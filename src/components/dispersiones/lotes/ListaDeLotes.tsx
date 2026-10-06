@@ -27,7 +27,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/toast';
 import { ArrowRight, Bank, Plus } from '@phosphor-icons/react';
-import { Banner } from '@leasefy/cadence';
+import { Banner, MotionIndicator } from '@leasefy/cadence';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -44,15 +44,17 @@ import {
 } from '@/components/ui/dialog';
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useLotesDeDispersion } from '@/lib/hooks/use-lotes-de-dispersion';
 import { lotesDeDispersionApi, type LoteResumen } from '@/lib/api/lotes-de-dispersion.service';
@@ -89,28 +91,65 @@ interface PendientesDelMes {
   totalCop: number;
   /** Las que tienen un dato bancario por completar. */
   sinDatos: number;
+  /**
+   * 🔴 PG-05: las que no van al archivo, por QUÉ (sin las que se compensan).
+   * `null` = un back anterior que no lo dice: queda la frase de siempre.
+   */
+  porTipo: Partial<Record<'RETENIDA_GIRO_DEVUELTO' | 'RETENIDA_CAMBIO_DE_CUENTA' | 'SIN_CUENTA' | 'DATO_BANCARIO', number>> | null;
 }
 
-/**
- * Los pasos de un lote, en una línea. Es lo que la persona no sabía al entrar:
- * que armar no gira nada y que el archivo lo sube ella al portal del banco.
+/** Cuántas de cada exclusión, desde los candidatos (o `null` si el back no lo dice). */
+export function exclusionesPorTipo(
+  candidatos: readonly { motivoDeExclusion: string | null; seCompensa?: boolean; tipoDeExclusion?: string | null }[],
+): PendientesDelMes['porTipo'] {
+  const excluidas = candidatos.filter((c) => c.motivoDeExclusion !== null && !c.seCompensa);
+  if (excluidas.some((c) => c.tipoDeExclusion === undefined)) return null;
+  const cuenta: NonNullable<PendientesDelMes['porTipo']> = {};
+  for (const c of excluidas) {
+    const tipo = (c.tipoDeExclusion ?? 'DATO_BANCARIO') as keyof NonNullable<PendientesDelMes['porTipo']>;
+    if (tipo === ('SE_COMPENSA' as string)) continue;
+    cuenta[tipo] = (cuenta[tipo] ?? 0) + 1;
+  }
+  return cuenta;
+}
+
+/** Cada exclusión en palabras: «1 retenida: el banco devolvió el giro anterior…». */
+export function frasesDeLasExclusiones(porTipo: NonNullable<PendientesDelMes['porTipo']>): string[] {
+  const n = (k: keyof typeof porTipo) => porTipo[k] ?? 0;
+  const frases: string[] = [];
+  if (n('RETENIDA_GIRO_DEVUELTO') > 0) {
+    frases.push(
+      `${n('RETENIDA_GIRO_DEVUELTO')} ${n('RETENIDA_GIRO_DEVUELTO') === 1 ? 'retenida' : 'retenidas'}: el banco devolvió el giro anterior y falta aprobar la cuenta`,
+    );
+  }
+  if (n('RETENIDA_CAMBIO_DE_CUENTA') > 0) {
+    frases.push(
+      `${n('RETENIDA_CAMBIO_DE_CUENTA')} ${n('RETENIDA_CAMBIO_DE_CUENTA') === 1 ? 'retenida' : 'retenidas'}: falta aprobar el cambio de cuenta`,
+    );
+  }
+  if (n('SIN_CUENTA') > 0) {
+    frases.push(`${n('SIN_CUENTA')} sin cuenta bancaria registrada`);
+  }
+  if (n('DATO_BANCARIO') > 0) {
+    frases.push(
+      `a ${n('DATO_BANCARIO')} ${n('DATO_BANCARIO') === 1 ? 'le falta un dato bancario' : 'les falta un dato bancario'}`,
+    );
+  }
+  return frases;
+}
+
+/*
+ * Los pasos de un lote (armar → aprobar → descargar → subir al banco → marcar
+ * pagado) viven desde el 05-10-2026 en `ComoSaleUnLote.tsx` (`PASOS_DE_UN_LOTE`),
+ * detrás del botón «¿Cómo funciona?» del encabezado. Lo que la persona no sabía
+ * al entrar —que armar no gira nada y que el archivo lo sube ella al portal del
+ * banco— sigue a la vista en la tarjeta del mes (`lote-no-gira-solo`).
  */
-export const PASOS_DEL_LOTE = [
-  'Armas el lote eligiendo el banco',
-  'otra persona lo aprueba con un código',
-  'descargas el archivo de ese banco (o su planilla)',
-  'lo subes al portal del banco',
-  'marcas el lote pagado',
-] as const;
 
 function pasaElFiltro(lote: LoteResumen, filtro: Filtro): boolean {
   if (filtro === 'todos') return true;
   if (filtro === 'en_curso') return lote.estado !== 'PAGADO' && lote.estado !== 'ANULADO';
   return lote.estado === filtro;
-}
-
-function mensajeDe(error: unknown, siNo: string): string {
-  return error instanceof Error && error.message ? error.message : siNo;
 }
 
 export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}) {
@@ -138,10 +177,25 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
       .then((r) => {
         if (!vigente) return;
         const sinDatos = r.candidatos.filter((c) => c.motivoDeExclusion !== null && !c.seCompensa).length;
-        setPendientes({ esperan: r.candidatos.length, girables: r.cantidad, totalCop: r.totalCop, sinDatos });
+        setPendientes({
+          esperan: r.candidatos.length,
+          girables: r.cantidad,
+          totalCop: r.totalCop,
+          sinDatos,
+          porTipo: exclusionesPorTipo(r.candidatos),
+        });
       })
       .catch((e: unknown) => {
-        if (vigente) setErrorDePendientes(mensajeDe(e, 'No se pudieron contar las dispersiones del mes.'));
+        // Con la regla de oro (02-10-2026): un 5xx dice «de nuestro lado» con la
+        // referencia; «conexión», sólo sin respuesta. Antes iba `e.message` crudo.
+        if (vigente) {
+          setErrorDePendientes(
+            mensajeParaLaPersona(e, {
+              porDefecto: 'No se pudieron contar las dispersiones del mes.',
+              accion: 'contar las dispersiones del mes',
+            }),
+          );
+        }
       });
     return () => {
       vigente = false;
@@ -188,15 +242,14 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
           )}
         </div>
         <FraseDelMes mes={mes} pendientes={pendientes} error={errorDePendientes} />
-        <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-caption text-fg-muted" aria-label="Cómo sale un pago">
-          {PASOS_DEL_LOTE.map((paso, i) => (
-            <li key={paso} className="flex items-center gap-1.5">
-              <span className="font-mono text-fg-subtle">{i + 1}.</span>
-              {paso}
-              {i < PASOS_DEL_LOTE.length - 1 && <ArrowRight className="h-3 w-3" aria-hidden="true" />}
-            </li>
-          ))}
-        </ol>
+        {/* COMO-FUNCIONA (05-10-2026): los cinco pasos dibujados que iban acá
+            se fueron al botón «¿Cómo funciona?» del encabezado (`ComoSaleUnLote`).
+            Queda a la vista sólo el aviso de seguridad, como la línea de Portales:
+            armar no gira plata y el archivo lo sube una persona al banco. */}
+        <p className="text-caption text-fg-muted" data-testid="lote-no-gira-solo">
+          Armar el lote <span className="font-medium text-fg">no gira plata</span>: el archivo lo subes tú al
+          portal del banco.
+        </p>
       </section>
 
       {lotes.length > 0 && (
@@ -211,10 +264,14 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
                 aria-selected={filtro === f.id}
                 onClick={() => setFiltro(f.id)}
                 className={cn(
-                  'rounded-full px-3 py-1 text-xs font-medium transition-colors',
-                  filtro === f.id ? 'bg-primary text-primary-fg' : 'text-fg-muted hover:bg-surface-muted',
+                  'relative isolate rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                  filtro === f.id ? 'text-primary-fg' : 'text-fg-muted hover:bg-surface-muted',
                 )}
               >
+                {/* La píldora del filtro elegido SE DESLIZA al nuevo. */}
+                {filtro === f.id ? (
+                  <MotionIndicator layoutId="lotes-filtro" className="inset-0 -z-10 rounded-full bg-primary" />
+                ) : null}
                 {f.nombre}
               </button>
             ))}
@@ -247,11 +304,13 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
                   <TableHead className="sr-only">Abrir</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              {/* Filas escalonadas con techo; cada filtro o página monta un
+                  cuerpo nuevo. */}
+              <TableBodyAnimado key={`${filtro}|${page}|${pageSize}`}>
                 {pageItems.map((lote) => {
                   const enTotal = lote._count?.items ?? lote.cantidad;
                   return (
-                    <TableRow
+                    <TableRowAnimada
                       key={lote.id}
                       className="cursor-pointer"
                       onClick={() => irAlLote(lote.id)}
@@ -285,10 +344,10 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
                           </Link>
                         </Button>
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   );
                 })}
-              </TableBody>
+              </TableBodyAnimado>
             </Table>
           </div>
         )}
@@ -380,14 +439,22 @@ function FraseDelMes({
         </>
       )}
       .
-      {sinDatos > 0 && (
+      {sinDatos > 0 && pendientes.porTipo ? (
+        /* 🔴 PG-05 (03-10-2026): cada exclusión con su porqué. Paula tiene
+           cuenta; su giro anterior fue DEVUELTO y el siguiente queda retenido
+           hasta aprobar la cuenta: no es «le falta un dato bancario». */
+        <span className="text-fg-muted" data-testid="exclusiones-del-mes">
+          {' '}
+          No van al archivo del banco (entran al lote): {frasesDeLasExclusiones(pendientes.porTipo).join('; ')}.
+        </span>
+      ) : sinDatos > 0 ? (
         <span className="text-fg-muted">
           {' '}
           A <span className="font-mono tabular-nums">{sinDatos}</span>{' '}
           {sinDatos === 1 ? 'le falta un dato bancario: entra al lote' : 'les falta un dato bancario: entran al lote'} pero
           no al archivo.
         </span>
-      )}
+      ) : null}
     </p>
   );
 }
@@ -484,7 +551,7 @@ function ArmarLoteDialog({
       }
       onArmado(lote.id);
     } catch (e) {
-      setError(mensajeDe(e, 'No se pudo armar el lote.'));
+      setError(mensajeParaLaPersona(e, { porDefecto: 'No se pudo armar el lote.', accion: 'armar el lote' }));
     } finally {
       setEnviando(false);
     }
@@ -492,7 +559,7 @@ function ArmarLoteDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-4xl" data-testid="dialogo-armar-lote">
+      <DialogContent size="xl" data-testid="dialogo-armar-lote">
         <DialogHeader>
           <DialogTitle>Armar el lote de {nombreDelMes(mes)}</DialogTitle>
           <DialogDescription>
@@ -502,7 +569,9 @@ function ArmarLoteDialog({
               ' Como eres administrador, queda aprobado al armarlo, sin código (P-4): en la bitácora queda que fuiste la misma persona.'}
           </DialogDescription>
         </DialogHeader>
-        <div className="max-h-[60vh] space-y-5 overflow-y-auto px-6 py-4 text-sm">
+        {/* Sin scroll ni relleno propios: el cuerpo del modal ya scrollea
+            (dos scrollers anidados se pelean el gesto). */}
+        <div className="space-y-5 text-sm">
           {abierto && <ElegirBancoDeOrigen onCambio={setBanco} />}
           {abierto && <ElegirAQuienPagarle mes={mes} onCambio={setEleccion} />}
           {error && <Banner variant="danger">{error}</Banner>}

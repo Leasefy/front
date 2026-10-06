@@ -25,6 +25,7 @@ import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button } from '@/components/ui/button'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelAgente } from './fallo-del-agente'
+import { CrossFade } from '@leasefy/cadence'
 
 // =============================================================================
 // Component
@@ -39,9 +40,18 @@ export default function CarrierDeepDivePage() {
   const { data: recentQuotes, isLoading: quotesLoading } = useCarrierRecentQuotes(carrier)
 
   // Phase 38-05b: skeleton only (D-38-04: dynamic detail route, no EmptyState).
-  if (isLoading && !detail) return <PageSkeleton variant="detail" />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // contenido); lo que ya estaba al montarse no se anima.
+  if (isLoading && !detail) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="detail" />
+      </CrossFade>
+    )
+  }
 
   return (
+    <CrossFade swapKey="aseguradora">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
@@ -133,5 +143,6 @@ export default function CarrierDeepDivePage() {
         <CarrierRecentQuotesTable quotes={recentQuotes ?? null} isLoading={quotesLoading} />
       </section>
     </div>
+    </CrossFade>
   )
 }

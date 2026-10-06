@@ -24,7 +24,7 @@
  * preguntándose por qué guardó una cosa y el portal muestra otra.
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { toast } from '@/components/ui/toast';
 import {
   CalendarCheck,
@@ -39,11 +39,23 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+import { Collapse, CrossFade, MotionIndicator, Presence } from '@leasefy/cadence';
 import { AvailabilityScheduleEditor } from '@/components/panel/AvailabilityScheduleEditor';
 import { agendaApi, type TipoDeVisita } from '@/lib/api/agenda.service';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
-import { descripcionDelError } from '@/lib/errores/descripcion-del-error';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { diaLegible } from '@/lib/mandato/textos';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { scheduleToWindows, windowsToSchedule } from '@/lib/utils/availability-schedule';
 import {
   type AvailabilitySchedule,
@@ -57,6 +69,14 @@ export interface VisitasDelInmuebleProps {
    * un 400, y un «Reintentar» que nunca iba a funcionar (F6).
    */
   propertyId?: string;
+  /**
+   * IN-10 (QA 04-10): el inmueble tiene un contrato vigente. Prender las
+   * visitas ya no guarda de una: avisa que está arrendado (hasta cuándo, si se
+   * sabe) y pregunta antes de abrir horarios.
+   */
+  arrendado?: boolean;
+  /** Hasta cuándo va el contrato vigente (`YYYY-MM-DD…`), si se sabe. */
+  arrendadoHasta?: string | null;
 }
 
 /** Cuántas franjas quedaron cargadas: lo que decide si hay visitas o no. */
@@ -144,7 +164,10 @@ function ModalidadCard({
 
 type Estado = 'cargando' | 'listo' | 'error';
 
-export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
+export function VisitasDelInmueble({ propertyId, arrendado = false, arrendadoHasta = null }: VisitasDelInmuebleProps) {
+  const [preguntarSiArrendado, setPreguntarSiArrendado] = useState(false);
+  // La pestaña de horarios elegida lleva su píldora, que se DESLIZA a la otra.
+  const indicadorDeLaModalidad = `${useId()}-modalidad`;
   const [estado, setEstado] = useState<Estado>('cargando');
   const [errorDeCarga, setErrorDeCarga] = useState<unknown>(null);
   // Una agenda por modalidad. Son distintas a propósito.
@@ -208,8 +231,14 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
         // F12: el back explica por qué no (una franja que se cruza, una
         // modalidad que no aplica). Tragarlo dejaba a la persona reintentando
         // lo mismo; «intenta de nuevo» queda sólo para lo que no explica.
+        // 02-10: por el traductor. La función de antes callaba el 5xx (caía al
+        // «intenta de nuevo» sin referencia) y no listaba los `campos` de un
+        // 400 que llegaba sin `message` legible.
         toast.error('No pudimos guardar los horarios', {
-          description: descripcionDelError(e) ?? 'Intenta de nuevo en unos segundos.',
+          description: mensajeParaLaPersona(e, {
+            porDefecto: 'Intenta de nuevo en unos segundos.',
+            accion: 'guardar los horarios de visita',
+          }),
         });
       } finally {
         setGuardando(false);
@@ -287,7 +316,10 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
             onCheckedChange={(activar) => {
               // Prender sin modalidad dejaría cupos que nadie puede reservar:
               // si no había ninguna, entra presencial, que es el caso normal.
-              if (activar) {
+              if (activar && arrendado) {
+                // IN-10: nada se guarda sin confirmar.
+                setPreguntarSiArrendado(true);
+              } else if (activar) {
                 void guardar(
                   DEFAULT_AVAILABILITY_SCHEDULE,
                   modalidades.length === 0 ? ['IN_PERSON'] : undefined,
@@ -307,7 +339,42 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
         )}
       </header>
 
-      <div className="px-5 py-4">
+      <AlertDialog open={preguntarSiArrendado} onOpenChange={setPreguntarSiArrendado}>
+        <AlertDialogContent data-testid="visitas-arrendado">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Este inmueble está arrendado</AlertDialogTitle>
+            <AlertDialogDescription>
+              {arrendadoHasta
+                ? `Tiene un contrato vigente hasta el ${diaLegible(arrendadoHasta)}.`
+                : 'Tiene un contrato vigente.'}{' '}
+              ¿Quieres abrir visitas (de lunes a viernes de 9:00 a 18:00 y los sábados de 10:00 a 14:00) para mostrarlo a quien lo arriende cuando quede libre? Después puedes cambiar los horarios.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No abrir visitas</AlertDialogCancel>
+            <AlertDialogAction
+              data-testid="visitas-arrendado-confirmar"
+              onClick={() => {
+                setPreguntarSiArrendado(false);
+                void guardar(
+                  DEFAULT_AVAILABILITY_SCHEDULE,
+                  modalidades.length === 0 ? ['IN_PERSON'] : undefined,
+                  'IN_PERSON',
+                );
+              }}
+            >
+              Abrir visitas
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cargando → apagadas → prendidas (o → fallo): al usar el interruptor
+          el contenido se cruza con un fundido en vez de saltar. */}
+      <CrossFade
+        className="px-5 py-4"
+        swapKey={estado === 'listo' ? (prendido ? 'prendidas' : 'apagadas') : estado}
+      >
         {estado === 'cargando' && (
           <div className="flex justify-center py-6">
             <Spinner />
@@ -361,19 +428,23 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
                   testId="modalidad-virtual"
                 />
               </div>
-              {modalidades.length === 0 && (
-                <p className="mt-2 flex items-center gap-1.5 text-caption text-warning">
+              <Presence
+                as="p"
+                show={modalidades.length === 0}
+                distance="xs"
+                className="mt-2 flex items-center gap-1.5 text-caption text-warning"
+              >
                   <Warning className="h-3.5 w-3.5 shrink-0" weight="fill" aria-hidden />
                   Sin ninguna marcada nadie puede reservar, aunque haya horarios.
-                </p>
-              )}
+              </Presence>
             </div>
 
             {/* Los horarios son POR modalidad. Con las dos ofrecidas hay que
                 poder verlas y editarlas por separado — antes lo que se cargaba
                 valía para las dos, que es falso: una videollamada se atiende a
                 una hora en que nadie va a abrir el inmueble. */}
-            {modalidades.length > 1 && (
+            {/* Las pestañas aparecen (con su altura) al ofrecer las dos. */}
+            <Collapse open={modalidades.length > 1}>
               <div
                 role="tablist"
                 aria-label="Modalidad de los horarios"
@@ -388,18 +459,27 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
                     onClick={() => setModalidadActiva(tipo)}
                     data-testid={`horarios-de-${tipo}`}
                     className={cn(
-                      'rounded-full px-3.5 py-1.5 text-body-sm transition-colors',
+                      'relative isolate rounded-full px-3.5 py-1.5 text-body-sm transition-colors',
                       modalidadActiva === tipo
-                        ? 'bg-surface font-medium text-fg shadow-[0_1px_2px_rgba(20,19,15,0.06)]'
+                        ? 'font-medium text-fg'
                         : 'text-fg-muted hover:text-fg',
                     )}
                   >
+                    {/* La píldora blanca de la activa (la misma de antes), que viaja. */}
+                    {modalidadActiva === tipo && (
+                      <MotionIndicator
+                        layoutId={indicadorDeLaModalidad}
+                        className="inset-0 -z-10 rounded-full bg-surface shadow-[0_1px_2px_rgba(20,19,15,0.06)]"
+                      />
+                    )}
                     Horario {tipo === 'IN_PERSON' ? 'presencial' : 'virtual'}
                   </button>
                 ))}
               </div>
-            )}
+            </Collapse>
 
+            {/* Cambiar de pestaña cruza un horario con el otro. */}
+            <CrossFade swapKey={`${modalidadActiva}-${scheduleActivo ? 'con' : 'sin'}`}>
             {scheduleActivo ? (
               <AvailabilityScheduleEditor
                 key={modalidadActiva}
@@ -428,6 +508,7 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
                 </Button>
               </div>
             )}
+            </CrossFade>
             <div className="flex items-start gap-2.5 rounded-lg bg-surface-muted/60 p-3">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" aria-hidden />
               <p className="text-caption text-fg-muted">
@@ -437,7 +518,7 @@ export function VisitasDelInmueble({ propertyId }: VisitasDelInmuebleProps) {
             </div>
           </div>
         )}
-      </div>
+      </CrossFade>
     </section>
   );
 }

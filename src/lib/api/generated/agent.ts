@@ -8787,6 +8787,160 @@ export interface paths {
         patch: operations["cotizadorAdminPrescoringConfigUpdate"];
         trace?: never;
     };
+    "/api/agency/{agencyId}/piloto/director/metas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto director — las metas propuestas y aceptadas, con su serie diaria y su historial */
+        get: operations["getPilotoDirectorMetas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/metas/{metaId}/aceptar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto director — aceptar una meta propuesta (o reactivar una pausada). Sólo ADMIN */
+        post: operations["postPilotoDirectorMetaAceptar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/metas/{metaId}/ajustar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto director — ajustar el objetivo de una meta (422 objetivo_invalido si no cabe en los topes). Sólo ADMIN */
+        post: operations["postPilotoDirectorMetaAjustar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/metas/{metaId}/pausar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto director — pausar una meta. Sólo ADMIN */
+        post: operations["postPilotoDirectorMetaPausar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/gasto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto director — gasto de IA del mes contra el tope (tramo, escalón, por componente y por día); cobranza aparte */
+        get: operations["getPilotoDirectorGasto"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/experimento": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto director — el grupo de control del 10 % (si la inmobiliaria lo aceptó) */
+        get: operations["getPilotoDirectorExperimento"];
+        /** Piloto director — prender o apagar el grupo de control (sólo ADMIN; apagarlo no borra las asignaciones) */
+        put: operations["putPilotoDirectorExperimento"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/semana": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto director — el informe de la semana a la gerencia (lo que hizo el Piloto, metas, lo que espera un clic, gasto de IA en pesos) */
+        get: operations["getPilotoDirectorSemana"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/hoy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Piloto director — el plan del día: prioridades, órdenes, retenciones, lo rechazado y cómo lo pensó */
+        get: operations["getPilotoDirectorHoy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/piloto/director/replanear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Piloto director — «Volver a planear» (sólo ADMIN; máximo 3 al día) */
+        post: operations["postPilotoDirectorReplanear"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -11685,7 +11839,7 @@ export interface components {
         AiHubChatPendingApproval: {
             id: string;
             /** @enum {string} */
-            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion";
+            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director";
             actionType: string;
             title: string;
             description: string;
@@ -11704,7 +11858,7 @@ export interface components {
         };
         AiHubChatDispatch: {
             /** @enum {string} */
-            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion";
+            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director";
             taskDescription: string;
             /** @enum {string} */
             status: "completed" | "failed";
@@ -11787,7 +11941,7 @@ export interface components {
             kind: "routing" | "approval" | "feedback";
             pattern: {
                 /** @enum {string|null} */
-                agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | null;
+                agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | null;
                 tags: string[];
             };
             recommendation: string;
@@ -12048,6 +12202,8 @@ export interface components {
             desde: string;
             href: string;
             accion?: components["schemas"]["PilotoInboxAccion"];
+            motivo?: string;
+            director?: components["schemas"]["PilotoDirectorEnLaBandeja"];
         };
         PilotoInboxResponse: {
             items: components["schemas"]["PilotoInboxItem"][];
@@ -12642,6 +12798,21 @@ export interface components {
             acciones: components["schemas"]["PilotoDetalleAccion"][];
             enlaces: components["schemas"]["PilotoDetalleEnlace"][];
             nota?: string;
+            motivo?: string;
+            director?: {
+                prioridad: number;
+                porQue: string;
+                evidencia: {
+                    tipo: string;
+                    ref: string;
+                }[];
+                meta: {
+                    id: string;
+                    metrica: string;
+                    nombre: string;
+                } | null;
+                alternativaDescartada: string | null;
+            } | null;
         };
         PilotoBriefingResponse: {
             fecha: string;
@@ -15285,6 +15456,276 @@ export interface components {
             success: false;
             error: string;
             details?: unknown;
+        };
+        PilotoDirectorEnLaBandeja: {
+            prioridad: number;
+            porQue: string;
+            evidencia: {
+                tipo: string;
+                ref: string;
+            }[];
+            meta: {
+                id: string;
+                metrica: string;
+                nombre: string;
+            } | null;
+            alternativaDescartada: string | null;
+        } | null;
+        DirectorMeta: {
+            id: string;
+            /** @enum {string} */
+            metrica: "recaudo_a_tiempo" | "mora_30" | "dias_de_vacancia" | "renovacion" | "pqrs_en_plazo" | "horas_ahorradas";
+            nombre: string;
+            /** @enum {string} */
+            estado: "propuesta" | "activa" | "pausada" | "cumplida" | "vencida";
+            /** @enum {string} */
+            direccion: "subir" | "bajar";
+            /** @enum {string} */
+            unidad: "porcentaje" | "dias" | "horas";
+            lineaBase: number | null;
+            objetivo: number;
+            actual: number | null;
+            desde: string;
+            hasta: string;
+            estimada: boolean;
+            porQue: string;
+            serie: {
+                fecha: string;
+                valor: number | null;
+            }[];
+            historial: {
+                en: string;
+                quien: string;
+                /** @enum {string} */
+                que: "propuso" | "acepto" | "ajusto" | "pauso" | "cumplio" | "vencio";
+                objetivo: number | null;
+            }[];
+        };
+        DirectorMetas: {
+            encendido: boolean;
+            metas: components["schemas"]["DirectorMeta"][];
+            sinMeta: {
+                /** @enum {string} */
+                metrica: "recaudo_a_tiempo" | "mora_30" | "dias_de_vacancia" | "renovacion" | "pqrs_en_plazo" | "horas_ahorradas";
+                nombre: string;
+            }[];
+        };
+        DirectorError: {
+            error: string;
+            mensaje?: string;
+        };
+        DirectorMetaAjustarBody: {
+            objetivo: number;
+        };
+        DirectorGasto: {
+            encendido: boolean;
+            mes: string;
+            topeCop: number;
+            /** @enum {string|null} */
+            tramo: "pequena" | "mediana" | "grande" | null;
+            gastadoCop: number;
+            excluidoCop: number;
+            /** @enum {string|null} */
+            escalon: "normal" | "ahorro" | "sinModelo" | null;
+            porComponente: {
+                /** @enum {string} */
+                componente: "director.plan" | "director.replan" | "director.chat" | "director.resumen" | "chat" | "cobranza" | "otro";
+                cop: number;
+                cuentaParaTope: boolean;
+            }[];
+            porDia: {
+                fecha: string;
+                cop: number;
+            }[];
+        };
+        DirectorGastoError: {
+            error: string;
+            mensaje?: string;
+        };
+        DirectorExperimento: {
+            encendido: boolean;
+            activo: boolean;
+            porcentajeControl: number;
+            desde: string | null;
+            entidadesEnControl: number;
+        };
+        DirectorExperimentoError: {
+            error: string;
+            mensaje?: string;
+        };
+        DirectorExperimentoPutBody: {
+            activo: boolean;
+        };
+        PilotoDirectorInformeSemanal: {
+            encendido: boolean;
+            desde: string;
+            hasta: string;
+            piloto: {
+                detectadas: number;
+                hechasSolas: number;
+                hechasConClic: number;
+                esperanClic: number;
+                fallidas: number;
+            } | null;
+            director: {
+                planes: number;
+                conLaIa: number;
+                conReglas: number;
+                fallidos: number;
+                ordenes: number;
+                aprobadas: number;
+                hechas: number;
+                descartadas: number;
+                enBandeja: number;
+                costoCop: number;
+            } | null;
+            metas: {
+                metrica: string;
+                nombre: string;
+                estado: string;
+                unidad: string;
+                /** @enum {string} */
+                direccion: "subir" | "bajar";
+                lineaBase: number | null;
+                objetivo: number;
+                actual: number | null;
+                vaBien: boolean | null;
+                frase: string;
+            }[];
+            gasto: {
+                mes: string;
+                gastadoCop: number;
+                topeCop: number;
+                escalon: string;
+            } | null;
+            resumen: string[];
+        };
+        PilotoDirectorError: {
+            error: string;
+            mensaje?: string;
+            cicloId?: string;
+            code?: string;
+        };
+        PilotoDirectorHoy: {
+            encendido: boolean;
+            pilotoActivo?: boolean;
+            fecha: string | null;
+            ciclo: {
+                id: string;
+                /** @enum {string} */
+                tipo: "dia" | "replan";
+                /** @enum {string} */
+                estado: "en_curso" | "listo" | "fallido" | "sin_modelo";
+                inicio: string;
+                fin: string | null;
+                modelo: string | null;
+                esfuerzo: string | null;
+                costoCop: number;
+                sinModeloPorque: string | null;
+            } | null;
+            resumen: string | null;
+            pensamiento: string | null;
+            prioridades: {
+                meta: {
+                    id: string;
+                    metrica: string;
+                    nombre: string;
+                };
+                porQue: string;
+            }[];
+            ordenes: {
+                ordenId: string;
+                agente: string;
+                agenteNombre: string;
+                proceso: string;
+                procesoNombre: string;
+                entidad: {
+                    tipo: string;
+                    id: string;
+                    nombre: string;
+                    enlace: string | null;
+                };
+                cuando: string;
+                prioridad: number;
+                porQue: string;
+                evidencia: {
+                    tipo: string;
+                    ref: string;
+                    texto: string;
+                    enlace: string | null;
+                }[];
+                meta: {
+                    id: string;
+                    metrica: string;
+                    nombre: string;
+                } | null;
+                alternativaDescartada: string | null;
+                conflictoResuelto: string | null;
+                estado: string;
+                accionId: string | null;
+                motivoDeLaPerilla: string | null;
+            }[];
+            retenciones: {
+                retencionId: string;
+                entidad: {
+                    tipo: string;
+                    id: string;
+                    nombre: string;
+                    enlace: string | null;
+                };
+                agentes: string[];
+                hasta: string;
+                porQue: string;
+                evidencia: {
+                    tipo: string;
+                    ref: string;
+                    texto: string;
+                    enlace: string | null;
+                }[];
+                /** @enum {string} */
+                estado: "en_bandeja" | "activa" | "vencida" | "descartada";
+                accionId: string | null;
+            }[];
+            sugerencias: {
+                agente: string;
+                agenteNombre: string;
+                que: string;
+                porQue: string;
+            }[];
+            propuestasDeAutonomia: {
+                agente: string;
+                agenteNombre: string;
+                de: string;
+                a: string;
+                evidencia: {
+                    tipo: string;
+                    ref: string;
+                }[];
+            }[];
+            alertas: {
+                nivel: string;
+                que: string;
+                porQue: string;
+            }[];
+            rechazadas: {
+                ordenId: string;
+                proceso: string;
+                procesoNombre: string;
+                entidad: {
+                    tipo: string;
+                    id: string;
+                    nombre: string;
+                    enlace: string | null;
+                };
+                motivo: string;
+            }[];
+            grupoDeControl: {
+                activo: boolean;
+                omitidas: number;
+            };
+        };
+        PilotoDirectorReplan: {
+            cicloId: string;
         };
     };
     responses: never;
@@ -35023,6 +35464,610 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CotizadorAdminPrescoringErrorResponse"];
+                };
+            };
+        };
+    };
+    getPilotoDirectorMetas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las metas (o `encendido: false`) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorMetas"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description Sin base o sin la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+        };
+    };
+    postPilotoDirectorMetaAceptar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                metaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La meta, con la misma forma que en el listado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorMeta"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description La meta no existe en la inmobiliaria (`no_existe`) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description La meta ya terminó (`meta_terminada`), cambió mientras tanto (`en_conflicto`) o el director está apagado (`director_apagado`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description Sin base o sin la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+        };
+    };
+    postPilotoDirectorMetaAjustar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                metaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectorMetaAjustarBody"];
+            };
+        };
+        responses: {
+            /** @description La meta, con la misma forma que en el listado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorMeta"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description La meta no existe en la inmobiliaria (`no_existe`) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description La meta ya terminó (`meta_terminada`), cambió mientras tanto (`en_conflicto`) o el director está apagado (`director_apagado`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description El objetivo no cabe en los topes duros (`objetivo_invalido`) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description Sin base o sin la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+        };
+    };
+    postPilotoDirectorMetaPausar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                metaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La meta, con la misma forma que en el listado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorMeta"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description La meta no existe en la inmobiliaria (`no_existe`) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description La meta ya terminó (`meta_terminada`), cambió mientras tanto (`en_conflicto`) o el director está apagado (`director_apagado`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+            /** @description Sin base o sin la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorError"];
+                };
+            };
+        };
+    };
+    getPilotoDirectorGasto: {
+        parameters: {
+            query?: {
+                mes?: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El gasto (o `encendido: false`) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorGasto"];
+                };
+            };
+            /** @description Mes mal escrito */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorGastoError"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorGastoError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorGastoError"];
+                };
+            };
+            /** @description Sin base o sin la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorGastoError"];
+                };
+            };
+        };
+    };
+    getPilotoDirectorExperimento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El experimento (o `encendido: false`) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimento"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+            /** @description Sin base o sin la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+        };
+    };
+    putPilotoDirectorExperimento: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DirectorExperimentoPutBody"];
+            };
+        };
+        responses: {
+            /** @description El experimento, como en el GET */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimento"];
+                };
+            };
+            /** @description Cuerpo que no es `{ activo: boolean }` */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+            /** @description No es miembro activo, o no es ADMIN (`solo_admin`) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+            /** @description El director está apagado (`director_apagado`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+            /** @description Sin base o sin la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DirectorExperimentoError"];
+                };
+            };
+        };
+    };
+    getPilotoDirectorSemana: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El informe (o `encendido: false`) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorInformeSemanal"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+        };
+    };
+    getPilotoDirectorHoy: {
+        parameters: {
+            query?: {
+                fecha?: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El plan (o `encendido: false`) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorHoy"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description No es miembro activo */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+        };
+    };
+    postPilotoDirectorReplanear: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El ciclo quedó en curso */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorReplan"];
+                };
+            };
+            /** @description Sin JWT válido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description Sólo un administrador vuelve a planear */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description Ya hay un ciclo en curso (o el director o el Piloto automático están apagados) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description Ya se usaron los re-planes del día */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description No se pudo encargar el re-plan */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
+                };
+            };
+            /** @description Falta la migración del director */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PilotoDirectorError"];
                 };
             };
         };

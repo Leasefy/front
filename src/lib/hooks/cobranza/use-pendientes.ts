@@ -9,7 +9,7 @@
  *                                   (live/high → alta, medium → media, low → baja)
  *   2. useLegalArtifacts         → cartas prejurídicas pending_human_review (alta)
  *   3. useInsuranceClaims        → siniestros pending_human_review (alta)
- *   4. usePaymentsFunnel         → pagos `pending` ligados a un acuerdo de pago
+ *   4. usePaymentPlans           → acuerdos de pago que esperan la aprobación
  *                                   (paymentPlanId != null) — lo más cercano que
  *                                   existe a "planes por revisar"; NO hay endpoint
  *                                   que liste planes `offered` agency-wide (media)
@@ -34,9 +34,9 @@ import { useEscalations } from '@/lib/hooks/cobranza/use-escalations'
 import { useLegalArtifacts } from '@/lib/hooks/cobranza/use-legal-artifacts'
 import { useInsuranceClaims } from '@/lib/hooks/cobranza/use-insurance-claims'
 import {
-  usePaymentsFunnel,
-  type UsePaymentsFunnelFilters,
-} from '@/lib/hooks/cobranza/use-payments-funnel'
+  usePaymentPlans,
+  type EstadoDelPlanDePago,
+} from '@/lib/hooks/cobranza/use-payment-plans'
 import {
   useDailyReport,
   type DailyReportResponse,
@@ -112,16 +112,14 @@ const PRIORIDAD_RANK: Record<PendientePrioridad, number> = {
 }
 
 /**
- * Estable entre renders — usePaymentsFunnel serializa filtros para sus deps.
+ * Los planes que pueden estar esperando la aprobación de la inmobiliaria.
  *
- * `en_proceso`, no `pending`: bajo `pending` viajan también las obligaciones
- * importadas de la cartera, que acá se descartan igual (no tienen
- * `paymentPlanId`). El endpoint devuelve 50 filas por página y esto sólo lee
- * la primera, así que con una cartera grande las obligaciones podían llenarla
- * entera y dejar los planes por revisar fuera de Pendientes —sin error, sin
- * vacío, simplemente ausentes.
+ * 🔴 QA-IA-B (04-10-2026): antes esto leía el embudo de pagos (`en_proceso`),
+ * que sólo trae filas de `agent.payments`: un plan recién ofrecido, que no
+ * tiene ningún pago, no le aparecía a nadie para aprobarlo. Ahora sale de la
+ * lista real de planes (`GET …/cartera/payment-plans`).
  */
-const PLANES_FILTERS: UsePaymentsFunnelFilters = { status: 'en_proceso' }
+const PLANES_QUE_PUEDEN_ESPERAR: readonly EstadoDelPlanDePago[] = ['offered', 'accepted']
 
 /** Estados de promesa que aún requieren seguimiento. */
 const PTP_OPEN_STATUSES = new Set(['open', 'partially_kept'])
@@ -156,7 +154,7 @@ export function usePendientes(): UsePendientesResult {
   const escalaciones = useEscalations()
   const cartas = useLegalArtifacts({ status: 'pending_human_review' })
   const siniestros = useInsuranceClaims({ status: 'pending_human_review' })
-  const planes = usePaymentsFunnel(PLANES_FILTERS)
+  const planes = usePaymentPlans({ status: PLANES_QUE_PUEDEN_ESPERAR })
   const reporte = useDailyReport()
   const conversaciones = useCobranzaInbox()
 
@@ -236,28 +234,24 @@ export function usePendientes(): UsePendientesResult {
       })
     }
 
-    // 4. Pagos pendientes ligados a un acuerdo de pago — dedup por plan,
-    //    conservando el pago más reciente.
-    const planRows = new Map<string, PendienteItem>()
-    for (const row of planes.rows) {
-      if (!row.paymentPlanId || row.status !== 'pending') continue
-      const existing = planRows.get(row.paymentPlanId)
-      if (existing && existing.fecha >= row.createdAt) continue
-      planRows.set(row.paymentPlanId, {
-        key: `plan-${row.paymentPlanId}`,
+    // 4. Acuerdos de pago (planes con cuotas) que esperan la aprobación de la
+    //    inmobiliaria: ninguno se activa sin que una persona lo apruebe.
+    for (const plan of planes.planes) {
+      if (plan.aprobado) continue
+      out.push({
+        key: `plan-${plan.planId}`,
         grupo: 'planes',
         prioridad: 'media',
-        titulo: row.debtor.fullName,
-        reason: null,
+        titulo: plan.debtorName,
+        reason: 'Acuerdo de pago esperando tu aprobación',
         kind: null,
-        montoCop: row.amount,
-        dueDate: null,
-        fecha: row.createdAt,
-        href: `${BASE}/pagos/planes/${row.paymentPlanId}`,
+        montoCop: plan.totalDueCop,
+        dueDate: plan.proximaCuota?.vence ?? null,
+        fecha: plan.offeredAt,
+        href: `${BASE}/pagos/planes/${plan.planId}`,
         cta: 'revisar',
       })
     }
-    out.push(...planRows.values())
 
     // 5. Promesas de pago de HOY (aún abiertas) → dar seguimiento al deudor
     const ptps =
@@ -312,7 +306,7 @@ export function usePendientes(): UsePendientesResult {
     escalaciones.data,
     cartas.data,
     siniestros.data,
-    planes.rows,
+    planes.planes,
     reporte.data,
     conversaciones.threads,
   ])

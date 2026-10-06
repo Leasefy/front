@@ -29,7 +29,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
-import { Banner } from '@leasefy/cadence';
+import { Banner, MotionIndicator } from '@leasefy/cadence';
 import { ArrowSquareOut } from '@phosphor-icons/react';
 
 import { Spinner } from '@/components/ui/spinner';
@@ -41,6 +41,7 @@ import {
   type TipoDeCuentaDeOrigen,
 } from '@/lib/api/lotes-de-dispersion.service';
 import { cn } from '@/lib/utils';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 import { CamposDeLaCuentaDeOrigen, cuentaEscritaValida } from './CamposDeLaCuentaDeOrigen';
 import { entregaDe, ETIQUETA_DE_LA_ENTREGA, fuenteCorta, ORDEN_DE_LA_ENTREGA } from './entrega-del-formato';
@@ -86,7 +87,16 @@ export function ElegirBancoDeOrigen({ onCambio }: { onCambio: (e: EleccionDelBan
         }
       })
       .catch((e: unknown) => {
-        if (vigente) setError(e instanceof Error && e.message ? e.message : 'No se pudo cargar la lista de bancos.');
+        // Con la regla de oro (02-10-2026): un 5xx dice «de nuestro lado» con la
+        // referencia; «conexión», sólo sin respuesta. Antes iba `e.message` crudo.
+        if (vigente) {
+          setError(
+            mensajeParaLaPersona(e, {
+              porDefecto: 'No se pudo cargar la lista de bancos.',
+              accion: 'cargar la lista de bancos',
+            }),
+          );
+        }
       });
     return () => {
       vigente = false;
@@ -184,13 +194,20 @@ export function ElegirBancoDeOrigen({ onCambio }: { onCambio: (e: EleccionDelBan
                       data-testid={`banco-${b.id}`}
                       onClick={() => elegirBanco(b.id)}
                       className={cn(
-                        'rounded-full border px-3 py-1.5 text-sm transition-colors',
+                        'relative isolate rounded-full border px-3 py-1.5 text-sm transition-colors',
                         activo
-                          ? 'border-primary bg-primary-soft text-fg'
+                          ? 'border-transparent text-fg'
                           : 'border-border text-fg hover:border-border-strong',
                         !b.formato && !activo && 'text-fg-muted',
                       )}
                     >
+                      {/* El banco elegido: la píldora SE DESLIZA al nuevo. */}
+                      {activo ? (
+                        <MotionIndicator
+                          layoutId="banco-de-origen"
+                          className="-inset-px -z-10 rounded-full border border-primary bg-primary-soft"
+                        />
+                      ) : null}
                       {b.nombre}
                       {b.formato && fuenteCorta(b) && (
                         <span className="ml-1.5 text-caption text-fg-muted" data-testid={`fuente-corta-${b.id}`}>

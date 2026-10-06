@@ -59,6 +59,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useAuth } from '@/lib/auth'
+import { leerFallo } from '@/lib/errores/traductor-de-errores'
 import {
   CLAVE_DEL_RECORRIDO_DEL_PANEL,
   onboardingVistoApi,
@@ -283,9 +284,20 @@ export function PanelPrefsProvider({ children }: ProviderProps) {
         if (clave === CLAVE_DEL_RECORRIDO_DEL_PANEL) olvidarVersionAnterior()
         setDelServidor((prev) => (prev ? { ...prev, [clave]: r } : prev))
       } catch (err) {
-        // La caché lo sostiene en este navegador y se reintenta en la próxima
-        // carga (ver el efecto de arriba).
-        console.warn('[PanelPrefsContext] no se pudo guardar la bienvenida vista:', err)
+        // 🔴 No se le avisa a la persona (tanda 2 de errores, 02-10-2026): es
+        // una preferencia y no se pierde. La caché la sostiene en este
+        // navegador —el recorrido no vuelve a salir— y se le vuelve a mandar
+        // al servidor en la próxima carga (ver el efecto de arriba). Un toast
+        // por esto culparía a alguien de algo que ya se arregla solo. Al log
+        // va lo que pasó (tipo, status, código, referencia), no el volcado.
+        const { tipo, status, code, referencia } = leerFallo(err)
+        console.warn('[PanelPrefsContext] no se guardó en el servidor que la bienvenida se vio; se reintenta en la próxima carga.', {
+          clave,
+          tipo,
+          status,
+          ...(code ? { code } : {}),
+          ...(referencia ? { referencia } : {}),
+        })
       }
     },
     [agencyId],

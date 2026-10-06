@@ -24,6 +24,12 @@ import { ApiError, getAccessToken, esCodigoDeSesionMuerta, estaMfaPendiente } fr
 import { sesionTerminada } from '@/lib/auth/session-terminal'
 import { cuantoEsperar } from '@/lib/api/demasiadas-solicitudes'
 import { CODIGO_LEASEFY_NO_RESPONDE } from '@/lib/conexion/estado-de-conexion'
+import { fraseDelCodigo, leerFallo, mensajeParaLaPersona } from './traductor-de-errores'
+import {
+  CODIGO_LIMITE_DEL_PLAN,
+  CODIGO_NOMINA_NO_HABILITADA,
+  CODIGO_PLAN_REQUERIDO,
+} from './codigos-del-plan'
 import {
   esCaidaDeLaBase,
   esServicioNoDisponible,
@@ -31,6 +37,7 @@ import {
   textoDeServicioNoDisponible,
   textoParaUnAviso,
 } from '@/lib/conexion/servicio-no-disponible'
+import { suenaARedCaida } from '@/lib/conexion/leer-el-error'
 
 export type TipoDeFallo =
   | 'noExiste'
@@ -76,6 +83,13 @@ export type TipoDeFallo =
    * `src/lib/conexion/estado-de-conexion.ts`.
    */
   | 'leasefyNoResponde'
+  /**
+   * 02-10-2026 · Un 4xx de una ACCIÓN (`accion` en el contexto): el servidor
+   * dijo que no a lo que se mandó —un dato que no cumple (400/422), algo que
+   * choca con lo que ya hay (409)—. No es «un problema nuestro»: la
+   * descripción dice qué está mal, con las palabras del back.
+   */
+  | 'rechazado'
 
 export interface FalloDeCarga {
   tipo: TipoDeFallo
@@ -87,6 +101,12 @@ export interface FalloDeCarga {
   status: number | null
   /** El mensaje original, para diagnóstico. Nunca se muestra tal cual. */
   mensajeOriginal: string | null
+  /**
+   * La `referencia` que el back (o el micro) le puso a un 5xx y que también
+   * quedó en su log (02-10-2026). `<FalloDeCarga>` la muestra en vez de la
+   * suya (status + hora): con ésta, soporte encuentra el error exacto.
+   */
+  referencia?: string
 }
 
 /** El nombre de lo que se estaba cargando, para que el cartel no sea genérico. */
@@ -101,6 +121,15 @@ export interface Contexto {
    * es nuestro, no mandarte a pedir un permiso que ya tienes.
    */
   creoQueTengoAcceso?: boolean
+  /**
+   * 02-10-2026 · Lo que se estaba HACIENDO, en infinitivo («resolver el
+   * caso»). Sin esto se clasifica una LECTURA, como siempre. Con esto, un
+   * 4xx que no tiene su propio cartel (400, 409, 422…) no se titula «fue un
+   * problema nuestro»: se titula «No pudimos resolver el caso» y la
+   * descripción dice qué está mal. Lo demás (404, 403, 401, 429, red, 5xx)
+   * sigue igual.
+   */
+  accion?: string
 }
 
 /**
@@ -123,16 +152,8 @@ function haySesionViva(): boolean {
 /** Un mensaje que ES el status y nada más: lo que tiran los hooks del micro. */
 const SOLO_EL_STATUS = /^[1-5]\d\d$/
 
-/**
- * Lo que dice cada navegador cuando el pedido NO llegó a salir.
- * Chrome, Firefox, Safari y React Native, en ese orden.
- */
-const ASI_SUENA_LA_RED_CAIDA = [
-  'failed to fetch',
-  'networkerror',
-  'load failed',
-  'network request failed',
-]
+// Lo que dice cada navegador (y Node) cuando el pedido NO llegó a salir vive
+// en `src/lib/conexion/leer-el-error.ts` (`RED_CAIDA`): una sola lista.
 
 /** El texto del error, venga como Error o como string ya aplanado. */
 function textoDe(error: unknown): string | null {
@@ -175,8 +196,8 @@ function statusDe(error: unknown): number | null {
   // navegador. Sin esto, quedarse sin red se anunciaba como «fue un problema
   // nuestro» — y la rama `status === 0` de acá abajo era código muerto para
   // todo el panel.
-  const enMinuscula = texto.toLowerCase()
-  if (ASI_SUENA_LA_RED_CAIDA.some((senal) => enMinuscula.includes(senal))) return 0
+  // (Node dice «fetch failed»: también está en la lista.)
+  if (suenaARedCaida(texto)) return 0
 
   return null
 }
@@ -203,6 +224,8 @@ export interface CuerpoDelNo {
   module?: string
   action?: string
   role?: string
+  /** IA95-41: los roles que SÍ entran, separados por coma (lo manda `PageGuard` con `SIN_PERMISO_POR_ROL`). */
+  roles?: string
 }
 
 export function cuerpoDelNo(error: unknown): CuerpoDelNo {
@@ -215,6 +238,7 @@ export function cuerpoDelNo(error: unknown): CuerpoDelNo {
       module: texto(e.module),
       action: texto(e.action),
       role: texto(e.role),
+      roles: texto(e.roles),
     }
   }
   /*
@@ -242,6 +266,7 @@ export function cuerpoDelNo(error: unknown): CuerpoDelNo {
     module: primero('module'),
     action: primero('action'),
     role: primero('role'),
+    roles: primero('roles'),
   }
 }
 
@@ -255,6 +280,28 @@ export function esSegundoFactor(error: unknown): boolean {
  * Cómo se llama en pantalla el módulo que el back nombró. Sin esto el cartel
  * diría «pipeline» —una llave interna— o, peor, no diría cuál.
  */
+/** IA95-41: cómo se nombra cada rol de la inmobiliaria en una frase («el contador»). */
+const ROL_EN_LA_FRASE: Record<string, string> = {
+  ADMIN: 'el administrador',
+  CONTADOR: 'el contador',
+  AGENTE: 'el asesor comercial',
+  VIEWER: 'el visualizador',
+  COORDINADOR: 'el coordinador',
+  AUXILIAR_CARTERA: 'el auxiliar de cartera',
+  ABOGADO_EXTERNO: 'el abogado externo',
+}
+
+/** `'ADMIN,CONTADOR'` → «el administrador y el contador»; vacío o desconocido → `null`. Pura. */
+export function rolesEnPalabras(roles: string | undefined): string | null {
+  const nombres = (roles ?? '')
+    .split(',')
+    .map((r) => ROL_EN_LA_FRASE[r.trim()])
+    .filter((n): n is string => Boolean(n))
+  if (nombres.length === 0) return null
+  if (nombres.length === 1) return nombres[0]!
+  return `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`
+}
+
 const NOMBRE_DEL_MODULO: Record<string, string> = {
   pipeline: 'Pipeline',
   inmuebles: 'Inmuebles',
@@ -371,9 +418,35 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     }
   }
 
-  // Un 402 no es un tropiezo: el plan se quedó sin créditos de IA. Ofrecer
-  // «Intentar de nuevo» ahí es la misma promesa falsa que sobre un 404 — la
-  // consulta no va a pasar hasta que alguien recargue.
+  /*
+   * 02-10-2026 · Los 402 del back llevan `code` y cada uno dice lo suyo. Antes
+   * TODO 402 era «Tu plan se quedó sin créditos de IA», también la inmobiliaria
+   * sin plan activo y el tope del plan. Ninguno se arregla reintentando.
+   */
+  if (status === 402) {
+    const code = cuerpoDelNo(error).code
+    const titulos: Record<string, string> = {
+      [CODIGO_PLAN_REQUERIDO]: 'Tu inmobiliaria no tiene un plan activo',
+      [CODIGO_LIMITE_DEL_PLAN]: 'Llegaste al límite de tu plan',
+      [CODIGO_NOMINA_NO_HABILITADA]: 'El módulo de Nómina no está habilitado',
+    }
+    if (code && titulos[code]) {
+      return {
+        tipo: 'sinPermiso',
+        titulo: titulos[code],
+        // El texto del back si se lee (es el más preciso: «límite de AGENTES»);
+        // si no, la frase del código. Lo decide el traductor.
+        descripcion: mensajeParaLaPersona(error, { porDefecto: fraseDelCodigo(code) }),
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
+  }
+
+  // Un 402 sin código no es un tropiezo: el plan se quedó sin créditos de IA.
+  // Ofrecer «Intentar de nuevo» ahí es la misma promesa falsa que sobre un
+  // 404 — la consulta no va a pasar hasta que alguien recargue.
   if (status === 402) {
     return {
       tipo: 'sinCreditos',
@@ -516,6 +589,32 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
       }
     }
 
+    /*
+     * 🟡 IA95-41 (QA-IA-95, 05-10-2026): la pantalla es de ciertos ROLES y el
+     * tuyo no está. Decir «tu rol no incluye Cobros» a quien sí tiene Cobros
+     * (el auxiliar de cartera en una pantalla de administrador y contador)
+     * mandaba a pedir un permiso que ya tenía. Se dice quiénes la usan.
+     */
+    if (cuerpo.code === 'SIN_PERMISO_POR_ROL') {
+      // Con más de tres roles la lista no ayuda («todos menos el tuyo»): se nombra el tuyo.
+      const cuantos = (cuerpo.roles ?? '').split(',').filter((r) => r.trim()).length
+      const quienes = cuantos <= 3 ? rolesEnPalabras(cuerpo.roles) : null
+      const tuRol = rolesEnPalabras(cuerpo.role)
+      const seccion = cuerpo.module ? (NOMBRE_DEL_MODULO[cuerpo.module] ?? cuerpo.module) : null
+      return {
+        tipo: 'sinPermiso',
+        titulo: seccion ? `No tienes acceso a ${seccion}` : 'No tienes acceso a esta pantalla',
+        descripcion: quienes
+          ? `Esta pantalla la usan ${quienes}, y tu rol en la inmobiliaria no está entre ellos. Si la necesitas, pídele a un administrador.`
+          : tuRol
+            ? `Esta pantalla no es de tu rol en la inmobiliaria (${tuRol}). Si la necesitas, pídele a un administrador.`
+            : 'Esta pantalla es de otros roles de la inmobiliaria, y el tuyo no está entre ellos. Si la necesitas, pídele a un administrador.',
+        sePuedeReintentar: false,
+        status,
+        mensajeOriginal,
+      }
+    }
+
     return {
       tipo: 'sinPermiso',
       titulo: 'No tienes acceso a esto',
@@ -596,6 +695,29 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     }
   }
 
+  /*
+   * 02-10-2026 · Un 4xx de una ACCIÓN. Hasta hoy un 400 o un 409 caían al
+   * cartel genérico de abajo —«No pudimos cargar esto · Fue un problema
+   * nuestro, no tuyo»—, que en una acción es doblemente falso: no se estaba
+   * cargando nada y el back sí dijo qué estaba mal. Sólo con `accion`: en una
+   * LECTURA un 400 sí delata un pedido mal armado por nosotros.
+   */
+  const accion = ctx.accion?.trim()
+  if (accion && status !== null && status >= 400 && status < 500) {
+    return {
+      tipo: 'rechazado',
+      titulo: `No pudimos ${accion}`,
+      descripcion: mensajeParaLaPersona(error, {
+        porDefecto: 'No se aceptó tal como está. Revisa los datos e intenta de nuevo.',
+        accion,
+      }),
+      // Mandar lo mismo otra vez da la misma respuesta: hay que cambiar algo.
+      sePuedeReintentar: false,
+      status,
+      mensajeOriginal,
+    }
+  }
+
   // status 0 = fetch ni siquiera salió: sin red, servidor caído, CORS.
   if (status === 0) {
     return {
@@ -638,6 +760,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     }
   }
 
+  const referencia = leerFallo(error).referencia
   return {
     tipo: 'servidor',
     titulo: 'No pudimos cargar esto',
@@ -646,6 +769,7 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
     sePuedeReintentar: true,
     status,
     mensajeOriginal,
+    ...(referencia ? { referencia } : {}),
   }
 }
 

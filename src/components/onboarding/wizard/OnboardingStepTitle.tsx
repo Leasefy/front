@@ -13,9 +13,14 @@
  * Al cambiar de paso el foco pasa al título (no en la primera pintura: ahí
  * manda el campo que tenga `autoFocus`), para que el lector de pantalla
  * anuncie dónde quedó la persona — igual que en el segundo factor.
+ *
+ * Al cambiar de paso el encabezado nuevo entra subiendo 4 px y el viejo se va
+ * acelerando (`CrossFade` en `popLayout`): el nuevo monta YA, así el foco cae
+ * en SU título y no en el que se está yendo.
  */
 
 import { useEffect, useRef, type ReactNode } from 'react'
+import { CrossFade } from '@leasefy/cadence'
 
 export interface OnboardingStepTitleProps {
   /** Cambia cuando cambia el paso; con eso se mueve el foco al título. */
@@ -39,7 +44,8 @@ export function OnboardingStepTitle({ pasoId, rotulo, titulo, subtitulo, antes }
   }, [pasoId])
 
   return (
-    <div>
+    <div className="relative">
+      <CrossFade swapKey={pasoId} mode="popLayout">
       {antes}
       {rotulo ? (
         <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary">{rotulo}</p>
@@ -52,6 +58,7 @@ export function OnboardingStepTitle({ pasoId, rotulo, titulo, subtitulo, antes }
         {titulo}
       </h1>
       {subtitulo ? <p className="mt-2 text-pretty text-body-sm text-fg-muted">{subtitulo}</p> : null}
+      </CrossFade>
     </div>
   )
 }

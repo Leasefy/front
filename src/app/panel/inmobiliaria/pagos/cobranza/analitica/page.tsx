@@ -18,14 +18,19 @@ import { HeatmapGrid24x7 }        from '@/components/inmobiliaria/cobranza/Heatm
 import { CostPerPesoKpi }         from '@/components/inmobiliaria/cobranza/CostPerPesoKpi'
 import { TopScriptsTable }        from '@/components/inmobiliaria/cobranza/TopScriptsTable'
 import { FalloDeCarga }           from '@/components/estado/FalloDeCarga'
+import { CrossFade } from '@leasefy/cadence'
 
 export default function CobranzaAnaliticaPage() {
   const { t } = useI18n()
   const { isLoading, error, data, refetch } = useCobranzaAnalytics()
 
   // ── Loading skeleton (first load, no data yet) ─────────────────────────────
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // analítica, → fallo, → vacío, → «aún sin datos»); lo que ya estaba al
+  // montarse no se anima. Las gráficas (recharts) animan solas.
   if (isLoading && !data) {
     return (
+      <CrossFade swapKey="esqueleto">
       <div className="p-6 lg:p-8 space-y-6">
         <header>
           <h1 className="text-h2 text-fg">
@@ -48,12 +53,14 @@ export default function CobranzaAnaliticaPage() {
           ))}
         </div>
       </div>
+      </CrossFade>
     )
   }
 
   // ── Error banner (non-loading error) ──────────────────────────────────────
   if (error && !isLoading) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="p-6 lg:p-8 space-y-6">
         <header>
           <h1 className="text-h2 text-fg">
@@ -69,6 +76,7 @@ export default function CobranzaAnaliticaPage() {
           onReintentar={refetch}
         />
       </div>
+      </CrossFade>
     )
   }
 
@@ -84,6 +92,7 @@ export default function CobranzaAnaliticaPage() {
   // surface the "truly empty" EmptyState (vs NoDataYetBadge "below threshold" branch).
   if (!isLoading && agencyGate?.populated && agencyGate?.calls_30d === 0) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-6">
         <header>
           <h1 className="text-h2 text-fg">
@@ -97,11 +106,13 @@ export default function CobranzaAnaliticaPage() {
           primaryCta={{ label: t('inmobiliaria.ai.cobranza.analitica.empty.cta.label'), href: '/panel/inmobiliaria/pagos/cobranza/deudores' }}
         />
       </div>
+      </CrossFade>
     )
   }
 
   if (isAgencyGateClosed) {
     return (
+      <CrossFade swapKey="sin-datos">
       <div className="p-6 lg:p-8">
         <header className="mb-6">
           <h1 className="text-h2 text-fg">
@@ -115,6 +126,7 @@ export default function CobranzaAnaliticaPage() {
           ctaHref="/panel/inmobiliaria/pagos/cobranza"
         />
       </div>
+      </CrossFade>
     )
   }
 
@@ -124,6 +136,7 @@ export default function CobranzaAnaliticaPage() {
   const heatmapMaxCount = Math.max(1, ...heatmapCells.map((c) => c.call_count))
 
   return (
+    <CrossFade swapKey="analitica">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Page header */}
       <header>
@@ -211,5 +224,6 @@ export default function CobranzaAnaliticaPage() {
 
       </div>
     </div>
+    </CrossFade>
   )
 }

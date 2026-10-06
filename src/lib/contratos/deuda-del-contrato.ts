@@ -85,6 +85,12 @@ export interface DeudaDelContrato {
   diasDePlazoQueQuedan: number | null;
   estado: EstadoDeLaDeuda;
   /**
+   * 🔴 CR-31 (COLA-FRONT, 04-10): lo vencido no está «en plazo» sino SIN plazo
+   * (`plazoSinFijar` del back): la inmobiliaria no ha fijado sus días. Se
+   * rotula «Vencida» y no se cuentan días de plazo que no existen.
+   */
+  plazoSinFijar: boolean;
+  /**
    * La tabla de amortización en tres números, contando CUOTAS y no filas: un
    * abono parcial parte una cuota en varias filas, y contarlas diría que el
    * contrato tiene más cuotas de las que tiene.
@@ -182,6 +188,11 @@ export function deudaDelContrato(args: {
       }
     : null;
 
+  const plazoSinFijar = filas.some(
+    (f) => f.plazoSinFijar === true && f.estado === 'PENDIENTE' && f.valorNeto > 0,
+  );
+  if (plazoSinFijar) diasDePlazoQueQuedan = null;
+
   const estado: EstadoDeLaDeuda =
     enCartera > 0
       ? 'EN_CARTERA'
@@ -216,6 +227,7 @@ export function deudaDelContrato(args: {
     diasDeMora,
     diasDePlazoQueQuedan,
     estado,
+    plazoSinFijar,
     cuotas: { pagadas, anteriores, total },
   };
 }

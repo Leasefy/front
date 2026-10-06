@@ -38,6 +38,8 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { exogenaApi, type ConfiguracionDeExogena as Configuracion } from '@/lib/api/exogena.service';
 import {
   borradorDe,
@@ -49,7 +51,8 @@ import {
   topeVigente,
   type BorradorDeConfiguracion,
 } from '@/lib/contabilidad/configuracion-de-exogena';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+// CB-17: la plata de Contabilidad con UN formato («$ 1.234.567», «−$ 119.100»).
+import { plata as formatCurrency } from '@/lib/contabilidad/plata';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
 import { usePuedeEscribir } from '../use-puede-escribir';
 
@@ -75,6 +78,8 @@ export function ConfiguracionDeExogena({ anio }: { anio: number }) {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [guardando, setGuardando] = useState(false);
+  /** Lo que el back dijo del tope (un 400 con `campos` en `topeCuantiasMenoresCop`). */
+  const [errorDelTope, setErrorDelTope] = useState<string | null>(null);
 
   const escritura = usePuedeEscribir();
 
@@ -99,6 +104,7 @@ export function ConfiguracionDeExogena({ anio }: { anio: number }) {
   const guardar = useCallback(async () => {
     if (!borrador) return;
     setGuardando(true);
+    setErrorDelTope(null);
     try {
       await exogenaApi.guardarConfiguracion(cuerpoDeConfiguracion(borrador));
       /*
@@ -109,7 +115,16 @@ export function ConfiguracionDeExogena({ anio }: { anio: number }) {
       await cargar();
       toast.success('Configuración de exógena guardada.');
     } catch (e) {
-      toast.error(mensajeDeContabilidad(e, 'No se pudo guardar la configuración.'));
+      // El error del tope va bajo el tope; lo demás, al toast con la regla de oro.
+      const reparto = repartirErroresDelServidor(e, { campos: ['topeCuantiasMenoresCop'] });
+      if (reparto.porCampo.topeCuantiasMenoresCop) {
+        setErrorDelTope(reparto.porCampo.topeCuantiasMenoresCop);
+      }
+      if (reparto.delServidor.length === 0) {
+        toast.error(mensajeDeContabilidad(e, 'No se pudo guardar la configuración.'));
+      } else if (reparto.sueltos.length > 0) {
+        toast.error(reparto.sueltos.join(' · '));
+      }
     } finally {
       setGuardando(false);
     }
@@ -230,11 +245,18 @@ export function ConfiguracionDeExogena({ anio }: { anio: number }) {
             <MoneyInput
               id="tope-propio"
               value={borrador.tope}
-              onChange={(crudo) => setBorrador((b) => (b ? { ...b, tope: crudo } : b))}
+              onChange={(crudo) => {
+                setErrorDelTope(null);
+                setBorrador((b) => (b ? { ...b, tope: crudo } : b));
+              }}
               disabled={!config.disponible || !escritura.puede || guardando}
               placeholder="Vacío = heredar"
+              aria-invalid={Boolean(problema ?? errorDelTope) || undefined}
+              aria-describedby={(problema ?? errorDelTope) ? 'tope-propio-error' : undefined}
               data-testid="tope-propio"
             />
+            {/* 🔁 El tope del back (`limites-de-contabilidad.ts`), con su frase, en el campo. */}
+            <ErrorDelCampo id="tope-propio-error" mensaje={problema ?? errorDelTope} />
             <p className="text-caption text-fg-muted" data-testid="frase-del-tope">
               {fraseDelTope(config, formatCurrency)}
             </p>

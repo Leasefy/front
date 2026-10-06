@@ -94,8 +94,13 @@ export default function SeleccionarRolPage() {
 
   return (
     <EleccionDePerfil
-      panelDeInmobiliaria={(cerrar, alAbrirRegistro) => (
-        <PanelAntesDeComenzarConAprovisionamiento onCerrar={cerrar} onApertura={alAbrirRegistro} />
+      panelDeInmobiliaria={(cerrar, alAbrirRegistro, alSaberSiPuedeCambiar, alSaberDelRegistroAMedias) => (
+        <PanelAntesDeComenzarConAprovisionamiento
+          onCerrar={cerrar}
+          onApertura={alAbrirRegistro}
+          onPuedeCambiarDePerfil={alSaberSiPuedeCambiar}
+          onRegistroAMedias={alSaberDelRegistroAMedias}
+        />
       )}
     />
   )

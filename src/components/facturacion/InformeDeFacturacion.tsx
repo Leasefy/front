@@ -24,15 +24,23 @@ import { mesLegible } from '@/lib/api/facturacion-por-mes.service'
 import { cn } from '@/lib/utils'
 import { quedaronPendientes, type ResultadoDeLaCorrida } from './facturasPorTandas'
 import { motivoParaNoDescargarLote, useDescargarFacturas, vaPorElCentro } from './useDescargarFacturas'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 const numero = (n: number) => n.toLocaleString('es-CO')
 const facturas = (n: number) => `${numero(n)} ${n === 1 ? 'factura' : 'facturas'}`
 
-/** El mensaje del back si lo hay (vienen en castellano), o uno honesto. */
+/**
+ * El mensaje del back si lo hay (vienen en castellano), o uno honesto.
+ *
+ * Con la regla de oro (02-10-2026): un 4xx dice lo que escribió el back; un
+ * 5xx, que falló DE NUESTRO LADO, con la referencia de soporte (antes salía
+ * «Error interno del servidor» pelado); «conexión», sólo sin respuesta.
+ */
 export function mensajeDelFalloDeEmision(error: unknown): string {
-  return error instanceof Error && error.message
-    ? error.message
-    : 'No se pudieron emitir las facturas.'
+  return mensajeParaLaPersona(error, {
+    porDefecto: 'No se pudieron emitir las facturas.',
+    accion: 'emitir las facturas',
+  })
 }
 
 export function InformeDeFacturacion({
@@ -72,13 +80,13 @@ export function InformeDeFacturacion({
   if (informe.yaNoEstabanPorEmitir > 0) {
     lineas.push({
       clave: 'ya-no-estaban',
-      texto: `${facturas(informe.yaNoEstabanPorEmitir)} ya no estaban por emitir cuando llegó la orden: alguien las emitió antes o el contrato dejó de tocar el mes.`,
+      texto: `${facturas(informe.yaNoEstabanPorEmitir)} ${informe.yaNoEstabanPorEmitir === 1 ? 'ya no estaba' : 'ya no estaban'} por emitir cuando llegó la orden: alguien ${informe.yaNoEstabanPorEmitir === 1 ? 'la emitió' : 'las emitió'} antes o el contrato dejó de tocar el mes.`,
     })
   }
   if (informe.sinNumero > 0) {
     lineas.push({
       clave: 'sin-numero',
-      texto: `${facturas(informe.sinNumero)} quedaron sin número. ${informe.motivos.join(' ')}`.trim(),
+      texto: `${facturas(informe.sinNumero)} ${informe.sinNumero === 1 ? 'quedó' : 'quedaron'} sin número. ${informe.motivos.join(' ')}`.trim(),
     })
   }
   if (informe.sinConfirmar > 0) {
@@ -102,7 +110,7 @@ export function InformeDeFacturacion({
   const queHacer = !pendientes
     ? null
     : corte === 'rangoAgotado'
-      ? 'Carga la resolución nueva en la pestaña «Resolución» y vuelve a apretar «Generar»: las que ya salieron no se duplican.'
+      ? 'Carga la resolución nueva en la pestaña «Resolución» y vuelve a apretar «Emitir»: las que ya salieron no se duplican.'
       : 'Vuelve a apretar «Generar»: la lista ya se actualizó y las que salieron no se duplican.'
 
   return (

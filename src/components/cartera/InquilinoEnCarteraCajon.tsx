@@ -43,6 +43,7 @@ import {
 } from '@/lib/cartera/conceptos'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { mesEnTitulo } from '@/lib/utils/mes'
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 import { useI18n } from '@/lib/i18n'
 import type { InquilinoEnCartera, TipoDeConcepto } from '@/lib/api/cartera.types'
 import { cn } from '@/lib/utils'
@@ -69,6 +70,14 @@ function ElCajonDelMes({
     return (
       <span className="text-danger">
         Cartera · {fila.diasDeMora} {fila.diasDeMora === 1 ? 'día' : 'días'} de mora
+      </span>
+    )
+  }
+  // 🔴 CR-31: sin plazo fijado no hay plazo que la sostenga: «Vencida», sin mora.
+  if (fila.esVencida && fila.plazoSinFijar) {
+    return (
+      <span className="text-warning" data-testid="vencida-sin-plazo">
+        Vencida · venció el {fechaLarga(fila.vence)} · sin plazo fijado, no corre mora
       </span>
     )
   }
@@ -148,7 +157,12 @@ export function InquilinoEnCarteraCajon({
           {(
             [
               ['Por vencer', inquilino.totales.porVencerCop, 'muted'],
-              ['Vencido, en plazo', inquilino.totales.vencidaEnPlazoCop ?? 0, 'warning'],
+              [
+                // CR-31: sin plazo fijado lo vencido no está «en plazo».
+                inquilino.filas.some((f) => f.plazoSinFijar) ? 'Vencido' : 'Vencido, en plazo',
+                inquilino.totales.vencidaEnPlazoCop ?? 0,
+                'warning',
+              ],
               ['Cartera', inquilino.totales.enMoraCop, 'danger'],
             ] as const
           ).map(([rotulo, valor, tono]) => (

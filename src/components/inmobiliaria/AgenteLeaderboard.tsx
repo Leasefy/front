@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   Trophy,
   Medal,
@@ -104,21 +104,6 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
     router.push(`/panel/inmobiliaria/configuracion/equipo/${agenteId}`);
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05,
-      },
-    },
-  };
-
-  const rowVariants = {
-    hidden: { opacity: 0, x: -20 },
-    visible: { opacity: 1, x: 0 },
-  };
-
   return (
     <div className={cn('space-y-4', className)}>
       {/* Header with Toggle */}
@@ -187,13 +172,13 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
         </div>
 
         {/* Table Body */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          {rankedAgentes.length > 0 ? (
-            rankedAgentes.map((agente, index) => {
+        {/* Las filas entran escalonadas (techo del sistema) y, al cambiar entre
+            mes y año, el ranking se REORDENA deslizándose (`layout`). Antes el
+            contenedor orquestaba las filas con variantes, que en el modo
+            estricto de React las dejaba en opacity 0. */}
+        {rankedAgentes.length > 0 ? (
+          <Stagger>
+            {rankedAgentes.map((agente, index) => {
               const rank = index + 1;
               const isTopThree = rank <= 3;
               const isFirst = rank === 1;
@@ -204,12 +189,11 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
 
 
               return (
-                <motion.div
+                <StaggerItem
                   key={agente.id}
-                  variants={rowVariants}
                   onClick={() => handleRowClick(agente.id)}
                   className={cn(
-                    'grid grid-cols-12 gap-4 px-4 py-3 border-b border-border-faint dark:border-border-strong cursor-pointer transition-all duration-200',
+                    'grid grid-cols-12 gap-4 px-4 py-3 border-b border-border-faint dark:border-border-strong cursor-pointer transition-colors duration-base',
                     isFirst && 'bg-warning-soft/50 dark:bg-warning/10',
                     !isFirst && 'hover:bg-surface-muted dark:hover:bg-ink'
                   )}
@@ -314,18 +298,18 @@ export function AgenteLeaderboard({ agentes, className }: AgenteLeaderboardProps
                       —
                     </span>
                   </div>
-                </motion.div>
+                </StaggerItem>
               );
-            })
-          ) : (
-            <div className="px-4 py-12 text-center">
-              <Trophy className="w-12 h-12 mx-auto mb-3 text-fg-subtle dark:text-fg-muted" />
-              <p className="text-fg-muted dark:text-fg-subtle">
-                {t('inmobiliaria.agente.noActiveAgents')}
-              </p>
-            </div>
-          )}
-        </motion.div>
+            })}
+          </Stagger>
+        ) : (
+          <div className="px-4 py-12 text-center">
+            <Trophy className="w-12 h-12 mx-auto mb-3 text-fg-subtle dark:text-fg-muted" />
+            <p className="text-fg-muted dark:text-fg-subtle">
+              {t('inmobiliaria.agente.noActiveAgents')}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Summary Stats */}

@@ -66,7 +66,10 @@ import {
   type FactorPorVerificar,
 } from '@/lib/auth/inscripcion-del-segundo-factor';
 import { POR_QUE_LO_PEDIMOS } from '@/lib/auth/por-que-el-segundo-factor';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
+import { Appear, Collapse, CrossFade, FormError, motionScale, motionSpring } from '@leasefy/cadence';
+import { motion } from 'framer-motion';
 
 /**
  * Las apps recomendadas, con sus fichas OFICIALES. Verificadas el 30-09-2026:
@@ -94,6 +97,9 @@ export const APPS_RECOMENDADAS = [
 
 type Paso = 'app' | 'escanear' | 'codigo' | 'listo';
 type Plataforma = 'ios' | 'android' | 'escritorio';
+
+/** El orden de los pasos: decide si el nuevo entra por la derecha o por la izquierda. */
+const ORDEN_DEL_PASO: Record<Paso, number> = { app: 0, escanear: 1, codigo: 2, listo: 3 };
 
 const PASOS: Array<{ paso: Exclude<Paso, 'listo'>; titulo: string }> = [
   { paso: 'app', titulo: 'Descarga la app' },
@@ -148,6 +154,17 @@ export function ActivarSegundoFactorPasoAPaso({
   const [codigo, setCodigo] = useState('');
   const [verificando, setVerificando] = useState(false);
   const [errorDelCodigo, setErrorDelCodigo] = useState<string | null>(null);
+  /*
+   * Hacia dónde se movió la persona: «Continuar» entra por la derecha y
+   * «Atrás» por la izquierda. Se deriva del paso anterior durante el render
+   * (el patrón de React para «lo que había en el render pasado»).
+   */
+  const [pasoAnterior, setPasoAnterior] = useState<Paso>('app');
+  const [direccion, setDireccion] = useState<'forward' | 'backward'>('forward');
+  if (paso !== pasoAnterior) {
+    setDireccion(ORDEN_DEL_PASO[paso] >= ORDEN_DEL_PASO[pasoAnterior] ? 'forward' : 'backward');
+    setPasoAnterior(paso);
+  }
 
   /**
    * 🔴 El candado de verdad contra el doble envío, como en `/auth/mfa-verify`:
@@ -235,8 +252,13 @@ export function ActivarSegundoFactorPasoAPaso({
       setFactor(nuevo);
       setPaso('escanear');
     } catch (err) {
+      // Regla de oro (02-10-2026): «conexión» sólo sin respuesta; un 5xx es
+      // nuestro. Los errores de Supabase ya llegan traducidos (`ErrorDelSegundoFactor`).
       setErrorAlPreparar(
-        (err as Error).message || 'No pudimos preparar tu código. Intenta de nuevo en un momento.',
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos preparar tu código. Intenta de nuevo en un momento.',
+          accion: 'preparar tu código',
+        }),
       );
     } finally {
       setPreparando(false);
@@ -263,7 +285,10 @@ export function ActivarSegundoFactorPasoAPaso({
         setVerificando(false);
         setCodigo('');
         setErrorDelCodigo(
-          (err as Error).message || 'No pudimos verificar el código. Intenta con el siguiente.',
+          mensajeParaLaPersona(err, {
+            porDefecto: 'No pudimos verificar el código. Intenta con el siguiente.',
+            accion: 'verificar el código',
+          }),
         );
         return;
       }
@@ -287,11 +312,19 @@ export function ActivarSegundoFactorPasoAPaso({
   }, [factor]);
 
   if (paso === 'listo') {
+    // El «Listo» llega: sube 8 px con fundido y el visto entra con el resorte
+    // de rebote leve. Monta YA (no espera a que salga el paso del código) para
+    // que el foco caiga en su título.
     return (
-      <div className="space-y-6 text-center" data-testid="segundo-factor-listo" role="status">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-soft">
+      <Appear className="space-y-6 text-center" data-testid="segundo-factor-listo" role="status">
+        <motion.div
+          initial={{ scale: motionScale.pop, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={motionSpring.bouncy}
+          className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-soft"
+        >
           <CheckCircle className="h-9 w-9 text-success" weight="fill" aria-hidden="true" />
-        </div>
+        </motion.div>
         <div className="space-y-2">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-subtle">Listo</p>
           <h1
@@ -308,7 +341,7 @@ export function ActivarSegundoFactorPasoAPaso({
         </div>
         {/* Transición a la cuenta: es de las cargas que llevan el logo (Nico, 01-10). */}
         <CargaDeMarca tamano="md" tono="negro" disposicion="apilada" texto="Te llevamos a tu cuenta…" />
-      </div>
+      </Appear>
     );
   }
 
@@ -351,6 +384,15 @@ export function ActivarSegundoFactorPasoAPaso({
           </h2>
         </div>
 
+        {/*
+          El paso nuevo entra por la derecha al avanzar y por la izquierda al
+          volver (`CrossFade` de pasos). `popLayout`: monta YA, al mismo tiempo
+          que el título de arriba cambia —el título queda fuera y recibe el
+          foco—; el viejo se va por encima, acelerando. El contenedor es
+          `relative` para que el que sale quede en su sitio.
+        */}
+        <div className="relative">
+        <CrossFade swapKey={paso} direction={direccion} mode="popLayout">
         {paso === 'app' ? (
           <PasoDescargar
             plataforma={plataforma}
@@ -407,8 +449,8 @@ export function ActivarSegundoFactorPasoAPaso({
                   ? '¿Estás en el mismo celular? Copia la clave'
                   : '¿No puedes escanearlo? Escribe la clave a mano'}
               </button>
-              {claveAbierta ? (
-                <div id="clave-a-mano" className="space-y-3 px-4 pb-4">
+              {/* Se abre y se cierra con su altura (`Collapse`), no de golpe. */}
+              <Collapse id="clave-a-mano" open={claveAbierta} className="space-y-3 px-4 pb-4">
                   <div className="flex items-center gap-2 rounded-sm border border-border bg-surface px-3 py-2.5">
                     <code
                       className="min-w-0 flex-1 break-all font-mono text-[13px] tabular-nums tracking-wide text-fg select-all"
@@ -448,8 +490,7 @@ export function ActivarSegundoFactorPasoAPaso({
                       Abrir en mi app de autenticación
                     </a>
                   ) : null}
-                </div>
-              ) : null}
+              </Collapse>
             </div>
 
             <div className="flex flex-col-reverse gap-3 sm:flex-row">
@@ -492,46 +533,58 @@ export function ActivarSegundoFactorPasoAPaso({
               }}
               onCompleto={(v) => void verificar(v)}
               hayError={Boolean(errorDelCodigo)}
+              aria-describedby={errorDelCodigo ? 'codigo-de-la-app-error' : undefined}
               disabled={verificando}
               autoFocus
             />
-            {errorDelCodigo ? (
-              <p
-                role="alert"
-                className="flex items-start justify-center gap-2 text-pretty text-center text-body-sm text-danger"
-                data-testid="error-del-codigo"
-              >
-                <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                {errorDelCodigo}
-              </p>
-            ) : null}
-            <Button
-              type="button"
-              hideArrow
-              onClick={() => void verificar(codigo)}
-              disabled={verificando || codigo.length !== 6}
-              isLoading={verificando}
-              className="w-full"
-              data-testid="activar-segundo-factor"
+            {/* El error del código entra suave (Cadence `FormError`), con su ícono. */}
+            <FormError
+              id="codigo-de-la-app-error"
+              invalid={Boolean(errorDelCodigo)}
+              className="flex items-start justify-center gap-2 text-pretty text-center"
+              data-testid="error-del-codigo"
             >
-              {verificando ? 'Verificando…' : 'Activar segundo factor'}
-            </Button>
+              {errorDelCodigo ? (
+                <>
+                  <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                  {errorDelCodigo}
+                </>
+              ) : null}
+            </FormError>
             <p className="text-pretty text-center text-caption text-fg-subtle">
               El código cambia cada 30 segundos. Si te lo rechaza, espera al siguiente.
             </p>
-            <div className="text-center">
+            {/* El mismo pie del paso del QR (Nico, 02-10: «ahí con un link y el
+                otro bello con algo mejor, déjalo como está en el paso del QR»). */}
+            <div className="flex flex-col-reverse gap-3 sm:flex-row">
               <Button
                 type="button"
-                variant="link"
-                size="sm"
+                variant="ghost"
+                hideArrow
                 onClick={() => setPaso('escanear')}
                 disabled={verificando}
+                className="sm:flex-none"
+                data-testid="volver-al-qr"
               >
-                Volver al código QR
+                <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                Atrás
+              </Button>
+              <Button
+                type="button"
+                hideArrow
+                onClick={() => void verificar(codigo)}
+                disabled={verificando || codigo.length !== 6}
+                isLoading={verificando}
+                className="flex-1"
+                data-testid="activar-segundo-factor"
+              >
+                {verificando ? 'Verificando…' : 'Activar segundo factor'}
               </Button>
             </div>
           </div>
         ) : null}
+        </CrossFade>
+        </div>
       </section>
     </div>
   );
@@ -580,7 +633,7 @@ function AnilloDePasos({ actual }: { actual: number }) {
             strokeLinecap="round"
             strokeDasharray={`${tramo} ${vuelta - tramo}`}
             strokeDashoffset={-(i * porTramo) - 4.5}
-            className={cn('transition-colors duration-300', i <= actual ? 'stroke-primary' : 'stroke-border-strong')}
+            className={cn('transition-colors duration-slow ease-standard', i <= actual ? 'stroke-primary' : 'stroke-border-strong')}
             data-tramo={i <= actual ? 'hecho' : 'pendiente'}
           />
         ))}

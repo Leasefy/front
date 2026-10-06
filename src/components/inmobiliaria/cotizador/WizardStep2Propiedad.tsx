@@ -6,6 +6,7 @@ import { SegmentedControl } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 
 const TIPO_OPTIONS = ['apartamento', 'casa', 'oficina', 'local'] as const
 type TipoInmueble = (typeof TIPO_OPTIONS)[number]
@@ -46,10 +47,11 @@ export function WizardStep2Propiedad({
 
       {/* Canon mensual */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-fg">
+        <label htmlFor="cotizador-canon" className="text-sm font-medium text-fg">
           {t('inmobiliaria.ai.cotizador.nueva.step2.canonLabel')}
         </label>
         <Input
+          id="cotizador-canon"
           type="text"
           inputMode="numeric"
           value={value.canonCop === '' ? '' : String(value.canonCop)}
@@ -63,11 +65,12 @@ export function WizardStep2Propiedad({
               // parent controls errors via validateStep2 — blur just ensures field is touched
             }
           }}
+          aria-invalid={errors.canonCop ? true : undefined}
+          aria-describedby={errors.canonCop ? 'cotizador-canon-error' : undefined}
           className={errors.canonCop ? 'border-danger/40 focus-visible:ring-danger/20' : ''}
         />
-        {errors.canonCop && (
-          <p className="text-sm text-danger">{errors.canonCop}</p>
-        )}
+        {/* 02-10-2026: el error entra suave (Cadence), con o sin servidor detrás. */}
+        <ErrorDelCampo id="cotizador-canon-error" mensaje={errors.canonCop} className="mt-0" />
       </div>
 
       {/* Tipo de inmueble — selector excluyente (UI-DS-CONTRACT §3) */}
@@ -86,9 +89,7 @@ export function WizardStep2Propiedad({
             label: t(`inmobiliaria.ai.cotizador.nueva.step2.tipoOptions.${tipo}`),
           }))}
         />
-        {errors.tipoInmueble && (
-          <p className="text-sm text-danger">{errors.tipoInmueble}</p>
-        )}
+        <ErrorDelCampo id="cotizador-tipo-error" mensaje={errors.tipoInmueble} className="mt-0" />
       </div>
 
       {/* Codeudores */}

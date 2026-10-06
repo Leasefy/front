@@ -39,10 +39,15 @@
  *    con la misma regla que la prefactura y la cartera.
  */
 
+import { selloDelContrato } from '@/lib/estado-de-cuenta/sello-del-contrato';
 import * as React from 'react';
+import Link from 'next/link';
+import { Collapse } from '@leasefy/cadence';
+import { CaretDown } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { numeroDelContratoDelEstado } from './numero';
+import { estadoDeLaDevolucion } from './saldo-a-favor';
 import { BotonAnularRecibo } from './AnularReciboDeLaFila';
 import { formatCurrency } from '@/lib/format';
 import {
@@ -72,12 +77,14 @@ import {
   intercalarCortes,
   periodoLegible,
   pintaDelEstado,
+  sinComprobantesDelSistemaAnterior,
   type ColumnaDeImpuesto,
 } from './filas';
 import { AmortizacionDelContrato } from './ResumenDelEstado';
-import { useTextoDelEstado } from './textos';
-import { InteresesDelContratoSeccion } from './InteresesDelContrato';
+import { claveDelLado, useTextoDelEstado } from './textos';
+import { InteresesDelContratoSeccion, RUTA_DEL_PLAZO } from './InteresesDelContrato';
 import { AnticipoDelContratoSeccion } from './AnticipoDelContrato';
+import { SaldoAFavorAlTerminarSeccion } from './SaldoAFavorAlTerminar';
 import { hayQueContarIntereses, interesesDelContrato } from './intereses';
 
 /** Más de esto y la sección se pagina. Debajo, el contrato se lee de corrido. */
@@ -104,6 +111,12 @@ interface Props {
   reglasDeMoraHref?: string;
   /** El anticipo del contrato, sólo en el panel (endpoint de la inmobiliaria). */
   conAnticipoDelContrato?: boolean;
+  /**
+   * QA-INQ-95 (E-30, regla R-04 de Nico, 16-09: «un bloque plegable por
+   * contrato»): con varios contratos, cada uno se pliega a su encabezado y su
+   * total. Al imprimir (`sinPaginar`) siempre va abierto.
+   */
+  plegable?: boolean;
 }
 
 export function ContratoDelEstado({
@@ -112,11 +125,29 @@ export function ContratoDelEstado({
   sinPaginar = false,
   reglasDeMoraHref,
   conAnticipoDelContrato = false,
+  plegable = false,
 }: Props) {
   const t = useTextoDelEstado();
+  const [abierto, setAbierto] = React.useState(true);
+  const visible = !plegable || abierto || sinPaginar;
+  const idDelCuerpo = `contrato-${contrato.numero}-cuerpo`;
   const esPropietario = contrato.rol === 'PROPIETARIO';
+  // 🔴 Ola E: en el panel, un contrato que ya no está vigente muestra la
+  // liquidación del saldo a favor con su acción (registrar la devolución); el
+  // bloque informativo de abajo es para el enlace del cliente y el PDF.
+  const conSaldoAFavorAlTerminar = conAnticipoDelContrato && !esPropietario && !contrato.vigente;
   const intereses = interesesDelContrato(contrato);
   const conIntereses = Boolean(intereses && intereses.filas.length > 0);
+  /*
+   * 🔴 CR-31 (Nico, 03-10-2026: «avisar… de que eso falta»): las vencidas que
+   * no entran a la cartera porque la inmobiliaria no ha fijado su plazo. El
+   * aviso es de la inmobiliaria: sólo en el panel (`reglasDeMoraHref`).
+   */
+  const vencidasSinPlazo = reglasDeMoraHref
+    ? [...contrato.secciones.arriendos, ...contrato.secciones.otrosConceptos].filter(
+        (f) => f.plazoSinFijar,
+      ).length
+    : 0;
 
   const columnas = React.useMemo(
     () =>
@@ -160,17 +191,41 @@ export function ContratoDelEstado({
             )}
           </p>
         </div>
-        <span
-          className={cn(
-            'shrink-0 rounded-full px-2.5 py-0.5 text-caption font-medium',
-            contrato.vigente
-              ? 'bg-success-soft text-success'
-              : 'bg-surface-muted text-fg-subtle',
-          )}
-        >
-          {t(contrato.vigente ? 'estadoDeCuenta.vigente' : 'estadoDeCuenta.terminado')}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <span
+            className={cn(
+              'shrink-0 rounded-full px-2.5 py-0.5 text-caption font-medium',
+              selloDelContrato(contrato).vivo
+                ? 'bg-success-soft text-success'
+                : 'bg-surface-muted text-fg-subtle',
+            )}
+          >
+            {/* QA-PROP-95 (PO-01): «Empieza el …» y «Cancelado» además de vigente/terminado. */}
+            {contrato.estadoDelContrato && contrato.estadoDelContrato !== 'VIGENTE' && contrato.estadoDelContrato !== 'TERMINADO'
+              ? selloDelContrato(contrato).texto
+              : t(contrato.vigente ? 'estadoDeCuenta.vigente' : 'estadoDeCuenta.terminado')}
+          </span>
+          {plegable ? (
+            <button
+              type="button"
+              onClick={() => setAbierto((a) => !a)}
+              aria-expanded={visible}
+              aria-controls={idDelCuerpo}
+              data-testid={`plegar-contrato-${contrato.numero}`}
+              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-caption font-medium text-fg-muted hover:bg-surface-muted hover:text-fg print:hidden"
+            >
+              <CaretDown
+                className={cn('h-3.5 w-3.5 transition-transform duration-base', !visible && '-rotate-90')}
+                aria-hidden="true"
+              />
+              {visible ? 'Plegar' : 'Desplegar'}
+              <span className="sr-only"> el contrato {numero.principal}</span>
+            </button>
+          ) : null}
+        </div>
       </div>
+
+      <Collapse id={idDelCuerpo} open={visible} className="space-y-5">
 
       {/* «Funciona como una tabla de amortización» (CEO). La barra dice en una
           línea lo que la tabla dice en cuarenta filas: cuánto del contrato ya
@@ -209,6 +264,26 @@ export function ContratoDelEstado({
         </p>
       )}
 
+      {vencidasSinPlazo > 0 && (
+        <div
+          data-testid={`vencidas-sin-plazo-${contrato.numero}`}
+          className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-md bg-warning-soft px-3 py-2 text-caption text-warning print:hidden"
+        >
+          <span>
+            {vencidasSinPlazo === 1
+              ? t('estadoDeCuenta.unaVencidaSinPlazoAviso')
+              : t('estadoDeCuenta.vencidasSinPlazoAviso', { n: vencidasSinPlazo })}
+          </span>
+          <Link
+            href={RUTA_DEL_PLAZO}
+            className="font-medium underline underline-offset-4"
+            data-testid="fijar-plazo-desde-el-estado"
+          >
+            {t('estadoDeCuenta.fijarPlazo')}
+          </Link>
+        </div>
+      )}
+
       {hayQueContarIntereses(intereses) && (
         <InteresesDelContratoSeccion
           intereses={intereses}
@@ -220,6 +295,8 @@ export function ContratoDelEstado({
       {conAnticipoDelContrato && !esPropietario && (
         <AnticipoDelContratoSeccion contractId={contrato.id} />
       )}
+
+      {conSaldoAFavorAlTerminar && <SaldoAFavorAlTerminarSeccion contractId={contrato.id} />}
 
       {/* 🔴 D11: la deuda subrogada, VISIBLE y SEPARADA de lo que se le debe a
           la inmobiliaria: no suma a «resta por pagar». */}
@@ -242,18 +319,55 @@ export function ContratoDelEstado({
         </div>
       )}
 
+      {/* 🔴 Ola E (Juan Camilo): el saldo a favor del inquilino y su devolución
+          al terminar (cuenta por pagar + comprobante de egreso). Aparte de lo
+          que debe: no suma a «resta por pagar». */}
+      {!conSaldoAFavorAlTerminar &&
+        contrato.saldoAFavor &&
+        (contrato.saldoAFavor.anticipoSinConsumirCop > 0 || contrato.saldoAFavor.devolucion) && (
+          <div
+            className="space-y-1 rounded-md border border-border bg-surface-muted px-4 py-3"
+            data-testid={`saldo-a-favor-contrato-${contrato.numero}`}
+          >
+            <p className="text-label uppercase tracking-wide text-fg-subtle">
+              {t('estadoDeCuenta.saldoAFavor')}
+            </p>
+            {contrato.saldoAFavor.anticipoSinConsumirCop > 0 && (
+              <p className="text-body-sm text-fg">
+                {t('estadoDeCuenta.saldoAFavorAnticipo')}:{' '}
+                <span className="font-mono tabular-nums">
+                  {formatCurrency(contrato.saldoAFavor.anticipoSinConsumirCop)}
+                </span>
+              </p>
+            )}
+            {contrato.saldoAFavor.devolucion && (
+              <p className="text-body-sm text-fg">
+                {t('estadoDeCuenta.saldoAFavorDevolucion')}:{' '}
+                <span className="font-mono tabular-nums">
+                  {formatCurrency(contrato.saldoAFavor.devolucion.valorCop)}
+                </span>{' '}
+                · {estadoDeLaDevolucion(contrato.saldoAFavor.devolucion, t)}
+              </p>
+            )}
+          </div>
+        )}
+
+      </Collapse>
+
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 rounded-md bg-surface-muted px-4 py-3">
         <p className="text-label uppercase tracking-wide text-fg-subtle">
           {t('estadoDeCuenta.totalDelContrato')}
         </p>
         <div className="flex flex-wrap items-baseline gap-x-8 gap-y-2">
+          {/* QA-PROP-95 (F11): del lado del propietario la plata se GIRA: «Girado»
+              y «Resta por girar», no las palabras del inquilino. */}
           <Cifra
-            etiqueta={t('estadoDeCuenta.cancelado')}
+            etiqueta={esPropietario ? 'Girado' : t('estadoDeCuenta.cancelado')}
             valor={contrato.totales.cancelado}
             tono="apagado"
           />
           <Cifra
-            etiqueta={t('estadoDeCuenta.restaPorPagar')}
+            etiqueta={esPropietario ? 'Resta por girar' : t('estadoDeCuenta.restaPorPagar')}
             valor={contrato.totales.restaPorPagar}
             tono={
               contrato.totales.restaPorPagar > 0 && !conIntereses
@@ -336,6 +450,25 @@ function SeccionDeFilas({
   testid,
 }: SeccionProps) {
   const t = useTextoDelEstado();
+  /*
+   * 🔴 P-19 (QA-PROP, 03-10): el estado de cuenta del PROPIETARIO no cabía ni a
+   * 1440 px —«Esta tabla no cabe entera: se corre a los lados» en todos los
+   * contratos— porque lleva, además de las del inquilino, la comisión y sus
+   * impuestos: hasta cinco columnas de impuestos (1.464 px en una caja de
+   * 1.052). Del lado del propietario esas columnas se pliegan en UNA,
+   * «Comisión e impuestos», con cada valor que no es cero en su renglón; el
+   * vencimiento atrasado baja a su propia línea y Concepto y Pago se angostan.
+   * Los montos no se parten. El lado del inquilino queda igual.
+   */
+  /*
+   * 🔴 PG-15 (QA de Pagos, 03-10-2026), lado del INQUILINO: con dos o más
+   * columnas de impuestos (un local con IVA, retención y ReteIVA) tampoco cabía
+   * a 1440 px (1.241 px en una caja de 1.052). Se pliegan igual que del lado
+   * del propietario, en «Impuestos»; con una sola, queda como
+   * estaba.
+   */
+  const compacta = rol === 'PROPIETARIO' || columnas.length >= 2;
+  const columnasVisibles = compacta ? (columnas.length > 0 ? 1 : 0) : columnas.length;
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(filas, {
       initialPageSize: FILAS_POR_PAGINA,
@@ -401,7 +534,7 @@ function SeccionDeFilas({
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="min-w-[220px]">
+                  <TableHead className={compacta ? 'min-w-[200px]' : 'min-w-[220px]'}>
                     {t('estadoDeCuenta.colConcepto')}
                   </TableHead>
                   <TableHead className="whitespace-nowrap">
@@ -413,15 +546,21 @@ function SeccionDeFilas({
                   <TableHead className="whitespace-nowrap text-right">
                     {t('estadoDeCuenta.colBruto')}
                   </TableHead>
-                  {columnas.map((c) => (
-                    <TableHead key={c} className="whitespace-nowrap text-right">
-                      {ETIQUETA_DE_COLUMNA[c]}
-                    </TableHead>
-                  ))}
+                  {compacta
+                    ? columnasVisibles > 0 && (
+                        <TableHead className="whitespace-nowrap text-right" data-testid="col-impuestos-plegados">
+                          {t(claveDelLado('estadoDeCuenta.colImpuestos', rol))}
+                        </TableHead>
+                      )
+                    : columnas.map((c) => (
+                        <TableHead key={c} className="whitespace-nowrap text-right">
+                          {ETIQUETA_DE_COLUMNA[c]}
+                        </TableHead>
+                      ))}
                   <TableHead className="whitespace-nowrap text-right">
                     {t('estadoDeCuenta.colNeto')}
                   </TableHead>
-                  <TableHead className="min-w-[150px]">
+                  <TableHead className={compacta ? 'min-w-[120px]' : 'min-w-[150px]'}>
                     {t('estadoDeCuenta.colPago')}
                   </TableHead>
                 </TableRow>
@@ -430,7 +569,7 @@ function SeccionDeFilas({
                 {renglones.map((r) =>
                   r.tipo === 'corte' ? (
                     <TableRow key={r.clave} className="hover:bg-transparent">
-                      <TableCell colSpan={6 + columnas.length} className="py-2">
+                      <TableCell colSpan={6 + columnasVisibles} className="py-2">
                         <LineaDeQuiebre corte={r.corte} />
                       </TableCell>
                     </TableRow>
@@ -441,6 +580,7 @@ function SeccionDeFilas({
                       columnas={columnas}
                       hoy={hoy}
                       rol={rol}
+                      compacta={compacta}
                     />
                   ),
                 )}
@@ -550,9 +690,26 @@ function Pildora({
   fila: FilaDelEstadoDeCuenta;
   rol: RolEnElContrato;
 }) {
+  const t = useTextoDelEstado();
   // «Cancelada» al inquilino, «Pagada» al propietario: mismo estado, distinta
   // palabra, como en los dos PDF de Nui.
   const pinta = pintaDelEstado(fila.estado, rol);
+  /*
+   * 🔴 Nico (03-10-2026): la cuota que una nota crédito dejó en $0 no se pagó:
+   * la saldó la nota. «Saldada por nota crédito NC-12», no «Cancelada».
+   */
+  if (fila.saldadaPorNota) {
+    return (
+      <span
+        className="inline-block rounded-full bg-surface-muted px-2.5 py-0.5 text-caption text-fg-muted"
+        data-testid="saldada-por-nota"
+      >
+        {fila.saldadaPorNota.numero
+          ? t('estadoDeCuenta.saldadaPorNota', { numero: fila.saldadaPorNota.numero })
+          : t('estadoDeCuenta.saldadaPorNotaSinNumero')}
+      </span>
+    );
+  }
   return (
     <span
       className={cn(
@@ -565,9 +722,34 @@ function Pildora({
   );
 }
 
-function Vence({ fila, hoy }: { fila: FilaDelEstadoDeCuenta; hoy: string }) {
+function Vence({
+  fila,
+  hoy,
+  rol,
+}: {
+  fila: FilaDelEstadoDeCuenta;
+  hoy: string;
+  rol?: RolEnElContrato;
+}) {
   const t = useTextoDelEstado();
   const vencida = estaVencida(fila, hoy);
+  /*
+   * P-19 / P-16: del lado del propietario lo vencido es un GIRO ATRASADO de la
+   * inmobiliaria, no una deuda suya: «atrasado» en ámbar y en su propia línea
+   * (en el mismo renglón ensanchaba la columna 70 px). El inquilino, igual.
+   */
+  if (rol === 'PROPIETARIO') {
+    return (
+      <span className="whitespace-nowrap font-mono text-caption tabular-nums">
+        {fechaLegible(fila.fechaVencimiento)}
+        {vencida && (
+          <span className="block font-sans text-warning" data-testid="vence-atrasado">
+            {t(claveDelLado('estadoDeCuenta.vencida', rol))}
+          </span>
+        )}
+      </span>
+    );
+  }
   return (
     <span
       className={cn(
@@ -576,8 +758,11 @@ function Vence({ fila, hoy }: { fila: FilaDelEstadoDeCuenta; hoy: string }) {
       )}
     >
       {fechaLegible(fila.fechaVencimiento)}
+      {/* PG-15 (03-10-2026): «vencida» en su propia línea, como del lado del
+          propietario: en el mismo renglón ensanchaba la columna ~50 px y la
+          tabla del inquilino con impuestos no cabía a 1440 px. */}
       {vencida && (
-        <span className="ml-1 font-sans">{t('estadoDeCuenta.vencida')}</span>
+        <span className="block font-sans">{t('estadoDeCuenta.vencida')}</span>
       )}
     </span>
   );
@@ -590,6 +775,20 @@ function Vence({ fila, hoy }: { fila: FilaDelEstadoDeCuenta; hoy: string }) {
 function Pago({ fila }: { fila: FilaDelEstadoDeCuenta }) {
   const t = useTextoDelEstado();
   const doc = fila.documentoDePago;
+  // PG-08 (Nico, 03-10-2026): un mes del sistema anterior sin comprobante
+  // migrado lo dice; un «—» se leería como «no pagó».
+  if (sinComprobantesDelSistemaAnterior(fila)) {
+    return (
+      <>
+        <span className="block text-caption text-fg-subtle" data-testid="sin-comprobantes">
+          {t('estadoDeCuenta.sinComprobantesCargados')}
+        </span>
+        <span className="block text-caption text-fg-subtle" data-testid="no-suma">
+          {t('estadoDeCuenta.noSuma')}
+        </span>
+      </>
+    );
+  }
   if (!doc && !fila.fechaDePago) {
     return <span className="text-caption text-fg-subtle">—</span>;
   }
@@ -606,6 +805,13 @@ function Pago({ fila }: { fila: FilaDelEstadoDeCuenta }) {
           title={doc.descripcion || undefined}
         >
           {doc.numero} · {doc.tipo}
+        </p>
+      )}
+      {/* PG-08: un mes del sistema anterior con su comprobante se lee como
+          pago, pero tampoco suma en los totales (lo cobró el sistema de antes). */}
+      {fila.estado === 'ANTERIOR' && (
+        <p className="text-caption text-fg-subtle" data-testid="no-suma">
+          {t('estadoDeCuenta.noSuma')}
         </p>
       )}
       {/* Sólo en el panel y para un administrador (llega por contexto). */}
@@ -625,11 +831,14 @@ function FilaDeLaTabla({
   columnas,
   hoy,
   rol,
+  compacta = false,
 }: {
   fila: FilaDelEstadoDeCuenta;
   columnas: ColumnaDeImpuesto[];
   hoy: string;
   rol: RolEnElContrato;
+  /** Lado del propietario: los impuestos van plegados en una columna (P-19). */
+  compacta?: boolean;
 }) {
   const apagada = fila.estado === 'ANULADA' || fila.estado === 'ANTERIOR';
   return (
@@ -638,7 +847,7 @@ function FilaDeLaTabla({
         <Concepto fila={fila} />
       </TableCell>
       <TableCell className="align-top">
-        <Vence fila={fila} hoy={hoy} />
+        <Vence fila={fila} hoy={hoy} rol={rol} />
       </TableCell>
       <TableCell className="align-top">
         <Pildora fila={fila} rol={rol} />
@@ -646,14 +855,22 @@ function FilaDeLaTabla({
       <TableCell className="whitespace-nowrap text-right align-top font-mono tabular-nums">
         {formatCurrency(fila.valorBruto)}
       </TableCell>
-      {columnas.map((c) => (
-        <TableCell
-          key={c}
-          className="whitespace-nowrap text-right align-top font-mono text-caption tabular-nums text-fg-muted"
-        >
-          {formatCurrency(fila[c] ?? 0)}
-        </TableCell>
-      ))}
+      {compacta ? (
+        columnas.length > 0 && (
+          <TableCell className="align-top">
+            <ImpuestosPlegados fila={fila} columnas={columnas} />
+          </TableCell>
+        )
+      ) : (
+        columnas.map((c) => (
+          <TableCell
+            key={c}
+            className="whitespace-nowrap text-right align-top font-mono text-caption tabular-nums text-fg-muted"
+          >
+            {formatCurrency(fila[c] ?? 0)}
+          </TableCell>
+        ))
+      )}
       <TableCell className="whitespace-nowrap text-right align-top font-mono font-medium tabular-nums">
         {formatCurrency(fila.valorNeto)}
       </TableCell>
@@ -661,6 +878,36 @@ function FilaDeLaTabla({
         <Pago fila={fila} />
       </TableCell>
     </TableRow>
+  );
+}
+
+/**
+ * Las columnas de impuestos de una fila, plegadas en una (lado del propietario,
+ * P-19): un renglón por valor que no es cero, «Comisión  $ 225.000», con el
+ * monto entero (sin partir) y alineado a la derecha como el resto de la plata.
+ */
+function ImpuestosPlegados({
+  fila,
+  columnas,
+}: {
+  fila: FilaDelEstadoDeCuenta;
+  columnas: ColumnaDeImpuesto[];
+}) {
+  const conValor = columnas.filter((c) => (fila[c] ?? 0) !== 0);
+  if (conValor.length === 0) {
+    return <span className="block text-right text-caption text-fg-subtle">—</span>;
+  }
+  return (
+    <dl className="ml-auto grid w-max grid-cols-[auto_auto] gap-x-3 gap-y-0.5 text-caption" data-testid="impuestos-plegados">
+      {conValor.map((c) => (
+        <React.Fragment key={c}>
+          <dt className="whitespace-nowrap text-fg-subtle">{ETIQUETA_DE_COLUMNA[c]}</dt>
+          <dd className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
+            {formatCurrency(fila[c] ?? 0)}
+          </dd>
+        </React.Fragment>
+      ))}
+    </dl>
   );
 }
 
@@ -696,7 +943,7 @@ function TarjetaDeFila({
 
       <dl className="mt-2 space-y-0.5 border-t border-border-faint pt-2 text-caption">
         <Dato etiqueta={t('estadoDeCuenta.colVence')}>
-          <Vence fila={fila} hoy={hoy} />
+          <Vence fila={fila} hoy={hoy} rol={rol} />
         </Dato>
         <Dato etiqueta={t('estadoDeCuenta.colBruto')}>
           <span className="font-mono tabular-nums">{formatCurrency(fila.valorBruto)}</span>
@@ -730,3 +977,4 @@ function Dato({
     </div>
   );
 }
+

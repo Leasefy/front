@@ -3,6 +3,8 @@ import * as React from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 import { usePilotoAutonomia } from './use-piloto-autonomia'
+import { ApiError } from '@/lib/api/client'
+import { camposDelError, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import es from '@/lib/i18n/locales/es.json'
 import en from '@/lib/i18n/locales/en.json'
 
@@ -189,3 +191,80 @@ describe('🔴 usePilotoAutonomia — UNA petición para toda la flota (auditor�
     expect(result?.error).toBeNull()
   })
 })
+
+/*
+ * Tanda 2 de errores (02-10-2026): `setModo` devolvía `{ ok: false, error:
+ * '403' }` y la pantalla pintaba «No se pudo cambiar el modo: 403». Ahora
+ * `lib/api/piloto.ts` lee el sobre del micro y el hook deja pasar `fallo`.
+ */
+describe('usePilotoAutonomia — setModo no se traga el error', () => {
+  async function cambiarConRespuesta(respuesta: () => Promise<Response>) {
+    vi.spyOn(globalThis, 'fetch')
+      .mockImplementationOnce(async () => makeOkResponse(flota))
+      .mockImplementationOnce(respuesta)
+      .mockImplementation(async () => makeOkResponse(flota))
+    await mount()
+    let r: Awaited<ReturnType<HookResult['setModo']>> | undefined
+    await act(async () => {
+      r = await result!.setModo('cobranza', 'autonomo')
+    })
+    return r!
+  }
+
+  it('un 400 del sobre llega como `fallo` con sus `campos`, y el modo vuelve atrás', async () => {
+    const r = await cambiarConRespuesta(
+      async () =>
+        new Response(
+          JSON.stringify({
+            statusCode: 400,
+            code: 'DATOS_INVALIDOS',
+            message: ['El modo debe ser Manual, Copiloto o Automático.'],
+            campos: [{ campo: 'modo', regla: 'opcion', mensaje: 'El modo debe ser Manual, Copiloto o Automático.' }],
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } },
+        ),
+    )
+    expect(r.ok).toBe(false)
+    expect(r.fallo).toBeInstanceOf(ApiError)
+    expect(camposDelError(r.fallo)).toHaveLength(1)
+    expect(mensajeParaLaPersona(r.fallo)).toBe('El modo debe ser Manual, Copiloto o Automático.')
+    expect(result?.rows.find((x) => x.agente === 'cobranza')?.modo).toBe('copiloto')
+  })
+
+  it('un 5xx dice «de nuestro lado» con la referencia; nunca el status', async () => {
+    const r = await cambiarConRespuesta(
+      async () => new Response(JSON.stringify({ error: 'boom', requestId: 'feedface-0002' }), { status: 500 }),
+    )
+    const texto = mensajeParaLaPersona(r.fallo, { accion: 'cambiar el modo' })
+    expect(texto).toContain('No pudimos cambiar el modo: algo falló de nuestro lado')
+    expect(texto).toContain('feedface')
+  })
+
+  // 🔴 03-10-2026: el micro caído con el back sano es capa 2 («el asistente de
+  // Leasefy no está disponible»), no la red de la persona (`agent-fetch.ts`).
+  it('un `fetch` al micro que ni salió, con el back respondiendo, es el asistente caído (capa 2), no «conexión»', async () => {
+    const r = await cambiarConRespuesta(async () => {
+      throw new TypeError('Failed to fetch')
+    })
+    expect(r.fallo).toBeInstanceOf(ApiError)
+    expect((r.fallo as ApiError).status).toBe(503)
+    const texto = mensajeParaLaPersona(r.fallo)
+    expect(texto).toMatch(/asistente de Leasefy no está disponible/)
+    expect(texto).not.toMatch(/conexi[oó]n/i)
+  })
+
+  it('sin red en el navegador, el `fetch` que ni salió llega TAL CUAL (status 0 = conexión)', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    try {
+      const red = new TypeError('Failed to fetch')
+      const r = await cambiarConRespuesta(async () => {
+        throw red
+      })
+      expect(r.fallo).toBe(red)
+      expect(mensajeParaLaPersona(r.fallo)).toMatch(/conexión/)
+    } finally {
+      enLinea.mockRestore()
+    }
+  })
+})
+

@@ -175,14 +175,15 @@ const DECLARADOS: readonly string[] = [
   'captacionApi.anularFirma',
   'captacionApi.consultarListas',
   'captacionApi.guardarDatos',
-  'captacionApi.previsualizarVenta',
   'captacionApi.revisarBaja',
   'captacionApi.urlDelDocumento',
   'cobrosApi.generateOne',
   'cobrosApi.registerPayment',
   'conciliacionBancariaApi.conciliarSeguros',
-  'facturacionElectronicaService.crearProveedor',
-  'facturacionElectronicaService.notasDebito',
+  // 04-10 · `facturacionElectronicaService.crearProveedor` y `.notasDebito`
+  // salieron: ya tienen puerta (QA de Facturación, rondas 2 y 3 —
+  // `DocumentoSoporte` registra al proveedor ahí mismo y `FacturasEmitidas`
+  // lista las notas débito).
   'finanzasApi.asignarASede',
   'inmobiliariaConfigApi.getConfigBilling',
   'inmobiliariaConfigApi.getConfigInvoices',
@@ -193,7 +194,6 @@ const DECLARADOS: readonly string[] = [
   'landlordApplicationsApi.triggerReevaluation',
   'leadsApi.buscarContactos',
   'leadsApi.reasignaciones',
-  'leadsApi.reasignar',
   'leadsApi.reasignarVencidos',
   'leadsApi.respondido',
   'mantenimientoApi.reabrirPorGarantia',
@@ -226,7 +226,6 @@ const DECLARADOS: readonly string[] = [
   'postulacionesApi.revisarCierre',
   'propertiesApi.getAssigned',
   'propertiesApi.removeAgent',
-  'proveedoresDeMantenimientoApi.calificar',
   'pseCheckoutApi.getRequestStatus',
   'pseCheckoutApi.verifyRequest',
   'recibosDeCajaApi.anticipos',
@@ -244,8 +243,10 @@ const DECLARADOS: readonly string[] = [
   'visitasApi.sePuedeMostrar',
 ];
 
+// ARREGLOS-7: cada prueba barre todo `src/` y tarda 3–4,7 s con la máquina
+// cargada; con el límite de 5 s por defecto fallaba por tiempo, no por lo que mira.
 describe('🔴 ninguna ruta del cliente se queda sin puerta', () => {
-  it('no aparece un método NUEVO sin un solo llamador en el producto', () => {
+  it('no aparece un método NUEVO sin un solo llamador en el producto', { timeout: 30_000 }, () => {
     const hoy = metodosSinLlamador();
     const nuevos = hoy.filter((m) => !DECLARADOS.includes(m));
     expect(
@@ -257,7 +258,7 @@ describe('🔴 ninguna ruta del cliente se queda sin puerta', () => {
     ).toEqual([]);
   });
 
-  it('🔴 la lista declarada no se queda con métodos que YA tienen puerta', () => {
+  it('🔴 la lista declarada no se queda con métodos que YA tienen puerta', { timeout: 30_000 }, () => {
     // Si alguien construyó la pantalla, el método sale de la lista. Sin esto
     // la lista sólo crece y deja de significar algo.
     const hoy = new Set(metodosSinLlamador());
@@ -268,7 +269,7 @@ describe('🔴 ninguna ruta del cliente se queda sin puerta', () => {
     ).toEqual([]);
   });
 
-  it('el barrido mira los 95 servicios y encuentra métodos de verdad', () => {
+  it('el barrido mira los 95 servicios y encuentra métodos de verdad', { timeout: 30_000 }, () => {
     // Un guardián que no encuentra nada porque el regex se rompió es peor que
     // no tenerlo: pasaría verde para siempre.
     expect(readdirSync(DIR).filter((x) => x.endsWith('.service.ts')).length).toBeGreaterThan(80);

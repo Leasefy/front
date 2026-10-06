@@ -22,6 +22,7 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui/button'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { falloDelAgente } from '../fallo-del-agente'
+import { CrossFade } from '@leasefy/cadence'
 
 // =============================================================================
 // Component
@@ -38,7 +39,15 @@ export default function CarrierSlaPage() {
   // i18n note: using existing `aseguradoras.sla.empty.*` keys scaffolded by 38-02 (verbatim D-38-04 copy);
   // the plan's literal `aseguradoras.carrier.sla.empty.*` path was a parallel namespace not wired in i18n
   // — reusing already-scaffolded keys avoids adding orphan strings under an unwired `carrier` namespace.
-  if (isLoading && !sla) return <PageSkeleton variant="list" />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // contenido); lo que ya estaba al montarse no se anima.
+  if (isLoading && !sla) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="list" />
+      </CrossFade>
+    )
+  }
   /*
    * Sin datos Y con error, el agente no contestó: eso no es «todavía no hay
    * cumplimiento que mostrar». Esta guarda va ANTES del vacío, que si no se
@@ -47,6 +56,7 @@ export default function CarrierSlaPage() {
    */
   if (error && !sla) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="space-y-6 p-6 lg:p-8">
         {/* 🔴 20-09 · El camino de vuelta va ARRIBA, no sólo dentro de la
             tarjeta: un fallo a pantalla completa sin encabezado no dice en qué
@@ -64,6 +74,7 @@ export default function CarrierSlaPage() {
           }}
         />
       </div>
+      </CrossFade>
     )
   }
   if (
@@ -71,15 +82,18 @@ export default function CarrierSlaPage() {
     (!sla || (!sla.state && (!sla.breachWindows || sla.breachWindows.length === 0)))
   ) {
     return (
+      <CrossFade swapKey="vacio">
       <EmptyState
         icon={ChartLine}
         title={t('inmobiliaria.ai.cotizador.aseguradoras.sla.empty.title')}
         description={t('inmobiliaria.ai.cotizador.aseguradoras.sla.empty.description')}
       />
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="sla">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
@@ -139,5 +153,6 @@ export default function CarrierSlaPage() {
         isLoading={isLoading}
       />
     </div>
+    </CrossFade>
   )
 }

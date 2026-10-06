@@ -19,6 +19,7 @@
  */
 
 import { useCallback, useId, useMemo, useState } from 'react';
+import { plata } from '@/lib/contabilidad/plata';
 import { toast } from '@/components/ui/toast';
 import { LockKey, LockSimple, LockSimpleOpen } from '@phosphor-icons/react';
 import { Banner } from '@leasefy/cadence';
@@ -36,14 +37,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import {
   contabilidadApi,
   type Cierre,
   type ResultadoDeCierre,
+  type SinAsentar,
 } from '@/lib/api/contabilidad.service';
 import { aTextoDeDia, diaDe, diaLegible } from '@/lib/contabilidad/fechas';
 import { elPeriodoEnUnaFrase, estadoDelPeriodo } from '@/lib/contabilidad/el-periodo-en-una-frase';
+import { CampoDeDia } from '../CampoDeDia';
 import { Reapertura } from './Reapertura';
 
 export interface CierreDePeriodoProps {
@@ -67,6 +72,23 @@ export interface CierreDePeriodoProps {
   onReabierto?: () => void;
 }
 
+/** «Hay 3 movimientos sin asiento hasta el 30 sep 2026 (2 recibos, 1 cobro): …». */
+export function fraseDeLoSinAsentar(
+  s: { recibos: number; lotes: number; cobros: number; total: number; valorCop?: number | null },
+  hasta: string | null,
+): string {
+  const partes = [
+    s.recibos ? `${s.recibos} ${s.recibos === 1 ? 'recibo' : 'recibos'}` : null,
+    s.lotes ? `${s.lotes} ${s.lotes === 1 ? 'lote' : 'lotes'}` : null,
+    s.cobros ? `${s.cobros} ${s.cobros === 1 ? 'cobro' : 'cobros'}` : null,
+  ].filter(Boolean);
+  const cuantos = s.total === 1 ? 'Hay 1 movimiento sin asiento' : `Hay ${s.total.toLocaleString('es-CO')} movimientos sin asiento`;
+  // CB-B-25 (QA-FACT-CONTA-95 r2): y cuánta plata es, si el back la sabe.
+  const cuanto =
+    typeof s.valorCop === 'number' && s.valorCop > 0 ? ` por ${plata(s.valorCop)}` : '';
+  return `${cuantos}${hasta ? ` hasta el ${diaLegible(hasta)}` : ''}${partes.length ? ` (${partes.join(', ')})` : ''}${cuanto}: asiéntalos («Reprocesar» en el inicio de Contabilidad) antes de cerrar, o quedan por fuera del período.`;
+}
+
 /** El último día del mes anterior: lo que normalmente se cierra. */
 function ultimoDiaDelMesAnterior(ahora: Date = new Date()): string {
   return aTextoDeDia(new Date(ahora.getFullYear(), ahora.getMonth(), 0));
@@ -88,25 +110,49 @@ export function CierreDePeriodo({
 }: CierreDePeriodoProps) {
   const id = useId();
   const cerradaHasta = cierre?.cerradaHasta ?? null;
+  /** Back 26beefbc (CB-R06): sólo se cierran meses terminados, hasta este día. */
+  const sePuedeCerrarHasta = cierre?.sePuedeCerrarHasta ?? null;
+  const sinAsentar = cierre?.sinAsentar ?? null;
   const [hasta, setHasta] = useState(ultimoDiaDelMesAnterior);
   const [confirmando, setConfirmando] = useState(false);
   const [escrito, setEscrito] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * El error que el back puso en `hasta` (un 400 con `campos`). Va bajo la
+   * fecha escrita en el diálogo, que es donde está la persona y es el mismo
+   * dato.
+   */
+  const [errorDeLaFecha, setErrorDeLaFecha] = useState<string | null>(null);
+  /**
+   * 🔴 QA-FACT-CONTA-95 r2 (CB-B-25): lo que quedaría sin asiento si se cierra
+   * hasta la fecha ELEGIDA, dicho DENTRO del diálogo y antes de confirmar
+   * (cuántos y cuánta plata). Se pregunta al abrir; si falla, el diálogo sigue.
+   */
+  const [sinAsentarAlCerrar, setSinAsentarAlCerrar] = useState<SinAsentar | null>(null);
 
   const problema = useMemo(() => {
     if (!diaDe(hasta)) return 'Elige un día.';
     if (cerradaHasta && hasta <= cerradaHasta) {
       return `Ya está cerrada hasta el ${diaLegible(cerradaHasta)}: la nueva fecha tiene que ser posterior.`;
     }
+    if (sePuedeCerrarHasta && hasta > sePuedeCerrarHasta) {
+      return `Sólo se cierran meses terminados: hasta el ${diaLegible(sePuedeCerrarHasta)}.`;
+    }
     return null;
-  }, [hasta, cerradaHasta]);
+  }, [hasta, cerradaHasta, sePuedeCerrarHasta]);
 
   const abrir = useCallback(() => {
     setEscrito('');
     setError(null);
+    setErrorDeLaFecha(null);
+    setSinAsentarAlCerrar(null);
     setConfirmando(true);
-  }, []);
+    void Promise.resolve()
+      .then(() => contabilidadApi.asientos.cierre(hasta))
+      .then((c) => setSinAsentarAlCerrar(c?.sinAsentar ?? null))
+      .catch(() => setSinAsentarAlCerrar(null));
+  }, [hasta]);
 
   const cerrarDialogo = useCallback(() => {
     if (enviando) return;
@@ -117,6 +163,7 @@ export function CierreDePeriodo({
     if (escrito !== hasta) return;
     setEnviando(true);
     setError(null);
+    setErrorDeLaFecha(null);
     try {
       const r = await contabilidadApi.asientos.cerrar(hasta);
       toast.success(`Contabilidad cerrada hasta el ${diaLegible(r.hasta)}`, {
@@ -125,6 +172,10 @@ export function CierreDePeriodo({
             ? '1 asiento quedó bloqueado.'
             : `${r.cerrados.toLocaleString('es-CO')} asientos quedaron bloqueados.`,
       });
+      // Back 26beefbc: lo que quedó sin asiento adentro del período, se dice.
+      if (r.sinAsentar && r.sinAsentar.total > 0) {
+        toast.warning(fraseDeLoSinAsentar(r.sinAsentar, r.hasta));
+      }
       setConfirmando(false);
       // La fecha del control avanza al fin del mes siguiente al cierre. Si se
       // quedara en la fecha recién cerrada, `problema` diría en rojo «Ya está
@@ -133,7 +184,15 @@ export function CierreDePeriodo({
       setHasta(finDelMesSiguiente(r.hasta));
       onCerrado?.(r);
     } catch (e) {
-      setError(mensajeDeContabilidad(e, 'No se pudo cerrar el período.'));
+      // Un 400 con `campos` en `hasta` va bajo la fecha; el resto (un código
+      // de negocio, un 5xx, la red) al banner, con la regla de oro.
+      const reparto = repartirErroresDelServidor(e, { campos: ['hasta'] });
+      if (reparto.porCampo.hasta) setErrorDeLaFecha(reparto.porCampo.hasta);
+      if (reparto.delServidor.length === 0) {
+        setError(mensajeDeContabilidad(e, 'No se pudo cerrar el período.'));
+      } else if (reparto.sueltos.length > 0) {
+        setError(reparto.sueltos.join(' · '));
+      }
     } finally {
       setEnviando(false);
     }
@@ -228,16 +287,20 @@ export function CierreDePeriodo({
             <Label htmlFor={`${id}-hasta`} className="text-caption text-fg-muted">
               Hasta el día
             </Label>
-            <Input
+            {/* 🔴 CB-04: el selector de fecha del DS, no el `<input type="date">`
+                del navegador (se cortaba y decía «30/09/2026» en el formato del
+                sistema). */}
+            <CampoDeDia
               id={`${id}-hasta`}
-              type="date"
               value={hasta}
               min={cerradaHasta ?? undefined}
-              onChange={(e) => setHasta(e.target.value)}
+              max={sePuedeCerrarHasta ?? undefined}
+              onChange={setHasta}
               disabled={cargando || enviando}
-              aria-invalid={Boolean(problema) || undefined}
-              className="w-44 bg-surface font-mono tabular-nums"
-              data-testid="cierre-hasta"
+              invalido={Boolean(problema) && !cargando}
+              describedBy={problema && !cargando ? `${id}-hasta-error` : undefined}
+              className="w-48 bg-surface"
+              testid="cierre-hasta"
             />
           </div>
           <Button
@@ -252,9 +315,11 @@ export function CierreDePeriodo({
             Cerrar período…
           </Button>
         </div>
-        {problema && !cargando ? (
-          <p className="text-caption text-danger" role="alert">
-            {problema}
+        <ErrorDelCampo id={`${id}-hasta-error`} mensaje={!cargando ? problema : null} />
+        {/* Back 26beefbc: cerrar con movimientos sin asiento los deja afuera del período. */}
+        {!cargando && sinAsentar && sinAsentar.total > 0 ? (
+          <p className="text-caption text-warning" role="status" data-testid="sin-asentar-al-cerrar">
+            {fraseDeLoSinAsentar(sinAsentar, sePuedeCerrarHasta)}
           </p>
         ) : null}
       </div>
@@ -267,15 +332,21 @@ export function CierreDePeriodo({
       />
 
       <Dialog open={confirmando} onOpenChange={(open) => !open && cerrarDialogo()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent variant="destructive" icon={<LockKey weight="bold" />} size="sm">
           <DialogHeader>
             <DialogTitle>Cerrar la contabilidad hasta el {diaLegible(hasta)}</DialogTitle>
             <DialogDescription>
-              Esto no se deshace. Después del cierre no entra ningún asiento con fecha igual o
-              anterior al {diaLegible(hasta)}; lo que esté mal sólo se corrige con una reversa
-              fechada después.
+              Sólo se deshace reabriendo, y queda en la bitácora con el motivo. Después del
+              cierre no entra ningún asiento con fecha igual o anterior al {diaLegible(hasta)};
+              lo que esté mal sólo se corrige con una reversa fechada después.
             </DialogDescription>
           </DialogHeader>
+
+          {sinAsentarAlCerrar && sinAsentarAlCerrar.total > 0 ? (
+            <Banner variant="warning" role="status" data-testid="sin-asentar-en-el-dialogo">
+              {fraseDeLoSinAsentar(sinAsentarAlCerrar, hasta)}
+            </Banner>
+          ) : null}
 
           <div className="space-y-2">
             <Label htmlFor={`${id}-escribir`}>
@@ -285,13 +356,19 @@ export function CierreDePeriodo({
             <Input
               id={`${id}-escribir`}
               value={escrito}
-              onChange={(e) => setEscrito(e.target.value.trim())}
+              onChange={(e) => {
+                setErrorDeLaFecha(null);
+                setEscrito(e.target.value.trim());
+              }}
               placeholder="AAAA-MM-DD"
               autoComplete="off"
               disabled={enviando}
+              aria-invalid={Boolean(errorDeLaFecha) || undefined}
+              aria-describedby={errorDeLaFecha ? `${id}-escribir-error` : undefined}
               className="font-mono"
               data-testid="cierre-escribir"
             />
+            <ErrorDelCampo id={`${id}-escribir-error`} mensaje={errorDeLaFecha} />
             {error ? (
               <Banner variant="danger" role="alert">
                 {error}
@@ -300,7 +377,7 @@ export function CierreDePeriodo({
           </div>
 
           <DialogFooter>
-            <Button variant="ghost" hideArrow onClick={cerrarDialogo} disabled={enviando}>
+            <Button variant="outline" hideArrow onClick={cerrarDialogo} disabled={enviando}>
               Cancelar
             </Button>
             <Button

@@ -18,7 +18,9 @@ import { ClockCounterClockwise } from '@phosphor-icons/react'
 
 import type { ActorType, TrazaEntry } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { relativeTime, type TranslateFn } from './ColaHumana'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 
 // ── Vocabulary ──────────────────────────────────────────────────────────────
 
@@ -98,29 +100,36 @@ export interface TrazaCasoProps {
 
 export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps) {
   const { t } = useI18n()
+  // Movimiento: cada estado en un `CrossFade` con su clave (cargando →
+  // traza, → fallo, → vacío); los pasos entran escalonados (techo 320 ms) y
+  // el que se agrega después (una acción recién hecha) entra solo.
   if (isLoading) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="space-y-2" data-testid="traza-caso-loading">
         {[0, 1, 2].map((i) => (
           <div key={i} className="h-14 rounded-lg border border-border bg-muted/40 animate-pulse" />
         ))}
       </div>
+      </CrossFade>
     )
   }
 
   if (error) {
+    // 02-10-2026 · Por el cartel de la casa, no «No se pudo cargar la traza:
+    // 500». Sin marco y más bajo: vive en la columna angosta del detalle.
     return (
-      <div
-        className="rounded-lg border border-danger/30 bg-danger-soft text-danger"
-        data-testid="traza-caso-error"
-      >
-        {t('inmobiliaria.ai.workspace.traza.error', { error })}
+      <CrossFade swapKey="fallo">
+      <div className="rounded-lg border border-border bg-card" data-testid="traza-caso-error">
+        <FalloDeCarga error={error} queEs="la traza del caso" enmarcado={false} className="py-8" />
       </div>
+      </CrossFade>
     )
   }
 
   if (entries.length === 0) {
     return (
+      <CrossFade swapKey="vacio">
       <div
         className="rounded-lg border border-dashed border-border bg-muted/30 p-6 text-center"
         data-testid="traza-caso-empty"
@@ -137,6 +146,7 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
           {t('inmobiliaria.ai.workspace.traza.emptyBody')}
         </p>
       </div>
+      </CrossFade>
     )
   }
 
@@ -150,14 +160,15 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
       : datosTecnicosLabel
 
   return (
-    <ol className="space-y-0" data-testid="traza-caso">
+    <CrossFade swapKey="traza">
+    <Stagger as="ol" className="space-y-0" data-testid="traza-caso">
       {entries.map((entry, idx) => {
         const meta = actorMeta(entry.actorType)
         const hasDetails = entry.details && Object.keys(entry.details).length > 0
         const flatDetails = hasDetails && isFlatDetails(entry.details)
         const isLast = idx === entries.length - 1
         return (
-          <li key={entry.id} className="relative flex gap-3 pb-4" data-testid={`traza-entry-${entry.id}`}>
+          <StaggerItem as="li" key={entry.id} className="relative flex gap-3 pb-4" data-testid={`traza-entry-${entry.id}`}>
             {/* Dot + connector */}
             <div className="flex flex-col items-center pt-1.5">
               <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${meta.dot}`} aria-hidden="true" />
@@ -213,9 +224,10 @@ export function TrazaCaso({ entries, isLoading, error, agente }: TrazaCasoProps)
                 </details>
               )}
             </div>
-          </li>
+          </StaggerItem>
         )
       })}
-    </ol>
+    </Stagger>
+    </CrossFade>
   )
 }

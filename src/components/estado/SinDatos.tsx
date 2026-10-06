@@ -25,6 +25,7 @@ import Link from 'next/link'
 import { MagnifyingGlass, Plus, type Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { CajaQueEntra } from './entrada-del-estado'
 
 export interface SinDatosProps {
   /**
@@ -96,7 +97,8 @@ export function SinDatos({
     : (descripcion ?? `Lo que agregues aparece acá.`)
 
   return (
-    <div
+    // Entra con `Appear` de Cadence salvo dentro de un `EstadoDeDatos` que ya lo anima.
+    <CajaQueEntra
       className={cn('px-6 py-16 text-center', className)}
       data-testid="sin-datos"
       data-caso={hayFiltros ? 'filtros' : 'vacio'}
@@ -138,6 +140,6 @@ export function SinDatos({
           )}
         </div>
       )}
-    </div>
+    </CajaQueEntra>
   )
 }

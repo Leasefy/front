@@ -10,24 +10,25 @@
  * contra un `setTimeout`.
  */
 
+import { confirmar } from '@/components/ui/confirmar';
 import { useCallback, useEffect, useState } from 'react';
-import { CalendarBlank } from '@phosphor-icons/react';
+import { CrossFade } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/spinner';
-import { Input, Label } from '@/components/ui';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
-import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type { ExtractoPropietario as ExtractoDelMes } from '@/lib/types/inmobiliaria';
 import { descargar } from '@/lib/propietarios/exportar-datos';
-import { nombreDelMes } from '@/lib/utils/mes';
-import { ExtractoPropietario } from './ExtractoPropietario';
+import { AccionesDelExtracto, ExtractoPropietario } from './ExtractoPropietario';
 
 interface ExtractoDelPropietarioDialogProps {
   propietarioId: string;
@@ -36,6 +37,13 @@ interface ExtractoDelPropietarioDialogProps {
   onOpenChange: (abierto: boolean) => void;
   /** Se llama cuando «Enviar por email» terminó bien (la ficha refresca sus huellas). */
   onEnviado?: () => void;
+  /**
+   * QA-PROP-95 C-24/F-08 (04-10): ¿quien mira puede MANDAR el extracto?
+   * (`dispersiones:edit`, lo mismo que exige el back). Ver no es mandar: un rol
+   * con sólo `dispersiones:view` ve el extracto sin «Enviar por correo».
+   * Ausente = sí (como antes).
+   */
+  puedeEnviar?: boolean;
 }
 
 const FORMA_DE_MES = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -46,23 +54,13 @@ export function mesDeHoy(hoy: Date = new Date()): string {
   return `${hoy.getFullYear()}-${mm}`;
 }
 
-/** «septiembre de 2026» → «Septiembre de 2026». Con `capitalize` de CSS salía «Septiembre De 2026». */
-function conInicialMayuscula(texto: string): string {
-  return texto.charAt(0).toUpperCase() + texto.slice(1);
-}
-
-function mensajeDe(error: unknown, porDefecto: string): string {
-  if (error instanceof ApiError) return error.messages?.join(' · ') ?? error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return porDefecto;
-}
-
 export function ExtractoDelPropietarioDialog({
   propietarioId,
   propietarioName,
   abierto,
   onOpenChange,
   onEnviado,
+  puedeEnviar = true,
 }: ExtractoDelPropietarioDialogProps) {
   const { t } = useI18n();
   const [mes, setMes] = useState(() => mesDeHoy());
@@ -85,7 +83,12 @@ export function ExtractoDelPropietarioDialog({
       .catch((e: unknown) => {
         if (!vigente) return;
         setExtracto(null);
-        setError(mensajeDe(e, t('inmobiliaria.propietario.extracto.sinDatos')));
+        setError(
+          mensajeParaLaPersona(e, {
+            porDefecto: t('inmobiliaria.propietario.extracto.sinDatos'),
+            accion: 'armar el extracto',
+          }),
+        );
       })
       .finally(() => {
         if (vigente) setCargando(false);
@@ -102,70 +105,104 @@ export function ExtractoDelPropietarioDialog({
   }, [propietarioId, propietarioName, mes]);
 
   const enviarPorCorreo = useCallback(async () => {
+    // QA-PROP-95 (C-19, PR-17): el extracto le llega a una persona real; se
+    // confirma antes, diciendo de qué mes. Antes salía de un clic.
+    const [anio, numMes] = mes.split('-').map(Number);
+    const mesEnPalabras = new Intl.DateTimeFormat('es-CO', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(Date.UTC(anio, numMes - 1, 1)));
+    const ok = await confirmar({
+      titulo: '¿Le enviamos el extracto por correo?',
+      descripcion: `Se le enviará al propietario el extracto de ${mesEnPalabras}, a su correo registrado.`,
+      accion: 'Enviar el extracto',
+      cancelar: 'Cancelar',
+    });
+    if (!ok) return false;
     await propietariosApi.enviarExtracto(propietarioId, mes);
     onEnviado?.();
+    return true;
   }, [propietarioId, mes, onEnviado]);
 
   return (
     <Dialog open={abierto} onOpenChange={onOpenChange}>
-      {/* Ancho de dispersiones: el extracto tiene nueve columnas. El scroll lo
-          pone el Dialog; `data-lenis-prevent` para que el scroll suave no se
-          coma el de esto que flota. */}
-      <DialogContent className="max-w-5xl max-h-[90vh]" data-lenis-prevent>
+      {/* Más ancho que `xl` (880): el extracto tiene diez columnas y una tabla
+          de ~1.170 px. Mirado en pantalla el 02-10, a 880 sólo se veían seis
+          (Propiedad → Estado) y Comisión, Conceptos y Neto —lo que el
+          propietario recibe— quedaban detrás del scroll lateral; a 1024, el
+          ancho de antes, se ven casi ocho. Se le devuelve ese ancho. El scroll
+          (y su `data-lenis-prevent`) lo pone el cuerpo del Dialog. */}
+      {/* P-23 (QA-PROP, 03-10): a 1440 px la tabla (~1.030 px) seguía sin caber
+          en 1024 y Neto, fija, tapaba Comisión y Conceptos al correrla. Con
+          «Com. %» plegado en Comisión y el diálogo en 1152 (`max-w-6xl`) cabe
+          entera; en una pantalla más angosta se corre como antes. */}
+      <DialogContent size="xl" className="max-w-6xl" data-testid="extracto-del-propietario">
         <DialogHeader>
           <DialogTitle>{t('inmobiliaria.propietario.extracto.ownerStatement')}</DialogTitle>
           <DialogDescription>{propietarioName}</DialogDescription>
         </DialogHeader>
 
-        <div className="min-w-0 space-y-4 p-6 pt-2">
-          <div className="flex items-end gap-3">
-            <div className="space-y-1">
-              <Label htmlFor="mes-del-extracto" className="text-xs">
-                {t('inmobiliaria.propietario.extracto.elegirMes')}
-              </Label>
-              <Input
-                id="mes-del-extracto"
-                type="month"
-                value={mes}
-                onChange={(e) => setMes(e.target.value)}
-                className="h-10 w-44 font-mono"
-                data-testid="extracto-mes"
-              />
-            </div>
-            {mesValido && (
-              <p className="flex items-center gap-1.5 pb-2.5 text-sm text-fg-muted">
-                <CalendarBlank className="h-4 w-4" />
-                <span>{conInicialMayuscula(nombreDelMes(mes))}</span>
-              </p>
-            )}
+        <div className="min-w-0 space-y-4">
+          {/* 🔴 P-23 (QA-PROP, 03-10): el `<input type="month">` del navegador
+              decía «October 2026» en un panel en español. Es el selector de
+              mes de la casa (‹ Octubre de 2026 ›), el de las pantallas de
+              finanzas: en español y sin meses futuros. */}
+          <div
+            role="group"
+            aria-labelledby="mes-del-extracto-etiqueta"
+            className="flex flex-wrap items-center gap-x-3 gap-y-1"
+          >
+            <span id="mes-del-extracto-etiqueta" className="text-xs font-medium text-fg">
+              {t('inmobiliaria.propietario.extracto.elegirMes')}
+            </span>
+            <SelectorDeMes mes={mes} onCambiar={setMes} testId="extracto-mes" />
           </div>
 
-          {cargando && (
-            <div
-              className="flex items-center gap-3 rounded-lg border border-border bg-card p-6 text-sm text-fg-muted"
-              role="status"
-              aria-live="polite"
-              data-testid="extracto-cargando"
-            >
-              <Spinner size="sm" />
-              {t('inmobiliaria.propietario.extracto.cargando')}
-            </div>
-          )}
+          {/* Cargando → el extracto del mes (o el fallo): se cruzan. */}
+          <CrossFade
+            swapKey={cargando ? 'cargando' : error ? 'fallo' : extracto ? 'extracto' : 'nada'}
+            mode="popLayout"
+            className="empty:hidden"
+          >
+            {cargando && (
+              <div
+                className="flex items-center gap-3 rounded-lg border border-border bg-card p-6 text-sm text-fg-muted"
+                role="status"
+                aria-live="polite"
+                data-testid="extracto-cargando"
+              >
+                <Spinner size="sm" />
+                {t('inmobiliaria.propietario.extracto.cargando')}
+              </div>
+            )}
 
-          {!cargando && error && (
-            <p className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger" data-testid="extracto-error">
-              {error}
-            </p>
-          )}
+            {!cargando && error && (
+              <p className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger" data-testid="extracto-error">
+                {error}
+              </p>
+            )}
 
-          {!cargando && !error && extracto && (
-            <ExtractoPropietario
+            {!cargando && !error && extracto && (
+              <ExtractoPropietario
+                extracto={extracto}
+                onDownloadPDF={descargarPdf}
+                onEmail={puedeEnviar ? enviarPorCorreo : undefined}
+                acciones="afuera"
+              />
+            )}
+          </CrossFade>
+        </div>
+
+        {/* P-23: Imprimir / Enviar / Descargar en el pie FIJO del diálogo
+            (hijo directo de `DialogContent`): antes iban al final del
+            documento, detrás del scroll. */}
+        {!cargando && !error && extracto && (
+          <DialogFooter>
+            <AccionesDelExtracto
               extracto={extracto}
               onDownloadPDF={descargarPdf}
-              onEmail={enviarPorCorreo}
+              onEmail={puedeEnviar ? enviarPorCorreo : undefined}
+              className="w-full"
             />
-          )}
-        </div>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

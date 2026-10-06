@@ -13,11 +13,12 @@
  * A 404 from any of these means "el agente aún no reporta" (endpoint not
  * deployed / nothing to show) and is surfaced as `notAvailable`, NOT an error.
  *
- * Follows the NEXT_PUBLIC_AGENT_URL + agentAuthHeaders pattern of
+ * Follows the NEXT_PUBLIC_AGENT_URL + agentFetch pattern of
  * `use-agent-work-items.ts` / `work-item.ts`.
  */
 
-import { agentAuthHeaders } from './agent-auth'
+import { agentFetch } from './agent-fetch'
+import { falloDelMicro } from './fallo-del-micro'
 import { conBackoff } from './fetch-with-backoff'
 import type { AgenteId, OwnerRole, WorkItem, WorkItemAction, WorkItemEstado } from './work-item'
 
@@ -180,7 +181,7 @@ async function getJson<T>(
   // NGINX) — ver fetch-with-backoff.ts. `usePilotoAutonomia` es el mayor
   // consumidor de este fetcher: 12 llamadas por montaje, una por agente.
   const res = await conBackoff(
-    () => globalThis.fetch(`${agentUrl}${path}`, { headers: agentAuthHeaders(), signal }),
+    () => agentFetch(`${agentUrl}${path}`, { signal }),
     signal,
   )
   if (res.status === 404) return { data: null, notAvailable: true }
@@ -251,21 +252,26 @@ export function fetchAiHubResumen(
 export async function runWorkItemAction(
   action: WorkItemAction,
   body?: Record<string, unknown>,
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; error?: string; fallo?: unknown }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) return { ok: false, error: 'not_configured' }
   try {
-    const res = await globalThis.fetch(`${agentUrl}${action.path}`, {
+    const res = await agentFetch(`${agentUrl}${action.path}`, {
       method: action.method,
-      headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify(body ?? {}),
     })
     if (!res.ok) {
-      const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-      return { ok: false, error: errBody.error ?? `${res.status}` }
+      // `error` se conserva por compatibilidad (el `error` del cuerpo viejo o
+      // el status; NO es para la persona). `fallo` es el error entero para el
+      // traductor: status, `code`, `message` del sobre y `campos` (02-10-2026).
+      const fallo = await falloDelMicro(res)
+      const viejo = fallo.detalle?.error
+      return { ok: false, error: typeof viejo === 'string' && viejo ? viejo : `${res.status}`, fallo }
     }
     return { ok: true }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'action_failed' }
+    // El pedido no salió: el error de red llega TAL CUAL (status 0 = conexión).
+    return { ok: false, error: err instanceof Error ? err.message : 'action_failed', fallo: err }
   }
 }

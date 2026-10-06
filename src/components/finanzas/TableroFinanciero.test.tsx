@@ -78,6 +78,13 @@ function tablero(extra: Partial<TableroFinanciero> = {}): TableroFinanciero {
     },
     propietarios: {
       porGirarCop: 210_000_000,
+      porGirarHastaMes: '2026-10',
+      proximosGiros: {
+        desdeMes: '2026-11',
+        hastaMes: '2027-01',
+        totalCop: 96_000_000,
+        cuotas: 40,
+      },
       retenidoCop: 4_500_000,
       enLotesPorAprobarCop: 88_000_000,
       lotesPorAprobar: 2,
@@ -138,6 +145,13 @@ describe('tablero financiero', () => {
     expect(valor('margen')).toContain('12.100.000');
   });
 
+  it('🔴 PG-13 (03-10-2026): las fechas con la forma de la casa, nunca «2026-09-17»', async () => {
+    await pintar();
+    expect(container.textContent).toContain('Datos al 17 de septiembre de 2026 (hora de Bogotá)');
+    expect(container.textContent).toContain('Los recibos de caja con fecha 17 de septiembre de 2026');
+    expect(container.textContent).not.toContain('2026-09-17');
+  });
+
   it('🔴 una tasa que el back no pudo medir sale «—», nunca «0 %»', async () => {
     h.tablero.mockResolvedValue(
       tablero({
@@ -160,6 +174,8 @@ describe('tablero financiero', () => {
     expect(container.querySelector('[data-testid="margen-pct"]')?.textContent).toContain('—');
     // Y dice por qué no se midió, en vez de dejar un guion mudo.
     expect(container.textContent).toContain('no hay contra qué comparar');
+    // TB-04 (FALTANTES, 05-10-2026): un solo guion, no «— —».
+    expect(container.querySelector('[data-testid="comparacion-mes-anterior"]')?.textContent).not.toContain('— —');
   });
 
   it('muestra los avisos del back arriba y sin recortarlos', async () => {
@@ -168,11 +184,46 @@ describe('tablero financiero', () => {
     expect(avisos?.textContent).toContain('no tienen tabla de amortización');
   });
 
-  it('el siniestro se dice aparte, adentro de la cartera', async () => {
+  it('el siniestro se dice APARTE de la cartera (el back lo saca del total)', async () => {
     await pintar();
-    expect(container.querySelector('[data-testid="cartera-en-siniestro"]')?.textContent).toContain(
-      '12.000.000',
+    const pie = container.querySelector('[data-testid="cartera-en-siniestro"]')?.textContent ?? '';
+    expect(pie).toContain('12.000.000');
+    // CONSISTENCIA (04-10-2026): «De eso, $104 M» bajo una cartera de $102 M.
+    expect(pie).toContain('Aparte');
+    expect(pie).not.toContain('De eso');
+    expect(container.textContent).not.toContain('siniestros incluidos');
+  });
+
+  it('🔴 CR-31: sin plazo fijado dice por qué la cartera está en cero y lleva al campo', async () => {
+    h.tablero.mockResolvedValue(
+      tablero({ cartera: { ...tablero().cartera, totalCop: 0, plazoSinFijar: true } }),
     );
+    await pintar();
+    const aviso = container.querySelector('[data-testid="cartera-plazo-sin-fijar"]');
+    expect(aviso?.textContent).toContain('todavía no fijó sus días de plazo');
+    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo',
+    );
+  });
+
+  it('🔴 «Por girar» es UNA sola cifra hasta el mes EN CURSO, y los próximos giros van aparte (Nico, 04-10)', async () => {
+    await pintar();
+    // El tablero mira septiembre; «Por girar» es lo que se debe hoy (octubre).
+    const porGirar = container.querySelector('[data-testid="cifra-por-girar"]')?.textContent ?? '';
+    expect(porGirar).toContain('Por girar hasta octubre de 2026');
+    expect(porGirar).toContain('la misma cifra en el Tablero, en Cartera → Por pagar y en Liquidaciones');
+    const proximos =
+      container.querySelector('[data-testid="cifra-proximos-giros"]')?.textContent ?? '';
+    expect(proximos).toContain('Próximos giros · noviembre de 2026 a enero de 2027');
+    expect(proximos).toContain('96.000.000');
+    const girado = container.querySelector('[data-testid="cifra-girado-del-mes"]')?.textContent ?? '';
+    expect(girado).toContain('Girado en septiembre de 2026');
+    expect(girado).toContain('Dispersado');
+  });
+
+  it('con el plazo fijado no sale el aviso del plazo', async () => {
+    await pintar();
+    expect(container.querySelector('[data-testid="cartera-plazo-sin-fijar"]')).toBeNull();
   });
 
   it('el deudor sale con su etapa en palabras', async () => {
@@ -246,8 +297,9 @@ describe('piezas puras del tablero', () => {
   });
 
   it('la variación lleva signo, y `null` es una raya', () => {
-    expect(textoDeLaVariacion(20)).toBe('+20.0%');
-    expect(textoDeLaVariacion(-8.25)).toBe('-8.3%');
+    // TB-04 (FALTANTES, 05-10-2026): como se escribe en Colombia (antes «+20.0%» y «-8.3%»).
+    expect(textoDeLaVariacion(20)).toBe('+20,0 %');
+    expect(textoDeLaVariacion(-8.25)).toBe('-8,3 %');
     expect(textoDeLaVariacion(null)).toBe('—');
   });
 });

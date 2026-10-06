@@ -31,6 +31,7 @@
 import { useCallback, useState } from 'react'
 
 import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { descargarBlob } from '@/lib/reportes/exportables'
 import {
   MAXIMO_FACTURAS_POR_ZIP,
@@ -56,10 +57,9 @@ export function motivoParaNoDescargarLote(cuantas: number): string | null {
   return null
 }
 
-function mensajeDeError(error: unknown): string {
-  return error instanceof Error && error.message
-    ? error.message
-    : 'No se pudo descargar el documento.'
+/** Con la regla de oro (02-10-2026): ya no es una copia local de `mensajeDe`. */
+function mensajeDeError(error: unknown, accion = 'descargar el documento'): string {
+  return mensajeParaLaPersona(error, { porDefecto: 'No se pudo descargar el documento.', accion })
 }
 
 /** Lo que hace falta para bajar una factura: su id y el número que se ve. */
@@ -113,7 +113,7 @@ export function useDescargarFacturas(): DescargaDeFacturas {
         const blob = await facturacionPorMesService.pdfDeLaFactura(facturaId)
         descargarBlob(blob, nombreDelPdf(numero))
       } catch (error) {
-        toast.error(mensajeDeError(error))
+        toast.error(mensajeDeError(error, 'descargar la factura'))
       } finally {
         setDescargando(null)
       }
@@ -144,7 +144,7 @@ export function useDescargarFacturas(): DescargaDeFacturas {
             opciones.procesosConZip ?? [],
           )
         } catch (error) {
-          toast.error(mensajeDeError(error))
+          toast.error(mensajeDeError(error, 'preparar el ZIP de las facturas'))
         } finally {
           setDescargando(null)
         }
@@ -156,7 +156,7 @@ export function useDescargarFacturas(): DescargaDeFacturas {
         )
         descargarBlob(blob, nombreDelZip)
       } catch (error) {
-        toast.error(mensajeDeError(error))
+        toast.error(mensajeDeError(error, 'descargar el ZIP de las facturas'))
       } finally {
         setDescargando(null)
       }

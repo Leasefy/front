@@ -2,10 +2,23 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { landlordApi } from '@/lib/api/landlord.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type { Candidate } from '@/lib/types/candidate';
 import type { LandlordCandidate, LandlordProperty, DashboardSummary } from '@/lib/types/landlord';
 import type { RiskScore } from '@/lib/types/risk-score';
 import type { BackendCandidateNote, CandidateDecisionDto, DashboardData } from '@/lib/api/landlord.types';
+
+/**
+ * El texto de un fallo al CARGAR (02-10-2026, sistema de errores): antes se
+ * guardaba `err.message` crudo y la pantalla pintaba «Error interno del
+ * servidor.» o «Failed to fetch». Ahora la regla de oro del traductor.
+ */
+function falloAlCargar(error: unknown, queEs: string): string {
+  return mensajeParaLaPersona(error, {
+    accion: `cargar ${queEs}`,
+    porDefecto: `No pudimos cargar ${queEs}. Prueba de nuevo en un momento.`,
+  });
+}
 
 // ============================================================================
 // useCandidates - list candidates with filters
@@ -42,7 +55,7 @@ export function useCandidates(params?: {
       setTotal(result.total);
       setStats(result.stats);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error cargando candidatos';
+      const message = falloAlCargar(err, 'tus candidatos');
       setErrorCrudo(err);
       setError(message);
       setCandidates([]);
@@ -88,7 +101,7 @@ export function useCandidate(id: string | null | undefined) {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Error cargando candidato');
+          setError(falloAlCargar(err, 'el candidato'));
           setCandidate(null);
           setIsLoading(false);
         }
@@ -132,7 +145,7 @@ export function useRiskScore(candidateId: string | null | undefined) {
       })
       .catch((err) => {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Error cargando score');
+          setError(falloAlCargar(err, 'el puntaje del candidato'));
           setRiskScore(null);
           setIsLoading(false);
         }
@@ -150,6 +163,33 @@ export function useRiskScore(candidateId: string | null | undefined) {
 // useCandidateDecision - make decisions on candidates
 // ============================================================================
 
+/** Lo que se estaba haciendo, para el texto de un 5xx («No pudimos aprobar al candidato: …»). */
+const ACCION_DE_LA_DECISION: Record<CandidateDecisionDto['decision'], string> = {
+  approved: 'aprobar al candidato',
+  rejected: 'rechazar al candidato',
+  'more-info': 'pedirle más información al candidato',
+};
+
+/** El texto de un fallo al decidir, con la regla de oro del traductor. */
+export function mensajeDelFalloAlDecidir(
+  error: unknown,
+  decision: CandidateDecisionDto['decision'],
+): string {
+  return mensajeParaLaPersona(error, {
+    accion: ACCION_DE_LA_DECISION[decision],
+    porDefecto: 'No pudimos guardar tu decisión. Prueba de nuevo en un momento.',
+  });
+}
+
+/**
+ * Aprobar, rechazar o pedir más información a un candidato.
+ *
+ * 🔴 02-10-2026 · Antes el hook se tragaba el error: devolvía `null`, guardaba
+ * `err.message` en un estado que ninguna pantalla pintaba y el propietario veía
+ * que el panel se cerraba sin decir nada (la decisión no se había guardado).
+ * Ahora el error SALE (`decide` lo relanza) y `error` lo trae ya traducido
+ * (`mensajeDelFalloAlDecidir`), para que la pantalla lo diga.
+ */
 export function useCandidateDecision() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -158,12 +198,10 @@ export function useCandidateDecision() {
     setIsSubmitting(true);
     setError(null);
     try {
-      const updated = await landlordApi.decideCandidate(candidateId, decision);
-      return updated;
+      return await landlordApi.decideCandidate(candidateId, decision);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al tomar decision';
-      setError(message);
-      return null;
+      setError(mensajeDelFalloAlDecidir(err, decision.decision));
+      throw err;
     } finally {
       setIsSubmitting(false);
     }
@@ -193,7 +231,7 @@ export function useCandidateNotes(candidateId: string | null | undefined) {
       const result = await landlordApi.getNotes(candidateId);
       setNotes(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error cargando notas');
+      setError(falloAlCargar(err, 'las notas'));
       setNotes([]);
     } finally {
       setIsLoading(false);
@@ -211,7 +249,7 @@ export function useCandidateNotes(candidateId: string | null | undefined) {
       setNotes(prev => [note, ...prev]);
       return note;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error agregando nota');
+      setError(mensajeParaLaPersona(err, { accion: 'agregar la nota', porDefecto: 'No pudimos agregar la nota. Prueba de nuevo en un momento.' }));
       return null;
     }
   }, [candidateId]);
@@ -237,7 +275,7 @@ export function useLandlordProperties() {
       setProperties(result.properties);
       setSummary(result.summary);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error cargando propiedades';
+      const message = falloAlCargar(err, 'tus inmuebles');
       setError(message);
       setProperties([]);
     } finally {
@@ -290,7 +328,7 @@ export function useLandlordProperty(propertyId: string | null | undefined) {
       .catch((err) => {
         if (!cancelled) {
           setErrorCrudo(err);
-          setError(err instanceof Error ? err.message : 'Error cargando propiedad');
+          setError(falloAlCargar(err, 'el inmueble'));
           setProperty(null);
           setIsLoading(false);
         }
@@ -326,7 +364,7 @@ export function useLandlordDashboard() {
       const result = await landlordApi.getDashboardForDisplay();
       setDashboard(result);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error cargando dashboard';
+      const message = falloAlCargar(err, 'tu resumen');
       setError(message);
       setDashboard(null);
     } finally {

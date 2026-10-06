@@ -24,6 +24,10 @@ import type {
   CambiosDeConfiguracion,
   ConfiguracionDeExogena,
 } from '@/lib/api/exogena.service';
+import {
+  MENSAJES_DE_CONTABILIDAD,
+  TOPE_MAXIMO_DE_CUANTIAS_MENORES_COP,
+} from './limites-de-contabilidad';
 
 export type OrigenDelTope = 'PROPIO' | 'PLATAFORMA' | 'NINGUNO';
 
@@ -117,24 +121,31 @@ export function borradorDe(config: ConfiguracionDeExogena): BorradorDeConfigurac
 
 /**
  * El tope escrito, en pesos. `null` = vacío, o sea heredar.
- * `'INVALIDO'` = escribieron algo que no es un entero positivo — el back lo
- * rechaza con 400, así que se frena acá.
+ * `'INVALIDO'` = escribieron algo que no es un entero positivo; `'FUERA_DE_RANGO'`
+ * = pasa del tope de la columna (🔁 `TOPE_MAXIMO_DE_CUANTIAS_MENORES_COP`, el
+ * mismo del back). Los dos son un 400 del back, así que se frenan acá.
  */
-export function topeDelBorrador(tope: string): number | null | 'INVALIDO' {
+export function topeDelBorrador(tope: string): number | null | 'INVALIDO' | 'FUERA_DE_RANGO' {
   const limpio = tope.trim();
   if (limpio === '') return null;
   if (!/^\d+$/.test(limpio)) return 'INVALIDO';
   const n = Number(limpio);
   // `@Min(1)` en el DTO: cero no es «sin tope», es un 400.
-  if (!Number.isSafeInteger(n) || n < 1) return 'INVALIDO';
+  if (!Number.isSafeInteger(n) || n < 1) {
+    return Number.isFinite(n) && n > TOPE_MAXIMO_DE_CUANTIAS_MENORES_COP ? 'FUERA_DE_RANGO' : 'INVALIDO';
+  }
+  if (n > TOPE_MAXIMO_DE_CUANTIAS_MENORES_COP) return 'FUERA_DE_RANGO';
   return n;
 }
 
-/** `null` = se puede guardar. */
+/**
+ * `null` = se puede guardar. Es el error DEL CAMPO del tope, con la MISMA
+ * frase que el back (`limites-de-contabilidad.ts`).
+ */
 export function problemaDeLaConfiguracion(borrador: BorradorDeConfiguracion): string | null {
-  if (topeDelBorrador(borrador.tope) === 'INVALIDO') {
-    return 'El tope va en pesos enteros y mayor que cero. Déjalo vacío para heredar el que Leasefy publicó para el año.';
-  }
+  const tope = topeDelBorrador(borrador.tope);
+  if (tope === 'INVALIDO') return MENSAJES_DE_CONTABILIDAD.topeDeCuantiasMinimo;
+  if (tope === 'FUERA_DE_RANGO') return MENSAJES_DE_CONTABILIDAD.topeDeCuantiasMaximo;
   return null;
 }
 
@@ -164,6 +175,6 @@ export function cuerpoDeConfiguracion(
   return {
     girosAPropietariosEn1001: borrador.girosAPropietariosEn1001,
     saldo2815En1009: borrador.saldo2815En1009,
-    topeCuantiasMenoresCop: tope === 'INVALIDO' ? null : tope,
+    topeCuantiasMenoresCop: tope === 'INVALIDO' || tope === 'FUERA_DE_RANGO' ? null : tope,
   };
 }

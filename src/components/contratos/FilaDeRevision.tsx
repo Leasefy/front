@@ -34,7 +34,9 @@
  *    filas, es un error que nadie vio.
  */
 
+import { FALTA_EL_PORCENTAJE } from "@/lib/inmuebles/participaciones-desconocidas";
 import { useEffect, useRef, useState } from "react";
+import { Presence } from "@leasefy/cadence";
 import { CheckCircle, Warning } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
@@ -50,6 +52,21 @@ import {
 import type { Propietario } from "@/lib/types/inmobiliaria";
 import { FaltantesDeFila } from "./FaltantesDeFila";
 import { SelectorDePropietario } from "./SelectorDePropietario";
+import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
+import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
+
+/**
+ * Los campos del back (`RegistrarPropietarioDto` / `CorregirPropietarioDto`)
+ * que esta fila puede señalar. El propietario se elige de una lista, así que
+ * un error del nombre o del documento de la ficha elegida va al selector.
+ */
+const MAPA_DEL_SERVIDOR = {
+  propietarioId: "propietario",
+  nombre: "propietario",
+  documento: "propietario",
+  comisionPorcentaje: "comision",
+} as const;
+type CampoDeLaFila = "propietario" | "comision";
 
 /**
  * El propietario ya tiene su propio control en esta fila; volver a pintarlo
@@ -82,6 +99,31 @@ export function FilaDeRevision({
   const [error, setError] = useState<string | null>(null);
   /** La confirmación de «Descartar esta fila» va en la propia fila, no en un diálogo del navegador. */
   const [confirmandoDescarte, setConfirmandoDescarte] = useState(false);
+  /** Lo que el back dijo del propietario o de la comisión, debajo de cada uno. */
+  const [errorPorCampo, setErrorPorCampo] = useState<
+    Partial<Record<CampoDeLaFila, string>>
+  >({});
+  const idPropietario = `revision-${fila.id}-propietario`;
+  const idComision = `revision-${fila.id}-comision`;
+  /**
+   * El campo que hay que enfocar cuando termine de guardar: mientras guarda,
+   * la comisión y el selector están apagados y un `focus()` no hace nada.
+   */
+  const [porEnfocar, setPorEnfocar] = useState<CampoDeLaFila | null>(null);
+  useEffect(() => {
+    if (guardando || !porEnfocar) return;
+    if (porEnfocar === "comision") document.getElementById(idComision)?.focus();
+    else {
+      // El selector es un Combobox del DS (no es de este archivo): se enfoca
+      // su disparador desde afuera.
+      document
+        .querySelector<HTMLElement>(
+          `[data-testid="propietario-fila-${fila.fila}"] button, [data-testid="propietario-fila-${fila.fila}"] input`,
+        )
+        ?.focus();
+    }
+    setPorEnfocar(null);
+  }, [guardando, porEnfocar, idComision, fila.fila]);
 
   const yaActivada = fila.estado === "ACTIVADO";
   const descartada = fila.estado === "DESCARTADO";
@@ -107,11 +149,25 @@ export function FilaDeRevision({
   async function correr(accion: () => Promise<FilaDeMigracion>) {
     setGuardando(true);
     setError(null);
+    setErrorPorCampo({});
     try {
       onActualizada(await accion());
       onCambio();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No pudimos guardar el cambio.");
+      /*
+       * Sistema de errores (02-10-2026): lo que el back señala por campo va
+       * debajo del propietario o de la comisión; lo demás —un 409, un 5xx con
+       * su referencia, la red— al aviso de la fila, con el traductor.
+       */
+      const reparto = repartirErroresDelServidor<CampoDeLaFila>(e, {
+        mapa: MAPA_DEL_SERVIDOR,
+        campos: ["propietario", "comision"],
+        porDefecto: "No pudimos guardar el cambio. Prueba de nuevo en un momento.",
+        accion: "guardar el cambio",
+      });
+      setErrorPorCampo(reparto.porCampo);
+      setError(reparto.sueltos.length > 0 ? reparto.sueltos.join(" · ") : null);
+      setPorEnfocar(reparto.orden[0] ?? null);
     } finally {
       setGuardando(false);
     }
@@ -257,19 +313,27 @@ export function FilaDeRevision({
               inmueble, no del contrato.
             </p>
           ) : (
-            <SelectorDePropietario
-              propietarios={propietarios}
-              actualId={fila.propietario?.id ?? null}
-              disabled={!puedeElegirPropietario || guardando}
-              onElegir={(p) => void elegirPropietario(p)}
-              testId={`propietario-fila-${fila.fila}`}
-            />
+            <>
+              <SelectorDePropietario
+                propietarios={propietarios}
+                actualId={fila.propietario?.id ?? null}
+                disabled={!puedeElegirPropietario || guardando}
+                onElegir={(p) => void elegirPropietario(p)}
+                testId={`propietario-fila-${fila.fila}`}
+              />
+              <ErrorDelCampo
+                id={`${idPropietario}-error`}
+                mensaje={errorPorCampo.propietario}
+              />
+            </>
           )}
         </div>
 
         <div className="w-28">
           <p className="mb-1 text-caption text-muted-foreground">Comisión %</p>
           <CampoComision
+            id={idComision}
+            mensaje={errorPorCampo.comision ?? null}
             valor={fila.comisionPorcentaje ?? null}
             deshabilitado={!editable || !consignada || guardando}
             onGuardar={(v) => void guardarComision(v)}
@@ -322,11 +386,11 @@ export function FilaDeRevision({
         </p>
       ) : null}
 
-      {error ? (
-        <p className="text-caption text-destructive" data-testid="error-de-fila">
-          {error}
-        </p>
-      ) : null}
+      {/* El aviso de la fila (no es el error de un campo): lo que el back
+          no señaló en el propietario ni en la comisión. */}
+      <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-caption text-destructive" data-testid="error-de-fila" role="alert">
+        {error}
+      </Presence>
 
       {editable && otrosFaltantes.length > 0 ? (
         <FaltantesDeFila
@@ -428,11 +492,16 @@ export function FilaDeRevision({
  * 100% de comisión es peor que no guardar nada.
  */
 function CampoComision({
+  id,
+  mensaje,
   valor,
   deshabilitado,
   onGuardar,
   testId,
 }: {
+  id: string;
+  /** El error que mandó el back para la comisión, si lo hubo. */
+  mensaje: string | null;
   valor: number | null;
   deshabilitado: boolean;
   onGuardar: (v: number) => void;
@@ -451,32 +520,39 @@ function CampoComision({
   }, [valor]);
 
   return (
-    <PercentInput
-      value={borrador}
-      disabled={deshabilitado}
-      /*
-       * Sin placeholder. El del DS es «0», y en un campo apagado —el de una
-       * fila que todavía no está consignada— un cero gris se lee como una
-       * comisión del cero por ciento, que es un dato, no un campo vacío.
-       */
-      placeholder=""
-      onChange={(n) => {
-        const v = Number.isNaN(n) ? undefined : n;
-        ultimo.current = v;
-        setBorrador(v);
-      }}
-      onBlur={() => {
-        const v = ultimo.current;
-        const imposible = v === undefined || v < 0 || v > 100;
-        if (imposible || v === valor) {
-          setBorrador(valor ?? undefined);
-          ultimo.current = valor ?? undefined;
-          return;
-        }
-        onGuardar(v);
-      }}
-      data-testid={testId}
-    />
+    <>
+      <PercentInput
+        id={id}
+        invalid={Boolean(mensaje)}
+        aria-invalid={mensaje ? true : undefined}
+        aria-describedby={mensaje ? `${id}-error` : undefined}
+        value={borrador}
+        disabled={deshabilitado}
+        /*
+         * Sin placeholder. El del DS es «0», y en un campo apagado —el de una
+         * fila que todavía no está consignada— un cero gris se lee como una
+         * comisión del cero por ciento, que es un dato, no un campo vacío.
+         */
+        placeholder=""
+        onChange={(n) => {
+          const v = Number.isNaN(n) ? undefined : n;
+          ultimo.current = v;
+          setBorrador(v);
+        }}
+        onBlur={() => {
+          const v = ultimo.current;
+          const imposible = v === undefined || v < 0 || v > 100;
+          if (imposible || v === valor) {
+            setBorrador(valor ?? undefined);
+            ultimo.current = valor ?? undefined;
+            return;
+          }
+          onGuardar(v);
+        }}
+        data-testid={testId}
+      />
+      <ErrorDelCampo id={`${id}-error`} mensaje={mensaje} />
+    </>
   );
 }
 
@@ -542,8 +618,16 @@ function RepartoEntreDuenos({
           ? " · el reparto no cuadra"
           : reparto.explicito
             ? " · reparto del archivo"
-            : " · partes iguales (el archivo no trae porcentajes)"}
+            : ` · ${FALTA_EL_PORCENTAJE.toLowerCase()}`}
       </p>
+      {/* 🔴 Sin porcentaje en el archivo (Nico, 04-10-2026: «vacío y giro
+          bloqueado»): no se inventa un 50/50; se dice qué pasa. */}
+      {!reparto.problema && !reparto.explicito ? (
+        <p className="text-caption text-warning" data-testid="reparto-sin-porcentaje">
+          El archivo no dice cuánto es de cada dueño: el contrato entra igual, pero el giro
+          de este inmueble no sale hasta que pongas el porcentaje en su ficha.
+        </p>
+      ) : null}
       <ul className="space-y-0.5">
         {reparto.duenos.map((d, i) => (
           <li

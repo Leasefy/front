@@ -124,10 +124,7 @@ describe('ningún peso por asesor', () => {
   const RAIZ = join(__dirname, '..', '..');
   const PANTALLAS = [
     'components/inmobiliaria/AgenteMetrics.tsx',
-    'components/inmobiliaria/AgenteCard.tsx',
-    'components/inmobiliaria/AgenteTable.tsx',
     'components/inmobiliaria/AgenteLeaderboard.tsx',
-    'components/inmobiliaria/AgenteFilters.tsx',
     'components/inmobiliaria/CaptacionesYArriendos.tsx',
   ];
 

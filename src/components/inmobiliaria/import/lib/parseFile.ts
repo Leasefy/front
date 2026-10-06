@@ -18,10 +18,18 @@
 
 import type { ParsedRow } from './importTypes';
 
+import { separarFilasDeTotales, type FilaDeTotales } from '@/lib/migracion/fila-de-totales';
+
 export interface ParseResult {
   rows: ParsedRow[];
   headers: string[];
   sheetNames: string[];
+  /**
+   * Las filas de TOTALES del final del archivo (MIG-C, 04-10): ya NO están en
+   * `rows` — no son datos — y quien muestra el archivo lo dice con
+   * `fraseDeFilasDeTotales`.
+   */
+  filasDeTotales?: FilaDeTotales[];
 }
 
 /**
@@ -89,6 +97,10 @@ function normalizarCeldasDeFecha(
       if (!f) continue;
       const iso = `${f.y}-${dosDigitos(f.m)}-${dosDigitos(f.d)}`;
       worksheet[direccion] = { t: 's', v: iso, w: iso };
+    } else if (celda.t === 'n' && typeof celda.v === 'number' && Number.isFinite(celda.v)) {
+      // El VALOR, no el texto formateado (QA-MIG-B, 04-10): con «#,##0» una
+      // celda 48350750,50 se leía «48,350,751» — redondeada en silencio.
+      celda.w = textoDelNumero(celda.v, celda.z);
     } else if (celda.t === 'd' && celda.v instanceof Date) {
       // Celda ya materializada como Date. Hay dos orígenes y cada uno pone la
       // medianoche en un reloj distinto: SheetJS materializa serials en UTC
@@ -107,6 +119,39 @@ function normalizarCeldasDeFecha(
 }
 
 /**
+ * El texto con el que viaja una celda NUMÉRICA (no fecha) de un Excel.
+ *
+ * `sheet_to_json({ raw: false })` entrega el texto FORMATEADO de la celda, y
+ * el formato miente: «#,##0» redondea los centavos (48350750,50 →
+ * «48,350,751») y «0.0» corta decimales. Acá sale el valor guardado, sin
+ * separador de miles y con el punto decimal:
+ *
+ *  - los decimales se recortan a 10 para quitar el ruido binario de una
+ *    fórmula (1575000.0000000002 → «1575000»);
+ *  - exactamente 3 decimales se escriben con 4 («1234.567» → «1234.5670»):
+ *    con 3, los lectores de plata leen el punto como de MILES y fabrican
+ *    1.234.567 — con 4 la celda queda ilegible para ellos, nunca inventada;
+ *  - un formato de porcentaje conserva el % sobre el valor ×100 (0,105 →
+ *    «10.5%»): el valor guardado es 0,105 y nadie escribió una comisión de 0,1;
+ *  - un formato de puros ceros («00000», el de los códigos con ceros a la
+ *    izquierda) conserva el texto formateado: «007» es el código, no 7.
+ */
+function textoDelNumero(v: number, formato?: string): string {
+  const z = typeof formato === 'string' ? formato : '';
+  if (/^0+$/.test(z)) return String(v).padStart(z.length, '0');
+  const limpio = (n: number): string => {
+    if (Number.isInteger(n)) return String(n);
+    let t = n.toFixed(10).replace(/0+$/, '').replace(/\.$/, '');
+    const decimales = t.includes('.') ? t.split('.')[1].length : 0;
+    if (decimales === 3) t += '0';
+    return t;
+  };
+  if (z.includes('%')) return `${limpio(Number((v * 100).toFixed(10)))}%`;
+  if (Math.abs(v) >= 1e21) return String(v);
+  return limpio(v);
+}
+
+/**
  * Limpia un encabezado como lo escribió Excel: espacios alrededor, dobles
  * espacios y saltos de línea adentro de la celda. «  Nombre  » y
  * «Nombre del\npropietario» tienen que mapear igual que sus versiones limpias
@@ -115,6 +160,12 @@ function normalizarCeldasDeFecha(
  */
 function limpiarEncabezado(bruto: unknown): string {
   return String(bruto ?? '').replace(/\s+/g, ' ').trim();
+}
+
+/** El número de la fila en la hoja (base 0) que SheetJS deja en `__rowNum__`. */
+function numeroDeFilaEnLaHoja(row: Record<string, unknown>, porDefecto: number): number {
+  const n = (row as { __rowNum__?: unknown }).__rowNum__;
+  return typeof n === 'number' && Number.isFinite(n) ? n : porDefecto;
 }
 
 export interface ParseOptions {
@@ -138,6 +189,29 @@ export async function leerPrimerasFilas(file: File, n = 40): Promise<string[][]>
   if (!hoja) return [];
   const filas = XLSX.utils.sheet_to_json<unknown[]>(hoja, { header: 1, raw: false, defval: '' });
   return filas.slice(0, n).map((f) => f.map((c) => (c === null || c === undefined ? '' : String(c))));
+}
+
+/**
+ * Las primeras `n` filas de CADA hoja, como matrices de texto. Para elegir
+ * dónde está la tabla de verdad cuando el libro trae portada, instrucciones o
+ * resumen antes (QA-MIG-A, MG-02: el paso de propietarios leía la hoja
+ * «Instrucciones» y creaba a un propietario llamado «No modificar.»).
+ */
+export async function leerPrimerasFilasDeCadaHoja(
+  file: File,
+  n = 15,
+): Promise<Array<{ hoja: string; filas: string[][] }>> {
+  const XLSX = await import('xlsx');
+  const libro = await leerLibro(XLSX, file);
+  return libro.SheetNames.map((hoja) => {
+    const ws = libro.Sheets[hoja];
+    if (!ws) return { hoja, filas: [] };
+    const filas = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, raw: false, defval: '' });
+    return {
+      hoja,
+      filas: filas.slice(0, n).map((f) => f.map((c) => (c === null || c === undefined ? '' : String(c)))),
+    };
+  });
 }
 
 async function leerLibro(XLSX: typeof import('xlsx'), file: File): Promise<import('xlsx').WorkBook> {
@@ -238,18 +312,24 @@ export async function parseSpreadsheetFile(
   }
   const headers = claves.map((c) => encabezadosLimpios.get(c) ?? c);
 
-  // Filter out empty rows and add _rowIndex (1-based)
+  // Se botan las filas vacías y cada fila lleva su número EN LA HOJA
+  // (`__rowNum__` de SheetJS, base 0: el encabezado en A1 deja la primera fila
+  // de datos en 1, y quien muestra «fila N» suma 1 — la que ve en Excel).
+  // Renumerar DESPUÉS de botar las vacías corría todos los números que la
+  // persona ve a partir de la primera fila en blanco (QA-MIG-B, 04-10).
   const rows: ParsedRow[] = rawData
-    .filter((row) => Object.values(row).some((v) => v !== '' && v !== null && v !== undefined))
-    .map((row, index) => {
-      const limpia: ParsedRow = { _rowIndex: index + 1 };
+    .map((row, index) => ({ row, numero: numeroDeFilaEnLaHoja(row, index + 1 + filaDeEncabezado) }))
+    .filter(({ row }) => Object.values(row).some((v) => v !== '' && v !== null && v !== undefined))
+    .map(({ row, numero }) => {
+      const limpia: ParsedRow = { _rowIndex: numero };
       for (const [clave, valor] of Object.entries(row)) {
         limpia[encabezadosLimpios.get(clave) ?? clave] = valor;
       }
       return limpia;
     });
 
-  return { rows, headers, sheetNames };
+  const { filas: datos, totales } = separarFilasDeTotales(rows);
+  return { rows: datos, headers, sheetNames, filasDeTotales: totales };
 }
 
 /**

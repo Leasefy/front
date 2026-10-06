@@ -12233,7 +12233,8 @@
               "pagos",
               "documentos",
               "reportes",
-              "comunicacion"
+              "comunicacion",
+              "director"
             ]
           },
           "actionType": {
@@ -12315,7 +12316,8 @@
               "pagos",
               "documentos",
               "reportes",
-              "comunicacion"
+              "comunicacion",
+              "director"
             ]
           },
           "taskDescription": {
@@ -12682,7 +12684,8 @@
                   "pagos",
                   "documentos",
                   "reportes",
-                  "comunicacion"
+                  "comunicacion",
+                  "director"
                 ]
               },
               "tags": {
@@ -13774,6 +13777,12 @@
           },
           "accion": {
             "$ref": "#/components/schemas/PilotoInboxAccion"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "director": {
+            "$ref": "#/components/schemas/PilotoDirectorEnLaBandeja"
           }
         },
         "required": [
@@ -16341,6 +16350,76 @@
           },
           "nota": {
             "type": "string"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "director": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "prioridad": {
+                "type": "number"
+              },
+              "porQue": {
+                "type": "string"
+              },
+              "evidencia": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "tipo": {
+                      "type": "string"
+                    },
+                    "ref": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "tipo",
+                    "ref"
+                  ]
+                }
+              },
+              "meta": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "metrica": {
+                    "type": "string"
+                  },
+                  "nombre": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "metrica",
+                  "nombre"
+                ]
+              },
+              "alternativaDescartada": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "prioridad",
+              "porQue",
+              "evidencia",
+              "meta",
+              "alternativaDescartada"
+            ]
           }
         },
         "required": [
@@ -27097,6 +27176,1259 @@
         "required": [
           "success",
           "error"
+        ]
+      },
+      "PilotoDirectorEnLaBandeja": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "prioridad": {
+            "type": "number"
+          },
+          "porQue": {
+            "type": "string"
+          },
+          "evidencia": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tipo": {
+                  "type": "string"
+                },
+                "ref": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "tipo",
+                "ref"
+              ]
+            }
+          },
+          "meta": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "metrica": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "metrica",
+              "nombre"
+            ]
+          },
+          "alternativaDescartada": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "prioridad",
+          "porQue",
+          "evidencia",
+          "meta",
+          "alternativaDescartada"
+        ]
+      },
+      "DirectorMeta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "metrica": {
+            "type": "string",
+            "enum": [
+              "recaudo_a_tiempo",
+              "mora_30",
+              "dias_de_vacancia",
+              "renovacion",
+              "pqrs_en_plazo",
+              "horas_ahorradas"
+            ]
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "propuesta",
+              "activa",
+              "pausada",
+              "cumplida",
+              "vencida"
+            ]
+          },
+          "direccion": {
+            "type": "string",
+            "enum": [
+              "subir",
+              "bajar"
+            ]
+          },
+          "unidad": {
+            "type": "string",
+            "enum": [
+              "porcentaje",
+              "dias",
+              "horas"
+            ]
+          },
+          "lineaBase": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "objetivo": {
+            "type": "number"
+          },
+          "actual": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "desde": {
+            "type": "string"
+          },
+          "hasta": {
+            "type": "string"
+          },
+          "estimada": {
+            "type": "boolean"
+          },
+          "porQue": {
+            "type": "string"
+          },
+          "serie": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fecha": {
+                  "type": "string"
+                },
+                "valor": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "fecha",
+                "valor"
+              ]
+            }
+          },
+          "historial": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "en": {
+                  "type": "string"
+                },
+                "quien": {
+                  "type": "string"
+                },
+                "que": {
+                  "type": "string",
+                  "enum": [
+                    "propuso",
+                    "acepto",
+                    "ajusto",
+                    "pauso",
+                    "cumplio",
+                    "vencio"
+                  ]
+                },
+                "objetivo": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "en",
+                "quien",
+                "que",
+                "objetivo"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "metrica",
+          "nombre",
+          "estado",
+          "direccion",
+          "unidad",
+          "lineaBase",
+          "objetivo",
+          "actual",
+          "desde",
+          "hasta",
+          "estimada",
+          "porQue",
+          "serie",
+          "historial"
+        ]
+      },
+      "DirectorMetas": {
+        "type": "object",
+        "properties": {
+          "encendido": {
+            "type": "boolean"
+          },
+          "metas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DirectorMeta"
+            }
+          },
+          "sinMeta": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "metrica": {
+                  "type": "string",
+                  "enum": [
+                    "recaudo_a_tiempo",
+                    "mora_30",
+                    "dias_de_vacancia",
+                    "renovacion",
+                    "pqrs_en_plazo",
+                    "horas_ahorradas"
+                  ]
+                },
+                "nombre": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "metrica",
+                "nombre"
+              ]
+            }
+          }
+        },
+        "required": [
+          "encendido",
+          "metas",
+          "sinMeta"
+        ]
+      },
+      "DirectorError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "DirectorMetaAjustarBody": {
+        "type": "object",
+        "properties": {
+          "objetivo": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "objetivo"
+        ],
+        "additionalProperties": false
+      },
+      "DirectorGasto": {
+        "type": "object",
+        "properties": {
+          "encendido": {
+            "type": "boolean"
+          },
+          "mes": {
+            "type": "string"
+          },
+          "topeCop": {
+            "type": "number"
+          },
+          "tramo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "pequena",
+              "mediana",
+              "grande"
+            ]
+          },
+          "gastadoCop": {
+            "type": "number"
+          },
+          "excluidoCop": {
+            "type": "number"
+          },
+          "escalon": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "normal",
+              "ahorro",
+              "sinModelo"
+            ]
+          },
+          "porComponente": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "componente": {
+                  "type": "string",
+                  "enum": [
+                    "director.plan",
+                    "director.replan",
+                    "director.chat",
+                    "director.resumen",
+                    "chat",
+                    "cobranza",
+                    "otro"
+                  ]
+                },
+                "cop": {
+                  "type": "number"
+                },
+                "cuentaParaTope": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "componente",
+                "cop",
+                "cuentaParaTope"
+              ]
+            }
+          },
+          "porDia": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fecha": {
+                  "type": "string"
+                },
+                "cop": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "fecha",
+                "cop"
+              ]
+            }
+          }
+        },
+        "required": [
+          "encendido",
+          "mes",
+          "topeCop",
+          "tramo",
+          "gastadoCop",
+          "excluidoCop",
+          "escalon",
+          "porComponente",
+          "porDia"
+        ]
+      },
+      "DirectorGastoError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "DirectorExperimento": {
+        "type": "object",
+        "properties": {
+          "encendido": {
+            "type": "boolean"
+          },
+          "activo": {
+            "type": "boolean"
+          },
+          "porcentajeControl": {
+            "type": "number"
+          },
+          "desde": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "entidadesEnControl": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "encendido",
+          "activo",
+          "porcentajeControl",
+          "desde",
+          "entidadesEnControl"
+        ]
+      },
+      "DirectorExperimentoError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "DirectorExperimentoPutBody": {
+        "type": "object",
+        "properties": {
+          "activo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "activo"
+        ],
+        "additionalProperties": false
+      },
+      "PilotoDirectorInformeSemanal": {
+        "type": "object",
+        "properties": {
+          "encendido": {
+            "type": "boolean"
+          },
+          "desde": {
+            "type": "string"
+          },
+          "hasta": {
+            "type": "string"
+          },
+          "piloto": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "detectadas": {
+                "type": "number"
+              },
+              "hechasSolas": {
+                "type": "number"
+              },
+              "hechasConClic": {
+                "type": "number"
+              },
+              "esperanClic": {
+                "type": "number"
+              },
+              "fallidas": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "detectadas",
+              "hechasSolas",
+              "hechasConClic",
+              "esperanClic",
+              "fallidas"
+            ]
+          },
+          "director": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "planes": {
+                "type": "number"
+              },
+              "conLaIa": {
+                "type": "number"
+              },
+              "conReglas": {
+                "type": "number"
+              },
+              "fallidos": {
+                "type": "number"
+              },
+              "ordenes": {
+                "type": "number"
+              },
+              "aprobadas": {
+                "type": "number"
+              },
+              "hechas": {
+                "type": "number"
+              },
+              "descartadas": {
+                "type": "number"
+              },
+              "enBandeja": {
+                "type": "number"
+              },
+              "costoCop": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "planes",
+              "conLaIa",
+              "conReglas",
+              "fallidos",
+              "ordenes",
+              "aprobadas",
+              "hechas",
+              "descartadas",
+              "enBandeja",
+              "costoCop"
+            ]
+          },
+          "metas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "metrica": {
+                  "type": "string"
+                },
+                "nombre": {
+                  "type": "string"
+                },
+                "estado": {
+                  "type": "string"
+                },
+                "unidad": {
+                  "type": "string"
+                },
+                "direccion": {
+                  "type": "string",
+                  "enum": [
+                    "subir",
+                    "bajar"
+                  ]
+                },
+                "lineaBase": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "objetivo": {
+                  "type": "number"
+                },
+                "actual": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "vaBien": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "frase": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "metrica",
+                "nombre",
+                "estado",
+                "unidad",
+                "direccion",
+                "lineaBase",
+                "objetivo",
+                "actual",
+                "vaBien",
+                "frase"
+              ]
+            }
+          },
+          "gasto": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "mes": {
+                "type": "string"
+              },
+              "gastadoCop": {
+                "type": "number"
+              },
+              "topeCop": {
+                "type": "number"
+              },
+              "escalon": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "mes",
+              "gastadoCop",
+              "topeCop",
+              "escalon"
+            ]
+          },
+          "resumen": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "encendido",
+          "desde",
+          "hasta",
+          "piloto",
+          "director",
+          "metas",
+          "gasto",
+          "resumen"
+        ]
+      },
+      "PilotoDirectorError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "mensaje": {
+            "type": "string"
+          },
+          "cicloId": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "PilotoDirectorHoy": {
+        "type": "object",
+        "properties": {
+          "encendido": {
+            "type": "boolean"
+          },
+          "pilotoActivo": {
+            "type": "boolean"
+          },
+          "fecha": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ciclo": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "tipo": {
+                "type": "string",
+                "enum": [
+                  "dia",
+                  "replan"
+                ]
+              },
+              "estado": {
+                "type": "string",
+                "enum": [
+                  "en_curso",
+                  "listo",
+                  "fallido",
+                  "sin_modelo"
+                ]
+              },
+              "inicio": {
+                "type": "string"
+              },
+              "fin": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "modelo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "esfuerzo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "costoCop": {
+                "type": "number"
+              },
+              "sinModeloPorque": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "tipo",
+              "estado",
+              "inicio",
+              "fin",
+              "modelo",
+              "esfuerzo",
+              "costoCop",
+              "sinModeloPorque"
+            ]
+          },
+          "resumen": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pensamiento": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "prioridades": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "meta": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "metrica": {
+                      "type": "string"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "metrica",
+                    "nombre"
+                  ]
+                },
+                "porQue": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "meta",
+                "porQue"
+              ]
+            }
+          },
+          "ordenes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ordenId": {
+                  "type": "string"
+                },
+                "agente": {
+                  "type": "string"
+                },
+                "agenteNombre": {
+                  "type": "string"
+                },
+                "proceso": {
+                  "type": "string"
+                },
+                "procesoNombre": {
+                  "type": "string"
+                },
+                "entidad": {
+                  "type": "object",
+                  "properties": {
+                    "tipo": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "enlace": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "tipo",
+                    "id",
+                    "nombre",
+                    "enlace"
+                  ]
+                },
+                "cuando": {
+                  "type": "string"
+                },
+                "prioridad": {
+                  "type": "number"
+                },
+                "porQue": {
+                  "type": "string"
+                },
+                "evidencia": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "tipo": {
+                        "type": "string"
+                      },
+                      "ref": {
+                        "type": "string"
+                      },
+                      "texto": {
+                        "type": "string"
+                      },
+                      "enlace": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "tipo",
+                      "ref",
+                      "texto",
+                      "enlace"
+                    ]
+                  }
+                },
+                "meta": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "metrica": {
+                      "type": "string"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "metrica",
+                    "nombre"
+                  ]
+                },
+                "alternativaDescartada": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "conflictoResuelto": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "estado": {
+                  "type": "string"
+                },
+                "accionId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "motivoDeLaPerilla": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "ordenId",
+                "agente",
+                "agenteNombre",
+                "proceso",
+                "procesoNombre",
+                "entidad",
+                "cuando",
+                "prioridad",
+                "porQue",
+                "evidencia",
+                "meta",
+                "alternativaDescartada",
+                "conflictoResuelto",
+                "estado",
+                "accionId",
+                "motivoDeLaPerilla"
+              ]
+            }
+          },
+          "retenciones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "retencionId": {
+                  "type": "string"
+                },
+                "entidad": {
+                  "type": "object",
+                  "properties": {
+                    "tipo": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "enlace": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "tipo",
+                    "id",
+                    "nombre",
+                    "enlace"
+                  ]
+                },
+                "agentes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "hasta": {
+                  "type": "string"
+                },
+                "porQue": {
+                  "type": "string"
+                },
+                "evidencia": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "tipo": {
+                        "type": "string"
+                      },
+                      "ref": {
+                        "type": "string"
+                      },
+                      "texto": {
+                        "type": "string"
+                      },
+                      "enlace": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "tipo",
+                      "ref",
+                      "texto",
+                      "enlace"
+                    ]
+                  }
+                },
+                "estado": {
+                  "type": "string",
+                  "enum": [
+                    "en_bandeja",
+                    "activa",
+                    "vencida",
+                    "descartada"
+                  ]
+                },
+                "accionId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "retencionId",
+                "entidad",
+                "agentes",
+                "hasta",
+                "porQue",
+                "evidencia",
+                "estado",
+                "accionId"
+              ]
+            }
+          },
+          "sugerencias": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "agente": {
+                  "type": "string"
+                },
+                "agenteNombre": {
+                  "type": "string"
+                },
+                "que": {
+                  "type": "string"
+                },
+                "porQue": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "agente",
+                "agenteNombre",
+                "que",
+                "porQue"
+              ]
+            }
+          },
+          "propuestasDeAutonomia": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "agente": {
+                  "type": "string"
+                },
+                "agenteNombre": {
+                  "type": "string"
+                },
+                "de": {
+                  "type": "string"
+                },
+                "a": {
+                  "type": "string"
+                },
+                "evidencia": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "tipo": {
+                        "type": "string"
+                      },
+                      "ref": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "tipo",
+                      "ref"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "agente",
+                "agenteNombre",
+                "de",
+                "a",
+                "evidencia"
+              ]
+            }
+          },
+          "alertas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nivel": {
+                  "type": "string"
+                },
+                "que": {
+                  "type": "string"
+                },
+                "porQue": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "nivel",
+                "que",
+                "porQue"
+              ]
+            }
+          },
+          "rechazadas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "ordenId": {
+                  "type": "string"
+                },
+                "proceso": {
+                  "type": "string"
+                },
+                "procesoNombre": {
+                  "type": "string"
+                },
+                "entidad": {
+                  "type": "object",
+                  "properties": {
+                    "tipo": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    },
+                    "nombre": {
+                      "type": "string"
+                    },
+                    "enlace": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "tipo",
+                    "id",
+                    "nombre",
+                    "enlace"
+                  ]
+                },
+                "motivo": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "ordenId",
+                "proceso",
+                "procesoNombre",
+                "entidad",
+                "motivo"
+              ]
+            }
+          },
+          "grupoDeControl": {
+            "type": "object",
+            "properties": {
+              "activo": {
+                "type": "boolean"
+              },
+              "omitidas": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "activo",
+              "omitidas"
+            ]
+          }
+        },
+        "required": [
+          "encendido",
+          "fecha",
+          "ciclo",
+          "resumen",
+          "pensamiento",
+          "prioridades",
+          "ordenes",
+          "retenciones",
+          "sugerencias",
+          "propuestasDeAutonomia",
+          "alertas",
+          "rechazadas",
+          "grupoDeControl"
+        ]
+      },
+      "PilotoDirectorReplan": {
+        "type": "object",
+        "properties": {
+          "cicloId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "cicloId"
         ]
       }
     },
@@ -64518,6 +65850,860 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CotizadorAdminPrescoringErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/director/metas": {
+      "get": {
+        "operationId": "getPilotoDirectorMetas",
+        "summary": "Piloto director — las metas propuestas y aceptadas, con su serie diaria y su historial",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Las metas (o `encendido: false`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorMetas"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo, o no es ADMIN (`solo_admin`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin base o sin la migración del director",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/director/metas/{metaId}/aceptar": {
+      "post": {
+        "operationId": "postPilotoDirectorMetaAceptar",
+        "summary": "Piloto director — aceptar una meta propuesta (o reactivar una pausada). Sólo ADMIN",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "metaId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "La meta, con la misma forma que en el listado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorMeta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo, o no es ADMIN (`solo_admin`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "La meta no existe en la inmobiliaria (`no_existe`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "La meta ya terminó (`meta_terminada`), cambió mientras tanto (`en_conflicto`) o el director está apagado (`director_apagado`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin base o sin la migración del director",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/director/metas/{metaId}/ajustar": {
+      "post": {
+        "operationId": "postPilotoDirectorMetaAjustar",
+        "summary": "Piloto director — ajustar el objetivo de una meta (422 objetivo_invalido si no cabe en los topes). Sólo ADMIN",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "metaId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectorMetaAjustarBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "La meta, con la misma forma que en el listado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorMeta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo, o no es ADMIN (`solo_admin`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "La meta no existe en la inmobiliaria (`no_existe`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "La meta ya terminó (`meta_terminada`), cambió mientras tanto (`en_conflicto`) o el director está apagado (`director_apagado`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "El objetivo no cabe en los topes duros (`objetivo_invalido`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin base o sin la migración del director",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/director/metas/{metaId}/pausar": {
+      "post": {
+        "operationId": "postPilotoDirectorMetaPausar",
+        "summary": "Piloto director — pausar una meta. Sólo ADMIN",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "metaId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "La meta, con la misma forma que en el listado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorMeta"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo, o no es ADMIN (`solo_admin`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "La meta no existe en la inmobiliaria (`no_existe`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "La meta ya terminó (`meta_terminada`), cambió mientras tanto (`en_conflicto`) o el director está apagado (`director_apagado`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin base o sin la migración del director",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/director/gasto": {
+      "get": {
+        "operationId": "getPilotoDirectorGasto",
+        "summary": "Piloto director — gasto de IA del mes contra el tope (tramo, escalón, por componente y por día); cobranza aparte",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+              "example": "2026-09"
+            },
+            "required": false,
+            "name": "mes",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El gasto (o `encendido: false`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorGasto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Mes mal escrito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorGastoError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorGastoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorGastoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin base o sin la migración del director",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorGastoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/director/experimento": {
+      "get": {
+        "operationId": "getPilotoDirectorExperimento",
+        "summary": "Piloto director — el grupo de control del 10 % (si la inmobiliaria lo aceptó)",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El experimento (o `encendido: false`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorExperimento"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorExperimentoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorExperimentoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin base o sin la migración del director",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorExperimentoError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "putPilotoDirectorExperimento",
+        "summary": "Piloto director — prender o apagar el grupo de control (sólo ADMIN; apagarlo no borra las asignaciones)",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DirectorExperimentoPutBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "El experimento, como en el GET",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorExperimento"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cuerpo que no es `{ activo: boolean }`",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorExperimentoError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorExperimentoError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo, o no es ADMIN (`solo_admin`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorExperimentoError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "El director está apagado (`director_apagado`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorExperimentoError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Sin base o sin la migración del director",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DirectorExperimentoError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/director/semana": {
+      "get": {
+        "operationId": "getPilotoDirectorSemana",
+        "summary": "Piloto director — el informe de la semana a la gerencia (lo que hizo el Piloto, metas, lo que espera un clic, gasto de IA en pesos)",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El informe (o `encendido: false`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorInformeSemanal"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/director/hoy": {
+      "get": {
+        "operationId": "getPilotoDirectorHoy",
+        "summary": "Piloto director — el plan del día: prioridades, órdenes, retenciones, lo rechazado y cómo lo pensó",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "required": false,
+            "name": "fecha",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El plan (o `encendido: false`)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorHoy"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No es miembro activo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/piloto/director/replanear": {
+      "post": {
+        "operationId": "postPilotoDirectorReplanear",
+        "summary": "Piloto director — «Volver a planear» (sólo ADMIN; máximo 3 al día)",
+        "tags": [
+          "agency",
+          "piloto"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "El ciclo quedó en curso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorReplan"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sin JWT válido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sólo un administrador vuelve a planear",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ya hay un ciclo en curso (o el director o el Piloto automático están apagados)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Ya se usaron los re-planes del día",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "No se pudo encargar el re-plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Falta la migración del director",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PilotoDirectorError"
                 }
               }
             }

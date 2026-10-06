@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 export interface QuoteMetadata {
   quoteId: string
@@ -55,9 +55,8 @@ export function useQuoteMetadata(quoteId: string): {
     let cancelled = false
     void (async () => {
       try {
-        const res = await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cotizador/quote/${quoteId}`,
-          { headers: agentAuthHeaders() },
+        const res = await agentFetch(
+          `${agentUrl}/api/agency/${agencyId}/cotizador/quote/${quoteId}`
         )
         if (cancelled) return
         if (!res.ok) {

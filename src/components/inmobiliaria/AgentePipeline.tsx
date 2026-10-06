@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Collapse } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 import {
   Funnel,
@@ -82,14 +82,8 @@ export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps
       </button>
 
       {/* Content */}
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
+      {/* Se abre y se cierra con `Collapse` (la altura sólo durante la transición). */}
+      <Collapse open={isExpanded}>
             <div className="p-4 space-y-3">
               {activeItems.length > 0 ? (
                 activeItems.map((item) => {
@@ -170,9 +164,7 @@ export function AgentePipeline({ pipelineItems, className }: AgentePipelineProps
                 </div>
               )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </Collapse>
     </div>
   );
 }

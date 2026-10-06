@@ -28,7 +28,7 @@ export interface Lease {
   deposit?: number;
   startDate: string;
   endDate: string;
-  paymentDay: number; // Day of month (1-28)
+  paymentDay: number | null; // Día del mes en que vence la cuota; null = sin definir
 
   // ─── Campos legacy / no modelados en backend ────────
   /** @deprecated backend no modela adminFee en lease. Si necesitas, viene de la property. */
@@ -80,6 +80,17 @@ export interface Lease {
       por: string | null;
       motivo: string | null;
     } | null;
+  } | null;
+
+  /**
+   * D-19 (QA-INQ-95 ronda 2): el aviso de no renovación que vale para el fin
+   * de hoy, venga de quien venga y aunque no haya renovación abierta (el de la
+   * inmobiliaria vive en el contrato). Úsalo con `avisoDeNoRenovar(lease)`.
+   */
+  avisoNoRenovar?: {
+    at: string;
+    por: string | null;
+    motivo: string | null;
   } | null;
 
   // Metadata

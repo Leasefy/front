@@ -30,6 +30,7 @@
  */
 
 import { apiClient } from './client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { anunciarProceso } from './procesos.service';
 
 // ============================================================================
@@ -80,7 +81,9 @@ export type Faltante =
   | 'fecha_consignacion'
   | 'posible_duplicado'
   /** Varios dueños y los porcentajes (o la plata) no cuadran. */
-  | 'reparto';
+  | 'reparto'
+  /** MG-36: el mismo código viene en otra fila del archivo con otros datos. */
+  | 'codigo_repetido';
 
 /**
  * Un dueño de `propietarios[]`. Espejo de `PropietarioDelInmuebleDto` del
@@ -227,6 +230,20 @@ export interface FilaDeImportacion {
   ubicacion?: UbicacionDeFila;
   /** T-0130 — por qué falló la creación de esta fila, si falló. */
   errorDeActivacion?: string | null;
+  /**
+   * MG-36 — sólo con `codigo_repetido`: las otras filas del archivo con el
+   * mismo código y en qué datos difieren de ésta. Ausente = back anterior.
+   */
+  repetidas?: FilaRepetidaDelArchivo[];
+}
+
+/** MG-36 — otra fila del archivo con el mismo código y datos distintos. */
+export interface FilaRepetidaDelArchivo {
+  id: string;
+  /** La fila del archivo (como la cuenta la persona). */
+  fila: number;
+  /** `campo` es la clave del dato; `aqui`/`alla` el texto de cada fila (`''` = vacío). */
+  diferencias: { campo: string; aqui: string; alla: string }[];
 }
 
 export interface EstadoDeLoteInmuebles {
@@ -276,9 +293,14 @@ export interface EstadoDeLoteInmuebles {
  */
 export interface CreacionDeLote {
   total: number;
+  /** Filas ya creadas (incluye las que re-apuntaron un inmueble que ya estaba). */
   creadas: number;
   fallidas: number;
   pendientes: number;
+  /** Inmuebles distintos que dejaron esas filas. Ausente con un back anterior. */
+  inmuebles?: number;
+  /** De ésos, los que nacieron con esta carga (QA-MIG-A, MG-36). */
+  nuevos?: number;
 }
 
 /** `POST .../lotes/:lote/crear` — 202. Llamarlo con el lote ya CREANDO devuelve lo mismo. */
@@ -657,8 +679,10 @@ export const inmueblesImportacionApi = {
         );
       } catch (e) {
         if (total.procesadas === 0) throw e;
+        // El motivo con la regla de oro: «conexión» sólo si no hubo respuesta;
+        // un 5xx dice que fue nuestro, con la referencia (nunca `e.message` crudo).
         total.interrumpida = {
-          motivo: e instanceof Error ? e.message : 'Se cortó la conexión a mitad.',
+          motivo: mensajeParaLaPersona(e, { porDefecto: 'Se cortó a mitad.', accion: 'terminar el cambio' }),
         };
         return total;
       }

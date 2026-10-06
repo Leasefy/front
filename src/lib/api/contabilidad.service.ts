@@ -201,7 +201,8 @@ export interface CuentaImportada {
    * archivo no pierda columnas en el camino es lo que permite decirlo.
    */
   ultimoNivel?: boolean;
-  habilitado?: boolean;
+  /** QA-MIG-B: SI/NO como booleano; «Inactiva», «I»… crudo (lo lee el back). */
+  habilitado?: boolean | string;
   controlDeTerceros?: boolean;
   cajaOBanco?: boolean;
 }
@@ -226,6 +227,14 @@ export interface CuentaRevisada {
    * de cuentas como deshabilitada.
    */
   activa?: boolean;
+  /**
+   * QA-MIG-B (04-10): de dónde salió la naturaleza. `ARCHIVO` = la traía;
+   * `CLASE` = se dedujo del código; `PADRE` = de la cuenta de la que cuelga;
+   * `PLAN` = la cuenta ya estaba. Un back viejo no lo manda.
+   */
+  naturalezaDe?: 'ARCHIVO' | 'CLASE' | 'PADRE' | 'PLAN';
+  /** QA-MIG-B: subcuenta sin su cuenta mayor en el archivo ni en el plan (entra suelta). */
+  sinPadre?: boolean;
   /** El mismo veredicto en el vocabulario de las otras migraciones. */
   estado?: EstadoDeFilaMigrada | 'YA_EXISTE';
   /** La fila del archivo, 1-based, cuando el back la manda. */
@@ -237,6 +246,12 @@ export interface RevisionDeImportacionPuc {
   nuevas: number;
   existentes: number;
   invalidas: number;
+  /**
+   * QA-MIG-B (04-10): lo que el archivo no traía y se completó con una regla
+   * fija (naturaleza por la clase, todas activas), o lo que no se guarda.
+   * Opcional: un back anterior puede no mandarlo.
+   */
+  advertencias?: string[];
 }
 
 export interface ResultadoImportacionPuc extends RevisionDeImportacionPuc {
@@ -259,6 +274,20 @@ export interface MovimientoContable {
   orden: number;
   /** Sólo en los listados y en `GET /:id`; `POST /` devuelve sin esto. */
   cuenta?: { codigo: string; nombre: string };
+  /**
+   * CB-13 (QA de Contabilidad, 03-10-2026): el NOMBRE del tercero de la línea,
+   * que el back agrega al detalle. Opcional: un back anterior no lo manda, y
+   * entonces la pantalla no pinta nada — nunca el `terceroId` (un uuid).
+   */
+  terceroNombre?: string | null;
+  /** CB-13: el documento del tercero (sin el tipo). Opcional. */
+  terceroDocumento?: string | null;
+}
+
+/** Otro asiento nombrado desde éste (CB-14): su id para abrirlo y su número para decirlo. */
+export interface ReferenciaDeAsiento {
+  id: string;
+  numero: number;
 }
 
 export interface AsientoContable {
@@ -274,6 +303,52 @@ export interface AsientoContable {
   creadoPorUserId: string | null;
   createdAt: string;
   movimientos: MovimientoContable[];
+  /**
+   * CB-14: si este asiento ES la reversa de otro, cuál («Reversa del N.º 18»).
+   * Opcional: un back anterior no lo manda (`undefined` = no se sabe).
+   */
+  reversaDe?: ReferenciaDeAsiento | null;
+  /** CB-14: si a este asiento ya lo reversaron, con cuál («Reversado por el N.º 165»). */
+  reversadoPor?: ReferenciaDeAsiento | null;
+  /**
+   * CB-13: lo que generó el asiento dicho para una persona: su tipo, el rótulo
+   * («Recibo de caja N.º 23», «Cobro de octubre de 2026 · Valentina Ospina») y
+   * el id del documento (no se pinta). Opcional: un back anterior no lo manda.
+   */
+  origenLegible?: OrigenLegible | null;
+  /** CB-14: ¿se ofrece «Reversar»? Lo decide el back (reversado, reversa, automático…). */
+  sePuedeReversar?: boolean;
+  /** CB-14: por qué no, en palabras («Ya tiene su reversa: el N.º 165»). */
+  porQueNoSeReversa?: string | null;
+}
+
+/** Los tipos de `origenLegible.tipo` (QA-CONTA-BACK, 03-10-2026). */
+export type TipoDeOrigenLegible =
+  | 'MANUAL'
+  | 'REVERSA'
+  | 'APERTURA'
+  | 'COBRO'
+  | 'RECIBO_DE_CAJA'
+  | 'DISPERSION'
+  | 'MIGRACION'
+  | 'EGRESO'
+  | 'FACTURA_DE_PROVEEDOR'
+  | 'CONCILIACION'
+  | 'TRASLADO_AL_BANCO'
+  | 'TRASLADO_DE_COMISION'
+  | 'GIRO_DEVUELTO'
+  | 'NOMINA'
+  | 'SALDO_A_FAVOR';
+
+export interface OrigenLegible {
+  tipo: TipoDeOrigenLegible | string;
+  rotulo: string;
+  id: string | null;
+  /**
+   * Sólo en una REVERSA: el documento anulado que la hizo (CB-B-19,
+   * QA-FACT-CONTA-95 r2). «Cobro anulado» / «Recibo anulado» en el libro.
+   */
+  anula?: 'COBRO' | 'RECIBO_DE_CAJA';
 }
 
 /**
@@ -315,8 +390,9 @@ export interface FiltrosDeAsientos {
 
 export const MAX_LIMITE_DE_ASIENTOS = 200;
 
-/** `MovimientoDto` (anidado en `CrearAsientoDto`). Montos en pesos enteros,
- * sin centavos; débito XOR crédito por línea. */
+/** `MovimientoDto` (anidado en `CrearAsientoDto`). Montos en pesos enteros
+ * (con la llave de la contabilidad de «centavos en todo», hasta dos decimales:
+ * `partida-doble.ts`); débito XOR crédito por línea. */
 export const CLAVES_DE_MOVIMIENTO = [
   'cuentaId',
   'debitoCop',
@@ -392,6 +468,22 @@ export interface ResultadoDeReversa {
 export interface Cierre {
   /** `AAAA-MM-DD`, el último día cerrado. */
   cerradaHasta: string | null;
+  /**
+   * QA-CONTA-BACK (26beefbc, CB-R06): el último día que se PUEDE cerrar — sólo
+   * meses terminados. Opcional: un back anterior no lo manda.
+   */
+  sePuedeCerrarHasta?: string | null;
+  /** Lo que todavía no tiene asiento hasta ese día (cerrarlo así lo dejaría afuera). */
+  sinAsentar?: SinAsentar | null;
+}
+
+export interface SinAsentar {
+  recibos: number;
+  lotes: number;
+  cobros: number;
+  total: number;
+  /** CB-B-25 (QA-FACT-CONTA-95 r2): la plata de esos documentos; ausente con un back anterior. */
+  valorCop?: number | null;
 }
 
 /** `CerrarPeriodoDto`: un solo campo. */
@@ -403,6 +495,8 @@ export interface ResultadoDeCierre {
   /** Asientos que quedaron bloqueados con este cierre. */
   cerrados: number;
   fronteraAnterior: string | null;
+  /** Back 26beefbc: lo que quedó sin asiento dentro del período cerrado. */
+  sinAsentar?: SinAsentar | null;
 }
 
 // ── Reabrir un mes cerrado (contrato del 19-09, §1) ────────────────────────
@@ -441,6 +535,11 @@ export interface ReaperturaContable {
   fronteraNueva: string | null;
   motivo: string;
   reabiertoPorUserId: string | null;
+  /**
+   * QA-FACT-CONTA-95 (CB-B-26): el NOMBRE de quien reabrió (o su correo).
+   * `null`/ausente = sin usuario, una cuenta que ya no existe o un back anterior.
+   */
+  reabiertoPorNombre?: string | null;
   reabiertoAt: string;
 }
 
@@ -499,6 +598,50 @@ export interface FilaDeBalance {
   saldoFinalCop: number;
 }
 
+/**
+ * 🔴 CB-39 (QA-CONTA-PROF, 04-10-2026): `GET /reportes/cartera-vs-cuotas`. La
+ * cartera del libro (1305) contra las cuotas que deben los inquilinos, por
+ * contrato, con cada diferencia y su motivo («sin explicar» si no se sabe).
+ */
+export interface MotivoDeLaDiferenciaDeCartera {
+  /** CB-K-03: `CAUSADO_CON_OTRO_VALOR` = la causación del cobro y su cuota no coinciden y el texto dice por qué. */
+  tipo: 'SIN_CAUSAR' | 'YA_NO_SE_DEBE' | 'CAUSADO_CON_OTRO_VALOR' | 'SIN_EXPLICAR';
+  /** `AAAA-MM` del cobro o de la cuota. */
+  mes: string | null;
+  texto: string;
+  /** Lo que aporta a la diferencia (libro − cuotas), con signo. */
+  valorCop: number;
+}
+
+export interface CarteraDelContrato {
+  contractId: string;
+  codigo: string | null;
+  inquilino: string | null;
+  inmueble: string | null;
+  libroCop: number;
+  cuotasCop: number;
+  diferenciaCop: number;
+  motivos: MotivoDeLaDiferenciaDeCartera[];
+}
+
+export interface CarteraSinContrato {
+  tipo: 'COBRO_QUE_YA_NO_EXISTE' | 'COBRO_SIN_CONTRATO' | 'ASIENTO_MANUAL' | 'MIGRACION' | 'OTRO';
+  texto: string;
+  valorCop: number;
+  documentos: number;
+  explicado: boolean;
+}
+
+export interface CarteraLibroVsCuotas {
+  hasta: string;
+  mayorCop: number;
+  cuotasCop: number;
+  diferenciaCop: number;
+  sinExplicarCop: number;
+  contratos: CarteraDelContrato[];
+  sinContrato: CarteraSinContrato[];
+}
+
 /** `GET /reportes/balance-de-prueba`. `cuadra` en `false` es un bug del
  * libro, no un dato más: la pantalla lo grita. */
 export interface BalanceDePrueba {
@@ -520,6 +663,9 @@ export interface RenglonDeAuxiliar {
   descripcion: string | null;
   terceroTipo: string | null;
   terceroId: string | null;
+  /** CB-C-04 (QA-FACT-CONTA-95 r2): el nombre y el documento del tercero; ausentes con un back anterior. */
+  terceroNombre?: string | null;
+  terceroDocumento?: string | null;
   debitoCop: number;
   creditoCop: number;
   /** Saldo corrido, en la naturaleza de la cuenta. */
@@ -584,6 +730,12 @@ export const CLAVES_DE_MOVIMIENTO_MIGRADO = [
   'descripcion',
   'terceroTipo',
   'terceroId',
+  // QA-MIG-B (04-10): el valor en una sola columna (con signo o con D/C) y el
+  // tercero de la línea tal como viene en el archivo.
+  'valor',
+  'naturalezaDelValor',
+  'terceroDocumento',
+  'terceroNombre',
 ] as const;
 
 export interface MovimientoMigrado {
@@ -593,6 +745,13 @@ export interface MovimientoMigrado {
   descripcion?: string;
   terceroTipo?: string;
   terceroId?: string;
+  /** El valor de una sola columna; el back lo lee sólo si débito y crédito vienen vacíos. */
+  valor?: number | string;
+  /** «D»/«C» (Débito/Crédito) para `valor`. Sin él, el signo decide. */
+  naturalezaDelValor?: string;
+  /** Cédula o NIT del tercero de la línea, tal cual. */
+  terceroDocumento?: string;
+  terceroNombre?: string;
 }
 
 /** `MigrarAsientoDto`. `fecha` es texto libre (`AAAA-MM-DD`, `DD/MM/AAAA`,
@@ -686,6 +845,12 @@ export interface RevisionDeLote {
   /** 🔴 Se reportan, nunca se crean: la UI manda al paso 4. */
   cuentasFaltantes: CuentaFaltante[];
   motivos: MotivoDeRechazo[];
+  /**
+   * QA-MIG-B (04-10): lo que ENTRA pero con una nota (un tercero que no está
+   * en Leasefy y queda en el detalle, un comprobante repetido…), agrupado
+   * como los motivos. Opcional: un back anterior no lo manda.
+   */
+  avisos?: MotivoDeRechazo[];
   filas: FilaRevisada[];
 }
 
@@ -806,6 +971,9 @@ export interface DocumentoMigrado {
   valorRestanteAnticipo?: unknown;
   creadoPor?: string;
   fechaCreacionOrigen?: string;
+  /** QA-MIG-B: el tercero de su propia columna (asocia y queda en el concepto). */
+  terceroDocumento?: string;
+  terceroNombre?: string;
 }
 
 export type EstadoDeDocumento = 'LISTO' | 'YA_MIGRADO' | 'RECHAZADO';
@@ -1175,6 +1343,12 @@ export interface MapeoDeEvento {
   opcional?: boolean;
   cuenta: CuentaResumida | null;
   propuesta: CuentaResumida | null;
+  /**
+   * CB-28 (QA de Contabilidad, 03-10-2026): cuántos movimientos ya asentó el
+   * evento con su cuenta. Opcional (lo puede agregar el back): sin él, cambiar
+   * una cuenta YA asignada se confirma igual.
+   */
+  movimientos?: number;
 }
 
 export interface MapeoContable {
@@ -1444,9 +1618,14 @@ export const contabilidadApi = {
       return apiClient.get<AsientoContable>(`${BASE}/asientos/${encodeURIComponent(id)}`);
     },
 
-    /** Hasta qué día está cerrada la contabilidad. */
-    async cierre(): Promise<Cierre> {
-      return apiClient.get<Cierre>(`${BASE}/asientos/cierre`);
+    /**
+     * Hasta qué día está cerrada la contabilidad. Con `hasta`, lo que quedaría
+     * sin asiento si se cierra hasta ese día (CB-B-25, QA-FACT-CONTA-95 r2).
+     */
+    async cierre(hasta?: string): Promise<Cierre> {
+      return apiClient.get<Cierre>(
+        `${BASE}/asientos/cierre${hasta ? `?hasta=${encodeURIComponent(hasta)}` : ''}`,
+      );
     },
 
     /** Recibos, giros y cobros que quedaron sin asiento por falta de mapeo. */
@@ -1533,6 +1712,13 @@ export const contabilidadApi = {
           soloConMovimiento:
             filtros.soloConMovimiento === undefined ? undefined : String(filtros.soloConMovimiento),
         }),
+      );
+    },
+
+    /** CB-39: la conciliación de la cartera (libro 1305 contra las cuotas). */
+    async carteraVsCuotas(hasta?: string): Promise<CarteraLibroVsCuotas> {
+      return apiClient.get<CarteraLibroVsCuotas>(
+        conQuery(`${BASE}/reportes/cartera-vs-cuotas`, { hasta }),
       );
     },
 

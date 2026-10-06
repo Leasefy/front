@@ -19,6 +19,7 @@
 // frontend disabled-submit is pre-emptive UX; a stale client that bypasses it
 // still receives the 429 codepath which presents the same banner.
 
+import { formatCurrency } from '@/lib/types/inmobiliaria'
 import * as React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -31,6 +32,7 @@ import { useAskWhy, type AskWhyResult, type AskWhyError, type AskWhyVariable, ty
 import { useAskWhyUsage } from '@/lib/hooks/cotizador/use-ask-why-usage'
 import { useAuth } from '@/lib/auth'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
+import { AnimatedNumber, CrossFade, MotionIndicator } from '@leasefy/cadence'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -237,7 +239,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
     footerText = t('inmobiliaria.ai.cotizador.askWhy.calculating')
   } else if (result) {
     footerText =
-      t('inmobiliaria.ai.cotizador.askWhy.costActual', { cost: result.cost_usd.toFixed(5) }) +
+      t('inmobiliaria.ai.cotizador.askWhy.costActual', { cost: formatCurrency(result.cost_cop) }) +
       ' · ' +
       t('inmobiliaria.ai.cotizador.askWhy.remaining', { n: usedCount, m: capCount })
   } else {
@@ -365,13 +367,21 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                       disabled={ro}
                       onClick={() => activate('tipo', tipo)}
                       className={[
-                        'rounded-lg border px-2 py-1.5 text-xs font-medium transition-colors',
+                        'relative isolate rounded-lg border px-2 py-1.5 text-xs font-medium transition-colors',
                         isActive
-                          ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary'
+                          ? 'border-primary text-primary'
                           : 'border-border bg-card text-foreground hover:bg-muted',
                         ro ? 'pointer-events-none opacity-50' : '',
                       ].join(' ')}
                     >
+                      {/* El fondo y el anillo del tipo elegido se deslizan al
+                          nuevo (`MotionIndicator`). */}
+                      {isActive && (
+                        <MotionIndicator
+                          layoutId="contrafactual-tipo"
+                          className="inset-0 -z-10 rounded-lg bg-primary/10 ring-1 ring-primary"
+                        />
+                      )}
                       {tipo}
                     </button>
                   )
@@ -402,7 +412,7 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                         <Minus size={16} />
                       </button>
                       <span className="min-w-[2rem] text-center text-base font-semibold font-mono tabular-nums">
-                        {draftValues.codeudores}
+                        <AnimatedNumber value={draftValues.codeudores} format={(n) => String(Math.round(n))} />
                       </span>
                       <button
                         type="button"
@@ -439,6 +449,13 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
               <h3 className="text-xs font-mono uppercase tracking-wide text-foreground">
                 {t('inmobiliaria.ai.cotizador.askWhy.hypotheticalColumn')}
               </h3>
+              {/* Esperando → consultando → el resultado hipotético: cada
+                  estado entra con su fundido (`popLayout`: monta ya). */}
+              <CrossFade
+                mode="popLayout"
+                swapKey={isLoading ? 'consultando' : result ? 'resultado' : !error ? 'esperando' : 'fallo'}
+                className="space-y-2"
+              >
               {isLoading && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Spinner weight="bold" className="w-4 h-4 animate-spin" />
@@ -459,11 +476,16 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                   <CarrierCard carrier={c} />
                 </div>
               ))}
+              </CrossFade>
             </div>
           </section>
 
           {/* Narrative pane */}
           <section>
+            <CrossFade
+              mode="popLayout"
+              swapKey={isLoading ? 'cargando' : result ? 'narrativa' : 'nada'}
+            >
             {isLoading && (
               <div className="space-y-2" data-testid="narrative-skeleton">
                 <div className="h-4 w-full rounded bg-muted animate-pulse" />
@@ -479,12 +501,14 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
                 {result.narrative_es}
               </p>
             )}
+            </CrossFade>
 
             {/* Error UX (D-33-13) */}
             {error && error.code === 'timeout' && (
               <div className="mt-2 space-y-2">
                 <p role="alert" className="text-sm text-[#C4503B] dark:text-[#E0664D]">
-                  {t('inmobiliaria.ai.cotizador.askWhy.errorGeneric')}
+                  {/* La frase del hook, ya en español y por el traductor (02-10-2026). */}
+                  {error.mensaje || t('inmobiliaria.ai.cotizador.askWhy.errorGeneric')}
                 </p>
                 <button
                   type="button"
@@ -500,7 +524,8 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
             {error && (error.code === 500 || error.code === 'network') && (
               <div className="mt-2 space-y-2">
                 <p role="alert" className="text-sm text-[#C4503B] dark:text-[#E0664D]">
-                  {t('inmobiliaria.ai.cotizador.askWhy.errorGeneric')}
+                  {/* 5xx: «de nuestro lado» + referencia; la red: la conexión. */}
+                  {error.mensaje || t('inmobiliaria.ai.cotizador.askWhy.errorGeneric')}
                 </p>
                 <button
                   type="button"
@@ -515,7 +540,8 @@ export function CounterfactualModal(props: CounterfactualModalProps): React.JSX.
             )}
             {error && error.code === 400 && (
               <p role="alert" className="mt-2 text-sm text-[#C4503B] dark:text-[#E0664D]">
-                {t('inmobiliaria.ai.cotizador.askWhy.error400Prefix') + error.message}
+                {/* Lo que el micro dijo que está mal, en español; nunca su `error` en inglés. */}
+                {error.mensaje || t('inmobiliaria.ai.cotizador.askWhy.error400Prefix') + error.message}
               </p>
             )}
           </section>

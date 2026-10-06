@@ -1,5 +1,6 @@
 'use client';
 
+import { retrasoEscalonado } from '../lib/retraso-escalonado';
 import { useState } from 'react';
 import {
   Buildings,
@@ -199,12 +200,12 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
             <div
               key={software.id}
               className={cn(
-                'animate-stagger-in rounded-lg border transition-all cursor-pointer',
+                'animate-stagger-in rounded-lg border transition-[border-color,background-color,box-shadow] cursor-pointer',
                 isExpanded
                   ? 'border-primary/30 bg-primary-soft/50 dark:bg-primary/10'
                   : 'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong bg-surface dark:bg-bg'
               )}
-              style={{ animationDelay: `${index * 80}ms` }}
+              style={{ animationDelay: retrasoEscalonado(index) }}
               onClick={() => handleCardClick(software.id)}
             >
               <div className="p-5">
@@ -253,7 +254,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
                         <li
                           key={stepIndex}
                           className="animate-content-reveal flex items-start gap-3"
-                          style={{ animationDelay: `${stepIndex * 60}ms` }}
+                          style={{ animationDelay: retrasoEscalonado(stepIndex) }}
                         >
                           <div className="w-7 h-7 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center shrink-0 mt-0.5">
                             <span className="text-xs font-mono text-fg-muted dark:text-fg-subtle">

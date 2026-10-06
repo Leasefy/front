@@ -35,6 +35,8 @@ const h = vi.hoisted(() => {
     usePilotoPulso: vi.fn(vacio),
     usePilotoProcesos: vi.fn(vacio),
     usePilotoCatalogo: vi.fn(vacio),
+    useDirectorHoy: vi.fn(vacio),
+    useDirectorMetas: vi.fn(vacio),
   }
 })
 
@@ -61,6 +63,10 @@ vi.mock('@/lib/hooks/piloto/use-piloto-autonomia', () => ({ usePilotoAutonomia: 
 vi.mock('@/lib/hooks/piloto/use-piloto-pulso', () => ({ usePilotoPulso: h.usePilotoPulso }))
 vi.mock('@/lib/hooks/piloto/use-piloto-procesos', () => ({ usePilotoProcesos: h.usePilotoProcesos }))
 vi.mock('@/lib/hooks/piloto/use-piloto-catalogo', () => ({ usePilotoCatalogo: h.usePilotoCatalogo }))
+vi.mock('@/lib/hooks/piloto/use-piloto-director', () => ({
+  useDirectorHoy: h.useDirectorHoy,
+  useDirectorMetas: h.useDirectorMetas,
+}))
 
 vi.mock('@/components/inmobiliaria/piloto/PilotoPulso', () => ({ PilotoPulso: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoBandeja', () => ({ PilotoBandeja: () => null }))
@@ -68,12 +74,25 @@ vi.mock('@/components/inmobiliaria/piloto/PilotoAutonomia', () => ({ PilotoAuton
 vi.mock('@/components/inmobiliaria/piloto/PilotoOperaSola', () => ({ PilotoOperaSola: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoFeed', () => ({ PilotoFeed: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoCajon', () => ({ PilotoCajon: () => null }))
+vi.mock('@/components/inmobiliaria/piloto/PilotoDirector', () => ({
+  PilotoDirector: () => <div data-testid="piloto-director-doble" />,
+  PilotoDirectorVista: () => <div data-testid="piloto-director-doble" />,
+}))
+// El centro de mando (05-10-2026) tiene sus pruebas en `mando/`; acá un doble
+// que deja ver dónde va y qué recibe.
+vi.mock('@/components/inmobiliaria/piloto/mando/DireccionElegida', () => ({
+  DireccionElegida: (p: { acciones: Record<string, unknown> }) => (
+    <div data-testid="mando-elegida-doble" data-acciones={Object.keys(p.acciones).sort().join(',')} />
+  ),
+}))
 vi.mock('@/components/inmobiliaria/piloto/PilotoProcesos', () => ({ PilotoProcesos: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoCatalogo', () => ({ PilotoCatalogo: () => null }))
 // La explicación de la pantalla (30-09) tiene sus propias pruebas; acá sólo
 // importa que la torre se monte detrás del guard.
 vi.mock('@/components/inmobiliaria/piloto/PilotoQueEs', () => ({ PilotoQueEs: () => null }))
 vi.mock('@/components/inmobiliaria/piloto/PilotoNovedad', () => ({ PilotoNovedad: () => null }))
+// PI-01 (04-10-2026): la franja del Piloto activo se prueba en `PilotoActivacion.test.tsx`.
+vi.mock('@/components/inmobiliaria/piloto/PilotoActivacion', () => ({ PilotoActivacion: () => null }))
 
 import PilotoPage from './page'
 import PilotoProcesosPage from './procesos/page'
@@ -116,6 +135,26 @@ describe('/piloto — detrás de PageGuard', () => {
     expect(container.querySelector('[data-testid="piloto-page"]')).not.toBeNull()
     expect(h.usePilotoInbox).toHaveBeenCalled()
     expect(h.replace).not.toHaveBeenCalled()
+  })
+
+  it('el centro de mando va arriba de todo, justo después del encabezado (Nico, 05-10)', async () => {
+    // Antes (fase 1 del director, 28-09) arriba iba la tarjeta del director;
+    // desde la pantalla elegida el director habla primero DENTRO del núcleo
+    // (su frase es la voz del día: `vozDelDia`) y su tarjeta completa se abre
+    // en un cajón desde «Plan del día».
+    h.permisos = { isLoading: false, isAdmin: false, agencyRole: 'AGENTE' }
+    await render(<PilotoPage />)
+    const pagina = container.querySelector('[data-testid="piloto-page"]')!
+    const mando = pagina.querySelector('[data-testid="mando-elegida-doble"]')
+    expect(mando).not.toBeNull()
+    expect(mando?.parentElement).toBe(pagina)
+    expect(mando?.previousElementSibling?.tagName).toBe('HEADER')
+    // Lo que la torre tenía no se pierde: la Bandeja entera, la actividad y el director se abren desde la pantalla.
+    // Y desde cada agente (Nico, 05-10 19:30): activar, apagar y su modo, con las llamadas de Autonomía.
+    expect(mando?.getAttribute('data-acciones')).toBe(
+      'abrirActividad,abrirAlerta,abrirAutonomia,abrirBandeja,abrirDirector,abrirItem,agentes',
+    )
+    expect(h.useDirectorHoy).toHaveBeenCalled()
   })
 })
 

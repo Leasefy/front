@@ -142,10 +142,20 @@ export function esExigible(paso: PasoDeMigracion): boolean {
 }
 
 /**
+ * 🔴 Los pasos que NO esperan a los anteriores (Nico, 04-10-2026: «soltar
+ * sólo el Plan de cuentas»). El plan de cuentas no necesita terceros ni
+ * contratos: el contador lo sube cuando quiera. Los saldos iniciales y los
+ * movimientos (`contables`) siguen esperando, porque cada saldo y cada
+ * movimiento se imputa a un propietario, un inquilino o un contrato.
+ */
+export const PASOS_QUE_NO_ESPERAN: readonly IdDePasoDeMigracion[] = ['puc'];
+
+/**
  * Un paso se puede empezar sólo cuando todos los EXIGIBLES anteriores están
  * listos. El orden no es una preferencia: el inmueble necesita dueño, el
  * contrato se pega a la dirección del inmueble y un asiento no se puede
- * imputar a una cuenta que todavía no existe.
+ * imputar a una cuenta que todavía no existe. La excepción es el plan de
+ * cuentas (`PASOS_QUE_NO_ESPERAN`).
  *
  * Los `no_disponible` intercalados no frenan a los que vienen después —
  * si no, un módulo caído congelaría todo lo de abajo.
@@ -153,6 +163,7 @@ export function esExigible(paso: PasoDeMigracion): boolean {
 export function pasoHabilitado(pasos: PasoDeMigracion[], indice: number): boolean {
   const paso = pasos[indice];
   if (!paso || !esExigible(paso)) return false;
+  if (PASOS_QUE_NO_ESPERAN.includes(paso.id)) return true;
   return pasos.slice(0, indice).every((previo) => !esExigible(previo) || previo.estado === 'listo');
 }
 
@@ -167,6 +178,8 @@ export function pasoQueFrena(
   pasos: PasoDeMigracion[],
   indice: number,
 ): PasoDeMigracion | null {
+  const paso = pasos[indice];
+  if (paso && PASOS_QUE_NO_ESPERAN.includes(paso.id)) return null;
   for (let i = indice - 1; i >= 0; i--) {
     const previo = pasos[i];
     if (esExigible(previo) && previo.estado !== 'listo') return previo;
@@ -244,6 +257,12 @@ export const MODULO_DEL_PASO: Record<IdDePasoDeMigracion, string> = {
 export interface DeudaDeMigracion {
   /** Filas de migración de contratos de la agencia — `resumen.total`. */
   contratos: number;
+  /**
+   * QA-CONT-95: las filas que SÍ son contrato (`resumen.activados`). El
+   * veredicto decía «21 contratos migrados» contando las 10 filas sin activar.
+   * `null` = el back no lo mandó (se cae a `contratos`).
+   */
+  activados?: number | null;
   /** Contratos ACTIVOS sin inmueble: existen y no cobran un peso. */
   sinInmueble: number;
   /** Contratos ACTIVOS con inmueble y sin consignación: tampoco cobran. */
@@ -306,6 +325,7 @@ export function leerDeuda(bruto: unknown): DeudaDeMigracion | null {
 
   return {
     contratos,
+    activados: numeroNoNegativo(r.activados),
     pendientes,
     sinInmueble,
     sinPropietario,

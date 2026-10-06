@@ -313,12 +313,15 @@ const config: Config = {
   				100: 'hsl(var(--success-100))',
   				500: 'hsl(var(--success-500))',
   				700: 'hsl(var(--success-700))',
+  				ink: 'var(--success-ink)',
   			},
   			warning: {
   				50: 'hsl(var(--warning-50))',
   				100: 'hsl(var(--warning-100))',
   				500: 'hsl(var(--warning-500))',
   				700: 'hsl(var(--warning-700))',
+  				/* QA-PROP-95 G-14: la tinta del texto (globals.css, «La tinta de advertencia»). */
+  				ink: 'var(--warning-ink)',
   			},
   			error: {
   				50: 'hsl(var(--error-50))',

@@ -16,7 +16,7 @@ import { useI18n } from '@/lib/i18n';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { toast } from '@/components/ui/toast';
 import { useAuth } from '@/lib/auth/use-auth';
-import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import type { InmuebleSinConsignacion, Propietario, Agente, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import { PropietarioSelector } from '@/components/inmobiliaria/PropietarioSelector';
@@ -255,13 +255,12 @@ function CuerpoDelLote({
     } catch (error) {
       // The propietario create/update step itself failed — nothing was
       // submitted yet, so the user can fix the owner and retry.
-      const description =
-        error instanceof ApiError && error.messages
-          ? error.messages.join(' · ')
-          : error instanceof Error && error.message
-            ? error.message
-            : t('inmobiliaria.import.confirm.mandateBatch.toasts.errorDesc');
-      setFormError(description);
+      setFormError(
+        mensajeParaLaPersona(error, {
+          porDefecto: t('inmobiliaria.import.confirm.mandateBatch.toasts.errorDesc'),
+          accion: 'guardar el propietario',
+        }),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -340,7 +339,7 @@ function CuerpoDelLote({
   );
 
   return (
-    <DialogContent className="max-w-4xl max-h-[80vh]">
+    <DialogContent size="xl">
         <DialogHeader>
           <DialogTitle>{t('inmobiliaria.import.confirm.mandateBatch.title')}</DialogTitle>
           <DialogDescription>
@@ -371,7 +370,7 @@ function CuerpoDelLote({
                   {t('inmobiliaria.import.confirm.mandateBatch.propertiesListLabel')}
                 </label>
                 <div
-                  className="grid max-h-40 gap-x-6 gap-y-2 overflow-y-auto rounded-lg border border-border bg-surface-muted p-3 md:grid-cols-2"
+                  className="grid max-h-40 gap-x-6 gap-y-2 overflow-y-auto rounded-lg border border-border bg-surface-hover p-3 md:grid-cols-2"
                   data-lenis-prevent
                   style={{ overscrollBehavior: 'contain' }}
                 >

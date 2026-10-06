@@ -404,3 +404,29 @@ describe('<FaltantesDeFila> — el documento del inquilino es de otra cuenta', (
     })
   })
 })
+
+describe('<FaltantesDeFila> — QA-MIG-A MG-35: sin documento ni correo se puede escribir el documento', () => {
+  it('el título pide «documento o correo» y el documento se guarda como inquilinoDocumento', () => {
+    render(
+      filaBase({
+        faltantes: ['inquilino_correo'],
+        datos: { direccion: 'Cra 1', inquilino: { nombre: 'Ricardo', correo: '' } },
+      }),
+    )
+    expect(container.textContent).toContain('Falta el documento o el correo del inquilino')
+    const documento = container.querySelector('input[type="text"]') as HTMLInputElement
+    expect(documento).toBeTruthy()
+    typeInto(documento, '1099888777')
+    const guardar = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Guardar'),
+    )
+    act(() => {
+      guardar?.click()
+    })
+    expect(contractsApi.migracion.resolver).toHaveBeenCalledWith('f-1', {
+      inquilinoDocumento: '1099888777',
+    })
+    // Y el correo sigue disponible para quien lo tenga.
+    expect(container.querySelector('input[type="email"]')).toBeTruthy()
+  })
+})

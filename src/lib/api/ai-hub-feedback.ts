@@ -10,14 +10,15 @@
  * y de un pulgar abajo con comentario sale una LECCIÓN que el chat usa en la
  * siguiente pregunta.
  *
- * Auth = bearer de Supabase (`agentAuthHeaders`); base = `NEXT_PUBLIC_AGENT_URL`.
+ * Auth = bearer de Supabase (`agentFetch`); base = `NEXT_PUBLIC_AGENT_URL`.
  * Mismas convenciones de red/errores que `ai-hub-lessons.ts`.
  *
  * 🔴 El `agencyId` de la URL lo valida el micro contra el TOKEN; lo que viaja en
  * el cuerpo es sólo lo que el usuario tuvo en pantalla.
  */
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { agentFetch } from './agent-fetch';
+import { falloDelMicro } from '@/lib/api/fallo-del-micro';
 
 export type VeredictoFeedback = 'up' | 'down';
 
@@ -52,19 +53,24 @@ function agentBaseUrl(): string {
   return base;
 }
 
-/** Manda la valoración. Lanza en no-OK (el llamador lo muestra). */
+/**
+ * Manda la valoración. En no-OK lanza el fallo ENTERO (`ApiError` con status,
+ * `code` y cuerpo; 02-10-2026): el llamador lo dice por el traductor. Antes
+ * era `Error('ai-hub chat feedback 403')` y la pantalla sólo podía decir «no
+ * pude guardar» sin saber si era permiso, sesión o un fallo nuestro.
+ */
 export async function enviarFeedbackDeChat(args: {
   agencyId: string;
   feedback: FeedbackDeRespuesta;
   signal?: AbortSignal;
 }): Promise<RespuestaDeFeedback> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/feedback`;
-  const res = await fetch(url, {
+  const res = await agentFetch(url, {
     method: 'POST',
-    headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify(args.feedback),
     ...(args.signal ? { signal: args.signal } : {}),
   });
-  if (!res.ok) throw new Error(`ai-hub chat feedback ${res.status}`);
+  if (!res.ok) throw await falloDelMicro(res);
   return (await res.json()) as RespuestaDeFeedback;
 }

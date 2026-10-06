@@ -1,5 +1,6 @@
 'use client'
 
+import { formatCurrency } from '@/lib/types/inmobiliaria'
 import Link from 'next/link'
 import {
   ResponsiveContainer,
@@ -77,11 +78,11 @@ export function InsightsMonthlyCostPreview({
   // Show last 6 months of data
   const sliced = trend.slice(-6)
 
-  // CRITICAL: cost values come back as strings (Decimal/BigInt safety from 35-04).
-  // Parse via parseFloat before rendering.
+  // 🔴 En PESOS (Nico, 04-10-2026): el micro ya convierte con la tasa de la
+  // plataforma. Un micro anterior mandaba texto: se sigue leyendo.
   const chartData = sliced.map((row) => ({
     month: row.month,
-    total: parseFloat(row.total) || 0,
+    total: (typeof row.total === 'number' ? row.total : parseFloat(row.total)) || 0,
   }))
 
   return (
@@ -94,14 +95,14 @@ export function InsightsMonthlyCostPreview({
             tickFormatter={formatMonth}
           />
           <YAxis
-            tickFormatter={(v: number) => `$${v.toFixed(2)}`}
+            tickFormatter={(v: number) => formatCurrency(v)}
             tick={{ fontSize: 9, fill: EJE }}
             width={48}
           />
           <Tooltip
             formatter={(value: unknown) => {
               const n = typeof value === 'number' ? value : parseFloat(String(value)) || 0
-              return [`$${n.toFixed(2)} USD`]
+              return [formatCurrency(n)]
             }}
             labelFormatter={(label: unknown) => formatMonth(String(label))}
           />

@@ -37,7 +37,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { SegmentedControl } from '@leasefy/cadence';
+import { Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { TarjetaDeArchivo } from '@/components/migracion/TarjetaDeArchivo';
@@ -71,8 +71,16 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir';
-import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
+import {
+  leerPrimerasFilasDeCadaHoja,
+  parseSpreadsheetFile,
+} from '@/components/inmobiliaria/import/lib/parseFile';
+import { elegirDondeEstaLaTabla, fraseDeDondeSeLeyo } from '@/lib/migracion/donde-esta-la-tabla';
+import { fraseDeFilasDeTotales } from '@/lib/migracion/fila-de-totales';
+import { MENSAJES_DE_LA_MIGRACION } from './limites-de-la-migracion';
 import {
   migracionTercerosApi,
   CAMPOS_NO_MASIVOS,
@@ -115,6 +123,7 @@ import {
   AplicacionInterrumpida,
   type ProgresoDeAplicacion,
 } from '@/lib/migracion/aplicar-lote-de-terceros';
+import { AvanceDeRetomar, type FaseDeRetomar } from './AvanceDeRetomar';
 import { FilaDeTercero, type ResultadoDeAccion } from './FilaDeTercero';
 import { TercerosYaCargados, type EstadoDeLoCargado } from './TercerosYaCargados';
 
@@ -129,6 +138,13 @@ const IGNORAR = '__ignorar__';
  */
 const POR_PAGINA = 25;
 
+/**
+ * Cuánto se espera al «Retomar» antes de decir que está tardando más de lo
+ * normal. Con la base sana abrir una carga de 1.729 filas toma pocos segundos;
+ * pasado esto, la persona merece saber que puede soltar la espera.
+ */
+export const MS_PARA_DECIR_QUE_RETOMAR_TARDA = 15_000;
+
 type Fila = Record<string, unknown>;
 
 /**
@@ -140,9 +156,16 @@ const MENSAJE_CAMPO_NO_MASIVO =
   'Ese dato identifica a cada persona (documento, dígito de verificación, nombre, correo o id del sistema anterior) ' +
   'y no se puede poner igual en varias filas. Corrígelo fila por fila.';
 
-const mensaje = (e: unknown, respaldo: string) => {
+/**
+ * El fallo de una acción, dicho para la persona (sistema de errores,
+ * 02-10-2026): por el traductor — un 4xx dice qué está mal, un 5xx que fue de
+ * nuestro lado con su referencia, y «conexión» SÓLO si no hubo respuesta.
+ * Antes devolvía el `message` crudo de cualquier `Error` (un 5xx en inglés,
+ * un `TypeError`). `CAMPO_NO_MASIVO` conserva su texto propio.
+ */
+const mensaje = (e: unknown, respaldo: string, accion?: string) => {
   if (e instanceof ApiError && e.code === CODIGO_CAMPO_NO_MASIVO) return MENSAJE_CAMPO_NO_MASIVO;
-  return e instanceof Error && e.message ? e.message : respaldo;
+  return mensajeParaLaPersona(e, { porDefecto: respaldo, accion });
 };
 
 /**
@@ -212,8 +235,8 @@ const SOLO_EL_ADMINISTRADOR_DESCARTA =
   'Descartar una carga o una fila requiere permisos de administración y tu rol no los tiene. ' +
   'Pídele a un administrador de tu inmobiliaria que lo haga: mientras tanto, esta carga sigue pendiente.';
 
-const mensajeDeDescarte = (e: unknown, respaldo: string) =>
-  e instanceof ApiError && e.status === 403 ? SOLO_EL_ADMINISTRADOR_DESCARTA : mensaje(e, respaldo);
+const mensajeDeDescarte = (e: unknown, respaldo: string, accion?: string) =>
+  e instanceof ApiError && e.status === 403 ? SOLO_EL_ADMINISTRADOR_DESCARTA : mensaje(e, respaldo, accion);
 
 /**
  * El parte de una masiva parcial: TODOS los motivos distintos con sus filas,
@@ -271,6 +294,16 @@ function fechaDeLote(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return 'desconocida';
   return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' });
+}
+
+/** Las filas que la revisión vuelve a mirar: las que todavía no se crearon ni se botaron. */
+function filasVivas(l: LoteDeTerceros): number {
+  return l.borradores + l.requierenAtencion + l.listos;
+}
+
+/** MG-28: el back dice así a la fila «misma persona» que no se volvió a crear. */
+function esLaMismaPersonaYaCargada(motivo?: string): boolean {
+  return Boolean(motivo?.startsWith('Es la misma persona'));
 }
 
 export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTercerosProps = {}) {
@@ -399,15 +432,47 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
 
   // ── Leer el archivo ───────────────────────────────────────────────────────
 
+  /** Dónde se leyó la tabla, si no fue A1 de la primera hoja (MG-01/02). */
+  const [dondeSeLeyo, setDondeSeLeyo] = useState<string | null>(null);
+
   const leerArchivo = useCallback(
     async (archivo: File) => {
       setError(null);
+      setDondeSeLeyo(null);
       setAplicacion(null);
       setArchivo(archivo);
       setNombreDeArchivo(archivo.name);
       setLeyendo(true);
       try {
-        const { rows, headers } = await parseSpreadsheetFile(archivo);
+        /*
+         * En qué hoja y en qué fila empieza la tabla (QA-MIG-A, MG-01/02): un
+         * Excel hecho a mano con el título arriba dejaba todas las filas
+         * vacías, y un libro con «Instrucciones» primero creaba a un
+         * propietario llamado «No modificar.». Si la exploración falla, se lee
+         * como siempre: es una mejora, no un requisito.
+         */
+        let donde: { hoja?: string; fila: number } = { fila: 0 };
+        try {
+          donde = elegirDondeEstaLaTabla(
+            await leerPrimerasFilasDeCadaHoja(archivo, 15),
+            (celdas) => mapearColumnas(columnas, celdas).filter((m) => m.campo).length,
+          );
+        } catch {
+          donde = { fila: 0 };
+        }
+        const { rows, headers, filasDeTotales } = await parseSpreadsheetFile(archivo, donde.hoja, {
+          filaDeEncabezado: donde.fila,
+        });
+        setDondeSeLeyo(
+          [fraseDeDondeSeLeyo(donde), fraseDeFilasDeTotales(filasDeTotales ?? [])].filter(Boolean).join(' ') || null,
+        );
+        if (rows.length === 0) {
+          setError(MENSAJES_DE_LA_MIGRACION.archivoSinFilas(archivo.name));
+          setFilas([]);
+          setEncabezados([]);
+          setMapeo([]);
+          return;
+        }
         setFilas(rows as Fila[]);
         setEncabezados(headers);
         setMapeo(mapearColumnas(columnas, headers));
@@ -430,6 +495,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
   const soltarArchivo = useCallback(() => {
     setArchivo(null);
     setLeyendo(false);
+    setDondeSeLeyo(null);
     setNombreDeArchivo('');
     setFilas([]);
     setEncabezados([]);
@@ -460,15 +526,13 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     [columnas, mapeo],
   );
 
-  const refrescar = useCallback(async (elLote: string, pag = 1) => {
-    // Las reglas del back cambian; las filas guardadas no. Antes de listar se
-    // les pide al back que las vuelva a mirar con las reglas de hoy (no hace
-    // nada si ya están al día). Si falla, se lista igual.
-    try {
-      await migracionTercerosApi.revisar(elLote);
-    } catch {
-      // Se lista igual.
-    }
+  /*
+   * 🔴 Leer la lista NO revisa el lote (02-10-2026). Antes cada refresco —cada
+   * página, cada corrección, «Actualizar la lista», después de crear— pedía
+   * primero `POST revisar`, que con reglas viejas reescribe el lote ENTERO en el
+   * back. Revisar es cosa de abrir la carga: lo hace `retomar`, una vez.
+   */
+  const leerLista = useCallback(async (elLote: string, pag = 1) => {
     // T-0128 · los conteos por motivo son una AYUDA para elegir de golpe: si no
     // llegan, la lista funciona igual y simplemente no se ofrecen.
     const contarMotivos = async (): Promise<MotivosDelLote | null> => {
@@ -488,15 +552,24 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       }),
       contarMotivos(),
     ]);
-    setMotivos(m);
-    setResumen(r);
-    setPendientes(p.filas);
-    setTotalPendientes(p.total);
-    setPagina(p.pagina);
+    return { resumen: r, pagina: p, motivos: m };
+  }, []);
+
+  const mostrarLista = useCallback((l: Awaited<ReturnType<typeof leerLista>>) => {
+    setMotivos(l.motivos);
+    setResumen(l.resumen);
+    setPendientes(l.pagina.filas);
+    setTotalPendientes(l.pagina.total);
+    setPagina(l.pagina.pagina);
     // `seleccion` sobrevive a propósito: se limpia sólo cuando cambia el LOTE.
     // Reiniciarla acá haría que resolver una fila borrara lo elegido en otras
     // páginas, y aplicar algo a 300 filas serían doce masivas repetidas.
   }, []);
+
+  const refrescar = useCallback(
+    async (elLote: string, pag = 1) => mostrarLista(await leerLista(elLote, pag)),
+    [leerLista, mostrarLista],
+  );
 
   /**
    * El nombre que chocó con una carga que ya existe. Vive aparte del mensaje
@@ -543,7 +616,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         setLoteEnConflicto(lote.trim());
         refrescarLotesAbiertos();
       }
-      setError(mensaje(e, 'No pudimos preparar la carga.'));
+      setError(mensaje(e, 'No pudimos preparar la carga.', 'preparar la carga'));
       setCargando(false);
       return;
     }
@@ -565,22 +638,102 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     setCargando(false);
   }, [lote, tipo, aMigrar, refrescar, refrescarLotesAbiertos]);
 
+  /*
+   * ── Retomar una carga ──────────────────────────────────────────────────────
+   *
+   * 🔴 Nico, 02-10-2026 (paso Inquilinos, 1.729 filas): «no está dejando
+   * retomar un archivo que fue trabajado». «Retomar» no prendía nada —ni
+   * `cargando`, ni el botón ocupado— y la pantalla no cambiaba hasta que
+   * volvían el `revisar` y las tres lecturas. Con un lote grande eso tarda, la
+   * persona vuelve a tocar, y cada toque era otro `POST revisar` reescribiendo
+   * el lote entero en el back: siete colgados a la vez, y el centro de procesos
+   * esperando detrás. Ahora:
+   *  - un toque mientras se retoma no hace nada (`retomandoRef`, no el estado:
+   *    dos clics en el mismo tick verían el estado viejo);
+   *  - se ve QUÉ está pasando (`retomando.fase`) y, si tarda, se dice;
+   *  - «Dejar de esperar» es la salida: suelta la espera (lo que el back
+   *    alcance a poner al día queda guardado y no se repite) y la tarjeta vuelve
+   *    con «Retomar» y «No la voy a seguir»;
+   *  - la carga se abre (`loteAbierto`) sólo cuando llegó su lista: cortar o
+   *    fallar no deja nada a medias.
+   * NO se avisa al muro (`onOcupado`): no se está creando nada, y el muro
+   * congela el paso entero mientras está ocupado — la salida quedaría tapada.
+   */
+  const [retomando, setRetomando] = useState<{
+    lote: string;
+    fase: FaseDeRetomar;
+    /** Cuántas filas puso al día la revisión; `null` si todavía no vuelve o falló. */
+    puestasAlDia: number | null;
+  } | null>(null);
+  const [retomarTarda, setRetomarTarda] = useState(false);
+  const retomandoRef = useRef(false);
+  /** Sube con cada intento y con «Dejar de esperar»: lo que vuelve tarde de un intento viejo se ignora. */
+  const intentoDeRetomar = useRef(0);
+  useEffect(
+    () => () => {
+      intentoDeRetomar.current += 1;
+    },
+    [],
+  );
+  // El reloj corre desde el toque, no desde cada fase.
+  const loteQueSeRetoma = retomando?.lote ?? null;
+  useEffect(() => {
+    setRetomarTarda(false);
+    if (!loteQueSeRetoma) return;
+    const t = setTimeout(() => setRetomarTarda(true), MS_PARA_DECIR_QUE_RETOMAR_TARDA);
+    return () => clearTimeout(t);
+  }, [loteQueSeRetoma]);
+
   const retomar = useCallback(
     async (l: LoteDeTerceros) => {
+      if (retomandoRef.current) return;
+      retomandoRef.current = true;
+      const intento = ++intentoDeRetomar.current;
+      const vigente = () => intentoDeRetomar.current === intento;
       setError(null);
       setLoteEnConflicto(null);
-      setTipo(l.tipo);
-      setLoteAbierto(l.lote);
-      setSeleccion(new Set());
-      setAlcance(SOLO_IDS);
+      setAvisoMasivo(null);
+      setRetomando({ lote: l.lote, fase: 'poniendo-al-dia', puestasAlDia: null });
       try {
-        await refrescar(l.lote);
+        // Las reglas del back cambian; las filas guardadas no. Al abrir la
+        // carga se le pide al back que la mire con las reglas de hoy (no hace
+        // nada si ya está al día). Si falla, se lista igual.
+        let puestasAlDia: number | null = null;
+        try {
+          puestasAlDia = (await migracionTercerosApi.revisar(l.lote)).revisadas;
+        } catch {
+          // Se lista igual.
+        }
+        if (!vigente()) return;
+        setRetomando({ lote: l.lote, fase: 'leyendo', puestasAlDia });
+        const lista = await leerLista(l.lote);
+        if (!vigente()) return;
+        setTipo(l.tipo);
+        setLoteAbierto(l.lote);
+        setSeleccion(new Set());
+        setAlcance(SOLO_IDS);
+        mostrarLista(lista);
       } catch (e) {
-        setError(mensaje(e, 'No pudimos abrir esa carga. Reintenta.'));
+        if (vigente()) {
+          setError(
+            `${mensaje(e, 'No pudimos abrir esa carga.')} Reintenta con «Retomar»: lo que ya estaba en la carga sigue ahí.`,
+          );
+        }
+      } finally {
+        if (vigente()) {
+          retomandoRef.current = false;
+          setRetomando(null);
+        }
       }
     },
-    [refrescar],
+    [leerLista, mostrarLista],
   );
+
+  const dejarDeEsperar = useCallback(() => {
+    intentoDeRetomar.current += 1;
+    retomandoRef.current = false;
+    setRetomando(null);
+  }, []);
 
   const volverAEmpezar = useCallback(() => {
     setResumen(null);
@@ -628,7 +781,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         if (loteAbierto === l.lote) volverAEmpezar();
         else refrescarLotesAbiertos();
       } catch (e) {
-        setError(mensajeDeDescarte(e, 'No pudimos descartar esa carga.'));
+        setError(mensajeDeDescarte(e, 'No pudimos descartar esa carga.', 'descartar esa carga'));
       } finally {
         setCargando(false);
         setLotePorDescartar(null);
@@ -665,7 +818,24 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       try {
         await accion();
       } catch (e) {
-        const m = mensaje(e, respaldo);
+        /*
+         * Sistema de errores (02-10-2026): un 400 con `campos` del back
+         * (`CorregirFilaTerceroDto.campos.<campo>`) va a SU celda en la
+         * tarjeta de la fila; al aviso va sólo lo que no tiene celda.
+         */
+        const reparto = repartirErroresDelServidor(e, {
+          campos: columnas.map((c) => c.campo),
+          porDefecto: respaldo,
+        });
+        const porCampo = reparto.porCampo as Record<string, string>;
+        const conCampo = reparto.orden.length > 0;
+        const m = conCampo
+          ? reparto.sueltos.length > 0
+            ? reparto.sueltos.join(' · ')
+            : 'Revisa lo marcado en la fila.'
+          : // «No pudimos guardar la corrección.» → un 5xx dice «No pudimos
+            // guardar la corrección: algo falló de nuestro lado…».
+            mensaje(e, respaldo, /^No pudimos (.+?)\.?$/.exec(respaldo)?.[1]);
         /*
          * 🔴 «Otra pestaña guardó primero» es el único fallo donde SÍ se
          * relee: lo que la persona tiene en pantalla ya no es lo que hay, y
@@ -683,7 +853,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         }
         setError(m);
         setCargando(false);
-        return { ok: false, mensaje: m };
+        return { ok: false, mensaje: m, porCampo };
       }
       try {
         await refrescar(loteAbierto, paginaAlTerminar ?? pagina);
@@ -693,7 +863,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
       setCargando(false);
       return { ok: true, mensaje: null };
     },
-    [loteAbierto, pagina, refrescar],
+    [loteAbierto, pagina, refrescar, columnas],
   );
 
   /** Cambiar de página también puede fallar; que lo diga, no que se quede muda. */
@@ -746,6 +916,10 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         setProgreso,
       );
       setAplicacion(informe);
+      // El aviso de la última decisión («…se crea con el botón de arriba»)
+      // ya se cumplió: dejarlo después de crear dice lo contrario de lo que
+      // pasó (QA-MIG-A, MG-20).
+      setAvisoMasivo(null);
       await refrescar(loteAbierto, 1);
     } catch (e) {
       /*
@@ -756,8 +930,11 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
        * subir el archivo «por las dudas».
        */
       const hechas = e instanceof AplicacionInterrumpida ? e.parcial.aplicadas : 0;
+      // La causa de verdad (el `ApiError`) viaja en `causa`: el traductor la
+      // lee entera — con su referencia si fue un 5xx — en vez del texto copiado.
+      const causa = e instanceof AplicacionInterrumpida ? e.causa : e;
       setError(
-        `${mensaje(e, 'No pudimos crear las fichas.')} ` +
+        `${mensaje(causa, 'No pudimos crear las fichas.', 'crear las fichas')} ` +
           (hechas > 0
             ? `Alcanzaron a crearse ${hechas}: quedaron creadas. `
             : 'Lo que alcanzó a crearse quedó creado. ') +
@@ -936,7 +1113,10 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     filas.length > 0 &&
     !demasiadasFilas &&
     lote.trim().length > 0 &&
-    !cargando;
+    !cargando &&
+    // Mientras se abre una carga, no se prepara otra: la que vuelva tarde
+    // pisaría a la recién subida.
+    retomando === null;
 
   // Con el tipo fijo, las cargas sin terminar del OTRO tipo son de otro paso.
   const lotesVisibles = tipoFijo ? lotesAbiertos.filter((l) => l.tipo === tipoFijo) : lotesAbiertos;
@@ -1004,9 +1184,16 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               Volver a subir el mismo archivo con otro nombre duplica a las personas.
             </p>
           </div>
-          <ul className="divide-y divide-border-faint border-t border-border-faint">
+          {/* Las cargas entran escalonadas y la que se descarta SALE
+              (ARREGLOS-8, MOV-A6). */}
+          <Stagger
+            as="ul"
+            layout={false}
+            distance="xs"
+            className="divide-y divide-border-faint border-t border-border-faint"
+          >
             {lotesVisibles.map((l) => (
-              <li key={l.lote} className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5">
+              <StaggerItem as="li" key={l.lote} className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5">
                 <div className="min-w-0">
                   <p className="truncate text-sm text-fg" title={l.lote}>
                     {l.lote}
@@ -1029,28 +1216,61 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                     ) : null}
                     {' · '}última actividad: {fechaDeLote(l.actualizado)}
                   </p>
+                  {/* En qué va «Retomar»: entra y sale con su animación. */}
+                  <Presence show={retomando?.lote === l.lote}>
+                    {retomando?.lote === l.lote ? (
+                      <AvanceDeRetomar
+                        lote={l.lote}
+                        fase={retomando.fase}
+                        filas={filasVivas(l)}
+                        puestasAlDia={retomando.puestasAlDia}
+                        tarda={retomarTarda}
+                      />
+                    ) : null}
+                  </Presence>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button size="sm" hideArrow disabled={cargando} onClick={() => void retomar(l)}>
-                    Retomar
-                  </Button>
-                  {/* La segunda salida, que no existía: botarla. Sin esto una
-                      carga a medias se quedaba ofreciéndose para siempre. */}
                   <Button
                     size="sm"
-                    variant="ghost"
                     hideArrow
-                    disabled={cargando}
-                    onClick={() => setLotePorDescartar(l)}
-                    data-testid={`descartar-lote-${l.lote}`}
+                    disabled={cargando || (retomando !== null && retomando.lote !== l.lote)}
+                    isLoading={retomando?.lote === l.lote}
+                    onClick={() => void retomar(l)}
+                    data-testid={`retomar-lote-${l.lote}`}
                   >
-                    <Trash className="h-4 w-4" />
-                    No la voy a seguir
+                    {retomando?.lote === l.lote ? 'Retomando…' : 'Retomar'}
                   </Button>
+                  {retomando?.lote === l.lote ? (
+                    /* La salida mientras se espera: soltar la espera. El back
+                       termina lo que empezó; nada se pierde ni se duplica. */
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      hideArrow
+                      onClick={dejarDeEsperar}
+                      data-testid={`dejar-de-esperar-${l.lote}`}
+                    >
+                      Dejar de esperar
+                    </Button>
+                  ) : (
+                    /* La segunda salida, que no existía: botarla. Sin esto una
+                       carga a medias se quedaba ofreciéndose para siempre. */
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      hideArrow
+                      disabled={cargando || retomando !== null}
+                      onClick={() => setLotePorDescartar(l)}
+                      data-testid={`descartar-lote-${l.lote}`}
+                    >
+                      <Trash className="h-4 w-4" />
+                      No la voy a seguir
+                    </Button>
+                  )}
                 </div>
-              </li>
+              </StaggerItem>
             ))}
-          </ul>
+          </Stagger>
         </section>
       ) : null}
 
@@ -1312,11 +1532,12 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               <Button
                 size="sm"
                 hideArrow
-                disabled={cargando}
+                disabled={cargando || retomando !== null}
+                isLoading={retomando?.lote === cargaEnConflicto.lote}
                 data-testid="retomar-conflicto"
                 onClick={() => void retomar(cargaEnConflicto)}
               >
-                Retomar esa carga
+                {retomando?.lote === cargaEnConflicto.lote ? 'Retomando…' : 'Retomar esa carga'}
               </Button>
             ) : null}
           </div>
@@ -1333,6 +1554,11 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
                 archivo. Revisa el mapeo antes de seguir: lo que se mapea mal no falla, se guarda
                 en el campo de al lado.
               </p>
+              {dondeSeLeyo ? (
+                <p className="text-caption text-fg-muted" data-testid="donde-se-leyo">
+                  {dondeSeLeyo}
+                </p>
+              ) : null}
             </div>
             <Button
               variant="link"
@@ -1493,7 +1719,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               <span className="font-mono tabular-nums">
                 {MAX_FILAS_POR_LOTE.toLocaleString('es-CO')}
               </span>
-              . Partilo en dos archivos.
+              . Pártelo en dos archivos.
             </p>
           ) : null}
 
@@ -1775,7 +2001,7 @@ function ListaDeTrabajo({
 
         {error ? (
           <div className="flex flex-wrap items-center gap-3" data-testid="error-de-lista">
-            <p className="text-sm text-danger">{error}</p>
+            <p className="text-sm text-danger" role="alert">{error}</p>
             {/* Releer es un GET: siempre es seguro ofrecerlo. Es la salida
                 tanto del refresco caído como de la página que no llegó. */}
             <Button size="sm" variant="outline" hideArrow disabled={cargando} onClick={onActualizar}>
@@ -1884,12 +2110,23 @@ function ListaDeTrabajo({
               )}
             </p>
           ) : null}
-          {aplicacion.resultados.some((r) => r.estado === 'omitido') ? (
+          {aplicacion.resultados.some((r) => r.estado === 'omitido' && !esLaMismaPersonaYaCargada(r.motivo)) ? (
             /* Otra pestaña o un reintento ya la había creado: ni fallo ni aviso. */
             <p className="text-sm text-fg-muted" data-testid="omitidas">
-              {aplicacion.resultados.filter((r) => r.estado === 'omitido').length} ya las había creado
+              {aplicacion.resultados.filter((r) => r.estado === 'omitido' && !esLaMismaPersonaYaCargada(r.motivo)).length} ya las había creado
               otra pestaña o un reintento: no se repitieron.
             </p>
+          ) : null}
+          {/* MG-28 (MIG-C, 04-10): «es la misma persona» que ya estaba cargada
+              sin correo en otra carga: no se creó otra vez, y se dice por qué. */}
+          {aplicacion.resultados.some((r) => r.estado === 'omitido' && esLaMismaPersonaYaCargada(r.motivo)) ? (
+            <ul className="space-y-1 text-sm text-fg-muted" data-testid="ya-estaban-cargadas">
+              {aplicacion.resultados
+                .filter((r) => r.estado === 'omitido' && esLaMismaPersonaYaCargada(r.motivo))
+                .map((r) => (
+                  <li key={r.id}>{`Fila ${r.fila}: ${r.motivo}`}</li>
+                ))}
+            </ul>
           ) : null}
           {aplicacion.fallidas > 0 ? (
             <ul className="space-y-2 text-sm text-fg-muted" data-testid="fallidas-de-aplicacion">
@@ -2095,9 +2332,18 @@ function ListaDeTrabajo({
           ) : null}
 
           {pendientes.length > 0 ? (
-            <ul className="divide-y divide-border-faint border-t border-border-faint">
+            /* Las filas entran escalonadas y la que se decide SALE (ARREGLOS-8,
+               MOV-A6). Cada página es una lista nueva; sin `layout`: una fila
+               se abre para corregirla y medirlas todas la deformaría. */
+            <Stagger
+              as="ul"
+              key={pagina}
+              layout={false}
+              distance="xs"
+              className="divide-y divide-border-faint border-t border-border-faint"
+            >
               {pendientes.map((fila) => (
-                <li key={fila.id} className="flex items-start gap-3 px-6 py-5">
+                <StaggerItem as="li" key={fila.id} className="flex items-start gap-3 px-6 py-5">
                   {/* Sin texto al lado, así que el nombre va en `aria-label` — y no
                       dice «seleccionar fila» a secas: con doscientas casillas
                       idénticas, eso no le sirve a nadie que navegue por teclado. */}
@@ -2129,9 +2375,9 @@ function ListaDeTrabajo({
                       onCrearIncompleta={() => onCrearIncompleta(fila.id, fila.version)}
                     />
                   </div>
-                </li>
+                </StaggerItem>
               ))}
-            </ul>
+            </Stagger>
           ) : null}
 
           {/* Pie del design system: dice cuántas filas quedan por decidir y en

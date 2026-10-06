@@ -19,7 +19,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Stack } from '@phosphor-icons/react';
+import { ArrowCounterClockwise, Receipt, Stack } from '@phosphor-icons/react';
 
 import {
   AlertDialog,
@@ -38,7 +38,10 @@ import { toast } from '@/components/ui/toast';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { conciliacionBancariaApi } from '@/lib/api/conciliacion-bancaria.service';
 import type { LoteActual, LoteDeConciliacion } from '@/lib/api/conciliacion-bancaria.types';
-import { diaLegible, mensajeDe, mesesLegibles, plata } from './formato';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { diaLegible, mesesLegibles, plata } from './formato';
 
 const ORIGEN: Record<LoteDeConciliacion['armadoPor'], string> = {
   persona: 'armado a mano',
@@ -64,6 +67,8 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
   const [confirmando, setConfirmando] = useState(false);
   const [reversando, setReversando] = useState<LoteDeConciliacion | null>(null);
   const [motivo, setMotivo] = useState('');
+  /** El error del motivo de la reversa que mandó el back (`campos[].motivo`). */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     try {
@@ -89,7 +94,9 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
       );
       await cargar();
     } catch (e) {
-      toast.error(mensajeDe(e, 'No se pudo armar el lote.'));
+      toast.error(
+        mensajeParaLaPersona(e, { porDefecto: 'No se pudo armar el lote.', accion: 'armar el lote' }),
+      );
     } finally {
       setOcupado(false);
     }
@@ -108,7 +115,9 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
       await cargar();
       onCambio();
     } catch (e) {
-      toast.error(mensajeDe(e, 'No se pudo aprobar el lote.'));
+      toast.error(
+        mensajeParaLaPersona(e, { porDefecto: 'No se pudo aprobar el lote.', accion: 'aprobar el lote' }),
+      );
     } finally {
       setOcupado(false);
     }
@@ -118,6 +127,7 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
     const lote = reversando;
     if (!lote) return;
     setOcupado(true);
+    setErrorDelMotivo(null);
     try {
       await conciliacionBancariaApi.reversarLote(lote.id, motivo.trim());
       toast.success('Lote reversado: sus recibos quedaron anulados y los movimientos volvieron a pendientes.');
@@ -126,7 +136,17 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
       await cargar();
       onCambio();
     } catch (e) {
-      toast.error(mensajeDe(e, 'No se pudo reversar el lote.'));
+      // Un 400 del motivo va debajo del motivo; lo demás, al aviso.
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: ['motivo'] as const,
+        porDefecto: 'No se pudo reversar el lote.',
+        accion: 'reversar el lote',
+      });
+      if (porCampo.motivo) {
+        setErrorDelMotivo(porCampo.motivo);
+        document.getElementById('motivo-reversa')?.focus();
+      }
+      if (sueltos.length > 0) toast.error(sueltos.join(' · '));
     } finally {
       setOcupado(false);
     }
@@ -136,7 +156,8 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
     return (
       <section className="rounded-lg border border-border bg-surface p-4" data-testid="lote-error">
         <p className="text-body-sm text-fg-muted">
-          No se pudo leer el lote de lo que calza exacto: {mensajeDe(error, 'error desconocido')}
+          No se pudo leer el lote de lo que calza exacto.{' '}
+          {mensajeParaLaPersona(error, { porDefecto: 'Prueba de nuevo en un momento.' })}
         </p>
       </section>
     );
@@ -255,6 +276,7 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
                     onClick={() => {
                       setReversando(l);
                       setMotivo('');
+                      setErrorDelMotivo(null);
                     }}
                     data-testid={`reversar-lote-${l.id}`}
                   >
@@ -267,8 +289,8 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
         </div>
       )}
 
-      <AlertDialog open={confirmando} onOpenChange={setConfirmando}>
-        <AlertDialogContent>
+      <AlertDialog open={confirmando} onOpenChange={(abierto) => !ocupado && setConfirmando(abierto)}>
+        <AlertDialogContent variant="confirm" icon={<Receipt weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               Aprobar {propuesto?.cantidad ?? 0} {propuesto?.cantidad === 1 ? 'movimiento' : 'movimientos'}
@@ -286,7 +308,7 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
                 e.preventDefault();
                 if (propuesto) void aprobar(propuesto);
               }}
-              disabled={ocupado}
+              loading={ocupado}
               data-testid="confirmar-aprobar-lote"
             >
               {ocupado ? 'Emitiendo…' : 'Aprobar y emitir'}
@@ -295,8 +317,11 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={reversando !== null} onOpenChange={(abierto) => !abierto && setReversando(null)}>
-        <AlertDialogContent>
+      <AlertDialog
+        open={reversando !== null}
+        onOpenChange={(abierto) => !abierto && !ocupado && setReversando(null)}
+      >
+        <AlertDialogContent variant="destructive" icon={<ArrowCounterClockwise weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>Reversar el lote</AlertDialogTitle>
             <AlertDialogDescription>
@@ -309,12 +334,21 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
             <Textarea
               id="motivo-reversa"
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
+              onChange={(e) => {
+                setMotivo(e.target.value);
+                setErrorDelMotivo(null);
+              }}
               placeholder="Se cargó el extracto de otra cuenta."
               rows={3}
               maxLength={280}
+              aria-invalid={errorDelMotivo ? true : undefined}
+              aria-describedby={errorDelMotivo ? 'motivo-reversa-error' : undefined}
             />
-            <p className="text-caption text-fg-muted">Entre 5 y 280 caracteres.</p>
+            <ErrorDelCampo
+              id="motivo-reversa-error"
+              mensaje={errorDelMotivo}
+              pista="Entre 5 y 280 caracteres."
+            />
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={ocupado}>Cancelar</AlertDialogCancel>
@@ -323,7 +357,8 @@ export function LoteDeLoQueCalzaExacto({ version, onCambio }: Props) {
                 e.preventDefault();
                 void reversar();
               }}
-              disabled={ocupado || motivo.trim().length < 5}
+              disabled={motivo.trim().length < 5}
+              loading={ocupado}
               data-testid="confirmar-reversar-lote"
             >
               Reversar

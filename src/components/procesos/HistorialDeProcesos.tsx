@@ -18,6 +18,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { procesosApi } from '@/lib/api/procesos.service'
@@ -155,6 +156,10 @@ export function HistorialDeProcesos() {
           )}
         </div>
 
+        {/* Esqueleto → vacío → lista con un fundido; al filtrar o al llegar
+            un proceso nuevo, las filas entran escalonadas y las que sobran
+            salen. */}
+        <CrossFade swapKey={!data && centro.cargando ? 'cargando' : lista.length === 0 ? 'vacio' : 'lista'}>
         {!data && centro.cargando ? (
           <ul className="space-y-2 p-4" aria-busy="true">
             {[0, 1, 2].map((i) => (
@@ -168,12 +173,15 @@ export function HistorialDeProcesos() {
               : 'Todavía no hay procesos. Cuando generes un archivo, emitas facturas, reproceses asientos o cargues la migración, aparecen aquí.'}
           </p>
         ) : (
-          <ul className="divide-y divide-border-faint">
+          <Stagger as="ul" layout={false} className="divide-y divide-border-faint">
             {lista.map((p) => (
-              <FilaDeProceso key={p.id} proceso={p} onCambio={() => void centro.refetch()} />
+              <StaggerItem as="li" key={p.id}>
+                <FilaDeProceso as="div" proceso={p} onCambio={() => void centro.refetch()} />
+              </StaggerItem>
             ))}
-          </ul>
+          </Stagger>
         )}
+        </CrossFade>
 
         {hayMas && (
           <div className="border-t border-border-faint px-4 py-3">

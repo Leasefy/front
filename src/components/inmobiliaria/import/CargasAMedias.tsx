@@ -77,7 +77,7 @@ export function CargasAMedias({
         onCambio();
         onRetomar(r.lote);
       } catch (e) {
-        toast.error(mensajeDeCarga(e, 'No pudimos reintentar esta carga.'));
+        toast.error(mensajeDeCarga(e, 'No pudimos reintentar esta carga.', 'reintentar esta carga'));
         onCambio();
       } finally {
         setTrabajando(null);
@@ -99,7 +99,7 @@ export function CargasAMedias({
         });
       } catch (e) {
         // `LOTE_EN_PROCESO` NO es un fallo de la persona: es «espera», y se dice.
-        toast.error(mensajeDeCarga(e, 'No pudimos descartar esa carga.'));
+        toast.error(mensajeDeCarga(e, 'No pudimos descartar esa carga.', 'descartar esa carga'));
       } finally {
         setTrabajando(null);
         setADescartar(null);
@@ -327,8 +327,11 @@ export function CargasAMedias({
     </section>
     ) : null}
 
-      <AlertDialog open={aDescartar !== null} onOpenChange={(a) => !a && setADescartar(null)}>
-        <AlertDialogContent data-testid="dialogo-descartar-carga">
+      <AlertDialog
+        open={aDescartar !== null}
+        onOpenChange={(a) => !a && trabajando === null && setADescartar(null)}
+      >
+        <AlertDialogContent variant="destructive" data-testid="dialogo-descartar-carga">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Descartar esta carga?</AlertDialogTitle>
             <AlertDialogDescription className="text-left">
@@ -337,8 +340,10 @@ export function CargasAMedias({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Volver</AlertDialogCancel>
+            <AlertDialogCancel disabled={trabajando !== null}>Volver</AlertDialogCancel>
+            {/* Abierto mientras descarta (antes se podía volver a apretar). */}
             <AlertDialogAction
+              loading={aDescartar !== null && trabajando === aDescartar.lote}
               data-testid="confirmar-descartar-carga"
               onClick={(e) => {
                 e.preventDefault();

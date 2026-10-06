@@ -144,7 +144,7 @@ export function PropertyGrid({
             <div
               key={property.id}
               ref={(el) => propertyRefCallback?.(property.id, el)}
-              className={cn('animate-in fade-in duration-300 relative', sobreTope && 'opacity-75')}
+              className={cn('animate-in fade-in duration-slow relative', sobreTope && 'opacity-75')}
             >
               <PropertyCard
                 property={property}
@@ -194,9 +194,10 @@ export function PropertyGrid({
               Mostrando {displayedProperties.length} de {properties.length}
             </span>
             <div className="w-24 h-1 bg-muted rounded-full overflow-hidden">
+              {/* `transform` (translateX), no `width`: «cargar más» corre la barra sin recalcular el layout. */}
               <div
-                className="h-full bg-muted-foreground rounded-full transition-all duration-300"
-                style={{ width: `${(displayedProperties.length / properties.length) * 100}%` }}
+                className="h-full w-full bg-muted-foreground rounded-full transition-transform duration-slow ease-enter"
+                style={{ transform: `translateX(${(displayedProperties.length / properties.length) * 100 - 100}%)` }}
               />
             </div>
           </div>

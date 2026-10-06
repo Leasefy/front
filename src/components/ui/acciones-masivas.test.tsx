@@ -81,6 +81,9 @@ describe('BarraDeAccionesMasivas', () => {
     expect(resumen()).not.toMatch(/marcad[oa]s?\b/)
 
     montar({ marcadas: 3 })
+    // La cifra CUENTA de 1 a 3 (`AnimatedNumber` de Cadence). Con las
+    // animaciones apagadas (`skipAnimations` de `vitest.setup.ts`) escribe la
+    // cifra final de una, sin esperar un cuadro.
     expect(resumen()).toContain('3 cruces')
   })
 

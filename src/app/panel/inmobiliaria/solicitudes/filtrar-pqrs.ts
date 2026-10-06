@@ -20,7 +20,20 @@ import type { Pqrs, PqrsEstado } from '@/lib/api/pqrs-agencia.types';
 
 export interface FiltrosDePqrs {
   texto: string;
-  estado: PqrsEstado | 'todos';
+  /** SO-25: además de cada estado, «vencidas» y «vencen pronto» (≤ 2 días hábiles). */
+  estado: PqrsEstado | 'todos' | 'vencidas' | 'porVencer';
+}
+
+const ABIERTA = (p: Pqrs) => p.estado !== 'RESUELTA' && p.estado !== 'CERRADA';
+/** Dos días hábiles desde hoy (sin festivos: es sólo el filtro; la cifra la da el back). */
+function enDosDiasHabiles(ahora: Date): number {
+  const d = new Date(ahora);
+  let n = 0;
+  while (n < 2) {
+    d.setDate(d.getDate() + 1);
+    if (d.getDay() !== 0 && d.getDay() !== 6) n += 1;
+  }
+  return d.getTime();
 }
 
 export const FILTROS_DE_PQRS_VACIOS: FiltrosDePqrs = { texto: '', estado: 'todos' };
@@ -29,10 +42,16 @@ export const FILTROS_DE_PQRS_VACIOS: FiltrosDePqrs = { texto: '', estado: 'todos
  * Se filtra en el cliente a propósito: la consulta ya trajo todo y el resumen
  * de arriba sigue contando el total de la agencia, no lo que quedó filtrado.
  */
-export function filtrarPqrs(solicitudes: Pqrs[], filtros: FiltrosDePqrs): Pqrs[] {
+export function filtrarPqrs(solicitudes: Pqrs[], filtros: FiltrosDePqrs, ahora: Date = new Date()): Pqrs[] {
   const texto = filtros.texto.trim().toLowerCase();
+  const limite = enDosDiasHabiles(ahora);
   return solicitudes.filter((p) => {
-    if (filtros.estado !== 'todos' && p.estado !== filtros.estado) return false;
+    const vence = new Date(p.slaVenceAt).getTime();
+    if (filtros.estado === 'vencidas') {
+      if (!ABIERTA(p) || vence > ahora.getTime()) return false;
+    } else if (filtros.estado === 'porVencer') {
+      if (!ABIERTA(p) || vence <= ahora.getTime() || vence > limite) return false;
+    } else if (filtros.estado !== 'todos' && p.estado !== filtros.estado) return false;
     if (!texto) return true;
     // Lo que alguien tiene en la mano cuando busca: el radicado que le dieron,
     // el nombre de quien reclamó, de qué se trata, o el inmueble.

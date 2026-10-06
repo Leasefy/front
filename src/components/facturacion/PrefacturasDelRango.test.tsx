@@ -262,7 +262,7 @@ describe('PrefacturasDelRango', () => {
 
   it('🔴 un contrato que se acaba dentro del rango lo dice, con la fecha', () => {
     const fila = q('[data-testid="rango-termina-ct-1"]');
-    expect(fila?.textContent).toContain('31/12/2026');
+    expect(fila?.textContent).toContain('31 dic 2026');
   });
 
   it('🔴 el mes a mes dice DÓNDE se cae cada contrato que termina', () => {
@@ -273,7 +273,7 @@ describe('PrefacturasDelRango', () => {
     expect(bloque).not.toBeNull();
     expect(bloque?.textContent).toContain('1686');
     expect(bloque?.textContent).toContain('Nubia Amparo David');
-    expect(bloque?.textContent).toContain('31/12/2026');
+    expect(bloque?.textContent).toContain('31 dic 2026');
     expect(q('[data-testid="rango-terminan-pildora-2026-12"]')?.textContent).toContain(
       '1 terminan acá',
     );

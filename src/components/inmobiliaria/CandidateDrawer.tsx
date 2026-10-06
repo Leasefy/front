@@ -24,10 +24,11 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Spinner as DSSpinner } from '@/components/ui/spinner';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet';
 import { IconButton } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
 import { EstudioPagadoALaInmobiliaria } from '@/components/inmobiliaria/estudios/EstudioPagadoALaInmobiliaria';
+import { ChipDeLaMarcaDelEstudio } from '@/components/inmobiliaria/MarcaDelEstudio';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { ChatThread } from '@/components/messages/ChatThread';
 import { useCandidateDocuments } from '@/lib/hooks/useDocuments';
@@ -36,7 +37,9 @@ import {
   type PartitionedScoreBreakdown,
 } from '@/lib/utils/score-breakdown';
 import { useContractByApplication } from '@/lib/hooks/useContracts';
-import { getAccessToken, ApiError } from '@/lib/api/client';
+import { getAccessToken } from '@/lib/api/client';
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { toast } from '@/components/ui/toast';
 import type { DocumentItem } from '@/lib/api/documents.service';
 import type {
   LandlordCandidate,
@@ -181,6 +184,33 @@ const DOC_TYPE_LABELS: Record<string, string> = {
  * cerrar: así el polling de la evaluación no queda vivo con el cajón cerrado,
  * y abrir a otro candidato lo vuelve a montar limpio.
  */
+/**
+ * Los fallos del cajón, por el traductor (02-10-2026). Antes se pintaba
+ * `err.message` crudo («Internal server error», «Failed to fetch») y el 404
+ * se adivinaba por el texto.
+ */
+
+/** ¿El análisis todavía no existe? (404 por el status, no por el texto). */
+export function noHayAnalisisTodavia(error: unknown): boolean {
+  return leerFallo(error).tipo === 'noExiste';
+}
+
+/** Lo que se dice cuando no se pudo cargar el análisis del candidato. */
+export function mensajeDelAnalisis(error: unknown): string {
+  return mensajeParaLaPersona(error, {
+    porDefecto: 'No se pudo cargar el análisis del candidato. Prueba de nuevo en un momento.',
+    accion: 'cargar el análisis',
+  });
+}
+
+/** Lo que se dice cuando falla la búsqueda de inmuebles compatibles. */
+export function mensajeDelMatching(error: unknown): string {
+  return mensajeParaLaPersona(error, {
+    porDefecto: 'No se pudieron buscar inmuebles compatibles. Prueba de nuevo en un momento.',
+    accion: 'buscar inmuebles compatibles',
+  });
+}
+
 export function CandidateDrawer({ candidate, onClose, onAction, puedeDecidir = true }: CandidateDrawerProps) {
   const ultimo = useUltimoPresente(candidate);
 
@@ -188,14 +218,15 @@ export function CandidateDrawer({ candidate, onClose, onAction, puedeDecidir = t
     <Sheet open={Boolean(candidate)} onOpenChange={(open) => { if (!open) onClose(); }}>
       <SheetContent
         side="right"
-        hideCloseButton
+        size="lg"
+        // El cuerpo (cabecera, cuerpo, pie) vive en `CuerpoDelCandidato`: el
+        // reparto automático no lo ve a través del componente.
+        layout="manual"
         aria-describedby={undefined}
-        className="w-full sm:max-w-2xl !p-0 flex flex-col gap-0 bg-background"
       >
         {ultimo && (
           <CuerpoDelCandidato
             candidate={ultimo}
-            onClose={onClose}
             onAction={onAction}
             puedeDecidir={puedeDecidir}
           />
@@ -208,12 +239,11 @@ export function CandidateDrawer({ candidate, onClose, onAction, puedeDecidir = t
 interface CuerpoDelCandidatoProps {
   /** Nunca null: el envoltorio no monta el cuerpo sin candidato. */
   candidate: LandlordCandidate;
-  onClose: () => void;
   onAction: (type: CandidateAction, candidate: LandlordCandidate) => void;
   puedeDecidir: boolean;
 }
 
-function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: CuerpoDelCandidatoProps) {
+function CuerpoDelCandidato({ candidate, onAction, puedeDecidir }: CuerpoDelCandidatoProps) {
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -295,11 +325,12 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
                 stopPolling();
               }
             } catch (err) {
-              if (err instanceof ApiError && err.status === 503) {
+              if (leerFallo(err).status === 503) {
                 // Agent micro unreachable — backend 503. Evaluation state intact.
                 // Stop polling and surface the error; there is no re-trigger from
-                // this drawer (T-0024 removed the front-side trigger).
-                setAiError('Servicio temporalmente no disponible. Reintenta en unos minutos.');
+                // this drawer (T-0024 removed the front-side trigger). El texto
+                // de la caída lo pone el traductor (`src/lib/conexion/`).
+                setAiError(mensajeDelAnalisis(err));
                 setIsLoadingAI(false);
                 stopPolling();
                 return;
@@ -313,11 +344,10 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
         setEvaluation(result);
       } catch (err) {
         if (cancelled) return;
-        const msg = err instanceof Error ? err.message : 'Error cargando análisis';
-        if (/404|not found|no.*encontr/i.test(msg)) {
+        if (noHayAnalisisTodavia(err)) {
           setNoEvaluationYet(true);
         } else {
-          setAiError(msg);
+          setAiError(mensajeDelAnalisis(err));
         }
       } finally {
         if (!cancelled && !pollingRef.current) setIsLoadingAI(false);
@@ -343,9 +373,7 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
       const res = await landlordApplicationsApi.triggerSmartMatching(candidate.id, 10);
       setMatchingResults(res);
     } catch (err) {
-      setMatchingError(
-        err instanceof Error ? err.message : 'Error al buscar propiedades compatibles'
-      );
+      setMatchingError(mensajeDelMatching(err));
     } finally {
       setIsMatching(false);
     }
@@ -389,46 +417,31 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
 
   return (
     <>
-        {/* sr-only title satisfies Dialog a11y; the visual header lives below */}
-        <SheetTitle className="sr-only">{candidate.tenantName || 'Candidato'}</SheetTitle>
-        {/* Header — flex-none keeps it pinned to the top of the panel */}
-        <div className="flex-none bg-background border-b border-border px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
+        <SheetHeader
+          leading={
             <div className="w-10 h-10 rounded-full bg-primary-soft flex items-center justify-center flex-shrink-0">
               <User className="w-5 h-5 text-primary" />
             </div>
-            <div className="min-w-0">
-              <h2 className="font-semibold text-foreground truncate">
-                {candidate.tenantName || 'Candidato'}
-              </h2>
-              <p className="text-xs text-fg-muted truncate flex items-center gap-1.5">
-                <Envelope className="w-3 h-3" />
-                {candidate.tenantEmail}
-              </p>
-            </div>
-          </div>
-          <IconButton
-            variant="ghost"
-            size="md"
-            icon={<X className="w-4 h-4" />}
-            onClick={onClose}
-            aria-label="Cerrar"
-            className="flex-shrink-0"
-          />
-        </div>
-
-        {/* Scrollable body — data-lenis-prevent so Lenis stays out of native scroll */}
-        <div
-          className="flex-1 overflow-y-auto p-6 space-y-6"
-          data-lenis-prevent
-          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+          }
+          title={<span className="block truncate">{candidate.tenantName || 'Candidato'}</span>}
         >
+          <p className="text-xs text-fg-muted truncate flex items-center gap-1.5">
+            <Envelope className="w-3 h-3" />
+            {candidate.tenantEmail}
+          </p>
+        </SheetHeader>
+
+        {/* El cuerpo: lo único que scrollea (trae data-lenis-prevent y overscroll contain) */}
+        <SheetBody className="space-y-6">
           {/* Status */}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm text-fg-muted">Estado:</span>
             <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-foreground">
               {STATUS_LABELS[candidate.status]}
             </span>
+            {/* 🔴 El estudio es opcional (Nico, 04-10-2026): qué falta, a la
+                vista antes de decidir. */}
+            <ChipDeLaMarcaDelEstudio marca={candidate.marcaDelEstudio} />
             <span className="text-sm text-fg-muted ml-auto">
               Postulado el {new Date(candidate.submittedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
@@ -511,8 +524,8 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
                 <ShieldCheck className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm text-foreground">Estudio de preescoring</h3>
-                <p className="text-xs text-fg-muted">Resultado del estudio de asegurabilidad que ya pagó el candidato</p>
+                <h3 className="font-semibold text-sm text-foreground">Estudio de asegurabilidad</h3>
+                <p className="text-xs text-fg-muted">El estudio con que se postuló, si lo hizo: es opcional</p>
               </div>
             </div>
             <PreScoringStudyPanel study={candidate.preScoringStudy} />
@@ -532,7 +545,7 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
                 <Robot className="w-4 h-4 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm text-foreground">Análisis IA · Tenant Scoring</h3>
+                <h3 className="font-semibold text-sm text-foreground">Análisis de riesgo con IA</h3>
                 <p className="text-xs text-fg-muted">Generado por el agente de evaluación de riesgo</p>
               </div>
             </div>
@@ -543,9 +556,9 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
               </div>
             ) : noEvaluationYet ? (
               <div className="rounded-lg bg-surface-muted p-3 border border-border">
-                <p className="text-xs text-fg-muted">
-                  Este candidato aún no tiene un análisis de IA generado por el agente.
-                </p>
+                {/* El puntaje no está prendido (Nico, 04-10-2026): no se
+                    promete uno que no va a llegar. */}
+                <p className="text-xs text-fg-muted">Sin puntaje.</p>
               </div>
             ) : evaluacionDesactualizada(evaluation) ? (
               <AvisoDeEvaluacionDesactualizada />
@@ -756,7 +769,7 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
                   <MagnifyingGlass className="w-4 h-4 text-fg-muted dark:text-fg-subtle" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-sm text-foreground">Smart Matching</h3>
+                  <h3 className="font-semibold text-sm text-foreground">Inmuebles compatibles</h3>
                   <p className="text-xs text-fg-muted">Otras propiedades de tu portafolio que le podrían calzar</p>
                 </div>
               </div>
@@ -919,7 +932,7 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
             <ChatThread applicationId={candidate.id} />
           </section>
 
-        </div>
+        </SheetBody>
 
         {/*
           * Las acciones, al pie y siempre visibles.
@@ -929,53 +942,47 @@ function CuerpoDelCandidato({ candidate, onClose, onAction, puedeDecidir }: Cuer
           * entero. Decidir es a lo que se viene, así que no se scrollea.
           */}
         {hayAcciones && (
-          <div className="flex-none border-t border-border bg-background px-6 py-4 space-y-3">
-            {requiresManualReview && (
-              // El motivo, a la vista. Antes vivía en un `title=`: el botón se
-              // veía apagado y nadie podía saber por qué.
-              <p className="flex items-start gap-2 text-xs text-danger">
-                <WarningCircle className="w-4 h-4 flex-shrink-0 mt-px" />
-                <span>
-                  El análisis marcó inconsistencias en los documentos. Revisa las alertas de
-                  integridad antes de decidir.
+          <SheetFooter
+            note={
+              requiresManualReview ? (
+                // El motivo, a la vista. Antes vivía en un `title=`: el botón se
+                // veía apagado y nadie podía saber por qué.
+                <span className="flex items-start gap-2 text-danger">
+                  <WarningCircle className="w-4 h-4 flex-shrink-0 mt-px" />
+                  <span>
+                    El análisis marcó inconsistencias en los documentos. Revisa las alertas de
+                    integridad antes de decidir.
+                  </span>
                 </span>
-              </p>
-            )}
-            <div className="flex flex-wrap items-center gap-2">
-              {canReject && (
-                <Button
-                  variant="destructive"
-                  hideArrow
-                  onClick={() => onAction('reject', candidate)}
-                  className="flex-1 min-w-[8rem]"
-                >
+              ) : undefined
+            }
+            start={
+              canReject ? (
+                <Button variant="secondary" hideArrow onClick={() => onAction('reject', candidate)}>
+                  <X weight="bold" className="w-4 h-4" aria-hidden="true" />
                   Rechazar
                 </Button>
-              )}
-              {canRequestInfo && (
-                <Button
-                  variant="secondary"
-                  hideArrow
-                  onClick={() => onAction('request-info', candidate)}
-                  className="flex-1 min-w-[8rem]"
-                >
-                  Pedir info
-                </Button>
-              )}
-              {/* Aprobar, SIEMPRE la última: es la acción que cierra el paso. */}
-              {canApprove && (
-                // success/green: Cadence Button has no success variant (logged gap) — real
-                // Button keeps all DS states; only the fill is overridden for the missing tone.
-                <Button
-                  hideArrow
-                  onClick={() => onAction('approve', candidate)}
-                  className="flex-1 min-w-[8rem] bg-success text-white hover:bg-success/90"
-                >
-                  Aprobar
-                </Button>
-              )}
-            </div>
-          </div>
+              ) : undefined
+            }
+          >
+            {canRequestInfo && (
+              <Button variant="secondary" hideArrow onClick={() => onAction('request-info', candidate)}>
+                Pedir info
+              </Button>
+            )}
+            {/* Aprobar, SIEMPRE la última: es la acción que cierra el paso. */}
+            {canApprove && (
+              // success/green: Cadence Button has no success variant (logged gap) — real
+              // Button keeps all DS states; only the fill is overridden for the missing tone.
+              <Button
+                hideArrow
+                onClick={() => onAction('approve', candidate)}
+                className="bg-success text-white hover:bg-success/90"
+              >
+                Aprobar
+              </Button>
+            )}
+          </SheetFooter>
         )}
     </>
   );
@@ -1521,7 +1528,17 @@ function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId:
       const res = await fetch(proxyUrl, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
-      if (!res.ok) throw new Error('No se pudo abrir el documento');
+      if (!res.ok) {
+        // Con su status, para que el traductor distinga lo nuestro (5xx) de lo
+        // que no está o no se puede ver.
+        const porQue =
+          res.status === 404
+            ? 'El documento ya no está disponible.'
+            : res.status === 403
+              ? 'No tienes permiso para abrir este documento.'
+              : '';
+        throw Object.assign(new Error(porQue), { status: res.status });
+      }
       const blob = await res.blob();
       const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1530,8 +1547,14 @@ function DocumentRow({ doc, applicationId }: { doc: DocumentItem; applicationId:
       a.rel = 'noopener noreferrer';
       a.click();
       setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
-    } catch {
-      // silently ignore — button just stays enabled again
+    } catch (err) {
+      // Antes se callaba: el botón volvía a prenderse y nada decía por qué.
+      toast.error('No se pudo abrir el documento', {
+        description: mensajeParaLaPersona(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'abrir el documento',
+        }),
+      });
     } finally {
       setIsOpening(false);
     }

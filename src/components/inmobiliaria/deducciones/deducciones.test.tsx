@@ -36,6 +36,10 @@ vi.mock('@/components/ui/dialog', () => ({
   DialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  // `responsive-dialog` (que entra por el barril `@/components/ui`) los lee
+  // al cargar: sin ellos el doble revienta antes de la primera prueba.
+  DialogTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  DialogClose: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 const toast = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
@@ -384,6 +388,87 @@ describe('<DeduccionesDelPropietario> — en la ficha', () => {
   });
 });
 
+/**
+ * Sistema de errores (02-10-2026): lo que el back rechaza POR CAMPO va bajo su
+ * campo, con el foco; lo demás va al toast con la regla de oro del traductor.
+ */
+describe('<DeduccionesDelPropietario> — cuando el back rechaza', () => {
+  async function registrarCon(error: unknown) {
+    api.listar.mockResolvedValue(listado({ deducciones: [] }));
+    api.registrar.mockRejectedValue(error);
+    await montar(<DeduccionesDelPropietario propietarioId="p1" inmuebles={[]} />);
+    await clic(porTestId('registrar-descuento-abrir'));
+    await escribir(document.body.querySelector<HTMLInputElement>('#descuento-motivo')!, 'Servicios de agosto');
+    await escribir(document.body.querySelector<HTMLInputElement>('#descuento-valor')!, '120000');
+    await adjuntar(new File(['%PDF'], 'epm.pdf', { type: 'application/pdf' }));
+    await clic(porTestId('descuento-guardar'));
+  }
+
+  it('🔴 un 400 con `campos`: el error va bajo el valor, con el foco, y no hay toast', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const tope = 'El valor no puede pasar de $ 100.000.000.';
+    await registrarCon(
+      new ApiError(400, [tope], 'DATOS_INVALIDOS', {
+        campos: [{ campo: 'valorCop', regla: 'maximo', mensaje: tope }],
+      }),
+    );
+    const valor = document.body.querySelector<HTMLInputElement>('#descuento-valor')!;
+    expect(document.getElementById('descuento-valor-error')?.textContent).toBe(tope);
+    expect(valor.getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe(valor);
+    expect(toast.error).not.toHaveBeenCalled();
+    // El diálogo sigue abierto con lo escrito.
+    expect(document.body.querySelector<HTMLInputElement>('#descuento-motivo')!.value).toBe('Servicios de agosto');
+  });
+
+  it('un 5xx dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    await registrarCon(new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }));
+    const [, { description }] = toast.error.mock.calls[0] as [string, { description: string }];
+    expect(description).toMatch(/^No pudimos registrar el descuento: algo falló de nuestro lado/);
+    expect(description).toContain('ab12cd34');
+    expect(description).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('sin respuesta (la red) habla de la conexión', async () => {
+    await registrarCon(new TypeError('Failed to fetch'));
+    const [, { description }] = toast.error.mock.calls[0] as [string, { description: string }];
+    expect(description).toMatch(/conexión/);
+  });
+
+  async function anularCon(error: unknown) {
+    api.listar.mockResolvedValue(listado());
+    api.anular.mockRejectedValue(error);
+    await montar(<DeduccionesDelPropietario propietarioId="p1" inmuebles={[]} />);
+    await clic(porTestId('anular-ded-1'));
+    await escribir(document.body.querySelector<HTMLInputElement>('#anular-motivo')!, 'Lo pagó el propietario');
+    const confirmar = [...porTestId('anular-deduccion').querySelectorAll('button')].find(
+      (b) => b.textContent === 'Anular descuento',
+    )!;
+    await clic(confirmar);
+  }
+
+  it('anular: un motivo rechazado va bajo el motivo, con el foco y sin toast', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const frase = 'El motivo puede tener hasta 500 caracteres.';
+    await anularCon(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', { campos: [{ campo: 'motivo', regla: 'longitud_maxima', mensaje: frase }] }),
+    );
+    const motivo = document.body.querySelector<HTMLInputElement>('#anular-motivo')!;
+    expect(document.getElementById('anular-motivo-error')?.textContent).toBe(frase);
+    expect(document.activeElement).toBe(motivo);
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it('anular: un 5xx va al toast con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    await anularCon(new ApiError(503, 'x', 'ERROR_INTERNO', { referencia: 'feed0001' }));
+    const [titulo, { description }] = toast.error.mock.calls[0] as [string, { description: string }];
+    expect(titulo).toBe('No se anuló el descuento');
+    expect(description).toContain('feed0001');
+  });
+});
+
 function bloque(extra: Partial<DeduccionesDeLaLiquidacion> = {}): DeduccionesDeLaLiquidacion {
   const d = deduccion({ estado: 'EN_LIQUIDACION' });
   return {
@@ -414,12 +499,12 @@ describe('<BloqueDeDeducciones> — la liquidación con sus deducciones', () => 
     const b = porTestId('bloque-de-deducciones');
     expect(b.textContent).toContain('Neto del mes');
     expect(b.textContent).toContain('Descuento: Predial 2026');
-    expect(porTestId('bloque-a-girar').textContent).toBe('$550.000');
+    expect(porTestId('bloque-a-girar').textContent).toBe('$\u00a0550.000');
     expect(document.body.querySelector('[data-testid="bloque-saldo-en-contra"]')).toBeNull();
     expect(document.body.querySelector('[data-testid="soporte-ded-1"]')).not.toBeNull();
   });
 
-  it('🔴 si las deducciones superan el neto: gira $0 y dice cuánto pasa a la siguiente liquidación', async () => {
+  it('🔴 si las deducciones superan el neto: gira $ 0 y dice cuánto pasa a la siguiente liquidación', async () => {
     await montar(
       <BloqueDeDeducciones
         bloque={bloque({
@@ -432,9 +517,9 @@ describe('<BloqueDeDeducciones> — la liquidación con sus deducciones', () => 
       />,
     );
 
-    expect(porTestId('bloque-a-girar').textContent).toBe('$0');
+    expect(porTestId('bloque-a-girar').textContent).toBe('$\u00a00');
     expect(porTestId('bloque-saldo-en-contra').textContent).toContain(
-      '$150.000 pasan a su siguiente liquidación',
+      '$\u00a0150.000 pasan a su siguiente liquidación',
     );
   });
 });
@@ -552,5 +637,50 @@ describe('<DeduccionesDelPropietario> — lo que le debe a la inmobiliaria', () 
 
     expect(porTestId('cuenta-de-cobro-sin-migrar').textContent).toContain('todavía no está disponible');
     expect(document.body.querySelector('[data-testid="generar-cuenta-de-cobro"]')).toBeNull();
+  });
+});
+
+/**
+ * 🔴 P-27 (QA-PROP, 03-10): el soporte usaba el selector NATIVO del navegador
+ * («Choose File», en el idioma del navegador) y, al enviar con errores, el foco
+ * se quedaba en el botón. Ahora es la tarjeta de archivo de la casa y el foco
+ * va al primer campo con error.
+ */
+describe('<RegistrarDescuentoDialog> — la tarjeta de archivo y el foco (P-27)', () => {
+  async function abrirVacio(inmuebles: { consignacionId: string; titulo: string }[] = []) {
+    await montar(<RegistrarDescuentoDialog abierto onOpenChange={() => {}} inmuebles={inmuebles} onGuardar={vi.fn()} />);
+  }
+
+  it('🔴 el soporte es la tarjeta de la casa en español, con el input de verdad escondido', async () => {
+    await abrirVacio();
+    const selector = porTestId('descuento-soporte-selector');
+    expect(selector.textContent).toContain('Elegir archivo');
+    const input = porTestId<HTMLInputElement>('descuento-soporte');
+    expect(input.type).toBe('file');
+    expect(input.className).toContain('sr-only');
+    expect(input.getAttribute('aria-describedby')).toBe('descuento-soporte-error');
+    expect(input.getAttribute('aria-required')).toBe('true');
+  });
+
+  it('elegido el archivo, la tarjeta lo nombra y deja quitarlo', async () => {
+    await abrirVacio();
+    await adjuntar(new File(['%PDF'], 'predial.pdf', { type: 'application/pdf' }));
+    expect(porTestId('descuento-soporte-selector').textContent).toContain('predial.pdf');
+  });
+
+  it('🔴 al enviar vacío, el foco va al PRIMER campo con error (el motivo), no se queda en el botón', async () => {
+    await abrirVacio();
+    await clic(porTestId('descuento-guardar'));
+    expect(document.activeElement).toBe(document.body.querySelector('#descuento-motivo'));
+  });
+
+  it('si lo único que falta es el soporte, el foco va a «Elegir archivo»', async () => {
+    await abrirVacio();
+    await escribir(document.body.querySelector<HTMLInputElement>('#descuento-motivo')!, 'Predial 2026');
+    await escribir(document.body.querySelector<HTMLInputElement>('#descuento-valor')!, '350000');
+    await clic(porTestId('descuento-guardar'));
+    const boton = porTestId('descuento-soporte-selector').querySelector('button');
+    expect(document.activeElement).toBe(boton);
+    expect(porTestId<HTMLInputElement>('descuento-soporte').getAttribute('aria-invalid')).toBe('true');
   });
 });

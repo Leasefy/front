@@ -31,15 +31,16 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Input } from '@/components/ui'
 import { Textarea } from '@/components/ui/textarea'
 import { Spinner } from '@/components/ui/spinner'
+import { AnimatedNumber, CrossFade, Presence, SegmentedControl, Card } from '@leasefy/cadence'
+// El Dialog del ADAPTADOR local (z del panel y la ✕ del producto), no el de Cadence pelado.
 import {
-  SegmentedControl,
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  Card,
-} from '@leasefy/cadence'
+} from '@/components/ui/dialog'
 import {
   useDisputes,
   type CobranzaDispute,
@@ -49,6 +50,11 @@ import {
 import { DisputasList } from '@/components/inmobiliaria/cobranza/DisputasList'
 import { DisputaDetailPanel } from '@/components/inmobiliaria/cobranza/DisputaDetailPanel'
 import { TablePagination } from '@/components/ui/pagination'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import {
   DebtorPicker,
@@ -59,7 +65,17 @@ const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const DEUDORES_HREF = `${BASE}/deudores`
 
 const REASON_MIN = 1
+/** El mismo tope del micro (`reason: z.string().trim().min(1).max(2000)`). */
 const REASON_MAX = 2000
+
+/** Los campos del formulario de abrir disputa, con el nombre que usa el micro en `campos`. */
+type CampoDeLaDisputa = 'debtorId' | 'reason' | 'disputedAmount'
+const ID_DEL_CAMPO_DE_LA_DISPUTA: Record<CampoDeLaDisputa, string> = {
+  debtorId: 'disputa-debtor',
+  reason: 'disputa-reason',
+  disputedAmount: 'disputa-monto',
+}
+const CAMPOS_DE_LA_DISPUTA = Object.keys(ID_DEL_CAMPO_DE_LA_DISPUTA) as CampoDeLaDisputa[]
 
 /**
  * Alto de la cabecera del panel + las secciones de Cobros + las pestañas de
@@ -93,7 +109,7 @@ interface AbrirDisputaModalProps {
     debtorId: string
     reason: string
     disputedAmount?: number
-  }) => Promise<{ ok: boolean; status: number; persisted: boolean }>
+  }) => Promise<{ ok: boolean; status: number; persisted: boolean; fallo?: unknown; error?: string }>
 }
 
 function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps) {
@@ -102,6 +118,10 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
   const [monto, setMonto] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  /** El error de cada campo que mandó el micro en `campos` (un 400). */
+  const [erroresDelServidor, setErroresDelServidor] = useState<
+    Partial<Record<CampoDeLaDisputa, string>>
+  >({})
 
   // El deudor se ELIGE de la cartera; el UUID nunca lo escribe una persona.
   const debtorIdOk = debtor !== null
@@ -123,37 +143,61 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
       ...(montoNum !== undefined ? { disputedAmount: montoNum } : {}),
     })
     setSubmitting(false)
+    setErroresDelServidor({})
     if (res.ok) {
       setDebtor(null)
       setReason('')
       setMonto('')
       onClose()
     } else if (res.status === 403) {
+      // El 403 del micro no trae un `message` para la persona: se dice acá.
       setSubmitError('No tienes permiso para abrir disputas.')
     } else if (res.status === 404) {
       setSubmitError('No se encontró el deudor con ese identificador.')
-    } else if (res.status === 0) {
+    } else if (res.fallo === undefined) {
+      // La acción ni salió (sin agente configurado).
       setSubmitError(
-        'No se pudo registrar la disputa. El servicio aún no está disponible.',
+        mensajeDeLaAccion(res, {
+          porDefecto: 'No pudimos registrar la disputa.',
+          accion: 'registrar la disputa',
+        }),
       )
     } else {
-      setSubmitError(`No se pudo registrar la disputa (error ${res.status}).`)
+      // Un 400 con `campos` va a su campo; lo demás (un 5xx con su referencia,
+      // la red) abajo. Antes decía «error 500» o culpaba al servicio.
+      const reparto = repartirErroresDelServidor<CampoDeLaDisputa>(res.fallo, {
+        campos: CAMPOS_DE_LA_DISPUTA,
+        porDefecto: 'No pudimos registrar la disputa.',
+        accion: 'registrar la disputa',
+      })
+      setErroresDelServidor(reparto.porCampo)
+      const primero = CAMPOS_DE_LA_DISPUTA.find((c) => reparto.porCampo[c])
+      if (primero) document.getElementById(ID_DEL_CAMPO_DE_LA_DISPUTA[primero])?.focus()
+      setSubmitError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null)
     }
   }, [canSubmit, onSubmit, debtor, reason, montoNum, onClose])
 
+  /** Lo que se le dice a la persona debajo de cada campo: el tope del cliente o lo del micro. */
+  const errorDelMotivo =
+    reasonLen > REASON_MAX
+      ? `El motivo puede tener hasta ${REASON_MAX.toLocaleString('es-CO')} caracteres.`
+      : erroresDelServidor.reason
+  const errorDelMonto = !montoOk
+    ? 'El monto debe ser un número mayor o igual a cero.'
+    : erroresDelServidor.disputedAmount
+
   return (
     <Dialog open={isOpen} onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="md:max-w-lg">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>Abrir una disputa</DialogTitle>
+          <DialogDescription>
+            Registrar una disputa deja constancia y la pone en la cola de
+            revisión humana. No pausa la cobranza automáticamente.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          <p className="text-xs text-fg-muted leading-relaxed">
-            Registrar una disputa deja constancia y la pone en la cola de
-            revisión humana. No pausa la cobranza automáticamente.
-          </p>
-
           {/* Deudor — se elige de la cartera, nunca se escribe un UUID */}
           <div className="space-y-1.5">
             <label
@@ -165,8 +209,12 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             <DebtorPicker
               inputId="disputa-debtor"
               value={debtor}
-              onChange={setDebtor}
+              onChange={(d) => {
+                setDebtor(d)
+                setErroresDelServidor(({ debtorId: _, ...resto }) => resto)
+              }}
             />
+            <ErrorDelCampo id="disputa-debtor-error" mensaje={erroresDelServidor.debtorId} />
           </div>
 
           {/* Motivo */}
@@ -179,15 +227,24 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             </label>
             <Textarea
               id="disputa-reason"
+              aria-required="true"
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={(e) => {
+                setReason(e.target.value)
+                setErroresDelServidor(({ reason: _, ...resto }) => resto)
+              }}
               rows={4}
               maxLength={REASON_MAX + 50}
               placeholder="Describe qué disputa el deudor (saldo, cargo, etc.)."
               className="leading-relaxed"
+              aria-invalid={errorDelMotivo ? true : undefined}
+              aria-describedby={errorDelMotivo ? 'disputa-reason-error' : undefined}
             />
-            <div className="flex items-center justify-end text-xs text-fg-muted tabular-nums">
-              {reasonLen} / {REASON_MAX}
+            <div className="flex items-start justify-between gap-3">
+              <ErrorDelCampo id="disputa-reason-error" mensaje={errorDelMotivo} className="mt-0" />
+              <span className="ml-auto shrink-0 text-xs text-fg-muted tabular-nums">
+                {reasonLen} / {REASON_MAX}
+              </span>
             </div>
           </div>
 
@@ -203,18 +260,21 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
               id="disputa-monto"
               inputMode="numeric"
               value={monto}
-              onChange={(e) => setMonto(e.target.value)}
+              onChange={(e) => {
+                setMonto(e.target.value)
+                setErroresDelServidor(({ disputedAmount: _, ...resto }) => resto)
+              }}
               placeholder="COP"
               className="tabular-nums"
+              aria-invalid={errorDelMonto ? true : undefined}
+              aria-describedby={errorDelMonto ? 'disputa-monto-error' : undefined}
             />
-            {!montoOk && (
-              <p className="text-xs text-danger">
-                El monto debe ser un número mayor o igual a cero.
-              </p>
-            )}
+            <ErrorDelCampo id="disputa-monto-error" mensaje={errorDelMonto} />
           </div>
 
-          {submitError && <p className="text-xs text-danger">{submitError}</p>}
+          <Presence as="p" show={Boolean(submitError)} role="alert" className="text-xs text-danger" data-testid="disputa-abrir-error">
+              {submitError}
+          </Presence>
         </div>
 
         <DialogFooter>
@@ -232,6 +292,7 @@ function AbrirDisputaModal({ isOpen, onClose, onSubmit }: AbrirDisputaModalProps
             hideArrow
             onClick={() => void handleSubmit()}
             disabled={!canSubmit}
+            isLoading={submitting}
             data-testid="disputa-abrir-submit"
           >
             {submitting ? 'Registrando…' : 'Registrar disputa'}
@@ -249,8 +310,14 @@ function DisputasContent() {
 
   // Filtro server-side por estado (el endpoint soporta ?status).
   const [filtro, setFiltro] = useState<EstadoFiltro>('todas')
-  const { disputes, isLoading, error, refetch, openDispute, resolveDispute } =
+  const { disputes, isLoading, error, fallo, refetch, openDispute, resolveDispute } =
     useDisputes(filtro === 'todas' ? {} : { status: filtro })
+  // Abrir y resolver es `cobranza:intervene` en el micro (también la lista).
+  // QA-IA-B (04-10-2026): al contador se le ofrecía «Abrir disputa» y la
+  // lista decía «No pudimos cargar las disputas. 403».
+  const { canAccess } = usePermissionsContext()
+  const puedeActuar = canAccess('cobranza', 'intervene')
+  const sinPermiso = (fallo as { status?: number } | null)?.status === 403
 
   useAutoRefresh(refetch)
 
@@ -315,6 +382,8 @@ function DisputasContent() {
         ok: res.ok,
         status: res.status,
         persisted: res.data?.persisted ?? false,
+        fallo: res.fallo,
+        error: res.error,
       }
     },
     [openDispute, refetch],
@@ -333,6 +402,8 @@ function DisputasContent() {
         ok: res.ok,
         status: res.status,
         recommendation: res.data?.recommendation ?? null,
+        fallo: res.fallo,
+        error: res.error,
       }
     },
     [resolveDispute, refetch, authUser?.id],
@@ -356,56 +427,67 @@ function DisputasContent() {
           pausa ni reactiva la cobranza por su cuenta.
         </p>
       </div>
-      <Button
-        size="sm"
-        hideArrow
-        onClick={() => setAbrirOpen(true)}
-        data-testid="disputa-abrir"
-        className="shrink-0"
-      >
-        Abrir disputa
-      </Button>
+      {puedeActuar && !sinPermiso && (
+        <Button
+          size="sm"
+          hideArrow
+          onClick={() => setAbrirOpen(true)}
+          data-testid="disputa-abrir"
+          className="shrink-0"
+        >
+          Abrir disputa
+        </Button>
+      )}
     </header>
   )
 
   // ── Primer load ────────────────────────────────────────────────────────────
+  // Movimiento: cargando → disputas en un `CrossFade` (el mismo nodo en las
+  // dos ramas); lo que ya estaba al montarse no se anima.
   if (isLoading && disputes.length === 0 && !error) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="p-6 lg:p-8 space-y-6">
         {header}
         <div className="flex items-center justify-center py-12">
           <Spinner size="md" variant="default" />
         </div>
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="disputas">
     <div className="p-6 lg:p-8 space-y-6">
       {header}
 
       {/* Error de carga. Cuando falla, ABAJO no puede decirse «no hay
           disputas»: no sabemos si hay o no. */}
-      {hayError && (
-        <div
+      <Presence show={hayError}
           role="alert"
           className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center justify-between gap-3 flex-wrap"
         >
           <span className="flex items-center gap-2">
             <ShieldWarning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
-            No pudimos cargar las disputas. {error}
+            <span data-testid="disputas-fallo">
+              {sinPermiso
+                ? 'Tu rol no puede ver las disputas: las abre y las resuelve quien gestiona la cobranza. Si las necesitas, pídele el acceso a un administrador.'
+                : mensajeParaLaPersona(fallo ?? error, { porDefecto: 'No pudimos cargar las disputas.' })}
+            </span>
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            hideArrow
-            onClick={() => void refetch()}
-            className="shrink-0"
-          >
-            Reintentar
-          </Button>
-        </div>
-      )}
+          {!sinPermiso && (
+            <Button
+              variant="outline"
+              size="sm"
+              hideArrow
+              onClick={() => void refetch()}
+              className="shrink-0"
+            >
+              Reintentar
+            </Button>
+          )}
+      </Presence>
 
       {/* Filtro por estado + conteo */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -420,12 +502,15 @@ function DisputasContent() {
         />
         {disputes.length > 0 && (
           <span className="text-xs text-fg-muted tabular-nums">
-            {counts.open} abiertas · {counts.in_review} en revisión ·{' '}
-            {counts.resolved} resueltas
+            <AnimatedNumber value={counts.open} format={(n) => String(Math.round(n))} /> abiertas ·{' '}
+            <AnimatedNumber value={counts.in_review} format={(n) => String(Math.round(n))} /> en revisión ·{' '}
+            <AnimatedNumber value={counts.resolved} format={(n) => String(Math.round(n))} /> resueltas
           </span>
         )}
       </div>
 
+      {/* Vacío ⇄ maestro-detalle: el uno sale y el otro entra. */}
+      <CrossFade swapKey={hayError ? 'fallo' : disputes.length === 0 ? `vacio-${filtro}` : 'lista'}>
       {hayError ? null : disputes.length === 0 ? (
         <EmptyState
           icon={Scales}
@@ -504,6 +589,7 @@ function DisputasContent() {
           </Card>
         </div>
       )}
+      </CrossFade>
 
       {/* Alta — sigue siendo modal: es una creación, no una lectura */}
       <AbrirDisputaModal
@@ -512,6 +598,7 @@ function DisputasContent() {
         onSubmit={handleOpenDispute}
       />
     </div>
+    </CrossFade>
   )
 }
 

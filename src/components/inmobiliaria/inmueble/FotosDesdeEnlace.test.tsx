@@ -139,6 +139,18 @@ describe('<FotosDesdeEnlace>', () => {
     expect(q('error-fotos-enlace')?.textContent).toContain('empezando por https://');
   });
 
+  it('si traerlas lanza (sin red), lo dice en el campo y habla de la conexión', async () => {
+    // Antes era un try/finally sin catch: un rechazo sin atrapar y nada en pantalla.
+    fotosDesdeEnlace.mockRejectedValue(new TypeError('Failed to fetch'));
+    await pintar();
+
+    await escribir('https://x/1');
+    await traer();
+
+    expect(q('error-fotos-enlace')?.textContent).toMatch(/conexión/);
+    expect((q('enlace-del-aviso') as HTMLInputElement).getAttribute('aria-invalid')).toBe('true');
+  });
+
   /* Sin cupo no se ofrece: un campo que no puede hacer nada es peor que
      ninguno. */
   it('sin cupo no se dibuja', async () => {

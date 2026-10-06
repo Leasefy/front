@@ -214,3 +214,79 @@ function escribir(input: HTMLInputElement, valor: string) {
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
 }
+
+/*
+ * Sistema de errores (02-10-2026): 🔁 la tasa fuera de 0–500 dice la frase del
+ * back bajo el campo; lo que el back dice de un campo va bajo ese campo; un
+ * 5xx dice «de nuestro lado» con la referencia.
+ */
+describe('tasas de usura · errores en su campo', () => {
+  async function abrirEditor() {
+    await pintar();
+    await act(async () => {
+      botones('Cargar una tasa')[0]!.click();
+    });
+    escribir(document.body.querySelector<HTMLInputElement>('#tasa-mes')!, '2026-08');
+  }
+
+  it('🔁 2486 (sin la coma) dice la frase del back bajo el campo y no deja guardar', async () => {
+    await abrirEditor();
+    escribir(document.body.querySelector<HTMLInputElement>('#tasa-efectiva')!, '2486');
+    // La ayuda gris sale y el error entra con un cruce (Cadence): se espera.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 400));
+    });
+    expect(document.getElementById('tasa-efectiva-error')?.textContent).toBe(
+      'La tasa de usura no puede pasar del 500 % efectivo anual. Revisa que no sobren ceros.',
+    );
+    expect(botones('Guardar')[0]!.disabled).toBe(true);
+    expect(h.guardarUsura).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 400 con `campos` en `fuente` va bajo la fuente', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const mensaje = 'La fuente puede tener hasta 200 caracteres.';
+    h.guardarUsura.mockRejectedValueOnce(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'fuente', regla: 'longitud_maxima', mensaje }],
+      }),
+    );
+    await abrirEditor();
+    escribir(document.body.querySelector<HTMLInputElement>('#tasa-efectiva')!, '25,5');
+    await act(async () => {
+      botones('Guardar')[0]!.click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    const fuente = document.body.querySelector<HTMLInputElement>('#tasa-fuente')!;
+    expect(fuente.getAttribute('aria-invalid')).toBe('true');
+    expect(document.getElementById('tasa-fuente-error')?.textContent).toBe(mensaje);
+    expect(document.activeElement).toBe(fuente);
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const { toast } = await import('@/components/ui/toast');
+    h.guardarUsura.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'eeee5555',
+      }),
+    );
+    await abrirEditor();
+    escribir(document.body.querySelector<HTMLInputElement>('#tasa-efectiva')!, '25,5');
+    await act(async () => {
+      botones('Guardar')[0]!.click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    const [, opciones] = vi.mocked(toast.error).mock.calls.at(-1)! as [string, { description: string }];
+    expect(opciones.description).toMatch(/de nuestro lado/);
+    expect(opciones.description).toContain('eeee5555');
+  });
+});

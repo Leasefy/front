@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import {
   Bank,
   PencilSimple,
@@ -11,7 +10,7 @@ import {
   Check,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { IconButton } from '@leasefy/cadence';
+import { IconButton, CrossFade, Presence } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type { PropietarioBankAccount } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_BANKS } from '@/lib/types/payment-accounts';
@@ -163,9 +162,15 @@ export function PropietarioBankInfo({
         <div className="flex items-center justify-between py-2 border-b border-border-faint dark:border-border-strong">
           <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.propietario.bankInfo.number')}</span>
           <div className="flex items-center gap-2">
-            <span className="font-mono font-medium text-fg">
+            {/* Mostrar u ocultar el número cruza un texto con el otro. */}
+            <CrossFade
+              as="span"
+              swapKey={showAccount ? 'visible' : 'oculta'}
+              direction="none"
+              className="font-mono font-medium text-fg"
+            >
               {showAccount ? bankAccount.accountNumber : maskAccount(bankAccount.accountNumber)}
-            </span>
+            </CrossFade>
             <div className="flex items-center gap-1">
               <IconButton
                 variant="ghost"
@@ -175,16 +180,22 @@ export function PropietarioBankInfo({
                 aria-label={showAccount ? t('inmobiliaria.propietario.bankInfo.hide') : t('inmobiliaria.propietario.bankInfo.show')}
                 icon={showAccount ? <EyeSlash className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               />
-              {showAccount && (
+              {/* «Copiar» entra y sale con el número; el visto de «copiado»
+                  se cruza con el ícono de copiar. */}
+              <Presence show={showAccount} initial={false} direction="left" distance="xs" as="span" className="inline-flex">
                 <IconButton
                   variant="ghost"
                   size="sm"
                   onClick={handleCopy}
                   title={t('inmobiliaria.propietario.bankInfo.copy')}
                   aria-label={t('inmobiliaria.propietario.bankInfo.copy')}
-                  icon={copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                  icon={
+                    <CrossFade as="span" swapKey={copied ? 'copiado' : 'copiar'} className="inline-flex">
+                      {copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}
+                    </CrossFade>
+                  }
                 />
-              )}
+              </Presence>
             </div>
           </div>
         </div>

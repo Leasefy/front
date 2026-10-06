@@ -147,3 +147,47 @@ describe('useInquilinoDetalle — lo que debe', () => {
     expect(result.current?.refDeCuenta).toBeNull()
   })
 })
+
+describe('useInquilinoDetalle — cobros cuando un contrato falla (QA-INQ-95 ronda 2, F-26)', () => {
+  let root: Root | undefined
+  let container: HTMLDivElement | undefined
+  const result: { current: ReturnType<typeof useInquilinoDetalle> } = { current: null }
+  function Sonda({ persona }: { persona: Inquilino }) {
+    result.current = useInquilinoDetalle(persona)
+    return null
+  }
+  const DOS: Inquilino = {
+    ...PERSONA,
+    arriendos: [PERSONA.arriendos[0], { ...PERSONA.arriendos[0], leaseId: null, contractId: 'c2', estado: 'ENDED' }],
+  }
+  beforeEach(() => {
+    resumenMock.mockReset().mockResolvedValue(resumen())
+    obtenerMock.mockReset().mockResolvedValue(DOS)
+    cobrosMock.mockReset().mockImplementation(async (id: string) => {
+      if (id === 'c1') throw new Error('500')
+      return []
+    })
+    result.current = null
+  })
+  afterEach(() => {
+    const r = root
+    if (r) act(() => r.unmount())
+    container?.remove()
+  })
+  it('uno falla y el otro no trae cobros: es un fallo con «Reintentar», no «ningún cobro»', async () => {
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+    await act(async () => {
+      root!.render(<Sonda persona={DOS} />)
+    })
+    for (let i = 0; i < 6; i++) {
+      await act(async () => {
+        await Promise.resolve()
+      })
+    }
+    expect(cobrosMock).toHaveBeenCalledWith('c1')
+    expect(cobrosMock).toHaveBeenCalledWith('c2')
+    expect(result.current?.errorPagos).toBe(true)
+  })
+})

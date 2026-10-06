@@ -44,8 +44,14 @@ const RAIZ = join(process.cwd(), 'src')
  */
 const ZONAS_PERMITIDAS = ['app/admin/', 'components/admin/']
 
-/** `beforeunload` y compañía no son confirmaciones nuestras. */
-const LLAMADA_NATIVA = /\bwindow\.(confirm|alert|prompt)\s*\(/
+/**
+ * `beforeunload` y compañía no son confirmaciones nuestras.
+ *
+ * `globalThis.confirm(` y `self.confirm(` son el mismo diálogo por otra puerta:
+ * así se coló el de «Reportes a propietarios» (02-10-2026), que este guardián
+ * no veía porque sólo buscaba `window.`.
+ */
+const LLAMADA_NATIVA = /\b(?:window|globalThis|self)\.(confirm|alert|prompt)\s*\(/
 
 function archivosDeCodigo(dir: string, encontrados: string[] = []): string[] {
   for (const entrada of readdirSync(dir, { withFileTypes: true })) {
@@ -99,8 +105,8 @@ describe('el panel confirma con el sistema de diseño, no con el navegador', () 
     }
     expect(
       infractores,
-      'Estos archivos preguntan con un diálogo del navegador. Usa AlertDialog ' +
-        'de components/ui/alert-dialog.tsx: el del navegador ignora el tema, ' +
+      'Estos archivos preguntan con un diálogo del navegador. Usa confirmar() / avisar() ' +
+        'de components/ui/confirmar.tsx (o AlertDialog): el del navegador ignora el tema, ' +
         'no se puede probar y algunos navegadores lo suprimen, con lo que la ' +
         'acción destructiva pasa sin confirmación.',
     ).toEqual([])

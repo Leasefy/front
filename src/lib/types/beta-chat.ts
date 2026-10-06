@@ -87,6 +87,19 @@ export interface AgentExecution {
   durationMs?: number;
   /** Error message if status === 'failed' */
   error?: string;
+  /**
+   * Lo que el especialista contestó, en una línea (`dispatch_result.dispatch.summary`).
+   * Lo pinta la delegación del turno («Ori → Laura» + su resumen) en los
+   * mensajes ya cerrados, donde los pasos en vivo ya no están (02-10-2026).
+   */
+  resumen?: string;
+  /**
+   * El id del despacho que manda el micro (`dispatch_start.id`, `dispatch.id`;
+   * desde el commit `33d8607b` del micro): con él dos despachos al mismo
+   * especialista en un turno no se confunden. Un micro anterior no lo manda y
+   * se empareja por orden.
+   */
+  despachoId?: string;
 }
 
 /** An agent activity block in the conversation */
@@ -130,6 +143,11 @@ export interface TurnStep {
   detailKey?: string;
   detailVars?: Record<string, string | number>;
   agentType?: AgentType;
+  /**
+   * El despacho al que pertenece (pasos `agente` y `herramienta`), cuando el
+   * micro mande el id (`dispatch_start.id`, `tool_step.dispatchId`).
+   */
+  despachoId?: string;
   /**
    * Cuántas veces seguidas ocurrió el MISMO paso. El especialista vuelve a
    * llamar a una herramienta con otros parámetros (visto en vivo: calculó el
@@ -269,6 +287,9 @@ export interface ChatSnapshot {
   /** La cartera del ERP (Pagos → Cartera). Falta con un micro anterior al 23-09. */
   carteraCop?: number;
   contratosEnCartera?: number;
+  /** Lo vencido sin pagar (CH-02/CH-04): con el plazo sin fijar la mora es $ 0 y esto no. */
+  vencidoCop?: number;
+  porVencerCop?: number;
 }
 
 /**
@@ -371,6 +392,14 @@ export interface ChatMessage {
    * nada: el front no adivina fallos leyendo el texto.
    */
   reintentable?: Reintentable;
+  /**
+   * «Lo que pensó» el orquestador (y sus especialistas) para este turno,
+   * que el micro manda en el `done` (desde el commit `33d8607b`, 02-10-2026;
+   * un micro anterior no lo manda). Sin él no se pinta nada: nunca se rellena con
+   * los pasos ni con texto inventado. Lo lee `leerElTurno` (que también
+   * acepta un paso como texto suelto).
+   */
+  razonamiento?: Array<{ agente?: string; texto: string } | string>;
   /**
    * Valoración del usuario sobre esta respuesta (pulgar arriba/abajo).
    *
@@ -478,6 +507,24 @@ export interface BriefingSection {
   actionContext?: string;
 }
 
+/**
+ * Las cifras del día que manda el micro en el briefing (`piloto/briefing.ts` →
+ * `numeros`). Cada una está SÓLO si llegó como número: ausente = no se sabe,
+ * nunca cero. Ojo: el micro rellena con 0 un conteo que falló, así que quien
+ * las pinte no debe pintar ceros.
+ */
+export interface NumerosDelBriefing {
+  /** Decisiones de la bandeja que esperan a una persona. */
+  pendientes?: number;
+  /** De esas, cuántas son de prioridad alta. */
+  altas?: number;
+  llamadasHoy?: number;
+  /** Promesas de pago CREADAS hoy (no las que vencen hoy). */
+  promesasCreadasHoy?: number;
+  /** Lo recuperado por cobranza en el mes (COP). El micro sólo lo manda si es > 0. */
+  recuperadoMesCop?: number;
+}
+
 /** A complete daily briefing with greeting and sectioned overview */
 export interface DailyBriefing {
   id: string;
@@ -487,6 +534,8 @@ export interface DailyBriefing {
   sections: BriefingSection[];
   /** Whether this briefing has been viewed yet */
   isNew: boolean;
+  /** Las cifras del día, cuando el micro las mandó (forma de `armarBriefing`). */
+  numeros?: NumerosDelBriefing;
 }
 
 // ============================================================================

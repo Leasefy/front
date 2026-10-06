@@ -56,6 +56,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
+  DialogSection,
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
@@ -70,6 +71,9 @@ import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { SectionLabel } from '@/components/ui/section-label';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useLoteDeDispersion } from '@/lib/hooks/use-lotes-de-dispersion';
 import {
@@ -265,10 +269,6 @@ function ResultadoDeLosExtractos({ r }: { r: ExtractosDeLosCompensados }) {
       </span>
     </Banner>
   );
-}
-
-function mensajeDe(error: unknown, siNo: string): string {
-  return error instanceof Error && error.message ? error.message : siNo;
 }
 
 function ultimos4(cuenta: string): string {
@@ -511,7 +511,7 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           mono={false}
           detalle={
             lote.aprobadoAt
-              ? `${notaP4 ? 'Como administrador, en el mismo paso (P-4) · ' : ''}${formatDateTime(lote.aprobadoAt)}`
+              ? `${notaP4 ? 'Como administrador, en el mismo paso · ' : ''}${formatDateTime(lote.aprobadoAt)}`
               : undefined
           }
         />
@@ -785,30 +785,41 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
                     </TableCell>
                     {lotePagado ? (
                       <TableCell>
-                        <AccionesDelGiro
-                          dispersionId={item.dispersionId}
-                          nombreTitular={item.nombreTitular}
-                          valorCop={item.valorCop}
-                          giro={giros.porDispersion.get(item.dispersionId)}
-                          puedeEditar={puedeTocarGiros}
-                          disponible={giros.disponible}
-                          onDevolver={() =>
-                            setGiroEnDialogo({
-                              accion: 'devolver',
-                              dispersionId: item.dispersionId,
-                              nombreTitular: item.nombreTitular,
-                              valorCop: item.valorCop,
-                            })
-                          }
-                          onRegirar={() =>
-                            setGiroEnDialogo({
-                              accion: 'regirar',
-                              dispersionId: item.dispersionId,
-                              nombreTitular: item.nombreTitular,
-                              valorCop: item.valorCop,
-                            })
-                          }
-                        />
+                        {/* 🔴 PRUEBAS-PAGOS (03-10-2026): sólo lo que ENTRÓ al
+                            archivo salió del banco y puede volver. A un pago
+                            excluido (sin cuenta, o que se cierra en $0) se le
+                            ofrecía «Marcar devuelto» y el back respondía 409
+                            GIRO_NO_SALIO. */}
+                        {item.motivoDeExclusion !== null ? (
+                          <span className="text-fg-subtle" data-testid={`sin-giro-${item.dispersionId}`}>
+                            —
+                          </span>
+                        ) : (
+                          <AccionesDelGiro
+                            dispersionId={item.dispersionId}
+                            nombreTitular={item.nombreTitular}
+                            valorCop={item.valorCop}
+                            giro={giros.porDispersion.get(item.dispersionId)}
+                            puedeEditar={puedeTocarGiros}
+                            disponible={giros.disponible}
+                            onDevolver={() =>
+                              setGiroEnDialogo({
+                                accion: 'devolver',
+                                dispersionId: item.dispersionId,
+                                nombreTitular: item.nombreTitular,
+                                valorCop: item.valorCop,
+                              })
+                            }
+                            onRegirar={() =>
+                              setGiroEnDialogo({
+                                accion: 'regirar',
+                                dispersionId: item.dispersionId,
+                                nombreTitular: item.nombreTitular,
+                                valorCop: item.valorCop,
+                              })
+                            }
+                          />
+                        )}
                       </TableCell>
                     ) : null}
                   </TableRow>
@@ -1047,7 +1058,12 @@ function PedirAprobacionDialog({
             : 'Lote enviado a aprobación',
       );
     } catch (e) {
-      setError(mensajeDe(e, 'No se pudo mandar el lote a aprobación.'));
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo mandar el lote a aprobación.',
+          accion: 'mandar el lote a aprobación',
+        }),
+      );
     } finally {
       setEnviando(false);
     }
@@ -1055,7 +1071,27 @@ function PedirAprobacionDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-lg" data-testid="dialogo-pedir-aprobacion">
+      {/* La variante sigue al estado (DESIGN.md §17): confirmación antes de
+          mandar; éxito si quedó aprobado o no exige código; info si salió el
+          código por correo. */}
+      <DialogContent
+        size="md"
+        variant={
+          !resultado
+            ? 'confirm'
+            : resultado.lote.estado === 'APROBADO' || !resultado.exigeCodigo
+              ? 'success'
+              : 'info'
+        }
+        icon={
+          resultado ? undefined : comoAdministrador ? (
+            <SealCheck weight="bold" />
+          ) : (
+            <PaperPlaneTilt weight="bold" />
+          )
+        }
+        data-testid="dialogo-pedir-aprobacion"
+      >
         <DialogHeader>
           <DialogTitle>
             {comoAdministrador ? 'Aprobar el lote' : reenvio ? 'Volver a mandar el código' : 'Pedir aprobación'}
@@ -1069,7 +1105,7 @@ function PedirAprobacionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 px-6 py-4 text-sm">
+        <div className="space-y-3 text-sm">
           {!resultado ? (
             <>
               {comoAdministrador ? (
@@ -1088,16 +1124,20 @@ function PedirAprobacionDialog({
             </>
           ) : (
             <div className="space-y-3" data-testid="resultado-de-aprobacion">
+              {/* El medallón ya dice éxito o info: el resultado va en un bloque
+                  con borde, sin repetir el ícono de un Banner. */}
               {resultado.lote.estado === 'APROBADO' ? (
-                <Banner variant="success" title={APROBADO_POR_TI}>
-                  {resultado.mismoPaso?.nota ??
-                    'Quedó aprobado en este paso, sin código. En la bitácora queda que fuiste la misma persona.'}
-                </Banner>
+                <DialogSection title={APROBADO_POR_TI}>
+                  <p className="text-fg-muted">
+                    {resultado.mismoPaso?.nota ??
+                      'Quedó aprobado en este paso, sin código. En la bitácora queda que fuiste la misma persona.'}
+                  </p>
+                </DialogSection>
               ) : resultado.exigeCodigo ? (
                 <>
-                  <Banner variant="info" title="El código salió por correo">
-                    {resultado.motivoDelCodigo}
-                  </Banner>
+                  <DialogSection title="El código salió por correo">
+                    <p className="text-fg-muted">{resultado.motivoDelCodigo}</p>
+                  </DialogSection>
                   <div>
                     <p className="text-xs text-fg-muted">Le llegó a</p>
                     <ul className="mt-1 space-y-0.5 font-mono text-fg">
@@ -1114,10 +1154,12 @@ function PedirAprobacionDialog({
                   )}
                 </>
               ) : (
-                <Banner variant="success" title="No exige código">
-                  Está por debajo del monto que pide doble control. Igual lo tiene que aprobar otra
-                  persona.
-                </Banner>
+                <DialogSection title="No exige código">
+                  <p className="text-fg-muted">
+                    Está por debajo del monto que pide doble control. Igual lo tiene que aprobar otra
+                    persona.
+                  </p>
+                </DialogSection>
               )}
             </div>
           )}
@@ -1134,7 +1176,7 @@ function PedirAprobacionDialog({
               </Button>
             </>
           ) : (
-            <Button onClick={onCerrar} hideArrow>
+            <Button variant="outline" onClick={onCerrar} hideArrow>
               Entendido
             </Button>
           )}
@@ -1165,21 +1207,30 @@ function AprobarDialog({
   const [codigo, setCodigo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** El error DEL CÓDIGO, debajo del campo (02-10-2026). */
+  const [errorDelCodigo, setErrorDelCodigo] = useState<string | null>(null);
 
   useEffect(() => {
     if (!abierto) {
       setCodigo('');
       setError(null);
+      setErrorDelCodigo(null);
     }
   }, [abierto]);
 
+  const marcarElCodigo = (mensaje: string) => {
+    setErrorDelCodigo(mensaje);
+    document.getElementById('codigo-de-aprobacion')?.focus();
+  };
+
   const aprobar = async () => {
     if (exigeCodigo && !codigoValido(codigo)) {
-      setError('El código son 6 dígitos, tal como llegó en el correo.');
+      marcarElCodigo('El código son 6 dígitos, tal como llegó en el correo.');
       return;
     }
     setEnviando(true);
     setError(null);
+    setErrorDelCodigo(null);
     try {
       const aprobado = await lotesDeDispersionApi.aprobar(lote.id, exigeCodigo ? codigo : undefined);
       onListo(aprobado);
@@ -1188,8 +1239,15 @@ function AprobarDialog({
       });
       onCerrar();
     } catch (e) {
-      // Tal cual: el back dice cuántos intentos quedan, o que se venció.
-      setError(mensajeDe(e, 'No se pudo aprobar el lote.'));
+      // Tal cual: el back dice cuántos intentos quedan, o que se venció. Un
+      // 400 sobre el código (`campos`) va debajo del campo; lo demás al aviso.
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: ['codigo'],
+        porDefecto: 'No se pudo aprobar el lote.',
+        accion: 'aprobar el lote',
+      });
+      if (porCampo.codigo) marcarElCodigo(porCampo.codigo);
+      setError(sueltos.length > 0 ? sueltos.join(' · ') : null);
       onFallo();
     } finally {
       setEnviando(false);
@@ -1198,7 +1256,12 @@ function AprobarDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-md" data-testid="dialogo-aprobar">
+      <DialogContent
+        size="sm"
+        variant="confirm"
+        icon={<ShieldCheck weight="bold" />}
+        data-testid="dialogo-aprobar"
+      >
         <DialogHeader>
           <DialogTitle>Aprobar el lote</DialogTitle>
           <DialogDescription>
@@ -1208,7 +1271,7 @@ function AprobarDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 px-6 py-4 text-sm">
+        <div className="space-y-3 text-sm">
           {exigeCodigo ? (
             <div className="space-y-2">
               <Label htmlFor="codigo-de-aprobacion">Código de 6 dígitos</Label>
@@ -1219,11 +1282,17 @@ function AprobarDialog({
                 autoComplete="one-time-code"
                 maxLength={6}
                 value={codigo}
-                onChange={(e) => setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onChange={(e) => {
+                  setCodigo(e.target.value.replace(/\D/g, '').slice(0, 6));
+                  if (errorDelCodigo) setErrorDelCodigo(null);
+                }}
+                aria-invalid={errorDelCodigo ? true : undefined}
+                aria-describedby={errorDelCodigo ? 'codigo-de-aprobacion-error' : undefined}
                 className="font-mono text-lg tracking-[0.4em]"
                 placeholder="000000"
                 autoFocus
               />
+              <ErrorDelCampo id="codigo-de-aprobacion-error" mensaje={errorDelCodigo} />
               <p className="text-xs text-fg-muted">
                 Te llegó por correo.{' '}
                 <span className="font-mono">{intentosRestantes}</span>{' '}
@@ -1294,7 +1363,12 @@ function ArchivoDialog({
       setArchivo(r);
       if (!r.reenvio) onGenerado();
     } catch (e) {
-      setError(mensajeDe(e, 'No se pudo generar el archivo.'));
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo generar el archivo.',
+          accion: 'generar el archivo del lote',
+        }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -1326,7 +1400,12 @@ function ArchivoDialog({
       guardar(blob, archivo.nombreArchivo);
       toast.success('Archivo guardado', { description: archivo.nombreArchivo });
     } catch (e) {
-      setError(mensajeDe(e, 'No se pudo descargar el archivo.'));
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo descargar el archivo.',
+          accion: 'descargar el archivo del lote',
+        }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -1339,7 +1418,15 @@ function ArchivoDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-xl" data-testid="dialogo-archivo">
+      {/* La variante sigue al estado: confirmación antes de generar; con el
+          archivo listo, éxito (layout verificado), advertencia (sin verificar)
+          o info (planilla para cargar a mano). */}
+      <DialogContent
+        size="lg"
+        variant={!archivo ? 'confirm' : esPlanilla ? 'info' : sinVerificar ? 'warning' : 'success'}
+        icon={archivo ? undefined : <FileText weight="bold" />}
+        data-testid="dialogo-archivo"
+      >
         <DialogHeader>
           <DialogTitle>
             {origen?.formato === 'PLANILLA_MANUAL'
@@ -1352,7 +1439,7 @@ function ArchivoDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 px-6 py-4 text-sm">
+        <div className="space-y-4 text-sm">
           {!archivo && origen && origen.formato !== 'PLANILLA_MANUAL' && (
             <p className="text-fg" data-testid="archivo-del-banco">
               Sale el archivo de <span className="font-medium">{origen.nombreDelBanco}</span> (
@@ -1425,7 +1512,7 @@ function ArchivoDialog({
                     viaje hasta el escritorio.
                   </Banner>
                   {archivo.pendienteDeConfirmar.length > 0 && (
-                    <div className="rounded-lg border border-border bg-surface-muted p-3">
+                    <div className="rounded-[14px] border border-border p-3">
                       <p className="text-xs font-medium text-fg">Qué falta confirmar contra el banco</p>
                       <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-fg-muted">
                         {archivo.pendienteDeConfirmar.map((p) => (
@@ -1481,7 +1568,7 @@ function ArchivoDialog({
               )}
 
               {archivo.advertencias.length > 0 && (
-                <div className="rounded-lg border border-border bg-surface-muted p-3">
+                <div className="rounded-[14px] border border-border p-3">
                   <p className="text-xs font-medium text-fg">Advertencias</p>
                   <ul className="mt-1 list-disc space-y-0.5 pl-4 text-xs text-fg-muted">
                     {archivo.advertencias.map((a, i) => (
@@ -1543,22 +1630,31 @@ function MarcarPagadoDialog({
   const [facturarAhora, setFacturarAhora] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** El error DE LA REFERENCIA, debajo del campo (02-10-2026). */
+  const [errorDeReferencia, setErrorDeReferencia] = useState<string | null>(null);
 
   useEffect(() => {
     if (!abierto) {
       setReferencia('');
       setFacturarAhora(false);
       setError(null);
+      setErrorDeReferencia(null);
     }
   }, [abierto]);
 
+  const marcarLaReferencia = (mensaje: string) => {
+    setErrorDeReferencia(mensaje);
+    document.getElementById('referencia-del-banco')?.focus();
+  };
+
   const marcar = async () => {
     if (!referencia.trim()) {
-      setError('Hace falta la referencia con la que el banco confirmó el pago.');
+      marcarLaReferencia('Hace falta la referencia con la que el banco confirmó el pago.');
       return;
     }
     setEnviando(true);
     setError(null);
+    setErrorDeReferencia(null);
     try {
       const pagado = await lotesDeDispersionApi.marcarPagado(
         lote.id,
@@ -1582,7 +1678,14 @@ function MarcarPagadoDialog({
       });
       onCerrar();
     } catch (e) {
-      setError(mensajeDe(e, 'No se pudo marcar el lote como pagado.'));
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        mapa: { referenciaBanco: 'referencia' },
+        campos: ['referencia'],
+        porDefecto: 'No se pudo marcar el lote como pagado.',
+        accion: 'marcar el lote como pagado',
+      });
+      if (porCampo.referencia) marcarLaReferencia(porCampo.referencia);
+      setError(sueltos.length > 0 ? sueltos.join(' · ') : null);
     } finally {
       setEnviando(false);
     }
@@ -1590,7 +1693,12 @@ function MarcarPagadoDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-md" data-testid="dialogo-pagado">
+      <DialogContent
+        size="sm"
+        variant="confirm"
+        icon={<SealCheck weight="bold" />}
+        data-testid="dialogo-pagado"
+      >
         <DialogHeader>
           <DialogTitle>Marcar el lote como pagado</DialogTitle>
           <DialogDescription>
@@ -1598,18 +1706,24 @@ function MarcarPagadoDialog({
             <span className="font-mono">{formatCurrency(lote.totalCop)}</span>.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2 px-6 py-4 text-sm">
+        <div className="space-y-2 text-sm">
           <Label htmlFor="referencia-del-banco">Referencia del banco</Label>
           <Input
             id="referencia-del-banco"
             data-testid="referencia-del-banco"
             value={referencia}
-            onChange={(e) => setReferencia(e.target.value)}
+            onChange={(e) => {
+              setReferencia(e.target.value);
+              if (errorDeReferencia) setErrorDeReferencia(null);
+            }}
             maxLength={120}
+            aria-invalid={errorDeReferencia ? true : undefined}
+            aria-describedby={errorDeReferencia ? 'referencia-del-banco-error' : undefined}
             placeholder="BC-20260907-00123"
             className="font-mono"
             autoFocus
           />
+          <ErrorDelCampo id="referencia-del-banco-error" mensaje={errorDeReferencia} />
           <p className="text-xs text-fg-muted">
             Un lote pagado ya no se anula: si algo salió mal, se corrige con una contrapartida.
           </p>
@@ -1664,6 +1778,8 @@ function AnularDialog({
   const [motivo, setMotivo] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** El error DEL MOTIVO, debajo del campo (02-10-2026). */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
   /*
    * 🔴 Con el archivo YA generado, anular pide confirmar que ese archivo no se
    * procesó en el banco (back, 23-09-2026: 409
@@ -1678,13 +1794,19 @@ function AnularDialog({
     if (!abierto) {
       setMotivo('');
       setError(null);
+      setErrorDelMotivo(null);
       setConfirmo(false);
     }
   }, [abierto]);
 
+  const marcarElMotivo = (mensaje: string) => {
+    setErrorDelMotivo(mensaje);
+    document.getElementById('motivo-de-anulacion')?.focus();
+  };
+
   const anular = async () => {
     if (!motivoValido(motivo)) {
-      setError('Di por qué se anula, en 5 a 300 caracteres. Sin motivo no se anula.');
+      marcarElMotivo('Di por qué se anula, en 5 a 300 caracteres. Sin motivo no se anula.');
       return;
     }
     if (conArchivo && !confirmo) {
@@ -1693,6 +1815,7 @@ function AnularDialog({
     }
     setEnviando(true);
     setError(null);
+    setErrorDelMotivo(null);
     try {
       const anulado = await lotesDeDispersionApi.anular(lote.id, motivo, conArchivo && confirmo);
       onListo(anulado);
@@ -1701,7 +1824,13 @@ function AnularDialog({
       });
       onCerrar();
     } catch (e) {
-      setError(mensajeDe(e, 'No se pudo anular el lote.'));
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: ['motivo'],
+        porDefecto: 'No se pudo anular el lote.',
+        accion: 'anular el lote',
+      });
+      if (porCampo.motivo) marcarElMotivo(porCampo.motivo);
+      setError(sueltos.length > 0 ? sueltos.join(' · ') : null);
     } finally {
       setEnviando(false);
     }
@@ -1709,7 +1838,12 @@ function AnularDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-md" data-testid="dialogo-anular">
+      <DialogContent
+        size="sm"
+        variant="destructive"
+        icon={<Prohibit weight="bold" />}
+        data-testid="dialogo-anular"
+      >
         <DialogHeader>
           <DialogTitle>Anular el lote</DialogTitle>
           <DialogDescription>
@@ -1717,18 +1851,24 @@ function AnularDialog({
             anulado, con el motivo.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-2 px-6 py-4 text-sm">
+        <div className="space-y-2 text-sm">
           <Label htmlFor="motivo-de-anulacion">Por qué se anula</Label>
           <Textarea
             id="motivo-de-anulacion"
             data-testid="motivo-de-anulacion"
             value={motivo}
-            onChange={(e) => setMotivo(e.target.value)}
+            onChange={(e) => {
+              setMotivo(e.target.value);
+              if (errorDelMotivo) setErrorDelMotivo(null);
+            }}
             maxLength={300}
             rows={3}
+            aria-invalid={errorDelMotivo ? true : undefined}
+            aria-describedby={errorDelMotivo ? 'motivo-de-anulacion-error' : undefined}
             placeholder="Dos propietarios cambiaron de cuenta después de armar el lote"
             autoFocus
           />
+          <ErrorDelCampo id="motivo-de-anulacion-error" mensaje={errorDelMotivo} />
           {conArchivo && (
             <div className="space-y-2 pt-2" data-testid="confirmar-archivo-del-banco">
               <Banner variant="warning">{t('inmobiliaria.dispersiones.lote.anular.avisoArchivo')}</Banner>

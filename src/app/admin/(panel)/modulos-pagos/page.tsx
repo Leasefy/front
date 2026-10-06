@@ -32,6 +32,7 @@ import {
   LoadingBlock,
 } from '@/components/admin/screen/states'
 import { ApiError } from '@/lib/admin/api'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import {
   fijarModulo,
@@ -111,9 +112,10 @@ export default function ModulosPagosPage() {
       refetch()
     } catch (err) {
       setFallo(
-        err instanceof ApiError
-          ? err.message
-          : `No se pudo ${prender ? 'prender' : 'apagar'} el módulo.`,
+        mensajeDelAdmin(err, {
+          accion: `${prender ? 'prender' : 'apagar'} el módulo`,
+          porDefecto: `No se pudo ${prender ? 'prender' : 'apagar'} el módulo.`,
+        }),
       )
     } finally {
       setOcupado(null)

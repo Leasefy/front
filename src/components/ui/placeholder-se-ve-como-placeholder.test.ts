@@ -26,8 +26,12 @@ import { join, relative } from 'node:path'
 const RAIZ = join(process.cwd(), 'src')
 const GLOBALS = readFileSync(join(RAIZ, 'app/globals.css'), 'utf8')
 
-/** Superficie de un campo en cada tema (`--surface`). */
-const FONDO = { claro: '#ffffff', oscuro: '#0a0a0a' } as const
+/**
+ * Superficie de un campo en cada paleta (`--surface`). La tercera es la de
+ * grises NEUTROS del chat en oscuro (`.dark .chat-grises`, 02-10): redefine los
+ * mismos tokens sólo dentro de la conversación, sobre el mismo negro.
+ */
+const FONDO = { claro: '#ffffff', oscuro: '#0a0a0a', 'oscuro del chat': '#0a0a0a' } as const
 
 function luminancia(hex: string): number {
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
@@ -54,13 +58,20 @@ function archivos(dir: string): string[] {
 }
 
 describe('el placeholder se ve como placeholder', () => {
-  it('🔴 tiene su propio token, en el tema claro y en el oscuro', () => {
-    expect(valores('--fg-placeholder')).toHaveLength(2)
+  it('🔴 tiene su propio token, en el tema claro, en el oscuro y en la paleta neutra del chat', () => {
+    expect(valores('--fg-placeholder')).toHaveLength(3)
+    // El tercero es el de `.chat-grises`, y esa paleta trae su propio `fg-subtle`
+    // para comparar (si no, la comparación de abajo mezclaría paletas).
+    const chat = GLOBALS.slice(GLOBALS.indexOf('.dark .chat-grises {'))
+    const bloque = chat.slice(0, chat.indexOf('}'))
+    expect(bloque).toContain(`--fg-placeholder: ${valores('--fg-placeholder')[2]}`)
+    expect(bloque).toContain(`--fg-subtle: ${valores('--fg-subtle')[2]}`)
   })
 
   it.each([
     ['claro', 0],
     ['oscuro', 1],
+    ['oscuro del chat', 2],
   ] as const)('🔴 en %s es más tenue que cualquier texto real, sin volverse invisible', (tema, i) => {
     const fondo = FONDO[tema]
     const placeholder = valores('--fg-placeholder')[i]

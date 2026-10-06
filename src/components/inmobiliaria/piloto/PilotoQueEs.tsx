@@ -73,6 +73,10 @@ export function PilotoQueEs({ onVerPresentacion }: PilotoQueEsProps) {
                 </span>{' '}
                 {t(`${NS}.modoCorto.${modo}`)}
               </>
+            ) : data?.piloto?.motivo === 'apagado_por_leasefy' ? (
+              t('inmobiliaria.piloto.flota.apagadoHintLeasefy')
+            ) : data?.piloto?.motivo === 'prueba_terminada' ? (
+              t('inmobiliaria.piloto.flota.apagadoHintPrueba')
             ) : (
               t(`${NS}.apagadoCorto`)
             )}

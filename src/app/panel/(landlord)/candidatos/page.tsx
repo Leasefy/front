@@ -7,7 +7,8 @@ import { Users, MagnifyingGlass, Buildings, UserCheck, UserMinus, Eye, FileText,
 import { cn } from '@/lib/utils';
 import { EmptyState } from '@/components/ui/empty-state';
 import { toast } from 'sonner';
-import { useCandidates, useCandidate, useCandidateDecision } from '@/lib/hooks/useLandlord';
+import { useCandidates, useCandidate, useCandidateDecision, mensajeDelFalloAlDecidir } from '@/lib/hooks/useLandlord';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { landlordApi } from '@/lib/api/landlord.service';
 import { DocumentAnalysisSection } from '@/components/landlord/DocumentAnalysisSection';
 import { PlanTable, PlanTableColumn } from '@/components/ui/plan/PlanTable';
@@ -336,33 +337,46 @@ export default function CandidatosPage() {
     try {
       const full = await landlordApi.getCandidate(row.id);
       setSelectedCandidate((prev) => (prev && prev.id === row.id ? full : prev));
-    } catch {
-      toast.error(t('landlord.candidates.loadDetailError'));
+    } catch (err) {
+      toast.error(
+        mensajeParaLaPersona(err, {
+          accion: 'cargar el detalle del candidato',
+          porDefecto: t('landlord.candidates.loadDetailError'),
+        }),
+      );
     }
   }, [t]);
 
+  // 02-10-2026: si la decisión no se guarda, se DICE (antes el panel se cerraba
+  // en silencio) y el panel queda abierto para reintentar.
   const handleApprove = async (candidate: Candidate) => {
-    const result = await decide(candidate.id, { decision: 'approved' });
-    setSheetOpen(false);
-    if (result) {
-      toast.success(t('landlord.candidates.approvedToast'), {
-        description: t('landlord.candidates.approvedToastDesc', { name: candidate.fullName }),
-      });
-      refetch();
-      router.push(`/panel/${candidate.propertyId}/contract/${candidate.id}?new=true`);
+    try {
+      await decide(candidate.id, { decision: 'approved' });
+    } catch (err) {
+      toast.error(mensajeDelFalloAlDecidir(err, 'approved'));
+      return;
     }
+    setSheetOpen(false);
+    toast.success(t('landlord.candidates.approvedToast'), {
+      description: t('landlord.candidates.approvedToastDesc', { name: candidate.fullName }),
+    });
+    refetch();
+    router.push(`/panel/${candidate.propertyId}/contract/${candidate.id}?new=true`);
   };
 
   const handleReject = async (candidate: Candidate) => {
-    const result = await decide(candidate.id, { decision: 'rejected' });
-    setSheetOpen(false);
-    if (result) {
-      toast(t('landlord.candidates.rejectedToast'), {
-        description: t('landlord.candidates.rejectedToastDesc', { name: candidate.fullName }),
-        icon: '❌',
-      });
-      refetch();
+    try {
+      await decide(candidate.id, { decision: 'rejected' });
+    } catch (err) {
+      toast.error(mensajeDelFalloAlDecidir(err, 'rejected'));
+      return;
     }
+    setSheetOpen(false);
+    toast(t('landlord.candidates.rejectedToast'), {
+      description: t('landlord.candidates.rejectedToastDesc', { name: candidate.fullName }),
+      icon: '❌',
+    });
+    refetch();
   };
 
   // Quick actions for detail sheet

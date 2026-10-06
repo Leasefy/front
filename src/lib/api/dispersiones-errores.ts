@@ -20,6 +20,7 @@
  */
 
 import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 export const RUTA_LOTES = '/panel/inmobiliaria/pagos/dispersiones/lotes';
 
@@ -157,11 +158,33 @@ export function apruebaPorLote(
 /**
  * El motivo que se le puede mostrar a una persona, o `null` si el error es de
  * los que no traen uno legible (red, 5xx): ésos van por `FalloDeCarga`.
+ *
+ * Qué es «legible» lo decide el traductor (02-10-2026): un volcado, un HTML o
+ * un texto vacío no lo son, y un 400 de validación con varios problemas los
+ * dice todos. Lo que queda `null` sigue por `FalloDeCarga` o por
+ * `motivoDeUnaAccion`.
  */
 export function motivoLegible(error: unknown): string | null {
   if (!(error instanceof ApiError)) return null;
   if (error.status >= 400 && error.status < 500 && error.status !== 401) {
-    return texto(error.message);
+    return mensajeParaLaPersona(error, { porDefecto: '' }) || null;
   }
   return null;
+}
+
+/**
+ * Por qué falló UNA acción sobre la plata de un propietario (aprobar, girar,
+ * armar o aprobar un lote, generar su archivo…), en una frase que se puede
+ * leer, con la regla de oro (02-10-2026):
+ *
+ *  · un 4xx dice lo que escribió el back (los códigos de negocio de arriba
+ *    —`APROBAR_POR_LOTE`, `DISPERSION_EN_UN_LOTE`…— los resuelve antes quien
+ *    llama, con su enlace);
+ *  · un 5xx dice que falló DE NUESTRO LADO, con la referencia para soporte;
+ *  · «conexión» sólo cuando no hubo respuesta.
+ *
+ * `accion` va en infinitivo: «aprobar la dispersión».
+ */
+export function motivoDeUnaAccion(error: unknown, accion: string): string {
+  return motivoLegible(error) ?? mensajeParaLaPersona(error, { accion });
 }

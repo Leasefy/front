@@ -20,13 +20,12 @@
  * logotipo a la izquierda y la salida a la derecha, sin barra ni vidrio, para
  * que el registro se sienta una sola pieza.
  *
- * El movimiento respeta `prefers-reduced-motion` para todo lo que vive
- * adentro (`MotionConfig reducedMotion="user"`): con la preferencia puesta,
- * framer-motion apaga los desplazamientos y deja sólo los fundidos.
+ * El movimiento respeta `prefers-reduced-motion` sin nada propio: lo hace el
+ * `MotionProvider` del layout raíz para toda la app (antes había acá un
+ * `MotionConfig` que repetía lo mismo).
  */
 
 import type { ReactNode } from 'react'
-import { MotionConfig } from 'framer-motion'
 import { LeasefyLogotype } from '@/components/brand'
 import { cn } from '@/lib/utils'
 
@@ -69,7 +68,6 @@ export function OnboardingWizardLayout({
   className,
 }: OnboardingWizardLayoutProps) {
   return (
-    <MotionConfig reducedMotion="user">
       <div className={cn('min-h-screen w-full bg-bg', className)}>
         <header className="flex items-center justify-between gap-4 px-4 py-4 sm:px-8 sm:py-5">
           {marca ?? (
@@ -105,6 +103,5 @@ export function OnboardingWizardLayout({
           </div>
         </main>
       </div>
-    </MotionConfig>
   )
 }

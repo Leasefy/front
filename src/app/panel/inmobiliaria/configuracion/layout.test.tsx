@@ -102,11 +102,13 @@ describe('marco de Configuración', () => {
     expect(marcado?.getAttribute('href')).toBe('/panel/inmobiliaria/configuracion')
   })
 
-  it('quien sólo tiene el módulo `agentes` ve dos secciones, no once', async () => {
+  it('quien sólo tiene el módulo `agentes` ve tres secciones, no once', async () => {
     permisos = { isAdmin: false, canAccess: (m: string) => m === 'agentes', isLoading: false }
     await render()
     expect(enlaces()).toEqual([
       '/panel/inmobiliaria/configuracion/equipo',
+      // QA 04-10: sus Notificaciones son de cada persona.
+      '/panel/inmobiliaria/configuracion/notificaciones',
       '/panel/inmobiliaria/configuracion/ia',
     ])
   })

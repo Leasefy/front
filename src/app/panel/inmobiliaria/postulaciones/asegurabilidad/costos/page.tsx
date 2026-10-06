@@ -15,6 +15,7 @@
  *   - Charts: 60s (via useCostos → fetchSeries)
  */
 
+import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { Coins } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { useCostos } from '@/lib/hooks/cotizador/use-costos'
@@ -27,6 +28,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SinDatos } from '@/components/estado/SinDatos'
+import { CrossFade } from '@leasefy/cadence'
 
 const COLUMNAS = 3
 
@@ -63,7 +65,15 @@ export default function CostosPage() {
   // Phase 38-05b: page-level skeleton on initial load only (D-38-04: skeleton only;
   // per-section table skeleton + inline empty prose preserved below; no EmptyState since
   // costos uses Phase 35 SampleDataWatermark semantics — no "truly nothing" zero state).
-  if (isLoadingSummary && !summaryData) return <PageSkeleton variant="dashboard" />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // contenido); lo que ya estaba al montarse no se anima.
+  if (isLoadingSummary && !summaryData) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="dashboard" />
+      </CrossFade>
+    )
+  }
 
   // Derive table rows by joining costSources registry labels with source totals
   const tableRows = (summaryData?.costSources ?? []).map(src => ({
@@ -82,6 +92,7 @@ export default function CostosPage() {
   const tablaCargando = (isLoadingSummary || isLoadingSeries) && tableRows.length === 0
 
   return (
+    <CrossFade swapKey="costos">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa */}
       <header className="space-y-1.5">
@@ -185,10 +196,12 @@ export default function CostosPage() {
                     {row.label}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm font-mono tabular-nums text-right text-fg">
-                    {row.total > 0 ? `$${row.total.toFixed(4)}` : '—'}
+                    {row.total > 0 ? formatCurrency(row.total) : '—'}
                   </TableCell>
                   <TableCell className="px-4 py-3 text-sm">
-                    {row.populated ? (
+                    {/* QA-IA-A: «Con datos» al lado de «—» se contradecía; con
+                        datos es que haya gasto, no que la fuente esté cableada. */}
+                    {row.populated && row.total > 0 ? (
                       <Badge variant="outline" className="text-success border-success/30">
                         {t('inmobiliaria.ai.cotizador.costos.sourceBreakdown.statusPopulated')}
                       </Badge>
@@ -207,5 +220,6 @@ export default function CostosPage() {
       </>
       )}
     </div>
+    </CrossFade>
   )
 }

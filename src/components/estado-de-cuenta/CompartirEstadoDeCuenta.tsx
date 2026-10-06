@@ -74,6 +74,7 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
+  AlertDialogSection,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
@@ -120,6 +121,10 @@ export interface CompartirProps {
 const VA_FILTRADO = 'Va con el filtro que tienes puesto';
 
 /** Un ítem del menú con su línea de aclaración, si la tiene. */
+/** Por qué el WhatsApp está apagado para quien no tiene cuenta del portal. */
+export const SIN_CUENTA_NO_HAY_WHATSAPP =
+  'No tiene cuenta del portal: el WhatsApp sale por el chat de su cuenta';
+
 function Rotulo({ texto, aclaracion }: { texto: string; aclaracion?: string }) {
   return (
     <span className="flex min-w-0 flex-col">
@@ -167,6 +172,13 @@ export function CompartirEstadoDeCuenta({
 
   const conFiltros = Boolean(nota);
   const aclaracionDelEnlace = sinPermiso ?? (conFiltros ? VA_FILTRADO : undefined);
+  /*
+   * EC-05 (QA-INQ-95 ronda 2): el WhatsApp sale por el chat de la CUENTA del
+   * portal. A quien no tiene cuenta se le apagaba sin decir por qué: parecía
+   * un botón roto.
+   */
+  const aclaracionDelWhatsapp =
+    sinPermiso ?? (personaId ? aclaracionDelEnlace : SIN_CUENTA_NO_HAY_WHATSAPP);
 
   const cliente = doc.cliente.nombre;
   const documento = doc.cliente.documento;
@@ -208,7 +220,7 @@ export function CompartirEstadoDeCuenta({
             data-testid="compartir-whatsapp"
           >
             <WhatsappLogo className="h-4 w-4" />
-            <Rotulo texto={t('estadoDeCuenta.porWhatsapp')} aclaracion={aclaracionDelEnlace} />
+            <Rotulo texto={t('estadoDeCuenta.porWhatsapp')} aclaracion={aclaracionDelWhatsapp} />
           </DropdownListItem>
           <DropdownListItem
             onSelect={() => void copiarEnlace()}
@@ -237,7 +249,17 @@ export function CompartirEstadoDeCuenta({
           if (!abierto && ocupado === null) cancelarEnvio();
         }}
       >
-        <AlertDialogContent data-testid="confirmar-envio-dialogo">
+        <AlertDialogContent
+          variant="confirm"
+          icon={
+            envioPorConfirmar === 'WHATSAPP' ? (
+              <WhatsappLogo weight="bold" />
+            ) : (
+              <Envelope weight="bold" />
+            )
+          }
+          data-testid="confirmar-envio-dialogo"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               {envioPorConfirmar === 'WHATSAPP'
@@ -253,13 +275,13 @@ export function CompartirEstadoDeCuenta({
             </AlertDialogDescription>
           </AlertDialogHeader>
           {conFiltros ? (
-            <p
-              className="rounded-md bg-surface-muted px-3 py-2 text-body-sm text-fg"
+            <AlertDialogSection
+              className="text-body-sm text-fg"
               data-testid="confirmar-envio-filtros"
             >
               El enlace muestra la MISMA vista filtrada que tienes en pantalla, no el estado de
               cuenta entero.
-            </p>
+            </AlertDialogSection>
           ) : null}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={ocupado !== null}>Cancelar</AlertDialogCancel>
@@ -269,7 +291,7 @@ export function CompartirEstadoDeCuenta({
                 e.preventDefault();
                 void confirmarEnvio();
               }}
-              disabled={ocupado !== null}
+              loading={ocupado !== null}
               data-testid="confirmar-envio"
             >
               {ocupado !== null ? 'Enviando…' : 'Mandar'}

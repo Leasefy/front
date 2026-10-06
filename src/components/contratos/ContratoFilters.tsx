@@ -19,7 +19,7 @@ import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
-import { IconButton, SegmentedControl } from '@leasefy/cadence';
+import { AnimatedNumber, IconButton, Presence, SegmentedControl } from '@leasefy/cadence';
 import { CONTRACT_STATUS_LABELS, type ContractStatus } from '@/lib/types/contract';
 import {
   FILTROS_INICIALES,
@@ -65,18 +65,32 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
     { value: 'all', label: tx('Toda vigencia', 'Any term') },
     { value: 'vigente', label: tx('Vigentes', 'In force') },
     { value: 'por_vencer', label: tx(`Vencen en ${DIAS_POR_VENCER} días`, `Ending in ${DIAS_POR_VENCER} days`) },
+    // C-05: los que empiezan después de hoy no son «vigentes»; se buscan acá.
+    { value: 'por_empezar', label: tx('Por empezar', 'Not started yet') },
     { value: 'vencido', label: tx('Vencidos', 'Ended') },
     { value: 'sin_fechas', label: tx('Sin fechas', 'No dates') },
   ];
+  /*
+   * QA-CONT C-06: la fila de un `expired` dice «Terminado» (`etiquetaDeVigencia`)
+   * y el filtro decía «Expirado»: la misma cosa con dos nombres. El filtro usa
+   * el de la fila.
+   */
+  const etiquetaDelEstado = (estado: ContractStatus) =>
+    estado === 'expired' ? tx('Terminado', 'Ended') : CONTRACT_STATUS_LABELS[estado];
   const INMUEBLES: { value: ConOSin; label: string }[] = [
     { value: 'all', label: tx('Con o sin inmueble', 'With or without property') },
     { value: 'con', label: tx('Con inmueble', 'With property') },
     { value: 'sin', label: tx('Sin inmueble', 'Without property') },
   ];
+  /*
+   * QA-CONT-95 (A-13, CR-22): este filtro mira la CUENTA del portal del
+   * inquilino (`tenantId`), no si hay persona —todo contrato tiene inquilino—.
+   * Decía «Con / Sin inquilino» y traía 9 y 42 de 51 contratos con persona.
+   */
   const INQUILINOS: { value: ConOSin; label: string }[] = [
-    { value: 'all', label: tx('Con o sin inquilino', 'With or without tenant') },
-    { value: 'con', label: tx('Con inquilino', 'With tenant') },
-    { value: 'sin', label: tx('Sin inquilino', 'Without tenant') },
+    { value: 'all', label: tx('Con o sin cuenta del inquilino', 'With or without tenant account') },
+    { value: 'con', label: tx('Inquilino con cuenta', 'Tenant with account') },
+    { value: 'sin', label: tx('Inquilino sin cuenta en el portal', 'Tenant without portal account') },
   ];
   const CANONES: { value: CanonDeFiltro; label: string }[] = [
     { value: 'all', label: tx('Cualquier canon', 'Any rent') },
@@ -109,7 +123,8 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
             'Search by number, tenant or address…',
           )}
           aria-label={tx('Buscar contratos', 'Search contracts')}
-          className="w-full pl-10 pr-10"
+          // QA-CONT-95: sin la «×» nativa del buscador (salían dos, A-10).
+          className="w-full pl-10 pr-10 [&::-webkit-search-cancel-button]:hidden"
           data-testid="buscar-contratos"
         />
         {filtros.busqueda && (
@@ -140,25 +155,25 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
         <div className="hidden sm:block w-px h-6 bg-border" />
 
         <Select value={filtros.estado} onValueChange={(v) => poner('estado', v as EstadoDeFiltro)}>
-          <SelectTrigger className="w-auto max-w-[200px] gap-2" data-testid="filtro-estado">
+          <SelectTrigger className="w-auto max-w-[200px] gap-2" data-testid="filtro-estado" aria-label={tx('Filtrar por estado', 'Filter by status')}>
             <span className="truncate">
               {filtros.estado === 'all'
                 ? tx('Todos los estados', 'All statuses')
-                : CONTRACT_STATUS_LABELS[filtros.estado]}
+                : etiquetaDelEstado(filtros.estado)}
             </span>
           </SelectTrigger>
           <SelectContent className="max-h-72">
             <SelectItem value="all">{tx('Todos los estados', 'All statuses')}</SelectItem>
             {ESTADOS.map((s) => (
               <SelectItem key={s} value={s}>
-                {CONTRACT_STATUS_LABELS[s]}
+                {etiquetaDelEstado(s)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
 
         <Select value={filtros.vigencia} onValueChange={(v) => poner('vigencia', v as VigenciaDeFiltro)}>
-          <SelectTrigger className="w-auto max-w-[190px] gap-2" data-testid="filtro-vigencia">
+          <SelectTrigger className="w-auto max-w-[190px] gap-2" data-testid="filtro-vigencia" aria-label={tx('Filtrar por vigencia', 'Filter by term')}>
             <span className="truncate">{etiqueta(VIGENCIAS, filtros.vigencia)}</span>
           </SelectTrigger>
           <SelectContent>
@@ -169,7 +184,7 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
         </Select>
 
         <Select value={filtros.inmueble} onValueChange={(v) => poner('inmueble', v as ConOSin)}>
-          <SelectTrigger className="w-auto max-w-[190px] gap-2" data-testid="filtro-inmueble">
+          <SelectTrigger className="w-auto max-w-[190px] gap-2" data-testid="filtro-inmueble" aria-label={tx('Filtrar por inmueble', 'Filter by property')}>
             <span className="truncate">{etiqueta(INMUEBLES, filtros.inmueble)}</span>
           </SelectTrigger>
           <SelectContent>
@@ -180,7 +195,7 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
         </Select>
 
         <Select value={filtros.inquilino} onValueChange={(v) => poner('inquilino', v as ConOSin)}>
-          <SelectTrigger className="w-auto max-w-[190px] gap-2" data-testid="filtro-inquilino">
+          <SelectTrigger className="w-auto max-w-[190px] gap-2" data-testid="filtro-inquilino" aria-label={tx('Filtrar por la cuenta del inquilino', 'Filter by tenant account')}>
             <span className="truncate">{etiqueta(INQUILINOS, filtros.inquilino)}</span>
           </SelectTrigger>
           <SelectContent>
@@ -191,7 +206,8 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
         </Select>
 
         <Select value={filtros.canon} onValueChange={(v) => poner('canon', v as CanonDeFiltro)}>
-          <SelectTrigger className="w-auto max-w-[170px] gap-2" data-testid="filtro-canon">
+          {/* C-18: con 170 px «Cualquier canon» salía «Cualquier can…». */}
+          <SelectTrigger className="w-auto max-w-[220px] gap-2" data-testid="filtro-canon" aria-label={tx('Filtrar por canon', 'Filter by rent')}>
             <span className="truncate">{etiqueta(CANONES, filtros.canon)}</span>
           </SelectTrigger>
           <SelectContent>
@@ -201,7 +217,7 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
           </SelectContent>
         </Select>
 
-        {conFiltros && (
+        <Presence show={conFiltros} initial={false} direction="left" distance="xs">
           <Button
             variant="link"
             size="sm"
@@ -218,7 +234,7 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
             {tx('Limpiar', 'Clear')}
             <X className="w-3.5 h-3.5" />
           </Button>
-        )}
+        </Presence>
 
         {/* «N de M»: el total con filtros contra el total real, no las filas
             de esta página — son cosas distintas en cuanto hay paginación. */}
@@ -226,7 +242,7 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
           className="ml-auto text-sm text-muted-foreground tabular-nums"
           data-testid="conteo-filtrado"
         >
-          {totalFiltrado} {tx('de', 'of')} {total}
+          <AnimatedNumber value={totalFiltrado} format={(n) => String(Math.round(n))} /> {tx('de', 'of')} {total}
         </span>
       </div>
     </div>

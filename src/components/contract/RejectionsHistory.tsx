@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { Collapse } from '@leasefy/cadence';
 import { XCircle, PencilSimple, CaretDown, CaretUp, User } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { ContractRejection } from '@/lib/types/contract';
@@ -55,13 +56,12 @@ export function RejectionsHistory({ rejections, collapsible = true, className }:
         </button>
       )}
 
-      {visibleHistory.length > 0 && (
-        <div className="space-y-2 pt-1">
-          {visibleHistory.map((r) => (
-            <RejectionCard key={r.id} rejection={r} />
-          ))}
-        </div>
-      )}
+      {/* El historial previo se abre y se cierra con su altura. */}
+      <Collapse open={visibleHistory.length > 0} className="space-y-2 pt-1">
+        {visibleHistory.map((r) => (
+          <RejectionCard key={r.id} rejection={r} />
+        ))}
+      </Collapse>
     </section>
   );
 }

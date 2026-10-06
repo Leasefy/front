@@ -14,15 +14,13 @@ import { getAccessToken } from '@/lib/api/client';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import type { SearchSource, SearchResult } from '@/lib/hooks/useFederatedSearch';
 import { UserCircle } from '@phosphor-icons/react';
+import { formatoPesos } from '@/lib/plata/formato';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? '';
 
+/** BU-03 (04-10-2026): la plata completa, como la escribe la casa («$ 3.200.000»), no «$3.2M». */
 function formatCOP(amount: number): string {
-  if (amount === 0) return '$0';
-  const millions = amount / 1_000_000;
-  if (millions >= 1) return `$${millions.toFixed(1)}M`;
-  const thousands = amount / 1_000;
-  return `$${Math.round(thousands)}k`;
+  return formatoPesos(amount);
 }
 
 export const propietariosSource: SearchSource = {
@@ -57,10 +55,18 @@ export const propietariosSource: SearchSource = {
       subtitle: item.email ?? undefined,
       badges: [
         ...(item.propertyCount > 0
-          ? [{ label: `${item.propertyCount} prop`, color: 'neutral' as const }]
+          ? [
+              {
+                // BU-05 (04-10-2026): «9 prop» no decía qué contaba. Son los
+                // inmuebles de los mandatos donde es la propietaria principal
+                // (`propertyCount` del back), verificado contra la base.
+                label: `${item.propertyCount} ${item.propertyCount === 1 ? 'inmueble' : 'inmuebles'}`,
+                color: 'neutral' as const,
+              },
+            ]
           : []),
         ...(item.totalMonthlyRent > 0
-          ? [{ label: formatCOP(item.totalMonthlyRent), color: 'green' as const }]
+          ? [{ label: `${formatCOP(item.totalMonthlyRent)} al mes`, color: 'green' as const }]
           : []),
       ],
       href: `/panel/inmobiliaria/propietarios/${item.id}`,

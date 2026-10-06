@@ -26,7 +26,7 @@ const RAZON_BLOQUEO = 'Viene de tu estudio de arrendamiento vigente y no se pued
  * Collects personal information with Luxterra-style inputs
  */
 export function StepPersonal() {
-  const { application, updatePersonal, attemptedAdvance } = useApplication();
+  const { application, updatePersonal, attemptedAdvance, erroresDelServidor } = useApplication();
   const personal = application.personal;
 
   const locked = useMemo(
@@ -46,11 +46,15 @@ export function StepPersonal() {
   }, []);
 
   // Get error message for a field (show if touched OR if user attempted to advance)
+  // Lo que el back rechazó al enviar (02-10-2026) va primero: se ve aunque
+  // el campo no se haya tocado, y se borra en cuanto la persona lo corrige.
   const getError = useCallback(
     (fieldName: string): string | undefined => {
+      const delServidor = (erroresDelServidor as Record<string, string | undefined> | undefined)?.[fieldName];
+      if (delServidor) return delServidor;
       return (touched[fieldName] || attemptedAdvance) ? validation.errors[fieldName] : undefined;
     },
-    [touched, validation.errors, attemptedAdvance]
+    [touched, validation.errors, attemptedAdvance, erroresDelServidor]
   );
 
   // Handle text input changes

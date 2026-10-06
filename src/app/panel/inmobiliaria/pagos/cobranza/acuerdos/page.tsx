@@ -62,6 +62,9 @@ import {
   type PaymentsFunnelItem,
 } from '@/lib/hooks/cobranza/use-payments-funnel'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
+import { TraerLaCartera } from '@/components/cobranza-manual/TraerLaCartera'
+import { usePlazoSinFijar } from '@/lib/hooks/use-plazo-sin-fijar'
+import { FIJAR_EL_PLAZO_HREF } from '@/lib/api/cobranza-secuencia.types'
 import { useDebtorDetail } from '@/lib/hooks/cobranza/use-debtor-detail'
 import { useAgreementOffer } from '@/lib/hooks/cobranza/use-agreement-offer'
 import { reformatearMiles, parseMiles, formatMiles } from '@/lib/cobranza/formato-miles'
@@ -69,6 +72,7 @@ import {
   type CarteraStage,
 } from '@/lib/hooks/cobranza/use-agreement-propose'
 import { usePromises } from '@/lib/hooks/cobranza/use-promises'
+import { usePaymentPlans } from '@/lib/hooks/cobranza/use-payment-plans'
 // El Dialog del ADAPTADOR local (`@/components/ui/dialog`), no el de Cadence
 // crudo: es el que usan los otros 21 modales del panel, trae su padding `p-6` y
 // frena Lenis mientras está abierto.
@@ -89,6 +93,7 @@ import {
 import { AcuerdoDetalleSheet } from '@/components/inmobiliaria/cobranza/AcuerdoDetalleSheet'
 import { AcuerdosGeneralesCard } from '@/components/inmobiliaria/cobranza/AcuerdosGeneralesCard'
 import { AcuerdosGeneralesTabla } from '@/components/inmobiliaria/cobranza/AcuerdosGeneralesTabla'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 // Etapas donde NO hay superficie de negociación (espejo del backend:
 // agency-cobranza-promises.ts NEGOTIATION_UNAVAILABLE_STAGES). En esas etapas el
@@ -305,11 +310,14 @@ const CONSECUENCIAS = [
 const NUM_CUOTAS_OPCIONES = [2, 3, 4, 6, 9, 12]
 
 function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
+  // CONSISTENCIA (04-10-2026, CR-31): sin plazo fijado no hay deudores en
+  // cobranza, y el selector tiene que decir POR QUÉ (no un vacío mudo).
+  const plazoSinFijar = usePlazoSinFijar()
   const { formatCurrency } = useI18n()
 
   // Deudor → fuente real de debtorId + etapa (requeridos por el endpoint). Sólo
   // se ofrecen deudores en etapas con superficie de negociación (S0..S3).
-  const { pages: debtors, isLoading: debtorsLoading } = useDebtorList()
+  const { pages: debtors, isLoading: debtorsLoading, refetch: releerDeudores } = useDebtorList()
   const debtoresNegociables = useMemo(
     () => debtors.filter((d) => !NEGOTIATION_UNAVAILABLE_STAGES.has(d.currentStage)),
     [debtors],
@@ -421,7 +429,9 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
                   debtorsLoading
                     ? 'Cargando deudores…'
                     : debtoresNegociables.length === 0
-                      ? 'No hay deudores con acuerdo disponible'
+                      ? plazoSinFijar
+                        ? 'Sin días de plazo fijados no hay deudores en cobranza'
+                        : 'Todavía no hay deudores en Cobranza'
                       : 'Selecciona un deudor'
                 }
               />
@@ -437,6 +447,24 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
           {selectedDebtor && (
             <p className="text-xs text-fg-muted">
               Etapa actual: {STAGE_LABELS_ES[selectedDebtor.currentStage]}
+            </p>
+          )}
+          {/* COBRANZA-MANUAL (04-10-2026): los deudores salen de la cartera de
+              los contratos; si todavía no llegaron, se traen desde aquí. */}
+          {!debtorsLoading && debtoresNegociables.length === 0 && !plazoSinFijar && (
+            <div className="space-y-2" data-testid="acuerdo-sin-deudores">
+              <p className="text-sm text-fg-muted">
+                Los deudores salen solos de la cartera de los contratos (quien pasa sus días de plazo sin pagar).
+              </p>
+              <TraerLaCartera compacto onTraida={() => void releerDeudores()} />
+            </div>
+          )}
+          {!debtorsLoading && debtoresNegociables.length === 0 && plazoSinFijar && (
+            <p className="text-sm text-fg-muted" data-testid="acuerdo-sin-plazo">
+              Las cuotas vencidas entran a la cobranza cuando la inmobiliaria fija sus días de plazo.{' '}
+              <Link href={FIJAR_EL_PLAZO_HREF} className="font-medium text-primary hover:underline">
+                Fijar los días de plazo
+              </Link>
             </p>
           )}
         </div>
@@ -607,8 +635,8 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
         </div>
 
         {/* Aviso suave si el backend aún no está desplegado (404). Form intacto. */}
-        {notDeployed && (
-          <div
+        <Presence
+            show={notDeployed}
             role="status"
             className="flex items-start gap-2 rounded-lg bg-surface-muted p-3 ring-1 ring-border"
           >
@@ -617,19 +645,17 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
               La creación de propuestas estará disponible muy pronto. Por ahora puedes
               armar las condiciones; el envío quedó guardado para cuando se habilite.
             </p>
-          </div>
-        )}
+        </Presence>
 
-        {/* Error de validación / permiso / red. */}
-        {error && (
-          <div
+        {/* Error de validación / permiso / red: entra y sale con `Presence`. */}
+        <Presence
+            show={Boolean(error)}
             role="alert"
             className="flex items-start gap-2 rounded-lg bg-danger-soft p-3 ring-1 ring-danger/30"
           >
             <Warning className="w-4 h-4 text-danger shrink-0 mt-0.5" weight="fill" aria-hidden="true" />
             <p className="text-xs text-danger leading-relaxed">{error}</p>
-          </div>
-        )}
+        </Presence>
 
         <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
           {/* Único primary CTA de la sección (contrato §2). */}
@@ -648,6 +674,9 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
       {/* Columna derecha — vista previa local mientras se arma el acuerdo. */}
       <div className="space-y-3">
         <h3 className="text-base font-semibold text-fg">Vista previa</h3>
+        {/* «Completa las condiciones» ⇄ la vista previa: la una sale y la otra
+            entra al llenar (o vaciar) lo que falta. */}
+        <CrossFade swapKey={hasPreview ? 'vista-previa' : 'faltan-datos'}>
         {hasPreview ? (
           <AcuerdoPropuestoCard
             totalAdeudado={total}
@@ -665,6 +694,7 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
             </p>
           </div>
         )}
+        </CrossFade>
       </div>
     </div>
   )
@@ -796,14 +826,16 @@ function AcuerdosContent() {
     error: errorPromesas,
     refetch: recargarPromesas,
   } = usePromises({ limit: 200 })
+  // 🔴 QA-IA-B (04-10-2026): los planes salen de la lista REAL de planes de
+  // pago. Antes salían del embudo de pagos (sólo filas de `agent.payments`), y
+  // un plan sin pagos —todos los recién ofrecidos— no aparecía nunca.
   const {
-    rows,
+    planes,
     isLoading: cargandoPlanes,
     error: errorPlanes,
     refetch: recargarPlanes,
-  } = usePaymentsFunnel({ status: 'pending', sort: 'created_at' })
+  } = usePaymentPlans()
 
-  const planes = useMemo(() => rows.filter((r) => r.paymentPlanId != null), [rows])
   const acuerdos = useMemo(
     () => componerAcuerdos(promises, planes),
     [promises, planes],
@@ -860,6 +892,8 @@ function AcuerdosContent() {
       <AcuerdosGeneralesCard />
       <AcuerdosGeneralesTabla />
 
+      {/* Cargando → la tabla: entra con su fundido. */}
+      <CrossFade swapKey={cargando && acuerdos.length === 0 && !error ? 'cargando' : 'tabla'}>
       {cargando && acuerdos.length === 0 && !error ? (
         <div className="flex items-center justify-center py-16">
           <Spinner size="md" />
@@ -874,13 +908,14 @@ function AcuerdosContent() {
           onReintentar={recargar}
         />
       )}
+      </CrossFade>
 
       <AcuerdoDetalleSheet acuerdo={detalle} onClose={() => setDetalle(null)} />
 
       {/* Crear — en modal: la pantalla es para MIRAR los acuerdos; armar uno es
           una tarea puntual que no tiene por qué ocupar media pantalla siempre. */}
       <Dialog open={crearAbierto} onOpenChange={setCrearAbierto}>
-        <DialogContent className="sm:max-w-5xl">
+        <DialogContent size="xl" aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Nuevo acuerdo de pago</DialogTitle>
           </DialogHeader>

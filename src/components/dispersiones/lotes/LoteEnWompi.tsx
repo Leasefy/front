@@ -46,6 +46,7 @@ import type { EnvioAWompi, EstadoDelEnvio, VistaDelLoteEnWompi } from '@/lib/api
 import type { EstadoDelLote } from '@/lib/api/lotes-de-dispersion.types';
 import { useRefrescoAutomatico } from '@/lib/hooks/use-refresco-automatico';
 import { RECURSO_DE_LOTES } from '@/lib/api/lotes-de-dispersion.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type { TonoDeBadge } from './estado-del-lote';
 
 export const NOMBRE_DEL_ENVIO: Record<EstadoDelEnvio, string> = {
@@ -147,8 +148,10 @@ export function LoteEnWompi({ loteId, estado, vista, puedeEditar, onCambio }: Lo
     try {
       onCambio(await wompiPagosApi.consultar(loteId));
     } catch (e) {
+      // Con la regla de oro (02-10-2026): un 5xx dice «de nuestro lado» con la
+      // referencia; Wompi caído (502 con `servicio`) lo dice la capa de caídas.
       toast.error('No se pudo consultar a Wompi', {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeParaLaPersona(e, { accion: 'consultar a Wompi' }),
       });
     } finally {
       setConsultando(false);
@@ -397,7 +400,12 @@ function EnviarAWompiDialog({
       });
       onCerrar();
     } catch (e) {
-      setError(e instanceof Error && e.message ? e.message : 'No se pudo mandar el lote a Wompi.');
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo mandar el lote a Wompi.',
+          accion: 'mandar el lote a Wompi',
+        }),
+      );
     } finally {
       setEnviando(false);
     }
@@ -405,7 +413,12 @@ function EnviarAWompiDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-md" data-testid="dialogo-enviar-a-wompi">
+      <DialogContent
+        size="sm"
+        variant="confirm"
+        icon={reenvio ? <ArrowsClockwise weight="bold" /> : <PaperPlaneTilt weight="bold" />}
+        data-testid="dialogo-enviar-a-wompi"
+      >
         <DialogHeader>
           <DialogTitle>{reenvio ? 'Volver a mandar a Wompi' : 'Enviar el lote a Wompi'}</DialogTitle>
           <DialogDescription>
@@ -414,7 +427,7 @@ function EnviarAWompiDialog({
               : `Sale desde ${vista.cuentaOrigen ?? 'la cuenta vinculada en Wompi'}. Queda esperando a que el Aprobador de tu inmobiliaria lo apruebe en el panel de Wompi.`}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3 px-6 py-4 text-sm">
+        <div className="space-y-3 text-sm">
           {!reenvio && (
             <label className="flex items-start gap-2" htmlFor="wompi-facturar-ahora">
               <Checkbox

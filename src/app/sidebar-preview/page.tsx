@@ -123,13 +123,14 @@ export default function SidebarPreviewPage() {
   if (process.env.NODE_ENV === "production") {
     notFound();
   }
-  const comun = { onCollapse: () => {}, showCollapseButton: false } as const;
+  const comun = { onCollapse: () => {}, showCollapseButton: true } as const;
 
   return (
     <main className="min-h-screen bg-surface-muted p-6">
       <h1 className="text-[22px] font-semibold tracking-[-0.015em] text-fg">Sidebar — secciones plegables</h1>
       <p className="mt-1 max-w-2xl text-[14px] text-fg-muted">
-        El componente real, con datos de muestra. Cierra y abre secciones: se recuerda por persona.
+        El componente real, con datos de muestra. Al entrar sólo «Operación» (y la sección de la página actual) está
+        abierta; lo que abras o cierres vale mientras navegas y no se guarda.
       </p>
       <div className="mt-6 flex gap-6 overflow-x-auto pb-4">
         <Columna titulo="Inmobiliaria">

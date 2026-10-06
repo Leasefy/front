@@ -17,6 +17,7 @@ import { WhatsappLogo } from '@phosphor-icons/react';
 
 import { Switch } from '@/components/ui/switch';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { messagesApi } from '@/lib/api/messages.service';
 import type { CanalDeWhatsapp } from '@/lib/api/messages.types';
 
@@ -76,9 +77,16 @@ export function InterruptorDeWhatsapp({
             ? 'Ahora le llegan los mensajes del chat por WhatsApp'
             : 'Ya no le llegan los mensajes del chat por WhatsApp',
         );
-      } catch {
+      } catch (err) {
         setCanal(previo);
-        toast.error('No se pudo guardar el permiso de WhatsApp');
+        // El porqué, por el traductor (02-10-2026): antes era siempre el mismo
+        // aviso genérico, también ante un 403 o un 409 que explicaban algo.
+        toast.error('No se pudo guardar el permiso de WhatsApp', {
+          description: mensajeParaLaPersona(err, {
+            porDefecto: 'Prueba de nuevo en un momento.',
+            accion: 'guardar el permiso de WhatsApp',
+          }),
+        });
       } finally {
         setGuardando(false);
       }

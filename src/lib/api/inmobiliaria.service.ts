@@ -3,7 +3,9 @@
  * Connects to backend /api/v1/inmobiliaria endpoints
  */
 
+import type { PorGirarDelBack } from '@/lib/propietarios/por-girar';
 import { ESTADO_AL_BACK, mantenimientoAlBack, mantenimientoDelBack } from './mantenimiento-enums';
+import { actaDelBack, type CuerpoParaCrearElActa } from '@/lib/actas/acta-del-back';
 import { apiClient, getAccessToken, ApiError } from '@/lib/api/client';
 import { resolveListingType } from '@/lib/api/properties.mapper';
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url';
@@ -75,6 +77,7 @@ import {
   type DispersionDelBack,
 } from './dispersion-adapter';
 import type { CuotasTardias, InventoryItem, VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
+import type { LiquidacionDelMesCompleto } from '@/lib/liquidaciones/liquidacion-del-mes';
 import { COLOMBIAN_BANKS, type BankCode, type AccountType } from '@/lib/types/payment-accounts';
 
 const BASE = '/inmobiliaria';
@@ -468,6 +471,17 @@ export const propietariosApi = {
     });
   },
 
+  /**
+   * POST /inmobiliaria/propietarios/extractos/enviar-mes/en-el-centro → 202 `{ procesoId }`.
+   * QA-PROP-95 C-42: el mismo envío, en el centro de procesos (avance y «Detener»).
+   */
+  async enviarExtractosDelMesEnElCentro(month: string, soloSinEnviar = true): Promise<{ procesoId: string }> {
+    return apiClient.post<{ procesoId: string }>(`${BASE}/propietarios/extractos/enviar-mes/en-el-centro`, {
+      month,
+      soloSinEnviar,
+    });
+  },
+
   /** GET /inmobiliaria/propietarios/:id/extractos — las últimas huellas de envío, de la más reciente. */
   async extractosDe(id: string): Promise<ExtractoEnviado[]> {
     const res = await apiClient.get<{ data: ExtractoEnviado[] } | ExtractoEnviado[]>(
@@ -795,6 +809,20 @@ export const consignacionesApi = {
 
   async delete(id: string): Promise<void> {
     await apiClient.delete(`${BASE}/consignaciones/${id}`);
+  },
+
+  /**
+   * PUT /inmobiliaria/consignaciones/:id/principal — en un EMPATE de
+   * participación (copropiedad 50/50), quién queda como propietario principal
+   * (QA-PROP P-03, seguimiento). No cambia participaciones. Sólo administrador o
+   * contador (403 `SOLO_ADMINISTRADOR_O_CONTADOR`); 409
+   * `NO_TIENE_LA_MAYOR_PARTICIPACION` si el elegido no tiene la mayor.
+   */
+  async elegirPrincipal(
+    id: string,
+    propietarioId: string,
+  ): Promise<{ consignacionId: string; propietarioId: string; nombre: string; anterior: string; participacionBps: number; yaEra: boolean }> {
+    return apiClient.put(`${BASE}/consignaciones/${id}/principal`, { propietarioId });
   },
 
   /**
@@ -1144,6 +1172,15 @@ export interface ResultadoDeLaGeneracion {
     cuantos: number;
     contratos: ConsignacionConContratoVencido[];
   };
+  /**
+   * QA-CONT CR-18 (SEGUIMIENTO-BACK): los inmuebles cuyo contrato se cobra por
+   * trimestre y este mes va DENTRO de la cuota de otro mes (no se les genera
+   * cobro). Ausente en un back anterior.
+   */
+  dentroDeOtraCuota?: {
+    cuantos: number;
+    consignaciones: { consignacionId: string; mesDeLaCuota: string }[];
+  };
 }
 
 export const cobrosApi = {
@@ -1262,9 +1299,18 @@ export const cobrosApi = {
    * lista, y una corrida que deja gente afuera en silencio es exactamente lo
    * que esa exclusión vino a evitar.
    */
-  async generate(month: string): Promise<ResultadoDeLaGeneracion> {
+  /**
+   * 🔴 PG-R13 (QA de Pagos, 03-10-2026): generar NO avisa a los inquilinos
+   * salvo que la persona lo pida (`avisarALosInquilinos: true`); el back
+   * tampoco avisa sin el campo. Es el incidente del 14-09.
+   */
+  async generate(
+    month: string,
+    opciones?: { avisarALosInquilinos?: boolean },
+  ): Promise<ResultadoDeLaGeneracion> {
     return apiClient.post<ResultadoDeLaGeneracion>(`${BASE}/cobros/generate`, {
       month,
+      ...(opciones?.avisarALosInquilinos ? { avisarALosInquilinos: true } : {}),
     });
   },
 
@@ -1292,8 +1338,15 @@ export const cobrosApi = {
     return { cobro: normalizeCobro(res.cobro), creado: Boolean(res.creado) };
   },
 
-  async sendReminder(id: string): Promise<void> {
-    await apiClient.put(`${BASE}/cobros/${id}/send-reminder`);
+  /**
+   * 🔴 PG-R01 (03-10-2026): devuelve lo que contestó el back. «Se envió» sólo
+   * con `enviado: true` (`recordatorio-de-cobro.ts`): el back de antes sumaba
+   * el contador sin mandar nada.
+   */
+  async sendReminder(id: string): Promise<{ enviado?: boolean; canal?: string | null; motivo?: string | null } | null> {
+    return apiClient.put<{ enviado?: boolean; canal?: string | null; motivo?: string | null } | null>(
+      `${BASE}/cobros/${id}/send-reminder`,
+    );
   },
 
   /**
@@ -1388,6 +1441,16 @@ export const avaluosApi = {
     return apiClient.get<AgencyAvaluoListResponse>(
       `${BASE}/avaluos${qs ? `?${qs}` : ''}`,
     );
+  },
+
+  /**
+   * El PDF del certificado firmado de UN avalúo de la inmobiliaria
+   * (`GET /inmobiliaria/avaluos/:id/certificate`, back `avaluos.controller.ts`).
+   * El back lo acota a la agencia por su correo (anti-IDOR): un avalúo ajeno
+   * es 404, y con el servicio caído, 502 con `servicio: 'avaluos'`.
+   */
+  certificado(id: string): Promise<Blob> {
+    return apiClient.getBlob(`${BASE}/avaluos/${encodeURIComponent(id)}/certificate`);
   },
 
   /**
@@ -1495,7 +1558,8 @@ export const dispersionesApi = {
      * Las cuotas que llegaron tarde: las que se sumaron a una liquidación
      * abierta y las que no, con el motivo. Opcional: back anterior.
      */
-    tardias?: { sumadas: CuotasTardias[]; sinSumar: CuotasTardias[] };
+    /** PG-R03: `complementarias` = las liquidaciones complementarias que se armaron. */
+    tardias?: { sumadas: CuotasTardias[]; sinSumar: CuotasTardias[]; complementarias?: CuotasTardias[] };
   }> {
     return apiClient.post(`${BASE}/dispersiones/generate`, {
       month,
@@ -1578,6 +1642,18 @@ export const dispersionesApi = {
   },
 
   /**
+   * 🔴 PG-02 (QA de Pagos, 03-10-2026): la liquidación del MES COMPLETO por
+   * propietario —lo ya generado en dispersiones más lo que falta—, con el
+   * estado verdadero de cada fila. Es lo que pinta «Liquidaciones»; `preview`
+   * sigue siendo lo que falta generar (el asistente de Dispersiones).
+   */
+  async liquidacionDelMes(month: string): Promise<LiquidacionDelMesCompleto> {
+    return apiClient.get<LiquidacionDelMesCompleto>(
+      `${BASE}/dispersiones/liquidacion-del-mes?month=${encodeURIComponent(month)}`,
+    );
+  },
+
+  /**
    * Lo que se giraría con ESTA selección — a quiénes y a qué inmuebles—,
    * calculado por el back y sin escribir nada.
    *
@@ -1606,6 +1682,15 @@ export const dispersionesApi = {
     );
   },
 
+  /**
+   * 🔴 «Por girar» → UNA sola cifra: hasta el mes en curso, neta de
+   * deducciones, y los próximos giros aparte (Nico, 04-10-2026). La misma
+   * función del back que leen el Tablero, «Cartera → Por pagar» y el chat.
+   */
+  async porGirar(): Promise<PorGirarDelBack> {
+    return apiClient.get<PorGirarDelBack>(`${BASE}/dispersiones/por-girar`);
+  },
+
   async getSummary(month: string): Promise<DispersionSummary> {
     // Sin envoltorio `{ data }`: el back responde el objeto directo.
     return apiClient.get<DispersionSummary>(`${BASE}/dispersiones/summary?month=${month}`);
@@ -1615,6 +1700,19 @@ export const dispersionesApi = {
 // ============================================================================
 // Mantenimiento
 // ============================================================================
+
+/** A dónde va una foto de mantenimiento (`POST :id/fotos`, campo `destino`). */
+export type DestinoDeLaFotoDelMantenimiento = 'reporte' | 'trabajo';
+
+/**
+ * `reporte` → `{ ruta, photoUrls }`; `trabajo` → `{ ruta, completionPhotoUrls }`
+ * (todas firmadas).
+ */
+export interface RespuestaDeLaFotoDelMantenimiento {
+  ruta: string;
+  photoUrls?: string[];
+  completionPhotoUrls?: string[];
+}
 
 export const mantenimientoApi = {
   async getAll(params?: { status?: string; consignacionId?: string }): Promise<SolicitudMantenimiento[]> {
@@ -1675,6 +1773,100 @@ export const mantenimientoApi = {
   /** Alias for changeStatus used by operaciones page */
   async updateStatus(id: string, status: string): Promise<SolicitudMantenimiento> {
     return mantenimientoApi.changeStatus(id, status);
+  },
+
+  /**
+   * PUT /inmobiliaria/mantenimiento/:id/complete — cerrar la solicitud con las
+   * fotos del trabajo (`CompleteMantenimientoDto`: `completionPhotoUrls`, hasta
+   * 30, nunca un `blob:`). Las fotos se suben ANTES, una por una, con
+   * `subirFoto` (`destino: 'trabajo'`); acá viajan sus rutas, y la lista
+   * REEMPLAZA a la de la fila (las mismas rutas no se duplican; `[]` la
+   * vacía). `changeStatus(id, 'completed')` cierra sin tocar las fotos que ya
+   * estaban.
+   */
+  async completar(
+    id: string,
+    cierre: { completionNotes?: string; completionPhotoUrls?: string[]; costoFinalCop?: number } = {},
+  ): Promise<SolicitudMantenimiento> {
+    return mantenimientoDelBack(
+      await apiClient.put<SolicitudMantenimiento>(`${BASE}/mantenimiento/${encodeURIComponent(id)}/complete`, cierre),
+    );
+  },
+
+  /**
+   * POST /inmobiliaria/mantenimiento/:id/fotos — UNA foto de la solicitud
+   * (multipart `file`). Devuelve todas sus fotos ya firmadas.
+   *
+   * 🔴 02-10-2026: antes la foto no se subía: se guardaba la vista previa del
+   * navegador (`blob:`), que nadie más podía abrir. Ahora va al almacenamiento
+   * privado y la fila guarda la ruta. Se sube DESPUÉS de crear la solicitud,
+   * una por una: una foto que falla no tumba la solicitud.
+   *
+   * El rechazo sale con el sobre de error entero (`code`, `campos`), para que
+   * el traductor diga qué pasó: «conexión» sólo si no hubo respuesta.
+   *
+   * `destino` (Nico, 02-10-2026): `reporte` —el de siempre, la foto va a
+   * `photoUrls`— o `trabajo` —las fotos del trabajo terminado, DIRECTO a
+   * `completionPhotoUrls`, con su propio tope de 30, sin tocar las del
+   * reporte—. Para el reporte no se manda el campo: el back toma `reporte` sin
+   * él, y así un back anterior al cambio sigue recibiendo lo mismo de siempre.
+   */
+  async subirFoto(
+    id: string,
+    foto: File,
+    destino: DestinoDeLaFotoDelMantenimiento = 'reporte',
+  ): Promise<RespuestaDeLaFotoDelMantenimiento> {
+    const token = getAccessToken();
+    const formData = new FormData();
+    formData.append('file', foto, foto.name || 'foto.jpg');
+    if (destino !== 'reporte') formData.append('destino', destino);
+    let res: Response;
+    try {
+      res = await fetch(`${BACKEND_URL}${BASE}/mantenimiento/${encodeURIComponent(id)}/fotos`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+      });
+    } catch (err) {
+      throw new ApiError(
+        0,
+        `No pudimos conectarnos al servidor. ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+    if (!res.ok) {
+      const cuerpo = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      const mensaje =
+        Array.isArray(cuerpo.message) || typeof cuerpo.message === 'string'
+          ? (cuerpo.message as string | string[])
+          : 'No se pudo subir la foto';
+      throw new ApiError(
+        res.status,
+        mensaje,
+        typeof cuerpo.code === 'string' ? cuerpo.code : undefined,
+        cuerpo,
+      );
+    }
+    return res.json() as Promise<RespuestaDeLaFotoDelMantenimiento>;
+  },
+
+  /**
+   * DELETE /inmobiliaria/mantenimiento/:id/fotos?ruta=…&destino=… — borra UNA
+   * foto: sale de su lista y el archivo se borra (Nico, 02-10-2026). Responde
+   * como `subirFoto`, con la lista de su destino ya firmada.
+   *
+   * Lo usa el cierre cancelado (`borrarLasDelIntento`): las fotos del trabajo
+   * que subió ESE intento. El back sólo borra rutas de esta solicitud, con la
+   * solicitud abierta (409 si ya está completada o cancelada) y es idempotente.
+   */
+  async borrarFoto(
+    id: string,
+    ruta: string,
+    destino: DestinoDeLaFotoDelMantenimiento = 'reporte',
+  ): Promise<RespuestaDeLaFotoDelMantenimiento> {
+    const query = new URLSearchParams({ ruta, destino });
+    return apiClient.delete<RespuestaDeLaFotoDelMantenimiento>(
+      `${BASE}/mantenimiento/${encodeURIComponent(id)}/fotos?${query.toString()}`,
+    );
   },
 
   /**
@@ -2072,17 +2264,28 @@ export const documentosApi = {
 // ============================================================================
 
 export const actasApi = {
+  /*
+   * 02-10-2026 · El acta viaja en el vocabulario del back (`ENTREGA`,
+   * `ACTA_DRAFT`, `GOOD`) y el panel pinta el suyo: `actaDelBack` traduce lo
+   * que llega (antes toda acta salía como «Devolución» y sin estado).
+   */
   async getAll(): Promise<ActaEntrega[]> {
     const res = await apiClient.get<{ data: ActaEntrega[] } | ActaEntrega[]>(`${BASE}/actas`);
-    return lista(res);
+    return lista(res).map(actaDelBack);
   },
 
   async getById(id: string): Promise<ActaEntrega> {
-    return apiClient.get<ActaEntrega>(`${BASE}/actas/${id}`);
+    return actaDelBack(await apiClient.get<ActaEntrega>(`${BASE}/actas/${id}`));
   },
 
-  async create(data: Partial<ActaEntrega>): Promise<ActaEntrega> {
-    return apiClient.post<ActaEntrega>(`${BASE}/actas`, data);
+  /**
+   * 🔴 02-10-2026 · «Crear un acta desde el panel parece roto» (Nico): se
+   * mandaba el `ActaEntrega` entero y `CreateActaDto` respondía 400 por cada
+   * clave que no conoce. Ahora va EXACTAMENTE su cuerpo, armado en
+   * `cuerpoParaCrearElActa` (`lib/actas/acta-del-back.ts`).
+   */
+  async create(cuerpo: CuerpoParaCrearElActa): Promise<ActaEntrega> {
+    return actaDelBack(await apiClient.post<ActaEntrega>(`${BASE}/actas`, cuerpo));
   },
 
   /**
@@ -2093,7 +2296,7 @@ export const actasApi = {
    * vacío.
    */
   async update(id: string, data: Partial<ActaEntrega>): Promise<ActaEntrega> {
-    return apiClient.put<ActaEntrega>(`${BASE}/actas/${id}`, data);
+    return actaDelBack(await apiClient.put<ActaEntrega>(`${BASE}/actas/${id}`, data));
   },
 
   /**
@@ -2117,16 +2320,22 @@ export const actasApi = {
    * — sin documento «un testigo» es un nombre cualquiera y no sirve el día que
    * haya que sostener el acta.
    */
+  /*
+   * 02-10-2026: si el acta es de devolución y los descuentos pasan el
+   * depósito, la respuesta trae `cargoAparte` (el cargo creado en el estado de
+   * cuenta del inquilino, o por qué no se creó). `actaDelBack` lo deja pasar;
+   * se lee con `cargoAparteDelCierre` (`lib/actas/acta-del-back.ts`).
+   */
   async cerrarSinFirma(
     id: string,
     testigo: { testigoNombre: string; testigoDocumento: string },
   ): Promise<ActaEntrega> {
-    return apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/cerrar-sin-firma`, testigo);
+    return actaDelBack(await apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/cerrar-sin-firma`, testigo));
   },
 
   /** El inquilino objeta dentro de los 5 días. NO reabre el acta: deja escrito. */
   async objetar(id: string, texto: string): Promise<ActaEntrega> {
-    return apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/objetar`, { texto });
+    return actaDelBack(await apiClient.post<ActaEntrega>(`${BASE}/actas/${id}/objetar`, { texto }));
   },
 };
 
@@ -2151,8 +2360,9 @@ export const inmobiliariaConfigApi = {
 
   async inviteUser(invite: UserInvite): Promise<AgencyInviteResult> {
     // Backend enum: ADMIN | AGENTE | CONTADOR | VIEWER — just uppercase the frontend value
-    // Backend DTO rejects: message (UI-only), phone (not in DTO)
-    const { message: _msg, phone: _phone, ...rest } = invite;
+    // Backend DTO rejects: message (UI-only). (El teléfono ya no se pide al
+    // invitar: `InviteMemberDto` no lo tiene y nunca se guardó.)
+    const { message: _msg, ...rest } = invite;
     const payload = {
       ...rest,
       role: invite.role.toUpperCase(),
@@ -2180,8 +2390,14 @@ export const inmobiliariaConfigApi = {
   },
 
   async getInvoices(): Promise<BillingInvoice[]> {
-    const res = await apiClient.get<{ data: BillingInvoice[] } | BillingInvoice[]>(`${BASE}/config/billing/invoices`);
-    return lista(res);
+    // El back responde `{ invoices, total }` (los cobros de la suscripción de la
+    // inmobiliaria, CF-07 04-10-2026); `lista` sólo miraba `data` y la tabla
+    // salía siempre vacía.
+    const res = await apiClient.get<
+      { data?: BillingInvoice[]; invoices?: BillingInvoice[] } | BillingInvoice[]
+    >(`${BASE}/config/billing/invoices`);
+    if (res && !Array.isArray(res) && Array.isArray(res.invoices)) return res.invoices;
+    return lista(res as { data?: BillingInvoice[] } | BillingInvoice[]);
   },
 
   // ==========================================================================

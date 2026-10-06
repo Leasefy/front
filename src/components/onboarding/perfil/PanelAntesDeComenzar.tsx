@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { WarningCircle, X } from '@phosphor-icons/react'
+import { CrossFade } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { CargaDeMarca } from '@/components/ui/carga-de-marca'
@@ -19,12 +20,29 @@ import { PERFIL_INMOBILIARIA } from './perfiles'
 export type AprovisionamientoDelPanel = Pick<
   UseOnboardingProvisioningResult,
   'status' | 'valoresGuardados' | 'fallo' | 'retry' | 'provision'
->
+> &
+  Partial<Pick<UseOnboardingProvisioningResult, 'corrigiendo'>>
 
 export interface PanelAntesDeComenzarProps {
   aprovisionamiento: AprovisionamientoDelPanel
   /** Cierra el panel y devuelve las tarjetas al centro. */
   onCerrar: () => void
+  /**
+   * Avisa si se puede cerrar el panel para volver a elegir perfil, para que el
+   * «Salir» de arriba ofrezca «Volver a elegir tu perfil» sólo entonces.
+   */
+  onPuedeCambiarDePerfil?: (puede: boolean) => void
+  /**
+   * Avisa si esta persona ya tiene una inmobiliaria a medias (la que creó el
+   * envío de este formulario), para que elegir otro perfil pregunte antes de
+   * dejarla de lado. `null` = no hay nada que dejar de lado.
+   */
+  onRegistroAMedias?: (registro: RegistroAMedias | null) => void
+}
+
+/** La inmobiliaria a medias que habría que dejar de lado para cambiar de perfil. */
+export interface RegistroAMedias {
+  razonSocial: string
 }
 
 /**
@@ -34,15 +52,31 @@ export interface PanelAntesDeComenzarProps {
  * misma validación, mismo «Continuar» (`provision` → `POST /users/me/onboarding`).
  * Este panel sólo le pone el marco y la salida.
  *
- * 🔴 Cambiar de perfil se ofrece SÓLO mientras no existe la inmobiliaria. El
- * envío del formulario crea la agencia y su membresía ADMIN; si después se
- * pudiera volver a elegir «Inquilino», quedaría una agencia huérfana. Por eso
- * la ✕ y el «Cambiar» desaparecen mientras se envía, cuando el back ya tiene
- * una agencia de esta persona (`valoresGuardados`) y si algo falló al crearla.
+ * 🔴 La ✕ está SIEMPRE, también cuando la inmobiliaria ya existe (Nico,
+ * 01-10-2026: «¿cómo se devuelve entonces para ver de nuevo los dos activos?»).
+ * Antes desaparecía con la agencia creada, porque elegir «Inquilino» después
+ * dejaba una agencia huérfana. Ahora la ✕ devuelve las tarjetas y, si hay
+ * una inmobiliaria a medias (`onRegistroAMedias`), elegir otro perfil pregunta
+ * y la deja de lado en el back (`DELETE /users/me/onboarding/agency`) antes
+ * de seguir. Lo único que la esconde es estar enviando o abriendo el registro.
  */
-export function PanelAntesDeComenzar({ aprovisionamiento, onCerrar }: PanelAntesDeComenzarProps) {
-  const { status, valoresGuardados, fallo, retry, provision } = aprovisionamiento
-  const sePuedeCambiar = !valoresGuardados && (status === 'resuming' || status === 'needs-info')
+export function PanelAntesDeComenzar({
+  aprovisionamiento,
+  onCerrar,
+  onPuedeCambiarDePerfil,
+  onRegistroAMedias,
+}: PanelAntesDeComenzarProps) {
+  const { status, valoresGuardados, fallo, retry, provision, corrigiendo = false } = aprovisionamiento
+  const sePuedeCambiar = status === 'resuming' || status === 'needs-info'
+  const razonSocialAMedias = valoresGuardados?.razonSocial?.trim() || null
+
+  useEffect(() => {
+    onPuedeCambiarDePerfil?.(sePuedeCambiar)
+  }, [sePuedeCambiar, onPuedeCambiarDePerfil])
+
+  useEffect(() => {
+    onRegistroAMedias?.(valoresGuardados ? { razonSocial: razonSocialAMedias ?? 'tu inmobiliaria' } : null)
+  }, [valoresGuardados, razonSocialAMedias, onRegistroAMedias])
 
   // «Abriendo tu registro…» va solo y centrado, sin el marco de la tarjeta:
   // las tarjetas de perfil también se esconden (Nico, 2026-09-30: «que se
@@ -109,6 +143,16 @@ export function PanelAntesDeComenzar({ aprovisionamiento, onCerrar }: PanelAntes
       ) : null}
 
       <div className="p-5 sm:p-8">
+        {/* Esqueleto → formulario (o el error): se cruzan, no se reemplazan de golpe. */}
+        <CrossFade
+          swapKey={
+            status === 'resuming'
+              ? 'cargando'
+              : status === 'needs-info' || status === 'provisioning'
+                ? 'formulario'
+                : 'error'
+          }
+        >
         {status === 'resuming' ? (
           <div role="status" aria-label="Cargando tu registro" className="space-y-5" data-testid="panel-cargando">
             <div className="space-y-2.5">
@@ -140,11 +184,15 @@ export function PanelAntesDeComenzar({ aprovisionamiento, onCerrar }: PanelAntes
               onSubmit={provision}
               isSubmitting={status === 'provisioning'}
               valoresIniciales={valoresGuardados ?? undefined}
+              corrigiendo={corrigiendo}
+              // Lo que el back rechazó por campo va a ese campo (02-10-2026).
+              erroresDelServidor={status === 'needs-info' ? fallo?.campos : undefined}
             />
           </>
         ) : (
           <OnboardingProvisioningErrorBanner onRetry={retry} fallo={fallo} />
         )}
+        </CrossFade>
       </div>
     </div>
   )
@@ -167,10 +215,14 @@ function esLaApertura(status: AprovisionamientoDelPanel['status']): boolean {
 export function PanelAntesDeComenzarConAprovisionamiento({
   onCerrar,
   onApertura,
+  onPuedeCambiarDePerfil,
+  onRegistroAMedias,
 }: {
   onCerrar: () => void
   /** Avisa cuando el panel pasa a «Abriendo tu registro…», para esconder las tarjetas. */
   onApertura?: (abriendo: boolean) => void
+  onPuedeCambiarDePerfil?: (puede: boolean) => void
+  onRegistroAMedias?: (registro: RegistroAMedias | null) => void
 }) {
   const router = useRouter()
   const aprovisionamiento = useOnboardingProvisioning()
@@ -185,5 +237,12 @@ export function PanelAntesDeComenzarConAprovisionamiento({
     onApertura?.(abriendo)
   }, [abriendo, onApertura])
 
-  return <PanelAntesDeComenzar aprovisionamiento={aprovisionamiento} onCerrar={onCerrar} />
+  return (
+    <PanelAntesDeComenzar
+      aprovisionamiento={aprovisionamiento}
+      onCerrar={onCerrar}
+      onPuedeCambiarDePerfil={onPuedeCambiarDePerfil}
+      onRegistroAMedias={onRegistroAMedias}
+    />
+  )
 }

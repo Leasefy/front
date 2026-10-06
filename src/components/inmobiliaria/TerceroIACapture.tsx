@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
+import { CrossFade } from '@leasefy/cadence';
 import {
   Sparkle,
   UploadSimple,
@@ -18,6 +19,7 @@ import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
+import { CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { PropietarioForm } from './PropietarioForm';
 import {
   extractTerceroFromFiles,
@@ -38,11 +40,25 @@ import type {
   TerceroExtraido,
 } from '@/lib/api/terceros-extract.types';
 import type { Propietario, PropietarioFormData } from '@/lib/types/inmobiliaria';
+import type { ErrorAlGuardarPropietario } from '@/lib/propietarios/errores-del-propietario';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 interface TerceroIACaptureProps {
   /** Reusa el handler de creación manual existente (TERC-04 sin cambios). */
   onCreated: (data: PropietarioFormData) => Promise<void>;
   onClose: () => void;
+  /**
+   * El error del último guardado (`errorAlGuardarPropietario`), para que cada
+   * error por campo vaya a SU campo del formulario de revisión (02-10-2026).
+   * Lo que no tiene campo lo pinta la pantalla que monta esto.
+   */
+  errorDelServidor?: ErrorAlGuardarPropietario | null;
+  /**
+   * Lo que el back dijo sin campo (`errorDelServidor.general`), ya pintado por
+   * quien monta esto. Va ARRIBA del cuerpo del cajón: fuera de él quedaría
+   * entre la cabecera y el cuerpo, sin desplazarse con nada.
+   */
+  aviso?: React.ReactNode;
 }
 
 type Step = 'upload' | 'extracting' | 'review' | 'error';
@@ -92,7 +108,7 @@ function IconoDeArchivo({ file }: { file: File }) {
  * es cada uno y lo devuelve (`documentos`), y una pista de un solo documento
  * era más un obstáculo («¿y si subo los dos?») que una ayuda.
  */
-export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) {
+export function TerceroIACapture({ onCreated, onClose, errorDelServidor, aviso }: TerceroIACaptureProps) {
   const { t } = useI18n();
   const k = (s: string) => `inmobiliaria.terceroIA.${s}`;
 
@@ -116,7 +132,14 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
     if (nuevos.length === 0) return;
     // El mismo archivo dos veces no aporta nada al modelo y sí cuesta.
     const vistos = new Set(files.map((f) => `${f.name}:${f.size}`));
-    const distintos = nuevos.filter((f) => !vistos.has(`${f.name}:${f.size}`));
+    // QA-PROP-95 (A-46): también dentro de la MISMA selección (elegir dos
+    // veces el mismo archivo en el diálogo lo sumaba dos veces).
+    const distintos = nuevos.filter((f) => {
+      const llave = `${f.name}:${f.size}`;
+      if (vistos.has(llave)) return false;
+      vistos.add(llave);
+      return true;
+    });
     const candidatos = [...files, ...distintos];
     const error = validarArchivos(candidatos);
     if (error) {
@@ -145,7 +168,11 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
       if (err instanceof TerceroExtractUnavailableError) {
         setErrorMsg(t(k('errorUnavailable')));
       } else {
-        setErrorMsg(err instanceof Error ? err.message : t(k('errorGeneric')));
+        // Con la regla de oro: un 400 dice qué documento no sirvió, un 5xx
+        // «de nuestro lado» con la referencia, y la red, la conexión.
+        setErrorMsg(
+          mensajeParaLaPersona(err, { porDefecto: t(k('errorGeneric')), accion: 'leer los documentos' }),
+        );
       }
       setStep('error');
     }
@@ -197,9 +224,18 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
     setFormKey((n) => n + 1);
   };
 
+  /** El pie del cajón manda el formulario de revisión desde afuera (`form=`). */
+  const idDelFormulario = `tercero-ia-${useId().replace(/:/g, '')}`;
+  const [guardando, setGuardando] = useState(false);
+
   const handleSave = async (data: PropietarioFormData) => {
-    await onCreated(data);
-    onClose();
+    setGuardando(true);
+    try {
+      await onCreated(data);
+      onClose();
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const prefill: Propietario | undefined = useMemo(
@@ -208,12 +244,23 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
   );
   const confidencePct = Math.round(confidence * 100);
 
-  // ── Review step: prefilled (or blank) PropietarioForm ──────────────────────
+  /*
+   * Nico (03-10): «el de crear con IA sigue en modal» → todo el recorrido va en
+   * el CAJÓN: subir → leer → revisar y guardar, sin abrir nada encima. Cada paso
+   * pone su cuerpo (lo único que se desplaza) y su pie (siempre visible entero).
+   * El cuerpo es el MISMO elemento en los cuatro pasos y adentro un `CrossFade`
+   * cruza un paso con el otro (`popLayout`: el nuevo entra YA y el viejo se va
+   * por encima).
+   */
+  let cuerpo: React.ReactNode;
+  let pie: React.ReactNode;
+
   if (step === 'review') {
+    // ── Revisar: el formulario prellenado (o en blanco) ──────────────────────
     const detectadosLegibles = detectados
       .map((d) => TIPO_DETECTADO[d.tipo] ?? d.tipo)
       .filter((v, i, arr) => arr.indexOf(v) === i);
-    return (
+    cuerpo = (
       <div className="space-y-4">
         {extracted ? (
           <div className="rounded-lg bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
@@ -282,27 +329,63 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
           onSubmit={handleSave}
           onCancel={onClose}
           mode="create"
+          serverError={errorDelServidor?.campo ?? null}
+          serverErrors={errorDelServidor?.porCampo ?? null}
+          accionesAfuera
+          idDelFormulario={idDelFormulario}
         />
       </div>
     );
-  }
-
-  // ── Extracting step ────────────────────────────────────────────────────────
-  if (step === 'extracting') {
-    return (
+    pie = (
+      <>
+        <Button type="button" variant="secondary" size="sm" hideArrow onClick={onClose} disabled={guardando}>
+          {t('inmobiliaria.propietario.form.cancel')}
+        </Button>
+        <Button
+          type="submit"
+          form={idDelFormulario}
+          size="sm"
+          hideArrow
+          disabled={guardando}
+          className="gap-2"
+          data-testid="tercero-ia-guardar"
+        >
+          {guardando ? (
+            <>
+              <Spinner size="sm" variant="current" />
+              {t('inmobiliaria.propietario.form.saving')}
+            </>
+          ) : (
+            t('inmobiliaria.propietario.form.createOwner')
+          )}
+        </Button>
+      </>
+    );
+  } else if (step === 'extracting') {
+    // ── Leyendo ──────────────────────────────────────────────────────────────
+    cuerpo = (
       <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
         <Spinner size="md" variant="muted" />
         <p className="text-sm text-muted-foreground">
-          {t(k('extractingN'), { n: String(files.length) })}
+          {files.length === 1 ? t(k('extractingUno')) : t(k('extractingN'), { n: String(files.length) })}
         </p>
       </div>
     );
-  }
-
-  // ── Error step ─────────────────────────────────────────────────────────────
-  if (step === 'error') {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-10 px-6 text-center">
+    pie = (
+      <>
+        <Button type="button" variant="secondary" size="sm" hideArrow onClick={onClose}>
+          {t(k('cancel'))}
+        </Button>
+        <Button type="button" size="sm" hideArrow disabled data-testid="tercero-ia-extraer">
+          <Spinner size="sm" variant="current" />
+          {files.length > 1 ? t(k('extractN'), { n: String(files.length) }) : t(k('extract'))}
+        </Button>
+      </>
+    );
+  } else if (step === 'error') {
+    // ── No se pudo leer ──────────────────────────────────────────────────────
+    cuerpo = (
+      <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
         <div className="w-14 h-14 rounded-full bg-danger-soft flex items-center justify-center">
           <WarningCircle className="w-7 h-7 text-danger" />
         </div>
@@ -310,117 +393,139 @@ export function TerceroIACapture({ onCreated, onClose }: TerceroIACaptureProps) 
           <h3 className="text-h4 font-semibold text-foreground">{t(k('errorTitle'))}</h3>
           <p className="text-body-sm text-muted-foreground max-w-sm">{errorMsg}</p>
         </div>
-        <div className="flex items-center gap-2 mt-1">
-          <Button variant="secondary" size="sm" hideArrow onClick={resetToUpload}>
-            <ArrowClockwise className="w-4 h-4" />
-            {t(k('retry'))}
-          </Button>
-          <Button size="sm" hideArrow onClick={fillManually}>
-            <PencilSimple className="w-4 h-4" weight="bold" />
-            {t(k('fillManual'))}
-          </Button>
-        </div>
       </div>
     );
-  }
-
-  // ── Upload step (default) ────────────────────────────────────────────────────
-  return (
-    <div className="space-y-5">
-      <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
-          <Sparkle className="w-5 h-5 text-primary" weight="fill" />
+    pie = (
+      <>
+        <Button type="button" variant="secondary" size="sm" hideArrow onClick={resetToUpload}>
+          <ArrowClockwise className="w-4 h-4" />
+          {t(k('retry'))}
+        </Button>
+        <Button type="button" size="sm" hideArrow onClick={fillManually}>
+          <PencilSimple className="w-4 h-4" weight="bold" />
+          {t(k('fillManual'))}
+        </Button>
+      </>
+    );
+  } else {
+    // ── Subir (el primer paso) ───────────────────────────────────────────────
+    cuerpo = (
+      <div className="space-y-5">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
+            <Sparkle className="w-5 h-5 text-primary" weight="fill" />
+          </div>
+          <p className="text-body-sm text-muted-foreground">{t(k('intro'))}</p>
         </div>
-        <p className="text-body-sm text-muted-foreground">{t(k('intro'))}</p>
-      </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept={ACCEPT}
-        multiple
-        className="hidden"
-        data-testid="tercero-ia-input"
-        onChange={(e) => {
-          agregar(Array.from(e.target.files ?? []));
-          // Volver a elegir el mismo archivo tiene que disparar onChange.
-          e.target.value = '';
-        }}
-      />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={ACCEPT}
+          multiple
+          className="hidden"
+          data-testid="tercero-ia-input"
+          onChange={(e) => {
+            agregar(Array.from(e.target.files ?? []));
+            // Volver a elegir el mismo archivo tiene que disparar onChange.
+            e.target.value = '';
+          }}
+        />
 
-      {/* Dropzone: click o arrastrar. Lo que ya está listado se queda. */}
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setArrastrando(true);
-        }}
-        onDragLeave={() => setArrastrando(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setArrastrando(false);
-          agregar(Array.from(e.dataTransfer.files ?? []));
-        }}
-        className={`w-full rounded-lg border-2 border-dashed bg-muted/30 hover:bg-muted/50 transition-colors p-6 flex flex-col items-center justify-center gap-2 text-center ${
-          arrastrando ? 'border-primary bg-primary-soft/40' : 'border-border hover:border-foreground/20'
-        }`}
-        data-testid="tercero-ia-dropzone"
-      >
-        <div className="w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center mb-1">
-          <IdentificationCard className="w-6 h-6 text-primary" />
-        </div>
-        <p className="text-body-sm font-medium text-foreground">
-          {files.length === 0 ? t(k('uploadTitle')) : t(k('uploadMore'))}
-        </p>
-        <p className="text-caption text-muted-foreground inline-flex items-center gap-1">
-          <UploadSimple className="w-3.5 h-3.5" />
-          {t(k('uploadHint'), { max: String(TERCERO_MAX_ARCHIVOS) })}
-        </p>
-      </button>
+        {/* Dropzone: click o arrastrar. Lo que ya está listado se queda. */}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setArrastrando(true);
+          }}
+          onDragLeave={() => setArrastrando(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setArrastrando(false);
+            agregar(Array.from(e.dataTransfer.files ?? []));
+          }}
+          className={`w-full rounded-lg border-2 border-dashed bg-muted/30 hover:bg-muted/50 transition-colors p-6 flex flex-col items-center justify-center gap-2 text-center ${
+            arrastrando ? 'border-primary bg-primary-soft/40' : 'border-border hover:border-foreground/20'
+          }`}
+          data-testid="tercero-ia-dropzone"
+        >
+          <div className="w-12 h-12 rounded-xl bg-primary-soft flex items-center justify-center mb-1">
+            <IdentificationCard className="w-6 h-6 text-primary" />
+          </div>
+          <p className="text-body-sm font-medium text-foreground">
+            {files.length === 0 ? t(k('uploadTitle')) : t(k('uploadMore'))}
+          </p>
+          <p className="text-caption text-muted-foreground inline-flex items-center gap-1">
+            <UploadSimple className="w-3.5 h-3.5" />
+            {t(k('uploadHint'), { max: String(TERCERO_MAX_ARCHIVOS) })}
+          </p>
+        </button>
 
-      {files.length > 0 ? (
-        <ul className="divide-y divide-border rounded-lg border border-border" data-testid="tercero-ia-archivos">
-          {files.map((f, i) => (
-            <li key={`${f.name}:${f.size}`} className="flex items-center gap-3 px-3 py-2 text-sm">
-              <IconoDeArchivo file={f} />
-              <span className="min-w-0 flex-1 truncate text-foreground" title={f.name}>
-                {f.name}
-              </span>
-              <span className="text-xs text-muted-foreground tabular-nums">{tamano(f.size)}</span>
+        {files.length > 0 ? (
+          <ul className="divide-y divide-border rounded-lg border border-border" data-testid="tercero-ia-archivos">
+            {files.map((f, i) => (
+              <li key={`${f.name}:${f.size}`} className="flex items-center gap-3 px-3 py-2 text-sm">
+                <IconoDeArchivo file={f} />
+                <span className="min-w-0 flex-1 truncate text-foreground" title={f.name}>
+                  {f.name}
+                </span>
+                <span className="text-xs text-muted-foreground tabular-nums">{tamano(f.size)}</span>
+                <button
+                  type="button"
+                  onClick={() => quitar(i)}
+                  className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  aria-label={t(k('quitar'), { nombre: f.name })}
+                  data-testid={`quitar-${i}`}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </li>
+            ))}
+            <li className="px-3 py-2">
               <button
                 type="button"
-                onClick={() => quitar(i)}
-                className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                aria-label={t(k('quitar'), { nombre: f.name })}
-                data-testid={`quitar-${i}`}
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
               >
-                <X className="w-3.5 h-3.5" />
+                <Plus className="w-3.5 h-3.5" />
+                {t(k('agregarOtro'))}
               </button>
             </li>
-          ))}
-          <li className="px-3 py-2">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              {t(k('agregarOtro'))}
-            </button>
-          </li>
-        </ul>
-      ) : null}
-
-      <div className="flex items-center justify-end gap-2 pt-1">
-        <Button variant="secondary" hideArrow onClick={onClose}>
+          </ul>
+        ) : null}
+      </div>
+    );
+    pie = (
+      <>
+        <Button type="button" variant="secondary" size="sm" hideArrow onClick={onClose}>
           {t(k('cancel'))}
         </Button>
-        <Button hideArrow onClick={handleExtract} disabled={files.length === 0} data-testid="tercero-ia-extraer">
+        <Button
+          type="button"
+          size="sm"
+          hideArrow
+          onClick={handleExtract}
+          disabled={files.length === 0}
+          data-testid="tercero-ia-extraer"
+        >
           <Sparkle className="w-4 h-4" weight="fill" />
           {files.length > 1 ? t(k('extractN'), { n: String(files.length) }) : t(k('extract'))}
         </Button>
-      </div>
-    </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <CajonCuerpo>
+        {aviso ? <div className="mb-4">{aviso}</div> : null}
+        <CrossFade swapKey={step} mode="popLayout">
+          {cuerpo}
+        </CrossFade>
+      </CajonCuerpo>
+      <CajonPie>{pie}</CajonPie>
+    </>
   );
 }

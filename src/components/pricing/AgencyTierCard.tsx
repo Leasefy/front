@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Appear, Collapse, CrossFade, Pressable } from '@leasefy/cadence';
 import { Buildings, Users, CheckCircle, Check, CaretDown } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -73,14 +73,14 @@ export function AgencyTierCard({
   );
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.3 }}
+    // Sin entrada propia: en /pricing las tarjetas están ARRIBA del pliegue y
+    // un `opacity: 0` del servidor dejaba la página en blanco hasta hidratar
+    // (LCP); en el panel ya entra la página. Al pasar el puntero sube 2 px
+    // (`Pressable`, sin hundirse: el clic es del botón de adentro).
+    <Pressable
+      press="none"
       className={cn(
-        'relative rounded-[20px] bg-card p-6 flex flex-col transition-all duration-300',
+        'relative rounded-[20px] bg-card p-6 flex flex-col transition-[border-color,box-shadow] duration-slow',
         selected
           ? 'border-2 border-primary/30 ring-2 ring-primary/20'
           : isFlex
@@ -125,8 +125,11 @@ export function AgencyTierCard({
           <span className="text-[28px] font-mono font-bold tabular-nums text-foreground">{price}</span>
         ) : (
           <>
+            {/* Al pasar de mensual a anual el precio se cruza en su lugar. */}
+            <CrossFade as="span" swapKey={`${price}${period ?? ''}`} className="inline-block">
             <span className="text-[32px] font-mono font-bold tabular-nums text-foreground">{noCurrencySymbol ? '' : '$'}{price}</span>
             {period && <span className="text-muted-foreground text-[13px] ml-1">{period}</span>}
+            </CrossFade>
           </>
         )}
       </div>
@@ -177,18 +180,11 @@ export function AgencyTierCard({
             onClick={() => setShowAddons(!showAddons)}
             className="flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            <CaretDown className={cn('w-3.5 h-3.5 transition-transform duration-200', showAddons && 'rotate-180')} />
+            <CaretDown className={cn('w-3.5 h-3.5 transition-transform duration-base', showAddons && 'rotate-180')} />
             {showAddons ? 'Ocultar extras' : 'Ver extras disponibles'}
           </button>
-          <AnimatePresence>
-            {showAddons && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
+          {/* Se abre y se cierra con su altura (`Collapse`). */}
+          <Collapse open={showAddons}>
                 <div className="mt-3 pt-3 border-t border-border space-y-2">
                   {addons.map((addon, i) => (
                     <div key={i} className="flex items-center justify-between text-[12px]">
@@ -197,9 +193,7 @@ export function AgencyTierCard({
                     </div>
                   ))}
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          </Collapse>
         </div>
       )}
 
@@ -211,7 +205,7 @@ export function AgencyTierCard({
       ) : (
         buttonEl
       )}
-    </motion.div>
+    </Pressable>
   );
 }
 
@@ -226,14 +220,13 @@ export function BenefitCard({
   description: string;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+    // Debajo del pliegue: entra al aparecer en pantalla (`Appear inView`).
+    <Appear
+      inView
       className="rounded-[20px] border border-border bg-card p-6 transition-shadow"
     >
       <h4 className="text-[15px] font-semibold text-foreground">{title}</h4>
       <p className="mt-2 text-[13px] text-muted-foreground leading-relaxed">{description}</p>
-    </motion.div>
+    </Appear>
   );
 }

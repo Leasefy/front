@@ -96,17 +96,47 @@ function render(props: Partial<React.ComponentProps<typeof EquipoAgentes>> = {})
   })
 }
 
+
+/** Lo que se ve (sin el nodo de diagnóstico de `FalloDeCarga`, que está fuera de pantalla). */
+function textoVisible(el: Element): string {
+  const copia = el.cloneNode(true) as Element
+  copia.querySelectorAll('[data-testid="fallo-detalle-tecnico"]').forEach((n) => n.remove())
+  return copia.textContent ?? ''
+}
+
 describe('EquipoAgentes — states', () => {
   it('renders the loading skeleton', () => {
     render({ isLoading: true })
     expect(container.querySelector('[data-testid="equipo-agentes-loading"]')).not.toBeNull()
   })
 
-  it('renders the error banner', () => {
+  // 02-10-2026 · El error de la lectura va por el cartel de la casa
+  // (`FalloDeCarga`), no interpolado crudo («No se pudo cargar…: 500»).
+  it('renders the error banner through FalloDeCarga, never the raw status', () => {
     render({ error: '500' })
     const err = container.querySelector('[data-testid="equipo-agentes-error"]')
     expect(err).not.toBeNull()
-    expect(err!.textContent).toContain('500')
+    const cartel = err!.querySelector('[data-testid="fallo-de-carga"]')
+    expect(cartel?.getAttribute('data-tipo')).toBe('servidor')
+    expect(textoVisible(err!)).toContain('Fue un problema nuestro')
+    // El texto viejo interpolaba el status: «No se pudo cargar …: 500».
+    expect(textoVisible(err!)).not.toMatch(/No se pudo cargar|\{\{error\}\}/)
+  })
+
+  it('a 403 is not told as a server or connection problem', () => {
+    render({ error: '403' })
+    const err = container.querySelector('[data-testid="equipo-agentes-error"]')
+    expect(err!.querySelector('[data-testid="fallo-de-carga"]')?.getAttribute('data-tipo')).toBe('sinPermiso')
+    expect(textoVisible(err!)).not.toMatch(/conexi|problema nuestro/i)
+  })
+
+  it('a fetch that never left talks about the connection, without a reference', () => {
+    render({ error: 'Failed to fetch' })
+    const err = container.querySelector('[data-testid="equipo-agentes-error"]')
+    expect(err!.querySelector('[data-testid="fallo-de-carga"]')?.getAttribute('data-tipo')).toBe('red')
+    expect(textoVisible(err!)).not.toContain('Failed to fetch')
+    expect(textoVisible(err!)).toMatch(/conexión/)
+    expect(textoVisible(err!)).not.toMatch(/Referencia/)
   })
 
   it('renders the graceful panel on 404 / null data (NOT an error)', () => {

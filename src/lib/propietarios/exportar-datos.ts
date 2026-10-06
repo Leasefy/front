@@ -73,7 +73,10 @@ export function armarHojasDelPropietario(
     ['Inmuebles consignados', propietario.propertyCount],
     ['Arrendados', propietario.activeLeases],
     ['Canon mensual total', propietario.totalMonthlyRent],
-    ['Saldo pendiente', propietario.pendingBalance],
+    // 🔴 P-10 (back 5731a4e2): `pendingBalance` ya es el giro atrasado, no lo
+    // generado en Dispersiones; lo generado va en su propia fila.
+    ['Giro atrasado (vencido sin girar)', propietario.pendingBalance],
+    ['Generado en Dispersiones sin girar', propietario.generadoSinGirar ?? ''],
     ['Notas', propietario.notes ?? ''],
     ['Creado', propietario.createdAt.slice(0, 10)],
   ];
@@ -165,7 +168,7 @@ export function nombreDelArchivoDelPropietario(nombre: string, hoy: Date = new D
     .replace(/[^a-zA-Z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .toLowerCase();
-  const fecha = hoy.toISOString().slice(0, 10);
+  const fecha = diaEnBogota(hoy);
   return `propietario-${seguro || 'sin-nombre'}-${fecha}.xlsx`;
 }
 
@@ -229,6 +232,9 @@ export function descargar(blob: Blob, nombre: string): void {
  * filtró por empresa y exporta, el archivo tiene que traer empresas.
  * ──────────────────────────────────────────────────────────────────────────── */
 
+/** Lo que va en una celda de plata que quien exporta no puede ver. */
+export const SIN_ACCESO_A_LA_PLATA = 'Sin acceso';
+
 /** Una fila por propietario, con las columnas de la tabla más la cuenta de giro. */
 export function armarHojaDeLaLista(
   propietarios: readonly Propietario[],
@@ -244,7 +250,9 @@ export function armarHojaDeLaLista(
       'Inmuebles',
       'Arrendados',
       'Canon mensual total',
-      'Saldo pendiente',
+      // P-10: el giro atrasado y, aparte, lo generado en Dispersiones.
+      'Giro atrasado (vencido sin girar)',
+      'Generado sin girar',
       'Banco',
       'Tipo de cuenta',
       // 🔴 23-09 (datos personales): la LISTA ya no trae el número de cuenta,
@@ -260,6 +268,9 @@ export function armarHojaDeLaLista(
       const ultimos4 =
         cuenta?.ultimos4 ?? (cuenta?.accountNumber ? cuenta.accountNumber.replace(/\s+/g, '').slice(-4) : null);
       const tieneCuenta = Boolean(ultimos4);
+      // P-21 (QA de Propietarios, 03-10): a quien no ve la plata el back se la
+      // manda en null y la lista la lee 0. El archivo no puede decir «$0».
+      const sinPlata = p.plataOculta === true;
       return [
         p.name,
         p.documentType ?? 'Sin registrar',
@@ -269,8 +280,9 @@ export function armarHojaDeLaLista(
         p.city ?? '',
         p.propertyCount,
         p.activeLeases,
-        p.totalMonthlyRent,
-        p.pendingBalance,
+        sinPlata ? SIN_ACCESO_A_LA_PLATA : p.totalMonthlyRent,
+        sinPlata ? SIN_ACCESO_A_LA_PLATA : p.pendingBalance,
+        sinPlata ? SIN_ACCESO_A_LA_PLATA : (p.generadoSinGirar ?? ''),
         tieneCuenta ? nombreDelBanco(cuenta) : '',
         tieneCuenta ? (cuenta.accountType === 'savings' ? 'Ahorros' : 'Corriente') : '',
         tieneCuenta ? `•••• ${ultimos4}` : '',
@@ -285,7 +297,7 @@ export function armarHojaDeLaLista(
 
 /** `propietarios-<fecha>.xlsx`. */
 export function nombreDelArchivoDeLaLista(hoy: Date = new Date()): string {
-  return `propietarios-${hoy.toISOString().slice(0, 10)}.xlsx`;
+  return `propietarios-${diaEnBogota(hoy)}.xlsx`;
 }
 
 /**
@@ -315,4 +327,13 @@ export async function descargarListaDePropietarios(
     nombre,
   );
   return nombre;
+}
+
+/**
+ * QA-PROP-95 (A-30, PR-34): el día del nombre del archivo es el de Bogotá.
+ * Con `toISOString()` (UTC) un archivo bajado después de las 7 p. m. salía con
+ * la fecha de mañana.
+ */
+function diaEnBogota(hoy: Date): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).format(hoy);
 }

@@ -12,7 +12,9 @@
  * anticipan para que la persona vea el problema antes de mandar, no un 400.
  */
 
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 import { MAX_COP_POR_MOVIMIENTO, type MovimientoNuevo } from '@/lib/api/contabilidad.service';
+import { aCentavos } from '@/lib/plata/plata';
 
 /** A quién se le imputa un saldo de cartera o de terceros. */
 export type TipoDeTerceroDeApertura = 'PROPIETARIO' | 'ARRENDATARIO';
@@ -91,13 +93,27 @@ export function totalesDeApertura(filas: readonly FilaDeApertura[]): {
   creditos: number;
   diferencia: number;
 } {
+  // En centavos enteros («centavos en todo»): con la llave de la contabilidad
+  // los saldos traen centavos y 0,1 + 0,2 tiene que cuadrar con 0,3. Con los
+  // pesos enteros de hoy da exactamente lo mismo.
   let debitos = 0;
   let creditos = 0;
   for (const f of filasConContenido(filas)) {
-    debitos += monto(f.debitoCop);
-    creditos += monto(f.creditoCop);
+    debitos += aCentavos(monto(f.debitoCop));
+    creditos += aCentavos(monto(f.creditoCop));
   }
-  return { debitos, creditos, diferencia: debitos - creditos };
+  return { debitos: debitos / 100, creditos: creditos / 100, diferencia: (debitos - creditos) / 100 };
+}
+
+/**
+ * Por qué no cuadra, con el número exacto (MIG-C, 04-10): «faltan $911.000 en
+ * créditos», no sólo «no cuadra». `null` si cuadra.
+ */
+export function fraseDelDescuadre(totales: { debitos: number; creditos: number; diferencia: number }): string | null {
+  if (totales.diferencia === 0) return null;
+  const plata = (n: number) => `$${Math.abs(n).toLocaleString('es-CO')}`;
+  const falta = totales.diferencia > 0 ? 'créditos' : 'débitos';
+  return `No cuadra: faltan ${plata(totales.diferencia)} en ${falta} para que los dos totales sean iguales (débitos ${plata(totales.debitos)}, créditos ${plata(totales.creditos)}).`;
 }
 
 /** `AAAA-MM-DD` y que el día exista: `aDiaContable` del back rechaza el resto. */
@@ -166,7 +182,8 @@ export function movimientosDeApertura(filas: readonly FilaDeApertura[]): Movimie
 }
 
 export function descripcionSugerida(fecha: string): string {
-  return esFechaContable(fecha) ? `Saldos iniciales al ${fecha}` : 'Saldos iniciales';
+  // Fecha de la casa («31 de julio de 2026»), no «2026-07-31» (MIG-C, 04-10).
+  return esFechaContable(fecha) ? `Saldos iniciales al ${fechaLarga(fecha)}` : 'Saldos iniciales';
 }
 
 /** Hoy en `AAAA-MM-DD` local, el valor por defecto del campo de fecha. */

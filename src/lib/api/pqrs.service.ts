@@ -1,6 +1,12 @@
 /**
  * PQRS / Solicitudes API service — tolerant, frontend-first CONTRACT (v7-06).
  *
+ * 03-10-2026: `GET /pqrs/mine` ya existe en el back y responde
+ * `{ solicitudes, sePuedeRadicar, contratosParaRadicar }` (ver
+ * `listMineConDisponibilidad`). Desde ARREGLOS-2 (03-10-2026, Nico Q4 a) también
+ * existe `POST /pqrs`: el inquilino radica sobre su contrato vigente. La
+ * aprobación de la cotización sigue sin existir.
+ *
  * Modeled 1:1 on the shipped honest-degrade idiom (`lease-documents.service.ts`,
  * `tenant-payment-requests.service.ts`). The NestJS/agent PQRS routes
  * (`POST /pqrs`, `GET /pqrs/mine`, `POST /pqrs/:id/aprobar-cotizacion`) are a
@@ -20,6 +26,7 @@
  */
 
 import { apiClient, ApiError } from './client';
+import { subirAdjuntoDePqrs } from './pqrs-adjuntos';
 import type { SolicitudPqrs, PqrsTipo } from './pqrs.types';
 
 // ---------------------------------------------------------------------------
@@ -66,6 +73,8 @@ export interface NuevaSolicitudInput {
   descripcion: string;
   contratoId?: string;
   propiedadId?: string;
+  /** SO-27: el propietario radica sobre SU inmueble (mandato). */
+  consignacionId?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -89,13 +98,70 @@ async function listMine(): Promise<SolicitudPqrs[]> {
  * distinguir «no has radicado nada» de «todavía no se puede radicar». Con
  * `disponible: false` el botón se apaga ANTES de que la persona escriba.
  */
-async function listMineConDisponibilidad(): Promise<{ items: SolicitudPqrs[]; disponible: boolean }> {
+async function listMineConDisponibilidad(): Promise<MisSolicitudes> {
   try {
-    return { items: await apiClient.get<SolicitudPqrs[]>('/pqrs/mine'), disponible: true };
+    return leerMisSolicitudes(
+      await apiClient.get<SolicitudPqrs[] | RespuestaDeMisSolicitudes>('/pqrs/mine'),
+    );
   } catch (err) {
-    if (isEndpointUnavailable(err)) return { items: [], disponible: false };
+    if (isEndpointUnavailable(err)) return { items: [], disponible: false, contratos: [] };
     throw err;
   }
+}
+
+/** Un contrato vigente del inquilino sobre el que puede radicar. */
+export interface ContratoParaRadicar {
+  contratoId: string;
+  /** SO-27: en el portal del propietario, el mandato (inmueble). */
+  consignacionId?: string;
+  /** Cómo se llama el inmueble (para elegir si hay más de uno). */
+  inmueble: string;
+}
+
+export interface MisSolicitudes {
+  items: SolicitudPqrs[];
+  /** ¿Se puede radicar desde el portal? */
+  disponible: boolean;
+  /** Sus contratos vigentes (con más de uno, el portal pregunta sobre cuál). */
+  contratos: ContratoParaRadicar[];
+}
+
+/**
+ * Lo que responde el back (`GET /pqrs/mine`): las solicitudes PROPIAS del
+ * inquilino, si puede radicar desde el portal (tiene un contrato vigente con su
+ * inmobiliaria) y sobre qué contratos. Sin eso, «Nueva solicitud» queda apagada
+ * ANTES de que la persona escriba (QA 22-09). Un back anterior no manda
+ * `contratosParaRadicar`: lista vacía (el back elige si hay uno solo).
+ */
+interface RespuestaDeMisSolicitudes {
+  solicitudes: SolicitudPqrs[];
+  sePuedeRadicar: boolean;
+  contratosParaRadicar?: ContratoParaRadicar[];
+}
+
+/**
+ * La forma del back o, si algún día responde la lista a secas (el contrato
+ * provisional de v7-06), la lista con «se puede radicar». Cualquier otra cosa no
+ * se toma por una lista: nada inventado.
+ */
+function leerMisSolicitudes(
+  respuesta: SolicitudPqrs[] | RespuestaDeMisSolicitudes | null | undefined,
+): MisSolicitudes {
+  if (Array.isArray(respuesta)) return { items: respuesta, disponible: true, contratos: [] };
+  if (respuesta && Array.isArray(respuesta.solicitudes)) {
+    const contratos = Array.isArray(respuesta.contratosParaRadicar)
+      ? respuesta.contratosParaRadicar.filter(
+          (c): c is ContratoParaRadicar =>
+            !!c && typeof c.contratoId === 'string' && typeof c.inmueble === 'string',
+        )
+      : [];
+    return {
+      items: respuesta.solicitudes,
+      disponible: respuesta.sePuedeRadicar === true,
+      contratos,
+    };
+  }
+  return { items: [], disponible: false, contratos: [] };
 }
 
 /**
@@ -143,4 +209,22 @@ async function approveCotizacion(id: string): Promise<SolicitudPqrs> {
   }
 }
 
-export const pqrsApi = { listMine, listMineConDisponibilidad, getMine, create, approveCotizacion };
+/** SO-18: una foto o un PDF a MI solicitud, ya radicada. */
+async function subirAdjunto(id: string, archivo: File) {
+  return subirAdjuntoDePqrs(`/pqrs/${id}/adjuntos`, archivo);
+}
+
+/** Abrir un adjunto de mi solicitud (URL firmada de una hora). */
+async function abrirAdjunto(id: string, adjuntoId: string): Promise<{ url: string; nombre: string }> {
+  return apiClient.get<{ url: string; nombre: string }>(`/pqrs/${id}/adjuntos/${adjuntoId}`);
+}
+
+export const pqrsApi = {
+  listMine,
+  listMineConDisponibilidad,
+  getMine,
+  create,
+  approveCotizacion,
+  subirAdjunto,
+  abrirAdjunto,
+};

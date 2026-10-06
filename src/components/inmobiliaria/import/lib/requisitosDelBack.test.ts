@@ -7,6 +7,7 @@ import {
   resolveImportListingType,
   requisitoDe,
   avisosDeValor,
+  sinCanon,
   MINIMO_CANON,
   MINIMO_AREA,
   MINIMO_VENTA,
@@ -35,12 +36,23 @@ describe('faltantesParaElBack', () => {
     expect(faltantesParaElBack(inmueble())).toEqual([]);
   });
 
-  it.each([
-    ['propertyAddress', { propertyAddress: '' }],
-    ['monthlyRent', { monthlyRent: undefined }],
-  ] as const)('reclama %s cuando falta', (campo, parcial) => {
-    const faltan = faltantesParaElBack(inmueble(parcial));
-    expect(faltan.map((f) => f.campo)).toContain(campo);
+  it('reclama la dirección cuando falta', () => {
+    const faltan = faltantesParaElBack(inmueble({ propertyAddress: '' }));
+    expect(faltan.map((f) => f.campo)).toContain('propertyAddress');
+  });
+
+  /**
+   * 🔴 T-0129 (`34570618`, 01-10-2026): el CANON dejó de frenar. Un arriendo
+   * sin canon se crea igual y queda «con el canon por confirmar»: no se
+   * publica, no se consigna ni se le hacen contratos hasta que alguien lo
+   * ponga a mano. El back lo crea con `canonPorConfirmar`
+   * (`importacion-inmuebles.service.ts`). Esta prueba seguía pidiendo el canon
+   * como faltante y fallaba desde ese commit.
+   */
+  it('🔴 un arriendo sin canon NO frena: se crea con el canon por confirmar', () => {
+    const p = inmueble({ monthlyRent: undefined });
+    expect(faltantesParaElBack(p)).toEqual([]);
+    expect(sinCanon(p)).toBe(true);
   });
 
   /**
@@ -61,29 +73,46 @@ describe('faltantesParaElBack', () => {
     expect(faltantesParaElBack(inmueble(parcial))).toEqual([]);
   });
 
-  it('lo que SÍ sigue frenando es la dirección y el precio', () => {
-    // Sin dirección no hay inmueble que identificar, y sin canon no se le
-    // puede cobrar a nadie: ésos no son «datos que la inmobiliaria a veces no
-    // tiene», son la razón de ser de la ficha.
+  it('lo que SÍ sigue frenando es la dirección (y, en una venta, su precio)', () => {
+    // Sin dirección no hay inmueble que identificar. El canon de un arriendo
+    // ya no frena (T-0129): sin él, la fila entra «por confirmar».
     expect(
       faltantesParaElBack(inmueble({ propertyAddress: '', monthlyRent: undefined })).map(
         (f) => f.campo,
       ),
-    ).toEqual(['propertyAddress', 'monthlyRent']);
+    ).toEqual(['propertyAddress']);
+    expect(
+      faltantesParaElBack(
+        inmueble({ propertyAddress: '', listingType: 'Venta', monthlyRent: undefined, salePrice: undefined }),
+      ).map((f) => f.campo),
+    ).toEqual(['propertyAddress', 'salePrice']);
   });
 
-  it('respeta el mínimo de canon del DTO', () => {
-    expect(faltantesParaElBack(inmueble({ monthlyRent: MINIMO_CANON }))).toEqual([]);
-    expect(faltantesParaElBack(inmueble({ monthlyRent: MINIMO_CANON - 1 }))).toHaveLength(1);
+  it('un canon por debajo del mínimo del DTO no frena, pero cuenta como «por confirmar»', () => {
+    // El mínimo sigue siendo el del DTO: por debajo no es un canon, es un dato
+    // que falta. Desde T-0129 eso no deselecciona la fila: la marca.
+    expect(sinCanon(inmueble({ monthlyRent: MINIMO_CANON }))).toBe(false);
+    expect(sinCanon(inmueble({ monthlyRent: MINIMO_CANON - 1 }))).toBe(true);
+    expect(faltantesParaElBack(inmueble({ monthlyRent: MINIMO_CANON - 1 }))).toEqual([]);
   });
 
   it('cada faltante trae con qué completarlo', () => {
-    const [f] = faltantesParaElBack(inmueble({ monthlyRent: undefined }));
+    const [f] = faltantesParaElBack(
+      inmueble({ listingType: 'Venta', monthlyRent: undefined, salePrice: undefined }),
+    );
     // Sin etiqueta ni ayuda el campo no se puede dibujar: es lo que se muestra.
-    expect(f.etiqueta).toBe('Canon mensual');
-    expect(f.ayuda).toContain(MINIMO_CANON.toLocaleString('es-CO'));
+    expect(f.etiqueta).toBe('Precio de venta');
+    expect(f.ayuda).toContain(MINIMO_VENTA.toLocaleString('es-CO'));
     expect(f.sufijo).toBe('COP');
     expect(f.tipo).toBe('numero');
+  });
+
+  it('el canon se sigue describiendo, y dice que vacío queda por confirmar', () => {
+    // Lo usa el input del canon cuando la persona SÍ lo quiere escribir.
+    const canon = requisitoDe('monthlyRent');
+    expect(canon.etiqueta).toBe('Canon mensual');
+    expect(canon.ayuda).toContain(MINIMO_CANON.toLocaleString('es-CO'));
+    expect(canon.ayuda).toContain('canon por confirmar');
   });
 });
 
@@ -167,9 +196,10 @@ describe('faltantesParaElBack — a SALE row needs salePrice, never monthlyRent'
     expect(faltantesParaElBack(inmuebleEnVenta({ salePrice: MINIMO_VENTA - 1 }))).toHaveLength(1);
   });
 
-  it('a RENT row (default/unset listingType) is unaffected — still requires monthlyRent (regression)', () => {
-    const faltan = faltantesParaElBack(inmueble({ monthlyRent: undefined }));
-    expect(faltan.map((f) => f.campo)).toContain('monthlyRent');
+  it('a RENT row (default/unset listingType) never asks for salePrice — without canon it is «por confirmar» (T-0129)', () => {
+    const p = inmueble({ monthlyRent: undefined });
+    expect(faltantesParaElBack(p).map((f) => f.campo)).not.toContain('salePrice');
+    expect(sinCanon(p)).toBe(true);
   });
 });
 
@@ -191,13 +221,20 @@ describe('recalcularEstado', () => {
   });
 
   it('deselecciona lo que no se puede crear y vuelve a seleccionarlo al completarlo', () => {
-    const sinCanon = recalcularEstado(inmueble({ monthlyRent: undefined }));
-    expect(sinCanon.hasErrors).toBe(true);
-    expect(sinCanon.selected).toBe(false);
+    const sinDireccion = recalcularEstado(inmueble({ propertyAddress: '' }));
+    expect(sinDireccion.hasErrors).toBe(true);
+    expect(sinDireccion.selected).toBe(false);
 
-    const completo = recalcularEstado({ ...sinCanon, monthlyRent: 1_900_000 });
+    const completo = recalcularEstado({ ...sinDireccion, propertyAddress: 'Calle 39A # 25-14' });
     expect(completo.hasErrors).toBe(false);
     expect(completo.selected).toBe(true);
+  });
+
+  it('🔴 T-0129: un arriendo sin canon nace seleccionado y sin error', () => {
+    const p = recalcularEstado(inmueble({ monthlyRent: undefined }));
+    expect(p.hasErrors).toBe(false);
+    expect(p.errorMessages).toEqual([]);
+    expect(p.selected).toBe(true);
   });
 
   it('🔴 un inmueble sin área NI baños NI barrio nace seleccionado', () => {
@@ -212,9 +249,11 @@ describe('recalcularEstado', () => {
   });
 
   it('el mensaje dice qué falta y con qué regla', () => {
-    const { errorMessages } = recalcularEstado(inmueble({ monthlyRent: undefined }));
-    expect(errorMessages[0]).toContain('canon');
-    expect(errorMessages[0]).toContain(MINIMO_CANON.toLocaleString('es-CO'));
+    const { errorMessages } = recalcularEstado(
+      inmueble({ listingType: 'Venta', monthlyRent: undefined, salePrice: undefined }),
+    );
+    expect(errorMessages[0]).toContain('precio de venta');
+    expect(errorMessages[0]).toContain(MINIMO_VENTA.toLocaleString('es-CO'));
   });
 });
 
@@ -232,14 +271,26 @@ describe('escribirCampo', () => {
     expect(escribirCampo(inmueble(), 'monthlyRent', '$ 1.850.000').monthlyRent).toBe(1_850_000);
   });
 
-  it('escribir el canon que faltaba desbloquea el inmueble', () => {
-    const bloqueado = recalcularEstado(inmueble({ monthlyRent: undefined }));
+  it('escribir el precio de venta que faltaba desbloquea el inmueble', () => {
+    const bloqueado = recalcularEstado(
+      inmueble({ listingType: 'Venta', monthlyRent: undefined, salePrice: undefined }),
+    );
     expect(bloqueado.hasErrors).toBe(true);
 
-    const arreglado = escribirCampo(bloqueado, 'monthlyRent', '1.900.000');
-    expect(arreglado.monthlyRent).toBe(1_900_000);
+    const arreglado = escribirCampo(bloqueado, 'salePrice', '350.000.000');
+    expect(arreglado.salePrice).toBe(350_000_000);
     expect(arreglado.hasErrors).toBe(false);
     expect(arreglado.selected).toBe(true);
+  });
+
+  it('escribir el canon que faltaba le quita el «por confirmar»', () => {
+    const porConfirmar = recalcularEstado(inmueble({ monthlyRent: undefined }));
+    expect(sinCanon(porConfirmar)).toBe(true);
+
+    const conCanon = escribirCampo(porConfirmar, 'monthlyRent', '1.900.000');
+    expect(conCanon.monthlyRent).toBe(1_900_000);
+    expect(sinCanon(conCanon)).toBe(false);
+    expect(conCanon.selected).toBe(true);
   });
 
   it('el área se sigue pudiendo escribir aunque ya no sea obligatoria', () => {
@@ -296,9 +347,9 @@ describe('requisitoDe', () => {
 
   it('faltantesParaElBack devuelve exactamente lo que dice el catálogo', () => {
     const faltan = faltantesParaElBack(
-      inmueble({ propertyAddress: '', monthlyRent: undefined }),
+      inmueble({ propertyAddress: '', listingType: 'Venta', monthlyRent: undefined, salePrice: undefined }),
     );
-    expect(faltan).toEqual([requisitoDe('propertyAddress'), requisitoDe('monthlyRent')]);
+    expect(faltan).toEqual([requisitoDe('propertyAddress'), requisitoDe('salePrice')]);
   });
 });
 
@@ -352,14 +403,26 @@ describe('tipoEfectivo — el tipo sigue al precio que sí existe', () => {
     ).toBe('sale');
   });
 
-  it('sin ningún precio no inventa: devuelve lo declarado y la fila sigue incompleta', () => {
-    const sinNada = inmueble({
+  it('sin ningún precio no inventa: devuelve lo declarado', () => {
+    // Un arriendo sin precio entra con el canon POR CONFIRMAR (T-0129): no se
+    // inventa un canon ni se lo convierte en venta.
+    const arriendoSinNada = inmueble({
       listingType: 'Arriendo',
       monthlyRent: undefined,
       salePrice: undefined,
     });
-    expect(tipoEfectivo(sinNada)).toBe('rent');
-    expect(faltantesParaElBack(sinNada).map((f) => f.campo)).toEqual(['monthlyRent']);
+    expect(tipoEfectivo(arriendoSinNada)).toBe('rent');
+    expect(faltantesParaElBack(arriendoSinNada)).toEqual([]);
+    expect(sinCanon(arriendoSinNada)).toBe(true);
+
+    // Una venta sin precio sí sigue incompleta: el precio de venta frena.
+    const ventaSinNada = inmueble({
+      listingType: 'Venta',
+      monthlyRent: undefined,
+      salePrice: undefined,
+    });
+    expect(tipoEfectivo(ventaSinNada)).toBe('sale');
+    expect(faltantesParaElBack(ventaSinNada).map((f) => f.campo)).toEqual(['salePrice']);
   });
 
   it('un precio por DEBAJO del mínimo no cuenta como precio', () => {
@@ -379,8 +442,9 @@ describe('el mínimo del canon dejó de frenar inmuebles reales', () => {
   });
 
   it('pero un canon en 0 sigue siendo un dato que falta, no un arriendo gratis', () => {
-    expect(faltantesParaElBack(inmueble({ monthlyRent: 0 })).map((f) => f.campo)).toEqual([
-      'monthlyRent',
-    ]);
+    // No frena (T-0129), pero tampoco se toma como canon: queda por confirmar.
+    const cero = inmueble({ monthlyRent: 0 });
+    expect(sinCanon(cero)).toBe(true);
+    expect(faltantesParaElBack(cero)).toEqual([]);
   });
 });

@@ -26,6 +26,11 @@ import {
   type FiltroDeEstado,
   type Inquilino,
 } from '@/lib/api/inquilinos.service';
+import {
+  esElPortafolio,
+  totalesDelPortafolio,
+  type TotalesDelPortafolio,
+} from '@/lib/inquilinos/lista';
 
 /** Congelado: `?? []` en el cuerpo del hook crea un array nuevo por render y
  * cualquier `useEffect` que dependa de él corre para siempre. */
@@ -33,8 +38,19 @@ const SIN_DATOS: readonly Inquilino[] = Object.freeze([]);
 
 const REBOTE_MS = 300;
 
-export function useInquilinos(filtros: { buscar: string; estado: FiltroDeEstado }) {
+export function useInquilinos(
+  filtros: { buscar: string; estado: FiltroDeEstado },
+  /**
+   * `portafolio`: también los totales de arriba (sólo la pantalla de
+   * Inquilinos, I-07). Con la lista en «activos» y sin búsqueda, la lista ES
+   * el portafolio y no se pide nada más; con un filtro puesto, se pide UNA vez
+   * (por recarga) la lista sin filtros.
+   */
+  opciones: { portafolio?: boolean } = {},
+) {
   const { buscar, estado } = filtros;
+  const conPortafolio = opciones.portafolio === true;
+  const filtrada = !esElPortafolio({ buscar, estado });
 
   const [inquilinos, setInquilinos] = useState<readonly Inquilino[]>(SIN_DATOS);
   const [cargando, setCargando] = useState(true);
@@ -45,6 +61,14 @@ export function useInquilinos(filtros: { buscar: string; estado: FiltroDeEstado 
    * peor que ninguno, y que falle el conteo no puede tumbar la lista.
    */
   const [conteos, setConteos] = useState<ConteosDeInquilinos | null>(null);
+  /** De qué consulta son las filas que hay (`estado|búsqueda`). */
+  const [consulta, setConsulta] = useState<string | null>(null);
+
+  /** Los totales del portafolio y de qué recarga son (no se piden de nuevo al teclear). */
+  const [portafolio, setPortafolio] = useState<TotalesDelPortafolio | null>(null);
+  const [cargandoPortafolio, setCargandoPortafolio] = useState(false);
+  const [errorPortafolio, setErrorPortafolio] = useState<unknown>(null);
+  const portafolioDeLaRecarga = useRef<number | null>(null);
 
   /** Descarta la respuesta de una búsqueda que ya no es la vigente. */
   const pedido = useRef(0);
@@ -67,7 +91,14 @@ export function useInquilinos(filtros: { buscar: string; estado: FiltroDeEstado 
         .then((filas) => {
           if (!vigente || mio !== pedido.current) return;
           setInquilinos(filas);
+          setConsulta(`${estado}|${buscar.trim()}`);
           setError(null);
+          // Sin filtros, la lista ES el portafolio: no hace falta pedirlo aparte.
+          if (esElPortafolio({ buscar, estado })) {
+            setPortafolio(totalesDelPortafolio(filas));
+            setErrorPortafolio(null);
+            portafolioDeLaRecarga.current = recarga;
+          }
         })
         .catch((e) => {
           if (!vigente || mio !== pedido.current) return;
@@ -109,5 +140,46 @@ export function useInquilinos(filtros: { buscar: string; estado: FiltroDeEstado 
     };
   }, [buscar, recarga]);
 
-  return { inquilinos, cargando, error, refrescar, conteos };
+  /*
+   * Con un filtro puesto, el portafolio sale de su propia lectura (activos,
+   * sin búsqueda), una vez por recarga, con su carga y su error: nunca un
+   * $ 0 inventado mientras no llega.
+   */
+  useEffect(() => {
+    if (!conPortafolio || !filtrada) return;
+    if (portafolioDeLaRecarga.current === recarga) return;
+    let vigente = true;
+    setCargandoPortafolio(true);
+    inquilinosApi
+      .listar({ estado: 'activos' })
+      .then((filas) => {
+        if (!vigente) return;
+        setPortafolio(totalesDelPortafolio(filas));
+        setErrorPortafolio(null);
+        portafolioDeLaRecarga.current = recarga;
+      })
+      .catch((e) => {
+        if (!vigente) return;
+        setPortafolio(null);
+        setErrorPortafolio(e);
+      })
+      .finally(() => {
+        if (vigente) setCargandoPortafolio(false);
+      });
+    return () => {
+      vigente = false;
+    };
+  }, [conPortafolio, filtrada, recarga]);
+
+  return {
+    inquilinos,
+    consulta,
+    cargando,
+    error,
+    refrescar,
+    conteos,
+    portafolio,
+    cargandoPortafolio,
+    errorPortafolio,
+  };
 }

@@ -36,6 +36,7 @@ import { PropertyEditModal } from './PropertyEditModal'
 import { propertiesApi } from '@/lib/api/properties.service'
 import { uploadPropertyPhotos } from '@/lib/api/property-photos'
 import { toast } from '@/components/ui/toast'
+import { ApiError } from '@/lib/api/client'
 import type { AgencyProperty } from '@/lib/types/property'
 
 const update = propertiesApi.update as unknown as ReturnType<typeof vi.fn>
@@ -102,14 +103,24 @@ function render(props: Partial<React.ComponentProps<typeof PropertyEditModal>> =
   return defaultProps
 }
 
+/**
+ * El modal es el `Dialog` del producto (Radix): se pinta en un portal sobre
+ * `document.body`, no dentro de `container`. Se busca en el diálogo mismo.
+ */
+function dialogo(): HTMLElement {
+  const d = document.querySelector<HTMLElement>('[role="dialog"]')
+  if (!d) throw new Error('El diálogo no está abierto')
+  return d
+}
+
 function input(testId: string): HTMLInputElement {
-  const el = container.querySelector(`[data-testid="${testId}"]`) as HTMLInputElement
+  const el = dialogo().querySelector(`[data-testid="${testId}"]`) as HTMLInputElement
   expect(el).toBeTruthy()
   return el
 }
 
 async function submit() {
-  const form = container.querySelector('form') as HTMLFormElement
+  const form = dialogo().querySelector('form') as HTMLFormElement
   expect(form).toBeTruthy()
   await act(async () => {
     form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
@@ -127,6 +138,20 @@ function setValue(el: HTMLInputElement | HTMLTextAreaElement, value: string) {
 }
 
 describe('<PropertyEditModal>', () => {
+  it('es el Dialog canónico: título en la cabecera, una sola ✕ y el guardar del pie apunta al formulario', () => {
+    render()
+    const d = dialogo()
+    expect(d.querySelector('h2')?.textContent).toBe('Editar propiedad')
+    expect(document.querySelectorAll('[aria-label="Cerrar"]')).toHaveLength(1)
+
+    const form = d.querySelector('form') as HTMLFormElement
+    const guardar = d.querySelector('[data-testid="edit-submit"]') as HTMLButtonElement
+    // El botón vive en el pie fijo, FUERA del <form>: lo envía por `form=`.
+    expect(form.contains(guardar)).toBe(false)
+    expect(guardar.type).toBe('submit')
+    expect(guardar.getAttribute('form')).toBe(form.id)
+  })
+
   it('seeds the form with the current property data', () => {
     render()
     expect(input('edit-title').value).toBe('Apto Chapinero')
@@ -168,7 +193,7 @@ describe('<PropertyEditModal>', () => {
 
     await submit()
 
-    const error = container.querySelector('[data-testid="edit-error"]')
+    const error = dialogo().querySelector('[data-testid="edit-error"]')
     expect(error?.textContent).toContain('No tienes acceso a esta propiedad')
     expect(props.onSuccess).not.toHaveBeenCalled()
   })
@@ -205,7 +230,7 @@ describe('<PropertyEditModal> photos', () => {
     await flush()
 
     expect(getImages).toHaveBeenCalledWith('prop-1')
-    const tiles = container.querySelectorAll('[data-testid="edit-existing-image"]')
+    const tiles = dialogo().querySelectorAll('[data-testid="edit-existing-image"]')
     expect(tiles.length).toBe(2)
   })
 
@@ -215,7 +240,7 @@ describe('<PropertyEditModal> photos', () => {
     render()
     await flush()
 
-    const removeBtn = container.querySelector(
+    const removeBtn = dialogo().querySelector(
       '[data-testid="edit-remove-image-img-1"]',
     ) as HTMLButtonElement
     expect(removeBtn).toBeTruthy()
@@ -225,7 +250,7 @@ describe('<PropertyEditModal> photos', () => {
     })
 
     expect(deleteImage).toHaveBeenCalledWith('prop-1', 'img-1')
-    const tiles = container.querySelectorAll('[data-testid="edit-existing-image"]')
+    const tiles = dialogo().querySelectorAll('[data-testid="edit-existing-image"]')
     expect(tiles.length).toBe(1)
   })
 
@@ -237,7 +262,7 @@ describe('<PropertyEditModal> photos', () => {
     await flush()
 
     const file = new File(['x'], 'nueva.jpg', { type: 'image/jpeg' })
-    const photoInput = container.querySelector(
+    const photoInput = dialogo().querySelector(
       '[data-testid="property-photo-input"]',
     ) as HTMLInputElement
     expect(photoInput).toBeTruthy()
@@ -265,7 +290,7 @@ describe('<PropertyEditModal> photos', () => {
     await flush()
 
     const file = new File(['x'], 'nueva.jpg', { type: 'image/jpeg' })
-    const photoInput = container.querySelector(
+    const photoInput = dialogo().querySelector(
       '[data-testid="property-photo-input"]',
     ) as HTMLInputElement
     Object.defineProperty(photoInput, 'files', { value: [file], configurable: true })
@@ -281,5 +306,57 @@ describe('<PropertyEditModal> photos', () => {
       expect.objectContaining({ description: 'Upload failed: 500' }),
     )
     expect(props.onSuccess).toHaveBeenCalledTimes(1)
+  })
+})
+
+/**
+ * Sistema de errores, tanda 2 (02-10-2026): un 400 con `campos` va bajo su
+ * campo con el foco; los topes del DTO se dicen antes de mandar; un 5xx dice
+ * «de nuestro lado» con la referencia.
+ */
+describe('<PropertyEditModal> — los errores, en su campo', () => {
+  it('🔴 un 400 en el área: el error bajo el área, el foco ahí y sin aviso suelto', async () => {
+    const frase = 'El área debe ser un número entero de metros cuadrados.'
+    update.mockRejectedValueOnce(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        code: 'DATOS_INVALIDOS',
+        campos: [{ campo: 'area', regla: 'entero', mensaje: frase }],
+      }),
+    )
+    render()
+    await submit()
+
+    expect(dialogo().querySelector('#edit-campo-area-error')?.textContent).toBe(frase)
+    expect(input('edit-area').getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(input('edit-area'))
+    expect(dialogo().querySelector('[data-testid="edit-error"]')).toBeNull()
+  })
+
+  it('🔴 un canon de once cifras se dice en el momento y no deja guardar', async () => {
+    render()
+    act(() => setValue(input('edit-rent'), '30000000000'))
+    expect(dialogo().querySelector('#edit-campo-monthlyRent-error')?.textContent).toBe(
+      'El canon no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.',
+    )
+    await submit()
+    expect(update).not.toHaveBeenCalled()
+  })
+
+  it('un 5xx dice «de nuestro lado» con la referencia', async () => {
+    update.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
+    )
+    render()
+    await submit()
+    const aviso = dialogo().querySelector('[data-testid="edit-error"]')!
+    expect(aviso.textContent).toMatch(/No pudimos actualizar la propiedad: algo falló de nuestro lado/)
+    expect(aviso.textContent).toContain('ab12cd34')
+  })
+
+  it('sin respuesta: la conexión', async () => {
+    update.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    render()
+    await submit()
+    expect(dialogo().querySelector('[data-testid="edit-error"]')!.textContent).toMatch(/conexión/)
   })
 })

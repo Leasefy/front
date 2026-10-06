@@ -20,8 +20,10 @@ const { cola, bulk } = vi.hoisted(() => ({
     isLoading: false,
     error: null as string | null,
     refetch: vi.fn(async () => undefined),
-    confirmMatch: vi.fn(async () => ({ ok: true })),
-    rejectMatch: vi.fn(async () => ({ ok: true })),
+    confirmMatch: vi.fn(async (_id: string): Promise<{ ok: boolean; error?: string; fallo?: unknown }> => ({ ok: true })),
+    rejectMatch: vi.fn(
+      async (_id: string, _motivo: string): Promise<{ ok: boolean; error?: string; fallo?: unknown }> => ({ ok: true }),
+    ),
     reverseMatch: vi.fn(async () => ({ ok: true })),
     ingestStatement: vi.fn(async () => ({ ok: true })),
     summary: {
@@ -53,6 +55,8 @@ vi.mock('sonner', () => ({
 }))
 
 import ConciliacionColaPage from './page'
+import { toast } from 'sonner'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 
 function item(sobre: Partial<ConciliacionQueueItem> = {}): ConciliacionQueueItem {
   return {
@@ -128,6 +132,7 @@ beforeEach(() => {
   cola.error = null
   cola.confirmMatch.mockClear()
   cola.rejectMatch.mockClear()
+  ;(toast.error as unknown as ReturnType<typeof vi.fn>).mockClear()
 })
 
 afterEach(async () => {
@@ -158,7 +163,9 @@ describe('Por revisar — la tabla', () => {
     expect(fila.textContent).toContain('Ref. 0009812')
     expect(fila.textContent).toContain('Pago parcial')
     expect(fila.textContent).toContain('Contrato 111')
-    expect(fila.textContent).toContain('72% de confianza')
+    // 🔴 Nico (C1-MEDIR Q1): sólo el nivel, nunca el porcentaje que nadie midió.
+    expect(fila.textContent).toContain('Confianza media')
+    expect(fila.textContent).not.toContain('72')
     // El pie del design system se monta siempre que haya filas.
     expect(document.body.textContent).toContain('Mostrando 1–1 de 1')
   })
@@ -285,5 +292,126 @@ describe('Por revisar — la tabla', () => {
     expect(document.querySelector('[data-testid="sin-datos"]')).toBeNull()
     expect(document.body.textContent).toContain('No pudimos cargar esto')
     expect(document.body.textContent).toContain('Intentar de nuevo')
+  })
+})
+
+/*
+ * Tanda 2 de errores (02-10-2026): «No se pudo aprobar el cruce (403).» y
+ * «No se pudo rechazar el cruce (reject_failed).», y al fallar el rechazo el
+ * diálogo se cerraba y el motivo escrito se perdía.
+ */
+describe('Por revisar — una acción que no sale', () => {
+  const toastError = () => toast.error as unknown as ReturnType<typeof vi.fn>
+
+  async function escribirMotivo(texto: string) {
+    const area = $('#motivo-rechazo') as HTMLTextAreaElement
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!
+    await act(async () => {
+      setter.call(area, texto)
+      area.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await esperar()
+    return area
+  }
+
+  it('🔴 rechazar: un 400 con `campos` sobre `reason` va debajo del motivo, con el foco, y el diálogo sigue abierto', async () => {
+    cola.items = [item()]
+    cola.total = 1
+    cola.rejectMatch.mockResolvedValueOnce({
+      ok: false,
+      error: '400',
+      fallo: await falloDelMicro({
+        status: 400,
+        json: async () => ({
+          statusCode: 400,
+          code: 'DATOS_INVALIDOS',
+          message: ['El motivo es obligatorio: queda en la auditoría.'],
+          campos: [{ campo: 'reason', regla: 'requerido', mensaje: 'El motivo es obligatorio: queda en la auditoría.' }],
+        }),
+      }),
+    })
+    await montar()
+    await clic(botonConTexto('Rechazar', $('[data-testid="conciliacion-row-q-1"]')))
+    await escribirMotivo('No corresponde.')
+    await clic($('[data-testid="conciliacion-confirmar-rechazo"]'))
+
+    const area = $('#motivo-rechazo') as HTMLTextAreaElement
+    expect($('#motivo-rechazo-error').textContent).toContain('El motivo es obligatorio')
+    expect(area.getAttribute('aria-invalid')).toBe('true')
+    expect(area.getAttribute('aria-describedby')).toBe('motivo-rechazo-error')
+    expect(document.activeElement).toBe(area)
+    expect(area.value).toBe('No corresponde.')
+    expect(toastError()).not.toHaveBeenCalled()
+  })
+
+  it('aprobar: un 5xx dice «de nuestro lado» con la referencia, nunca el status', async () => {
+    cola.items = [item()]
+    cola.total = 1
+    cola.confirmMatch.mockResolvedValueOnce({
+      ok: false,
+      error: '500',
+      fallo: await falloDelMicro({ status: 500, json: async () => ({ error: 'boom', requestId: 'f00dbabe-0000' }) }),
+    })
+    await montar()
+    await clic(botonConTexto('Aprobar', $('[data-testid="conciliacion-row-q-1"]')))
+    expect(toastError()).toHaveBeenCalledTimes(1)
+    const texto = String(toastError().mock.calls[0]![0])
+    expect(texto).toContain('No pudimos aprobar el cruce: algo falló de nuestro lado')
+    expect(texto).toContain('f00dbabe')
+    expect(texto).not.toMatch(/conexi|500/i)
+  })
+
+  it('aprobar: si el pedido ni salió (status 0) habla de la conexión', async () => {
+    cola.items = [item()]
+    cola.total = 1
+    const red = new TypeError('Failed to fetch')
+    cola.confirmMatch.mockResolvedValueOnce({ ok: false, error: red.message, fallo: red })
+    await montar()
+    await clic(botonConTexto('Aprobar', $('[data-testid="conciliacion-row-q-1"]')))
+    expect(String(toastError().mock.calls[0]![0])).toMatch(/conexión/)
+  })
+
+  it('rechazar: un 409 dice el `message` del micro (no el código) y lo escrito se queda', async () => {
+    cola.items = [item()]
+    cola.total = 1
+    cola.rejectMatch.mockResolvedValueOnce({
+      ok: false,
+      error: 'MATCH_YA_DECIDIDO',
+      fallo: await falloDelMicro({
+        status: 409,
+        json: async () => ({ code: 'MATCH_YA_DECIDIDO', message: 'Otra persona ya decidió este cruce.' }),
+      }),
+    })
+    await montar()
+    await clic(botonConTexto('Rechazar', $('[data-testid="conciliacion-row-q-1"]')))
+    await escribirMotivo('No es el pago de ese contrato.')
+    await clic($('[data-testid="conciliacion-confirmar-rechazo"]'))
+    expect(toastError()).toHaveBeenCalledWith('Otra persona ya decidió este cruce.')
+    expect(($('#motivo-rechazo') as HTMLTextAreaElement).value).toBe('No es el pago de ese contrato.')
+  })
+})
+
+
+/*
+ * ARREGLOS-8 (ARREGLOS-4 Q1 A, 03-10-2026): con el micro caído, la cola le
+ * pasaba a `EstadoDeDatos` sólo el TEXTO del error y la tarjeta decía «Fue un
+ * problema nuestro». Ahora va el error entero (`errorCrudo` del hook).
+ */
+describe('«Por revisar» — con el micro caído', () => {
+  it('🔴 dice que se cayó el asistente', async () => {
+    const { caidaDelAsistente } = await import('@/lib/api/agent-fetch')
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'))
+    const conCrudo = cola as typeof cola & { errorCrudo?: unknown }
+    cola.error = 'Failed to fetch'
+    conCrudo.errorCrudo = caidaDelAsistente(new TypeError('Failed to fetch'))
+    try {
+      await montar()
+      const texto = $('[data-testid="fallo-de-carga"]').textContent ?? ''
+      expect(texto).toMatch(/El asistente de Leasefy no está disponible/)
+      expect(texto).not.toMatch(/problema nuestro/i)
+    } finally {
+      delete conCrudo.errorCrudo
+      vi.restoreAllMocks()
+    }
   })
 })

@@ -183,26 +183,33 @@ describe('Recaudo', () => {
     await montar();
 
     // 🔴 «Se debe» es la cifra de referencia y sale de las CUOTAS del contrato.
-    expect($('[data-testid="valor-se-debe"]').textContent).toBe('$ 3.000.000');
+    expect($('[data-testid="valor-se-debe"]').textContent).toBe('$\u00a03.000.000');
     expect($('[data-testid="cifra-se-debe"]').textContent).toContain('2 cuotas');
-    expect($('[data-testid="valor-llego"]').textContent).toBe('$ 1.500.000');
-    expect($('[data-testid="cifra-llego"]').textContent).toContain('$ 1.000.000 son de cobros de este mes');
-    expect($('[data-testid="valor-pendiente"]').textContent).toBe('$ 1.500.000');
+    expect($('[data-testid="valor-llego"]').textContent).toBe('$\u00a01.500.000');
+    // PG-09 (03-10-2026), cambiado a propósito: «Llegó» ya no habla de
+    // «cobros de este mes»; sin `pagadoDeLasCuotasDelMesCop` (este resumen no lo
+    // trae) sólo dice qué son los recibos.
+    expect($('[data-testid="cifra-llego"]').textContent).toContain('Recibos de caja con fecha en el mes, de la cuota que sea.');
+    expect($('[data-testid="cifra-llego"]').textContent).not.toContain('cobros');
+    expect($('[data-testid="valor-pendiente"]').textContent).toBe('$\u00a01.500.000');
     // Se cuenta en CUOTAS, no en cobros: con 0 cobros emitidos el rótulo viejo
     // decía «Saldo de los 0 cobros del mes sin pagar» sobre $1.251 millones.
     expect($('[data-testid="cifra-pendiente"]').textContent).toContain('Saldo de 1 cuota');
     expect($('[data-testid="cifra-pendiente"]').textContent).toContain('En cartera acumulada');
-    expect($('[data-testid="cifra-pendiente"]').textContent).toContain('$ 800.000');
-    expect($('[data-testid="valor-dispersado"]').textContent).toBe('$ 1.000.000');
-    expect($('[data-testid="cifra-dispersado"]').textContent).toContain('$ 150.000 de comisión');
-    expect($('[data-testid="valor-disponible"]').textContent).toBe('$ 2.850.000');
-    expect($('[data-testid="facturado"]').textContent).toContain('Cobros emitidos $ 3.000.000');
-    expect($('[data-testid="facturado"]').textContent).toContain('1 pagados');
+    expect($('[data-testid="cifra-pendiente"]').textContent).toContain('$\u00a0800.000');
+    expect($('[data-testid="valor-dispersado"]').textContent).toBe('$\u00a01.000.000');
+    expect($('[data-testid="cifra-dispersado"]').textContent).toContain('$\u00a0150.000 de comisión');
+    expect($('[data-testid="valor-disponible"]').textContent).toBe('$\u00a02.850.000');
+    // 🔴 PG-09 (03-10-2026): la línea habla de CUOTAS, no de «Cobros emitidos … 0 en mora».
+    expect($('[data-testid="cuotas-del-mes"]').textContent).toContain('De las 2 cuotas de');
+    expect($('[data-testid="cuotas-del-mes"]').textContent).toContain('1 está pagada');
+    expect($('[data-testid="cuotas-del-mes"]').textContent).toContain('1 está sin pagar del todo');
+    expect(host.textContent).not.toContain('Cobros emitidos');
 
     const porMedio = $('[data-testid="por-medio"]').textContent ?? '';
     expect(porMedio).toContain('Transferencia');
     expect(porMedio).toContain('Efectivo');
-    expect(porMedio).toContain('$ 500.000');
+    expect(porMedio).toContain('$\u00a0500.000');
 
     expect($('[data-testid="grafico-de-recaudo"]').getAttribute('data-puntos')).toBe('2');
     expect(resumenMock).toHaveBeenCalledWith(HOY);
@@ -212,7 +219,7 @@ describe('Recaudo', () => {
   it('un disponible negativo se muestra en rojo y dice por qué', async () => {
     resumenMock.mockResolvedValue(resumen({ disponibleCop: -200_000 }));
     await montar();
-    expect($('[data-testid="valor-disponible"]').textContent).toBe('$ -200.000');
+    expect($('[data-testid="valor-disponible"]').textContent).toBe('$\u00a0-200.000');
     expect($('[data-testid="valor-disponible"]').className).toContain('text-danger');
     expect($('[data-testid="cifra-disponible"]').textContent).toContain('nunca pasó por un recibo');
   });
@@ -262,7 +269,7 @@ describe('Recaudo', () => {
     expect(filas).toHaveLength(2);
     expect(filas[0].getAttribute('data-mes')).toBe(HOY);
     expect(filas[0].getAttribute('aria-current')).toBe('true');
-    expect(filas[0].textContent).toContain('$ 3.000.000');
+    expect(filas[0].textContent).toContain('$\u00a03.000.000');
     expect(filas[0].textContent).toContain('50 %');
     // La columna dice con qué fórmula se midió, no «% recaudado».
     expect($('[data-testid="rotulo-de-la-tasa"]').textContent).toBe('Recaudo sobre lo causado');
@@ -282,7 +289,7 @@ describe('Recaudo', () => {
     expect(host.querySelectorAll('[data-testid="medio-fila"]')).toHaveLength(2);
     const total = $('[data-testid="medio-total"]').textContent ?? '';
     expect(total).toContain('2');
-    expect(total).toContain('$ 1.500.000');
+    expect(total).toContain('$\u00a01.500.000');
   });
 
   it('un mes con cobros pero sin recibos dice que no hay recibos, dentro de la tabla', async () => {
@@ -313,9 +320,10 @@ describe('Recaudo', () => {
     await montar();
 
     expect(host.textContent).not.toContain('Nada que contar');
-    expect($('[data-testid="valor-se-debe"]').textContent).toBe('$ 3.000.000');
-    // Y el cero de los cobros se dice con palabras, no como «Facturado $ 0».
-    expect($('[data-testid="facturado"]').textContent).toContain('Nadie emitió un cobro');
+    expect($('[data-testid="valor-se-debe"]').textContent).toBe('$\u00a03.000.000');
+    // PG-09: sin cobros la línea sigue hablando de las cuotas del mes (la deuda),
+    // no de los documentos.
+    expect($('[data-testid="cuotas-del-mes"]').textContent).toContain('De las 2 cuotas de');
   });
 
   it('si el back falla se ve el fallo, no un mes vacío', async () => {
@@ -323,6 +331,61 @@ describe('Recaudo', () => {
     await montar();
     expect($('[data-testid="fallo-de-carga"]').textContent).toContain('el recaudo: Se cayó la red.');
     expect(host.textContent).not.toContain('Nada que contar');
+  });
+});
+
+describe('PG-10 y PG-11 (QA de Pagos, 03-10-2026)', () => {
+  it('🔴 PG-09: «Llegó» dice lo que ya entró a las CUOTAS del mes, no a los cobros', async () => {
+    resumenMock.mockResolvedValue(resumen({ pagadoDeLasCuotasDelMesCop: 11_900_000 }));
+    await montar();
+    const llego = $('[data-testid="cifra-llego"]').textContent ?? '';
+    expect(llego).toContain('A las cuotas de');
+    expect(llego).toContain('$\u00a011.900.000');
+    expect(llego).not.toContain('cobros');
+  });
+
+  it('🔴 PG-10: al lado del % va SU numerador, y lo recaudado en el mes dice que son recibos con fecha del mes', async () => {
+    serieMock.mockResolvedValue([
+      {
+        month: HOY,
+        deudaDelMesCop: 92_230_850,
+        facturadoCop: 89_250_000,
+        // Recibos con FECHA en octubre (de cualquier período): 24 % de lo causado…
+        recaudadoCop: 22_573_888,
+        pagadoDeLasCuotasDelMesCop: 11_800_000,
+        dispersadoCop: 0,
+        // …y la tasa sobre lo causado, con lo pagado de las CUOTAS de octubre: 13 %.
+        tasaDeRecaudo: tasa({ numeradorCop: 11_800_000, denominadorCop: 92_230_850, pct: 12.79 }),
+      },
+    ]);
+    resumenMock.mockResolvedValue(resumen());
+    await montar();
+    expect($('[data-testid="rotulo-del-numerador"]').textContent).toBe('Pagado de las cuotas del mes');
+    expect($('[data-testid="rotulo-de-lo-recaudado"]').textContent).toContain('recibos con fecha del mes');
+    const fila = host.querySelector<HTMLElement>('[data-testid="serie-fila"]')!;
+    expect(fila.querySelector('[data-testid="serie-numerador"]')!.textContent).toBe('$\u00a011.800.000');
+    expect(fila.textContent).toContain('13 %');
+    expect(fila.querySelector('[data-testid="serie-recaudado"]')!.textContent).toBe('$\u00a022.573.888');
+  });
+
+  it('🔴 PG-11: «transferencia 6 · Transferencia 5 · pse 6» es UNA transferencia y UN PSE, con su nombre', async () => {
+    resumenMock.mockResolvedValue(
+      resumen({
+        porMedio: [
+          { medio: 'transferencia', valorCop: 13_500_000, cantidad: 6 },
+          { medio: 'Transferencia', valorCop: 5_000_000, cantidad: 5 },
+          { medio: 'pse', valorCop: 4_073_888, cantidad: 6 },
+        ],
+      }),
+    );
+    await montar();
+    const filas = Array.from(host.querySelectorAll('[data-testid="medio-fila"]')).map((f) => f.textContent);
+    expect(filas).toHaveLength(2);
+    expect(filas[0]).toContain('Transferencia');
+    expect(filas[0]).toContain('11');
+    expect(filas[0]).toContain('$\u00a018.500.000');
+    expect(filas[1]).toContain('PSE');
+    expect(host.querySelector('[data-testid="por-medio"]')!.textContent).not.toContain('pse');
   });
 });
 

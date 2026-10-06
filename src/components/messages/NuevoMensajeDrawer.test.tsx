@@ -32,7 +32,9 @@ vi.mock('sonner', () => ({ toast: { error: (m: string) => toastError(m) } }));
 
 // El Sheet real arrastra los primitivos de diálogo del design system; acá sólo
 // interesa el contenido.
-vi.mock('@/components/ui/sheet', () => ({
+vi.mock('@/components/ui/sheet', async () => ({
+  // Las piezas del cajón (cabecera con título y acciones, cuerpo, pie) como DOM plano.
+  ...(await import('@/components/ui/sheet-test-stub')),
   Sheet: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
   SheetContent: ({ children, ...rest }: Record<string, unknown> & { children?: React.ReactNode }) =>
     React.createElement('div', { 'data-testid': rest['data-testid'] }, children as React.ReactNode),
@@ -233,6 +235,38 @@ describe('<NuevoMensajeDrawer>', () => {
       expect.stringContaining('inmueble o un contrato en común'),
     );
     expect(onCerrar).not.toHaveBeenCalled();
+  });
+
+  it('🔴 02-10 · un 5xx al abrir no culpa a la conexión: falló de nuestro lado, con la referencia', async () => {
+    getDestinatarios.mockResolvedValue({ tipo: 'PERSONAS', personas: [PERSONA], agencias: [] });
+    abrirHiloDirecto.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    await render();
+    await act(async () => {
+      container.querySelector('[data-testid="destinatario-user-1"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    const dicho = toastError.mock.calls[0]?.[0] as string;
+    expect(dicho).toContain('de nuestro lado');
+    expect(dicho).toContain('ab12cd34');
+    expect(dicho).not.toMatch(/conexi[oó]n|intenta de nuevo/i);
+  });
+
+  it('🔴 02-10 · sin respuesta (status 0), y sólo entonces, habla de la conexión', async () => {
+    getDestinatarios.mockResolvedValue({ tipo: 'PERSONAS', personas: [PERSONA], agencias: [] });
+    abrirHiloDirecto.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await render();
+    await act(async () => {
+      container.querySelector('[data-testid="destinatario-user-1"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(toastError.mock.calls[0]?.[0]).toMatch(/conexi[oó]n/i);
   });
 
   it('sin destinatarios lo dice, y no como si fuera un fallo', async () => {

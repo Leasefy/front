@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   User,
   Buildings,
@@ -15,9 +15,18 @@ import {
   Package,
   NotePencil,
   Check,
-  Warning,
   Pencil,
+  House,
+  Couch,
+  Storefront,
+  BuildingOffice,
+  Warehouse,
+  Car,
+  Tree,
+  WarningCircle,
 } from '@phosphor-icons/react';
+import type { Icon as IconoDePhosphor } from '@phosphor-icons/react';
+import { llevaHabitaciones, descripcionValida, DESCRIPCION_MINIMA, DESCRIPCION_MAXIMA } from '@/lib/inmuebles/reglas-del-paso-del-inmueble';
 import { cn } from '@/lib/utils';
 import {
   Button,
@@ -39,6 +48,9 @@ import type { FilaCopropietario } from './CopropietariosField';
 import { AgenteSelector } from './AgenteSelector';
 import { PropertyLocationField, type PropertyLocationValue } from '@/components/publicar/PropertyLocationField';
 import { PropertyPhotoPicker } from './PropertyPhotoPicker';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { idDelCampoDelAsistente, topesDelPasoDelInmueble } from '@/lib/inmuebles/errores-del-asistente';
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 
 // ============================================================================
 // Shared Types
@@ -99,21 +111,51 @@ export interface StepProps {
   updateFormData: (data: Partial<WizardFormData>) => void;
   propietarios: Propietario[];
   agentes: Agente[];
+  /**
+   * Los errores que mandó el back en `campos[]`, ya con el nombre del campo
+   * del asistente (ver `ConsignacionWizard`). Se van solos al editar el campo.
+   */
+  erroresDelServidor?: Partial<Record<string, string>>;
+}
+
+// Sistema de errores (02-10-2026): los ids y los topes viven en
+// `lib/inmuebles/errores-del-asistente.ts` (el asistente los usa sin montar
+// los pasos). Acá sólo el `aria` de cada control.
+function aria(campo: string, error?: string, requerido = false) {
+  const id = idDelCampoDelAsistente(campo);
+  return {
+    id,
+    'aria-invalid': error ? true : undefined,
+    'aria-describedby': error ? `${id}-error` : undefined,
+    'aria-required': requerido ? true : undefined,
+  } as const;
+}
+
+/**
+ * IN-17 (QA 04-10): las etiquetas del asistente no estaban unidas a su campo
+ * (un lector de pantalla no decía qué era cada caja y `getByLabel` no las
+ * encontraba). Cada `<label>` apunta con `htmlFor` al `id` que ya ponía
+ * `aria()`; los grupos de tarjetas (tipo, arriendo/venta, término) se nombran
+ * con `aria-labelledby`, porque un `<div role="radiogroup">` no es «labelable».
+ */
+function idDeLaEtiqueta(campo: string): string {
+  return `${idDelCampoDelAsistente(campo)}-etiqueta`;
 }
 
 // ============================================================================
 // Property Type Options
 // ============================================================================
 
-const PROPERTY_TYPES: { value: Consignacion['propertyType']; labelKey: string; icon: string }[] = [
-  { value: 'apartment', labelKey: 'inmobiliaria.consignaciones.propertyType.apartment', icon: '🏢' },
-  { value: 'house', labelKey: 'inmobiliaria.consignaciones.propertyType.house', icon: '🏠' },
-  { value: 'studio', labelKey: 'inmobiliaria.consignaciones.propertyType.studio', icon: '🛋️' },
-  { value: 'commercial', labelKey: 'inmobiliaria.consignaciones.propertyType.commercial', icon: '🏪' },
-  { value: 'office', labelKey: 'inmobiliaria.consignaciones.propertyType.office', icon: '🏬' },
-  { value: 'warehouse', labelKey: 'inmobiliaria.consignaciones.propertyType.warehouse', icon: '🏭' },
-  { value: 'parking', labelKey: 'inmobiliaria.consignaciones.propertyType.parking', icon: '🅿️' },
-  { value: 'land', labelKey: 'inmobiliaria.consignaciones.propertyType.land', icon: '🌄' },
+// IN-15 (QA 04-10): íconos del DS (Phosphor), no emojis.
+const PROPERTY_TYPES: { value: Consignacion['propertyType']; labelKey: string; icon: IconoDePhosphor }[] = [
+  { value: 'apartment', labelKey: 'inmobiliaria.consignaciones.propertyType.apartment', icon: Buildings },
+  { value: 'house', labelKey: 'inmobiliaria.consignaciones.propertyType.house', icon: House },
+  { value: 'studio', labelKey: 'inmobiliaria.consignaciones.propertyType.studio', icon: Couch },
+  { value: 'commercial', labelKey: 'inmobiliaria.consignaciones.propertyType.commercial', icon: Storefront },
+  { value: 'office', labelKey: 'inmobiliaria.consignaciones.propertyType.office', icon: BuildingOffice },
+  { value: 'warehouse', labelKey: 'inmobiliaria.consignaciones.propertyType.warehouse', icon: Warehouse },
+  { value: 'parking', labelKey: 'inmobiliaria.consignaciones.propertyType.parking', icon: Car },
+  { value: 'land', labelKey: 'inmobiliaria.consignaciones.propertyType.land', icon: Tree },
 ];
 
 const MINIMUM_TERMS: { value: number; labelKey: string }[] = [
@@ -226,11 +268,11 @@ export function StepSelectPropietario({
         onChange={(nuevas) => guardarSeleccion(seleccion, nuevas)}
       />
 
-      {ownerServerError && (
-        <p className="text-sm text-danger" role="alert" data-testid="wizard-owner-error">
-          {ownerServerError.message}
-        </p>
-      )}
+      {/* El error del propietario que el back no aceptó (documento repetido,
+          un dato del formulario). Entra suave, como todo error de campo. */}
+      <div data-testid="wizard-owner-error-slot">
+        <ErrorDelCampo id="wizard-owner-error" mensaje={ownerServerError?.message} />
+      </div>
     </div>
   );
 }
@@ -239,7 +281,7 @@ export function StepSelectPropietario({
 // Step 2: Property Data
 // ============================================================================
 
-export function StepPropertyData({ formData, updateFormData }: StepProps) {
+export function StepPropertyData({ formData, updateFormData, erroresDelServidor }: StepProps) {
   const { t, locale } = useI18n();
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
@@ -257,18 +299,29 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
   if (touched.propertyTitle && !formData.propertyTitle) errors.propertyTitle = t('inmobiliaria.consignaciones.wizard.step2.validation.titleRequired');
   if (touched.propertyAddress && !formData.propertyAddress) errors.propertyAddress = t('inmobiliaria.consignaciones.wizard.step2.validation.addressRequired');
   if (touched.propertyCity && !formData.propertyCity) errors.propertyCity = t('inmobiliaria.consignaciones.wizard.step2.validation.cityRequired');
-  if (touched.propertyZone && !formData.propertyZone) errors.propertyZone = t('inmobiliaria.consignaciones.wizard.step2.validation.zoneRequired');
   // contract.md §3.2.1 — required in this UI (the wire keeps it optional).
-  if (touched.department && !formData.department) errors.department = t('inmobiliaria.consignaciones.wizard.step2.validation.departmentRequired');
   if (!isSaleListing && touched.monthlyRent && (!formData.monthlyRent || formData.monthlyRent <= 0)) errors.monthlyRent = t('inmobiliaria.consignaciones.wizard.step2.validation.rentRequired');
   if (isSaleListing && touched.salePrice && (!formData.salePrice || formData.salePrice <= 0)) errors.salePrice = t('inmobiliaria.consignaciones.wizard.step2.validation.salePriceRequired');
   // Thresholds mirror CreatePropertyDto (contract.md §3.2) — bedrooms 0-20,
   // bathrooms 1-10 (0 invalid), area 10-10000 m² (0 invalid), description 20-5000 chars.
-  if (touched.bedrooms && (formData.bedrooms == null || formData.bedrooms < 0 || formData.bedrooms > 20)) errors.bedrooms = t('inmobiliaria.consignaciones.wizard.step2.validation.bedroomsRequired');
-  if (touched.bathrooms && (!formData.bathrooms || formData.bathrooms < 1 || formData.bathrooms > 10)) errors.bathrooms = t('inmobiliaria.consignaciones.wizard.step2.validation.bathroomsRequired');
-  if (touched.area && (!formData.area || formData.area < 10 || formData.area > 10000)) errors.area = t('inmobiliaria.consignaciones.wizard.step2.validation.areaRequired');
-  const descriptionLength = formData.propertyDescription?.length ?? 0;
-  if (touched.propertyDescription && (descriptionLength < 20 || descriptionLength > 5000)) errors.propertyDescription = t('inmobiliaria.consignaciones.wizard.step2.validation.descriptionRequired');
+  // IN-16 (QA 04-10): barrio, departamento, habitaciones, baños, área y
+  // descripción son opcionales. Lo que se escribe se revisa con los topes del
+  // back (`topesDelPasoDelInmueble`, más abajo); la descripción, si se
+  // escribe, entre 20 y 5.000 como en «Editar».
+  const conHabitaciones = llevaHabitaciones(formData.propertyType);
+  if (touched.bedrooms && formData.bedrooms != null && (formData.bedrooms < 0 || formData.bedrooms > 20)) errors.bedrooms = t('inmobiliaria.consignaciones.wizard.step2.validation.bedroomsRequired');
+  if (touched.bathrooms && formData.bathrooms != null && (formData.bathrooms < 0 || formData.bathrooms > 10)) errors.bathrooms = t('inmobiliaria.consignaciones.wizard.step2.validation.bathroomsRequired');
+  if (touched.area && formData.area != null && (formData.area < 10 || formData.area > 10000)) errors.area = t('inmobiliaria.consignaciones.wizard.step2.validation.areaRequired');
+  const descriptionLength = formData.propertyDescription?.trim().length ?? 0;
+  if (touched.propertyDescription && !descripcionValida(formData.propertyDescription)) errors.propertyDescription = t('inmobiliaria.consignaciones.wizard.step2.validation.descriptionRequired');
+  // Los topes del back se ven en el momento (no esperan al blur); lo que el
+  // servidor rechazó, en su campo hasta que se edite.
+  for (const [campo, mensaje] of Object.entries(topesDelPasoDelInmueble(formData))) {
+    if (mensaje && !errors[campo]) errors[campo] = mensaje;
+  }
+  for (const [campo, mensaje] of Object.entries(erroresDelServidor ?? {})) {
+    if (mensaje && !errors[campo]) errors[campo] = mensaje;
+  }
 
   return (
     <div className="space-y-6">
@@ -284,10 +337,12 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
       <div className="space-y-4">
         {/* Property Type */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+          <label id={idDeLaEtiqueta('propertyType')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.propertyTypeLabel')} <span className="text-danger">*</span>
           </label>
           <RadioCardGroup
+            aria-labelledby={idDeLaEtiqueta('propertyType')}
+            aria-required
             className="grid grid-cols-3 sm:grid-cols-6 gap-2"
             value={formData.propertyType || undefined}
             onValueChange={(v) => updateFormData({ propertyType: v as Consignacion['propertyType'] })}
@@ -298,7 +353,7 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
                 value={type.value}
                 label={
                   <span className="flex flex-col items-center gap-1 text-xs font-medium text-center">
-                    <span className="text-2xl leading-none">{type.icon}</span>
+                    <type.icon className="h-6 w-6" weight="duotone" aria-hidden="true" />
                     {t(type.labelKey)}
                   </span>
                 }
@@ -309,7 +364,7 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
 
         {/* Property Title */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+          <label htmlFor={idDelCampoDelAsistente('propertyTitle')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.propertyTitleLabel')} <span className="text-danger">*</span>
           </label>
           <Input
@@ -317,23 +372,20 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
             value={formData.propertyTitle || ''}
             onChange={(e) => updateFormData({ propertyTitle: e.target.value })}
             onBlur={() => handleBlur('propertyTitle')}
+            {...aria('propertyTitle', errors.propertyTitle, true)}
             placeholder={t('inmobiliaria.consignaciones.wizard.step2.propertyTitlePlaceholder')}
             className={cn('w-full', errors.propertyTitle && 'border-danger/30')}
           />
-          {errors.propertyTitle && (
-            <p className="text-xs text-danger flex items-center gap-1">
-              <Warning className="w-3 h-3" />
-              {errors.propertyTitle}
-            </p>
-          )}
+          <ErrorDelCampo id={`${idDelCampoDelAsistente('propertyTitle')}-error`} mensaje={errors.propertyTitle} />
         </div>
 
         {/* Address */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+          <label htmlFor={idDelCampoDelAsistente('propertyAddress')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.addressLabel')} <span className="text-danger">*</span>
           </label>
           <PropertyLocationField
+            id={idDelCampoDelAsistente('propertyAddress')}
             address={formData.propertyAddress || ''}
             city={formData.propertyCity}
             latitude={formData.propertyLatitude}
@@ -350,18 +402,13 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
               });
             }}
           />
-          {errors.propertyAddress && (
-            <p className="text-xs text-danger flex items-center gap-1">
-              <Warning className="w-3 h-3" />
-              {errors.propertyAddress}
-            </p>
-          )}
+          <ErrorDelCampo id={`${idDelCampoDelAsistente('propertyAddress')}-error`} mensaje={errors.propertyAddress} />
         </div>
 
         {/* City and Zone */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            <label htmlFor={idDelCampoDelAsistente('propertyCity')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
               {t('inmobiliaria.consignaciones.wizard.step2.cityLabel')} <span className="text-danger">*</span>
             </label>
             <Input
@@ -369,49 +416,44 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
               value={formData.propertyCity || ''}
               onChange={(e) => updateFormData({ propertyCity: e.target.value })}
               onBlur={() => handleBlur('propertyCity')}
+              {...aria('propertyCity', errors.propertyCity, true)}
               placeholder={t('inmobiliaria.consignaciones.wizard.step2.cityPlaceholder')}
               className={cn('w-full', errors.propertyCity && 'border-danger/30')}
             />
-            {errors.propertyCity && (
-              <p className="text-xs text-danger flex items-center gap-1">
-                <Warning className="w-3 h-3" />
-                {errors.propertyCity}
-              </p>
-            )}
+            <ErrorDelCampo id={`${idDelCampoDelAsistente('propertyCity')}-error`} mensaje={errors.propertyCity} />
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
-              {t('inmobiliaria.consignaciones.wizard.step2.zoneLabel')} <span className="text-danger">*</span>
+            <label htmlFor={idDelCampoDelAsistente('propertyZone')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
+              {t('inmobiliaria.consignaciones.wizard.step2.zoneLabel')}
             </label>
             <Input
               type="text"
               value={formData.propertyZone || ''}
               onChange={(e) => updateFormData({ propertyZone: e.target.value })}
               onBlur={() => handleBlur('propertyZone')}
+              {...aria('propertyZone', errors.propertyZone)}
               placeholder={t('inmobiliaria.consignaciones.wizard.step2.zonePlaceholder')}
               className={cn('w-full', errors.propertyZone && 'border-danger/30')}
             />
-            {errors.propertyZone && (
-              <p className="text-xs text-danger flex items-center gap-1">
-                <Warning className="w-3 h-3" />
-                {errors.propertyZone}
-              </p>
-            )}
+            <ErrorDelCampo id={`${idDelCampoDelAsistente('propertyZone')}-error`} mensaje={errors.propertyZone} />
           </div>
         </div>
 
         {/* Department — contract.md §3.2.1: required in this UI, reuses
             COLOMBIAN_DEPARTMENTS (do not define a second list). */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
-            {t('inmobiliaria.consignaciones.wizard.step2.departmentLabel')} <span className="text-danger">*</span>
+          <label htmlFor={idDelCampoDelAsistente('department')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            {t('inmobiliaria.consignaciones.wizard.step2.departmentLabel')}
           </label>
           <Select
             value={formData.department || undefined}
             onValueChange={(v) => { updateFormData({ department: v }); handleBlur('department'); }}
           >
-            <SelectTrigger className={cn('w-full', errors.department && 'border-danger/30')}>
+            <SelectTrigger
+              {...aria('department', errors.department)}
+              className={cn('w-full', errors.department && 'border-danger/30')}
+            >
               <SelectValue placeholder={t('inmobiliaria.consignaciones.wizard.step2.departmentPlaceholder')} />
             </SelectTrigger>
             <SelectContent>
@@ -422,22 +464,19 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
               ))}
             </SelectContent>
           </Select>
-          {errors.department && (
-            <p className="text-xs text-danger flex items-center gap-1">
-              <Warning className="w-3 h-3" />
-              {errors.department}
-            </p>
-          )}
+          <ErrorDelCampo id={`${idDelCampoDelAsistente('department')}-error`} mensaje={errors.department} />
         </div>
 
         {/* Rent vs sale — contract.md §3.2.2 (T-0038). When 'sale', the canon
             field below is replaced by a sale-price field; a sale listing
             sends monthlyRent: null, never 0 (C6) — see ConsignacionWizard. */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+          <label id={idDeLaEtiqueta('listingType')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.listingTypeLabel')} <span className="text-danger">*</span>
           </label>
           <RadioCardGroup
+            aria-labelledby={idDeLaEtiqueta('listingType')}
+            aria-required
             className="grid grid-cols-2 gap-2"
             value={listingType}
             onValueChange={(v) => updateFormData({ listingType: v as 'rent' | 'sale' })}
@@ -451,7 +490,7 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {isSaleListing ? (
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+              <label htmlFor={idDelCampoDelAsistente('salePrice')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
                 {t('inmobiliaria.consignaciones.wizard.step2.salePriceLabel')} <span className="text-danger">*</span>
               </label>
               <div className="relative">
@@ -464,20 +503,16 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
                     updateFormData({ salePrice: value ? parseInt(value) : undefined });
                   }}
                   onBlur={() => handleBlur('salePrice')}
+                  {...aria('salePrice', errors.salePrice, true)}
                   placeholder={t('inmobiliaria.consignaciones.wizard.step2.salePricePlaceholder')}
                   className={cn('w-full pl-10', errors.salePrice && 'border-danger/30')}
                 />
               </div>
-              {errors.salePrice && (
-                <p className="text-xs text-danger flex items-center gap-1">
-                  <Warning className="w-3 h-3" />
-                  {errors.salePrice}
-                </p>
-              )}
+              <ErrorDelCampo id={`${idDelCampoDelAsistente('salePrice')}-error`} mensaje={errors.salePrice} />
             </div>
           ) : (
             <div className="space-y-1.5">
-              <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+              <label htmlFor={idDelCampoDelAsistente('monthlyRent')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
                 {t('inmobiliaria.consignaciones.wizard.step2.monthlyRentLabel')} <span className="text-danger">*</span>
               </label>
               <div className="relative">
@@ -490,21 +525,17 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
                     updateFormData({ monthlyRent: value ? parseInt(value) : 0 });
                   }}
                   onBlur={() => handleBlur('monthlyRent')}
+                  {...aria('monthlyRent', errors.monthlyRent, true)}
                   placeholder={t('inmobiliaria.consignaciones.wizard.step2.monthlyRentPlaceholder')}
                   className={cn('w-full pl-10', errors.monthlyRent && 'border-danger/30')}
                 />
               </div>
-              {errors.monthlyRent && (
-                <p className="text-xs text-danger flex items-center gap-1">
-                  <Warning className="w-3 h-3" />
-                  {errors.monthlyRent}
-                </p>
-              )}
+              <ErrorDelCampo id={`${idDelCampoDelAsistente('monthlyRent')}-error`} mensaje={errors.monthlyRent} />
             </div>
           )}
 
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            <label htmlFor={idDelCampoDelAsistente('adminFee')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
               {t('inmobiliaria.consignaciones.wizard.step2.adminFeeLabel')}
             </label>
             <div className="relative">
@@ -517,17 +548,21 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
                   updateFormData({ adminFee: value ? parseInt(value) : undefined });
                 }}
                 placeholder={t('inmobiliaria.consignaciones.wizard.step2.adminFeePlaceholder')}
-                className="w-full pl-10"
+                {...aria('adminFee', errors.adminFee)}
+                className={cn('w-full pl-10', errors.adminFee && 'border-danger/30')}
               />
             </div>
+            <ErrorDelCampo id={`${idDelCampoDelAsistente('adminFee')}-error`} mensaje={errors.adminFee} />
           </div>
         </div>
 
-        {/* Bedrooms, Bathrooms, Area */}
+        {/* Bedrooms, Bathrooms, Area — habitaciones y baños sólo si el tipo
+            los tiene (IN-16: un Lote o una Bodega no los piden). */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {conHabitaciones && (<>
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
-              {t('inmobiliaria.consignaciones.wizard.step2.bedroomsLabel')} <span className="text-danger">*</span>
+            <label htmlFor={idDelCampoDelAsistente('bedrooms')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
+              {t('inmobiliaria.consignaciones.wizard.step2.bedroomsLabel')}
             </label>
             <Input
               type="number"
@@ -536,40 +571,33 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
               value={formData.bedrooms ?? ''}
               onChange={(e) => updateFormData({ bedrooms: e.target.value === '' ? undefined : Number(e.target.value) })}
               onBlur={() => handleBlur('bedrooms')}
+              {...aria('bedrooms', errors.bedrooms)}
               className={cn('w-full', errors.bedrooms && 'border-danger/30')}
             />
-            {errors.bedrooms && (
-              <p className="text-xs text-danger flex items-center gap-1">
-                <Warning className="w-3 h-3" />
-                {errors.bedrooms}
-              </p>
-            )}
+            <ErrorDelCampo id={`${idDelCampoDelAsistente('bedrooms')}-error`} mensaje={errors.bedrooms} />
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
-              {t('inmobiliaria.consignaciones.wizard.step2.bathroomsLabel')} <span className="text-danger">*</span>
+            <label htmlFor={idDelCampoDelAsistente('bathrooms')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
+              {t('inmobiliaria.consignaciones.wizard.step2.bathroomsLabel')}
             </label>
             <Input
               type="number"
-              min={1}
+              min={0}
               max={10}
               value={formData.bathrooms ?? ''}
               onChange={(e) => updateFormData({ bathrooms: e.target.value === '' ? undefined : Number(e.target.value) })}
               onBlur={() => handleBlur('bathrooms')}
+              {...aria('bathrooms', errors.bathrooms)}
               className={cn('w-full', errors.bathrooms && 'border-danger/30')}
             />
-            {errors.bathrooms && (
-              <p className="text-xs text-danger flex items-center gap-1">
-                <Warning className="w-3 h-3" />
-                {errors.bathrooms}
-              </p>
-            )}
+            <ErrorDelCampo id={`${idDelCampoDelAsistente('bathrooms')}-error`} mensaje={errors.bathrooms} />
           </div>
+          </>)}
 
           <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
-              {t('inmobiliaria.consignaciones.wizard.step2.areaLabel')} <span className="text-danger">*</span>
+            <label htmlFor={idDelCampoDelAsistente('area')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
+              {t('inmobiliaria.consignaciones.wizard.step2.areaLabel')}
             </label>
             <Input
               type="number"
@@ -578,44 +606,36 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
               value={formData.area ?? ''}
               onChange={(e) => updateFormData({ area: e.target.value === '' ? undefined : Number(e.target.value) })}
               onBlur={() => handleBlur('area')}
+              {...aria('area', errors.area)}
               className={cn('w-full', errors.area && 'border-danger/30')}
             />
-            {errors.area && (
-              <p className="text-xs text-danger flex items-center gap-1">
-                <Warning className="w-3 h-3" />
-                {errors.area}
-              </p>
-            )}
+            <ErrorDelCampo id={`${idDelCampoDelAsistente('area')}-error`} mensaje={errors.area} />
           </div>
         </div>
 
         {/* Description */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
-            {t('inmobiliaria.consignaciones.wizard.step2.descriptionLabel')} <span className="text-danger">*</span>
+          <label htmlFor={idDelCampoDelAsistente('propertyDescription')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            {t('inmobiliaria.consignaciones.wizard.step2.descriptionLabel')}
           </label>
           <Textarea
             value={formData.propertyDescription || ''}
             onChange={(e) => updateFormData({ propertyDescription: e.target.value })}
             onBlur={() => handleBlur('propertyDescription')}
+            {...aria('propertyDescription', errors.propertyDescription)}
             placeholder={t('inmobiliaria.consignaciones.wizard.step2.descriptionPlaceholder')}
             rows={4}
             maxLength={5000}
             className={cn('w-full resize-none', errors.propertyDescription && 'border-danger/30')}
           />
-          <p className={cn('text-xs', errors.propertyDescription ? 'text-danger' : 'text-fg-subtle')}>
+          <p className="text-xs text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.descriptionCounter', {
               count: descriptionLength,
-              min: 20,
-              max: 5000,
+              min: DESCRIPCION_MINIMA,
+              max: DESCRIPCION_MAXIMA,
             })}
           </p>
-          {errors.propertyDescription && (
-            <p className="text-xs text-danger flex items-center gap-1">
-              <Warning className="w-3 h-3" />
-              {errors.propertyDescription}
-            </p>
-          )}
+          <ErrorDelCampo id={`${idDelCampoDelAsistente('propertyDescription')}-error`} mensaje={errors.propertyDescription} />
         </div>
 
         {/*
@@ -626,18 +646,21 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
           unchanged by this task) — see ConsignacionWizard.tsx.
         */}
         <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+          <label htmlFor={idDelCampoDelAsistente('consignedAt')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.consignedAtLabel')}
           </label>
           <Input
             type="date"
             value={formData.consignedAt || ''}
             onChange={(e) => updateFormData({ consignedAt: e.target.value })}
-            className="w-full sm:w-64"
+            {...aria('consignedAt', errors.consignedAt)}
+            className={cn('w-full sm:w-64', errors.consignedAt && 'border-danger/30')}
           />
-          <p className="text-xs text-fg-subtle">
-            {t('inmobiliaria.consignaciones.wizard.step2.consignedAtHint')}
-          </p>
+          <ErrorDelCampo
+            id={`${idDelCampoDelAsistente('consignedAt')}-error`}
+            mensaje={errors.consignedAt}
+            pista={t('inmobiliaria.consignaciones.wizard.step2.consignedAtHint')}
+          />
         </div>
       </div>
     </div>
@@ -648,8 +671,10 @@ export function StepPropertyData({ formData, updateFormData }: StepProps) {
 // Step 3: Commission Terms
 // ============================================================================
 
-export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
+export function StepCommissionTerms({ formData, updateFormData, erroresDelServidor }: StepProps) {
   const { t } = useI18n();
+  // Lo que el back no aceptó del mandato (comisión, término), en su campo.
+  const servidor = erroresDelServidor ?? {};
   // contract-addendum-2.md §A.8 step 3 — "Renders sale commission only. No
   // canon, no minimumTerm, no adminFee."
   const isSaleListing = formData.listingType === 'sale';
@@ -672,7 +697,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
 
       {isSaleListing ? (
         <div className="space-y-3">
-          <label className="text-sm font-medium text-muted-foreground">
+          <label htmlFor={idDelCampoDelAsistente('saleCommissionPercent')} className="text-sm font-medium text-muted-foreground">
             {t('inmobiliaria.consignaciones.wizard.step3.saleCommissionLabel')}
           </label>
           <div className="relative">
@@ -688,6 +713,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
                   updateFormData({ saleCommissionPercent: value });
                 }
               }}
+              {...aria('saleCommissionPercent', servidor.saleCommissionPercent)}
               className="w-full pr-12 text-lg font-semibold tabular-nums"
               placeholder="3"
             />
@@ -695,15 +721,17 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
               %
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {t('inmobiliaria.consignaciones.wizard.step3.saleCommissionHelper')}
-          </p>
+          <ErrorDelCampo
+            id={`${idDelCampoDelAsistente('saleCommissionPercent')}-error`}
+            mensaje={servidor.saleCommissionPercent}
+            pista={t('inmobiliaria.consignaciones.wizard.step3.saleCommissionHelper')}
+          />
         </div>
       ) : (
         <div className="space-y-6">
           {/* Commission Input */}
           <div className="space-y-3">
-            <label className="text-sm font-medium text-muted-foreground">
+            <label htmlFor={idDelCampoDelAsistente('commissionPercent')} className="text-sm font-medium text-muted-foreground">
               {t('inmobiliaria.consignaciones.wizard.step3.commissionLabel')}
             </label>
             <div className="relative">
@@ -719,6 +747,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
                     updateFormData({ commissionPercent: value });
                   }
                 }}
+                {...aria('commissionPercent', servidor.commissionPercent)}
                 className="w-full pr-12 text-lg font-semibold tabular-nums"
                 placeholder="10"
               />
@@ -726,9 +755,11 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
                 %
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {t('inmobiliaria.consignaciones.wizard.step3.commissionHelper')}
-            </p>
+            <ErrorDelCampo
+              id={`${idDelCampoDelAsistente('commissionPercent')}-error`}
+              mensaje={servidor.commissionPercent}
+              pista={t('inmobiliaria.consignaciones.wizard.step3.commissionHelper')}
+            />
           </div>
 
           {/* Commission Summary */}
@@ -764,10 +795,12 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
 
           {/* Minimum Term */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+            <label id={idDeLaEtiqueta('minimumTerm')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
               {t('inmobiliaria.consignaciones.wizard.step3.minimumTermLabel')}
             </label>
             <RadioCardGroup
+              {...aria('minimumTerm', servidor.minimumTerm)}
+              aria-labelledby={idDeLaEtiqueta('minimumTerm')}
               className="grid grid-cols-2 sm:grid-cols-4 gap-2"
               value={formData.minimumTerm != null ? String(formData.minimumTerm) : undefined}
               onValueChange={(v) => updateFormData({ minimumTerm: Number(v) })}
@@ -780,6 +813,7 @@ export function StepCommissionTerms({ formData, updateFormData }: StepProps) {
                 />
               ))}
             </RadioCardGroup>
+            <ErrorDelCampo id={`${idDelCampoDelAsistente('minimumTerm')}-error`} mensaje={servidor.minimumTerm} />
           </div>
         </div>
       )}
@@ -835,6 +869,8 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
   // step renders photos-only for it. The rent path is unchanged (inventory
   // + photos + observaciones generales, all three).
   const isSaleListing = formData.listingType === 'sale';
+  // Un renglón sin nombre no es un ítem (no se guarda): no cuenta como inventario.
+  const inventarioConNombre = inventoryItems.filter((item) => item.name.trim().length > 0);
 
   const addItem = () => {
     const newItem: InventoryItem = {
@@ -892,14 +928,27 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
           </Button>
         </div>
 
+        {/* QA con avatares (04-10): se podía seguir sin inventario y después
+            el contrato no se podía crear («El inmueble no tiene inventario»).
+            Se dice AQUÍ, antes de salir del asistente; no frena. */}
+        {inventarioConNombre.length === 0 && (
+          <p
+            role="note"
+            className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft/40 p-3 text-sm text-fg"
+            data-testid="aviso-sin-inventario"
+          >
+            <WarningCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
+            {t('inmobiliaria.consignaciones.wizard.step5.sinInventarioAviso')}
+          </p>
+        )}
+
         {inventoryItems.length > 0 ? (
-          <div className="space-y-3">
+          // Agregar o quitar un ítem: entra bajando apenas y el que se quita
+          // sale; los de abajo se corren a su lugar.
+          <Stagger className="space-y-3" direction="down" distance="xs">
             {inventoryItems.map((item, index) => (
-              <motion.div
+              <StaggerItem
                 key={item.id}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
                 className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg"
               >
                 <div className="flex items-start gap-3">
@@ -914,6 +963,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                         type="text"
                         value={item.name}
                         onChange={(e) => updateItem(item.id, { name: e.target.value })}
+                        aria-label={t('inmobiliaria.consignaciones.wizard.step5.itemNameAria', { n: index + 1 })}
                         placeholder={t('inmobiliaria.consignaciones.wizard.step5.itemNamePlaceholder')}
                         className="w-full h-9 text-sm"
                       />
@@ -926,6 +976,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                         min="1"
                         value={item.quantity}
                         onChange={(e) => updateItem(item.id, { quantity: parseInt(e.target.value) || 1 })}
+                        aria-label={t('inmobiliaria.consignaciones.wizard.step5.itemQuantityAria', { n: index + 1 })}
                         className="w-20 h-9 px-3 text-sm text-center"
                       />
                       <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.wizard.step5.units')}</span>
@@ -936,7 +987,10 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                       value={item.condition}
                       onValueChange={(v) => updateItem(item.id, { condition: v as InventoryItem['condition'] })}
                     >
-                      <SelectTrigger className="w-full h-9 px-3 text-sm">
+                      <SelectTrigger
+                        className="w-full h-9 px-3 text-sm"
+                        aria-label={t('inmobiliaria.consignaciones.wizard.step5.itemConditionAria', { n: index + 1 })}
+                      >
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -953,6 +1007,7 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                       type="text"
                       value={item.notes || ''}
                       onChange={(e) => updateItem(item.id, { notes: e.target.value })}
+                      aria-label={t('inmobiliaria.consignaciones.wizard.step5.itemNotesAria', { n: index + 1 })}
                       placeholder={t('inmobiliaria.consignaciones.wizard.step5.additionalNotes')}
                       className="sm:col-span-2 h-9 px-3 text-sm"
                     />
@@ -963,14 +1018,14 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
                     variant="ghost"
                     size="sm"
                     onClick={() => removeItem(item.id)}
-                    aria-label={t('inmobiliaria.consignaciones.wizard.step5.addItem')}
+                    aria-label={t('inmobiliaria.consignaciones.wizard.step5.removeItem', { n: index + 1 })}
                     icon={<Trash className="w-4 h-4" />}
                     className="shrink-0 text-danger hover:bg-danger-soft hover:text-danger"
                   />
                 </div>
-              </motion.div>
+              </StaggerItem>
             ))}
-          </div>
+          </Stagger>
         ) : (
           <div className="p-8 text-center rounded-lg border border-dashed border-border dark:border-border-strong bg-surface-muted dark:bg-bg">
             <Package className="w-12 h-12 mx-auto mb-3 text-fg-subtle dark:text-fg-muted" />
@@ -1005,10 +1060,11 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
       {/* General Notes — no acta de entrega on the sale path (T-0042) */}
       {!isSaleListing && (
       <div className="space-y-1.5">
-        <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+        <label htmlFor={idDelCampoDelAsistente('inventoryNotes')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
           {t('inmobiliaria.consignaciones.wizard.step5.generalNotes')}
         </label>
         <Textarea
+          id={idDelCampoDelAsistente('inventoryNotes')}
           value={formData.inventoryNotes || ''}
           onChange={(e) => updateFormData({ inventoryNotes: e.target.value })}
           placeholder={t('inmobiliaria.consignaciones.wizard.step5.generalNotesPlaceholder')}
@@ -1119,8 +1175,11 @@ export function StepConfirmation({
         <div className="p-4 rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg">
           <SectionHeader title={t('inmobiliaria.consignaciones.wizard.step6.propertySection')} step={2} />
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center text-2xl">
-              {propertyType?.icon || '🏠'}
+            <div className="w-10 h-10 rounded-md bg-success-soft flex items-center justify-center">
+              {(() => {
+                const IconoDelTipo = propertyType?.icon ?? House;
+                return <IconoDelTipo className="h-5 w-5 text-success" weight="duotone" aria-hidden="true" />;
+              })()}
             </div>
             <div className="flex-1">
               <p className="font-medium text-fg">
@@ -1130,7 +1189,7 @@ export function StepConfirmation({
                 {formData.propertyAddress}
               </p>
               <p className="text-sm text-fg-muted dark:text-fg-subtle">
-                {formData.propertyZone}, {formData.propertyCity}
+                {barrioYCiudad(formData.propertyZone, formData.propertyCity)}
               </p>
               <div className="flex items-center gap-4 mt-2">
                 {isSaleListing ? (

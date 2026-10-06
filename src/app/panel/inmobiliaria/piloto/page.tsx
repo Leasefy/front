@@ -55,6 +55,29 @@
  *
  * Fail-soft POR WIDGET: cada pieza maneja su propio cargando/error/vacío;
  * un endpoint caído no tumba la pantalla.
+ *
+ * ── El director (fase 1, 28-09-2026) ───────────────────────────────────────
+ * Arriba de todo, antes del pulso, la tarjeta del director: el plan del día y
+ * sus metas. Es la respuesta a una pregunta anterior a las tres de arriba:
+ * «¿qué hay que hacer hoy, y por qué?». Sus órdenes abren el MISMO cajón de
+ * la Bandeja (`acc:<accionId>`), con el por qué de la orden como respaldo.
+ * Apagado para la inmobiliaria, es una sola línea.
+ *
+ * ── El centro de mando (Nico, 05-10-2026) ───────────────────────────────────
+ * «Hoy la UX del piloto automático no se siente como un verdadero panel de
+ * control, sin KPIs, sin información relevante, todo como tirado; quiero que
+ * se sienta como Jarvis». Se armaron tres direcciones (`/piloto/propuestas`) y
+ * Nico eligió (17:05) la Cabina con el núcleo de la A arriba y la línea del día
+ * de la C debajo: `mando/DireccionElegida.tsx`, TAL CUAL.
+ *   · Las lecciones de arriba siguen: mismo contenedor y encabezado que las
+ *     hermanas (el carácter vive DENTRO, en el núcleo); cada número UNA vez
+ *     (el núcleo no repite las severidades ni el avance del plan); el director
+ *     sigue hablando primero (su frase es la voz del núcleo, y su lectura
+ *     reemplaza la del Gerente: `vozDelDia`).
+ *   · Lo que la torre tenía y la Cabina sólo resume no se perdió: la Bandeja
+ *     entera, la actividad por día y la tarjeta del director (replanear,
+ *     metas, semana) se abren en un cajón desde su tarjeta.
+ *   · El MISMO cajón de casos (`PilotoCajon`), con su pila.
  */
 
 import { useCallback, useMemo, useState } from 'react'
@@ -63,47 +86,49 @@ import { ListChecks } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { Button } from '@/components/ui/button'
+import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon'
 
 import { useI18n } from '@/lib/i18n'
-import { usePilotoInbox } from '@/lib/hooks/piloto/use-piloto-inbox'
-import { usePilotoActivity } from '@/lib/hooks/piloto/use-piloto-activity'
-import { usePilotoBriefing } from '@/lib/hooks/piloto/use-piloto-briefing'
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { usePilotoAutonomia } from '@/lib/hooks/piloto/use-piloto-autonomia'
-import { usePilotoPulso } from '@/lib/hooks/piloto/use-piloto-pulso'
-import { PilotoPulso } from '@/components/inmobiliaria/piloto/PilotoPulso'
+import { useDirectorHoy, useDirectorMetas } from '@/lib/hooks/piloto/use-piloto-director'
 import { PilotoBandeja } from '@/components/inmobiliaria/piloto/PilotoBandeja'
 import { PilotoAutonomia } from '@/components/inmobiliaria/piloto/PilotoAutonomia'
 import { PilotoOperaSola } from '@/components/inmobiliaria/piloto/PilotoOperaSola'
 import { PilotoFeed } from '@/components/inmobiliaria/piloto/PilotoFeed'
+import { PilotoDirectorVista } from '@/components/inmobiliaria/piloto/PilotoDirector'
+import type { PorQueDeRespaldo } from '@/components/inmobiliaria/piloto/PilotoDirectorHoy'
 import {
   PilotoCajon,
   type PilotoApertura,
 } from '@/components/inmobiliaria/piloto/PilotoCajon'
 import { PilotoQueEs } from '@/components/inmobiliaria/piloto/PilotoQueEs'
 import { PilotoNovedad } from '@/components/inmobiliaria/piloto/PilotoNovedad'
+import { PilotoActivacion } from '@/components/inmobiliaria/piloto/PilotoActivacion'
+import { DireccionElegida } from '@/components/inmobiliaria/piloto/mando/DireccionElegida'
+import { atrasadas as contarAtrasadas } from '@/components/inmobiliaria/piloto/mando/calculos'
+import { TEXTOS } from '@/components/inmobiliaria/piloto/mando/textos'
+import type { AccionesDelMando } from '@/components/inmobiliaria/piloto/mando/tipos'
+import { useDatosReales } from '@/components/inmobiliaria/piloto/mando/use-datos-del-mando'
+import { useControlDeAgentes } from '@/components/inmobiliaria/piloto/mando/control-de-agentes'
 import type { PulsoAlerta } from '@/lib/api/piloto'
 
-/** Una decisión «atrasada» lleva más de una semana esperando. */
-const SEMANA_MS = 7 * 86_400_000
+/** Qué cajón de resumen está abierto (la Bandeja, la actividad o el director). */
+type Resumen = 'bandeja' | 'actividad' | 'director' | null
 
 function PilotoContent() {
   const { t } = useI18n()
-  const inbox = usePilotoInbox()
-  const actividad = usePilotoActivity(50)
-  const briefing = usePilotoBriefing()
+  // Lo mismo que lee la tarjeta del director (`PilotoDirector`): un admin ve sus acciones.
+  const isAdmin = usePermissionsContextSafe()?.isAdmin === true
   const autonomia = usePilotoAutonomia()
-  const pulso = usePilotoPulso()
+  // Las lecturas del director se comparten con su tarjeta (en el cajón): un
+  // «Volver a planear» o una meta aceptada se ven en el núcleo sin pedir dos veces.
+  const directorHoy = useDirectorHoy()
+  const directorMetas = useDirectorMetas()
+  const datos = useDatosReales({ hoy: directorHoy, metas: directorMetas })
 
   /**
-   * El cajón: una sola pieza para las tres listas. Vive acá arriba —y no
-   * dentro de cada lista— porque un ítem de una alerta del tablero abre el
-   * detalle de un caso de la bandeja: tres cajones separados no podrían
-   * pasarse la posta.
-   */
-  /**
-   * El cajón guarda una PILA, no una sola apertura. Antes, abrir un caso desde
-   * una alerta reemplazaba la vista y no había forma de volver: quedabas en el
-   * detalle sin saber de dónde veniste (Nico, 2026-08-31). Con la pila, cada
+   * El cajón guarda una PILA, no una sola apertura (Nico, 2026-08-31): cada
    * salto recuerda su origen y el cajón puede ofrecer «volver».
    */
   const [pila, setPila] = useState<PilotoApertura[]>([])
@@ -114,59 +139,81 @@ function PilotoContent() {
     [],
   )
   /**
-   * Una alerta con UN SOLO caso abre ese caso directo.
-   *
-   * La vista intermedia mostraba el titular, la explicación y una lista de un
-   * elemento — todo lo cual el usuario acababa de leer en la fila del pulso —
-   * y dejaba media pantalla en blanco. Un clic y una pantalla de por medio
-   * para llegar a la información de verdad (Nico, 2026-08-31). Con varios
-   * casos la lista sí sirve: hay que elegir cuál.
+   * Una alerta con UN SOLO caso abre ese caso directo (Nico, 2026-08-31): la
+   * vista intermedia repetía lo que se acababa de leer. Con varios, la lista.
    */
   const abrirAlerta = useCallback((alerta: PulsoAlerta) => {
     const unico = alerta.items?.length === 1 ? alerta.items[0] : undefined
     setPila((p) => [...p, unico ? { tipo: 'item', id: unico.id } : { tipo: 'alerta', alerta }])
   }, [])
+  /** Una orden del director abre la fila de la Bandeja que la espera, con su por qué. */
+  const abrirDesdeElDirector = useCallback(
+    (accionId: string, porQue: PorQueDeRespaldo) =>
+      setPila((p) => [...p, { tipo: 'item', id: `acc:${accionId}`, porQue }]),
+    [],
+  )
   const volver = useCallback(() => setPila((p) => p.slice(0, -1)), [])
   const cerrarCajon = useCallback(() => setPila([]), [])
 
-  const inboxSinDato = Boolean(inbox.error) || inbox.notAvailable
+  /**
+   * Activar, apagar o cambiar el modo de un agente desde su tarjeta (Nico,
+   * 05-10 19:30): la MISMA lectura de autonomía y las MISMAS llamadas que la
+   * hoja de «Autonomía» del encabezado, con su confirmación de Automático.
+   */
+  const { control: agentes, dialogo: confirmarAutomatico } = useControlDeAgentes({
+    autonomia,
+    refrescarFlota: async () => {
+      await datos.flota.reintentar?.()
+    },
+    pilotoActivo: datos.flota.data?.activo !== false,
+    isAdmin,
+  })
+
+  /** Los cajones de lo que la pantalla resume: la Bandeja, la actividad, el director. */
+  const [resumen, setResumen] = useState<Resumen>(null)
+  const acciones = useMemo<AccionesDelMando>(
+    () => ({
+      abrirItem,
+      abrirAlerta,
+      abrirBandeja: () => setResumen('bandeja'),
+      abrirActividad: () => setResumen('actividad'),
+      abrirDirector: () => setResumen('director'),
+      // La hoja de «Autonomía» es la del encabezado (`PilotoAutonomia`, sin tocarla): se abre su botón.
+      abrirAutonomia: () => {
+        document.querySelector<HTMLButtonElement>('#piloto-autonomia button')?.click()
+      },
+      agentes,
+    }),
+    [abrirItem, abrirAlerta, agentes],
+  )
 
   /**
    * La presentación, vuelta a abrir a mano desde «¿Cómo funciona?» (Nico,
-   * 30-09: quien llega no entiende qué es esta pantalla). El modal de la
-   * explicación se cierra solo antes de abrirla.
+   * 30-09: quien llega no entiende qué es esta pantalla).
    */
   const [novedadForzada, setNovedadForzada] = useState(false)
   const verPresentacion = useCallback(() => setNovedadForzada(true), [])
 
+  const bandeja = datos.bandeja.data
   /**
-   * La lectura del Gerente que va DENTRO del pulso. El briefing dejó de ser
-   * una banda propia: dos resúmenes del mismo momento, uno encima del otro,
-   * se leen como repetición.
+   * El por qué del caso abierto, por si el detalle del micro no lo trae: el
+   * de la orden del director con que se abrió, o el de su fila en la Bandeja.
    */
-  const lecturaDelGerente = useMemo(() => {
-    const b = briefing.data
-    if (!b || briefing.error) return undefined
-    const frases = [
-      ...(Array.isArray(b.resumen) ? b.resumen : []),
-      ...(Array.isArray(b.narrativa) ? b.narrativa : []),
-    ].filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
-    return frases.length > 0 ? frases : undefined
-  }, [briefing.data, briefing.error])
+  const porQueDeRespaldo = useMemo(() => {
+    if (apertura?.tipo !== 'item') return null
+    if (apertura.porQue) return apertura.porQue
+    const fila = bandeja?.items.find((i) => i.id === apertura.id)
+    return fila ? { director: fila.director ?? null, motivo: fila.motivo ?? null } : null
+  }, [apertura, bandeja])
 
   /** Cuántas decisiones llevan más de una semana paradas — la urgencia real. */
-  const atrasadas = useMemo(() => {
-    if (inboxSinDato) return undefined
-    const corte = Date.now() - SEMANA_MS
-    return inbox.items.filter((i) => new Date(i.desde).getTime() < corte).length
-  }, [inbox.items, inboxSinDato])
+  const atrasadas = useMemo(() => (bandeja ? contarAtrasadas(bandeja.items, Date.now()) : undefined), [bandeja])
 
-  // Tras una acción de la bandeja se refresca TAMBIÉN el feed: la acción
-  // ejecutada es, precisamente, actividad nueva.
+  // Tras una acción se refresca TAMBIÉN la actividad y el pulso: la acción
+  // ejecutada es actividad nueva y puede apagar una alerta.
   const refetchTrasAccion = useCallback(async () => {
-    // El pulso también: una acción resuelta puede apagar una alerta.
-    await Promise.allSettled([inbox.refetch(), actividad.refetch(), pulso.refetch()])
-  }, [inbox.refetch, actividad.refetch, pulso.refetch]) // eslint-disable-line react-hooks/exhaustive-deps
+    await Promise.allSettled([datos.bandeja.reintentar?.(), datos.actividad.reintentar?.(), datos.pulso.reintentar?.()])
+  }, [datos.bandeja, datos.actividad, datos.pulso])
 
   return (
     <div className="space-y-6 p-6 lg:p-8" data-testid="piloto-page">
@@ -201,52 +248,58 @@ function PilotoContent() {
               {t('inmobiliaria.piloto.procesos.titulo')}
             </Link>
           </Button>
-          <PilotoAutonomia autonomia={autonomia} />
+          {/* `#piloto-autonomia`: el orbe del núcleo abre esta misma hoja con su botón «Autonomía». */}
+          <div id="piloto-autonomia" className="contents">
+            <PilotoAutonomia autonomia={autonomia} />
+          </div>
         </div>
       </header>
 
-      {/* El tablero vivo: qué pasa ahora y qué puede explotar */}
-      <PilotoPulso
-        data={pulso.data}
-        isLoading={pulso.isLoading}
-        error={pulso.error}
-        notAvailable={pulso.notAvailable}
-        lectura={lecturaDelGerente}
-        {...(typeof briefing.data?.numeros?.recuperadoMesCop === 'number'
-          ? { recuperadoMesCop: briefing.data.numeros.recuperadoMesCop }
-          : {})}
-        onAbrirItem={abrirItem}
-        onAbrirAlerta={abrirAlerta}
-        onRefetch={pulso.refetch}
-      />
+      {/* El centro de mando (Nico, 05-10): el núcleo, la línea del día y la
+          Cabina. PI-01 (04-10-2026): la activación del Piloto de ESTA
+          inmobiliaria (la prueba de 30 días, prenderlo y lo que le falta a la
+          operación) va al final; el núcleo apagado la invita con un enlace. */}
+      <DireccionElegida datos={datos} acciones={acciones} activacion={<PilotoActivacion />} />
 
-      {/* Decidir (ancho) · lo que pasó (angosto) */}
-      <div className="grid items-start gap-5 lg:grid-cols-5">
-        {/* `min-w-0`: sin esto el contenido largo empuja el track del grid
-            y la página scrollea de lado en móvil (medido: 517 > 500 px). */}
-        <div className="min-w-0 lg:col-span-3">
+      {/* La Bandeja entera: filtros, paginación y acciones, la de siempre. */}
+      <Cajon abierto={resumen === 'bandeja'} onOpenChange={(o) => !o && setResumen(null)} tamano="lg" data-testid="piloto-cajon-bandeja">
+        <CajonCabecera titulo={TEXTOS.cajones.bandeja.titulo} descripcion={TEXTOS.cajones.bandeja.bajada} />
+        <CajonCuerpo>
           <PilotoBandeja
-            items={inbox.items}
-            total={inbox.total}
+            items={bandeja?.items ?? []}
+            total={bandeja?.total ?? 0}
             {...(typeof atrasadas === 'number' ? { atrasadas } : {})}
-            isLoading={inbox.isLoading}
-            error={inbox.error}
-            notAvailable={inbox.notAvailable}
+            isLoading={datos.bandeja.isLoading}
+            error={datos.bandeja.error}
+            notAvailable={datos.bandeja.notAvailable}
             onRefetch={refetchTrasAccion}
             onAbrir={abrirItem}
           />
-        </div>
-        <div className="min-w-0 lg:col-span-2">
+        </CajonCuerpo>
+      </Cajon>
+
+      {/* La actividad completa, por día. */}
+      <Cajon abierto={resumen === 'actividad'} onOpenChange={(o) => !o && setResumen(null)} tamano="md" data-testid="piloto-cajon-actividad">
+        <CajonCabecera titulo={TEXTOS.cajones.actividad.titulo} descripcion={TEXTOS.cajones.actividad.bajada} />
+        <CajonCuerpo>
           <PilotoFeed
-            items={actividad.items}
-            isLoading={actividad.isLoading}
-            error={actividad.error}
-            notAvailable={actividad.notAvailable}
-            onRefetch={actividad.refetch}
+            items={datos.actividad.data ?? []}
+            isLoading={datos.actividad.isLoading}
+            error={datos.actividad.error}
+            notAvailable={datos.actividad.notAvailable}
+            {...(datos.actividad.reintentar ? { onRefetch: async () => { await datos.actividad.reintentar?.() } } : {})}
             onAbrir={abrirItem}
           />
-        </div>
-      </div>
+        </CajonCuerpo>
+      </Cajon>
+
+      {/* La tarjeta del director de siempre: el plan, las metas y la semana, con sus acciones. */}
+      <Cajon abierto={resumen === 'director'} onOpenChange={(o) => !o && setResumen(null)} tamano="lg" data-testid="piloto-cajon-director">
+        <CajonCabecera titulo={TEXTOS.cajones.director.titulo} descripcion={TEXTOS.cajones.director.bajada} />
+        <CajonCuerpo>
+          <PilotoDirectorVista hoy={directorHoy} metas={directorMetas} isAdmin={isAdmin} onAbrirAccion={abrirDesdeElDirector} />
+        </CajonCuerpo>
+      </Cajon>
 
       {/* El cajón: todo el detalle sin salir de la sección */}
       <PilotoCajon
@@ -255,10 +308,14 @@ function PilotoContent() {
         {...(pila.length > 1 ? { onVolver: volver } : {})}
         onAbrirItem={abrirItem}
         onAccionEjecutada={refetchTrasAccion}
+        porQueDeRespaldo={porQueDeRespaldo}
       />
 
       {/* La presentación: sola la primera vez; a mano desde el cajón */}
       <PilotoNovedad forzada={novedadForzada} onCerrarForzada={() => setNovedadForzada(false)} />
+
+      {/* Pasar un agente a Automático desde su tarjeta: la misma confirmación que en Autonomía. */}
+      {confirmarAutomatico}
     </div>
   )
 }

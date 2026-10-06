@@ -61,7 +61,7 @@ describe('useAskWhy', () => {
   it('Test 1 — mutate POSTs correct JSON body to ask-why endpoint', async () => {
     const successBody: AskWhyResult = {
       narrative_es: 'Si el canon fuera mayor…',
-      cost_usd: 0.00087,
+      cost_cop: 3.65,
       hypothetical_carriers: [],
     }
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
@@ -141,7 +141,8 @@ describe('useAskWhy', () => {
     expect(result.current!.error?.code).toBe('timeout')
   })
 
-  it('Test 5 — on network failure (non-abort throw), error code=network', async () => {
+  it('Test 5 — on network failure (non-abort throw, sin internet), error code=network', async () => {
+    vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('failed to fetch'))
     const result = renderHook('agency-test')
     await act(async () => {
@@ -152,7 +153,9 @@ describe('useAskWhy', () => {
     expect(result.current!.error?.code).toBe('network')
   })
 
-  it('Test 6 — on 400 error code=400 with message from body.error', async () => {
+  // 02-10-2026: el `error` del cuerpo viejo («invalid_variable») va en inglés y
+  // NO es para la persona: el mensaje es español (ver use-ask-why.sobre.test.tsx).
+  it('Test 6 — on 400 error code=400 with a Spanish message (never body.error)', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({ error: 'invalid_variable' }), { status: 400 }),
     )
@@ -165,7 +168,9 @@ describe('useAskWhy', () => {
     const err = result.current!.error
     expect(err?.code).toBe(400)
     if (err?.code === 400) {
-      expect(err.message).toBe('invalid_variable')
+      expect(err.message).not.toContain('invalid_variable')
+      expect(err.message).toBe(err.mensaje)
+      expect(err.mensaje).toMatch(/Revisa el valor/)
     }
   })
 
@@ -201,7 +206,7 @@ describe('useAskWhy', () => {
     expect(result.current!.isLoading).toBe(true)
 
     await act(async () => {
-      resolveFetch(new Response(JSON.stringify({ narrative_es: 'ok', cost_usd: 0.001, hypothetical_carriers: [] }), { status: 200 }))
+      resolveFetch(new Response(JSON.stringify({ narrative_es: 'ok', cost_cop: 4.2, hypothetical_carriers: [] }), { status: 200 }))
       await mutatePromise!.catch(() => {})
     })
 

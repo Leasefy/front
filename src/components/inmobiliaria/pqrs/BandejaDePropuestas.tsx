@@ -25,13 +25,23 @@
  * nada a nadie: ni al agente que la propuso, ni a quien revise después.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Sparkle, Check, X, ChatCircleText, Phone } from '@phosphor-icons/react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Sparkle, Check, X, XCircle, ChatCircleText, Phone } from '@phosphor-icons/react';
+import { Collapse, Stagger, StaggerItem } from '@leasefy/cadence';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 
 import { Button, Badge, Input } from '@/components/ui';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { usePermissions } from '@/lib/hooks/usePermissions';
-import { cn } from '@/lib/utils';
 import {
   propuestasDePqrsApi,
   type PropuestaDePqrs,
@@ -61,6 +71,8 @@ export function BandejaDePropuestas({ onRadicada }: { onRadicada?: () => void })
   const [cargando, setCargando] = useState(true);
   const [ocupada, setOcupada] = useState<string | null>(null);
   const [descartando, setDescartando] = useState<PropuestaDePqrs | null>(null);
+  // ¿Ya terminó la primera lectura? (ver `hayPendientes`)
+  const yaCargo = useRef(false);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -71,6 +83,7 @@ export function BandejaDePropuestas({ onRadicada }: { onRadicada?: () => void })
       // es un agregado, no la lista principal. Queda vacía y en silencio.
       setPropuestas([]);
     } finally {
+      yaCargo.current = true;
       setCargando(false);
     }
   }, []);
@@ -85,8 +98,17 @@ export function BandejaDePropuestas({ onRadicada }: { onRadicada?: () => void })
   );
 
   // Sin nada pendiente la bandeja NO se dibuja: un bloque vacío permanente
-  // arriba de la pantalla enseña a la gente a ignorar esa zona.
-  if (cargando || pendientes.length === 0) return null;
+  // arriba de la pantalla enseña a la gente a ignorar esa zona. Aparece y se
+  // va con su altura (`Collapse`); mientras se pliega —se radicó o descartó la
+  // última—, sigue mostrando lo que tenía.
+  //
+  // Sólo la PRIMERA carga la esconde: al releer después de radicar o descartar
+  // se queda la lista que había (la que se fue sale animada cuando llega la
+  // nueva). Escondida durante cada relectura, la bandeja se plegaba y se volvía
+  // a abrir con cada clic.
+  const primeraCarga = cargando && !yaCargo.current;
+  const hayPendientes = !primeraCarga && pendientes.length > 0;
+  const lista = useUltimoPresente(pendientes.length > 0 ? pendientes : null) ?? [];
 
   const confirmar = async (p: PropuestaDePqrs) => {
     setOcupada(p.id);
@@ -98,13 +120,16 @@ export function BandejaDePropuestas({ onRadicada }: { onRadicada?: () => void })
       await cargar();
       onRadicada?.();
     } catch (e) {
-      toast.error(mensajeDeError(e, 'No se pudo radicar'));
+      toast.error('No se pudo radicar la propuesta', {
+        description: mensajeParaLaPersona(e, { accion: 'radicar la propuesta' }),
+      });
     } finally {
       setOcupada(null);
     }
   };
 
   return (
+    <Collapse open={hayPendientes}>
     <section
       className="space-y-3 rounded-lg border border-primary/30 bg-primary-soft/40 p-4"
       data-testid="bandeja-de-propuestas"
@@ -113,9 +138,9 @@ export function BandejaDePropuestas({ onRadicada }: { onRadicada?: () => void })
         <Sparkle className="mt-0.5 h-5 w-5 shrink-0 text-primary" weight="duotone" />
         <div>
           <h2 className="text-sm font-semibold text-fg">
-            {pendientes.length === 1
+            {lista.length === 1
               ? 'El agente detectó una posible PQRS'
-              : `El agente detectó ${pendientes.length} posibles PQRS`}
+              : `El agente detectó ${lista.length} posibles PQRS`}
           </h2>
           <p className="text-xs text-fg-muted">
             No se radica nada hasta que alguien lo confirme. Al confirmar, la PQRS
@@ -124,9 +149,11 @@ export function BandejaDePropuestas({ onRadicada }: { onRadicada?: () => void })
         </div>
       </div>
 
-      <ul className="space-y-2">
-        {pendientes.map((p) => (
-          <li
+      {/* Radicar o descartar una: sale, y las de abajo suben a su lugar. */}
+      <Stagger as="ul" className="space-y-2">
+        {lista.map((p) => (
+          <StaggerItem
+            as="li"
             key={p.id}
             data-testid="propuesta"
             className="rounded-md border border-border bg-surface p-3"
@@ -192,9 +219,9 @@ export function BandejaDePropuestas({ onRadicada }: { onRadicada?: () => void })
                 )}
               </div>
             </div>
-          </li>
+          </StaggerItem>
         ))}
-      </ul>
+      </Stagger>
 
       {descartando && (
         <DialogoDeDescarte
@@ -207,6 +234,7 @@ export function BandejaDePropuestas({ onRadicada }: { onRadicada?: () => void })
         />
       )}
     </section>
+    </Collapse>
   );
 }
 
@@ -235,60 +263,70 @@ function DialogoDeDescarte({
       toast.success('Descartada. El motivo queda con la propuesta.');
       await onDescartada();
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo descartar'));
+      toast.error('No se pudo descartar la propuesta', {
+        description: mensajeParaLaPersona(err, { accion: 'descartar la propuesta' }),
+      });
     } finally {
       setGuardando(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={guardando ? undefined : onCerrar}
-      />
-      <form
-        onSubmit={enviar}
-        className={cn('relative w-full max-w-md rounded-lg bg-background p-6')}
-      >
-        <h3 className="text-base font-semibold text-fg">¿Por qué no era una PQRS?</h3>
-        <p className="mt-1 text-xs text-fg-muted">
-          El motivo queda guardado. Es lo que deja ver dónde se equivoca el agente.
-        </p>
-        <Input
-          autoFocus
-          value={motivo}
-          onChange={(e) => setMotivo(e.target.value)}
-          maxLength={500}
-          placeholder="Era una consulta de horarios, no un reclamo"
-          className="mt-3"
-          aria-label="Motivo del descarte"
-        />
-        <div className="mt-4 flex gap-2">
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        if (!abierto && !guardando) onCerrar();
+      }}
+    >
+      <DialogContent size="sm" variant="destructive" icon={<XCircle weight="bold" />}>
+        <DialogHeader>
+          <DialogTitle>¿Por qué no era una PQRS?</DialogTitle>
+          <DialogDescription>
+            «{propuesta.asunto}» no se radica y sale de esta bandeja. La propuesta
+            queda guardada con el motivo: es lo que deja ver dónde se equivoca el
+            agente.
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* El pie vive FUERA del <form>: el botón de enviar lo apunta con `form=`. */}
+        <form id={ID_FORM_DESCARTE} onSubmit={enviar}>
+          <Input
+            autoFocus
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            maxLength={500}
+            placeholder="Era una consulta de horarios, no un reclamo"
+            aria-label="Motivo del descarte"
+          />
+        </form>
+
+        <DialogFooter>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             hideArrow
             onClick={onCerrar}
             disabled={guardando}
-            className="flex-1"
           >
             Cancelar
           </Button>
           <Button
             type="submit"
+            form={ID_FORM_DESCARTE}
+            variant="destructive"
             hideArrow
             isLoading={guardando}
             disabled={!motivo.trim() || guardando}
-            className="flex-1"
           >
             Descartar
           </Button>
-        </div>
-      </form>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
+
+const ID_FORM_DESCARTE = 'form-descartar-propuesta-de-pqrs';
 
 function fechaCorta(iso: string): string {
   return new Date(iso).toLocaleDateString('es-CO', {
@@ -297,10 +335,3 @@ function fechaCorta(iso: string): string {
   });
 }
 
-function mensajeDeError(e: unknown, porDefecto: string): string {
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: unknown }).message;
-    if (typeof m === 'string' && m.trim()) return m;
-  }
-  return porDefecto;
-}

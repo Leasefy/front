@@ -74,6 +74,10 @@ export async function aplicarLoteDeTerceros(
     acumulado.fallidas += tanda.fallidas;
     acumulado.invitados += tanda.invitados;
     acumulado.sinInvitar = (acumulado.sinInvitar ?? 0) + (tanda.sinInvitar ?? 0);
+    // M-05 (QA-INQ-95 r2): sin estas dos sumas el informe nunca decía «Las
+    // completas desde Inquilinos» ni cuántos venían sin correo.
+    acumulado.incompletas = (acumulado.incompletas ?? 0) + (tanda.incompletas ?? 0);
+    acumulado.sinCorreo = (acumulado.sinCorreo ?? 0) + (tanda.sinCorreo ?? 0);
     acumulado.resultados.push(...(tanda.resultados as ResultadoDeFila[]));
     acumulado.restantes = tanda.restantes ?? 0;
 

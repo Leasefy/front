@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { SignIn } from '@phosphor-icons/react'
-import { FormField, FormLabel, FormControl, FormError, FormHint } from '@leasefy/cadence'
+import { FormField, FormLabel, FormControl, FormHint } from '@leasefy/cadence'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { Input } from '@/components/ui/input'
 import { PhoneField } from '@/components/ui/phone-field'
 import {
@@ -13,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
+import { useTenantOnboarding, type ErroresDelServidor } from '@/lib/context/TenantOnboardingContext'
 import { useAuth } from '@/lib/auth/use-auth'
 import { recortarAlPais } from '@/lib/phone/countries'
 import {
@@ -27,8 +28,11 @@ import { useIntentosDeAvanzar } from './intento-de-avanzar'
 
 type Campo = keyof ErroresDelInquilino
 
+/** Sin proveedor que los traiga (las pruebas de cada paso), no hay errores del servidor. */
+const SIN_ERRORES_DEL_SERVIDOR: ErroresDelServidor = {}
+
 export function StepTenantWelcome() {
-  const { draft, updateDraft } = useTenantOnboarding()
+  const { draft, updateDraft, erroresDelServidor = SIN_ERRORES_DEL_SERVIDOR } = useTenantOnboarding()
   const { user } = useAuth()
   const intentos = useIntentosDeAvanzar()
   const nombreRef = useRef<HTMLInputElement>(null)
@@ -61,12 +65,21 @@ export function StepTenantWelcome() {
   const errores = revisarDatosDelInquilino(draft, { documentoBloqueado: rutLocked })
   const [escritos, setEscritos] = useState<Partial<Record<Campo, boolean>>>({})
   const [revisados, setRevisados] = useState<Partial<Record<Campo, boolean>>>({})
+  // Lo que el back rechazó al guardar (02-10-2026) gana: está en el campo
+  // hasta que la persona lo edita (el contexto lo borra en `updateDraft`).
   const errorDe = (campo: Campo) =>
-    intentos > 0 || revisados[campo] ? errores[campo] : undefined
+    erroresDelServidor[campo] ?? (intentos > 0 || revisados[campo] ? errores[campo] : undefined)
   const escribio = (campo: Campo) => setEscritos((p) => (p[campo] ? p : { ...p, [campo]: true }))
   const revisar = (campo: Campo) => {
     if (escritos[campo]) setRevisados((p) => (p[campo] ? p : { ...p, [campo]: true }))
   }
+
+  // Un rechazo del servidor en este paso: foco en el primero.
+  useEffect(() => {
+    if (erroresDelServidor.nombre) nombreRef.current?.focus()
+    else if (erroresDelServidor.documento) documentoRef.current?.focus()
+    else if (erroresDelServidor.telefono) telefonoRef.current?.querySelector('input')?.focus()
+  }, [erroresDelServidor])
 
   // Cada intento fallido lleva el foco al primer campo que falta.
   useEffect(() => {
@@ -97,7 +110,7 @@ export function StepTenantWelcome() {
             placeholder="Tu nombre completo"
           />
         </FormControl>
-        <FormError>{errorDe('nombre')}</FormError>
+        <ErrorDelCampo id="displayName-error" mensaje={errorDe('nombre')} className="mt-0" />
       </FormField>
 
       {/* Documento: tipo + número, como en el resto de la plataforma. */}
@@ -143,7 +156,7 @@ export function StepTenantWelcome() {
         {rutLocked ? (
           <FormHint>Para modificar tu número de documento, contacta al soporte de Leasefy.</FormHint>
         ) : null}
-        <FormError>{errorDe('documento')}</FormError>
+        <ErrorDelCampo id="rut-error" mensaje={errorDe('documento')} className="mt-0" />
       </FormField>
 
       {/* Celular: indicativo, largo y validación del país (`PhoneField`). */}
@@ -161,7 +174,7 @@ export function StepTenantWelcome() {
           />
         </div>
         <FormHint>Para que los propietarios puedan contactarte sobre tus aplicaciones.</FormHint>
-        <FormError>{errorDe('telefono')}</FormError>
+        <ErrorDelCampo id="phone-error" mensaje={errorDe('telefono')} className="mt-0" />
       </FormField>
 
       {/* Already have account */}

@@ -40,6 +40,8 @@ vi.mock('@/components/estado/FalloDeCarga', () => ({
 }));
 
 import { CobroJuridico } from './CobroJuridico';
+import { ApiError } from '@/lib/api/client';
+import { MENSAJES_DEL_JURIDICO } from '@/lib/cartera/limites-del-juridico';
 
 const ABOGADO = {
   id: 'ab-1',
@@ -300,5 +302,112 @@ describe('el cobro jurídico', () => {
     );
     await montar();
     expect(document.body.textContent).toContain('20260917170000');
+  });
+});
+
+/*
+ * Tanda 2 del sistema de errores (02-10-2026). El jurídico tenía su propia
+ * copia de `mensaje(e)` (el `error.message` crudo) y activar o desactivar un
+ * abogado era un `void …then(cargar)` sin `catch`: si fallaba, nada. Ahora el
+ * tope de los honorarios se ataja con la frase del back, un 400 va a su
+ * campo, un 5xx dice que fue nuestro con la referencia, y el abogado avisa.
+ */
+describe('el cobro jurídico — los errores en palabras', () => {
+  const cincoXX = () =>
+    new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      message: 'Error interno del servidor',
+      referencia: 'ab12cd34',
+    });
+
+  async function escribirYSalir(selector: string, valor: string) {
+    const input = $(selector) as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+    await act(async () => {
+      setter.call(input, valor);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      input.focus();
+      input.blur();
+    });
+    await esperar();
+  }
+
+  it('🔴 un tope con ceros de más se ataja debajo del campo, con la frase del back, y no viaja', async () => {
+    await montar();
+    await escribirYSalir('[data-testid="honorarios-tope"]', '30000000000');
+    expect(api.guardarConfiguracion).not.toHaveBeenCalled();
+    expect($('#honorarios-tope-error').textContent).toBe(MENSAJES_DEL_JURIDICO.topeMaximo);
+    expect($('#honorarios-tope').getAttribute('aria-describedby')).toBe('honorarios-tope-error');
+  });
+
+  it('un porcentaje de más de 100 se ataja igual', async () => {
+    await montar();
+    await escribirYSalir('[data-testid="honorarios-pct"]', '150');
+    expect(api.guardarConfiguracion).not.toHaveBeenCalled();
+    expect($('#honorarios-pct-error').textContent).toBe(MENSAJES_DEL_JURIDICO.porcentajeMaximo);
+  });
+
+  it('🔴 un 400 con campos va a SU campo y le da el foco, no al aviso', async () => {
+    api.guardarConfiguracion.mockRejectedValue(
+      new ApiError(400, [MENSAJES_DEL_JURIDICO.topeMaximo], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [MENSAJES_DEL_JURIDICO.topeMaximo],
+        campos: [{ campo: 'honorariosTopeCop', regla: 'maximo', mensaje: MENSAJES_DEL_JURIDICO.topeMaximo }],
+      }),
+    );
+    await montar();
+    await escribirYSalir('[data-testid="honorarios-tope"]', '5.000.000');
+    expect(api.guardarConfiguracion).toHaveBeenCalledWith({ honorariosTopeCop: 5_000_000 });
+    expect($('#honorarios-tope-error').textContent).toBe(MENSAJES_DEL_JURIDICO.topeMaximo);
+    expect(document.activeElement?.id).toBe('honorarios-tope');
+    expect(toastMock.error).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx al guardar dice «de nuestro lado» con la referencia', async () => {
+    api.guardarConfiguracion.mockRejectedValue(cincoXX());
+    await montar();
+    await escribirYSalir('[data-testid="honorarios-tope"]', '5000000');
+    const descripcion = String(toastMock.error.mock.calls[0]![1]?.description);
+    expect(descripcion).toContain('No pudimos guardar lo pactado: algo falló de nuestro lado');
+    expect(descripcion).toContain('ab12cd34');
+  });
+
+  it('sin respuesta (la red): ahí sí se habla de la conexión', async () => {
+    api.pagarHonorarios.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    api.honorarios.mockResolvedValue([
+      {
+        id: 'h-1',
+        casoId: 'k-1',
+        abogado: { id: 'ab-1', nombre: 'Martínez & Asociados' },
+        reciboId: null,
+        recaudoCop: null,
+        honorarioCop: 400_000,
+        origen: 'AL_PASAR',
+        baseCop: 4_000_000,
+        conceptoDeUnaVezId: 'cu-1',
+        estado: 'POR_PAGAR_AL_ABOGADO',
+        pagadoAt: null,
+        createdAt: '2026-09-20T00:00:00.000Z',
+      },
+    ]);
+    await montar();
+    await clic($('[data-testid="pagar-h-1"]'));
+    expect(String(toastMock.error.mock.calls[0]![1]?.description)).toMatch(/conexión/);
+  });
+
+  it('🔴 desactivar un abogado que falla AVISA (antes no decía nada)', async () => {
+    api.actualizarAbogado.mockRejectedValue(cincoXX());
+    await montar();
+    const boton = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-testid="abogados"] button')).find(
+      (b) => b.textContent?.trim() === 'Desactivar',
+    )!;
+    await clic(boton);
+    expect(api.actualizarAbogado).toHaveBeenCalledWith('ab-1', { activo: false });
+    expect(toastMock.error.mock.calls[0]![0]).toBe('No se pudo desactivar el abogado');
+    expect(String(toastMock.error.mock.calls[0]![1]?.description)).toContain('ab12cd34');
   });
 });

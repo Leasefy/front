@@ -13,6 +13,7 @@
 import Link from 'next/link';
 
 import { Input } from '@/components/ui/input';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { Label } from '@/components/ui/label';
 import { useI18n } from '@/lib/i18n';
 import type { CuentaRegistrada, TipoDeCuentaDeOrigen } from '@/lib/api/lotes-de-dispersion.service';
@@ -49,6 +50,8 @@ export function CamposDeLaCuentaDeOrigen({
   const { t } = useI18n();
   const numeroValido = cuentaEscritaValida(numero);
   const idDelTipo = `${idDelNumero}-tipo`;
+  const idDelError = `${idDelNumero}-error`;
+  const numeroMalEscrito = numero !== '' && !numeroValido;
 
   return (
     <div className="space-y-3">
@@ -106,13 +109,16 @@ export function CamposDeLaCuentaDeOrigen({
             value={numero}
             onChange={(e) => onNumero(e.target.value)}
             className="h-10 w-56 font-mono"
-            aria-invalid={numero !== '' && !numeroValido}
+            aria-invalid={numeroMalEscrito}
+            aria-describedby={numeroMalEscrito ? idDelError : undefined}
           />
         </div>
       </div>
-      {numero !== '' && !numeroValido && (
-        <p className="text-caption text-danger">{t('inmobiliaria.dispersiones.cuentaDeOrigen.soloDigitos')}</p>
-      )}
+      {/* El error del número, debajo del campo y con su entrada suave (02-10-2026). */}
+      <ErrorDelCampo
+        id={idDelError}
+        mensaje={numeroMalEscrito ? t('inmobiliaria.dispersiones.cuentaDeOrigen.soloDigitos') : null}
+      />
       {cuentas.length === 0 && (
         <p className="text-caption text-fg-muted">
           {t('inmobiliaria.dispersiones.cuentaDeOrigen.laTienesRegistrada')}{' '}

@@ -4,12 +4,21 @@
  * /ai/estudio — Tier-B "Estudios de inquilinos" overview (visión §3 / §19).
  *
  * Reemplaza el <SalaAgente> genérico por una Sala a medida (espejo de cobranza):
- * resumen ejecutivo + KPIs + "Qué necesita tu atención" + pipeline por estado +
- * actividad reciente + "cómo funciona". Se alimenta del overview funcional ya
- * cableado (useEstudioOverview → AgentOverviewResponse). UX-only.
+ * resumen ejecutivo + KPIs + pipeline por estado + actividad reciente + "cómo
+ * funciona". Se alimenta del overview funcional ya cableado (useEstudioOverview
+ * → AgentOverviewResponse). UX-only.
+ *
+ * 🔴 Sin bandeja prometida (PROMESAS-Y-DIRECTOR, 05-10-2026): la tarjeta «Qué
+ * necesita tu atención → Abrir bandeja» y el botón «Ver estudios» llevaban a
+ * `/estudio/estudios`, que lee la cola del micro para `agente=estudio`, y esa
+ * cola vuelve SIEMPRE vacía (micro `agency-ai-hub-work-items.ts`, `case
+ * 'estudio'` → `emptyResponse`; el resumen, `emptyOverview`): el estudio guarda
+ * en tablas sin inmobiliaria por la que filtrar. Los dos se fueron. Con el
+ * resumen vacío la sala dice dónde se ve cada estudio (la ficha del candidato,
+ * en su postulación) en vez de «aparecerán aquí». Prueba:
+ * `no-promete-la-bandeja.test.tsx`.
  */
 
-import Link from 'next/link'
 import {
   ChartBar,
   CheckCircle,
@@ -22,23 +31,37 @@ import type { Icon } from '@phosphor-icons/react'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Button } from '@/components/ui/button'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
 import { useEstudioOverview } from '@/lib/hooks/estudio/use-estudio-overview'
 import { EstudioKpiStrip } from '@/components/inmobiliaria/estudio/EstudioKpiStrip'
 import { EstudioOverviewSkeleton } from '@/components/skeleton/panel/EstudioOverviewSkeleton'
 import { relativeTime } from '@/lib/cartera'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
+import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 const PAGES_NS = 'inmobiliaria.ai.workspace.pages.estudio'
 const NS = 'inmobiliaria.ai.estudio'
 
-/** "Cómo funciona" — los 4 pasos del estudio (se conserva del Sala anterior). */
-const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] = [
-  { icon: ClipboardText, titleKey: `${PAGES_NS}.comoFunciona.step1.title`, descKey: `${PAGES_NS}.comoFunciona.step1.desc` },
-  { icon: FileMagnifyingGlass, titleKey: `${PAGES_NS}.comoFunciona.step2.title`, descKey: `${PAGES_NS}.comoFunciona.step2.desc` },
-  { icon: ChartBar, titleKey: `${PAGES_NS}.comoFunciona.step3.title`, descKey: `${PAGES_NS}.comoFunciona.step3.desc` },
-  { icon: CheckCircle, titleKey: `${PAGES_NS}.comoFunciona.step4.title`, descKey: `${PAGES_NS}.comoFunciona.step4.desc` },
+/**
+ * «¿Cómo funciona?» — los 4 pasos del estudio, detrás del botón del encabezado
+ * (Nico, 05-10-2026: «eso no debe de estar ahí siempre […] llévalas al botón
+ * que al dar clic abre drawer y explica mejor cada cosa»). Antes eran cuatro
+ * tarjetas siempre a la vista.
+ *
+ * Verificado contra el código (05-10): el estudio es OPCIONAL y lo pide el
+ * candidato desde su portal (el panel ya no lo lanza); la afianzadora consulta
+ * centrales de riesgo y listas restrictivas con su autorización; el resultado
+ * se ve en la ficha del candidato y la decisión es siempre de una persona. Los
+ * textos de antes («cada postulación entra sola», «los dudosos llegan aquí»)
+ * prometían lo que el código no hace.
+ */
+const COMO_FUNCIONA_STEPS: { icon: Icon; clave: string; quien: QuienLoHace; tuParte?: true }[] = [
+  { icon: ClipboardText, clave: 'step1', quien: 'candidato' },
+  { icon: FileMagnifyingGlass, clave: 'step2', quien: 'agente' },
+  { icon: ChartBar, clave: 'step3', quien: 'tu', tuParte: true },
+  { icon: CheckCircle, clave: 'step4', quien: 'leasefy' },
 ]
 
 function EstudioOverview() {
@@ -51,9 +74,24 @@ function EstudioOverview() {
     return r === key ? fallback : r
   }
 
-  if (isLoading && !data) return <EstudioOverviewSkeleton />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // contenido); lo que ya estaba al montarse no se anima.
+  if (isLoading && !data) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <EstudioOverviewSkeleton />
+      </CrossFade>
+    )
+  }
+
+  // El micro responde para el estudio un resumen VÁLIDO pero vacío
+  // (`emptyOverview`): sin esto la sala quedaba en blanco debajo del encabezado.
+  const hayResumen = Boolean(
+    data && (data.kpis.length > 0 || data.pipeline.length > 0 || data.feed.length > 0),
+  )
 
   return (
+    <CrossFade swapKey="estudio">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header — resumen ejecutivo */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
@@ -64,66 +102,63 @@ function EstudioOverview() {
           <p className="text-sm text-fg-muted mt-0.5 max-w-2xl line-clamp-2">
             {tf(
               `${NS}.overview.subtitle`,
-              'Evalúa candidatos, valida su información y decide con mayor seguridad quién puede avanzar en el proceso de arriendo.',
+              'El estudio es opcional y lo pide el candidato desde su portal. Su resultado aparece en la ficha del candidato, dentro de su postulación, y ahí decides tú.',
             )}
           </p>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-3 sm:shrink-0">
           {data?.generatedAt && (
             <p className="text-xs text-fg-muted whitespace-nowrap">
               {tf(`${NS}.overview.lastUpdated`, 'Actualizado hace')} {relativeTime(data.generatedAt, locale)}
             </p>
           )}
-          <Button asChild hideArrow>
-            <Link href="/panel/inmobiliaria/postulaciones/estudio/estudios">
-              {tf(`${NS}.overview.verEstudios`, 'Ver estudios')}
-            </Link>
-          </Button>
+          {/* ¿Cómo funciona? — el cajón con los cuatro pasos (05-10-2026). */}
+          <ParaEntenderMas
+            etiqueta={t(`${PAGES_NS}.comoFunciona.title`)}
+            titulo={t(`${PAGES_NS}.comoFunciona.titulo`)}
+            descripcion={t(`${PAGES_NS}.comoFunciona.descripcion`)}
+            variante="secundario"
+          >
+            <PasosExplicados
+              data-testid="estudio-como-funciona"
+              pasos={COMO_FUNCIONA_STEPS.map((step) => ({
+                id: step.clave,
+                icono: step.icon,
+                titulo: t(`${PAGES_NS}.comoFunciona.${step.clave}.title`),
+                explicacion: t(`${PAGES_NS}.comoFunciona.${step.clave}.desc`),
+                quien: step.quien,
+                tuParte: step.tuParte ? t(`${PAGES_NS}.comoFunciona.${step.clave}.tuParte`) : undefined,
+              }))}
+            />
+          </ParaEntenderMas>
         </div>
       </header>
 
-      {/* Empty (sin datos del overview) — el header ya es dueño del CTA "Ver
-          estudios", así que aquí NO se duplica la acción (contrato §6). */}
-      {!data && !isLoading && !error && (
+      {/* Vacío: sin overview, o con el overview vacío que el micro devuelve
+          HOY para el estudio (sin KPIs, sin pipeline, sin actividad). No dice
+          «aparecerán aquí» (nunca van a aparecer): dice dónde se ve cada
+          estudio y lleva a Postulaciones. */}
+      {/* Sin datos ⇄ el resumen: el uno sale y el otro entra. */}
+      <CrossFade swapKey={hayResumen ? 'resumen' : !isLoading && !error ? 'vacio' : 'nada'} className="space-y-6">
+      {!hayResumen && !isLoading && !error && (
         <EmptyState
           icon={ShieldCheck}
-          title={tf(`${NS}.overview.empty.title`, 'Aún no hay estudios')}
+          title={tf(`${NS}.overview.empty.title`, 'Cada estudio se ve en su postulación')}
           description={tf(
             `${NS}.overview.empty.description`,
-            'Cuando llegue un estudio de inquilino, sus métricas y pendientes aparecerán aquí.',
+            'Esta sala no junta los estudios: el resultado de cada uno aparece en la ficha del candidato, dentro de su postulación.',
           )}
+          primaryCta={{
+            label: tf(`${NS}.overview.empty.cta`, 'Ir a Postulaciones'),
+            href: '/panel/inmobiliaria/postulaciones',
+          }}
         />
       )}
 
-      {data && (
+      {data && hayResumen && (
         <>
           {/* KPIs (visión §3 / §19) */}
           <EstudioKpiStrip kpis={data.kpis} isLoading={isLoading} />
-
-          {/* Qué necesita tu atención (visión §3) → bandeja /estudios */}
-          <section className="rounded-lg border border-border bg-card p-5 flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex items-start gap-3 min-w-0">
-              <span className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center shrink-0">
-                <ClipboardText className="w-5 h-5 text-fg" weight="duotone" aria-hidden="true" />
-              </span>
-              <div className="min-w-0">
-                <h2 className="text-base font-semibold text-fg">
-                  {tf(`${NS}.overview.atencion.title`, 'Qué necesita tu atención')}
-                </h2>
-                <p className="text-sm text-fg-muted">
-                  {tf(
-                    `${NS}.overview.atencion.desc`,
-                    'Revisa los estudios priorizados por severidad y abre cada caso para decidir.',
-                  )}
-                </p>
-              </div>
-            </div>
-            <Button asChild variant="secondary" hideArrow className="shrink-0">
-              <Link href="/panel/inmobiliaria/postulaciones/estudio/estudios">
-                {tf(`${NS}.overview.atencion.cta`, 'Abrir bandeja')}
-              </Link>
-            </Button>
-          </section>
 
           {/* Pipeline por estado */}
           {data.pipeline.length > 0 && (
@@ -131,9 +166,9 @@ function EstudioOverview() {
               <h2 className="text-base font-semibold text-fg mb-3">
                 {tf(`${NS}.overview.pipeline.title`, 'Pipeline por estado')}
               </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <Stagger className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {data.pipeline.map((seg) => (
-                  <div
+                  <StaggerItem
                     key={seg.estado}
                     className="rounded-lg border border-border bg-card p-4"
                     data-estado={seg.estado}
@@ -142,11 +177,11 @@ function EstudioOverview() {
                       {tf(`inmobiliaria.ai.workspace.estado.${seg.estado}`, seg.estado)}
                     </p>
                     <p className="mt-1 text-xl font-semibold text-fg tabular-nums">
-                      {seg.count}
+                      <AnimatedNumber value={seg.count} format={(n) => String(Math.round(n))} />
                     </p>
-                  </div>
+                  </StaggerItem>
                 ))}
-              </div>
+              </Stagger>
             </section>
           )}
 
@@ -156,12 +191,14 @@ function EstudioOverview() {
               <h2 className="text-base font-semibold text-fg mb-3">
                 {tf(`${NS}.overview.feed.title`, 'Actividad reciente')}
               </h2>
-              <ul
+              <Stagger
+                as="ul"
+                direction="down"
                 role="list"
                 className="rounded-lg border border-border bg-card divide-y divide-border"
               >
                 {data.feed.slice(0, 8).map((f) => (
-                  <li key={f.id} className="px-4 py-3 flex items-start gap-3">
+                  <StaggerItem as="li" key={f.id} className="px-4 py-3 flex items-start gap-3">
                     <span
                       aria-hidden="true"
                       className={cn(
@@ -180,56 +217,29 @@ function EstudioOverview() {
                     <span className="text-xs text-fg-muted whitespace-nowrap shrink-0">
                       {relativeTime(f.occurredAt, locale)}
                     </span>
-                  </li>
+                  </StaggerItem>
                 ))}
-              </ul>
+              </Stagger>
             </section>
           )}
         </>
       )}
-
-      {/* Cómo funciona — el viaje del estudio en 4 pasos (step-strip parejo) */}
-      <section className="space-y-3" data-testid="estudio-como-funciona">
-        <h2 className="text-base font-semibold text-fg">{t(`${PAGES_NS}.comoFunciona.title`)}</h2>
-        <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {COMO_FUNCIONA_STEPS.map((step, i) => {
-            const StepIcon = step.icon
-            return (
-              <li
-                key={step.titleKey}
-                className="h-full rounded-lg border border-border bg-card p-5 flex flex-col gap-3"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="w-9 h-9 rounded-lg bg-primary-soft flex items-center justify-center shrink-0">
-                    <StepIcon className="w-5 h-5 text-primary" weight="duotone" aria-hidden="true" />
-                  </span>
-                  <span className="text-xs font-medium text-fg-muted tabular-nums">
-                    {tf(`${PAGES_NS}.comoFunciona.paso`, 'Paso')} {i + 1}
-                  </span>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold text-fg leading-tight">{t(step.titleKey)}</p>
-                  <p className="text-xs text-fg-muted leading-snug">{t(step.descKey)}</p>
-                </div>
-              </li>
-            )
-          })}
-        </ol>
-      </section>
+      </CrossFade>
 
       {/* Error (no bloqueante) */}
       {/* El status crudo —«Error al cargar los estudios: 401»— no le dice nada
           a nadie y no ofrece salida. `FalloDeCarga` clasifica el fallo, escribe
           en español lo que pasó y sólo ofrece reintentar cuando reintentar
           puede dar otro resultado. */}
-      {error && !isLoading && (
+      <Presence show={Boolean(error && !isLoading)}>
         <FalloDeCarga
           error={errorCrudo ?? error}
           queEs="los estudios"
           onReintentar={refetch}
         />
-      )}
+      </Presence>
     </div>
+    </CrossFade>
   )
 }
 

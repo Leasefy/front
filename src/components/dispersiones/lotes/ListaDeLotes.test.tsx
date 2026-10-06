@@ -62,6 +62,7 @@ vi.mock('@/lib/api/lotes-de-dispersion.service', () => ({
 }));
 
 import { ListaDeLotes } from './ListaDeLotes';
+import { ApiError } from '@/lib/api/client';
 
 function candidato(i: number, motivo: string | null = null) {
   return {
@@ -94,6 +95,21 @@ function septiembre(): CandidatosDeDispersion {
     totalCop: 794_000_000,
     cantidad: 314,
   };
+}
+
+/**
+ * 🔴 Un mes CHICO para lo que no es el conteo (02-10-2026).
+ *
+ * Con los 317 candidatos del 22-09 cada prueba del diálogo de armar tardaba
+ * 1–2 s sola (el diálogo pinta a quién se le paga, fila por fila) y, con la
+ * suite en paralelo y el Mac cargado, pasaba de los 5 s del tope: caían
+ * «Test timed out» y, detrás, las siguientes («No está el elemento»). Lo que
+ * miran el banco de origen y los fallos no depende de cuántas filas haya; el
+ * mes entero de Nico sigue en el primer bloque, que es el que lo afirma.
+ */
+function unMesChico(): CandidatosDeDispersion {
+  const lista = Array.from({ length: 12 }, (_, i) => candidato(i, i < 3 ? 'Sin número de cuenta' : null));
+  return { ...septiembre(), candidatos: lista, totalCop: 22_500_000, cantidad: 9 };
 }
 
 function lista(): BancosParaGirar {
@@ -204,6 +220,27 @@ describe('<ListaDeLotes> — el mes no se ve vacío', () => {
     expect(botonQueDice('Armar el lote de')).toBeDefined();
   });
 
+  it('🔴 PG-05 (03-10-2026): cada exclusión dice su porqué — el giro devuelto no es «le falta un dato bancario»', async () => {
+    const mes = unMesChico();
+    mes.candidatos = mes.candidatos.map((c, i) =>
+      i === 0
+        ? { ...c, motivoDeExclusion: 'Retenida: el banco devolvió el giro anterior', tipoDeExclusion: 'RETENIDA_GIRO_DEVUELTO' as const }
+        : i === 1
+          ? { ...c, tipoDeExclusion: 'SIN_CUENTA' as const }
+          : i === 2
+            ? { ...c, tipoDeExclusion: 'DATO_BANCARIO' as const }
+            : { ...c, tipoDeExclusion: null },
+    );
+    candidatos.mockResolvedValue(mes);
+    await montar('2026-09');
+
+    const texto = frase();
+    expect(texto).toContain('1 retenida: el banco devolvió el giro anterior y falta aprobar la cuenta');
+    expect(texto).toContain('1 sin cuenta bancaria registrada');
+    expect(texto).toContain('a 1 le falta un dato bancario');
+    expect(texto).not.toContain('A 3 les falta un dato bancario');
+  });
+
   it('el mes se elige con SelectorDeMes en español, no con un <input type="month">', async () => {
     await montar('2026-09');
 
@@ -222,18 +259,24 @@ describe('<ListaDeLotes> — el mes no se ve vacío', () => {
     expect(botonQueDice('Armar el lote de')).toBeUndefined();
   });
 
-  it('los pasos del lote se leen en una línea', async () => {
+  // COMO-FUNCIONA (05-10-2026): los cinco pasos dibujados se fueron al botón
+  // «¿Cómo funciona?» del encabezado de la pantalla (`ComoSaleUnLote`, con su
+  // prueba). En la tarjeta del mes queda a la vista sólo el aviso de seguridad.
+  it('los pasos del lote ya no están dibujados en la tarjeta; queda el aviso de que armar no gira plata', async () => {
     await montar('2026-09');
 
-    const pasos = document.body.querySelector('[aria-label="Cómo sale un pago"]')?.textContent ?? '';
-    expect(pasos).toContain('otra persona lo aprueba con un código');
-    expect(pasos).toContain('descargas el archivo de ese banco (o su planilla)');
-    expect(pasos).toContain('lo subes al portal del banco');
-    expect(pasos).toContain('marcas el lote pagado');
+    expect(document.body.querySelector('[aria-label="Cómo sale un pago"]')).toBeNull();
+    const aviso = document.body.querySelector('[data-testid="lote-no-gira-solo"]')?.textContent ?? '';
+    expect(aviso).toContain('no gira plata');
+    expect(aviso).toContain('lo subes tú al portal del banco');
   });
 });
 
 describe('<ListaDeLotes> — desde qué banco se gira', () => {
+  beforeEach(() => {
+    candidatos.mockResolvedValue(unMesChico());
+  });
+
   async function abrirArmar() {
     await montar('2026-09');
     await clicEn(botonQueDice('Armar el lote de'));
@@ -297,7 +340,9 @@ describe('<ListaDeLotes> — desde qué banco se gira', () => {
     const { toast } = await import('@/components/ui/toast');
     const [titulo, opciones] = vi.mocked(toast.success).mock.calls.at(-1)!;
     expect(titulo).toBe('Lote de septiembre de 2026 armado y aprobado');
-    expect((opciones as { description: string }).description).toContain('Aprobado por ti como administrador (P-4)');
+    expect((opciones as { description: string }).description).toContain('Aprobado por ti como administrador');
+    // Sin el código interno (COLA-FRONT, 04-10).
+    expect((opciones as { description: string }).description).not.toContain('(P-4)');
   });
 
   it('otro rol: «armado», como siempre (lo aprueba otra persona)', async () => {
@@ -459,5 +504,63 @@ describe('<ListaDeLotes> — desde qué banco se gira', () => {
 
     expect(document.body.textContent).toContain('20260922190100_origen_del_lote');
     expect(botonQueDice('Armar lote con el mes entero')?.disabled).toBe(false);
+  });
+});
+
+/*
+ * 02-10-2026 · Armar el lote y contar el mes con la regla de oro: un 5xx dice
+ * «de nuestro lado» con la referencia de soporte; un 4xx, lo que escribió el
+ * back; «conexión», sólo sin respuesta. Antes iba `e.message` crudo.
+ */
+describe('<ListaDeLotes> — los fallos (02-10)', () => {
+  beforeEach(() => {
+    candidatos.mockResolvedValue(unMesChico());
+  });
+
+  const fallo500 = () =>
+    new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      message: 'Error interno del servidor',
+      referencia: 'ab12cd34',
+    });
+
+  async function armarCon(error: unknown) {
+    armar.mockRejectedValue(error);
+    await montar('2026-09');
+    await clicEn(botonQueDice('Armar el lote de'));
+    await esperar();
+    await clicEn(botonQueDice('Armar lote con el mes entero'));
+    return document.body.querySelector('[data-testid="dialogo-armar-lote"]')?.textContent ?? '';
+  }
+
+  it('🔴 armar con un 5xx: «de nuestro lado» con la referencia, no «Error interno del servidor»', async () => {
+    const texto = await armarCon(fallo500());
+    expect(texto).toContain('No pudimos armar el lote: algo falló de nuestro lado');
+    expect(texto).toContain('ab12cd34');
+  });
+
+  it('armar con un 400 dice lo que escribió el back', async () => {
+    const mensaje = 'Puedes mandar hasta 50.000 dispersiones a la vez.';
+    const texto = await armarCon(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        campos: [{ campo: 'dispersionIds', regla: 'lista_maxima', mensaje }],
+      }),
+    );
+    expect(texto).toContain(mensaje);
+  });
+
+  it('armar sin respuesta: ahí sí habla de la conexión', async () => {
+    const texto = await armarCon(new ApiError(0, 'Failed to fetch'));
+    expect(texto).toMatch(/conexi[oó]n/);
+  });
+
+  it('🔴 si no se pudo contar el mes por un 5xx, la frase lo dice con la referencia', async () => {
+    candidatos.mockRejectedValue(fallo500());
+    await montar('2026-09');
+    expect(frase()).toContain('No pudimos contar las dispersiones del mes: algo falló de nuestro lado');
+    expect(frase()).toContain('ab12cd34');
   });
 });

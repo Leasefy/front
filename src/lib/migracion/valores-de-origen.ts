@@ -30,6 +30,8 @@
  * que la misma celda valga lo mismo en las tres pantallas.
  */
 
+import { aCentavos } from '@/lib/plata/plata';
+
 /** Sin tildes, minúsculas, espacios colapsados. */
 function normalizar(v: unknown): string {
   return String(v ?? '')
@@ -379,8 +381,28 @@ export function plataDeOrigen(v: unknown): number | undefined {
  * plata, la celda entera vuelve `undefined` — nunca una lista a medias.
  * Espejo de `parsearListaDeDinero` en el back.
  */
-export function listaDePlata(v: unknown): number[] | undefined {
-  if (typeof v === 'number') return Number.isFinite(v) ? [Math.round(v)] : undefined;
+export function listaDePlata(
+  v: unknown,
+  /**
+   * «Centavos en todo»: con la llave de los contratos cada parte trae sus
+   * centavos tal cual; con más de dos decimales la celda no se adivina
+   * (`undefined`). Ausente = al peso, como hoy.
+   */
+  { conCentavos = false }: { conCentavos?: boolean } = {},
+): number[] | undefined {
+  const comoPlata = (n: number): number | undefined => {
+    if (!conCentavos) return Math.round(n);
+    try {
+      return aCentavos(n, { talCual: true }) / 100;
+    } catch {
+      return undefined;
+    }
+  };
+  if (typeof v === 'number') {
+    if (!Number.isFinite(v)) return undefined;
+    const n = comoPlata(v);
+    return n === undefined ? undefined : [n];
+  }
   const s = String(v ?? '').trim();
   if (!s) return [];
   const trozos = s
@@ -391,7 +413,9 @@ export function listaDePlata(v: unknown): number[] | undefined {
   for (const trozo of trozos) {
     const n = plataDeOrigen(trozo);
     if (n === undefined) return undefined;
-    valores.push(Math.round(n));
+    const parte = comoPlata(n);
+    if (parte === undefined) return undefined;
+    valores.push(parte);
   }
   return valores;
 }
@@ -470,8 +494,13 @@ export function porcentajeDeOrigen(v: unknown): number | undefined {
 
 // ── Banderas SI / NO ────────────────────────────────────────────────────────
 
-const SI = new Set(['si', 'sí', 's', 'yes', 'y', 'true', 'verdadero', 'x', '1']);
-const NO = new Set(['no', 'n', 'false', 'falso', '0']);
+/*
+ * «Activo/Inactivo», «Activa/Inactiva» y «A/I» son como los exportan varios
+ * sistemas contables la columna de habilitada (QA-MIG-B, 04-10): sin ellas la
+ * bandera volvía `undefined` y la cuenta entraba con lo que dijera el default.
+ */
+const SI = new Set(['si', 'sí', 's', 'yes', 'y', 'true', 'verdadero', 'x', '1', 'activo', 'activa', 'a', 'habilitado', 'habilitada']);
+const NO = new Set(['no', 'n', 'false', 'falso', '0', 'inactivo', 'inactiva', 'i', 'deshabilitado', 'deshabilitada']);
 
 /**
  * «SI»/«NO» → `true`/`false`. Lo que no es ninguna de las dos vuelve

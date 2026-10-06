@@ -13,6 +13,12 @@ import * as React from 'react'
 import { useEffect, useState } from 'react'
 
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import {
+  erroresDeLaIntervencion,
+  LARGO_MAXIMO_DEL_MOTIVO,
+} from './error-de-la-intervencion'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
@@ -40,6 +46,8 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { Collapse, CrossFade, Presence } from '@leasefy/cadence'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 
 void React
 
@@ -73,15 +81,20 @@ export function ForceStageModal({
   // destino que nadie eligió no es un default, es una afirmación falsa. Acá
   // hay que elegir, y hasta entonces «Confirmar» está apagado.
   const [target, setTarget] = useState<CarteraStage | ''>('')
+  // La consecuencia sigue diciendo la última etapa mientras se pliega.
+  const targetVisible = useUltimoPresente(target || null)
   const [reason, setReason] = useState<string>('')
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  /** El error de cada campo: el del cliente o el que mandó el micro en `campos`. */
+  const [errores, setErrores] = useState<Partial<Record<'target_stage' | 'reason', string>>>({})
 
   useEffect(() => {
     if (open) {
       setTarget('')
       setReason('')
       setError(null)
+      setErrores({})
     }
   }, [open])
 
@@ -90,16 +103,26 @@ export function ForceStageModal({
 
   const handleSubmit = async () => {
     setError(null)
+    setErrores({})
     if (envMissing) {
       setError(t('inmobiliaria.ai.cobranza.detail.acciones.envMissing'))
       return
     }
+    // Lo que falta se dice debajo de su campo (antes, todo en una línea suelta).
+    const delCliente: Partial<Record<'target_stage' | 'reason', string>> = {}
     if (!target) {
-      setError(t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.targetMissing'))
-      return
+      delCliente.target_stage = t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.targetMissing')
     }
     if (reason.trim().length < 10) {
-      setError(t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonTooShort'))
+      delCliente.reason = t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonTooShort')
+    } else if (reason.trim().length > LARGO_MAXIMO_DEL_MOTIVO) {
+      delCliente.reason = `El motivo puede tener hasta ${LARGO_MAXIMO_DEL_MOTIVO} caracteres.`
+    }
+    if (delCliente.target_stage || delCliente.reason) {
+      setErrores(delCliente)
+      document
+        .getElementById(delCliente.target_stage ? 'forzar-etapa-destino' : 'forzar-etapa-motivo')
+        ?.focus()
       return
     }
     setSubmitting(true)
@@ -112,18 +135,23 @@ export function ForceStageModal({
           body: JSON.stringify({ target_stage: target, reason: reason.trim() }),
         },
       )
-      if (!res.ok) {
-        setError(`${res.status}`)
-        return
-      }
+      if (!res.ok) throw await falloDelMicro(res)
       onSuccess()
       onClose()
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t('inmobiliaria.ai.cobranza.detail.acciones.genericError'),
-      )
+      // Antes: el status crudo («500»), o «Acción fallida — intenta de nuevo».
+      const r = erroresDeLaIntervencion<'target_stage' | 'reason'>(err, {
+        campos: ['target_stage', 'reason'],
+        porDefecto: 'No pudimos cambiar la etapa.',
+        accion: 'cambiar la etapa',
+      })
+      setErrores(r.porCampo)
+      setError(r.general)
+      if (r.primero) {
+        document
+          .getElementById(r.primero === 'target_stage' ? 'forzar-etapa-destino' : 'forzar-etapa-motivo')
+          ?.focus()
+      }
     } finally {
       setSubmitting(false)
     }
@@ -131,7 +159,9 @@ export function ForceStageModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="max-w-md">
+      {/* Sin permiso, el medallón ámbar dice que no se puede (antes, la
+          descripción en rojo a mano). */}
+      <DialogContent size="sm" variant={allowed ? undefined : 'warning'}>
         <DialogHeader>
           <DialogTitle>
             {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.modalTitle')}
@@ -141,7 +171,7 @@ export function ForceStageModal({
               {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.modalDescription')}
             </DialogDescription>
           ) : (
-            <DialogDescription className="text-danger">
+            <DialogDescription>
               {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.accessDenied')}
             </DialogDescription>
           )}
@@ -157,7 +187,7 @@ export function ForceStageModal({
               {/* De dónde sale. Sin esto el operador elige un destino sin saber
                   desde dónde se mueve — y «S2 → S1» y «S5 → S1» no son lo
                   mismo ni de lejos. */}
-              <div className="rounded-md border border-border bg-surface-muted px-3 py-2.5">
+              <div className="rounded-[14px] border border-border px-3 py-2.5">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.currentLabel')}
                 </p>
@@ -176,9 +206,17 @@ export function ForceStageModal({
                 </span>
                 <Select
                   value={target}
-                  onValueChange={(v) => setTarget(v as CarteraStage)}
+                  onValueChange={(v) => {
+                    setTarget(v as CarteraStage)
+                    setErrores(({ target_stage: _, ...resto }) => resto)
+                  }}
                 >
-                  <SelectTrigger className="mt-1 w-full">
+                  <SelectTrigger
+                    id="forzar-etapa-destino"
+                    className="mt-1 w-full"
+                    aria-invalid={errores.target_stage ? true : undefined}
+                    aria-describedby={errores.target_stage ? 'forzar-etapa-destino-error' : undefined}
+                  >
                     <SelectValue
                       placeholder={t(
                         'inmobiliaria.ai.cobranza.detail.acciones.forceStage.targetPlaceholder',
@@ -205,60 +243,74 @@ export function ForceStageModal({
                     })}
                   </SelectContent>
                 </Select>
+                <ErrorDelCampo id="forzar-etapa-destino-error" mensaje={errores.target_stage} />
               </label>
 
               {/* La consecuencia, en la misma pantalla donde se decide. Cambiar
                   de etapa no es reetiquetar: cambia a quién contacta el agente,
                   cuándo, y si sigue haciéndolo. Sólo aparece cuando ya hay un
                   destino elegido — antes no hay nada verdadero que decir. */}
-              {target && (
+              {/* Se despliega con su altura al elegir el destino, y la frase
+                  se cruza al cambiarlo. */}
+              <Collapse open={Boolean(target)}>
+              {targetVisible && (
                 <div className="rounded-md border border-primary/25 bg-primary-soft px-3 py-2.5">
                   <p className="text-[11px] font-medium uppercase tracking-wide text-primary">
                     {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.effectLabel')}
                   </p>
-                  <p className="mt-1 text-xs leading-relaxed text-fg">
-                    {stageAgentPlan(target, locale)}
-                  </p>
+                  <CrossFade as="p" swapKey={targetVisible} mode="popLayout" direction="none" className="mt-1 text-xs leading-relaxed text-fg">
+                    {stageAgentPlan(targetVisible, locale)}
+                  </CrossFade>
                   <p className="mt-1.5 text-[11px] leading-relaxed text-fg-muted">
                     {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.effectNote')}
                   </p>
                 </div>
               )}
+              </Collapse>
 
               <label className="block">
                 <span className="text-xs font-medium text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonLabel')}
                 </span>
                 <Textarea
+                  id="forzar-etapa-motivo"
                   value={reason}
-                  onChange={(e) => setReason(e.target.value)}
+                  onChange={(e) => {
+                    setReason(e.target.value)
+                    setErrores(({ reason: _, ...resto }) => resto)
+                  }}
                   rows={4}
                   minLength={10}
                   placeholder={t(
                     'inmobiliaria.ai.cobranza.detail.acciones.forceStage.reasonPlaceholder',
                   )}
                   className="mt-1 w-full"
+                  aria-invalid={errores.reason ? true : undefined}
+                  aria-describedby={errores.reason ? 'forzar-etapa-motivo-error' : undefined}
                 />
+                <ErrorDelCampo id="forzar-etapa-motivo-error" mensaje={errores.reason} />
               </label>
             </div>
           ))}
 
-        {error && <p className="text-xs text-danger">{error}</p>}
+        <Presence as="p" show={Boolean(error)} role="alert" className="text-xs text-danger" data-testid="intervencion-error">
+            {error}
+        </Presence>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter>
           <Button
             variant="outline"
-            size="sm"
+            hideArrow
             onClick={onClose}
             disabled={submitting}
           >
             {t('inmobiliaria.ai.cobranza.detail.pii.modalCancel')}
           </Button>
           <Button
-            size="sm"
             hideArrow
             onClick={() => void handleSubmit()}
-            disabled={submitting || envMissing || !allowed || !target}
+            disabled={envMissing || !allowed || !target}
+            isLoading={submitting}
           >
             {submitting
               ? t('inmobiliaria.ai.cobranza.detail.acciones.forceStage.confirming')

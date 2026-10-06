@@ -107,6 +107,22 @@ function boton(texto: string): HTMLButtonElement {
   return b as HTMLButtonElement
 }
 
+/**
+ * La compra es el `Dialog` del producto (Radix): se pinta en un portal sobre
+ * `document.body`, no dentro de `host`. Se busca en el diálogo mismo.
+ */
+function dialogo(): HTMLElement {
+  const d = document.querySelector<HTMLElement>('[role="dialog"]')
+  if (!d) throw new Error('la compra no está abierta')
+  return d
+}
+
+function botonDeLaCompra(texto: string): HTMLButtonElement {
+  const b = Array.from(dialogo().querySelectorAll('button')).find((x) => x.textContent?.includes(texto))
+  if (!b) throw new Error(`no está el botón «${texto}» en la compra`)
+  return b as HTMLButtonElement
+}
+
 async function abrirCompra() {
   await act(async () => {
     boton('Comprar pack').click()
@@ -115,11 +131,11 @@ async function abrirCompra() {
 }
 
 function llenarPagador() {
-  const selects = host.querySelectorAll('[role="dialog"] select')
+  const selects = dialogo().querySelectorAll('select')
   // [0] banco, [1] tipo de persona, [2] tipo de documento
   escribir(selects[0] as HTMLSelectElement, '1007')
-  escribir(host.querySelector<HTMLInputElement>('#creditos-documento')!, '1020304050')
-  escribir(host.querySelector<HTMLInputElement>('#creditos-nombre')!, 'Ana Pérez')
+  escribir(dialogo().querySelector<HTMLInputElement>('#creditos-documento')!, '1020304050')
+  escribir(dialogo().querySelector<HTMLInputElement>('#creditos-nombre')!, 'Ana Pérez')
 }
 
 beforeEach(async () => {
@@ -155,12 +171,12 @@ describe('compra de créditos por PSE real', () => {
     await abrirCompra()
     expect(getFinancialInstitutions).toHaveBeenCalledTimes(1)
     expect(apiGet.mock.calls.some(([ruta]) => String(ruta).includes('pse-mock'))).toBe(false)
-    expect(host.querySelector('[role="dialog"]')?.textContent).toContain('BANCOLOMBIA')
+    expect(dialogo().textContent).toContain('BANCOLOMBIA')
   })
 
   it('no deja pagar sin los datos del pagador', async () => {
     await abrirCompra()
-    expect(boton('Pagar').disabled).toBe(true)
+    expect(botonDeLaCompra('Pagar').disabled).toBe(true)
   })
 
   it('inicia el checkout sin mandar el monto y se va a la URL del banco', async () => {
@@ -173,11 +189,11 @@ describe('compra de créditos por PSE real', () => {
     })
     await abrirCompra()
     llenarPagador()
-    expect(host.querySelector<HTMLInputElement>('#creditos-correo')!.value).toBe('admin@inmobiliaria.co')
-    expect(boton('Pagar').disabled).toBe(false)
+    expect(dialogo().querySelector<HTMLInputElement>('#creditos-correo')!.value).toBe('admin@inmobiliaria.co')
+    expect(botonDeLaCompra('Pagar').disabled).toBe(false)
 
     await act(async () => {
-      boton('Pagar').click()
+      botonDeLaCompra('Pagar').click()
     })
     await flush()
 
@@ -207,11 +223,66 @@ describe('compra de créditos por PSE real', () => {
     await abrirCompra()
     llenarPagador()
     await act(async () => {
-      boton('Pagar').click()
+      botonDeLaCompra('Pagar').click()
     })
     await flush()
 
     expect(assign).not.toHaveBeenCalled()
-    expect(host.querySelector('[role="alert"]')?.textContent).toContain('enlace de pago')
+    expect(dialogo().querySelector('[role="alert"]')?.textContent).toContain('enlace de pago')
+  })
+})
+
+/*
+ * 02-10-2026 · La compra con el sistema de errores. `@/lib/api/client` está
+ * doblado en este archivo (sin `ApiError`): los errores se arman por forma,
+ * que es como los lee el traductor. Nada de cobros reales: el checkout PSE es
+ * un doble.
+ */
+function falloHttp(status: number, cuerpo: Record<string, unknown>, mensaje = '') {
+  return Object.assign(new Error(mensaje), {
+    status,
+    code: cuerpo.code,
+    detalle: { statusCode: status, ...cuerpo },
+    ...(Array.isArray(cuerpo.message) ? { messages: cuerpo.message } : {}),
+  })
+}
+
+describe('compra de créditos — el sistema de errores (02-10)', () => {
+  async function pagarCon(error: unknown) {
+    startPseCheckout.mockRejectedValue(error)
+    await abrirCompra()
+    llenarPagador()
+    await act(async () => {
+      botonDeLaCompra('Pagar').click()
+    })
+    await flush()
+  }
+
+  it('🔴 un 400 con campos pinta el error en SU campo y le da el foco', async () => {
+    const mensaje = 'El documento debe tener entre 6 y 15 dígitos.'
+    await pagarCon(
+      falloHttp(400, {
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'legalId', regla: 'formato', mensaje }],
+      }, mensaje),
+    )
+    expect(document.querySelector('#creditos-documento-error')?.textContent).toBe(mensaje)
+    expect(document.activeElement?.id).toBe('creditos-documento')
+    expect(dialogo().querySelector('[role="alert"].bg-danger-soft')).toBeNull()
+  })
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    await pagarCon(
+      falloHttp(500, { code: 'ERROR_INTERNO', message: 'Error interno del servidor', referencia: 'ab12cd34' }, 'Error interno del servidor'),
+    )
+    const aviso = dialogo().textContent ?? ''
+    expect(aviso).toContain('No pudimos iniciar el pago por PSE: algo falló de nuestro lado')
+    expect(aviso).toContain('ab12cd34')
+  })
+
+  it('sin respuesta: ahí sí habla de la conexión', async () => {
+    await pagarCon(falloHttp(0, {}, 'Failed to fetch'))
+    expect(dialogo().textContent).toMatch(/conexi[oó]n/)
   })
 })

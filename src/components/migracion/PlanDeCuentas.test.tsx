@@ -547,3 +547,108 @@ describe('la casilla «No deducible»', () => {
     expect('noDeducible' in cambios).toBe(false);
   });
 });
+
+/*
+ * Sistema de errores (02-10-2026): crear una cuenta que el back rechaza dice
+ * el motivo bajo SU campo; la semilla que falla de nuestro lado dice la
+ * referencia.
+ */
+describe('PlanDeCuentas · errores en su campo', () => {
+  function escribirEn(testid: string, valor: string) {
+    const el = q(testid) as HTMLInputElement;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, valor);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  async function abrirNuevaCuenta() {
+    pucMock.arbol.mockResolvedValue(ARBOL_SEMBRADO);
+    pucMock.semillaPendientes.mockResolvedValue({ total: 0, cuentas: [] });
+    await pintar();
+    await click('puc-nueva-cuenta');
+    await act(async () => {
+      escribirEn('puc-codigo', '110510');
+      escribirEn('puc-nombre', 'Caja menor');
+    });
+  }
+
+  it('🔴 `CODIGO_DUPLICADO` va bajo el código, con su frase, y lo enfoca', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    pucMock.crear.mockRejectedValue(
+      new ApiError(409, 'duplicado', 'CODIGO_DUPLICADO', { statusCode: 409, code: 'CODIGO_DUPLICADO' }),
+    );
+    await abrirNuevaCuenta();
+    await click('puc-guardar');
+
+    const codigo = q('puc-codigo') as HTMLInputElement;
+    expect(codigo.getAttribute('aria-invalid')).toBe('true');
+    expect(container.querySelector('#puc-codigo-error')?.textContent).toBe(
+      'Ya hay una cuenta con ese código en tu plan.',
+    );
+    expect(document.activeElement).toBe(codigo);
+  });
+
+  it('🔴 un 400 con `campos` en `nombre` va bajo el nombre', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const mensaje = 'El nombre de la cuenta puede tener hasta 200 caracteres.';
+    pucMock.crear.mockRejectedValue(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'nombre', regla: 'longitud_maxima', mensaje }],
+      }),
+    );
+    await abrirNuevaCuenta();
+    await click('puc-guardar');
+
+    expect(q('puc-nombre')!.getAttribute('aria-invalid')).toBe('true');
+    expect(container.querySelector('#puc-nombre-error')?.textContent).toBe(mensaje);
+  });
+
+  it('🔴 un 5xx al guardar dice «de nuestro lado» con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    pucMock.crear.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'f1f2f3f4',
+      }),
+    );
+    await abrirNuevaCuenta();
+    await click('puc-guardar');
+
+    const alerta = q('puc-formulario')!.querySelector('[role="alert"].rounded-md, .bg-danger-soft');
+    expect(alerta?.textContent).toMatch(/No pudimos guardar la cuenta: algo falló de nuestro lado/);
+    expect(alerta?.textContent).toContain('f1f2f3f4');
+  });
+
+  it('🔴 la semilla que falla de nuestro lado dice la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    pucMock.arbol.mockResolvedValue([]);
+    pucMock.sembrar.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'deadbeef',
+      }),
+    );
+    await pintar();
+    await click('puc-sembrar');
+
+    const alerta = container.querySelector('[role="alert"]');
+    expect(alerta?.textContent).toMatch(/No pudimos cargar el plan base: algo falló de nuestro lado/);
+    expect(alerta?.textContent).toContain('deadbeef');
+  });
+
+  it('🔴 sin respuesta (status 0) la semilla habla de la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    pucMock.arbol.mockResolvedValue([]);
+    pucMock.sembrar.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await pintar();
+    await click('puc-sembrar');
+
+    expect(container.querySelector('[role="alert"]')?.textContent).toMatch(/conexión/);
+  });
+});

@@ -27,6 +27,17 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 import type { CandidatoDeConciliacion, MovimientoBancario } from '@/lib/api/conciliacion-bancaria.types';
 import { diaLegible, mesesLegibles, plata } from './formato';
+import { MuchosAUno } from './MuchosAUno';
+import { yaLaRespaldanRecibosEmitidos } from './muchos-a-uno';
+import { RecibosYaEmitidos } from './RecibosYaEmitidos';
+import { PropuestaDeLaPasarela } from './PropuestaDeLaPasarela';
+import { PropuestaDeLaPasarelaGiro } from './PropuestaDeLaPasarelaGiro';
+import { nombreDeLaCuenta } from './cuentas-del-extracto';
+import { DeshacerLaConciliacion } from './DeshacerLaConciliacion';
+// C2-SALIDAS (Nico, P5): las salidas se concilian (giros, egresos, gastos del banco, reversos).
+import { SalidaDelExtracto } from './SalidaDelExtracto';
+// Seguimiento 6: el cajón del movimiento con lo que propone el agente («por el alias», las salidas).
+import { LoQueProponeElAgente } from './LoQueProponeElAgente';
 
 interface Props {
   movimiento: MovimientoBancario;
@@ -38,6 +49,14 @@ interface Props {
   onConciliarConCliente: (movimiento: MovimientoBancario) => void;
   onIgnorar: (movimiento: MovimientoBancario) => void;
   onReabrir: (movimiento: MovimientoBancario) => void;
+  /**
+   * Muchos a uno (02-10-2026): ¿ya se sabe que falta la tabla de vínculos?
+   * Lo descubre una fila y lo saben todas: «Aprobar» se apaga en la tabla entera.
+   */
+  sinTablaDeVinculos?: boolean;
+  onSinTablaDeVinculos?: () => void;
+  /** Conciliar contra recibos cambió la cola: la pantalla vuelve a leer lista y resumen. */
+  onCambio?: () => void;
 }
 
 export function MovimientoFila({
@@ -49,9 +68,16 @@ export function MovimientoFila({
   onConciliarConCliente,
   onIgnorar,
   onReabrir,
+  sinTablaDeVinculos = false,
+  onSinTablaDeVinculos = () => {},
+  onCambio = () => {},
 }: Props) {
   const esSalida = m.valorCop < 0;
   const esPendiente = m.estado === 'PENDIENTE';
+  // 🔴 ARREGLOS-5 (Nico Q4 a): recibos ya emitidos suman exacto esta línea: nada de 1:1 (otro recibo por la misma plata).
+  const yaTieneSusRecibos = esPendiente && !esSalida && yaLaRespaldanRecibosEmitidos(m);
+  // 🔴 ARREGLOS-6b (Nico, ARREGLOS-5 Q4 a): la línea que es el giro de Leasefy no se concilia contra una cuota ni un cliente.
+  const esElGiroDeLeasefy = esPendiente && !esSalida && (m.giroDeLeasefy?.propuestas.length ?? 0) > 0;
 
   return (
     <TableRow
@@ -74,6 +100,13 @@ export function MovimientoFila({
             <span className="font-mono text-caption text-fg-muted">Ref. {m.referencia}</span>
           )}
           {esSalida && <Badge variant="secondary">Salida</Badge>}
+          {/* (02-10-2026, Fase 1) De qué cuenta es la línea; los pagos en línea no son de una cuenta. */}
+          {m.cuenta && (
+            <span className="text-caption text-fg-muted" data-testid={`cuenta-de-${m.id}`}>
+              {nombreDeLaCuenta(m.cuenta)}
+            </span>
+          )}
+          {m.deLaPasarela && <Badge variant="outline">Pago en línea</Badge>}
           {m.estado === 'CONCILIADO' && m.recibo && (
             <Badge variant={m.recibo.anuladoAt ? 'destructive' : 'success'}>
               Recibo N.º {m.recibo.numero}
@@ -91,9 +124,67 @@ export function MovimientoFila({
         {plata(m.valorCop)}
       </TableCell>
 
-      {/* Cruce sugerido: la decisión de la fila */}
+      {/* Cruce sugerido: la decisión de la fila.
+          🔴 (03-10-2026) Esta celda mide ~300 px aun en un escritorio ancho: las
+          tarjetas van APILADAS (texto arriba, botón abajo). Con la fila del breakpoint `sm`
+          —que mira la ventana, no la celda— el botón se comía el ancho y el
+          texto quedaba de una palabra por línea (filas de 1.500 px). */}
       <TableCell className="max-w-[460px]">
-        {esPendiente && !esSalida ? (
+        {/* 🔴 Muchos a uno: si el movimiento es la suma de recibos YA emitidos,
+            eso va primero. Conciliarlo contra una cuota EMITIRÍA otro recibo
+            por la misma plata. */}
+        {/* 🔴 (Nico, P4) Puede ser un pago en línea: va primero. Si es esa
+            plata, conciliarla contra una cuota emitiría un segundo recibo. */}
+        {esPendiente && !esSalida && m.pasarela && m.pasarela.propuestas.length > 0 && (
+          <PropuestaDeLaPasarela
+            movimiento={m}
+            propuestas={m.pasarela.propuestas}
+            puedeEditar={puedeEditar}
+            ocupado={ocupado}
+            onCambio={onCambio}
+          />
+        )}
+        {/* 🔴 C2-AGREGADOR (Nico, P2): el giro de Leasefy (el neto de una liquidación). Va
+            arriba: conciliarlo contra una cuota emitiría otro recibo por plata que ya tiene los suyos. */}
+        {esPendiente && !esSalida && m.giroDeLeasefy && m.giroDeLeasefy.propuestas.length > 0 && (
+          <PropuestaDeLaPasarelaGiro
+            movimiento={m}
+            propuestas={m.giroDeLeasefy.propuestas}
+            puedeEditar={puedeEditar}
+            ocupado={ocupado}
+            onCambio={onCambio}
+          />
+        )}
+        {/* El pago en línea que no calzó con el canon: lo resuelve la inmobiliaria. */}
+        {esPendiente && m.deLaPasarela && (
+          <p className="mb-2 text-caption text-fg-muted" data-testid={`no-calzo-${m.id}`}>
+            Pago en línea que no calzó con el canon: concílialo contra el cliente (la plata va a su deuda más
+            vieja) o ignóralo con su motivo si se devolvió. Nunca se concilia solo.
+          </p>
+        )}
+        {/* C2-SALIDAS: una entrada que habla de un reverso o de la devolución de un giro. */}
+        {esPendiente && !esSalida && (
+          <SalidaDelExtracto movimiento={m} puedeConciliar={puedeConciliar} ocupado={ocupado} onCambio={onCambio} />
+        )}
+        {esPendiente && !esSalida && m.muchosAUno && (
+          <MuchosAUno
+            movimiento={m}
+            puedeConciliar={puedeConciliar}
+            ocupado={ocupado}
+            sinTabla={sinTablaDeVinculos}
+            onSinTabla={onSinTablaDeVinculos}
+            onCambio={onCambio}
+          />
+        )}
+        {esElGiroDeLeasefy ? (
+          <p className="text-caption text-fg-muted" data-testid={`sin-uno-a-uno-${m.id}`}>
+            Si es el giro de Leasefy, confírmalo arriba: sus recibos ya se emitieron con cada pago en línea. Conciliarlo
+            contra una cuota o un cliente emitiría otro recibo por la misma plata.
+          </p>
+        ) : yaTieneSusRecibos ? (
+          // ARREGLOS-6b (Q1 a): cuáles recibos, con la regla del back; si no son una propuesta, conciliar con ellos.
+          <RecibosYaEmitidos movimiento={m} puedeConciliar={puedeConciliar} ocupado={ocupado} onCambio={onCambio} />
+        ) : esPendiente && !esSalida ? (
           m.candidatos.length === 0 ? (
             /*
              * 🔴 Antes acá decía «ningún cobro con saldo se parece», y eso
@@ -126,7 +217,7 @@ export function MovimientoFila({
                 <li
                   key={c.contractId}
                   className={cn(
-                    'flex flex-col gap-1.5 rounded-md border px-2.5 py-1.5 sm:flex-row sm:items-center sm:justify-between',
+                    'flex flex-col gap-1.5 rounded-md border px-2.5 py-1.5',
                     c.seguro ? 'border-primary bg-primary-soft' : 'border-border bg-surface-muted',
                   )}
                   data-testid={`candidato-${m.id}-${c.contractId}`}
@@ -163,7 +254,7 @@ export function MovimientoFila({
                     disabled={!puedeConciliar || ocupado}
                     onClick={() => onConciliar(m, c)}
                     aria-label={`Conciliar con ${c.tenantName ?? c.propertyTitle}`}
-                    className="shrink-0"
+                    className="shrink-0 self-start"
                   >
                     <CheckCircle className="h-4 w-4" aria-hidden="true" />
                     Conciliar
@@ -188,30 +279,55 @@ export function MovimientoFila({
             </ul>
           )
         ) : esPendiente && esSalida ? (
-          <p className="text-caption text-fg-muted">
-            Una salida no se concilia contra una cuota; se puede ignorar.
-          </p>
+          /* C2-SALIDAS (Nico, P5): el giro, el egreso, el pago al proveedor o el gasto del banco. */
+          <SalidaDelExtracto
+            movimiento={m}
+            puedeConciliar={puedeConciliar}
+            ocupado={ocupado}
+            onCambio={onCambio}
+            vacio={
+              <p className="text-caption text-fg-muted">
+                Una salida no se concilia contra una cuota; se puede ignorar.
+              </p>
+            }
+          />
         ) : m.estado === 'IGNORADO' && m.motivoIgnorado ? (
           <p className="text-caption text-fg-muted">Motivo: {m.motivoIgnorado}</p>
         ) : (
-          <span className="text-fg-subtle">—</span>
+          /* C2-SALIDAS: la salida conciliada dice contra qué quedó. */
+          <SalidaDelExtracto
+            movimiento={m}
+            puedeConciliar={puedeConciliar}
+            ocupado={ocupado}
+            onCambio={onCambio}
+            vacio={<span className="text-fg-subtle">—</span>}
+          />
         )}
       </TableCell>
 
       {/* Acciones */}
       <TableCell className="whitespace-nowrap">
         {esPendiente ? (
-          <Button
-            size="sm"
-            variant="ghost"
-            hideArrow
-            disabled={!puedeEditar || ocupado}
-            onClick={() => onIgnorar(m)}
-            aria-label={`Ignorar «${m.descripcion}»`}
-          >
-            <Prohibit className="h-4 w-4" aria-hidden="true" />
-            Ignorar
-          </Button>
+          <div className="flex flex-col items-start gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              hideArrow
+              disabled={!puedeEditar || ocupado}
+              onClick={() => onIgnorar(m)}
+              aria-label={`Ignorar «${m.descripcion}»`}
+            >
+              <Prohibit className="h-4 w-4" aria-hidden="true" />
+              Ignorar
+            </Button>
+            <LoQueProponeElAgente
+              movimiento={m}
+              puedeConciliar={puedeConciliar}
+              puedeEditar={puedeEditar}
+              ocupado={ocupado}
+              onCambio={onCambio}
+            />
+          </div>
         ) : m.estado === 'IGNORADO' ? (
           <Button
             size="sm"
@@ -223,6 +339,9 @@ export function MovimientoFila({
             <ArrowCounterClockwise className="h-4 w-4" aria-hidden="true" />
             Volver a pendiente
           </Button>
+        ) : m.estado === 'CONCILIADO' ? (
+          /* C2-DESHACER (Nico, P11): sólo administrador o contador; sin anular el recibo. */
+          <DeshacerLaConciliacion movimiento={m} ocupado={ocupado} onCambio={onCambio} />
         ) : (
           <span className="text-fg-subtle">—</span>
         )}

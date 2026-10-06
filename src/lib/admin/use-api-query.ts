@@ -49,7 +49,8 @@ export function useApiQuery<T>(
       },
       (err: unknown) => {
         if (controller.signal.aborted) return
-        setError(err instanceof Error ? err : new Error('Error de red'))
+        // Un rechazo que no es un `Error` no dice que sea la red (02-10-2026).
+        setError(err instanceof Error ? err : new Error('No pudimos cargar esto. Prueba de nuevo en un momento.'))
         setIsLoading(false)
       },
     )

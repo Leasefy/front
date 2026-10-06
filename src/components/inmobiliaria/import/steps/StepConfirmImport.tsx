@@ -52,6 +52,7 @@ import {
 } from "../lib/claveDeCarga";
 import { huellaDelArchivo } from "../lib/huellaDelArchivo";
 import { mensajeDeCarga, MENSAJE_SESION_TERMINADA, esSesionMuerta } from "../lib/mensajeDeCarga";
+import { traeErroresPorCampo } from "@/lib/errores/errores-en-el-formulario";
 import { generarIdempotencyKey } from "../lib/idempotencia";
 import { revisarLoteCompleto, type ProgresoDeRevision } from "../lib/revisarLoteCompleto";
 import { emparejarFilasConFotos, subirFotosDelLote } from "../lib/subirFotosDelLote";
@@ -280,7 +281,7 @@ export function StepConfirmImport({
       }
     } catch (e) {
       toast.error(
-        e instanceof Error ? e.message : "No pudimos consultar el estado del lote.",
+        mensajeDeCarga(e, "No pudimos consultar el estado del lote.", "consultar el estado de la carga"),
       );
     } finally {
       setConsultando(false);
@@ -343,10 +344,20 @@ export function StepConfirmImport({
       // dónde sacar las URLs de las fotos: se salta sin ruido.
       if (importables.length === 0) return;
       const filas: FilaDeImportacion[] = [];
-      for (let pagina = 1; pagina <= 25; pagina++) {
-        const p = await inmueblesImportacionApi.filas(elLote, { pagina, porPagina: 200, estado: 'ACTIVADO' });
-        filas.push(...p.filas);
-        if (p.filas.length < 200) break;
+      try {
+        for (let pagina = 1; pagina <= 25; pagina++) {
+          const p = await inmueblesImportacionApi.filas(elLote, { pagina, porPagina: 200, estado: 'ACTIVADO' });
+          filas.push(...p.filas);
+          if (p.filas.length < 200) break;
+        }
+      } catch (e) {
+        // Antes esto quedaba como un rechazo sin atrapar (`void` en el efecto) y
+        // las fotos no se subían sin que nadie lo supiera. Los inmuebles ya están
+        // creados: se avisa y se dice dónde subirlas.
+        toast.warning("Las fotos no se subieron", {
+          description: `${mensajeDeCarga(e, "No pudimos leer los inmuebles creados.", "preparar las fotos")} Puedes subirlas desde cada inmueble.`,
+        });
+        return;
       }
       const pares = emparejarFilasConFotos(filas, importables).filter((x) => !fotosSubidas.has(x.propertyId));
       if (pares.length === 0) return;
@@ -563,7 +574,7 @@ export function StepConfirmImport({
        */
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No pudimos abrir ese lote.");
+      setError(mensajeDeCarga(e, "No pudimos abrir ese lote.", "abrir esta carga"));
     }
   }, [cargarFallidas]);
 
@@ -851,7 +862,7 @@ export function StepConfirmImport({
       setError(
         esSesionMuerta(causa)
           ? MENSAJE_SESION_TERMINADA
-          : `${mensajeDeCarga(causa, "No pudimos subir el archivo.")}${cortada && e.lote ? " Lo que ya llegó está guardado: toca «Continuar subiendo» para seguir donde quedó." : ""}`,
+          : `${mensajeDeCarga(causa, "No pudimos subir el archivo.", "subir el archivo")}${cortada && e.lote ? " Lo que ya llegó está guardado: toca «Continuar subiendo» para seguir donde quedó." : ""}`,
       );
     } finally {
       setSubiendo(false);
@@ -930,7 +941,7 @@ export function StepConfirmImport({
       setError(
         esSesionMuerta(causa)
           ? MENSAJE_SESION_TERMINADA
-          : `${mensajeDeCarga(causa, "Se cortó la búsqueda de direcciones.")} Lo que ya se ubicó está guardado: toca «Continuar ubicando» para seguir.`,
+          : `${mensajeDeCarga(causa, "Se cortó la búsqueda de direcciones.", "guardar las direcciones")} Lo que ya se ubicó está guardado: toca «Continuar ubicando» para seguir.`,
       );
     } finally {
       ubicandoRef.current = false;
@@ -986,7 +997,7 @@ export function StepConfirmImport({
         await refrescarRevision(lote, pagina);
       }
     } catch (e) {
-      setError(mensajeDeCarga(e, "No pudimos reintentar esta carga."));
+      setError(mensajeDeCarga(e, "No pudimos reintentar esta carga.", "reintentar esta carga"));
     } finally {
       setReintentando(false);
     }
@@ -1009,10 +1020,13 @@ export function StepConfirmImport({
         // La fila que se ve es vieja: refrescar la saca de la lista en vez
         // de dejar a la persona editando un fantasma que siempre da 409.
         await refrescarRevision(lote, pagina);
+      } else if (traeErroresPorCampo(e)) {
+        // Un 400 con `campos` (un canon de once cifras, una fecha mal
+        // escrita): lo pinta la FILA debajo de su campo, con el foco ahí.
+        // Un toast suelto la dejaría adivinando cuál de los diez inputs era.
+        throw e;
       } else {
-        toast.error(
-          e instanceof Error ? e.message : "No pudimos guardar los cambios.",
-        );
+        toast.error(mensajeDeCarga(e, "No pudimos guardar los cambios.", "guardar la fila"));
       }
     } finally {
       setFilaBusy(null);
@@ -1029,9 +1043,7 @@ export function StepConfirmImport({
       toast.error(
         e instanceof ApiError && e.code === "LOTE_EN_PROCESO"
           ? MENSAJE_CREANDO_NO_SE_EDITA
-          : e instanceof Error
-            ? e.message
-            : "No pudimos descartar la fila.",
+          : mensajeDeCarga(e, "No pudimos descartar la fila.", "descartar la fila"),
       );
     } finally {
       setFilaBusy(null);
@@ -1054,7 +1066,7 @@ export function StepConfirmImport({
       else router.push("/panel/inmobiliaria/inmuebles");
     } catch (e) {
       // `LOTE_EN_PROCESO` es «espera a que termine», no un fallo de la persona.
-      setError(mensajeDeCarga(e, "No pudimos descartar el lote."));
+      setError(mensajeDeCarga(e, "No pudimos descartar el lote.", "descartar la carga"));
     } finally {
       setDescartandoLote(false);
     }
@@ -1106,7 +1118,7 @@ export function StepConfirmImport({
       }
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "No pudimos volver a revisar el lote.",
+        mensajeDeCarga(e, "No pudimos volver a revisar el lote.", "volver a revisar la carga"),
       );
     } finally {
       setRevisando(false);
@@ -1249,7 +1261,7 @@ export function StepConfirmImport({
       setError(
         esSesionMuerta(e)
           ? MENSAJE_SESION_TERMINADA
-          : mensajeDeCarga(e, "No pudimos empezar a crear los inmuebles."),
+          : mensajeDeCarga(e, "No pudimos empezar a crear los inmuebles.", "empezar a crear los inmuebles"),
       );
     } finally {
       setIniciandoCreacion(false);
@@ -1423,13 +1435,13 @@ export function StepConfirmImport({
            * completa como un fracaso de 679.
            */}
           <p className="text-fg-muted dark:text-fg-subtle" data-testid="resumen-creadas">
-            Se crearon{" "}
-            <span className="font-semibold text-fg dark:text-white">
-              {nCreadas.toLocaleString("es-CO")}{" "}
-              {nCreadas === 1 ? "inmueble" : "inmuebles"}
-            </span>{" "}
-            en tu portafolio
+            {lineaDeCreados(creacion, nCreadas)}
           </p>
+          {detalleDeReusados(creacion) ? (
+            <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="resumen-reusados">
+              {detalleDeReusados(creacion)}
+            </p>
+          ) : null}
           {(resumenLote?.pendientes ?? 0) > 0 && (
             <div className="space-y-2" data-testid="quedan-por-revisar">
               <p className="text-sm text-warning">
@@ -1619,6 +1631,15 @@ export function StepConfirmImport({
             de{" "}
             <span className="font-mono tabular-nums">{total.toLocaleString("es-CO")}</span>{" "}
             creadas
+            {/* Nico, 2026-09-11: «debemos mostrar acá el % en que va de avance».
+                La vista de T-0131 lo había perdido: el «N de M» solo no dice
+                cuánto falta de un vistazo. */}
+            <span
+              className="ml-2 font-mono text-sm tabular-nums text-fg-muted"
+              data-testid="creacion-porcentaje"
+            >
+              {pct}%
+            </span>
           </p>
           <Progress value={pct} size="xs" />
           {(creacion?.pendientes ?? 0) > 0 && creandoActivo ? (
@@ -1933,12 +1954,12 @@ export function StepConfirmImport({
               : "Todo listo para crear"}
           </h2>
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
-            Se crean{" "}
+            {listas === 1 ? "Se crea" : "Se crean"}{" "}
             <span className="font-mono tabular-nums font-medium text-fg">
               {listas.toLocaleString("es-CO")}
             </span>{" "}
             {listas === 1 ? "inmueble" : "inmuebles"} en un solo proceso del servidor. Puedes cerrar
-            esta página: las seguimos creando.
+            esta página: {listas === 1 ? "lo creamos aunque te vayas." : "las seguimos creando."}
           </p>
         </div>
 
@@ -2082,6 +2103,7 @@ export function StepConfirmImport({
           lote={lote}
           deshabilitado={revisando || descartandoLote || iniciandoCreacion}
           onCambio={() => void refrescarRevision(lote, 1)}
+          firmaDelLote={resumenLote ? `${resumenLote.pendientes}|${resumenLote.listos}|${resumenLote.descartados}` : undefined}
         />
 
         {pendientes.length > 0 && (
@@ -2441,4 +2463,47 @@ function ResumenDeLoQueSeLeyo({ inmuebles }: { inmuebles: ImportProperty[] }) {
       </ul>
     </section>
   );
+}
+
+/**
+ * «Se crearon N inmuebles» contaba FILAS: una reimportación de 4 inmuebles que
+ * ya estaban decía «4 creados» con 0 nuevos, y dos filas con el mismo código
+ * decían 2 donde quedó 1 (QA-MIG-A, MG-36). Con un back que manda `nuevos`,
+ * la frase dice los nuevos y el detalle dice el resto; con uno anterior, lo de
+ * siempre.
+ */
+export function lineaDeCreados(
+  creacion: { creadas: number; nuevos?: number } | null | undefined,
+  nCreadas: number,
+): string {
+  const n = typeof creacion?.nuevos === 'number' ? creacion.nuevos : nCreadas
+  const cifra = n.toLocaleString('es-CO')
+  if (typeof creacion?.nuevos === 'number') {
+    return n === 1 ? 'Se creó 1 inmueble nuevo en tu portafolio' : `Se crearon ${cifra} inmuebles nuevos en tu portafolio`
+  }
+  return `Se crearon ${cifra} ${n === 1 ? 'inmueble' : 'inmuebles'} en tu portafolio`
+}
+
+export function detalleDeReusados(
+  creacion: { creadas: number; inmuebles?: number; nuevos?: number } | null | undefined,
+): string | null {
+  if (typeof creacion?.nuevos !== 'number' || typeof creacion.inmuebles !== 'number') return null
+  const yaEstaban = Math.max(0, creacion.inmuebles - creacion.nuevos)
+  const repetidas = Math.max(0, creacion.creadas - creacion.inmuebles)
+  const partes: string[] = []
+  if (yaEstaban > 0) {
+    partes.push(
+      yaEstaban === 1
+        ? '1 ya estaba en tu portafolio con el mismo código: no se duplicó.'
+        : `${yaEstaban.toLocaleString('es-CO')} ya estaban en tu portafolio con el mismo código: no se duplicaron.`,
+    )
+  }
+  if (repetidas > 0) {
+    partes.push(
+      repetidas === 1
+        ? '1 fila repetía el código de otra fila del archivo: quedaron en el mismo inmueble.'
+        : `${repetidas.toLocaleString('es-CO')} filas repetían el código de otra fila del archivo: quedaron en el mismo inmueble.`,
+    )
+  }
+  return partes.length > 0 ? partes.join(' ') : null
 }

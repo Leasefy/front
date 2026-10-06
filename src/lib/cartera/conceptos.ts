@@ -51,6 +51,8 @@ export function rotuloDelContrato(c: {
 /** Qué le pasó al giro de un mes, dicho como lo diría la persona de tesorería. */
 export const NOMBRE_DEL_ESTADO_DEL_GIRO: Record<EstadoDelGiro, string> = {
   SIN_GENERAR: 'Sin generar la dispersión',
+  // PG-02: con lo que llegó después, todavía sin dispersión.
+  GENERADO_EN_PARTE: 'Generada en parte: hay cuotas sin dispersión',
   DISP_PENDING: 'Dispersión pendiente de aprobar',
   PROCESSING: 'Aprobada, en proceso de giro',
   DISP_COMPLETED: 'Girado',

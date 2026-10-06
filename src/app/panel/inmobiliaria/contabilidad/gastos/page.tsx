@@ -18,6 +18,7 @@ import { useSearchParams } from 'next/navigation';
 import { ArrowLeft } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { SectionLabel } from '@/components/ui/section-label';
 import {
   FacturasDeProveedor,
@@ -28,7 +29,7 @@ export default function GastosPage() {
   const estado = estadoDe(useSearchParams().get('estado'));
 
   return (
-    <PageGuard module="reportes" action="view">
+    <PageGuard module="reportes" roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]} seccion="Contabilidad" action="view">
       <div className="space-y-6 p-6 lg:p-8">
         <header className="space-y-1.5">
           <Link

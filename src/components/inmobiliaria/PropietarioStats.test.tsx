@@ -106,7 +106,7 @@ describe('<PropietarioStats> — alertas', () => {
   it('plata pendiente de girar: monto en el título y botón a dispersiones', () => {
     render({ propietario: { ...base, pendingBalance: 1_800_000 }, consignaciones: [] });
     const a = container.querySelector('[data-testid="alerta-pendiente-de-giro"]')!;
-    expect(a.textContent).toContain('inmobiliaria.propietario.alertas.pendienteDeGiro.titulo($1.800.000)');
+    expect(a.textContent).toContain('inmobiliaria.propietario.alertas.pendienteDeGiro.titulo($\u00a01.800.000)');
     expect(a.querySelector('a')!.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/dispersiones');
   });
 
@@ -133,12 +133,94 @@ describe('<PropietarioStats> — alertas', () => {
 
   it('la comisión es la real del back, no un 10 % inventado', () => {
     render({ propietario: { ...base, totalMonthlyRent: 4_300_000, totalCommission: 517_000 }, consignaciones: [] });
-    expect(container.textContent).toContain('$517.000 inmobiliaria.propietario.stats.commission');
+    expect(container.textContent).toContain('$\u00a0517.000 inmobiliaria.propietario.stats.commission');
     expect(container.textContent).not.toContain('~');
   });
 
   it('sin comisión del back no se estima nada', () => {
     render({ propietario: { ...base, totalMonthlyRent: 4_300_000 }, consignaciones: [] });
     expect(container.textContent).not.toContain('inmobiliaria.propietario.stats.commission');
+  });
+});
+
+/**
+ * 🔴 QA-PROP (03-10): P-17 (lo que no es tendencia no lleva flecha ni rojo),
+ * P-21 (sin acceso a la plata no hay $0 ni «Al día» ni «no tiene cuenta»),
+ * P-22 (a 390 px la franja no corre la página) y P-26 (plurales).
+ */
+describe('<PropietarioStats> — QA de Propietarios', () => {
+  const SIN_CUENTA = { bank: '', accountType: 'savings', accountNumber: '', accountHolder: '' } as unknown as Propietario['bankAccount'];
+  const celdas = () => Array.from(container.querySelectorAll('[data-testid="resumen-del-propietario"] > *')) as HTMLElement[];
+
+  it('🔴 P-17: «7 de 8 arrendados» y «Último giro» van en texto neutro, sin flecha ni rojo', () => {
+    render({
+      propietario: { ...base, propertyCount: 8, activeLeases: 7, copropiedadesCount: 1, pendingBalance: 3_656_150, lastPaymentDate: '2026-10-03T12:00:00Z' },
+      consignaciones: [],
+    });
+    const franja = container.querySelector('[data-testid="resumen-del-propietario"]')!;
+    expect(franja.textContent).toContain('inmobiliaria.propietario.stats.ofTotalRented');
+    expect(franja.textContent).toContain('inmobiliaria.propietario.stats.lastPayment');
+    expect(franja.querySelectorAll('.text-danger, .text-success')).toHaveLength(0);
+    expect(franja.querySelectorAll('svg')).toHaveLength(0);
+  });
+
+  it('🔴 P-21: con la plata oculta (asesor) dice «—» y «sin acceso a la plata», nunca $0 ni «Al día»', () => {
+    render({
+      propietario: {
+        ...base,
+        propertyCount: 8,
+        activeLeases: 7,
+        plataOculta: true,
+        datosBancariosOcultos: true,
+        bankAccount: SIN_CUENTA,
+      },
+      consignaciones: [mandato({})],
+    });
+    const franja = container.querySelector('[data-testid="resumen-del-propietario"]')!.textContent ?? '';
+    expect(franja).not.toContain('$0');
+    expect(franja).not.toContain('inmobiliaria.propietario.stats.upToDate');
+    expect(franja.match(/—/g)).toHaveLength(3);
+    expect(franja.match(/inmobiliaria\.propietario\.stats\.sinAccesoALaPlata/g)).toHaveLength(3);
+  });
+
+  it('🔴 P-21: la cuenta oculta por rol no es «no tiene cuenta»: ni la alerta roja ni la de giros pendientes', () => {
+    render({
+      propietario: { ...base, propertyCount: 8, activeLeases: 7, plataOculta: true, datosBancariosOcultos: true, bankAccount: SIN_CUENTA },
+      consignaciones: [],
+      onCargarCuenta: () => {},
+    });
+    expect(alertas()).toEqual([]);
+  });
+
+  it('sólo la cuenta oculta (ve la plata pero no los datos bancarios): tampoco dice «no tiene cuenta»', () => {
+    render({
+      propietario: { ...base, propertyCount: 1, activeLeases: 1, datosBancariosOcultos: true, bankAccount: SIN_CUENTA },
+      consignaciones: [],
+    });
+    expect(container.querySelector('[data-testid="alerta-sin-cuenta"]')).toBeNull();
+  });
+
+  it('🔴 P-22: la franja es una rejilla bajo `xl` (una columna en el celular, dos en tableta) y una fila desde `xl`', () => {
+    render({ propietario: { ...base, propertyCount: 2, activeLeases: 1 }, consignaciones: [] });
+    const franja = container.querySelector('[data-testid="resumen-del-propietario"]')!;
+    expect(franja.className).toMatch(/\bgrid\b/);
+    expect(franja.className).toMatch(/\bgrid-cols-1\b/);
+    expect(franja.className).toMatch(/\bsm:grid-cols-2\b/);
+    expect(franja.className).toMatch(/\bxl:flex\b/);
+    // En una columna, cada celda menos la primera se separa por arriba, no por el lado.
+    const [, segunda, tercera] = celdas();
+    expect(segunda.className).toMatch(/max-sm:border-l-0/);
+    expect(segunda.className).toMatch(/max-sm:border-t/);
+    expect(tercera.className).toMatch(/sm:max-xl:border-l-0/);
+  });
+
+  it('🔴 P-26: con un solo inmueble arrendado y sin cuenta, el aviso va en singular', () => {
+    render({
+      propietario: { ...base, propertyCount: 1, activeLeases: 1, bankAccount: SIN_CUENTA },
+      consignaciones: [mandato({})],
+    });
+    const a = container.querySelector('[data-testid="alerta-sin-cuenta"]')!.textContent ?? '';
+    expect(a).toContain('inmobiliaria.propietario.alertas.sinCuenta.detalleUno');
+    expect(a).not.toContain('inmobiliaria.propietario.alertas.sinCuenta.detalle(');
   });
 });

@@ -24,6 +24,8 @@ import { Label, RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { MAX_MONTO_EN_PESOS } from '@/lib/configuracion/limites-de-la-inmobiliaria';
 
 type TresEstados = 'SI' | 'NO' | 'SIN_ELEGIR';
 
@@ -85,6 +87,11 @@ export function ConfigCicloDeVidaDelContrato({
     const topeNum = tope.trim() === '' ? null : Number(tope.replace(/\D/g, ''));
     if (topeNum !== null && (!Number.isInteger(topeNum) || topeNum <= 0)) {
       setError('El tope va en pesos, mayor que cero.');
+      return;
+    }
+    // El tope del back (`garantiaServiciosTopeCop`, columna int4).
+    if (topeNum !== null && topeNum > MAX_MONTO_EN_PESOS) {
+      setError('El tope de la garantía de servicios no puede pasar de $2.000.000.000. Revisa que no sobren ceros.');
       return;
     }
     const periodosNum = periodos.trim() === '' ? null : Number(periodos);
@@ -328,7 +335,7 @@ export function ConfigCicloDeVidaDelContrato({
         <Button size="sm" variant="outline" disabled={deshabilitado} onClick={() => void guardar()}>
           Guardar
         </Button>
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        <ErrorDelCampo id="ciclo-de-vida-error" mensaje={error} className="mt-0" />
       </div>
     </section>
   );

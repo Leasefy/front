@@ -67,7 +67,11 @@ export const COLUMNAS_DE_CUENTA: readonly (ColumnaDePlantilla & { campo: CampoDe
     titulo: 'Naturaleza',
     obligatoria: false,
     ejemplo: 'Débito',
-    alias: ['naturaleza', 'tipo', 'debito credito', 'db cr', 'nature'],
+    // QA-MIG-B (04-10): «Nat» (SIIGO Pyme) y «D/C» (Excel del contador) son
+    // la naturaleza; antes quedaban «Ignorar» y se deducía de la clase
+    // pasando por encima de lo que decía el archivo. «Tipo» se queda: si trae
+    // la CLASE («Activo», Alegra) el back lo reconoce y toma la del código.
+    alias: ['naturaleza', 'tipo', 'debito credito', 'db cr', 'nature', 'nat', 'd c', 'dc', 'naturaleza cuenta', 'deb cred'],
     ayuda: 'Débito o Crédito. Si falta, se deduce de la clase (el primer dígito).',
   },
   {
@@ -75,7 +79,7 @@ export const COLUMNAS_DE_CUENTA: readonly (ColumnaDePlantilla & { campo: CampoDe
     titulo: 'Recibe movimientos',
     obligatoria: false,
     ejemplo: 'Sí',
-    alias: ['imputable', 'movimiento', 'recibe movimientos', 'auxiliar', 'detalle si no', 'es auxiliar', 'nivel detalle'],
+    alias: ['imputable', 'movimiento', 'recibe movimientos', 'auxiliar', 'detalle si no', 'es auxiliar', 'nivel detalle', 'transaccional', 'es transaccional', 'acepta movimiento', 'acepta movimientos'],
     ayuda: 'Sí/No. Si falta, lo decide el árbol: las cuentas con subcuentas no reciben movimientos.',
   },
   {
@@ -91,15 +95,18 @@ export const COLUMNAS_DE_CUENTA: readonly (ColumnaDePlantilla & { campo: CampoDe
     titulo: 'Habilitada',
     obligatoria: false,
     ejemplo: 'SI',
-    alias: ['habilitado', 'habilitada', 'activa', 'activo', 'estado cuenta', 'vigente'],
-    ayuda: 'SI/NO. Una cuenta deshabilitada existe pero no se puede usar.',
+    // QA-MIG-B (04-10): «Estado» (Activo/Inactivo en SIIGO, Activa/Inactiva
+    // en Alegra, A/I en Helisa) es esta columna. Sin el alias, una cuenta
+    // cancelada del archivo entraba ACTIVA.
+    alias: ['habilitado', 'habilitada', 'activa', 'activo', 'estado cuenta', 'vigente', 'estado', 'estado de la cuenta', 'activa si no'],
+    ayuda: 'Sí/No, Activa/Inactiva o A/I. Una cuenta deshabilitada existe pero no se puede usar.',
   },
   {
     campo: 'controlDeTerceros',
     titulo: 'Control de terceros',
     obligatoria: false,
     ejemplo: 'NO',
-    alias: ['control de terceros', 'control terceros', 'maneja terceros', 'exige tercero', 'requiere tercero'],
+    alias: ['control de terceros', 'control terceros', 'maneja terceros', 'exige tercero', 'requiere tercero', 'maneja tercero', 'exige nit', 'maneja nit', 'tercero'],
     ayuda: 'SI/NO. Las cuentas que exigen decir de quién es el saldo.',
   },
   {
@@ -123,6 +130,20 @@ function texto(v: unknown): string {
   if (v === null || v === undefined) return '';
   if (v instanceof Date) return '';
   return String(v).trim();
+}
+
+/**
+ * 🔴 QA-MIG-B (04-10). El estado de la cuenta: «SI»/«NO» viaja como booleano
+ * (lo de siempre); cualquier OTRA cosa no vacía —«Inactiva», «Inactivo»,
+ * «I»— viaja CRUDA y la lee el back (`leerEstadoDeCuenta`), que la entiende
+ * o frena la fila diciendo por qué. Antes se descartaba por no ser SI/NO y
+ * la cuenta entraba activa: una cuenta cancelada aparecía habilitada.
+ */
+function estadoDeLaCuenta(v: unknown): boolean | string | undefined {
+  const b = banderaDeOrigen(v);
+  if (b !== undefined) return b;
+  const t = texto(v);
+  return t ? cap(t, 40) : undefined;
 }
 
 function cap(s: string, n: number): string {
@@ -173,7 +194,7 @@ export function armarCuentas(
      */
     const banderas = {
       ultimoNivel: banderaDeOrigen(leer(fila, 'ultimoNivel')),
-      habilitado: banderaDeOrigen(leer(fila, 'habilitado')),
+      habilitado: estadoDeLaCuenta(leer(fila, 'habilitado')),
       controlDeTerceros: banderaDeOrigen(leer(fila, 'controlDeTerceros')),
       cajaOBanco: banderaDeOrigen(leer(fila, 'cajaOBanco')),
     };

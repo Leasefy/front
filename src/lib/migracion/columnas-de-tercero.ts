@@ -302,7 +302,16 @@ export function mapearColumnas(
       if (usados.has(columna.campo)) continue;
       if (columna.campo === 'nombre' && esParteNumerada(n)) continue;
       for (const termino of terminosDe(columna)) {
-        if (termino.length < LARGO_MINIMO_PARA_CONTENER) continue;
+        if (termino.length < LARGO_MINIMO_PARA_CONTENER) {
+          /*
+           * Un alias corto («cc», «nit») no se busca adentro de otra palabra,
+           * pero SÍ como palabra completa: «Nit/CC», «CC propietario» o
+           * «NIT o CC» son la columna del documento, y sin esto quedaban sin
+           * mapear y TODAS las filas sin documento (QA-MIG-A, MG-03).
+           */
+          if (` ${n} `.includes(` ${termino} `)) candidatos.push({ i, campo: columna.campo, termino });
+          continue;
+        }
         if (n.includes(termino)) candidatos.push({ i, campo: columna.campo, termino });
       }
     }
@@ -400,6 +409,25 @@ function celda(valor: unknown): string {
  * vacía simplemente no está: «MARIA» + «» + «RUIZ» + «GOMEZ» es «MARIA RUIZ
  * GOMEZ», no «MARIA  RUIZ GOMEZ».
  */
+/**
+ * MG-22: los nombres y los apellidos POR SEPARADO, tal como los parte el
+ * archivo. Viajan junto al nombre completo para que el back no lo vuelva a
+ * partir a ojo («Gloria Patricia Úsuga» = «Gloria Patricia» + «Úsuga», no
+ * «Gloria» + «Patricia Úsuga»). Una mitad vacía = no se manda ninguna.
+ */
+export function mitadesDelNombre(
+  partes: Partial<Record<ParteDelNombre, unknown>>,
+): { nombres: string; apellidos: string } | null {
+  const mitad = (a: ParteDelNombre, b: ParteDelNombre, juntos: ParteDelNombre) => {
+    const primero = celda(partes[a]);
+    const segundo = celda(partes[b]);
+    return (primero || segundo ? [primero, segundo] : [celda(partes[juntos])]).filter(Boolean).join(' ');
+  };
+  const nombres = mitad('primerNombre', 'segundoNombre', 'nombres');
+  const apellidos = mitad('primerApellido', 'segundoApellido', 'apellidos');
+  return nombres && apellidos ? { nombres, apellidos } : null;
+}
+
 export function componerNombre(partes: Partial<Record<ParteDelNombre, unknown>>): string {
   const numerados = (a: ParteDelNombre, b: ParteDelNombre, juntos: ParteDelNombre) => {
     const primero = celda(partes[a]);
@@ -474,6 +502,15 @@ export function armarFila(
   if (!celda(cruda.nombre) && nombreSeArmaPorPartes(mapeo)) {
     const compuesto = componerNombre(partes);
     if (compuesto) cruda.nombre = compuesto;
+  }
+  // MG-22: con las partes, mandan las partes — aunque la fila traiga además
+  // su nombre completo (que sigue siendo el nombre que se muestra).
+  if (nombreSeArmaPorPartes(mapeo)) {
+    const mitades = mitadesDelNombre(partes);
+    if (mitades) {
+      cruda.nombres = mitades.nombres;
+      cruda.apellidos = mitades.apellidos;
+    }
   }
   // Las columnas «a notas» se pegan debajo de la nota propia, una por línea.
   const lineas = mapeo

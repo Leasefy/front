@@ -32,11 +32,12 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
@@ -76,6 +77,8 @@ export interface TablaDeSiniestrosProps {
   /** ¿Hay búsqueda puesta? Distingue «ningún caso» de «ninguno coincide». */
   hayFiltros?: boolean
   onLimpiarFiltros?: () => void
+  /** Filtros y página: al cambiar, el cuerpo entra de nuevo (filas escalonadas). */
+  clave?: string
 }
 
 const COLUMNAS = 7
@@ -85,6 +88,7 @@ export function TablaDeSiniestros({
   diasParaSiniestro,
   hayFiltros = false,
   onLimpiarFiltros,
+  clave,
 }: TablaDeSiniestrosProps) {
   const { t } = useI18n()
   return (
@@ -100,9 +104,9 @@ export function TablaDeSiniestros({
           <TableHead className="w-16" />
         </TableRow>
       </TableHeader>
-      <TableBody>
+      <TableBodyAnimado key={clave}>
         {items.length === 0 ? (
-          <TableRow>
+          <TableRowAnimada key="vacio">
             <TableCell colSpan={COLUMNAS} className="p-0">
               <SinDatos
                 hayFiltros={hayFiltros}
@@ -113,12 +117,12 @@ export function TablaDeSiniestros({
                 onLimpiarFiltros={onLimpiarFiltros}
               />
             </TableCell>
-          </TableRow>
+          </TableRowAnimada>
         ) : (
           items.map((i) => {
             const desde = fechaCorta(i.siniestroDesde)
             return (
-              <TableRow
+              <TableRowAnimada
                 key={i.cuotaId}
                 data-testid="siniestro-fila"
                 data-cuota-id={i.cuotaId}
@@ -167,11 +171,11 @@ export function TablaDeSiniestros({
                     </Link>
                   </Button>
                 </TableCell>
-              </TableRow>
+              </TableRowAnimada>
             )
           })
         )}
-      </TableBody>
+      </TableBodyAnimado>
     </Table>
   )
 }

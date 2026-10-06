@@ -99,7 +99,9 @@ const COBERTURA: string[] = [
   'app/panel/inmobiliaria/postulaciones/asegurabilidad/costos/page.tsx',
   'app/panel/inmobiliaria/postulaciones/asegurabilidad/configuracion/page.tsx',
   'components/inmobiliaria/cotizador/CotizadorRecentQuotesFeed.tsx',
-  'components/inmobiliaria/cotizador/CotizadorPriorityInbox.tsx',
+  // `CotizadorPriorityInbox.tsx` se borró el 05-10-2026 (PROMESAS-Y-DIRECTOR):
+  // «Consultas que necesitan atención» leía la cola del cotizador, que el micro
+  // devuelve siempre vacía. No se renombró: dejó de existir.
   'components/inmobiliaria/cotizador/CotizadorCarriersStatus.tsx',
   'components/inmobiliaria/cotizador/CarrierRegistryTable.tsx',
   'components/inmobiliaria/cotizador/CarrierOverridePopover.tsx',
@@ -117,12 +119,13 @@ const COBERTURA: string[] = [
   'components/inmobiliaria/ai/ColaHumana.tsx',
   'components/inmobiliaria/ai/AutonomiaPanel.tsx',
   // — contratos ————————————————————————————————————————————————
-  'app/panel/inmobiliaria/contratos/(retencion)/layout.tsx',
-  'app/panel/inmobiliaria/contratos/(retencion)/retencion/page.tsx',
-  'app/panel/inmobiliaria/contratos/(retencion)/riesgo/BandejaClient.tsx',
-  'app/panel/inmobiliaria/contratos/(retencion)/riesgo/[caseId]/CasoSidebar.tsx',
-  'app/panel/inmobiliaria/contratos/(retencion)/riesgo/[caseId]/CasoDetailClient.tsx',
-  'app/panel/inmobiliaria/contratos/(retencion)/aprobar/RevisionesClient.tsx',
+  // Retención se mudó a «Agentes IA» (QA-CONT C-19): mismas pantallas, otra carpeta.
+  'app/panel/inmobiliaria/retencion/layout.tsx',
+  'app/panel/inmobiliaria/retencion/page.tsx',
+  'app/panel/inmobiliaria/retencion/riesgo/BandejaClient.tsx',
+  'app/panel/inmobiliaria/retencion/riesgo/[caseId]/CasoSidebar.tsx',
+  'app/panel/inmobiliaria/retencion/riesgo/[caseId]/CasoDetailClient.tsx',
+  'app/panel/inmobiliaria/retencion/aprobar/RevisionesClient.tsx',
   'app/panel/inmobiliaria/contratos/[id]/page.tsx',
   'app/panel/inmobiliaria/contratos/[id]/editar/page.tsx',
   'app/panel/inmobiliaria/contratos/[id]/firmar/page.tsx',
@@ -150,8 +153,6 @@ const COBERTURA: string[] = [
   'components/messages/PendientesDelHiloPopover.tsx',
   'components/messages/PlantillasDeMensajePopover.tsx',
   'components/messages/SelectorDeEmojis.tsx',
-  // — reportes / exportación ——————————————————————————————————
-  'components/inmobiliaria/ExportButton.tsx',
   // — mantenimiento ————————————————————————————————————————————
   'components/inmobiliaria/mantenimiento/TicketCard.tsx',
   'components/inmobiliaria/mantenimiento/InboxFilters.tsx',
@@ -188,6 +189,15 @@ const COBERTURA: string[] = [
   // Nace en tokens (2026-09-08): entra acá el mismo día, para que no haya que
   // «pasarla» después.
   'components/contabilidad/ComprobantesDelSistemaAnterior.tsx',
+  // — el director del Piloto (fase 1, 2026-09-28) ————————————————
+  // Nace en tokens y en primitivas: la tarjeta «Hoy», las metas, el por qué
+  // de la Bandeja y la configuración (gasto de IA y grupo de control).
+  'components/inmobiliaria/piloto/PilotoDirector.tsx',
+  'components/inmobiliaria/piloto/PilotoDirectorHoy.tsx',
+  'components/inmobiliaria/piloto/PilotoDirectorMetas.tsx',
+  'components/inmobiliaria/piloto/PilotoDirectorPorQue.tsx',
+  'components/inmobiliaria/piloto/PilotoDirectorAjustes.tsx',
+  'components/inmobiliaria/piloto/PilotoDirectorSemana.tsx',
   // — listados diarios ————————————————————————————————————————
   'components/inmobiliaria/InquilinosTable.tsx',
   'components/inmobiliaria/InquilinoDrawer.tsx',
@@ -196,7 +206,6 @@ const COBERTURA: string[] = [
   'components/inmobiliaria/PropietarioBankInfo.tsx',
   'components/inmobiliaria/SelectorDePropietarios.tsx',
   'components/inmobiliaria/RenovacionesTable.tsx',
-  'components/inmobiliaria/AgenteTable.tsx',
   'components/inmobiliaria/CandidateDrawer.tsx',
   'components/inmobiliaria/VisitasDelInmueble.tsx',
   'components/inmobiliaria/ReporteCard.tsx',
@@ -267,9 +276,6 @@ const COLOR_CRUDO_JUSTIFICADO: Record<string, string> = {
     'Degradé `from-black/60` y píldora «Subiendo» sobre la foto; y ' +
     '`bg-danger … text-white` en «No se subió» — `text-danger-fg` es el rojo mismo, ' +
     'así que sería rojo sobre rojo.',
-  'components/inmobiliaria/ExportButton.tsx':
-    '`text-white` sobre los rellenos `bg-danger` (PDF) y `bg-success` (Excel): ' +
-    'mismo motivo, `danger-fg`/`success-fg` son alias del propio color.',
   'components/inmobiliaria/ActaEntregaView.tsx':
     'Scrim del lightbox de fotos del acta (`bg-black/80`, `bg-black/50 text-white`). ' +
     'Un scrim tiene que quedarse oscuro en LOS DOS temas: `bg-fg/80` se volvería ' +
@@ -279,8 +285,6 @@ const COLOR_CRUDO_JUSTIFICADO: Record<string, string> = {
   'components/inmobiliaria/MantenimientoViewer.tsx':
     'Velo `bg-black/20` sobre la foto del ticket, y `text-white` sobre el relleno ' +
     '`bg-success` del paso completado.',
-  'components/inmobiliaria/MantenimientoForm.tsx':
-    '`text-white` sobre el relleno `bg-danger`.',
   'components/inmobiliaria/ActaEntregaForm.tsx':
     '`text-white` sobre el relleno `bg-success` del círculo de paso completado.',
   'components/inmobiliaria/CandidateDrawer.tsx':
@@ -307,6 +311,10 @@ const COLOR_CRUDO_JUSTIFICADO: Record<string, string> = {
  * verifica el test de abajo).
  */
 const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
+  'app/panel/inmobiliaria/agenda/page.tsx':
+    'Dos filas clickeables enteras que abren el cajón del evento: la ficha del ' +
+    'día en «Semana» y la tarjeta de la vista de celular (AG-03/AG-14). Las ' +
+    'pestañas y «Sólo lo mío» ya usan Button y Checkbox.',
   // ColaHumana ya no está: la cola pasó de tarjetas a la tabla de la casa
   // (2026-09-08), y la fila clickeable es un `<TableRow>` con `role="button"`,
   // no un `<button>` a mano.
@@ -346,11 +354,6 @@ const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
   'components/messages/SelectorDeEmojis.tsx':
     'Disparador del popover con estado seleccionado, y la grilla de emojis: cada ' +
     'emoji es una celda de 32px, no un CTA.',
-  'components/inmobiliaria/ExportButton.tsx':
-    'CTA con marca por formato (rojo PDF / verde Excel) y cambio de ícono con ' +
-    '`AnimatePresence`: el `Button` del DS no tiene variante de éxito y su prop ' +
-    '`isLoading` no modela el swap éxito→ícono. Ya estaba anotado en el archivo ' +
-    'como «allowlist (Cadence GAP)».',
   'app/panel/inmobiliaria/contratos/[id]/editar/page.tsx':
     '`<input type="file" className="sr-only">` detrás de un `<label htmlFor>`: no ' +
     'tiene apariencia, y el adapter `<Input>` le inyectaría `h-11 px-4` peleando ' +
@@ -380,7 +383,6 @@ const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
     'Paso del stepper: la celda entera es el control.',
   'components/inmobiliaria/CobroTable.tsx': 'Disparador de orden en `<TableHead>`.',
   'components/inmobiliaria/PropietarioTable.tsx': 'Disparador de orden en `<TableHead>`.',
-  'components/inmobiliaria/AgenteTable.tsx': 'Disparador de orden en `<TableHead>`.',
   'components/inmobiliaria/RenovacionesTable.tsx': 'Disparador de orden en `<TableHead>`.',
   'components/inmobiliaria/DispersionCard.tsx':
     'Cabecera desplegable de la tarjeta: el bloque entero abre y cierra.',
@@ -430,7 +432,7 @@ const CONTROL_A_MANO_JUSTIFICADO: Record<string, string> = {
     'Celda `role="gridcell"` del mapa de calor.',
   'components/inmobiliaria/cobranza/DebtorPicker.tsx':
     'Fila de sugerencia del buscador de deudores.',
-  'app/panel/inmobiliaria/contratos/(retencion)/riesgo/[caseId]/CasoDetailClient.tsx':
+  'app/panel/inmobiliaria/retencion/riesgo/[caseId]/CasoDetailClient.tsx':
     'Pestaña subrayada, sin superficie ni pill: un `Button` le pondría pill y foco ' +
     'de CTA a algo que es una pestaña.',
 }

@@ -82,6 +82,8 @@ export interface BackendApplication {
     neighborhood: string;
     monthlyRent: number;
     images?: Array<{ url: string; order: number }>;
+    /** La inmobiliaria que administra el inmueble (null si es de un propietario directo). */
+    agencyId?: string | null;
   };
 }
 
@@ -252,6 +254,19 @@ export interface PreScoringStudy {
   carriers?: PreScoringCarrierResult[];
 }
 
+/**
+ * Lo que falta del estudio de arrendamiento de quien se postuló (back:
+ * `applications/marca-del-estudio.ts`). 🔴 El estudio es OPCIONAL (Nico,
+ * 04-10-2026): la postulación entra igual y la inmobiliaria la ve marcada;
+ * al aprobar una marcada, el panel pide confirmar. `null` = tiene estudio y
+ * el canon le cabe en el respaldo.
+ */
+export interface MarcaDelEstudio {
+  codigo: 'SIN_ESTUDIO' | 'ESTUDIO_EN_CURSO' | 'ESTUDIO_VENCIDO' | 'CANON_SOBRE_RESPALDO';
+  /** Sólo con `CANON_SOBRE_RESPALDO`: hasta cuánto la respaldan (puede ser 0). */
+  respaldoCop: number | null;
+}
+
 /** Shape returned by GET /landlord/properties/:id/candidates */
 export interface LandlordCandidate {
   id: string;
@@ -267,6 +282,8 @@ export interface LandlordCandidate {
    * same "no study" UI state — never a blank panel. See PreScoringStudy.
    */
   preScoringStudy?: PreScoringStudy | null;
+  /** Ausente en un back anterior al 04-10-2026: se trata como sin marca. */
+  marcaDelEstudio?: MarcaDelEstudio | null;
 }
 
 /** Item of GET /landlord/candidates — candidate plus its property context */

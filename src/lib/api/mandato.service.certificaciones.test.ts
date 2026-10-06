@@ -73,3 +73,31 @@ describe('las certificaciones del reparto viajan en su campo', () => {
     );
   });
 });
+
+describe('un 4xx del formulario trae el cuerpo entero (02-10-2026)', () => {
+  it('🔴 `campos`, `cuenta`, `campo` y `referencia` llegan en `detalle` del ApiError', async () => {
+    const cuerpo = {
+      statusCode: 400,
+      code: 'CUENTA_INVALIDA',
+      message: 'El número de la cuenta 2 no es válido.',
+      cuenta: 1,
+      campo: 'bankAccountNumber',
+      campos: [{ campo: 'reparto.1.bankAccountNumber', regla: 'formato', mensaje: 'El número de la cuenta 2 no es válido.' }],
+      referencia: 'ab12cd34',
+    };
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => cuerpo,
+    } as unknown as Response) as typeof globalThis.fetch;
+    const error = await mandatoApi
+      .solicitarCambioDeCuenta('p1', {
+        bankCode: 'DAVIVIENDA',
+        bankAccountType: 'AHORROS',
+        bankAccountNumber: 'x',
+        titularDeLaCuenta: 'PROPIETARIO',
+      })
+      .catch((e: unknown) => e);
+    expect(error).toMatchObject({ status: 400, code: 'CUENTA_INVALIDA', detalle: cuerpo });
+  });
+});

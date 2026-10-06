@@ -26,8 +26,9 @@ void React
 // ---------------------------------------------------------------------------
 
 const cerrar = vi.fn()
+let abierta = true
 vi.mock('@/lib/context/CommandPaletteContext', () => ({
-  useCommandPalette: () => ({ isOpen: true, open: vi.fn(), close: cerrar }),
+  useCommandPalette: () => ({ isOpen: abierta, open: vi.fn(), close: cerrar }),
 }))
 
 const push = vi.fn()
@@ -73,6 +74,7 @@ interface EntradaDeAuditoria {
   ip: string | null
   user_agent: string | null
   occurred_at: string
+  details?: unknown
 }
 
 let auditoria: {
@@ -147,6 +149,7 @@ function tecla(key: string) {
 }
 
 beforeEach(() => {
+  abierta = true
   push.mockClear()
   cerrar.mockClear()
   auditoria = { items: [], isLoading: false, error: null }
@@ -165,8 +168,9 @@ afterEach(() => {
 
 describe('Novedades — nunca una clave cruda', () => {
   const hace6h = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+  const hace19min = new Date(Date.now() - 19 * 60 * 1000).toISOString()
 
-  function evento(action: string, entity_type: string | null): EntradaDeAuditoria {
+  function evento(action: string, entity_type: string | null, extra: Partial<EntradaDeAuditoria> = {}): EntradaDeAuditoria {
     return {
       id: `ev-${action}`,
       action,
@@ -177,6 +181,7 @@ describe('Novedades — nunca una clave cruda', () => {
       ip: null,
       user_agent: null,
       occurred_at: hace6h,
+      ...extra,
     }
   }
 
@@ -189,9 +194,10 @@ describe('Novedades — nunca una clave cruda', () => {
     montar()
 
     expect(texto()).toContain('Llamada retenida para aprobación')
-    expect(texto()).toContain('deudor · hace 6 h')
+    expect(texto()).toContain('Deudor')
+    expect(texto()).toContain('hace 6 h')
     expect(texto()).not.toContain('precall.held_for_approval')
-    expect(texto()).not.toContain('debtor ·')
+    expect(texto()).not.toContain('debtor')
   })
 
   it('un evento que nadie tradujo sale humanizado, sin puntos ni guiones', () => {
@@ -203,8 +209,26 @@ describe('Novedades — nunca una clave cruda', () => {
     montar()
 
     expect(texto()).toContain('Cobranza algo totalmente nuevo')
-    expect(texto()).toContain('una entidad nueva')
+    expect(texto()).toContain('Una entidad nueva')
     expect(texto()).not.toContain('cobranza.algo_totalmente_nuevo')
+  })
+
+  it('la captura del 02-10: cuatro «Piloto retenido por autonomia» son UNA fila, en español y con tilde', () => {
+    auditoria = {
+      items: [1, 2, 3, 4].map((n) =>
+        evento('piloto_retenido_por_autonomia', 'piloto_retencion', { id: `r-${n}`, occurred_at: hace19min }),
+      ),
+      isLoading: false,
+      error: null,
+    }
+    montar()
+
+    const filas = document.body.querySelectorAll('section[aria-label="Novedades"] li')
+    expect(filas.length).toBe(1)
+    expect(filas[0]?.textContent).toContain('Acción retenida para tu aprobación')
+    expect(filas[0]?.textContent).toContain('Piloto automático · 4 veces')
+    expect(filas[0]?.textContent).toContain('hace 19 min')
+    expect(texto()).not.toMatch(/autonomia|piloto retencion|Piloto retenido/)
   })
 
   it('si el feed falla, el grupo entero desaparece (el ⌘K no es un log de errores)', () => {
@@ -228,12 +252,38 @@ describe('Novedades — nunca una clave cruda', () => {
 // ---------------------------------------------------------------------------
 
 describe('estado vacío — el pie no miente', () => {
-  it('las acciones rápidas son filas navegables del listbox', () => {
+  it('las acciones rápidas son filas navegables del listbox, con su línea de apoyo', () => {
     montar()
     const filas = opciones()
     expect(filas.length).toBe(5)
     expect(filas[0]?.textContent).toContain('Nueva consignación')
+    expect(filas[0]?.textContent).toContain('Un inmueble nuevo con su propietario')
+    expect(filas[1]?.textContent).toContain('Deudores, llamadas y acuerdos de pago')
     expect(filas[0]?.getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('el campo anuncia la fila activa (aria-activedescendant) y las filas no van en el Tab', () => {
+    montar()
+    expect(input().getAttribute('aria-activedescendant')).toBe(opciones()[0]?.id)
+    tecla('ArrowDown')
+    expect(input().getAttribute('aria-activedescendant')).toBe(opciones()[1]?.id)
+    for (const fila of opciones()) expect(fila.getAttribute('tabindex')).toBe('-1')
+  })
+
+  it('las cinco acciones siguen yendo a las mismas rutas', () => {
+    montar()
+    const destinos: string[] = []
+    for (let i = 0; i < 5; i++) {
+      act(() => opciones()[i]!.click())
+      destinos.push(push.mock.calls.at(-1)?.[0] as string)
+    }
+    expect(destinos).toEqual([
+      '/panel/inmobiliaria/inmuebles/nuevo',
+      '/panel/inmobiliaria/pagos/cobranza',
+      '/panel/inmobiliaria/postulaciones/asegurabilidad',
+      '/panel/inmobiliaria/reportes',
+      '/panel/inmobiliaria/inmuebles',
+    ])
   })
 
   it('↓ mueve el foco y ↵ abre esa acción', () => {
@@ -323,6 +373,10 @@ describe('con búsqueda', () => {
     expect(opciones().length).toBe(2)
     // El contador del encabezado.
     expect(texto()).toContain('2')
+    // Lo escrito se resalta en el título, sin importar mayúsculas.
+    const marcas = Array.from(opciones()[0]!.querySelectorAll('mark')).map((m) => m.textContent)
+    expect(marcas).toEqual(['Cob'])
+    expect(opciones()[1]!.querySelectorAll('mark').length).toBe(0)
   })
 
   it('sin resultados dice qué probar', () => {
@@ -334,11 +388,12 @@ describe('con búsqueda', () => {
     montar()
     escribir('zzzz')
 
+    expect(document.body.querySelector('[data-testid="cp-sin-resultados"]')).toBeTruthy()
     expect(texto()).toContain('Sin resultados para “zzzz”')
     expect(texto()).toContain('Prueba con el código, el nombre o el documento.')
   })
 
-  it('mientras carga no dice «sin resultados»', () => {
+  it('mientras carga no dice «sin resultados»: filas fantasma y el hilo bajo el campo', () => {
     busqueda = {
       bySource: { navegacion: { isLoading: true, error: null, results: [] } },
       flat: [],
@@ -348,5 +403,59 @@ describe('con búsqueda', () => {
     escribir('zz')
 
     expect(texto()).not.toContain('Sin resultados')
+    expect(document.body.querySelector('[data-testid="cp-cargando"]')).toBeTruthy()
+    expect(document.body.querySelector('[data-testid="cp-buscando"]')).toBeTruthy()
+    expect(texto()).toContain('Buscando…')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Abrir y cerrar (framer-motion, Nico 02-10: «cada interacción con su animación»)
+// ---------------------------------------------------------------------------
+
+describe('abrir y cerrar', () => {
+  /** `skipAnimations` (vitest.setup) termina la salida en el próximo cuadro. */
+  async function dejarTerminarLaSalida() {
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 60))
+    })
+  }
+
+  it('el velo y la caja son de framer; un clic en el velo cierra', () => {
+    montar()
+    const velo = document.body.querySelector<HTMLElement>('[data-testid="cp-velo"]')
+    expect(velo).toBeTruthy()
+    expect(document.body.querySelector('[data-testid="cp-caja"]')).toBeTruthy()
+    act(() => velo!.click())
+    expect(cerrar).toHaveBeenCalled()
+  })
+
+  it('una sola ✕, la del producto (Cadence no pinta la suya sobre el marco)', () => {
+    montar()
+    expect(document.body.querySelectorAll('[data-testid="dialog-close"]').length).toBe(1)
+  })
+
+  it('al cerrar, la caja SALE y recién entonces se desmonta y se borra lo escrito', async () => {
+    montar()
+    act(() => {
+      const el = input()
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set?.call(el, 'cob')
+      el.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    expect(input().value).toBe('cob')
+
+    abierta = false
+    act(() => root.render(<CommandPalette />))
+    // Saliendo: el diálogo sigue montado y la lista no cambió a mitad del fundido.
+    expect(document.body.querySelector('[role="dialog"]')).toBeTruthy()
+    expect(document.body.querySelector<HTMLInputElement>('input[role="combobox"]')?.value).toBe('cob')
+    await dejarTerminarLaSalida()
+    expect(document.body.querySelector('[data-testid="cp-caja"]')).toBeNull()
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull()
+
+    // Al volver a abrir, el campo arranca vacío.
+    abierta = true
+    act(() => root.render(<CommandPalette />))
+    expect(input().value).toBe('')
   })
 })

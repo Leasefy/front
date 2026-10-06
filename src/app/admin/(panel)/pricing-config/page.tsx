@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { adminApi } from '@/lib/admin/api'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP } from '@/lib/admin/format'
@@ -9,6 +10,8 @@ import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pagination } from '@/components/admin/screen/Pagination'
 import { useClientPagination } from '@/lib/admin/use-client-pagination'
 import { Pill } from '@/components/admin/Pill'
+import { EditarModeloDeCobro } from '@/components/admin/EditarModeloDeCobro'
+import { NOMBRE_DEL_MODELO, fraccionAPorcentaje, type ModeloDeCobro } from '@/lib/admin/modelo-de-cobro'
 
 const PAGE_SIZE = 50
 import type { PillTone } from '@/lib/admin/types'
@@ -68,7 +71,9 @@ function projectMonthlyFee(p: PolicyRow): { value: number | null; formula: strin
       }
     }
     case 'performance': {
-      const pct  = num(p.success_fee_pct) / 100
+      // La política guarda la FRACCIÓN (0,08 = 8 %): antes se dividía otra vez
+      // por 100 y la proyección salía cien veces menor.
+      const pct  = num(p.success_fee_pct)
       const calc = Math.max(minCop, recovered * pct)
       return {
         value: calc,
@@ -77,7 +82,7 @@ function projectMonthlyFee(p: PolicyRow): { value: number | null; formula: strin
     }
     case 'hybrid': {
       const base = num(p.base_fee)
-      const pct  = num(p.hybrid_pct) / 100
+      const pct  = num(p.hybrid_pct)
       const calc = Math.max(minCop, base + recovered * pct)
       return {
         value: calc,
@@ -97,11 +102,22 @@ function modelTone(model: string | null): PillTone {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 /** /pricing-config — modelo de cobro por agencia, read-only (BACK.md §8.20 · FRONT.md §6.31). */
+/** «0.0800» → «8 %» (la política guarda la fracción). */
+function pct(fraccion: string | null): string {
+  return fraccion != null ? `${fraccionAPorcentaje(fraccion)} %` : '—'
+}
+
 export default function PricingConfigPage() {
-  const { data: rows, isLoading, error } = useApiQuery<PolicyRow[]>(
+  const { data: rows, isLoading, error, refetch } = useApiQuery<PolicyRow[]>(
     (signal) => adminApi('/pricing-config', { signal }),
     [],
   )
+  /**
+   * 🔴 El modelo de cobro lo cambia SÓLO Leasefy, desde acá (Nico,
+   * 04-10-2026); la inmobiliaria lo ve en sólo lectura en Configuración de
+   * cobranza y el micro le rechaza el cambio.
+   */
+  const [editando, setEditando] = useState<PolicyRow | null>(null)
 
   /* Una fila por agencia: crece con cada alta. Los KPIs y la proyección de
      abajo siguen contando sobre `rows` entero, no sobre la página visible. */
@@ -126,7 +142,7 @@ export default function PricingConfigPage() {
         <div>
           <div className="font-medium text-fg">{r.legal_name}</div>
           <div className="font-mono text-[10px] text-fg-subtle">
-            {num(r.debtors_count)} deudores · max {r.max_discount != null ? num(r.max_discount).toFixed(0) : '—'}% desc ·{' '}
+            {num(r.debtors_count)} deudores · máx {pct(r.max_discount)} desc ·{' '}
             máx {r.max_plan_months ?? '—'} cuotas · {r.negotiation_max_attempts ?? '—'} intentos
           </div>
         </div>
@@ -135,7 +151,11 @@ export default function PricingConfigPage() {
     {
       header: 'Modelo',
       cell: (r) => (
-        <Pill tone={modelTone(r.billing_model)}>{r.billing_model ?? 'sin policy'}</Pill>
+        <Pill tone={modelTone(r.billing_model)}>
+          {r.billing_model && r.billing_model in NOMBRE_DEL_MODELO
+            ? NOMBRE_DEL_MODELO[r.billing_model as ModeloDeCobro]
+            : r.billing_model ?? 'sin política'}
+        </Pill>
       ),
     },
     {
@@ -143,7 +163,7 @@ export default function PricingConfigPage() {
       align: 'right',
       cell: (r) => (
         <span className="tabular-nums font-mono text-xs">
-          {r.success_fee_pct ? `${num(r.success_fee_pct).toFixed(1)}%` : '—'}
+          {pct(r.success_fee_pct)}
         </span>
       ),
     },
@@ -179,7 +199,7 @@ export default function PricingConfigPage() {
       align: 'right',
       cell: (r) => (
         <span className="tabular-nums font-mono text-xs">
-          {r.hybrid_pct ? `${num(r.hybrid_pct).toFixed(1)}%` : '—'}
+          {pct(r.hybrid_pct)}
         </span>
       ),
     },
@@ -214,6 +234,21 @@ export default function PricingConfigPage() {
         )
       },
     },
+    {
+      header: '',
+      align: 'right',
+      cell: (r) =>
+        r.billing_model ? (
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setEditando(r)}
+            data-testid={`editar-modelo-${r.tenant_id}`}
+          >
+            Cambiar
+          </button>
+        ) : null,
+    },
   ]
 
   return (
@@ -221,7 +256,7 @@ export default function PricingConfigPage() {
       <PageHeader
         label="26 · pricing"
         title="Modelo de pricing por agencia"
-        description="Configuración de cobro (standard / performance / hybrid) por agencia. Solo lectura — edit requiere audit_log + notificación. Proyección calculada en el cliente."
+        description="Cómo le cobra Leasefy a cada inmobiliaria. Sólo Leasefy lo cambia (la inmobiliaria lo ve en sólo lectura); cada cambio queda en el registro con quién, cuándo y de qué a qué. Proyección calculada en el navegador."
       />
 
       <div className="grid grid-cols-5 gap-3 mb-8">
@@ -254,12 +289,17 @@ export default function PricingConfigPage() {
         </div>
       )}
 
-      <div className="card p-4 border-l-4 border-l-warn text-xs text-fg-muted mt-6">
-        <strong>Read-only por ahora.</strong> Edit requiere server action con (1) audit_log
-        obligatorio, (2) re-check admin, (3) notificación email a la agencia si el cambio neto
-        supera el 5% del fee proyectado, (4) histórico de cambios. Por ahora, cambios vía SQL
-        directo en agent.
-      </div>
+      {editando && (
+        <EditarModeloDeCobro
+          key={editando.tenant_id}
+          actual={editando}
+          onCerrar={() => setEditando(null)}
+          onGuardado={() => {
+            setEditando(null)
+            refetch()
+          }}
+        />
+      )}
     </div>
   )
 }

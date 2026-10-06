@@ -1,14 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-import { toast } from '@/components/ui';
-import { ArrowRight, Trash, Check, X } from '@phosphor-icons/react';
-import { LeasefyMark } from './LeasefyMark';
-import { PromptComposer, Eyebrow } from '@leasefy/cadence';
+import { useContext, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
+import { motionDuration, motionEase, motionStagger } from '@leasefy/cadence';
+import { Buildings } from '@phosphor-icons/react';
+import { useMigracion } from '@/components/migracion/migracion-context';
+import { migracionSinTerminar, progresoDeMigracion } from '@/components/migracion/muro-reglas';
+import { AuthContext } from '@/lib/auth/auth-context';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
-import { ChatTemplatesMenu } from './ChatTemplates';
+import { CHAT_TEMPLATES, CHAT_TEMPLATES_DEL_AUXILIAR, ChatTemplatesMenu, esAuxiliarDeCartera } from './ChatTemplates';
+import { CajaDeLlegada } from './llegada/CajaDeLlegada';
+import { AvisoDePreguntas } from './AvisoDePreguntas';
+import { ConversacionesRecientes } from './llegada/ConversacionesRecientes';
+import { FranjaDeMigracion } from './llegada/FranjaDeMigracion';
+import { migracionEstadoApi } from '@/lib/api/migracion-estado.service';
+import { BotonDelEquipo } from '@/components/agentes/BotonDelEquipo';
 
 // ============================================================================
 // Types
@@ -16,22 +24,35 @@ import { ChatTemplatesMenu } from './ChatTemplates';
 
 interface BetaWelcomeProps {
   onPromptClick?: (prompt: string) => void;
-  /** @deprecated the hero now uses the cadence <PromptComposer>; kept for API compat. */
+  /** @deprecated la llegada dibuja su propia caja (`CajaDeLlegada`); se conserva por compatibilidad. */
   inputSlot?: React.ReactNode;
   className?: string;
 }
 
-/** «hace 3 h», «ayer», «12 ago» — sin traer una librería de fechas. */
-function haceCuanto(fecha: Date, ahora: Date): string {
-  const min = Math.floor((ahora.getTime() - fecha.getTime()) / 60000);
-  if (min < 1) return 'ahora';
-  if (min < 60) return `hace ${min} min`;
-  const h = Math.floor(min / 60);
-  if (h < 24) return `hace ${h} h`;
-  const d = Math.floor(h / 24);
-  if (d === 1) return 'ayer';
-  if (d < 7) return `hace ${d} días`;
-  return fecha.toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+/**
+ * Los atajos de la llegada: tres de las plantillas que ya existen (no hay datos
+ * de uso para elegir las «más usadas»). Al tocarlos se manda el MISMO texto que
+ * manda el menú de plantillas.
+ */
+export const ATAJOS_DE_LLEGADA = ['cobros', 'contratos', 'propiedades'] as const;
+
+/** Los ejemplos que se escriben solos en la caja: cosas que el chat SÍ contesta o hace. */
+const CLAVES_DE_EJEMPLOS = ['e1', 'e2', 'e3', 'e4', 'e5', 'e6'] as const;
+
+/**
+ * CF-01 (decisión 12, 05-10-2026): los del auxiliar de cartera, que sólo
+ * conversa de cartera (cada uno con su consulta fija en el micro).
+ */
+const CLAVES_DE_EJEMPLOS_DEL_AUXILIAR = ['a1', 'a2', 'a3', 'a4', 'a5'] as const;
+
+/** La curva de la referencia (`sa-hero`): sale rápido y se posa despacio. */
+
+function entrada(paso: number) {
+  return {
+    initial: { opacity: 0, y: 22 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: motionDuration.slow, ease: motionEase.enter, delay: Math.min(paso * motionStagger.step, motionStagger.max) },
+  };
 }
 
 // ============================================================================
@@ -39,202 +60,242 @@ function haceCuanto(fecha: Date, ahora: Date): string {
 // ============================================================================
 
 /**
- * BetaWelcome — estado-0 del chat.
+ * BetaWelcome — la llegada del chat (estado 0).
  *
- * Cambio de producto (Nico, 2026-08-27): donde estaban las seis tarjetas de
- * sugerencias va ahora el HISTORIAL de conversaciones, para poder retomar un
- * contexto en vez de empezar siempre de cero. Las seis acciones no se
- * perdieron: se mudaron al menú del botón «Plantillas» (`ChatTemplates.tsx`),
- * que hasta hoy era un botón dibujado sin nada detrás.
+ * Rediseño del 02-10-2026 (Nico: «quiero así de hermoso el chat y pensado
+ * claramente para Leasefy, con esas animaciones top»), con el lenguaje visual
+ * de la llegada del sistema de diseño de SaleAds y nada de su marca:
+ * título grande con tracking cerrado + línea de apoyo, la caja en un marco con
+ * aro de luz al enfocarla (`CajaDeLlegada`), un ejemplo real que se escribe
+ * solo, la bandeja de estado, tres atajos y una línea sobre los especialistas.
+ *
+ * Lo que se conserva tal cual: enviar (`onPromptClick` → `sendMessage`) y el
+ * menú «Plantillas», que ahora sale desde su botón.
+ *
+ * Segunda vuelta de Nico (02-10-2026): «Conversaciones recientes» ya no va
+ * abajo. Sin conversaciones no se muestra nada; con conversaciones queda un
+ * acceso en la bandeja que abre la lista dentro del chat (abrir y borrar como
+ * antes). La bandeja ya no lleva las cifras del briefing.
+ *
+ * Regla de la casa: nada de números inventados. La bandeja sólo dice con los
+ * datos de qué inmobiliaria responde el chat y cuántas conversaciones hay
+ * guardadas; la franja de arriba aparece sólo con la migración a medias.
  */
 export function BetaWelcome({ onPromptClick, className }: BetaWelcomeProps) {
   const { t } = useI18n();
   const { filteredSummaries, switchConversation, deleteConversation } = useBetaChatContext();
-  const [borrando, setBorrando] = useState<string | null>(null);
   const [templatesOpen, setTemplatesOpen] = useState(false);
-  const ahora = new Date();
+  const [recientesAbiertas, setRecientesAbiertas] = useState(false);
+
+  // CF-01: el auxiliar de cartera ve la llegada de SU chat (sólo cartera).
+  const esAuxiliar = esAuxiliarDeCartera(useContext(AuthContext)?.agencyRole);
+  const ejemplos = useMemo(
+    () =>
+      esAuxiliar
+        ? CLAVES_DE_EJEMPLOS_DEL_AUXILIAR.map((k) => t(`beta.welcome.ejemplosAuxiliar.${k}`))
+        : CLAVES_DE_EJEMPLOS.map((k) => t(`beta.welcome.ejemplos.${k}`)),
+    [t, esAuxiliar]
+  );
+
+  // ── La bandeja: sólo datos que el panel ya tiene ─────────────────────────
+  // `AuthContext` directo (no `useAuth`): fuera del proveedor, sin bandeja.
+  // «Agency» es el nombre de relleno de `readAgencyFromStorage` cuando lo
+  // guardado no lo trae: no es el nombre de nadie.
+  const nombre = useContext(AuthContext)?.agency?.name?.trim() ?? '';
+  const agencia = nombre && nombre !== 'Agency' ? nombre : null;
+  const migracion = useMigracion();
+  const estadoMigracion = migracion?.estado ?? null;
+  const [avisoCerrado, setAvisoCerrado] = useState(false);
+  const progreso =
+    estadoMigracion &&
+    !estadoMigracion.bloquea &&
+    !estadoMigracion.recordatorioDescartado &&
+    migracionSinTerminar(estadoMigracion)
+      ? progresoDeMigracion(estadoMigracion.pasos)
+      : null;
+  // Empezada y no terminada: «paso 3 de 6». Sin empezar no se dice nada (eso
+  // es decisión de la inmobiliaria, y ya lo recuerda la barra lateral); quien
+  // cerró el recordatorio (`recordatorioDescartado`) tampoco lo ve acá.
+  const migrando = progreso && progreso.total > 0 && progreso.hechos > 0 ? progreso : null;
+
+  // La ✕ de la franja usa el MISMO «descartado» del recordatorio de la
+  // migración: es de la cuenta (`POST /inmobiliaria/migracion/recordatorio`),
+  // no del navegador, así que no reaparece en otro equipo. Se oculta al
+  // instante; si el back no lo guarda, vuelve a salir en la próxima visita
+  // (molesta, no encierra).
+  const cerrarAviso = () => {
+    setAvisoCerrado(true);
+    void migracionEstadoApi
+      .recordatorio(true)
+      .then(() => migracion?.recargar())
+      .catch(() => {});
+  };
+  const aviso =
+    migrando && migracion && !avisoCerrado ? (
+      <FranjaDeMigracion
+        paso={Math.min(migrando.hechos + 1, migrando.total)}
+        total={migrando.total}
+        siguiente={migrando.siguiente ? t(`migracion.pasos.${migrando.siguiente.id}.corto`) : null}
+        // Abre la migración a pantalla completa (no navega): la única salida
+        // del chat que hay acá, autorizada por Nico el 02-10-2026.
+        onContinuar={migracion.abrir}
+        onCerrar={cerrarAviso}
+      />
+    ) : null;
 
   // Sólo las que tienen algo adentro: la conversación vacía recién creada es
   // justamente esta pantalla, listarla sería ofrecerle volver a donde está.
-  const historial = filteredSummaries.filter((c) => c.messageCount > 0).slice(0, 6);
+  const historial = filteredSummaries.filter((c) => c.messageCount > 0).slice(0, 8);
+
+  // La bandeja (Nico, 02-10, segunda vuelta): el acceso a las conversaciones
+  // (si hay) y con los datos de qué inmobiliaria responde. Las cifras del
+  // briefing se quitaron: «337 decisiones pendientes» ahí no ayudaba.
+  const bandeja =
+    agencia || historial.length > 0 ? (
+      <div
+        data-testid="bandeja-de-llegada"
+        className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-[13px] text-fg-muted"
+      >
+        <ConversacionesRecientes
+          historial={historial}
+          onAbrir={switchConversation}
+          onBorrar={deleteConversation}
+          onAbierto={setRecientesAbiertas}
+        />
+        {agencia && (
+          <span className="inline-flex min-w-0 items-center gap-2">
+            <span aria-hidden className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface text-fg-muted">
+              <Buildings size={13} />
+            </span>
+            {/* Sin truncar: en el celular el nombre se partía en «Inmobiliaria Po…». */}
+            <span className="min-w-0">
+              {t('beta.welcome.bandeja.datosDe')} <strong className="font-medium text-fg">{agencia}</strong>
+            </span>
+          </span>
+        )}
+      </div>
+    ) : null;
+
+  const atajos = esAuxiliar
+    ? CHAT_TEMPLATES_DEL_AUXILIAR.slice(0, 3)
+    : ATAJOS_DE_LLEGADA.map((id) => CHAT_TEMPLATES.find((tpl) => tpl.id === id)).filter(
+        (tpl): tpl is (typeof CHAT_TEMPLATES)[number] => Boolean(tpl)
+      );
 
   return (
-    <div className={cn('flex min-h-full flex-col items-center justify-center px-4 py-12 sm:px-6', className)}>
-      <div className="flex w-full max-w-[760px] flex-col items-center">
-        {/* Hero greeting */}
-        <h1 className="mb-9 text-center font-heading font-medium tracking-[-0.025em] leading-[1.04] text-fg text-[clamp(2.25rem,5vw,3.25rem)]">
-          {t('beta.welcome.heroTitle')}
-        </h1>
+    // Movimiento reducido: lo resuelve `MotionProvider reducedMotion="user"`
+    // del layout raíz (framer apaga los desplazamientos y deja el fundido).
+    // `llegada-grises`: en oscuro, grises neutros en vez de los cálidos de
+    // Cadence (Nico, 02-10: «unos grises como amarillos súper feos»).
+      <div
+        className={cn(
+          'llegada-grises flex min-h-full flex-col items-center justify-center px-4 py-12 sm:px-6 sm:py-16',
+          className
+        )}
+      >
+        <div className="flex w-full max-w-[800px] flex-col items-center">
+          {/* Título + apoyo */}
+          <motion.h1
+            {...entrada(0)}
+            className="text-center font-heading font-semibold leading-[1.02] tracking-[-0.04em] text-fg text-[clamp(2.1rem,6vw,3.75rem)] [text-wrap:balance]"
+          >
+            {t('beta.welcome.heroTitle')}
+          </motion.h1>
+          <motion.p
+            {...entrada(1)}
+            className="mt-4 max-w-[560px] text-center text-[16px] leading-[1.5] text-fg-muted sm:text-[17px] [text-wrap:balance]"
+          >
+            {t(esAuxiliar ? 'beta.welcome.heroSubtitleAuxiliar' : 'beta.welcome.heroSubtitle')}
+          </motion.p>
 
-        {/* Prompt composer (state 0) — el menú se ancla a este contenedor */}
-        <div className="relative w-full">
-          <PromptComposer
-            // `[&>div:first-child]:hidden` oculta la fila de «Adjuntar
-            // contexto» + chips. Ese botón viene del mockup de Cadence
-            // (adjuntar un inmueble / inquilino / contrato como alcance de la
-            // pregunta) y NUNCA se construyó: el backend del chat sólo recibe
-            // mensaje e historial. En cadence se dibuja sin condición, así que
-            // quitarlo de verdad es cortar versión del DS — hasta entonces, no
-            // se muestra un control que no hace nada (Nico, 2026-08-27: «doy
-            // clic y no funciona»). Como nunca se pasan `contexts`, la fila no
-            // tenía nada más.
-            // Al irse la fila de arriba, el área de texto quedó apretada (Nico:
-            // «quedó muy pequeño»): cadence dibuja el textarea con rows=1 y
-            // min-h 27px porque contaba con esa fila para dar aire. Se le da
-            // altura para ~3 líneas y un poco de respiro arriba.
-            className="w-full [&>div:first-child]:hidden [&>div:nth-child(2)]:pt-5 [&_textarea]:min-h-[84px]"
-            onSend={(text) => onPromptClick?.(text)}
-            onTemplates={() => setTemplatesOpen((v) => !v)}
-            placeholder={t('beta.chat.placeholder')}
-          />
-          <ChatTemplatesMenu
-            open={templatesOpen}
-            onClose={() => setTemplatesOpen(false)}
-            onSelect={(prompt) => onPromptClick?.(prompt)}
-          />
-        </div>
+          {/* La caja — `z-10`: el menú y el panel de conversaciones pasan por encima de los atajos */}
+          <motion.div {...entrada(2)} className="relative z-10 mt-9 w-full sm:mt-10">
+            <CajaDeLlegada
+              onEnviar={(texto) => onPromptClick?.(texto)}
+              onPlantillas={() => setTemplatesOpen((v) => !v)}
+              plantillasAbiertas={templatesOpen}
+              menuDePlantillas={
+                <ChatTemplatesMenu
+                  open={templatesOpen}
+                  onClose={() => setTemplatesOpen(false)}
+                  onSelect={(prompt) => onPromptClick?.(prompt)}
+                />
+              }
+              ejemplos={ejemplos}
+              bandeja={bandeja}
+              bandejaElevada={recientesAbiertas}
+              aviso={aviso}
+            />
+            {/* La línea fija de la cláusula (Nico, 04-10-2026: política v4.0 §16):
+                también debajo de la caja de la llegada, que es donde se hace la
+                primera pregunta. */}
+            <AvisoDePreguntas />
+          </motion.div>
 
-        {/* Historial de conversaciones */}
-        <div className="mt-8 w-full">
-          <Eyebrow className="mb-3.5 px-1">{t('beta.welcome.historyLabel')}</Eyebrow>
-
-          {historial.length === 0 ? (
-            <div className="rounded-[18px] border border-dashed border-border px-5 py-8 text-center">
-              <p className="font-body text-[13.5px] text-fg-muted">
-                {t('beta.welcome.historyEmpty')}
-              </p>
-              <button
-                type="button"
-                onClick={() => setTemplatesOpen(true)}
-                className="mt-2.5 font-body text-[13px] font-medium text-primary underline-offset-4 hover:underline"
-              >
-                {t('beta.welcome.historyEmptyCta')}
-              </button>
-            </div>
-          ) : (
-            /* Una sola columna, de lado a lado (Nico, 2026-08-27: «que vaya
-               de lado a lado para que no quede tan pequeña»). En dos columnas
-               cada tarjeta quedaba angosta y el preview —que es lo que te dice
-               si es LA conversación que buscabas— se cortaba a media frase. */
-            <div className="flex flex-col gap-2.5">
-              {historial.map((conv) => {
-                const confirmando = borrando === conv.id;
-                return (
-                  /* La tarjeta es un <div> con DOS botones hermanos — abrir y
-                     borrar — porque un botón dentro de otro es HTML inválido
-                     y el clic en la papelera abriría la conversación. */
-                  <div
-                    key={conv.id}
+          {/* Atajos */}
+          <motion.ul
+            aria-label={t('beta.welcome.atajosLabel')}
+            initial="oculto"
+            animate="visible"
+            variants={{ visible: { transition: { delayChildren: 0.2, staggerChildren: 0.05 } } }}
+            className="mt-6 flex flex-wrap justify-center gap-2.5"
+          >
+            {atajos.map((tpl) => {
+              const Icono = tpl.icon;
+              const texto = t(tpl.descKey);
+              return (
+                <motion.li
+                  key={tpl.id}
+                  variants={{
+                    oculto: { opacity: 0, y: 12 },
+                    visible: { opacity: 1, y: 0, transition: { duration: motionDuration.reveal, ease: motionEase.enter } },
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onPromptClick?.(texto)}
+                    title={texto}
+                    data-testid={`atajo-${tpl.id}`}
                     className={cn(
-                      'group relative flex items-center gap-3.5 rounded-[18px] border border-border bg-surface px-4 py-3.5',
-                      'transition-all duration-200 hover:border-border-strong hover:shadow-[0_6px_20px_-12px_rgba(20,19,15,0.18)] hover:-translate-y-px',
-                      confirmando && 'border-border-strong'
+                      'group inline-flex h-11 items-center gap-2.5 rounded-full border border-border bg-surface py-1 pl-1.5 pr-4',
+                      'text-[14px] font-medium text-fg',
+                      'transition-[transform,border-color,box-shadow] duration-base ease-enter',
+                      'hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md active:scale-[0.98]',
+                      'motion-reduce:hover:translate-y-0'
                     )}
                   >
-                    <button
-                      type="button"
-                      onClick={() => switchConversation(conv.id)}
-                      disabled={confirmando}
-                      className={cn(
-                        'flex min-w-0 flex-1 items-start gap-3 text-left',
-                        'outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-[12px]'
-                      )}
+                    <span
+                      aria-hidden
+                      className="flex size-8 items-center justify-center rounded-full bg-surface-muted text-fg-muted transition-colors duration-base group-hover:bg-primary-soft group-hover:text-primary"
                     >
-                      {/* La marca en vez de un icono genérico de chat: es una
-                          conversación CON Laura, y al pasar el mouse el tile
-                          se enciende al azul de marca — el mismo avatar que
-                          firma cada respuesta. */}
-                      <span
-                        aria-hidden
-                        className={cn(
-                          'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
-                          'bg-primary/10 text-primary transition-colors duration-200',
-                          'group-hover:bg-[#1A40FF] group-hover:text-white'
-                        )}
-                      >
-                        <LeasefyMark className="w-[18px] h-auto" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-baseline gap-2">
-                          <span className="truncate font-body text-[14.5px] font-semibold text-fg">
-                            {conv.title}
-                          </span>
-                          <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.06em] text-fg-subtle">
-                            {haceCuanto(conv.updatedAt, ahora)}
-                            {' · '}
-                            {conv.messageCount} {t(conv.messageCount === 1 ? 'beta.conversations.message' : 'beta.conversations.messages')}
-                          </span>
-                        </span>
-                        <span className="mt-1 line-clamp-1 block font-body text-[13px] leading-snug text-fg-muted">
-                          {conv.preview}
-                        </span>
-                      </span>
-                    </button>
+                      <Icono size={15} />
+                    </span>
+                    {t(tpl.titleKey)}
+                  </button>
+                </motion.li>
+              );
+            })}
+          </motion.ul>
 
-                    {/* Borrar (Nico, 2026-08-27: «tenemos que dar la posibilidad
-                        de borrar las conversaciones»). Papelera que aparece al
-                        pasar el mouse o con el teclado; confirma EN LÍNEA
-                        porque borrar un hilo no se deshace, y un diálogo modal
-                        por una tarjeta es demasiado ceremonia. */}
-                    {confirmando ? (
-                      <span className="flex shrink-0 items-center gap-1 self-center">
-                        <span className="hidden font-body text-[12px] text-fg-muted sm:inline">
-                          {t('beta.conversations.confirmDelete')}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            deleteConversation(conv.id);
-                            setBorrando(null);
-                            toast.success(t('beta.conversations.deleted'));
-                          }}
-                          className={cn(
-                            'inline-flex items-center gap-1 rounded-full bg-danger px-2.5 py-[4px]',
-                            'font-body text-[12px] font-medium text-white',
-                            'transition-opacity hover:opacity-90 outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                          )}
-                        >
-                          <Check size={12} weight="bold" />
-                          {t('beta.conversations.deleteConfirm')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setBorrando(null)}
-                          aria-label={t('beta.conversation.endCancel')}
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-full text-fg-subtle hover:bg-surface-muted hover:text-fg outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <X size={12} />
-                        </button>
-                      </span>
-                    ) : (
-                      <span className="flex shrink-0 items-center gap-1 self-center">
-                        <button
-                          type="button"
-                          onClick={() => setBorrando(conv.id)}
-                          aria-label={t('beta.conversations.deleteConversation')}
-                          title={t('beta.conversations.deleteConversation')}
-                          className={cn(
-                            'inline-flex h-7 w-7 items-center justify-center rounded-full text-fg-subtle',
-                            'opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100',
-                            'hover:bg-surface-muted hover:text-danger outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                          )}
-                        >
-                          <Trash size={14} />
-                        </button>
-                        <ArrowRight
-                          size={16}
-                          aria-hidden
-                          className="text-fg-subtle transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary"
-                        />
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+          {/* Quiénes trabajan detrás: los orbes del equipo abren «El equipo»
+              (02-10, commit `27a3b2b8`). La frase es verdad: el chat llama a
+              sus especialistas según lo que se pida. Va centrada, ARRIBA del
+              botón y no a su lado (Nico, 03-10: «mira esto como se ve de feo»:
+              al lado, la frase partía en dos renglones corridos a la derecha).
+              Debajo de la frase, el botón no se confunde con un cuarto atajo. */}
+          {/* CF-01: el chat del auxiliar de cartera no llama especialistas (sólo
+              consultas fijas de cartera): la frase no sería verdad para él. */}
+          {!esAuxiliar && (
+            <motion.div
+              {...entrada(5)}
+              className="mt-8 flex max-w-[680px] flex-col items-center gap-3 text-center text-[13px] leading-snug text-fg-subtle"
+              data-testid="fila-del-equipo"
+            >
+              <span className="[text-wrap:balance]">{t('beta.welcome.especialistas')}</span>
+              <BotonDelEquipo className="shrink-0" />
+            </motion.div>
           )}
         </div>
       </div>
-    </div>
   );
 }

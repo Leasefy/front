@@ -23,14 +23,15 @@
  * throws — the caller degrades to the current screen state (no row confirmed,
  * honest error toast) rather than breaking.
  *
- * Mirrors the NEXT_PUBLIC_AGENT_URL + agentAuthHeaders pattern of
+ * Mirrors the NEXT_PUBLIC_AGENT_URL + agentFetch pattern of
  * use-conciliacion-queue.ts.
  */
 
 import { useCallback } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
+import { accionQueNoSalioConCuerpo } from '@/lib/hooks/ai/accion-del-micro'
 
 /**
  * Server-side high-confidence floor mirrored from the backend
@@ -55,8 +56,10 @@ export interface BulkConfirmResult {
   confirmados: number
   /** Per-match failures (below_confidence_floor | not_found | …). */
   fallidos: BulkConfirmFailure[]
-  /** Transport / backend error code when ok=false (e.g. '404', 'not_configured'). */
+  /** Transport / backend error code when ok=false (e.g. '404', 'not_configured'). NO es para la persona. */
   error?: string
+  /** El error entero para el traductor (`mensajeParaLaPersona`): el `ApiError` del micro o el de red tal cual. */
+  fallo?: unknown
 }
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
@@ -79,11 +82,11 @@ export function useConciliacionBulk(): UseConciliacionBulkResult {
         return { ok: false, confirmados: 0, fallidos: [], error: 'not_configured' }
       }
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/conciliacion/queue/bulk-confirm`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify(body),
           },
         )
@@ -93,11 +96,13 @@ export function useConciliacionBulk(): UseConciliacionBulkResult {
           fallidos?: BulkConfirmFailure[]
         }
         if (!res.ok) {
+          const { error, fallo } = await accionQueNoSalioConCuerpo(res.status, json)
           return {
             ok: false,
             confirmados: 0,
             fallidos: Array.isArray(json.fallidos) ? json.fallidos : [],
-            error: json.error ?? `${res.status}`,
+            error,
+            fallo,
           }
         }
         return {
@@ -111,6 +116,7 @@ export function useConciliacionBulk(): UseConciliacionBulkResult {
           confirmados: 0,
           fallidos: [],
           error: err instanceof Error ? err.message : 'bulk_confirm_failed',
+          fallo: err,
         }
       }
     },

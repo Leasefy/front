@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, type MouseEvent as ReactMouseEvent } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ShieldCheck,
   GitMerge,
@@ -20,7 +21,7 @@ import {
   Play,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
-import { IconButton, MonoLabel } from '@leasefy/cadence';
+import { Appear, IconButton, MonoLabel } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { AIAgentDefinition } from '@/lib/types/ai-agents';
@@ -29,6 +30,9 @@ import { useAgentExecution } from '@/lib/hooks/use-agent';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
+
+/** Dónde se ven y se cambian los planes de la inmobiliaria. */
+const PAGINA_DE_LOS_PLANES = '/panel/inmobiliaria/upgrade';
 
 const ICON_MAP: Record<string, Icon> = {
   ShieldCheck,
@@ -56,7 +60,8 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
   const popoverRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { isRunning, error, result, trace, runScoring, clearResult } = useAgentExecution();
+  const router = useRouter();
+  const { isRunning, error, limiteDelPlan, result, trace, runScoring, clearResult } = useAgentExecution();
 
   const AgentIcon = ICON_MAP[agent.icon] || ShieldCheck;
   const isActive = agent.status === 'active';
@@ -207,10 +212,37 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
                 <span>{locale === 'es' ? 'Ejecutando...' : 'Running...'}</span>
               </div>
             )}
+            {/* 02-10-2026: el motivo se lee ENTERO (antes `truncate` lo cortaba
+                a una línea) y, si es el tope del plan (402 `LIMITE_DEL_PLAN`, p.
+                ej. las evaluaciones del mes), se dice acá con «Ver planes» a la
+                mano. Nunca se navega solo: sólo si la persona lo toca. */}
             {!isRunning && error && (
-              <div className="flex items-center gap-2 text-sm text-danger">
-                <Warning weight="fill" className="h-4 w-4" />
-                <span className="truncate flex-1">{error}</span>
+              <Appear
+                distance="xs"
+                role="alert"
+                data-testid="error-del-agente"
+                className={cn('flex items-start gap-2 text-sm', limiteDelPlan ? 'text-fg' : 'text-danger')}
+              >
+                <Warning
+                  weight="fill"
+                  className={cn('mt-0.5 h-4 w-4 shrink-0', limiteDelPlan && 'text-warning')}
+                  aria-hidden="true"
+                />
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p className="break-words">{error}</p>
+                  {limiteDelPlan && (
+                    <Button
+                      variant="link"
+                      size="sm"
+                      hideArrow
+                      data-testid="ver-planes"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); router.push(PAGINA_DE_LOS_PLANES); }}
+                      className="h-auto p-0"
+                    >
+                      {locale === 'es' ? 'Ver planes' : 'View plans'}
+                    </Button>
+                  )}
+                </div>
                 <IconButton
                   variant="ghost"
                   size="sm"
@@ -218,7 +250,7 @@ export function AIAgentCard({ agent, metrics, lastAction, recentCount }: AIAgent
                   aria-label={locale === 'es' ? 'Descartar error' : 'Dismiss error'}
                   icon={<X />}
                 />
-              </div>
+              </Appear>
             )}
             {!isRunning && resultLabel && (
               <div className="flex items-center gap-2 text-sm">

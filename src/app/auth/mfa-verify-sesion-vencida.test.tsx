@@ -8,18 +8,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
 
-const { supa, sesion, auth, toastError } = vi.hoisted(() => ({
+const { supa, sesion, auth, toastError, navegar } = vi.hoisted(() => ({
   supa: { listFactors: vi.fn(), challenge: vi.fn(), verify: vi.fn() },
   sesion: { getSession: vi.fn(), refreshSession: vi.fn() },
   auth: { user: { id: 'u-1', role: 'agency' }, mfaRequired: true, setMfaVerified: vi.fn(), signOut: vi.fn() },
   toastError: vi.fn(),
+  navegar: vi.fn(),
 }));
 
 vi.mock('@/lib/supabase/client', () => ({
   getSupabase: () => ({ auth: { mfa: supa, ...sesion } }),
 }));
 vi.mock('@/lib/auth', () => ({ useAuth: () => auth }));
-vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn() }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: navegar }) }));
 vi.mock('sonner', () => ({ toast: { error: toastError, success: vi.fn() } }));
 vi.mock('@/components/settings/MfaSetupSection', () => ({ MfaSetupSection: () => null }));
 
@@ -59,7 +60,9 @@ beforeEach(() => {
   supa.verify.mockReset().mockResolvedValue({ error: null });
   sesion.refreshSession.mockReset().mockResolvedValue({ error: null });
   toastError.mockReset();
+  navegar.mockReset();
   auth.setMfaVerified.mockReset();
+  auth.signOut.mockReset().mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -110,6 +113,58 @@ describe('/auth/mfa-verify — la sesión vence mientras se espera', () => {
     expect(toastError.mock.calls[0]![0]).toMatch(/sesión/);
     expect(toastError.mock.calls[0]![0]).not.toMatch(/Código incorrecto/);
   });
+
+  it('🔴 Nico, 05-10: si la sesión ya no se renueva, la cierra y lo manda a la contraseña con su destino (no se queda pidiendo códigos)', async () => {
+    window.history.replaceState(null, '', '/auth/mfa-verify?returnUrl=%2Fpanel%2Finmobiliaria%2Fpagos');
+    const vencida = Math.floor(Date.now() / 1000) - 3600;
+    sesion.getSession.mockReset().mockResolvedValue({ data: { session: { expires_at: vencida } } });
+    sesion.refreshSession.mockResolvedValue({
+      error: Object.assign(new Error('Invalid Refresh Token: Refresh Token Not Found'), {
+        status: 400,
+        code: 'refresh_token_not_found',
+      }),
+    });
+    await montar();
+    await escribirElCodigo('123456');
+
+    expect(supa.challenge).not.toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalledTimes(1);
+    expect(toastError.mock.calls[0]![0]).toBe('Tu sesión se cerró. Vuelve a entrar con tu contraseña.');
+    expect(auth.signOut).toHaveBeenCalledTimes(1);
+    expect(navegar).toHaveBeenCalledWith('/auth?returnUrl=%2Fpanel%2Finmobiliaria%2Fpagos');
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('🔴 con el token rechazado en el reto (bad_jwt) también sale a la contraseña', async () => {
+    const enUnaHora = Math.floor(Date.now() / 1000) + 3600;
+    sesion.getSession.mockReset().mockResolvedValue({ data: { session: { expires_at: enUnaHora } } });
+    supa.challenge.mockResolvedValue({
+      data: null,
+      error: Object.assign(new Error('invalid JWT: token has invalid claims: token is expired'), {
+        status: 403,
+        code: 'bad_jwt',
+      }),
+    });
+    await montar();
+    await escribirElCodigo('123456');
+
+    expect(auth.signOut).toHaveBeenCalledTimes(1);
+    expect(navegar).toHaveBeenCalledWith('/auth');
+  });
+
+  it('un código equivocado NO cierra la sesión: se queda para escribir otro', async () => {
+    const enUnaHora = Math.floor(Date.now() / 1000) + 3600;
+    sesion.getSession.mockReset().mockResolvedValue({ data: { session: { expires_at: enUnaHora } } });
+    supa.verify.mockResolvedValue({
+      error: Object.assign(new Error('Invalid TOTP code entered'), { status: 422, code: 'mfa_verification_failed' }),
+    });
+    await montar();
+    await escribirElCodigo('123456');
+
+    expect(toastError).toHaveBeenCalledTimes(1);
+    expect(auth.signOut).not.toHaveBeenCalled();
+    expect(navegar).not.toHaveBeenCalled();
+  });
 });
 
 describe('/auth/mfa-verify — con qué cuenta (Nico, 01-10)', () => {
@@ -145,5 +200,54 @@ describe('/auth/mfa-verify — cuando ningún código sirve (Nico, 01-10)', () =
     const aviso = document.querySelector('[data-testid="mfa-verify-ninguno-sirve"]');
     expect(aviso?.textContent).toContain('hola+27@leasefy.co');
     expect(aviso?.textContent).toContain('Restablecer con un código al correo');
+  });
+});
+
+/**
+ * 02-10-2026 · La regla de oro: si lo que falló fue la red o Supabase, el
+ * código no tuvo la culpa — ni «Código incorrecto» ni las casillas en rojo.
+ */
+describe('/auth/mfa-verify — la red o Supabase, no el código', () => {
+  const casillasEnRojo = () =>
+    [...document.querySelectorAll<HTMLInputElement>('[data-testid^="casilla-"]')].some((c) =>
+      c.className.includes('border-danger'),
+    );
+
+  beforeEach(() => {
+    sesion.getSession.mockReset().mockResolvedValue({
+      data: { session: { expires_at: Math.floor(Date.now() / 1000) + 3600 } },
+    });
+  });
+
+  it('🔴 sin respuesta: habla de la conexión y no pinta el código en rojo', async () => {
+    supa.challenge.mockResolvedValue({
+      data: null,
+      error: Object.assign(new Error('Failed to fetch'), { name: 'AuthRetryableFetchError', status: 0 }),
+    });
+    await montar();
+    await escribirElCodigo('123456');
+    expect(toastError.mock.calls[0]![0]).toMatch(/conexión/);
+    expect(toastError.mock.calls[0]![0]).not.toMatch(/Código incorrecto/);
+    expect(casillasEnRojo()).toBe(false);
+  });
+
+  it('🔴 un 5xx de Supabase: falló de nuestro lado, sin culpar al código', async () => {
+    supa.verify.mockResolvedValue({
+      error: Object.assign(new Error('Internal Server Error'), { name: 'AuthApiError', status: 500 }),
+    });
+    await montar();
+    await escribirElCodigo('123456');
+    expect(toastError.mock.calls[0]![0]).toMatch(/de nuestro lado/);
+    expect(casillasEnRojo()).toBe(false);
+  });
+
+  it('un código malo sí pinta las casillas en rojo', async () => {
+    supa.verify.mockResolvedValue({
+      error: Object.assign(new Error('Invalid TOTP code entered'), { status: 422, code: 'mfa_verification_failed' }),
+    });
+    await montar();
+    await escribirElCodigo('123456');
+    expect(toastError.mock.calls[0]![0]).toMatch(/Código incorrecto/);
+    expect(casillasEnRojo()).toBe(true);
   });
 });

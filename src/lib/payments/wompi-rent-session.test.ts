@@ -53,12 +53,28 @@ describe('isPeriodPayable', () => {
 })
 
 describe('buildRentReference', () => {
-  it('is rent-namespaced with a zero-padded 2-digit month', () => {
-    expect(buildRentReference('L1', 2026, 7)).toBe('rent-L1-2026-07')
+  const INTENTO = 1_759_449_600_123
+
+  it('is rent-namespaced with a zero-padded 2-digit month and the attempt', () => {
+    expect(buildRentReference('L1', 2026, 7, INTENTO)).toBe('rent-L1-2026-07-1759449600123')
   })
 
   it('does not pad an already 2-digit month', () => {
-    expect(buildRentReference('L1', 2026, 12)).toBe('rent-L1-2026-12')
+    expect(buildRentReference('L1', 2026, 12, INTENTO)).toBe('rent-L1-2026-12-1759449600123')
+  })
+
+  it('una referencia por intento (Nico, 02-10-2026): dos intentos del mismo período no se repiten', () => {
+    expect(buildRentReference('L1', 2026, 7, INTENTO)).not.toBe(
+      buildRentReference('L1', 2026, 7, INTENTO + 1)
+    )
+  })
+
+  it('sin intento explícito usa la hora (13 dígitos: lo que acepta el back, 10 a 16)', () => {
+    const ref = buildRentReference('2b1f6a7e-4c2d-4e8f-9a1b-3c5d7e9f1a2b', 2026, 10)
+    // El mismo patrón que `back/src/tenant-payments/wompi/referencia-del-arriendo.ts`.
+    expect(ref).toMatch(
+      /^rent-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-\d{4}-\d{2}-\d{10,16}$/
+    )
   })
 })
 

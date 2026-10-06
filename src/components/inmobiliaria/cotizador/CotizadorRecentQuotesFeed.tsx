@@ -1,20 +1,23 @@
 'use client'
 
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Tray } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
+import { formatCurrency } from '@/lib/format'
 import { SinDatos } from '@/components/estado/SinDatos'
 import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotizador-overview'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * QA-IA-95 (05-10-2026): la plata como en la casa («$ 54.600», «$ 1.400.000»),
+ * no «$55K» ni «$1.4M» (abreviaturas y punto decimal en inglés).
+ */
 function formatCOP(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
-  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`
-  return String(value)
+  return formatCurrency(value)
 }
 
 // ---------------------------------------------------------------------------
@@ -73,11 +76,13 @@ export function CotizadorRecentQuotesFeed({
     <div
       className={`rounded-lg border border-border bg-surface overflow-hidden ${vacio ? '' : 'p-5'}`}
     >
-      {/* Esqueleto con la forma de la lista: título + referencia + chip. */}
+      {/* Esqueleto con la forma de la lista: título + referencia + chip.
+          Cargando → vacío → lista: cada estado entra con su fundido. */}
+      <CrossFade swapKey={isLoading && quotes.length === 0 ? 'cargando' : vacio ? 'vacio' : 'lista'}>
       {isLoading && quotes.length === 0 ? (
         <ul className="divide-y divide-border" role="status" aria-label="Cargando">
           {[1, 2, 3].map((i) => (
-            <li key={i} className="flex items-center justify-between py-3">
+            <li key={`esqueleto-${i}`} className="flex items-center justify-between py-3">
               <div className="space-y-1.5">
                 <div className="h-4 w-32 rounded bg-surface-muted animate-pulse" />
                 <div className="h-3 w-20 rounded bg-surface-muted animate-pulse" />
@@ -98,20 +103,17 @@ export function CotizadorRecentQuotesFeed({
         />
       ) : (
         /* Quotes list */
-        <ul
+        // La cotización nueva entra ARRIBA bajando a su lugar (tokens del
+        // sistema; antes, duración inventada) y las demás se corren.
+        <Stagger
+          as="ul"
+          direction="down"
           aria-live="polite"
           aria-relevant="additions"
           className="divide-y divide-border"
         >
-          <AnimatePresence initial={false}>
             {quotes.map((q) => (
-              <motion.li
-                key={q.id}
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.25 }}
-              >
+              <StaggerItem as="li" key={q.id}>
                 <Link
                   href={`/panel/inmobiliaria/postulaciones/asegurabilidad/${q.id}`}
                   className="flex items-center justify-between py-3 px-1 hover:bg-surface-muted rounded-md transition-colors"
@@ -124,7 +126,7 @@ export function CotizadorRecentQuotesFeed({
                       de cédula es solo una referencia técnica → "Ref. {hash}" */}
                   <div className="flex flex-col gap-0.5">
                     <span className="text-sm font-medium text-fg">
-                      {q.ciudad} · ${formatCOP(q.canonCop)}/mes
+                      {q.ciudad} · {formatCOP(q.canonCop)}/mes
                     </span>
                     <span className="text-xs font-mono text-fg-muted">
                       Ref. {q.cedulaHashPrefix8}
@@ -138,11 +140,11 @@ export function CotizadorRecentQuotesFeed({
                     <ArrowRight className="h-4 w-4 text-fg-subtle" />
                   </div>
                 </Link>
-              </motion.li>
+              </StaggerItem>
             ))}
-          </AnimatePresence>
-        </ul>
+        </Stagger>
       )}
+      </CrossFade>
     </div>
   )
 }

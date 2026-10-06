@@ -65,9 +65,21 @@ export function fechaRelativa(
 
   if (Number.isNaN(objeto.getTime())) return { dias: 0, texto: '' };
 
-  const dias = Math.round(
-    (objeto.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24),
-  );
+  /*
+   * QA-CONT C-09 (03-10-2026): una fecha de CALENDARIO (`YYYY-MM-DD` o la
+   * medianoche UTC con la que el back serializa una columna `date`) se cuenta
+   * por días de calendario en la hora de quien mira. Como instante, en Bogotá
+   * el fin «31-10» era el 30 a las 7 p. m.: el historial decía «En 27 días» y
+   * el encabezado de la misma ficha «Vence en 28 días».
+   */
+  const calendario = typeof fecha === 'string' ? /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.0+)?Z)?$/.exec(fecha) : null;
+  const dias = calendario
+    ? Math.round(
+        (new Date(Number(calendario[1]), Number(calendario[2]) - 1, Number(calendario[3])).getTime() -
+          new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate()).getTime()) /
+          (1000 * 60 * 60 * 24),
+      )
+    : Math.round((objeto.getTime() - ahora.getTime()) / (1000 * 60 * 60 * 24));
 
   if (dias === 0) return { dias, texto: es ? 'Hoy' : 'Today' };
   if (dias === 1) return { dias, texto: es ? 'Mañana' : 'Tomorrow' };

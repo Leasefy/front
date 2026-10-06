@@ -74,6 +74,8 @@ const ENCLITICOS_SIN_TILDE = [
   'quitala', 'quitalas', 'quitalo', 'quitalos', 'creala', 'crealo', 'declaralo',
   'declarala', 'subilo', 'subila', 'mandale', 'contale', 'dejala', 'dejalo',
   'sacalo', 'sacala', 'miralo', 'mirala', 'usalo', 'usala',
+  // QA-FACT-CONTA-95 r2: el imperativo de «hacer» con enclítico («hazlo» en tuteo).
+  'hacelo', 'hacela', 'hacelos', 'hacelas',
 ]
 
 const PROHIBIDAS = [...IMPERATIVOS_EN_AR, ...PRESENTES_VOSEO, ...ENCLITICOS_SIN_TILDE]

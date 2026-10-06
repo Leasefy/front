@@ -16,8 +16,49 @@ export interface LoQueDiceElError {
   servicio?: string
 }
 
+/**
+ * Lo que dice `fetch` cuando el pedido NO llegó a salir (sin red, DNS, el
+ * servidor apagado, CORS): Chrome, Firefox, Safari, React Native y Node, en
+ * ese orden. En minúscula: se compara contra el texto en minúscula.
+ *
+ * 02-10-2026 · Node (undici) dice `TypeError: fetch failed`, distinto de los
+ * navegadores. Sin esa frase, un pedido que no salió desde el servidor de
+ * Next (o desde una prueba que corre en Node) se leía como «algo falló» y no
+ * como «sin respuesta».
+ */
+export const RED_CAIDA = [
+  'failed to fetch',
+  'networkerror',
+  'load failed',
+  'network request failed',
+  'fetch failed',
+] as const
+
+/** ¿Este texto es el de un pedido que no salió? */
+export function suenaARedCaida(texto: string): boolean {
+  const t = texto.toLowerCase()
+  return RED_CAIDA.some((senal) => t.includes(senal))
+}
+
+/**
+ * ¿El error es el `TypeError` de un `fetch` que no salió? Sólo un
+ * `TypeError` (o algo que se llama así): un `Error` cualquiera que diga
+ * «fetch failed» en su texto puede ser otra cosa.
+ */
+export function esFalloDeRed(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false
+  const esTypeError =
+    error instanceof TypeError || (error as { name?: unknown }).name === 'TypeError'
+  const mensaje = (error as { message?: unknown }).message
+  return esTypeError && typeof mensaje === 'string' && suenaARedCaida(mensaje)
+}
+
 export function leerElError(error: unknown): LoQueDiceElError {
   if (!error || typeof error !== 'object') return {}
+  // Sin respuesta no hay cuerpo que leer: status 0, como el `ApiError(0)` del
+  // cliente. Así quien lee sólo el status (el traductor, la franja) sabe que
+  // fue la red aunque el `TypeError` del `fetch` llegue crudo.
+  if (esFalloDeRed(error)) return { status: 0 }
   const sitios = [
     error as Record<string, unknown>,
     (error as { detalle?: unknown }).detalle,

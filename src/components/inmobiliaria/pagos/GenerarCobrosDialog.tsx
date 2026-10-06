@@ -30,7 +30,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Warning, CheckCircle, SealWarning, ArrowSquareOut } from '@phosphor-icons/react'
+import { Warning, CheckCircle, SealWarning, ArrowSquareOut, Receipt } from '@phosphor-icons/react'
 
 import {
   Dialog,
@@ -41,7 +41,10 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui'
+import { Checkbox } from '@/components/ui/checkbox'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
+import { Appear, Banner } from '@leasefy/cadence'
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   cobrosApi,
   type ConsignacionConContratoVencido,
@@ -49,6 +52,20 @@ import {
 } from '@/lib/api/inmobiliaria.service'
 import { mesEnTitulo } from '@/lib/utils/mes'
 import { useI18n } from '@/lib/i18n'
+
+/**
+ * ¿El back RECHAZÓ la corrida (un 4xx que dice por qué)? (02-10-2026)
+ *
+ * `FalloDeCarga` está hecho para una LECTURA: para él un 400 o un 409 es
+ * inesperado y lo titula «problema nuestro». Generar es una ACCIÓN: un 409
+ * («ya hay una corrida en curso») o un 400 dicen qué pasó y hay que leerlo tal
+ * cual. Los 5xx, la red y las caídas siguen con `FalloDeCarga`, que sabe
+ * nombrar el servicio caído y dar la referencia.
+ */
+function esUnRechazo(error: unknown): boolean {
+  const { tipo } = leerFallo(error)
+  return tipo === 'datos' || tipo === 'conflicto' || tipo === 'rechazo' || tipo === 'noExiste'
+}
 
 export interface GenerarCobrosDialogProps {
   open: boolean
@@ -170,6 +187,12 @@ export function GenerarCobrosDialog({
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<unknown>(null)
   /**
+   * 🔴 PG-R13 (QA de Pagos, 03-10-2026): avisarles a los inquilinos es una
+   * decisión de quien genera, apagada por defecto. Antes generar disparaba
+   * «Factura y cobro del mes» a todos sin decirlo (el incidente del 14-09).
+   */
+  const [avisar, setAvisar] = useState(false)
+  /**
    * El resultado de la corrida. Antes el diálogo se cerraba y listo; desde que
    * el back excluye los contratos VENCIDOS hay que mostrarlos, porque una
    * corrida que deja gente afuera en silencio es justo lo que esa exclusión
@@ -185,12 +208,15 @@ export function GenerarCobrosDialog({
     setEnviando(true)
     setError(null)
     try {
-      const r = await cobrosApi.generate(mes)
+      const r = avisar
+        ? await cobrosApi.generate(mes, { avisarALosInquilinos: true })
+        : await cobrosApi.generate(mes)
       onGenerado()
       const omitidos = r?.omitidosPorContratoVencido
       // Sólo se queda abierto si hay algo que CONTAR: vencidos que quedaron
       // fuera, o que no se pudo verificar si los había.
-      if (omitidos && (omitidos.cuantos > 0 || !omitidos.consultado)) {
+      // CR-18: o inmuebles que se cobran por trimestre y este mes va en otra cuota.
+      if ((omitidos && (omitidos.cuantos > 0 || !omitidos.consultado)) || (r?.dentroDeOtraCuota?.cuantos ?? 0) > 0) {
         setResultado(r)
       } else {
         onOpenChange(false)
@@ -209,46 +235,97 @@ export function GenerarCobrosDialog({
     if (!siguiente) {
       setError(null)
       setResultado(null)
+      setAvisar(false)
     }
     onOpenChange(siguiente)
   }
 
+  const omitidos = resultado?.omitidosPorContratoVencido
+  /*
+   * La variante sigue al estado (DESIGN.md §17): pregunta → corrida terminada
+   * (o terminada SIN poder verificar los vencidos, que es una advertencia: la
+   * corrida no excluyó a nadie) → fallo. El medallón dice el estado; por eso el
+   * ✓ verde que iba a mano en el cuerpo ya no está.
+   */
+  const variante = omitidos
+    ? omitidos.consultado
+      ? 'success'
+      : 'warning'
+    : error
+      ? 'error'
+      : 'confirm'
+
   return (
     <Dialog open={open} onOpenChange={cambiarApertura}>
-      <DialogContent className="sm:max-w-lg" data-testid="generar-cobros-dialog">
+      <DialogContent
+        size="md"
+        variant={variante}
+        icon={variante === 'confirm' ? <Receipt weight="bold" /> : undefined}
+        data-testid="generar-cobros-dialog"
+      >
         <DialogHeader>
-          <DialogTitle>
-            {t('inmobiliaria.ai.pagos_home.resumen.generar.titulo', { mes: titulo })}
-          </DialogTitle>
-          <DialogDescription>
-            {t('inmobiliaria.ai.pagos_home.resumen.generar.descripcion', { mes: titulo })}
-          </DialogDescription>
+          {resultado && omitidos ? (
+            <>
+              <DialogTitle>La corrida de {titulo} terminó</DialogTitle>
+              {typeof resultado.created === 'number' ? (
+                <DialogDescription>
+                  <span className="tabular-nums">{resultado.created.toLocaleString('es-CO')}</span>{' '}
+                  {resultado.created === 1 ? 'cobro generado.' : 'cobros generados.'}
+                </DialogDescription>
+              ) : null}
+            </>
+          ) : error ? (
+            <>
+              <DialogTitle>
+                {t('inmobiliaria.ai.pagos_home.resumen.generar.errorTitulo', { mes: titulo })}
+              </DialogTitle>
+              <DialogDescription>
+                {t('inmobiliaria.ai.pagos_home.resumen.generar.errorDescripcion')}
+              </DialogDescription>
+            </>
+          ) : (
+            <>
+              <DialogTitle>
+                {t('inmobiliaria.ai.pagos_home.resumen.generar.titulo', { mes: titulo })}
+              </DialogTitle>
+              <DialogDescription>
+                {t('inmobiliaria.ai.pagos_home.resumen.generar.descripcion', { mes: titulo })}
+              </DialogDescription>
+            </>
+          )}
         </DialogHeader>
 
-        {resultado?.omitidosPorContratoVencido ? (
-          <div className="space-y-3">
-            <p className="flex items-start gap-2 text-sm text-fg-muted">
-              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-success" weight="duotone" aria-hidden="true" />
-              <span>
-                La corrida de {titulo} terminó
-                {typeof resultado.created === 'number'
-                  ? `: ${resultado.created.toLocaleString('es-CO')} ${resultado.created === 1 ? 'cobro generado' : 'cobros generados'}.`
-                  : '.'}
-              </span>
+        {/* Movimiento (ola 2, 03-10-2026): el resultado de la corrida y el
+            fallo ENTRAN (fundido y 4 px) en lugar del formulario. */}
+        {omitidos ? (
+          <Appear distance="xs">
+          <OmitidosPorVencido omitidos={omitidos} />
+          {/* CR-18: los trimestrales cuyo mes va en la cuota de otro mes. */}
+          {(resultado?.dentroDeOtraCuota?.cuantos ?? 0) > 0 ? (
+            <p className="mt-3 text-body-sm text-fg-muted" data-testid="dentro-de-otra-cuota">
+              {resultado!.dentroDeOtraCuota!.cuantos === 1
+                ? `1 inmueble se cobra por trimestre y ${titulo} va en la cuota de otro mes: no se le generó cobro.`
+                : `${resultado!.dentroDeOtraCuota!.cuantos.toLocaleString('es-CO')} inmuebles se cobran por trimestre y ${titulo} va en la cuota de otro mes: no se les generó cobro.`}
             </p>
-            <OmitidosPorVencido omitidos={resultado.omitidosPorContratoVencido} />
-          </div>
+          ) : null}
+          </Appear>
+        ) : error && esUnRechazo(error) ? (
+          <Banner variant="danger" role="alert" data-testid="generar-rechazo">
+            {mensajeParaLaPersona(error, { accion: 'generar los cobros' })}
+          </Banner>
         ) : error ? (
+          <Appear distance="xs">
           <FalloDeCarga
             error={error}
             queEs={t('inmobiliaria.ai.pagos_home.resumen.generar.queEs')}
             onReintentar={confirmar}
             enmarcado={false}
           />
+          </Appear>
         ) : (
           <div className="space-y-3">
             {/* El alcance, en hechos: sobre qué mes y qué hay hoy. */}
-            <dl className="rounded-lg border border-border bg-surface-muted/40 divide-y divide-border">
+            <dl className="rounded-lg border border-border divide-y divide-border">
               <div className="flex items-baseline justify-between gap-4 px-4 py-3">
                 <dt className="text-sm text-fg-muted">
                   {t('inmobiliaria.ai.pagos_home.resumen.generar.mesLabel')}
@@ -295,34 +372,60 @@ export function GenerarCobrosDialog({
                 </span>
               </p>
             )}
+
+            {/* PG-R13: si los inquilinos se enteran o no lo decide quien
+                genera, y se dice ANTES de confirmar. */}
+            <label className="flex items-start gap-2 px-1 text-sm text-fg" data-testid="generar-avisar">
+              <Checkbox
+                className="mt-0.5"
+                checked={avisar}
+                onCheckedChange={(v) => setAvisar(v === true)}
+                data-testid="generar-avisar-casilla"
+              />
+              <span>
+                {t('inmobiliaria.ai.pagos_home.resumen.generar.avisarALosInquilinos')}
+                <span className="block text-caption text-fg-muted">
+                  {avisar
+                    ? t('inmobiliaria.ai.pagos_home.resumen.generar.avisarSi')
+                    : t('inmobiliaria.ai.pagos_home.resumen.generar.avisarNo')}
+                </span>
+              </span>
+            </label>
           </div>
         )}
 
         <DialogFooter>
           {resultado ? (
-            <Button hideArrow onClick={() => cambiarApertura(false)} data-testid="generar-cerrar">
+            // Terminado, la salida es blanca (DESIGN.md §17: «Listo» blanco).
+            <Button
+              variant="outline"
+              hideArrow
+              onClick={() => cambiarApertura(false)}
+              data-testid="generar-cerrar"
+            >
               Cerrar
             </Button>
           ) : (
             <>
-          <Button
-            variant="secondary"
-            hideArrow
-            onClick={() => cambiarApertura(false)}
-            disabled={enviando}
-          >
-            {t('common.cancel')}
-          </Button>
-          <Button
-            hideArrow
-            onClick={confirmar}
-            disabled={enviando}
-            data-testid="generar-confirmar"
-          >
-            {enviando
-              ? t('inmobiliaria.ai.pagos_home.resumen.generar.enviando')
-              : t('inmobiliaria.ai.pagos_home.resumen.generar.confirmar', { mes: titulo })}
-          </Button>
+              <Button
+                variant="secondary"
+                hideArrow
+                onClick={() => cambiarApertura(false)}
+                disabled={enviando}
+              >
+                {t('common.cancel')}
+              </Button>
+              <Button
+                hideArrow
+                onClick={confirmar}
+                disabled={enviando}
+                isLoading={enviando}
+                data-testid="generar-confirmar"
+              >
+                {enviando
+                  ? t('inmobiliaria.ai.pagos_home.resumen.generar.enviando')
+                  : t('inmobiliaria.ai.pagos_home.resumen.generar.confirmar', { mes: titulo })}
+              </Button>
             </>
           )}
         </DialogFooter>

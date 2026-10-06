@@ -32,7 +32,7 @@ export function ClusterMarker({ count, onClick }: ClusterMarkerProps) {
         // Colors - primary for cluster visibility
         'bg-primary text-white font-semibold font-mono tabular-nums',
         // Transitions
-        'transition-all duration-150 ease-out',
+        'transition-transform duration-fast ease-enter',
         // Hover effect
         'hover:scale-110 cursor-pointer',
         // Text size

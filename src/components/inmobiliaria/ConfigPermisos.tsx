@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { Presence } from '@leasefy/cadence';
 import {
   ArrowClockwise,
   Check,
@@ -73,6 +73,7 @@ import {
   PERMISOS_PUNTUALES,
   ROLES_DEL_SISTEMA,
 } from '@/lib/types/inmobiliaria';
+import { queCambiaEnLosPermisos } from '@/lib/permisos/que-cambia';
 
 // Los siete roles del sistema (22-09 noche); sólo se muestran los que el back devolvió.
 type AgencyRole = RolDeLaMatriz;
@@ -164,7 +165,7 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
           <div className="flex items-center justify-center">
             <label
               className={cn(
-                'relative flex items-center justify-center w-10 h-10 rounded-md transition-all cursor-pointer',
+                'relative flex items-center justify-center w-10 h-10 rounded-md transition-colors cursor-pointer',
                 isEnabled
                   ? isDangerous
                     ? 'bg-warning-soft text-warning'
@@ -181,12 +182,15 @@ function PermissionCell({ module, action, isEnabled, isAdmin, onChange }: Permis
                 checked={isEnabled}
                 onChange={(e) => !isLocked && onChange(e.target.checked)}
                 disabled={isLocked}
+                // CF-09 (QA 04-10): el lector de pantalla oía «casilla» sin más.
+                aria-label={`${getModuleLabel(module)} · ${getActionLabel(action)}`}
                 className="sr-only"
               />
+              {/* El ícono no se traga el clic: llega a la casilla por el <label>. */}
               {isEnabled ? (
-                <Check className="w-4 h-4" weight="bold" />
+                <Check className="w-4 h-4 pointer-events-none" weight="bold" aria-hidden="true" />
               ) : (
-                <ActionIcon className="w-4 h-4" />
+                <ActionIcon className="w-4 h-4 pointer-events-none" aria-hidden="true" />
               )}
               {isDangerous && isEnabled && (
                 <Warning className="absolute -top-1 -right-1 w-3.5 h-3.5 text-warning" weight="fill" />
@@ -235,11 +239,9 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
   const someEnabled = enabledActions.length > 0 && !allEnabled;
 
   return (
-    <motion.tr
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="border-b border-border hover:bg-muted/40 transition-colors"
-    >
+    // Sin entrada propia: al cambiar de rol ya entra el panel de la pestaña
+    // (Tabs de Cadence); un fundido por fila se sumaba a ése.
+    <tr className="border-b border-border hover:bg-muted/40 transition-colors">
       {/* Module Name */}
       <TableCell className="p-4">
         <div className="flex items-center gap-3">
@@ -259,6 +261,7 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
             checked={allEnabled ? true : someEnabled ? 'indeterminate' : false}
             onCheckedChange={(checked) => onToggleAll(module, checked === true)}
             disabled={isAdmin}
+            aria-label={`${getModuleLabel(module)} · todas las acciones`}
             className={cn(isAdmin && 'opacity-60 cursor-not-allowed')}
           />
         </div>
@@ -276,7 +279,7 @@ function PermissionRow({ module, permissions, isAdmin, onToggle, onToggleAll }: 
           />
         </TableCell>
       ))}
-    </motion.tr>
+    </tr>
   );
 }
 
@@ -300,6 +303,10 @@ export function ConfigPermisos({
     [initialPermissions],
   );
   const [activeRole, setActiveRole] = useState<AgencyRole>('admin');
+  const cambios = useMemo(
+    () => queCambiaEnLosPermisos(initialPermissions, permissions),
+    [initialPermissions, permissions],
+  );
   const [hasChanges, setHasChanges] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
@@ -454,18 +461,17 @@ export function ConfigPermisos({
       </div>
 
       {/* Unsaved changes indicator */}
-      {hasChanges && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 p-3 rounded-md bg-warning-soft border border-warning/30"
-        >
-          <Info className="w-5 h-5 text-warning shrink-0" />
-          <p className="text-sm text-warning">
-            {t('inmobiliaria.config.permissions.unsavedChanges')}
-          </p>
-        </motion.div>
-      )}
+      {/* Entra bajando y, al guardar o descartar, SALE (antes desaparecía de golpe). */}
+      <Presence
+        show={hasChanges}
+        direction="down"
+        className="flex items-center gap-2 p-3 rounded-md bg-warning-soft border border-warning/30"
+      >
+        <Info className="w-5 h-5 text-warning shrink-0" />
+        <p className="text-sm text-warning">
+          {t('inmobiliaria.config.permissions.unsavedChanges')}
+        </p>
+      </Presence>
 
       {/* Role Tabs */}
       <Tabs value={activeRole} onValueChange={(v) => setActiveRole(v as AgencyRole)}>
@@ -690,14 +696,25 @@ export function ConfigPermisos({
 
       {/* Confirm Save Dialog */}
       <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="sm" variant="confirm" icon={<ShieldCheck weight="bold" />}>
           <DialogHeader>
             <DialogTitle>{t('inmobiliaria.config.permissions.confirmTitle')}</DialogTitle>
             <DialogDescription>
               {t('inmobiliaria.config.permissions.confirmDescription')}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2 sm:gap-0">
+          {/* CF-09 (QA 04-10): qué cambia, no sólo «Confirmar cambios». */}
+          {cambios.length > 0 && (
+            <ul className="mt-1 max-h-48 space-y-1 overflow-y-auto text-sm text-fg" data-testid="permisos-que-cambia">
+              {cambios.map((c) => (
+                <li key={c} className="flex gap-2">
+                  <span aria-hidden="true" className="text-fg-subtle">•</span>
+                  {c}
+                </li>
+              ))}
+            </ul>
+          )}
+          <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmDialogOpen(false)}>
               {t('inmobiliaria.config.permissions.cancel')}
             </Button>
@@ -710,19 +727,14 @@ export function ConfigPermisos({
 
       {/* Reset to Defaults Dialog */}
       <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="sm" variant="destructive" icon={<ArrowClockwise weight="bold" />}>
           <DialogHeader>
-            <DialogTitle className="text-warning">{t('inmobiliaria.config.permissions.resetTitle')}</DialogTitle>
+            <DialogTitle>{t('inmobiliaria.config.permissions.resetTitle')}</DialogTitle>
             <DialogDescription>
               {t('inmobiliaria.config.permissions.resetDescription')}
             </DialogDescription>
           </DialogHeader>
-          <div className="p-4 rounded-md bg-warning-soft border border-warning/30">
-            <p className="text-sm text-warning">
-              {t('inmobiliaria.config.permissions.resetWarning')}
-            </p>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setResetDialogOpen(false)}>
               {t('inmobiliaria.config.permissions.cancel')}
             </Button>

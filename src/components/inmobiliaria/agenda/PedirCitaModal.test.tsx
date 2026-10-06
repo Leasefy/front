@@ -132,6 +132,8 @@ async function montar(props: Partial<React.ComponentProps<typeof PedirCitaModal>
 }
 
 const q = (id: string) => container.querySelector<HTMLElement>(`[data-testid="${id}"]`)
+/** El error bajo un campo (`ErrorDelCampo`, id `cita-<campo>-error`). */
+const errorDe = (campo: string) => container.querySelector<HTMLElement>(`#cita-${campo}-error`)
 
 function escribir(el: HTMLInputElement, valor: string) {
   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, valor)
@@ -184,8 +186,8 @@ describe('A4 — el combo no ofrece inmuebles arrendados', () => {
     await llenar({ conCombo: false })
     await agendar()
 
-    expect(q('cita-rechazo-inmueble')?.textContent).toContain('contrato vigente')
-    expect(q('cita-rechazo-hora')).toBeNull()
+    expect(errorDe('inmueble')?.textContent).toContain('contrato vigente')
+    expect(errorDe('hora')).toBeNull()
     expect(toastMock.error).not.toHaveBeenCalled()
     // El modal sigue abierto con lo que ya se llenó.
     expect(onClose).not.toHaveBeenCalled()
@@ -206,20 +208,80 @@ describe('A6 — el solape se dice al lado de la hora', () => {
     await llenar()
     await agendar()
 
-    expect(q('cita-rechazo-hora')?.textContent).toBe('Ya hay una cita en ese horario. Elige otra hora.')
-    expect(q('cita-rechazo-inmueble')).toBeNull()
+    expect(errorDe('hora')?.textContent).toBe('Ya hay una cita en ese horario. Elige otra hora.')
+    expect(errorDe('inmueble')).toBeNull()
     expect(toastMock.error).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
   })
 
-  it('un 500 no explica nada: texto genérico DENTRO del modal, no el volcado del servidor', async () => {
-    createCitaMock.mockRejectedValue(new ApiError(500, 'PrismaClientKnownRequestError: boom'))
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia, DENTRO del modal y sin el volcado', async () => {
+    createCitaMock.mockRejectedValue(
+      new ApiError(500, 'Invalid `prisma.propertyVisit.create()` invocation', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Invalid `prisma.propertyVisit.create()` invocation',
+        referencia: 'ab12cd34',
+      }),
+    )
     await montar()
     await llenar()
     await agendar()
 
-    expect(q('cita-rechazo-general')?.textContent).toBe('inmobiliaria.agenda.citaError')
-    expect(container.textContent).not.toContain('Prisma')
+    const general = q('cita-rechazo-general')?.textContent ?? ''
+    expect(general).toContain('de nuestro lado')
+    expect(general).toContain('ab12cd34')
+    expect(general).not.toMatch(/conexi[oó]n/i)
+    expect(container.textContent).not.toContain('prisma')
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('🔴 sin respuesta (status 0) habla de la conexión, dentro del modal', async () => {
+    createCitaMock.mockRejectedValue(new ApiError(0, 'Failed to fetch'))
+    await montar()
+    await llenar()
+    await agendar()
+
+    expect(q('cita-rechazo-general')?.textContent).toMatch(/conexi[oó]n/i)
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un 400 con campos: cada error bajo SU campo y el foco en el primero', async () => {
+    const correo = 'Revisa el correo del contacto: debe tener la forma nombre@dominio.com.'
+    const fecha = 'Elige un día válido para la visita (AAAA-MM-DD).'
+    createCitaMock.mockRejectedValue(
+      new ApiError(400, [fecha, correo], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [fecha, correo],
+        campos: [
+          { campo: 'date', regla: 'fecha', mensaje: fecha },
+          { campo: 'contactEmail', regla: 'correo', mensaje: correo },
+        ],
+      }),
+    )
+    await montar()
+    await llenar()
+    await agendar()
+
+    expect(errorDe('fecha')?.textContent).toBe(fecha)
+    expect(errorDe('correo')?.textContent).toBe(correo)
+    expect(q('cita-rechazo-general')).toBeNull()
+    // El correo se ve antes que la fecha: ahí va el foco.
+    expect(document.activeElement).toBe(container.querySelector('#cita-correo'))
+    expect(container.querySelector('#cita-correo')?.getAttribute('aria-invalid')).toBe('true')
+    expect(toastMock.error).not.toHaveBeenCalled()
+  })
+
+  it('un correo mal escrito se dice antes de enviar, con la frase del back, y no deja agendar', async () => {
+    await montar()
+    await llenar()
+    await act(async () => {
+      escribir(container.querySelector<HTMLInputElement>('#cita-correo')!, 'ana@')
+    })
+    expect(errorDe('correo')?.textContent).toBe(
+      'Revisa el correo del contacto: debe tener la forma nombre@dominio.com.',
+    )
+    expect(botonAgendar().disabled).toBe(true)
   })
 
   it('un 400 del back trae su motivo: va tal cual, arriba del pie', () => {
@@ -236,8 +298,8 @@ describe('A6 — el solape se dice al lado de la hora', () => {
     await agendar()
 
     expect(q('cita-rechazo-general')).toBeNull()
-    expect(q('cita-rechazo-hora')).toBeNull()
-    expect(q('cita-rechazo-inmueble')).toBeNull()
+    expect(errorDe('hora')).toBeNull()
+    expect(errorDe('inmueble')).toBeNull()
   })
 
   it('con éxito: agenda, avisa y cierra', async () => {

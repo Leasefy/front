@@ -32,6 +32,7 @@
  *   cosas distintas y el cliente tendría razón en no creerle a ninguno de los dos.
  */
 
+import { rotuloDePorGirar } from '@/lib/propietarios/por-girar';
 import type { JSX } from "react"
 import {
   Document,
@@ -42,7 +43,7 @@ import {
   View,
 } from '@react-pdf/renderer';
 
-import { formatCurrency } from '@/lib/format';
+import { formatCurrencyEnDocumento } from '@/lib/format';
 import type {
   ContratoDelEstadoDeCuenta,
   EstadoDeCuenta,
@@ -56,8 +57,10 @@ import {
   columnasDeImpuestos,
   columnasOmitidas,
   comoSeLlamaElRol,
+  documentoDelCliente,
   conceptoLimpio,
   estaVencida,
+  sinComprobantesDelSistemaAnterior,
   ETIQUETA_DE_COLUMNA,
   fechaLegible,
   intercalarCortes,
@@ -71,8 +74,13 @@ import {
   resumirElCliente,
   type AmortizacionDelContrato,
 } from './resumen';
+import {
+  ORIGEN_DE_LA_DEDUCCION,
+  estadoDeLaDeduccionEnPalabras,
+} from '@/components/inmobiliaria/deducciones/DeduccionesDelEstado';
 import { claveDelLado, texto } from './textos';
 import { numeroDelContratoDelEstado } from './numero';
+import { estadoDeLaDevolucion } from './saldo-a-favor';
 import { interesesDelContrato, interesesDelEstado } from './intereses';
 
 // ══ Paleta ══════════════════════════════════════════════════════════════════
@@ -484,6 +492,19 @@ const estilos = StyleSheet.create({
   pieNumero: { fontFamily: MONO, fontSize: 6.5, color: COLOR.tenue },
 });
 
+// ══ La plata del documento ══════════════════════════════════════════════════
+
+/**
+ * «Centavos en todo» (P8 a): el estado de cuenta en PDF es un DOCUMENTO. Con
+ * las dos llaves de la deuda (`conCentavos`), toda cifra con dos decimales
+ * («$ 2.350.000,00», «$ 2.350.000,29»); sin ellas, exactamente como siempre.
+ * Baja por props (no por contexto): cada pedazo del papel es una función pura
+ * que las pruebas llaman sin montar React.
+ */
+function plataDelPdf(conCentavos: boolean | undefined): (valor: number | null | undefined) => string {
+  return (valor) => formatCurrencyEnDocumento(valor, conCentavos === true);
+}
+
 // ══ El documento ════════════════════════════════════════════════════════════
 
 export interface EstadoDeCuentaPDFProps {
@@ -492,9 +513,14 @@ export interface EstadoDeCuentaPDFProps {
   hoy: string;
   /** Lo que dice que el documento sale filtrado. Va bajo el título. */
   nota?: string;
+  /**
+   * Las dos llaves de la deuda prendidas (`usePlataConCentavos(AREAS_DE_LA_DEUDA)`):
+   * la plata con dos decimales siempre. Ausente = como siempre.
+   */
+  conCentavos?: boolean;
 }
 
-export function EstadoDeCuentaPDF({ doc, hoy, nota }: EstadoDeCuentaPDFProps): JSX.Element {
+export function EstadoDeCuentaPDF({ doc, hoy, nota, conCentavos = false }: EstadoDeCuentaPDFProps): JSX.Element {
   return (
     <Document
       title={`${frase('estadoDeCuenta.titulo')} · ${doc.cliente.nombre}`}
@@ -503,12 +529,18 @@ export function EstadoDeCuentaPDF({ doc, hoy, nota }: EstadoDeCuentaPDFProps): J
       creator="Leasefy"
       producer="@react-pdf/renderer"
     >
-      <Portada doc={doc} hoy={hoy} nota={nota} />
+      <Portada doc={doc} hoy={hoy} nota={nota} conCentavos={conCentavos} />
       {/* Un contrato por hoja: no hace falta `break` porque cada `<Page>` ya
           empieza en papel nuevo, y así el encabezado `fixed` del contrato sólo
           se repite dentro de SU contrato. */}
       {doc.contratos.map((contrato) => (
-        <PaginaDelContrato key={contrato.numero} doc={doc} contrato={contrato} hoy={hoy} />
+        <PaginaDelContrato
+          key={contrato.numero}
+          doc={doc}
+          contrato={contrato}
+          hoy={hoy}
+          conCentavos={conCentavos}
+        />
       ))}
     </Document>
   );
@@ -516,14 +548,21 @@ export function EstadoDeCuentaPDF({ doc, hoy, nota }: EstadoDeCuentaPDFProps): J
 
 // ══ Portada ═════════════════════════════════════════════════════════════════
 
-function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
+function Portada({ doc, hoy, nota, conCentavos }: EstadoDeCuentaPDFProps) {
+  const formatCurrency = plataDelPdf(conCentavos);
   // Del lado PROPIETARIO la portada no dice «Resta por pagar · En mora» (QA 22-09).
   const esPropietario = doc.cliente.tipo === 'PROPIETARIO';
   const frase = (clave: string, params?: Record<string, string | number>) =>
     fraseGeneral(claveDelLado(clave, doc.cliente.tipo), params);
   const resumen = resumirElCliente(doc, hoy);
   const interesesDelDoc = interesesDelEstado(doc);
-  const heroe = formatCurrency(resumen.restaPorPagar);
+  /*
+   * 🔴 Del PROPIETARIO, el héroe es «Por girar» hasta el mes en curso, neto de
+   * sus deducciones (Nico, 04-10-2026): la misma cifra de la pantalla y del
+   * chat. Con un filtro o un back anterior, la cuenta de las filas.
+   */
+  const porGirar = esPropietario && !doc.filtro ? doc.porGirar : undefined;
+  const heroe = formatCurrency(porGirar ? porGirar.porGirarCop : resumen.restaPorPagar);
   const logo = urlDeLogoUsable(doc.inmobiliaria.logoUrl);
   const ciudadYFecha = doc.inmobiliaria.ciudad
     ? frase('estadoDeCuenta.ciudadYFecha', {
@@ -563,7 +602,7 @@ function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
           <Text style={estilos.cliente}>{paraElPapel(doc.cliente.nombre)}</Text>
           <Text style={estilos.clienteDatos}>
             {[
-              doc.cliente.documento ? `NIT/CC ${doc.cliente.documento}` : null,
+              documentoDelCliente(doc.cliente),
               comoSeLlamaElRol(doc.cliente.tipo),
               cuantos,
             ]
@@ -583,7 +622,9 @@ function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
       {/* El héroe: el número que el CEO dijo de memoria. Todo lo demás baja la voz. */}
       <View style={estilos.heroe}>
         <View style={{ width: 299, paddingRight: 14 }}>
-          <Text style={estilos.rotulo}>{frase('estadoDeCuenta.restaPorPagar')}</Text>
+          <Text style={estilos.rotulo}>
+            {porGirar ? rotuloDePorGirar(porGirar.hastaMes) : frase('estadoDeCuenta.restaPorPagar')}
+          </Text>
           <Text
             data-testid="resta-por-pagar"
             style={[estilos.heroeNumero, { fontSize: tamanoDelHeroe(heroe) }]}
@@ -640,12 +681,19 @@ function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
             {resumen.enMora
               ? frase('estadoDeCuenta.enMoraDias', { dias: resumen.diasDeMora })
               : resumen.enPlazo
-                ? frase('estadoDeCuenta.vencidoEnPlazo')
+                ? // 🔴 CR-31: sin plazo fijado es «Vencida», no «en plazo».
+                  resumen.sinPlazoFijado
+                  ? frase('estadoDeCuenta.vencidaSinPlazo')
+                  : frase('estadoDeCuenta.vencidoEnPlazo')
                 : frase('estadoDeCuenta.alDia')}
           </Text>
           {resumen.enPlazo ? (
             <Text style={estilos.heroePie}>
-              {frase('estadoDeCuenta.vencidoEnPlazoDetalle', { n: resumen.cuotasEnPlazo })}
+              {resumen.sinPlazoFijado
+                ? resumen.cuotasEnPlazo === 1
+                  ? frase('estadoDeCuenta.unaVencidaSinPlazoDetalle')
+                  : frase('estadoDeCuenta.vencidaSinPlazoDetalle', { n: resumen.cuotasEnPlazo })
+                : frase('estadoDeCuenta.vencidoEnPlazoDetalle', { n: resumen.cuotasEnPlazo })}
             </Text>
           ) : null}
           {resumen.enMora ? (
@@ -670,10 +718,42 @@ function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
           </>
         ) : (
           doc.contratos.map((contrato) => (
-            <ContratoEnLaPortada key={contrato.numero} contrato={contrato} hoy={hoy} />
+            <ContratoEnLaPortada key={contrato.numero} contrato={contrato} hoy={hoy} conCentavos={conCentavos} />
           ))
         )}
       </View>
+
+      {/* 🔴 SO-09 (QA 04-10): los descuentos de sus giros, también en papel
+          («el propietario lo ve en su extracto con el soporte», CEO 16-09). */}
+      {esPropietario && doc.deducciones && doc.deducciones.filas.length > 0 ? (
+        <View style={{ marginTop: 22 }} wrap={false}>
+          <Text style={estilos.rotulo}>
+            {paraElPapel(
+              `Descuentos de tus giros · por descontar ${formatCurrency(doc.deducciones.porDescontarCop)}`,
+            )}
+          </Text>
+          {doc.deducciones.filas.map((d) => (
+            <View
+              key={d.id}
+              style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 }}
+            >
+              <View style={{ maxWidth: 400 }}>
+                <Text style={{ fontSize: 8 }}>
+                  {paraElPapel(`${ORIGEN_DE_LA_DEDUCCION[d.origen] ?? 'Descuento'}: ${d.concepto}`)}
+                </Text>
+                <Text style={estilos.direccion}>
+                  {paraElPapel(
+                    [d.inmueble, estadoDeLaDeduccionEnPalabras(d), d.tieneSoporte ? `Soporte: ${d.soporteNombre ?? 'adjunto'}` : null]
+                      .filter(Boolean)
+                      .join(' · '),
+                  )}
+                </Text>
+              </View>
+              <Text style={estilos.cifraChica}>{paraElPapel(`-${formatCurrency(d.valorCop)}`)}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
 
       <PieDePagina doc={doc} />
     </Page>
@@ -683,10 +763,13 @@ function Portada({ doc, hoy, nota }: EstadoDeCuentaPDFProps) {
 function ContratoEnLaPortada({
   contrato,
   hoy,
+  conCentavos,
 }: {
   contrato: ContratoDelEstadoDeCuenta;
   hoy: string;
+  conCentavos?: boolean;
 }) {
+  const formatCurrency = plataDelPdf(conCentavos);
   const amortizacion = amortizacionDe(contrato);
   const proxima = proximaCuotaDe(contrato, hoy);
 
@@ -707,11 +790,12 @@ function ContratoEnLaPortada({
       </View>
 
       <View style={{ flexGrow: 1, paddingRight: 18 }}>
-        <BarraDeAmortizacion amortizacion={amortizacion} numero={contrato.numero} />
+        <BarraDeAmortizacion amortizacion={amortizacion} numero={contrato.numero} conCentavos={conCentavos} />
       </View>
 
       <View style={{ width: 150, alignItems: 'flex-end' }}>
-        <Text style={estilos.rotulo}>{frase('estadoDeCuenta.restaPorPagar')}</Text>
+        {/* QA-PROP-95 (F11): al propietario se le gira. */}
+        <Text style={estilos.rotulo}>{contrato.rol === 'PROPIETARIO' ? 'Resta por girar' : frase('estadoDeCuenta.restaPorPagar')}</Text>
         <Text style={[estilos.numeroDeContrato, { fontSize: 11, marginTop: 3 }]}>
           {formatCurrency(contrato.totales.restaPorPagar)}
         </Text>
@@ -737,10 +821,13 @@ function ContratoEnLaPortada({
 function BarraDeAmortizacion({
   amortizacion,
   numero,
+  conCentavos,
 }: {
   amortizacion: AmortizacionDelContrato;
   numero: string;
+  conCentavos?: boolean;
 }) {
+  const formatCurrency = plataDelPdf(conCentavos);
   if (amortizacion.total === 0) return null;
 
   return (
@@ -792,11 +879,14 @@ function PaginaDelContrato({
   doc,
   contrato,
   hoy,
+  conCentavos,
 }: {
   doc: EstadoDeCuenta;
   contrato: ContratoDelEstadoDeCuenta;
   hoy: string;
+  conCentavos?: boolean;
 }) {
+  const formatCurrency = plataDelPdf(conCentavos);
   const todas = [...contrato.secciones.arriendos, ...contrato.secciones.otrosConceptos];
   const intereses = interesesDelContrato(contrato);
   const conIntereses = Boolean(intereses && intereses.filas.length > 0);
@@ -853,6 +943,7 @@ function PaginaDelContrato({
         rol={contrato.rol}
         hoy={hoy}
         vacio={frase('estadoDeCuenta.sinArriendos')}
+        conCentavos={conCentavos}
       />
 
       <SeccionDeLaTabla
@@ -866,6 +957,7 @@ function PaginaDelContrato({
         rol={contrato.rol}
         hoy={hoy}
         vacio={frase('estadoDeCuenta.sinOtrosConceptos')}
+        conCentavos={conCentavos}
       />
 
       {omitidas.length > 0 ? (
@@ -922,6 +1014,35 @@ function PaginaDelContrato({
               </Text>
             </View>
           ))}
+        </View>
+      ) : null}
+
+      {/* 🔴 Ola E (Juan Camilo): el saldo a favor del inquilino y su devolución
+          al terminar el contrato, aparte de lo que debe. */}
+      {contrato.saldoAFavor &&
+      (contrato.saldoAFavor.anticipoSinConsumirCop > 0 || contrato.saldoAFavor.devolucion) ? (
+        <View style={estilos.totales} wrap={false}>
+          <Text style={estilos.totalesRotulo}>{frase('estadoDeCuenta.saldoAFavor')}</Text>
+          {contrato.saldoAFavor.anticipoSinConsumirCop > 0 ? (
+            <View style={estilos.totalCelda}>
+              <Text style={estilos.rotulo}>{frase('estadoDeCuenta.saldoAFavorAnticipo')}</Text>
+              <Text style={estilos.totalCifraApagada}>
+                {formatCurrency(contrato.saldoAFavor.anticipoSinConsumirCop)}
+              </Text>
+            </View>
+          ) : null}
+          {contrato.saldoAFavor.devolucion ? (
+            <View style={estilos.totalCelda}>
+              <Text style={estilos.rotulo}>
+                {paraElPapel(
+                  `${frase('estadoDeCuenta.saldoAFavorDevolucion')} · ${estadoDeLaDevolucion(contrato.saldoAFavor.devolucion, frase)}`,
+                )}
+              </Text>
+              <Text style={estilos.totalCifraApagada}>
+                {formatCurrency(contrato.saldoAFavor.devolucion.valorCop)}
+              </Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
 
@@ -1031,6 +1152,7 @@ function SeccionDeLaTabla({
   rol,
   hoy,
   vacio,
+  conCentavos,
 }: {
   titulo: string;
   filas: FilaDelEstadoDeCuenta[];
@@ -1040,6 +1162,7 @@ function SeccionDeLaTabla({
   rol: RolEnElContrato;
   hoy: string;
   vacio: string;
+  conCentavos?: boolean;
 }) {
   const renglones = intercalarCortes(filas, cortes);
 
@@ -1062,6 +1185,7 @@ function SeccionDeLaTabla({
               medidas={medidas}
               rol={rol}
               hoy={hoy}
+              conCentavos={conCentavos}
             />
           ),
         )
@@ -1102,13 +1226,16 @@ function FilaDeLaTabla({
   medidas,
   rol,
   hoy,
+  conCentavos,
 }: {
   fila: FilaDelEstadoDeCuenta;
   columnas: ColumnaDeImpuesto[];
   medidas: MedidasDeLaTabla;
   rol: RolEnElContrato;
   hoy: string;
+  conCentavos?: boolean;
 }) {
+  const formatCurrency = plataDelPdf(conCentavos);
   const tono = TONO_DEL_ESTADO[fila.estado];
   // `ANULADA` dejó de existir y `ANTERIOR` no está en nuestra cartera: ninguna
   // de las dos suma, así que ninguna de las dos se lee con la tinta de las que sí.
@@ -1138,7 +1265,14 @@ function FilaDeLaTabla({
             fila.estado === 'ANULADA' ? { textDecoration: 'line-through' } : {},
           ]}
         >
-          {paraElPapel(pintaDelEstado(fila.estado, rol).texto)}
+          {/* 🔴 Nico (03-10-2026): la saldó una nota crédito, no un pago. */}
+          {paraElPapel(
+            fila.saldadaPorNota
+              ? fila.saldadaPorNota.numero
+                ? frase('estadoDeCuenta.saldadaPorNota', { numero: fila.saldadaPorNota.numero })
+                : frase('estadoDeCuenta.saldadaPorNotaSinNumero')
+              : pintaDelEstado(fila.estado, rol).texto,
+          )}
         </Text>
       </View>
 
@@ -1206,7 +1340,10 @@ function FilaDeLaTabla({
           </>
         ) : (
           <Text style={{ fontSize: medidas.fuente - 1, color: COLOR.tenue }}>
-            {frase('estadoDeCuenta.sinPago')}
+            {/* PG-08: un mes del sistema anterior sin comprobante migrado no es «Sin pago». */}
+            {sinComprobantesDelSistemaAnterior(fila)
+              ? frase('estadoDeCuenta.sinComprobantesCargados')
+              : frase('estadoDeCuenta.sinPago')}
           </Text>
         )}
       </View>

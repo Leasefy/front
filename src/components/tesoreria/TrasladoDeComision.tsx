@@ -21,7 +21,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowsLeftRight, CheckCircle, Prohibit } from '@phosphor-icons/react';
+import { ArrowsLeftRight, CheckCircle, Prohibit, XCircle } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Avisos, Cifra, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
@@ -45,6 +45,9 @@ import type {
   Traslado,
 } from '@/lib/api/tesoreria.types';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 
 /** `YYYY-MM` del mes pasado en Bogotá: el que normalmente se acaba de liquidar. */
 function mesAnterior(): string {
@@ -69,6 +72,8 @@ export function TrasladoDeComisionPanel() {
   const [trabajando, setTrabajando] = useState(false);
   const [rechazando, setRechazando] = useState<Traslado | null>(null);
   const [motivo, setMotivo] = useState('');
+  /** El error del motivo del rechazo que mandó el back (`campos[].motivo`). */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -104,7 +109,12 @@ export function TrasladoDeComisionPanel() {
       }
       await cargar();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo proponer el traslado.');
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo proponer el traslado.',
+          accion: 'proponer el traslado',
+        }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -120,7 +130,12 @@ export function TrasladoDeComisionPanel() {
       for (const aviso of r.avisos) toast.warning(aviso);
       await cargar();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo aprobar el traslado.');
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo aprobar el traslado.',
+          accion: 'aprobar el traslado',
+        }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -129,6 +144,7 @@ export function TrasladoDeComisionPanel() {
   const rechazar = async () => {
     if (!rechazando) return;
     setTrabajando(true);
+    setErrorDelMotivo(null);
     try {
       await tesoreriaApi.rechazarTraslado(rechazando.id, motivo);
       toast.success('Traslado rechazado. La comisión se queda en la cuenta de recaudo.');
@@ -136,7 +152,17 @@ export function TrasladoDeComisionPanel() {
       setMotivo('');
       await cargar();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo rechazar el traslado.');
+      // Un 400 del motivo va debajo del motivo; lo demás, al aviso.
+      const { porCampo, sueltos } = repartirErroresDelServidor(error, {
+        campos: ['motivo'] as const,
+        porDefecto: 'No se pudo rechazar el traslado.',
+        accion: 'rechazar el traslado',
+      });
+      if (porCampo.motivo) {
+        setErrorDelMotivo(porCampo.motivo);
+        document.getElementById('motivo-del-rechazo')?.focus();
+      }
+      if (sueltos.length > 0) toast.error(sueltos.join(' · '));
     } finally {
       setTrabajando(false);
     }
@@ -221,6 +247,7 @@ export function TrasladoDeComisionPanel() {
                       onClick={() => {
                         setRechazando(t);
                         setMotivo('');
+                        setErrorDelMotivo(null);
                       }}
                       disabled={trabajando}
                       data-testid={`rechazar-${t.id}`}
@@ -253,31 +280,63 @@ export function TrasladoDeComisionPanel() {
       </EstadoDeDatos>
 
       <Dialog open={rechazando !== null} onOpenChange={(v) => !v && setRechazando(null)}>
-        <DialogContent>
+        {/* Destructiva: rechazar (no anular) → `XCircle` en el medallón. */}
+        <DialogContent
+          variant="destructive"
+          icon={<XCircle weight="bold" />}
+          data-testid="dialogo-rechazar-traslado"
+        >
           <DialogHeader>
-            <DialogTitle>Rechazar el traslado</DialogTitle>
+            <DialogTitle>
+              Rechazar el traslado
+              {rechazando ? (
+                <>
+                  {' '}de <span className="tabular-nums">{formatCurrency(rechazando.totalCop)}</span>
+                </>
+              ) : null}
+            </DialogTitle>
             <DialogDescription>
               La comisión se queda en la cuenta de recaudo y el cuadre de plata de terceros va a
-              seguir mostrando esa diferencia. Deja escrito por qué.
+              seguir mostrando esa diferencia. El traslado queda como rechazado, no se borra, y esa
+              plata vuelve a quedar por trasladar: se puede proponer otro desde acá. Deja escrito
+              por qué.
             </DialogDescription>
           </DialogHeader>
-          <Textarea
-            value={motivo}
-            onChange={(e) => setMotivo(e.target.value)}
-            placeholder="Se traslada junto con la comisión de octubre."
-            maxLength={300}
-            data-testid="motivo-del-rechazo"
-          />
+          <div>
+            <Textarea
+              id="motivo-del-rechazo"
+              value={motivo}
+              onChange={(e) => {
+                setMotivo(e.target.value);
+                setErrorDelMotivo(null);
+              }}
+              placeholder="Se traslada junto con la comisión de octubre."
+              maxLength={300}
+              aria-label="Por qué se rechaza"
+              aria-invalid={errorDelMotivo ? true : undefined}
+              aria-describedby={errorDelMotivo ? 'motivo-del-rechazo-error' : undefined}
+              data-testid="motivo-del-rechazo"
+            />
+            <ErrorDelCampo id="motivo-del-rechazo-error" mensaje={errorDelMotivo} />
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRechazando(null)}>
+            <Button
+              variant="outline"
+              hideArrow
+              onClick={() => setRechazando(null)}
+              disabled={trabajando}
+            >
               Volver
             </Button>
             <Button
+              variant="destructive"
+              hideArrow
               onClick={() => void rechazar()}
               disabled={trabajando || motivo.trim().length === 0}
+              isLoading={trabajando}
               data-testid="confirmar-rechazo"
             >
-              Rechazar
+              Rechazar el traslado
             </Button>
           </DialogFooter>
         </DialogContent>

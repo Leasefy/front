@@ -5,6 +5,7 @@ import { usePathname /* , useRouter */ } from 'next/navigation';
 import { ChatsCircle, AirTrafficControl } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AgencySubscriptionGuard } from '@/components/auth/AgencySubscriptionGuard';
+import { puedeVerLaSuscripcion } from '@/lib/auth/quien-ve-la-suscripcion';
 import { AsistentePendienteGuard } from '@/components/auth/AsistentePendienteGuard';
 import { SegundoFactorDentroDelPanel } from '@/components/auth/SegundoFactorDentroDelPanel';
 import { PlanSidebar, NavItem } from '@/components/ui/plan/PlanSidebar';
@@ -90,7 +91,12 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // name (contrato 29). While the subscription / plan catalog is loading or
   // errored the CTA stays hidden (indeterminate) so paying users never see a
   // flash of "Upgrade".
-  const { isPaidPlan, indeterminate: subIndeterminate } = useAgencySubscription();
+  // 🔴 COBRANZA-MANUAL (04-10-2026): sólo la pide quien la puede ver (el CTA es
+  // del administrador); el auxiliar de cartera y el abogado recibían un 403 en
+  // la consola al entrar (`quien-ve-la-suscripcion.ts`).
+  const { isPaidPlan, indeterminate: subIndeterminate } = useAgencySubscription(
+    !permissionsLoading && puedeVerLaSuscripcion({ isAdmin, canAccess }),
+  );
   // …y sólo al ADMIN: `/upgrade` es `PageGuard adminOnly`, así que a un
   // AGENTE/CONTADOR/VIEWER el botón lo mandaba a una pantalla que lo devuelve
   // a la portada sin decirle nada. Un CTA que rebota es peor que no tenerlo.
@@ -105,7 +111,10 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // admins. Falls back to the i18n title while loading / if empty, so the brand
   // never flashes empty. `logoUrl` empty → PlanSidebar shows the LeasefyMark.
   const { agency } = useAuth();
-  const { config } = useInmobiliariaConfig();
+  // 🔴 ARREGLOS-4 (03-10-2026): sólo quien PUEDE leerla la pide. El back la
+  // cierra con `configuracion:view`; pedirla igual era un 403 en cada pantalla
+  // del contador y de la asesora (y el nombre ya viene de `useAuth().agency`).
+  const { config } = useInmobiliariaConfig(canAccess('configuracion', 'view'));
   // El mismo gate que usa la propia pantalla de Equipo (`SeccionEquipo`) para
   // decidir si muestra el formulario de invitación.
   // 🔴 Comentado con la tarjeta de invitar (Nico, 01-10: «no me interesa que
@@ -127,7 +136,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
   // T-0031 WU-4: el "Retomar" del importador era page-local (N10) — sólo se
   // veía si ya se había entrado a /contratos/migrar. Este badge lo hace
   // visible siempre, en la nav.
-  const { pendientes: migracionesPendientes } = useMigracionesPendientes();
+  // 🔴 ARREGLOS-4: `GET /contracts/migrar/lotes` pide `contratos:view`; sin él
+  // (la asesora) no se pide — era otro 403 en cada pantalla — y no hay badge.
+  const { pendientes: migracionesPendientes } = useMigracionesPendientes(canAccess('contratos', 'view'));
   // Piloto automático: total de la bandeja (poll 60s; fail-soft a undefined ⇒
   // sin badge — un cero afirmaría que no hay nada, que es lo que no sabemos).
   const { total: pilotoPendientes } = usePilotoBadge();
@@ -202,6 +213,7 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // «Inicio» y eso lo escondía: nadie busca un chat bajo ese nombre, y el
     // inicio ahora es el Piloto. Se llama por lo que es (Nico, 2026-08-31).
     // `exact` para que no quede resaltado en cada subruta.
+    // CF-01 (decisión 12, 05-10-2026): también el auxiliar de cartera; su chat contesta sólo de cartera (micro).
     { label: t('inmobiliaria.nav.chat'),         href: '/panel/inmobiliaria',              icon: ChatsCircle,   exact: true, module: null, dataTourTarget: 'sidebar-chat' },
 
     // ── LOS MÓDULOS ── los agentes arriba, y después el ciclo de vida del contrato.

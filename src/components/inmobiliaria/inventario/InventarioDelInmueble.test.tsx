@@ -11,11 +11,14 @@ const estadoInventarios = vi.fn();
 const estadoBorrador = vi.fn();
 const completar = vi.fn();
 const reemplazar = vi.fn();
+const toastError = vi.fn();
 let destinoRecibido: { guardar: (id: string, items: unknown[]) => Promise<void> } | undefined;
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
-vi.mock('@/components/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('@/components/ui/toast', () => ({
+  toast: { success: vi.fn(), error: (...a: unknown[]) => toastError(...a) },
+}));
 vi.mock('@/lib/hooks/use-inventarios-del-inmueble', () => ({
   useInventariosDelInmueble: () => estadoInventarios(),
 }));
@@ -74,7 +77,11 @@ function datos(over: Partial<InventariosDelInmueble>): InventariosDelInmueble {
   };
 }
 
-async function montar(d: InventariosDelInmueble | null, borrador: Record<string, unknown> = {}) {
+async function montar(
+  d: InventariosDelInmueble | null,
+  borrador: Record<string, unknown> = {},
+  extra: { volverAlContrato?: string | null; puedeEditar?: boolean } = {},
+) {
   estadoInventarios.mockReturnValue({ datos: d, cargando: false, error: null, desdeCache: false, recargar: vi.fn(), reemplazar });
   estadoBorrador.mockReturnValue({
     vistasPrevias: {}, hayPendientes: false, subiendo: false, actualizadoEn: null, fotosSinSubir: 0,
@@ -88,7 +95,8 @@ async function montar(d: InventariosDelInmueble | null, borrador: Record<string,
     root.render(
       <InventarioDelInmueble
         consignacion={{ id: 'cons-1', contractDate: '2026-01-01', inventoryItems: [] }}
-        puedeEditar
+        puedeEditar={extra.puedeEditar ?? true}
+        volverAlContrato={extra.volverAlContrato}
       />,
     );
   });
@@ -151,10 +159,89 @@ describe('InventarioDelInmueble', () => {
     expect(q('completar-inventario')?.textContent).toContain('Sube lo pendiente antes de completar');
   });
 
+  /**
+   * Sistema de errores, tanda 2 (02-10-2026): la descripción del toast era
+   * `err.message` crudo. Un 500 decía «Internal server error» y la red,
+   * «Failed to fetch».
+   */
+  describe('el error al completar', () => {
+    async function completarConError(error: unknown) {
+      const borrador = version({ id: 'v2', version: 2, estado: 'BORRADOR', completadoEn: null, items: [{ id: 'a' }] });
+      completar.mockRejectedValue(error);
+      await montar(datos({ versiones: [borrador], borrador }));
+      await act(async () => {
+        (q('completar-inventario-boton') as HTMLButtonElement).click();
+      });
+      return (toastError.mock.calls[0]?.[1] as { description?: string } | undefined)?.description ?? '';
+    }
+
+    it('🔴 un 5xx dice «de nuestro lado» con la referencia, nunca «Internal server error»', async () => {
+      const { ApiError } = await import('@/lib/api/client');
+      const descripcion = await completarConError(
+        new ApiError(500, 'Internal server error', 'ERROR_INTERNO', {
+          code: 'ERROR_INTERNO', message: 'Internal server error', referencia: '77aa77aa',
+        }),
+      );
+      expect(descripcion).toMatch(/^No pudimos completar el inventario: algo falló de nuestro lado/);
+      expect(descripcion).toContain('77aa77aa');
+      expect(descripcion).not.toContain('Internal server error');
+    });
+
+    it('un 409 que explica el back se dice tal cual', async () => {
+      const { ApiError } = await import('@/lib/api/client');
+      const descripcion = await completarConError(
+        new ApiError(409, 'El borrador cambió mientras lo completabas: vuelve a abrirlo.', 'BORRADOR_CAMBIO'),
+      );
+      expect(descripcion).toBe('El borrador cambió mientras lo completabas: vuelve a abrirlo.');
+    });
+
+    it('sin respuesta habla de la conexión, no «Failed to fetch»', async () => {
+      const descripcion = await completarConError(new TypeError('Failed to fetch'));
+      expect(descripcion).toMatch(/conexión/);
+      expect(descripcion).not.toContain('Failed to fetch');
+    });
+  });
+
   it('el borrador sin señal sube al inventario por versiones, no a la consignación', async () => {
     await montar(datos({}));
     expect(destinoRecibido).toBeDefined();
     await destinoRecibido!.guardar('cons-1', []);
     expect(reemplazar).toHaveBeenCalled();
+  });
+
+  /*
+   * IN-07 (QA 04-10): sin inventario la tarjeta decía lo mismo tres veces (el
+   * aviso, el encabezado y la tabla vacía, más el historial vacío). Ahora es
+   * UN estado vacío con la acción para empezar.
+   */
+  it('🔴 IN-07: sin ningún inventario hay UN solo estado vacío, con «Empezar el inventario»', async () => {
+    await montar(datos({ vigencia: { vigente: false, motivo: 'SIN_INVENTARIO', ultimoCompleto: null, porActualizarTras: null } as never }))
+    const vacio = q('inventario-vacio')!;
+    expect(vacio).not.toBeNull();
+    expect(vacio.textContent).toContain('Este inmueble todavía no tiene inventario');
+    expect(vacio.textContent).toContain('Empezar el inventario');
+    // Ni el aviso de vigencia, ni el encabezado de versión, ni la tabla vacía, ni el historial vacío.
+    expect(q('aviso-inventario-info')).toBeNull();
+    expect(q('encabezado-de-version')).toBeNull();
+    expect(q('acta')).toBeNull();
+    expect(q('historial')).toBeNull();
+    expect(host.textContent).not.toContain('Todavía no hay inventario');
+    expect(host.textContent!.match(/no tiene inventario/g)?.length).toBe(1);
+  });
+
+  it('sin permiso de editar, el vacío no ofrece empezar', async () => {
+    await montar(datos({}), {}, { puedeEditar: false });
+    expect(q('inventario-vacio')?.textContent).not.toContain('Empezar el inventario');
+  });
+
+  it('con un borrador ya empezado se ve la tabla de siempre, no el vacío', async () => {
+    await montar(datos({ borrador: version({ id: 'b', estado: 'BORRADOR', items: [{ id: 'i', name: 'Nevera', quantity: 1, condition: 'good' }] }) as never, versiones: [version({ id: 'b', estado: 'BORRADOR' })] }));
+    expect(q('inventario-vacio')).toBeNull();
+    expect(q('acta')).not.toBeNull();
+  });
+
+  it('desde «Nuevo contrato» ofrece volver al contrato', async () => {
+    await montar(datos({}), {}, { volverAlContrato: '/panel/inmobiliaria/contratos/nuevo?inmueble=p1' });
+    expect(q('volver-al-contrato')?.textContent).toContain('cuando completes el inventario');
   });
 });

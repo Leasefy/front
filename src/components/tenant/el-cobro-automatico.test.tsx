@@ -367,3 +367,75 @@ describe('sin contrato', () => {
     expect(host.textContent).toBe('');
   });
 });
+
+/**
+ * 🔴 02-10-2026 · Sistema de errores: el tope con la MISMA cifra y la MISMA
+ * frase que el back (`tenant-payments/dto/limites-del-pago.ts`), lo que el
+ * back rechaza va bajo su campo y los demás fallos pasan por el traductor.
+ */
+describe('errores del cobro automático (02-10-2026)', () => {
+  const TOPE = 'El tope del cobro automático no puede pasar de $100.000.000. Revisa que no sobren ceros.';
+
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    return Object.assign(new Error(Array.isArray(cuerpo.message) ? cuerpo.message.join(' · ') : String(cuerpo.message ?? '')), {
+      name: 'ApiError',
+      status,
+      code: cuerpo.code,
+      messages: Array.isArray(cuerpo.message) ? cuerpo.message : undefined,
+      detalle: cuerpo,
+    });
+  }
+
+  async function llenarYAutorizar(tope: string) {
+    await montar();
+    await clic(boton('Activar cobro automático')!);
+    await escribir('autopago-tope', tope);
+    await escribir('autopago-nombre', 'ANA PEREZ');
+    await escribir('autopago-numero', '4242424242424242');
+    await escribir('autopago-mes', '12');
+    await escribir('autopago-anio', '2030');
+    await escribir('autopago-cvc', '123');
+    await clic($('#autopago-acepta')!);
+    await clic(boton('Autorizar')!);
+  }
+
+  it('🔴 un tope de once cifras se ataja bajo el campo, sin tocar la tarjeta', async () => {
+    await llenarYAutorizar('30000000000');
+    expect(tokenizar).not.toHaveBeenCalled();
+    expect(api.activar).not.toHaveBeenCalled();
+    expect($('#autopago-tope-error')?.textContent).toBe(TOPE);
+    expect($('#autopago-tope')?.getAttribute('aria-invalid')).toBe('true');
+  });
+
+  it('🔴 un 400 del back en topeCop va bajo el tope, sin toast', async () => {
+    api.activar.mockRejectedValue(
+      errorDelBack(400, {
+        code: 'DATOS_INVALIDOS',
+        message: [TOPE],
+        campos: [{ campo: 'topeCop', regla: 'maximo', mensaje: TOPE }],
+      }),
+    );
+    await llenarYAutorizar('2500000');
+    expect($('#autopago-tope-error')?.textContent).toBe(TOPE);
+    expect(toastMock.error).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx al activar dice que fue nuestro, con la referencia, sin el texto crudo', async () => {
+    api.activar.mockRejectedValue(
+      errorDelBack(500, { code: 'ERROR_INTERNO', message: 'Internal server error', referencia: 'ab12cd34' }),
+    );
+    await llenarYAutorizar('2500000');
+    const dicho = String(toastMock.error.mock.calls[0][0]);
+    expect(dicho).toMatch(/^No pudimos activar el cobro automático: algo falló de nuestro lado/);
+    expect(dicho).toContain('ab12cd34');
+    expect(dicho).not.toMatch(/Internal server error|conexi[oó]n/);
+  });
+
+  it('sin respuesta al pausar: habla de la conexión', async () => {
+    api.estado.mockResolvedValue(ACTIVO);
+    api.pausarOReactivar.mockRejectedValue(new TypeError('Failed to fetch'));
+    await montar();
+    await clic(boton('Pausar')!);
+    expect(String(toastMock.error.mock.calls[0][0])).toMatch(/conexión/);
+  });
+});

@@ -87,7 +87,7 @@ export function EnlacesCompartidos({
       onRevocado(enlace.id);
       toast.success('Enlace revocado: quien lo abra ya no ve el estado de cuenta.');
     } catch (e) {
-      toast.error(motivoDeCompartir(e, 'No se pudo revocar el enlace.'));
+      toast.error(motivoDeCompartir(e, 'No se pudo revocar el enlace.', 'revocar el enlace'));
     } finally {
       setRevocando(null);
     }
@@ -103,7 +103,7 @@ export function EnlacesCompartidos({
             instante: quien lo abra ya no ve nada.
           </DialogDescription>
         </DialogHeader>
-        <div className="px-6 py-4">
+        <div>
           <EstadoDeDatos
             cargando={cargando}
             error={error}
@@ -144,6 +144,7 @@ export function EnlacesCompartidos({
                     hideArrow
                     onClick={() => void revocar(e)}
                     disabled={revocando !== null}
+                    isLoading={revocando === e.id}
                     data-testid={`revocar-${e.id}`}
                   >
                     {revocando === e.id ? 'Revocando…' : 'Revocar'}

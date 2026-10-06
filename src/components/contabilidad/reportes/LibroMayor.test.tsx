@@ -111,10 +111,12 @@ describe('<LibroMayor>', () => {
   it('🔴 no dibuja los meses que todavía no llegaron', async () => {
     await pintar();
     const encabezados = [...q('libro-mayor')!.querySelectorAll('th')].map((t) => t.textContent);
-    expect(encabezados).toContain('2026-08');
-    expect(encabezados).toContain('2026-09');
-    expect(encabezados).not.toContain('2026-10');
-    expect(encabezados).not.toContain('2026-11');
+    // QA-FACT-CONTA-95 (CB-C-03): los meses legibles («ago 2026», no «2026-08»).
+    expect(encabezados).toContain('ago 2026');
+    expect(encabezados).toContain('sept 2026');
+    expect(encabezados).not.toContain('oct 2026');
+    expect(encabezados).not.toContain('nov 2026');
+    expect(encabezados).not.toContain('2026-08');
   });
 
   it('🔴 y dice cuántas columnas se recortaron, para que nadie las busque', async () => {
@@ -145,7 +147,8 @@ describe('<LibroMayor>', () => {
 
     const cartel = q('mayor-no-cuadra')!.textContent!;
     expect(cartel).toContain('partida doble');
-    expect(cartel).toContain('$1.000');
+    // CB-17 (03-10-2026): la plata de Contabilidad con UN formato, «$ 1.000».
+    expect(cartel).toContain('$\u00a01.000');
   });
 
   it('el nivel por defecto es la cuenta de 4 dígitos', async () => {

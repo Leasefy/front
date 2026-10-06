@@ -2,9 +2,8 @@
 
 import { useState, type ReactNode } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
 import { CaretLeft, CaretRight } from '@phosphor-icons/react';
-import { IconButton } from '@leasefy/cadence';
+import { Appear, CrossFade, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
 
 export interface Testimonial {
   quote: string;
@@ -25,12 +24,16 @@ export function TestimonialCarousel({
   cardClassName = "bg-white",
 }: TestimonialCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  // «Siguiente» trae el par nuevo por la derecha; «Anterior», por la izquierda.
+  const [direccion, setDireccion] = useState<'forward' | 'backward'>('forward');
 
   const nextTestimonial = () => {
+    setDireccion('forward');
     setCurrentIndex((prev) => (prev + 2) % testimonials.length);
   };
 
   const prevTestimonial = () => {
+    setDireccion('backward');
     setCurrentIndex((prev) => (prev - 2 + testimonials.length) % testimonials.length);
   };
 
@@ -38,13 +41,7 @@ export function TestimonialCarousel({
     <section className="bg-white overflow-hidden">
       <div className="container-platform py-[80px] pb-[100px]">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="lg:sticky lg:top-32"
-          >
+          <Appear inView direction="right" distance="md" duration="slow" className="lg:sticky lg:top-32">
             {title}
 
             <div className="flex gap-3">
@@ -63,20 +60,21 @@ export function TestimonialCarousel({
                 icon={<CaretRight className="w-5 h-5" />}
               />
             </div>
-          </motion.div>
+          </Appear>
 
-          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
-            <AnimatePresence mode="popLayout">
+          {/*
+            El par cambia como un paso: el viejo se va hacia un lado y el nuevo
+            entra desde el otro (`CrossFade`); adentro, las dos tarjetas llegan
+            una tras otra (`Stagger`, 40 ms).
+          */}
+          <CrossFade swapKey={currentIndex} direction={direccion} className="lg:col-span-2">
+            <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-5" layout={false}>
               {[0, 1].map((offset) => {
                 const index = (currentIndex + offset) % testimonials.length;
                 const testimonial = testimonials[index];
                 return (
-                  <motion.div
-                    key={`${index}-${currentIndex}`}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.4, delay: offset * 0.1 }}
+                  <StaggerItem
+                    key={`${index}-${testimonial.author}`}
                     className={`${cardClassName} rounded-xl p-8 flex flex-col`}
                   >
                     <div className="mb-6">
@@ -108,11 +106,11 @@ export function TestimonialCarousel({
                         </p>
                       </div>
                     </div>
-                  </motion.div>
+                  </StaggerItem>
                 );
               })}
-            </AnimatePresence>
-          </div>
+            </Stagger>
+          </CrossFade>
         </div>
       </div>
     </section>

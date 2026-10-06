@@ -107,7 +107,7 @@ export function KPICard({
     <div
       className={cn(
         'relative p-5 rounded-sm border border-border',
-        'transition-all duration-200 ease-out',
+        'transition-[border-color,background-color,box-shadow] duration-base ease-enter',
         href && 'hover: hover:border-border cursor-pointer',
         styles.bg,
         className

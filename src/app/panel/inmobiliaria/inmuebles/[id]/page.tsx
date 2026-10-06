@@ -1,4 +1,5 @@
 'use client';
+import { SituacionComercialDelInmueble } from '@/components/comercial/SituacionComercial';
 import { AsignarAgente } from '@/components/inmobiliaria/AsignarAgente';
 import { CandidatosDelInmueble } from '@/components/inmobiliaria/CandidatosDelInmueble';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -8,10 +9,11 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { useState, useCallback, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { CaretLeft, Buildings, CalendarPlus, WifiSlash } from '@phosphor-icons/react';
+import { CrossFade } from '@leasefy/cadence';
+import { CaretLeft, Buildings, CalendarPlus, WifiSlash, Prohibit } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { motivosDelError } from '@/lib/errores/descripcion-del-error';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -52,6 +54,7 @@ import {
 import { FirmaElectronicaDeConsignacionSection } from '@/components/inmobiliaria/consignacion/FirmaElectronicaDeConsignacionSection';
 import { EditarPropietariosDialog } from '@/components/inmobiliaria/EditarPropietariosDialog';
 import { InventarioDelInmueble } from '@/components/inmobiliaria/inventario/InventarioDelInmueble';
+import { rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
 import { ConsignacionEditForm } from '@/components/inmobiliaria/ConsignacionEditForm';
 // 🔴 C-05 y la firma del mandato (18-09-2026): los papeles que hacen falta
@@ -195,8 +198,10 @@ function ConsignacionDetailContent() {
   const consignacion = consignacionData || fetchedConsignacion || copiaLocal.copia?.consignacion;
   // T-0109 contract.md §3.1.C — la sección de firma electrónica sólo ofrece
   // sus acciones (iniciar, cancelar, reenviar) con `portafolio:edit`.
-  const { canAccess } = usePermissions();
+  const { canAccess, agencyRole } = usePermissions();
   const puedeEditarPortafolio = canAccess('portafolio', 'edit');
+  // P-03 (seguimiento): elegir el principal en un empate lo hacen el administrador o el contador.
+  const puedeElegirPrincipal = agencyRole === 'ADMIN' || agencyRole === 'CONTADOR';
   /** Se está mostrando lo guardado porque el back no contestó. */
   const mostrandoCopia = Boolean(
     !consignacionData && !fetchedConsignacion && copiaLocal.copia,
@@ -205,6 +210,12 @@ function ConsignacionDetailContent() {
   // `?editar=1` (el «Editar» del kebab de la lista) abre el formulario apenas
   // hay datos, y se limpia la URL para que un refresh no lo vuelva a abrir.
   const searchParams = useSearchParams();
+  // QA con avatares (04-10): desde «Nuevo contrato» («Hacer el inventario») se
+  // llega con `?volver=`; el inventario ofrece regresar al contrato.
+  const volverAlContrato = (() => {
+    const ruta = rutaDeRegreso(searchParams.get('volver'), '');
+    return ruta.startsWith('/panel/inmobiliaria/contratos') ? ruta : null;
+  })();
   useEffect(() => {
     if (consignacion && searchParams.get('editar') === '1') {
       setShowEditModal(true);
@@ -319,12 +330,12 @@ function ConsignacionDetailContent() {
         description: t('inmobiliaria.portafolio.detail.toasts.changesSaved'),
       });
     } catch (err) {
-      // F5: un 400 del back trae sus motivos sueltos y `ApiError` los pega con
-      // « · ». El pegote pasa el tope del toast y se perdía entero; acá se
-      // pinta el primero, que es el que dice qué hay que cambiar.
-      const motivos = motivosDelError(err);
+      // F5: un 400 del back trae sus motivos sueltos. Antes se pintaba sólo el
+      // primero; ahora van todos, por el traductor (sistema de errores,
+      // 02-10-2026): un 5xx dice «de nuestro lado» con la referencia y
+      // «conexión» sólo si no hubo respuesta.
       toast.error(t('inmobiliaria.portafolio.detail.toasts.statusChangeError'), {
-        description: motivos[0],
+        description: mensajeParaLaPersona(err, { accion: 'cambiar el estado del inmueble' }),
       });
     }
   }, [consignacion, t]);
@@ -403,8 +414,18 @@ function ConsignacionDetailContent() {
   // salía directo a «Consignación no encontrada» durante la carga y recién
   // después aparecía el inmueble (Nico, 2026-09-02: «primero sale esto y
   // luego carga, muy raro»).
+  //
+  // Esqueleto → ficha (o → fallo, → no existe): cada salida va en un
+  // `CrossFade` con su clave, así lo que llega DESPUÉS de cargar entra con su
+  // fundido. Lo que ya estaba al montarse (la ficha en caché) no se anima: la
+  // página ya entra con su `template.tsx`, y las secciones no tienen entradas
+  // propias ni retrasos a mano.
   if (!consignacion && cargandoConsignacion) {
-    return <EsqueletoDeLaFicha />;
+    return (
+      <CrossFade swapKey="esqueleto">
+        <EsqueletoDeLaFicha />
+      </CrossFade>
+    );
   }
 
   /*
@@ -426,6 +447,7 @@ function ConsignacionDetailContent() {
      * pantalla completa no dice en qué parte del panel estás.
      */
     return (
+      <CrossFade swapKey="fallo">
       <div className="space-y-6 p-6 lg:p-8" data-testid="ficha-fallo">
         <BackButton
           href="/panel/inmobiliaria/inmuebles"
@@ -447,11 +469,13 @@ function ConsignacionDetailContent() {
           />
         </div>
       </div>
+      </CrossFade>
     );
   }
 
   // Respondió sin error y sin consignación, o sin señal y sin copia.
   if (!consignacion) {
+    // Sin `CrossFade`: el `EmptyState` ya entra solo (8 px y fundido).
     return (
       <div className="p-4 md:p-6">
         <div className="max-w-lg mx-auto py-16">
@@ -481,6 +505,7 @@ function ConsignacionDetailContent() {
   }
 
   return (
+    <CrossFade swapKey="ficha">
     <div className="p-4 md:p-6 space-y-6">
       {/* Sin señal la ficha se arma con lo guardado. Decirlo con la FECHA es
           lo único honesto: las tarjetas que piden otras llamadas —fotos,
@@ -534,10 +559,7 @@ function ConsignacionDetailContent() {
       </div>
 
       {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
+      <div>
         <ConsignacionHeader
           consignacion={consignacion}
           propertyThumbnailUrl={property?.thumbnailUrl}
@@ -550,161 +572,127 @@ function ConsignacionDetailContent() {
           fechaDeTerminacion={fechaDeTerminacion}
           contratoVigente={contratoVigente}
         />
-      </motion.div>
+      </div>
+
+      {/* COMERCIAL (Nico, 04-10-2026): «Vacante hace 42 días» y el mandato
+          que se vence. Fuente aparte: si falla, la ficha sigue igual. */}
+      {!terminada && <SituacionComercialDelInmueble consignacionId={consignacionId} />}
 
       {/* Main Content - Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Main Info (2/3) */}
         <div className="lg:col-span-2 space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
+          <div>
             <PropertyInfoSection consignacion={consignacion} />
-          </motion.div>
+          </div>
 
           {/* Las coordenadas viven en el Property (la consignación no las
               tiene). Sin propertyId no hay mapa que mostrar. */}
           {consignacion.propertyId && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.11 }}
-            >
+            <div>
               <UbicacionDelInmueble
                 property={property}
                 cargando={cargandoProperty}
                 consignacion={consignacion}
                 onActualizado={refetchProperty}
               />
-            </motion.div>
+            </div>
           )}
 
           {/* Las fotos viven en el Property; sin propertyId (mandato sin
               inmueble) no hay galería que mostrar. */}
           {consignacion.propertyId && (
-            <motion.div
-              id="fotos"
-              className="scroll-mt-20"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.12 }}
-            >
+            <div id="fotos" className="scroll-mt-20">
               <FotosDelInmueble propertyId={consignacion.propertyId} onCambio={refetchProperty} onVer={setFotoAbierta} />
-            </motion.div>
+            </div>
           )}
 
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-          >
+          <div id="propietarios" className="scroll-mt-20">
             <PropietarioSection
               propietario={propietario ?? undefined}
               copropietarios={consignacion.copropietarios}
+              participacionesDesconocidas={consignacion.participacionesDesconocidas === true}
               onCambiar={() => setShowCambiarPropietario(true)}
               rutaDeOrigen={`/panel/inmobiliaria/inmuebles/${consignacionId}`}
+              onElegirPrincipal={
+                puedeElegirPrincipal
+                  ? async (propietarioId) => {
+                      await consignacionesApi.elegirPrincipal(consignacion.id, propietarioId);
+                      // La copia local gana sobre el hook: se relee ahí (como al adjuntar el contrato).
+                      await recargarConsignacion();
+                    }
+                  : undefined
+              }
             />
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
+          <div>
             <AgenteSection
               agente={agente ?? undefined}
               commissionPercent={consignacion.commissionPercent}
               isSaleListing={consignacion.listingType === 'sale'}
               onReassign={handleReassignAgent}
             />
-          </motion.div>
+          </div>
 
           {/* D1 y D2 (17-09): con qué modalidad se le gira al propietario y de
               quién son los intereses de mora. */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.21 }}
-          >
+          <div>
             <ModalidadDelMandato
               consignacionId={consignacion.id}
               esVenta={consignacion.listingType === 'sale'}
               terminada={terminada}
             />
-          </motion.div>
+          </div>
 
           {terminada ? <RetiroRegistrado consignacionId={consignacion.id} /> : null}
 
           {/* Quién se postuló. Vive acá, antes del contrato vigente: es lo que
               pasa mientras el inmueble está disponible. */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.22 }}
-          >
+          <div>
             <CandidatosDelInmueble
               propertyId={consignacion.propertyId}
               consignacionId={consignacion.id}
             />
-          </motion.div>
+          </div>
 
           {/* Cuándo se puede visitar. Va junto a los candidatos porque es lo
               otro que pasa mientras el inmueble está disponible — y sin esto
               el aviso del marketplace dice «Sin disponibilidad» siempre. */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.23 }}
-          >
-            <VisitasDelInmueble propertyId={consignacion.propertyId} />
-          </motion.div>
+          <div>
+            <VisitasDelInmueble
+              propertyId={consignacion.propertyId}
+              arrendado={Boolean(consignacion.arrendado)}
+              arrendadoHasta={consignacion.leaseEndDate ?? null}
+            />
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-          >
+          <div>
             <CurrentLeaseSection consignacion={consignacion} />
-          </motion.div>
+          </div>
 
           {/* La historia contable ANTERIOR a Leasefy de este inmueble: los
               comprobantes del sistema viejo que el back colgó de sus
               contratos, en tres pestañas (ingresos · egresos · facturas).
               Después del contrato vigente porque ése es el orden real —
               arriba lo de hoy, abajo lo que quedó registrado antes. */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.27 }}
-          >
+          <div>
             <ComprobantesDelSistemaAnterior propertyId={consignacion.propertyId} />
-          </motion.div>
+          </div>
 
-          <motion.div
-            id="documentos"
-            className="scroll-mt-20"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
+          <div id="documentos" className="scroll-mt-20">
             <DocumentsSection consignacion={consignacion} onActualizado={() => void recargarConsignacion()} />
-          </motion.div>
+          </div>
 
           {/* T-0109 contract.md §3.1.C — vía ADICIONAL a C9 (arriba): firma
               electrónica reforzada del contrato de consignación. Se oculta
               sola contra un back sin WU-3 (404 en C2). */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.31 }}
-          >
+          <div>
             <FirmaElectronicaDeConsignacionSection
               consignacionId={consignacion.id}
               puedeEditar={puedeEditarPortafolio}
             />
-          </motion.div>
+          </div>
 
           {/* 🔴 22-09: quién tocó este inmueble, con su rol. Son DOS recursos
               en el back —el inmueble (`/properties/:id`: fotos, datos,
@@ -720,11 +708,7 @@ function ConsignacionDetailContent() {
 
         {/* Right Column - Sidebar (1/3) */}
         <div className="space-y-6">
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-          >
+          <div>
             {/* 🔴 Nico y Juan Camilo, 2026-09-16: el inventario es del inmueble,
                 por versiones; sin la migración del back monta la tarjeta de siempre. */}
             <InventarioDelInmueble
@@ -733,31 +717,26 @@ function ConsignacionDetailContent() {
               copiaLocal={copiaLocal}
               sinSenal={sinSenal}
               onActualizada={setConsignacionData}
+              volverAlContrato={volverAlContrato}
             />
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.38 }}
-          >
+          <div>
             <MandatoDelInmueble
               consignacionId={consignacion.id}
               propietarioNombre={propietario?.name ?? null}
+              propietarioCorreo={propietario?.email ?? null}
+              direccionDelInmueble={consignacion.propertyAddress ?? null}
               puedeEditar={puedeEditarInventario}
             />
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
+          <div>
             <ConsignacionTimeline
               consignacion={consignacion}
               agenteName={agente?.name}
             />
-          </motion.div>
+          </div>
         </div>
       </div>
 
@@ -801,7 +780,7 @@ function ConsignacionDetailContent() {
           }
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive" icon={<Prohibit weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {t('inmobiliaria.portafolio.detail.terminateDialog.title')}
@@ -834,9 +813,14 @@ function ConsignacionDetailContent() {
               {t('common.cancel')}
             </AlertDialogCancel>
             <AlertDialogAction
-              tone="danger"
-              onClick={handleTerminateConfirm}
-              disabled={isTerminating}
+              // `preventDefault`: sin él Radix cierra el diálogo al apretar y,
+              // si el back lo rechaza, el motivo (`terminar-rechazo`) se va con
+              // él. `handleTerminateConfirm` lo cierra sólo si salió bien.
+              onClick={(e) => {
+                e.preventDefault();
+                void handleTerminateConfirm();
+              }}
+              loading={isTerminating}
             >
               {t('inmobiliaria.portafolio.detail.terminateDialog.confirm')}
             </AlertDialogAction>
@@ -879,6 +863,7 @@ function ConsignacionDetailContent() {
         onAsignado={() => setConsignacionData(null)}
       />
     </div>
+    </CrossFade>
   );
 }
 

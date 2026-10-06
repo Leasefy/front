@@ -21,14 +21,35 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { CaretDown, FloppyDisk, Robot } from '@phosphor-icons/react'
-import { Card } from '@leasefy/cadence'
+import { Card, Collapse, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import { Button, Input, Label, Checkbox, Switch, Spinner } from '@/components/ui'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useAgencyPolicy } from '@/lib/hooks/cobranza/use-agency-policy'
 import { resumenAcuerdo, avisosDelAcuerdo } from '@/lib/cobranza/acuerdo-general'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import {
+  erroresDeLaPolitica,
+  type CampoDeLaPolitica,
+} from '@/lib/hooks/cobranza/limites-de-cobranza'
 
 const PLAZOS = [1, 3, 6, 9, 12, 18, 24, 36]
+
+/** El `id` del control de cada campo; su error vive en `${id}-error`. */
+const ID_DEL_CAMPO: Record<CampoDeLaPolitica, string> = {
+  maxDiscountPct: 'acuerdo-descuento',
+  maxPlanMonths: 'acuerdo-plazo-max',
+  minPaymentCop: 'acuerdo-pago-min',
+  negotiationMaxAttempts: 'acuerdo-intentos',
+  autoEscalateAfterDays: 'acuerdo-dias-escalar',
+}
+const CAMPOS = Object.keys(ID_DEL_CAMPO) as CampoDeLaPolitica[]
+
+function enfocarElPrimero(errores: Partial<Record<CampoDeLaPolitica, string>>) {
+  const primero = CAMPOS.find((c) => errores[c])
+  if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus()
+}
 
 interface Borrador {
   maxDiscountPct: number
@@ -50,6 +71,8 @@ export function AcuerdosGeneralesCard() {
   const guardadoRef = useRef<Borrador | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [errorGuardar, setErrorGuardar] = useState<string | null>(null)
+  /** El error de cada campo: el del cliente (topes del micro) o el que mandó el micro en `campos`. */
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaPolitica, string>>>({})
 
   useEffect(() => {
     if (!data) return
@@ -68,6 +91,12 @@ export function AcuerdosGeneralesCard() {
 
   const set = useCallback(<K extends keyof Borrador>(k: K, v: Borrador[K]) => {
     setBorrador((prev) => (prev ? { ...prev, [k]: v } : prev))
+    setErrores((prev) => {
+      if (!(k in prev)) return prev
+      const siguiente = { ...prev }
+      delete siguiente[k as CampoDeLaPolitica]
+      return siguiente
+    })
   }, [])
 
   const togglePlazo = useCallback((meses: number, marcado: boolean) => {
@@ -93,13 +122,29 @@ export function AcuerdosGeneralesCard() {
       if (JSON.stringify(antes[k]) !== JSON.stringify(borrador[k])) patch[k] = borrador[k]
     })
     if (Object.keys(patch).length === 0) return
-    setGuardando(true)
     setErrorGuardar(null)
+    // Lo que el micro rechazaría se ataja acá, debajo de su campo.
+    const delCliente = erroresDeLaPolitica(patch as Partial<Record<CampoDeLaPolitica, number>>)
+    if (Object.keys(delCliente).length > 0) {
+      setErrores(delCliente)
+      enfocarElPrimero(delCliente)
+      return
+    }
+    setErrores({})
+    setGuardando(true)
     try {
       await patchPolicy(patch)
       guardadoRef.current = borrador
     } catch (e) {
-      setErrorGuardar(e instanceof Error ? e.message : 'No pudimos guardar el acuerdo.')
+      // Un 400 con `campos` va a su campo; abajo, sólo lo suelto (los plazos, un 5xx, la red).
+      const reparto = repartirErroresDelServidor<CampoDeLaPolitica>(e, {
+        campos: CAMPOS,
+        porDefecto: 'No pudimos guardar el acuerdo general.',
+        accion: 'guardar el acuerdo general',
+      })
+      setErrores(reparto.porCampo)
+      enfocarElPrimero(reparto.porCampo)
+      setErrorGuardar(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null)
     } finally {
       setGuardando(false)
     }
@@ -110,6 +155,12 @@ export function AcuerdosGeneralesCard() {
   if (isLoading || error || notProvisioned || !data || !borrador) return null
 
   const avisos = avisosDelAcuerdo(borrador)
+
+  /** Lo que lleva cada control para leer su error. */
+  const aria = (campo: CampoDeLaPolitica) => ({
+    'aria-invalid': errores[campo] ? true : undefined,
+    'aria-describedby': errores[campo] ? `${ID_DEL_CAMPO[campo]}-error` : undefined,
+  })
 
   return (
     <Card className="p-4 sm:p-5">
@@ -154,18 +205,24 @@ export function AcuerdosGeneralesCard() {
         {resumenAcuerdo(borrador)}
       </p>
 
-      {avisos.map((aviso) => (
-        <p
-          key={aviso}
-          data-testid="acuerdo-aviso"
-          className="mt-2 rounded-lg border border-warning bg-warning-soft px-4 py-3 text-sm text-warning"
-        >
-          {aviso}
-        </p>
-      ))}
+      {/* Los avisos aparecen y se van mientras se edita: entran y salen con
+          su animación en vez de saltar. */}
+      <Stagger>
+        {avisos.map((aviso) => (
+          <StaggerItem
+            as="p"
+            key={aviso}
+            data-testid="acuerdo-aviso"
+            className="mt-2 rounded-lg border border-warning bg-warning-soft px-4 py-3 text-sm text-warning"
+          >
+            {aviso}
+          </StaggerItem>
+        ))}
+      </Stagger>
 
-      {abierto && (
-        <div id="acuerdo-general-form" className="mt-4 pt-4 border-t border-border space-y-4">
+      {/* «Ajustar» despliega los límites con su altura (`Collapse`), con la
+          misma curva que el chevron; «Listo» los pliega. */}
+      <Collapse open={abierto} id="acuerdo-general-form" className="mt-4 pt-4 border-t border-border space-y-4">
           <div className="space-y-2">
             <Label className="text-sm">Plazos que puede aceptar</Label>
             <p className="text-xs text-fg-muted">
@@ -211,12 +268,17 @@ export function AcuerdosGeneralesCard() {
                   onChange={(e) =>
                     set('maxDiscountPct', Math.min(50, Math.max(0, Number(e.target.value))) / 100)
                   }
+                  {...aria('maxDiscountPct')}
                 />
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-fg-muted">
                   %
                 </span>
               </div>
-              <p className="text-xs text-fg-muted">Sobre el saldo. Máximo 50%.</p>
+              <ErrorDelCampo
+                id="acuerdo-descuento-error"
+                mensaje={errores.maxDiscountPct}
+                pista="Sobre el saldo. Máximo 50%."
+              />
             </div>
 
             <div className="space-y-1">
@@ -233,11 +295,13 @@ export function AcuerdosGeneralesCard() {
                 disabled={!canEdit}
                 value={borrador.maxPlanMonths}
                 onChange={(e) => set('maxPlanMonths', Number(e.target.value))}
+                {...aria('maxPlanMonths')}
               />
-              <p className="text-xs text-fg-muted">
-                Tope con el que el agente arma las cuotas. Tiene que llegar al plazo
-                más largo que marcaste arriba.
-              </p>
+              <ErrorDelCampo
+                id="acuerdo-plazo-max-error"
+                mensaje={errores.maxPlanMonths}
+                pista="Tope con el que el agente arma las cuotas. Tiene que llegar al plazo más largo que marcaste arriba."
+              />
             </div>
 
             <div className="space-y-1">
@@ -254,12 +318,17 @@ export function AcuerdosGeneralesCard() {
                 disabled={!canEdit}
                 value={borrador.minPaymentCop}
                 onChange={(e) => set('minPaymentCop', Number(e.target.value))}
+                {...aria('minPaymentCop')}
               />
-              <p className="text-xs text-fg-muted">
-                {borrador.minPaymentCop > 0
-                  ? 'No acepta abonos por debajo de ese monto.'
-                  : 'En 0 acepta cualquier abono, por chico que sea.'}
-              </p>
+              <ErrorDelCampo
+                id="acuerdo-pago-min-error"
+                mensaje={errores.minPaymentCop}
+                pista={
+                  borrador.minPaymentCop > 0
+                    ? 'No acepta abonos por debajo de ese monto.'
+                    : 'En 0 acepta cualquier abono, por chico que sea.'
+                }
+              />
             </div>
 
             <div className="space-y-1">
@@ -276,10 +345,13 @@ export function AcuerdosGeneralesCard() {
                 disabled={!canEdit}
                 value={borrador.negotiationMaxAttempts}
                 onChange={(e) => set('negotiationMaxAttempts', Number(e.target.value))}
+                {...aria('negotiationMaxAttempts')}
               />
-              <p className="text-xs text-fg-muted">
-                Cuántas contraofertas hace antes de escalarte el caso.
-              </p>
+              <ErrorDelCampo
+                id="acuerdo-intentos-error"
+                mensaje={errores.negotiationMaxAttempts}
+                pista="Cuántas contraofertas hace antes de escalarte el caso."
+              />
             </div>
 
             <div className="space-y-1">
@@ -296,10 +368,13 @@ export function AcuerdosGeneralesCard() {
                 disabled={!canEdit}
                 value={borrador.autoEscalateAfterDays}
                 onChange={(e) => set('autoEscalateAfterDays', Number(e.target.value))}
+                {...aria('autoEscalateAfterDays')}
               />
-              <p className="text-xs text-fg-muted">
-                Pasado ese punto el caso deja de negociarse solo y pasa a cobro humano.
-              </p>
+              <ErrorDelCampo
+                id="acuerdo-dias-escalar-error"
+                mensaje={errores.autoEscalateAfterDays}
+                pista="Pasado ese punto el caso deja de negociarse solo y pasa a cobro humano."
+              />
             </div>
           </div>
 
@@ -323,15 +398,19 @@ export function AcuerdosGeneralesCard() {
             />
           </div>
 
-          {errorGuardar && (
-            <p className="text-sm text-danger" data-testid="acuerdo-general-error">
+          <Presence
+            as="p"
+            show={Boolean(errorGuardar)}
+            role="alert"
+            className="text-sm text-danger"
+            data-testid="acuerdo-general-error"
+          >
               {errorGuardar}
-            </p>
-          )}
+          </Presence>
 
           {canEdit && (
             <div className="flex items-center justify-end gap-2">
-              {sucio && (
+              <Presence show={sucio} direction="none" initial={false}>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -342,7 +421,7 @@ export function AcuerdosGeneralesCard() {
                 >
                   Descartar
                 </Button>
-              )}
+              </Presence>
               <Button
                 size="sm"
                 className="min-h-[44px]"
@@ -359,8 +438,7 @@ export function AcuerdosGeneralesCard() {
               </Button>
             </div>
           )}
-        </div>
-      )}
+      </Collapse>
     </Card>
   )
 }

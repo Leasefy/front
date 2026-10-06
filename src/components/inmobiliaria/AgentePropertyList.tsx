@@ -3,7 +3,7 @@
 import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { useState } from 'react';
 import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Collapse, Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   Buildings,
   House,
@@ -121,25 +121,21 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
       </button>
 
       {/* Content */}
-      <AnimatePresence>
-        {isExpanded && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
+      {/* Se abre y se cierra con `Collapse` (la altura sólo durante la transición). */}
+      <Collapse open={isExpanded}>
             <div className="p-4 space-y-3">
               {consignaciones.length > 0 ? (
-                <>
+                // El inmueble recién asignado entra (y el que se quita sale) con
+                // el escalonado del sistema; lo que ya estaba al abrir, quieto.
+                <Stagger className="space-y-3">
                   {consignaciones.map((consignacion) => {
                     const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType];
                     const availability = AVAILABILITY_CONFIG[consignacion.availability];
                     const AvailabilityIcon = availability.icon;
 
                     return (
+                      <StaggerItem key={consignacion.id}>
                       <Link
-                        key={consignacion.id}
                         href={`/panel/inmobiliaria/inmuebles/${consignacion.id}`}
                         className="flex items-center gap-3 p-3 rounded-lg bg-surface-muted dark:bg-bg hover:bg-surface-muted dark:hover:bg-ink transition-colors group"
                       >
@@ -188,9 +184,10 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
                           </span>
                         </div>
                       </Link>
+                      </StaggerItem>
                     );
                   })}
-                </>
+                </Stagger>
               ) : (
                 <div className="text-center py-8">
                   <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center">
@@ -222,9 +219,7 @@ export function AgentePropertyList({ consignaciones, onAssignProperty, className
                 </Button>
               )}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </Collapse>
     </div>
   );
 }

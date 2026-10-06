@@ -28,6 +28,8 @@ export interface CuotaPlanTableProps {
   /** Locale para formato de fecha; por defecto el del contexto i18n. */
   locale?: string;
   className?: string;
+  /** QA-INQ-95: el acuerdo ya no está vivo (completado, cancelado, incumplido): lo no pagado dice «Sin cobrar». */
+  acuerdoCerrado?: boolean;
 }
 
 /** Fecha de cuota en formato largo es-CO / en-US (o vacío si la fecha es inválida). */
@@ -42,11 +44,42 @@ function formatCuotaDate(iso: string, locale: string): string {
 }
 
 /**
+ * El DÍA en que vence una cuota (PRUEBAS-PAGOS, 03-10-2026). El micro manda
+ * `dueDate` como medianoche UTC («2026-11-03T00:00:00.000Z») y, pintado en la
+ * hora de Colombia, decía «Vence el 2 de noviembre» de una cuota que vence el
+ * 3. Se toma el `AAAA-MM-DD` y se formatea en UTC: un día sin hora no cambia
+ * con el huso. `paidAt` sí es un instante y sigue con `formatCuotaDate`.
+ */
+export function formatDiaDeLaCuota(iso: string, locale: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
+  if (!m) return formatCuotaDate(iso, locale);
+  return new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))));
+}
+
+/**
+ * El nombre de una cuota. La número 0 es la INICIAL del acuerdo (ARREGLOS-3,
+ * 03-10-2026, Nico: «mostrarla como la cuota 0, pagable igual que las demás»):
+ * el micro la lista adelante, con su vencimiento y su estado.
+ */
+export function nombreDeLaCuota(numero: number, locale: string): string {
+  const es = locale === 'es';
+  if (numero === 0) return es ? 'Cuota 0 · inicial' : 'Installment 0 · down payment';
+  return es ? `Cuota ${numero}` : `Installment ${numero}`;
+}
+
+/**
  * Etiqueta factual del estado de la cuota (neutral, sin alarma ni copy de urgencia).
  * Un estado desconocido cae al string crudo — nunca se inventa un color de alarma.
  */
-function cuotaEstadoLabel(status: string, locale: string): string {
+function cuotaEstadoLabel(status: string, locale: string, acuerdoCerrado = false): string {
   const es = locale === 'es';
+  // QA-INQ-95: en un acuerdo cerrado lo que no se pagó por él ya no se cobra.
+  if (acuerdoCerrado && status !== 'paid' && status !== 'pagada') return es ? 'Sin cobrar' : 'Not charged';
   switch (status) {
     case 'paid':
     case 'pagada':
@@ -68,7 +101,7 @@ function cuotaEstadoLabel(status: string, locale: string): string {
   }
 }
 
-export function CuotaPlanTable({ installments, locale, className }: CuotaPlanTableProps) {
+export function CuotaPlanTable({ installments, locale, className, acuerdoCerrado = false }: CuotaPlanTableProps) {
   const { formatCurrency, locale: i18nLocale } = useI18n();
   const loc = locale ?? i18nLocale;
   const es = loc === 'es';
@@ -90,11 +123,11 @@ export function CuotaPlanTable({ installments, locale, className }: CuotaPlanTab
         >
           <div className="min-w-0">
             <p className="text-sm font-medium text-fg dark:text-white">
-              {es ? `Cuota ${cuota.number}` : `Installment ${cuota.number}`}
+              {nombreDeLaCuota(cuota.number, loc)}
             </p>
             <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
               {es ? 'Vence el ' : 'Due '}
-              {formatCuotaDate(cuota.dueDate, loc)}
+              {formatDiaDeLaCuota(cuota.dueDate, loc)}
               {cuota.paidAt && (
                 <>
                   {' · '}
@@ -105,8 +138,8 @@ export function CuotaPlanTable({ installments, locale, className }: CuotaPlanTab
             </p>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
-            <span className="rounded-full bg-surface-muted dark:bg-[#2a2a2c] px-2 py-0.5 text-[10px] font-medium text-fg-subtle dark:text-fg-muted whitespace-nowrap">
-              {cuotaEstadoLabel(cuota.status, loc)}
+            <span className="rounded-full bg-surface-muted dark:bg-border px-2 py-0.5 text-[10px] font-medium text-fg-subtle dark:text-fg-muted whitespace-nowrap">
+              {cuotaEstadoLabel(cuota.status, loc, acuerdoCerrado)}
             </span>
             <span className="text-sm font-mono tabular-nums text-fg dark:text-white whitespace-nowrap">
               {formatCurrency(cuota.amountCop)}

@@ -1,11 +1,9 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { useState, useMemo, useEffect, useRef, useId } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
   UserPlus,
@@ -13,16 +11,14 @@ import {
   Buildings,
   CurrencyDollar,
   Warning,
-  X,
   GridFour,
   List,
   CaretRight,
   Users,
   UserCircle,
+  Funnel,
 } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
-import { cn } from '@/lib/utils';
-import { useLenis } from '@/components/providers/SmoothScroll';
 import {
   PropietarioCard,
   PropietarioTable,
@@ -36,6 +32,20 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Cajon, CajonCabecera } from '@/components/ui/cajon';
+// El cajón de Nuevo/Editar vive en su archivo: la ficha abre el mismo (SEGUIMIENTO-FRONT).
+import {
+  AvisoEnElDialogo,
+  CajonDelFormularioDelPropietario as CajonDelFormulario,
+} from '@/components/inmobiliaria/CajonDelFormularioDelPropietario';
+import {
   RUTA_DE_LA_MIGRACION,
   useCopyDeMigracionEnLista,
 } from '@/components/migracion/VeredictoDeMigracion';
@@ -47,11 +57,13 @@ import { SinDatos } from '@/components/estado/SinDatos';
 import { KpiValor } from '@/components/estado/KpiValor';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { usePermissions } from '@/lib/hooks/usePermissions';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import {
   errorAlGuardarPropietario,
   motivoAlEliminarPropietario,
   type ErrorAlGuardarPropietario,
 } from '@/lib/propietarios/errores-del-propietario';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   FILTROS_INICIALES,
   conteosDePropietarios,
@@ -59,166 +71,74 @@ import {
   type FiltrosDePropietarios,
 } from '@/lib/propietarios/filtrar-propietarios';
 import { descargarListaDePropietarios } from '@/lib/propietarios/exportar-datos';
-import { SegmentedControl, KpiCard, IconButton } from '@leasefy/cadence';
+import { laListaOcultaLaPlata } from '@/lib/propietarios/lo-que-muestra-la-lista';
+import { generadoSinGirarDeLaLista } from '@/lib/propietarios/giros-del-propietario';
+// AVISO-TIPO-DOC (05-10-2026): el aviso y la lista filtrada por lo que falta.
+import { AvisoTipoDeDocumento } from '@/components/inmobiliaria/AvisoTipoDeDocumento';
+import { FALTA_TIPO_DE_DOCUMENTO, PARAMETRO_FALTA } from '@/lib/propietarios/falta-del-documento';
+import { SegmentedControl, KpiCard, AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 
 type ViewMode = 'table' | 'grid';
 
 /**
- * Modal Component - Uses Portal to escape transformed parents
+ * La cáscara del diálogo de «Eliminar» (una confirmación, no un formulario).
+ * Nuevo, Crear con IA y Editar van en el cajón (`CajonDelFormulario`, Nico,
+ * 03-10: «la experiencia de nuevo propietario debería ser en un drawer»).
+ *
+ * Era un portal hecho a mano (capa `fixed inset-0`, ✕ propia, `lenis.stop()`
+ * y un bloqueo del scroll que fijaba el body con `position: fixed` y lo
+ * devolvía a su `scrollY`), sin Esc, sin foco atrapado y sin `role="dialog"`.
+ * Ahora es el `Dialog` de la plataforma (DESIGN.md §17): el velo, la ✕, el
+ * Esc, el foco y el bloqueo del scroll los pone la primitiva —que bloquea sin
+ * mover la página, así que el salto al tope que corregía ese efecto ya no
+ * tiene de dónde salir (`modal-conserva-el-scroll.test.tsx`)—, y a Lenis lo
+ * frena `SmoothScroll` al ver un `[role=dialog]` abierto.
+ *
+ * El pie va por `footer` y no dentro de `children`: el `DialogContent` reparte
+ * sólo a sus hijos DIRECTOS, y un pie metido en el cuerpo se iría con el
+ * scroll. `variant="destructive"` (eliminar) pone el medallón rojo; el botón
+ * rojo lo trae el pie.
  */
 function Modal({
   open,
   onClose,
   title,
+  description,
   children,
+  footer,
   size = 'md',
+  variant,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
-  children: React.ReactNode;
+  description?: React.ReactNode;
+  children?: React.ReactNode;
+  footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  variant?: 'destructive';
 }) {
-  const lenis = useLenis();
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [mounted, setMounted] = useState(false);
-
-  const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-  };
-
-  // Mount check for portal
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  /*
-   * Bloquear el scroll del fondo mientras el modal está abierto.
-   *
-   * 🔴 La limpieza tiene que estar DENTRO del `if (open)`.
-   *
-   * Estaba afuera, y eso hacía que la página saltara al tope cada vez que se
-   * abría un modal: React corre la limpieza del render anterior ANTES del
-   * efecto nuevo, así que al pasar de cerrado a abierto primero se ejecutaba
-   * un `window.scrollTo(0, -parseInt(''))` —o sea, `scrollTo(0, 0)`— y recién
-   * después se leía `window.scrollY`… que para entonces ya era 0. Resultado:
-   * abrir «Agregar propietario» desde la mitad de la lista te mandaba arriba,
-   * y al cerrar te dejaba ahí. Se veía como un salto sin causa.
-   *
-   * De paso, la posición se recuerda en la clausura en vez de releerse del
-   * `style.top`: el número que se guardó es el que se restaura, sin depender
-   * de que nadie más haya tocado ese estilo.
-   */
-  useEffect(() => {
-    if (!open) return;
-
-    // Stop Lenis smooth scroll to allow native scroll in modal
-    lenis.stop();
-
-    const scrollY = window.scrollY;
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.left = '0';
-    document.body.style.right = '0';
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      // Restart Lenis when modal closes
-      lenis.start();
-
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.left = '';
-      document.body.style.right = '';
-      document.body.style.overflow = '';
-      window.scrollTo(0, scrollY);
-    };
-  }, [open, lenis]);
-
-  if (!open || !mounted) return null;
-
-  const modalContent = (
-    <div
-      // Modal layer = z-[300] (misma capa que <Dialog>/<Sheet>). Antes z-[9999],
-      // que tapaba cualquier AlertDialog disparado desde adentro. Ver DESIGN.md §17.
-      className="fixed inset-0 z-[300]"
-      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-      data-lenis-prevent
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        onClick={onClose}
-      />
-      {/* Modal container - centers the modal */}
-      <div
-        className="absolute inset-0 flex items-center justify-center p-4"
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-      >
-        {/* Modal */}
-        <div
-          className={cn(
-            'relative bg-card w-full rounded-[20px] flex flex-col',
-            sizeClasses[size]
-          )}
-          style={{ maxHeight: '85vh' }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header - fixed */}
-          <div className="flex-shrink-0 flex items-center justify-between px-6 py-5 border-b border-border">
-            <h3 className="text-base font-semibold text-foreground">
-              {title}
-            </h3>
-            <IconButton
-              onClick={onClose}
-              aria-label="Cerrar"
-              variant="ghost"
-              size="md"
-              className="bg-muted hover:bg-muted/70"
-              icon={<X className="w-4 h-4" />}
-            />
-          </div>
-          {/* Content - scrollable */}
-          <div
-            ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto overscroll-contain p-6"
-            data-lenis-prevent
-            style={{
-              minHeight: 0,
-              overscrollBehavior: 'contain',
-              WebkitOverflowScrolling: 'touch',
-              touchAction: 'pan-y',
-            }}
-            onWheel={(e) => e.stopPropagation()}
-          >
-            {children}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Use portal to render at body level, escaping any transformed parents
-  return createPortal(modalContent, document.body);
-}
-
-/**
- * El motivo del back, dentro del diálogo que lo provocó. Un toast se va solo
- * en cuatro segundos y se lleva la única explicación de por qué no se guardó.
- */
-function AvisoEnElDialogo({ children }: { children: React.ReactNode }) {
   return (
-    <p
-      role="alert"
-      data-testid="aviso-en-el-dialogo"
-      className="mb-4 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+    <Dialog
+      open={open}
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose();
+      }}
     >
-      {children}
-    </p>
+      <DialogContent
+        size={size}
+        variant={variant}
+        // Sin descripción visible, Radix no tiene a qué apuntar: se le avisa.
+        {...(description ? {} : { 'aria-describedby': undefined })}
+      >
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {description ? <DialogDescription>{description}</DialogDescription> : null}
+        </DialogHeader>
+        {children}
+        {footer ? <DialogFooter>{footer}</DialogFooter> : null}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -276,7 +196,12 @@ function PropietariosContent() {
    * El orden correcto —filtrar → ordenar → paginar— sólo se puede hacer donde
    * está la lista completa. Ver `lib/propietarios/filtrar-propietarios.ts`.
    */
-  const [filtros, setFiltros] = useState<FiltrosDePropietarios>(FILTROS_INICIALES);
+  // AVISO-TIPO-DOC: `?falta=tipo-de-documento` (el enlace del aviso) entra ya filtrado.
+  const faltaEnLaUrl = searchParams.get(PARAMETRO_FALTA) === FALTA_TIPO_DE_DOCUMENTO;
+  const [filtros, setFiltros] = useState<FiltrosDePropietarios>(() => ({
+    ...FILTROS_INICIALES,
+    falta: faltaEnLaUrl ? 'tipoDocumento' : null,
+  }));
   const propietariosFiltrados = useMemo(
     () => filtrarPropietarios(propietarios, filtros),
     [propietarios, filtros],
@@ -292,7 +217,20 @@ function PropietariosContent() {
   const [showIACapture, setShowIACapture] = useState(false);
   const [editingPropietario, setEditingPropietario] = useState<Propietario | null>(null);
   const [deletingPropietario, setDeletingPropietario] = useState<Propietario | null>(null);
+  /*
+   * Lo que los diálogos de editar y eliminar MUESTRAN: el último propietario.
+   * Al cerrar, el estado vuelve a `null` en el mismo render en que el `Dialog`
+   * empieza a salir; sin esto el modal se vaciaba (sin formulario, sin pie) y
+   * se iba en blanco. Las acciones siguen leyendo el estado de verdad.
+   */
+  const propietarioQueSeEdita = useUltimoPresente(editingPropietario);
+  const propietarioQueSeBorra = useUltimoPresente(deletingPropietario);
   const [isDeleting, setIsDeleting] = useState(false);
+  /** El pie del cajón vive afuera del formulario: sabe que se está guardando por acá. */
+  const [guardandoAlta, setGuardandoAlta] = useState(false);
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const idDelAlta = `propietario-nuevo-${useId().replace(/:/g, '')}`;
+  const idDeLaEdicion = `propietario-editar-${useId().replace(/:/g, '')}`;
 
   /*
    * 🔴 Lo que el back explica se queda en el diálogo.
@@ -315,7 +253,7 @@ function PropietariosContent() {
    * `canAccess` en false mientras los permisos cargan: los botones aparecen
    * cuando se sabe, nunca antes.
    */
-  const { canAccess } = usePermissions();
+  const { canAccess, isLoading: cargandoPermisosDeLaLista } = usePermissions();
   const puedeCrear = canAccess('propietarios', 'create');
   const puedeEditar = canAccess('propietarios', 'edit');
   const puedeEliminar = canAccess('propietarios', 'delete');
@@ -337,14 +275,42 @@ function PropietariosContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  /*
+   * AVISO-TIPO-DOC: el botón del aviso en esta misma pantalla cambia la URL sin
+   * montarla de nuevo; el filtro la sigue. El parámetro queda en la barra
+   * mientras el filtro está puesto: al volver de la ficha («atrás») la lista
+   * sigue filtrada, que es justo el trabajo de completar una ficha tras otra.
+   */
+  useEffect(() => {
+    if (!faltaEnLaUrl) return;
+    setFiltros((f) => (f.falta === 'tipoDocumento' ? f : { ...f, falta: 'tipoDocumento' }));
+    setCurrentPage(1);
+  }, [faltaEnLaUrl]);
+
+  /** Quitar el filtro de lo que falta: también de la barra (con `replaceState`, sin remontar la página). */
+  const quitarFiltroDeLoQueFalta = () => {
+    setFiltros((f) => ({ ...f, falta: null }));
+    setCurrentPage(1);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete(PARAMETRO_FALTA);
+      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+  };
+
   // Open modal if ?nuevo=true query param is present
   useEffect(() => {
     if (searchParams.get('nuevo') === 'true') {
-      setShowAddModal(true);
+      // QA-PROP-95 (A-65): quien no puede crear (el contador, desde Reportes ›
+      // Resumen) no se queda sin saber por qué no se abrió el formulario.
+      // `canAccess` es false mientras cargan los permisos: se espera a que carguen.
+      if (cargandoPermisosDeLaLista) return;
+      if (puedeCrear) setShowAddModal(true);
+      else toast.error('No puedes crear propietarios', { description: 'Tu rol no incluye crear propietarios. Pídele a un administrador que te lo habilite.' });
       // Clean up URL without reload
       router.replace('/panel/inmobiliaria/propietarios', { scroll: false });
     }
-  }, [searchParams, router]);
+  }, [searchParams, router, puedeCrear, cargandoPermisosDeLaLista]);
 
   /**
    * `?persona=<User.id>` — entrar acá con un propietario ya elegido.
@@ -391,8 +357,11 @@ function PropietariosContent() {
   const stats = useMemo(() => {
     const totalProperties = propietarios.reduce((sum, p) => sum + p.propertyCount, 0);
     const totalMonthlyRent = propietarios.reduce((sum, p) => sum + p.totalMonthlyRent, 0);
+    // 🔴 P-10 (back 5731a4e2): `pendingBalance` es el GIRO ATRASADO (vencido y
+    // sin girar); lo generado en Dispersiones viene aparte.
     const totalPending = propietarios.reduce((sum, p) => sum + p.pendingBalance, 0);
     const pendingCount = propietarios.filter((p) => p.pendingBalance > 0).length;
+    const generadoSinGirar = generadoSinGirarDeLaLista(propietarios);
 
     return {
       totalPropietarios: propietarios.length,
@@ -400,6 +369,7 @@ function PropietariosContent() {
       totalMonthlyRent,
       totalPending,
       pendingCount,
+      generadoSinGirar,
     };
   }, [propietarios]);
 
@@ -456,8 +426,12 @@ function PropietariosContent() {
     setAbriendoEdicion(propietario.id);
     try {
       setEditingPropietario(await propietariosApi.getById(propietario.id));
-    } catch {
-      toast.error(t('inmobiliaria.propietarios.toasts.loadForEditError'));
+    } catch (err) {
+      // Por qué no se pudo abrir, con la regla de oro: un 404 dice que ya no
+      // está, un 5xx «de nuestro lado» con la referencia, la red la conexión.
+      toast.error(t('inmobiliaria.propietarios.toasts.loadForEditError'), {
+        description: mensajeParaLaPersona(err, { porDefecto: '', accion: 'abrir la ficha' }) || undefined,
+      });
     } finally {
       setAbriendoEdicion(null);
     }
@@ -497,6 +471,7 @@ function PropietariosContent() {
 
   const handleCreateSubmit = async (data: PropietarioFormData) => {
     setErrorAlCrear(null);
+    setGuardandoAlta(true);
     try {
       const created = await propietariosApi.create(data);
       // Aparece solo. Y se pide de nuevo al back a propósito: el objeto que
@@ -511,6 +486,8 @@ function PropietariosContent() {
       setErrorAlCrear(errorAlGuardarPropietario(err));
       // Re-throw so the form keeps the modal open and resets its submitting state
       throw err;
+    } finally {
+      setGuardandoAlta(false);
     }
   };
 
@@ -518,6 +495,7 @@ function PropietariosContent() {
     if (!editingPropietario) return;
 
     setErrorAlEditar(null);
+    setGuardandoEdicion(true);
     try {
       await propietariosApi.update(editingPropietario.id, data);
       // Se actualiza sola.
@@ -527,6 +505,8 @@ function PropietariosContent() {
       setErrorAlEditar(errorAlGuardarPropietario(err));
       // Re-throw so the form keeps the modal open and resets its submitting state
       throw err;
+    } finally {
+      setGuardandoEdicion(false);
     }
   };
 
@@ -569,6 +549,20 @@ function PropietariosContent() {
    * igual que el texto (mismo arreglo que Pipeline e Inquilinos).
    */
   const kpiSinDato = cargandoPropietarios || Boolean(errorPropietarios);
+  /*
+   * 🔴 P-21 (QA de Propietarios, 03-10): al asesor el back le oculta la plata
+   * (`plataOculta`, montos en `null` que `normalizePropietario` vuelve 0). Los
+   * tiles de plata decían «Canon mensual $0» y «Sin pendientes · Al día»: no
+   * los mostramos como cero, decimos que no tiene acceso.
+   */
+  const plataOculta = !kpiSinDato && laListaOcultaLaPlata(propietarios);
+  const sinAccesoALaPlata = t('inmobiliaria.propietario.table.sinAccesoALaPlata');
+  const tileSinPlata = (
+    // El porqué lo dice el subtítulo del tile (visible y leído una sola vez).
+    <span className="text-fg-subtle" data-testid="kpi-valor" data-estado="oculto" title={sinAccesoALaPlata}>
+      <span aria-hidden="true">—</span>
+    </span>
+  ) as unknown as string;
   const valorDeTile = (valor: string) =>
     (
       <KpiValor cargando={cargandoPropietarios} fallo={errorPropietarios}>
@@ -591,8 +585,8 @@ function PropietariosContent() {
   /* O5: con inmuebles consignados, o figurando como dueño en mandatos de otro
      (copropiedades), el back rechaza el borrado con un 409. Se dice antes y el
      botón no se ofrece activo. */
-  const inmueblesDelBorrado = deletingPropietario?.propertyCount ?? 0;
-  const copropiedadesDelBorrado = deletingPropietario?.copropiedadesCount ?? 0;
+  const inmueblesDelBorrado = propietarioQueSeBorra?.propertyCount ?? 0;
+  const copropiedadesDelBorrado = propietarioQueSeBorra?.copropiedadesCount ?? 0;
   const borradoBloqueado = inmueblesDelBorrado > 0 || copropiedadesDelBorrado > 0;
 
   return (
@@ -613,13 +607,16 @@ function PropietariosContent() {
           </p>
         </div>
 
+        {/* P-22: a 390 px los dos no caben en una línea («Nuevo propietario»
+            se salía del borde y la página medía 416 px): se acomodan en dos,
+            cada uno a lo ancho. */}
         {puedeCrear && (
-          <div className="flex items-center gap-2 shrink-0">
-            <Button variant="secondary" hideArrow onClick={() => setShowIACapture(true)}>
+          <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+            <Button variant="secondary" hideArrow onClick={() => setShowIACapture(true)} className="flex-1 sm:flex-none">
               <Sparkle className="w-5 h-5 text-primary" weight="fill" />
               {t('inmobiliaria.propietarios.addOwnerIA')}
             </Button>
-            <Button hideArrow onClick={() => setShowAddModal(true)}>
+            <Button hideArrow onClick={() => setShowAddModal(true)} className="flex-1 sm:flex-none">
               <UserPlus className="w-5 h-5" />
               {t('inmobiliaria.propietarios.addOwner')}
             </Button>
@@ -627,29 +624,35 @@ function PropietariosContent() {
         )}
       </div>
 
+      {/* AVISO-TIPO-DOC: los propietarios cuyo documento frena la factura por
+          mandato (sólo para quien puede arreglarlo; se va solo al completarlos). */}
+      <AvisoTipoDeDocumento enLaLista filtroPuesto={filtros.falta === 'tipoDocumento'} />
+
       {/* El clic que vino de otra pantalla y no llegó a ningún lado. Se dice:
           una lista que se queda igual parece un botón roto. */}
-      {personaNoEncontrada && (
-        <div
-          data-testid="persona-no-encontrada"
-          className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4"
-        >
-          <Warning className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" aria-hidden="true" />
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-fg">
-              No encontramos a esa persona en el directorio
-            </p>
-            <p className="mt-0.5 text-sm text-fg-muted">
-              La ficha del propietario se cruza con su cuenta del portal por
-              correo: si el de la ficha no es el mismo con el que entra a
-              Leasefy, no hay forma de enlazarlos. Abajo está la lista completa.
-            </p>
-          </div>
+      <Presence
+        show={Boolean(personaNoEncontrada)}
+        data-testid="persona-no-encontrada"
+        className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4"
+      >
+        <Warning className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-fg">
+            No encontramos a esa persona en el directorio
+          </p>
+          <p className="mt-0.5 text-sm text-fg-muted">
+            La ficha del propietario se cruza con su cuenta del portal por
+            correo: si el de la ficha no es el mismo con el que entra a
+            Leasefy, no hay forma de enlazarlos. Abajo está la lista completa.
+          </p>
         </div>
-      )}
+      </Presence>
 
-      {/* Summary Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Summary Stats — P-22: a 390 px, en dos columnas, «$96.600.000» se
+          cortaba («$96.600.0») y las etiquetas también («PROPIETA…»). Una
+          columna en el celular, dos en tableta y cuatro desde `xl`, donde la
+          cifra cabe con el menú abierto. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <KpiCard
           label={t('inmobiliaria.propietarios.title')}
           value={valorDeTile(String(stats.totalPropietarios))}
@@ -662,34 +665,70 @@ function PropietariosContent() {
         />
         <KpiCard
           label={t('inmobiliaria.propietarios.monthlyRevenue')}
-          value={valorDeTile(formatCurrency(stats.totalMonthlyRent))}
+          value={plataOculta ? tileSinPlata : valorDeTile(formatCurrency(stats.totalMonthlyRent))}
+          sublabel={plataOculta ? sinAccesoALaPlata : undefined}
           icon={<CurrencyDollar />}
         />
         {/* Sin dato, la etiqueta tampoco puede decir «Sin pendientes» ni
-            pintarse en verde: es la misma afirmación que el «$0». */}
+            pintarse en verde: es la misma afirmación que el «$0». Sin acceso
+            a la plata (P-21), tampoco. */}
         <KpiCard
           label={
-            kpiSinDato
-              ? 'Saldo pendiente'
+            kpiSinDato || plataOculta
+              ? 'Giros atrasados'
               : stats.pendingCount > 0
                 ? t('inmobiliaria.propietarios.withBalance', { count: stats.pendingCount })
                 : t('inmobiliaria.propietarios.noPending')
           }
-          value={valorDeTile(
-            stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate'),
-          )}
-          icon={!kpiSinDato && stats.pendingCount > 0 ? <Warning /> : <CurrencyDollar />}
-          deltaDirection={kpiSinDato ? 'neutral' : stats.pendingCount > 0 ? 'down' : 'up'}
+          value={
+            plataOculta
+              ? tileSinPlata
+              : valorDeTile(
+                  stats.pendingCount > 0 ? formatCurrency(stats.totalPending) : t('inmobiliaria.propietarios.upToDate'),
+                )
+          }
+          sublabel={
+            plataOculta
+              ? sinAccesoALaPlata
+              : !kpiSinDato && (stats.generadoSinGirar ?? 0) > 0
+                ? t('inmobiliaria.propietarios.generadoSinGirar', { monto: formatCurrency(stats.generadoSinGirar ?? 0) })
+                : undefined
+          }
+          icon={!kpiSinDato && !plataOculta && stats.pendingCount > 0 ? <Warning /> : <CurrencyDollar />}
+          deltaDirection={kpiSinDato || plataOculta ? 'neutral' : stats.pendingCount > 0 ? 'down' : 'up'}
         />
       </div>
 
-      {/* Unified Data Card - View Toggle + Content + Pagination */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="rounded-lg border border-border bg-card overflow-hidden"
+      {/* AVISO-TIPO-DOC: qué filtra la lista y cómo volver a verla entera. */}
+      <Presence
+        show={filtros.falta === 'tipoDocumento'}
+        data-testid="filtro-falta-documento"
+        className="flex flex-col gap-3 rounded-lg border border-border bg-surface-muted px-4 py-3 sm:flex-row sm:items-center"
       >
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <Funnel className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" weight="fill" aria-hidden="true" />
+          <p className="text-sm text-fg">
+            {paginationData.totalItems === 0
+              ? 'Ya no queda ningún propietario con mandato y el documento por completar.'
+              : `${paginationData.totalItems === 1 ? 'Se muestra 1 propietario' : `Se muestran ${paginationData.totalItems} propietarios`} con mandato y el documento por completar: sus facturas por mandato no se emiten hasta completarlo.`}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          hideArrow
+          onClick={quitarFiltroDeLoQueFalta}
+          className="self-start sm:self-auto"
+          data-testid="quitar-filtro-falta-documento"
+        >
+          Quitar filtro
+        </Button>
+      </Presence>
+
+      {/* Unified Data Card - View Toggle + Content + Pagination.
+          Sin entrada propia: la página ya entra con el `template.tsx`; lo que
+          se anima adentro son los cambios (filas, tarjetas, la cifra). */}
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         {/* View Toggle Header */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
           <SegmentedControl<ViewMode>
@@ -722,7 +761,10 @@ function PropietariosContent() {
           {/* El mismo «0» que los tiles, un renglón más abajo: sin dato, no se dice. */}
           {!kpiSinDato && (
             <span className="text-sm text-muted-foreground tabular-nums">
-              {paginationData.totalItems} {t('inmobiliaria.propietarios.title').toLowerCase()}
+              <AnimatedNumber value={paginationData.totalItems} format={(n) => String(Math.round(n))} />{' '}
+              {paginationData.totalItems === 1
+                ? t('inmobiliaria.propietarios.propietarioUno')
+                : t('inmobiliaria.propietarios.title').toLowerCase()}
             </span>
           )}
         </div>
@@ -734,6 +776,9 @@ function PropietariosContent() {
             error={errorPropietarios}
             queEs="los propietarios"
             onReintentar={recargarPropietarios}
+            // QA-PROP-95 (A-04, PR-14): si el servidor NIEGA la lista, la pantalla
+            // entera pasa al cartel (PageGuard) y no quedan «Nuevo» ni «Crear con IA» vivos.
+            principal
           >
             {propietarios.length === 0 ? (
               /* «Todavía no hay ninguno» es esto y sólo esto: la lista del
@@ -790,8 +835,30 @@ function PropietariosContent() {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onExport={handleExport}
+                plataOculta={plataOculta}
               />
-            ) : paginationData.totalItems === 0 ? (
+            ) : (
+              <>
+              {/* QA-PROP-95 (A-28): la vista de tarjetas también busca y filtra:
+                  la misma barra de la tabla, sin la tabla. */}
+              <PropietarioTable
+                soloBarra
+                propietarios={paginationData.paginatedItems}
+                totalFiltrado={paginationData.totalItems}
+                total={propietarios.length}
+                filtros={filtros}
+                conteos={conteos}
+                onFiltros={(nuevos) => {
+                  setFiltros(nuevos);
+                  setCurrentPage(1);
+                }}
+                onView={handleView}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onExport={handleExport}
+                plataOculta={plataOculta}
+              />
+              {paginationData.totalItems === 0 ? (
               /* En tarjetas no hay barra de filtros —vive dentro de la tabla—,
                  así que acá el vacío filtrado tiene que traer su propia salida:
                  si no, la única forma de volver es adivinar que hay que cambiar
@@ -806,21 +873,30 @@ function PropietariosContent() {
                 }}
               />
             ) : (
-              <div className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              /* Las tarjetas entran escalonadas (techo de 320 ms) y, al cambiar
+                 de página, las que se van salen: `key` = el id. Sin `layout`:
+                 una página entera cambia de una vez, no se reacomoda. */
+              <Stagger layout={false} className="p-4 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {paginationData.paginatedItems.map((propietario) => (
-                  <PropietarioCard
-                    key={propietario.id}
-                    propietario={propietario}
-                    onClick={() => handleView(propietario)}
-                  />
+                  <StaggerItem key={propietario.id}>
+                    <PropietarioCard
+                      propietario={propietario}
+                      onClick={() => handleView(propietario)}
+                    />
+                  </StaggerItem>
                 ))}
-              </div>
+              </Stagger>
+            )}
+              </>
             )}
           </EstadoDeDatos>
         </div>
 
-        {/* Pagination Footer */}
-        {paginationData.totalPages > 1 && (
+        {/* Pagination Footer.
+            QA-PROP-95 (A-22): se queda mientras haya más filas que el tamaño de
+            página más chico. Antes se iba con `totalPages > 1`: quien elegía 50
+            por página (con 37) perdía el selector y no podía volver a 10. */}
+        {paginationData.totalItems > 5 && (
           <div className="px-4 py-3 border-t border-border bg-muted/10">
             <TablePagination
               total={paginationData.totalItems}
@@ -835,112 +911,100 @@ function PropietariosContent() {
             />
           </div>
         )}
-      </motion.div>
+      </div>
 
-      {/* Add Modal — el permiso también cierra el `?nuevo=true`: sin él, el
-          enlace no abre un formulario que el back va a rechazar. */}
-      <Modal
-        open={showAddModal && puedeCrear}
-        onClose={cerrarAlta}
-        title={t('inmobiliaria.propietarios.addOwner')}
-        size="lg"
+      {/* Nuevo propietario — en el CAJÓN (Nico, 03-10). El permiso también
+          cierra el `?nuevo=true`: sin él, el enlace no abre un formulario que
+          el back va a rechazar. */}
+      <CajonDelFormulario
+        abierto={showAddModal && puedeCrear}
+        onCerrar={cerrarAlta}
+        titulo={t('inmobiliaria.propietarios.addOwner')}
+        descripcion="Regístralo para consignar sus inmuebles y girarle lo que le corresponde. La cuenta bancaria la puedes cargar después."
+        aviso={errorAlCrear?.general}
+        idDelFormulario={idDelAlta}
+        textoDelBoton={t('inmobiliaria.propietario.form.createOwner')}
+        guardando={guardandoAlta}
       >
-        {errorAlCrear?.general && <AvisoEnElDialogo>{errorAlCrear.general}</AvisoEnElDialogo>}
         <PropietarioForm
           onSubmit={handleCreateSubmit}
           onCancel={cerrarAlta}
           mode="create"
           serverError={errorAlCrear?.campo ?? null}
+          serverErrors={errorAlCrear?.porCampo ?? null}
+          accionesAfuera
+          idDelFormulario={idDelAlta}
         />
-      </Modal>
+      </CajonDelFormulario>
 
-      {/* AI Capture Modal (v6-07 — additive; reuses the create handler).
-          Su formulario vive dentro de `TerceroIACapture` y no recibe el error
-          por campo: el motivo va arriba, completo. */}
-      <Modal
-        open={showIACapture && puedeCrear}
-        onClose={cerrarCapturaIA}
-        title={t('inmobiliaria.propietarios.addOwnerIA')}
-        size="lg"
+      {/* Crear con IA (v6-07; reusa el alta) — también en el cajón (Nico,
+          03-10: «el de crear con IA sigue en modal»): subir → leer → revisar y
+          guardar, todo adentro. `TerceroIACapture` pone su cuerpo y su pie; el
+          error por campo va a SU campo (02-10-2026) y arriba sólo lo que no
+          tiene campo. */}
+      <Cajon
+        abierto={showIACapture && puedeCrear}
+        onOpenChange={(sigue) => {
+          if (!sigue) cerrarCapturaIA();
+        }}
+        tamano="lg"
+        data-testid="cajon-crear-con-ia"
       >
-        {errorAlCrear && (errorAlCrear.general || errorAlCrear.campo) && (
-          <AvisoEnElDialogo>
-            {[errorAlCrear.campo?.message, errorAlCrear.general].filter(Boolean).join(' · ')}
-          </AvisoEnElDialogo>
-        )}
+        <CajonCabecera
+          titulo={t('inmobiliaria.propietarios.addOwnerIA')}
+          descripcion="Sube sus documentos, revisa lo que leímos y guárdalo."
+        />
         <TerceroIACapture
           onCreated={handleCreateSubmit}
           onClose={cerrarCapturaIA}
+          errorDelServidor={errorAlCrear}
+          aviso={errorAlCrear?.general ? <AvisoEnElDialogo>{errorAlCrear.general}</AvisoEnElDialogo> : null}
         />
-      </Modal>
+      </Cajon>
 
-      {/* Edit Modal */}
-      <Modal
-        open={!!editingPropietario && puedeEditar}
-        onClose={cerrarEdicion}
-        title={t('inmobiliaria.propietarios.editOwner')}
-        size="lg"
+      {/* Editar — el MISMO formulario en el mismo cajón que «Nuevo» (una sola
+          experiencia; decisión anotada para Nico). */}
+      <CajonDelFormulario
+        abierto={!!editingPropietario && puedeEditar}
+        onCerrar={cerrarEdicion}
+        titulo={t('inmobiliaria.propietarios.editOwner')}
+        descripcion={propietarioQueSeEdita?.name}
+        aviso={errorAlEditar?.general}
+        idDelFormulario={idDeLaEdicion}
+        textoDelBoton={t('inmobiliaria.propietario.form.saveChanges')}
+        guardando={guardandoEdicion}
       >
-        {editingPropietario && (
-          <>
-            {errorAlEditar?.general && <AvisoEnElDialogo>{errorAlEditar.general}</AvisoEnElDialogo>}
-            <PropietarioForm
-              initialData={editingPropietario}
-              onSubmit={handleEditSubmit}
-              onCancel={cerrarEdicion}
-              mode="edit"
-              serverError={errorAlEditar?.campo ?? null}
-            />
-          </>
+        {propietarioQueSeEdita && (
+          <PropietarioForm
+            initialData={propietarioQueSeEdita}
+            onSubmit={handleEditSubmit}
+            onCancel={cerrarEdicion}
+            mode="edit"
+            serverError={errorAlEditar?.campo ?? null}
+            serverErrors={errorAlEditar?.porCampo ?? null}
+            accionesAfuera
+            idDelFormulario={idDeLaEdicion}
+          />
         )}
-      </Modal>
+      </CajonDelFormulario>
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal — destructiva: dice qué se borra (la ficha
+          entera; el back hace un `delete`, no la archiva) y, si algo lo
+          retiene, por qué y a dónde ir. */}
       <Modal
         open={!!deletingPropietario && puedeEliminar}
         onClose={cerrarEliminar}
         title={t('inmobiliaria.propietarios.deleteOwner')}
+        description={
+          propietarioQueSeBorra
+            ? t('inmobiliaria.propietarios.deleteConfirm', { name: propietarioQueSeBorra.name })
+            : undefined
+        }
         size="sm"
-      >
-        {deletingPropietario && (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              {t('inmobiliaria.propietarios.deleteConfirm', { name: deletingPropietario.name })}
-            </p>
-            {/* O5 — lo mismo que la ficha: qué lo retiene y a dónde ir. El aviso
-                ámbar de antes lo decía, pero dejaba el botón activo y el clic
-                terminaba en el 409. */}
-            {borradoBloqueado && (
-              <AlertaAccionable
-                severidad="danger"
-                titulo={
-                  inmueblesDelBorrado > 0
-                    ? t('inmobiliaria.propietarios.deleteBloqueado.titulo', { count: inmueblesDelBorrado })
-                    : t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietario', {
-                        count: copropiedadesDelBorrado,
-                      })
-                }
-                accion={{
-                  label: t('inmobiliaria.propietarios.deleteBloqueado.accion'),
-                  href: '/panel/inmobiliaria/inmuebles',
-                }}
-                data-testid="borrar-bloqueado"
-              >
-                {t('inmobiliaria.propietarios.deleteBloqueado.detalle')}
-              </AlertaAccionable>
-            )}
-            {/* O1 — el motivo del back cuando igual lo rechaza (p. ej. una
-                copropiedad que la lista no cuenta). Se queda en el diálogo. */}
-            {motivoAlEliminar && (
-              <p
-                role="alert"
-                data-testid="motivo-al-eliminar"
-                className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
-              >
-                {motivoAlEliminar}
-              </p>
-            )}
-            <div className="flex items-center gap-3 justify-end pt-4">
+        variant="destructive"
+        footer={
+          propietarioQueSeBorra ? (
+            <>
               <Button
                 variant="secondary"
                 hideArrow
@@ -960,8 +1024,51 @@ function PropietariosContent() {
               >
                 {t('inmobiliaria.common.delete')}
               </Button>
-            </div>
-          </div>
+            </>
+          ) : null
+        }
+      >
+        {/* O5 — lo mismo que la ficha: qué lo retiene y a dónde ir. El aviso
+            ámbar de antes lo decía, pero dejaba el botón activo y el clic
+            terminaba en el 409. */}
+        {propietarioQueSeBorra && borradoBloqueado && (
+          <AlertaAccionable
+            severidad="danger"
+            titulo={
+              /* P-26: «1 inmueble consignado» / «3 inmuebles consignados», no «inmueble(s)». */
+              inmueblesDelBorrado > 0
+                ? inmueblesDelBorrado === 1
+                  ? t('inmobiliaria.propietarios.deleteBloqueado.tituloUno')
+                  : t('inmobiliaria.propietarios.deleteBloqueado.tituloN', { count: inmueblesDelBorrado })
+                : copropiedadesDelBorrado === 1
+                  ? t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietarioUno')
+                  : t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietarioN', {
+                      count: copropiedadesDelBorrado,
+                    })
+            }
+            accion={{
+              label: t('inmobiliaria.propietarios.deleteBloqueado.accion'),
+              href: '/panel/inmobiliaria/inmuebles',
+            }}
+            data-testid="borrar-bloqueado"
+          >
+            {/* Como en la ficha: a un copropietario no se le pide retirar
+                mandatos desde el portafolio, sino quitarlo del reparto. */}
+            {inmueblesDelBorrado > 0
+              ? t('inmobiliaria.propietarios.deleteBloqueado.detalle')
+              : t('inmobiliaria.propietarios.deleteBloqueado.detalleCopropietario')}
+          </AlertaAccionable>
+        )}
+        {/* O1 — el motivo del back cuando igual lo rechaza (p. ej. una
+            copropiedad que la lista no cuenta). Se queda en el diálogo. */}
+        {propietarioQueSeBorra && motivoAlEliminar && (
+          <p
+            role="alert"
+            data-testid="motivo-al-eliminar"
+            className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+          >
+            {motivoAlEliminar}
+          </p>
         )}
       </Modal>
     </div>

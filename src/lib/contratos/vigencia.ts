@@ -34,6 +34,13 @@ export interface Vigencia {
   diasVencido: number;
   /** Una línea lista para mostrar. */
   leyenda: string;
+  /**
+   * QA-CONT C-01 (Nico, 03-10-2026: «con fecha futura el contrato sigue activo
+   * hasta esa fecha»): `'YYYY-MM-DD'` del día en que termina una terminación
+   * PROGRAMADA. Mientras no llegue, el contrato es vigente («Activo · Termina el
+   * 31 oct»). `undefined`/`null` = no hay terminación programada.
+   */
+  terminaEl?: string | null;
 }
 
 /** Lo mínimo que hace falta saber. El listado no trae el contrato entero. */
@@ -110,11 +117,23 @@ export function vigenciaDelContrato(
   const quieto = { vencidoSinRenovar: false, vencidoDesde: null, diasVencido: 0 };
 
   const terminado = comoDiaUtc(contrato.terminadoEn);
-  if (terminado !== null) {
+  const hoyUtc = Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth(), hoy.getUTCDate());
+  // C-01: una terminación con fecha FUTURA no termina hoy; el contrato corre
+  // hasta ese día (incluido) y la pantalla dice «Termina el …».
+  const programada = terminado !== null && terminado > hoyUtc && ESTADOS_QUE_CORREN.includes(contrato.status);
+  if (terminado !== null && !programada) {
     return {
       ...quieto,
       estado: 'TERMINADO_ANTICIPADAMENTE',
       leyenda: `Terminado el ${dia(terminado)}`,
+    };
+  }
+  if (programada) {
+    return {
+      ...quieto,
+      estado: 'VIGENTE',
+      leyenda: `Vigente hasta el ${dia(terminado)}`,
+      terminaEl: dia(terminado),
     };
   }
 
@@ -174,7 +193,7 @@ export function etiquetaDeVigencia(v: Vigencia, etiquetaDelEstado: string): stri
 /** El color del chip. Un vencido es un aviso, no un estado neutro. */
 export function colorDeVigencia(v: Vigencia, colorDelEstado: string): string {
   return v.vencidoSinRenovar
-    ? 'bg-plan-status-yellow-bg text-plan-status-yellow'
+    ? 'bg-plan-status-yellow-bg text-warning-700 dark:text-warning-100'
     : colorDelEstado;
 }
 

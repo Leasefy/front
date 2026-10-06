@@ -20,7 +20,8 @@
  *      monto), en la misma familia de tarjeta que el resto del panel,
  *   4. qué pasó con la última corrida, si se pidió una,
  *   5. la actividad reciente del agente,
- *   6. «¿Cómo funciona?», plegado, que es ayuda y no dato.
+ *   6. «¿Cómo funciona?», que es ayuda y no dato: desde el 05-10-2026 es el
+ *      botón del encabezado y abre un cajón (antes, un botón al pie).
  *
  * ── Por qué esta Sala no usa <SalaAgente> ───────────────────────────────────
  * `<SalaAgente>` monta SIEMPRE el CTA primario de la cola en su encabezado y
@@ -52,9 +53,11 @@
  * de hoy sino una función que todavía no existe en ese entorno.
  */
 
+import { Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { ArrowsClockwise, CheckCircle, UploadSimple, WarningCircle } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 
@@ -72,11 +75,14 @@ import {
 import { PageGuard } from '@/components/auth/PageGuard'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
+import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
+import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
 import { useExtractoDelBack } from '@/lib/hooks/conciliacion/use-extracto-del-back'
 import type { ResumenDeConciliacion } from '@/lib/api/conciliacion-bancaria.types'
+// D-CONCILIACION (ola 3): la alerta de partidas pendientes (P10).
+import { AlertaDePartidas } from '@/components/cobros/extracto-bancario/AlertaDePartidas'
 import { useConciliacionRun } from '@/lib/hooks/conciliacion/use-conciliacion-run'
 import {
   ConciliacionResumen,
@@ -99,11 +105,20 @@ const SONDEO_MS = 5000
 /** Seis vueltas ≈ 30 s. */
 const VUELTAS_DEL_SONDEO = 6
 
-/** «Cómo funciona» — el viaje de la conciliación en 3 pasos. */
-const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] = [
-  { icon: UploadSimple, titleKey: `${PAGES_NS}.comoFunciona.step1.title`, descKey: `${PAGES_NS}.comoFunciona.step1.desc` },
-  { icon: ArrowsClockwise, titleKey: `${PAGES_NS}.comoFunciona.step2.title`, descKey: `${PAGES_NS}.comoFunciona.step2.desc` },
-  { icon: CheckCircle, titleKey: `${PAGES_NS}.comoFunciona.step3.title`, descKey: `${PAGES_NS}.comoFunciona.step3.desc` },
+/**
+ * «Cómo funciona» — el viaje de la conciliación en 3 pasos, cada uno con quién
+ * lo hace (Nico, 05-10-2026: «explica mejor cada cosa y más bonito»).
+ *
+ * Verificado contra el código (05-10): el extracto entra en CSV o Excel y la
+ * cuenta es obligatoria (`CargarExtracto`); las entradas se cruzan con cuotas y
+ * recibos y las salidas con giros, egresos y gastos del banco; en Copiloto no
+ * se aplica nada sin el clic, en Autónomo sólo lo exacto, y la pasarela se
+ * concilia sola.
+ */
+const COMO_FUNCIONA_STEPS: { icon: Icon; clave: string; quien: QuienLoHace; tuParte?: true }[] = [
+  { icon: UploadSimple, clave: 'step1', quien: 'tu', tuParte: true },
+  { icon: ArrowsClockwise, clave: 'step2', quien: 'agente' },
+  { icon: CheckCircle, clave: 'step3', quien: 'tu', tuParte: true },
 ]
 
 /**
@@ -190,6 +205,10 @@ function ConciliacionSala() {
     data: summary,
     isLoading: summaryLoading,
     error: summaryError,
+    // ARREGLOS-8 (ARREGLOS-4 Q1 A): el error ENTERO, para que `FalloDeCarga`
+    // diga qué se cayó (con el micro caído, «El asistente de Leasefy no está
+    // disponible», no «Fue un problema nuestro»).
+    errorCrudo: summaryErrorCrudo,
     refetch: refetchSummary,
   } = useConciliacionSummary()
   // Disparo de conciliación on-demand (acción humana, T-323).
@@ -316,12 +335,23 @@ function ConciliacionSala() {
       setCorrida({ estado: 'corriendo' })
       vigilarLaCorrida(antes)
     } else if (res.ok && !res.enqueued) {
-      // Backend respondió pero no pudo encolar (db/inngest no disponible).
-      toast.error('No se pudo iniciar la conciliación en este momento. Intenta de nuevo más tarde.')
+      // El micro contestó pero no pudo encolar (su base o su cola no
+      // estaban): es nuestro, no de la persona ni de su conexión.
+      toast.error(
+        'No pudimos iniciar la conciliación: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo en un momento.',
+      )
     } else if (res.reason === 'not_available') {
       toast.error('La conciliación bajo demanda aún no está disponible.')
     } else {
-      toast.error('No se pudo iniciar la conciliación. Intenta de nuevo.')
+      // Con la regla de oro: el 4xx dice qué pasó, el 5xx «de nuestro lado»
+      // con la referencia y la conexión sólo si el pedido no salió. Antes
+      // decía «Intenta de nuevo» para todo.
+      toast.error(
+        mensajeParaLaPersona(res.fallo, {
+          porDefecto: 'No se pudo iniciar la conciliación.',
+          accion: 'iniciar la conciliación',
+        }),
+      )
     }
   }
 
@@ -349,11 +379,37 @@ function ConciliacionSala() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6" data-testid="sala-agente-conciliacion">
-      {/* Encabezado — sin CTA: la acción vive en la tarjeta que la explica. */}
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">{t(`${PAGES_NS}.salaTitulo`)}</h1>
-        <p className="text-body text-fg-muted max-w-2xl">{t(`${PAGES_NS}.salaDesc`)}</p>
+      {/* Encabezado — sin CTA: la acción vive en la tarjeta que la explica. A la
+          derecha, sólo «¿Cómo funciona?» (05-10-2026): estaba al pie de la
+          pantalla, debajo de la actividad, y ahí no lo encontraba nadie. */}
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-h2 text-fg">{t(`${PAGES_NS}.salaTitulo`)}</h1>
+          <p className="text-body text-fg-muted max-w-2xl">{t(`${PAGES_NS}.salaDesc`)}</p>
+        </div>
+        <ParaEntenderMas
+          etiqueta={t(`${PAGES_NS}.comoFunciona.title`)}
+          titulo={t(`${PAGES_NS}.comoFunciona.titulo`)}
+          descripcion={t(`${PAGES_NS}.comoFunciona.descripcion`)}
+          variante="secundario"
+          className="self-start sm:shrink-0"
+        >
+          <PasosExplicados
+            data-testid="conciliacion-como-funciona"
+            pasos={COMO_FUNCIONA_STEPS.map((step) => ({
+              id: step.clave,
+              icono: step.icon,
+              titulo: t(`${PAGES_NS}.comoFunciona.${step.clave}.title`),
+              explicacion: t(`${PAGES_NS}.comoFunciona.${step.clave}.desc`),
+              quien: step.quien,
+              tuParte: step.tuParte ? t(`${PAGES_NS}.comoFunciona.${step.clave}.tuParte`) : undefined,
+            }))}
+          />
+        </ParaEntenderMas>
       </header>
+
+      {/* D-CONCILIACION (Nico, P10): el aviso de las partidas que pasan de los días de la alerta. */}
+      <AlertaDePartidas />
 
       {/* 1. La acción que desbloquea todo lo demás: subir el extracto. */}
       <section
@@ -419,7 +475,7 @@ function ConciliacionSala() {
           data-testid="conciliacion-resumen-fallo"
         >
           <FalloDeCarga
-            error={summaryError}
+            error={summaryErrorCrudo ?? summaryError}
             queEs="el resumen de la conciliación"
             onReintentar={refetchSummary}
             enmarcado={false}
@@ -429,8 +485,9 @@ function ConciliacionSala() {
 
       {/* K1: falló un refresco. Los números se quedan, pero no se hacen pasar
           por los de ahora. */}
-      {summary && summaryError && !summaryLoading && (
-        <div
+      {/* Entra cuando falla un refresco y SALE cuando el siguiente llega bien. */}
+      <Presence
+          show={Boolean(summary && summaryError && !summaryLoading)}
           className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-border bg-warning-soft px-4 py-3"
           role="status"
           data-testid="conciliacion-resumen-desactualizado"
@@ -442,8 +499,7 @@ function ConciliacionSala() {
           <Button variant="outline" size="sm" hideArrow onClick={() => void refetchSummary()}>
             Intentar de nuevo
           </Button>
-        </div>
-      )}
+      </Presence>
 
       {/* 2. Lo que encontró el agente — la tarjeta protagonista. */}
       <HallazgosDelAgente data={summary} colaHref={COLA_HREF} />
@@ -465,11 +521,12 @@ function ConciliacionSala() {
           <h2 className="text-base font-semibold text-fg">
             {t(`${WORKSPACE_NS}.sala.feedTitle`)}
           </h2>
-          <ul className="mt-3 divide-y divide-border">
+          {/* Lo nuevo que llega con el sondeo entra arriba y empuja lo demás. */}
+          <Stagger as="ul" className="mt-3 divide-y divide-border">
             {feed.map((entrada) => {
               const meta = actorMeta(entrada.actorType)
               return (
-                <li key={entrada.id} className="flex items-start gap-2 py-2.5 first:pt-0 last:pb-0">
+                <StaggerItem as="li" key={entrada.id} className="flex items-start gap-2 py-2.5 first:pt-0 last:pb-0">
                   <span
                     className={`mt-0.5 inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-caption ring-1 ${meta.cls}`}
                   >
@@ -482,49 +539,16 @@ function ConciliacionSala() {
                   <span className="mt-0.5 shrink-0 text-caption tabular-nums text-fg-muted">
                     {relativeTime(entrada.occurredAt, t)}
                   </span>
-                </li>
+                </StaggerItem>
               )
             })}
-          </ul>
+          </Stagger>
         </section>
       )}
 
-      {/* 6. ¿Cómo funciona? — ayuda, no dato. Estaba plegada al final de la
-          pantalla; desde el 21-09 se abre ENCIMA: un `<details>` abierto crece
-          dentro de la pantalla y empuja las sugerencias que la persona vino a
-          revisar. El `data-testid` se conserva en el contenido para que las
-          pruebas sigan buscando lo mismo. */}
-      <ParaEntenderMas
-        etiqueta={t(`${PAGES_NS}.comoFunciona.title`)}
-        ancho="ancho"
-      >
-        <ol
-          className="grid grid-cols-1 gap-4 sm:grid-cols-3"
-          data-testid="conciliacion-como-funciona"
-        >
-          {COMO_FUNCIONA_STEPS.map((step, i) => {
-            const StepIcon = step.icon
-            return (
-              <li key={step.titleKey} className="flex items-start gap-2.5">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-muted">
-                  <StepIcon className="h-4 w-4 text-fg-muted" weight="duotone" aria-hidden="true" />
-                </span>
-                <div className="min-w-0 space-y-0.5">
-                  <p className="text-body-sm font-medium leading-tight text-fg">
-                    <span className="tabular-nums text-fg-subtle">{i + 1}. </span>
-                    {t(step.titleKey)}
-                  </p>
-                  <p className="text-caption leading-snug text-fg-muted">{t(step.descKey)}</p>
-                </div>
-              </li>
-            )
-          })}
-        </ol>
-      </ParaEntenderMas>
-
       {/* Confirmación humana de "Conciliar ahora" (T-323) */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="confirm" icon={<ArrowsClockwise weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Conciliar ahora?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -545,7 +569,7 @@ function ConciliacionSala() {
 
 export default function ConciliacionSalaPage() {
   return (
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+    <PageGuard roles={[...ROLES_QUE_CONCILIAN]}>
       <ConciliacionSala />
     </PageGuard>
   )

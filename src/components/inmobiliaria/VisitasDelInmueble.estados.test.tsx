@@ -111,7 +111,7 @@ describe('<VisitasDelInmueble> — sin inmueble, fallo de carga y motivo al guar
     })
   })
 
-  it('un 500 al guardar no pinta «Internal server error»: queda el «intenta de nuevo»', async () => {
+  it('un 500 al guardar no pinta «Internal server error»: dice que fue de nuestro lado (02-10-2026)', async () => {
     agenda.getDisponibilidad.mockResolvedValueOnce({ windows: [], agendas: null, visitTypes: [] })
     agenda.setDisponibilidad.mockRejectedValueOnce(new ApiError(500, 'Internal server error'))
     await montar('prop-1')
@@ -122,7 +122,61 @@ describe('<VisitasDelInmueble> — sin inmueble, fallo de carga y motivo al guar
     await tick()
 
     expect(toastMock.error).toHaveBeenCalledWith('No pudimos guardar los horarios', {
-      description: 'Intenta de nuevo en unos segundos.',
+      description: expect.stringMatching(/de nuestro lado/),
     })
+    expect(JSON.stringify(toastMock.error.mock.calls)).not.toContain('Internal server error')
+  })
+
+  it('🔴 un 5xx con referencia la dice, y dice qué no se pudo hacer (tanda 2 de errores)', async () => {
+    agenda.getDisponibilidad.mockResolvedValueOnce({ windows: [], agendas: null, visitTypes: [] })
+    agenda.setDisponibilidad.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: '5e5e5e5e',
+      }),
+    )
+    await montar('prop-1')
+    await act(async () => {
+      ;(container.querySelector('[data-testid="visitas-interruptor"]') as HTMLElement).click()
+    })
+    await tick()
+
+    const { description } = toastMock.error.mock.calls[0][1] as { description: string }
+    expect(description).toMatch(/^No pudimos guardar los horarios de visita: algo falló de nuestro lado/)
+    expect(description).toContain('5e5e5e5e')
+    expect(description).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('un 400 con `campos` y sin `message` legible dice lo que trae cada campo', async () => {
+    agenda.getDisponibilidad.mockResolvedValueOnce({ windows: [], agendas: null, visitTypes: [] })
+    agenda.setDisponibilidad.mockRejectedValueOnce(
+      new ApiError(400, '', 'DATOS_INVALIDOS', {
+        code: 'DATOS_INVALIDOS',
+        campos: [{ campo: 'windows.0.startTime', regla: 'formato', mensaje: 'La hora de inicio no es válida.' }],
+      }),
+    )
+    await montar('prop-1')
+    await act(async () => {
+      ;(container.querySelector('[data-testid="visitas-interruptor"]') as HTMLElement).click()
+    })
+    await tick()
+
+    expect(toastMock.error).toHaveBeenCalledWith('No pudimos guardar los horarios', {
+      description: 'La hora de inicio no es válida.',
+    })
+  })
+
+  it('sin respuesta habla de la conexión', async () => {
+    agenda.getDisponibilidad.mockResolvedValueOnce({ windows: [], agendas: null, visitTypes: [] })
+    agenda.setDisponibilidad.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await montar('prop-1')
+    await act(async () => {
+      ;(container.querySelector('[data-testid="visitas-interruptor"]') as HTMLElement).click()
+    })
+    await tick()
+
+    const { description } = toastMock.error.mock.calls[0][1] as { description: string }
+    expect(description).toMatch(/conexión/)
   })
 })

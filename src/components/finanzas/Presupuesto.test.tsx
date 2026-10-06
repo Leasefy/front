@@ -42,6 +42,56 @@ vi.mock('@/lib/api/finanzas.service', () => ({
 vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }));
+// CB-17 (03-10-2026): los selectores son el `Select` del DS (Radix), que no se
+// abre en happy-dom. Este doble lo vuelve un `<select>` nativo con el MISMO
+// `data-testid` del disparador, su valor y sus opciones: lo que estas pruebas
+// miran no cambió.
+vi.mock('@/components/ui/select', async () => {
+  const React = await import('react');
+  type Ctx = { value?: string; onValueChange?: (v: string) => void; trigger: Record<string, unknown> };
+  const Contexto = React.createContext<Ctx>({ trigger: {} });
+  return {
+    Select: ({
+      value,
+      onValueChange,
+      children,
+    }: {
+      value?: string;
+      onValueChange?: (v: string) => void;
+      children?: React.ReactNode;
+    }) => {
+      const trigger = React.useRef<Record<string, unknown>>({}).current;
+      return <Contexto.Provider value={{ value, onValueChange, trigger }}>{children}</Contexto.Provider>;
+    },
+    SelectTrigger: (props: Record<string, unknown>) => {
+      Object.assign(React.useContext(Contexto).trigger, props);
+      return null;
+    },
+    SelectValue: () => null,
+    SelectContent: ({ children }: { children?: React.ReactNode }) => {
+      const ctx = React.useContext(Contexto);
+      return (
+        <select
+          data-testid={ctx.trigger['data-testid'] as string | undefined}
+          aria-label={ctx.trigger['aria-label'] as string | undefined}
+          disabled={Boolean(ctx.trigger.disabled)}
+          value={ctx.value ?? ''}
+          onChange={(e) => ctx.onValueChange?.(e.target.value)}
+        >
+          {ctx.value ? null : <option value="" />}
+          {children}
+        </select>
+      );
+    },
+    SelectItem: ({ value, children }: { value: string; children?: React.ReactNode }) => (
+      <option value={value}>{children}</option>
+    ),
+    SelectGroup: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+    SelectLabel: () => null,
+    SelectSeparator: () => null,
+  };
+});
+
 
 import { PresupuestoPanel } from './Presupuesto';
 
@@ -248,5 +298,75 @@ describe('sin diálogos del navegador', () => {
   it('un rubro sin presupuesto cargado no ofrece quitarlo', async () => {
     await pintar();
     expect(testId('quitar-nomina')).toBeNull();
+  });
+});
+
+/*
+ * Sistema de errores (02-10-2026): 🔁 el valor presupuestado con ceros de más
+ * (para arriba o para abajo: puede ser negativo) dice la frase del back bajo
+ * el campo y no viaja; un 5xx dice «de nuestro lado» con la referencia.
+ */
+describe('cargar el presupuesto · errores en su campo', () => {
+  const enDoc = (id: string) => document.querySelector<HTMLElement>(`[data-testid="${id}"]`);
+  function escribir(el: HTMLInputElement, valor: string) {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, valor);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  async function abrirYEscribir(valor: string) {
+    await pintar();
+    await act(async () => {
+      (testId('cargar-presupuesto') as HTMLButtonElement).click();
+    });
+    await act(async () => {
+      // CB-30 (03-10-2026): el rubro se ELIGE (Select del DS; aquí su doble nativo).
+      const rubro = enDoc('presupuesto-rubro') as HTMLSelectElement;
+      rubro.value = 'comisiones';
+      rubro.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await act(async () => {
+      escribir(enDoc('presupuesto-valor') as HTMLInputElement, valor);
+    });
+  }
+  async function guardar() {
+    await act(async () => {
+      (enDoc('guardar-presupuesto') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+  }
+
+  it('🔁 un valor con ceros de más se ataja antes de enviar, con la frase del back', async () => {
+    await abrirYEscribir('120000000000');
+    expect(document.getElementById('presupuesto-valor-error')?.textContent).toBe(
+      'El valor presupuestado no puede pasar de $2.000.000.000 (ni de -$2.000.000.000). Revisa que no sobren ceros.',
+    );
+    await guardar();
+    expect(h.guardar).not.toHaveBeenCalled();
+  });
+
+  it('un valor negativo dentro del rango sí se manda (un rubro de costo)', async () => {
+    h.guardar.mockResolvedValue({});
+    await abrirYEscribir('-35000000');
+    expect(document.getElementById('presupuesto-valor-error')?.textContent ?? '').toBe('');
+    await guardar();
+    expect(h.guardar).toHaveBeenCalledWith(expect.objectContaining({ valorCop: -35_000_000 }));
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const { toast } = await import('@/components/ui/toast');
+    h.guardar.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ffff6666',
+      }),
+    );
+    await abrirYEscribir('120000000');
+    await guardar();
+
+    const texto = vi.mocked(toast.error).mock.calls.at(-1)![0] as string;
+    expect(texto).toMatch(/No pudimos cargar el presupuesto: algo falló de nuestro lado/);
+    expect(texto).toContain('ffff6666');
   });
 });

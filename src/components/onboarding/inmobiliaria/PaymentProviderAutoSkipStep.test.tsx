@@ -95,4 +95,21 @@ describe('<PaymentProviderAutoSkipStep>', () => {
     await flush()
     expect(onSkip).toHaveBeenCalledTimes(2)
   })
+
+  it('🔴 con un 400 dice qué estuvo mal (la frase del error del paso), no la frase general (02-10-2026)', async () => {
+    const onSkip = vi.fn().mockResolvedValueOnce(null)
+    render({ onSkip, mensajeDelFallo: 'El día de corte tiene que estar entre 1 y 28.' })
+    await flush()
+
+    const bloque = container.querySelector('[data-testid="payment-provider-skip-error"]')
+    expect(bloque?.textContent).toContain('El día de corte tiene que estar entre 1 y 28.')
+    expect(bloque?.textContent).not.toContain('No pudimos continuar sin una pasarela de pago')
+  })
+
+  it('sin la frase del error sigue la general', async () => {
+    render({ onSkip: vi.fn().mockResolvedValueOnce(null), mensajeDelFallo: null })
+    await flush()
+
+    expect(container.querySelector('[data-testid="payment-provider-skip-error"]')?.textContent).toContain('No pudimos continuar sin una pasarela de pago')
+  })
 })

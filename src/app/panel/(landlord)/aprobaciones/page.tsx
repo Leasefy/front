@@ -27,6 +27,12 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { aprobacionesDeReparacionApi } from '@/lib/api/aprobaciones-de-reparacion.service';
 import type { AprobacionEnElPortal } from '@/lib/types/deducciones';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+
+/** `RechazarAprobacionDto.motivo`: `@MaxLength(2000)` en el back. */
+const MAX_LARGO_DEL_MOTIVO = 2000;
 
 const ESTADO: Record<AprobacionEnElPortal['estado'], string> = {
   PENDIENTE: 'Esperando tu respuesta',
@@ -51,6 +57,7 @@ function Pendiente({
   const [enviando, setEnviando] = useState<'aprobar' | 'rechazar' | null>(null);
   const [rechazando, setRechazando] = useState(false);
   const [motivo, setMotivo] = useState('');
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
 
   const decidir = async (accion: 'aprobar' | 'rechazar') => {
     if (enviando) return;
@@ -69,9 +76,17 @@ function Pendiente({
       }
       onDecidida();
     } catch (error) {
-      toast.error('No se pudo guardar tu respuesta', {
-        description: error instanceof Error ? error.message : undefined,
+      // 02-10-2026: el motivo que el back rechaza va bajo el motivo; lo demás,
+      // con la regla de oro del traductor (antes, `error.message` crudo).
+      const reparto = repartirErroresDelServidor<'motivo'>(error, {
+        campos: ['motivo'],
+        accion: accion === 'aprobar' ? 'guardar tu aprobación' : 'guardar tu rechazo',
+        porDefecto: 'Prueba de nuevo en un momento.',
       });
+      setErrorDelMotivo(reparto.porCampo.motivo ?? null);
+      if (reparto.sueltos.length > 0) {
+        toast.error('No se pudo guardar tu respuesta', { description: reparto.sueltos.join(' · ') });
+      }
       setEnviando(null);
     }
   };
@@ -103,14 +118,24 @@ function Pendiente({
         Si la apruebas, el valor se descuenta de tu próxima liquidación sin pagar. Pedida el {fecha(aprobacion.pedidaAt)}.
       </p>
       {rechazando && (
-        <textarea
-          className="w-full rounded-md border border-border bg-surface p-2 text-sm text-fg"
-          rows={2}
-          placeholder="¿Por qué la rechazas? (opcional, lo lee tu inmobiliaria)"
-          value={motivo}
-          onChange={(e) => setMotivo(e.target.value)}
-          data-testid="aprobacion-motivo"
-        />
+        <div>
+          <textarea
+            id={`motivo-${aprobacion.id}`}
+            className="w-full rounded-md border border-border bg-surface p-2 text-sm text-fg"
+            rows={2}
+            maxLength={MAX_LARGO_DEL_MOTIVO}
+            placeholder="¿Por qué la rechazas? (opcional, lo lee tu inmobiliaria)"
+            value={motivo}
+            onChange={(e) => {
+              setMotivo(e.target.value);
+              setErrorDelMotivo(null);
+            }}
+            aria-invalid={errorDelMotivo ? true : undefined}
+            aria-describedby={errorDelMotivo ? `motivo-${aprobacion.id}-error` : undefined}
+            data-testid="aprobacion-motivo"
+          />
+          <ErrorDelCampo id={`motivo-${aprobacion.id}-error`} mensaje={errorDelMotivo} />
+        </div>
       )}
       <div className="flex flex-wrap gap-2">
         <Button hideArrow onClick={() => void decidir('aprobar')} disabled={enviando !== null} data-testid="aprobacion-aprobar">
@@ -146,7 +171,10 @@ function DelHistorial({ aprobacion }: { aprobacion: AprobacionEnElPortal }) {
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (error) {
       toast.error('No se pudo abrir el soporte', {
-        description: error instanceof Error ? error.message : undefined,
+        description: mensajeParaLaPersona(error, {
+          accion: 'abrir el soporte',
+          porDefecto: 'Prueba de nuevo en un momento.',
+        }),
       });
     }
   };

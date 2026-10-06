@@ -47,6 +47,20 @@ import type {
 export const LEYENDA_DEL_CANON =
   'El canon recaudado NO es ingreso de la inmobiliaria: es plata del propietario y vive en la 2815, que es una cuenta de pasivo. Acá sólo aparece lo propio — la comisión de administración, los recargos y los gastos de la inmobiliaria (CTCP 2020-0678).';
 
+/**
+ * CB-C-09 (QA-FACT-CONTA-95 r2): un P&G sin gastos en el mes lo dice y dice
+ * dónde se registran (Gastos). Sin gastos asentados la utilidad sale inflada:
+ * no es que la inmobiliaria no gaste, es que sus facturas no se han causado.
+ * `null` si el mes sí tiene gastos.
+ */
+export function notaSinGastosDelMes(gastosMesCop: number): string | null {
+  if (gastosMesCop !== 0) return null;
+  return 'Este mes no tiene gastos asentados: la utilidad sale igual a los ingresos. Los gastos propios de la inmobiliaria (el arriendo de la oficina, la luz, el contador) entran al P&G cuando registras y causas sus facturas en Gastos.';
+}
+
+/** Adónde lleva la nota de arriba. */
+export const RUTA_DE_GASTOS = '/panel/inmobiliaria/contabilidad/gastos';
+
 /** La frase del back, o la nuestra. Nunca vacío. */
 export function leyendaDelCanon(informe: {
   elCanonNoEsIngreso?: string;
@@ -220,16 +234,53 @@ export function avisoDeLoQueFalta(sinAsentar: SinAsentar | null | undefined): st
 /** El margen en texto. `null` → «—»: dividir por cero no es 0 %. */
 export function margenLegible(margenPct: number | null, sinMedir: string): string {
   if (margenPct === null || !Number.isFinite(margenPct)) return sinMedir;
-  return `${margenPct.toFixed(1)}%`;
+  // QA-FACT-CONTA-95: el número de la casa — coma decimal, «−» y espacio
+  // antes del «%» («−385,6 %»; decía «-385.6%»).
+  const cifra = Math.abs(margenPct).toLocaleString('es-CO', {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
+  return `${margenPct < 0 ? '−' : ''}${cifra}\u00a0%`;
 }
 
 // ── Balance general ────────────────────────────────────────────────────────
 
-/** Pasivo + patrimonio + resultado del ejercicio: el otro lado de la igualdad. */
+/**
+ * Pasivo + patrimonio + resultado del ejercicio (+ el de años anteriores sin
+ * asiento de cierre, CB-R14): el otro lado de la igualdad, el mismo del back.
+ */
 export function totalDelOtroLado(balance: BalanceGeneral): number {
   return (
-    balance.pasivo.totalCop + balance.patrimonio.totalCop + balance.resultadoDelEjercicioCop
+    balance.pasivo.totalCop +
+    balance.patrimonio.totalCop +
+    balance.resultadoDelEjercicioCop +
+    (balance.resultadoDeEjerciciosAnterioresCop ?? 0)
   );
+}
+
+/**
+ * 🔴 QA-CONTA CB-18: ¿cuánto le falta al auxiliar por tercero para cuadrar con
+ * el libro? Sólo se puede saber con TODOS los terceros a la vista (una sola
+ * página, sin el filtro «con saldo», que esconde terceros con movimientos que
+ * se anulan). `null` = no se puede saber desde acá.
+ */
+export function loQueLeFaltaAlAuxiliar(auxiliar: {
+  total: number;
+  desplazamiento: number;
+  terceros: ReadonlyArray<{ debitosCop: number; creditosCop: number }>;
+  sinTercero: { debitosCop: number; creditosCop: number };
+  libro?: { debitosCop: number; creditosCop: number };
+}, conSaldo: boolean): { debitosCop: number; creditosCop: number } | null {
+  if (!auxiliar.libro || conSaldo) return null;
+  if (auxiliar.desplazamiento !== 0 || auxiliar.terceros.length !== auxiliar.total) return null;
+  const debitos =
+    auxiliar.terceros.reduce((s, f) => s + f.debitosCop, 0) + auxiliar.sinTercero.debitosCop;
+  const creditos =
+    auxiliar.terceros.reduce((s, f) => s + f.creditosCop, 0) + auxiliar.sinTercero.creditosCop;
+  return {
+    debitosCop: auxiliar.libro.debitosCop - debitos,
+    creditosCop: auxiliar.libro.creditosCop - creditos,
+  };
 }
 
 /**

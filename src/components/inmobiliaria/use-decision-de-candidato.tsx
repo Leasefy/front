@@ -28,6 +28,7 @@ import {
 } from '@/components/inmobiliaria/AccionDePostulacion';
 import { ModalAvisarNoElegidos } from '@/components/inmobiliaria/ModalAvisarNoElegidos';
 import type { LandlordCandidate } from '@/lib/api/applications.types';
+import { avisoAlAprobar } from '@/lib/postulaciones/marca-del-estudio';
 
 export interface DecisionDeCandidato<C extends LandlordCandidate> {
   /** Quién está abierto, o `null`. */
@@ -155,6 +156,7 @@ export function useDecisionDeCandidato<C extends LandlordCandidate>({
           candidateName={accion.candidato.tenantName || accion.candidato.id.slice(0, 8)}
           onConfirm={confirmar}
           onClose={() => setAccion(null)}
+          aviso={avisoAlAprobar(accion.candidato.marcaDelEstudio)}
         />
       )}
     </>

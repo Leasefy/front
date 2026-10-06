@@ -72,6 +72,15 @@ export interface InformeDeFacturas {
   /** Los motivos del back, sin repetir. */
   motivos: string[]
   /**
+   * 🔴 QA-FACT (03-10-2026): las que el back NO emitió porque hoy no se pueden
+   * (escenario sin confirmar, comisión sin giro pagado…), con su motivo. Un
+   * back anterior no las manda: 0.
+   */
+  bloqueadas?: number
+  motivosDeBloqueo?: string[]
+  /** FA-R10: numeradas con una resolución de PRUEBA, que no se le entregan a nadie. */
+  noEntregadasPorPrueba?: number
+  /**
    * 🔴 Las facturas que salieron EN ESTA corrida, con su id y su número (Nico,
    * 22-09: «ya acabo de facturar y yo dónde puedo descargar el lote»). Es lo
    * que baja el botón «Descargar» del informe. Las que el back no devolvió con
@@ -149,6 +158,9 @@ export async function generarPorTandas(
     sinEnviar: 0,
     totalCop: 0,
     motivos: [],
+    bloqueadas: 0,
+    motivosDeBloqueo: [],
+    noEntregadasPorPrueba: 0,
     documentos: [],
     procesosConZip: [],
   }
@@ -201,9 +213,17 @@ export async function generarPorTandas(
     informe.yaEstaban += r.yaEstaban
     informe.sinNumero += r.sinNumero
     informe.totalCop += r.totalCop
+    const bloqueadas = r.cuantasBloqueadas ?? r.bloqueadas?.length ?? 0
+    informe.bloqueadas = (informe.bloqueadas ?? 0) + bloqueadas
+    const motivosDeBloqueo = (informe.motivosDeBloqueo ??= [])
+    for (const b of r.bloqueadas ?? []) {
+      if (b.motivo && !motivosDeBloqueo.includes(b.motivo)) motivosDeBloqueo.push(b.motivo)
+    }
+    informe.noEntregadasPorPrueba =
+      (informe.noEntregadasPorPrueba ?? 0) + (r.transmision?.noEntregadasPorPrueba ?? 0)
     informe.yaNoEstabanPorEmitir += Math.max(
       0,
-      parte.length - r.emitidas - r.yaEstaban - r.sinNumero,
+      parte.length - r.emitidas - r.yaEstaban - r.sinNumero - bloqueadas,
     )
     if (r.motivo && !informe.motivos.includes(r.motivo)) informe.motivos.push(r.motivo)
     for (const f of r.facturas ?? []) {

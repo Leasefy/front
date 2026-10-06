@@ -15,7 +15,13 @@ const { crearMock, toastMock } = vi.hoisted(() => ({
   toastMock: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 vi.mock('sonner', () => ({ toast: toastMock }))
-vi.mock('@/lib/api/pqrs-agencia.service', () => ({ pqrsApi: { crear: crearMock } }))
+// PQRS-FIX (04-10): los responsables salen de `GET /inmobiliaria/pqrs/responsables` (SO-22).
+vi.mock('@/lib/api/pqrs-agencia.service', () => ({
+  pqrsApi: {
+    crear: crearMock,
+    responsables: () => Promise.resolve([{ userId: 'u1', nombre: 'Ana Agente', rol: 'AGENTE' }]),
+  },
+}))
 // El responsable viene preelegido con quien radica: acá la sesión es de otra
 // persona (`u-otro`), así que la preelección no aplica y el campo arranca vacío.
 vi.mock('@/lib/auth', () => ({ useAuth: () => ({ user: { id: 'u-otro' } }) }))
@@ -190,5 +196,68 @@ describe('NuevaPqrsDrawer', () => {
     })
     expect(onCreated).not.toHaveBeenCalled()
     expect(onOpenChange).not.toHaveBeenCalled()
+  })
+
+  async function radicarCon(fallo: unknown) {
+    crearMock.mockRejectedValue(fallo)
+    await act(async () => {
+      root.render(<NuevaPqrsDrawer open onOpenChange={vi.fn()} onCreated={vi.fn()} />)
+    })
+    act(() => escribir(q<HTMLInputElement>('[data-testid="pqrs-nombre"]')!, 'Camila'))
+    act(() => escribir(q<HTMLInputElement>('[data-testid="pqrs-asunto"]')!, 'Gotera'))
+    act(() => elegir(q<HTMLSelectElement>('[data-testid="pqrs-asignado"]')!, 'u1'))
+    await act(async () => {
+      q<HTMLFormElement>('[data-testid="nueva-pqrs-form"]')!.dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      )
+    })
+  }
+
+  it('🔴 02-10 · un 400 con campos: el error bajo SU campo y el foco ahí, sin aviso', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    const frase = 'El asunto no puede tener más de 200 caracteres.'
+    await radicarCon(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'asunto', regla: 'longitud_maxima', mensaje: frase }],
+      }),
+    )
+    expect(q('#pqrs-asunto-error')?.textContent).toBe(frase)
+    expect(document.activeElement).toBe(q('#pqrs-asunto'))
+    expect(toastMock.error).not.toHaveBeenCalled()
+  })
+
+  it('🔴 02-10 · un motivo largo llega entero (antes se cortaba en 160)', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    const largo =
+      'Ese inmueble ya no está consignado en tu inmobiliaria: se retiró de la administración la semana pasada. Radica la solicitud sin inmueble o con el inmueble nuevo del inquilino.'
+    expect(largo.length).toBeGreaterThan(160)
+    await radicarCon(new ApiError(409, largo))
+    expect(toastMock.error).toHaveBeenCalledWith('No se pudo radicar la solicitud', { description: largo })
+  })
+
+  it('🔴 02-10 · un 5xx dice que falló de nuestro lado, con la referencia; sin respuesta, la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    await radicarCon(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    )
+    const de5xx = toastMock.error.mock.calls[0]?.[1]?.description as string
+    expect(de5xx).toContain('de nuestro lado')
+    expect(de5xx).toContain('ab12cd34')
+
+    crearMock.mockRejectedValue(new ApiError(0, 'Failed to fetch'))
+    await act(async () => {
+      q<HTMLFormElement>('[data-testid="nueva-pqrs-form"]')!.dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      )
+    })
+    expect(toastMock.error.mock.calls[1]?.[1]?.description).toMatch(/conexi[oó]n/i)
   })
 })

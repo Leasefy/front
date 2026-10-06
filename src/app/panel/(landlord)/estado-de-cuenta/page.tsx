@@ -22,7 +22,14 @@ export default function MiEstadoDeCuentaDelPropietarioPage() {
   return (
     <PantallaDelEstadoDeCuenta
       cargar={() => estadoDeCuentaApi.mio()}
+      // SO-09 (04-10): el soporte de cada descuento de sus giros.
+      abrirSoporteDeLaDeduccion={async (id) => (await estadoDeCuentaApi.soporteDeMiDeduccion(id)).url}
       volverA={{ label: 'Volver al panel', href: '/panel' }}
+      // QA-PROP-95 PO-27: el vacío dicho al propietario, no «Este cliente…».
+      textosSinContratos={{
+        titulo: 'Todavía no tienes contratos con tu inmobiliaria en Leasefy',
+        detalle: 'Cuando registre el contrato de uno de tus inmuebles, aquí ves lo que te gira, lo que falta y por qué.',
+      }}
       acciones={(doc, nota) => (
         <BotonDescargarPDF doc={doc} hoy={doc.fecha} nota={nota} />
       )}

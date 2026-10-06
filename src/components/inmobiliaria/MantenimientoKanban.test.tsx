@@ -127,6 +127,7 @@ function montar(props: Partial<React.ComponentProps<typeof MantenimientoKanban>>
         data={props.data ?? [hacerSolicitud()]}
         onViewDetails={onViewDetails}
         onStatusChange={onStatusChange}
+        alSoltar={props.alSoltar}
       />,
     );
   });
@@ -186,6 +187,25 @@ describe('soltar la tarjeta en otra columna', () => {
       });
     });
   };
+
+  it('🔴 SO-14: si la página se encarga del destino (abre el cierre o la aprobación), el tablero NO cambia el estado a pelo', async () => {
+    const alSoltar = vi.fn((_s: unknown, destino: string) => destino === 'completed');
+    const { onStatusChange } = montar({ alSoltar: alSoltar as never });
+    await soltar('sol-1', 'completed');
+    expect(alSoltar).toHaveBeenCalledWith(expect.objectContaining({ id: 'sol-1' }), 'completed');
+    expect(onStatusChange).not.toHaveBeenCalled();
+    await soltar('sol-1', 'quoted');
+    expect(onStatusChange).toHaveBeenCalledWith('sol-1', 'quoted');
+  });
+
+  it('🔴 SO-15: las cinco columnas en una grilla (a 1440 se ven todas), sin desplazamiento lateral', () => {
+    montar();
+    const columna = document.body.querySelector('[data-testid="columna-completed"]')!;
+    const grilla = columna.parentElement!;
+    expect(grilla.className).toContain('xl:grid-cols-5');
+    expect(grilla.className).not.toContain('overflow-x-auto');
+    expect(columna.className).not.toContain('min-w-[280px]');
+  });
 
   it('pide el cambio de estado con la columna donde se soltó', async () => {
     const { onStatusChange } = montar();

@@ -96,8 +96,31 @@ export interface OnboardingResumePoint {
   ownerLastName?: string | null
   legalRepresentative?: string | null
   onboardingCompleted: boolean
+  /**
+   * ¿Esta persona REGISTRÓ la inmobiliaria? El asistente del micro sólo le
+   * contesta a ella (403 a cualquier otro miembro). `null` sin inmobiliaria o
+   * en una agencia sin fundador conocido; ausente en un back anterior.
+   */
+  esQuienLaRegistro?: boolean | null
 }
 
 export function getOnboardingResumePoint(): Promise<OnboardingResumePoint> {
   return apiClient.get<OnboardingResumePoint>('/users/me/onboarding/session')
+}
+
+/** `DELETE /users/me/onboarding/agency`. */
+export interface DesistirDelRegistroResponse {
+  desistido: boolean
+  agencyId: string | null
+}
+
+/**
+ * Deja de lado el registro de inmobiliaria a medias de esta persona, para que
+ * pueda entrar con otro perfil (Nico, 01-10-2026). El back se niega con 409 si
+ * la inmobiliaria ya tiene información o el registro ya terminó, y con 503
+ * (`servicio: 'asistente'`) si el asistente no responde: en esos casos no se
+ * borró nada.
+ */
+export function desistirDelRegistroDeInmobiliaria(): Promise<DesistirDelRegistroResponse> {
+  return apiClient.delete<DesistirDelRegistroResponse>('/users/me/onboarding/agency')
 }

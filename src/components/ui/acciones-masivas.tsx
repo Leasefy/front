@@ -53,7 +53,15 @@
  *   nada» no concuerdan con nada, así que no se pueden equivocar.
  */
 
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import { motion } from 'framer-motion'
+import { X } from '@phosphor-icons/react'
+import {
+  AnimatedNumber,
+  enterTransition,
+  motionDistance,
+  usePrefersReducedMotion,
+} from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -100,6 +108,16 @@ export interface BarraDeAccionesMasivasProps {
    * que las casillas.
    */
   variant?: 'suelta' | 'pie'
+  /**
+   * Una línea y la acción (QA de Facturación, FA-04 / FA-15, 03-10-2026): el pie
+   * de «Por facturar» medía ~170 px a 1.440 y tapaba ~40 % de la pantalla a
+   * 390. Compacta, la barra no explica la sugerencia (la pantalla lo pone en su
+   * «Ver más», dentro de `nota`), usa menos aire y en el celular «Quitar la
+   * selección» es una ✕ (con su nombre para el lector de pantalla) para que los
+   * dos botones quepan en un renglón.
+   * Sin ella, la barra de siempre.
+   */
+  compacta?: boolean
   testid: string
   className?: string
 }
@@ -116,21 +134,41 @@ export function BarraDeAccionesMasivas({
   nota,
   cuandoNoHayNada,
   variant = 'suelta',
+  compacta = false,
   testid,
   className,
 }: BarraDeAccionesMasivasProps) {
   const [singular, plural] = queSon
-  const cuantas = marcadas.toLocaleString('es-CO')
   const nombre = marcadas === 1 ? singular : plural
+  /*
+   * Movimiento (sistema de Cadence): la barra SUBE desde abajo (8 px, fundido)
+   * cuando aparece con algo marcado —la pantalla la monta al marcar la
+   * primera fila—; si ya estaba al cargar la pantalla con cero marcadas, no
+   * entra animada. El «N marcadas» cuenta de la cifra vieja a la nueva. Con
+   * movimiento reducido, sólo el fundido y la cifra salta.
+   */
+  const reducido = usePrefersReducedMotion()
+  const [entraAnimada] = useState(() => marcadas > 0)
+  const cuantas = (
+    <AnimatedNumber
+      value={marcadas}
+      format={(n) => Math.round(n).toLocaleString('es-CO')}
+      data-testid={`${testid}-cuantas`}
+    />
+  )
 
   return (
-    <div
+    <motion.div
+      initial={entraAnimada ? { opacity: 0, y: motionDistance.sm } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={enterTransition(reducido)}
       data-testid={testid}
       className={cn(
         // Pegada al borde de abajo mientras se recorren las filas. El `z-30`
         // la deja por encima de las columnas ancladas de la tabla, que van en
         // z-20, y por debajo de los modales.
-        'sticky bottom-0 z-30 flex flex-col gap-3 bg-surface px-4 py-3',
+        'sticky bottom-0 z-30 flex flex-col bg-surface px-4',
+        compacta ? 'gap-2 py-2.5' : 'gap-3 py-3',
         'sm:flex-row sm:items-center sm:justify-between',
         variant === 'pie'
           ? 'border-t border-border shadow-[0_-6px_16px_-8px_rgba(0,0,0,0.25)]'
@@ -155,7 +193,7 @@ export function BarraDeAccionesMasivas({
           ) : (
             <>
               <span className="font-medium">Marcaste</span>{' '}
-              <span className="tabular-nums">{cuantas}</span> {nombre}
+              {cuantas} {nombre}
               {/* El monto no se parte: «$» en una línea y la cifra en otra se lee
                   como dos datos (Facturación, 23-09). */}
               {monto ? <span className="whitespace-nowrap tabular-nums"> · {monto}</span> : null}
@@ -164,7 +202,7 @@ export function BarraDeAccionesMasivas({
         </p>
         {/* La sugerencia dice que es sugerencia. Sin este renglón, una
             selección que nadie hizo se lee como una que uno hizo y olvidó. */}
-        {marcadas > 0 && sugerida && (
+        {marcadas > 0 && sugerida && !compacta && (
           <p className="text-caption text-fg-muted" data-testid={`${testid}-es-sugerencia`}>
             Es una sugerencia: desmarca lo que no va, o quita la selección.
           </p>
@@ -172,7 +210,12 @@ export function BarraDeAccionesMasivas({
         {nota}
       </div>
 
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
+      <div
+        className={cn(
+          'flex shrink-0 items-center gap-2',
+          compacta ? 'justify-end' : 'flex-wrap',
+        )}
+      >
         {marcadas > 0 && (
           <Button
             variant="ghost"
@@ -180,13 +223,24 @@ export function BarraDeAccionesMasivas({
             hideArrow
             disabled={ocupado}
             onClick={onQuitar}
+            aria-label={compacta ? 'Quitar la selección' : undefined}
+            title={compacta ? 'Quitar la selección' : undefined}
             data-testid={`${testid}-quitar`}
           >
-            Quitar la selección
+            {compacta ? (
+              <>
+                {/* En el celular, la ✕ sola: con el texto, los dos botones no
+                    caben en un renglón junto a la acción. */}
+                <X className="h-4 w-4 sm:hidden" weight="bold" aria-hidden="true" />
+                <span className="hidden sm:inline">Quitar la selección</span>
+              </>
+            ) : (
+              'Quitar la selección'
+            )}
           </Button>
         )}
         {children}
       </div>
-    </div>
+    </motion.div>
   )
 }

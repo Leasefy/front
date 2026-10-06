@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { Eye, EyeSlash } from '@phosphor-icons/react';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 
 interface AuthInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -66,7 +67,7 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
               // como un lugar donde escribir, no como una caja. Al enfocar se
               // vuelve blanco con el azul de la marca y un halo suave.
               'h-12 w-full rounded-lg border bg-surface-muted/70 px-4 text-base md:text-[14px] text-fg',
-              'transition-[background-color,border-color,box-shadow] duration-150 placeholder:text-fg-placeholder',
+              'transition-[background-color,border-color,box-shadow] duration-fast ease-standard placeholder:text-fg-placeholder',
               'focus:outline-none focus:bg-surface focus:border-[#1A40FF] focus:shadow-[0_0_0_4px_rgba(26,64,255,0.10)]',
               'disabled:cursor-not-allowed disabled:opacity-50',
               isPassword && 'pr-11',
@@ -91,11 +92,9 @@ export const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
           )}
         </div>
 
-        {error && (
-          <p id={errorId} className="text-[12px] text-danger">
-            {error}
-          </p>
-        )}
+        {/* El error entra suave (Cadence `FormError`) y se anuncia; el
+            espacio de arriba lo pone el `space-y` del contenedor. */}
+        <ErrorDelCampo id={errorId} mensaje={error} className="mt-0" />
       </div>
     );
   }

@@ -7,8 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { ariaDelCampo, idDelCampo, idDelError, type CampoDePublicar } from '../campos-con-error';
 
 interface NumberInputProps {
+  /** El campo del borrador: da el id del control y el de su error. */
+  campo: CampoDePublicar;
+  /** Lo que el back (o el tope del cliente) rechazó en este campo. */
+  error?: string;
   label: string;
   value: number;
   onChange: (value: number) => void;
@@ -19,7 +25,7 @@ interface NumberInputProps {
   step?: number;
 }
 
-function NumberInput({ label, value, onChange, min = 0, max = 99, icon, suffix, step = 1 }: NumberInputProps) {
+function NumberInput({ campo, error, label, value, onChange, min = 0, max = 99, icon, suffix, step = 1 }: NumberInputProps) {
   const [localValue, setLocalValue] = useState(String(value));
   const [isFocused, setIsFocused] = useState(false);
 
@@ -41,7 +47,7 @@ function NumberInput({ label, value, onChange, min = 0, max = 99, icon, suffix, 
 
   return (
     <div className="space-y-2">
-      <Label className="flex items-center gap-2 text-fg">
+      <Label htmlFor={idDelCampo(campo)} className="flex items-center gap-2 text-fg">
         {icon}
         {label}
       </Label>
@@ -59,6 +65,8 @@ function NumberInput({ label, value, onChange, min = 0, max = 99, icon, suffix, 
         </Button>
         <div className="flex-1 relative">
           <Input
+            {...ariaDelCampo(campo, error)}
+            invalid={!!error}
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
@@ -101,11 +109,12 @@ function NumberInput({ label, value, onChange, min = 0, max = 99, icon, suffix, 
           +
         </Button>
       </div>
+      <ErrorDelCampo id={idDelError(campo)} mensaje={error} />
     </div>
   );
 }
 
-function YearPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+function YearPicker({ value, onChange, error }: { value: number; onChange: (v: number) => void; error?: string }) {
   const currentYear = new Date().getFullYear();
   const [open, setOpen] = useState(false);
   const [localValue, setLocalValue] = useState(String(value));
@@ -170,12 +179,14 @@ function YearPicker({ value, onChange }: { value: number; onChange: (v: number) 
 
   return (
     <div className="space-y-2">
-      <Label className="flex items-center gap-2 text-fg">
+      <Label htmlFor={idDelCampo('yearBuilt')} className="flex items-center gap-2 text-fg">
         <Calendar className="w-4 h-4 text-fg-subtle" />
         Año de construcción
       </Label>
       <div ref={containerRef} className="relative max-w-[200px]">
         <Input
+          {...ariaDelCampo('yearBuilt', error)}
+          invalid={!!error}
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
@@ -233,12 +244,13 @@ function YearPicker({ value, onChange }: { value: number; onChange: (v: number) 
           </div>
         )}
       </div>
+      <ErrorDelCampo id={idDelError('yearBuilt')} mensaje={error} />
     </div>
   );
 }
 
 export function StepDetails() {
-  const { draft, updateDraft } = usePublish();
+  const { draft, updateDraft, erroresDelServidor } = usePublish();
 
   return (
     <div className="space-y-6">
@@ -253,6 +265,8 @@ export function StepDetails() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <NumberInput
+          campo="bedrooms"
+          error={erroresDelServidor.bedrooms}
           label="Habitaciones"
           value={draft.bedrooms}
           onChange={(value) => updateDraft({ bedrooms: value })}
@@ -262,6 +276,8 @@ export function StepDetails() {
         />
 
         <NumberInput
+          campo="bathrooms"
+          error={erroresDelServidor.bathrooms}
           label="Baños"
           value={draft.bathrooms}
           onChange={(value) => updateDraft({ bathrooms: value })}
@@ -271,6 +287,8 @@ export function StepDetails() {
         />
 
         <NumberInput
+          campo="area"
+          error={erroresDelServidor.area}
           label="Área"
           value={draft.area}
           onChange={(value) => updateDraft({ area: value })}
@@ -282,6 +300,8 @@ export function StepDetails() {
         />
 
         <NumberInput
+          campo="parkingSpaces"
+          error={erroresDelServidor.parkingSpaces}
           label="Parqueaderos"
           value={draft.parkingSpaces}
           onChange={(value) => updateDraft({ parkingSpaces: value })}
@@ -291,6 +311,8 @@ export function StepDetails() {
         />
 
         <NumberInput
+          campo="floor"
+          error={erroresDelServidor.floor}
           label="Piso"
           value={draft.floor}
           onChange={(value) => updateDraft({ floor: value })}
@@ -300,6 +322,8 @@ export function StepDetails() {
         />
 
         <NumberInput
+          campo="stratum"
+          error={erroresDelServidor.stratum}
           label="Estrato"
           value={draft.stratum}
           onChange={(value) => updateDraft({ stratum: value })}
@@ -311,6 +335,7 @@ export function StepDetails() {
 
       <div className="pt-4 border-t border-border">
         <YearPicker
+          error={erroresDelServidor.yearBuilt}
           value={draft.yearBuilt}
           onChange={(value) => updateDraft({ yearBuilt: value })}
         />

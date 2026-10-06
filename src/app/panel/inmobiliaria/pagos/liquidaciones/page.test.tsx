@@ -65,8 +65,17 @@ vi.mock('@/components/ui/select', async () => {
 });
 
 const preview = vi.fn();
+const liquidacionDelMes = vi.fn<(m: string) => Promise<unknown>>(() =>
+  Promise.reject(new ApiError(404, 'Cannot GET /inmobiliaria/dispersiones/liquidacion-del-mes')),
+);
 vi.mock('@/lib/api/inmobiliaria.service', () => ({
-  dispersionesApi: { preview: (m: string) => preview(m) },
+  // PG-02 (03-10-2026): la pantalla pide primero la liquidación del mes
+  // completo; un back sin esa ruta contesta 404 y se usa la vista previa (lo
+  // que cuidan las pruebas de este archivo). El camino nuevo tiene las suyas.
+  dispersionesApi: {
+    preview: (m: string) => preview(m),
+    liquidacionDelMes: (m: string) => liquidacionDelMes(m),
+  },
 }));
 
 import LiquidacionesPage from './page';
@@ -136,6 +145,7 @@ async function montar() {
 
 beforeEach(() => {
   preview.mockReset();
+  liquidacionDelMes.mockClear();
 });
 
 afterEach(() => {
@@ -258,23 +268,36 @@ describe('L1 — un solo estado a la vez', () => {
 });
 
 describe('L2 — el mes se elige', () => {
-  it('ofrece los últimos 12 meses empezando por el corriente, sin meses futuros', async () => {
+  it('🔴 PG-R18: ofrece hasta el mes en curso + 3 y los 12 de atrás; arranca en el corriente', async () => {
+    // Cambiado a propósito el 03-10-2026 (QA de Pagos, decisión de Nico): antes
+    // el selector se topaba en el mes corriente («sin meses futuros»).
     preview.mockResolvedValue(vistaPrevia());
     await montar();
 
     const opciones = Array.from(host.querySelectorAll('[data-opcion]')).map(
-      (b) => b.getAttribute('data-opcion'),
+      (b) => b.getAttribute('data-opcion') as string,
     );
-    expect(opciones).toHaveLength(12);
-    expect(opciones[0]).toBe(mesActual());
-    expect(opciones.every((m) => (m as string) <= mesActual())).toBe(true);
+    const hoy = new Date();
+    const masTres = new Date(hoy.getFullYear(), hoy.getMonth() + 3, 1);
+    const mesMasTres = `${masTres.getFullYear()}-${String(masTres.getMonth() + 1).padStart(2, '0')}`;
+    expect(opciones).toHaveLength(15);
+    expect(opciones[0]).toBe(mesMasTres);
+    expect(opciones).toContain(mesActual());
+    expect(opciones.filter((m) => m > mesActual())).toHaveLength(3);
+    // Lo que se pide al entrar sigue siendo el mes en curso.
+    expect(preview).toHaveBeenCalledWith(mesActual());
   });
 
   it('elegir el mes anterior vuelve a pedir la liquidación de ESE mes', async () => {
     preview.mockResolvedValue(vistaPrevia());
     await montar();
 
-    const anterior = host.querySelectorAll('[data-opcion]')[1] as HTMLButtonElement;
+    // PG-R18: arriba van los meses que vienen; el anterior se busca por su
+    // valor (antes era la segunda opción).
+    const hoy = new Date();
+    const previo = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+    const mesPrevio = `${previo.getFullYear()}-${String(previo.getMonth() + 1).padStart(2, '0')}`;
+    const anterior = host.querySelector(`[data-opcion="${mesPrevio}"]`) as HTMLButtonElement;
     const mes = anterior.getAttribute('data-opcion');
     await act(async () => {
       anterior.click();
@@ -418,6 +441,116 @@ describe('Deducciones del mes', () => {
  * total dejaría de cuadrar con lo que se va a girar, y esa cuenta es la que se
  * defiende delante del propietario.
  */
+describe('🔴 PG-02: Liquidaciones pinta el MES COMPLETO (03-10-2026)', () => {
+  const bloque = (canon: number, comision: number, aGirar: number) => ({
+    canonCop: canon,
+    comisionCop: comision,
+    ivaComisionCop: 0,
+    retencionesComisionCop: 0,
+    conceptosAFavorCop: 0,
+    conceptosACargoCop: 0,
+    netoCop: aGirar,
+    deduccionesCop: 0,
+    aGirarCop: aGirar,
+    saldoEnContraCop: 0,
+  });
+
+  /** Paula, octubre en el laboratorio: $4.150.000 generados + $13.825.000 por generar. */
+  function liquidacionDePaula() {
+    const generado = bloque(4_150_000, 415_000, 3_656_150);
+    const pendiente = bloque(13_825_000, 1_382_500, 12_180_000);
+    const mes = bloque(17_975_000, 1_797_500, 15_836_150);
+    return {
+      month: '2026-10',
+      base: 'CAUSADO',
+      propietarios: [
+        {
+          propietarioId: 'p-paula',
+          propietarioName: 'Paula Propietaria Ruiz',
+          estado: 'GENERADA_EN_PARTE',
+          mes,
+          generado,
+          pendiente,
+          dispersiones: [{ id: 'd-1', status: 'DISP_PENDING', aGirarCop: 3_656_150 }],
+          cuentaDeDestino: { banco: 'Bancolombia', cuenta: '•••• 8912' },
+        },
+      ],
+      resumen: {
+        mes,
+        generado,
+        pendiente,
+        propietarios: 1,
+        porEstado: { POR_GENERAR: 0, GENERADA_EN_PARTE: 1, GENERADA: 0, GIRADA: 0 },
+      },
+    };
+  }
+
+  it('la fila y el resumen son del mes ENTERO, y el estado dice «Generada en parte», no «Dispersión generada»', async () => {
+    liquidacionDelMes.mockResolvedValueOnce(liquidacionDePaula());
+    await montar();
+    expect(liquidacionDelMes).toHaveBeenCalled();
+    expect(preview).not.toHaveBeenCalled();
+    const fila = filas()[0]!;
+    expect(fila.textContent).toMatch(/17\.975\.000/);
+    expect(q('tesoreria-estado-fila')?.textContent).toBe('Generada en parte');
+    expect(q('tesoreria-en-parte-fila')?.textContent).toMatch(/4\.150\.000 generado/);
+    expect(q('tesoreria-en-parte-fila')?.textContent).toMatch(/13\.825\.000 por generar/);
+    expect(texto()).not.toContain('estadoGenerada');
+    // La cuenta llega enmascarada del back y se sigue viendo enmascarada.
+    expect(q('tesoreria-cuenta-fila')?.textContent).toBe('****8912');
+    expect(q('tesoreria-neto-total')?.textContent).toMatch(/15\.836\.150/);
+  });
+
+  it('un back sin la ruta (400 de `/:id`) cae a la vista previa de siempre', async () => {
+    liquidacionDelMes.mockRejectedValueOnce(new ApiError(400, 'Validation failed (uuid is expected)'));
+    preview.mockResolvedValue(vistaPrevia());
+    await montar();
+    expect(preview).toHaveBeenCalled();
+    expect(filas()).toHaveLength(2);
+  });
+
+  it('una liquidación frenada por la ruta nueva se dice tal cual, sin caer a la vista previa', async () => {
+    liquidacionDelMes.mockRejectedValueOnce(
+      new ApiError(400, 'Los porcentajes no suman 100 %.', 'PARTICIPACIONES_NO_SUMAN_100', { titulo: 'Apto 101' }),
+    );
+    await montar();
+    expect(preview).not.toHaveBeenCalled();
+    expect(texto()).toContain('no suman 100');
+  });
+});
+
+describe('PG-06 y PG-15 (QA de Pagos, 03-10-2026)', () => {
+  it('🔴 PG-06: la cuenta destino va enmascarada, como en la ficha', async () => {
+    preview.mockResolvedValue(
+      vistaPrevia({
+        propietarios: [
+          { ...(vistaPrevia().propietarios as Array<Record<string, unknown>>)[0], propietarioBankAccount: '20345678912' },
+        ],
+      }),
+    );
+    await montar();
+    expect(texto()).not.toContain('20345678912');
+    expect(q('tesoreria-cuenta-fila')?.textContent).toBe('****8912');
+    expect(filas()[0]!.textContent).toContain('Bancolombia');
+  });
+
+  it('🔴 PG-15: A favor, Descuentos y Deducciones van plegados en «Ajustes», con su nombre y sólo si no son cero', async () => {
+    const [jorge, marcela] = vistaPrevia().propietarios as Array<Record<string, unknown>>;
+    preview.mockResolvedValue(
+      vistaPrevia({ propietarios: [{ ...jorge, totalConceptosAFavor: 50_000, totalConceptosACargo: 20_000 }, marcela] }),
+    );
+    await montar();
+    const encabezados = Array.from(host.querySelectorAll('th')).map((th) => th.textContent);
+    expect(encabezados).toContain('inmobiliaria.tesoreria.colAjustes');
+    expect(encabezados).not.toContain('inmobiliaria.tesoreria.colAFavor');
+    expect(encabezados).not.toContain('inmobiliaria.tesoreria.colDeducciones');
+    const ajustes = Array.from(host.querySelectorAll('[data-testid="tesoreria-ajustes-fila"]'));
+    expect(ajustes[0]!.textContent).toContain('inmobiliaria.tesoreria.colAFavor');
+    expect(ajustes[0]!.textContent).toMatch(/\+\$\s?50\.000/);
+    expect(ajustes[1]!.textContent).toContain('—');
+  });
+});
+
 describe('buscar y paginar en vez de un scroll infinito', () => {
   /** N propietarios con un neto distinto cada uno. */
   function conMuchos(cuantos: number) {
@@ -450,6 +583,11 @@ describe('buscar y paginar en vez de un scroll infinito', () => {
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });
     await asentar();
+    // Movimiento (03-10-2026): las filas que ya no coinciden SALEN (150 ms)
+    // antes de desmontarse.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 50));
+    });
   }
 
   it('con doce propietarios se ven diez, y el pie de la tabla aparece', async () => {
@@ -458,6 +596,17 @@ describe('buscar y paginar en vez de un scroll infinito', () => {
 
     expect(filas()).toHaveLength(10);
     expect(q('alcance-de-liquidaciones')?.textContent).toContain('12 de 12');
+  });
+
+  it('🔴 PG-R19: el buscador no distingue tildes ni mayúsculas («usuga» encuentra a «Úsuga»)', async () => {
+    const base = conMuchos(12);
+    (base.propietarios as Array<Record<string, unknown>>)[3]!.propietarioName = 'Ana Lucía Peña Úsuga';
+    preview.mockResolvedValue(base);
+    await montar();
+    await escribir('usuga');
+
+    expect(filas()).toHaveLength(1);
+    expect(filas()[0]!.textContent).toContain('Úsuga');
   });
 
   it('el buscador encuentra por nombre', async () => {

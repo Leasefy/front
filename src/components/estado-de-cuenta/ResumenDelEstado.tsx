@@ -22,7 +22,7 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import type { EstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
-import { comoSeLlamaElRol, fechaLegible } from './filas';
+import { comoSeLlamaElRol, documentoDelCliente, fechaLegible } from './filas';
 import {
   amortizacionDe,
   resumirElCliente,
@@ -31,6 +31,8 @@ import {
 } from './resumen';
 import { claveDelLado, useTextoDelEstado } from './textos';
 import { interesesDelEstado } from './intereses';
+import { rotuloDePorGirar, rotuloDeProximosGiros } from '@/lib/propietarios/por-girar';
+import { sumarMeses } from '@/lib/recaudo/meses';
 
 export function ResumenDelEstado({
   doc,
@@ -48,6 +50,14 @@ export function ResumenDelEstado({
   const t: typeof texto = (clave, params) => texto(claveDelLado(clave, rol), params);
   const r = React.useMemo(() => resumirElCliente(doc, hoy), [doc, hoy]);
   const intereses = interesesDelEstado(doc);
+  /*
+   * 🔴 «Por girar» → UNA sola cifra: hasta el mes en curso, neta de sus
+   * deducciones, y los próximos giros aparte (Nico, 04-10-2026). La manda el
+   * back con la misma regla del chat y de las pantallas de la inmobiliaria.
+   * Con un filtro puesto, el documento habla de lo filtrado: ahí sigue la
+   * cuenta de las filas, como antes.
+   */
+  const porGirar = esPropietario && !doc.filtro ? doc.porGirar : undefined;
 
   return (
     <section
@@ -59,7 +69,7 @@ export function ResumenDelEstado({
         <h2 className="text-h2 text-fg">{doc.cliente.nombre}</h2>
         <p className="font-mono text-caption tabular-nums text-fg-muted">
           {[
-            doc.cliente.documento ? `NIT/CC ${doc.cliente.documento}` : null,
+            documentoDelCliente(doc.cliente),
             comoSeLlamaElRol(doc.cliente.tipo),
             doc.contratos.length === 1
               ? '1 contrato'
@@ -77,14 +87,32 @@ export function ResumenDelEstado({
       <div className="grid gap-5 rounded-lg bg-surface-muted p-5 sm:grid-cols-[1.4fr_1fr_1fr] sm:gap-0 sm:divide-x sm:divide-border sm:p-6">
         <div className="min-w-0 sm:pr-6">
           <p className="text-label uppercase tracking-wide text-fg-subtle">
-            {t('estadoDeCuenta.restaPorPagar')}
+            {porGirar ? rotuloDePorGirar(porGirar.hastaMes) : t('estadoDeCuenta.restaPorPagar')}
           </p>
           <p
             data-testid="resta-por-pagar"
             className="mt-1.5 whitespace-nowrap font-mono text-[28px] font-medium leading-none tabular-nums text-fg sm:text-[32px] lg:text-[36px]"
           >
-            {formatCurrency(r.restaPorPagar)}
+            {formatCurrency(porGirar ? porGirar.porGirarCop : r.restaPorPagar)}
           </p>
+          {porGirar && (
+            <p className="mt-2 text-caption text-fg-muted" data-testid="proximos-giros-del-propietario">
+              {rotuloDeProximosGiros(sumarMeses(porGirar.hastaMes, 1), porGirar.proximosGirosHastaMes)}
+              :{' '}
+              <span className="font-mono tabular-nums">
+                {formatCurrency(porGirar.proximosGirosCop)}
+              </span>
+              {porGirar.deduccionesCop > 0 && (
+                <>
+                  {' · ya descontados '}
+                  <span className="font-mono tabular-nums">
+                    {formatCurrency(porGirar.deduccionesCop)}
+                  </span>
+                  {' de deducciones'}
+                </>
+              )}
+            </p>
+          )}
           <p className="mt-2.5 text-caption text-fg-muted">
             {t('estadoDeCuenta.cancelado')}{' '}
             <span className="font-mono tabular-nums">{formatCurrency(r.cancelado)}</span>
@@ -167,13 +195,20 @@ export function ResumenDelEstado({
               {r.enMora
                 ? t('estadoDeCuenta.enMoraDias', { dias: r.diasDeMora })
                 : r.enPlazo
-                  ? t('estadoDeCuenta.vencidoEnPlazo')
+                  ? // 🔴 CR-31: sin plazo fijado es «Vencida», no «en plazo».
+                    r.sinPlazoFijado
+                    ? t('estadoDeCuenta.vencidaSinPlazo')
+                    : t('estadoDeCuenta.vencidoEnPlazo')
                   : t('estadoDeCuenta.alDia')}
             </span>
           </p>
           {r.enPlazo && (
             <p className="mt-2 text-caption text-fg-muted" data-testid="estado-en-plazo">
-              {t('estadoDeCuenta.vencidoEnPlazoDetalle', { n: r.cuotasEnPlazo })}
+              {r.sinPlazoFijado
+                ? r.cuotasEnPlazo === 1
+                  ? t('estadoDeCuenta.unaVencidaSinPlazoDetalle')
+                  : t('estadoDeCuenta.vencidaSinPlazoDetalle', { n: r.cuotasEnPlazo })
+                : t('estadoDeCuenta.vencidoEnPlazoDetalle', { n: r.cuotasEnPlazo })}
             </p>
           )}
           {r.enMora && (
@@ -229,6 +264,13 @@ export function BarraDeAmortizacion({
             <span className="text-fg-subtle">
               {' '}
               · {t('estadoDeCuenta.delSistemaAnterior', { n: a.anteriores })}
+              {/* PG-08: sin comprobante no se cuentan como pagadas: se dice. */}
+              {a.anterioresSinComprobante > 0 && (
+                <span data-testid="anteriores-sin-comprobante">
+                  {', '}
+                  {t('estadoDeCuenta.sinComprobantesDe', { n: a.anterioresSinComprobante })}
+                </span>
+              )}
             </span>
           )}
         </span>

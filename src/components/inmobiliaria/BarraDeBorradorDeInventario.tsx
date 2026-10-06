@@ -13,6 +13,7 @@
  */
 
 import { CloudArrowUp, SpinnerGap, WarningCircle, WifiSlash } from '@phosphor-icons/react';
+import { Appear } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import type { AvanceDeSubida } from '@/lib/inventario/subir-borrador';
 
@@ -99,10 +100,10 @@ export function BarraDeBorradorDeInventario({
             )}
           </p>
           {errorDeSubida && !subiendo && (
-            <p className="text-body-sm text-danger mt-1 flex items-start gap-1.5">
+            <Appear as="p" distance="xs" className="text-body-sm text-danger mt-1 flex items-start gap-1.5">
               <WarningCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               {errorDeSubida}
-            </p>
+            </Appear>
           )}
         </div>
       </div>

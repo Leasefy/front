@@ -22,13 +22,16 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Clock } from '@phosphor-icons/react';
+import { Clock, Siren, UserCircleCheck } from '@phosphor-icons/react';
 
 import { Button, Input } from '@/components/ui';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { slaDePqrsApi, type SlaDePqrs } from '@/lib/api/sla-de-pqrs.service';
+import { pqrsApi } from '@/lib/api/pqrs-agencia.service';
+import type { ResponsableDePqrs } from '@/lib/api/pqrs-agencia.types';
 import { EsqueletoDeSeccion, TarjetaDeAjustes, FilaDeAjuste } from './piezas';
 
 /** Los cuatro tipos, en el orden en que los lee una persona. */
@@ -58,8 +61,61 @@ const TIPOS: Array<{ valor: string; titulo: string; descripcion: string }> = [
 const MAX_HORAS = 2160; // 90 días. Más que eso no es un compromiso de respuesta.
 
 export function SeccionSlaDePqrs() {
-  const { canAccess } = usePermissions();
+  const { canAccess, isAdmin } = usePermissions();
   const puedeEditar = canAccess('configuracion', 'edit');
+  // SO-26 (04-10-2026): a quién se le escalan las vencidas. Sólo administrador.
+  const [equipo, setEquipo] = useState<ResponsableDePqrs[]>([]);
+  const [guardandoJefe, setGuardandoJefe] = useState(false);
+  useEffect(() => {
+    pqrsApi.responsables().then(setEquipo).catch(() => setEquipo([]));
+  }, []);
+  const guardarJefe = async (userId: string) => {
+    setGuardandoJefe(true);
+    try {
+      const d = await slaDePqrsApi.guardarEscalamiento(userId || null);
+      setDatos(d);
+      toast.success(
+        d.escalarANombre
+          ? `Listo. Las PQRS vencidas se le escalan a ${d.escalarANombre}.`
+          : 'Listo. Las PQRS vencidas no se le escalan a nadie.',
+      );
+    } catch (e) {
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo guardar a quién se escalan.',
+          accion: 'guardar a quién se escalan las PQRS vencidas',
+        }),
+      );
+    } finally {
+      setGuardandoJefe(false);
+    }
+  };
+
+  // AUTONOMIA-POR-TIPO (04-10-2026): el responsable por defecto de las PQRS que
+  // llegan sin responsable (el Piloto se las asigna sola si la inmobiliaria lo
+  // escogió en Autonomía → «Qué hace solo»). Sólo administrador.
+  const [guardandoPorDefecto, setGuardandoPorDefecto] = useState(false);
+  const guardarPorDefecto = async (userId: string) => {
+    setGuardandoPorDefecto(true);
+    try {
+      const d = await slaDePqrsApi.guardarResponsablePorDefecto(userId || null);
+      setDatos(d);
+      toast.success(
+        d.responsablePorDefectoNombre
+          ? `Listo. Las PQRS sin responsable quedan a cargo de ${d.responsablePorDefectoNombre} cuando el Piloto las asigna solo.`
+          : 'Listo. Las PQRS sin responsable no tienen a quién asignarse solas: piden tu clic.',
+      );
+    } catch (e) {
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo guardar el responsable por defecto.',
+          accion: 'guardar el responsable por defecto de las PQRS',
+        }),
+      );
+    } finally {
+      setGuardandoPorDefecto(false);
+    }
+  };
 
   const [datos, setDatos] = useState<SlaDePqrs | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -105,7 +161,12 @@ export function SeccionSlaDePqrs() {
       setDatos(d);
       toast.success('Listo. Las PQRS ya radicadas conservan el plazo que se les prometió.');
     } catch (e) {
-      toast.error(mensajeDeError(e, 'No se pudo guardar el tiempo máximo'));
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo guardar el tiempo máximo.',
+          accion: 'guardar el tiempo máximo',
+        }),
+      );
     } finally {
       setGuardando(false);
     }
@@ -178,6 +239,79 @@ export function SeccionSlaDePqrs() {
         ))}
       </TarjetaDeAjustes>
 
+      <TarjetaDeAjustes>
+        <FilaDeAjuste
+          icono={Siren}
+          titulo="Cuando una PQRS se vence"
+          descripcion={
+            datos.escalarANombre
+              ? `Se le escala a ${datos.escalarANombre}: le llega un aviso con cada PQRS vencida (todos los días a la 1:00 p. m.), y también a quien la tenía a cargo.`
+              : 'Hoy no se le escala a nadie: elige quién recibe las PQRS vencidas para que el plazo legal no se pase sin que nadie se entere.'
+          }
+        >
+          <select
+            aria-label="A quién se escalan las PQRS vencidas"
+            value={datos.escalarAUserId ?? ''}
+            disabled={!isAdmin || guardandoJefe || !datos.disponible}
+            onChange={(e) => void guardarJefe(e.target.value)}
+            className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg sm:w-64"
+            data-testid="pqrs-escalar-a"
+          >
+            <option value="">A nadie</option>
+            {datos.escalarAUserId && !equipo.some((m) => m.userId === datos.escalarAUserId) && (
+              <option value={datos.escalarAUserId}>{datos.escalarANombre ?? 'Responsable actual'}</option>
+            )}
+            {equipo.map((m) => (
+              <option key={m.userId} value={m.userId}>
+                {m.nombre}
+              </option>
+            ))}
+          </select>
+        </FilaDeAjuste>
+      </TarjetaDeAjustes>
+      {datos.responsablePorDefectoDisponible !== undefined && (
+        <TarjetaDeAjustes>
+          <FilaDeAjuste
+            icono={UserCircleCheck}
+            titulo="Responsable por defecto"
+            descripcion={
+              !datos.responsablePorDefectoDisponible
+                ? 'Todavía no se puede escoger: Leasefy tiene pendiente una actualización. Mientras tanto, las PQRS sin responsable piden tu clic.'
+                : datos.responsablePorDefectoNombre
+                  ? `Si tu inmobiliaria escogió en el Piloto que «Asignar la PQRS sin responsable» vaya solo, la PQRS que llega sin responsable queda a cargo de ${datos.responsablePorDefectoNombre}.`
+                  : 'Sin responsable por defecto, la PQRS que llega sin responsable pide tu clic aunque el Piloto esté en Automático.'
+            }
+          >
+            <select
+              aria-label="Responsable por defecto de las PQRS"
+              value={datos.responsablePorDefectoUserId ?? ''}
+              disabled={!isAdmin || guardandoPorDefecto || !datos.disponible || !datos.responsablePorDefectoDisponible}
+              onChange={(e) => void guardarPorDefecto(e.target.value)}
+              className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg sm:w-64"
+              data-testid="pqrs-responsable-por-defecto"
+            >
+              <option value="">Nadie</option>
+              {datos.responsablePorDefectoUserId &&
+                !equipo.some((m) => m.userId === datos.responsablePorDefectoUserId) && (
+                  <option value={datos.responsablePorDefectoUserId}>
+                    {datos.responsablePorDefectoNombre ?? 'Responsable actual'}
+                  </option>
+                )}
+              {equipo.map((m) => (
+                <option key={m.userId} value={m.userId}>
+                  {m.nombre}
+                </option>
+              ))}
+            </select>
+          </FilaDeAjuste>
+        </TarjetaDeAjustes>
+      )}
+      {!isAdmin && (
+        <p className="text-xs text-fg-muted">
+          Sólo un administrador decide a quién se escalan las PQRS vencidas y quién es el responsable por defecto.
+        </p>
+      )}
+
       <p className="text-xs text-fg-muted">
         Cambiar esto <strong>no mueve las PQRS ya radicadas</strong>: cada una se
         juzga con el plazo que se le prometió el día que se radicó. Bajar el
@@ -198,12 +332,4 @@ export function SeccionSlaDePqrs() {
       )}
     </div>
   );
-}
-
-function mensajeDeError(e: unknown, porDefecto: string): string {
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: unknown }).message;
-    if (typeof m === 'string' && m.trim()) return m;
-  }
-  return porDefecto;
 }

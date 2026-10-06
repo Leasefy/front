@@ -105,9 +105,10 @@
  * un renglón del estado de cuenta de alguien.
  */
 
-import { useMemo, useState, type ReactNode } from 'react'
+import { useId, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import { MagnifyingGlass, Plus, Warning } from '@phosphor-icons/react'
+import { AnimatedNumber, Appear, MotionIndicator, Presence } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui'
 import { Input } from '@/components/ui/input'
@@ -132,21 +133,32 @@ import type { NuevoReciboPorCliente } from '@/lib/api/recibos-de-caja.types'
 import type { CajonDeLaCuota, FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { useI18n } from '@/lib/i18n'
-import { CLAVE_DE_MORA, RUTA_DE_REGLAS_DE_MORA } from '@/components/cartera/interes-de-mora'
+import { CLAVE_DE_MORA, RUTA_DE_REGLAS_DE_MORA, sumarIntereses } from '@/components/cartera/interes-de-mora'
 import { mesEnTitulo } from '@/lib/utils/mes'
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 import { cn } from '@/lib/utils'
 
 const numberFormatter = new Intl.NumberFormat('es-CO')
+
+/** PG-R18: cuántos meses por venir ofrece el selector (como «Por pagar»: el mes en curso + 3). */
+export const MESES_HACIA_ADELANTE = 3
 
 /** El mes corriente en 'YYYY-MM', en hora LOCAL (no UTC: ver lib/utils/mes). */
 export function mesActual(hoy: Date = new Date()): string {
   return `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`
 }
 
-/** Los últimos `cantidad` meses hasta hoy, del más reciente al más viejo. */
-export function mesesRecientes(cantidad = 12, hoy: Date = new Date()): string[] {
+/**
+ * Los últimos `cantidad` meses hasta hoy, del más reciente al más viejo.
+ *
+ * 🔴 PG-R18 (QA de Pagos, decisión de Nico 03-10-2026): con `adelante` el
+ * selector también ofrece los meses que vienen —hasta el mes en curso + 3, como
+ * «Por pagar a propietarios»—: un inquilino que adelanta paga cuotas de
+ * noviembre, y esa deuda ya existe desde la firma del contrato.
+ */
+export function mesesRecientes(cantidad = 12, hoy: Date = new Date(), adelante = 0): string[] {
   const meses: string[] = []
-  for (let i = 0; i < cantidad; i += 1) {
+  for (let i = -adelante; i < cantidad; i += 1) {
     const d = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1)
     meses.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
   }
@@ -269,14 +281,15 @@ export function filtrarCuotas(
  * frase, un número sin marca se lee como texto.
  */
 function CifraEnLaFrase({
-  valor,
+  monto,
   testId,
   tono,
   activa,
   onClick,
   queMuestra,
 }: {
-  valor: string
+  /** La cifra: cuenta desde la anterior al cambiar de mes (`AnimatedNumber`). */
+  monto: number
   testId: string
   tono?: 'success' | 'danger'
   activa: boolean
@@ -299,7 +312,7 @@ function CifraEnLaFrase({
       )}
       data-activa={activa ? 'si' : 'no'}
     >
-      <span data-testid={testId}>{valor}</span>
+      <AnimatedNumber data-testid={testId} value={monto} format={formatCurrency} />
     </button>
   )
 }
@@ -321,6 +334,7 @@ function PestanaDeCajon({
   testIdCifra,
   onClick,
   extra,
+  marca,
 }: {
   label: string
   monto: number
@@ -331,6 +345,8 @@ function PestanaDeCajon({
   testIdCifra: string
   onClick: () => void
   extra?: ReactNode
+  /** El `layoutId` de la marca de la pestaña elegida (una por tarjeta). */
+  marca: string
 }) {
   return (
     <button
@@ -361,19 +377,17 @@ function PestanaDeCajon({
         )}
         data-testid={testIdCifra}
       >
-        {formatCurrency(monto)}
+        <AnimatedNumber value={monto} format={formatCurrency} />
       </span>
       <span className="text-caption text-fg-subtle">
         {numberFormatter.format(cuotas)} {cuotas === 1 ? 'cuota' : 'cuotas'}
       </span>
       {extra}
-      <span
-        aria-hidden="true"
-        className={cn(
-          'absolute inset-x-0 bottom-0 h-0.5 bg-primary transition-opacity',
-          activa ? 'opacity-100' : 'opacity-0',
-        )}
-      />
+      {/* La marca de la elegida SE DESLIZA a la nueva (`MotionIndicator`);
+          antes se apagaba en una y se prendía en la otra. */}
+      {activa ? (
+        <MotionIndicator layoutId={marca} className="inset-x-0 bottom-0 h-0.5 bg-primary" />
+      ) : null}
     </button>
   )
 }
@@ -385,6 +399,7 @@ export interface DeudaDelMesPanelProps {
 
 export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
   const { t: traducir } = useI18n()
+  const marca = `${useId()}-cajon`
   const [mes, setMes] = useState(() => mesInicial ?? mesActual())
   const [busqueda, setBusqueda] = useState('')
   const [cajon, setCajon] = useState<CajonElegido>('TODAS')
@@ -393,7 +408,8 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
   const { datos, cargando, error, recargar } = useCarteraDelMes(mes)
   const puedeHacerRecibo = usePuedeHacerRecibo()
 
-  const opciones = useMemo(() => mesesRecientes(12), [])
+  // PG-R18: los 12 de atrás y hasta el mes en curso + 3.
+  const opciones = useMemo(() => mesesRecientes(12, new Date(), MESES_HACIA_ADELANTE), [])
   const titulo = mesEnTitulo(mes)
 
   const todas = useMemo(() => datos?.filas ?? [], [datos])
@@ -413,6 +429,13 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
     for (const f of todas) cuenta[f.cajon] = (cuenta[f.cajon] ?? 0) + 1
     return cuenta
   }, [todas])
+
+  /**
+   * 🔴 CR-31: la inmobiliaria no ha fijado sus días de plazo. Lo vencido no
+   * está «en plazo» (no hay plazo): la pestaña dice «Vencido» y el aviso de
+   * arriba dice por qué no es cartera.
+   */
+  const hayVencidasSinPlazo = useMemo(() => todas.some((f) => f.plazoSinFijar), [todas])
 
   /** Las que de verdad faltan: los tres momentos, sin las ya saldadas. */
   const cuotasQueFaltan = useMemo(
@@ -441,7 +464,9 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
    * siguen siendo capital. Todo el interés es de cuotas en cartera (también las
    * ya pagadas que lo siguen debiendo).
    */
-  const interesDelMes = t?.interesCop ?? 0
+  // 🔴 CR-31 (COLA-FRONT, 04-10): con vencidas sin plazo fijado, el interés del
+  // mes se suma de las filas (que no cuentan el de esas cuotas: no corre).
+  const interesDelMes = hayVencidasSinPlazo ? sumarIntereses(todas) : (t?.interesCop ?? 0)
 
   /**
    * Emite el recibo. El back reparte la plata por antigüedad sobre las cuotas
@@ -518,7 +543,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             De los{' '}
             <CifraEnLaFrase
               testId="mes-se-debe"
-              valor={formatCurrency(t?.totalCop ?? 0)}
+              monto={t?.totalCop ?? 0}
               activa={cajon === 'MES'}
               onClick={() => setCajon('MES')}
               queMuestra={`Ver las ${numberFormatter.format(t?.cuotas ?? 0)} cuotas del mes en la tabla`}
@@ -529,7 +554,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             {(t?.inquilinos ?? 0) === 1 ? 'inquilino' : 'inquilinos'}— ya entraron{' '}
             <CifraEnLaFrase
               testId="mes-pagado"
-              valor={formatCurrency(t?.pagadoCop ?? 0)}
+              monto={t?.pagadoCop ?? 0}
               tono="success"
               activa={cajon === 'PAGADO'}
               onClick={() => setCajon('PAGADO')}
@@ -541,7 +566,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 dos se encienden los dos. */}
             <CifraEnLaFrase
               testId="mes-falta"
-              valor={formatCurrency(t?.pendienteCop ?? 0)}
+              monto={t?.pendienteCop ?? 0}
               activa={cajon === 'TODAS'}
               onClick={() => setCajon('TODAS')}
               queMuestra="Ver en la tabla todo lo que falta por pagar"
@@ -554,7 +579,9 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 {' ('}
                 {traducir(CLAVE_DE_MORA.conIntereses, {
                   monto: formatCurrency(
-                    t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
+                    hayVencidasSinPlazo
+                      ? (t?.pendienteCop ?? 0) + interesDelMes
+                      : t?.totalConInteresCop ?? (t?.pendienteCop ?? 0) + interesDelMes,
                   ),
                 })}
                 {')'}
@@ -566,7 +593,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
           {/* 🔴 Lo que estos números NO cuentan. Un contrato vigente sin tabla de
               amortización no es un contrato sin deuda: es una deuda que todavía
               nadie generó. Callarlo deja el resumen mintiendo por omisión. */}
-          {avisos.length > 0 && (
+          <Presence show={avisos.length > 0} initial={false}>
             <div
               className="flex gap-2 border-b border-border bg-warning-soft px-4 py-3 text-sm text-fg"
               data-testid="avisos-del-mes"
@@ -591,7 +618,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 ) : null}
               </div>
             </div>
-          )}
+          </Presence>
 
           {/* 3 · Los tres cajones COMO PESTAÑAS, pegadas a la tabla: el número
                  es el filtro. En el orden en que una deuda los recorre —nace
@@ -619,6 +646,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 y el último la cartera del back (`t.cuotasEnCartera`), y nada
                 obligaba a que 0 + 8 + 93 diera lo que decía el primero. */}
             <PestanaDeCajon
+              marca={marca}
               label="Todo lo que falta"
               monto={t?.pendienteCop ?? 0}
               cuotas={cuotasQueFaltan}
@@ -628,6 +656,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
               onClick={() => setCajon('TODAS')}
             />
             <PestanaDeCajon
+              marca={marca}
               label="Por vencer"
               monto={t?.porVencerCop ?? 0}
               cuotas={cuotasPorCajon.POR_VENCER ?? 0}
@@ -638,7 +667,8 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
               onClick={() => setCajon('POR_VENCER')}
             />
             <PestanaDeCajon
-              label="Vencido, en plazo"
+              marca={marca}
+              label={hayVencidasSinPlazo ? 'Vencido' : 'Vencido, en plazo'}
               monto={t?.vencidaEnPlazoCop ?? 0}
               cuotas={cuotasPorCajon.VENCIDA_EN_PLAZO ?? 0}
               tono="warning"
@@ -648,6 +678,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
               onClick={() => setCajon('VENCIDA_EN_PLAZO')}
             />
             <PestanaDeCajon
+              marca={marca}
               label="Cartera"
               monto={t?.carteraCop ?? 0}
               cuotas={cuotasPorCajon.CARTERA ?? 0}
@@ -678,6 +709,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                 pestañas de deuda más ésta suman las cuotas del mes que dice
                 el resumen, y el número se puede conciliar a ojo. */}
             <PestanaDeCajon
+              marca={marca}
               label="Pagadas"
               monto={pagadoDeLasSaldadas}
               cuotas={cuotasPorCajon.SIN_DEUDA ?? 0}
@@ -695,7 +727,11 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             className="border-b border-border px-4 py-2 text-xs text-fg-muted"
             data-testid="que-es-este-cajon"
           >
+            {/* La frase del cajón nuevo entra con un fundido (sin salida: la
+                línea no cambia de alto ni se queda un momento vacía). */}
+            <Appear as="span" key={cajon} direction="none">
             {QUE_ES_ESTE_CAJON[cajon]}
+            </Appear>
           </p>
 
           {/* 4 · El buscador, DENTRO de la tarjeta, con el alcance a su lado.
@@ -727,8 +763,9 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
               {numberFormatter.format(visibles.length)} de{' '}
               {numberFormatter.format(todas.length)}{' '}
               {todas.length === 1 ? 'cuota' : 'cuotas'} de {titulo}.
-              {hayFiltros ? (
-                <>
+              {/* «Quitar el filtro» entra con el primer filtro y se va al
+                  quitarlo. */}
+              <Presence as="span" show={hayFiltros} initial={false} direction="none">
                   {' '}Las cifras de arriba son las del mes completo.{' '}
                   <button
                     type="button"
@@ -738,8 +775,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                   >
                     Quitar el filtro
                   </button>
-                </>
-              ) : null}
+              </Presence>
             </p>
           </div>
 
@@ -749,6 +785,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             mes={mes}
             hayFiltros={hayFiltros}
             onLimpiarFiltros={limpiar}
+            vista={cajon}
             sinMarco
           />
         </EstadoDeDatos>
@@ -760,7 +797,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
           desde que se firma, y el inquilino puede pagarla antes o hasta el día máximo
           de cartera de su contrato. Cada fila es un mes del{' '}
           <strong className="font-medium">estado de cuenta</strong> de ese cliente: haz
-          clic en su nombre para verlo completo. Leído contra el {datos.hoy}.
+          clic en su nombre para verlo completo. Leído contra el {fechaLarga(datos.hoy)}.
         </p>
       ) : null}
 

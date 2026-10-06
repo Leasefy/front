@@ -26,6 +26,7 @@ import { AirTrafficControl, ArrowUpRight, X } from '@phosphor-icons/react'
 import { Chip } from '@leasefy/cadence'
 
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { usePilotoDock } from '@/lib/hooks/piloto/piloto-dock-context'
 import { usePilotoFlotaCompartida } from '@/lib/hooks/piloto/piloto-flota-context'
 import { usePilotoProcesos } from '@/lib/hooks/piloto/use-piloto-procesos'
@@ -34,7 +35,7 @@ import { cn } from '@/lib/utils'
 import type { TipoDeProceso } from '@/lib/api/piloto'
 import { PilotoCajon, type PilotoApertura } from './PilotoCajon'
 import { ProcesoFila } from './ProcesoCard'
-import { RUTA_PROCESOS } from './PilotoModoHeader'
+import { RUTA_PROCESOS } from './rutas-del-piloto'
 
 const TIPOS: Array<TipoDeProceso | 'todos'> = ['todos', 'deposito', 'llamada', 'whatsapp']
 /** Cuántas filas caben sin que el tray se vuelva la página. */
@@ -160,9 +161,18 @@ export function PilotoDock() {
                   ))}
                 </ul>
               ) : procesos.error ? (
-                <p className="px-3 py-6 text-center text-caption text-fg-muted">
-                  {t('inmobiliaria.piloto.procesos.error', { error: procesos.error })}
-                </p>
+                // 02-10-2026 · Por el cartel de la casa, no «No se pudieron
+                // cargar los procesos: 500». Un 403 no se dice como una red
+                // caída. Sin marco y bajo: es el hueco angosto del tray.
+                <div data-testid="piloto-dock-error">
+                  <FalloDeCarga
+                    error={procesos.error}
+                    queEs="los procesos"
+                    onReintentar={procesos.refetch}
+                    enmarcado={false}
+                    className="px-3 py-6"
+                  />
+                </div>
               ) : lista.length === 0 ? (
                 <p className="px-3 py-8 text-center text-caption text-fg-muted">
                   {t(procesos.notAvailable ? 'inmobiliaria.piloto.procesos.sinFuente' : 'inmobiliaria.piloto.dock.vacio')}
@@ -207,3 +217,4 @@ export function PilotoDock() {
     </>
   )
 }
+

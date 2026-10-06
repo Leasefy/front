@@ -37,6 +37,12 @@ export interface CasillasDeCodigoProps {
   hayError?: boolean;
   /** Lo que lee un lector de pantalla sobre el grupo. */
   'aria-label': string;
+  /**
+   * El id del error (o de la ayuda) que describe el código, p. ej. el de su
+   * `<ErrorDelCampo>` (02-10-2026). Va en CADA casilla: es la que tiene el
+   * foco, y así el lector dice el error al volver a escribir.
+   */
+  'aria-describedby'?: string;
   autoFocus?: boolean;
   className?: string;
 }
@@ -132,6 +138,7 @@ export function CasillasDeCodigo({
           // autorrelleno de iOS mete el código entero en cada una.
           autoComplete={i === 0 ? 'one-time-code' : 'off'}
           aria-label={`Dígito ${i + 1} de ${cuantas}`}
+          aria-describedby={resto['aria-describedby'] || undefined}
           maxLength={1}
           value={d}
           disabled={disabled}

@@ -49,7 +49,42 @@ vi.mock('../use-puede-escribir', async () => {
 vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn(), warning: vi.fn(), info: vi.fn() },
 }));
+// CB-04 (03-10-2026): «Hasta el día» es el selector de fecha del DS
+// (`CampoDeDia`, un botón con calendario), que no se escribe. Este doble lo
+// vuelve un campo de texto con el MISMO `data-testid`, valor, `disabled`,
+// `aria-invalid` y `aria-describedby`: lo que estas pruebas miran del cierre no
+// cambió. El campo de verdad se prueba en `CampoDeDia.test.tsx`.
+vi.mock('../CampoDeDia', () => ({
+  CampoDeDia: ({
+    id,
+    value,
+    onChange,
+    disabled,
+    invalido,
+    describedBy,
+    testid,
+  }: {
+    id: string;
+    value: string;
+    onChange: (v: string) => void;
+    disabled?: boolean;
+    invalido?: boolean;
+    describedBy?: string;
+    testid?: string;
+  }) => (
+    <input
+      id={id}
+      value={value}
+      disabled={disabled}
+      aria-invalid={invalido || undefined}
+      aria-describedby={describedBy}
+      data-testid={testid}
+      onChange={(e) => onChange(e.target.value)}
+    />
+  ),
+}));
 
+import { ApiError } from '@/lib/api/client';
 import { CierreDePeriodo } from './CierreDePeriodo';
 import { MOTIVO_SIN_REAPERTURA } from '../use-puede-escribir';
 
@@ -194,5 +229,128 @@ describe('<CierreDePeriodo> · lo que ya no está tirado', () => {
     });
     filas = document.querySelectorAll('[data-testid="fila-de-reapertura"]');
     expect(filas).toHaveLength(2);
+  });
+});
+
+/*
+ * El cierre decía «Esto no se deshace», y en la misma pantalla está «Reabrir
+ * la contabilidad». Nico, 02-10: que diga cómo se deshace de verdad.
+ */
+describe('<CierreDePeriodo> · la confirmación dice cómo se deshace', () => {
+  it('🔴 «Sólo se deshace reabriendo», no «no se deshace»', async () => {
+    await pintar({ cierre: null });
+    await act(async () => {
+      q('abrir-cierre')!.click();
+    });
+    const dialogo = document.querySelector<HTMLElement>('[role="dialog"]');
+    expect(dialogo).not.toBeNull();
+    expect(dialogo!.textContent).toContain(
+      'Sólo se deshace reabriendo, y queda en la bitácora con el motivo.',
+    );
+    expect(dialogo!.textContent).not.toContain('Esto no se deshace');
+  });
+});
+
+/*
+ * Sistema de errores (02-10-2026): el error de la fecha va en su campo, y lo
+ * que no tiene campo dice la regla de oro (un 5xx «de nuestro lado» con la
+ * referencia; «conexión» sólo sin respuesta).
+ */
+describe('<CierreDePeriodo> · errores en su campo', () => {
+  function escribirEn(el: HTMLInputElement, valor: string) {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(el, valor);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  async function confirmar() {
+    await act(async () => {
+      q('abrir-cierre')!.click();
+    });
+    const hasta = (q('cierre-hasta') as HTMLInputElement).value;
+    await act(async () => {
+      escribirEn(q('cierre-escribir') as HTMLInputElement, hasta);
+    });
+    await act(async () => {
+      q('confirmar-cierre')!.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
+
+  it('🔴 la fecha ya cerrada se dice bajo el campo, con su id en aria-describedby', async () => {
+    await pintar({ cierre: { cerradaHasta: '2999-12-31' } as Cierre });
+    const campo = q('cierre-hasta')!;
+    expect(campo.getAttribute('aria-invalid')).toBe('true');
+    const error = document.getElementById(campo.getAttribute('aria-describedby')!);
+    expect(error?.textContent).toMatch(/Ya está cerrada hasta el/);
+  });
+
+  it('🔴 un 400 con `campos` en `hasta` va bajo la fecha del diálogo', async () => {
+    const mensaje = 'La fecha del cierre no es un día real del calendario (usa AAAA-MM-DD).';
+    api.asientos.cerrar.mockRejectedValue(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'hasta', regla: 'fecha', mensaje }],
+      }),
+    );
+    await pintar({ cierre: { cerradaHasta: null } as Cierre });
+    await confirmar();
+
+    const escribir = q('cierre-escribir')!;
+    expect(escribir.getAttribute('aria-invalid')).toBe('true');
+    expect(document.getElementById(escribir.getAttribute('aria-describedby')!)?.textContent).toBe(
+      mensaje,
+    );
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    api.asientos.cerrar.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: '0badc0de',
+      }),
+    );
+    await pintar({ cierre: { cerradaHasta: null } as Cierre });
+    await confirmar();
+
+    const dialogo = document.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(dialogo.textContent).toMatch(/No pudimos cerrar el período: algo falló de nuestro lado/);
+    expect(dialogo.textContent).toContain('0badc0de');
+  });
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    api.asientos.cerrar.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await pintar({ cierre: { cerradaHasta: null } as Cierre });
+    await confirmar();
+
+    const dialogo = document.querySelector<HTMLElement>('[role="dialog"]')!;
+    expect(dialogo.textContent).toMatch(/conexi[oó]n/i);
+    expect(dialogo.textContent).not.toContain('Failed to fetch');
+  });
+});
+
+describe('<CierreDePeriodo> · back 26beefbc (CB-R06)', () => {
+  it('🔴 más allá de `sePuedeCerrarHasta` no se ofrece cerrar, y lo dice', async () => {
+    await pintar({ cierre: { cerradaHasta: null, sePuedeCerrarHasta: '2000-01-31' } as Cierre });
+    expect(document.getElementById(q('cierre-hasta')!.getAttribute('aria-describedby')!)?.textContent).toMatch(
+      /Sólo se cierran meses terminados/,
+    );
+    expect((q('abrir-cierre') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('🔴 lo que está sin asentar se avisa antes de cerrar', async () => {
+    await pintar({
+      cierre: {
+        cerradaHasta: null,
+        sePuedeCerrarHasta: '2999-12-31',
+        sinAsentar: { recibos: 2, lotes: 0, cobros: 1, total: 3 },
+      } as Cierre,
+    });
+    expect(q('sin-asentar-al-cerrar')!.textContent).toContain('Hay 3 movimientos sin asiento');
+    expect(q('sin-asentar-al-cerrar')!.textContent).toContain('2 recibos, 1 cobro');
   });
 });

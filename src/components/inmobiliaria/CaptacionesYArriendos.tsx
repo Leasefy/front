@@ -65,8 +65,8 @@ export function CaptacionesYArriendos({
         <div>
           <h3 className="text-base font-semibold text-foreground">Captaciones y arriendos</h3>
           <p className="text-sm text-muted-foreground">
-            Quién trajo el mandato y quién cerró el arriendo. La comisión de los asesores se
-            liquida por fuera de Leasefy: acá no hay pesos.
+            Quién trajo el mandato y quién cerró el arriendo. Lo que gana cada asesor está en
+            Captación y arriendo › Comisiones y metas.
           </p>
         </div>
         <div className="flex items-end gap-2">

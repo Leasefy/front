@@ -25,6 +25,8 @@ import { useCallback, useState } from 'react'
 
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { useAuth } from '@/lib/auth'
 import type { CarteraStage } from './use-agreement-propose'
 
@@ -52,7 +54,14 @@ export interface OfferAgreementInput {
 export interface UseAgreementOfferResult {
   offer: (input: OfferAgreementInput) => Promise<AgreementOfferResult | null>
   isSubmitting: boolean
+  /**
+   * Lo que se le dice a la persona cuando no se guardó, ya traducido
+   * (`mensajeParaLaPersona`): un 400 dice qué está mal, un 5xx que fue
+   * nuestro (con la referencia) y «conexión» sólo si el `fetch` no salió.
+   */
   error: string | null
+  /** El error tal cual (el `ApiError` del micro o el de la red), por si la pantalla lo necesita. */
+  fallo: unknown
   /** 404 → backend no desplegado. Aviso suave, form intacto. */
   notDeployed: boolean
   reset: () => void
@@ -64,11 +73,23 @@ export function useAgreementOffer(): UseAgreementOfferResult {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fallo, setFallo] = useState<unknown>(null)
   const [notDeployed, setNotDeployed] = useState(false)
 
   const reset = useCallback(() => {
     setError(null)
+    setFallo(null)
     setNotDeployed(false)
+  }, [])
+
+  const registrarFallo = useCallback((e: unknown) => {
+    setFallo(e)
+    setError(
+      mensajeParaLaPersona(e, {
+        porDefecto: 'No pudimos guardar la propuesta.',
+        accion: 'guardar la propuesta',
+      }),
+    )
   }, [])
 
   const offer = useCallback(
@@ -85,6 +106,7 @@ export function useAgreementOffer(): UseAgreementOfferResult {
 
       setIsSubmitting(true)
       setError(null)
+      setFallo(null)
       setNotDeployed(false)
       try {
         const res = await agentFetch(
@@ -107,26 +129,23 @@ export function useAgreementOffer(): UseAgreementOfferResult {
           return null
         }
         if (!res.ok) {
-          let detail = `${res.status}`
-          try {
-            const body = (await res.json()) as { error?: string }
-            if (body?.error) detail = body.error
-          } catch {
-            /* cuerpo no-JSON */
-          }
-          setError(detail)
+          // Antes se pintaba el `error` del cuerpo (un código en inglés) o el
+          // status crudo («500»).
+          registrarFallo(await falloDelMicro(res))
           return null
         }
         return (await res.json()) as AgreementOfferResult
-      } catch {
-        setError('No se pudo guardar la propuesta. Verifica tu conexión e inténtalo de nuevo.')
+      } catch (e) {
+        // Un `fetch` que no salió llega tal cual: el traductor lo lee como
+        // conexión. Cualquier otra cosa NO es la conexión.
+        registrarFallo(e)
         return null
       } finally {
         setIsSubmitting(false)
       }
     },
-    [agencyId],
+    [agencyId, registrarFallo],
   )
 
-  return { offer, isSubmitting, error, notDeployed, reset }
+  return { offer, isSubmitting, error, fallo, notDeployed, reset }
 }

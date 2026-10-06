@@ -85,6 +85,12 @@ export interface ReciboDeCaja {
 export interface CobroConDesglose extends Cobro {
   conceptos?: ConceptoDelCobro[];
   recibosDeCaja?: ReciboDeCaja[];
+  /**
+   * 🔴 QA-INQ-95 (I-09): el back marca el cobro SIN cuota de un mes anterior a
+   * la fecha de cartera del contrato. No es deuda de aquí («Resta por pagar» no
+   * lo suma): la fila lo dice en vez de pintar su saldo. Ausente = cobro normal.
+   */
+  anteriorALaCartera?: true;
 }
 
 /**
@@ -514,4 +520,41 @@ export function sumarConceptos(conceptos: readonly ConceptoDelCobro[]): {
 /** Los conceptos en el orden en que el back los quiere ver. */
 export function enOrden(conceptos: readonly ConceptoDelCobro[]): ConceptoDelCobro[] {
   return [...conceptos].sort((a, b) => a.orden - b.orden);
+}
+
+// ── Con qué se puede registrar un recibo (PG-01, QA de Pagos 03-10-2026) ─────
+
+/**
+ * Un medio del catálogo de caja, como lo ve QUIEN HACE EL RECIBO
+ * (`GET /inmobiliaria/recibos-de-caja/medios`, `cobros:create`). La lista de
+ * Configuración pide `configuracion:view`, que el auxiliar no tiene.
+ */
+export interface MedioDelRecibo {
+  /** El código que viaja en `medio` al registrar (`EFECTIVO`, `TARJETA`…). */
+  medio: string;
+  nombre: string;
+  familia: 'TRANSFERENCIA' | 'PASARELA' | 'CAJA' | 'OTRO';
+  habilitado: boolean;
+  /** La plata llega a una cuenta de la inmobiliaria: hay que decir a cuál. */
+  llevaCuenta: boolean;
+  /** Por qué no se ofrece y dónde se prende. `null` si está habilitado. */
+  porQueNo: string | null;
+}
+
+/** Una cuenta de Configuración → Medios de pago, con su tipo. */
+export interface CuentaDelRecibo {
+  id: string;
+  nombre: string;
+  /** `TRANSFERENCIA`, `NEQUI`, `EFECTIVO`… */
+  tipo: string;
+  banco: string | null;
+  /** Ya enmascarada por el back: «•••• 8912». */
+  cuenta: string | null;
+  habilitado: boolean;
+  porQueNo: string | null;
+}
+
+export interface MediosDelRecibo {
+  medios: MedioDelRecibo[];
+  cuentas: CuentaDelRecibo[];
 }

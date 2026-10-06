@@ -33,6 +33,76 @@ import { getAccessToken, ApiError } from '@/lib/api/client';
 import { sanitizeReturnUrl } from '@/lib/utils/safe-redirect';
 import { getConsentText, type ConsentTextResponse } from '@/lib/api/legal.service';
 import { aplicarPrefill, aplicarIdentidadDelEstudio } from '@/lib/tenant/prefill-a-postulacion';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { revisarReferencias } from '@/lib/inquilino/limites-de-la-postulacion';
+
+// ============================================================================
+// Errores del servidor, en su campo (02-10-2026)
+// ============================================================================
+
+/**
+ * Los campos del asistente que pueden traer un error del back, con el paso
+ * donde viven. Los nombres son los del cuerpo que se manda (`POST
+ * /applications`, `PATCH …/steps/:n`), que son los mismos del borrador.
+ */
+const PASO_DEL_CAMPO = {
+  fullName: 1,
+  documentType: 1,
+  documentNumber: 1,
+  dateOfBirth: 1,
+  phone: 1,
+  email: 1,
+  currentAddress: 1,
+  timeAtCurrentAddress: 1,
+  maritalStatus: 1,
+  dependents: 1,
+  employmentStatus: 2,
+  companyName: 2,
+  monthlySalary: 3,
+  additionalIncome: 3,
+  additionalIncomeSource: 3,
+  monthlyObligations: 3,
+} as const;
+
+export type CampoDeLaPostulacion = keyof typeof PASO_DEL_CAMPO;
+
+const CAMPOS_DE_LA_POSTULACION = Object.keys(PASO_DEL_CAMPO) as CampoDeLaPostulacion[];
+
+export type ErroresDeLaPostulacion = Partial<Record<CampoDeLaPostulacion, string>>;
+
+/**
+ * Un fallo al enviar cuyo mensaje YA está escrito para la persona (subir un
+ * documento, adjuntar los anteriores). El `catch` lo muestra tal cual.
+ */
+class FalloAlEnviar extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'FalloAlEnviar';
+  }
+}
+
+const NOMBRE_DEL_DOCUMENTO: Record<string, string> = {
+  ID_DOCUMENT: 'tu documento de identidad',
+  BANK_STATEMENT: 'tu extracto bancario',
+};
+
+/**
+ * El motivo de un documento que no subió, con la regla de oro: antes decía
+ * `No pudimos subir el documento "ID_DOCUMENT". <mensaje crudo>`.
+ */
+function falloAlSubir(err: unknown, nombre: string): FalloAlEnviar {
+  const tipo = leerFallo(err).tipo;
+  const motivo = mensajeParaLaPersona(err, {
+    accion: `subir ${nombre}`,
+    porDefecto: `No pudimos subir ${nombre}. Prueba de nuevo en un momento.`,
+  });
+  // Un 5xx, la red o una caída ya dicen qué pasó con su propia frase.
+  if (tipo === 'nuestro' || tipo === 'sinRespuesta' || tipo === 'servicioCaido' || tipo === 'leasefyNoResponde') {
+    return new FalloAlEnviar(motivo);
+  }
+  return new FalloAlEnviar(`No pudimos subir ${nombre}: ${motivo}`);
+}
 
 // ============================================================================
 // Local storage key
@@ -114,6 +184,11 @@ interface ApplicationContextValue {
   clearApplication: () => void;
   submitApplication: () => Promise<void>;
   submissionError: string | null;
+  /**
+   * Lo que el back rechazó por campo al enviar (02-10-2026). Cada paso lo
+   * pinta bajo su campo; se borra en cuanto la persona toca ese campo.
+   */
+  erroresDelServidor: ErroresDeLaPostulacion;
   /**
    * Cuando el envío falló porque el correo YA tiene cuenta (409
    * `INICIA_SESION` de `POST /applications/guest`): a dónde ir a iniciar
@@ -209,6 +284,7 @@ export function ApplicationProvider({
   const [isHydrated, setIsHydrated] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [erroresDelServidor, setErroresDelServidor] = useState<ErroresDeLaPostulacion>({});
   const [submissionLoginHref, setSubmissionLoginHref] = useState<string | null>(null);
   const [isGuestSubmission, setIsGuestSubmission] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
@@ -433,23 +509,37 @@ export function ApplicationProvider({
   // Section update handlers
   // ========================================================================
 
+  /** Lo que el back rechazó deja de valer en cuanto la persona toca ese campo. */
+  const olvidarErroresDe = useCallback((campos: string[]) => {
+    setErroresDelServidor((prev) => {
+      const tocados = campos.filter((c): c is CampoDeLaPostulacion => c in prev);
+      if (tocados.length === 0) return prev;
+      const next = { ...prev };
+      for (const c of tocados) delete next[c];
+      return next;
+    });
+  }, []);
+
   const updatePersonal = useCallback((data: Partial<PersonalInfo>) => {
+    olvidarErroresDe(Object.keys(data));
     setApplication((prev) => ({
       ...prev,
       personal: { ...prev.personal, ...data },
       updatedAt: new Date().toISOString(),
     }));
-  }, []);
+  }, [olvidarErroresDe]);
 
   const updateEmployment = useCallback((data: Partial<EmploymentInfo>) => {
+    olvidarErroresDe(Object.keys(data));
     setApplication((prev) => ({
       ...prev,
       employment: { ...prev.employment, ...data },
       updatedAt: new Date().toISOString(),
     }));
-  }, []);
+  }, [olvidarErroresDe]);
 
   const updateIncome = useCallback((data: Partial<IncomeInfo>) => {
+    olvidarErroresDe(Object.keys(data));
     setApplication((prev) => {
       const newIncome = { ...prev.income, ...data };
       // Auto-compute totals
@@ -461,7 +551,7 @@ export function ApplicationProvider({
         updatedAt: new Date().toISOString(),
       };
     });
-  }, []);
+  }, [olvidarErroresDe]);
 
   const updateDocuments = useCallback((data: Partial<DocumentInfo>) => {
     setApplication((prev) => ({
@@ -551,9 +641,18 @@ export function ApplicationProvider({
       }
     }
 
+    // Las referencias que trae el prellenado, con los topes del back: lo que
+    // el back rechazaría se dice acá, con su misma frase.
+    const referenciasDeMas = revisarReferencias(application.references);
+    if (referenciasDeMas.length > 0) {
+      setSubmissionError(referenciasDeMas.join(' · '));
+      return;
+    }
+
     setIsLoading(true);
     setSubmissionError(null);
     setSubmissionLoginHref(null);
+    setErroresDelServidor({});
 
     const payload = {
       propertyId,
@@ -649,8 +748,7 @@ export function ApplicationProvider({
             try {
               await applicationsApi.uploadDocument(existingApplicationId, file, type);
             } catch (uploadErr) {
-              const msg = uploadErr instanceof Error ? uploadErr.message : 'Error subiendo documento';
-              throw new Error(`No pudimos subir el documento "${type}". ${msg}`);
+              throw falloAlSubir(uploadErr, NOMBRE_DEL_DOCUMENTO[type] ?? 'un documento');
             }
           }
         }
@@ -681,8 +779,7 @@ export function ApplicationProvider({
               // The outer catch maps this to setSubmissionError so the user can retry.
               // NOTE: the application row already exists from create() above, so a full
               // re-submit could 409; retry should re-run uploads only, not create.
-              const msg = uploadErr instanceof Error ? uploadErr.message : 'Error subiendo documento';
-              throw new Error(`No pudimos subir el documento "${type}". ${msg}`);
+              throw falloAlSubir(uploadErr, NOMBRE_DEL_DOCUMENTO[type] ?? 'un documento');
             }
           }
         }
@@ -702,8 +799,7 @@ export function ApplicationProvider({
           try {
             await applicationsApi.reuseDocuments(created.id);
           } catch (reuseErr) {
-            const msg = reuseErr instanceof Error ? reuseErr.message : 'Error adjuntando documentos';
-            throw new Error(`No pudimos adjuntar tus documentos anteriores. ${msg}`);
+            throw falloAlSubir(reuseErr, 'tus documentos anteriores');
           }
         }
       } else {
@@ -761,9 +857,32 @@ export function ApplicationProvider({
         // this wizard is launched from) already renders the SALE
         // chat/visit CTA once reloaded.
         setSubmissionError(err.message);
+      } else if (err instanceof FalloAlEnviar) {
+        setSubmissionError(err.message);
       } else {
-        const message = err instanceof Error ? err.message : 'Error al enviar la aplicación';
-        setSubmissionError(message);
+        // 🔴 02-10-2026 · Sistema de errores. Antes: `err.message` crudo (un
+        // 5xx en inglés, un volcado, «Revisa tu conexión» sin serlo). Ahora:
+        //  · lo que el back rechazó por campo va a SU campo, y el asistente
+        //    vuelve al paso de ese campo;
+        //  · al aviso sólo lo que no tiene campo, con la regla de oro.
+        const reparto = repartirErroresDelServidor<CampoDeLaPostulacion>(err, {
+          campos: CAMPOS_DE_LA_POSTULACION,
+          accion: 'enviar tu postulación',
+          porDefecto: 'No pudimos enviar tu postulación. Prueba de nuevo en un momento.',
+        });
+        setErroresDelServidor(reparto.porCampo);
+        const primero = reparto.orden[0];
+        if (primero) {
+          const paso = PASO_DEL_CAMPO[primero];
+          setApplication((prev) => ({ ...prev, currentStep: paso, updatedAt: new Date().toISOString() }));
+        }
+        setSubmissionError(
+          reparto.sueltos.length > 0
+            ? reparto.sueltos.join(' · ')
+            : primero
+              ? 'Revisa los datos marcados antes de enviar.'
+              : null,
+        );
       }
     } finally {
       setIsLoading(false);
@@ -900,6 +1019,7 @@ export function ApplicationProvider({
     clearApplication,
     submitApplication,
     submissionError,
+    erroresDelServidor,
     submissionLoginHref,
     isGuestSubmission,
 

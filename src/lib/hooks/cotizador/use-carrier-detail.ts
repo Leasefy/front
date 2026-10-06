@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 // =============================================================================
 // Types
@@ -21,7 +21,8 @@ export interface CarrierDetailPayload {
     latencyP95Ms: number
     errorRate24h: number       // 0–1 fraction
     approvalRate30d: number    // 0–1 fraction
-    costPerQuoteUsd30d: number
+    /** 🔴 En pesos (04-10-2026): el micro convierte con la tasa de la plataforma. */
+    costPerQuoteCop30d: number
   }
   latencySparkline: Array<{ hour: string; p95LatencyMs: number }>      // 30d hourly
   errorRateSeries: Array<{ date: string; errorRate: number }>           // 30d daily
@@ -64,9 +65,8 @@ export function useCarrierDetail(carrier: string): UseCarrierDetailResult {
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cotizador/aseguradoras/${carrier}`,
-        { headers: agentAuthHeaders() },
+      const res = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/cotizador/aseguradoras/${carrier}`
       )
       if (!res.ok) throw new Error(`${res.status}`)
       const json = (await res.json()) as CarrierDetailPayload

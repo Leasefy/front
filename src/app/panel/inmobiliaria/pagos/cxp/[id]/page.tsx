@@ -28,9 +28,11 @@ import {
 import { PageGuard } from '@/components/auth/PageGuard';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
-import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { agentFetch } from '@/lib/api/agent-fetch';
 import { cn } from '@/lib/utils';
 import { Button, Spinner } from '@/components/ui';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 
 // ---------------------------------------------------------------------------
 // AP Bill shape (mirrors ap-bills-source.ts)
@@ -91,7 +93,7 @@ const STATUS_COLORS: Record<
 function formatCOP(amountStr: string): string {
   const amount = Number(amountStr);
   if (isNaN(amount) || amount === 0) return '$0';
-  return new Intl.NumberFormat('es-CO', {
+  return plataEnPantalla('es-CO', {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,
@@ -143,14 +145,21 @@ function ApBillDetailContent({ billId }: { billId: string }) {
 
   const [bill, setBill] = useState<ApBill | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  /** Sin el agente configurado: no hay a quién preguntarle (texto fijo). */
+  const [sinAgente, setSinAgente] = useState(false);
+  /**
+   * El error ENTERO de la carga (02-10-2026): `FalloDeCarga` dice la regla de
+   * oro con él —un 5xx es nuestro, sin respuesta es la conexión, un 403 es el
+   * permiso— en vez del «Error al cargar la factura» de siempre.
+   */
+  const [error, setError] = useState<unknown>(null);
 
   useEffect(() => {
     if (!agency?.id) return;
 
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL;
     if (!agentUrl) {
-      setError(t(k('loadingError')));
+      setSinAgente(true);
       setIsLoading(false);
       return;
     }
@@ -159,9 +168,9 @@ function ApBillDetailContent({ billId }: { billId: string }) {
 
     (async () => {
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agency.id}/ap/bills`,
-          { headers: agentAuthHeaders(), signal: controller.signal },
+          { signal: controller.signal },
         );
         if (!res.ok) throw new Error(`${res.status}`);
         const json = (await res.json()) as { bills: ApBill[] };
@@ -169,7 +178,8 @@ function ApBillDetailContent({ billId }: { billId: string }) {
         setBill(found);
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
-        setError(t(k('loadingError')));
+        // `Error('500')`: el traductor lee el status del texto.
+        setError(err);
       } finally {
         setIsLoading(false);
       }
@@ -201,6 +211,14 @@ function ApBillDetailContent({ billId }: { billId: string }) {
     return (
       <div className="p-6 lg:p-8 space-y-4">
         <BackNav t={t} k={k} />
+        <FalloDeCarga error={error} queEs="la factura" />
+      </div>
+    );
+  }
+  if (sinAgente) {
+    return (
+      <div className="p-6 lg:p-8 space-y-4">
+        <BackNav t={t} k={k} />
         <div
           role="alert"
           className="flex items-start gap-3 rounded-lg border border-danger/30 bg-danger-soft p-4"
@@ -209,7 +227,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
             className="w-5 h-5 text-danger flex-shrink-0 mt-0.5"
             weight="fill"
           />
-          <p className="text-sm text-danger">{error}</p>
+          <p className="text-sm text-danger">{t(k('loadingError'))}</p>
         </div>
       </div>
     );

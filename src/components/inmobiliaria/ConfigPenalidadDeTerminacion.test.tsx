@@ -44,4 +44,23 @@ describe('<ConfigPenalidadDeTerminacion> (17-09)', () => {
     await act(async () => boton.click());
     expect(onSave).toHaveBeenCalledWith({ penalidadTerminacionCanones: null });
   });
+
+  it('🔴 dice que los cánones son también el máximo al terminar (Nico, 02-10-2026)', async () => {
+    await montar({ penalidadTerminacionCanones: 3 });
+    const aviso = container!.querySelector('[data-testid="penalidad-es-el-maximo"]');
+    expect(aviso?.textContent).toBe('Al terminar un contrato no se podrá cobrar más de 3 cánones.');
+  });
+
+  it('sin cánones no hay máximo, y con 0 no se cobra penalidad', async () => {
+    await montar({ penalidadTerminacionCanones: null });
+    expect(container!.querySelector('[data-testid="penalidad-es-el-maximo"]')?.textContent).toBe(
+      'Sin cánones no hay máximo: al terminar se puede escribir cualquier valor.',
+    );
+    act(() => root?.unmount());
+    container?.remove();
+    await montar({ penalidadTerminacionCanones: 0 });
+    expect(container!.querySelector('[data-testid="penalidad-es-el-maximo"]')?.textContent).toBe(
+      'Con 0 cánones no se cobra penalidad al terminar un contrato.',
+    );
+  });
 });

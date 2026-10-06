@@ -16,7 +16,15 @@ void React // evita que el transform de JSX tree-shakee el import
 
 vi.mock('@/lib/api/contracts.service', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/api/contracts.service')>()
-  return { ...actual, contractsApi: { ...actual.contractsApi, invitarInquilino: vi.fn() } }
+  // CR-08: sin el estado del back (un back anterior), el comportamiento de siempre.
+  return {
+    ...actual,
+    contractsApi: {
+      ...actual.contractsApi,
+      invitarInquilino: vi.fn(),
+      invitacionDelInquilino: vi.fn(() => Promise.reject(new Error('back anterior'))),
+    },
+  }
 })
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))

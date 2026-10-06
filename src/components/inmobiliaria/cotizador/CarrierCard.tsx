@@ -3,10 +3,10 @@
 // Single carrier state card with entrance animation.
 
 import { Warning, CheckCircle, XCircle, Question } from '@phosphor-icons/react'
-import { motion } from 'framer-motion'
 import { Spinner } from '@/components/ui/spinner'
 import { useI18n } from '@/lib/i18n'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
+import { AnimatedNumber, CrossFade, StaggerItem } from '@leasefy/cadence'
 
 // ---------------------------------------------------------------------------
 // Color helpers
@@ -99,22 +99,22 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
 
   const statusLabel = t(`inmobiliaria.ai.cotizador.detail.carrier.${carrier.status}Label`)
 
-  const primaFormatted = carrier.primaMensualCop
-    ? new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
-      }).format(carrier.primaMensualCop)
-    : null
+  const formatoCop = (n: number) =>
+    new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+    }).format(n)
+  const primaFormatted = carrier.primaMensualCop ? formatoCop(carrier.primaMensualCop) : null
 
+  // Movimiento: la tarjeta es un `StaggerItem` de `CarrierStreamGrid` (entra
+  // escalonada con los tokens del sistema; antes, duración y curva inventadas).
+  // Al responder la aseguradora, el esqueleto se cruza con el resultado y la
+  // prima cuenta desde 0.
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, ease: 'easeOut' }}
+    <StaggerItem
       className={[
-        'rounded-lg border p-4 space-y-3 transition-colors duration-300',
+        'rounded-lg border p-4 space-y-3 transition-colors duration-slow',
         colors.bg,
         colors.border,
       ].join(' ')}
@@ -124,16 +124,14 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <StatusIcon status={carrier.status} />
+          {/* QA-IA-A (04-10-2026): con la píldora de milisegundos a la derecha,
+              en una tarjeta angosta el nombre de la aseguradora se truncaba a
+              nada. El tiempo de respuesta vive en la tabla comparativa. */}
           <span className="font-heading font-semibold text-foreground truncate">
-            {carrier.carrier}
+            {carrier.carrier ? carrier.carrier.charAt(0).toUpperCase() + carrier.carrier.slice(1) : carrier.carrier}
           </span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          {carrier.latencyMs !== null && (
-            <span className="text-caption font-mono text-muted-foreground rounded-full bg-muted px-2 py-0.5">
-              {carrier.latencyMs}{t('inmobiliaria.ai.cotizador.detail.carrier.latencyMs')}
-            </span>
-          )}
           <span
             className={[
               'rounded-full uppercase tracking-wide text-[10px] font-medium px-2 py-0.5',
@@ -145,6 +143,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
         </div>
       </div>
 
+      <CrossFade swapKey={carrier.status} className="space-y-3">
       {/* Pending skeleton */}
       {carrier.status === 'pending' && (
         <div className="space-y-2 animate-pulse">
@@ -156,8 +155,10 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
       {/* Approved / Conditional */}
       {(carrier.status === 'approved' || carrier.status === 'conditional') && primaFormatted && (
         <div className="space-y-2">
-          <div className={['font-mono stat-number text-2xl font-bold', colors.text].join(' ')}>
-            {primaFormatted}
+          {/* Sin `stat-number`: esa clase pone text-7xl en escritorio y la prima
+              se salía de la tarjeta («$ 54» cortado). */}
+          <div className={['font-mono tabular-nums text-2xl font-bold break-words', colors.text].join(' ')}>
+            <AnimatedNumber value={carrier.primaMensualCop ?? 0} from={0} format={formatoCop} />
             <span className="text-xs font-normal text-muted-foreground ml-1">/mes</span>
           </div>
           {carrier.condiciones.length > 0 && (
@@ -166,8 +167,8 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
                 {t('inmobiliaria.ai.cotizador.detail.carrier.condicionesTitle')}
               </p>
               <ul className="space-y-0.5">
-                {carrier.condiciones.map((c, i) => (
-                  <li key={i} className="text-body-sm text-muted-foreground flex items-start gap-1.5">
+                {carrier.condiciones.map((c) => (
+                  <li key={c} className="text-body-sm text-muted-foreground flex items-start gap-1.5">
                     <span className="opacity-40 mt-0.5">•</span>
                     {c}
                   </li>
@@ -210,6 +211,7 @@ export function CarrierCard({ carrier }: CarrierCardProps) {
           {t('inmobiliaria.ai.cotizador.detail.carrier.stubModeBadge')}
         </div>
       )}
-    </motion.div>
+      </CrossFade>
+    </StaggerItem>
   )
 }

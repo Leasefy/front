@@ -225,6 +225,20 @@ describe('<CompartirEstadoDeCuenta>', () => {
     expect(($('[data-testid="compartir-pdf"]') as HTMLButtonElement).disabled).toBe(false);
   });
 
+  it('🔴 EC-05: a quien no tiene cuenta del portal el WhatsApp sale apagado Y dice por qué', async () => {
+    await montar({ tipo: 'inquilino', id: 'doc:901959595', personaId: null });
+    const item = $('[data-testid="compartir-whatsapp"]') as HTMLButtonElement;
+    expect(item.disabled).toBe(true);
+    expect(item.textContent).toContain('No tiene cuenta del portal');
+    // El correo y el enlace no dependen de la cuenta.
+    expect(($('[data-testid="compartir-correo"]') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('EC-05: con cuenta, el WhatsApp no lleva esa aclaración', async () => {
+    await montar({ tipo: 'inquilino', id: 'tenant-1', personaId: 'user-9' });
+    expect($('[data-testid="compartir-whatsapp"]')!.textContent).not.toContain('No tiene cuenta');
+  });
+
   it('E1: el del inquilino pide `cobros:view`', async () => {
     const canAccess = vi.fn(() => true);
     permisos.valor = { canAccess };

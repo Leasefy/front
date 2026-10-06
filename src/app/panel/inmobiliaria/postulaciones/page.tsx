@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import {
   ClipboardText,
   Hourglass,
@@ -18,19 +18,33 @@ import { EmptyState } from '@/components/data-display/EmptyState'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { Input } from '@/components/ui'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBodyAnimado, TableCell, TableHead, TableHeader, TableRow, TableRowAnimada } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
-import { IconButton, SegmentedControl } from '@leasefy/cadence'
+import {
+  AnimatedNumber,
+  CrossFade,
+  IconButton,
+  MotionIndicator,
+  Presence,
+  SegmentedControl,
+} from '@leasefy/cadence'
+
+/** El número tal cual se escribía antes (`{value}`): sin separador de miles. */
+const enteroTalCual = (n: number) => String(Math.round(n))
 import { RecorridoMapa } from '@/components/inmobiliaria/recorrido/RecorridoMapa'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { CandidateDrawer } from '@/components/inmobiliaria/CandidateDrawer'
+// MANOS-2 (04-10-2026): la lista corta que armó matching en el Piloto.
+import { listasCortasApi, puestosPorPostulacion, type PuestoEnLaListaCorta } from '@/lib/api/listas-cortas.service'
 import {
   AccionDePostulacion,
   type ActionType,
 } from '@/components/inmobiliaria/AccionDePostulacion'
 import { landlordApplicationsApi } from '@/lib/api/applications.service'
 import type { AllCandidatesItem, LandlordApplicationStatus } from '@/lib/api/applications.types'
+import { ChipDeLaMarcaDelEstudio } from '@/components/inmobiliaria/MarcaDelEstudio'
+import { avisoAlAprobar } from '@/lib/postulaciones/marca-del-estudio'
 
 // ─── Status display (mirrors propiedades/candidatos pages) ────────────────────
 
@@ -63,7 +77,7 @@ const SCORE_COLORS: Record<string, string> = {
 
 // ─── Clickable stat tiles (same visual language as propiedades StatTile) ──────
 
-type FilterKey = 'ALL' | 'IN_REVIEW' | 'NEEDS_INFO' | 'APPROVED' | 'REJECTED'
+type FilterKey = 'ALL' | 'IN_REVIEW' | 'NEEDS_INFO' | 'APPROVED' | 'REJECTED' | 'NOT_AWARDED'
 
 const TILE_TONES = {
   neutral: 'bg-surface-muted text-fg-muted',
@@ -84,7 +98,11 @@ const FILTERS: {
   { key: 'IN_REVIEW',   label: 'En revisión',   tone: 'info',    icon: Hourglass,     statuses: ['SUBMITTED', 'UNDER_REVIEW', 'PREAPPROVED'] },
   { key: 'NEEDS_INFO',  label: 'Pide info',     tone: 'warn',    icon: WarningCircle, statuses: ['NEEDS_INFO'] },
   { key: 'APPROVED',    label: 'Aprobadas',     tone: 'ok',      icon: CheckCircle,   statuses: ['APPROVED'] },
-  { key: 'REJECTED',    label: 'Rechazadas',    tone: 'bad',     icon: XCircle,       statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED', 'NO_ADJUDICADO'] },
+  { key: 'REJECTED',    label: 'Rechazadas',    tone: 'bad',     icon: XCircle,       statuses: ['REJECTED', 'WITHDRAWN', 'CONTRACT_FAILED'] },
+  // QA-IA-A (04-10-2026): el no adjudicado NO es un rechazo —el inmueble quedó
+  // para otro— y es a quien hay que ofrecerle otras opciones (F-06). Contarlo
+  // entre las rechazadas lo escondía; el back ya lo devuelve en la lista.
+  { key: 'NOT_AWARDED', label: 'No adjudicadas', tone: 'neutral', icon: Hourglass,     statuses: ['NO_ADJUDICADO'] },
 ];
 
 function StatTile({
@@ -94,6 +112,7 @@ function StatTile({
   icon: Icon,
   active,
   onClick,
+  indicador,
 }: {
   value: number;
   label: string;
@@ -101,6 +120,8 @@ function StatTile({
   icon: typeof ClipboardText;
   active: boolean;
   onClick: () => void;
+  /** `layoutId` compartido por las seis: el marco del filtro activo se DESLIZA de una a otra. */
+  indicador: string;
 }) {
   return (
     <button
@@ -108,17 +129,26 @@ function StatTile({
       onClick={onClick}
       aria-pressed={active}
       className={cn(
-        'flex items-center gap-3 p-4 rounded-lg border bg-card text-left transition-colors',
-        active
-          ? 'border-primary ring-1 ring-primary'
-          : 'border-border hover:bg-surface-muted',
+        'relative flex items-center gap-3 p-4 rounded-lg border border-border bg-card text-left transition-colors',
+        !active && 'hover:bg-surface-muted',
       )}
     >
+      {/* El marco cobalto del filtro activo (el mismo `border-primary ring-1`
+          de antes), ahora como `MotionIndicator`: viaja a la tarjeta elegida. */}
+      {active && (
+        <MotionIndicator
+          layoutId={indicador}
+          className="-inset-px rounded-lg border border-primary ring-1 ring-primary"
+        />
+      )}
       <div className={cn('w-10 h-10 rounded-lg flex items-center justify-center shrink-0', TILE_TONES[tone])}>
         <Icon className="w-5 h-5" weight="duotone" />
       </div>
       <div className="min-w-0">
-        <p className="text-2xl font-semibold text-fg tabular-nums leading-none">{value}</p>
+        {/* Cuenta cuando cambia (se aprueba, rechaza o llega una nueva). */}
+        <p className="text-2xl font-semibold text-fg tabular-nums leading-none">
+          <AnimatedNumber value={value} format={enteroTalCual} />
+        </p>
         <p className="text-xs text-fg-muted mt-1 truncate">{label}</p>
       </div>
     </button>
@@ -131,7 +161,8 @@ function formatDate(iso: string): string {
   if (!iso) return '—'
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+  // La fecha de la casa: «4 de octubre de 2026» (no «04 de oct de 2026»).
+  return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Bogota' })
 }
 
 function initials(name: string): string {
@@ -140,6 +171,7 @@ function initials(name: string): string {
 }
 
 function PostulacionesContenido() {
+  const indicadorDelFiltro = `${useId()}-filtro`
   const [items, setItems] = useState<AllCandidatesItem[]>([])
   const [filter, setFilter] = useState<FilterKey>('ALL')
   const [search, setSearch] = useState('')
@@ -169,8 +201,16 @@ function PostulacionesContenido() {
   const { canAccess } = usePermissions()
   const puedeDecidir = canAccess('portafolio', 'edit')
 
+  /** MANOS-2 (04-10-2026): la lista corta que armó matching, por postulación. */
+  const [listaCorta, setListaCorta] = useState<Map<string, PuestoEnLaListaCorta>>(() => new Map())
+
   const load = useCallback(async () => {
     setError(null)
+    // La lista corta es un dato de más: si no responde, la tabla sale igual.
+    void listasCortasApi
+      .deLaInmobiliaria()
+      .then((l) => setListaCorta(puestosPorPostulacion(l)))
+      .catch(() => undefined)
     try {
       const res = await landlordApplicationsApi.getAllCandidates()
       setItems(res.candidates)
@@ -262,6 +302,14 @@ function PostulacionesContenido() {
     shouldPaginate,
   } = useTablePagination(visibleItems, { resetKey: `${filter}|${search.trim()}` })
 
+  /*
+   * El puntaje NO está prendido (Nico, 04-10-2026: «aún ese no lo vamos a
+   * prender»). Una columna «Puntaje» llena de rayas promete algo que no
+   * existe: sólo sale si alguna postulación de la lista trae puntaje, y la que
+   * no lo trae dice «Sin puntaje».
+   */
+  const hayPuntaje = items.some((c) => Boolean(c.riskScore))
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -274,12 +322,12 @@ function PostulacionesContenido() {
 
       {/* El refresco de fondo falló con la lista ya en pantalla: se conserva y se
           dice, en vez de borrarla o de dejarla envejecer en silencio. */}
-      {error && cargoAlgunaVez ? (
-        <div
-          role="status"
-          data-testid="refresco-fallido"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 text-sm text-fg"
-        >
+      <Presence
+        show={Boolean(error && cargoAlgunaVez)}
+        role="status"
+        data-testid="refresco-fallido"
+        className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-warning/30 bg-warning-soft px-4 py-2.5 text-sm text-fg"
+      >
           <span>No pudimos actualizar la lista. Lo que ves es de la última vez que cargó.</span>
           <button
             type="button"
@@ -288,9 +336,13 @@ function PostulacionesContenido() {
           >
             Reintentar
           </button>
-        </div>
-      ) : null}
+      </Presence>
 
+      {/* Esqueleto → fallo → vacío → lista: lo nuevo entra con un fundido. */}
+      <CrossFade
+        swapKey={isLoading ? 'cargando' : error && !cargoAlgunaVez ? 'fallo' : items.length === 0 ? 'vacio' : 'lista'}
+        className="space-y-6"
+      >
       {isLoading ? (
         /* Esqueleto con las 5 columnas reales de la tabla, no un spinner: la
            forma de lo que viene ya se conoce, así que la pantalla no tiene que
@@ -317,7 +369,7 @@ function PostulacionesContenido() {
           <EmptyState
             icon={ClipboardText}
             title="Todavía no te ha llegado ninguna postulación"
-            description="Cuando alguien con asegurabilidad vigente se postule a una de tus propiedades, aparece acá con su nivel y su estado."
+            description="Cuando alguien se postule a una de tus propiedades, aparece acá con su estado y si tiene estudio de arrendamiento."
           />
           {/* 🔴 21-09: acá estaba el mapa de ONCE tarjetas, desplegado, ocupando
               la pantalla entera de una lista vacía. Nico: «eso ahí expuesto…
@@ -348,6 +400,7 @@ function PostulacionesContenido() {
                 icon={f.icon}
                 active={filter === f.key}
                 onClick={() => setFilter(filter === f.key ? 'ALL' : f.key)}
+                indicador={indicadorDelFiltro}
               />
             ))}
           </div>
@@ -405,15 +458,21 @@ function PostulacionesContenido() {
                     <TableHead>Candidato</TableHead>
                     <TableHead>Propiedad</TableHead>
                     <TableHead>Estado</TableHead>
-                    <TableHead>Score</TableHead>
+                    {/* 🔴 El estudio es opcional (Nico, 04-10-2026): quien se
+                        postuló sin él (o con el canon por encima de su
+                        respaldo) se ve marcado acá. */}
+                    <TableHead>Estudio</TableHead>
+                    {hayPuntaje && <TableHead>Puntaje</TableHead>}
                     <TableHead>Fecha</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                {/* Filtrar, buscar, paginar o decidir: las filas entran
+                    escalonadas y las que sobran salen. */}
+                <TableBodyAnimado>
                   {pageItems.map((c) => {
                     const statusCfg = STATUS_CONFIG[c.status] ?? FALLBACK_STATUS
                     return (
-                      <TableRow
+                      <TableRowAnimada
                         key={c.id}
                         className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
                         // `?candidato=` abre el cajón de ESA persona al llegar.
@@ -440,6 +499,15 @@ function PostulacionesContenido() {
                             <div className="min-w-0">
                               <p className="font-medium text-fg truncate">{c.tenantName}</p>
                               <p className="text-xs text-fg-muted truncate">{c.tenantEmail}</p>
+                              {listaCorta.get(c.id) && (
+                                <span
+                                  className="mt-0.5 inline-flex items-center rounded-full bg-primary-soft px-2 py-0.5 text-xs font-medium text-primary"
+                                  title={listaCorta.get(c.id)!.razones.join(' ')}
+                                  data-testid={`lista-corta-${c.id}`}
+                                >
+                                  Lista corta · {listaCorta.get(c.id)!.puesto}.º
+                                </span>
+                              )}
                             </div>
                           </div>
                         </TableCell>
@@ -456,24 +524,29 @@ function PostulacionesContenido() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          {c.riskScore ? (
-                            <span
-                              className={cn(
-                                'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums',
-                                SCORE_COLORS[c.riskScore.level] ?? 'text-fg-muted bg-surface-muted',
-                              )}
-                            >
-                              {c.riskScore.totalScore} · {c.riskScore.level}
-                            </span>
-                          ) : (
-                            <span className="text-fg-muted">—</span>
-                          )}
+                          <ChipDeLaMarcaDelEstudio marca={c.marcaDelEstudio} conEstudio />
                         </TableCell>
+                        {hayPuntaje && (
+                          <TableCell>
+                            {c.riskScore ? (
+                              <span
+                                className={cn(
+                                  'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums',
+                                  SCORE_COLORS[c.riskScore.level] ?? 'text-fg-muted bg-surface-muted',
+                                )}
+                              >
+                                {c.riskScore.totalScore} · {c.riskScore.level}
+                              </span>
+                            ) : (
+                              <span className="text-fg-muted">Sin puntaje</span>
+                            )}
+                          </TableCell>
+                        )}
                         <TableCell className="text-fg-muted">{formatDate(c.submittedAt)}</TableCell>
-                      </TableRow>
+                      </TableRowAnimada>
                     )
                   })}
-                </TableBody>
+                </TableBodyAnimado>
               </Table>
             )}
 
@@ -510,6 +583,7 @@ function PostulacionesContenido() {
           </div>
         </>
       )}
+      </CrossFade>
 
       {/* El detalle, en esta misma pantalla. */}
       <CandidateDrawer
@@ -529,6 +603,7 @@ function PostulacionesContenido() {
           candidateName={accion.candidate.tenantName || accion.candidate.id.slice(0, 8)}
           onConfirm={confirmarAccion}
           onClose={() => setAccion(null)}
+          aviso={avisoAlAprobar(accion.candidate.marcaDelEstudio)}
         />
       )}
     </div>

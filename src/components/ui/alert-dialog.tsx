@@ -8,6 +8,11 @@ import {
   AlertDialogOverlay as DSAlertDialogOverlay,
   AlertDialogContent as DSAlertDialogContent,
   type AlertDialogContentProps as DSAlertDialogContentProps,
+  AlertDialogHeader as DSAlertDialogHeader,
+  type AlertDialogHeaderProps as DSAlertDialogHeaderProps,
+  AlertDialogBody as DSAlertDialogBody,
+  AlertDialogSection as DSAlertDialogSection,
+  AlertDialogFooter as DSAlertDialogFooter,
   AlertDialogTitle as DSAlertDialogTitle,
   AlertDialogDescription as DSAlertDialogDescription,
   AlertDialogAction as DSAlertDialogAction,
@@ -18,31 +23,26 @@ import { cn } from "@/lib/utils"
 
 /**
  * ADAPTER sobre el AlertDialog de @leasefy/cadence (Radix alert-dialog real:
- * role="alertdialog", foco atrapado, SIN outside-dismiss — nativo del DS).
+ * role="alertdialog", foco en Cancelar al abrir, Esc cancela, SIN cerrar con
+ * un clic afuera, SIN ✕ — de un alert se sale por Cancelar o por la acción).
  *
- * ── La misma anatomía que `Dialog` (Nico, 2026-09-07) ──────────────────────
+ * La misma anatomía que `Dialog` (DESIGN.md §17): cabecera con medallón,
+ * cuerpo con scroll, pie con fondo suave. La clase de confirmación va en el
+ * Content:
  *
- * «Este modal no es igual al resto de modales que tenemos, y así como este hay
- * varios con ese título enorme». Era esto: el `Dialog` del producto tiene
- * cabecera fija con filete, título de 16px y pie fijo con filete (ver
- * `dialog.tsx` y DESIGN.md §17), y este adaptador seguía con el layout viejo
- * —`p-6 grid`, sin bandas— y el título del DS a `text-h2` (22px), tamaño de
- * encabezado de PÁGINA. Como los 21 call sites usan Header/Footer/Title de acá,
- * arreglarlo acá los arregla a todos.
+ * ```tsx
+ * <AlertDialogContent variant="destructive">   // medallón rojo + botón rojo sobrio
+ * <AlertDialogContent variant="confirm">       // cobalto
+ * <AlertDialogContent variant="warning">       // ámbar: sigue, pero con riesgo
+ * ```
  *
- *     ┌──────────────────────────────────────┐
- *     │  Título                              │  cabecera fija, filete abajo
- *     ├──────────────────────────────────────┤
- *     │  cuerpo (si lo hay; lo único que     │
- *     │  scrollea)                           │
- *     ├──────────────────────────────────────┤
- *     │                  Cancelar  Confirmar │  pie fijo, filete arriba
- *     └──────────────────────────────────────┘
+ * `AlertDialogAction` toma el color de la variante solo (rojo en
+ * `destructive`). Para una pregunta rápida desde un manejador, sin armar nada,
+ * está `confirmar()` (`components/ui/confirmar.tsx`).
  *
- * Igual que `DialogContent`, el Content REPARTE a sus hijos: `AlertDialogHeader`
- * arriba, `AlertDialogFooter` abajo y lo demás a un cuerpo con padding y scroll
- * propios. Los call sites no cambian. Lo que NO tiene, a propósito: la ✕ — de
- * un alert se sale por Cancelar/Confirmar (DESIGN.md, «La ✕: una sola»).
+ * Igual que `DialogContent`, el Content REPARTE a sus hijos directos:
+ * `AlertDialogHeader` arriba, `AlertDialogFooter` abajo y lo demás a un cuerpo
+ * con scroll. Los call sites no cambian.
  */
 
 const AlertDialog = DSAlertDialog
@@ -51,22 +51,15 @@ const AlertDialogTrigger = DSAlertDialogTrigger
 
 const AlertDialogPortal = DSAlertDialogPortal
 
-const alertOverlayClasses =
-  "z-[300] bg-black/60 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-
 const AlertDialogOverlay = React.forwardRef<
   React.ElementRef<typeof DSAlertDialogOverlay>,
   React.ComponentPropsWithoutRef<typeof DSAlertDialogOverlay>
 >(({ className, ...props }, ref) => (
-  <DSAlertDialogOverlay
-    ref={ref}
-    className={cn(alertOverlayClasses, className)}
-    {...props}
-  />
+  <DSAlertDialogOverlay ref={ref} className={cn("z-[300]", className)} {...props} />
 ))
 AlertDialogOverlay.displayName = "AlertDialogOverlay"
 
-type BandaDeAlerta = "cabecera" | "pie"
+type BandaDeAlerta = "cabecera" | "cuerpo" | "pie"
 
 /** En qué banda va un hijo directo del Content (mismo criterio que `dialog.tsx`). */
 function bandaDe(hijo: React.ReactNode): BandaDeAlerta | null {
@@ -78,6 +71,7 @@ function bandaDe(hijo: React.ReactNode): BandaDeAlerta | null {
 function repartirHijos(children: React.ReactNode) {
   let cabecera: React.ReactNode = null
   let pie: React.ReactNode = null
+  let cuerpoPropio = false
   const cuerpo: React.ReactNode[] = []
   React.Children.forEach(children, (hijo) => {
     if (hijo === null || hijo === undefined || typeof hijo === "boolean") return
@@ -90,89 +84,72 @@ function repartirHijos(children: React.ReactNode) {
       pie = hijo
       return
     }
+    if (banda === "cuerpo") cuerpoPropio = true
     cuerpo.push(hijo)
   })
-  return { cabecera, cuerpo, pie }
+  return { cabecera, cuerpo, pie, cuerpoPropio }
 }
+
+export type AlertDialogContentProps = DSAlertDialogContentProps
 
 const AlertDialogContent = React.forwardRef<
   React.ElementRef<typeof DSAlertDialogContent>,
-  DSAlertDialogContentProps
+  AlertDialogContentProps
 >(({ className, overlayClassName, children, ...props }, ref) => {
-  const { cabecera, cuerpo, pie } = repartirHijos(children)
+  const { cabecera, cuerpo, pie, cuerpoPropio } = repartirHijos(children)
   return (
     <DSAlertDialogContent
       ref={ref}
-      overlayClassName={cn(alertOverlayClasses, overlayClassName)}
-      className={cn(
-        // Columna: cabecera / cuerpo con scroll / pie. El padding vive en cada
-        // banda, por eso `p-0`; `overflow-hidden` recorta al radio del DS.
-        "z-[300] flex flex-col w-[calc(100%-2rem)] max-w-lg max-h-[min(640px,90dvh)] overflow-hidden p-0",
-        // animación legacy del mvp (in/out); animate-none apaga el scale-in del DS
-        "animate-none duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
-        className
-      )}
+      overlayClassName={cn("z-[300]", overlayClassName)}
+      onWheel={(e) => e.stopPropagation()}
+      className={cn("z-[300]", className)}
       {...props}
     >
       {cabecera}
-      {cuerpo.length > 0 && (
-        <div
-          className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)] gap-4 overflow-y-auto overscroll-contain p-6"
-          data-lenis-prevent
+      {cuerpoPropio ? (
+        cuerpo
+      ) : cuerpo.length > 0 ? (
+        <DSAlertDialogBody
+          className={cn("grid grid-cols-[minmax(0,1fr)] content-start gap-4", !cabecera && "pt-6 sm:pt-7")}
         >
           {cuerpo}
-        </div>
-      )}
+        </DSAlertDialogBody>
+      ) : null}
       {pie}
     </DSAlertDialogContent>
   )
 })
 AlertDialogContent.displayName = "AlertDialogContent"
 
-const AlertDialogHeader = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn(
-      "shrink-0 border-b border-border bg-surface px-6 py-4",
-      "flex flex-col gap-1 text-left",
-      // El título del DS es text-h2 (22px). Acá manda 16px, por especificidad
-      // de descendiente, igual que en DialogHeader (ver dialog.tsx).
-      "[&_h2]:text-base [&_h2]:leading-6 [&_h2]:font-semibold [&_h2]:tracking-[-0.005em] [&_h2]:pr-0",
-      className
-    )}
-    {...props}
-  />
-)
+const AlertDialogHeader = (props: DSAlertDialogHeaderProps) => <DSAlertDialogHeader {...props} />
 AlertDialogHeader.displayName = "AlertDialogHeader"
 AlertDialogHeader.bandaDeAlerta = "cabecera" as const
 
-const AlertDialogFooter = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn(
-      "shrink-0 border-t border-border bg-surface px-6 py-4",
-      "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
-      className
-    )}
-    {...props}
-  />
+const AlertDialogBody = (props: React.ComponentPropsWithoutRef<typeof DSAlertDialogBody>) => (
+  <DSAlertDialogBody {...props} />
 )
+AlertDialogBody.displayName = "AlertDialogBody"
+AlertDialogBody.bandaDeAlerta = "cuerpo" as const
+
+const AlertDialogFooter = (props: React.HTMLAttributes<HTMLDivElement>) => <DSAlertDialogFooter {...props} />
 AlertDialogFooter.displayName = "AlertDialogFooter"
 AlertDialogFooter.bandaDeAlerta = "pie" as const
+
+/** Bloque con borde fino (p. ej. la lista de lo que se pierde). */
+const AlertDialogSection = DSAlertDialogSection
 
 const AlertDialogTitle = DSAlertDialogTitle
 
 const AlertDialogDescription = DSAlertDialogDescription
 
-// Estilado por el DS (buttonVariants). `tone="danger"` para destructivas.
+/**
+ * Estilado por el DS. Toma el color de la variante del Content (rojo sobrio en
+ * `destructive`); `tone="danger"` lo fuerza. `loading` pone el spinner y lo
+ * deshabilita sin apagarle el color.
+ */
 const AlertDialogAction = DSAlertDialogAction
 
-// Estilado por el DS (variant secondary). El pie ya separa los botones con
-// `gap-2`, así que no hace falta el margen del stacking viejo.
+/** Blanco con borde fino; recibe el foco al abrir (lo seguro). */
 const AlertDialogCancel = DSAlertDialogCancel
 
 export {
@@ -182,6 +159,8 @@ export {
   AlertDialogTrigger,
   AlertDialogContent,
   AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogSection,
   AlertDialogFooter,
   AlertDialogTitle,
   AlertDialogDescription,

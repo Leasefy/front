@@ -1,8 +1,7 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useMemo, useCallback, useEffect, Suspense } from 'react';
 import {
   Funnel,
   Users,
@@ -35,7 +34,14 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { KpiValor } from '@/components/estado/KpiValor';
 import { NuevoLeadDialog } from '@/components/inmobiliaria/NuevoLeadDialog';
+import {
+  TITULO_AL_NO_MOVER_EL_LEAD,
+  mensajeAlNoMoverElLead,
+} from '@/lib/pipeline/errores-del-pipeline';
 import { tasaMedida, textoDeTasa } from '@/lib/tasas';
+import { useSearchParams } from 'next/navigation';
+import { AgendarVisitaDialog } from '@/components/inmobiliaria/AgendarVisitaDialog';
+import { useEquipo } from '@/lib/agenda/use-equipo';
 
 /**
  * Pipeline Page - Kanban board for managing the rental pipeline
@@ -95,6 +101,25 @@ function PipelineContent() {
   const falloSinDatos = yaSeMostro ? null : errorCrudo;
 
   const [creandoLead, setCreandoLead] = useState(false);
+  /** PL-16: el interesado al que se le está agendando la visita. */
+  const [agendandoA, setAgendandoA] = useState<PipelineItem | null>(null);
+  /** PL-12: el equipo activo, con nombre (también el admin y quien no es asesor). */
+  const { equipo } = useEquipo();
+  const nombresDelEquipo = useMemo(
+    () => equipo.map((m) => ({ id: m.userId, userId: m.userId, name: m.nombre })),
+    [equipo],
+  );
+  /** Desde un aviso de la campana (`?lead=<id>`) se abre ese interesado. */
+  const parametros = useSearchParams();
+  const leadDelEnlace = parametros?.get('lead') ?? null;
+  useEffect(() => {
+    if (!leadDelEnlace) return;
+    const lead = items.find((i) => i.id === leadDelEnlace);
+    if (lead) {
+      setSelectedItem(lead);
+      setIsDetailOpen(true);
+    }
+  }, [leadDelEnlace, items]);
 
   // Calculate stats from all items
   const stats = useMemo(() => {
@@ -186,7 +211,8 @@ function PipelineContent() {
    * back, y si falla se restaura esa foto en el acto (no se delega en el
    * refetch, que además puede traer datos viejos de una caché). El error se
    * dice UNA vez, acá, porque el mensaje es el mismo lo hayan disparado el
-   * arrastre o el cajón; y se relanza para que quien llamó no festeje.
+   * arrastre o el cajón; y se relanza para que quien llamó no festeje. La
+   * excepción es «Perdido» con motivo: ahí lo dice el diálogo bajo el campo.
    */
   const handleStageChange = useCallback(async (
     itemId: string,
@@ -235,12 +261,15 @@ function PipelineContent() {
         setItems((prev) => prev.map((item) => (item.id === itemId ? previa : item)));
         setSelectedItem((prev) => (prev?.id === itemId ? previa : prev));
       }
-      toast.error('No se pudo mover el lead', {
-        description:
-          error instanceof Error
-            ? error.message
-            : 'La tarjeta volvió a su etapa anterior. Prueba de nuevo.',
-      });
+      // Por el traductor (02-10-2026): «conexión» sólo sin respuesta; un 5xx
+      // es nuestro, con la referencia; un 400 dice qué campo está mal.
+      // Con motivo («Perdido») quien llamó es `MotivoDialog`, abierto con lo
+      // escrito: el porqué va bajo SU campo, no en un toast (Nico, 02-10-2026).
+      if (!lostReason) {
+        toast.error(TITULO_AL_NO_MOVER_EL_LEAD, {
+          description: mensajeAlNoMoverElLead(error),
+        });
+      }
       // Relanzar: el tablero y el cajón NO deben cantar éxito.
       throw error;
     }
@@ -288,7 +317,11 @@ function PipelineContent() {
    * `KpiCard` tipa `value` como string pero lo pinta como hijo
    * (`children: value` en @leasefy/cadence): el nodo se ve igual que el texto.
    */
-  const valorDeTile = (valor: string) =>
+  //
+  // Las cifras van como NÚMERO: `KpiValor` las cuenta (`AnimatedNumber`) al
+  // llegar y cuando cambian (mover un lead, filtrar). El texto final es el
+  // mismo que con `String(…)`.
+  const valorDeTile = (valor: string | number) =>
     (
       <KpiValor cargando={cargandoPorPrimeraVez} fallo={falloSinDatos}>
         {valor}
@@ -307,26 +340,21 @@ function PipelineContent() {
         </p>
       </div>
 
-      {/* Stats Row */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-2 sm:grid-cols-4 gap-3"
-      >
+      {/* Stats Row — sin entrada propia: la página entra con su template. */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <KpiCard
           label={t('inmobiliaria.pipeline.stats.totalLeads')}
-          value={valorDeTile(String(stats.total))}
+          value={valorDeTile(stats.total)}
           icon={<Users />}
         />
         <KpiCard
           label={t('inmobiliaria.pipeline.stats.inProcess')}
-          value={valorDeTile(String(stats.inProcess))}
+          value={valorDeTile(stats.inProcess)}
           icon={<Funnel />}
         />
         <KpiCard
           label={t('inmobiliaria.pipeline.stats.closedThisMonth')}
-          value={valorDeTile(String(stats.completedThisMonth))}
+          value={valorDeTile(stats.completedThisMonth)}
           icon={<CheckCircle />}
         />
         <KpiCard
@@ -334,15 +362,10 @@ function PipelineContent() {
           value={valorDeTile(textoDeTasa(stats.conversionRate, 0))}
           icon={<ChartLineUp />}
         />
-      </motion.div>
+      </div>
 
       {/* Unified Data Card - Filters + Content */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="rounded-lg border border-border bg-card overflow-hidden"
-      >
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         {/* Header with count */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3 bg-muted/20">
           <span className="text-sm font-medium text-foreground">
@@ -363,7 +386,7 @@ function PipelineContent() {
                 data-testid="pipeline-nuevo-lead"
               >
                 <Plus className="w-4 h-4" />
-                Nuevo lead
+                Nuevo interesado
               </Button>
             </PermissionGate>
           </div>
@@ -389,13 +412,13 @@ function PipelineContent() {
           cuandoVacio={
             <SinDatos
               hayFiltros={hayFiltros}
-              queSon="leads"
+              queSon="interesados"
               icono={Funnel}
-              titulo="Todavía no hay leads en el pipeline"
+              titulo="Todavía no hay interesados en el embudo"
               descripcion="Entran solos cuando alguien pide una visita o se postula a uno de tus inmuebles. El que te llega por teléfono lo puedes cargar a mano."
               crear={
                 puedeCrear
-                  ? { label: 'Nuevo lead', onClick: () => setCreandoLead(true) }
+                  ? { label: 'Nuevo interesado', onClick: () => setCreandoLead(true) }
                   : undefined
               }
               onLimpiarFiltros={limpiarFiltros}
@@ -405,13 +428,15 @@ function PipelineContent() {
           <div className="p-4">
             <PipelineBoard
               items={filteredItems}
+              agentes={nombresDelEquipo.length ? nombresDelEquipo : agentes}
               onItemClick={handleCardClick}
               onStageChange={handleStageChange}
               puedeMover={puedeMover}
+              onPedirVisita={setAgendandoA}
             />
           </div>
         </EstadoDeDatos>
-      </motion.div>
+      </div>
 
       {/* Detail Modal */}
       <PipelineDetail
@@ -420,6 +445,25 @@ function PipelineContent() {
         item={selectedItem}
         onStageChange={handleStageChange}
         puedeEditar={puedeMover}
+        // El cajón se cierra antes: dos modales encima no dejan escoger el día.
+        onPedirVisita={(i) => {
+          setIsDetailOpen(false);
+          setAgendandoA(i);
+        }}
+        equipo={equipo}
+        onCambio={() => void refetch()}
+      />
+
+      {/* PL-16: «Visita programada» = la visita agendada en la Agenda. */}
+      <AgendarVisitaDialog
+        item={agendandoA}
+        consignaciones={consignaciones}
+        onCerrar={() => setAgendandoA(null)}
+        onAgendada={() => {
+          setAgendandoA(null);
+          setIsDetailOpen(false);
+          void refetch();
+        }}
       />
 
       {puedeCrear && (
@@ -440,7 +484,10 @@ function PipelineContent() {
 export default function PipelinePage() {
   return (
     <PageGuard module="pipeline">
-      <PipelineContent />
+      {/* `useSearchParams` (el `?lead=` de la campana) pide su Suspense. */}
+      <Suspense fallback={null}>
+        <PipelineContent />
+      </Suspense>
     </PageGuard>
   );
 }

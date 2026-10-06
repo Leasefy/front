@@ -19,7 +19,8 @@
  *   Total data cells: 7 × 24 = 168
  */
 
-import { Fragment, useState } from 'react';
+import { Fragment, useId, useState } from 'react';
+import { CrossFade, MotionIndicator } from '@leasefy/cadence';
 
 import { GridFour } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
@@ -80,6 +81,8 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
   // Tap-to-inspect: the selected cell's details render in a summary line
   // below the grid (title-only tooltips are dead on touch).
   const [selected, setSelected] = useState<{ day: number; hour: number } | null>(null);
+  // El anillo de la celda elegida se DESLIZA a la nueva (`MotionIndicator`).
+  const idDelMapa = useId();
 
   // Branch A — agency-gate
   if (!data.populated && data.reason === 'agency-gate') {
@@ -188,13 +191,18 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
                       setSelected(isSelected ? null : { day: d, hour: cell.hour })
                     }
                     className={
-                      'aspect-square rounded-[2px] ' +
-                      (isSelected
-                        ? 'ring-2 ring-primary ring-offset-1 relative z-10'
-                        : '')
+                      'aspect-square rounded-[2px] relative ' +
+                      (isSelected ? 'z-10' : '')
                     }
                     style={{ backgroundColor: cellBgColor(cell.call_count, cell.positive_outcome_pct, effectiveMax) }}
-                  />
+                  >
+                    {isSelected && (
+                      <MotionIndicator
+                        layoutId={`${idDelMapa}-celda`}
+                        className="inset-0 rounded-[2px] ring-2 ring-primary ring-offset-1"
+                      />
+                    )}
+                  </button>
                 );
               })}
             </Fragment>
@@ -206,11 +214,18 @@ export function HeatmapGrid24x7({ data }: HeatmapGrid24x7Props) {
         aria-live="polite"
         className="text-xs text-fg-muted mt-1.5 min-h-4"
       >
-        {selectedCell
-          ? describeCell(selectedCell)
-          : isEs
-            ? 'Toca una celda para ver el detalle'
-            : 'Tap a cell to see details'}
+        {/* El detalle de la celda se cruza con un fundido al elegir otra. */}
+        <CrossFade
+          as="span"
+          swapKey={selected ? `${selected.day}-${selected.hour}` : 'ninguna'}
+          direction="none"
+        >
+          {selectedCell
+            ? describeCell(selectedCell)
+            : isEs
+              ? 'Toca una celda para ver el detalle'
+              : 'Tap a cell to see details'}
+        </CrossFade>
       </p>
       {/* Leyenda visual — «Intensidad = volumen + tasa positiva» era una
           fórmula, no una guía. Quien mira el mapa necesita saber qué buscar:

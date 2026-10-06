@@ -261,7 +261,7 @@ export function SobreTopeOverlay({ referencia }: { referencia: Referencia | null
             </span>
             <span
               role="tooltip"
-              className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 w-56 -translate-x-1/2 rounded-md border border-border bg-[hsl(var(--popover))] p-2 text-[11px] font-normal leading-snug text-[hsl(var(--popover-foreground))] opacity-0 shadow-md transition-opacity duration-150 group-hover/cod:opacity-100"
+              className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 w-56 -translate-x-1/2 rounded-md border border-border bg-[hsl(var(--popover))] p-2 text-[11px] font-normal leading-snug text-[hsl(var(--popover-foreground))] opacity-0 shadow-md transition-opacity duration-fast group-hover/cod:opacity-100"
             >
               {tf(
                 `${NS}.overlay.codeudorHint`,

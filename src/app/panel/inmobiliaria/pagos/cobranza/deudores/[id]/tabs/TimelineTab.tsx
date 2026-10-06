@@ -25,9 +25,26 @@ import {
   Circle,
   type Icon,
 } from '@phosphor-icons/react'
+import { Collapse, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { Button } from '@/components/ui'
 
 void React
+
+/**
+ * La clave de cada evento: lo que ES (tipo + momento), no su posición. Con el
+ * índice, un evento nuevo que llega arriba (tiempo real) le cambiaba la clave
+ * a todos y la lista entera volvía a entrar. Dos del mismo tipo en el mismo
+ * instante se distinguen por su orden de aparición (`#2`, `#3`).
+ */
+function clavesDeLosEventos(events: { event_type: string; occurred_at: string }[]): string[] {
+  const vistas = new Map<string, number>()
+  return events.map((ev) => {
+    const base = `${ev.event_type}-${ev.occurred_at}`
+    const n = (vistas.get(base) ?? 0) + 1
+    vistas.set(base, n)
+    return n === 1 ? base : `${base}#${n}`
+  })
+}
 
 interface TimelineTabProps {
   debtorId: string
@@ -60,8 +77,11 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
     if (refetchKey > 0) void refetch()
   }, [refetchKey, refetch])
 
+  // Movimiento: cada salida en un `CrossFade` con su clave (cargando →
+  // eventos, → fallo, → vacío).
   if (isLoading && !data) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="space-y-2">
         {Array.from({ length: 5 }, (_, i) => (
           <div
@@ -70,11 +90,13 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
           />
         ))}
       </div>
+      </CrossFade>
     )
   }
 
   if (error) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="rounded-md border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
         <p className="text-sm text-danger">
           {t('inmobiliaria.ai.cobranza.detail.timeline.error')}: {error}
@@ -89,22 +111,31 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
           {t('inmobiliaria.ai.cobranza.detail.timeline.errorRetry')}
         </Button>
       </div>
+      </CrossFade>
     )
   }
 
   const events = data?.events ?? []
   if (events.length === 0) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="rounded-md border border-dashed border-border p-8 text-center">
         <p className="text-sm text-fg-muted">
           {t('inmobiliaria.ai.cobranza.detail.timeline.empty')}
         </p>
       </div>
+      </CrossFade>
     )
   }
 
+  const claves = clavesDeLosEventos(events)
+
+  // El evento que llega en vivo entra arriba bajando a su lugar; la primera
+  // vez la lista entra escalonada (techo 320 ms). Sin `layout`: una historia
+  // larga mediría cada fila en cada cambio.
   return (
-    <ol className="space-y-2">
+    <CrossFade swapKey="eventos">
+    <Stagger as="ol" direction="down" layout={false} className="space-y-2">
       {events.map((ev, idx) => {
         const isExpanded = expandedIdx === idx
         const isClickableCall =
@@ -126,8 +157,9 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
         }
 
         return (
-          <li
-            key={`${ev.event_type}-${ev.occurred_at}-${idx}`}
+          <StaggerItem
+            as="li"
+            key={claves[idx]}
             className="rounded-sm border border-border bg-surface"
           >
             <button
@@ -167,16 +199,20 @@ export function TimelineTab({ debtorId, refetchKey = 0 }: TimelineTabProps) {
                 </span>
               </span>
             </button>
-            {isExpanded && ev.event_type === 'stage_transition' && (
-              <div className="px-3 pb-3 pt-1 text-xs text-fg-muted border-t border-border font-mono">
+            {/* El detalle del cambio de etapa se abre y se cierra con su
+                altura (`Collapse`), no de golpe. */}
+            <Collapse
+              open={isExpanded && ev.event_type === 'stage_transition'}
+              className="px-3 pb-3 pt-1 text-xs text-fg-muted border-t border-border font-mono"
+            >
                 <pre className="whitespace-pre-wrap break-words">
                   {JSON.stringify(ev.payload, null, 2)}
                 </pre>
-              </div>
-            )}
-          </li>
+            </Collapse>
+          </StaggerItem>
         )
       })}
-    </ol>
+    </Stagger>
+    </CrossFade>
   )
 }

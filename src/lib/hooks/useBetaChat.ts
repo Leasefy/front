@@ -8,6 +8,13 @@ import type {
   ResultadoEnElHilo,
 } from '@/lib/chat/acciones-del-hilo';
 import { pasoDelRevelado, prefiereMenosMovimiento } from '@/lib/chat/revelado';
+import {
+  aplicarPaso,
+  cerrarPensamiento,
+  ponerActividad as ponerActividadDelPensamiento,
+  type PensamientoEnVivo,
+  type PensamientoGuardado,
+} from '@/lib/chat/pensamiento';
 import type { BloqueDeRespuesta, EntidadDelChat } from '@/lib/chat/bloques';
 import {
   conElProcesoDelStream,
@@ -23,6 +30,7 @@ import {
   mandarSenalEnUnMomento,
   type TestigoDeTurnos,
 } from '@/lib/chat/senales';
+import { borrarConversacionEnElServidor } from '@/lib/chat/borrar-en-el-servidor';
 import { formatCurrency } from '@/lib/format';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import type {
@@ -70,9 +78,12 @@ import {
   type BackendAccionPropuesta,
 } from '@/lib/api/ai-hub-acciones';
 import { enviarFeedbackDeChat } from '@/lib/api/ai-hub-feedback';
+import { leerRazonamiento } from '@/lib/agentes/agente-que-habla';
 import { ApiError } from '@/lib/api/client';
 import { mensajeDeDemasiadasSolicitudes } from '@/lib/api/demasiadas-solicitudes';
-import { clasificarFallo } from '@/lib/errores/clasificar';
+import { clasificarFallo, esSegundoFactor } from '@/lib/errores/clasificar';
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { mensajeDelFalloDeLaAccion } from '@/lib/chat/fallo-de-la-accion';
 
 /**
  * Backend snapshot (has `generatedAt`) → the front `ChatSnapshot` (numeric KPIs
@@ -88,6 +99,8 @@ function backendSnapshotToChat(s: BackendSnapshot | null): ChatSnapshot | null {
     enPrejuridico: s.enPrejuridico,
     ...(typeof s.carteraCop === 'number' ? { carteraCop: s.carteraCop } : {}),
     ...(typeof s.contratosEnCartera === 'number' ? { contratosEnCartera: s.contratosEnCartera } : {}),
+    ...(typeof s.vencidoCop === 'number' ? { vencidoCop: s.vencidoCop } : {}),
+    ...(typeof s.porVencerCop === 'number' ? { porVencerCop: s.porVencerCop } : {}),
   };
 }
 
@@ -356,10 +369,23 @@ export interface UseBetaChatReturn {
    * Vacío cuando no hay un turno corriendo.
    */
   turnSteps: TurnStep[];
+  /**
+   * El PENSAMIENTO EN VIVO del turno (02-10-2026, evento `pensamiento` del
+   * micro): cada paso, mientras pasa, con lo concreto de la pregunta y de los
+   * datos. `pasos` vacío = todavía no llegó ninguno (o el micro es viejo y no
+   * lo cuenta: entonces mandan los `turnSteps` de siempre). `fin` = cuándo
+   * cerró. `null` sin turno. Ver `src/lib/chat/pensamiento.ts`.
+   */
+  pensamiento?: PensamientoEnVivo | null;
   retryAgent: (executionId: string) => void;
 
   // Decision handling
-  selectDecisionOption: (messageId: string, optionId: string) => void;
+  /**
+   * Elige una opción de la tarjeta de decisión. Si es una aprobación del
+   * micro, la registra y devuelve `null` si quedó, o el motivo (ya dicho por
+   * el traductor) si no: la tarjeta vuelve a quedar abierta para reintentar.
+   */
+  selectDecisionOption: (messageId: string, optionId: string) => Promise<string | null>;
   pendingDecisionsCount: number;
   allDecisions: DecisionEntry[];
 
@@ -370,13 +396,16 @@ export interface UseBetaChatReturn {
   regenerateResponse: (assistantMessageId: string) => void;
   /**
    * Valora una respuesta y la MANDA (pulgar arriba/abajo). `comentario` y
-   * `cifraMal` sólo aplican al pulgar abajo. Devuelve si el backend confirmó.
+   * `cifraMal` sólo aplican al pulgar abajo. Devuelve `true` si el backend
+   * confirmó; `false` si no salió nada (se quitó, o no hay a dónde mandarla);
+   * y si el envío falló, el motivo para la persona, ya dicho por el traductor
+   * (nunca «403» ni el inglés del micro).
    */
   rateMessage: (
     messageId: string,
     rating: 'up' | 'down',
     opts?: { comentario?: string; cifraMal?: boolean }
-  ) => Promise<boolean>;
+  ) => Promise<boolean | string>;
 
   // Conversation management
   conversations: Conversation[];
@@ -459,6 +488,13 @@ export function mensajeDeFalloDelChat(error: unknown): string {
     case 'sinCreditos':
       return 'Tu plan se quedó sin créditos de IA. Pídele a quien administra la cuenta que recargue o cambie de plan.';
     case 'limitado':
+      // CHAT-95 (04-10): el cupo DIARIO de la inmobiliaria (micro
+      // `tope-de-ia.ts`, `motivo: 'inmobiliaria'`) no se arregla esperando un
+      // minuto. Antes decía «Espera un momento» y la persona reintentaba en
+      // vano hasta medianoche.
+      if (error instanceof ApiError && error.code === 'tope_de_ia' && error.detalle?.motivo === 'inmobiliaria') {
+        return 'Tu inmobiliaria llegó al límite de uso de la IA por hoy. Vuelve a intentarlo mañana o escríbenos si necesitas más.';
+      }
       // La misma frase que el 429 del back (`demasiadas-solicitudes.ts`), con
       // el plazo cuando el micro lo dijo: un mensaje por límite, no dos.
       return mensajeDeDemasiadasSolicitudes(
@@ -472,8 +508,32 @@ export function mensajeDeFalloDelChat(error: unknown): string {
       return 'Tu sesión se venció. Vuelve a entrar para seguir conversando.';
     case 'sinPermiso':
       return 'Tu rol en la inmobiliaria no incluye el asistente. Pídele a un administrador que te lo habilite.';
-    default:
-      return 'No pude conectarme con el asistente en este momento. Prueba de nuevo en un momento.';
+    case 'sinSegundoFactor':
+    case 'segundoFactorPendiente':
+      // El 403 del segundo factor: le falta un paso que puede dar ella misma.
+      // Antes llegaba porque el `error` del cuerpo (en español, por suerte) se
+      // volvía el texto del error; ahora el texto es sólo el `message` del
+      // sobre, así que la frase sale de la clasificación, igual que en el panel.
+      return `${fallo.titulo}. ${fallo.descripcion}`;
+    default: {
+      // 🔴 La regla de oro del traductor (02-10, `traductor-de-errores.ts`):
+      // «conexión» SÓLO cuando no hubo respuesta. Antes TODO lo demás —un 500
+      // del micro incluido— decía «No pude conectarme» y mandaba a revisar el
+      // internet a quien tenía internet.
+      const leido = leerFallo(error);
+      if (leido.tipo === 'sinRespuesta') {
+        return 'No pude conectarme con el asistente. Revisa tu conexión a internet y prueba de nuevo.';
+      }
+      // Un error sin respuesta HTTP (el stream vino vacío, algo del navegador):
+      // su texto es técnico, no para la persona.
+      if (leido.tipo === 'desconocido') return 'No pude responder esta vez. Prueba de nuevo en un momento.';
+      // Un 5xx: «falló de nuestro lado», con la referencia para soporte; un
+      // 4xx: lo que dijo el micro; una caída: su texto de `src/lib/conexion/`.
+      return mensajeParaLaPersona(error, {
+        accion: 'contestarte',
+        porDefecto: 'No pude responder esta vez. Prueba de nuevo en un momento.',
+      });
+    }
   }
 }
 
@@ -578,6 +638,34 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       );
     },
     [aplicarPasos]
+  );
+
+  // ── El pensamiento en vivo (02-10) ───────────────────────────────────────
+  // Va aparte de los `turnSteps` (que quedan de respaldo para un micro viejo).
+  // El ref existe por lo mismo que el de los pasos: las callbacks del stream
+  // leen el estado anterior.
+  const [pensamiento, setPensamiento] = useState<PensamientoEnVivo | null>(null);
+  const pensamientoRef = useRef<PensamientoEnVivo | null>(null);
+  const aplicarPensamiento = useCallback((next: PensamientoEnVivo | null) => {
+    pensamientoRef.current = next;
+    setPensamiento(next);
+  }, []);
+
+  /**
+   * Cierra el pensamiento del turno: lo que seguía corriendo queda listo (o
+   * fallido, si el turno se cortó) y se devuelve para guardarlo en el mensaje
+   * («Cómo lo pensó · 8,4 s»). `null` si no llegó ningún paso.
+   */
+  const cerrarElPensamiento = useCallback(
+    (comoFallo = false): PensamientoGuardado | null => {
+      const actual = pensamientoRef.current;
+      if (!actual) return null;
+      const fin = actual.fin ?? Date.now();
+      const pasos = cerrarPensamiento(actual.pasos, comoFallo);
+      aplicarPensamiento({ ...actual, pasos, fin });
+      return pasos.length > 0 ? { pasos, duracionMs: Math.max(0, fin - actual.inicio) } : null;
+    },
+    [aplicarPensamiento]
   );
 
   /** Cierra el turno: lo que quedó corriendo se da por hecho, y se limpia. */
@@ -820,7 +908,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     setActiveAgentBlock(null);
     setIsAgentsRunning(false);
     aplicarPasos([]);
-  }, [clearTimeouts, aplicarPasos]);
+    aplicarPensamiento(null);
+  }, [clearTimeouts, aplicarPasos, aplicarPensamiento]);
 
   // ========================================================================
   // Start streaming response (reusable — called after agents complete or directly)
@@ -977,6 +1066,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       pendingStreamRef.current = null;
       // El turno se cortó: lo que estaba corriendo NO se puede dar por hecho.
       aplicarPasos([]);
+      // Lo que alcanzó a pensar queda en el mensaje, con lo que corría como fallido.
+      const pensado = cerrarElPensamiento(true);
       setConversations((prev) =>
         prev.map((c) =>
           c.id !== conversationId
@@ -988,7 +1079,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                 // como historial al modelo.
                 messages: c.messages.map((m) =>
                   m.id === assistantId
-                    ? { ...m, content: message, status: 'error' as MessageStatus }
+                    ? { ...m, content: message, status: 'error' as MessageStatus, ...(pensado ? { pensamiento: pensado } : {}) }
                     : m
                 ),
                 updatedAt: new Date(),
@@ -996,7 +1087,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         )
       );
     },
-    [clearTimeouts, aplicarPasos]
+    [clearTimeouts, aplicarPasos, cerrarElPensamiento]
   );
 
   /**
@@ -1042,6 +1133,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             status: (d.status === 'failed' ? 'failed' : 'completed') as AgentExecutionStatus,
             completedAt: new Date(),
             ...(d.status === 'failed' ? { error: d.summary } : {}),
+            // Lo que contestó el especialista: lo lee la delegación del turno
+            // («Ori → Laura» + su resumen) cuando el mensaje ya cerró.
+            ...(d.status !== 'failed' && d.summary?.trim() ? { resumen: d.summary.trim() } : {}),
+            ...(d.id ? { despachoId: d.id } : {}),
           };
         });
         const completedBlock: AgentActivityBlock = { ...block, agents: terminal };
@@ -1216,6 +1311,13 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         procesoIniciado?: EventoProcesoIniciado | null;
         /** `directo:*` = el micro contestó con la ficha, sin modelo: se muestra de una. */
         camino?: string;
+        /**
+         * «Cómo lo pensó» del `done` (micro `33d8607b`). Crudo: lo lee
+         * `leerRazonamiento`, que descarta lo mal formado.
+         */
+        razonamiento?: unknown;
+        /** El pensamiento en vivo ya cerrado, para guardarlo en el mensaje. */
+        pensamiento?: PensamientoGuardado | null;
       },
       assistantId: string,
       conversationId: string,
@@ -1252,8 +1354,21 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       const ensayo = resp.ensayo === true;
       // La tarjeta del plan (24-09, paquete H): varias acciones, una confirmación.
       const plan = resp.plan ?? null;
+      // «Lo que pensó» (02-10): sólo si el micro lo mandó con la forma esperada.
+      const razonamiento = leerRazonamiento(resp.razonamiento);
+      // El pensamiento en vivo, plegado en «Cómo lo pensó» (02-10).
+      const pensamientoDelTurno = resp.pensamiento ?? null;
       const actua = acciones.length > 0 || confirmacion || resultado || formulario || ejecucion || ensayo || plan;
-      if (snapshot || bloques.length > 0 || entidades.length > 0 || turnoId || reintentable || actua) {
+      if (
+        snapshot ||
+        bloques.length > 0 ||
+        entidades.length > 0 ||
+        turnoId ||
+        reintentable ||
+        actua ||
+        razonamiento ||
+        pensamientoDelTurno
+      ) {
         setConversations((prev) =>
           prev.map((c) =>
             c.id !== conversationId
@@ -1276,6 +1391,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                           ...(ejecucion ? { ejecucion } : {}),
                           ...(ensayo ? { ensayo } : {}),
                           ...(plan ? { plan } : {}),
+                          ...(razonamiento ? { razonamiento } : {}),
+                          ...(pensamientoDelTurno ? { pensamiento: pensamientoDelTurno } : {}),
                         }
                       : m
                   ),
@@ -1302,7 +1419,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       const summaries = resp.dispatches
         .map((d) => d.summary)
         .filter((s): s is string => Boolean(s));
-      const fullText = [resp.responseText, ...summaries].filter(Boolean).join('\n\n');
+      // Los resúmenes de los especialistas van en la delegación del turno
+      // («Ori le pasó el trabajo a Laura» → lo que contestó cada uno, 02-10).
+      // Pegarlos también al final del texto los decía dos veces (Nico: «no
+      // repitas»). Sólo hacen de texto si el orquestador no escribió nada.
+      const fullText = resp.responseText?.trim() ? resp.responseText : summaries.join('\n\n');
       const responseMeta: ResponseMeta = {
         type: 'informative',
         title: 'Asistente Leasefy',
@@ -1317,15 +1438,28 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       if (liveBlock && liveBlock.agents.length > 0) {
         // The stream already showed the dispatches live — settle any straggler
         // still "running", attach the block to the message, then stream the text.
-        const terminal: AgentExecution[] = liveBlock.agents.map((a) =>
-          a.status === 'running'
+        // El resumen de cada especialista, si su `dispatch_result` no llegó y
+        // el `done` sí lo trae (mismo especialista, en orden).
+        const sinUsar = [...resp.dispatches];
+        const resumenDe = (a: AgentExecution): string | undefined => {
+          const i = sinUsar.findIndex((d) =>
+            a.despachoId && d.id ? d.id === a.despachoId : backendAgentToFrontType(d.agent) === a.agentType
+          );
+          if (i < 0) return undefined;
+          const [d] = sinUsar.splice(i, 1);
+          return d.status !== 'failed' && d.summary?.trim() ? d.summary.trim() : undefined;
+        };
+        const terminal: AgentExecution[] = liveBlock.agents.map((a) => {
+          const resumen = a.resumen ?? resumenDe(a);
+          return a.status === 'running'
             ? {
                 ...a,
                 status: 'completed' as AgentExecutionStatus,
                 completedAt: new Date(),
+                ...(resumen ? { resumen } : {}),
               }
-            : a
-        );
+            : { ...a, ...(resumen && a.status === 'completed' ? { resumen } : {}) };
+        });
         const completedBlock: AgentActivityBlock = { ...liveBlock, agents: terminal };
         setActiveAgentBlock(completedBlock);
         setConversations((prev) =>
@@ -1399,6 +1533,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       plan: TarjetaDePlan | null;
       procesoIniciado: EventoProcesoIniciado | null;
       camino?: string;
+      razonamiento?: unknown;
     }> => {
       const startedAt = new Date();
       let liveBlock: AgentActivityBlock | null = null;
@@ -1425,6 +1560,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           ensayo?: boolean;
           plan?: TarjetaDePlan | null;
           camino?: string;
+          razonamiento?: unknown;
         } | null;
         snapshot: ChatSnapshot | null;
         /** El error del evento `error`, con su status cuando el micro lo manda. */
@@ -1477,7 +1613,19 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                 })
             );
           },
-          onProgreso: (p) => ponerActividad(p.texto, p),
+          onProgreso: (p) => {
+            ponerActividad(p.texto, p);
+            // En el pensamiento en vivo, el aviso es el «ahora» del paso que corre.
+            const actual = pensamientoRef.current;
+            if (actual && actual.pasos.length > 0 && !args.signal.aborted) {
+              aplicarPensamiento({ ...actual, pasos: ponerActividadDelPensamiento(actual.pasos, p.texto) });
+            }
+          },
+          onPensamiento: (paso) => {
+            const actual = pensamientoRef.current;
+            if (!actual || args.signal.aborted) return;
+            aplicarPensamiento({ ...actual, pasos: aplicarPaso(actual.pasos, paso) });
+          },
           onProcesoIniciado: (evento) => {
             collected.procesoIniciado = evento;
             // El Centro de procesos del panel (el anillo del header) mira ya,
@@ -1507,13 +1655,15 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               startStreaming(args.assistantId, text, args.conversationId, { parcial: true });
             }
           },
-          onDispatchStart: (agent, taskDescription) => {
+          onDispatchStart: (agent, taskDescription, extra) => {
             const exec: AgentExecution = {
               id: generateId(),
               agentType: backendAgentToFrontType(agent),
               taskDescription,
               status: 'running' as AgentExecutionStatus,
               startedAt: new Date(),
+              // El id del despacho, cuando el micro lo mande (aditivo, 02-10).
+              ...(extra?.id ? { despachoId: extra.id } : {}),
             };
             liveBlock = liveBlock
               ? { ...liveBlock, agents: [...liveBlock.agents, exec] }
@@ -1526,6 +1676,17 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             setIsThinking(false);
             setIsAgentsRunning(true);
             setActiveAgentBlock(liveBlock);
+            // Despachar ES la decisión (02-10): el orquestador ya entendió y le
+            // pasó el trabajo a un especialista. «Entender» (y el contexto, si
+            // seguía) se cierra acá; si no, quedaban dos pasos girando y la
+            // tarjeta decía «Entender la pregunta» mientras Laura trabajaba.
+            const alDespachar = new Date();
+            if (turnStepsRef.current.some((p) => p.id === 'cartera' && p.status === 'running')) {
+              parchearPaso('cartera', { status: 'done', completedAt: alDespachar, actividad: undefined });
+            }
+            if (turnStepsRef.current.some((p) => p.id === 'entender' && p.status !== 'done')) {
+              parchearPaso('entender', { status: 'done', completedAt: alDespachar, actividad: undefined, avance: undefined });
+            }
             // Lo que se tecleó antes del despacho era el preámbulo («Voy a
             // revisar…»), no la respuesta: «redactar» vuelve a esperar. Si no,
             // quedaban DOS pasos girando y uno decía «Escribiendo la respuesta…»
@@ -1545,6 +1706,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               labelKey: 'beta.tasks.plan.consultAgent',
               detail: taskDescription,
               agentType: exec.agentType,
+              ...(exec.despachoId ? { despachoId: exec.despachoId } : {}),
               status: 'running',
               startedAt: exec.startedAt,
             });
@@ -1553,12 +1715,19 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             resultDispatches.push(dispatch);
             if (!liveBlock) return;
             const agentType = backendAgentToFrontType(dispatch.agent);
+            // Con el id del despacho (cuando el micro lo mande) se cierra ESE;
+            // sin él, el primero de ese especialista que sigue corriendo.
+            const esEste = (a: AgentExecution) =>
+              dispatch.id && a.despachoId ? a.despachoId === dispatch.id : a.agentType === agentType;
             let settled = false;
+            let cerradoId: string | null = null;
+            const resumen = dispatch.status !== 'failed' && dispatch.summary?.trim() ? dispatch.summary.trim() : '';
             const agents = liveBlock.agents.map((a) => {
-              if (settled || a.status !== 'running' || a.agentType !== agentType) {
+              if (settled || a.status !== 'running' || !esEste(a)) {
                 return a;
               }
               settled = true;
+              cerradoId = a.id;
               return {
                 ...a,
                 status: (dispatch.status === 'failed'
@@ -1566,13 +1735,15 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
                   : 'completed') as AgentExecutionStatus,
                 completedAt: new Date(),
                 ...(dispatch.status === 'failed' ? { error: dispatch.summary } : {}),
+                // Lo que contestó: la delegación lo muestra al cerrar el turno.
+                ...(resumen ? { resumen } : {}),
               };
             });
             liveBlock = { ...liveBlock, agents };
             setActiveAgentBlock(liveBlock);
             // El paso se cierra con lo que el agente EFECTIVAMENTE respondió:
             // su resumen, y el siguiente paso que propone si lo trae.
-            const cerrado = agents.find((x) => x.status !== 'running' && x.agentType === agentType);
+            const cerrado = agents.find((x) => x.id === cerradoId);
             if (cerrado) {
               const detalle = [dispatch.summary, dispatch.nextStep].filter(Boolean).join(' · ');
               parchearPaso(cerrado.id, {
@@ -1588,14 +1759,16 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           // se cierra al llegar el siguiente — el backend avisa cuando una
           // herramienta TERMINÓ, así que el que está en curso es siempre el
           // último que llegó.
-          onToolStep: ({ tool, label }) => {
+          onToolStep: ({ agent, tool, label, dispatchId }) => {
             // Llega cuando la herramienta YA se ejecutó (Mastra avisa al cerrar
             // el paso), así que nace en «hecho». Sin reloj: no sabemos cuánto
             // tardó cada una por separado, y un 0:00 al lado sería inventarlo.
             const actuales = turnStepsRef.current;
             const previos = actuales.filter((p) => p.kind === 'herramienta');
             const ultimo = previos[previos.length - 1];
-            if (ultimo && ultimo.label === label) {
+            const duenio = agent ? backendAgentToFrontType(agent) : undefined;
+            // La misma herramienta repetida por el MISMO especialista se cuenta.
+            if (ultimo && ultimo.label === label && ultimo.agentType === duenio) {
               parchearPaso(ultimo.id, { repeticiones: (ultimo.repeticiones ?? 1) + 1 });
               return;
             }
@@ -1603,6 +1776,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               id: `tool-${tool}-${previos.length}`,
               kind: 'herramienta',
               label,
+              // De quién es (02-10): la delegación del turno cuelga cada
+              // herramienta de su especialista, no del último que llegó.
+              ...(duenio ? { agentType: duenio } : {}),
+              ...(dispatchId ? { despachoId: dispatchId } : {}),
               status: 'done',
             });
           },
@@ -1666,14 +1843,21 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               ensayo: f.ensayo,
               plan: f.plan,
               ...(f.camino ? { camino: f.camino } : {}),
+              ...(f.razonamiento !== undefined ? { razonamiento: f.razonamiento } : {}),
             };
           },
           onError: (message, meta) => {
             // Se guarda el error ENTERO, no sólo su texto: el status es lo que
             // deja distinguir «sin créditos» (402) de «no pude conectarme».
+            // El texto del `ApiError` es sólo el `message` del sobre (español);
+            // el `error` del evento (el texto interno del micro, a veces en
+            // inglés) queda en el cuerpo, para diagnóstico, y nunca se muestra.
             collected.streamError =
               typeof meta?.status === 'number'
-                ? new ApiError(meta.status, message, meta.code)
+                ? new ApiError(meta.status, meta.mensaje ?? '', meta.code, {
+                    error: message,
+                    ...(meta.referencia ? { referencia: meta.referencia } : {}),
+                  })
                 : new Error(message);
           },
         },
@@ -1716,9 +1900,10 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         plan: final?.plan ?? null,
         procesoIniciado: collected.procesoIniciado,
         ...(final?.camino ? { camino: final.camino } : {}),
+        ...(final?.razonamiento !== undefined ? { razonamiento: final.razonamiento } : {}),
       };
     },
-    [parchearPaso, insertarPaso, startStreaming, aplicarPasos, ponerActividad]
+    [parchearPaso, insertarPaso, startStreaming, aplicarPasos, ponerActividad, aplicarPensamiento]
   );
 
   // ========================================================================
@@ -1792,6 +1977,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       pendingDecisionRef.current = null;
       propuestaDeAccionRef.current = null;
       pendingResponseMetaRef.current = null;
+      // El pensamiento en vivo del turno arranca vacío: lo llena el micro.
+      aplicarPensamiento({ pasos: [], inicio: Date.now(), fin: null });
 
       // Plan inicial del turno. Sólo dos pasos son ciertos ANTES de que el
       // backend hable: leer la pregunta y responder. Todo lo del medio lo
@@ -1851,7 +2038,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             intencion,
           });
           if (signal.aborted) return;
-          finishTurn(streamed, assistantId, conversationId, streamed.liveBlock);
+          // Llegó la respuesta: el pensamiento se cierra y se pliega en «Cómo lo pensó».
+          finishTurn({ ...streamed, pensamiento: cerrarElPensamiento() }, assistantId, conversationId, streamed.liveBlock);
         } catch (errorDelStream) {
           // Abortar es intencional: ni respaldo POST ni cartel de error.
           if (signal.aborted) return;
@@ -1868,6 +2056,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           // clear any partial live UI and fall back to the one-shot POST.
           setActiveAgentBlock(null);
           setIsAgentsRunning(false);
+          // Lo que alcanzó a contar el stream no es de la respuesta del POST.
+          aplicarPensamiento(null);
           try {
             const resp = await postChatTurn({ agencyId, message: trimmed, history, intencion, signal });
             if (signal.aborted) return;
@@ -1896,6 +2086,8 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       finishTurn,
       finalizeError,
       aplicarPasos,
+      aplicarPensamiento,
+      cerrarElPensamiento,
     ]
   );
 
@@ -1984,14 +2176,15 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
    *   bloques de sistema.
    *
    * Devuelve si el backend lo confirmó, para que la pantalla no diga «guardado»
-   * cuando la red falló.
+   * cuando la red falló; y si el envío falló, POR QUÉ (02-10-2026): un 403 no
+   * es un 500 ni una red caída, y antes los tres decían lo mismo.
    */
   const rateMessage = useCallback(
     async (
       messageId: string,
       rating: 'up' | 'down',
       opts: { comentario?: string; cifraMal?: boolean } = {}
-    ): Promise<boolean> => {
+    ): Promise<boolean | string> => {
       const quitando =
         conversations
           .flatMap((c) => c.messages)
@@ -2061,11 +2254,14 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           }))
         );
         return r.guardado;
-      } catch {
+      } catch (err) {
         // El pulgar queda marcado en pantalla pero SIN el «guardado»: la
         // diferencia entre lo que el usuario eligió y lo que llegó al servidor
-        // tiene que verse.
-        return false;
+        // tiene que verse. Y el motivo, por el traductor.
+        return mensajeDelFalloDeLaAccion(err, {
+          accion: 'guardar tu valoración',
+          porDefecto: 'No pude guardar tu valoración. Intenta de nuevo.',
+        });
       }
     },
     [conversations, agencyId]
@@ -2125,8 +2321,11 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
 
   const deleteConversation = useCallback(
     (id: string) => {
-      // Borrar la conversación abierta también es irse de ella.
-      if (id === activeConversationId) anotarAbandonoDe(id);
+      // 🔴 Borrar la conversación borra también el servidor (Nico, 04-10-2026):
+      // sus señales, su pulgar, la memoria del chat y Redis. Y ya NO se anota
+      // como abandono: quien borra no se fue sin respuesta, borró.
+      const borrada = conversationsRef.current.find((c) => c.id === id);
+      if (borrada) borrarConversacionEnElServidor(agencyIdRef.current, borrada.messages);
       setConversations((prev) => {
         const filtered = prev.filter((c) => c.id !== id);
         // If deleting the active conversation, switch to first remaining or create new
@@ -2150,7 +2349,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       pendingStreamRef.current = null;
       abortarTurnoEnCurso();
     },
-    [activeConversationId, clearTimeouts, abortarTurnoEnCurso, anotarAbandonoDe]
+    [activeConversationId, clearTimeouts, abortarTurnoEnCurso]
   );
 
   // ========================================================================
@@ -2158,12 +2357,17 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
   // ========================================================================
 
   const selectDecisionOption = useCallback(
-    (messageId: string, optionId: string) => {
-      if (!activeConversationId) return;
+    async (messageId: string, optionId: string): Promise<string | null> => {
+      if (!activeConversationId) return null;
+
+      // La aprobación se lee de lo que está en pantalla, no desde adentro del
+      // actualizador de estado (React puede correrlo después).
+      const aprobacion = conversations
+        .find((c) => c.id === activeConversationId)
+        ?.messages.find((m) => m.id === messageId)?.decision?.approvalId;
 
       // Find the option label for the user response message
       let optionLabel = '';
-      let aprobacion: string | undefined;
       setConversations((prev) =>
         prev.map((c) => {
           if (c.id !== activeConversationId) return c;
@@ -2173,7 +2377,6 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
               if (m.id !== messageId || !m.decision) return m;
               const option = m.decision.options.find((o) => o.id === optionId);
               if (option) optionLabel = option.label;
-              aprobacion = m.decision.approvalId;
               return {
                 ...m,
                 decision: {
@@ -2192,15 +2395,34 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       // abre otro turno: la acción no se ejecuta acá, se ejecuta en su frente,
       // así que pedirle al modelo que opine de nuevo sólo gastaría un turno.
       if (aprobacion && agencyId) {
-        void resolveChatApproval({
-          agencyId,
-          approvalId: aprobacion,
-          outcome: optionId === 'cancel' ? 'rejected' : 'approved',
-        }).catch(() => {
-          // Fail-soft: la tarjeta ya quedó marcada; no se rompe la conversación.
-          console.warn('[useBetaChat] no se pudo registrar la decisión de aprobación');
-        });
-        return;
+        try {
+          await resolveChatApproval({
+            agencyId,
+            approvalId: aprobacion,
+            outcome: optionId === 'cancel' ? 'rejected' : 'approved',
+          });
+          return null;
+        } catch (err) {
+          // 🔴 (02-10-2026) Antes se tragaba el error (`console.warn`) y la
+          // tarjeta quedaba «Decidido» aunque el micro no lo hubiera
+          // registrado. Ahora la elección se deshace —la tarjeta vuelve a
+          // quedar abierta para reintentar— y el motivo sale por el traductor.
+          setConversations((prev) =>
+            prev.map((c) => ({
+              ...c,
+              messages: c.messages.map((m) =>
+                m.id === messageId && m.decision?.selectedOptionId === optionId
+                  ? { ...m, decision: { ...m.decision, selectedOptionId: undefined, selectedAt: undefined } }
+                  : m
+              ),
+            }))
+          );
+          return mensajeDelFalloDeLaAccion(err, {
+            accion: 'registrar tu decisión',
+            porDefecto: 'No pude registrar tu decisión. Prueba de nuevo en un momento.',
+            sinPermiso: 'Tu rol no puede decidir sobre esta propuesta. Pídele a un administrador que la revise.',
+          });
+        }
       }
 
       // Send a user message confirming the selection, then trigger a mock response
@@ -2210,8 +2432,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
           sendMessage(`He seleccionado: ${optionLabel}`);
         }, 300);
       }
+      return null;
     },
-    [activeConversationId, sendMessage, agencyId]
+    [activeConversationId, conversations, sendMessage, agencyId]
   );
 
 
@@ -2245,7 +2468,9 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
    * Los códigos se traducen a algo que el operador entienda: 410 es «venció»
    * (la cartera ya cambió y hay que volver a pedirla), 409 «ya se resolvió»,
    * 403 «tu cuenta no puede». Un error de red NO se cuenta como envío fallido
-   * inventado: se dice que no se pudo confirmar.
+   * inventado: se dice que no se pudo confirmar. Lo demás (un 400, un 404, un
+   * 5xx con su referencia, la red caída, el segundo factor) lo dice el
+   * traductor (02-10-2026); antes todo eso era «No se pudo confirmar».
    */
   const confirmarAccionDelMensaje = useCallback(
     async (messageId: string) => {
@@ -2270,12 +2495,15 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         const status = err instanceof ErrorDeAccion ? err.status : 0;
         const motivo =
           status === 410
-            ? 'La propuesta venció. Pedímela de nuevo y la preparo con los números de ahora.'
+            ? 'La propuesta venció. Pídemela de nuevo y la preparo con los números de ahora.'
             : status === 409
               ? 'Esa acción ya se resolvió.'
-              : status === 403
+              : status === 403 && !esSegundoFactor(err)
                 ? 'Tu cuenta no puede ejecutar esta acción.'
-                : 'No se pudo confirmar. Prueba de nuevo en un momento.';
+                : mensajeDelFalloDeLaAccion(err, {
+                    accion: 'confirmar la acción',
+                    porDefecto: 'No se pudo confirmar. Prueba de nuevo en un momento.',
+                  });
         parcharAccion(messageId, {
           estado: status === 410 ? 'vencida' : 'pendiente',
           error: motivo,
@@ -2349,7 +2577,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
    */
   const confirmActionProposal = useCallback(
     async (messageId: string, workItemId: string, reason?: string): Promise<void> => {
-      if (!agencyId) throw new Error('No agency');
+      if (!agencyId) throw new Error('No hay inmobiliaria activa');
 
       // Mark as confirming
       const updateStatus = (
@@ -2372,28 +2600,32 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         );
       };
 
+      // La acción se lee de lo que está en pantalla. Antes se leía desde
+      // adentro de un actualizador de estado, que React corre DESPUÉS (había
+      // otro cambio pendiente: «confirmando»), así que `action` quedaba vacío
+      // y esto nunca llegaba a llamar al micro (02-10-2026).
+      const action = conversations
+        .flatMap((c) => c.messages)
+        .find((m) => m.id === messageId)
+        ?.actionProposals?.find((p) => p.workItemId === workItemId)?.action;
+
       updateStatus('confirming');
       try {
-        // Find the action from state to pass to the network call
-        let action: ActionProposal['action'] | undefined;
-        setConversations((prev) => {
-          const msg = prev
-            .flatMap((c) => c.messages)
-            .find((m) => m.id === messageId);
-          action = msg?.actionProposals?.find((p) => p.workItemId === workItemId)?.action;
-          return prev;
-        });
-
-        if (!action) throw new Error('Proposal not found');
+        if (!action) throw new Error('No encontré esa propuesta');
         await executeAction({ agencyId, workItemId, action, reason });
         updateStatus('executed', { result: true });
       } catch (err) {
-        const error = err instanceof Error ? err.message : 'Error al ejecutar la acción';
+        // 🔴 Antes: `err.message` tal cual («execute action 409», el `error` en
+        // inglés del micro). Ahora lo dice el traductor.
+        const error = mensajeDelFalloDeLaAccion(err, {
+          accion: 'ejecutar la acción',
+          porDefecto: 'No se pudo ejecutar la acción. Prueba de nuevo en un momento.',
+        });
         updateStatus('error', { error });
         throw err; // re-throw so the card can show the error (if it handles it)
       }
     },
-    [agencyId]
+    [agencyId, conversations]
   );
 
   /** Discard a proposal UI-only (no network call). */
@@ -2524,6 +2756,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
     activeAgentBlock,
     isAgentsRunning,
     turnSteps,
+    pensamiento,
     retryAgent,
 
     // Decision handling

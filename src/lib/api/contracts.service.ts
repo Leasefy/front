@@ -27,6 +27,7 @@ import type {
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 import type { Contract, ContractType, ContractStatus, ContractRejection, InquilinoDelContrato } from '@/lib/types/contract';
 import type { CobroConDesglose } from './recibos-de-caja.types';
+import type { ValoresPorDefectoDelContrato } from '@/lib/contratos/valores-por-defecto';
 import { normalizeCobro } from './inmobiliaria.service';
 import type { ContractAuditEvent, ContractAuditEventType, ContractAuditEventMetadata } from '@/lib/types/contract';
 
@@ -115,6 +116,8 @@ export function mapBackendContract(bc: BackendContract): Contract {
     landlordEmail: bc.landlordEmail ?? '',
     landlordDocument: bc.landlordDocument ?? '',
     monthlyRent: bc.monthlyRent,
+    // Passthrough: la ficha de un COMERCIAL lo muestra (Nico, 03-10-2026).
+    deposit: bc.deposit,
     adminFee: bc.propertyAdminFee ?? 0,              // backend: propertyAdminFee → front: adminFee
     startDate: bc.startDate,
     endDate: bc.endDate,
@@ -129,6 +132,11 @@ export function mapBackendContract(bc: BackendContract): Contract {
     motivoDeTerminacion: bc.motivoDeTerminacion ?? null,
     notaDeTerminacion: bc.notaDeTerminacion ?? null,
     finPactadoOriginal: bc.finPactadoOriginal ?? null,
+    // QA-CONT (back ff282197). Passthrough: `undefined` = un back anterior, y
+    // la pantalla cae a lo que ya calculaba.
+    estadoParaMostrar: bc.estadoParaMostrar,
+    reglaDeCobro: bc.reglaDeCobro,
+    depositoDelContrato: bc.depositoDelContrato,
     // `null` y ausente se tratan igual a propósito: los dos significan «no hay
     // referencia propia», y quien la muestra se cae al consecutivo.
     referenciaDeRecaudo: bc.referenciaDeRecaudo ?? null,
@@ -138,6 +146,14 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // compara textos y un 9% saldría mayor que un 10%.
     comisionPorcentaje: aNumero(bc.comisionPorcentaje),
     comisionDeConsignacion: aNumero(bc.comisionDeConsignacion),
+    /*
+     * 🔴 QA-CONT-95 (B-30, CR-07): el back los manda en `GET /contracts/:id` y
+     * acá se perdían. Sin la penalidad propia, «Cómo se cobra» decía «La de la
+     * inmobiliaria» con 2 cánones guardados y «Corregir» la traía vacía; sin la
+     * fecha de cartera, «Cuándo paga» y la vigencia contaban desde el inicio.
+     */
+    penalidadTerminacionCanones: aNumero(bc.penalidadTerminacionCanones),
+    fechaDeCartera: typeof bc.fechaDeCartera === 'string' ? bc.fechaDeCartera.slice(0, 10) : null,
     propietarioDeLaConsignacion: bc.propietarioDeLaConsignacion,
     // Todos los dueños con su porcentaje y su parte del canon, y todos los
     // inquilinos. Passthrough: `undefined` = el back no lo mandó (lista,
@@ -511,7 +527,7 @@ export const contractsApi = {
     /** Crear el inmueble que el contrato dice tener y no está cargado. */
     async crearInmueble(
       id: string,
-      datos: { address: string; city: string; neighborhood?: string },
+      datos: { address: string; city: string; neighborhood?: string; tipo?: string },
     ): Promise<FilaDeMigracion> {
       return apiClient.post<FilaDeMigracion>(
         `/contracts/migrar/filas/${id}/inmueble`,
@@ -546,10 +562,12 @@ export const contractsApi = {
        * todo el lote de una vez, como siempre.
        */
       tanda?: { limite: number; despuesDeFila?: number },
+      /** Para las filas cuya dirección no dice el tipo (QA-MIG-A, MG-34). */
+      tipo?: string,
     ): Promise<ResultadoInmueblesFaltantes> {
       return apiClient.post<ResultadoInmueblesFaltantes>(
         '/contracts/migrar/inmuebles-faltantes',
-        { ...seleccion, ciudad: ciudad?.trim() || undefined, ...tanda },
+        { ...seleccion, ciudad: ciudad?.trim() || undefined, ...tanda, ...(tipo ? { tipo } : {}) },
       );
     },
 
@@ -691,6 +709,15 @@ export const contractsApi = {
     },
   },
 
+  /**
+   * GET /contracts/valores-por-defecto?inicio= — con qué arranca «Nuevo
+   * contrato»: los de la inmobiliaria (QA-CONT C-13, back ff282197).
+   */
+  async valoresPorDefecto(inicio?: string): Promise<ValoresPorDefectoDelContrato> {
+    const consulta = inicio ? `?inicio=${encodeURIComponent(inicio)}` : '';
+    return apiClient.get<ValoresPorDefectoDelContrato>(`/contracts/valores-por-defecto${consulta}`);
+  },
+
   async create(dto: CreateContractDto): Promise<Contract> {
     const raw = await apiClient.post<BackendContract>('/contracts', dto);
     return mapBackendContract(raw);
@@ -768,6 +795,15 @@ export const contractsApi = {
    */
   async invitarInquilino(id: string): Promise<ResultadoInvitacion> {
     return apiClient.post<ResultadoInvitacion>(`/contracts/${id}/invitar-inquilino`, {});
+  },
+
+  /**
+   * 🔴 QA-CONT CR-08 — `GET /contracts/:id/invitacion-del-inquilino`: en qué
+   * está la invitación al portal del inquilino del contrato y qué botón le
+   * toca («Invitar al portal», «Reenviar invitación» o ninguno).
+   */
+  async invitacionDelInquilino(id: string): Promise<InvitacionDelInquilino> {
+    return apiClient.get<InvitacionDelInquilino>(`/contracts/${id}/invitacion-del-inquilino`);
   },
 
   /**
@@ -900,6 +936,19 @@ export const contractsApi = {
       dto,
     );
     return mapBackendContract(raw);
+  },
+
+  /**
+   * QA-CONT-95 B-32: confirma cuál escenario tributario rige un contrato
+   * migrado cuyo escenario del archivo choca con la ficha del propietario.
+   * El back reescribe la nota del escenario y rehace las cuotas desde hoy;
+   * quien llama vuelve a leer el contrato.
+   */
+  async confirmarEscenario(
+    id: string,
+    codigo: 'E1' | 'E2' | 'E3' | 'E4' | 'E5' | 'E6' | 'E7' | 'E8' | 'E9',
+  ): Promise<{ codigo: string; nombre: string; confirmadoEl: string; confirmadoPor: string | null }> {
+    return apiClient.put(`/contracts/${id}/escenario-tributario`, { codigo });
   },
 
   /**
@@ -1734,4 +1783,46 @@ export interface ResultadoInvitacion {
    * un tercer shape.
    */
   contrato: BackendContract;
+  /**
+   * 🔴 CR-08: el contrato ya tenía la cuenta del inquilino y nunca entró, así
+   * que se REENVIÓ la invitación. Dice si salió y, si no, por qué (nunca se
+   * dice «enviada» si no salió). Ausente cuando fue la primera invitación.
+   */
+  reenvio?: ReenvioDeLaInvitacion;
+}
+
+/**
+ * - `SIN_CUENTA`: el contrato no tiene cuenta del portal vinculada.
+ * - `SIN_ENVIO`: tiene cuenta, nunca entró y no hay registro de envío.
+ * - `PENDIENTE`: le salió y todavía vale.
+ * - `VENCIDA`: le salió, venció y nunca entró.
+ * - `YA_ENTRO`: entró al portal alguna vez.
+ */
+export type EstadoDeLaInvitacion = 'SIN_CUENTA' | 'SIN_ENVIO' | 'PENDIENTE' | 'VENCIDA' | 'YA_ENTRO';
+
+/** `GET /contracts/:id/invitacion-del-inquilino` (back `invitacion-del-inquilino.ts`). */
+export interface InvitacionDelInquilino {
+  estado: EstadoDeLaInvitacion;
+  /** El botón que le toca. `null` = ninguno (ya entró, o sin correo para invitar). */
+  accion: 'INVITAR' | 'REENVIAR' | null;
+  /** ISO del último envío; `null` = sin registro. */
+  ultimoEnvio: string | null;
+  /** ISO de cuándo deja de valer: último envío + días de vigencia. */
+  vence: string | null;
+  diasDeVigencia: number;
+}
+
+/** Lo que pasó al reenviar (`POST :id/invitar-inquilino` → `reenvio`). */
+export interface ReenvioDeLaInvitacion {
+  enviada: boolean;
+  motivo:
+    | 'RECIEN_ENVIADA'
+    | 'DOMINIO_NO_ENTREGABLE'
+    | 'CORREO_NO_CONFIGURADO'
+    | 'ENVIO_FALLIDO'
+    | null;
+  /** Para el aviso, en palabras. Nunca dice «enviada» si no salió. */
+  mensaje: string;
+  /** La invitación DESPUÉS del intento. */
+  invitacion: InvitacionDelInquilino;
 }

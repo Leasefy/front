@@ -113,7 +113,11 @@ vi.mock('@/components/ui/alert-dialog', () => {
   };
 });
 
+// PQRS-FIX (04-10): el cajón de radicar desde un mensaje (SO-30) se prueba aparte.
+vi.mock('@/components/inmobiliaria/pqrs/NuevaPqrsDrawer', () => ({ NuevaPqrsDrawer: () => null }));
 vi.mock('@phosphor-icons/react', () => ({
+  Lifebuoy: () => null,
+  Wrench: () => null,
   Chat: () => null,
   ChatCircle: () => null,
   MagnifyingGlass: () => null,
@@ -417,6 +421,21 @@ describe('<MessagesWidget> — hilo directo: iniciar y distinguir perfiles', () 
   });
 });
 
+describe('<MessagesWidget> — SO-29: los hilos con la misma persona se rotulan por su tema', () => {
+  it('Iván ×2: «Postulación · …» y «Arriendo · …», en el panel y en el portal', () => {
+    for (const actor of ['landlord', 'tenant'] as const) {
+      conversationsState = [
+        makeConversation({ id: 'conv-post', name: 'Iván Inquilino', kind: 'APPLICATION', property: 'Apto en El Poblado', tema: 'Postulación · Carrera 35 # 8A-12' }),
+        makeConversation({ id: 'conv-dir', name: 'Iván Inquilino', kind: 'DIRECT', property: '', tema: 'Arriendo · Calle 45 # 70-12 Apto 301' }),
+      ];
+      render(actor);
+      const temas = [...container.querySelectorAll('[data-testid="tema-del-hilo"]')].map((e) => e.textContent);
+      expect(temas).toContain('Postulación · Carrera 35 # 8A-12');
+      expect(temas).toContain('Arriendo · Calle 45 # 70-12 Apto 301');
+    }
+  });
+});
+
 describe('<MessagesWidget> — selection keys on conversation.id, never applicationId (contract-addendum-2.md §B.3)', () => {
   it('auto-selects the first conversation by id when none is selected yet', () => {
     conversationsState = [
@@ -620,8 +639,9 @@ describe('<MessagesWidget> — el menú de los tres puntos (pedido 3)', () => {
        Las tres pegaban a rutas que el back no tiene: el servicio devuelve
        'unavailable' por 404 y las tres terminaban en un toast «estará
        disponible próximamente». Se retiraron, así que sin «Ver ficha» el menú
-       queda vacío y el `⋮` no se pinta. */
-    expect(container.querySelector('button[aria-label="Más opciones"]')).toBeNull();
+       queda vacío y el `⋮` no se pinta.
+       SO-30 (PQRS-FIX, 04-10): en el panel de la inmobiliaria el `⋮` queda aunque
+       no haya ficha: desde el mensaje se radica la PQRS o la reparación. */
     expect(container.querySelector('[data-testid="ver-ficha"]')).toBeNull();
   });
 
@@ -975,8 +995,11 @@ describe('<MessagesWidget> — un envío que falla (MSJ-4)', () => {
     });
 
     expect(enviar).toHaveBeenCalledWith('Hola, ¿seguimos?');
-    // El cartel existe...
+    // El cartel existe, y dice el porqué que le dio el traductor...
     expect(container.querySelector('[data-testid="mensaje-no-enviado"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="mensaje-no-enviado-motivo"]')?.textContent).toContain(
+      'Network request failed',
+    );
     // ...y lo escrito no se perdió.
     const campoDespues = container.querySelector('input[type="text"]:not([aria-label*="Buscar"])') as HTMLInputElement;
     expect(campoDespues.value).toBe('Hola, ¿seguimos?');

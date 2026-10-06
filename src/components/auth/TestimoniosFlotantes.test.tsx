@@ -1,11 +1,16 @@
 /**
  * Los testimonios del acceso rotan solos: uno, otro, otro, el cuarto, y
- * vuelve al primero. Sin framer-motion (se mockea a elementos planos).
+ * vuelve al primero. La barra se mockea a elementos planos; el cambio de
+ * tarjeta es el `CrossFade` de Cadence (con `skipAnimations`): sale el
+ * viejo y DESPUÉS entra el nuevo, así que cada avance se espera con
+ * `advanceTimersByTimeAsync` dentro de un `act` asíncrono.
  */
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -83,17 +88,30 @@ describe('TestimoniosFlotantes', () => {
     expect(iniciales('  ana  maría  de la torre ')).toBe('AM')
   })
 
-  it('cada tantos segundos sale el siguiente, y después del cuarto vuelve el primero', () => {
+  it('cada tantos segundos sale el siguiente, y después del cuarto vuelve el primero', async () => {
     act(() =>
       root.render(
         <TestimoniosFlotantes intervaloMs={1000} />,
       ),
     )
-    act(() => { vi.advanceTimersByTime(1000) })
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
     expect(agenciaEnPantalla()).toContain(TESTIMONIOS[1].agencia)
-    act(() => { vi.advanceTimersByTime(2000) })
+    await act(async () => { await vi.advanceTimersByTimeAsync(2000) })
     expect(agenciaEnPantalla()).toContain(TESTIMONIOS[3].agencia)
-    act(() => { vi.advanceTimersByTime(1000) })
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000) })
     expect(agenciaEnPantalla()).toContain('Portofino')
+  })
+
+  /**
+   * Sólo `transform` y `opacity` (DESIGN.md §8b): el `filter: blur` animado
+   * repintaba la tarjeta —con su `backdrop-blur` sobre el video— en cada
+   * cuadro, y la barra crecía con `width`. Se mira el fuente porque acá
+   * framer está mockeado y el estilo no llega al DOM.
+   */
+  it('anima sólo transform y opacidad: ni blur ni width', () => {
+    const fuente = readFileSync(join(__dirname, 'TestimoniosFlotantes.tsx'), 'utf8')
+    expect(fuente).not.toMatch(/filter:\s*['"]blur/)
+    expect(fuente).not.toMatch(/(initial|animate)=\{\{[^}]*width/)
+    expect(fuente).not.toMatch(/mode="wait"/)
   })
 })

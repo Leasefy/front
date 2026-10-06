@@ -1,7 +1,8 @@
 'use client';
 
+import { SituacionComercialCorta } from '@/components/comercial/SituacionComercial';
+import type { VacanciaYMandato } from '@/lib/comercial/comercial';
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import {
   Buildings,
   House,
@@ -15,7 +16,6 @@ import {
   PencilSimple,
   MapPin,
   User,
-  Percent,
   CalendarPlus,
   ArrowSquareOut,
   Users,
@@ -34,9 +34,10 @@ import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableHead,
   TableRow,
+  TableRowAnimada,
   TableCell,
 } from '@/components/ui/table';
 import {
@@ -54,6 +55,8 @@ import type {
 import { formatCurrency, portafolioRowKey } from '@/lib/types/inmobiliaria';
 import { CanonPorConfirmarBadge } from './CanonPorConfirmar';
 import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
+import { textoCortoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { cajonDelInmueble } from '@/lib/inmobiliaria/cajon-del-inmueble';
 
 type SortField = 'propertyTitle' | 'propertyZone' | 'monthlyRent' | 'commissionPercent' | 'availability';
 type SortDirection = 'asc' | 'desc';
@@ -94,6 +97,8 @@ interface ConsignacionTableProps {
    * tiene). Ver contract.md T-0030 §3.4.
    */
   onCompletarMandato?: (inmueble: InmuebleSinConsignacion) => void;
+  /** COMERCIAL (04-10-2026): días de vacancia y mandato que se vence, por consignación. */
+  comercialPorConsignacion?: Record<string, VacanciaYMandato>;
 }
 
 // Property type icons. Total lookup vía `getPropertyIcon` — nunca indexar
@@ -150,6 +155,12 @@ const AVAILABILITY_COLORS: Record<
   },
 };
 
+/** El inmueble no está publicado (`DRAFT`): ni disponible ni ofrecido. */
+const BORRADOR = {
+  variant: 'secondary' as const,
+  labelKey: 'inmobiliaria.consignaciones.availability.draft',
+};
+
 /**
  * ConsignacionTable - Full-featured data table for consigned properties
  * Includes sorting and row actions
@@ -166,6 +177,7 @@ export function ConsignacionTable({
   onEliminar,
   onPrepararSinSenal,
   onCompletarMandato,
+  comercialPorConsignacion,
 }: ConsignacionTableProps) {
   const { t } = useI18n();
   /*
@@ -340,13 +352,20 @@ export function ConsignacionTable({
             <TableHead className="w-12 p-4"></TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {sortedConsignaciones.map((row, index) => {
+        {/* Al filtrar, ordenar, paginar o retirar un inmueble, las filas
+            entran escalonadas (techo de 320 ms) y la que se va, sale. */}
+        <TableBodyAnimado>
+          {sortedConsignaciones.map((row) => {
             const rowKey = portafolioRowKey(row);
             const PropertyIcon = getPropertyIcon(row.propertyType);
+            // QA con avatares (04-10): un inmueble en BORRADOR salía
+            // «Disponible». Se dice «Borrador», con la MISMA regla del chip
+            // (`cajonDelInmueble`), para que la fila y el filtro no se contradigan.
             const availability =
               row.kind === 'consignacion'
-                ? AVAILABILITY_COLORS[row.availability] ?? AVAILABILITY_COLORS.available
+                ? cajonDelInmueble(row) === 'borrador'
+                  ? BORRADOR
+                  : AVAILABILITY_COLORS[row.availability] ?? AVAILABILITY_COLORS.available
                 : null;
             const propietarioName =
               row.kind === 'consignacion' ? propietariosMap[row.propietarioId] : undefined;
@@ -374,13 +393,10 @@ export function ConsignacionTable({
             const propertyCode = row.kind === 'sinMandato' ? row.code : (row.propertyCode ?? undefined);
 
             return (
-              <motion.tr
+              <TableRowAnimada
                 key={rowKey}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.02 }}
                 onClick={() => (row.kind === 'consignacion' ? onView(row) : handleCompletarMandato())}
-                className="border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors"
+                className="border-b last:border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors"
               >
                 {/* Code (T-0038 §3.2.5) */}
                 <TableCell className="p-4">
@@ -409,9 +425,12 @@ export function ConsignacionTable({
                       <p className="font-medium text-foreground truncate max-w-[200px]">
                         {row.propertyTitle}
                       </p>
-                      <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                        {row.propertyAddress}
-                      </p>
+                      {/* IN-02: si el título ES la dirección, no se repite debajo. */}
+                      {row.propertyAddress && row.propertyAddress.trim() !== row.propertyTitle.trim() ? (
+                        <p className="text-sm text-muted-foreground truncate max-w-[200px]">
+                          {row.propertyAddress}
+                        </p>
+                      ) : null}
                     </div>
                   </div>
                 </TableCell>
@@ -501,12 +520,17 @@ export function ConsignacionTable({
                     (§A.3), `commissionPercent` es siempre 0: se muestra
                     `saleCommissionPercent` en su lugar. */}
                 <TableCell className="p-4">
+                  {/* IN-03 (QA 04-10): decía «% 10%» (el ícono de porcentaje
+                      y el «%» del número). Ahora «10 %» una vez, con la misma
+                      regla de la tarjeta y la ficha (`textoDeLaComision`),
+                      que además dice «No venía en el archivo» en vez de un 0. */}
                   {row.kind === 'consignacion' ? (
-                    <Badge variant="secondary" className="gap-1 tabular-nums">
-                      <Percent className="w-3.5 h-3.5" />
-                      {row.listingType === 'sale'
-                        ? (row.saleCommissionPercent != null ? `${row.saleCommissionPercent}%` : '—')
-                        : `${row.commissionPercent}%`}
+                    <Badge
+                      variant="secondary"
+                      className="whitespace-nowrap tabular-nums"
+                      title={textoCortoDeLaComision(row).explicacion}
+                    >
+                      {textoCortoDeLaComision(row).texto}
                     </Badge>
                   ) : (
                     <span className="text-muted-foreground">—</span>
@@ -561,9 +585,13 @@ export function ConsignacionTable({
                     disparador que manda a llenar el mandato. */}
                 <TableCell className="p-4">
                   {availability ? (
-                    <Badge variant={availability.variant}>
-                      {t(availability.labelKey)}
-                    </Badge>
+                    <>
+                      <Badge variant={availability.variant}>
+                        {t(availability.labelKey)}
+                      </Badge>
+                      {/* COMERCIAL: «Vacante hace 42 días» / «Mandato vence el …». */}
+                      <SituacionComercialCorta className="max-w-[7.5rem]" datos={row.kind === 'consignacion' ? comercialPorConsignacion?.[row.id] : undefined} />
+                    </>
                   ) : (
                     <Button
                       variant="ghost"
@@ -694,10 +722,10 @@ export function ConsignacionTable({
                   </DropdownList>
                   )}
                 </TableCell>
-              </motion.tr>
+              </TableRowAnimada>
             );
           })}
-        </TableBody>
+        </TableBodyAnimado>
       </Table>
 
       {/* Empty State */}

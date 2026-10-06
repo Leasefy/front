@@ -104,7 +104,7 @@ export function AvisoDeBorradorDePublicacion({
       </div>
 
       <AlertDialog open={preguntar} onOpenChange={setPreguntar}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {t('inmobiliaria.consignaciones.wizard.borrador.dialogo.titulo')}

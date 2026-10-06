@@ -38,13 +38,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/lib/auth'
 import { getApiConfig } from '@/lib/api/config'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
-import {
-  SIN_AGENTE_CONFIGURADO,
-  SIN_AGENCIA,
-  mensajeDeRespuestaFallida,
-  mensajeDeErrorDeRed,
-} from './traer-del-agente'
+import { agentFetch } from '@/lib/api/agent-fetch'
+import { SIN_AGENTE_CONFIGURADO, SIN_AGENCIA, mensajeDeErrorDeRed, RespuestaDelAgente } from './traer-del-agente'
 import { getMockTicketDetail } from '@/lib/data/mock-mantenimiento'
 import type { MaintenanceTicketDetail } from '@/lib/types/mantenimiento'
 
@@ -113,12 +108,11 @@ export function useMantenimientoTicket(ticketId: string): UseMantenimientoTicket
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/mantenimiento/tickets/${ticketId}`,
-        { headers: agentAuthHeaders() },
+      const res = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/mantenimiento/tickets/${ticketId}`
       )
       if (!vigente()) return
-      if (!res.ok) throw new Error(mensajeDeRespuestaFallida(res, 'el ticket'))
+      if (!res.ok) throw new RespuestaDelAgente(res, 'el ticket')
       const json: MaintenanceTicketDetail = await res.json()
       setData(json)
       setError(null)

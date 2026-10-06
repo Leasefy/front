@@ -77,7 +77,8 @@ import {
   tramosParaGuardar,
 } from '@/lib/finanzas/deterioro';
 import { mesActual } from '@/lib/recaudo/meses';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+// CB-17: la plata de Contabilidad con UN formato («$ 1.234.567», «−$ 119.100»).
+import { plata as formatCurrency } from '@/lib/contabilidad/plata';
 
 const NUMERO = new Intl.NumberFormat('es-CO');
 
@@ -93,11 +94,24 @@ const NOMBRE_DEL_ESTADO: Record<EstadoDeLaProvision, string> = {
   ANULADA: 'Anulada',
 };
 
-/** «0 a 90 días» / «180+ días» — el rango del tramo en días de mora. */
+/**
+ * «De 0 a 90 días» / «De 91 a 180 días» / «Más de 180 días» — el rango del
+ * tramo en días de mora (con los tramos del back 26beefbc: 0–91, 91–181, 181+).
+ *
+ * 🔴 CB-08 (QA de Contabilidad, 03-10-2026): decía «0 a 90» y «90 a 180»: dos
+ * tramos compartían el 90. El back cuenta una cuota en el tramo cuando
+ * `desdeDias <= días < hastaDias` (`deterioro-de-cartera.ts`), así que el
+ * último día de un tramo es `hastaDias − 1`: la cuota de 90 días cae en el
+ * segundo, y el rótulo lo dice.
+ */
 export function rangoEnDias(tramo: { desdeDias: number; hastaDias: number | null }): string {
-  return tramo.hastaDias === null
-    ? `${tramo.desdeDias}+ días`
-    : `${tramo.desdeDias} a ${tramo.hastaDias} días`;
+  if (tramo.hastaDias === null) {
+    return tramo.desdeDias > 0 ? `Más de ${tramo.desdeDias - 1} días` : 'Cualquier mora';
+  }
+  const ultimo = tramo.hastaDias - 1;
+  return ultimo <= tramo.desdeDias
+    ? `${tramo.desdeDias} días`
+    : `De ${tramo.desdeDias} a ${ultimo} días`;
 }
 
 export function DeterioroDeCarteraPanel() {
@@ -208,6 +222,7 @@ export function DeterioroDeCarteraPanel() {
     setEnviando(true);
     try {
       await finanzasApi.anularDeterioro(provision.id, motivo.trim());
+      setMismoAprobador(false);
       toast.success('Provisión anulada.');
       setConfirmando(null);
       setMotivo('');
@@ -243,7 +258,10 @@ export function DeterioroDeCarteraPanel() {
         )}
       </div>
 
-      {mismoAprobador ? (
+      {/* 🔴 CB-31 (QA de Contabilidad, 03-10-2026): sólo con una provisión
+          APROBADA. Después de anularla el aviso quedaba pegado sobre
+          «Sin proponer», hablando de algo que ya no existía. */}
+      {mismoAprobador && aprobada ? (
         <p
           className="border-b border-border bg-warning-soft px-4 py-3 text-sm text-fg"
           data-testid="mismo-aprobador"
@@ -282,6 +300,7 @@ export function DeterioroDeCarteraPanel() {
               />
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 <Cifra
+                  formato={formatCurrency}
                   id="movimiento"
                   etiqueta="Movimiento del mes"
                   valor={movimiento}
@@ -289,18 +308,21 @@ export function DeterioroDeCarteraPanel() {
                   tono={movimiento > 0 ? 'danger' : movimiento < 0 ? 'success' : undefined}
                 />
                 <Cifra
+                  formato={formatCurrency}
                   id="provision"
                   etiqueta="Provisión al cierre"
                   valor={provisionCop}
                   definicion="El saldo acumulado que queda en la cuenta correctora después de este mes. NO es lo que se asienta."
                 />
                 <Cifra
+                  formato={formatCurrency}
                   id="provision-anterior"
                   etiqueta="Provisión del mes anterior"
                   valor={anteriorCop}
                   definicion="La última aprobada. Es el punto de partida del movimiento."
                 />
                 <Cifra
+                  formato={formatCurrency}
                   id="cartera-provisionable"
                   etiqueta="Cartera provisionable"
                   valor={datos.calculo.carteraCop}
@@ -456,7 +478,12 @@ export function DeterioroDeCarteraPanel() {
         open={confirmando === 'aprobar'}
         onOpenChange={(o) => !o && setConfirmando(null)}
       >
-        <DialogContent className="max-w-md" data-testid="dialogo-aprobar-deterioro">
+        <DialogContent
+          size="sm"
+          variant="confirm"
+          icon={<CheckCircle weight="bold" />}
+          data-testid="dialogo-aprobar-deterioro"
+        >
           <DialogHeader>
             <DialogTitle>Aprobar la provisión</DialogTitle>
             <DialogDescription>
@@ -486,7 +513,13 @@ export function DeterioroDeCarteraPanel() {
 
       {/* ── Anular: con motivo, siempre ────────────────────────────────── */}
       <Dialog open={confirmando === 'anular'} onOpenChange={(o) => !o && setConfirmando(null)}>
-        <DialogContent className="max-w-md" data-testid="dialogo-anular-deterioro">
+        {/* Destructiva: no borra (reversa), pero deja sin efecto la provisión. */}
+        <DialogContent
+          size="sm"
+          variant="destructive"
+          icon={<Prohibit weight="bold" />}
+          data-testid="dialogo-anular-deterioro"
+        >
           <DialogHeader>
             <DialogTitle>Anular la provisión</DialogTitle>
             <DialogDescription>
@@ -506,6 +539,7 @@ export function DeterioroDeCarteraPanel() {
               Cancelar
             </Button>
             <Button
+              variant="destructive"
               hideArrow
               onClick={() => void anular()}
               disabled={motivo.trim().length < 5}

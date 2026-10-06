@@ -28,7 +28,7 @@ import { useI18n } from '@/lib/i18n'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Spinner } from '@/components/ui'
-import { Chip } from '@leasefy/cadence'
+import { AnimatedNumber, Chip, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import {
@@ -164,8 +164,11 @@ function PendienteCard({ item }: { item: PendienteItem }) {
     }
   }, [item, t, formatCurrency, formatDate])
 
+  // Un `StaggerItem`: filtrar por grupo, paginar o resolver un pendiente hace
+  // entrar los que llegan (escalonados, techo 320 ms) y salir los que sobran.
   return (
-    <li
+    <StaggerItem
+      as="li"
       className="rounded-lg border border-border bg-card p-4 space-y-2.5"
       data-testid={`pendiente-item-${item.key}`}
     >
@@ -208,7 +211,7 @@ function PendienteCard({ item }: { item: PendienteItem }) {
           </Link>
         </Button>
       </div>
-    </li>
+    </StaggerItem>
   )
 }
 
@@ -239,19 +242,24 @@ function PendientesContent() {
     useTablePagination(visibleItems, { resetKey: effectiveFilter ?? 'todos' })
 
   // ── Primer load ────────────────────────────────────────────────────────────
+  // Movimiento: cada salida en un `CrossFade` con su clave (cargando →
+  // pendientes, → «todo al día»); lo que ya estaba al montarse no se anima.
   if (isLoading && items.length === 0 && !error) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="p-6 lg:p-8">
         <div className="flex items-center justify-center py-12">
           <Spinner size="md" />
         </div>
       </div>
+      </CrossFade>
     )
   }
 
   // ── Empty state celebratorio ───────────────────────────────────────────────
   if (!isLoading && items.length === 0 && !error) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-6">
         <header>
           <h1 className="text-h2 text-fg">
@@ -267,10 +275,12 @@ function PendientesContent() {
           description={t(`${NS}.vacioHint`)}
         />
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="pendientes">
     <div className="p-6 lg:p-8 space-y-6">
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
@@ -284,15 +294,14 @@ function PendientesContent() {
       </header>
 
       {/* Error total — solo cuando ninguna fuente rindió datos */}
-      {error && items.length === 0 && (
-        <div
+      <Presence
+          show={Boolean(error && items.length === 0)}
           role="alert"
           className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
-        </div>
-      )}
+      </Presence>
 
       {/* Chips de conteo por grupo — click = filtro */}
       {items.length > 0 && (
@@ -310,7 +319,9 @@ function PendientesContent() {
                 data-testid={`pendientes-chip-${grupo}`}
               >
                 {t(GRUPO_KEY[grupo])}
-                <span className="tabular-nums">{count}</span>
+                <span className="tabular-nums">
+                  <AnimatedNumber value={count} format={(n) => String(Math.round(n))} />
+                </span>
               </Chip>
             )
           })}
@@ -320,11 +331,11 @@ function PendientesContent() {
       {/* Lista priorizada — Alta → Media → Baja, fecha DESC dentro */}
       {visibleItems.length > 0 && (
         <div className="max-w-3xl">
-          <ul className="space-y-3" aria-label={t(`${NS}.pageTitle`)}>
+          <Stagger as="ul" className="space-y-3" aria-label={t(`${NS}.pageTitle`)}>
             {pageItems.map((item) => (
               <PendienteCard key={item.key} item={item} />
             ))}
-          </ul>
+          </Stagger>
 
           {shouldPaginate && (
             <div className="border-t border-border px-4 py-3 mt-3">
@@ -341,6 +352,7 @@ function PendientesContent() {
         </div>
       )}
     </div>
+    </CrossFade>
   )
 }
 

@@ -28,6 +28,8 @@ import type { LandlordNotification, TenantNotification } from '@/lib/types/notif
 interface UseLandlordNotificationsReturn {
   notifications: LandlordNotification[];
   unreadCount: number;
+  /** NO-01 (QA 04-10): el total REAL de la bandeja, no el tamaño de la página. */
+  total: number;
   isLoading: boolean;
   error: string | null;
   markAsRead: (id: string) => Promise<void>;
@@ -50,6 +52,7 @@ export function useLandlordNotifications(
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<LandlordNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
 
@@ -68,6 +71,7 @@ export function useLandlordNotifications(
       const res = await notificationsApi.getLandlordNotifications();
       setNotifications(res.notifications);
       setUnreadCount(res.unreadCount);
+      setTotal(res.total);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar notificaciones');
     } finally {
@@ -87,6 +91,7 @@ export function useLandlordNotifications(
     setNotifications((prev) =>
       prev.some((x) => x.id === mapped.id) ? prev : [mapped, ...prev]
     );
+    setTotal((prev) => prev + 1);
     if (!mapped.read) setUnreadCount((prev) => prev + 1);
   }, []);
 
@@ -138,6 +143,7 @@ export function useLandlordNotifications(
     try {
       await notificationsApi.deleteNotification(id);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
+      setTotal((prev) => Math.max(0, prev - 1));
       if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
       // Surface the failure so the caller can toast — don't swallow.
@@ -149,6 +155,7 @@ export function useLandlordNotifications(
   return {
     notifications,
     unreadCount,
+    total,
     isLoading,
     error,
     markAsRead,
@@ -165,6 +172,8 @@ export function useLandlordNotifications(
 interface UseTenantNotificationsReturn {
   notifications: TenantNotification[];
   unreadCount: number;
+  /** NO-01 (QA 04-10): el total REAL de la bandeja, no el tamaño de la página. */
+  total: number;
   isLoading: boolean;
   error: string | null;
   markAsRead: (id: string) => Promise<void>;
@@ -179,6 +188,7 @@ export function useTenantNotifications(
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<TenantNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
 
@@ -194,6 +204,7 @@ export function useTenantNotifications(
       const res = await notificationsApi.getTenantNotifications();
       setNotifications(res.notifications);
       setUnreadCount(res.unreadCount);
+      setTotal(res.total);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar notificaciones');
     } finally {
@@ -212,6 +223,7 @@ export function useTenantNotifications(
     setNotifications((prev) =>
       prev.some((x) => x.id === mapped.id) ? prev : [mapped, ...prev]
     );
+    setTotal((prev) => prev + 1);
     if (!mapped.read) setUnreadCount((prev) => prev + 1);
   }, []);
 
@@ -261,6 +273,7 @@ export function useTenantNotifications(
     try {
       await notificationsApi.deleteNotification(id);
       setNotifications((prev) => prev.filter((n) => n.id !== id));
+      setTotal((prev) => Math.max(0, prev - 1));
       if (wasUnread) setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
       // Surface the failure so the caller can toast — don't swallow.
@@ -272,6 +285,7 @@ export function useTenantNotifications(
   return {
     notifications,
     unreadCount,
+    total,
     isLoading,
     error,
     markAsRead,

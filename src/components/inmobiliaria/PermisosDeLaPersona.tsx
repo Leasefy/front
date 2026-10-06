@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useI18n } from '@/lib/i18n';
 import { permissionsApi } from '@/lib/api/inmobiliaria.service';
 import type { PermMap } from '@/lib/api/inmobiliaria.service';
@@ -77,7 +78,14 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
         setPropios(efectivos);
       })
       .catch((e: unknown) => {
-        if (!cancelado) setError(e instanceof Error ? e.message : 'No se pudieron leer sus permisos.');
+        if (!cancelado) {
+          setError(
+            mensajeParaLaPersona(e, {
+              porDefecto: 'No se pudieron leer sus permisos.',
+              accion: 'leer sus permisos',
+            }),
+          );
+        }
       });
     return () => {
       cancelado = true;
@@ -114,7 +122,10 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
       onCerrar();
     } catch (e) {
       toast.error('No se pudieron guardar sus permisos', {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeParaLaPersona(e, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'guardar sus permisos',
+        }),
       });
     } finally {
       setGuardando(false);
@@ -127,7 +138,7 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
 
   return (
     <Dialog open={persona !== null} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="sm:max-w-3xl" data-testid="permisos-de-la-persona">
+      <DialogContent size="xl" data-testid="permisos-de-la-persona">
         <DialogHeader>
           <DialogTitle>Permisos de {persona?.name || persona?.email}</DialogTitle>
           <DialogDescription data-testid="frase-de-permisos-propios">
@@ -144,7 +155,8 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
         ) : !propios || !delRol ? (
           <p className="text-sm text-fg-muted">Leyendo sus permisos…</p>
         ) : (
-          <div className="max-h-[60vh] space-y-4 overflow-y-auto">
+          // Sin scroll propio: el cuerpo del modal ya es lo único que scrollea.
+          <div className="space-y-4">
             {diferencias.length > 0 ? (
               <section aria-labelledby="diferencias-titulo" className="rounded-md border border-border p-3">
                 <h3 id="diferencias-titulo" className="text-sm font-semibold text-fg">
@@ -237,7 +249,7 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
           </div>
         )}
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter>
           <Button
             variant="outline"
             hideArrow

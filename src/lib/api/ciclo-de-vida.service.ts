@@ -43,7 +43,14 @@ export interface MotivoDeTerminacion {
   nombre: string;
   /** `OTRO` — el back rechaza la terminación sin nota. */
   exigeNota: boolean;
+  /**
+   * QA-CONT-95 (CR-10 · A-08, CEO 18-09): con venta o incumplimiento del
+   * arrendador NO se le cobra penalidad al inquilino; con mutuo acuerdo o fuerza
+   * mayor, sólo si se escribe. Ausente (back viejo) = la regla de `penalidadSegunElMotivo`.
+   */
+  penalidad?: 'POR_DEFECTO' | 'SOLO_SI_SE_ESCRIBE' | 'NO_APLICA';
 }
+
 
 export interface ProrrateoDelUltimoMes {
   mes: string;
@@ -61,6 +68,15 @@ export interface ProrrateoDelUltimoMes {
   terminaUnDiaAntes?: boolean;
 }
 
+/** El tope de la penalidad que definió la inmobiliaria (`tope-de-la-penalidad.ts` del back). */
+export interface TopeDeLaPenalidad {
+  canones: number;
+  valorCop: number;
+  origen: 'INMOBILIARIA' | 'CONTRATO';
+  descripcion: string;
+  mensaje: string;
+}
+
 export interface VistaPreviaDeTerminacion {
   puedeTerminarse: boolean;
   /** Por qué no se puede, en castellano. `null` cuando sí se puede. */
@@ -71,6 +87,14 @@ export interface VistaPreviaDeTerminacion {
   disponible: boolean;
   /** La penalidad por defecto (cánones del contrato o de la inmobiliaria), para prellenar. */
   penalidadSugerida?: { canones: number; valorCop: number } | null;
+  /**
+   * 🔴 El tope de la penalidad, que LO DEFINE CADA INMOBILIARIA (Nico, 02-10-2026):
+   * N cánones del contrato o de la configuración, por el canon. `descripcion`
+   * es la ayuda del campo; `mensaje`, el error si se pasa (la misma frase del
+   * 400 `PENALIDAD_SOBRE_EL_TOPE`). `null` = no hay tope de negocio (sólo el de
+   * la columna). Un back viejo no lo manda.
+   */
+  penalidadMaxima?: TopeDeLaPenalidad | null;
   /** D10: lo que falta de la garantía de servicios para recibir el inmueble. */
   garantiaDeServiciosPendiente?: string | null;
 }
@@ -412,6 +436,46 @@ export interface ResultadoDeLaCesion {
   propietarioNuevo: string;
   cuotasReapuntadas: number;
   parteId: string;
+  /**
+   * QA-CONT-95 r3 (E-10): el mes que contiene la fecha, repartido por días
+   * entre el que vende y el que compra, o por qué quedó completo del que
+   * vende. `null`/ausente si la fecha no parte ningún mes.
+   */
+  mesRepartido?: {
+    /** `AAAA-MM`. */
+    mes: string;
+    diasDelQueVende?: number;
+    diasDelQueCompra?: number;
+    sinRepartir?: string;
+  } | null;
+}
+
+/**
+ * QA-CONT CR-06 (back ff282197, `POST /contracts/:id/cambio-de-inquilino`): el
+ * contrato sigue con otro inquilino desde la fecha (hoy o antes). Lo anterior
+ * sigue siendo del saliente.
+ */
+export interface CambioDeInquilino {
+  /** `AAAA-MM-DD`, hoy o antes (el back responde 400 `CAMBIO_DE_INQUILINO_FUTURO`). */
+  desde: string;
+  nombre: string;
+  documento: string;
+  correo?: string;
+  telefono?: string;
+  /** El propietario lo aceptó (CEO 17-09). Sin `true`: 400 `FALTA_LA_ACEPTACION_DEL_PROPIETARIO`. */
+  aceptaElPropietario: boolean;
+  nota?: string;
+}
+
+export interface ResultadoDelCambioDeInquilino {
+  contractId: string;
+  desde: string;
+  inquilinoAnterior: string | null;
+  inquilinoNuevo: string;
+  cuotasReapuntadas: number;
+  /** El documento del entrante ya tiene cuenta en el portal. */
+  conCuenta: boolean;
+  parteId: string;
 }
 
 export const cicloDeVidaApi = {
@@ -458,6 +522,10 @@ export const cicloDeVidaApi = {
     },
   ) =>
     apiClient.post<ResultadoDeLaCesion>(`/contracts/${contractId}/cesion`, body),
+
+  /** QA-CONT CR-06: cambiar de inquilino (punto de quiebre). 409 `INQUILINO_SALIENTE_CON_DEUDA` si el saliente debe vencido. */
+  cambiarDeInquilino: (contractId: string, body: CambioDeInquilino) =>
+    apiClient.post<ResultadoDelCambioDeInquilino>(`/contracts/${contractId}/cambio-de-inquilino`, body),
 
   /** Contrato vencido con el inquilino adentro: renovar por los días ocupados o por el término inicial. */
   extender: (

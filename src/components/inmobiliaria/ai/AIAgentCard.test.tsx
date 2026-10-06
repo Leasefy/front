@@ -20,6 +20,11 @@ vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ locale: 'es' }),
 }))
 
+const mockPush = vi.fn()
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ push: mockPush }),
+}))
+
 // Sentinel for the execution panel so we can assert it mounts without pulling
 // in portals / Lenis.
 vi.mock('./AIAgentExecutionPanel', () => ({
@@ -31,6 +36,7 @@ const mockRunScoring = vi.fn()
 let _hookState: {
   isRunning: boolean
   error: string | null
+  limiteDelPlan?: string | null
   result: unknown
   trace: { id: string; agentId: string; title: string; status: string; steps: unknown[] } | null
 } = { isRunning: false, error: null, result: null, trace: null }
@@ -54,6 +60,7 @@ let root: Root
 beforeEach(() => {
   _hookState = { isRunning: false, error: null, result: null, trace: null }
   mockRunScoring.mockReset()
+  mockPush.mockReset()
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -123,5 +130,51 @@ describe('AIAgentCard — execution panel', () => {
 
     // Auto-open effect fires on completed trace → panel sentinel present
     expect(container.querySelector('[data-testid="execution-panel"]')).not.toBeNull()
+  })
+})
+
+// ── (4) el tope del plan, dicho donde pasó (02-10-2026) ────────────────────────
+
+const TOPE_DEL_MES =
+  'Tu inmobiliaria alcanzó el límite de 30 evaluaciones de este mes de su plan. Sube de plan para evaluar más candidatos, o espera al próximo mes.'
+
+describe('AIAgentCard — el tope de evaluaciones del plan', () => {
+  it('🔴 dice el motivo entero, ofrece «Ver planes» y no navega solo', () => {
+    _hookState = { isRunning: false, error: TOPE_DEL_MES, limiteDelPlan: 'evaluaciones', result: null, trace: null }
+    render()
+
+    const aviso = container.querySelector('[data-testid="error-del-agente"]')
+    expect(aviso?.getAttribute('role')).toBe('alert')
+    expect(aviso?.textContent).toContain(TOPE_DEL_MES)
+    // El texto ya no se recorta a una línea.
+    expect(aviso?.querySelector('.truncate')).toBeNull()
+    expect(container.querySelector('[data-testid="ver-planes"]')?.textContent).toBe('Ver planes')
+    // Pintarlo no navega.
+    expect(mockPush).not.toHaveBeenCalled()
+  })
+
+  it('«Ver planes» lleva a la página de los planes sólo al tocarlo, sin disparar el enlace de la tarjeta', () => {
+    _hookState = { isRunning: false, error: TOPE_DEL_MES, limiteDelPlan: 'evaluaciones', result: null, trace: null }
+    render()
+    const verPlanes = container.querySelector<HTMLButtonElement>('[data-testid="ver-planes"]')!
+    const clic = new MouseEvent('click', { bubbles: true, cancelable: true })
+    act(() => {
+      verPlanes.dispatchEvent(clic)
+    })
+    expect(clic.defaultPrevented).toBe(true)
+    expect(mockPush).toHaveBeenCalledWith('/panel/inmobiliaria/upgrade')
+  })
+
+  it('un error que no es del plan no ofrece «Ver planes»', () => {
+    _hookState = {
+      isRunning: false,
+      error: 'No pudimos iniciar la evaluación: algo falló de nuestro lado. Si sigue pasando, escríbenos con la referencia a1b2c3d4.',
+      limiteDelPlan: null,
+      result: null,
+      trace: null,
+    }
+    render()
+    expect(container.querySelector('[data-testid="error-del-agente"]')?.textContent).toContain('referencia a1b2c3d4')
+    expect(container.querySelector('[data-testid="ver-planes"]')).toBeNull()
   })
 })

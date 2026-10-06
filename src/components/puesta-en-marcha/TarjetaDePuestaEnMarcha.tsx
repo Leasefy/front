@@ -98,13 +98,15 @@ export function TarjetaDePuestaEnMarcha({
         initial={animar && aparece ? { opacity: 0, y: 12, scale: 0.98 } : false}
         animate={saliendo ? { opacity: 0, y: 6, scale: 0.99 } : { opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: animar ? (saliendo ? 0.24 : 0.36) : 0, ease: SUAVE }}
-        // La cáscara de los modales hechos a mano (`rounded-[20px]`, DESIGN
-        // §17), la de la bienvenida del recorrido. `minmax(0,1fr)` también en
+        // El radio del modal del sistema (`rounded-[24px]`, DESIGN §17, desde
+        // el 02-10-2026), la cáscara de la bienvenida del recorrido. No es un
+        // `Dialog` a propósito: es la tarjeta de dos columnas con foto de marca
+        // que Nico pidió para la puesta en marcha (30-09). `minmax(0,1fr)` también en
         // teléfono: con `auto`, lo que no podía partirse la estiraba.
         // En escritorio, el MISMO alto para los dos pasos: en el relevo la
         // tarjeta no crece ni se corre; lo que no cabe scrollea en la columna
         // del contenido, con la foto quieta. En teléfono scrollea la tarjeta.
-        className="grid max-h-[calc(100dvh-32px)] w-full max-w-[880px] grid-cols-[minmax(0,1fr)] overflow-y-auto overscroll-contain rounded-[20px] border border-border bg-surface shadow-lg outline-none md:h-[min(880px,calc(100dvh-32px))] md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:grid-rows-[minmax(0,1fr)] md:overflow-hidden"
+        className="grid max-h-[calc(100dvh-32px)] w-full max-w-[880px] grid-cols-[minmax(0,1fr)] overflow-y-auto overscroll-contain rounded-[24px] border border-border bg-surface shadow-lg outline-none md:h-[min(880px,calc(100dvh-32px))] md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:grid-rows-[minmax(0,1fr)] md:overflow-hidden"
         style={{ overscrollBehavior: 'contain' }}
         data-lenis-prevent
         data-entrada={entrada}

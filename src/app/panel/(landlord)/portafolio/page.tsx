@@ -44,8 +44,9 @@ export default function PortafolioPage() {
     return (
       <div className="min-h-screen bg-bg px-4 py-10 sm:px-6" data-testid="mi-plata-fallo">
         <div className="mx-auto max-w-3xl">
+          {/* El fallo entero (status + cuerpo, con la referencia de un 5xx); el armado a mano queda de respaldo. */}
           <FalloDeCarga
-            error={new ApiError(fallo.status, fallo.mensaje)}
+            error={fallo.error ?? new ApiError(fallo.status, fallo.mensaje)}
             queEs="tu plata"
             onReintentar={reintentar}
           />

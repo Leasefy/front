@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { NavItem } from '@/components/ui/plan/PlanSidebar';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -33,16 +33,11 @@ export function MobileNavSheet({ open, items, hrefActivo, onClose }: MobileNavSh
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent
-        side="bottom"
-        className="rounded-t-xl max-h-[70vh] overflow-y-auto"
-        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 16px)' }}
-      >
-        <SheetHeader className="sr-only">
-          <SheetTitle>{t('inmobiliaria.mobileNav.sheetTitle')}</SheetTitle>
-        </SheetHeader>
+      <SheetContent side="bottom" aria-describedby={undefined}>
+        {/* Visible: con la cabecera escondida, la ✕ caía encima de la primera fila. */}
+        <SheetHeader title={t('inmobiliaria.mobileNav.sheetTitle')} />
 
-        <div className="flex flex-col">
+        <SheetBody className="flex flex-col px-3 pt-3 pb-[max(env(safe-area-inset-bottom),1.25rem)]">
           {items.filter((item) => item.kind !== 'section').map((item) => {
             const active = isActive(item);
             const IconComponent = item.icon as React.ComponentType<{
@@ -76,9 +71,13 @@ export function MobileNavSheet({ open, items, hrefActivo, onClose }: MobileNavSh
                   aria-label={rowItem.label}
                   aria-current={rowActive ? 'page' : undefined}
                   className={cn(
-                    'flex items-center gap-4 px-4 py-3 min-h-[52px] rounded-lg',
+                    // `px-3` + el `px-3` del cuerpo = 24 px: el ícono queda en la
+                    // línea del título (DESIGN.md §Drawers, «Contenido alineado al padding»).
+                    'flex items-center gap-4 px-3 py-3 min-h-[52px] rounded-lg',
+                    // El azul de la fila activa del menú (globals.css), el mismo
+                    // de la barra: en oscuro, apagado.
                     rowActive
-                      ? 'bg-primary-soft text-primary'
+                      ? 'bg-[color:var(--menu-activa)] font-medium text-[color:var(--menu-activa-tinta)]'
                       : 'text-fg hover:bg-surface-muted'
                   )}
                 >
@@ -96,7 +95,7 @@ export function MobileNavSheet({ open, items, hrefActivo, onClose }: MobileNavSh
               );
             });
           })}
-        </div>
+        </SheetBody>
 
         {/* Acá abajo había una fila «Cerrar» con su propia ✕, además de la del
             cajón: dos aspas para la misma acción. Queda la del `SheetContent`,

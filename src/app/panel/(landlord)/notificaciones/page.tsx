@@ -1,8 +1,9 @@
 'use client';
 
+import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import {
   Bell,
   Check,
@@ -31,10 +32,11 @@ import {
   ArrowRight,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui';
-import { IconButton, Chip } from '@leasefy/cadence';
+import { IconButton, Chip, CrossFade, StaggerItem } from '@leasefy/cadence';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useLandlordNotifications } from '@/lib/hooks/useNotifications';
 import { LANDLORD_CATEGORIES } from '@/lib/types/notification';
@@ -114,6 +116,8 @@ function NotificationSkeleton() {
 export default function NotificacionesPage() {
   const { t, formatRelativeDate } = useI18n();
   const router = useRouter();
+  const administrados = useContratosAdministrados();
+  const deInmobiliaria = administrados.doc !== null;
   const {
     notifications,
     unreadCount,
@@ -125,10 +129,16 @@ export default function NotificacionesPage() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [hideRead, setHideRead] = useState(false);
 
-  const notifyError = () => toast.error(t('header.notificationActionError'));
-  const handleMarkAsRead = (id: string) => markAsRead(id).catch(notifyError);
-  const handleMarkAllAsRead = () => markAllAsRead().catch(notifyError);
-  const handleDeleteNotification = (id: string) => deleteNotification(id).catch(notifyError);
+  // 02-10-2026 · Antes, cualquier fallo decía el mismo texto fijo. Ahora por
+  // el traductor: un 4xx dice qué pasó, un 5xx que fue nuestro (con la
+  // referencia) y «conexión» sólo si no hubo respuesta.
+  const notifyError = (accion: string) => (err: unknown) =>
+    toast.error(mensajeParaLaPersona(err, { porDefecto: t('header.notificationActionError'), accion }));
+  const handleMarkAsRead = (id: string) =>
+    markAsRead(id).catch(notifyError('marcar la notificación como leída'));
+  const handleMarkAllAsRead = () => markAllAsRead().catch(notifyError('marcar las notificaciones como leídas'));
+  const handleDeleteNotification = (id: string) =>
+    deleteNotification(id).catch(notifyError('borrar la notificación'));
 
   const visibleNotifications = hideRead ? notifications.filter((n) => !n.read) : notifications;
   const filteredNotifications = visibleNotifications.filter((n) => {
@@ -152,8 +162,9 @@ export default function NotificacionesPage() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      {/* Header — QA-PROP-95 (PO-24): a 390 px «Marcar todo como leído» baja de
+          renglón; antes la página se corría 45 px de lado. */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-fg">
             {t('landlord.notifications.title')}
@@ -184,12 +195,16 @@ export default function NotificacionesPage() {
           { id: 'all', label: t('landlord.notifications.filterAll') },
           { id: 'unread', label: t('landlord.notifications.filterUnread'), count: unreadCount },
           { id: 'payment', label: t('landlord.notifications.filterPayments') },
-          { id: 'application', label: t('landlord.notifications.filterCandidates') },
+          { id: 'application', label: t('landlord.notifications.filterCandidates'), soloIndependiente: true },
           { id: 'contract', label: t('landlord.notifications.filterContracts') },
-          { id: 'lease', label: t('landlord.notifications.filterLeases') },
-          { id: 'visit', label: t('landlord.notifications.filterVisits') },
-          { id: 'property', label: t('landlord.notifications.filterProperties') },
-        ].map((f) => (
+          { id: 'lease', label: t('landlord.notifications.filterLeases'), soloIndependiente: true },
+          { id: 'visit', label: t('landlord.notifications.filterVisits'), soloIndependiente: true },
+          { id: 'property', label: t('landlord.notifications.filterProperties'), soloIndependiente: true },
+        ]
+          // QA-PROP-95: candidatos, arriendos, visitas y propiedades son del
+          // propietario independiente; a quien administra una inmobiliaria no le sirven.
+          .filter((f) => !(deInmobiliaria && 'soloIndependiente' in f && f.soloIndependiente))
+          .map((f) => (
           <Chip
             key={f.id}
             selected={filter === f.id}
@@ -197,15 +212,27 @@ export default function NotificacionesPage() {
             className="whitespace-nowrap"
           >
             {f.label}
-            {f.count !== undefined && f.count > 0 && (
-              <span className="tabular-nums">{f.count}</span>
+            {'count' in f && f.count !== undefined && f.count > 0 && (
+              <span className="ml-1 tabular-nums">{f.count}</span>
             )}
           </Chip>
         ))}
       </div>
 
-      {/* Notifications List */}
+      {/* Notifications List — cargando → lista, cambiar de filtro o quedar
+          vacío cruzan el contenido; dentro de un filtro, marcar o borrar saca
+          la fila y las demás se corren (lo que ya estaba no se anima). */}
       <div className="bg-surface rounded-lg border border-border overflow-hidden">
+        <CrossFade
+          className="relative"
+          swapKey={
+            isLoading
+              ? 'cargando'
+              : filteredNotifications.length === 0
+                ? `vacio-${filter}`
+                : `lista-${filter}`
+          }
+        >
         {isLoading ? (
           // Loading skeleton
           <div>
@@ -213,9 +240,7 @@ export default function NotificacionesPage() {
               <NotificationSkeleton key={i} />
             ))}
           </div>
-        ) : (
-        <AnimatePresence mode="popLayout">
-          {filteredNotifications.length === 0 ? (
+        ) : filteredNotifications.length === 0 ? (
             <EmptyState
               icon={Bell}
               title={
@@ -229,18 +254,14 @@ export default function NotificacionesPage() {
               className="border-0 rounded-none bg-transparent"
             />
           ) : (
-            filteredNotifications.map((notification, index) => {
+          <AnimatePresence initial={false} mode="popLayout">
+            {filteredNotifications.map((notification, index) => {
               const IconComponent = getNotificationIcon(notification.type);
               const categoryConfig = getCategoryConfig(notification.category);
 
               return (
-                <motion.div
+                <StaggerItem
                   key={notification.id}
-                  layout
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -100 }}
-                  transition={{ duration: 0.2 }}
                   onClick={() => handleNotificationClick(notification)}
                   className={cn(
                     'flex items-start gap-4 px-5 py-4 hover:bg-surface-hover transition-colors cursor-pointer group',
@@ -350,12 +371,12 @@ export default function NotificacionesPage() {
                     )}
                     <CaretRight className="w-4 h-4 text-fg-subtle group-hover:text-fg-muted transition-colors" />
                   </div>
-                </motion.div>
+                </StaggerItem>
               );
-            })
+            })}
+          </AnimatePresence>
           )}
-        </AnimatePresence>
-        )}
+        </CrossFade>
       </div>
 
       {/* Summary */}

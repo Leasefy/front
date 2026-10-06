@@ -4,41 +4,79 @@
  * Cargar un extracto: el archivo se lee en el navegador (como todas las
  * importaciones), se mapean las columnas por sinónimos, se muestran cinco
  * filas de prueba y recién ahí se manda al back.
+ *
+ * 🔴 Fase 1 de la conciliación (02-10-2026):
+ *   · la CUENTA es obligatoria (Nico, P3): sale de las cuentas de la
+ *     inmobiliaria (Configuración → Medios de pago) y cada línea la guarda;
+ *   · los saldos inicial y final (de la columna «Saldo» o escritos acá) y el
+ *     período prueban que el extracto llegó completo: si no cuadra, entra
+ *     igual y queda el aviso;
+ *   · si el archivo parece de OTRA cuenta (409 `EXTRACTO_DE_OTRA_CUENTA`), se
+ *     pregunta antes de duplicar nada.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { UploadSimple, X } from '@phosphor-icons/react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Bank, UploadSimple, Warning, X } from '@phosphor-icons/react';
 import { Banner } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from '@/components/ui/toast';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { leerPrimerasFilas, parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
+import { ApiError } from '@/lib/api/client';
 import { conciliacionBancariaApi } from '@/lib/api/conciliacion-bancaria.service';
-import type { ResultadoDeCarga } from '@/lib/api/conciliacion-bancaria.types';
+import type { CuentaDelExtracto, ResultadoDeCarga } from '@/lib/api/conciliacion-bancaria.types';
 import {
   COLUMNAS_DE_EXTRACTO,
   armarFilasDeExtracto,
   detectarFilaDeEncabezado,
   faltantesDelMapeo,
+  leerValorDelExtracto,
   mapearColumnasDeExtracto,
   type CampoDeExtracto,
   type MapeoDeExtracto,
 } from '@/lib/cobros/extracto-bancario';
-import { mensajeDe, plata } from './formato';
-import { tesoreriaApi } from '@/lib/api/tesoreria.service';
-import type { CuentaDeclarada } from '@/lib/api/tesoreria.types';
+import { errorDeLasFilasDelExtracto, leerSaldoEscrito } from '@/lib/cobros/limites-del-extracto';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { plata } from './formato';
+import {
+  RUTA_DE_LOS_MEDIOS_DE_PAGO,
+  cuadreEnVivo,
+  fraseDelCuadre,
+  nombreDeLaCuenta,
+  opcionDeLaCuenta,
+  partesDelResultado,
+  periodoDeLasFilas,
+  traeLaColumnaDeSaldo,
+  useAparecer,
+} from './cuentas-del-extracto';
 
 interface Props {
   onCargado: (resultado: ResultadoDeCarga) => void;
 }
 
 const SIN_MAPEAR = '__ninguna__';
-/** «No la declaro»: el extracto entra como siempre y el back avisa. */
-const SIN_CUENTA = '__sin_cuenta__';
+
+/** El 409 de «este archivo parece de otra cuenta», con lo que hace falta para preguntar. */
+interface DeOtraCuenta {
+  mensaje: string;
+}
 
 export function CargarExtracto({ onCargado }: Props) {
   const input = useRef<HTMLInputElement>(null);
+  const mov = useAparecer();
   const [archivo, setArchivo] = useState<File | null>(null);
   const [encabezados, setEncabezados] = useState<string[]>([]);
   const [crudas, setCrudas] = useState<Record<string, unknown>[]>([]);
@@ -46,39 +84,73 @@ export function CargarExtracto({ onCargado }: Props) {
   const [leyendo, setLeyendo] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [resultado, setResultado] = useState<ResultadoDeCarga | null>(null);
-  /**
-   * 🔴 (18-09-2026) A qué CUENTA corresponde este extracto. Es lo que le permite
-   * al back impedir que el mismo pago entre por el extracto Y por el archivo de
-   * recaudo del convenio. Las cuentas salen de los convenios configurados: si
-   * ninguna está declarada, este selector no aparece y todo sigue como antes.
-   */
-  const [cuentas, setCuentas] = useState<CuentaDeclarada[]>([]);
-  const [cuenta, setCuenta] = useState<string>(SIN_CUENTA);
 
-  useEffect(() => {
-    let vivo = true;
-    void tesoreriaApi
-      .cuentasDeclaradas()
-      .then((c) => {
-        if (!vivo) return;
-        setCuentas(c);
-        // Con UNA sola cuenta declarada no hay nada que elegir: se preselecciona.
-        if (c.length === 1) setCuenta(c[0].cuenta);
-      })
-      // Un back sin desplegar no tiene esta ruta: el extracto entra como antes.
-      .catch(() => undefined);
-    return () => {
-      vivo = false;
-    };
+  /**
+   * 🔴 (02-10-2026, Nico P3) Las cuentas de la inmobiliaria. La cuenta es
+   * obligatoria: sin ninguna registrada no se puede cargar, y se dice dónde
+   * registrarla.
+   */
+  const [cuentas, setCuentas] = useState<CuentaDelExtracto[] | null>(null);
+  const [errorDeCuentas, setErrorDeCuentas] = useState<unknown>(null);
+  const [cuentaId, setCuentaId] = useState('');
+  const [saldoInicial, setSaldoInicial] = useState('');
+  const [saldoFinal, setSaldoFinal] = useState('');
+  const [desde, setDesde] = useState('');
+  const [hasta, setHasta] = useState('');
+  const [deOtraCuenta, setDeOtraCuenta] = useState<DeOtraCuenta | null>(null);
+
+  const leerCuentas = useCallback(async () => {
+    setErrorDeCuentas(null);
+    try {
+      const r = await conciliacionBancariaApi.cuentas();
+      const activas = r.cuentas.filter((c) => c.activa);
+      setCuentas(activas);
+      // Con UNA sola cuenta no hay nada que elegir: se preselecciona.
+      if (activas.length === 1) setCuentaId(activas[0].id);
+    } catch (error) {
+      setErrorDeCuentas(error);
+    }
   }, []);
 
-  /** La cuenta elegida, si recauda por ARCHIVO: su extracto no se puede cargar. */
-  const laCuentaEntraPorArchivo = cuentas.find(
-    (c) => c.cuenta === cuenta && c.via === 'ARCHIVO',
-  );
+  useEffect(() => {
+    void leerCuentas();
+  }, [leerCuentas]);
 
-  const armadas = useMemo(() => armarFilasDeExtracto(crudas, mapeo), [crudas, mapeo]);
+  const cuenta = cuentas?.find((c) => c.id === cuentaId) ?? null;
+  /** La cuenta elegida recauda por ARCHIVO: su extracto no se puede cargar. */
+  const laCuentaEntraPorArchivo = cuenta?.via === 'ARCHIVO' ? cuenta : null;
+
+  /*
+   * «Centavos en todo» (C3-FRONT): con la llave de la tesorería prendida, el
+   * extracto se trae TAL CUAL, con los centavos del banco (el 4×1000, los
+   * intereses); una celda con más de dos decimales se frena con su frase.
+   * Apagada, al peso como siempre.
+   */
+  const conCentavos = usePlataConCentavos('tesoreria_y_conciliacion');
+  const armadas = useMemo(
+    () => armarFilasDeExtracto(crudas, mapeo, { conCentavos }),
+    [crudas, mapeo, conCentavos],
+  );
   const faltan = faltantesDelMapeo(mapeo);
+  /** 🔁 Espejo del tope del back: más de 20.000 líneas no se mandan. */
+  const demasiadas = errorDeLasFilasDelExtracto(armadas.filas.length);
+  const periodoDeLasLineas = useMemo(() => periodoDeLasFilas(armadas.filas), [armadas.filas]);
+  const conColumnaDeSaldo = traeLaColumnaDeSaldo(armadas.filas);
+
+  const parsearSaldo = (texto: string): number | null => {
+    const leido = leerValorDelExtracto(texto, conCentavos);
+    return leido && 'valor' in leido ? leido.valor : null;
+  };
+  const inicial = leerSaldoEscrito(saldoInicial, parsearSaldo, { conCentavos });
+  const final = leerSaldoEscrito(saldoFinal, parsearSaldo, { conCentavos });
+  const cuadre = cuadreEnVivo(armadas.filas, inicial.valor, final.valor);
+  const periodoAlReves = !!desde && !!hasta && desde > hasta;
+
+  // El período arranca en el de las líneas; la persona lo cambia si el extracto cubre más.
+  useEffect(() => {
+    setDesde(periodoDeLasLineas?.desde ?? '');
+    setHasta(periodoDeLasLineas?.hasta ?? '');
+  }, [periodoDeLasLineas?.desde, periodoDeLasLineas?.hasta]);
 
   const leer = async (f: File) => {
     setLeyendo(true);
@@ -98,7 +170,8 @@ export function CargarExtracto({ onCargado }: Props) {
       setCrudas(r.rows as Record<string, unknown>[]);
       setMapeo(mapearColumnasDeExtracto(r.headers));
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo leer el archivo.'));
+      // Un fallo al LEER el archivo es del navegador, no del servidor.
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo leer el archivo.' }));
     } finally {
       setLeyendo(false);
     }
@@ -109,23 +182,35 @@ export function CargarExtracto({ onCargado }: Props) {
     setEncabezados([]);
     setCrudas([]);
     setMapeo({});
+    setSaldoInicial('');
+    setSaldoFinal('');
     if (input.current) input.current.value = '';
   };
 
-  const cargar = async () => {
-    if (!archivo || faltan.length > 0 || armadas.filas.length === 0) return;
+  const cargar = async (aceptarIgualesDeOtraCuenta = false) => {
+    if (!archivo || !cuenta || faltan.length > 0 || armadas.filas.length === 0) return;
+    if (demasiadas) {
+      toast.error(demasiadas);
+      return;
+    }
     setCargando(true);
     try {
-      const r = await conciliacionBancariaApi.cargarExtracto(
-        archivo.name,
-        armadas.filas,
-        cuenta === SIN_CUENTA ? undefined : cuenta,
-      );
+      const r = await conciliacionBancariaApi.cargarExtracto(archivo.name, armadas.filas, {
+        cuentaId: cuenta.id,
+        saldoInicialCop: inicial.valor,
+        saldoFinalCop: final.valor,
+        // El período sólo viaja si la persona lo cambió: si no, el back lo saca
+        // de las mismas líneas.
+        desde: desde && desde !== periodoDeLasLineas?.desde ? desde : undefined,
+        hasta: hasta && hasta !== periodoDeLasLineas?.hasta ? hasta : undefined,
+        aceptarIgualesDeOtraCuenta,
+      });
+      setDeOtraCuenta(null);
       setResultado(r);
       onCargado(r);
       const detalle = [
-        r.yaPagadasPorPasarela > 0
-          ? `${r.yaPagadasPorPasarela} ya ${r.yaPagadasPorPasarela === 1 ? 'estaba pagado' : 'estaban pagados'} por la pasarela y ${r.yaPagadasPorPasarela === 1 ? 'quedó marcado' : 'quedaron marcados'}.`
+        (r.conPropuestaDeLaPasarela ?? 0) > 0
+          ? `${r.conPropuestaDeLaPasarela} ${r.conPropuestaDeLaPasarela === 1 ? 'puede ser un pago en línea' : 'pueden ser pagos en línea'}: ${r.conPropuestaDeLaPasarela === 1 ? 'quedó' : 'quedaron'} para que lo decidas.`
           : '',
         r.pendientes > 0
           ? `${r.pendientes} por conciliar${r.seguras > 0 ? `, ${r.seguras} con candidato seguro` : ''}.`
@@ -136,15 +221,29 @@ export function CargarExtracto({ onCargado }: Props) {
       toast.success(
         r.nuevas === 0
           ? 'Nada nuevo: todas las líneas ya estaban cargadas.'
-          : `${r.nuevas} ${r.nuevas === 1 ? 'movimiento nuevo' : 'movimientos nuevos'} del extracto.`,
+          : `${r.nuevas} ${r.nuevas === 1 ? 'movimiento nuevo' : 'movimientos nuevos'} del extracto de ${nombreDeLaCuenta(cuenta)}.`,
         detalle ? { description: detalle } : undefined,
       );
-      // 🔴 Los avisos del camino de entrada no son un detalle del éxito: se
-      // muestran aparte para que no se pierdan en la misma línea.
+      // 🔴 Los avisos no son un detalle del éxito: se muestran aparte.
       for (const aviso of r.avisos ?? []) toast.info(aviso);
       limpiar();
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo cargar el extracto.'));
+      if (error instanceof ApiError && error.code === 'EXTRACTO_DE_OTRA_CUENTA') {
+        setDeOtraCuenta({
+          mensaje: mensajeParaLaPersona(error, {
+            porDefecto: 'Buena parte de este archivo ya está cargada en otra cuenta.',
+          }),
+        });
+        return;
+      }
+      // El 409 de la cuenta que recauda por archivo y los 400 traen su motivo
+      // en palabras; un 5xx dice que fue nuestro, con la referencia.
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo cargar el extracto.',
+          accion: 'cargar el extracto',
+        }),
+      );
     } finally {
       setCargando(false);
     }
@@ -163,14 +262,26 @@ export function CargarExtracto({ onCargado }: Props) {
     });
   };
 
+  const sinCuentas = cuentas !== null && cuentas.length === 0;
+  const noSePuedeCargar =
+    cargando ||
+    !cuenta ||
+    armadas.filas.length === 0 ||
+    laCuentaEntraPorArchivo !== null ||
+    demasiadas !== null ||
+    !!inicial.error ||
+    !!final.error ||
+    periodoAlReves;
+
   return (
     <section className="space-y-4 rounded-lg border border-border bg-surface p-5" data-testid="cargar-extracto">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
           <h2 className="text-base font-semibold text-fg">Cargar el extracto</h2>
           <p className="text-sm text-fg-muted">
-            El CSV o Excel que exporta el banco, tal cual. Las líneas que ya estaban cargadas no se
-            duplican, así que se puede subir el mes entero cada vez.
+            El CSV o Excel que exporta el banco, tal cual, de UNA cuenta. Las líneas que ya estaban
+            cargadas no se duplican, así que se puede subir el mes entero cada vez; dos movimientos
+            iguales el mismo día entran los dos.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -192,54 +303,96 @@ export function CargarExtracto({ onCargado }: Props) {
         </div>
       </div>
 
-      {/* 🔴 (18-09-2026) A qué cuenta corresponde este extracto. Sólo aparece si
-          hay convenios de recaudo con cuenta declarada: sin eso no hay nada que
-          elegir y la pantalla queda como estaba. */}
-      {cuentas.length > 0 && (
-        <div className="space-y-2" data-testid="cuenta-del-extracto">
-          <label className="space-y-1 text-sm">
-            <span className="font-medium text-fg">¿De qué cuenta es este extracto?</span>
-            <select
-              className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg sm:w-96"
-              value={cuenta}
-              onChange={(e) => setCuenta(e.target.value)}
-              data-testid="elegir-cuenta-del-extracto"
-            >
-              <option value={SIN_CUENTA}>— no la declaro —</option>
-              {cuentas.map((c) => (
-                <option key={c.cuenta} value={c.cuenta}>
-                  {c.cuenta} · {c.banco} ({c.via === 'ARCHIVO' ? 'recauda por archivo' : 'por extracto'})
-                </option>
-              ))}
-            </select>
-          </label>
-          {laCuentaEntraPorArchivo ? (
-            <Banner variant="warning" title="Esta cuenta recauda por el archivo del banco">
-              La plata de {laCuentaEntraPorArchivo.cuenta} entra por el archivo del convenio «
-              {laCuentaEntraPorArchivo.convenio}». Cargar además su extracto dejaría cada pago DOS
-              veces en la cola, y conciliar los dos le emitiría al inquilino dos recibos por un
-              pago que hizo una vez. Importa el archivo en Tesorería → Recaudo del banco.
-            </Banner>
-          ) : (
-            <p className="text-caption text-fg-muted">
-              Decir la cuenta es lo que le permite al sistema impedir que el mismo pago entre por
-              el extracto Y por el archivo de recaudo del banco.
-            </p>
-          )}
-        </div>
-      )}
+      {/* 🔴 (02-10-2026, Nico P3) La cuenta del extracto, obligatoria. */}
+      <div className="space-y-2" data-testid="cuenta-del-extracto">
+        {errorDeCuentas ? (
+          <Banner variant="warning" title="No se pudieron leer las cuentas de la inmobiliaria">
+            {mensajeParaLaPersona(errorDeCuentas, {
+              porDefecto: 'Sin la cuenta no se puede cargar el extracto.',
+            })}{' '}
+            <button type="button" className="font-medium underline" onClick={() => void leerCuentas()}>
+              Reintentar
+            </button>
+          </Banner>
+        ) : cuentas === null ? (
+          <p className="flex items-center gap-2 text-caption text-fg-muted">
+            <Spinner size="sm" /> Leyendo las cuentas de la inmobiliaria…
+          </p>
+        ) : sinCuentas ? (
+          <Banner variant="warning" title="Registra primero la cuenta del banco" data-testid="sin-cuentas">
+            El extracto se carga en una cuenta de la inmobiliaria, y no hay ninguna registrada. Agrégala en{' '}
+            <Link href={RUTA_DE_LOS_MEDIOS_DE_PAGO} className="font-medium underline">
+              Configuración → Medios de pago
+            </Link>{' '}
+            (transferencia, Nequi o Daviplata). Si no tienes permiso para cambiar la configuración, pídeselo a
+            un administrador.
+          </Banner>
+        ) : (
+          <>
+            <label className="space-y-1 text-sm">
+              <span className="font-medium text-fg">¿De qué cuenta es este extracto?</span>
+              <select
+                className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg sm:w-[28rem]"
+                value={cuentaId}
+                onChange={(e) => setCuentaId(e.target.value)}
+                data-testid="elegir-cuenta-del-extracto"
+                aria-describedby="cuenta-del-extracto-ayuda"
+              >
+                <option value="">— elige la cuenta —</option>
+                {cuentas.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {opcionDeLaCuenta(c)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {laCuentaEntraPorArchivo ? (
+              <Banner variant="warning" title="Esta cuenta recauda por el archivo del banco">
+                La plata de {nombreDeLaCuenta(laCuentaEntraPorArchivo)} entra por el archivo del convenio «
+                {laCuentaEntraPorArchivo.convenio}». Cargar además su extracto dejaría cada pago DOS veces en
+                la cola, y conciliar los dos le emitiría al inquilino dos recibos por un pago que hizo una
+                vez. Importa el archivo en Tesorería → Recaudo del banco.
+              </Banner>
+            ) : (
+              <p id="cuenta-del-extracto-ayuda" className="text-caption text-fg-muted">
+                La conciliación, el saldo y el cierre van por cuenta. ¿No está la cuenta? Regístrala en{' '}
+                <Link href={RUTA_DE_LOS_MEDIOS_DE_PAGO} className="underline">
+                  Medios de pago
+                </Link>
+                .
+              </p>
+            )}
+          </>
+        )}
+      </div>
 
-      {resultado && (
-        <Banner variant={resultado.nuevas > 0 ? 'success' : 'info'} title="Extracto cargado">
-          {resultado.nuevas} nuevas · {resultado.repetidas} ya estaban · {resultado.salidas} salidas de plata
-          {resultado.descartadas > 0 ? ` · ${resultado.descartadas} descartadas por ilegibles` : ''}
-          {resultado.yaPagadasPorPasarela > 0
-            ? ` · ${resultado.yaPagadasPorPasarela} ya ${resultado.yaPagadasPorPasarela === 1 ? 'pagada' : 'pagadas'} por la pasarela`
-            : ''}
-          . Quedan {resultado.pendientes} por conciliar
-          {resultado.seguras > 0 ? `, ${resultado.seguras} con candidato seguro` : ''}.
-        </Banner>
-      )}
+      <AnimatePresence initial={false}>
+        {resultado && (
+          <motion.div key="resultado" {...mov}>
+            <Banner
+              variant={resultado.saldos?.cuadra === false ? 'warning' : resultado.nuevas > 0 ? 'success' : 'info'}
+              title={resultado.cuenta ? `Extracto cargado en ${nombreDeLaCuenta(resultado.cuenta)}` : 'Extracto cargado'}
+              data-testid="resultado-de-la-carga"
+            >
+              {partesDelResultado(resultado).join(' · ')}. Quedan {resultado.pendientes} por conciliar
+              {resultado.seguras > 0 ? `, ${resultado.seguras} con candidato seguro` : ''}.
+              {resultado.saldos?.cuadra === true && (
+                <> El saldo inicial más los movimientos da el saldo final: llegó completo.</>
+              )}
+              {resultado.saldos?.cuadra === false && resultado.saldos.diferenciaCop !== null && (
+                <> No cuadra por {plata(Math.abs(resultado.saldos.diferenciaCop))}: revisa si el archivo trae todas las líneas.</>
+              )}
+              {(resultado.huecos?.length ?? 0) > 0 && (
+                <>
+                  {' '}
+                  Falta el extracto de {resultado.huecos!.length === 1 ? 'un período' : `${resultado.huecos!.length} períodos`} de esta
+                  cuenta.
+                </>
+              )}
+            </Banner>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {archivo && (
         <div className="space-y-4" data-testid="vista-previa">
@@ -283,6 +436,99 @@ export function CargarExtracto({ onCargado }: Props) {
             </Banner>
           ) : (
             <>
+              {demasiadas ? (
+                <Banner variant="warning" title="El extracto es muy largo" data-testid="extracto-muy-largo">
+                  {demasiadas}
+                </Banner>
+              ) : null}
+
+              {/* 🔴 (02-10-2026) Saldos y período: lo que prueba que el extracto llegó completo. */}
+              <motion.fieldset
+                {...mov}
+                className="grid gap-3 rounded-md border border-border bg-surface-muted p-4 sm:grid-cols-2 lg:grid-cols-4"
+                data-testid="saldos-y-periodo"
+              >
+                <legend className="px-1 text-sm font-medium text-fg">Saldos y período del extracto</legend>
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-fg">Desde</span>
+                  <input
+                    type="date"
+                    className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
+                    value={desde}
+                    onChange={(e) => setDesde(e.target.value)}
+                    data-testid="periodo-desde"
+                    aria-invalid={periodoAlReves || undefined}
+                    aria-describedby={periodoAlReves ? 'periodo-desde-error' : undefined}
+                  />
+                  <ErrorDelCampo
+                    id="periodo-desde-error"
+                    mensaje={periodoAlReves ? 'La fecha de inicio va antes de la final.' : null}
+                  />
+                </label>
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-fg">Hasta</span>
+                  <input
+                    type="date"
+                    className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
+                    value={hasta}
+                    onChange={(e) => setHasta(e.target.value)}
+                    data-testid="periodo-hasta"
+                  />
+                </label>
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-fg">Saldo inicial</span>
+                  <input
+                    inputMode="numeric"
+                    className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm tabular-nums text-fg"
+                    value={saldoInicial}
+                    placeholder={conColumnaDeSaldo ? 'De la columna «Saldo»' : '$ 0'}
+                    onChange={(e) => setSaldoInicial(e.target.value)}
+                    data-testid="saldo-inicial"
+                    aria-invalid={inicial.error ? true : undefined}
+                    aria-describedby="saldo-inicial-error"
+                  />
+                  <ErrorDelCampo id="saldo-inicial-error" mensaje={inicial.error ?? null} />
+                </label>
+                <label className="space-y-1 text-sm">
+                  <span className="font-medium text-fg">Saldo final</span>
+                  <input
+                    inputMode="numeric"
+                    className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm tabular-nums text-fg"
+                    value={saldoFinal}
+                    placeholder={conColumnaDeSaldo ? 'De la columna «Saldo»' : '$ 0'}
+                    onChange={(e) => setSaldoFinal(e.target.value)}
+                    data-testid="saldo-final"
+                    aria-invalid={final.error ? true : undefined}
+                    aria-describedby="saldo-final-error"
+                  />
+                  <ErrorDelCampo id="saldo-final-error" mensaje={final.error ?? null} />
+                </label>
+                <p className="text-caption text-fg-muted sm:col-span-2 lg:col-span-4" data-testid="ayuda-de-los-saldos">
+                  {conColumnaDeSaldo
+                    ? 'El archivo trae la columna «Saldo»: el sistema lee de ahí el saldo inicial y el final y revisa que no falte ninguna línea. Escríbelos sólo si quieres corregirlos.'
+                    : 'Escríbelos como salen en el extracto: con ellos el sistema comprueba que llegó completo. Si los dejas vacíos, el extracto entra igual, pero sin esa prueba.'}
+                  {' '}El período sale de las fechas de las líneas; cámbialo si el extracto cubre más días (el mes
+                  entero, por ejemplo).
+                </p>
+                <AnimatePresence initial={false}>
+                  {cuadre && (
+                    <motion.p
+                      key={cuadre.diferenciaCop === 0 ? 'cuadra' : 'no-cuadra'}
+                      {...mov}
+                      className={
+                        cuadre.diferenciaCop === 0
+                          ? 'text-caption font-medium text-success sm:col-span-2 lg:col-span-4'
+                          : 'flex items-center gap-1.5 text-caption font-medium text-warning sm:col-span-2 lg:col-span-4'
+                      }
+                      data-testid="cuadre-en-vivo"
+                    >
+                      {cuadre.diferenciaCop !== 0 && <Warning className="h-4 w-4" aria-hidden="true" />}
+                      {fraseDelCuadre(cuadre)}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </motion.fieldset>
+
               <div className="overflow-x-auto rounded-md border border-border">
                 <Table>
                   <TableHeader>
@@ -291,6 +537,7 @@ export function CargarExtracto({ onCargado }: Props) {
                       <TableHead>Descripción</TableHead>
                       <TableHead>Referencia</TableHead>
                       <TableHead className="text-right">Valor</TableHead>
+                      {conColumnaDeSaldo && <TableHead className="text-right">Saldo</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -300,6 +547,11 @@ export function CargarExtracto({ onCargado }: Props) {
                         <TableCell className="max-w-md truncate">{f.descripcion}</TableCell>
                         <TableCell className="font-mono text-fg-muted">{f.referencia ?? '—'}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums">{plata(f.valorCop)}</TableCell>
+                        {conColumnaDeSaldo && (
+                          <TableCell className="text-right font-mono tabular-nums text-fg-muted">
+                            {typeof f.saldoCop === 'number' ? plata(f.saldoCop) : '—'}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -319,20 +571,15 @@ export function CargarExtracto({ onCargado }: Props) {
                       {armadas.descartadas.length > 3 ? '…' : ''}
                     </>
                   )}
+                  {!cuenta && !sinCuentas && cuentas !== null && (
+                    <span className="block text-warning" data-testid="falta-la-cuenta">
+                      Elige arriba la cuenta del extracto para poder cargarlo.
+                    </span>
+                  )}
                 </p>
-                {/* 🔴 Con la cuenta marcada como «recauda por archivo» el botón
-                    NO se aprieta: el back responde 409 y el aviso de arriba ya
-                    dice qué hacer. Descubrirlo apretando es peor. */}
-                <Button
-                  hideArrow
-                  onClick={() => void cargar()}
-                  disabled={
-                    cargando ||
-                    armadas.filas.length === 0 ||
-                    laCuentaEntraPorArchivo !== undefined
-                  }
-                  data-testid="cargar"
-                >
+                {/* 🔴 Con la cuenta marcada como «recauda por archivo», o sin cuenta,
+                    el botón NO se aprieta: descubrirlo apretando es peor. */}
+                <Button hideArrow onClick={() => void cargar()} disabled={noSePuedeCargar} data-testid="cargar">
                   {cargando ? <Spinner size="sm" /> : <UploadSimple className="h-4 w-4" aria-hidden="true" />}
                   Cargar {armadas.filas.length} {armadas.filas.length === 1 ? 'movimiento' : 'movimientos'}
                 </Button>
@@ -341,6 +588,29 @@ export function CargarExtracto({ onCargado }: Props) {
           )}
         </div>
       )}
+
+      {/* 🔴 El archivo parece de OTRA cuenta: se pregunta antes de duplicar nada. */}
+      <Dialog open={deOtraCuenta !== null} onOpenChange={(abierto) => !abierto && setDeOtraCuenta(null)}>
+        <DialogContent variant="confirm" icon={<Bank weight="bold" />}>
+          <DialogHeader>
+            <DialogTitle>¿Este extracto es de {cuenta ? nombreDeLaCuenta(cuenta) : 'esta cuenta'}?</DialogTitle>
+            <DialogDescription data-testid="de-otra-cuenta">{deOtraCuenta?.mensaje}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" hideArrow disabled={cargando} onClick={() => setDeOtraCuenta(null)}>
+              No, elijo otra cuenta
+            </Button>
+            <Button
+              hideArrow
+              isLoading={cargando}
+              onClick={() => void cargar(true)}
+              data-testid="confirmar-de-esta-cuenta"
+            >
+              Sí, es de esta cuenta
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }

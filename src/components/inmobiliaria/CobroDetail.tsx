@@ -5,7 +5,7 @@ import { mesEnTitulo } from '@/lib/utils/mes';
 import { toast } from '@/components/ui/toast';
 import Link from 'next/link';
 import { conRegreso } from '@/lib/nav/ruta-de-regreso';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   X,
   Buildings,
@@ -28,7 +28,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { SheetTitle } from '@/components/ui/sheet';
+import { SheetHeader } from '@/components/ui/sheet';
 import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +44,8 @@ import { DesgloseAdeudado } from './DesgloseAdeudado';
 import { RecibosDeCajaHistorial } from './RecibosDeCajaHistorial';
 import { enviarRecordatorio } from './recordatorio-de-cobro';
 import { MOTIVO_SIN_PERMISO_DE_RECIBO, usePuedeHacerRecibo } from './permiso-de-recibo';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { diaEnColombia, fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 
 interface CobroDetailProps {
   isOpen: boolean;
@@ -153,9 +155,16 @@ export function CobroDetail({
   onSendReminder,
   onCobroActualizado,
 }: CobroDetailProps) {
-  const { t, formatDate, locale } = useI18n();
+  const { t, locale } = useI18n();
   const [isSendingReminder, setIsSendingReminder] = React.useState(false);
   const puedeHacerRecibo = usePuedeHacerRecibo();
+  /*
+   * 🔴 PG-R06 (QA de Pagos, 03-10-2026): anular un recibo es SÓLO del
+   * administrador (CEO, 16-09: «sólo un administrador, con motivo»; Nico lo
+   * confirmó el 03-10 y el back ya responde 403 al resto). El estado de cuenta
+   * lo cumplía; este cajón le ofrecía «Anular» al contador.
+   */
+  const puedeAnularRecibos = usePermissionsContextSafe()?.isAdmin ?? false;
   const { stop: stopLenis, start: startLenis } = useLenis();
 
   /*
@@ -238,30 +247,26 @@ export function CobroDetail({
 
   return (
     <Cajon abierto={isOpen} onOpenChange={(open) => !open && onClose()} ancho="sm:max-w-lg">
-      {/* Cabecera fija. La insignia de estado va a la derecha del título,
-          por eso no usa `CajonCabecera`. */}
-      <div className="flex-none border-b border-border px-6 py-5 pr-14">
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <SheetTitle className="text-lg font-semibold text-foreground">
-              {cobro.propertyTitle}
-            </SheetTitle>
-            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-              <MapPin className="w-4 h-4" />
-              {cobro.propertyAddress}
-            </p>
-          </div>
-          <StatusBadge status={cobro.status} />
-        </div>
-      </div>
+      {/* Cabecera fija: la insignia de estado a la derecha del título. */}
+      <SheetHeader
+        title={cobro.propertyTitle}
+        description={
+          <span className="flex items-center gap-1.5">
+            <MapPin className="w-4 h-4" />
+            {cobro.propertyAddress}
+          </span>
+        }
+        actions={<StatusBadge status={cobro.status} />}
+      />
 
-      <CajonCuerpo className="space-y-6">
+      <CajonCuerpo>
+        {/* Movimiento (ola 2, 03-10-2026): las secciones llegan escalonadas
+            con el techo del sistema (320 ms) y 4 px, mientras el cajón entra.
+            Antes cada una tenía su retraso a mano (0 → 0,3 s) y la última
+            terminaba de llegar casi medio segundo después del cajón. */}
+        <Stagger className="space-y-6" distance="xs" layout={false}>
         {/* Property Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="inmueble" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Buildings className="w-4 h-4 text-primary" />
             {t('inmobiliaria.cobros.detail.propertySection')}
@@ -296,15 +301,10 @@ export function CobroDetail({
               )}
             </div>
           </div>
-        </motion.section>
+        </StaggerItem>
 
         {/* Tenant Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="inquilino" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <User className="w-4 h-4 text-primary" />
             {t('inmobiliaria.cobros.detail.tenantSection')}
@@ -352,16 +352,11 @@ export function CobroDetail({
               )}
             </div>
           </div>
-        </motion.section>
+        </StaggerItem>
 
         {/* Propietario Section */}
         {propietario && (
-          <motion.section
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-            className="space-y-3"
-          >
+          <StaggerItem as="section" key="propietario" className="space-y-3">
             <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Bank className="w-4 h-4 text-primary" />
               {t('inmobiliaria.cobros.detail.ownerSection')}
@@ -380,16 +375,11 @@ export function CobroDetail({
                 </Link>
               </div>
             </div>
-          </motion.section>
+          </StaggerItem>
         )}
 
         {/* Amount Breakdown Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="desglose" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <CurrencyCircleDollar className="w-4 h-4 text-primary" />
             {t('inmobiliaria.cobros.detail.breakdownSection')}
@@ -408,10 +398,10 @@ export function CobroDetail({
               <div>
                 <p className="text-xs text-muted-foreground">{t('inmobiliaria.cobros.detail.dueDateLabel')}</p>
                 <p className="font-medium text-foreground">
-                  {formatDate(new Date(cobro.dueDate), {
-                    day: 'numeric',
-                    month: 'short',
-                  })}
+                  {/* PG-R11 (03-10-2026): el día del vencimiento tal cual. Con
+                      `new Date('2026-10-01')` (medianoche UTC) en Bogotá salía
+                      «30 de sept» para un cobro que vence el 1 de octubre. */}
+                  {fechaCorta(String(cobro.dueDate ?? '').slice(0, 10))}
                 </p>
               </div>
             </div>
@@ -438,20 +428,21 @@ export function CobroDetail({
               <div className="flex items-center gap-2">
                 <Warning className="w-4 h-4 text-danger" weight="fill" />
                 <span className="text-sm font-medium text-danger">
-                  {t('inmobiliaria.cobros.detail.daysLate', { count: cobro.daysLate })}
+                  {/* PG-R16: «1 día», no «1 días». */}
+                  {t(
+                    cobro.daysLate === 1
+                      ? 'inmobiliaria.cobros.detail.daysLateUno'
+                      : 'inmobiliaria.cobros.detail.daysLate',
+                    { count: cobro.daysLate },
+                  )}
                 </span>
               </div>
             </div>
           )}
-        </motion.section>
+        </StaggerItem>
 
         {/* Recibos de caja — cada abono, su documento */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="recibos" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Receipt className="w-4 h-4 text-primary" />
             {t('recibos.historial.titulo')}
@@ -461,17 +452,12 @@ export function CobroDetail({
             cargando={cargandoDetalle}
             fallo={falloRecibos}
             onReintentar={recargar}
-            onAnular={anularRecibo}
+            onAnular={puedeAnularRecibos ? anularRecibo : undefined}
           />
-        </motion.section>
+        </StaggerItem>
 
         {/* Reminder History Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="space-y-3"
-        >
+        <StaggerItem as="section" key="recordatorios" className="space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Bell className="w-4 h-4 text-primary" />
             {t('inmobiliaria.cobros.detail.remindersSection')} ({cobro.remindersSent})
@@ -492,11 +478,9 @@ export function CobroDetail({
                 {cobro.lastReminderDate && (
                   <p className="text-xs text-muted-foreground">
                     {t('inmobiliaria.cobros.detail.lastReminder')}{' '}
-                    {formatDate(new Date(cobro.lastReminderDate), {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
+                    {/* PG-R11: el día de Colombia. `new Date('2026-10-03')`
+                        es medianoche UTC y en Bogotá se pintaba el 2. */}
+                    {fechaCorta(diaEnColombia(cobro.lastReminderDate) ?? cobro.lastReminderDate)}
                   </p>
                 )}
               </div>
@@ -506,7 +490,8 @@ export function CobroDetail({
               {t('inmobiliaria.cobros.detail.noReminders')}
             </p>
           )}
-        </motion.section>
+        </StaggerItem>
+        </Stagger>
       </CajonCuerpo>
 
       {/* Pie fijo. A la izquierda lo secundario (la cuenta de cobro); a la derecha las acciones del cobro. */}

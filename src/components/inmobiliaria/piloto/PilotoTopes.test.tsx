@@ -27,6 +27,7 @@ vi.mock('@/lib/i18n', () => ({
 
 import { PilotoTopes, type PilotoTopesProps } from './PilotoTopes'
 import type { PilotoPreferenciasResponse } from '@/lib/api/piloto'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 
 function datos(cambios: Partial<PilotoPreferenciasResponse> = {}): PilotoPreferenciasResponse {
   return {
@@ -148,15 +149,78 @@ describe('PilotoTopes', () => {
     expect(guardar()?.disabled).toBe(true)
   })
 
-  it('si el micro no lo guarda, lo dice en la pantalla y en el aviso', async () => {
-    const onGuardar = vi.fn(async () => ({ ok: false, error: 'Sólo un administrador…' }))
+  it('si el micro no lo guarda, lo dice en la pantalla y en el aviso (el 403 por su código, nunca «403»)', async () => {
+    // Tanda 2 de errores (02-10-2026): antes salía «errorAlGuardar(403)» o el
+    // `error` del micro tal cual. El 403 del micro trae `code: SOLO_ADMINISTRADOR`.
+    const fallo = await falloDelMicro({
+      status: 403,
+      json: async () => ({ error: 'Sólo un administrador cambia los topes.', code: 'SOLO_ADMINISTRADOR' }),
+    })
+    const onGuardar = vi.fn(async () => ({ ok: false, error: 'Sólo un administrador cambia los topes.', fallo }))
     pintar({ onGuardar })
     escribir(input('graciaSegundos'), '120')
     await act(async () => {
       guardar()!.click()
     })
-    expect(q('[data-testid="piloto-topes-fallo"]')?.textContent).toMatch(/errorAlGuardar\(Sólo un administrador…\)/)
-    expect(toastMock.error).toHaveBeenCalled()
+    const pie = q('[data-testid="piloto-topes-fallo"]')?.textContent ?? ''
+    expect(pie).toBe('Sólo un administrador puede cambiar los topes del Piloto.')
+    expect(toastMock.error).toHaveBeenCalledWith('Sólo un administrador puede cambiar los topes del Piloto.')
+    expect(pie).not.toMatch(/403|SOLO_ADMINISTRADOR/)
+  })
+
+  it('🔴 un 400 con `campos` pinta el error debajo de SU tope, le da el foco y no va al aviso', async () => {
+    const fallo = await falloDelMicro({
+      status: 400,
+      json: async () => ({
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['La gracia no puede pasar de 600 segundos.'],
+        campos: [{ campo: 'graciaSegundos', regla: 'maximo', mensaje: 'La gracia no puede pasar de 600 segundos.', valor: 600 }],
+      }),
+    })
+    const onGuardar = vi.fn(async () => ({ ok: false, error: '400', fallo }))
+    pintar({ onGuardar })
+    escribir(input('graciaSegundos'), '120')
+    await act(async () => {
+      guardar()!.click()
+    })
+    const error = q('#piloto-topes-graciaSegundos-error')
+    expect(error?.textContent).toBe('La gracia no puede pasar de 600 segundos.')
+    expect(input('graciaSegundos').getAttribute('aria-invalid')).toBe('true')
+    expect(input('graciaSegundos').getAttribute('aria-describedby')).toBe('piloto-topes-graciaSegundos-error')
+    expect(document.activeElement).toBe(input('graciaSegundos'))
+    expect(toastMock.error).not.toHaveBeenCalled()
+    expect(q('[data-testid="piloto-topes-fallo"]')).toBeNull()
+
+    // Al corregir el campo, el error del servidor se va.
+    escribir(input('graciaSegundos'), '180')
+    expect(input('graciaSegundos').getAttribute('aria-invalid')).toBe('false')
+  })
+
+  it('un 5xx dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
+    const fallo = await falloDelMicro({
+      status: 500,
+      json: async () => ({ error: 'Internal Server Error', requestId: 'deadbeef-0001' }),
+    })
+    pintar({ onGuardar: vi.fn(async () => ({ ok: false, error: '500', fallo })) })
+    escribir(input('graciaSegundos'), '120')
+    await act(async () => {
+      guardar()!.click()
+    })
+    const pie = q('[data-testid="piloto-topes-fallo"]')?.textContent ?? ''
+    expect(pie).toContain('No pudimos guardar los topes: algo falló de nuestro lado')
+    expect(pie).toContain('deadbeef')
+    expect(pie).not.toMatch(/conexi|500/i)
+  })
+
+  it('si el pedido ni salió (status 0) habla de la conexión', async () => {
+    const red = new TypeError('Failed to fetch')
+    pintar({ onGuardar: vi.fn(async () => ({ ok: false, error: red.message, fallo: red })) })
+    escribir(input('graciaSegundos'), '120')
+    await act(async () => {
+      guardar()!.click()
+    })
+    expect(q('[data-testid="piloto-topes-fallo"]')?.textContent).toMatch(/conexión/)
   })
 
   it('el horario de ley se muestra y no se edita; dice quién cambió los topes', () => {

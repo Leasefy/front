@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
+import { Presence } from '@leasefy/cadence'
 import { buildContactMailto, isContactFormValid, CONTACT_EMAIL } from '@/lib/landing/contact-mailto'
 
 const INTEREST_CHIPS = ['CRM', 'ERP', 'Agentes AI', 'Todo el sistema'] as const
@@ -139,11 +140,10 @@ export function ContactForm() {
             />
           </label>
 
-          {showError && (
-            <p className="landing-cp__error" data-testid="contact-error" role="alert">
-              Completa tu nombre y email para poder responderte.
-            </p>
-          )}
+          {/* El aviso entra subiendo 8 px y sale con su salida (`Presence`), no de golpe. */}
+          <Presence show={showError} as="p" className="landing-cp__error" data-testid="contact-error" role="alert">
+            Completa tu nombre y email para poder responderte.
+          </Presence>
 
           <button type="submit" className="btn primary lg landing-cp__send" data-testid="contact-submit">
             Enviar mensaje

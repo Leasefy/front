@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Appear, Collapse } from '@leasefy/cadence';
 import { Plus, X, ArrowRight } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -45,11 +45,12 @@ export function PricingFAQSection() {
       <div className="container-platform py-20 lg:py-28">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
           {/* Left - Header */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+          {/* Debajo del pliegue: entra al aparecer en pantalla, con la
+              distancia y la duración del sistema (antes 30 px en 600 ms). */}
+          <Appear
+            inView
+            direction="right"
+            distance="md"
             className="lg:sticky lg:top-32 self-start"
           >
             {/* Label */}
@@ -73,18 +74,13 @@ export function PricingFAQSection() {
               Contáctanos
               <ArrowRight className="w-4 h-4 ml-2" />
             </a>
-          </motion.div>
+          </Appear>
 
           {/* Right - FAQ Accordion */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-          >
+          <Appear inView direction="left" distance="md" delay={0.08}>
             {pricingFaqs.map((faq, index) => (
               <div
-                key={index}
+                key={faq.question}
                 className="border-b border-border/60 last:border-0"
               >
                 <button
@@ -96,7 +92,7 @@ export function PricingFAQSection() {
                     {faq.question}
                   </span>
                   <span className={cn(
-                    "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300",
+                    "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors duration-slow",
                     openIndex === index
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary"
@@ -108,25 +104,16 @@ export function PricingFAQSection() {
                     )}
                   </span>
                 </button>
-                <AnimatePresence>
-                  {openIndex === index && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
+                {/* La respuesta se abre y se cierra con su altura (`Collapse`). */}
+                <Collapse open={openIndex === index}>
                       {/* Answer text */}
                       <p className="text-[15px] md:text-[16px] text-muted-foreground leading-relaxed pb-6 pr-12">
                         {faq.answer}
                       </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                </Collapse>
               </div>
             ))}
-          </motion.div>
+          </Appear>
         </div>
       </div>
     </section>

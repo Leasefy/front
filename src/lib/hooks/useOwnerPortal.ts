@@ -14,6 +14,7 @@ import { ownerFinanzasApi } from '@/lib/api/owner-finanzas.service';
 import { ownerSeleccionApi } from '@/lib/api/owner-seleccion.service';
 import { ownerSolicitudesApi } from '@/lib/api/owner-solicitudes.service';
 import { ownerNovedadesApi } from '@/lib/api/owner-novedades.service';
+import type { ApiError } from '@/lib/api/client';
 import type { OwnerPerfil } from '@/lib/api/owner-portal.types';
 import type { EleccionProceso, EleccionComparacion } from '@/lib/api/owner-seleccion.types';
 import type { Solicitud, SolicitudDetalle } from '@/lib/api/owner-solicitudes.types';
@@ -82,7 +83,10 @@ export interface UseOwnerFinanzasResult {
   inmuebles: FinanzasInmueble[];
   proyeccion: FinanzasProyeccion | null;
   recaudoAnual: FinanzasRecaudoAnual | null;
-  /** Por qué no llegó esa parte. `null` = llegó, o llegó vacía (O3). */
+  /**
+   * Por qué no llegó esa parte, ya dicho por el traductor (02-10-2026): «conexión» sólo sin
+   * respuesta, «de nuestro lado» + referencia en un 5xx. `null` = llegó, o llegó vacía (O3).
+   */
   falloProyeccion: string | null;
   falloRecaudo: string | null;
   isLoading: boolean;
@@ -90,9 +94,10 @@ export interface UseOwnerFinanzasResult {
   unavailable: boolean;
   /**
    * El portafolio no llegó por una CAÍDA (403, 5xx, red), no porque el portal esté apagado.
-   * Se dice con reintento; nunca «Próximamente» sobre un fallo (O1).
+   * Se dice con reintento; nunca «Próximamente» sobre un fallo (O1). `error` es el fallo entero
+   * (status + cuerpo, con la `referencia` de un 5xx) para `<FalloDeCarga>` (02-10-2026).
    */
-  fallo: { status: number; mensaje: string } | null;
+  fallo: { status: number; mensaje: string; error?: ApiError } | null;
   reintentar: () => void;
   agencyId: string | null;
 }
@@ -110,7 +115,7 @@ export function useOwnerFinanzas(): UseOwnerFinanzasResult {
   const [falloProyeccion, setFalloProyeccion] = useState<string | null>(null);
   const [falloRecaudo, setFalloRecaudo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [fallo, setFallo] = useState<{ status: number; mensaje: string } | null>(null);
+  const [fallo, setFallo] = useState<UseOwnerFinanzasResult['fallo']>(null);
   const [intento, setIntento] = useState(0);
 
   useEffect(() => {
@@ -131,7 +136,7 @@ export function useOwnerFinanzas(): UseOwnerFinanzasResult {
       setPortafolio(resultado.estado === 'ok' ? resultado.data : null);
       setFallo(
         resultado.estado === 'fallo'
-          ? { status: resultado.status, mensaje: resultado.mensaje }
+          ? { status: resultado.status, mensaje: resultado.mensaje, error: resultado.error }
           : null,
       );
       setInmuebles(inm);

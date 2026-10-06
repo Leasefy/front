@@ -21,18 +21,6 @@ vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k, locale: 'es' }),
 }));
 
-vi.mock('framer-motion', () => ({
-  motion: new Proxy(
-    {},
-    {
-      get:
-        (_target, tag: string) =>
-        ({ children, initial, animate, exit, transition, whileHover, whileTap, ...rest }: Record<string, unknown> & { children?: React.ReactNode }) =>
-          React.createElement(tag, rest, children),
-    },
-  ),
-}));
-
 import { PropietarioTable } from './PropietarioTable';
 
 const ALTAVISTA: Propietario = {

@@ -31,17 +31,23 @@ const { api } = vi.hoisted(() => ({
  */
 /*
  * 21-09: «Cómo se decide» pasó de un `<details>` al pie a un modal
- * (`ParaEntenderMas`). Se moquea el diálogo, no el botón: lo que hay que poder
+ * (`ParaEntenderMas`; desde el 05-10 un cajón). Se moquea el cajón, no el botón: lo que hay que poder
  * seguir probando es que la explicación EXISTE y dice lo mismo, no que esté
  * puesta sobre la pantalla.
  */
-vi.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
-    open ? <div data-testid="modal">{children}</div> : null,
-  DialogContent: ({ children, ...p }: { children: React.ReactNode }) => <div {...p}>{children}</div>,
-  DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
-  DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
+// 05-10-2026: `ParaEntenderMas` abre el CAJÓN de la casa (antes un modal), así
+// que el doble pasó del diálogo al cajón; las aserciones no cambian. Un cajón
+// de verdad pinta en un portal fuera del contenedor y mete a Radix en el medio.
+vi.mock('@/components/ui/cajon', () => ({
+  Cajon: ({ abierto, children }: { abierto: boolean; children: React.ReactNode }) =>
+    abierto ? <div data-testid="modal">{children}</div> : null,
+  CajonCabecera: ({ titulo, descripcion }: { titulo: React.ReactNode; descripcion?: React.ReactNode }) => (
+    <div>
+      <h2>{titulo}</h2>
+      {descripcion ? <p>{descripcion}</p> : null}
+    </div>
+  ),
+  CajonCuerpo: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
@@ -280,5 +286,59 @@ describe('CalceClient', () => {
     expect($('[data-testid="no-ofrecible"]')?.textContent).toContain(
       'sin fecha de salida',
     )
+  })
+
+  // 🔴 El estudio es OPCIONAL (Nico, 04-10-2026): sin estudio se ofrece por el
+  // presupuesto, cada opción va marcada y el estudio se sugiere.
+  it('sin estudio: ofrece por el presupuesto, marca cada opción y sugiere el estudio', async () => {
+    const marca = 'Sin estudio: el tope asegurable se sabe cuando haga el estudio'
+    api.paraElLead = vi.fn(() =>
+      Promise.resolve({
+        lead: { pipelineItemId: 'p-1', nombre: 'QA DÍA Prospecto Pipeline', correo: null },
+        busca: { presupuestoCop: 1_800_000, topeAsegurableCop: null },
+        presupuestoDicho: true,
+        falta: null,
+        opciones: [
+          {
+            propertyId: 'inm-1',
+            puntaje: 80,
+            porQue: [],
+            marca,
+            inmueble: { title: 'Apto 402', neighborhood: 'Laureles', city: 'Medellín', monthlyRent: 1_400_000, adminFee: 0, bedrooms: 2 },
+          },
+        ],
+      }),
+    )
+    await pintar()
+    await escribir('[data-testid="input-lead"]', 'p-1')
+    expect($('[data-testid="falta-requisito"]')).toBeNull()
+    expect(contenedor.textContent).not.toContain('Todavía no se le puede mandar nada')
+    expect($('[data-testid="marca-inm-1"]')?.textContent).toBe(marca)
+    expect($('[data-testid="sugerencia-del-estudio"]')?.textContent).toContain('Sugiérele')
+    expect(contenedor.textContent).toContain('sin estudio')
+  })
+
+  it('«Se liberó un inmueble»: el lead sin estudio aparece con su marca', async () => {
+    api.paraElInmueble = vi.fn(() =>
+      Promise.resolve({
+        ofrecible: true,
+        motivo: null,
+        leads: [
+          {
+            pipelineItemId: 'p-7',
+            nombre: 'QA DÍA Prospecto Pipeline',
+            correo: null,
+            propertyId: 'inm-9',
+            puntaje: 75,
+            porQue: [],
+            marca: 'Sin estudio: el tope asegurable se sabe cuando haga el estudio',
+          },
+        ],
+      }),
+    )
+    await pintar()
+    await irAlLadoDelInmueble()
+    await escribir('[data-testid="input-inmueble"]', 'inm-9')
+    expect($('[data-testid="marca-lead-p-7"]')?.textContent).toContain('Sin estudio')
   })
 })

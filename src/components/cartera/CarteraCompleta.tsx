@@ -83,7 +83,7 @@
  *    cambio vino a cerrar.
  */
 
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -95,18 +95,19 @@ import {
   Warning,
   X,
 } from '@phosphor-icons/react'
-import { SegmentedControl, type SegmentedOption } from '@leasefy/cadence'
+import { Appear, MotionIndicator, Presence, SegmentedControl, type SegmentedOption } from '@leasefy/cadence'
 
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { TablePagination } from '@/components/ui/pagination'
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
@@ -210,6 +211,14 @@ export function CarteraCompleta() {
   // Las fichas y la franja hablan de TODA la cartera, no de lo filtrado: si
   // se achicaran con el filtro, dejarían de servir para elegir el filtro.
   const cartera = useMemo(() => discriminar(items, casosEnSiniestro), [items, casosEnSiniestro])
+  /** 🔴 CR-31: la inmobiliaria no ha fijado su plazo: lo vencido no está «en plazo». */
+  const hayVencidasSinPlazo = useMemo(() => items.some((i) => i.plazoSinFijar), [items])
+  const nombreDelCajon = (cual: Cajon) =>
+    cual === 'VENCIDA_EN_PLAZO' && hayVencidasSinPlazo ? 'Vencido' : NOMBRE_DEL_CAJON[cual]
+  const queSignificaElCajon = (cual: Cajon) =>
+    cual === 'VENCIDA_EN_PLAZO' && hayVencidasSinPlazo
+      ? 'Venció. Sin plazo fijado no es cartera ni corre mora.'
+      : QUE_SIGNIFICA_EL_CAJON[cual]
   const montoDelCajon = (cual: Cajon) =>
     cartera.cajones.find((c) => c.cajon === cual)!
   /*
@@ -272,6 +281,14 @@ export function CarteraCompleta() {
   const pagCasos = useTablePagination(casos, { resetKey: clave })
   const pag =
     vista === 'deudas' ? pagDeudas : vista === 'propietarios' ? pagPropietarios : pagCasos
+  /*
+   * Movimiento (ola 2, 03-10-2026): el cuerpo de la tabla se monta de nuevo
+   * con cada filtro, orden o página (las filas nuevas entran escalonadas, sin
+   * esperar a que salgan las viejas); la búsqueda NO está en la clave: al
+   * escribir, las que ya no coinciden salen en su lugar.
+   */
+  const claveDelCuerpo = `${vista}|${cajon ?? ''}|${edad ?? ''}|${propietario ? (propietario.id ?? 'null') : ''}|${orden.campo}|${orden.sentido}|${pag.page}|${pag.pageSize}`
+  const marca = useId()
 
   const hayBusqueda = busqueda.trim().length > 0
   const hayFiltros =
@@ -399,12 +416,13 @@ export function CarteraCompleta() {
                 onClick={() => elegirCajon(cual)}
                 aria-pressed={activo}
                 data-testid={`resumen-${cual.toLowerCase()}`}
-                className={cn(
-                  'p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary',
-                  activo ? 'bg-surface-muted' : 'hover:bg-surface-muted',
-                )}
+                className="relative isolate p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
               >
-                <p className="text-xs text-fg-muted">{NOMBRE_DEL_CAJON[cual]}</p>
+                {/* El fondo del cajón elegido SE DESLIZA al nuevo. */}
+                {activo ? (
+                  <MotionIndicator layoutId={`${marca}-cajon`} className="inset-0 -z-10 bg-surface-muted" />
+                ) : null}
+                <p className="text-xs text-fg-muted">{nombreDelCajon(cual)}</p>
                 <p
                   className={cn(
                     'mt-1 font-mono text-2xl font-semibold tabular-nums',
@@ -413,7 +431,7 @@ export function CarteraCompleta() {
                 >
                   {formatCurrency(suyo.monto)}
                 </p>
-                <p className="mt-0.5 text-xs text-fg-muted">{QUE_SIGNIFICA_EL_CAJON[cual]}</p>
+                <p className="mt-0.5 text-xs text-fg-muted">{queSignificaElCajon(cual)}</p>
                 {/* 🔴 La cartera INCLUYE el siniestro, y lo dice: restarlo en
                     silencio es lo que hacía que esta cifra no fuera la de «Por
                     concepto». */}
@@ -504,7 +522,7 @@ export function CarteraCompleta() {
           amortización no es un contrato sin deuda: es una deuda que todavía
           nadie generó. Callarlo deja la franja mintiendo por omisión.
         */}
-        {avisos.length > 0 && (
+        <Presence show={avisos.length > 0} initial={false}>
           <div
             className="flex gap-2 rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm text-fg"
             data-testid="avisos-de-la-cartera"
@@ -529,7 +547,7 @@ export function CarteraCompleta() {
               ) : null}
             </div>
           </div>
-        )}
+        </Presence>
 
         {/* ── La edad DE LA CARTERA. Cada ficha es un filtro. ──────────── */}
         <div>
@@ -565,13 +583,18 @@ export function CarteraCompleta() {
                   aria-pressed={activa}
                   data-testid={`tramo-${tramo.edad}`}
                   className={cn(
-                    'rounded-lg border bg-surface p-3 text-left transition-colors',
+                    'relative rounded-lg border bg-surface p-3 text-left transition-colors',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                    activa
-                      ? 'border-primary ring-1 ring-primary'
-                      : 'border-border hover:border-fg-subtle',
+                    activa ? 'border-transparent' : 'border-border hover:border-fg-subtle',
                   )}
                 >
+                  {/* El marco de la ficha elegida SE DESLIZA a la nueva. */}
+                  {activa ? (
+                    <MotionIndicator
+                      layoutId={`${marca}-tramo`}
+                      className="-inset-px rounded-lg border border-primary ring-1 ring-primary"
+                    />
+                  ) : null}
                   <p className="text-xs text-fg-muted">{NOMBRE_DE_EDAD[tramo.edad]}</p>
                   <p className={cn('mt-1 font-mono text-lg font-semibold tabular-nums', TONO[tramo.edad])}>
                     {formatCurrency(tramo.monto)}
@@ -591,13 +614,17 @@ export function CarteraCompleta() {
                 aria-pressed={vista === 'siniestros'}
                 data-testid="tramo-siniestro"
                 className={cn(
-                  'rounded-lg border bg-surface p-3 text-left transition-colors',
+                  'relative rounded-lg border bg-surface p-3 text-left transition-colors',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
-                  vista === 'siniestros'
-                    ? 'border-primary ring-1 ring-primary'
-                    : 'border-border hover:border-fg-subtle',
+                  vista === 'siniestros' ? 'border-transparent' : 'border-border hover:border-fg-subtle',
                 )}
               >
+                {vista === 'siniestros' ? (
+                  <MotionIndicator
+                    layoutId={`${marca}-tramo`}
+                    className="-inset-px rounded-lg border border-primary ring-1 ring-primary"
+                  />
+                ) : null}
                 <p className="text-xs text-fg-muted">{t('cartera.porEdad.tramoEnSiniestro')}</p>
                 <p className="mt-1 font-mono text-lg font-semibold tabular-nums text-danger">
                   {formatCurrency(cartera.enSiniestro.monto)}
@@ -611,8 +638,15 @@ export function CarteraCompleta() {
         </div>
 
         {(edad || cajon) && vista !== 'siniestros' ? (
-          <p className="text-sm text-fg-muted" data-testid="que-significa">
-            {edad ? QUE_SIGNIFICA[edad] : QUE_SIGNIFICA_EL_CAJON[cajon!]}{' '}
+          // Entra con un fundido; al cambiar de filtro, la frase nueva también.
+          <Appear
+            as="p"
+            key={edad ?? cajon ?? ''}
+            direction="none"
+            className="text-sm text-fg-muted"
+            data-testid="que-significa"
+          >
+            {edad ? QUE_SIGNIFICA[edad] : queSignificaElCajon(cajon!)}{' '}
             <button
               type="button"
               className="underline underline-offset-2 hover:text-fg"
@@ -623,7 +657,7 @@ export function CarteraCompleta() {
             >
               Ver toda la deuda
             </button>
-          </p>
+          </Appear>
         ) : null}
 
         {/* ── LA tabla, sin título encima: no se nombran las tablas. ───── */}
@@ -638,6 +672,12 @@ export function CarteraCompleta() {
             />
             <div className="flex items-center gap-2">
               {propietario && vista === 'deudas' ? (
+                <Appear
+                  as="span"
+                  key={propietario.id ?? 'sin-propietario'}
+                  direction="none"
+                  className="inline-flex"
+                >
                 <button
                   type="button"
                   onClick={() => setPropietario(null)}
@@ -648,6 +688,7 @@ export function CarteraCompleta() {
                   <X className="h-3 w-3 shrink-0" aria-hidden="true" />
                   <span className="sr-only">Quitar el filtro por propietario</span>
                 </button>
+                </Appear>
               ) : null}
               <div className="relative w-full sm:w-72">
                 <MagnifyingGlass
@@ -669,6 +710,7 @@ export function CarteraCompleta() {
           {vista === 'deudas' ? (
             <CarteraTable
               items={pagDeudas.pageItems}
+              clave={claveDelCuerpo}
               orden={orden}
               onOrdenar={setOrden}
               /* La fila lleva a donde lleva el botón: al cobro si existe, y si
@@ -692,6 +734,7 @@ export function CarteraCompleta() {
           ) : vista === 'propietarios' ? (
             <TablaPorPropietario
               propietarios={pagPropietarios.pageItems}
+              clave={claveDelCuerpo}
               onAbrir={abrirPropietario}
               vacio={
                 <SinDatos
@@ -707,6 +750,7 @@ export function CarteraCompleta() {
           ) : siniestros ? (
             <TablaDeSiniestros
               items={pagCasos.pageItems}
+              clave={claveDelCuerpo}
               diasParaSiniestro={siniestros.diasParaSiniestro}
               hayFiltros={hayFiltros}
               onLimpiarFiltros={hayFiltros ? limpiar : undefined}
@@ -744,10 +788,13 @@ function TablaPorPropietario({
   propietarios,
   onAbrir,
   vacio,
+  clave,
 }: {
   propietarios: readonly DeudaDePropietario[]
   onAbrir: (p: DeudaDePropietario) => void
   vacio: React.ReactNode
+  /** Filtros y página: al cambiar, el cuerpo entra de nuevo. */
+  clave?: string
 }) {
   const { t } = useI18n()
   const k = (x: string) => `cartera.porPropietario.${x}`
@@ -768,16 +815,16 @@ function TablaPorPropietario({
           <TableHead className="whitespace-nowrap text-right">{t(k('total'))}</TableHead>
         </TableRow>
       </TableHeader>
-      <TableBody>
+      <TableBodyAnimado key={clave}>
         {propietarios.length === 0 ? (
-          <TableRow>
+          <TableRowAnimada key="vacio">
             <TableCell colSpan={COLUMNAS_POR_PROPIETARIO} className="p-0">
               {vacio}
             </TableCell>
-          </TableRow>
+          </TableRowAnimada>
         ) : (
           propietarios.map((p) => (
-            <TableRow
+            <TableRowAnimada
               key={p.propietarioId ?? '__sin_propietario__'}
               onClick={() => onAbrir(p)}
               className="cursor-pointer"
@@ -808,10 +855,10 @@ function TablaPorPropietario({
               >
                 {formatCurrency(p.totalConInteres)}
               </TableCell>
-            </TableRow>
+            </TableRowAnimada>
           ))
         )}
-      </TableBody>
+      </TableBodyAnimado>
     </Table>
   )
 }

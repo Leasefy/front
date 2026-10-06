@@ -16,12 +16,14 @@
  *
  * Shell + gates are copied from `casos/page.tsx` (Spinner loading → onboarding
  * `CompleteProfileFirst` → error `EmptyState`; `min-h-screen bg-[#f8f8f8]
- * dark:bg-[#0e0e10]` + `max-w-7xl`). Buttons sentence case (DESIGN §4).
+ * dark:bg-bg` + `max-w-7xl`). Buttons sentence case (DESIGN §4).
  */
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { CrossFade, StaggerItem } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   Lifebuoy,
   Wrench,
@@ -66,6 +68,25 @@ const TONE_BADGE: Record<CaseTone, { variant: NonNullable<BadgeProps['variant']>
  * chip with a clarifying tooltip. Neutral styling only (no red, no ticking timer).
  */
 function ExpectedResponseLine({ s, locale }: { s: SolicitudPqrs; locale: string }) {
+  // SO-06 (PQRS-FIX, 04-10-2026): respondida, resuelta o cerrada ya no tiene
+  // «Respuesta a más tardar…»: se dice cuándo se respondió.
+  if (s.estado === 'resuelta' || s.estado === 'cerrada' || s.respuestaDetalle) {
+    const cuando = s.respuestaDetalle?.at ?? s.resueltaAt ?? s.updatedAt;
+    const fecha = new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    }).format(new Date(cuando));
+    return (
+      <span>
+        {locale === 'es'
+          ? s.respuestaDetalle
+            ? `Respondida el ${fecha}`
+            : `${s.estado === 'cerrada' ? 'Cerrada' : 'Resuelta'} el ${fecha}`
+          : `Answered on ${fecha}`}
+      </span>
+    );
+  }
   const { date, estimated } = resolveExpectedResponse(s.createdAt, s.slaVenceAt);
   const dateStr = new Intl.DateTimeFormat(locale === 'es' ? 'es-CO' : 'en-US', {
     day: 'numeric',
@@ -106,20 +127,16 @@ function ExpectedResponseLine({ s, locale }: { s: SolicitudPqrs; locale: string 
 // Solicitud row — deep-links to the UNIFIED caso detail (no duplicated timeline)
 // ============================================================================
 
-function SolicitudRow({ s, index, locale }: { s: SolicitudPqrs; index: number; locale: string }) {
+function SolicitudRow({ s, locale }: { s: SolicitudPqrs; locale: string }) {
   const TypeIcon = s.tipo === 'reparacion' ? Wrench : ChatCircle;
   const badge = TONE_BADGE[pqrsStatusToTone(s.estado)];
   const ToneIcon = badge.icon;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-    >
+    <StaggerItem>
       <Link href={`/inquilino/casos/${encodeURIComponent(s.id)}`} className="group block">
-        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-4 sm:p-5 flex items-center gap-4 hover:border-border dark:hover:border-border-strong transition-colors">
-          <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-4 sm:p-5 flex items-center gap-4 hover:border-border dark:hover:border-border-strong transition-colors">
+          <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
             <TypeIcon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
           </div>
 
@@ -128,6 +145,12 @@ function SolicitudRow({ s, index, locale }: { s: SolicitudPqrs; index: number; l
               <h3 className="text-sm sm:text-base font-semibold text-fg dark:text-white group-hover:text-primary transition-colors truncate">
                 {s.asunto}
               </h3>
+              {/* SO-20: el número de radicado. */}
+              {s.radicado && (
+                <span className="font-mono text-xs text-fg-muted" data-testid="solicitud-radicado">
+                  {s.radicado}
+                </span>
+              )}
               <Badge variant={badge.variant} className="inline-flex items-center gap-1">
                 <ToneIcon className="w-3 h-3" aria-hidden="true" />
                 {pqrsStatusToLabel(s.estado)}
@@ -141,7 +164,7 @@ function SolicitudRow({ s, index, locale }: { s: SolicitudPqrs; index: number; l
           <CaretRight className="w-5 h-5 text-fg-subtle group-hover:text-primary transition-colors flex-shrink-0" />
         </div>
       </Link>
-    </motion.div>
+    </StaggerItem>
   );
 }
 
@@ -152,20 +175,24 @@ function SolicitudRow({ s, index, locale }: { s: SolicitudPqrs; index: number; l
 export default function SolicitudesPage() {
   const { locale } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
-  const { items, isLoading, error, disponible, refetch } = useTenantPqrs();
-  // Sin la ruta del back, el botón se apaga ANTES de que la persona escriba
-  // (QA 22-09: se enteraba al enviar, con las fotos ya adjuntas).
+  const { items, isLoading, error, disponible, contratos, refetch } = useTenantPqrs();
+  // Sin un contrato vigente (o sin la ruta del back), el botón se apaga ANTES de
+  // que la persona escriba (QA 22-09: se enteraba al enviar, con las fotos ya
+  // adjuntas). Desde ARREGLOS-2 (03-10-2026) se radica de verdad (`POST /pqrs`).
   const sinRadicar = disponible === false;
   const motivoSinRadicar =
     locale === 'es'
-      ? 'Todavía no puedes radicar desde acá: escríbele a tu inmobiliaria.'
-      : 'You cannot submit requests here yet: write to your property manager.';
+      ? 'Para radicar desde acá necesitas un contrato vigente con tu inmobiliaria: escríbele a tu inmobiliaria.'
+      : 'To submit a request here you need an active lease with your property manager: write to them.';
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isOnboardingLoading || isLoading);
 
   // Loading gate — never flash a fake-empty while a source is in flight.
   if (isOnboardingLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
@@ -175,7 +202,7 @@ export default function SolicitudesPage() {
   // Onboarding gate.
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="rental" />
         </div>
@@ -187,7 +214,7 @@ export default function SolicitudesPage() {
   // fires on a genuine (non-404/403/0) failure.
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <EmptyState
             icon={XCircle}
@@ -201,15 +228,11 @@ export default function SolicitudesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4"
-        >
+        <header className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
               {locale === 'es' ? 'Solicitudes' : 'Requests'}
@@ -239,19 +262,20 @@ export default function SolicitudesPage() {
               </p>
             )}
           </div>
-        </motion.header>
+        </header>
 
-        {/* List — real own-requests, or an honest empty-state (incl. not-live []) */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        {/* List — real own-requests, or an honest empty-state (incl. not-live []).
+            Vacío → primera solicitud se cruzan. Lo que ya estaba al llegar no se
+            anima; una solicitud nueva entra y las demás se corren. */}
+        <section>
+          <CrossFade swapKey={items.length > 0 ? 'lista' : 'vacio'}>
           {items.length > 0 ? (
             <div className="space-y-3">
-              {items.map((s, index) => (
-                <SolicitudRow key={s.id} s={s} index={index} locale={locale} />
-              ))}
+              <AnimatePresence initial={false}>
+                {items.map((s) => (
+                  <SolicitudRow key={s.id} s={s} locale={locale} />
+                ))}
+              </AnimatePresence>
             </div>
           ) : (
             <div className="space-y-4">
@@ -279,13 +303,15 @@ export default function SolicitudesPage() {
               </div>
             </div>
           )}
-        </motion.section>
-      </div>
+          </CrossFade>
+        </section>
+      </motion.div>
 
       <NuevaSolicitudModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onCreated={refetch}
+        contratos={contratos}
       />
     </div>
   );

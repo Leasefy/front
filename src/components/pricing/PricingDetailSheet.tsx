@@ -1,15 +1,15 @@
 'use client';
 
 import { useEffect } from 'react';
-import { X, CheckCircle, Buildings, Users, Lightning } from '@phosphor-icons/react';
-import { MonoLabel, IconButton } from '@leasefy/cadence';
+import { CheckCircle, Buildings, Users, Lightning } from '@phosphor-icons/react';
+import { MonoLabel } from '@leasefy/cadence';
 import { useLenis } from '@/components/providers/SmoothScroll';
 import {
   Sheet,
+  SheetBody,
   SheetContent,
+  SheetFooter,
   SheetHeader,
-  SheetTitle,
-  SheetDescription,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -87,33 +87,13 @@ export function PricingDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col overflow-hidden p-0 sm:max-w-lg bg-surface dark:bg-ink"
-        hideCloseButton
-      >
-        {/* Header */}
-        <SheetHeader className="flex-shrink-0 flex flex-row items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-white/10">
-          <div>
-            <SheetTitle className="text-lg font-semibold text-neutral-900 dark:text-white">
-              {plan.name}
-            </SheetTitle>
-            <SheetDescription className="text-sm text-neutral-500 dark:text-neutral-400">
-              {plan.description}
-            </SheetDescription>
-          </div>
-          <IconButton
-            variant="ghost"
-            onClick={onClose}
-            className="w-9 h-9 rounded-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-            aria-label="Cerrar"
-            icon={<X className="w-5 h-5 text-neutral-600 dark:text-neutral-300" />}
-          />
-        </SheetHeader>
+      <SheetContent side="right" size="md">
+        {/* Header — la ✕ la pone `SheetContent`, la misma de todo el producto */}
+        <SheetHeader title={plan.name} description={plan.description} />
 
         {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto overscroll-contain" data-lenis-prevent>
-          <div className="px-5 py-6 space-y-6">
+        <SheetBody>
+          <div className="space-y-6">
             {/* Price badge */}
             <div className="flex items-baseline gap-2">
               {isEnterprise ? (
@@ -213,22 +193,20 @@ export function PricingDetailSheet({
               </div>
             )}
           </div>
-        </div>
+        </SheetBody>
 
         {/* Sticky footer */}
-        <div className="flex-shrink-0 border-t border-neutral-100 dark:border-white/10 px-5 py-4">
+        <SheetFooter>
           {isEnterprise ? (
-            <a href="mailto:ventas@leasefy.co" className="block">
-              <Button className="w-full" variant="default" hideArrow>
-                Solicitar cotización
-              </Button>
-            </a>
+            <Button asChild variant="default" hideArrow>
+              <a href="mailto:ventas@leasefy.co">Solicitar cotización</a>
+            </Button>
           ) : (
-            <Button className="w-full" variant="default" hideArrow onClick={handleSelect}>
+            <Button variant="default" hideArrow onClick={handleSelect}>
               Seleccionar plan
             </Button>
           )}
-        </div>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );

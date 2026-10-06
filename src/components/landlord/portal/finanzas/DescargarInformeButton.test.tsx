@@ -25,6 +25,7 @@ vi.mock('@/components/ui', () => ({
 vi.mock('@phosphor-icons/react', () => ({ DownloadSimple: () => null }));
 
 import { DescargarInformeButton } from './DescargarInformeButton';
+import { ApiError } from '@/lib/api/client';
 
 let container: HTMLDivElement;
 let root: Root;
@@ -56,6 +57,27 @@ describe('<DescargarInformeButton> (O2)', () => {
     await apretar();
     expect(avisos.toast.error).toHaveBeenCalledWith('No pudimos generar el informe', expect.anything());
     expect(avisos.toast).not.toHaveBeenCalledWith('Próximamente', expect.anything());
+  });
+
+  it('🔴 un 5xx del portal dice «de nuestro lado» con la referencia, no «El portal no respondió» (02-10-2026)', async () => {
+    const error = new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      referencia: 'ab12cd34',
+    });
+    api.getInformePdfConEstado.mockResolvedValue({ estado: 'fallo', status: 500, mensaje: 'x', error });
+    await apretar();
+    const [, opciones] = avisos.toast.error.mock.calls[0] as [string, { description: string }];
+    expect(opciones.description).toMatch(/^No pudimos generar el informe: algo falló de nuestro lado/);
+    expect(opciones.description).toContain('ab12cd34');
+    expect(opciones.description).not.toMatch(/no respondió|conexi[oó]n/i);
+  });
+
+  it('sólo sin respuesta (status 0) habla de la conexión', async () => {
+    api.getInformePdfConEstado.mockResolvedValue({ estado: 'fallo', status: 0, mensaje: 'x', error: new ApiError(0, '') });
+    await apretar();
+    const [, opciones] = avisos.toast.error.mock.calls[0] as [string, { description: string }];
+    expect(opciones.description).toMatch(/conexi[oó]n/i);
   });
 
   it('con el portal apagado sigue diciendo «Próximamente»', async () => {

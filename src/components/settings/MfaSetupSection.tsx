@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { ShieldCheck, Shield, Check, Copy, Warning } from '@phosphor-icons/react';
+import { ShieldCheck, Shield, ShieldSlash, Check, Copy } from '@phosphor-icons/react';
 import { getAccessToken } from '@/lib/api/client';
 import {
   apiDeAuth,
@@ -14,6 +14,10 @@ import {
   verificarFactorNuevo,
 } from '@/lib/auth/inscripcion-del-segundo-factor';
 import { toast } from '@/components/ui/toast';
+import { ErrorDelSegundoFactor } from '@/lib/auth/errores-del-segundo-factor';
+import { FRASES_DE_SUPABASE, codigoDeSupabase, mensajeDeSupabase } from '@/lib/auth/errores-de-supabase';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
@@ -91,6 +95,22 @@ export interface MfaSetupSectionProps {
    */
   onCambioDeFactor?: (enCurso: boolean) => void;
 }
+
+
+/**
+ * El fallo del segundo factor, en español y con la regla de oro (02-10-2026).
+ * Lo de `inscripcion-del-segundo-factor` ya viene traducido; un error de
+ * Supabase con código va por su traductor; lo demás (la red, un `TypeError`
+ * de JavaScript) por el de la plataforma. Antes era `err.message` crudo.
+ */
+function mensajeDelSegundoFactor(err: unknown, porDefecto: string, accion: string): string {
+  if (err instanceof ErrorDelSegundoFactor) return err.message;
+  if (codigoDeSupabase(err)) return mensajeDeSupabase(err, { porDefecto, accion });
+  return mensajeParaLaPersona(err, { porDefecto, accion });
+}
+
+/** Sin token en memoria: la sesión se cerró (no «No hay sesión activa»). */
+const sinSesion = () => new ErrorDelSegundoFactor(FRASES_DE_SUPABASE.session_not_found);
 
 export function MfaSetupSection({
   onEnrolled,
@@ -177,14 +197,20 @@ export function MfaSetupSection({
       // Authorization de todas las llamadas del panel.
       const token = tokenExplicito ?? getAccessToken();
       accessTokenRef.current = token;
-      if (!token) throw new Error('No hay sesión activa');
+      if (!token) throw sinSesion();
 
       // Por HTTP, no por el SDK (`crearFactorTotp` explica por qué).
       const nuevo = await crearFactorTotp(token);
       setEnrollData({ factorId: nuevo.factorId, qrCode: nuevo.qrCode, secret: nuevo.secret });
       setState('enrolling');
     } catch (err) {
-      toast.error((err as Error).message || 'Error al iniciar la configuración de 2FA');
+      toast.error(
+        mensajeDelSegundoFactor(
+          err,
+          'No pudimos empezar a activar el segundo factor. Prueba de nuevo en un momento.',
+          'empezar a activar el segundo factor',
+        ),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -222,8 +248,8 @@ export function MfaSetupSection({
       onEnrolled?.();
       onActivado?.(currentEnroll.factorId);
     } catch (err) {
-      // Ya viene en español (`errores-del-segundo-factor.ts`).
-      toast.error((err as Error).message || 'No se pudo verificar el código.');
+      // Casi siempre ya viene en español (`errores-del-segundo-factor.ts`).
+      toast.error(mensajeDelSegundoFactor(err, 'No se pudo verificar el código.', 'verificar el código'));
     } finally {
       setIsLoading(false);
     }
@@ -247,7 +273,7 @@ export function MfaSetupSection({
     setIsLoading(true);
     try {
       const token = getAccessToken() ?? accessTokenRef.current;
-      if (!token) throw new Error('No hay sesión activa');
+      if (!token) throw sinSesion();
 
       // Por HTTP, por el mismo candado que colgaba a `enroll`.
       await apiDeAuth(`/factors/${factorId}`, token, { method: 'DELETE' });
@@ -257,7 +283,13 @@ export function MfaSetupSection({
       setShowDisableModal(false);
       toast.success('Autenticación de dos factores desactivada');
     } catch (err) {
-      toast.error((err as Error).message || 'Error al desactivar 2FA');
+      toast.error(
+        mensajeDelSegundoFactor(
+          err,
+          'No pudimos desactivar el segundo factor. Prueba de nuevo en un momento.',
+          'desactivar el segundo factor',
+        ),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -294,13 +326,15 @@ export function MfaSetupSection({
       try {
         tokenNuevo = await verificarConElSdk(factorId, codigo);
         const token = tokenNuevo ?? getAccessToken();
-        if (!token) throw new Error('No hay sesión activa');
+        if (!token) throw sinSesion();
         await apiDeAuth(`/factors/${factorId}`, token, { method: 'DELETE' });
       } catch (err) {
         quitandoRef.current = false;
         setIsLoading(false);
         setCodigoDeLaApp('');
-        setErrorDelModal((err as Error).message || 'No se pudo quitar el segundo factor.');
+        setErrorDelModal(
+          mensajeDelSegundoFactor(err, 'No se pudo quitar el segundo factor.', 'quitar el segundo factor'),
+        );
         onCambioDeFactor?.(false);
         return;
       }
@@ -381,37 +415,21 @@ export function MfaSetupSection({
           open={showDisableModal}
           onClose={cerrarDesactivar}
           title={pideCodigo ? 'Quitar el segundo factor' : 'Desactivar 2FA'}
-        >
-          {pideCodigo ? (
-            <div className="space-y-4" aria-busy={isLoading}>
-              <p className="text-pretty text-sm text-fg-muted">
-                Para quitarlo, primero confirma que eres tú: escribe el código que muestra tu app
-                de autenticación ahora. Enseguida te mostramos cómo activarlo de nuevo.
-              </p>
-              <CasillasDeCodigo
-                aria-label="Código de 6 dígitos de tu app de autenticación"
-                value={codigoDeLaApp}
-                onChange={(v) => {
-                  setCodigoDeLaApp(v);
-                  if (errorDelModal) setErrorDelModal(null);
-                }}
-                onCompleto={(v) => void handleQuitarConCodigo(v)}
-                hayError={Boolean(errorDelModal)}
-                disabled={isLoading}
-                autoFocus
-              />
-              {errorDelModal ? (
-                <p role="alert" className="text-pretty text-center text-sm text-danger">
-                  {errorDelModal}
-                </p>
-              ) : null}
-              <div className="flex gap-3 pt-2">
+          variant="destructive"
+          icon={<ShieldSlash weight="bold" />}
+          description={
+            pideCodigo
+              ? 'Para quitarlo, primero confirma que eres tú: escribe el código que muestra tu app de autenticación ahora. Enseguida te mostramos cómo activarlo de nuevo.'
+              : 'Al desactivar 2FA tu cuenta queda menos protegida: para entrar bastará tu contraseña.'
+          }
+          footer={
+            pideCodigo ? (
+              <>
                 <Button
                   variant="outline"
                   hideArrow
                   onClick={cerrarDesactivar}
                   disabled={isLoading}
-                  className="flex-1 rounded-lg"
                 >
                   Cancelar
                 </Button>
@@ -421,11 +439,49 @@ export function MfaSetupSection({
                   isLoading={isLoading}
                   onClick={() => void handleQuitarConCodigo(codigoDeLaApp)}
                   disabled={isLoading || codigoDeLaApp.length !== 6}
-                  className="flex-1 rounded-lg"
                 >
                   {isLoading ? 'Verificando…' : 'Verificar y quitar'}
                 </Button>
-              </div>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" hideArrow onClick={cerrarDesactivar}>
+                  Cancelar
+                </Button>
+                <Button
+                  variant="destructive"
+                  hideArrow
+                  isLoading={isLoading}
+                  onClick={handleUnenroll}
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Desactivando...' : 'Desactivar 2FA'}
+                </Button>
+              </>
+            )
+          }
+        >
+          {pideCodigo ? (
+            <div className="space-y-4" aria-busy={isLoading}>
+              <CasillasDeCodigo
+                aria-label="Código de 6 dígitos de tu app de autenticación"
+                value={codigoDeLaApp}
+                onChange={(v) => {
+                  setCodigoDeLaApp(v);
+                  if (errorDelModal) setErrorDelModal(null);
+                }}
+                onCompleto={(v) => void handleQuitarConCodigo(v)}
+                hayError={Boolean(errorDelModal)}
+                aria-describedby={errorDelModal ? 'quitar-segundo-factor-error' : undefined}
+                disabled={isLoading}
+                autoFocus
+              />
+              {/* El error bajo el código entra suave (decisión 1, 02-10-2026). */}
+              <ErrorDelCampo
+                id="quitar-segundo-factor-error"
+                mensaje={errorDelModal}
+                className="text-pretty text-center"
+              />
               {onSinLaApp ? (
                 <div className="text-center">
                   <Button
@@ -442,38 +498,7 @@ export function MfaSetupSection({
                 </div>
               ) : null}
             </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="p-4 bg-danger-soft border border-danger/30 rounded-lg flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
-                  <Warning className="w-5 h-5 text-danger" />
-                </div>
-                <p className="text-sm text-danger">
-                  Al desactivar 2FA tu cuenta queda menos protegida: para entrar bastará tu contraseña.
-                </p>
-              </div>
-              <div className="flex gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  hideArrow
-                  onClick={cerrarDesactivar}
-                  className="flex-1 rounded-lg"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  variant="destructive"
-                  hideArrow
-                  isLoading={isLoading}
-                  onClick={handleUnenroll}
-                  disabled={isLoading}
-                  className="flex-1 rounded-lg"
-                >
-                  {isLoading ? 'Desactivando...' : 'Desactivar 2FA'}
-                </Button>
-              </div>
-            </div>
-          )}
+          ) : null}
         </SettingsModal>
       </>
     );

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Buildings, CaretDown, CheckCircle, Clock, WarningCircle, ChatCircle, FileText, Phone, Envelope, ArrowsClockwise } from '@phosphor-icons/react';
 import { Spinner } from '@/components/ui/spinner';
+import { Collapse } from '@leasefy/cadence';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { useLeasePayments } from '@/lib/hooks/useLeases';
 import type { Lease, Payment } from '@/lib/types/lease';
@@ -173,15 +174,15 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
 
           {/* Expand indicator */}
           <CaretDown className={cn(
-            'w-5 h-5 text-fg-subtle transition-transform flex-shrink-0',
+            'w-5 h-5 text-fg-subtle transition-transform duration-slow ease-emphasis flex-shrink-0',
             isExpanded && 'rotate-180'
           )} />
         </div>
       </button>
 
-      {/* Expanded content - Cards layout */}
-      {isExpanded && (
-        <div className="px-6 pb-6">
+      {/* Expanded content - Cards layout — se abre y se cierra con su altura;
+          el chevrón gira con la misma curva. */}
+      <Collapse open={isExpanded} className="px-6 pb-6">
           <div className="ml-[60px] grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Card 1: Lease Details */}
             <Card className="rounded-[16px] p-5">
@@ -403,8 +404,7 @@ export function LeaseExpandableItem({ lease }: LeaseExpandableItemProps) {
               )}
             </div>
           </div>
-        </div>
-      )}
+      </Collapse>
     </div>
   );
 }

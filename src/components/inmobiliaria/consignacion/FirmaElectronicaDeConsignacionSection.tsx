@@ -23,6 +23,8 @@ import type { OtpAdapter } from '@/components/contract/OTPVerification';
 import { firmaDeConsignacionApi } from '@/lib/api/consignacion-firma.service';
 import type { FirmanteDeConsignacionResponse, ProcesoDeFirmaResponse } from '@/lib/api/consignacion-firma.types';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import {
   describirEstadoDelProceso,
   esFirmaDeConsignacionNoDisponible,
@@ -31,6 +33,11 @@ import {
 } from '@/lib/contratos/firma-de-consignacion';
 
 const MAX_PDF_BYTES = 10 * 1024 * 1024;
+/** El `@MaxLength(500)` de `IniciarFirmaElectronicaDto.mensaje`. */
+const MAX_MENSAJE = 500;
+const ERROR_DEL_PDF = 'El documento debe ser un PDF de hasta 10 MB.';
+
+type CampoDeLaFirma = 'archivo' | 'mensaje';
 
 export interface FirmaElectronicaDeConsignacionSectionProps {
   consignacionId: string;
@@ -159,25 +166,43 @@ function ProcesoCerrado({ proceso }: { proceso: ProcesoDeFirmaResponse }) {
 
 function IniciarProceso({ consignacionId, onIniciado }: { consignacionId: string; onIniciado: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const elegirRef = useRef<HTMLButtonElement>(null);
+  const mensajeRef = useRef<HTMLTextAreaElement>(null);
   const [archivo, setArchivo] = useState<File | null>(null);
   const [mensaje, setMensaje] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaFirma, string>>>({});
 
   const elegir = () => inputRef.current?.click();
+
+  /** El error en su campo, con el foco en el primero. */
+  const marcar = (nuevos: Partial<Record<CampoDeLaFirma, string>>) => {
+    setErrores(nuevos);
+    if (nuevos.archivo) elegirRef.current?.focus();
+    else if (nuevos.mensaje) mensajeRef.current?.focus();
+  };
 
   const alElegir = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
     if (file.type !== 'application/pdf' || file.size > MAX_PDF_BYTES) {
-      toast.error('El documento debe ser un PDF de hasta 10 MB.');
+      // Es un error del campo del PDF, no un toast que se va: queda debajo
+      // del botón hasta que se elija otro.
+      marcar({ archivo: ERROR_DEL_PDF });
       return;
     }
+    setErrores((prev) => ({ ...prev, archivo: undefined }));
     setArchivo(file);
   };
 
   const iniciar = async () => {
     if (!archivo || enviando) return;
+    if (mensaje.trim().length > MAX_MENSAJE) {
+      marcar({ mensaje: 'El mensaje puede tener hasta 500 caracteres.' });
+      return;
+    }
+    setErrores({});
     setEnviando(true);
     try {
       await firmaDeConsignacionApi.iniciar(consignacionId, { file: archivo, mensaje: mensaje.trim() || undefined });
@@ -186,7 +211,21 @@ function IniciarProceso({ consignacionId, onIniciado }: { consignacionId: string
       setMensaje('');
       onIniciado();
     } catch (err) {
-      toast.error('No se pudo iniciar la firma electrónica.', { description: mensajeDelFallo(err, '') });
+      // Un 400 en `mensaje` va debajo del mensaje; uno del archivo, debajo del
+      // PDF. Lo demás (un 409 del mandato, un 5xx, la red) al toast, por el
+      // traductor.
+      const r = repartirErroresDelServidor<CampoDeLaFirma>(err, {
+        mapa: { mensaje: 'mensaje', file: 'archivo', archivo: 'archivo' },
+        campos: ['archivo', 'mensaje'],
+        porDefecto: '',
+        accion: 'iniciar la firma electrónica',
+      });
+      if (r.orden.length > 0) marcar(r.porCampo);
+      if (r.delServidor.length === 0) {
+        toast.error('No se pudo iniciar la firma electrónica.', { description: mensajeDelFallo(err, '') });
+      } else if (r.sueltos.length > 0) {
+        toast.error('No se pudo iniciar la firma electrónica.', { description: r.sueltos.join(' · ') });
+      }
     } finally {
       setEnviando(false);
     }
@@ -215,18 +254,37 @@ function IniciarProceso({ consignacionId, onIniciado }: { consignacionId: string
           </Button>
         </div>
       ) : (
-        <Button variant="outline" hideArrow onClick={elegir} className="gap-2" data-testid="elegir-pdf">
+        <Button
+          ref={elegirRef}
+          variant="outline"
+          hideArrow
+          onClick={elegir}
+          className="gap-2"
+          aria-invalid={errores.archivo ? true : undefined}
+          aria-describedby="firma-electronica-pdf-error"
+          data-testid="elegir-pdf"
+        >
           <UploadSimple className="w-4 h-4" />
           Elegir el PDF
         </Button>
       )}
+      <ErrorDelCampo id="firma-electronica-pdf-error" mensaje={errores.archivo} />
       <Textarea
+        ref={mensajeRef}
         value={mensaje}
-        onChange={(e) => setMensaje(e.target.value)}
+        onChange={(e) => {
+          setMensaje(e.target.value);
+          setErrores((prev) => ({ ...prev, mensaje: undefined }));
+        }}
         placeholder="Mensaje opcional para el correo de invitación"
-        maxLength={500}
+        aria-label="Mensaje para el correo de invitación"
+        maxLength={MAX_MENSAJE}
         rows={2}
+        aria-invalid={errores.mensaje ? true : undefined}
+        aria-describedby="firma-electronica-mensaje-error"
+        data-testid="firma-electronica-mensaje"
       />
+      <ErrorDelCampo id="firma-electronica-mensaje-error" mensaje={errores.mensaje} />
       <Button onClick={() => void iniciar()} disabled={!archivo || enviando} isLoading={enviando} hideArrow data-testid="iniciar-firma-electronica-boton">
         Iniciar firma electrónica
       </Button>

@@ -38,7 +38,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 
 // ── API shape (matched to conciliacion-summary.ts backend route) ─────────────
 
@@ -84,6 +85,13 @@ export interface UseConciliacionSummaryResult {
   isLoading: boolean
   /** La última lectura falló. Puede convivir con `data` (lo de antes). */
   error: string | null
+  /**
+   * El error ENTERO de la última lectura (ARREGLOS-7, ARREGLOS-4 Q1 A): el
+   * `ApiError` del micro (status, `code`, referencia) o el de `agentFetch` con
+   * el micro caído. Es lo que va a `FalloDeCarga`/`EstadoDeDatos`: con el texto
+   * de `error` la pantalla sólo podía decir «Fue un problema nuestro».
+   */
+  errorCrudo: unknown
   /** Backend 404 — endpoint not deployed yet (NOT an error; caller falls back). */
   notAvailable: boolean
   refetch: () => Promise<LecturaDelResumen>
@@ -98,6 +106,7 @@ export function useConciliacionSummary(): UseConciliacionSummaryResult {
   const [data, setData] = useState<ConciliacionSummaryResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null)
   const [notAvailable, setNotAvailable] = useState(false)
 
   /** Stale-response guard: each fetch aborts the previous one (agency switch race). */
@@ -120,11 +129,12 @@ export function useConciliacionSummary(): UseConciliacionSummaryResult {
     abortRef.current = controller
 
     const url = `${agentUrl}/api/agency/${agencyId}/conciliacion/summary`
+    /** El `ApiError` del micro cuando respondió que no; el texto de `error` sigue igual. */
+    let fallo: unknown = null
 
     try {
       setIsLoading(true)
-      const res = await globalThis.fetch(url, {
-        headers: agentAuthHeaders(),
+      const res = await agentFetch(url, {
         signal: controller.signal,
       })
       if (controller.signal.aborted) return NADA
@@ -133,14 +143,19 @@ export function useConciliacionSummary(): UseConciliacionSummaryResult {
         setData(null)
         setNotAvailable(true)
         setError(null)
+        setErrorCrudo(null)
         return NADA
       }
-      if (!res.ok) throw new Error(`${res.status}`)
+      if (!res.ok) {
+        fallo = await falloDelMicro(res)
+        throw new Error(`${res.status}`)
+      }
       const json = (await res.json()) as ConciliacionSummaryResponse
       if (controller.signal.aborted) return NADA
       setData(json)
       setNotAvailable(false)
       setError(null)
+      setErrorCrudo(null)
       return { data: json, error: null }
     } catch (err) {
       if (controller.signal.aborted) return NADA
@@ -148,6 +163,7 @@ export function useConciliacionSummary(): UseConciliacionSummaryResult {
       // K1: lo ya mostrado se queda. Quien pinta decide si decir «estos
       // números son de la última lectura» o, si no hay nada, el fallo entero.
       setError(mensaje)
+      setErrorCrudo(fallo ?? err)
       return { data: null, error: mensaje }
     } finally {
       if (!controller.signal.aborted) setIsLoading(false)
@@ -158,6 +174,7 @@ export function useConciliacionSummary(): UseConciliacionSummaryResult {
     // Otra inmobiliaria: lo leído de la anterior no se muestra ni un instante.
     setData(null)
     setError(null)
+    setErrorCrudo(null)
     setNotAvailable(false)
     if (!agencyId) {
       setIsLoading(false)
@@ -169,5 +186,5 @@ export function useConciliacionSummary(): UseConciliacionSummaryResult {
     }
   }, [fetchData, agencyId])
 
-  return { data, isLoading, error, notAvailable, refetch: fetchData }
+  return { data, isLoading, error, errorCrudo, notAvailable, refetch: fetchData }
 }

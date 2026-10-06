@@ -144,6 +144,26 @@ export interface FacturaDeProveedor {
   registradoPorUserId: string | null;
   createdAt: string;
   updatedAt: string;
+  /**
+   * 🔴 CB-R21 (04-10): el egreso VIVO que paga esta factura (null = nadie la
+   * mandó a pagar). Lo trae el listado; la ficha suelta no lo trae.
+   */
+  egreso?: EgresoDeLaFactura | null;
+}
+
+/** El egreso que paga una factura, tal como lo trae el listado (CB-R21). */
+export interface EgresoDeLaFactura {
+  id: string;
+  numero: number | null;
+  estado: EstadoDeEgreso;
+  loteId: string | null;
+}
+
+/** La cuenta a la que se le gira al proveedor (opcional al mandar a pagar). */
+export interface CuentaDelProveedor {
+  banco?: string;
+  tipoDeCuenta?: string;
+  numeroDeCuenta?: string;
 }
 
 /** Los totales de la página de facturas, ya sumados por el back. */
@@ -178,6 +198,8 @@ export interface FiltrosDeFacturas {
   proveedorId?: string;
   sedeId?: string;
   rubro?: string;
+  /** CB-R21: causadas con la fecha de vencimiento ya pasada. */
+  vencidas?: boolean;
   limite?: number;
   desplazamiento?: number;
 }
@@ -463,6 +485,13 @@ export interface Egreso {
   /** El movimiento del extracto con el que quedó conciliado. */
   movimientoBancarioId: string | null;
   motivoDeLaAnulacion: string | null;
+  /**
+   * 🔴 ARREGLOS-3 (03-10-2026): la DEVOLUCIÓN del saldo a favor que quedó por
+   * un valor viejo (llegó deuda después de registrarla). No se gira hasta que
+   * alguien la marque como revisada en el estado de cuenta del contrato. `null`
+   * = no; un back anterior no lo manda.
+   */
+  revision?: { motivo: string; debeCop: number; contractId: string } | null;
 }
 
 export interface ListaDeEgresos {
@@ -812,6 +841,7 @@ export const gastosApi = {
           proveedorId: filtros.proveedorId,
           sedeId: filtros.sedeId,
           rubro: filtros.rubro,
+          vencidas: filtros.vencidas ? 'true' : undefined,
           limite: numero(
             filtros.limite === undefined
               ? undefined
@@ -844,6 +874,21 @@ export const gastosApi = {
     },
 
     /** Escritura. Con `causar: true` registra y asienta en un solo paso. */
+    /**
+     * 🔴 CB-R21 (04-10) · «Pagar»: crea el egreso DE ESTA factura. El back
+     * hereda todo de lo causado (proveedor, neto, retenciones, rubro, sede);
+     * acá sólo viaja la factura y, si se sabe, la cuenta a la que se gira. El
+     * egreso queda PENDIENTE en Egresos: de ahí va al lote y a su doble firma.
+     */
+    async pagar(facturaId: string, cuenta: CuentaDelProveedor = {}): Promise<Egreso> {
+      const cuerpo: Record<string, string> = { facturaId };
+      for (const k of ['banco', 'tipoDeCuenta', 'numeroDeCuenta'] as const) {
+        const v = cuenta[k]?.trim();
+        if (v) cuerpo[k] = v;
+      }
+      return apiClient.post<Egreso>(`${BASE}/egresos`, cuerpo);
+    },
+
     async registrar(factura: FacturaNueva): Promise<FacturaDeProveedor> {
       return apiClient.post<FacturaDeProveedor>(
         `${BASE}/gastos/facturas`,
@@ -963,9 +1008,12 @@ export const gastosApi = {
      * Lectura, pero con efecto: marca `ARCHIVO_GENERADO` y guarda el hash del
      * archivo que se subió al banco. Baja como blob, no como JSON.
      */
-    async archivo(id: string, formato?: FormatoDelArchivo): Promise<Blob> {
+    async archivo(id: string, formato?: FormatoDelArchivo, cuentaId?: string): Promise<Blob> {
+      // 🔴 CB-R09: `cuentaId` = el medio de pago (cuenta bancaria de la
+      // inmobiliaria) desde el que sale la plata. Uno que no sirve es un 400
+      // `CUENTA_DE_ORIGEN_NO_SIRVE` con `campos: [{ campo: 'cuentaId' }]`.
       return apiClient.getBlob(
-        conQuery(`${BASE}/egresos/lotes/${encodeURIComponent(id)}/archivo`, { formato }),
+        conQuery(`${BASE}/egresos/lotes/${encodeURIComponent(id)}/archivo`, { formato, cuentaId }),
       );
     },
 

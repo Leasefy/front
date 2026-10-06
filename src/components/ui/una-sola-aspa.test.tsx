@@ -61,9 +61,12 @@ function montar(ui: React.ReactElement) {
 const aspas = () =>
   Array.from(document.querySelectorAll<HTMLElement>('[aria-label="Cerrar"]'))
 
-/** El chip gris redondo es el único dibujo permitido. */
+/**
+ * El círculo con borde fino es el único dibujo permitido (Nico, 02-10-2026:
+ * «una ✕ dentro de un círculo con borde»). Antes era un chip gris relleno.
+ */
 const esChipGris = (el: HTMLElement) =>
-  el.className.includes('rounded-full') && el.className.includes('bg-surface-muted')
+  el.className.includes('rounded-full') && /\bborder\b/.test(el.className)
 
 const texto = (t: string) =>
   Array.from(document.querySelectorAll<HTMLElement>('*')).find(
@@ -124,7 +127,9 @@ describe('un modal abierto tiene UNA sola ✕', () => {
 
     expect(aspas()).toHaveLength(1)
     expect(esChipGris(aspas()[0])).toBe(true)
-    expect(aspas()[0].className).toContain('absolute')
+    // Flota arriba a la derecha del panel (fuera del cuerpo que scrollea).
+    expect(aspas()[0].closest('.absolute')).toBeTruthy()
+    expect(aspas()[0].closest('.overflow-y-auto')).toBeFalsy()
   })
 
   it('`hideClose` en el Content la apaga entera: cero, no una tapada por otra', () => {

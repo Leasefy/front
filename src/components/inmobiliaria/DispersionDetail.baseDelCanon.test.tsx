@@ -45,10 +45,11 @@ vi.mock('framer-motion', () => ({
   AnimatePresence: ({ children }: { children?: React.ReactNode }) => children,
 }));
 
-vi.mock('@/components/ui/sheet', () => ({
+vi.mock('@/components/ui/sheet', async () => ({
+  // Las piezas del cajón (cabecera con título y acciones, cuerpo, pie) como DOM plano.
+  ...(await import('@/components/ui/sheet-test-stub')),
   Sheet: ({ children }: { children?: React.ReactNode }) => children,
   SheetContent: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
-  SheetHeader: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
   SheetTitle: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
 }));
 

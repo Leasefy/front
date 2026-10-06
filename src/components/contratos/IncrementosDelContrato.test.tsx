@@ -83,7 +83,8 @@ describe('<IncrementosDelContrato> (17-09)', () => {
     await montar(<IncrementosDelContrato contractId="c1" puedeEditar />);
     const bloque = document.querySelector('[data-testid="aniversario-2026-08-21"]')!;
     expect(bloque.textContent).toContain('IPC del año anterior');
-    expect(bloque.textContent).toContain('5.1 %');
+    // QA-CONT-95: con coma decimal, como se escribe en Colombia.
+    expect(bloque.textContent).toContain('5,1 %');
     expect(document.querySelector('[data-testid="tasa-pactada"]')).toBeNull();
 
     const generar = [...bloque.querySelectorAll('button')].find((b) => b.textContent === 'Ver y editar la carta')!;

@@ -169,6 +169,12 @@ const ALIAS: Record<string, string> = {
   dir: "direccion",
   direcciones: "direccion",
   ubicacion: "direccion",
+  // Fecha abreviada: «F. Inicio», «F. Fin», «Fec. inicio» (QA-MIG-A, MG-05:
+  // «F. Inicio» mapeaba por la palabra «inicio» y «F. Fin» se quedaba sin
+  // campo — el contrato entraba sin fecha de terminación).
+  f: "fecha",
+  fec: "fecha",
+  fch: "fecha",
   // Código / número
   cod: "codigo",
   cods: "codigo",
@@ -306,6 +312,19 @@ export const SIN_CAMPO_EN_CONTRATO = [
    * cualquier columna que diga «comisión» u «honorarios»—, y con un aviso si
    * los valores tienen cara de pesos. Ver `TERMINOS_DEBILES`.
    */
+  /*
+   * El TIPO del inmueble («Apartamento», «Local») no es el inmueble: con el
+   * término «inmueble» a secas, «Tipo inmueble» se mapeaba a la columna de
+   * código-y-dirección y «Apartamento» viajaba como si fuera la dirección
+   * (QA-MIG-A, MG-10). El contrato no guarda el tipo: es del inmueble.
+   */
+  "tipo inmueble",
+  "tipo de inmueble",
+  "clase inmueble",
+  "clase de inmueble",
+  "tipo propiedad",
+  "tipo de propiedad",
+  "tipo predio",
   "valor de administracion",
   "valor administracion",
   "administracion mensual",
@@ -354,6 +373,13 @@ const CAMPO_POR_ROL_Y_ATRIBUTO: Record<
     documento: "propietarioDocumento",
   },
 };
+
+/** De qué persona es cada campo de persona (para saber a quién nombra el archivo). */
+const ROL_DEL_CAMPO: Partial<Record<CampoDeContrato, string>> = Object.fromEntries(
+  Object.entries(CAMPO_POR_ROL_Y_ATRIBUTO).flatMap(([rol, tabla]) =>
+    Object.values(tabla).map((campo) => [campo, rol]),
+  ),
+);
 
 /**
  * Atributos de una persona para los que NO hay campo.
@@ -550,6 +576,9 @@ const DICCIONARIO: Array<{ campo: CampoDeContrato; terminos: string[] }> = [
       "vencimiento",
       "vence",
       "hasta",
+      // «Inicio» / «Fin» a secas, uno al lado del otro (MG-05): si «inicio»
+      // mapea solo, «fin» también.
+      "fin",
     ],
   },
   {
@@ -1047,6 +1076,40 @@ export function mapearColumnas(encabezados: string[]): MapeoDeColumna[] {
   }
 
   /*
+   * ── «Cédula», «Correo», «Teléfono» a secas, cuando el archivo nombra a UNA
+   *    sola persona (QA-MIG-A, MG-12/MG-14) ─────────────────────────────────
+   *
+   * Un atributo sin rol no se asigna solo: en un archivo con inquilino Y
+   * propietario, «Cédula» puede ser de cualquiera de los dos. Pero un archivo
+   * hecho a mano con «Inquilino | Cédula | Canon | …» y ninguna columna del
+   * propietario no deja esa duda — y dejar la cédula sin mapear es dejar al
+   * inquilino sin documento: no se enlaza con nadie. Se asigna a la única
+   * persona nombrada, con certeza DUDOSA para que la pantalla lo marque y
+   * alguien lo confirme. Si el archivo nombra a las dos, no se toca.
+   */
+  const rolesNombrados = new Set(
+    candidatos
+      .map((c) => (c.campo ? ROL_DEL_CAMPO[c.campo] : undefined))
+      .filter((r): r is string => Boolean(r)),
+  );
+  if (rolesNombrados.size === 1) {
+    const rol = [...rolesNombrados][0];
+    const tabla = CAMPO_POR_ROL_Y_ATRIBUTO[rol];
+    for (const c of candidatos) {
+      if (c.campo) continue;
+      const canon = canones[encabezados.indexOf(c.columna)];
+      if (SIN_CAMPO_EN_CONTRATO.some((t) => contienePalabras(canon, t))) continue;
+      const tokens = tokensUtiles(canon).filter((t) => t !== "numero");
+      if (tokens.length !== 1 || !(tokens[0] in tabla)) continue;
+      const atributo = tokens[0];
+      c.campo = tabla[atributo];
+      c.porque = `${atributo} (el archivo sólo nombra al ${rol === ROL_INQUILINO ? "inquilino" : "propietario"}: confirma que es de esa persona)`;
+      c.certeza = "dudosa";
+      c.puntaje = 1;
+    }
+  }
+
+  /*
    * Un campo se llena una sola vez. Antes ganaba la primera columna que
    * apareciera; ahora gana la MÁS específica, y ésa es la mitad del arreglo
    * del incidente: con `['Tel. arrendatario', 'Nombre del arrendatario']`, la
@@ -1163,7 +1226,10 @@ export const REQUISITOS_ESENCIALES: RequisitoEsencial[] = [
     // UNA columna («3 - CR 50 127 SUR 61») y `armar-fila` las separa. Sin esto
     // la compuerta frenaba un archivo que sí traía la dirección.
     campos: ["direccionInmueble", "codigoInmueble", "propiedadCodigoYDireccion"],
-    pistas: ["direccion", "inmueble", "predio", "propiedad", "address"],
+    // «Código» a secas no se asigna solo (puede ser el del contrato), pero sí
+    // es una columna POSIBLE: el consejo es elegirla en el desplegable, no
+    // «vuelve a subir el archivo» (QA-MIG-A).
+    pistas: ["direccion", "inmueble", "predio", "propiedad", "address", "codigo"],
   },
   {
     clave: "inquilino",
@@ -1202,13 +1268,15 @@ export const REQUISITOS_ESENCIALES: RequisitoEsencial[] = [
     campos: ["canon", "canonTotal"],
     pistas: ["canon", "arriendo", "renta", "alquiler", "mensualidad"],
   },
-  {
-    clave: "diaDePago",
-    etiqueta: "el día de pago",
-    nombreCorto: "día de pago",
-    campos: ["diaDePago"],
-    pistas: ["dia", "pago", "cobro", "corte"],
-  },
+  /*
+   * 🔴 El DÍA DE PAGO salió de lo esencial (QA-MIG-A, MG-18, 04-10): el export
+   * real de Nui no trae esa columna (ninguna de sus 18) y la compuerta frenaba
+   * el archivo ENTERO con «Tu archivo no trae ninguna columna de día de pago».
+   * Desde el 16-09 el arriendo se genera SIEMPRE el día 1 con los días de
+   * plazo (Nico + Juan Camilo), y el back ya no frena una fila por no traerlo
+   * (`revisar()`): exigirlo acá era bloquear por un dato que no se usa. Si la
+   * columna viene, se sigue leyendo y viajando.
+   */
 ];
 
 export interface FaltanteEsencial extends RequisitoEsencial {

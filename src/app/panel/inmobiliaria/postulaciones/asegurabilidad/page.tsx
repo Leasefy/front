@@ -18,7 +18,6 @@ import {
   type QuoteInsertEvent,
 } from '@/lib/hooks/cotizador/use-cotizador-overview'
 import { CotizadorKpiStrip } from '@/components/inmobiliaria/cotizador/CotizadorKpiStrip'
-import { CotizadorPriorityInbox } from '@/components/inmobiliaria/cotizador/CotizadorPriorityInbox'
 import { CotizadorRecentQuotesFeed } from '@/components/inmobiliaria/cotizador/CotizadorRecentQuotesFeed'
 import { CotizadorCarriersStatus } from '@/components/inmobiliaria/cotizador/CotizadorCarriersStatus'
 import { CotizadorOverviewSkeleton } from '@/components/skeleton/panel/CotizadorOverviewSkeleton'
@@ -26,57 +25,57 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { Button } from '@/components/ui/button'
 import { SectionLabel } from '@/components/ui/section-label'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
 import { relativeTime } from '@/lib/cartera'
+import { CrossFade } from '@leasefy/cadence'
 
 // Permissions gate is enforced by the cotizador layout (Phase 29).
 // This page does NOT re-check canAccess — layout handles 403 before mount.
 
 const PAGES_NS = 'inmobiliaria.ai.workspace.pages.cotizador'
 
-/** "Cómo funciona" — los 4 pasos del viaje de la cotización (markup como avaluos). */
-const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] = [
-  { icon: ClipboardText, titleKey: `${PAGES_NS}.comoFunciona.step1.title`, descKey: `${PAGES_NS}.comoFunciona.step1.desc` },
-  { icon: Lightning, titleKey: `${PAGES_NS}.comoFunciona.step2.title`, descKey: `${PAGES_NS}.comoFunciona.step2.desc` },
-  { icon: ShieldCheck, titleKey: `${PAGES_NS}.comoFunciona.step3.title`, descKey: `${PAGES_NS}.comoFunciona.step3.desc` },
-  { icon: CheckCircle, titleKey: `${PAGES_NS}.comoFunciona.step4.title`, descKey: `${PAGES_NS}.comoFunciona.step4.desc` },
+/**
+ * «¿Cómo funciona?» — los 4 pasos del viaje de la cotización, detrás del botón
+ * del encabezado (Nico, 05-10-2026: «eso no debe de estar ahí siempre […]
+ * llévalas al botón que al dar clic abre drawer y explica mejor cada cosa»).
+ * Antes era una tira de cuatro tarjetas al pie, en el vacío y con datos.
+ *
+ * Verificado contra el código (05-10): «Nueva cotización» es un asistente
+ * corto; el agente consulta las aseguradoras activas en paralelo; la matriz
+ * trae resultado, condición y costo con su porqué. El paso 4 ya NO manda a
+ * «Por revisar»: la cola del cotizador hoy siempre vuelve vacía y «elegir
+ * aseguradora» está en «Próximamente»; lo que sí funciona en la cotización es
+ * pedir la explicación, re-cotizar y descargar el PDF.
+ */
+const COMO_FUNCIONA_STEPS: { icon: Icon; clave: string; quien: QuienLoHace; tuParte?: true }[] = [
+  { icon: ClipboardText, clave: 'step1', quien: 'tu', tuParte: true },
+  { icon: Lightning, clave: 'step2', quien: 'agente' },
+  { icon: ShieldCheck, clave: 'step3', quien: 'agente' },
+  { icon: CheckCircle, clave: 'step4', quien: 'tu', tuParte: true },
 ]
 
-/** Sección "¿Cómo funciona?" — step-strip 4-up parejo (UI-DS-CONTRACT §7). */
 function ComoFuncionaCotizador() {
   const { t } = useI18n()
   return (
-    <div
-      className="rounded-lg border border-border bg-surface p-5 space-y-4"
-      data-testid="cotizador-como-funciona"
+    <ParaEntenderMas
+      etiqueta={t(`${PAGES_NS}.comoFunciona.title`)}
+      titulo={t(`${PAGES_NS}.comoFunciona.titulo`)}
+      descripcion={t(`${PAGES_NS}.comoFunciona.descripcion`)}
+      variante="secundario"
     >
-      <h2 className="text-base font-semibold text-fg">
-        {t(`${PAGES_NS}.comoFunciona.title`)}
-      </h2>
-      <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {COMO_FUNCIONA_STEPS.map((step, i) => {
-          const StepIcon = step.icon
-          return (
-            <li
-              key={step.titleKey}
-              className="h-full rounded-lg border border-border bg-surface p-4 flex flex-col gap-2"
-            >
-              <div className="flex items-center gap-2">
-                <span className="grid size-8 place-items-center rounded-md bg-primary-soft text-primary shrink-0">
-                  <StepIcon className="size-4" weight="duotone" aria-hidden="true" />
-                </span>
-                <span className="text-xs font-medium tabular-nums text-fg-muted">
-                  {i + 1}
-                </span>
-              </div>
-              <p className="text-sm font-semibold text-fg leading-snug">
-                {t(step.titleKey)}
-              </p>
-              <p className="text-xs text-fg-muted leading-snug">{t(step.descKey)}</p>
-            </li>
-          )
-        })}
-      </ol>
-    </div>
+      <PasosExplicados
+        data-testid="cotizador-como-funciona"
+        pasos={COMO_FUNCIONA_STEPS.map((step) => ({
+          id: step.clave,
+          icono: step.icon,
+          titulo: t(`${PAGES_NS}.comoFunciona.${step.clave}.title`),
+          explicacion: t(`${PAGES_NS}.comoFunciona.${step.clave}.desc`),
+          quien: step.quien,
+          tuParte: step.tuParte ? t(`${PAGES_NS}.comoFunciona.${step.clave}.tuParte`) : undefined,
+        }))}
+      />
+    </ParaEntenderMas>
   )
 }
 
@@ -125,11 +124,20 @@ export default function CotizadorOverviewPage() {
   }, [realtimeQuotes, data?.lastQuotes])
 
   // ── Skeleton guard (Phase 38 plan 38-04b / D-38-04) ───────────────────────
-  if (isLoading && !data) return <CotizadorOverviewSkeleton />
+  // Movimiento: esqueleto → sala en un `CrossFade` (el mismo nodo en las dos
+  // ramas); adentro, fallo / vacío / resumen se cruzan con su fundido.
+  if (isLoading && !data) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <CotizadorOverviewSkeleton />
+      </CrossFade>
+    )
+  }
 
   const sinCotizaciones = !isLoading && !error && mergedQuotes.length === 0
 
   return (
+    <CrossFade swapKey="sala">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado de la casa: etiqueta de sección + título + qué es. Antes el
           vacío salía SIN encabezado: la persona caía en un recuadro suelto sin
@@ -149,7 +157,8 @@ export default function CotizadorOverviewPage() {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        {/* QA-IA-95: a 390 px las tres piezas no caben en un renglón (se corría 118 px): bajan. */}
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
           {data?.generatedAt && (
             <p className="text-xs text-fg-muted whitespace-nowrap flex items-center gap-2 mr-1">
               {t('inmobiliaria.ai.cotizador.overview.lastUpdated')}{' '}
@@ -162,14 +171,13 @@ export default function CotizadorOverviewPage() {
               )}
             </p>
           )}
-          {/* CTA secundario — cola de verdicts por revisar (sin N: el overview
-              no trae ese count barato; la cola lo calcula al abrir) */}
-          <Button variant="secondary" size="sm" hideArrow asChild>
-            <Link href="/panel/inmobiliaria/postulaciones/asegurabilidad/cola">
-              <Tray className="h-4 w-4" weight="duotone" />
-              {t(`${PAGES_NS}.colaLabel`)}
-            </Link>
-          </Button>
+          {/* ¿Cómo funciona? — el cajón con los cuatro pasos (05-10-2026). */}
+          <ComoFuncionaCotizador />
+          {/* «Por revisar» se fue (PROMESAS-Y-DIRECTOR, 05-10-2026): llevaba a la
+              cola del cotizador, que el micro devuelve SIEMPRE vacía a propósito
+              (`agency-ai-hub-work-items.ts`, `case 'cotizador'`: el motor resuelve
+              cada cotización solo, no hay nada que aprobar). Un botón que lleva a
+              nada es un botón muerto. Prueba: `sin-cola-que-nadie-llena.test.tsx`. */}
           {/* Nueva cotización — único CTA primario de la vista (COTI-UI-01) */}
           <Button size="sm" hideArrow asChild>
             <Link href="/panel/inmobiliaria/postulaciones/asegurabilidad/nueva">
@@ -184,6 +192,7 @@ export default function CotizadorOverviewPage() {
           estaba al final de la página, después de los indicadores en cero y
           las listas vacías, fuera de pantalla. La pantalla afirmaba y
           desmentía en el mismo scroll. */}
+      <CrossFade swapKey={error && !isLoading ? 'fallo' : sinCotizaciones ? 'vacio' : 'resumen'} className="space-y-6">
       {error && !isLoading ? (
         <FalloDeCarga
           error={error}
@@ -206,20 +215,13 @@ export default function CotizadorOverviewPage() {
               }}
             />
           </div>
-          {/* La cola de consultas es independiente del feed de cotizaciones:
-              puede haber casos pendientes aunque hoy no se haya creado ninguna. */}
-          <CotizadorPriorityInbox />
-          {/* ¿Cómo funciona? — especialmente útil cuando aún no hay cotizaciones */}
-          <ComoFuncionaCotizador />
+          {/* Aquí iba «Consultas que necesitan atención»: leía la misma cola
+              vacía de «Por revisar» y nunca podía tener nada (05-10-2026). */}
         </>
       ) : (
         <>
           {/* KPI Strip */}
           <CotizadorKpiStrip kpis={data?.kpis ?? null} isLoading={isLoading} />
-
-          {/* Consultas que necesitan atención (visión #4) — cola priorizada arriba
-              del feed, lo primero accionable que ve el operador. */}
-          <CotizadorPriorityInbox />
 
           {/* Recent Quotes Feed */}
           <section aria-label={t('inmobiliaria.ai.cotizador.overview.recentQuotes.title')}>
@@ -237,12 +239,10 @@ export default function CotizadorOverviewPage() {
             <CotizadorCarriersStatus carriers={data?.carriers ?? []} isLoading={isLoading} />
           </section>
 
-          {/* ¿Cómo funciona? — el viaje de la cotización en 4 pasos */}
-          <section aria-label={t(`${PAGES_NS}.comoFunciona.title`)}>
-            <ComoFuncionaCotizador />
-          </section>
         </>
       )}
+      </CrossFade>
     </div>
+    </CrossFade>
   )
 }

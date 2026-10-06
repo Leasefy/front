@@ -8,6 +8,9 @@ import { fmtCOP, fmtDateTime, fmtDuration } from '@/lib/admin/format'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
+import { NitDeLaInmobiliaria } from '@/components/admin/NitDeLaInmobiliaria'
+// DIAN-FEEL (04-10-2026): la inmobiliaria como facturador de la cuenta de FEEL de Leasefy.
+import { FacturadorFeelDeLaInmobiliaria } from '@/components/admin/FacturadorFeelDeLaInmobiliaria'
 
 // ---------- Types ----------
 
@@ -173,9 +176,8 @@ export default function TenantDetailPage() {
           {data.agency.legal_name}
         </h1>
         <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 font-mono text-[11px] text-fg-muted">
-          <span>
-            <span className="text-fg-subtle">nit:</span> {data.agency.nit}
-          </span>
+          {/* El NIT vive en la tarjeta de abajo (el de Leasefy y el del micro):
+              acá quedaría viejo después de corregirlo. */}
           <span>
             <span className="text-fg-subtle">email:</span> {data.agency.primary_contact_email}
           </span>
@@ -187,6 +189,12 @@ export default function TenantDetailPage() {
           <Pill tone="neutral">{data.agency.billing_model}</Pill>
         </div>
       </div>
+
+      {/* El NIT del back (la fuente) y su corrección: el de arriba es la copia
+          que tiene el micro de agentes. */}
+      <NitDeLaInmobiliaria tenantId={tenantId} />
+
+      <FacturadorFeelDeLaInmobiliaria tenantId={tenantId} />
 
       {/* 8-metric counters list */}
       <section>

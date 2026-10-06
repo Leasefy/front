@@ -3,8 +3,15 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User as UserIcon, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, UserPlus, X, Warning, TrashSimple, Pencil, Upload } from '@phosphor-icons/react';
-import { IconButton } from '@leasefy/cadence';
+import { User as UserIcon, Envelope, Phone, MapPin, Calendar, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, UserPlus, TrashSimple, Pencil, Upload, FileText } from '@phosphor-icons/react';
+import {
+  AnimatedNumber,
+  Collapse,
+  CrossFade,
+  IconButton,
+  motionDuration,
+  motionEase,
+} from '@leasefy/cadence';
 import { useAuth } from '@/lib/auth';
 import {
   buildChangedFields,
@@ -22,6 +29,27 @@ import { toast } from 'sonner';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import {
+  enfocarCampoPersonal,
+  idDelCampoPersonal,
+  revisarDatosPersonales,
+  type CampoPersonal,
+  type ErroresPersonales,
+} from '@/lib/perfil/datos-personales';
+
+/** Prefijo de los `id` de los campos de esta pantalla (foco y `aria-describedby`). */
+const PREFIJO = 'perfil-inquilino';
 
 // Setup steps definition (derived from real profile data — never hardcoded)
 interface SetupStep {
@@ -53,6 +81,12 @@ export default function PerfilPage() {
 
   // Form state — seeded from the real authenticated user
   const [formData, setFormData] = useState<ProfileFormData>(() => formDataFromUser(user));
+  /**
+   * El error de cada campo: el del cliente (las mismas reglas que el back,
+   * `lib/perfil/datos-personales`) o el que el back mandó en `campos[]`. Va
+   * debajo de SU campo; al toast sólo lo que no tiene dónde ir.
+   */
+  const [errores, setErrores] = useState<ErroresPersonales>({});
 
   // Re-seed whenever the user loads/refreshes while not editing (also resets on cancel)
   useEffect(() => {
@@ -116,7 +150,24 @@ export default function PerfilPage() {
 
   const handleInputChange = (field: keyof ProfileFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Lo que estaba mal deja de valer en cuanto la persona toca ese campo.
+    setErrores(prev => {
+      if (prev[field] === undefined) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   };
+
+  /** Las props de accesibilidad de un campo con su error debajo. */
+  const propsDelCampo = (campo: CampoPersonal) => ({
+    id: idDelCampoPersonal(PREFIJO, campo),
+    'aria-invalid': errores[campo] ? true : undefined,
+    'aria-describedby': errores[campo] ? `${idDelCampoPersonal(PREFIJO, campo)}-error` : undefined,
+  });
+  const errorDelCampo = (campo: CampoPersonal) => (
+    <ErrorDelCampo id={`${idDelCampoPersonal(PREFIJO, campo)}-error`} mensaje={errores[campo]} />
+  );
 
   const handleSaveProfile = async (fields: readonly (keyof ProfileFormData)[]) => {
     const payload = buildChangedFields(fields, formData, user);
@@ -126,17 +177,32 @@ export default function PerfilPage() {
       return;
     }
 
+    // Lo que el back rechazaría no sale: las mismas reglas y frases del DTO.
+    const delCliente = revisarDatosPersonales(payload);
+    if (Object.keys(delCliente).length > 0) {
+      setErrores(delCliente);
+      enfocarCampoPersonal(PREFIJO, fields.find((f) => delCliente[f] !== undefined));
+      return;
+    }
+
     setIsSaving(true);
     try {
       await updateProfile(payload);
+      setErrores({});
       setEditingSection(null);
       toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
     } catch (err) {
-      // Surface the backend message (e.g. the Colombian phone format error)
-      const message = err instanceof Error && err.message
-        ? err.message
-        : (locale === 'es' ? 'No se pudieron guardar los cambios' : 'Could not save changes');
-      toast.error(message);
+      // 02-10-2026 · Antes: `err.message` crudo al toast (un 5xx, un texto en
+      // inglés). Ahora, con la regla de oro: lo del back por campo va a SU
+      // campo (el formato del celular, un largo); al toast, sólo lo suelto.
+      const reparto = repartirErroresDelServidor<CampoPersonal>(err, {
+        campos: fields,
+        accion: 'guardar tu perfil',
+        porDefecto: locale === 'es' ? 'No pudimos guardar los cambios. Prueba de nuevo en un momento.' : 'Could not save changes',
+      });
+      setErrores(reparto.porCampo);
+      enfocarCampoPersonal(PREFIJO, reparto.orden[0]);
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setIsSaving(false);
     }
@@ -158,10 +224,14 @@ export default function PerfilPage() {
       setAvatarFile(null);
       toast.success(locale === 'es' ? 'Foto de perfil actualizada' : 'Profile photo updated');
     } catch (err) {
-      const message = err instanceof Error && err.message
-        ? err.message
-        : (locale === 'es' ? 'No se pudo subir la foto' : 'Could not upload the photo');
-      toast.error(message);
+      // El back dice qué pasó con la imagen («Solo se permiten imágenes JPG,
+      // PNG o WebP»); un 5xx dice que fue nuestro; «conexión», sólo sin respuesta.
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: locale === 'es' ? 'No se pudo subir la foto' : 'Could not upload the photo',
+          accion: 'subir tu foto',
+        }),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -171,6 +241,7 @@ export default function PerfilPage() {
     setEditingSection(null);
     setAvatarPreview(null);
     setAvatarFile(null);
+    setErrores({});
   };
 
   // Avatar upload handlers
@@ -238,11 +309,21 @@ export default function PerfilPage() {
     setDeleteConfirmText('');
   };
 
+  // El paso y la palabra se reinician al ABRIR (arriba), no al cerrar: el
+  // Dialog sale con su animación y, si se reiniciaran acá, el paso 2 se
+  // convertiría en el 1 mientras se desvanece.
   const handleCloseDeleteModal = () => {
     setShowDeleteModal(false);
-    setDeleteStep(1);
-    setDeleteConfirmText('');
     setIsDeleting(false);
+  };
+
+  /*
+   * Escape, la ✕ y el velo los maneja el `Dialog`. No se sale mientras se
+   * borra (la petición ya salió) ni en la despedida (cierra la sesión sola).
+   */
+  const sePuedeCerrarLaBaja = !isDeleting && deleteStep !== 3;
+  const alCambiarModalDeBaja = (abierto: boolean) => {
+    if (!abierto && sePuedeCerrarLaBaja) handleCloseDeleteModal();
   };
 
   // Canonical deletion strings (single source of truth for all five flows).
@@ -262,10 +343,12 @@ export default function PerfilPage() {
       }, 2000);
     } catch (err) {
       setIsDeleting(false);
-      const message = err instanceof Error && err.message
-        ? err.message
-        : deletionCopy.errorFallback;
-      toast.error(message);
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: deletionCopy.errorFallback,
+          accion: 'eliminar tu cuenta',
+        }),
+      );
     }
   };
 
@@ -283,11 +366,7 @@ export default function PerfilPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <div>
             <h1 className="text-3xl font-medium text-fg tracking-tight">
               {t('profile.title')}
@@ -296,15 +375,11 @@ export default function PerfilPage() {
               {t('profile.subtitle')}
             </p>
           </div>
-        </motion.header>
+        </header>
 
-        {/* Setup Progress Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
-        >
+        {/* Setup Progress Section — la barra, el anillo y el porcentaje se
+            revelan desde 0 y, al completar un paso, avanzan desde donde estaban. */}
+        <section className="mb-8">
           <div className="rounded-xl bg-primary-soft p-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               {/* Progress Info */}
@@ -324,12 +399,13 @@ export default function PerfilPage() {
                     </p>
                   </div>
                 </div>
+                {/* `transform` (translateX), no `width`: no recalcula el layout por cuadro. */}
                 <div className="h-2 bg-surface/50 rounded-full overflow-hidden">
                   <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${completionPercentage}%` }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
-                    className="h-full bg-primary rounded-full"
+                    initial={{ x: '-100%' }}
+                    animate={{ x: `${completionPercentage - 100}%` }}
+                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
+                    className="h-full w-full bg-primary rounded-full"
                   />
                 </div>
                 <p className="text-xs text-fg-muted mt-2">
@@ -363,12 +439,12 @@ export default function PerfilPage() {
                       strokeLinecap="round"
                       initial={{ strokeDasharray: '0 251.2' }}
                       animate={{ strokeDasharray: `${completionPercentage * 2.512} 251.2` }}
-                      transition={{ duration: 0.8, ease: 'easeOut' }}
+                      transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
                     />
                   </svg>
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="text-2xl font-bold text-fg">
-                      {completionPercentage}%
+                      <AnimatedNumber value={completionPercentage} from={0} format={(n) => String(Math.round(n))} />%
                     </span>
                   </div>
                 </div>
@@ -380,13 +456,10 @@ export default function PerfilPage() {
               {setupSteps.map((step, index) => {
                 const Icon = step.icon;
                 return (
-                  <motion.div
+                  <div
                     key={step.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 + index * 0.05 }}
                     className={cn(
-                      'rounded-xl p-4 transition-all',
+                      'rounded-xl p-4 transition-colors',
                       step.completed
                         ? 'bg-surface/80'
                         : 'bg-surface border-2 border-dashed border-primary/30'
@@ -427,21 +500,16 @@ export default function PerfilPage() {
                         )}
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
           </div>
-        </motion.section>
+        </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="lg:col-span-1 space-y-6"
-          >
+          <div className="lg:col-span-1 space-y-6">
             {/* Avatar Card */}
             <div className="rounded-xl border border-border bg-surface overflow-hidden">
               <div className="relative bg-primary-soft h-28">
@@ -500,15 +568,15 @@ export default function PerfilPage() {
                   )}
                 </div>
 
-                {/* Avatar upload area when editing */}
-                {editingSection === 'avatar' && (
+                {/* Avatar upload area when editing — se abre y se cierra con su altura. */}
+                <Collapse open={editingSection === 'avatar'}>
                   <div
                     onDragOver={handleDragOver}
                     onDragLeave={handleDragLeave}
                     onDrop={handleDrop}
                     onClick={handleAvatarClick}
                     className={cn(
-                      "mb-4 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all",
+                      "mb-4 border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors",
                       isDragging
                         ? "border-primary/30 bg-primary-soft"
                         : "border-border hover:border-primary/30 hover:bg-surface-muted"
@@ -562,13 +630,13 @@ export default function PerfilPage() {
                       </>
                     )}
                   </div>
-                )}
+                </Collapse>
 
                 <h2 className="text-xl font-semibold text-fg">{displayName}</h2>
                 <p className="text-sm text-fg-muted mt-1">{user.email}</p>
 
                 {/* FloppyDisk/Cancel buttons for avatar section */}
-                {editingSection === 'avatar' && (
+                <Collapse open={editingSection === 'avatar'}>
                   <div className="flex items-center gap-2 mt-4">
                     <Button
                       variant="ghost"
@@ -592,7 +660,7 @@ export default function PerfilPage() {
                       {t('common.save')}
                     </Button>
                   </div>
-                )}
+                </Collapse>
               </div>
             </div>
 
@@ -615,19 +683,16 @@ export default function PerfilPage() {
                 </div>
               </div>
             )}
-          </motion.div>
+          </div>
 
           {/* Profile Form */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="lg:col-span-2 space-y-6"
-          >
-            {/* Personal Information */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Personal Information — Editar ↔ ver: las acciones y los campos se
+                cruzan (lo nuevo entra ya, lo viejo sale por encima). */}
             <div className="rounded-xl border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-fg">{t('profile.personalInfo')}</h3>
+                <CrossFade swapKey={editingSection === 'personal' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'personal' ? (
                   <Button
                     variant="ghost"
@@ -664,19 +729,28 @@ export default function PerfilPage() {
                     </Button>
                   </div>
                 )}
+                </CrossFade>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CrossFade
+                swapKey={editingSection === 'personal' ? 'editar' : 'ver'}
+                mode="popLayout"
+                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+              >
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">
                     {t('profile.firstName')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input
-                      type="text"
-                      value={formData.firstName}
-                      onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      className="w-full rounded-xl bg-surface-muted"
-                    />
+                    <>
+                      <Input
+                        type="text"
+                        {...propsDelCampo('firstName')}
+                        value={formData.firstName}
+                        onChange={(e) => handleInputChange('firstName', e.target.value)}
+                        className="w-full rounded-xl bg-surface-muted"
+                      />
+                      {errorDelCampo('firstName')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <UserIcon className="w-4 h-4 text-fg-subtle" />
@@ -690,12 +764,16 @@ export default function PerfilPage() {
                     {t('profile.lastName')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input
-                      type="text"
-                      value={formData.lastName}
-                      onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      className="w-full rounded-xl bg-surface-muted"
-                    />
+                    <>
+                      <Input
+                        type="text"
+                        {...propsDelCampo('lastName')}
+                        value={formData.lastName}
+                        onChange={(e) => handleInputChange('lastName', e.target.value)}
+                        className="w-full rounded-xl bg-surface-muted"
+                      />
+                      {errorDelCampo('lastName')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <UserIcon className="w-4 h-4 text-fg-subtle" />
@@ -720,13 +798,17 @@ export default function PerfilPage() {
                     {t('profile.phone')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      placeholder="+573001234567"
-                      className="w-full rounded-xl bg-surface-muted"
-                    />
+                    <>
+                      <Input
+                        type="tel"
+                        {...propsDelCampo('phone')}
+                        value={formData.phone}
+                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                        placeholder="+573001234567"
+                        className="w-full rounded-xl bg-surface-muted"
+                      />
+                      {errorDelCampo('phone')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <Phone className="w-4 h-4 text-fg-subtle" />
@@ -743,11 +825,13 @@ export default function PerfilPage() {
                     <>
                       <Input
                         type="text"
+                        {...propsDelCampo('rut')}
                         value={formData.rut}
                         onChange={(e) => handleInputChange('rut', e.target.value)}
                         disabled={isRutLocked(user)}
                         className="w-full rounded-xl bg-surface-muted"
                       />
+                      {errorDelCampo('rut')}
                       {isRutLocked(user) && (
                         <p className="mt-2 text-xs text-fg-subtle">
                           {locale === 'es'
@@ -769,12 +853,16 @@ export default function PerfilPage() {
                     {t('profile.dateOfBirth')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input
-                      type="date"
-                      value={formData.birthDate}
-                      onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                      className="w-full rounded-xl bg-surface-muted"
-                    />
+                    <>
+                      <Input
+                        type="date"
+                        {...propsDelCampo('birthDate')}
+                        value={formData.birthDate}
+                        onChange={(e) => handleInputChange('birthDate', e.target.value)}
+                        className="w-full rounded-xl bg-surface-muted"
+                      />
+                      {errorDelCampo('birthDate')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <Calendar className="w-4 h-4 text-fg-subtle" />
@@ -796,12 +884,16 @@ export default function PerfilPage() {
                     {t('profile.address')}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input
-                      type="text"
-                      value={formData.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
-                      className="w-full rounded-xl bg-surface-muted"
-                    />
+                    <>
+                      <Input
+                        type="text"
+                        {...propsDelCampo('address')}
+                        value={formData.address}
+                        onChange={(e) => handleInputChange('address', e.target.value)}
+                        className="w-full rounded-xl bg-surface-muted"
+                      />
+                      {errorDelCampo('address')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <MapPin className="w-4 h-4 text-fg-subtle" />
@@ -809,13 +901,14 @@ export default function PerfilPage() {
                     </div>
                   )}
                 </div>
-              </div>
+              </CrossFade>
             </div>
 
-            {/* Emergency Contact */}
+            {/* Emergency Contact — mismo cruce que los datos personales. */}
             <div className="rounded-xl border border-border bg-surface p-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-semibold text-fg">{t('profile.emergencyContact')}</h3>
+                <CrossFade swapKey={editingSection === 'emergency' ? 'editar' : 'ver'} mode="popLayout">
                 {editingSection !== 'emergency' ? (
                   <Button
                     variant="ghost"
@@ -852,20 +945,29 @@ export default function PerfilPage() {
                     </Button>
                   </div>
                 )}
+                </CrossFade>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <CrossFade
+                swapKey={editingSection === 'emergency' ? 'editar' : 'ver'}
+                mode="popLayout"
+                className="grid grid-cols-1 md:grid-cols-2 gap-6"
+              >
                 <div>
                   <label className="block text-sm font-medium text-fg-muted mb-2">
                     {locale === 'es' ? 'Nombre' : 'Name'}
                   </label>
                   {editingSection === 'emergency' ? (
-                    <Input
-                      type="text"
-                      value={formData.emergencyContactName}
-                      onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
-                      className="w-full rounded-xl bg-surface-muted"
-                      placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'}
-                    />
+                    <>
+                      <Input
+                        type="text"
+                        {...propsDelCampo('emergencyContactName')}
+                        value={formData.emergencyContactName}
+                        onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
+                        className="w-full rounded-xl bg-surface-muted"
+                        placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'}
+                      />
+                      {errorDelCampo('emergencyContactName')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <UserPlus className="w-4 h-4 text-fg-subtle" />
@@ -878,13 +980,17 @@ export default function PerfilPage() {
                     {t('profile.phone')}
                   </label>
                   {editingSection === 'emergency' ? (
-                    <Input
-                      type="tel"
-                      value={formData.emergencyContactPhone}
-                      onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
-                      className="w-full rounded-xl bg-surface-muted"
-                      placeholder="3001234567"
-                    />
+                    <>
+                      <Input
+                        type="tel"
+                        {...propsDelCampo('emergencyContactPhone')}
+                        value={formData.emergencyContactPhone}
+                        onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
+                        className="w-full rounded-xl bg-surface-muted"
+                        placeholder="3001234567"
+                      />
+                      {errorDelCampo('emergencyContactPhone')}
+                    </>
                   ) : (
                     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
                       <Phone className="w-4 h-4 text-fg-subtle" />
@@ -892,7 +998,7 @@ export default function PerfilPage() {
                     </div>
                   )}
                 </div>
-              </div>
+              </CrossFade>
             </div>
 
             {/* Housing preferences (tenant_preferences table — authoritative) */}
@@ -904,11 +1010,12 @@ export default function PerfilPage() {
                 <WarningCircle className="w-5 h-5" />
                 {locale === 'es' ? 'Zona de peligro' : 'Danger zone'}
               </h3>
-              <p className="text-sm text-fg-muted mb-4">
-                {locale === 'es'
-                  ? 'Estas acciones son irreversibles. Por favor, procede con precaución.'
-                  : 'These actions are irreversible. Please proceed with caution.'}
-              </p>
+              {/* La copia canónica, como en el perfil de la inmobiliaria (Nico,
+                  02-10-2026, pregunta 15): decía «Estas acciones son
+                  irreversibles», y dos clics después el modal dice que se
+                  recupera iniciando sesión. Nada se borra: pasados 30 días se
+                  bloquea y sólo el soporte la abre. */}
+              <p className="text-sm text-fg-muted mb-4">{deletionCopy.recovery}</p>
               <Button
                 variant="outline"
                 hideArrow
@@ -918,65 +1025,107 @@ export default function PerfilPage() {
                 {t('settings.account.deleteAccount')}
               </Button>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 
-      {/* Delete Account Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-surface rounded-xl max-w-md w-full overflow-hidden"
-          >
-            {/* Step 1: Warning */}
-            {deleteStep === 1 && (
-              <>
-                {/* Header with icon */}
-                <div className="bg-danger-soft px-6 py-8 text-center border-b border-danger/30">
-                  <div className="w-16 h-16 rounded-full bg-danger-soft flex items-center justify-center mx-auto mb-4">
-                    <Warning className="w-8 h-8 text-danger" />
-                  </div>
-                  <h3 className="text-xl font-semibold text-danger">
-                    {deletionCopy.warningTitle}
-                  </h3>
-                  <p className="text-sm text-danger mt-1">
-                    {deletionCopy.recovery}
-                  </p>
-                </div>
+      {/*
+        * Baja de la cuenta — el `Dialog` destructivo del DS, en tres pasos
+        * (aviso → escribir la palabra → despedida) dentro del MISMO modal: la
+        * cabecera, el cuerpo y el pie cambian con el paso y la variante lo
+        * sigue (rojo en los dos primeros, verde en la despedida). Portal,
+        * foco atrapado, Escape, velo y Lenis los pone la primitiva.
+        *
+        * El velo no cierra (nunca lo hizo): es una baja, no un aviso.
+        */}
+      <Dialog open={showDeleteModal} onOpenChange={alCambiarModalDeBaja}>
+        <DialogContent
+          size="sm"
+          variant={deleteStep === 3 ? 'success' : 'destructive'}
+          hideClose={!sePuedeCerrarLaBaja}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <CrossFade swapKey={deleteStep} className="flex min-w-0 flex-col gap-1.5">
+              {deleteStep === 1 && (
+                <>
+                  <DialogTitle>{deletionCopy.warningTitle}</DialogTitle>
+                  <DialogDescription>{deletionCopy.recovery}</DialogDescription>
+                </>
+              )}
+              {deleteStep === 2 && (
+                <>
+                  <DialogTitle>{locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}</DialogTitle>
+                  <DialogDescription>
+                    {deletionCopy.confirmInstructionPrefix}{' '}
+                    <span className="font-mono font-semibold text-danger">{deletionCopy.confirmWord}</span>{' '}
+                    {deletionCopy.confirmInstructionSuffix}
+                  </DialogDescription>
+                </>
+              )}
+              {deleteStep === 3 && (
+                <>
+                  <DialogTitle>{deletionCopy.goodbyeTitle}</DialogTitle>
+                  <DialogDescription>{deletionCopy.goodbyeBody}</DialogDescription>
+                </>
+              )}
+            </CrossFade>
+          </DialogHeader>
 
-                <div className="p-6">
-                  {/* What will be deleted */}
-                  <div className="mb-6">
+          {deleteStep !== 3 && (
+            <CrossFade swapKey={deleteStep}>
+              {deleteStep === 1 ? (
+                /*
+                 * Esta lista decía «Se eliminará permanentemente: tu perfil,
+                 * el historial de postulaciones y documentos, el de pagos y
+                 * contratos, las propiedades guardadas y las conversaciones».
+                 * `DELETE /users/me/account` (UsersService.deleteAccount) no
+                 * borra nada de eso: marca TU usuario con `isActive: false` y
+                 * `deletedAt`, revoca tus sesiones, y con un arriendo activo
+                 * a tu nombre (`lease.status = ACTIVE`) responde 403 y no da
+                 * de baja. Lo mismo que ya dice el perfil de la inmobiliaria.
+                 */
+                <div className="space-y-4">
+                  <div>
                     <p className="text-sm font-medium text-fg mb-3">
-                      {locale === 'es' ? 'Se eliminará permanentemente:' : 'Will be permanently deleted:'}
+                      {locale === 'es' ? 'Perderás:' : 'You will lose:'}
                     </p>
                     <ul className="space-y-2">
-                      {(locale === 'es' ? [
-                        'Tu perfil y toda tu información personal',
-                        'Historial de postulaciones y documentos',
-                        'Historial de pagos y contratos',
-                        'Acceso a propiedades guardadas',
-                        'Conversaciones y mensajes',
-                      ] : [
-                        'Your profile and all personal information',
-                        'Application and document history',
-                        'Payment and contract history',
-                        'Access to saved properties',
-                        'Conversations and messages',
-                      ]).map((item, index) => (
-                        <li key={index} className="flex items-start gap-2 text-sm text-fg-muted">
+                      {(locale === 'es'
+                        ? [
+                            'Tu perfil y tus datos personales',
+                            'El acceso a tu cuenta: postulaciones, pagos, documentos y propiedades guardadas',
+                            'Tu sesión en todos tus dispositivos',
+                          ]
+                        : [
+                            'Your profile and personal data',
+                            'Access to your account: applications, payments, documents and saved properties',
+                            'Your session on every device',
+                          ]
+                      ).map((item) => (
+                        <li key={item} className="flex items-start gap-2 text-sm text-fg-muted">
                           <TrashSimple className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
                           {item}
                         </li>
                       ))}
                     </ul>
                   </div>
+                  <div>
+                    <p className="text-sm font-medium text-fg mb-3">
+                      {locale === 'es' ? 'No se elimina:' : 'What is not deleted:'}
+                    </p>
+                    <ul className="space-y-2">
+                      <li className="flex items-start gap-2 text-sm text-fg-muted">
+                        <FileText className="w-4 h-4 text-fg-muted mt-0.5 flex-shrink-0" />
+                        {locale === 'es'
+                          ? 'Tus contratos, pagos y postulaciones: quedan registrados'
+                          : 'Your contracts, payments and applications: they stay on record'}
+                      </li>
+                    </ul>
+                  </div>
 
                   {/* Active lease warning */}
-                  <div className="p-4 rounded-xl bg-warning-soft border border-warning/30 mb-6">
+                  <div className="p-4 rounded-xl bg-warning-soft border border-warning/30">
                     <div className="flex items-start gap-3">
                       <WarningCircle className="w-5 h-5 text-warning mt-0.5 flex-shrink-0" />
                       <div>
@@ -985,108 +1134,56 @@ export default function PerfilPage() {
                         </p>
                         <p className="text-xs text-warning mt-0.5">
                           {locale === 'es'
-                            ? 'Eliminar tu cuenta no cancela un contrato de arriendo vigente. Deberás contactar a tu arrendador.'
-                            : 'Deleting your account does not cancel a current lease agreement. You will need to contact your landlord.'}
+                            ? 'No vas a poder darte de baja mientras tengas un contrato de arriendo activo a tu nombre: eliminar tu cuenta no cancela el contrato. Para terminarlo, contacta a tu arrendador.'
+                            : 'You cannot delete your account while you have an active lease in your name: deleting your account does not cancel the lease. To end it, contact your landlord.'}
                         </p>
                       </div>
                     </div>
                   </div>
-
-                  {/* Buttons */}
-                  <div className="flex gap-3">
-                    <Button
-                      variant="outline"
-                      hideArrow
-                      onClick={handleCloseDeleteModal}
-                      className="flex-1 rounded-full"
-                    >
-                      {t('common.cancel')}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      hideArrow
-                      onClick={() => setDeleteStep(2)}
-                      className="flex-1 rounded-full"
-                    >
-                      {locale === 'es' ? 'Continuar' : 'Continue'}
-                    </Button>
-                  </div>
                 </div>
-              </>
-            )}
+              ) : (
+                <Input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                  placeholder={deletionCopy.inputPlaceholder}
+                  aria-label={deletionCopy.confirmInstruction}
+                  autoFocus
+                  className="w-full font-mono text-center tracking-widest focus-visible:border-danger/30 focus-visible:ring-danger/20"
+                />
+              )}
+            </CrossFade>
+          )}
 
-            {/* Step 2: Confirmation */}
-            {deleteStep === 2 && (
-              <>
-                <div className="flex items-center justify-between px-6 py-4 border-b border-border-faint">
-                  <h3 className="text-lg font-semibold text-fg">
-                    {locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}
-                  </h3>
-                  <IconButton
-                    variant="ghost"
-                    onClick={handleCloseDeleteModal}
-                    className="p-2 rounded-full hover:bg-surface-muted"
-                    aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
-                    icon={<X className="w-5 h-5 text-fg-muted" />}
-                  />
-                </div>
+          {deleteStep === 1 && (
+            <DialogFooter>
+              <Button variant="outline" hideArrow onClick={handleCloseDeleteModal}>
+                {t('common.cancel')}
+              </Button>
+              <Button hideArrow onClick={() => setDeleteStep(2)}>
+                {locale === 'es' ? 'Continuar' : 'Continue'}
+              </Button>
+            </DialogFooter>
+          )}
 
-                <div className="p-6">
-                  <p className="text-sm text-fg-muted mb-4">
-                    {deletionCopy.confirmInstructionPrefix}{' '}
-                    <span className="font-mono font-semibold text-danger">{deletionCopy.confirmWord}</span>{' '}
-                    {deletionCopy.confirmInstructionSuffix}
-                  </p>
-
-                  <Input
-                    type="text"
-                    value={deleteConfirmText}
-                    onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
-                    placeholder={deletionCopy.inputPlaceholder}
-                    className="w-full rounded-xl bg-surface-muted font-mono text-center tracking-widest focus-visible:border-danger/30 focus-visible:ring-danger/20"
-                  />
-
-                  <div className="flex gap-3 mt-6">
-                    <Button
-                      variant="outline"
-                      hideArrow
-                      onClick={() => setDeleteStep(1)}
-                      className="flex-1 rounded-full"
-                    >
-                      {locale === 'es' ? 'Volver' : 'Back'}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      hideArrow
-                      isLoading={isDeleting}
-                      onClick={handleDeleteAccount}
-                      disabled={deleteConfirmText !== deletionCopy.confirmWord || isDeleting}
-                      className="flex-1 rounded-full"
-                    >
-                      {isDeleting ? deletionCopy.deleting : deletionCopy.deleteButton}
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Step 3: Goodbye */}
-            {deleteStep === 3 && (
-              <div className="p-8 text-center">
-                <div className="w-16 h-16 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-fg-muted" />
-                </div>
-                <h3 className="text-xl font-semibold text-fg mb-2">
-                  {deletionCopy.goodbyeTitle}
-                </h3>
-                <p className="text-sm text-fg-muted">
-                  {deletionCopy.goodbyeBody}
-                </p>
-              </div>
-            )}
-          </motion.div>
-        </div>
-      )}
+          {deleteStep === 2 && (
+            <DialogFooter>
+              <Button variant="outline" hideArrow onClick={() => setDeleteStep(1)} disabled={isDeleting}>
+                {locale === 'es' ? 'Volver' : 'Back'}
+              </Button>
+              <Button
+                variant="destructive"
+                hideArrow
+                isLoading={isDeleting}
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== deletionCopy.confirmWord || isDeleting}
+              >
+                {isDeleting ? deletionCopy.deleting : deletionCopy.deleteButton}
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -50,6 +50,18 @@ const { crm, pipeline, toasts } = vi.hoisted(() => ({
   toasts: { success: vi.fn() },
 }))
 
+// PL-07 (04-10-2026): el inmueble se escoge con el Combobox (buscador): cada opción es un botón.
+vi.mock('@/components/ui/combobox', () => ({
+  Combobox: ({ options, onChange }: { options: { value: string; label: string }[]; onChange: (v?: string) => void }) => (
+    <div>
+      {options.map((o) => (
+        <button key={o.value} type="button" data-testid={`opcion-${o.value}`} onClick={() => onChange(o.value)}>
+          {o.label}
+        </button>
+      ))}
+    </div>
+  ),
+}));
 vi.mock('@/lib/api/crm.service', async () => {
   const real =
     await vi.importActual<typeof import('@/lib/api/crm.service')>(
@@ -160,7 +172,7 @@ describe('NuevoLeadDialog — el origen (B-07)', () => {
   it('🔴 sin llave de contacto lo dice al lado del campo, y el botón no guarda', async () => {
     await pintar()
     await escribir('#nuevo-lead-nombre', 'Ana Restrepo')
-    expect($('[data-testid="falta-llave"]')?.textContent).toContain(
+    expect($('#nuevo-lead-documento-error')?.textContent).toContain(
       'documento o el teléfono',
     )
     const boton = document.body.querySelector<HTMLButtonElement>(
@@ -173,7 +185,7 @@ describe('NuevoLeadDialog — el origen (B-07)', () => {
     await pintar()
     await escribir('#nuevo-lead-nombre', 'Ana Restrepo')
     await escribir('#nuevo-lead-telefono', '3001234567')
-    expect($('[data-testid="falta-llave"]')).toBeNull()
+    expect($('#nuevo-lead-documento-error')).toBeNull()
   })
 
   it('🔴 avisa cuando el contacto YA existía, y por qué lado se reconoció', async () => {
@@ -215,7 +227,7 @@ describe('NuevoLeadDialog — el origen (B-07)', () => {
     // El inmueble se elige con el Select de Radix; en su lugar se comprueba que
     // la única llave que falta es ésa (el botón sigue deshabilitado por el
     // inmueble, no por el origen).
-    expect($('[data-testid="falta-llave"]')).toBeNull()
+    expect($('#nuevo-lead-documento-error')).toBeNull()
   })
 
   it('el camino nuevo NO llama al viejo, y al revés tampoco', async () => {

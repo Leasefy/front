@@ -3,14 +3,32 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { User, Envelope, Phone, MapPin, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, X, Warning, TrashSimple, Pencil, Upload, Buildings } from '@phosphor-icons/react';
+import { User, Envelope, Phone, MapPin, Shield, Camera, FloppyDisk, CheckCircle, WarningCircle, Briefcase, UserPlus, TrashSimple, Pencil, Upload, Buildings } from '@phosphor-icons/react';
 import { useAuth } from '@/lib/auth';
 import { AgenteHorarioVisitas } from '@/components/inmobiliaria/AgenteHorarioVisitas';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/toast';
 import { useI18n } from '@/lib/i18n';
 import { Button, Input, Spinner } from '@/components/ui';
-import { IconButton } from '@leasefy/cadence';
+import { AnimatedNumber, CrossFade, IconButton, motionDuration, motionEase } from '@leasefy/cadence';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import {
+  enfocarCampoPersonal,
+  idDelCampoPersonal,
+  revisarDatosPersonales,
+  type CampoPersonal,
+  type ErroresPersonales,
+} from '@/lib/perfil/datos-personales';
 import { usePermissionsContext } from '@/lib/context/PermissionsContext';
 import { settingsApi } from '@/lib/api/settings.service';
 import { accountDeletionCopy } from '@/lib/account-deletion/copy';
@@ -58,6 +76,11 @@ const AGENCY_ROLE_DESC: Record<string, string> = {
   ABOGADO_EXTERNO: 'Sólo sus casos jurídicos.',
 };
 
+/** Prefijo de los `id` de los campos de esta pantalla (foco y `aria-describedby`). */
+const PREFIJO_DEL_PERFIL = 'perfil-inmobiliaria';
+const CAMPOS_PERSONALES_VISIBLES: readonly CampoPersonal[] = ['firstName', 'lastName', 'phone', 'address'];
+const CAMPOS_DE_EMERGENCIA: readonly CampoPersonal[] = ['emergencyContactName', 'emergencyContactPhone'];
+
 export default function InmobiliariaPerfilPage() {
   const { t, locale } = useI18n();
   const { user, agency, updateProfile, logout } = useAuth();
@@ -85,6 +108,8 @@ export default function InmobiliariaPerfilPage() {
 
   // Form state — sourced from auth context, no mock data
   const [formData, setFormData] = useState<DatosDelPerfil>(() => datosDelUsuario(user));
+  /** El error de cada campo: del cliente (las reglas del back) o del back. */
+  const [errores, setErrores] = useState<ErroresPersonales>({});
 
   /*
    * El formulario sigue al usuario del contexto mientras NO se esté editando.
@@ -152,9 +177,25 @@ export default function InmobiliariaPerfilPage() {
   // backend, so no other badge is shown.
   const emailVerified = !!user?.emailConfirmedAt;
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: CampoPersonal, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    setErrores(prev => {
+      if (prev[field] === undefined) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   };
+
+  /** Las props de accesibilidad de un campo con su error debajo. */
+  const propsDelCampo = (campo: CampoPersonal) => ({
+    id: idDelCampoPersonal(PREFIJO_DEL_PERFIL, campo),
+    'aria-invalid': errores[campo] ? true : undefined,
+    'aria-describedby': errores[campo] ? `${idDelCampoPersonal(PREFIJO_DEL_PERFIL, campo)}-error` : undefined,
+  });
+  const errorDelCampo = (campo: CampoPersonal) => (
+    <ErrorDelCampo id={`${idDelCampoPersonal(PREFIJO_DEL_PERFIL, campo)}-error`} mensaje={errores[campo]} />
+  );
 
   /*
    * 🔴 La foto guardada sale del usuario, no de esta sesión.
@@ -168,37 +209,68 @@ export default function InmobiliariaPerfilPage() {
   const savedAvatar = avatarSubido ?? user?.avatar ?? null;
 
   const handleSave = async (section: EditingSection) => {
+    const datos =
+      section === 'personal'
+        ? {
+            firstName: formData.firstName.trim(),
+            lastName: formData.lastName.trim(),
+            phone: oNulo(formData.phone),
+            address: oNulo(formData.address),
+            birthDate: oNulo(formData.birthDate),
+          }
+        : section === 'emergency'
+          ? {
+              emergencyContactName: oNulo(formData.emergencyContactName),
+              emergencyContactPhone: oNulo(formData.emergencyContactPhone),
+            }
+          : null;
+
+    // Los campos que la sección MUESTRA: la fecha de nacimiento viaja (es la
+    // guardada) pero no tiene campo acá, así que su error va al toast.
+    const visibles: readonly CampoPersonal[] =
+      section === 'personal' ? CAMPOS_PERSONALES_VISIBLES : section === 'emergency' ? CAMPOS_DE_EMERGENCIA : [];
+
+    // Lo que el back rechazaría no sale: las mismas reglas y frases del DTO.
+    if (datos) {
+      const delCliente = revisarDatosPersonales(datos);
+      const conError = (Object.keys(datos) as CampoPersonal[]).filter((c) => delCliente[c] !== undefined);
+      if (conError.length > 0) {
+        const enCampo = conError.filter((c) => visibles.includes(c));
+        setErrores(Object.fromEntries(enCampo.map((c) => [c, delCliente[c]])));
+        enfocarCampoPersonal(PREFIJO_DEL_PERFIL, enCampo[0]);
+        const sinCampo = conError.filter((c) => !visibles.includes(c)).map((c) => delCliente[c]);
+        if (sinCampo.length > 0) toast.error(sinCampo.join(' · '));
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       if (section === 'avatar' && avatarFile) {
         const { url } = await settingsApi.uploadAvatar(avatarFile);
         setAvatarSubido(url);
         setAvatarFile(null);
-      } else if (section === 'personal') {
-        await updateProfile({
-          firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim(),
-          phone: oNulo(formData.phone),
-          address: oNulo(formData.address),
-          birthDate: oNulo(formData.birthDate),
-        });
-      } else if (section === 'emergency') {
-        await updateProfile({
-          emergencyContactName: oNulo(formData.emergencyContactName),
-          emergencyContactPhone: oNulo(formData.emergencyContactPhone),
-        });
+      } else if (datos) {
+        await updateProfile(datos);
       }
+      setErrores({});
       setEditingSection(null);
       toast.success(locale === 'es' ? 'Cambios guardados' : 'Changes saved');
     } catch (err) {
       // El backend dice EXACTAMENTE qué pasó —«Solo se permiten imagenes JPG,
-      // PNG o WebP», «La imagen no puede superar los 10MB»— y ese mensaje es
-      // lo único que le dice a la persona qué corregir. El `catch` pelado lo
-      // tiraba y dejaba un «Error al guardar los cambios» que no ayuda a nadie.
-      const detalle = err instanceof Error && err.message ? err.message : null;
-      toast.error(
-        detalle ?? (locale === 'es' ? 'Error al guardar los cambios' : 'Error saving changes'),
-      );
+      // PNG o WebP», el formato del celular— y eso es lo único que le dice a
+      // la persona qué corregir. 02-10-2026: por el traductor, con la regla de
+      // oro. Lo que trae campo va debajo de SU campo; al toast, sólo lo suelto
+      // (un 5xx dice que fue nuestro y da la referencia; «conexión», sólo sin
+      // respuesta). Antes era `err.message` crudo.
+      const reparto = repartirErroresDelServidor<CampoPersonal>(err, {
+        campos: visibles,
+        accion: section === 'avatar' ? 'subir tu foto' : 'guardar tu perfil',
+        porDefecto: locale === 'es' ? 'No pudimos guardar los cambios. Prueba de nuevo en un momento.' : 'Error saving changes',
+      });
+      setErrores(reparto.porCampo);
+      enfocarCampoPersonal(PREFIJO_DEL_PERFIL, reparto.orden[0]);
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setIsSaving(false);
     }
@@ -212,6 +284,7 @@ export default function InmobiliariaPerfilPage() {
     // línea lo tipeado sobrevivía en `formData` —que es lo que pinta la vista
     // de lectura— y el siguiente «Guardar» lo mandaba al backend.
     setFormData(datosDelUsuario(user));
+    setErrores({});
   };
 
   // Avatar upload handlers
@@ -283,34 +356,22 @@ export default function InmobiliariaPerfilPage() {
     setDeleteConfirmText('');
   };
 
+  // El paso y la palabra se reinician al ABRIR (arriba), no al cerrar: el
+  // Dialog sale con su animación y, si se reiniciaran acá, el paso 2 se
+  // convertiría en el 1 mientras se desvanece.
   const handleCloseDeleteModal = () => {
     setShowDeleteModal(false);
-    setDeleteStep(1);
-    setDeleteConfirmText('');
     setIsDeleting(false);
   };
 
   /*
-   * Escape cierra el modal de baja.
-   *
-   * DESIGN.md §7 lo marca OBLIGATORIO para cualquier modal y este no lo tenía:
-   * como es un div a mano —no el `Dialog` de Radix— nadie escuchaba la tecla, y
-   * el único modo de salir era encontrar «Cancelar». El listener va en el
-   * documento y no en el div porque al abrir, el foco se queda en el botón que
-   * lo disparó, que está FUERA del overlay: un `onKeyDown` en el div nunca lo
-   * vería. Mientras se está borrando no cierra: la petición ya salió.
+   * Escape, la ✕ y el velo los maneja el `Dialog`. No se sale mientras se
+   * borra (la petición ya salió) ni en la despedida (cierra la sesión sola).
    */
-  useEffect(() => {
-    if (!showDeleteModal) return;
-    const alPresionar = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || isDeleting) return;
-      e.preventDefault();
-      handleCloseDeleteModal();
-    };
-    document.addEventListener('keydown', alPresionar);
-    return () => document.removeEventListener('keydown', alPresionar);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showDeleteModal, isDeleting]);
+  const sePuedeCerrarLaBaja = !isDeleting && deleteStep !== 3;
+  const alCambiarModalDeBaja = (abierto: boolean) => {
+    if (!abierto && sePuedeCerrarLaBaja) handleCloseDeleteModal();
+  };
 
   // Canonical deletion strings (single source of truth for all five flows).
   const deletionCopy = accountDeletionCopy(locale);
@@ -334,10 +395,12 @@ export default function InmobiliariaPerfilPage() {
     } catch (err) {
       // Surface the backend's reason (e.g. 403: active leases /
       // last-agency-admin, in Spanish) instead of a generic message.
-      const message = err instanceof Error && err.message
-        ? err.message
-        : deletionCopy.errorFallback;
-      toast.error(message);
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: deletionCopy.errorFallback,
+          accion: 'eliminar tu cuenta',
+        }),
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -382,11 +445,13 @@ export default function InmobiliariaPerfilPage() {
                 </div>
               </div>
               <div className="h-2 bg-card/60 rounded-full overflow-hidden">
+                {/* Avanza con `translateX` (sólo transform; el extremo redondo
+                    no se deforma como con `scaleX`), con la curva del sistema. */}
                 <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${completionPercentage}%` }}
-                  transition={{ duration: 0.8, ease: 'easeOut' }}
-                  className="h-full bg-primary rounded-full"
+                  initial={{ x: '-100%' }}
+                  animate={{ x: `${completionPercentage - 100}%` }}
+                  transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
+                  className="h-full w-full bg-primary rounded-full"
                 />
               </div>
               <p className="text-xs text-fg-muted mt-2">
@@ -420,13 +485,17 @@ export default function InmobiliariaPerfilPage() {
                     className="text-primary"
                     initial={{ strokeDasharray: '0 251.2' }}
                     animate={{ strokeDasharray: `${completionPercentage * 2.512} 251.2` }}
-                    transition={{ duration: 0.8, ease: 'easeOut' }}
+                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-semibold tabular-nums text-fg">
-                    {completionPercentage}%
-                  </span>
+                  {/* Cuenta junto con el anillo; si cambia, desde la anterior. */}
+                  <AnimatedNumber
+                    value={completionPercentage}
+                    from={0}
+                    format={(n) => `${Math.round(n)}%`}
+                    className="text-2xl font-semibold tabular-nums text-fg"
+                  />
                 </div>
               </div>
             </div>
@@ -556,7 +625,7 @@ export default function InmobiliariaPerfilPage() {
                     onDrop={handleDrop}
                     onClick={handleAvatarClick}
                     className={cn(
-                      "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all",
+                      "mb-4 border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors",
                       isDragging
                         ? "border-primary/40 bg-primary-soft"
                         : "border-border hover:border-primary/40 hover:bg-surface-muted"
@@ -695,6 +764,8 @@ export default function InmobiliariaPerfilPage() {
                 <h3 className="text-base font-semibold text-fg">
                   {locale === 'es' ? 'Información personal' : 'Personal information'}
                 </h3>
+                {/* «Editar» ⇄ «Cancelar / Guardar» se cruzan en su lugar. */}
+                <CrossFade swapKey={editingSection === 'personal' ? 'editando' : 'viendo'} mode="popLayout">
                 {editingSection !== 'personal' ? (
                   <Button variant="ghost" size="sm" hideArrow onClick={() => setEditingSection('personal')}>
                     <Pencil className="w-3.5 h-3.5" />
@@ -711,6 +782,7 @@ export default function InmobiliariaPerfilPage() {
                     </Button>
                   </div>
                 )}
+                </CrossFade>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Nombre */}
@@ -719,7 +791,10 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Nombre' : 'First name'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input type="text" value={formData.firstName} onChange={(e) => handleInputChange('firstName', e.target.value)} />
+                    <>
+                      <Input type="text" {...propsDelCampo('firstName')} value={formData.firstName} onChange={(e) => handleInputChange('firstName', e.target.value)} />
+                      {errorDelCampo('firstName')}
+                    </>
                   ) : (
                     <div className={fieldDisplay}>
                       <User className="w-4 h-4 text-fg-muted" />
@@ -734,7 +809,10 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Apellido' : 'Last name'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input type="text" value={formData.lastName} onChange={(e) => handleInputChange('lastName', e.target.value)} />
+                    <>
+                      <Input type="text" {...propsDelCampo('lastName')} value={formData.lastName} onChange={(e) => handleInputChange('lastName', e.target.value)} />
+                      {errorDelCampo('lastName')}
+                    </>
                   ) : (
                     <div className={fieldDisplay}>
                       <User className="w-4 h-4 text-fg-muted" />
@@ -758,7 +836,10 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Teléfono' : 'Phone'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input type="tel" value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
+                    <>
+                      <Input type="tel" {...propsDelCampo('phone')} value={formData.phone} onChange={(e) => handleInputChange('phone', e.target.value)} />
+                      {errorDelCampo('phone')}
+                    </>
                   ) : (
                     <div className={fieldDisplay}>
                       <Phone className="w-4 h-4 text-fg-muted" />
@@ -786,7 +867,10 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Dirección' : 'Address'}
                   </label>
                   {editingSection === 'personal' ? (
-                    <Input type="text" value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
+                    <>
+                      <Input type="text" {...propsDelCampo('address')} value={formData.address} onChange={(e) => handleInputChange('address', e.target.value)} />
+                      {errorDelCampo('address')}
+                    </>
                   ) : (
                     <div className={fieldDisplay}>
                       <MapPin className="w-4 h-4 text-fg-muted" />
@@ -803,6 +887,8 @@ export default function InmobiliariaPerfilPage() {
                 <h3 className="text-base font-semibold text-fg">
                   {locale === 'es' ? 'Contacto de emergencia' : 'Emergency contact'}
                 </h3>
+                {/* «Editar» ⇄ «Cancelar / Guardar» se cruzan en su lugar. */}
+                <CrossFade swapKey={editingSection === 'emergency' ? 'editando' : 'viendo'} mode="popLayout">
                 {editingSection !== 'emergency' ? (
                   <Button variant="ghost" size="sm" hideArrow onClick={() => setEditingSection('emergency')}>
                     <Pencil className="w-3.5 h-3.5" />
@@ -819,6 +905,7 @@ export default function InmobiliariaPerfilPage() {
                     </Button>
                   </div>
                 )}
+                </CrossFade>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -826,9 +913,12 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Nombre' : 'Name'}
                   </label>
                   {editingSection === 'emergency' ? (
-                    <Input type="text" value={formData.emergencyContactName}
-                      onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
-                      placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'} />
+                    <>
+                      <Input type="text" {...propsDelCampo('emergencyContactName')} value={formData.emergencyContactName}
+                        onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
+                        placeholder={locale === 'es' ? 'Nombre del contacto' : 'Contact name'} />
+                      {errorDelCampo('emergencyContactName')}
+                    </>
                   ) : (
                     <div className={fieldDisplay}>
                       <UserPlus className="w-4 h-4 text-fg-muted" />
@@ -841,9 +931,12 @@ export default function InmobiliariaPerfilPage() {
                     {locale === 'es' ? 'Teléfono' : 'Phone'}
                   </label>
                   {editingSection === 'emergency' ? (
-                    <Input type="tel" value={formData.emergencyContactPhone}
-                      onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
-                      placeholder="3001234567" />
+                    <>
+                      <Input type="tel" {...propsDelCampo('emergencyContactPhone')} value={formData.emergencyContactPhone}
+                        onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
+                        placeholder="3001234567" />
+                      {errorDelCampo('emergencyContactPhone')}
+                    </>
                   ) : (
                     <div className={fieldDisplay}>
                       <Phone className="w-4 h-4 text-fg-muted" />
@@ -874,200 +967,163 @@ export default function InmobiliariaPerfilPage() {
       </div>
 
       {/*
-        * Delete Account Modal — modal a mano, no el `Dialog` del DS.
+        * Baja de la cuenta — el `Dialog` destructivo del DS, en tres pasos
+        * (aviso → escribir la palabra → despedida) dentro del MISMO modal: la
+        * cabecera, el cuerpo y el pie cambian con el paso y la variante lo
+        * sigue (rojo en los dos primeros, verde en la despedida). Portal,
+        * foco atrapado, Escape, velo y Lenis los pone la primitiva.
         *
-        * ⚠️ Sigue siendo el hijo suelto que era: sin portal, sin trampa de
-        * foco y sin `lenis.stop()`, las tres cosas que DESIGN.md §8 y §17 le
-        * exigen a cualquier overlay. Convertirlo al `Dialog` de Radix es
-        * reescribir los tres pasos y sus cabeceras de banda, así que queda
-        * anotado. Lo que sí se arregla acá es lo que DESIGN.md §7 marca como
-        * OBLIGATORIO y faltaba: cerrar con Escape y anunciarse como diálogo.
-        * El fondo pasa al tinte del DS: `bg-black` no es un token.
+        * El velo no cierra (nunca lo hizo): es una baja, no un aviso.
         */}
-      {showDeleteModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={deletionCopy.modalTitle}
-          className="fixed inset-0 bg-[#14130F]/40 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      <Dialog open={showDeleteModal} onOpenChange={alCambiarModalDeBaja}>
+        <DialogContent
+          size="sm"
+          variant={deleteStep === 3 ? 'success' : 'destructive'}
+          hideClose={!sePuedeCerrarLaBaja}
+          onInteractOutside={(e) => e.preventDefault()}
         >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-card rounded-lg max-w-md w-full overflow-hidden"
-          >
-            {/* Step 1: Warning */}
-            {deleteStep === 1 && (
-              <>
-                <div className="bg-danger-soft px-6 py-8 text-center border-b border-danger/20">
-                  <div className="w-16 h-16 rounded-full bg-card flex items-center justify-center mx-auto mb-4">
-                    <Warning className="w-8 h-8 text-danger" />
-                  </div>
-                  <h3 className="text-base font-semibold text-danger">
-                    {deletionCopy.warningTitle}
-                  </h3>
-                  <p className="text-sm text-danger mt-1">
-                    {deletionCopy.recovery}
-                  </p>
-                </div>
-
-                <div className="p-6">
-                  {/*
-                    * 🔴 Esta lista decía que se eliminaban «Datos de la agencia
-                    * y configuración», «Historial de propiedades y contratos»,
-                    * «Información de cobros y dispersiones» y «Conversaciones y
-                    * mensajes». Nada de eso pasa.
-                    *
-                    * `DELETE /users/me/account` (UsersService.deleteAccount)
-                    * hace UNA cosa: marca TU usuario con `isActive: false` y
-                    * `deletedAt`, y revoca tus sesiones. La inmobiliaria, sus
-                    * inmuebles, sus contratos, sus cobros y sus mensajes
-                    * siguen ahí — de hecho el backend te BLOQUEA la baja si
-                    * eres el único administrador, justamente para que nadie se
-                    * quede sin dueño. Decirle a alguien que borra la operación
-                    * de su agencia cuando lo único que pierde es su acceso es
-                    * la peor clase de mentira: la que aterra.
-                    */}
-                  <div className="mb-6 space-y-4">
-                    <div>
-                      <p className="text-sm font-medium text-fg mb-3">
-                        {locale === 'es' ? 'Perderás:' : 'You will lose:'}
-                      </p>
-                      <ul className="space-y-2">
-                        {(locale === 'es'
-                          ? [
-                              'Tu perfil y tus datos personales',
-                              'El acceso al panel de la inmobiliaria',
-                              'Tu sesión en todos tus dispositivos',
-                            ]
-                          : [
-                              'Your profile and personal data',
-                              'Access to the agency panel',
-                              'Your session on every device',
-                            ]
-                        ).map((item) => (
-                          <li key={item} className="flex items-start gap-2 text-sm text-fg-muted">
-                            <TrashSimple className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-fg mb-3">
-                        {locale === 'es' ? 'No se elimina:' : 'What is not deleted:'}
-                      </p>
-                      <ul className="space-y-2">
-                        {(locale === 'es'
-                          ? [
-                              'La información de la inmobiliaria: inmuebles, contratos, cobros y dispersiones siguen siendo de la agencia',
-                              'Las conversaciones y los documentos que ya generaste, que la agencia sigue viendo',
-                            ]
-                          : [
-                              'The agency’s data: properties, contracts, payments and disbursements stay with the agency',
-                              'Conversations and documents you already generated, which the agency keeps seeing',
-                            ]
-                        ).map((item) => (
-                          <li key={item} className="flex items-start gap-2 text-sm text-fg-muted">
-                            <Buildings className="w-4 h-4 text-fg-muted mt-0.5 flex-shrink-0" />
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    <p className="text-xs text-fg-muted">
-                      {locale === 'es'
-                        ? 'No vas a poder darte de baja si tienes contratos de arriendo activos a tu nombre o si eres el único administrador de la inmobiliaria.'
-                        : 'You cannot delete your account while you have active leases in your name, or while you are the agency’s only administrator.'}
-                    </p>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <Button variant="secondary" hideArrow className="flex-1 justify-center" onClick={handleCloseDeleteModal}>
-                      {locale === 'es' ? 'Cancelar' : 'Cancel'}
-                    </Button>
-                    <Button variant="destructive" hideArrow className="flex-1 justify-center" onClick={() => setDeleteStep(2)}>
-                      {locale === 'es' ? 'Continuar' : 'Continue'}
-                    </Button>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Step 2: Confirmation */}
-            {deleteStep === 2 && (
-              <>
-                <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                  <h3 className="text-base font-semibold text-fg">
-                    {locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}
-                  </h3>
-                  <IconButton
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleCloseDeleteModal}
-                    aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
-                    icon={<X className="w-5 h-5 text-fg-muted" />}
-                  />
-                </div>
-
-                <div className="p-6">
-                  <p className="text-sm text-fg-muted mb-4">
+          <DialogHeader>
+            <CrossFade swapKey={deleteStep} className="flex min-w-0 flex-col gap-1.5">
+              {deleteStep === 1 && (
+                <>
+                  <DialogTitle>{deletionCopy.warningTitle}</DialogTitle>
+                  <DialogDescription>{deletionCopy.recovery}</DialogDescription>
+                </>
+              )}
+              {deleteStep === 2 && (
+                <>
+                  <DialogTitle>{locale === 'es' ? 'Confirmar eliminación' : 'Confirm deletion'}</DialogTitle>
+                  <DialogDescription>
                     {deletionCopy.confirmInstructionPrefix}{' '}
                     <span className="font-semibold text-danger">{deletionCopy.confirmWord}</span>{' '}
                     {deletionCopy.confirmInstructionSuffix}
-                  </p>
+                  </DialogDescription>
+                </>
+              )}
+              {deleteStep === 3 && (
+                <>
+                  <DialogTitle>{deletionCopy.goodbyeTitle}</DialogTitle>
+                  <DialogDescription>{deletionCopy.goodbyeBody}</DialogDescription>
+                </>
+              )}
+            </CrossFade>
+          </DialogHeader>
 
-                  <Input
-                    type="text"
-                    value={deleteConfirmText}
-                    onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
-                    placeholder={deletionCopy.inputPlaceholder}
-                    className="text-center tracking-widest focus-visible:ring-danger/30"
-                  />
-
-                  <div className="flex gap-3 mt-6">
-                    <Button variant="secondary" hideArrow className="flex-1 justify-center" onClick={() => setDeleteStep(1)}>
-                      {locale === 'es' ? 'Volver' : 'Back'}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      hideArrow
-                      className="flex-1 justify-center"
-                      onClick={handleDeleteAccount}
-                      disabled={deleteConfirmText !== deletionCopy.confirmWord || isDeleting}
-                    >
-                      {isDeleting ? (
-                        <>
-                          <Spinner size="sm" variant="current" />
-                          {deletionCopy.deleting}
-                        </>
-                      ) : (
-                        deletionCopy.deleteButton
-                      )}
-                    </Button>
+          {deleteStep !== 3 && (
+            <CrossFade swapKey={deleteStep}>
+              {deleteStep === 1 ? (
+                /*
+                 * 🔴 Esta lista decía que se eliminaban «Datos de la agencia
+                 * y configuración», «Historial de propiedades y contratos»,
+                 * «Información de cobros y dispersiones» y «Conversaciones y
+                 * mensajes». Nada de eso pasa.
+                 *
+                 * `DELETE /users/me/account` (UsersService.deleteAccount)
+                 * hace UNA cosa: marca TU usuario con `isActive: false` y
+                 * `deletedAt`, y revoca tus sesiones. La inmobiliaria, sus
+                 * inmuebles, sus contratos, sus cobros y sus mensajes
+                 * siguen ahí — de hecho el backend te BLOQUEA la baja si
+                 * eres el único administrador, justamente para que nadie se
+                 * quede sin dueño. Decirle a alguien que borra la operación
+                 * de su agencia cuando lo único que pierde es su acceso es
+                 * la peor clase de mentira: la que aterra.
+                 */
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium text-fg mb-3">
+                      {locale === 'es' ? 'Perderás:' : 'You will lose:'}
+                    </p>
+                    <ul className="space-y-2">
+                      {(locale === 'es'
+                        ? [
+                            'Tu perfil y tus datos personales',
+                            'El acceso al panel de la inmobiliaria',
+                            'Tu sesión en todos tus dispositivos',
+                          ]
+                        : [
+                            'Your profile and personal data',
+                            'Access to the agency panel',
+                            'Your session on every device',
+                          ]
+                      ).map((item) => (
+                        <li key={item} className="flex items-start gap-2 text-sm text-fg-muted">
+                          <TrashSimple className="w-4 h-4 text-danger mt-0.5 flex-shrink-0" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
+                  <div>
+                    <p className="text-sm font-medium text-fg mb-3">
+                      {locale === 'es' ? 'No se elimina:' : 'What is not deleted:'}
+                    </p>
+                    <ul className="space-y-2">
+                      {(locale === 'es'
+                        ? [
+                            'La información de la inmobiliaria: inmuebles, contratos, cobros y dispersiones siguen siendo de la agencia',
+                            'Las conversaciones y los documentos que ya generaste, que la agencia sigue viendo',
+                          ]
+                        : [
+                            'The agency’s data: properties, contracts, payments and disbursements stay with the agency',
+                            'Conversations and documents you already generated, which the agency keeps seeing',
+                          ]
+                      ).map((item) => (
+                        <li key={item} className="flex items-start gap-2 text-sm text-fg-muted">
+                          <Buildings className="w-4 h-4 text-fg-muted mt-0.5 flex-shrink-0" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <p className="text-xs text-fg-muted">
+                    {locale === 'es'
+                      ? 'No vas a poder darte de baja si tienes contratos de arriendo activos a tu nombre o si eres el único administrador de la inmobiliaria.'
+                      : 'You cannot delete your account while you have active leases in your name, or while you are the agency’s only administrator.'}
+                  </p>
                 </div>
-              </>
-            )}
+              ) : (
+                <Input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value.toUpperCase())}
+                  placeholder={deletionCopy.inputPlaceholder}
+                  aria-label={deletionCopy.confirmInstruction}
+                  autoFocus
+                  className="text-center tracking-widest focus-visible:ring-danger/30"
+                />
+              )}
+            </CrossFade>
+          )}
 
-            {/* Step 3: Goodbye */}
-            {deleteStep === 3 && (
-              <div className="p-8 text-center">
-                <div className="w-16 h-16 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8 text-fg-muted" />
-                </div>
-                <h3 className="text-base font-semibold text-fg mb-2">
-                  {deletionCopy.goodbyeTitle}
-                </h3>
-                <p className="text-sm text-fg-muted">
-                  {deletionCopy.goodbyeBody}
-                </p>
-              </div>
-            )}
-          </motion.div>
-        </div>
-      )}
+          {deleteStep === 1 && (
+            <DialogFooter>
+              <Button variant="outline" hideArrow onClick={handleCloseDeleteModal}>
+                {locale === 'es' ? 'Cancelar' : 'Cancel'}
+              </Button>
+              <Button hideArrow onClick={() => setDeleteStep(2)}>
+                {locale === 'es' ? 'Continuar' : 'Continue'}
+              </Button>
+            </DialogFooter>
+          )}
+
+          {deleteStep === 2 && (
+            <DialogFooter>
+              <Button variant="outline" hideArrow onClick={() => setDeleteStep(1)} disabled={isDeleting}>
+                {locale === 'es' ? 'Volver' : 'Back'}
+              </Button>
+              <Button
+                variant="destructive"
+                hideArrow
+                isLoading={isDeleting}
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== deletionCopy.confirmWord || isDeleting}
+              >
+                {isDeleting ? deletionCopy.deleting : deletionCopy.deleteButton}
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -26,6 +26,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Spinner } from '@/components/ui/spinner';
 import { useI18n } from '@/lib/i18n';
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type {
   OpcionesDelOrigenDelGiro,
   OrigenPedido,
@@ -52,8 +53,8 @@ export function ElegirCuentaDeOrigenDelGiro({
 }) {
   const { t } = useI18n();
   const [datos, setDatos] = useState<OpcionesDelOrigenDelGiro | null>(null);
-  /** `mensaje: null` = falló sin decir por qué: se dice con la frase de siempre. */
-  const [error, setError] = useState<{ mensaje: string | null } | null>(null);
+  /** El fallo al leer las cuentas; se dice con el traductor al pintarlo. */
+  const [error, setError] = useState<{ causa: unknown } | null>(null);
   const [banco, setBanco] = useState<string>('');
   const [tipo, setTipo] = useState<TipoDeCuentaDeOrigen>('AHORROS');
   const [numero, setNumero] = useState('');
@@ -81,7 +82,10 @@ export function ElegirCuentaDeOrigenDelGiro({
         }
       })
       .catch((e: unknown) => {
-        if (vigente) setError({ mensaje: e instanceof Error && e.message ? e.message : null });
+        // Con la regla de oro (02-10-2026): un 5xx dice «de nuestro lado» con
+        // la referencia y «conexión» sólo sale sin respuesta. Antes pintaba
+        // `e.message` tal cual, viniera lo que viniera.
+        if (vigente) setError({ causa: e });
       });
     return () => {
       vigente = false;
@@ -120,7 +124,10 @@ export function ElegirCuentaDeOrigenDelGiro({
   if (error) {
     return (
       <p role="alert" className="text-caption text-danger" data-testid="origen-del-giro-error">
-        {error.mensaje ?? t('inmobiliaria.dispersiones.origenDelGiro.errorAlCargar')}
+        {mensajeParaLaPersona(error.causa, {
+          porDefecto: t('inmobiliaria.dispersiones.origenDelGiro.errorAlCargar'),
+          accion: 'leer las cuentas de origen',
+        })}
       </p>
     );
   }

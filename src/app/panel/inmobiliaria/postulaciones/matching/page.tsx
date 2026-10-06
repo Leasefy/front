@@ -31,48 +31,57 @@ import { formatKpiValue } from '@/components/inmobiliaria/ai/SalaAgente'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { SectionLabel } from '@/components/ui/section-label'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
 import type { AgentOverviewResponse } from '@/lib/api/agent-workspace'
 import { relativeTime } from '@/lib/cartera'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useI18n } from '@/lib/i18n'
+import { AnimatedNumber, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 
 const PAGES_NS = 'inmobiliaria.ai.workspace.pages.matching'
 const SALA_NS = 'inmobiliaria.ai.workspace.sala'
 const COLA_HREF = '/panel/inmobiliaria/postulaciones/matching/cola'
 
-/** Los tres pasos que existen hoy. Sin cuarto paso: no hay contacto que aprobar. */
-const PASOS: { icon: Icon; titleKey: string; descKey: string }[] = [
-  { icon: UserCheck, titleKey: `${PAGES_NS}.comoFunciona.step1.title`, descKey: `${PAGES_NS}.comoFunciona.step1.desc` },
-  { icon: Buildings, titleKey: `${PAGES_NS}.comoFunciona.step2.title`, descKey: `${PAGES_NS}.comoFunciona.step2.desc` },
-  { icon: Ranking, titleKey: `${PAGES_NS}.comoFunciona.step3.title`, descKey: `${PAGES_NS}.comoFunciona.step3.desc` },
+/**
+ * Los tres pasos que existen hoy. Sin cuarto paso: no hay contacto que aprobar.
+ *
+ * Viven detrás del botón «¿Cómo funciona?» del encabezado, en el cajón de
+ * `ParaEntenderMas` (Nico, 05-10-2026: «eso no debe de estar ahí siempre […]
+ * llévalas al botón que al dar clic abre drawer y explica mejor cada cosa»).
+ * Antes la tarjeta se veía siempre, también cargando o con error.
+ *
+ * Verificado contra el código (05-10): compara con los inmuebles disponibles en
+ * arriendo y deja los que calzan 70 % o más; en Autónomo sale solo si hay al
+ * menos dos opciones; nunca más de un correo cada 24 horas por candidato.
+ */
+const PASOS: { icon: Icon; clave: string; quien?: QuienLoHace; tuParte?: true }[] = [
+  { icon: UserCheck, clave: 'step1' },
+  { icon: Buildings, clave: 'step2', quien: 'agente' },
+  { icon: Ranking, clave: 'step3', quien: 'tu', tuParte: true },
 ]
 
 function ComoFunciona() {
   const { t } = useI18n()
   return (
-    <section
-      className="max-w-3xl space-y-4 rounded-lg border border-border bg-surface p-5"
-      data-testid="matching-como-funciona"
+    <ParaEntenderMas
+      etiqueta={t(`${PAGES_NS}.comoFunciona.title`)}
+      titulo={t(`${PAGES_NS}.comoFunciona.titulo`)}
+      descripcion={t(`${PAGES_NS}.comoFunciona.descripcion`)}
+      variante="secundario"
     >
-      <h2 className="text-base font-semibold text-fg">{t(`${PAGES_NS}.comoFunciona.title`)}</h2>
-      <ol className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {PASOS.map((paso, i) => {
-          const PasoIcono = paso.icon
-          return (
-            <li key={paso.titleKey} className="space-y-1.5">
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-muted">
-                  <PasoIcono className="h-4 w-4 text-fg" weight="duotone" aria-hidden="true" />
-                </span>
-                <span className="text-xs tabular-nums text-fg-muted">{i + 1}</span>
-              </div>
-              <p className="text-sm font-semibold leading-tight text-fg">{t(paso.titleKey)}</p>
-              <p className="text-xs leading-snug text-fg-muted">{t(paso.descKey)}</p>
-            </li>
-          )
-        })}
-      </ol>
-    </section>
+      <PasosExplicados
+        data-testid="matching-como-funciona"
+        pasos={PASOS.map((paso) => ({
+          id: paso.clave,
+          icono: paso.icon,
+          titulo: t(`${PAGES_NS}.comoFunciona.${paso.clave}.title`),
+          explicacion: t(`${PAGES_NS}.comoFunciona.${paso.clave}.desc`),
+          quien: paso.quien,
+          tuParte: paso.tuParte ? t(`${PAGES_NS}.comoFunciona.${paso.clave}.tuParte`) : undefined,
+        }))}
+      />
+    </ParaEntenderMas>
   )
 }
 
@@ -84,19 +93,31 @@ function ComoFunciona() {
 function ResumenConDatos({ data }: { data: AgentOverviewResponse }) {
   const { t, locale } = useI18n()
   const segmentos = data.pipeline.filter((seg) => seg.count > 0)
+  // IA-A-05 (QA-IA-95, 05-10-2026): sin candidatos con opciones en 30 días no
+  // hubo calce que promediar: «0,0 %» era una medición que no ocurrió.
+  const sinCasos = data.kpis.find((k) => k.id === 'candidatos_30d')?.value === 0
 
   return (
     <div className="space-y-6" data-testid="matching-resumen-datos">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4" data-testid="matching-kpis">
+      {/* Las tarjetas entran escalonadas y cada cifra cuenta desde 0. */}
+      <Stagger className="grid grid-cols-2 gap-4 md:grid-cols-4" data-testid="matching-kpis">
         {data.kpis.map((kpi) => (
-          <div key={kpi.id} className="rounded-lg border border-border bg-surface p-4">
+          <StaggerItem key={kpi.id} className="rounded-lg border border-border bg-surface p-4">
             <p className="text-xs leading-tight text-fg-muted">{kpi.label}</p>
             <p className="mt-1 text-xl font-semibold tabular-nums text-fg">
-              {formatKpiValue(kpi.value, kpi.format)}
+              {kpi.id === 'calce_promedio' && sinCasos ? (
+                <span data-testid="calce-sin-casos" title="Sin candidatos con opciones en 30 días">—</span>
+              ) : (
+                <AnimatedNumber
+                  value={kpi.value}
+                  from={0}
+                  format={(n) => formatKpiValue(n, kpi.format)}
+                />
+              )}
             </p>
-          </div>
+          </StaggerItem>
         ))}
-      </div>
+      </Stagger>
 
       {segmentos.length > 0 && (
         <section className="space-y-3 rounded-lg border border-border bg-surface p-4">
@@ -105,7 +126,9 @@ function ResumenConDatos({ data }: { data: AgentOverviewResponse }) {
             {segmentos.map((seg) => (
               <div key={seg.estado} className="flex items-center gap-1.5">
                 <dt className="text-xs text-fg-muted">{t(`${PAGES_NS}.estado.${seg.estado}`)}</dt>
-                <dd className="text-xs font-medium tabular-nums text-fg">{seg.count}</dd>
+                <dd className="text-xs font-medium tabular-nums text-fg">
+                  <AnimatedNumber value={seg.count} format={(n) => String(Math.round(n))} />
+                </dd>
               </div>
             ))}
           </dl>
@@ -115,9 +138,9 @@ function ResumenConDatos({ data }: { data: AgentOverviewResponse }) {
       {data.feed.length > 0 && (
         <section className="space-y-3 rounded-lg border border-border bg-surface p-4">
           <h2 className="text-sm font-semibold text-fg">{t(`${SALA_NS}.feedTitle`)}</h2>
-          <ul className="divide-y divide-border">
+          <Stagger as="ul" direction="down" className="divide-y divide-border">
             {data.feed.map((entrada) => (
-              <li key={entrada.id} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
+              <StaggerItem as="li" key={entrada.id} className="flex items-start gap-3 py-2.5 first:pt-0 last:pb-0">
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-fg">{entrada.titulo}</p>
                   <p className="truncate text-xs text-fg-muted">{entrada.detalle}</p>
@@ -125,9 +148,9 @@ function ResumenConDatos({ data }: { data: AgentOverviewResponse }) {
                 <span className="shrink-0 text-xs tabular-nums text-fg-muted">
                   {relativeTime(entrada.occurredAt, locale)}
                 </span>
-              </li>
+              </StaggerItem>
             ))}
-          </ul>
+          </Stagger>
         </section>
       )}
     </div>
@@ -140,7 +163,11 @@ function MatchingResumen() {
 
   // «Encendido» = el micro devolvió KPIs. Un 404 o un overview con todo en
   // cero es el mismo caso: el agente todavía no trabaja esta cartera.
-  const tieneDatos = Boolean(data && data.kpis.length > 0)
+  // IA-A-05 (QA-IA-95): el micro manda SIEMPRE sus cuatro KPI, también en cero;
+  // «tiene datos» es que alguno se mueva, no que lleguen.
+  const tieneDatos = Boolean(
+    data && (data.kpis.some((k) => k.value > 0) || data.pipeline.some((p) => p.count > 0) || data.feed.length > 0),
+  )
   const enCola = data?.kpis.find((kpi) => kpi.id === 'en_cola')?.value
 
   return (
@@ -151,16 +178,23 @@ function MatchingResumen() {
           <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.nav.resumen')}</h1>
           <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">{t(`${PAGES_NS}.salaDesc`)}</p>
         </div>
-        {/* El conteo sólo cuando el micro lo reporta: un «(0)» inventado
-            diría que ya revisó y no encontró nada. */}
-        <Button asChild hideArrow className="shrink-0">
-          <Link href={COLA_HREF}>
-            {t(`${PAGES_NS}.colaLabel`)}
-            {typeof enCola === 'number' ? ` (${enCola})` : ''}
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+          {/* ¿Cómo funciona? — el cajón con los tres pasos (05-10-2026). */}
+          <ComoFunciona />
+          {/* El conteo sólo cuando el micro lo reporta: un «(0)» inventado
+              diría que ya revisó y no encontró nada. */}
+          <Button asChild hideArrow className="shrink-0">
+            <Link href={COLA_HREF}>
+              {t(`${PAGES_NS}.colaLabel`)}
+              {typeof enCola === 'number' ? ` (${enCola})` : ''}
+            </Link>
+          </Button>
+        </div>
       </header>
 
+      {/* Cargando → fallo / resumen / «aún no trabaja»: cada estado entra con
+          su fundido. */}
+      <CrossFade swapKey={isLoading ? 'cargando' : error ? 'fallo' : tieneDatos && data ? 'resumen' : 'sin-trabajo'}>
       {isLoading ? (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4" data-testid="matching-resumen-cargando" aria-busy="true">
           {[0, 1, 2, 3].map((i) => (
@@ -180,8 +214,7 @@ function MatchingResumen() {
           description={t(`${PAGES_NS}.sinTrabajo.desc`)}
         />
       )}
-
-      <ComoFunciona />
+      </CrossFade>
     </div>
   )
 }

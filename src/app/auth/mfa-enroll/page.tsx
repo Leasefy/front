@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { SignOut } from '@phosphor-icons/react';
+import { Presence } from '@leasefy/cadence';
 import { useAuth } from '@/lib/auth';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { ActivarSegundoFactorPasoAPaso } from '@/components/auth/ActivarSegundoFactorPasoAPaso';
@@ -141,7 +142,8 @@ export default function MfaEnrollPage() {
                 onYaTeniaFactor={alYaTenerFactor}
               />
 
-              {activadoEn === null ? (
+              {/* Al activar, «Cerrar sesión» se va con su salida (no de golpe). */}
+              <Presence show={activadoEn === null} initial={false}>
                 <div className="border-t border-border-faint pt-4 text-center">
                   <button
                     type="button"
@@ -152,7 +154,7 @@ export default function MfaEnrollPage() {
                     Cerrar sesión
                   </button>
                 </div>
-              ) : null}
+              </Presence>
             </div>
           </div>
         </div>

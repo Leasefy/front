@@ -4,6 +4,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Appear } from '@leasefy/cadence';
+import { Bucle, ZonaDeBucles } from '@/components/landing/motion/bucles';
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
 import { Button } from '@/components/ui/button';
@@ -48,9 +50,9 @@ const testimonials = [
    ================================================================ */
 function EvaluationVisual() {
   return (
-    <div className="relative w-full h-full flex items-center overflow-hidden px-8 py-4">
+    <ZonaDeBucles className="relative w-full h-full flex items-center overflow-hidden px-8 py-4">
       {/* Animated glow effects */}
-      <motion.div
+      <Bucle.div
         className="absolute top-[20%] left-[18%] w-[180px] h-[180px] bg-[#2C7A53]/[0.07] rounded-full blur-[80px] pointer-events-none"
         animate={{
           scale: [1, 1.3, 1],
@@ -58,7 +60,7 @@ function EvaluationVisual() {
         }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       />
-      <motion.div
+      <Bucle.div
         className="absolute bottom-[10%] right-[20%] w-[120px] h-[120px] bg-[#1A40FF]/[0.05] rounded-full blur-[60px] pointer-events-none"
         animate={{
           scale: [1, 1.4, 1],
@@ -105,7 +107,7 @@ function EvaluationVisual() {
             transition={{ delay: 1.2, duration: 0.6, type: "spring" }}
             className="text-center mt-1"
           >
-            <motion.span
+            <Bucle.span
               className="text-[44px] font-bold text-white leading-none tracking-tight inline-block"
               animate={{
                 textShadow: ["0 0 20px rgba(52,211,153,0)", "0 0 30px rgba(52,211,153,0.4)", "0 0 20px rgba(52,211,153,0)"]
@@ -113,7 +115,7 @@ function EvaluationVisual() {
               transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
             >
               87
-            </motion.span>
+            </Bucle.span>
             <span className="text-[12px] text-white/30 font-medium">/100</span>
           </motion.div>
         </motion.div>
@@ -126,7 +128,7 @@ function EvaluationVisual() {
             transition={{ delay: 0.6, duration: 0.6, type: "spring" }}
             className="flex items-center gap-3 mb-4"
           >
-            <motion.div
+            <Bucle.div
               className="w-10 h-10 rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/10 flex items-center justify-center flex-shrink-0"
               whileHover={{ scale: 1.1, borderColor: "rgba(255,255,255,0.3)" }}
               animate={{
@@ -135,7 +137,7 @@ function EvaluationVisual() {
               transition={{ boxShadow: { duration: 3, repeat: Infinity } }}
             >
               <span className="text-[14px] font-semibold text-white/60">CR</span>
-            </motion.div>
+            </Bucle.div>
             <div>
               <div className="flex items-center gap-2">
                 <motion.span
@@ -152,12 +154,12 @@ function EvaluationVisual() {
                   transition={{ delay: 1.4, type: "spring", stiffness: 400, damping: 12 }}
                   className="flex items-center gap-0.5 bg-[#2C7A53]/15 text-[#2C7A53] text-[8px] font-bold px-2 py-0.5 rounded-full border border-[#2C7A53]/30"
                 >
-                  <motion.div
+                  <Bucle.div
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   >
                     <CheckCircle className="w-2.5 h-2.5" />
-                  </motion.div>
+                  </Bucle.div>
                   Bajo riesgo
                 </motion.span>
               </div>
@@ -193,16 +195,16 @@ function EvaluationVisual() {
               >
                 <span className="text-[9px] text-white/40 font-medium w-[100px] flex-shrink-0">{c.label}</span>
                 <div className="flex-1 h-[6px] bg-white/[0.04] rounded-full overflow-hidden relative">
-                  <motion.div
-                    className={`h-full rounded-full ${c.colorClass}`}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${c.score}%` }}
+                  <motion.div style={{ width: `${c.score}%` }}
+                    className={`h-full rounded-full ${c.colorClass} origin-left`}
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
                     transition={{ delay: 1 + i * 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                   />
-                  <motion.div
-                    className={`absolute top-0 h-full rounded-full blur-[4px] ${c.glowClass}`}
-                    initial={{ width: 0 }}
-                    animate={{ width: `${c.score}%` }}
+                  <motion.div style={{ width: `${c.score}%` }}
+                    className={`absolute top-0 h-full rounded-full blur-[4px] ${c.glowClass} origin-left`}
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
                     transition={{ delay: 1 + i * 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                   />
                 </div>
@@ -219,7 +221,7 @@ function EvaluationVisual() {
           </div>
         </div>
       </div>
-    </div>
+    </ZonaDeBucles>
   );
 }
 
@@ -229,7 +231,7 @@ function EvaluationVisual() {
    ================================================================ */
 function PaymentVisual() {
   return (
-    <div className="relative w-full h-full overflow-hidden px-4 pt-3">
+    <ZonaDeBucles className="relative w-full h-full overflow-hidden px-4 pt-3">
       {/* Balance card with enhanced animation */}
       <motion.div
         initial={{ y: -20, opacity: 0, scale: 0.95 }}
@@ -240,12 +242,12 @@ function PaymentVisual() {
       >
         <div className="flex items-center justify-between mb-1">
           <span className="text-[9px] text-white/50 font-medium">Balance disponible</span>
-          <motion.div
+          <Bucle.div
             animate={{ rotate: [0, 10, -10, 0] }}
             transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
           >
             <Wallet className="w-3.5 h-3.5 text-white/30" />
-          </motion.div>
+          </Bucle.div>
         </div>
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -253,7 +255,7 @@ function PaymentVisual() {
           transition={{ delay: 0.3, type: "spring" }}
           className="flex items-baseline gap-1"
         >
-          <motion.span
+          <Bucle.span
             className="text-[24px] font-bold tracking-tight"
             animate={{
               textShadow: ["0 0 0 transparent", "0 0 20px rgba(52,211,153,0.3)", "0 0 0 transparent"]
@@ -261,23 +263,23 @@ function PaymentVisual() {
             transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
           >
             $4.850.000
-          </motion.span>
+          </Bucle.span>
           <span className="text-[9px] text-white/40">COP</span>
         </motion.div>
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: "100%" }}
+        <motion.div style={{ width: "100%" }}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
           transition={{ delay: 0.6, duration: 0.8 }}
-          className="h-[3px] bg-[#2C7A53]/30 mt-2 rounded-full overflow-hidden"
+          className="h-[3px] bg-[#2C7A53]/30 mt-2 rounded-full overflow-hidden origin-left"
         >
-          <motion.div
-            className="h-full bg-[#2C7A53] rounded-full relative"
-            initial={{ width: 0 }}
-            animate={{ width: "78%" }}
+          <motion.div style={{ width: "78%" }}
+            className="h-full bg-[#2C7A53] rounded-full relative origin-left"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
             transition={{ delay: 0.8, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           >
             {/* Shimmer effect */}
-            <motion.div
+            <Bucle.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
               animate={{ x: ["-100%", "200%"] }}
               transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
@@ -336,13 +338,13 @@ function PaymentVisual() {
               transition={{ delay: 0.7 + i * 0.12 }}
               className="text-right"
             >
-              <motion.span
+              <Bucle.span
                 className={`text-[11px] font-bold ${tx.status === 'Recibido' ? 'text-[#2C7A53]' : 'text-[#B7791F]'}`}
                 animate={tx.status === 'Recibido' ? { scale: [1, 1.05, 1] } : {}}
                 transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
               >
                 {tx.amount}
-              </motion.span>
+              </Bucle.span>
               <span className={`block text-[7px] ${tx.status === 'Recibido' ? 'text-[#2C7A53]/60' : 'text-[#B7791F]/60'}`}>
                 {tx.status}
               </span>
@@ -358,7 +360,7 @@ function PaymentVisual() {
         transition={{ delay: 1 }}
         className="flex items-center justify-center gap-1.5 mt-3"
       >
-        <motion.div
+        <Bucle.div
           animate={{
             scale: [1, 1.2, 1],
             opacity: [0.5, 1, 0.5]
@@ -366,10 +368,10 @@ function PaymentVisual() {
           transition={{ duration: 2, repeat: Infinity }}
         >
           <Bell className="w-2.5 h-2.5 text-muted-foreground" />
-        </motion.div>
+        </Bucle.div>
         <span className="text-[8px] text-muted-foreground">Transferencia automática cada viernes</span>
       </motion.div>
-    </div>
+    </ZonaDeBucles>
   );
 }
 
@@ -385,9 +387,9 @@ function ContractVisual() {
   }, []);
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden px-5">
+    <ZonaDeBucles className="relative w-full h-full flex flex-col items-center justify-center overflow-hidden px-5">
       {/* Animated glow effects */}
-      <motion.div
+      <Bucle.div
         className="absolute top-[30%] left-[20%] w-[100px] h-[100px] bg-neutral-500/[0.06] rounded-full blur-[50px] pointer-events-none"
         animate={{
           scale: [1, 1.3, 1],
@@ -395,7 +397,7 @@ function ContractVisual() {
         }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       />
-      <motion.div
+      <Bucle.div
         className="absolute bottom-[20%] right-[15%] w-[80px] h-[80px] bg-[#2C7A53]/[0.05] rounded-full blur-[40px] pointer-events-none"
         animate={{
           scale: [1, 1.4, 1],
@@ -427,12 +429,12 @@ function ContractVisual() {
         style={{ border: "1px solid rgba(0,0,0,0.08)" }}
       >
         <div className="px-4 py-2.5 flex items-center gap-2.5" style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
-          <motion.div
+          <Bucle.div
             animate={{ rotate: [0, 5, -5, 0] }}
             transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
           >
             <FileText className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
-          </motion.div>
+          </Bucle.div>
           <div className="flex-1">
             <div className="text-[10px] font-medium text-foreground">Contrato de Arriendo</div>
             <div className="text-[7px] text-muted-foreground font-mono">REF-2026-00847</div>
@@ -476,7 +478,7 @@ function ContractVisual() {
         </div>
 
         <div className="px-4 py-2.5 relative" style={{ borderTop: "1px solid rgba(0,0,0,0.03)" }}>
-          <motion.div
+          <Bucle.div
             className="h-9 flex items-center justify-center"
             style={{ border: "1px dashed rgba(0,0,0,0.06)" }}
             animate={!signed ? {
@@ -485,19 +487,19 @@ function ContractVisual() {
             transition={{ duration: 2, repeat: Infinity }}
           >
             {!signed ? (
-              <motion.div
+              <Bucle.div
                 animate={{ opacity: [0.3, 0.7, 0.3] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
                 className="flex items-center gap-1"
               >
-                <motion.div
+                <Bucle.div
                   animate={{ x: [0, 3, 0], y: [0, -2, 0] }}
                   transition={{ duration: 1, repeat: Infinity }}
                 >
                   <PenNib className="w-2.5 h-2.5 text-[#B7791F]" strokeWidth={1.5} />
-                </motion.div>
+                </Bucle.div>
                 <span className="text-[7px] text-muted-foreground">Esperando firma...</span>
-              </motion.div>
+              </Bucle.div>
             ) : (
               <motion.svg width="90" height="18" viewBox="0 0 110 24" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <motion.path
@@ -508,7 +510,7 @@ function ContractVisual() {
                 />
               </motion.svg>
             )}
-          </motion.div>
+          </Bucle.div>
 
           {signed && (
             <motion.div
@@ -517,7 +519,7 @@ function ContractVisual() {
               transition={{ delay: 0.3, type: "spring", stiffness: 250, damping: 12 }}
               className="absolute -top-3 right-6"
             >
-              <motion.div
+              <Bucle.div
                 className="w-14 h-14 rounded-full border-2 border-[#2C7A53]/30 flex items-center justify-center bg-[#E8F3EC]/50 backdrop-blur-sm"
                 animate={{
                   boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 20px 5px rgba(16,185,129,0.2)", "0 0 0 0 rgba(16,185,129,0)"]
@@ -525,15 +527,15 @@ function ContractVisual() {
                 transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
               >
                 <div className="w-10 h-10 rounded-full border border-dashed border-[#2C7A53]/30 flex flex-col items-center justify-center">
-                  <motion.div
+                  <Bucle.div
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   >
                     <CheckCircle className="w-3 h-3 text-[#2C7A53]" />
-                  </motion.div>
+                  </Bucle.div>
                   <span className="text-[5px] text-[#2C7A53] font-mono font-normal uppercase tracking-wider mt-0.5">Legal</span>
                 </div>
-              </motion.div>
+              </Bucle.div>
             </motion.div>
           )}
         </div>
@@ -560,7 +562,7 @@ function ContractVisual() {
           </motion.span>
         ))}
       </motion.div>
-    </div>
+    </ZonaDeBucles>
   );
 }
 
@@ -577,7 +579,7 @@ function PublishVisual() {
   ];
 
   return (
-    <div className="relative w-full h-full flex flex-col justify-center overflow-hidden px-6">
+    <ZonaDeBucles className="relative w-full h-full flex flex-col justify-center overflow-hidden px-6">
       {/* Property preview with hover */}
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -593,17 +595,17 @@ function PublishVisual() {
             whileHover={{ scale: 1.05 }}
           >
             {/* Shimmer effect */}
-            <motion.div
+            <Bucle.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent"
               animate={{ x: ["-100%", "200%"] }}
               transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
             />
-            <motion.div
+            <Bucle.div
               animate={{ y: [0, -2, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
               <Buildings className="w-5 h-5 text-[#B7791F]/40" />
-            </motion.div>
+            </Bucle.div>
           </motion.div>
           <div className="flex-1 min-w-0">
             <motion.div
@@ -628,7 +630,7 @@ function PublishVisual() {
               transition={{ delay: 0.5 }}
               className="flex items-center gap-1 mt-1"
             >
-              <motion.span
+              <Bucle.span
                 className="text-[7px] bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] px-1.5 py-0.5 font-medium"
                 animate={{
                   boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 8px 2px rgba(16,185,129,0.3)", "0 0 0 0 rgba(16,185,129,0)"]
@@ -636,7 +638,7 @@ function PublishVisual() {
                 transition={{ duration: 2, repeat: Infinity }}
               >
                 Publicado
-              </motion.span>
+              </Bucle.span>
               <span className="text-[7px] text-muted-foreground">· 12 candidatos</span>
             </motion.div>
           </div>
@@ -659,7 +661,7 @@ function PublishVisual() {
             whileHover={{ scale: 1.03, backgroundColor: "rgba(0,0,0,0.03)" }}
             className="flex items-center gap-2 p-2 bg-muted/50 cursor-pointer transition-colors"
           >
-            <motion.div
+            <Bucle.div
               className="w-6 h-6 rounded-md flex items-center justify-center text-white text-[8px] font-bold"
               style={{ backgroundColor: portal.color }}
               whileHover={{ scale: 1.15, rotate: 5 }}
@@ -671,7 +673,7 @@ function PublishVisual() {
               }}
             >
               {portal.name.charAt(0)}
-            </motion.div>
+            </Bucle.div>
             <div className="flex-1 min-w-0">
               <span className="text-[9px] font-medium text-foreground block truncate">{portal.name}</span>
               <motion.span
@@ -680,12 +682,12 @@ function PublishVisual() {
                 transition={{ delay: portal.delay + 0.2 }}
                 className="text-[7px] text-[#2C7A53] flex items-center gap-0.5"
               >
-                <motion.span
+                <Bucle.span
                   animate={{ scale: [1, 1.3, 1] }}
                   transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
                 >
                   ✓
-                </motion.span>
+                </Bucle.span>
                 Sincronizado
               </motion.span>
             </div>
@@ -705,12 +707,12 @@ function PublishVisual() {
           className="flex items-center gap-1.5"
           whileHover={{ x: 3 }}
         >
-          <motion.div
+          <Bucle.div
             animate={{ rotate: [0, 10, -10, 0] }}
             transition={{ duration: 3, repeat: Infinity }}
           >
             <ShareNetwork className="w-3 h-3 text-muted-foreground" />
-          </motion.div>
+          </Bucle.div>
           <span className="text-[8px] text-muted-foreground">Un clic, 4 portales</span>
         </motion.div>
         <motion.div
@@ -720,22 +722,22 @@ function PublishVisual() {
           whileHover={{ scale: 1.05 }}
           className="flex items-center gap-1 bg-primary/10 px-2 py-1 cursor-pointer"
         >
-          <motion.div
+          <Bucle.div
             animate={{ y: [0, -2, 0] }}
             transition={{ duration: 1, repeat: Infinity }}
           >
             <TrendUp className="w-2.5 h-2.5 text-primary" />
-          </motion.div>
-          <motion.span
+          </Bucle.div>
+          <Bucle.span
             className="text-[8px] font-semibold text-primary"
             animate={{ scale: [1, 1.02, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           >
             +340% visibilidad
-          </motion.span>
+          </Bucle.span>
         </motion.div>
       </motion.div>
-    </div>
+    </ZonaDeBucles>
   );
 }
 
@@ -762,7 +764,7 @@ export default function PropietariosPage() {
               {/* Left Content */}
               <div className="space-y-4">
                 <motion.span
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
                   className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
@@ -771,9 +773,8 @@ export default function PropietariosPage() {
                 </motion.span>
 
                 <motion.h1
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
                   className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white tracking-[-0.03em] leading-[1.1]"
                 >
                   <span className="whitespace-nowrap">Arrienda tu propiedad</span>
@@ -781,9 +782,8 @@ export default function PropietariosPage() {
                 </motion.h1>
 
                 <motion.p
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
                   className="!mt-2 text-lg text-white/70 max-w-lg"
                 >
                   Evaluación de inquilinos gratis, publicación en portales gratis, cobro automatizado.
@@ -791,9 +791,8 @@ export default function PropietariosPage() {
                 </motion.p>
 
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
@@ -814,9 +813,8 @@ export default function PropietariosPage() {
 
                 {/* Hero Stats */}
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
                   className="flex items-center gap-8 pt-6"
                 >
                   {[
@@ -834,23 +832,20 @@ export default function PropietariosPage() {
 
               {/* Right - Hero Card */}
               <motion.div
-                initial={{ opacity: 0, x: 50, scale: 0.95 }}
+                initial={false}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
-                transition={{ delay: 0.3, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                 className="hidden lg:flex lg:justify-end"
               >
                 <div className="relative">
                   <motion.div
-                    initial={{ opacity: 0 }}
+                    initial={false}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4, duration: 0.5 }}
                     className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 w-[300px]"
                   >
                     {/* Header with profile */}
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={false}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5, duration: 0.4 }}
                       className="flex items-center gap-3 mb-5 pb-4 border-b border-white/10"
                     >
                       <Image
@@ -871,9 +866,8 @@ export default function PropietariosPage() {
 
                     {/* Main income card */}
                     <motion.div
-                      initial={{ opacity: 0, y: 15 }}
+                      initial={false}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.6, duration: 0.4 }}
                       className="bg-white/10 backdrop-blur-sm rounded-md p-4 border border-white/10 mb-3"
                     >
                       <div className="flex items-center justify-between mb-1.5">
@@ -889,9 +883,8 @@ export default function PropietariosPage() {
                     {/* Stats grid */}
                     <div className="grid grid-cols-2 gap-2">
                       <motion.div
-                        initial={{ opacity: 0, y: 15 }}
+                        initial={false}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.7, duration: 0.4 }}
                         className="bg-white/10 backdrop-blur-sm rounded-md p-3 border border-white/10"
                       >
                         <div className="flex items-center gap-2 mb-1">
@@ -901,9 +894,8 @@ export default function PropietariosPage() {
                         <p className="text-xl font-bold text-white">2</p>
                       </motion.div>
                       <motion.div
-                        initial={{ opacity: 0, y: 15 }}
+                        initial={false}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.8, duration: 0.4 }}
                         className="bg-white/10 backdrop-blur-sm rounded-md p-3 border border-white/10"
                       >
                         <div className="flex items-center gap-2 mb-1">
@@ -917,9 +909,8 @@ export default function PropietariosPage() {
 
                   {/* Floating notification */}
                   <motion.div
-                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                     className="absolute -bottom-5 -left-4 bg-white rounded-xl p-3.5 border border-border-faint"
                   >
                     <div className="flex items-center gap-3">
@@ -957,18 +948,14 @@ export default function PropietariosPage() {
             {/* Top Row - Image Cards with Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5 mb-4 lg:mb-5">
               {/* Card 1 - Impago */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
+              <Appear inView distance="md" duration="slow" delay={0.1}
                 className="relative h-[420px] rounded-xl overflow-hidden group"
               >
                 <Image
                   src="/hero-interior.jpg"
                   alt="Interior moderno"
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
@@ -987,21 +974,17 @@ export default function PropietariosPage() {
                     Sin verificación real, el riesgo lo asume completo el propietario
                   </p>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Card 2 - Vacancia */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
+              <Appear inView distance="md" duration="slow" delay={0.2}
                 className="relative h-[420px] rounded-xl overflow-hidden group"
               >
                 <Image
                   src="/hero-2.jpg"
                   alt="Espacio moderno"
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
@@ -1020,21 +1003,17 @@ export default function PropietariosPage() {
                     Documentos, visitas, negociaciones... un proceso del siglo pasado
                   </p>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Card 3 - Desalojo */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 }}
+              <Appear inView distance="md" duration="slow" delay={0.3}
                 className="relative h-[420px] rounded-xl overflow-hidden group"
               >
                 <Image
                   src="/hero-3.jpg"
                   alt="Habitación moderna"
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute top-5 left-5">
@@ -1053,17 +1032,13 @@ export default function PropietariosPage() {
                     Sin contrato sólido, recuperar tu propiedad es una pesadilla
                   </p>
                 </div>
-              </motion.div>
+              </Appear>
             </div>
 
             {/* Robottom Row - Illustration Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5">
               {/* Card 4 - Blind Selection Widget */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4 }}
+              <Appear inView distance="md" duration="slow" delay={0.32}
                 className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 {/* Widget Illustration */}
@@ -1107,14 +1082,10 @@ export default function PropietariosPage() {
                     Sin datos reales, seleccionar inquilinos es apostar. Un mal candidato puede costarte millones.
                   </p>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Card 5 - Payment Tracker Widget */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.5 }}
+              <Appear inView distance="md" duration="slow" delay={0.32}
                 className="bg-sand-50 rounded-xl p-8 flex flex-col md:flex-row gap-8 items-center min-h-[280px]"
               >
                 {/* Widget Illustration */}
@@ -1165,7 +1136,7 @@ export default function PropietariosPage() {
                     Sin verificación real, el propietario asume todo el riesgo de impago. Y recuperarlo puede tomar más de un año.
                   </p>
                 </div>
-              </motion.div>
+              </Appear>
             </div>
           </div>
         </section>
@@ -1188,11 +1159,7 @@ export default function PropietariosPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
               {/* Large Card - Evaluation */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.1 }}
+              <Appear inView distance="md" duration="slow" delay={0.1}
                 className="md:col-span-7 bg-foreground rounded-xl p-8 min-h-[360px] flex flex-col justify-between relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-white/5 to-transparent rounded-bl-full" />
@@ -1214,14 +1181,10 @@ export default function PropietariosPage() {
                     </span>
                   ))}
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Small Card - Automatic Collection */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.2 }}
+              <Appear inView distance="md" duration="slow" delay={0.2}
                 className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
@@ -1242,14 +1205,10 @@ export default function PropietariosPage() {
                     </span>
                   ))}
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Small Card - Digital Contracts */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.3 }}
+              <Appear inView distance="md" duration="slow" delay={0.3}
                 className="md:col-span-5 bg-white rounded-xl p-8 min-h-[360px] flex flex-col justify-between border border-border-faint"
               >
                 <div>
@@ -1270,21 +1229,17 @@ export default function PropietariosPage() {
                     </span>
                   ))}
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Large Card - Multi Portal */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4 }}
+              <Appear inView distance="md" duration="slow" delay={0.32}
                 className="md:col-span-7 relative rounded-xl overflow-hidden min-h-[360px] group"
               >
                 <Image
                   src="/hero-5.jpg"
                   alt="Propiedad moderna"
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/20" />
                 <div className="absolute inset-0 p-8 flex flex-col justify-between">
@@ -1307,7 +1262,7 @@ export default function PropietariosPage() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
             </div>
           </div>
         </section>

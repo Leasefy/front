@@ -9,6 +9,7 @@ import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { sanitizeReturnUrl } from '@/lib/utils';
 import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
+import { NoPudimosConfirmarTuSesion } from '@/components/auth/NoPudimosConfirmarTuSesion';
 
 /**
  * Post-login resolver for the OAuth (Google) flow.
@@ -35,6 +36,7 @@ function PostLoginResolver() {
     perfilElegido,
     mfaRequired,
     mfaEnrollRequired,
+    mfaCheckStatus,
     agencyRole,
     agencyMembershipChecked,
     hasActiveAgencyMembership,
@@ -55,6 +57,9 @@ function PostLoginResolver() {
 
   React.useEffect(() => {
     if (authLoading) return;
+    // Nico, 02-10-2026: sin el veredicto del segundo factor no se navega
+    // (`failed` pinta «No pudimos confirmar tu sesión» abajo).
+    if (isAuthenticated && (mfaCheckStatus === 'pending' || mfaCheckStatus === 'failed')) return;
     // MFA gate first (security): never bypass a pending second factor.
     // T-0099: enroll-pending takes priority — same order as ProtectedRoute.
     if (mfaEnrollRequired) {
@@ -86,8 +91,15 @@ function PostLoginResolver() {
     // Onboarding sin terminar → retomar donde lo dejó: el onboarding del
     // perfil elegido, o el selector si nunca eligió (Nico, 2026-09-07).
     if (!user.onboardingCompleted) {
-      router.replace(rutaDeOnboarding(perfilElegido));
-      return;
+      // 🟡 BU-06 (04-10-2026): un miembro activo de una inmobiliaria (la asesora
+      // invitada) no hace el onboarding personal: antes pasaba un instante por
+      // /onboarding/seleccionar-rol. Mismo criterio que `ProtectedRoute`.
+      const deUnaInmobiliaria = user.role === 'agency' || user.backendRole === 'AGENT';
+      if (deUnaInmobiliaria && !agencyMembershipChecked && !probeWaitElapsed) return;
+      if (!(deUnaInmobiliaria && hasActiveAgencyMembership)) {
+        router.replace(rutaDeOnboarding(perfilElegido));
+        return;
+      }
     }
     // Explicit destination wins over the role default.
     if (returnUrl && returnUrl !== '/') {
@@ -110,12 +122,17 @@ function PostLoginResolver() {
     perfilElegido,
     mfaRequired,
     mfaEnrollRequired,
+    mfaCheckStatus,
     returnUrl,
     agencyRole,
     agencyMembershipChecked,
     hasActiveAgencyMembership,
     probeWaitElapsed,
   ]);
+
+  if (!authLoading && isAuthenticated && mfaCheckStatus === 'failed') {
+    return <NoPudimosConfirmarTuSesion />;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted">

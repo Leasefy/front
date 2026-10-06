@@ -48,7 +48,8 @@ const ESTADOS: Array<EstadoDeProceso | 'todos'> = ['todos', 'en_curso', 'esperan
 export interface PilotoProcesosProps {
   data: PilotoProcesosResponse | null
   isLoading: boolean
-  error: string | null
+  /** El error entero (no su texto): `FalloDeCarga` dice qué pasó. `null` si no falló. */
+  error: unknown
   notAvailable: boolean
   tipo: TipoDeProceso | 'todos'
   onTipo: (tipo: TipoDeProceso | 'todos') => void

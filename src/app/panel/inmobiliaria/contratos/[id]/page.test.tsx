@@ -407,14 +407,65 @@ describe('ContratoDetallePage — el fallo de una acción, en palabras', () => {
     expect(container.textContent).not.toContain('Forbidden resource')
   })
 
-  it('C6 · recordar con un 429 → «ya enviaste uno en las últimas 24 horas»', async () => {
+  it('C6 · recordar con el 429 RECORDATORIO_RECIENTE → el mensaje del back, que dice desde cuándo', async () => {
     const { ApiError } = await import('@/lib/api/client')
-    accionesDelContrato.remind.mockRejectedValue(new ApiError(429, 'ThrottlerException'))
+    const motivo =
+      'Ya se le envió un recordatorio de firma en las últimas 24 horas. Podrás enviar otro desde el 3 de octubre a las 3:15 p. m.'
+    accionesDelContrato.remind.mockRejectedValue(
+      new ApiError(429, motivo, 'RECORDATORIO_RECIENTE', {
+        statusCode: 429,
+        code: 'RECORDATORIO_RECIENTE',
+        message: motivo,
+        proximoPermitido: '2026-10-03T20:15:00.000Z',
+      }),
+    )
     withContract(contract({ status: 'pending_tenant' }))
     await renderPage()
     await clic(boton('Recordar firma'))
 
-    expect(container.textContent).toContain('Ya enviaste un recordatorio en las últimas 24 horas.')
+    expect(container.textContent).toContain(motivo)
+  })
+
+  it('02-10 · un 429 del limitador general NO se lee como «ya enviaste un recordatorio»: decide el code', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    const limite = 'Hiciste muchas solicitudes seguidas. Espera 30 segundos y vuelve a intentar.'
+    accionesDelContrato.remind.mockRejectedValue(
+      new ApiError(429, limite, 'DEMASIADAS_SOLICITUDES', { code: 'DEMASIADAS_SOLICITUDES', message: limite }),
+    )
+    withContract(contract({ status: 'pending_tenant' }))
+    await renderPage()
+    await clic(boton('Recordar firma'))
+
+    expect(container.textContent).toContain(limite)
+    expect(container.textContent).not.toContain('Ya enviaste')
+  })
+
+  it('02-10 · enviar con un 5xx → «de nuestro lado» con la referencia, no la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    accionesDelContrato.send.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        referencia: '0a1b2c3d',
+      }),
+    )
+    withContract(contract({ status: 'draft' }))
+    await renderPage()
+    await clic(boton('Enviar al inquilino'))
+
+    expect(container.textContent).toContain('No pudimos enviar el contrato a firma: algo falló de nuestro lado.')
+    expect(container.textContent).toContain('0a1b2c3d')
+    expect(container.textContent).not.toContain('conexión')
+  })
+
+  it('02-10 · enviar sin respuesta (status 0) → la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    accionesDelContrato.send.mockRejectedValue(new ApiError(0, 'Failed to fetch'))
+    withContract(contract({ status: 'draft' }))
+    await renderPage()
+    await clic(boton('Enviar al inquilino'))
+
+    expect(container.textContent).toContain('conexión')
   })
 
   it('C6 · recordar con un 500 → su motivo, NUNCA «ya enviaste un recordatorio»', async () => {
@@ -691,7 +742,7 @@ describe('ContratoDetallePage — el bloque del arriendo', () => {
     await renderPage()
 
     expect(container.querySelector('h1')!.textContent).toBe('Contrato #99')
-    expect($('canon-del-arriendo')!.textContent).toContain('$2.100.000')
+    expect($('canon-del-arriendo')!.textContent).toContain('$\u00a02.100.000')
     expect($('ritmo-de-pago')!.textContent).toBe('Paga el 5 de cada mes, con 3 días de plazo.')
     expect($('fecha-de-fin')!.textContent).toBe('31 dic 2099')
     // Las tres cajas de antes ya no están.
@@ -711,7 +762,7 @@ describe('ContratoDetallePage — el bloque del arriendo', () => {
     expect(container.textContent).not.toContain('Saldo del inquilino')
     expect(container.textContent).not.toContain('sin cobros todavía')
     // Lo que resta sale del estado de cuenta de ESTE contrato.
-    expect($('resta-por-pagar')!.textContent).toBe('$8.000.000')
+    expect($('resta-por-pagar')!.textContent).toBe('$\u00a08.000.000')
     expect($('cuotas-pagadas')!.textContent).toBe('2 de 6 cuotas pagadas')
   })
 
@@ -721,7 +772,7 @@ describe('ContratoDetallePage — el bloque del arriendo', () => {
 
     await renderPage()
 
-    expect($('resta-por-pagar')!.textContent).toBe('$8.000.000')
+    expect($('resta-por-pagar')!.textContent).toBe('$\u00a08.000.000')
     expect(container.textContent).not.toContain('No se pudo traer el saldo')
   })
 

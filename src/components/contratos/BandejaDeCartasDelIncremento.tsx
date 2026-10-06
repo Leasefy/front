@@ -29,6 +29,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { Collapse } from '@leasefy/cadence';
 import Link from 'next/link';
 import { EnvelopeSimple, WarningCircle } from '@phosphor-icons/react';
 
@@ -41,7 +42,9 @@ import {
   type BandejaDeCartas,
   type CartaEnLaBandeja,
 } from '@/lib/api/ciclo-de-vida.service';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 
 /** La cola completa. El tablero lleva acá, con el estado en la URL. */
 export const RUTA_DE_LAS_CARTAS = '/panel/inmobiliaria/contratos/renovaciones/cartas';
@@ -62,12 +65,13 @@ export function fechaCorta(iso: string | null | undefined): string {
   const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
   if (!partes) return '—';
   return new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]))
-    .toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+    // QA-CONT-95: «1 nov 2026», no «01 nov 2026» (como todas las fechas de la casa).
+    .toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })
     .replace(/ de /g, ' ')
     .replace(/\.$/, '');
 }
 
-export const PESOS = new Intl.NumberFormat('es-CO', {
+export const PESOS = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,
@@ -152,7 +156,7 @@ export function BandejaDeCartasDelIncremento({ puedeEditar }: { puedeEditar: boo
         es transparencia.
       </p>
       {!datos.disponible && (
-        <p className="text-caption text-plan-status-yellow">
+        <p className="text-caption text-warning-700 dark:text-warning-100">
           Falta una actualización de la base: se ven las cartas, pero todavía no se pueden enviar.
         </p>
       )}
@@ -231,9 +235,13 @@ export function Fila({
   const [abierta, setAbierta] = useState(false);
   const [texto, setTexto] = useState(carta.contenido);
   const [ocupado, setOcupado] = useState(false);
+  // Si el back rechaza el texto corregido, se dice debajo del texto.
+  const [errorDelTexto, setErrorDelTexto] = useState<string | undefined>(undefined);
+  const idDelTexto = `carta-${carta.contractId}-${carta.desde}-texto`;
 
   const enviar = async () => {
     setOcupado(true);
+    setErrorDelTexto(undefined);
     try {
       const r = await cicloDeVidaApi.enviarCarta(
         carta.contractId,
@@ -247,7 +255,18 @@ export function Fila({
       }
       await onEnviada();
     } catch (e) {
-      toast.error('No se pudo enviar la carta.', { description: mensajeDelFallo(e, 'Intenta de nuevo.') });
+      // Un 400 del texto va bajo el texto; un 409, un 5xx con su referencia o
+      // la red al toast, por el traductor.
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: ['contenido'],
+        porDefecto: 'No pudimos enviar la carta.',
+        accion: 'enviar la carta',
+      });
+      if (porCampo.contenido) {
+        setAbierta(true);
+        setErrorDelTexto(porCampo.contenido);
+      }
+      if (sueltos.length) toast.error('No se pudo enviar la carta.', { description: sueltos.join(' · ') });
     } finally {
       setOcupado(false);
     }
@@ -282,7 +301,7 @@ export function Fila({
           {carta.medio ? ` (${carta.medio.toLowerCase()})` : ''}.
         </p>
       ) : (
-        <p className="text-caption text-plan-status-yellow">Faltan {carta.diasParaElAniversario} días para el aniversario.</p>
+        <p className="text-caption text-warning-700 dark:text-warning-100">Faltan {carta.diasParaElAniversario} días para el aniversario.</p>
       )}
       {carta.ultimoIntento && carta.estado !== 'ENVIADA' && (
         <p className="text-caption text-muted-foreground">Último intento: {fechaCorta(carta.ultimoIntento)}</p>
@@ -294,9 +313,23 @@ export function Fila({
       )}
       {editable && carta.estado !== 'ENVIADA' && (
         <div className="space-y-2">
-          {abierta && (
-            <Textarea value={texto} onChange={(e) => setTexto(e.target.value)} rows={7} aria-label="Texto de la carta" />
-          )}
+          {/* La carta se abre y se cierra con su altura. */}
+          <Collapse open={abierta} className="space-y-2">
+            <Textarea
+              id={idDelTexto}
+              value={texto}
+              maxLength={10_000}
+              onChange={(e) => {
+                setTexto(e.target.value);
+                setErrorDelTexto(undefined);
+              }}
+              rows={7}
+              aria-label="Texto de la carta"
+              aria-invalid={errorDelTexto ? true : undefined}
+              aria-describedby={`${idDelTexto}-error`}
+            />
+            <ErrorDelCampo id={`${idDelTexto}-error`} mensaje={errorDelTexto} className="mt-0" />
+          </Collapse>
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"

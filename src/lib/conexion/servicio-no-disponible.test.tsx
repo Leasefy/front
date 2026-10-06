@@ -51,6 +51,10 @@ describe('el clasificador', () => {
       ),
     ).toBe(false)
     expect(esServicioNoDisponible(new ApiError(503, 'falta', 'FALTA_UNA_MIGRACION'))).toBe(false)
+    // Desde la ola E el micro lo manda CON `servicio: 'base'`: sigue sin ser una caída.
+    expect(
+      esServicioNoDisponible(new ApiError(503, 'falta', 'FALTA_UNA_MIGRACION', { servicio: 'base' } as never)),
+    ).toBe(false)
     expect(esServicioNoDisponible(new ApiError(503, 'Error 503'))).toBe(false)
   })
 
@@ -164,9 +168,9 @@ describe('los ayudantes de mensajes de error dicen la caída, no el crudo', () =
   it('errorEnCristiano', () => {
     expect(errorEnCristiano(error, 'No se pudo')).toBe(esperado)
   })
-  it('descripcionDelError, que a un 5xx normal lo calla', () => {
+  it('descripcionDelError: la caída con su texto; un 5xx normal dice que fue nuestro (02-10-2026)', () => {
     expect(descripcionDelError(error)).toBe(esperado)
-    expect(descripcionDelError(new ApiError(500, 'Internal server error'))).toBeUndefined()
+    expect(descripcionDelError(new ApiError(500, 'Internal server error'))).toMatch(/de nuestro lado/)
   })
   it('motivosDelError', () => {
     expect(motivosDelError(error)).toEqual([esperado])

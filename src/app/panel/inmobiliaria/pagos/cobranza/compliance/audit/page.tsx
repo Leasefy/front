@@ -31,7 +31,7 @@ import { agentFetch } from '@/lib/api/agent-fetch'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Badge, MonoLabel } from '@leasefy/cadence'
+import { Badge, CrossFade, MonoLabel, Presence } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
@@ -45,10 +45,11 @@ import {
 import {
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableRow,
   TableHead,
   TableCell,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import {
   useAuditLog,
@@ -181,11 +182,18 @@ function AuditContent() {
   // filter controls + can adjust criteria.
   const hasCustomFilters =
     filters.actor !== undefined || filters.action !== undefined || filters.q !== undefined
+  // Movimiento: esqueleto → bitácora en un `CrossFade` (el mismo nodo en las
+  // dos ramas); filtrar cambia cargando/vacío/tabla con su fundido.
   if (isLoading && items.length === 0 && !hasCustomFilters) {
-    return <PageSkeleton variant="list" />
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="list" />
+      </CrossFade>
+    )
   }
 
   return (
+    <CrossFade swapKey="bitacora">
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -366,6 +374,18 @@ function AuditContent() {
       </div>
 
       {/* Loading state (only for filter-triggered refetch — first load handled by early return) */}
+      <CrossFade
+        swapKey={
+          isLoading && items.length === 0 && hasCustomFilters
+            ? 'cargando'
+            : !isLoading && items.length === 0 && !error
+              ? 'vacio'
+              : items.length > 0
+                ? 'tabla'
+                : 'nada'
+        }
+        className="space-y-6"
+      >
       {isLoading && items.length === 0 && hasCustomFilters && (
         <div className="flex items-center justify-center py-12">
           <Spinner size="md" variant="default" />
@@ -373,11 +393,9 @@ function AuditContent() {
       )}
 
       {/* Error state */}
-      {error && (
-        <div className="rounded-lg bg-danger-soft text-danger">
+      <Presence show={Boolean(error)} className="rounded-lg bg-danger-soft text-danger">
           Error: {error}
-        </div>
-      )}
+      </Presence>
 
       {/* Empty state — Phase 38-05a: EmptyState primitive */}
       {!isLoading && items.length === 0 && !error && (
@@ -401,7 +419,8 @@ function AuditContent() {
                 <TableHead>{locale.startsWith('es') ? 'Detalles' : 'Details'}</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* «Cargar más» o una fila nueva: entran escalonadas (techo 320 ms). */}
+            <TableBodyAnimado>
               {items.map((row) => {
                 // Detect cedula-shaped field in details (server already
                 // redacts to "XXXXXXXX50" shape). Render via Mask so the
@@ -415,7 +434,7 @@ function AuditContent() {
                       ? ((details as Record<string, unknown>)['cedula_masked'] as string)
                       : null
                 return (
-                  <TableRow key={row.id} className="align-top">
+                  <TableRowAnimada key={row.id} className="align-top">
                     <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-foreground whitespace-nowrap">
                       {new Date(row.occurred_at).toLocaleString(locale)}
                     </TableCell>
@@ -455,10 +474,10 @@ function AuditContent() {
                         {JSON.stringify(details, null, 2)}
                       </pre>
                     </TableCell>
-                  </TableRow>
+                  </TableRowAnimada>
                 )
               })}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
           {hasMore && (
             <div className="p-3 border-t border-border bg-muted/20 text-center">
@@ -477,7 +496,9 @@ function AuditContent() {
           )}
         </div>
       )}
+      </CrossFade>
     </div>
+    </CrossFade>
   )
 }
 

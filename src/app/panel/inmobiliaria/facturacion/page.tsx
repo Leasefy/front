@@ -22,14 +22,15 @@
  * `TablePagination`, como en Solicitudes): sin filas nunca se pintaría.
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { CalendarBlank, Info, Receipt } from '@phosphor-icons/react';
+import { CalendarBlank, Receipt } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { CuentasPorPagar } from '@/components/contabilidad/gastos/CuentasPorPagar';
 import {
   Select,
   SelectContent,
@@ -37,13 +38,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { SinDatos } from '@/components/estado/SinDatos';
 import { NuevaFactura } from '@/components/facturacion/NuevaFactura';
 import { ComoSeFactura } from '@/components/facturacion/ComoSeFactura';
 import { FacturasEmitidas } from '@/components/facturacion/FacturasEmitidas';
 import { ColaDeTransmision } from '@/components/facturacion/ColaDeTransmision';
+// DIAN-FEEL (04-10-2026): el aviso dice qué le falta a ESTA inmobiliaria.
+import { BannerDeLaDian } from '@/components/facturacion/EstadoAnteLaDian';
 import { EntregasYAcuse } from '@/components/facturacion/EntregasYAcuse';
 import { DocumentoSoporte } from '@/components/facturacion/DocumentoSoporte';
 import { CertificacionDelMandatario } from '@/components/facturacion/CertificacionDelMandatario';
@@ -54,6 +55,8 @@ import {
   mesLegible,
 } from '@/lib/api/facturacion-por-mes.service';
 import { ResolucionDeFacturacion } from '@/components/facturacion/ResolucionDeFacturacion';
+// AVISO-TIPO-DOC (05-10-2026): los propietarios cuyo documento frena la factura por mandato.
+import { AvisoTipoDeDocumento } from '@/components/inmobiliaria/AvisoTipoDeDocumento';
 import type { FacturacionTab } from '@/lib/api/facturacion.types';
 
 interface TabDef {
@@ -135,6 +138,16 @@ function FacturacionContent() {
   const k = (suffix: string) => `inmobiliaria.facturacion.${suffix}`;
 
   /*
+   * DIAN-FEEL (04-10-2026): «Cargar la resolución» de Configuración →
+   * Facturación llega con `?tab=resolucion`. Se lee del navegador al montar
+   * (sin `useSearchParams`, que pediría un Suspense en la página).
+   */
+  useEffect(() => {
+    const pedida = new URLSearchParams(window.location.search).get('tab');
+    if (pedida && esTab(pedida)) setActive(pedida);
+  }, []);
+
+  /*
    * El mes de los listados de documentos. «Ventas» y «Notas» leen
    * `GET /facturacion/emitidas?mes=`, que es por mes como todo lo demás de
    * facturación; las otras dos pestañas todavía no tienen de dónde leer.
@@ -167,20 +180,24 @@ function FacturacionContent() {
         </div>
       </header>
 
-      {/* Banner del M2, tal cual estaba: no es de esta pantalla decidir cuándo
-          llega el motor. Se calla en «Nueva factura» porque ahí sí hay motor
-          —lo que falta es el IVA y la numeración DIAN— y esa pestaña lo dice
-          con sus propias palabras: dos avisos distintos sobre lo mismo, uno
-          encima del otro, no los lee nadie. */}
-      {active === 'ventas' || active === 'compras' || active === 'notas' ? (
-      <div className="rounded-lg bg-primary-soft border border-primary/30 p-3 flex items-start gap-2.5">
-        <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" weight="fill" />
-        <div>
-          <p className="text-xs font-semibold text-primary">{t(k('m2BannerTitle'))}</p>
-          <p className="text-xs text-primary/90 mt-0.5">{t(k('m2BannerDesc'))}</p>
-        </div>
-      </div>
+      {/* El aviso de lo que todavía no pasa con lo emitido: se numera, pero
+          no se transmite a la DIAN. Sólo en Ventas y Notas, que es donde está
+          lo emitido. 🔴 FA-06 (QA-FACT, 03-10): decía «Estructura lista — el
+          motor DIAN llega en M2» (jerga interna) y «Compras todavía se lleva en
+          Pagos» estando en Ventas; Compras ya lo dice en su propio vacío. */}
+      {/* DIAN-FEEL (04-10-2026): con FEEL prendido y la inmobiliaria lista,
+          desaparece; si no, dice qué le falta a ESTA inmobiliaria. Sin
+          respuesta del back, el texto de siempre. */}
+      {active === 'ventas' || active === 'notas' ? (
+        <BannerDeLaDian
+          textoDeAntes={{ titulo: t(k('m2BannerTitle')), descripcion: t(k('m2BannerDesc')) }}
+        />
       ) : null}
+
+      {/* AVISO-TIPO-DOC: en «Por facturar», el total de lo frenado por el
+          documento del propietario y el camino a completarlo (cada fila frenada
+          ya dice su motivo con «Completar en el propietario»). */}
+      {active === 'nueva' ? <AvisoTipoDeDocumento /> : null}
 
       {/* UNA tarjeta: pestañas arriba, tabla debajo. Sin título encima. */}
       <Tabs
@@ -229,10 +246,13 @@ function FacturacionContent() {
                 de las dos era el tema. La pantalla que abre (`pagos/cxp/nueva`,
                 lectura de la foto o el PDF con IA) no cambió: cambió de dónde
                 se entra. Sólo en «Compras»: en Ventas todavía no hay motor DIAN
-                que emita nada, y ofrecerlo ahí sería un botón que no cumple. */}
+                que emita nada, y ofrecerlo ahí sería un botón que no cumple.
+                🔴 CB-R21 (04-10, Nico: «Proveedores: Una sola, en Gastos»): ya
+                no abre el formulario del agente de pagos (guardaba la factura
+                aparte, fuera del libro): lleva a Contabilidad → Gastos. */}
             {active === 'compras' && (
               <Button asChild hideArrow className="shrink-0" data-testid="facturacion-registrar-compra">
-                <Link href="/panel/inmobiliaria/pagos/cxp/nueva">
+                <Link href="/panel/inmobiliaria/contabilidad/gastos">
                   <Receipt className="h-4 w-4" weight="bold" />
                   {t(k('registrarCompra'))}
                 </Link>
@@ -308,7 +328,7 @@ function FacturacionContent() {
                   <p className="text-caption text-fg-muted">
                     {clave === 'ventas'
                       ? 'Las facturas que emitiste en el mes.'
-                      : 'Las notas crédito con las que anulaste facturas del mes.'}
+                      : 'Las notas crédito y débito del mes.'}
                   </p>
                   <Select value={mes} onValueChange={setMes}>
                     <SelectTrigger
@@ -316,7 +336,7 @@ function FacturacionContent() {
                       aria-label={
                         clave === 'ventas'
                           ? 'Mes de las facturas emitidas'
-                          : 'Mes de las notas crédito'
+                          : 'Mes de las notas'
                       }
                       data-testid="facturacion-mes-emitidas"
                     >
@@ -342,50 +362,15 @@ function FacturacionContent() {
             </TabsContent>
           ))}
 
-          {/* 🔴 «Compras» es la ÚNICA pestaña que sigue sin listado propio: las
-              facturas de proveedor viven en Pagos → cuentas por pagar. Las
-              otras tres que estaban acá («Electrónica», y ahora «Documento
-              soporte» y «Mandato») ya tienen motor y pintan sus propias
-              tablas. */}
-          {TABS.filter((x) => x.key === 'compras').map((tab) => (
-            <TabsContent key={tab.key} value={tab.key} className="mt-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {tab.columns.map((c) => (
-                      <TableHead key={c} className="whitespace-nowrap">
-                        {t(k(c))}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {/* El vacío vive dentro del cuerpo para que los encabezados
-                      se sigan viendo.
-
-                      🔴 F4 (auditoría 13-09): decía «Todavía no tienes facturas
-                      de compra» sobre un listado que no puede leer. Una
-                      pantalla que no puede leer no afirma nada sobre los datos
-                      de la persona: dice dónde están de verdad. */}
-                  <TableRow>
-                    <TableCell colSpan={tab.columns.length} className="p-0">
-                      <SinDatos
-                        queSon={t(k('queSon_compras'))}
-                        icono={Receipt}
-                        titulo="Este listado todavía no trae tus compras"
-                        descripcion={`${t(k('desc_compras'))} Las facturas de proveedor que registras quedan en Pagos, en cuentas por pagar. ${t(k('registrarCompraDesc'))}`}
-                        accion={
-                          <Button asChild variant="outline" hideArrow data-testid="facturacion-ir-a-cxp">
-                            <Link href="/panel/inmobiliaria/pagos/cxp">Ver cuentas por pagar</Link>
-                          </Button>
-                        }
-                      />
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TabsContent>
-          ))}
+          {/* 🔴 CB-R21 (04-10-2026, decidido con la recomendada): «Compras»
+              muestra las facturas de proveedor de Contabilidad → Gastos —la
+              única fuente, decisión de Nico—, las mismas de Pagos → cuentas
+              por pagar. Antes era un vacío que mandaba a Pagos. */}
+          <TabsContent value="compras" className="mt-0">
+            <div className="p-4">
+              <CuentasPorPagar conRegistrar={false} />
+            </div>
+          </TabsContent>
         </section>
       </Tabs>
     </div>
@@ -398,7 +383,12 @@ export default function FacturacionPage() {
   // CONTADOR algo que sí podía hacer desde Liquidaciones — y el contador es
   // justamente quien factura. Mismo par de roles que /pagos.
   return (
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+    // Nico (03-10-2026): Facturación es sólo de administrador y contador, también
+    // en el back. A los demás, el cartel dice «No tienes acceso a Facturación».
+    // FA-H-10 (QA-FACT-CONTA-95 r2): y con el permiso de `cobros` (lo que pide el
+    // back en todas las rutas de facturación). Sin él, el contador veía la
+    // pantalla entera con cada consulta en 403; ahora el cartel la cubre entera.
+    <PageGuard module="cobros" roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]} seccion="Facturación">
       <FacturacionContent />
     </PageGuard>
   );

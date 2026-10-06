@@ -15,6 +15,13 @@ export interface PolicyAutoSkipStepProps {
    * to the caller.
    */
   onSkip: () => Promise<unknown>
+  /**
+   * 02-10-2026 · Qué estuvo mal, si el micro lo dijo: el `message` del
+   * `OnboardingSessionError` de un 400 (ya en español, por el traductor del
+   * servicio). El `null` de `onSkip` no se traga el error: el hook lo deja en
+   * `error` y el asistente lo pasa acá. Sin él, la frase general.
+   */
+  mensajeDelFallo?: string | null
 }
 
 /**
@@ -31,7 +38,7 @@ export interface PolicyAutoSkipStepProps {
  * second automatic submit. A failed attempt only retries on explicit user
  * click — no infinite loop.
  */
-export function PolicyAutoSkipStep({ isSubmitting, onSkip }: PolicyAutoSkipStepProps) {
+export function PolicyAutoSkipStep({ isSubmitting, onSkip, mensajeDelFallo }: PolicyAutoSkipStepProps) {
   const firedRef = useRef(false)
   const [failed, setFailed] = useState(false)
 
@@ -59,7 +66,7 @@ export function PolicyAutoSkipStep({ isSubmitting, onSkip }: PolicyAutoSkipStepP
         className="rounded-md bg-danger-soft border border-border p-4 text-center space-y-3"
       >
         <p className="text-sm text-danger">
-          No pudimos aplicar la configuración inicial. Intenta de nuevo.
+          {mensajeDelFallo || 'No pudimos aplicar la configuración inicial. Intenta de nuevo.'}
         </p>
         <Button type="button" variant="outline" size="sm" hideArrow onClick={attempt}>
           <ArrowClockwise className="w-4 h-4" />

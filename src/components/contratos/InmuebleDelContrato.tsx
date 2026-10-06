@@ -37,6 +37,7 @@ import { InventarioDeLaConsignacion } from '@/components/inmobiliaria/Inventario
 import { InventarioDelContrato } from '@/components/inmobiliaria/inventario/InventarioDelContrato';
 import { ConsignacionTimeline } from '@/components/inmobiliaria/ConsignacionTimeline';
 import type { Consignacion } from '@/lib/types/inmobiliaria';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 
 interface InmuebleDelContratoProps {
   /** El inmueble del contrato. `null` = el contrato no tiene inmueble todavía. */
@@ -52,7 +53,20 @@ export function InmuebleDelContrato({
   contratoId,
   volverA,
 }: InmuebleDelContratoProps) {
-  const { consignacion: delBack, isLoading, error } = useConsignacion(propertyId ?? undefined);
+  /*
+   * QA-CONT C-20: el contrato tiene el id del INMUEBLE, así que se pide por
+   * inmueble (sin el `GET /consignaciones/<id del inmueble>` que daba 404 en
+   * cada ficha). Quien no ve el portafolio (el contador) no lo pide: eran dos
+   * 403 en su consola. Fuera del proveedor de permisos (pruebas), como antes.
+   */
+  const permisos = usePermissionsContextSafe();
+  const resolviendoPermisos = permisos?.isLoading === true;
+  const veElPortafolio = permisos ? !resolviendoPermisos && permisos.canAccess('portafolio', 'view') : true;
+  const { consignacion: delBack, isLoading: cargandoConsignacion, error } = useConsignacion(propertyId ?? undefined, {
+    porInmueble: true,
+    activo: veElPortafolio,
+  });
+  const isLoading = cargandoConsignacion || resolviendoPermisos;
   // Lo que devolvió el back al subir el borrador gana sobre lo que se pidió al
   // entrar: si no, quitar un ítem acá lo deja en pantalla hasta recargar.
   const [reciente, setReciente] = useState<Consignacion | null>(null);
@@ -87,9 +101,23 @@ export function InmuebleDelContrato({
             Este contrato no tiene inmueble asociado.
           </p>
           <p className="text-muted-foreground mt-0.5">
-            El inventario es del inmueble: vinculá uno para poder cargarlo.
+            El inventario es del inmueble: vincula uno para poder cargarlo.
           </p>
         </div>
+      </div>
+    );
+  }
+
+  if (!veElPortafolio && !resolviendoPermisos) {
+    return (
+      <div
+        className="rounded-lg border border-border bg-card p-5 flex items-start gap-3"
+        data-testid="inmueble-del-contrato-sin-permiso"
+      >
+        <Buildings className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+        <p className="text-sm text-muted-foreground">
+          El inventario y el historial del inmueble los ve quien tiene acceso a Inmuebles.
+        </p>
       </div>
     );
   }

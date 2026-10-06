@@ -18,10 +18,14 @@ import { useAuth } from '@/lib/auth/use-auth';
 import { visitsApi } from '@/lib/api/visits.service';
 import { messagesApi } from '@/lib/api/messages.service';
 import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import type { VisitSlot } from '@/lib/api/visits.types';
 import { PostularButton } from '@/components/tenant/PostularButton';
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { seLePuedePrometerSinCodeudor } from '@/lib/api/aprobacion.service';
+import { horaDeLaCasa } from '@/lib/agenda/hora-de-la-casa';
+import { TeLlamamosParaLaVisita } from '@/components/property/TeLlamamosParaLaVisita';
 
 interface StickyCTAProps {
   propertyId: string;
@@ -79,19 +83,49 @@ function parseDateDisplay(dateStr: string) {
   return { dayName: dayNames[date.getDay()], dayNumber: date.getDate() };
 }
 
-/** "09:00" → "9:00am" | "14:00" → "2:00pm" */
+/** PL-22: «09:00» → «9:00 a. m.», «14:00» → «2:00 p. m.» (antes «9:00am»). */
 function formatTimeSlot(hhmm: string): string {
-  const [h, m] = hhmm.split(':').map(Number);
-  const period = h >= 12 ? 'pm' : 'am';
-  const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-  return `${hour12}:${m.toString().padStart(2, '0')}${period}`;
+  return horaDeLaCasa(hhmm);
 }
 
-/** "YYYY-MM-DD" + N days in the future */
+/**
+ * «AAAA-MM-DD» de hoy + N días, en el calendario de BOGOTÁ. Antes salía de
+ * `toISOString()` (UTC): después de las 7 p. m. de Colombia «mañana» era
+ * pasado mañana.
+ */
 function addDays(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() + n);
-  return d.toISOString().split('T')[0];
+  const bogota = new Date(Date.now() - 5 * 60 * 60 * 1000);
+  bogota.setUTCDate(bogota.getUTCDate() + n);
+  return bogota.toISOString().split('T')[0];
+}
+
+/**
+ * PL-23: el día y la hora escogidos sobreviven al login. Antes «Confirmar
+ * visita» sin sesión mandaba a /auth y al volver había que escoger todo otra
+ * vez (y mucha gente no volvía).
+ */
+const LLAVE_DE_LA_VISITA = (propertyId: string) => `leasefy:visita-escogida:${propertyId}`;
+function guardarVisitaEscogida(propertyId: string, v: { dia: string; hora: string; tipo: string }) {
+  try {
+    sessionStorage.setItem(LLAVE_DE_LA_VISITA(propertyId), JSON.stringify(v));
+  } catch {
+    /* sin almacenamiento: se escoge otra vez */
+  }
+}
+function leerVisitaEscogida(propertyId: string): { dia: string; hora: string; tipo: string } | null {
+  try {
+    const crudo = sessionStorage.getItem(LLAVE_DE_LA_VISITA(propertyId));
+    return crudo ? (JSON.parse(crudo) as { dia: string; hora: string; tipo: string }) : null;
+  } catch {
+    return null;
+  }
+}
+function olvidarVisitaEscogida(propertyId: string) {
+  try {
+    sessionStorage.removeItem(LLAVE_DE_LA_VISITA(propertyId));
+  } catch {
+    /* nada */
+  }
 }
 
 /*
@@ -196,13 +230,40 @@ function useCompartirInmueble(propertyId: string) {
 
 // ─── Error messages ──────────────────────────────────────────────────────────
 
-function getScheduleErrorMessage(err: unknown): string {
-  if (err instanceof ApiError) {
-    if (err.status === 409) return 'Este horario ya fue reservado. Elige otro.';
-    if (err.status === 403) return 'No puedes agendar una visita para tu propia propiedad.';
-    if (err.status === 400) return 'Formato de datos inválido. Recarga la página e intenta de nuevo.';
+/**
+ * Por qué no se agendó la visita (02-10-2026, sistema de errores).
+ *
+ * El 409 del back (`visits.service.ts`) son DOS casos y ya trae `code`:
+ * `HORARIO_OCUPADO` (otro tomó el horario) y `VISITA_YA_SOLICITADA` (ya hay
+ * una visita activa con este inmueble); se decide con el código, nunca con el
+ * texto. Un 409 sin `code` (back viejo) dice los dos casos juntos. Todo lo
+ * demás va por el traductor: el 403 dice lo que mandó el back (su propio
+ * inmueble, o «Esto es sólo para cuentas de inquilino…»), un 400 dice qué está
+ * mal («Este inmueble ya está arrendado…»), un 5xx dice que fue nuestro con la
+ * referencia y sólo la falta de respuesta habla de la conexión.
+ */
+export function getScheduleErrorMessage(err: unknown): string {
+  if (err instanceof ApiError && err.status === 409) {
+    if (err.code === 'HORARIO_OCUPADO') return 'Ese horario ya no está disponible. Elige otro.';
+    if (err.code === 'VISITA_YA_SOLICITADA') {
+      return 'Ya tienes una visita pendiente para este inmueble. Revísala en tus visitas.';
+    }
+    if (!err.code) {
+      return 'Ese horario ya no está disponible o ya tienes una visita pendiente para este inmueble. Elige otro horario o revisa tus visitas.';
+    }
   }
-  return 'Ocurrió un error al agendar. Intenta de nuevo.';
+  return mensajeParaLaPersona(err, {
+    accion: 'agendar la visita',
+    porDefecto: 'No pudimos agendar la visita. Prueba de nuevo en un momento.',
+  });
+}
+
+/** Por qué no se abrió la conversación, con la regla de oro del traductor. */
+export function mensajeAlContactar(err: unknown): string {
+  return mensajeParaLaPersona(err, {
+    accion: 'iniciar la conversación',
+    porDefecto: 'No pudimos iniciar la conversación. Prueba de nuevo en un momento.',
+  });
 }
 
 // ============================================================================
@@ -250,6 +311,12 @@ export function StickyCTA({
     !!user && (user.role === 'agency' || user.backendRole === 'AGENT' || hasActiveAgencyMembership);
 
   const [ctaMode, setCtaMode] = useState<'apply' | 'visit' | 'contact'>(isSaleListing ? 'contact' : 'apply');
+  // PL-23: al volver del login (`?visita=1`), directo a la pestaña de visita.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('visita') === '1') {
+      setCtaMode('visit');
+    }
+  }, []);
   const [visitTextT, setVisitType] = useState<'presencial' | 'virtual'>('presencial');
 
   /**
@@ -292,11 +359,9 @@ export function StickyCTA({
       const { conversationId } = await messagesApi.createPropertyInquiry(propertyId);
       router.push(`/inquilino/mensajes?conversationId=${conversationId}`);
     } catch (error) {
-      setContactError(
-        error instanceof ApiError && error.messages
-          ? error.messages.join(' · ')
-          : 'No pudimos iniciar la conversación. Intenta de nuevo.',
-      );
+      // Antes sólo un 400 con `messages[]` decía algo propio; un 5xx o la red
+      // caían en el mismo texto genérico. Ahora, la regla de oro.
+      setContactError(mensajeAlContactar(error));
     } finally {
       setIsStartingChat(false);
     }
@@ -328,7 +393,19 @@ export function StickyCTA({
 
     visitsApi
       .getSlots(propertyId, startDate, endDate)
-      .then((response) => setSlotsByDate(groupSlotsByDate(response.slots)))
+      .then((response) => {
+        const porDia = groupSlotsByDate(response.slots);
+        setSlotsByDate(porDia);
+        // PL-23: lo que escogió antes de entrar, si el turno sigue libre.
+        const escogida = leerVisitaEscogida(propertyId);
+        if (escogida && porDia[escogida.dia]?.some((t) => t.time === escogida.hora && t.available)) {
+          setSelectedDay(escogida.dia);
+          setSelectedTime(escogida.hora);
+          if (escogida.tipo === 'virtual' || escogida.tipo === 'presencial') {
+            setVisitType(escogida.tipo);
+          }
+        }
+      })
       .catch(() => {
         // Non-blocking: empty slots will show "sin disponibilidad"
       })
@@ -351,9 +428,10 @@ export function StickyCTA({
   const handleScheduleVisit = async () => {
     if (!selectedDay || !selectedTime) return;
 
-    // Require authentication
+    // Require authentication — y lo escogido se guarda para cuando vuelva.
     if (!isAuthenticated || !user) {
-      router.push(`/auth?returnUrl=${encodeURIComponent(pathname)}`);
+      guardarVisitaEscogida(propertyId, { dia: selectedDay, hora: selectedTime, tipo: visitTextT });
+      router.push(`/auth?returnUrl=${encodeURIComponent(`${pathname}?visita=1`)}`);
       return;
     }
 
@@ -368,6 +446,7 @@ export function StickyCTA({
         visitType: visitTextT === 'presencial' ? 'IN_PERSON' : 'VIRTUAL',
       });
       setVisitConfirmed(true);
+      olvidarVisitaEscogida(propertyId);
     } catch (err) {
       setScheduleError(getScheduleErrorMessage(err));
     } finally {
@@ -406,15 +485,13 @@ export function StickyCTA({
                 ) : (
                   <LeasefyLogotype size={20} className="text-fg" title="Leasefy" />
                 )}
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[hsl(var(--success-50))] dark:bg-[hsl(var(--success-500)/0.15)] text-[hsl(var(--success-500))] text-[10px] font-semibold uppercase tracking-wide rounded-full">
-                  <Check className="w-3 h-3" />
-                  Verificado
-                </span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {administrador && !esLeasefy(administrador.agencyId) ? 'Administra este inmueble · ' : ''}
-                Respuesta en menos de 24h
-              </p>
+              {/* QA-IA-A (04-10-2026): «Verificado» y «Respuesta en menos de 24h»
+                  eran promesas sin un dato detrás (nadie mide ese tiempo ni
+                  verifica nada aquí). Se dice sólo lo que consta. */}
+              {administrador && !esLeasefy(administrador.agencyId) ? (
+                <p className="text-xs text-muted-foreground">Administra este inmueble</p>
+              ) : null}
             </div>
             <div className="flex gap-2">
               {onWishlistToggle && (
@@ -591,14 +668,11 @@ export function StickyCTA({
                     isLoading={isStartingChat}
                     disabled={isStartingChat}
                     onClick={handleStartChat}
+                    aria-describedby={contactError ? 'contacto-error' : undefined}
                   >
                     Contactar
                   </Button>
-                  {contactError && (
-                    <p role="alert" className="mt-3 text-[13px] text-danger">
-                      {contactError}
-                    </p>
-                  )}
+                  <ErrorDelCampo id="contacto-error" mensaje={contactError} className="mt-3 text-[13px]" />
                 </>
               ) : (
                 <>
@@ -654,12 +728,6 @@ export function StickyCTA({
                     </p>
                   </div>
                 )}
-                <div className="flex items-center gap-2.5">
-                  <Clock className="w-4 h-4 text-muted-foreground/60 flex-shrink-0" />
-                  <p className="text-[13px] text-muted-foreground">
-                    Respuesta en <span className="font-semibold text-foreground">menos de 24h</span>
-                  </p>
-                </div>
               </div>
               <PostularButton propertyId={propertyId} canonCop={price} className="w-full">
                 Postularme a esta propiedad
@@ -749,10 +817,11 @@ export function StickyCTA({
                   <Spinner variant="muted" />
                 </div>
               ) : availableDates.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-[13px] text-muted-foreground">Sin disponibilidad en los próximos días.</p>
-                  <p className="text-[12px] text-muted-foreground/70 mt-1">Vuelve a revisar pronto.</p>
-                </div>
+                /* PL-21: sin turnos, el interesado deja su nombre y su
+                   teléfono y la inmobiliaria lo llama para cuadrar la visita
+                   (antes: «Sin disponibilidad… vuelve pronto» y un lead
+                   perdido). */
+                <TeLlamamosParaLaVisita propertyId={propertyId} nombreInicial={user ? [user.firstName, user.lastName].filter(Boolean).join(' ') : ''} />
               ) : (
                 <>
                   {/* Date picker */}
@@ -820,13 +889,12 @@ export function StickyCTA({
               )}
 
               {/* Error message */}
-              {scheduleError && (
-                <p className="text-[12px] text-destructive text-center">{scheduleError}</p>
-              )}
+              <ErrorDelCampo id="visita-error" mensaje={scheduleError} className="text-[12px] text-center" />
 
               {/* CTA button */}
               <Button
                 onClick={handleScheduleVisit}
+                aria-describedby={scheduleError ? 'visita-error' : undefined}
                 disabled={!selectedDay || !selectedTime || isSubmitting || slotsLoading}
                 hideArrow
                 className="w-full h-auto py-4 rounded-xl text-[14px] gap-2"
@@ -916,9 +984,11 @@ export function MobileStickyCTA({
     try {
       const { conversationId } = await messagesApi.createPropertyInquiry(propertyId);
       router.push(`/inquilino/mensajes?conversationId=${conversationId}`);
-    } catch {
-      // Mobile CTA has no room for an inline error banner; the desktop
-      // StickyCTA on the same page already surfaces one.
+    } catch (error) {
+      // La barra del celular no tiene espacio para un aviso en línea, y la
+      // tarjeta de escritorio (oculta en el celular) no se entera de este
+      // fallo: antes no se decía nada. Un toast lo dice sin mover la barra.
+      toast.error(mensajeAlContactar(error));
     } finally {
       setIsStartingChat(false);
     }

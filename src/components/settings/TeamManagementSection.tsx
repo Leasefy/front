@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { Users, UserPlus, PencilSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -10,12 +9,21 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import { Input } from '@/components/ui/input';
+import { confirmar } from '@/components/ui/confirmar';
 import { useTeamMembers } from '@/lib/hooks/useSettings';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { errorDelCorreoDelEquipo, errorDelNombreDelEquipo } from '@/lib/perfil/limites-del-equipo';
 import type { TeamRole } from '@/lib/types/team';
 import { SettingsModal } from './SettingsModal';
 
-export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
+export function TeamManagementSection(
+  // `delay` ya no se usa (la entrada la pone el marco); se conserva para no
+  // romper a quien lo pasa.
+  _props: { delay?: number },
+) {
   const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -39,37 +47,85 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
   const [editingMember, setEditingMember] = useState<{ id: string; name?: string; email: string; role: TeamRole } | null>(null);
   const [inviteForm, setInviteForm] = useState<{ email: string; role: TeamRole }>({ email: '', role: 'viewer' });
   const [editMemberForm, setEditMemberForm] = useState<{ name: string; role: TeamRole }>({ name: '', role: 'viewer' });
+  /** El error bajo el correo de la invitación y bajo el nombre del miembro (cliente o back). */
+  const [errorDelCorreo, setErrorDelCorreo] = useState<string | undefined>();
+  const [errorDelNombre, setErrorDelNombre] = useState<string | undefined>();
 
   // Handlers
   const handleInviteMember = async () => {
-    if (!inviteForm.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteForm.email)) {
-      toast.error(t('landlordSettings.toasts.invalidEmail'));
+    // El correo mal escrito (o más largo que la columna) se dice debajo del
+    // campo, con la frase del back, y no sale (02-10-2026; antes, un toast).
+    const delCliente = errorDelCorreoDelEquipo(inviteForm.email);
+    if (delCliente) {
+      setErrorDelCorreo(delCliente);
+      document.getElementById('equipo-correo')?.focus();
       return;
     }
     setIsLoading(true);
     try {
-      await invite(inviteForm.email, inviteForm.role);
+      await invite(inviteForm.email.trim(), inviteForm.role);
       setShowInviteModal(false);
       setInviteForm({ email: '', role: 'viewer' });
+      setErrorDelCorreo(undefined);
       toast.success(t('landlordSettings.toasts.invitationSent', { email: inviteForm.email }));
     } catch (err) {
-      toast.error((err as Error).message || 'Error al enviar invitación');
+      // Lo del back sobre el correo (ya invitado, formato) va debajo del
+      // campo; el resto, al toast con la regla de oro.
+      const reparto = repartirErroresDelServidor(err, {
+        mapa: { email: 'email' },
+        campos: ['email'],
+        porDefecto: 'No pudimos enviar la invitación. Prueba de nuevo en un momento.',
+        accion: 'enviar la invitación',
+      });
+      if (reparto.porCampo.email) {
+        setErrorDelCorreo(reparto.porCampo.email);
+        document.getElementById('equipo-correo')?.focus();
+      }
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleRemoveMember = async (memberId: string) => {
+  /**
+   * «Eliminar» sacaba al miembro al primer clic, sin preguntar. Ahora pide
+   * confirmación destructiva diciendo qué pasa: el back BORRA la membresía
+   * (`DELETE /users/me/team/:id`), así que pierde el acceso al panel ya mismo
+   * —y una invitación pendiente deja de servir—; para que vuelva hay que
+   * invitarlo de nuevo.
+   */
+  const handleRemoveMember = async (member: { id: string; name?: string; email: string }) => {
+    const ok = await confirmar({
+      destructivo: true,
+      titulo: t('landlordSettings.modals.removeMember.title', { name: member.name || member.email }),
+      descripcion: t('landlordSettings.modals.removeMember.description'),
+      accion: t('landlordSettings.modals.removeMember.confirm'),
+      cancelar: t('landlordSettings.modals.cancel'),
+    });
+    if (!ok) return;
+    const memberId = member.id;
     try {
       await remove(memberId);
       toast.success(t('landlordSettings.toasts.memberRemoved'));
     } catch (err) {
-      toast.error((err as Error).message || 'Error al eliminar miembro');
+      // Antes: `err.message` crudo. Por el traductor, con la regla de oro.
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos quitar a este miembro. Prueba de nuevo en un momento.',
+          accion: 'quitar a este miembro',
+        }),
+      );
     }
   };
 
   const handleEditMember = async () => {
     if (!editingMember) return;
+    const delCliente = errorDelNombreDelEquipo(editMemberForm.name);
+    if (delCliente) {
+      setErrorDelNombre(delCliente);
+      document.getElementById('equipo-nombre')?.focus();
+      return;
+    }
     setIsLoading(true);
     try {
       await update(editingMember.id, {
@@ -79,9 +135,20 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
       setShowEditMemberModal(false);
       setEditingMember(null);
       setEditMemberForm({ name: '', role: 'viewer' });
+      setErrorDelNombre(undefined);
       toast.success(t('landlordSettings.toasts.memberUpdated'));
     } catch (err) {
-      toast.error((err as Error).message || 'Error al actualizar miembro');
+      const reparto = repartirErroresDelServidor(err, {
+        mapa: { name: 'name' },
+        campos: ['name'],
+        porDefecto: 'No pudimos guardar los cambios del miembro. Prueba de nuevo en un momento.',
+        accion: 'guardar los cambios',
+      });
+      if (reparto.porCampo.name) {
+        setErrorDelNombre(reparto.porCampo.name);
+        document.getElementById('equipo-nombre')?.focus();
+      }
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setIsLoading(false);
     }
@@ -89,10 +156,10 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
 
   return (
     <>
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay }}
+      {/* Sin entrada propia (era un fundido que subía 20 px con retraso): la
+          sección entra con el marco de Configuración, que ya anima el cambio
+          de sección. */}
+      <section
         // La tarjeta de Configuración de la inmobiliaria: el título «Equipo» ya
         // lo pone el marco, acá quedan el conteo y la acción (Nico, 2026-09-15).
         className="rounded-lg border border-border bg-surface overflow-hidden"
@@ -146,7 +213,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                       {t('landlordSettings.team.edit')}
                     </button>
                     <button
-                      onClick={() => handleRemoveMember(member.id)}
+                      onClick={() => void handleRemoveMember(member)}
                       className="text-xs text-danger hover:underline"
                     >
                       {t('landlordSettings.team.remove')}
@@ -176,20 +243,55 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
             </div>
           )}
         </div>
-      </motion.section>
+      </section>
 
       {/* Invite Team Member Modal */}
-      <SettingsModal open={showInviteModal} onClose={() => setShowInviteModal(false)} title={t('landlordSettings.modals.inviteMember.title')}>
+      <SettingsModal
+        open={showInviteModal}
+        onClose={() => {
+          setShowInviteModal(false);
+          setErrorDelCorreo(undefined);
+        }}
+        title={t('landlordSettings.modals.inviteMember.title')}
+        footer={
+          <>
+            <Button
+              variant="outline"
+              hideArrow
+              disabled={isLoading}
+              onClick={() => setShowInviteModal(false)}
+            >
+              {t('landlordSettings.modals.cancel')}
+            </Button>
+            <Button
+              hideArrow
+              onClick={handleInviteMember}
+              isLoading={isLoading}
+              disabled={isLoading || !inviteForm.email}
+            >
+              {!isLoading && <UserPlus className="w-4 h-4" />}
+              {isLoading ? t('landlordSettings.modals.inviteMember.sending') : t('landlordSettings.modals.inviteMember.sendInvite')}
+            </Button>
+          </>
+        }
+      >
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">{t('landlordSettings.modals.inviteMember.email')}</label>
             <Input
+              id="equipo-correo"
               type="email"
               value={inviteForm.email}
-              onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))}
+              onChange={(e) => {
+                setInviteForm(prev => ({ ...prev, email: e.target.value }));
+                setErrorDelCorreo(undefined);
+              }}
+              aria-invalid={errorDelCorreo ? true : undefined}
+              aria-describedby={errorDelCorreo ? 'equipo-correo-error' : undefined}
               className="h-12 rounded-lg"
               placeholder="email@ejemplo.com"
             />
+            <ErrorDelCampo id="equipo-correo-error" mensaje={errorDelCorreo} />
           </div>
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">{t('landlordSettings.modals.inviteMember.role')}</label>
@@ -205,7 +307,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                   type="button"
                   onClick={() => setInviteForm(prev => ({ ...prev, role: role.value }))}
                   className={cn(
-                    'w-full flex items-center gap-3 p-4 rounded-lg border transition-all text-left',
+                    'w-full flex items-center gap-3 p-4 rounded-lg border transition-colors text-left',
                     inviteForm.role === role.value
                       ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20'
                       : 'border-border hover:border-border-strong bg-surface'
@@ -229,40 +331,59 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
               ))}
             </div>
           </div>
-          <div className="flex gap-3 pt-2">
+        </div>
+      </SettingsModal>
+
+      {/* Edit Team Member Modal */}
+      <SettingsModal
+        open={showEditMemberModal}
+        onClose={() => {
+          setShowEditMemberModal(false);
+          setErrorDelNombre(undefined);
+        }}
+        title={t('landlordSettings.modals.editMember.title')}
+        footer={
+          <>
             <Button
               variant="outline"
               hideArrow
-              onClick={() => setShowInviteModal(false)}
-              className="flex-1 rounded-lg"
+              disabled={isLoading}
+              onClick={() => {
+                setShowEditMemberModal(false);
+                setEditingMember(null);
+              }}
             >
               {t('landlordSettings.modals.cancel')}
             </Button>
             <Button
               hideArrow
-              onClick={handleInviteMember}
-              disabled={isLoading || !inviteForm.email}
-              className="flex-1 rounded-lg"
+              onClick={handleEditMember}
+              isLoading={isLoading}
+              disabled={isLoading}
             >
-              {isLoading ? <Spinner size="xs" variant="current" /> : <UserPlus className="w-4 h-4" />}
-              {isLoading ? t('landlordSettings.modals.inviteMember.sending') : t('landlordSettings.modals.inviteMember.sendInvite')}
+              {!isLoading && <PencilSimple className="w-4 h-4" />}
+              {isLoading ? t('landlordSettings.modals.editMember.saving') : t('landlordSettings.modals.editMember.saveChanges')}
             </Button>
-          </div>
-        </div>
-      </SettingsModal>
-
-      {/* Edit Team Member Modal */}
-      <SettingsModal open={showEditMemberModal} onClose={() => setShowEditMemberModal(false)} title={t('landlordSettings.modals.editMember.title')}>
+          </>
+        }
+      >
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">{t('landlordSettings.modals.editMember.name')}</label>
             <Input
+              id="equipo-nombre"
               type="text"
               value={editMemberForm.name}
-              onChange={(e) => setEditMemberForm(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) => {
+                setEditMemberForm(prev => ({ ...prev, name: e.target.value }));
+                setErrorDelNombre(undefined);
+              }}
+              aria-invalid={errorDelNombre ? true : undefined}
+              aria-describedby={errorDelNombre ? 'equipo-nombre-error' : undefined}
               className="h-12 rounded-lg"
               placeholder={t('landlordSettings.modals.editMember.namePlaceholder')}
             />
+            <ErrorDelCampo id="equipo-nombre-error" mensaje={errorDelNombre} />
           </div>
           <div>
             <label className="block text-sm font-medium text-fg-muted mb-2">{t('landlordSettings.modals.editMember.role')}</label>
@@ -278,7 +399,7 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                   type="button"
                   onClick={() => setEditMemberForm(prev => ({ ...prev, role: role.value }))}
                   className={cn(
-                    'w-full flex items-center gap-3 p-4 rounded-lg border transition-all text-left',
+                    'w-full flex items-center gap-3 p-4 rounded-lg border transition-colors text-left',
                     editMemberForm.role === role.value
                       ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 dark:bg-[#1A40FF]/20'
                       : 'border-border hover:border-border-strong bg-surface'
@@ -301,28 +422,6 @@ export function TeamManagementSection({ delay = 0.15 }: { delay?: number }) {
                 </button>
               ))}
             </div>
-          </div>
-          <div className="flex gap-3 pt-2">
-            <Button
-              variant="outline"
-              hideArrow
-              onClick={() => {
-                setShowEditMemberModal(false);
-                setEditingMember(null);
-              }}
-              className="flex-1 rounded-lg"
-            >
-              {t('landlordSettings.modals.cancel')}
-            </Button>
-            <Button
-              hideArrow
-              onClick={handleEditMember}
-              disabled={isLoading}
-              className="flex-1 rounded-lg"
-            >
-              {isLoading ? <Spinner size="xs" variant="current" /> : <PencilSimple className="w-4 h-4" />}
-              {isLoading ? t('landlordSettings.modals.editMember.saving') : t('landlordSettings.modals.editMember.saveChanges')}
-            </Button>
           </div>
         </div>
       </SettingsModal>

@@ -3,6 +3,7 @@
  * Handles portfolio management, agents, property owners, and collections
  */
 
+import type { InmuebleSinPorcentaje } from '@/lib/inmuebles/participaciones-desconocidas';
 import type {
   CargoAlInquilino,
   DeduccionesDeLaLiquidacion,
@@ -10,6 +11,7 @@ import type {
   AprobacionDeReparacion,
 } from './deducciones';
 import type { BankCode, AccountType } from './payment-accounts';
+import { formatCurrency as formatCurrencyDeLaPlata } from '@/lib/format';
 /*
  * El vocabulario de la cartera se declara UNA vez, en el tipo que espeja
  * `cartera.service.ts`. Copiarlo acá es cómo las dos pantallas de cartera
@@ -57,7 +59,44 @@ export interface PropietarioBankAccount {
 }
 
 /** Lo que `GET /inmobiliaria/propietarios` reporta como faltante (T-0128). */
-export type DatoPendienteDelPropietario = 'documento' | 'tipoDocumento';
+export type DatoPendienteDelPropietario = 'documento' | 'tipoDocumento'
+  /** QA-PROP P-28 (back 5731a4e2): le falta la cuenta bancaria para girarle. */
+  | 'cuentaBancaria'
+  /**
+   * COLA-FRONT (04-10, la recomendada): tiene algo arrendado y ningún giro
+   * programado (`proximoGiro: null`). Lo agrega el front, no el back.
+   */
+  | 'diaDeGiro'
+  /**
+   * QA-PROP-95 B-08 (04-10): «CC» con un número con forma de NIT de empresa
+   * (9 dígitos que empiezan por 8 o 9). El back no lo corrige solo: se revisa.
+   */
+  | 'tipoDocumentoPorRevisar';
+
+/**
+ * Un inmueble en la ficha del propietario, con SU parte (QA-PROP P-02, back
+ * 5731a4e2, `arrendados-del-propietario.ts`). Arrendado = contrato ACTIVE ya
+ * empezado; el canon es el del contrato.
+ */
+export interface InmuebleDelPropietario {
+  consignacionId: string;
+  propertyId: string | null;
+  propertyTitle: string | null;
+  propertyAddress: string | null;
+  /** Es el principal del mandato (el de mayor participación). */
+  esPrincipal: boolean;
+  /** Cuánto del inmueble es suyo, en puntos básicos (10000 = el 100 %). */
+  participacionBps: number;
+  arrendado: boolean;
+  contratoId: string | null;
+  /** El canon del contrato (el del inmueble entero). `null` si no se sabe. */
+  canonDelContratoCop: number | null;
+  comisionPorcentaje: number | null;
+  /** SU parte del canon, de la comisión y del neto. `null` sin canon. */
+  canonCop: number | null;
+  comisionCop: number | null;
+  netoCop: number | null;
+}
 
 export interface Propietario {
   id: string;
@@ -74,6 +113,18 @@ export interface Propietario {
    * completa; un back anterior a T-0128 no lo manda.
    */
   datosPendientes?: DatoPendienteDelPropietario[];
+  /**
+   * 🔴 Sus inmuebles en copropiedad que vinieron de la migración sin el
+   * porcentaje de cada dueño (Nico, 04-10-2026): no se giran hasta ponerlo.
+   * Ausente con un back anterior.
+   */
+  inmueblesSinPorcentaje?: InmuebleSinPorcentaje[];
+  /**
+   * QA-PROP-95 B-40 (04-10): el banco devolvió un giro suyo por la cuenta y no
+   * hay un cambio de cuenta aprobado después: lo suyo queda retenido. Sólo en
+   * el detalle; `null` si quien mira no ve la plata; ausente con un back anterior.
+   */
+  giroRetenidoPorLaCuenta?: boolean | null;
   address?: string;
   city?: string;
   /** Departamento, aparte de la ciudad; lo parte la migración y lo edita el formulario. */
@@ -86,6 +137,13 @@ export interface Propietario {
    * El formulario no muestra ni exige el bloque bancario y guardar no lo toca.
    */
   datosBancariosOcultos?: boolean;
+  /**
+   * 🔴 P-21 (QA-PROP, 03-10): `true` cuando quien mira no ve la PLATA del
+   * propietario (el asesor comercial). El back manda los montos en `null`
+   * (`sinLaPlataDelPropietario`) y `normalizePropietario` los deja en 0: con
+   * esto la ficha dice «—» y no «$0» ni «Al día».
+   */
+  plataOculta?: boolean;
   /** Mandatos donde es el propietario PRINCIPAL (el de mayor participación). */
   propertyCount: number;
   /**
@@ -104,8 +162,36 @@ export interface Propietario {
    * salía antes era inventado).
    */
   totalCommission?: number;
-  /** Lo que la inmobiliaria le debe: Σ neto de las dispersiones pendientes o en proceso. */
+  /**
+   * 🔴 CAMBIÓ DE SIGNIFICADO (QA-PROP P-10, back 5731a4e2): ya NO es lo
+   * generado en Dispersiones. Es lo VENCIDO y sin girar de SU parte de las
+   * cuotas del lado propietario —la misma fuente que su estado de cuenta—: un
+   * GIRO ATRASADO. Lo generado va en `generadoSinGirar`. Ver
+   * `lib/propietarios/giros-del-propietario.ts`. (Antes decía: «Σ neto de las
+   * dispersiones pendientes o en proceso».)
+   */
   pendingBalance: number;
+  /** P-10: cuántas cuotas suyas tienen el giro vencido y sin girar. `null` con la plata oculta; ausente en un back anterior. */
+  girosVencidos?: number | null;
+  /** P-10: `AAAA-MM-DD` del giro vencido más viejo, o `null`. */
+  giroVencidoDesde?: string | null;
+  /** P-10: Σ de las dispersiones generadas que todavía no salieron (lo que antes era `pendingBalance`). */
+  generadoSinGirar?: number | null;
+  /** P-01/P-02: copropiedades (no es el principal) con contrato vigente. */
+  copropiedadesArrendadas?: number;
+  /**
+   * 🔴 COLA-FRONT / COLA-BACK (04-10): el próximo giro programado (su parte),
+   * o `null` si no tiene ninguno —un contrato arrendado sin cuotas del lado
+   * propietario—. Ausente = un back que todavía no lo manda: no se afirma nada.
+   */
+  proximoGiro?: { fecha: string; monto: number } | null;
+  /**
+   * P-02: cada inmueble donde figura, con su % y SU parte del canon, la
+   * comisión y el neto. Sólo la ficha (`GET /:id`); `null` con la plata oculta.
+   */
+  inmuebles?: InmuebleDelPropietario[] | null;
+  /** P-06: el dígito de verificación de un NIT, calculado por el back (algoritmo DIAN). `null` si no es NIT. */
+  digitoDeVerificacion?: number | null;
   /** Última dispersión completada. */
   lastPaymentDate?: string | null;
   /** Canon de los arrendados menos la comisión: lo que recibe al mes. Del back. */
@@ -291,6 +377,14 @@ export interface Consignacion {
    * hay que caer a `propietarioId`, nunca fabricar una participación.
    */
   copropietarios: Copropietario[];
+  /**
+   * 🔴 Copropiedad sin porcentaje (Nico, 04-10-2026: «vacío y giro
+   * bloqueado»): `true` = vino de la migración con varios dueños y sin decir
+   * cuánto es de cada uno. Los `participacionBps` son PROVISIONALES (partes
+   * iguales) y no se muestran: la ficha dice «Falta el porcentaje de cada
+   * propietario» y el giro no sale hasta ponerlo. Ausente con un back anterior.
+   */
+  participacionesDesconocidas?: boolean;
   agenteId: string;
 
   // Property info (denormalized for convenience)
@@ -634,9 +728,9 @@ const _STAGE_SUCCESS = 'bg-success-soft text-success';
 const _STAGE_CRITICAL = 'bg-danger-soft text-danger';
 export const PIPELINE_STAGES: { stage: PipelineStage; labelEs: string; labelEn: string; color: string }[] = [
   { stage: 'lead', labelEs: 'Interesado', labelEn: 'Lead', color: _STAGE_NEUTRAL },
-  { stage: 'visit_scheduled', labelEs: 'Visita prog.', labelEn: 'Visit sched.', color: _STAGE_INFO },
+  { stage: 'visit_scheduled', labelEs: 'Visita programada', labelEn: 'Visit sched.', color: _STAGE_INFO },
   { stage: 'visit_done', labelEs: 'Visita hecha', labelEn: 'Visit done', color: _STAGE_NEUTRAL },
-  { stage: 'application', labelEs: 'Aplicación', labelEn: 'Application', color: _STAGE_NEUTRAL },
+  { stage: 'application', labelEs: 'Postulación', labelEn: 'Application', color: _STAGE_NEUTRAL },
   { stage: 'evaluation', labelEs: 'Evaluación', labelEn: 'Evaluation', color: _STAGE_INFO },
   { stage: 'approved', labelEs: 'Aprobado', labelEn: 'Approved', color: _STAGE_SUCCESS },
   { stage: 'contract', labelEs: 'Contrato', labelEn: 'Contract', color: _STAGE_INFO },
@@ -950,10 +1044,42 @@ export interface CuotasTardias {
   seSuman: boolean;
   /** Por qué no se pueden sumar. `null` si se suman. */
   motivo: string | null;
+  /**
+   * 🔴 PG-R03 (QA de Pagos, decisión de Nico 03-10-2026): su liquidación del
+   * mes ya está cerrada (girada, aprobada o en un lote) y al generar se le arma
+   * una liquidación COMPLEMENTARIA de ese mes con estas cuotas, que se gira en
+   * el próximo lote. Ausente o `false` con un back sin la migración.
+   */
+  complementaria?: boolean;
+}
+
+/** N-19: una cuota que la corrida aparta «por liquidar a mano». */
+export interface CuotaPorLiquidarAMano {
+  cuotaId: string;
+  contractId: string;
+  propertyId: string | null;
+  propertyTitle: string;
+  mes: string;
+  /** Cuántos dueños tiene el inmueble. */
+  duenos: number;
+  /** El porqué, en palabras. */
+  motivo: string;
 }
 
 export interface VistaPreviaDeDispersiones {
   month: string;
+  /**
+   * 🔴 Los inmuebles que NO se giran este mes porque les falta el porcentaje
+   * de cada propietario (copropiedad migrada sin %). Un back anterior no lo
+   * manda.
+   */
+  sinPorcentaje?: InmuebleSinPorcentaje[];
+  /**
+   * 🔴 N-19 (QA-CONT-95 r3): las cuotas que la corrida aparta «por liquidar a
+   * mano» (varios dueños y IVA o retenciones de un solo perfil), con el
+   * inmueble y el motivo. Un back anterior no lo manda.
+   */
+  porLiquidarAMano?: CuotaPorLiquidarAMano[];
   /**
    * Con qué regla se liquidó: `CAUSADO` (el default del back: el canon del mes,
    * haya pagado el inquilino o no) o `RECAUDADO` (sólo lo que el inquilino ya
@@ -1055,6 +1181,8 @@ export interface MantenimientoQuote {
  * pedirlo.
  */
 export interface NuevaCotizacion {
+  /** SO-08 (04-10): el proveedor del registro; el back toma de ahí el nombre. */
+  proveedorId?: string;
   providerName: string;
   providerPhone?: string;
   amount: number;
@@ -1064,6 +1192,8 @@ export interface NuevaCotizacion {
 
 export interface SolicitudMantenimiento {
   id: string;
+  /** PI-28: la PQRS del portal de la que salió («Reparación / mantenimiento»), si salió de una. */
+  pqrs?: { id: string; radicado: string } | null;
   consignacionId: string;
   propertyId: string;
   propietarioId: string;
@@ -1087,6 +1217,8 @@ export interface SolicitudMantenimiento {
   status: MantenimientoStatus;
   quotes: MantenimientoQuote[];
   selectedQuoteId?: string;
+  /** H-04 / SO-08: el proveedor del registro que hace el trabajo (para calificarlo). */
+  proveedorId?: string | null;
   approvedAmount?: number;
   paidBy: MantenimientoPaidBy;
 
@@ -1194,12 +1326,16 @@ export interface ResultadoDeEnvioMasivo {
   enviados: number;
   fallidos: number;
   omitidos: number;
+  /** QA-PROP-95 C-41: los que ya lo habían recibido ese mes (no se les reenvió). */
+  yaLoTenian?: number;
   detalle: DetalleDeEnvioDeExtracto[];
 }
 
 export interface ExtractoPropietario {
   propietarioId: string;
   propietarioName: string;
+  /** QA-PROP-95 (C-14): cabecera del documento; la manda el back con el extracto (sin pedir la configuración). */
+  inmobiliaria?: { nombre: string; nit: string | null; direccion: string | null; ciudad: string | null } | null;
   month: string;
   generatedAt: string;
 
@@ -1288,6 +1424,20 @@ export interface ExtractoPropietario {
     codigo: 'SIN_INMUEBLES' | 'SIN_MOVIMIENTO_DEL_MES';
     mensaje: string;
   } | null;
+
+  /**
+   * C-06 (QA-CONT-95 r3): las cuotas que no entran porque el inmueble tiene
+   * varios dueños y la cuota lleva IVA o retenciones para un solo perfil
+   * tributario, cada una con su aviso en palabras. Antes tumbaban el extracto
+   * entero (400). Opcional por los back anteriores.
+   */
+  cuotasSinRepartir?: {
+    cuotaId: string;
+    contractId: string;
+    mes: string;
+    propertyTitle: string;
+    motivo: string;
+  }[];
 
   /**
    * La base del canon del extracto entero: `MIXTA` cuando conviven líneas de
@@ -1412,6 +1562,12 @@ export interface CarteraItem {
   diasDePlazo: number;
   /** El día de cartera ya pasó. Puede ser deuda vencida sin ser cartera. */
   esVencida: boolean;
+  /**
+   * 🔴 CR-31 (Nico, 03-10-2026): vencida, pero la inmobiliaria todavía no fijó
+   * sus días de plazo: NO es cartera ni va a la cobranza. Se rotula «Vencida»
+   * (no «Vencido, en plazo»). Sólo llega (`true`) en ese caso.
+   */
+  plazoSinFijar?: true;
   /** La inmobiliaria decidió dejar de perseguir esta deuda (21-09-2026). */
   castigada?: boolean;
   /** `YYYY-MM-DD` del día en que quedó castigada. `null` si no lo está. */
@@ -2013,18 +2169,17 @@ export function getDispersionStatusLabel(status: DispersionStatus): string {
   return labels[status];
 }
 
+/**
+ * 🔴 UNA sola `formatCurrency` («centavos en todo», C4, 03-10-2026). Hasta C4
+ * había dos copias: ésta escribía «$2.500.000» (sin espacio) y la de
+ * `@/lib/format` «$ 2.500.000». Decidido (C1-ESQUEMA Q4 a): «$ 1.234.567»,
+ * con espacio, la forma de `@/lib/format` y de `formatoPesos`. Ésta queda como
+ * puerta de entrada para los ~100 archivos que la importan de acá; la regla
+ * (texto que lanza en las pruebas, centavos sólo si el valor los trae y alguna
+ * llave está prendida —P8 a—) vive en UN lugar.
+ */
 export function formatCurrency(amount: number): string {
-  // Colombian pesos (COP). es-CO grouping (dot thousands) with a literal "$"
-  // prefix — `{ style:'currency', currency:'COP' }` would insert a space after
-  // the "$", so the prefix keeps the exact existing visual ("$2.500.000",
-  // negatives "$-2.500") while fixing the es-CL/CLP (Chile) misnomer.
-  return (
-    '$' +
-    new Intl.NumberFormat('es-CO', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  );
+  return formatCurrencyDeLaPlata(amount);
 }
 
 export function getDaysLate(dueDate: string): number {
@@ -2479,7 +2634,7 @@ export interface AgencyProfile {
   vigenciaEstudioDias?: number | null;
   /** 🔴 El seguro opcional como % del canon, POR PLAN: `{"BASIC":1.5}`. */
   seguroOpcionalPctPorPlan?: Record<string, number> | null;
-  /** IPC vigente en % (0..30). `null` = el IPC de diciembre del año anterior de la tabla de Leasefy. */
+  /** IPC vigente en % (0..100). `null` = el IPC de diciembre del año anterior de la tabla de Leasefy. */
   ipcVigente?: number | null;
   /** IPC de diciembre POR AÑO que cargó la inmobiliaria: `{ "2026": 5.3 }`. Para ese año manda sobre `ipcVigente` y la tabla. */
   ipcPorAnio?: Record<string, number>;
@@ -2858,6 +3013,12 @@ export interface AgencyUser {
   invitedAt?: string;
   lastLoginAt?: string;
   createdAt: string;
+  /**
+   * Sólo en una invitación pendiente (02-10-2026): cuándo vence, ISO. Ausente
+   * con un back anterior; `null` si no tiene fecha. La lista NUNCA trae el
+   * token ni el enlace: ésos salen sólo al invitar o reenviar.
+   */
+  invitationExpiresAt?: string | null;
 }
 
 export interface UserInvite {
@@ -2865,8 +3026,8 @@ export interface UserInvite {
   name: string;
   role: AgencyRole;
   message?: string;
-  // Extended fields used by AgenteFormModal and ConfigUsuarios
-  phone?: string;
+  // Extended fields used by AgenteFormModal and ConfigUsuarios.
+  // Sin `phone` (02-10-2026): `InviteMemberDto` no lo tiene y nunca se guardó.
   zone?: string;
   specialization?: 'RESIDENTIAL' | 'COMMERCIAL' | 'BOTH';
   commissionSplit?: number;
@@ -2954,9 +3115,9 @@ export function getModuleLabel(module: PermissionModule): string {
     dispersiones: 'Dispersiones',
     operaciones: 'Operaciones',
     reportes: 'Reportes',
-    configuracion: 'Configuracion',
+    configuracion: 'Configuración',
     documentos: 'Documentos',
-    analytics: 'Analitica',
+    analytics: 'Analítica',
     contratos: 'Contratos',
     subscription: 'Suscripción',
     avaluos: 'Avalúos',
@@ -3283,8 +3444,12 @@ export interface AgencyInviteResult extends AgencyMember {
    *
    * Opcional: un backend viejo no lo manda, y en ese caso se cae al mensaje
    * genérico en vez de romper.
+   *
+   * `suppressed` (01-10-2026) = un entorno de pruebas retuvo el correo a
+   * propósito (el interruptor de correo del back). La invitación vale; el
+   * enlace hay que pasarlo a mano.
    */
-  emailStatus?: 'sent' | 'not_configured' | 'failed';
+  emailStatus?: 'sent' | 'suppressed' | 'not_configured' | 'failed';
   /**
    * El token de la invitación, para armar el enlace cuando el correo no salió.
    *
@@ -3294,6 +3459,13 @@ export interface AgencyInviteResult extends AgencyMember {
    * el backend recorte la respuesta, esto se apaga solo en vez de romper.
    */
   invitationToken?: string;
+  /**
+   * El enlace personal de la invitación, armado por el back con la MISMA
+   * función que el correo (`/registro?invitationToken=…`, 02-10-2026). Sólo
+   * llega a quien invita (invitar y reenviar son rutas del administrador).
+   * Opcional: un back anterior no lo manda y el front lo arma con el token.
+   */
+  invitationLink?: string;
 }
 
 // ============================================================================
@@ -3895,9 +4067,9 @@ export function formatPercentageChange(percentage: number): string {
 
 export function getCategoryColor(category: AdvancedKPI['category']): string {
   const colors = {
-    financial: 'bg-white border-neutral-200 dark:bg-[#1a1a1c] dark:border-neutral-800',
-    operational: 'bg-white border-neutral-200 dark:bg-[#1a1a1c] dark:border-neutral-800',
-    performance: 'bg-white border-neutral-200 dark:bg-[#1a1a1c] dark:border-neutral-800',
+    financial: 'bg-white border-neutral-200 dark:bg-surface-muted dark:border-neutral-800',
+    operational: 'bg-white border-neutral-200 dark:bg-surface-muted dark:border-neutral-800',
+    performance: 'bg-white border-neutral-200 dark:bg-surface-muted dark:border-neutral-800',
   };
   return colors[category];
 }

@@ -6,7 +6,8 @@ import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { LoadingBlock, ErrorBlock, EmptyBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 import { useApiQuery } from '@/lib/admin/use-api-query'
-import { ApiError } from '@/lib/admin/api'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { fmtCOP } from '@/lib/admin/format'
 import {
   listPlans,
@@ -59,6 +60,8 @@ export default function PlansPage() {
   const [form, setForm] = useState<FormMode>({ kind: 'none' })
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  /** Los errores del back por campo, para el formulario (02-10-2026). */
+  const [serverFieldErrors, setServerFieldErrors] = useState<Partial<Record<keyof PlanFormValues, string>>>({})
 
   const [busyId, setBusyId] = useState<string | null>(null)
   const [rowError, setRowError] = useState<string | null>(null)
@@ -88,22 +91,26 @@ export default function PlansPage() {
 
   function openCreate() {
     setFormError(null)
+    setServerFieldErrors({})
     setForm({ kind: 'create' })
   }
 
   function openEdit(plan: AdminPlan) {
     setFormError(null)
+    setServerFieldErrors({})
     setForm({ kind: 'edit', plan })
   }
 
   function closeForm() {
     setForm({ kind: 'none' })
     setFormError(null)
+    setServerFieldErrors({})
   }
 
   async function handleSubmit(values: PlanFormValues) {
     setSubmitting(true)
     setFormError(null)
+    setServerFieldErrors({})
     try {
       if (form.kind === 'create') {
         await createPlan(toCreatePlanBody(values))
@@ -113,7 +120,16 @@ export default function PlansPage() {
       refetch()
       closeForm()
     } catch (err) {
-      setFormError(err instanceof ApiError ? err.message : 'No se pudo guardar el plan.')
+      // 02-10-2026 · Lo del back por campo va debajo de SU campo; lo demás,
+      // al pie, con la regla de oro (antes: `err.message` crudo o fijo).
+      const reparto = repartirErroresDelServidor<keyof PlanFormValues>(err, {
+        mapa: { usageFeeBps: 'usageFeePct', tier: 'slug', planType: null },
+        campos: Object.keys(values) as (keyof PlanFormValues)[],
+        accion: 'guardar el plan',
+        porDefecto: 'No se pudo guardar el plan.',
+      })
+      setServerFieldErrors(reparto.porCampo)
+      setFormError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null)
     } finally {
       setSubmitting(false)
     }
@@ -134,7 +150,7 @@ export default function PlansPage() {
       await deletePlan(plan.id)
       refetch()
     } catch (err) {
-      setRowError(err instanceof ApiError ? err.message : 'No se pudo desactivar el plan.')
+      setRowError(mensajeDelAdmin(err, { accion: 'desactivar el plan', porDefecto: 'No se pudo desactivar el plan.' }))
     } finally {
       setBusyId(null)
     }
@@ -147,7 +163,7 @@ export default function PlansPage() {
       await updatePlan(plan.id, { isActive: true })
       refetch()
     } catch (err) {
-      setRowError(err instanceof ApiError ? err.message : 'No se pudo reactivar el plan.')
+      setRowError(mensajeDelAdmin(err, { accion: 'reactivar el plan', porDefecto: 'No se pudo reactivar el plan.' }))
     } finally {
       setBusyId(null)
     }
@@ -182,6 +198,7 @@ export default function PlansPage() {
             otherDefaultExists={otherDefaultExists}
             isSubmitting={submitting}
             submitError={formError}
+            serverFieldErrors={serverFieldErrors}
             onSubmit={handleSubmit}
             onCancel={closeForm}
           />

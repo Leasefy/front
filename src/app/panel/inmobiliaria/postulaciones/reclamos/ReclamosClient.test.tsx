@@ -154,7 +154,7 @@ describe('ReclamosClient', () => {
     await escribir('[data-testid="respuesta-r-1"]', 'Tu puntaje fue muy bajo')
     await clic('[data-testid="enviar-r-1"]')
 
-    const fuga = $('[data-testid="fuga-detectada"]')?.textContent ?? ''
+    const fuga = $('#fuga-detectada')?.textContent ?? ''
     expect(fuga).toContain('puntaje')
     // El formulario sigue abierto: nada se cerró como si hubiera salido.
     expect($('[data-testid="respuesta-r-1"]')).not.toBeNull()
@@ -169,7 +169,7 @@ describe('ReclamosClient', () => {
     )
     await clic('[data-testid="enviar-r-1"]')
     expect(api.responder).toHaveBeenCalled()
-    expect($('[data-testid="fuga-detectada"]')).toBeNull()
+    expect($('#fuga-detectada')).toBeNull()
   })
 
   it('sin permiso no ofrece responder', async () => {
@@ -204,5 +204,42 @@ describe('ReclamosClient', () => {
     expect($('[data-testid="tomar-r-1"]')).toBeNull()
     expect($('[data-testid="responder-r-1"]')).toBeNull()
     expect(contenedor.textContent).toContain('Puedes presentarte con un codeudor.')
+  })
+})
+
+/**
+ * 02-10-2026 · Lo que no es el colador pasa por el traductor: antes todo lo
+ * que no era 400 decía «Vuelve a intentar», también un 5xx.
+ */
+describe('ReclamosClient — cuando responder falla por otra cosa', () => {
+  async function responderCon(error: unknown) {
+    api.responder.mockRejectedValue(error)
+    await pintar()
+    await clic('[data-testid="responder-r-1"]')
+    await escribir(
+      '[data-testid="respuesta-r-1"]',
+      'La aseguradora no aprobó con las condiciones actuales.',
+    )
+    await clic('[data-testid="enviar-r-1"]')
+    return $('#fuga-detectada')?.textContent ?? ''
+  }
+
+  it('🔴 un 5xx dice que es nuestro, con la referencia', async () => {
+    const texto = await responderCon(
+      new ApiError(500, 'Internal server error', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Internal server error',
+        referencia: '3c4d5e6f',
+      }),
+    )
+    expect(texto).toContain('de nuestro lado')
+    expect(texto).toContain('3c4d5e6f')
+    expect(texto.toLowerCase()).not.toContain('conexión')
+  })
+
+  it('🔴 sin respuesta (status 0), la conexión', async () => {
+    const texto = await responderCon(new ApiError(0, 'Failed to fetch'))
+    expect(texto.toLowerCase()).toContain('conexión')
   })
 })

@@ -27,6 +27,7 @@ const { estado, usePilotoProcesosMock } = vi.hoisted(() => ({
     flota: null as unknown,
     notAvailable: false,
     procesos: null as unknown,
+    errorDeProcesos: null as string | null,
   },
   usePilotoProcesosMock: vi.fn(),
 }))
@@ -52,7 +53,7 @@ vi.mock('@/lib/hooks/piloto/piloto-flota-context', () => ({
 vi.mock('@/lib/hooks/piloto/use-piloto-procesos', () => ({
   usePilotoProcesos: (...a: unknown[]) => {
     usePilotoProcesosMock(...a)
-    return { data: estado.procesos, isLoading: false, error: null, notAvailable: false, refetch: async () => {} }
+    return { data: estado.procesos, isLoading: false, error: estado.errorDeProcesos, notAvailable: false, refetch: async () => {} }
   },
 }))
 vi.mock('@/components/inmobiliaria/ai/ColaHumana', () => ({ relativeTime: () => 'hace 3 s' }))
@@ -69,6 +70,15 @@ vi.mock('@leasefy/cadence', () => ({
   },
 }))
 vi.mock('./PilotoCajon', () => ({ PilotoCajon: () => null }))
+// El cartel de la casa tiene sus propias pruebas: acá importa que el error le
+// LLEGUE entero (y que no se interpole crudo).
+vi.mock('@/components/estado/FalloDeCarga', () => ({
+  FalloDeCarga: ({ error, queEs }: { error: unknown; queEs?: string }) => (
+    <div data-testid="fallo-de-carga" data-error={String(error)}>
+      {queEs}
+    </div>
+  ),
+}))
 
 import { PilotoDock } from './PilotoDock'
 import { PilotoDockProvider, usePilotoDock } from '@/lib/hooks/piloto/piloto-dock-context'
@@ -146,6 +156,7 @@ beforeEach(() => {
   estado.flota = FLOTA()
   estado.notAvailable = false
   estado.procesos = PROCESOS
+  estado.errorDeProcesos = null
   usePilotoProcesosMock.mockClear()
   try {
     window.localStorage.removeItem('piloto-dock-abierto')
@@ -159,6 +170,18 @@ afterEach(() => {
 })
 
 describe('PilotoDock', () => {
+  it('🔴 02-10-2026 · si la lectura falla, el error va por el cartel de la casa, no «…: 500» crudo', async () => {
+    estado.procesos = null
+    estado.errorDeProcesos = '500'
+    render()
+    await act(async () => {
+      ;(q('[data-testid="abrir-dock"]') as HTMLButtonElement).click()
+    })
+    const cartel = q('[data-testid="piloto-dock-error"] [data-testid="fallo-de-carga"]')
+    expect(cartel?.getAttribute('data-error')).toBe('500')
+    expect(q('[data-testid="piloto-dock-lista"]')?.textContent).not.toContain('inmobiliaria.piloto.procesos.error')
+  })
+
   it('cerrado: el botón está, el panel no, y NO se consultan procesos', () => {
     render()
     expect(q('[data-testid="abrir-dock"]')).not.toBeNull()

@@ -25,17 +25,18 @@ import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table,
   TableHeader,
-  TableBody,
   TableHead,
   TableRow,
   TableCell,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import {
   PAGE_SIZE_OPTIONS,
   useTablePagination,
 } from '@/lib/hooks/use-table-pagination';
-import { IconButton } from '@leasefy/cadence';
+import { IconButton, motionDuration, motionEase, motionScale, Stagger, StaggerItem } from '@leasefy/cadence';
 import Link from 'next/link';
 import type { InventoryItem } from '@/lib/types/inmobiliaria';
 
@@ -288,16 +289,15 @@ export function ActaEntregaView({
                     )}
                   </TableRow>
                 </TableHeader>
-                <TableBody>
-                  {pageItems.map((item, index) => {
+                {/* Filas que entran escalonadas (techo de 320 ms) y salen al
+                    buscar, filtrar o cambiar de página: `key` = el id. */}
+                <TableBodyAnimado>
+                  {pageItems.map((item) => {
                     const style = CONDITION_STYLES[item.condition];
                     const Icon = style.icon;
                     return (
-                      <motion.tr
+                      <TableRowAnimada
                         key={item.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
                         className="border-b border-border/60 last:border-0"
                       >
                         <TableCell className="py-3 px-2">
@@ -342,7 +342,7 @@ export function ActaEntregaView({
                                 type="button"
                                 onClick={() => setSelectedImage(item.photoUrl!)}
                                 aria-label={item.name}
-                                className="w-8 h-8 rounded-md overflow-hidden bg-surface-muted hover:ring-2 hover:ring-primary transition-all"
+                                className="w-8 h-8 rounded-md overflow-hidden bg-surface-muted hover:ring-2 hover:ring-primary transition-shadow"
                               >
                                 <img
                                   src={item.photoUrl}
@@ -387,26 +387,23 @@ export function ActaEntregaView({
                             </div>
                           </TableCell>
                         )}
-                      </motion.tr>
+                      </TableRowAnimada>
                     );
                   })}
-                </TableBody>
+                </TableBodyAnimado>
               </Table>
             </div>
 
             {/* Mobile Cards — la misma página que la tabla de escritorio: si
                 cada uno recortara distinto, el pie contaría otra cosa según el
                 ancho de la ventana. */}
-            <div className="md:hidden space-y-3">
-              {pageItems.map((item, index) => {
+            <Stagger layout={false} className="md:hidden space-y-3">
+              {pageItems.map((item) => {
                 const style = CONDITION_STYLES[item.condition];
                 const Icon = style.icon;
                 return (
-                  <motion.div
+                  <StaggerItem
                     key={item.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
                     className="p-4 rounded-lg bg-surface-muted"
                   >
                     <div className="flex items-start justify-between mb-2">
@@ -469,10 +466,10 @@ export function ActaEntregaView({
                         />
                       </button>
                     )}
-                  </motion.div>
+                  </StaggerItem>
                 );
               })}
-            </div>
+            </Stagger>
 
             {/* Pie: sólo si hay más de una página. */}
             {shouldPaginate && (
@@ -535,17 +532,21 @@ export function ActaEntregaView({
       {/* Image Modal */}
       <AnimatePresence>
         {selectedImage && (
+          /* La foto en grande: el velo se funde y la foto crece desde 96 %
+             (tokens de Cadence); sale más rápido de lo que entró. */
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
+            transition={{ duration: motionDuration.base, ease: motionEase.enter }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80"
             onClick={() => setSelectedImage(null)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: motionScale.pop, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
+              exit={{ scale: motionScale.pop, opacity: 0, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
+              transition={{ duration: motionDuration.base, ease: motionEase.emphasis }}
               className="relative max-w-3xl max-h-[80vh] rounded-lg overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >

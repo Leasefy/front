@@ -441,12 +441,17 @@ describe('la compuerta de lo esencial', () => {
     expect(faltantesEsenciales(mapearColumnas(conArriendo))).toEqual([])
 
     const conPista = [
-      ...ARCHIVO_COMPLETO.filter((h) => h !== 'Día de pago'),
-      'Corte facturación',
+      ...ARCHIVO_COMPLETO.filter((h) => h !== 'Fecha de inicio'),
+      'Vigencia',
     ]
     const [faltaConPista] = faltantesEsenciales(mapearColumnas(conPista))
-    expect(faltaConPista.clave).toBe('diaDePago')
+    expect(faltaConPista.clave).toBe('fechaInicio')
     expect(faltaConPista.hayColumnaPosible).toBe(true)
+  })
+
+  it('QA-MIG-A MG-18: sin columna de día de pago NO se frena (el export de Nui no la trae)', () => {
+    const sinDia = ARCHIVO_COMPLETO.filter((h) => h !== 'Día de pago')
+    expect(faltantesEsenciales(mapearColumnas(sinDia))).toEqual([])
   })
 
   it('el uso y el depósito NO bloquean: se completan después, fila por fila', () => {
@@ -455,13 +460,13 @@ describe('la compuerta de lo esencial', () => {
 
   it('elegir la columna a mano destraba lo que faltaba', () => {
     const encabezados = [
-      ...ARCHIVO_COMPLETO.filter((h) => h !== 'Día de pago'),
-      'Corte facturación',
+      ...ARCHIVO_COMPLETO.filter((h) => h !== 'Fecha de inicio'),
+      'Vigencia',
     ]
     const auto = mapearColumnas(encabezados)
-    expect(faltantesEsenciales(auto).map((f) => f.clave)).toEqual(['diaDePago'])
+    expect(faltantesEsenciales(auto).map((f) => f.clave)).toEqual(['fechaInicio'])
 
-    const aMano = remapear(auto, 'Corte facturación', 'diaDePago')
+    const aMano = remapear(auto, 'Vigencia', 'fechaInicio')
     expect(faltantesEsenciales(aMano)).toEqual([])
   })
 
@@ -476,7 +481,8 @@ describe('la compuerta de lo esencial', () => {
     expect(mapeo.every((m) => m.campo === null)).toBe(true)
 
     const faltan = faltantesEsenciales(mapeo)
-    // Los siete: sin ninguno de ellos la fila que se crea es la fila vacía.
+    // Los seis: sin ninguno de ellos la fila que se crea es la fila vacía
+    // (el día de pago dejó de ser esencial: QA-MIG-A, MG-18).
     expect(faltan.map((f) => f.clave)).toEqual([
       'inmueble',
       'inquilino',
@@ -484,7 +490,6 @@ describe('la compuerta de lo esencial', () => {
       'fechaInicio',
       'fechaFin',
       'canon',
-      'diaDePago',
     ])
     // Y ninguna columna del archivo se parece a lo que falta: no es que haya
     // que elegir en el desplegable, es que el archivo no lo trae.

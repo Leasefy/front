@@ -32,11 +32,6 @@ const SIN_CABECERA_JUSTIFICADO: Record<string, string> = {
   'components/inmobiliaria/CommandPalette.tsx':
     'Paleta de comandos: su primer elemento es el buscador, no un título. Un ' +
     'filete y una ✕ arriba estorbarían el único gesto que importa (escribir).',
-  'components/inmobiliaria/AgencyCheckoutOverlay.tsx':
-    'Overlay de estado del checkout directo a Wompi: muestra el progreso del ' +
-    'pago (procesando/esperando/éxito/error) como una tarjeta centrada con ' +
-    'ícono, no como un diálogo con título. Es no-descartable mientras el pago ' +
-    'está en curso, así que una cabecera con filete y ✕ no corresponde.',
 }
 
 function archivosTsx(dir: string, encontrados: string[] = []): string[] {
@@ -101,35 +96,39 @@ describe('modales del panel — una sola cabecera', () => {
 
 describe('la primitiva conserva lo que la hace única', () => {
   const fuente = readFileSync(PRIMITIVA, 'utf8')
+  // El dibujo vive en Cadence (`dialog-layout.tsx`): se lee del paquete que la
+  // app consume de verdad, no de una copia.
+  const cadence = readFileSync(
+    join(process.cwd(), 'node_modules/@leasefy/cadence/src/components/ui/dialog-layout.tsx'),
+    'utf8',
+  )
 
-  // El título del DS es `text-h2` (22px). tailwind-merge NO lo reconoce como
-  // tamaño, así que un `className="text-base"` NO gana: sobreviven las dos
-  // clases y decide el orden del CSS. Por eso va por especificidad de
-  // descendiente. Si alguien lo "simplifica", los títulos vuelven a 22px.
-  it('baja el título a 16px con un selector de descendiente, no con className', () => {
-    expect(fuente).toContain('[&_h2]:text-base')
+  // Nico (02-10-2026) pidió «un título grande con subtítulo apagado». El tamaño
+  // lo fija Cadence (20/28) y NADIE lo pisa: ni el adaptador ni los call sites.
+  // Antes el adaptador lo bajaba a 16px con `[&_h2]:text-base`.
+  it('el título lo dimensiona Cadence (20/28) y el adaptador no lo pisa', () => {
+    expect(cadence).toMatch(/dialogTitleClassName =[\s\S]*?text-\[20px\][\s\S]*?leading-\[28px\]/)
+    expect(fuente).not.toMatch(/\[&_h2\]:text-/)
   })
 
   it('la cabecera y el pie quedan fijos, y sólo scrollea el cuerpo', () => {
-    expect(fuente).toContain('border-b border-border')
-    expect(fuente).toContain('border-t border-border')
-    // `min-h-0` es lo que permite que el hijo flex se achique y aparezca su
-    // scroll. Sin él vuelve a scrollear el contenedor y el título se va.
-    expect(fuente).toMatch(/min-h-0[^\n]*overflow-y-auto|overflow-y-auto[^\n]*min-h-0/)
+    // El panel no scrollea (`overflow-hidden`); el cuerpo sí, y `min-h-0` es lo
+    // que permite que el hijo flex se achique y aparezca su scroll. Sin él
+    // vuelve a scrollear el contenedor y el título se va.
+    expect(cadence).toMatch(/flex h-fit[^"]*flex-col overflow-hidden/)
+    expect(cadence).toMatch(/min-h-0 flex-1 overflow-y-auto/)
+    expect(cadence).toContain('data-lenis-prevent')
+    expect(cadence).toMatch(/shrink-0[^"]*border-t border-border/)
   })
 
   // ── La ✕ ─────────────────────────────────────────────────────────────────
   //
-  // El modal «Agendar una cita» mostraba DOS aspas: la pelada del DS en la
-  // esquina y, unos píxeles más abajo, el chip gris de la cabecera. La causa
-  // no era ese call site: `repartirHijos` reconocía la cabecera comparando
-  // identidad (`hijo.type === DialogHeader`), y `ResponsiveDialogHeader` es
-  // OTRO componente aunque adentro renderice `DialogHeader`. La comparación
-  // daba falso, la cabecera se iba al cuerpo y el Content encendía la ✕ del DS
-  // creyendo que nadie ponía una.
-  it('la ✕ del DS queda apagada SIEMPRE (la pelada nunca se pinta)', () => {
-    expect(fuente).not.toContain('hideClose={hideClose || cabeceraTraeCierre}')
-    expect(fuente).toMatch(/^\s*hideClose$/m)
+  // «Agendar una cita» mostró DOS aspas cuando el reparto reconocía la cabecera
+  // por identidad de componente. Hoy la ✕ la pone el Content (nunca la
+  // cabecera) y es la del producto, pasada a Cadence como `closeButton`: así
+  // Cadence la ubica y le reserva lugar, y la pelada del DS no se pinta nunca.
+  it('la ✕ del producto va como closeButton del Content de Cadence', () => {
+    expect(fuente).toContain('closeButton={<AspaDeCierre />}')
   })
 
   it('hay UN solo dibujo de la ✕ en la primitiva', () => {
@@ -184,10 +183,11 @@ describe('los envoltorios de las bandas declaran su marca', () => {
 })
 
 describe('las cáscaras de modal escritas a mano usan el mismo radio', () => {
-  // No todo modal pasa por la primitiva: propietarios, portafolio, ajustes y
-  // visitas montan la suya con `createPortal` + una capa `fixed inset-0`. El
-  // radio del DS (§41) es 20px; una cáscara en `rounded-xl` (32px en esta
-  // escala, NO los 12px de Tailwind) al lado de un modal de la primitiva se nota.
+  // Casi todo modal pasa ya por la primitiva (02-10-2026). Las cáscaras que
+  // quedan con `createPortal` + una capa `fixed inset-0` (zonas de otros
+  // equipos) tienen que usar el radio del modal, 24px; una en `rounded-xl`
+  // (32px en esta escala, NO los 12px de Tailwind) al lado de un modal de la
+  // primitiva se nota.
   //
   // El barrido se limita a ESOS archivos a propósito: las tarjetas y paneles
   // van en `rounded-lg` (22px, DESIGN.md §4), que es otra regla.
@@ -196,8 +196,8 @@ describe('las cáscaras de modal escritas a mano usan el mismo radio', () => {
     return f.includes('createPortal') && f.includes('inset-0')
   })
 
-  it('encuentra las cáscaras a mano', () => {
-    expect(cascarasAMano.length).toBeGreaterThanOrEqual(5)
+  it('encuentra las cáscaras a mano (portales con capa a pantalla completa)', () => {
+    expect(cascarasAMano.length).toBeGreaterThanOrEqual(1)
   })
 
   it('ninguna quedó en rounded-xl', () => {
@@ -210,6 +210,6 @@ describe('las cáscaras de modal escritas a mano usan el mismo radio', () => {
         if (esContenedorDeModal) infractoras.push(`${rel(ruta)} → ${linea.trim().slice(0, 90)}`)
       }
     }
-    expect(infractoras, 'Usar rounded-[20px], como la primitiva.').toEqual([])
+    expect(infractoras, 'Usar rounded-[24px], como la primitiva (o mejor: usar la primitiva).').toEqual([])
   })
 })

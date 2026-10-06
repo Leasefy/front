@@ -63,7 +63,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Buildings,
   CurrencyDollar,
@@ -74,11 +74,12 @@ import {
   UserCircle,
   Users,
 } from '@phosphor-icons/react';
-import { KpiCard, Eyebrow } from '@leasefy/cadence';
+import { KpiCard, Eyebrow, Presence } from '@leasefy/cadence';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { PermissionGate } from '@/components/auth/PermissionGate';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { useAlVolverLaConexion } from '@/lib/inquilinos/al-volver-la-conexion';
 import { KpiValor } from '@/components/estado/KpiValor';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { Button } from '@/components/ui/button';
@@ -89,6 +90,12 @@ import {
   InquilinosTable,
   RUTA_DEL_CONTRATO_MANUAL,
 } from '@/components/inmobiliaria/InquilinosTable';
+import {
+  esElPortafolio,
+  ordenarInquilinos,
+  totalesDelPortafolio,
+  type OrdenDeInquilinos,
+} from '@/lib/inquilinos/lista';
 import { InquilinoDrawer } from '@/components/inmobiliaria/InquilinoDrawer';
 import { InvitacionesPendientes } from '@/components/inmobiliaria/InvitacionesPendientes';
 import { NuevoInquilinoDrawer } from '@/components/inmobiliaria/NuevoInquilinoDrawer';
@@ -100,8 +107,8 @@ import { vacioPorMigracion } from '@/components/migracion/muro-reglas';
 import { useI18n } from '@/lib/i18n';
 import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
 import { useInquilinos } from '@/lib/hooks/use-inquilinos';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import {
-  arriendosVigentes,
   type FiltroDeEstado,
   type Inquilino,
 } from '@/lib/api/inquilinos.service';
@@ -171,7 +178,7 @@ export default function InquilinosPage() {
    * ese servicio esté caído.
    */
   return (
-    <PageGuard module="contratos">
+    <PageGuard module="contratos" seccion="Inquilinos">
       <ContenidoDeInquilinos />
     </PageGuard>
   );
@@ -194,6 +201,7 @@ function ContenidoDeInquilinos() {
    * «todos» para que se vea por qué la lista es más larga que de costumbre.
    */
   const searchParams = useSearchParams();
+  const router = useRouter();
   const personaBuscada = searchParams.get('persona');
 
   const [buscar, setBuscar] = useState('');
@@ -202,8 +210,34 @@ function ContenidoDeInquilinos() {
   );
   const [abierto, setAbierto] = useState<Inquilino | null>(null);
   const [creando, setCreando] = useState(false);
+  /** E-16: la persona cuyos datos se están corrigiendo (sobre su ficha abierta). */
+  const [editando, setEditando] = useState<Inquilino | null>(null);
+  /** Sube al guardar sus datos: la ficha abierta vuelve a pedir su detalle. */
+  const [versionDeLaFicha, setVersionDeLaFicha] = useState(0);
+  /** I-23: sube al crear a alguien, y el aviso de invitaciones se vuelve a leer. */
+  const [versionDeInvitaciones, setVersionDeInvitaciones] = useState(0);
+  /**
+   * I-01 / I-11: el orden vive ACÁ, no en la tabla. La tabla recibía sólo las
+   * 10 filas de la página y ordenaba ésas: «A→Z» iba de Ana a Sebastián en la
+   * página 1 y volvía a empezar en Carlos en la 2. Se ordena la lista ENTERA y
+   * después se pagina (R-36: filtrar, ordenar y DESPUÉS paginar).
+   */
+  const [orden, setOrden] = useState<OrdenDeInquilinos>({ campo: 'nombre', sentido: 'asc' });
 
-  const { inquilinos, cargando, error, refrescar, conteos } = useInquilinos({ buscar, estado });
+  const {
+    inquilinos,
+    consulta,
+    cargando,
+    error,
+    refrescar,
+    conteos,
+    portafolio,
+    cargandoPortafolio,
+    errorPortafolio,
+  } = useInquilinos({ buscar, estado }, { portafolio: true });
+  // XE-01: «apenas vuelva la red los traemos» — al volver la conexión, la
+  // lista (y los números) que fallaron se piden otra vez, solos.
+  useAlVolverLaConexion(refrescar, Boolean(error || errorPortafolio));
 
   /*
    * Se abre UNA vez por id. Sin esta marca, cada refresco de la lista —el que
@@ -218,7 +252,16 @@ function ContenidoDeInquilinos() {
     if (personaYaAbierta.current === personaBuscada) return;
     personaYaAbierta.current = personaBuscada;
 
-    const encontrada = inquilinos.find((i) => i.tenantId === personaBuscada);
+    /*
+     * QA-FACT-CONTA-95 r2 (decisión de Nico «la a»): «Completar en el inquilino»
+     * desde Facturación llega con `doc:<documento>` (la fila sólo sabe el
+     * documento del contrato). Si esa persona tiene cuenta por OTRO contrato, la
+     * lista la trae con el id de la cuenta: se encuentra también por documento.
+     */
+    const porDocumento = personaBuscada.startsWith('doc:') ? personaBuscada.slice(4).trim() : null;
+    const encontrada =
+      inquilinos.find((i) => i.tenantId === personaBuscada) ??
+      (porDocumento ? inquilinos.find((i) => (i.documento ?? '').trim() === porDocumento) : undefined);
     if (encontrada) {
       setAbierto(encontrada);
       setPersonaNoEncontrada(false);
@@ -236,7 +279,59 @@ function ContenidoDeInquilinos() {
    * y la búsqueda que estén puestos. Insertarla en el cliente la mostraría
    * aunque la búsqueda activa no la incluya.
    */
-  const alCrear = useCallback(() => refrescar(), [refrescar]);
+  const alCrear = useCallback(() => {
+    refrescar();
+    setVersionDeInvitaciones((n) => n + 1);
+  }, [refrescar]);
+
+  /*
+   * E-16: sus datos quedaron corregidos. Se refrescan la lista y la ficha; la
+   * ficha abierta pasa a la persona que devolvió el back (si cambió el
+   * documento de alguien sin cuenta, cambia también su identidad).
+   */
+  const alEditar = useCallback(
+    (actualizada: Inquilino) => {
+      refrescar();
+      setVersionDeInvitaciones((n) => n + 1);
+      setAbierto((actual) => (actual ? { ...actual, ...actualizada } : actual));
+      setVersionDeLaFicha((n) => n + 1);
+    },
+    [refrescar],
+  );
+
+  /*
+   * I-20: «Nuevo inquilino» chocó con alguien que ya está (409, documento o
+   * correo repetido). El enlace bajo el campo trae a esa persona: se busca por
+   * la llave que chocó, en «todos» (puede tener el arriendo terminado), y
+   * apenas aparece se abre su ficha.
+   */
+  const [porAbrir, setPorAbrir] = useState<{ llave: string; tenantId?: string } | null>(null);
+  const verExistente = useCallback((existente: { llave: string; tenantId?: string }) => {
+    setCreando(false);
+    setBuscar(existente.llave);
+    setEstado('todos');
+    setPorAbrir(existente);
+  }, []);
+  useEffect(() => {
+    if (!porAbrir || cargando || error) return;
+    // Sólo con las filas de ESA búsqueda: las de antes todavía están mientras
+    // corre la espera del buscador.
+    if (consulta !== `todos|${porAbrir.llave.trim()}`) return;
+    const llave = porAbrir.llave.trim().toLowerCase();
+    const encontrada =
+      inquilinos.find((i) => porAbrir.tenantId !== undefined && i.tenantId === porAbrir.tenantId) ??
+      inquilinos.find(
+        (i) => i.documento?.toLowerCase() === llave || i.email?.toLowerCase() === llave,
+      ) ??
+      (inquilinos.length === 1 ? inquilinos[0] : undefined);
+    if (encontrada) setAbierto(encontrada);
+    setPorAbrir(null);
+  }, [porAbrir, cargando, error, inquilinos, consulta]);
+
+  const ordenados = useMemo(
+    () => ordenarInquilinos(inquilinos, orden.campo, orden.sentido),
+    [inquilinos, orden],
+  );
 
   /*
    * Paginación en el cliente: la lista viene entera del back (una fila por
@@ -245,19 +340,11 @@ function ContenidoDeInquilinos() {
    * página 3 deja la tabla en blanco.
    */
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(inquilinos, {
+    useTablePagination(ordenados, {
       initialPageSize: 10,
-      resetKey: `${buscar}|${estado}`,
+      // I-11: cambiar el orden también vuelve a la página 1.
+      resetKey: `${buscar}|${estado}|${orden.campo}|${orden.sentido}`,
     });
-
-  const totales = useMemo(() => {
-    const vigentes = inquilinos.flatMap(arriendosVigentes);
-    return {
-      personas: inquilinos.length,
-      vigentes: vigentes.length,
-      canon: vigentes.reduce((suma, a) => suma + a.canonCop, 0),
-    };
-  }, [inquilinos]);
 
   const hayFiltros = buscar.trim().length > 0 || estado !== 'activos';
 
@@ -278,20 +365,34 @@ function ContenidoDeInquilinos() {
   const copyDeMigracion = useCopyDeMigracionEnLista();
   const vacioPorLaMigracion = !hayFiltros && vacioPorMigracion(deuda);
   const copy = deuda && vacioPorLaMigracion ? copyDeMigracion(deuda) : null;
+  /*
+   * QA-INQ-95 (V-03): sin `contratos:create` (contador, viewer) el vacío no
+   * ofrece «Migrar contratos» —la migración pide ese permiso y rebota— ni le
+   * dice «trae los tuyos o carga uno»: le dice cuándo aparecen.
+   */
+  const permisos = usePermissionsContextSafe();
+  const puedeCargar = permisos ? permisos.canAccess('contratos', 'create') : true;
 
   /*
-   * 🔴 Los tiles salen de la MISMA carga que la tabla de abajo, así que dicen
-   * lo mismo que ella: mientras carga, un hueco; si falló, «—» con «No se pudo
-   * traer». Antes, con el back caído, la tabla decía «no se pudo cargar» y un
-   * renglón arriba los tiles afirmaban «0 inquilinos · $0» — un cero es un
+   * 🔴 Los tiles son del PORTAFOLIO (I-07, QA-INQ 03-10): «activos» sin
+   * búsqueda. Sin filtros, ésa ES la lista de abajo (misma carga); con un
+   * filtro puesto, salen de su propia lectura, con su carga y su error. Antes
+   * salían de la lista filtrada y una búsqueda los dejaba en «0 · $ 0».
+   * Mientras carga, un hueco; si falló, «—» con «No se pudo traer». Antes, con
+   * el back caído, los tiles afirmaban «0 inquilinos · $0» — un cero es un
    * dato, y nadie lo verificó.
    *
    * `KpiCard` tipa `value` como string pero lo pinta como hijo: el nodo se ve
    * igual que el texto (mismo arreglo que Pipeline).
    */
+  const deLaLista = esElPortafolio({ buscar, estado });
+  const totales = deLaLista ? totalesDelPortafolio(inquilinos) : portafolio;
   const valorDeTile = (valor: string) =>
     (
-      <KpiValor cargando={cargando} fallo={error}>
+      <KpiValor
+        cargando={deLaLista ? cargando : cargandoPortafolio}
+        fallo={deLaLista ? error : errorPortafolio}
+      >
         {valor}
       </KpiValor>
     ) as unknown as string;
@@ -318,51 +419,54 @@ function ContenidoDeInquilinos() {
       {/* El clic que llegó de otra pantalla y no encontró a nadie. Se cuenta,
           no se traga: es la diferencia entre «la app no anda» y «esa persona no
           está acá». */}
-      {personaNoEncontrada && (
-        <div
-          data-testid="persona-no-encontrada"
-          className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4"
-        >
-          <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" aria-hidden="true" />
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-fg">
-              No encontramos a esa persona en el directorio
-            </p>
-            <p className="mt-0.5 text-sm text-fg-muted">
-              Puede que no sea inquilino de tu inmobiliaria o que su cuenta esté
-              registrada con otro correo. Abajo está la lista completa.
-            </p>
-          </div>
+      <Presence
+        show={Boolean(personaNoEncontrada)}
+        data-testid="persona-no-encontrada"
+        className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4"
+      >
+        <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" aria-hidden="true" />
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-fg">
+            No encontramos a esa persona en el directorio
+          </p>
+          <p className="mt-0.5 text-sm text-fg-muted">
+            Puede que no sea inquilino de tu inmobiliaria o que su cuenta esté
+            registrada con otro correo. Abajo está la lista completa.
+          </p>
         </div>
-      )}
+      </Presence>
 
       {/* Una cuenta creada no es una persona adentro. Este aviso es lo único
           que separa «tiene portal» de «tiene cuenta y no puede entrar»: sin él,
           la lista de abajo los muestra igual que a todos. Se pinta solo cuando
           hay pendientes. */}
-      <InvitacionesPendientes />
+      <InvitacionesPendientes version={versionDeInvitaciones} />
 
       {/* Los tres números miden lo VIGENTE, no lo histórico: un canon que suma
           contratos terminados no es plata que entra este mes. */}
       <div className="grid gap-4 sm:grid-cols-3">
         <KpiCard
           label={t('inquilinos.kpi.personas')}
-          value={valorDeTile(String(totales.personas))}
+          value={valorDeTile(String(totales?.personas ?? ''))}
           icon={<Users />}
         />
         <KpiCard
           label={t('inquilinos.kpi.arriendosVigentes')}
-          value={valorDeTile(String(totales.vigentes))}
+          value={valorDeTile(String(totales?.vigentes ?? ''))}
           icon={<Buildings />}
         />
         <KpiCard
           label={t('inquilinos.kpi.canonVigente')}
-          value={valorDeTile(formatCurrency(totales.canon))}
+          value={valorDeTile(totales ? formatCurrency(totales.canon) : '')}
           icon={<CurrencyDollar />}
         />
       </div>
 
+      {/* QA-INQ-95 (E-18 / XE-03): la lista es el dato PRINCIPAL: si el servidor
+          la niega (403), `PageGuard` cambia la pantalla entera por el cartel y no
+          quedan «Nuevo inquilino» ni «Crear un contrato» vivos. Un 500 no apaga nada. */}
       <EstadoDeDatos
+        principal
         cargando={cargando}
         error={error}
         queEs={t('inquilinos.queEs')}
@@ -394,7 +498,10 @@ function ContenidoDeInquilinos() {
               queSon={t('inquilinos.queSon')}
               icono={UserCircle}
               titulo={copy?.titulo}
-              descripcion={copy?.detalle ?? t('inquilinos.vacioDescripcion')}
+              descripcion={
+                copy?.detalle ??
+                t(puedeCargar ? 'inquilinos.vacioDescripcion' : 'inquilinos.vacioDescripcionSinPermiso')
+              }
               onLimpiarFiltros={
                 hayFiltros
                   ? () => {
@@ -428,12 +535,14 @@ function ContenidoDeInquilinos() {
               accion={
                 hayFiltros ? undefined : (
                   <div className="flex flex-wrap items-center justify-center gap-2">
-                    <Button asChild hideArrow>
-                      <Link href={RUTA_DE_LA_MIGRACION}>
-                        <UploadSimple className="mr-1.5 h-4 w-4" />
-                        {copy?.accion ?? t('inquilinos.vacioContrato')}
-                      </Link>
-                    </Button>
+                    <PermissionGate module="contratos" action="create" fallback={null}>
+                      <Button asChild hideArrow>
+                        <Link href={RUTA_DE_LA_MIGRACION}>
+                          <UploadSimple className="mr-1.5 h-4 w-4" />
+                          {copy?.accion ?? t('inquilinos.vacioContrato')}
+                        </Link>
+                      </Button>
+                    </PermissionGate>
                     <CrearContratoBoton />
                     <NuevoInquilinoBoton onAbrir={() => setCreando(true)} />
                   </div>
@@ -442,7 +551,12 @@ function ContenidoDeInquilinos() {
             />
           ) : (
             <>
-              <InquilinosTable inquilinos={pageItems} onAbrir={setAbierto} />
+              <InquilinosTable
+                inquilinos={pageItems}
+                onAbrir={setAbierto}
+                orden={orden}
+                onOrdenar={setOrden}
+              />
               {/* El pie se monta SIEMPRE que haya filas, aunque sean menos
                   que una página: con una sola dice «Mostrando 1–3 de 3» y deja
                   elegir cuántas ver, que es lo que hace que una tabla se lea
@@ -464,11 +578,34 @@ function ContenidoDeInquilinos() {
         </div>
       </EstadoDeDatos>
 
-      <InquilinoDrawer persona={abierto} onCerrar={() => setAbierto(null)} />
+      <InquilinoDrawer
+        persona={abierto}
+        onCerrar={() => {
+          setAbierto(null);
+          /* QA-INQ-95 (L-07): cerrada la ficha que pidió `?persona=`, el enlace
+             deja de pedirla: recargar o volver atrás no la reabre. */
+          if (personaBuscada) {
+            const sin = new URLSearchParams(searchParams.toString());
+            sin.delete('persona');
+            const cola = sin.toString();
+            router.replace(`${window.location.pathname}${cola ? `?${cola}` : ''}`, { scroll: false });
+          }
+        }}
+        onEditar={setEditando}
+        version={versionDeLaFicha}
+      />
       <NuevoInquilinoDrawer
         abierto={creando}
         onOpenChange={setCreando}
         onCreado={alCrear}
+        onVerExistente={verExistente}
+      />
+      {/* E-16: el MISMO formulario, con sus datos. */}
+      <NuevoInquilinoDrawer
+        abierto={editando !== null}
+        onOpenChange={(sigue) => !sigue && setEditando(null)}
+        onCreado={alEditar}
+        editando={editando}
       />
     </div>
   );

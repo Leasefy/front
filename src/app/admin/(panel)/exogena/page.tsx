@@ -30,7 +30,7 @@ import { useCallback, useState } from 'react'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
-import { ApiError } from '@/lib/admin/api'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { fmtCOP, fmtDateTime } from '@/lib/admin/format'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import {
@@ -119,7 +119,7 @@ export default function ExogenaAdminPage() {
       })
       refetch()
     } catch (err) {
-      setAccionError(err instanceof ApiError ? err.message : 'No se pudo guardar el año.')
+      setAccionError(mensajeDelAdmin(err, { accion: 'guardar el año', porDefecto: 'No se pudo guardar el año.' }))
     } finally {
       setGuardando(false)
     }
@@ -134,7 +134,7 @@ export default function ExogenaAdminPage() {
       setSemilla({ anio, r })
       refetch()
     } catch (err) {
-      setAccionError(err instanceof ApiError ? err.message : 'No se pudo sembrar el preset.')
+      setAccionError(mensajeDelAdmin(err, { accion: 'sembrar el preset', porDefecto: 'No se pudo sembrar el preset.' }))
     } finally {
       setOcupado(null)
     }
@@ -148,7 +148,7 @@ export default function ExogenaAdminPage() {
       setConfirmando(null)
       refetch()
     } catch (err) {
-      setAccionError(err instanceof ApiError ? err.message : 'No se pudo cambiar la publicación.')
+      setAccionError(mensajeDelAdmin(err, { accion: 'cambiar la publicación', porDefecto: 'No se pudo cambiar la publicación.' }))
     } finally {
       setOcupado(null)
     }
@@ -166,7 +166,7 @@ export default function ExogenaAdminPage() {
       <div className="card p-4 border-l-4 border-l-warn mb-6" data-testid="aviso-del-preset">
         <p className="text-sm text-fg">
           El preset del código es una <strong>sugerencia de uso corriente, no la resolución</strong>.
-          Confirmalo contra la resolución del año antes de publicar: un concepto equivocado no se ve
+          Confírmalo contra la resolución del año antes de publicar: un concepto equivocado no se ve
           — pasa el prevalidador y llega mal a la DIAN. Un año sin publicar no lo hereda nadie.
         </p>
       </div>

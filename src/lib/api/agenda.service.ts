@@ -2,6 +2,8 @@ import { apiClient } from './client';
 import type { AgendaListResponse,
   CrearTareaInput,
   ActualizarTareaInput,
+  MiembroDelEquipo,
+  VistaDeAgenda,
 } from './agenda.types';
 import { EVENTOS_POR_PAGINA, RESUMEN_AGENDA_VACIO } from './agenda.types';
 import { ApiError } from './client';
@@ -17,6 +19,10 @@ export interface CreateCitaInput {
   contactEmail?: string;
   contactPhone?: string;
   notes?: string;
+  /** AG-06: quien atiende la visita (ninguna nace sin asesor). */
+  asesorUserId?: string;
+  /** PL-25: el interesado del embudo al que se liga. */
+  pipelineItemId?: string;
 }
 
 /**
@@ -45,6 +51,13 @@ export interface PaginaDeAgendaPedida {
   pageSize?: number;
   /** Sólo los eventos de este inmueble. Lo filtra la BASE, no esta pantalla. */
   propertyId?: string;
+  /** AG-02: próximas, vencidas o hechas. */
+  vista?: VistaDeAgenda;
+  /** AG-04: sólo lo mío. */
+  mias?: boolean;
+  /** AG-04: la semana que se mira (días AAAA-MM-DD). */
+  desde?: string;
+  hasta?: string;
 }
 
 export const agendaApi = {
@@ -60,8 +73,14 @@ export const agendaApi = {
       const deUnInmueble = pedido.propertyId
         ? `&propertyId=${encodeURIComponent(pedido.propertyId)}`
         : '';
+      const extra = [
+        pedido.vista ? `&vista=${pedido.vista}` : '',
+        pedido.mias ? '&mias=true' : '',
+        pedido.desde ? `&desde=${pedido.desde}` : '',
+        pedido.hasta ? `&hasta=${pedido.hasta}` : '',
+      ].join('');
       return await apiClient.get<AgendaListResponse>(
-        `/inmobiliaria/agenda?page=${page}&pageSize=${pageSize}${deUnInmueble}`,
+        `/inmobiliaria/agenda?page=${page}&pageSize=${pageSize}${deUnInmueble}${extra}`,
       );
     } catch (err) {
       // Sin contexto de agencia (404) la agenda vacía ES la verdad.
@@ -124,9 +143,44 @@ export const agendaApi = {
     );
   },
 
-  /** PATCH — confirm a visit. */
-  async aceptarCita(visitId: string): Promise<void> {
-    await apiClient.patch(`/inmobiliaria/agenda/citas/${visitId}/aceptar`, {});
+  /** PATCH — confirmar una visita; AG-06: con el asesor que la atiende. */
+  async aceptarCita(visitId: string, asesorUserId?: string): Promise<void> {
+    await apiClient.patch(
+      `/inmobiliaria/agenda/citas/${visitId}/aceptar`,
+      asesorUserId ? { asesorUserId } : {},
+    );
+  },
+
+  /** AG-06: la visita se hizo (su interesado pasa a «Visita hecha»). */
+  async marcarHecha(visitId: string): Promise<void> {
+    await apiClient.patch(`/inmobiliaria/agenda/citas/${visitId}/hecha`, {});
+  },
+
+  /** AG-06: otra fecha y hora (misma persona, asesor e interesado). */
+  async reprogramar(
+    visitId: string,
+    input: { fecha: string; horaInicio: string; horaFin?: string; motivo?: string },
+  ): Promise<void> {
+    await apiClient.patch(`/inmobiliaria/agenda/citas/${visitId}/reprogramar`, input);
+  },
+
+  /** AG-06: asignar el asesor que atiende la visita. */
+  async asignarAsesor(visitId: string, asesorUserId: string): Promise<void> {
+    await apiClient.post(`/inmobiliaria/visitas/${visitId}/asesor`, { asesorUserId });
+  },
+
+  /** AG-09/AG-04: el equipo activo, con nombre y rol. */
+  async equipo(): Promise<MiembroDelEquipo[]> {
+    return apiClient.get<MiembroDelEquipo[]>('/inmobiliaria/agenda/equipo');
+  },
+
+  /** PL-21: los avisos publicados que no reciben visitas (sin horario). */
+  async avisosSinHorario(): Promise<{
+    publicados: number;
+    sinHorario: number;
+    inmuebles: { id: string; titulo: string; codigo: number | null }[];
+  }> {
+    return apiClient.get('/inmobiliaria/agenda/avisos-sin-horario');
   },
 
   /** PATCH — reject a visit (optional reason). */

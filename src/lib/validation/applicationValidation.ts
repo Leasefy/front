@@ -122,7 +122,7 @@ export function validatePersonalStep(data: Partial<PersonalInfo>): ValidationRes
     errors.documentNumber = 'Numero de documento requerido';
   } else if (data.documentType && !isValidDocument(data.documentNumber, data.documentType)) {
     if (data.documentType === 'cc') {
-      errors.documentNumber = 'Cedula debe tener entre 6 y 10 digitos';
+      errors.documentNumber = 'La cédula debe tener entre 6 y 10 dígitos';
     } else {
       errors.documentNumber = 'Formato de documento invalido';
     }
@@ -293,7 +293,7 @@ export function validateReviewStep(acceptTerms: boolean, authorizeVerification: 
   const errors: Record<string, string> = {};
 
   if (!acceptTerms) {
-    errors.acceptTerms = 'Debes aceptar los terminos y condiciones';
+    errors.acceptTerms = 'Debes aceptar los términos y condiciones';
   }
 
   if (!authorizeVerification) {
@@ -332,7 +332,7 @@ export function validateStep(
     case 5:
       return terms
         ? validateReviewStep(terms.acceptTerms, terms.authorizeVerification)
-        : { isValid: false, errors: { general: 'Faltan terminos' } };
+        : { isValid: false, errors: { general: 'Faltan los términos' } };
     default:
       return { isValid: true, errors: {} };
   }

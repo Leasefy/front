@@ -26,6 +26,7 @@ import type { OverrideFields } from '@/components/inmobiliaria/cotizador/Carrier
 import { Button } from '@/components/ui/button'
 import { SectionLabel } from '@/components/ui/section-label'
 import { toast } from '@/components/ui/toast'
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 // =============================================================================
 // Page
@@ -49,12 +50,24 @@ export default function AseguradorasPage() {
 
   // El toast de la casa (sonner por el envoltorio), no un <div fixed> propio
   // que se pintaba abajo a la derecha con otra cara y otro tiempo.
+  //
+  // 02-10-2026 · Antes pintaba `err.message`, que era el status crudo del micro
+  // («403», «500»), y el respaldo culpaba a la conexión. Ahora va por el
+  // traductor: un 400 dice qué dato está mal, un 403 que no tienes permiso, un
+  // 5xx que falló de nuestro lado (con la referencia) y SÓLO un pedido que no
+  // salió habla de la conexión.
   const avisarFallo = useCallback(
-    (err: unknown) => {
+    (err: unknown, accion: string) => {
+      // El 403 del micro no trae un `message` para una persona (sólo
+      // `error: 'Forbidden — …'`, en inglés): se dice el permiso.
+      const sinPermiso = leerFallo(err).tipo === 'sinPermiso'
       toast.error(
-        err instanceof Error
-          ? err.message
-          : t('inmobiliaria.ai.cotizador.aseguradoras.popover.saveError'),
+        mensajeParaLaPersona(err, {
+          porDefecto: sinPermiso
+            ? 'No tienes permiso para cambiar las aseguradoras de tu inmobiliaria. Pídeselo a quien administra tu cuenta.'
+            : t('inmobiliaria.ai.cotizador.aseguradoras.popover.saveError'),
+          accion,
+        }),
       )
     },
     [t],
@@ -111,7 +124,7 @@ export default function AseguradorasPage() {
       } catch (err) {
         // Revert on error
         setLocalOverrides(snapshot)
-        avisarFallo(err)
+        avisarFallo(err, 'guardar el ajuste de la aseguradora')
       }
     },
     [localOverrides, saveOverride, avisarFallo],
@@ -128,7 +141,7 @@ export default function AseguradorasPage() {
         await resetOverride(name, route)
       } catch (err) {
         setLocalOverrides(snapshot)
-        avisarFallo(err)
+        avisarFallo(err, 'restablecer la aseguradora a la configuración global')
       }
     },
     [localOverrides, resetOverride, avisarFallo],

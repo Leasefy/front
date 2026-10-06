@@ -16,9 +16,18 @@
  *
  * Va DENTRO del tile existente (en su prop `value`), para no rehacer los
  * tiles de cada pantalla: cada una ya tiene su propio diseño.
+ *
+ * Movimiento (sistema de Cadence): cuando el valor llega DESPUÉS de cargar
+ * (o de fallar), entra con un fundido y, si es un número, cuenta desde 0 con
+ * `AnimatedNumber` (`reveal`, 500 ms); si después cambia, cuenta desde el
+ * anterior. Lo que ya estaba al montarse no se anima. El texto final es el
+ * mismo que antes (sin separador de miles agregado). Con movimiento reducido
+ * salta al valor.
  */
 
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
+import { motion } from 'framer-motion'
+import { AnimatedNumber, enterTransition, usePrefersReducedMotion } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
 
 export interface KpiValorProps {
@@ -31,7 +40,22 @@ export interface KpiValorProps {
 
 export const KPI_SIN_DATO = '—'
 
+/** Escribe un paso del conteo con los mismos decimales que el valor final. */
+function formatoComoElValor(valor: number): (n: number) => string {
+  const decimales = Math.min((String(valor).split('.')[1] ?? '').length, 6)
+  return (n) => n.toFixed(decimales)
+}
+
 export function KpiValor({ cargando, fallo, children, className }: KpiValorProps) {
+  const reducido = usePrefersReducedMotion()
+  const estado = cargando ? 'cargando' : fallo ? 'fallo' : 'ok'
+  const primerEstado = useRef(estado)
+  const yaCambio = useRef(false)
+  if (estado !== primerEstado.current) yaCambio.current = true
+  const entra = yaCambio.current
+    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: enterTransition(reducido) }
+    : { initial: false as const }
+
   if (cargando) {
     return (
       <span
@@ -45,7 +69,9 @@ export function KpiValor({ cargando, fallo, children, className }: KpiValorProps
   }
   if (fallo) {
     return (
-      <span
+      <motion.span
+        key="fallo"
+        {...entra}
         className={cn('text-fg-subtle', className)}
         data-testid="kpi-valor"
         data-estado="fallo"
@@ -53,12 +79,21 @@ export function KpiValor({ cargando, fallo, children, className }: KpiValorProps
       >
         <span aria-hidden="true">{KPI_SIN_DATO}</span>
         <span className="sr-only">No se pudo traer este dato</span>
-      </span>
+      </motion.span>
     )
   }
+  const esCifra = typeof children === 'number' && Number.isFinite(children)
   return (
-    <span className={className} data-testid="kpi-valor" data-estado="ok">
-      {children}
-    </span>
+    <motion.span key="ok" {...entra} className={className} data-testid="kpi-valor" data-estado="ok">
+      {esCifra ? (
+        <AnimatedNumber
+          value={children}
+          from={yaCambio.current ? 0 : undefined}
+          format={formatoComoElValor(children)}
+        />
+      ) : (
+        children
+      )}
+    </motion.span>
   )
 }

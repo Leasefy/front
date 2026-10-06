@@ -25,6 +25,7 @@
  * una persona que la iban a avisar, sin nada detrás.
  */
 
+import { retrasoEscalonado } from '../lib/retraso-escalonado';
 import { Globe, FileArrowUp, ArrowSquareOut, Info, LinkSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -100,7 +101,7 @@ export function StepPortalImport({ updateState }: ImportStepProps) {
           <div
             key={portal.id}
             className="animate-stagger-in rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg p-5 flex flex-col gap-3"
-            style={{ animationDelay: `${index * 80}ms` }}
+            style={{ animationDelay: retrasoEscalonado(index) }}
           >
             <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center', portal.color)}>
               <Globe className="w-5 h-5 text-white" aria-hidden="true" />

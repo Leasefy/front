@@ -109,3 +109,143 @@ export function getChatFeedback(
     ...(opts.signal ? { signal: opts.signal } : {}),
   })
 }
+
+// ── Preguntas al chat (micro de agentes) ─────────────────────────────────────
+//
+// Decisión de Nico (04-10-2026): Leasefy ve las preguntas completas que le hacen
+// al chat, con su inmobiliaria, SIN el correo de quién preguntó y con los
+// números largos enmascarados, + sugerencias. La pantalla
+// (`/admin/chat-preguntas`) NO está en el menú hasta que se apruebe la cláusula.
+
+export type TemaDelChat =
+  | 'contratos'
+  | 'inquilinos'
+  | 'propietarios'
+  | 'inmuebles'
+  | 'cobros'
+  | 'pagos'
+  | 'cartera'
+  | 'renovaciones'
+  | 'mantenimientos'
+  | 'facturas'
+  | 'giros'
+  | 'visitas'
+  | 'prospectos'
+  | 'pqrs'
+  | 'canon'
+  | 'otros'
+
+export interface TurnoDelChat {
+  turnoId: string
+  agencyId: string
+  inmobiliaria: string | null
+  fecha: string
+  /** Ya enmascarada por el micro. */
+  pregunta: string
+  respuesta: string | null
+  sinRespuesta: boolean
+  falla: { motivo: 'sin_creditos' | 'error' } | null
+  especialistas: string[]
+  fuentes: string[]
+  reformulada: boolean
+  corregida: boolean
+  abandonada: boolean
+  pulgar: 'arriba' | 'abajo' | null
+  comentario: string | null
+  cifraContradicha: boolean
+  metricasContradichas: string[]
+  propusoAccion: boolean
+  pideAccion: boolean
+  ms: number | null
+  modelo: string | null
+  camino: string | null
+  rol: string | null
+  tokensEntrada: number | null
+  tokensSalida: number | null
+  costoUsd: number | null
+  temas: TemaDelChat[]
+}
+
+export interface SugerenciaDelChat {
+  id: string
+  tipo: 'sin_respuesta' | 'reformulacion' | 'abandono' | 'cifra' | 'pulgar_abajo' | 'accion' | 'lento' | 'falla' | 'costo'
+  severidad: 'alta' | 'media'
+  hallazgo: string
+  accion: string
+  conteo: number
+  total: number
+  tema: TemaDelChat | null
+  ejemplos: TurnoDelChat[]
+}
+
+export interface SemanaDeInmobiliariaDelChat {
+  semana: string
+  agencyId: string
+  inmobiliaria: string | null
+  preguntas: number
+  sinRespuesta: number
+  porcentajeSinRespuesta: number | null
+  reformulaciones: number
+  abandonos: number
+  fallas: number
+  pulgarAbajo: number
+  costoUsd: number
+  temas: Array<{ tema: TemaDelChat; nombre: string; preguntas: number }>
+}
+
+export interface ChatPreguntasResponse {
+  ventana: { desde: string; hasta: string; truncado: boolean }
+  totales: {
+    preguntas: number
+    inmobiliarias: number
+    sinRespuesta: number
+    porcentajeSinRespuesta: number | null
+    reformulaciones: number
+    abandonos: number
+    fallas: number
+    pulgarAbajo: number
+    cifrasContradichas: number
+    costoUsd: number
+    turnosConCosto: number
+  }
+  filas: TurnoDelChat[]
+  total: number
+  pagina: number
+  limite: number
+  resumen: SemanaDeInmobiliariaDelChat[]
+  temas: Array<{ tema: TemaDelChat; nombre: string; preguntas: number }>
+  especialistas: Array<{ nombre: string; veces: number }>
+  fuentes: Array<{ nombre: string; veces: number }>
+  sugerencias: SugerenciaDelChat[]
+  inmobiliarias: Array<{ agencyId: string; nombre: string | null; preguntas: number }>
+  generadoEn: string
+}
+
+export interface FiltrosDePreguntas {
+  agencyId?: string
+  desde?: string
+  hasta?: string
+  sinRespuesta?: boolean
+  pulgarAbajo?: boolean
+  q?: string
+  tema?: string
+  pagina?: number
+  limite?: number
+}
+
+export function getChatPreguntas(f: FiltrosDePreguntas & { signal?: AbortSignal } = {}): Promise<ChatPreguntasResponse> {
+  return agentAdminApi<ChatPreguntasResponse>('/api/admin/ai-hub/chat/preguntas', {
+    query: {
+      agencyId: f.agencyId,
+      desde: f.desde,
+      hasta: f.hasta,
+      sinRespuesta: f.sinRespuesta ? '1' : undefined,
+      pulgarAbajo: f.pulgarAbajo ? '1' : undefined,
+      q: f.q,
+      tema: f.tema,
+      pagina: f.pagina,
+      limite: f.limite ?? 50,
+    },
+    ...(f.signal ? { signal: f.signal } : {}),
+  })
+}

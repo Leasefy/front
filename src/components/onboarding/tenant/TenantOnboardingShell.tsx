@@ -7,7 +7,8 @@ import { getUserHomeRoute } from '@/lib/auth/role-routes'
 import { RUTA_DEL_SELECTOR_DE_PERFIL } from '@/lib/auth/perfil-de-onboarding'
 import { sanitizeReturnUrl } from '@/lib/utils'
 import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
-import { motion, AnimatePresence } from 'framer-motion'
+import { CrossFade } from '@leasefy/cadence'
+import { useDireccionDelPaso } from '@/components/onboarding/wizard/use-direccion-del-paso'
 import { ArrowLeft, ArrowRight, Clock, Eye, Lightning, SealCheck, Shield, ShieldCheck } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { useTenantOnboarding, TENANT_ONBOARDING_STEPS } from '@/lib/context/TenantOnboardingContext'
@@ -89,6 +90,8 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
   } = useTenantOnboarding()
 
   const isFirstStep = currentStep === 1
+  // «Continuar» trae el paso nuevo por la derecha; «Atrás», por la izquierda.
+  const direccion = useDireccionDelPaso(String(currentStep), currentStep)
   const isLastStep = currentStep === totalSteps
   // Cap step index to valid range (in case localStorage has old step 4)
   const safeStepIndex = Math.min(currentStep - 1, STEP_WHY_CONTENT.es.length - 1)
@@ -262,17 +265,17 @@ export function TenantOnboardingShell({ children }: TenantOnboardingShellProps) 
       {/* Form Content */}
       <div className="px-5 pb-7 sm:px-8 sm:pb-8">
         <IntentoDeAvanzarContext.Provider value={intentos}>
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            >
+          {/*
+            El paso nuevo entra por la derecha al avanzar y por la izquierda al
+            volver (`CrossFade` de pasos). `popLayout`: monta YA, junto con el
+            título (que recibe el foco); el viejo se va por encima, acelerando.
+            Antes era `mode="wait"`: el título cambiaba y el cuerpo esperaba.
+          */}
+          <div className="relative">
+            <CrossFade swapKey={currentStep} direction={direccion} mode="popLayout">
               {children}
-            </motion.div>
-          </AnimatePresence>
+            </CrossFade>
+          </div>
         </IntentoDeAvanzarContext.Provider>
       </div>
 

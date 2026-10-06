@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Envelope, X, FileText, House, Users, Buildings, Chat, Clock, Heart, Compass, Warning } from '@phosphor-icons/react';
-import { SegmentedControl } from '@leasefy/cadence';
+import { AnimatePresence, motion } from 'framer-motion';
+import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Minus, X, House, Clock, Heart, Compass, Receipt, Lifebuoy, Handshake } from '@phosphor-icons/react';
+import { SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth';
 import { getUserHomeRoute } from '@/lib/auth/role-routes';
@@ -15,6 +16,8 @@ import { getPlanById, PLANS, agencyPlanToDisplayPlan } from '@/lib/constants/sub
 import { useMySubscription, useAgencyPlans } from '@/lib/hooks/useSubscription';
 import { useAgencySubscription } from '@/lib/hooks/useAgencySubscription';
 import { Spinner } from '@/components/ui/spinner';
+import { Button } from '@/components/ui/button';
+import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
 import { formatDate } from '@/lib/format';
 import { useLandlordNotifications, useTenantNotifications } from '@/lib/hooks/useNotifications';
 import { useArcoAlerts } from '@/lib/hooks/cobranza/use-arco-alerts';
@@ -25,21 +28,29 @@ import { FeedbackCta } from '@/components/feedback/FeedbackCta';
 import { AvatarSubscriptionIndicator } from './SubscriptionBadge';
 import { openPlanMobileSidebar } from './PlanSidebar';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { puedeVerLaSuscripcion } from '@/lib/auth/quien-ve-la-suscripcion';
 import { usePanelPrefsSafe } from '@/lib/context/PanelPrefsContext';
 import type { TenantSubscriptionTextT } from '@/lib/context/TenantProfileContext';
-import { TEAM_ROLES, AGENTE_TEAM_ENTRY, type TeamRole } from '@/lib/types/team';
-import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service';
 import { useAgencyUsers } from '@/lib/hooks/useInmobiliaria';
+import { InvitarAlEquipo } from '@/components/inmobiliaria/invitar-al-equipo/InvitarAlEquipo';
+import { useMovimiento } from '@/components/inmobiliaria/invitar-al-equipo/movimiento';
 import { toast } from '@/components/ui/toast';
+import { CampanaDeLaInmobiliaria } from '@/components/notificaciones/CampanaDeLaInmobiliaria';
+import { etiquetaDeCategoria, iconoDelAviso } from '@/lib/notificaciones/aviso';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+// 🔴🔴 BU-11 (04-10-2026): el buscador del portal del inquilino busca en LO
+// SUYO (cuotas, recibos, contrato, solicitudes, acuerdos); el mock de
+// `lib/constants/search-data.ts` —pagos, inmuebles y personas inventadas— se borró.
 import {
-  searchData,
-  groupSearchResults,
-  getCategoryLabel,
-  getRecentSearches,
-  getQuickLinks,
-  type SearchCategory,
-  type SearchResult,
-} from '@/lib/constants/search-data';
+  accesosRapidos,
+  buscarEnElPortal,
+  NOMBRE_DE_CATEGORIA,
+  ORDEN_DE_CATEGORIAS,
+  type CategoriaDelPortal,
+  type ResultadoDelPortal,
+} from '@/lib/search/portal-inquilino/buscador-del-inquilino';
+import { useBuscadorDelInquilino } from '@/lib/search/portal-inquilino/use-buscador-del-inquilino';
+import { guardarReciente, leerRecientes } from '@/lib/search/portal-inquilino/busquedas-recientes';
 import {
   DropdownList,
   DropdownListContent,
@@ -53,6 +64,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+
+import { useEsPropietarioDeInmobiliaria } from '@/lib/context/PropietarioDeInmobiliariaContext';
 
 export interface PlanHeaderProps {
   title?: string;
@@ -74,9 +87,9 @@ export interface PlanHeaderProps {
 // Get category label for notification popover
 function getNotifCategoryLabel(category: string, isLandlord: boolean): string {
   if (isLandlord) {
-    return LANDLORD_CATEGORIES[category as LandlordNotificationCategory]?.label ?? category;
+    return LANDLORD_CATEGORIES[category as LandlordNotificationCategory]?.label ?? etiquetaDeCategoria(category);
   }
-  return TENANT_CATEGORIES[category as TenantNotificationCategory]?.label ?? category;
+  return TENANT_CATEGORIES[category as TenantNotificationCategory]?.label ?? etiquetaDeCategoria(category);
 }
 
 export function PlanHeader({
@@ -105,22 +118,12 @@ export function PlanHeader({
   // Mobile (<sm) search pattern: the inline input is hidden and replaced by an
   // icon button that toggles an absolute full-width search row under the header.
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [recientes, setRecientes] = useState<string[]>([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [subscriptionOpen, setSubscriptionOpen] = useState(false);
-  const [teamInviteOpen, setTeamInviteOpen] = useState(false);
+  const [equipoAbierto, setEquipoAbierto] = useState(false);
   const [activeTab, setNotifTab] = useState<'all' | 'unread'>('all');
-  const [inviteName, setInviteName] = useState('');
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteEmailError, setInviteEmailError] = useState('');
-  const [inviteRole, setInviteRole] = useState<TeamRole>('viewer');
-  const [inviteSent, setInviteSent] = useState(false);
-  // true when the member row was created but the invitation email failed to send.
-  const [inviteEmailUndelivered, setInviteEmailUndelivered] = useState(false);
-  const [inviteLoading, setInviteLoading] = useState(false);
-
-  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const mobileSearchBtnRef = useRef<HTMLButtonElement>(null);
@@ -133,8 +136,19 @@ export function PlanHeader({
 
   // In the inmobiliaria context, only admins can invite members or upgrade the plan.
   // Outside inmobiliaria (landlord/tenant), always show these actions.
+  // Propietario de una inmobiliaria: no tiene plan propio que mejorar.
+  const sinPlanPropio = useEsPropietarioDeInmobiliaria();
   const permsCtx = usePermissionsContextSafe();
   const canShowAdminActions = !isInmobiliaria || (permsCtx?.isAdmin ?? false);
+
+  // «Invitar a tu equipo» (02-10-2026) — sólo en el panel de la inmobiliaria:
+  // en el del propietario el botón invitaba a una agencia que no existe.
+  // Ver el equipo pide `configuracion:view` (lo exige `GET /agency/members`);
+  // invitar, ser ADMINISTRADOR (el back corta a cualquier otro rol con 403).
+  const puedeInvitarAlEquipo = isInmobiliaria && (permsCtx?.isAdmin ?? false);
+  const puedeVerElEquipo =
+    isInmobiliaria && (puedeInvitarAlEquipo || (permsCtx?.canAccess('configuracion', 'view') ?? false));
+  const movimiento = useMovimiento();
 
   // Phase 38 plan 38-06 (D-38-07) — PanelPrefsContext is only mounted under
   // /panel/inmobiliaria/*, so this header (rendered across multiple layouts)
@@ -165,8 +179,14 @@ export function PlanHeader({
 
   const handleNotificationClick = (notification: BaseNotification) => {
     if (!notification.read) {
-      activeNotifs.markAsRead(notification.id).catch(() => {
-        toast.error(t('header.notificationActionError'));
+      activeNotifs.markAsRead(notification.id).catch((err: unknown) => {
+        // Por el traductor (regla de oro), no un texto fijo para todo.
+        toast.error(
+          mensajeParaLaPersona(err, {
+            porDefecto: t('header.notificationActionError'),
+            accion: 'marcar la notificación como leída',
+          }),
+        );
       });
     }
     setNotificationsOpen(false);
@@ -190,7 +210,11 @@ export function PlanHeader({
     error: agencyError,
     refetch: agencySubscriptionRefetch,
     state: agencySubscriptionState,
-  } = useAgencySubscription(isInmobiliaria);
+  } = useAgencySubscription(
+    // COBRANZA-MANUAL (04-10-2026): sólo quien la puede ver (el auxiliar de
+    // cartera y el abogado recibían un 403 en la consola al entrar).
+    isInmobiliaria && !!permsCtx && !permsCtx.isLoading && puedeVerLaSuscripcion(permsCtx),
+  );
   // The LIVE agency plan catalog — an admin-created tier (contrato 29, e.g.
   // "pro-plus") only exists here, never in the static AGENCY_PLANS array.
   // Same source `upgrade/page.tsx` and `ConfigFacturacion.tsx` resolve
@@ -256,23 +280,36 @@ export function PlanHeader({
   // Tier helpers — false when error to avoid asserting a tier we didn't load.
   const isBaseTier = !effectiveSubError && planId === 'starter';
   const isTopTier = !effectiveSubError && planId === 'flex';
-  // Real agency roster (GET /inmobiliaria/agency/members) — matches the endpoint
-  // the invite form below posts to. Only fetched in the inmobiliaria context;
-  // `skip` avoids a wasted/failing call for landlord/tenant headers.
-  const { users: teamMembers, refetch: refetchTeam } = useAgencyUsers(isInmobiliaria);
+  // El equipo (GET /inmobiliaria/agency/members) para el modal «Invitar a tu
+  // equipo» y el contador de invitaciones pendientes. Sólo se pide si quien
+  // mira puede verlo: antes se pedía para todo el que entraba al panel y a un
+  // asesor le devolvía 403 en cada página.
+  const {
+    users: teamMembers,
+    isLoading: teamLoading,
+    errorCrudo: teamError,
+    refetch: refetchTeam,
+  } = useAgencyUsers(puedeVerElEquipo);
   const pendingInvites = teamMembers.filter((m) => m.status === 'invited');
 
-  // MagnifyingGlass functionality
+  // 🔴🔴 BU-11: el buscador sólo existe donde hay algo REAL que buscar — el
+  // portal del inquilino. En el panel del propietario independiente buscaba en
+  // candidatos y pagos inventados: ahí no se pinta (decidido con la recomendada).
+  const conBuscador = showMagnifyingGlass && !isLandlord;
+  const buscador = useBuscadorDelInquilino(conBuscador && (searchFocused || mobileSearchOpen));
+  const consultaLista = searchQuery.trim().length >= 2;
+  const searchResults: ResultadoDelPortal[] =
+    consultaLista && buscador.indice ? buscarEnElPortal(buscador.indice, searchQuery) : [];
+
+  // Reset keyboard navigation whenever the query changes.
   useEffect(() => {
-    if (searchQuery.length >= 2) {
-      const results = searchData(searchQuery, isLandlord);
-      setSearchResults(results);
-    } else {
-      setSearchResults([]);
-    }
-    // Reset keyboard navigation whenever the query / result set changes.
     setActiveIndex(-1);
-  }, [searchQuery, isLandlord]);
+  }, [searchQuery]);
+
+  // Las recientes son de quien busca, en este navegador (se leen al abrir).
+  useEffect(() => {
+    if (conBuscador && searchFocused) setRecientes(leerRecientes(user?.id ?? user?.email ?? null));
+  }, [conBuscador, searchFocused, user?.id, user?.email]);
 
   // Close search on click outside (the mobile toggle button is excluded so it
   // can toggle the row without the outside-click handler racing it closed).
@@ -305,25 +342,32 @@ export function PlanHeader({
     onMagnifyingGlass?.(value);
   };
 
-  const handleMagnifyingGlassSelect = (result: SearchResult) => {
+  const handleMagnifyingGlassSelect = (result: ResultadoDelPortal) => {
+    if (consultaLista) setRecientes(guardarReciente(user?.id ?? user?.email ?? null, searchQuery));
     setMagnifyingGlassQuery('');
     setMagnifyingGlassFocused(false);
     setMobileSearchOpen(false);
+    // Si el resultado es la página en la que ya está, el campo seguía con el
+    // foco y un clic no lo volvía a abrir.
+    searchInputRef.current?.blur();
     router.push(result.href);
   };
 
-  const groupedResults = groupSearchResults(searchResults, isLandlord);
-  const recentSearches = getRecentSearches(isLandlord);
-  const quickLinks = getQuickLinks(isLandlord);
+  const groupedResults: Partial<Record<CategoriaDelPortal, ResultadoDelPortal[]>> = {};
+  for (const categoria of ORDEN_DE_CATEGORIAS) {
+    const deEsta = searchResults.filter((r) => r.categoria === categoria);
+    if (deEsta.length > 0) groupedResults[categoria] = deEsta;
+  }
+  const recentSearches = recientes;
+  const quickLinks = accesosRapidos();
 
   // Flatten the navigable items in render order so ArrowUp/ArrowDown index math
   // matches what the listbox shows. When the query is < 2 chars we show quick
   // links; otherwise we show the grouped results (recent searches are not
   // included here because they re-fill the query rather than navigate).
-  const flatResults: SearchResult[] =
-    searchQuery.length >= 2
-      ? Object.values(groupedResults).flat()
-      : quickLinks;
+  const flatResults: ResultadoDelPortal[] = consultaLista
+    ? ORDEN_DE_CATEGORIAS.flatMap((c) => groupedResults[c] ?? [])
+    : quickLinks;
   const activeOptionId =
     activeIndex >= 0 && flatResults[activeIndex]
       ? `plan-search-opt-${flatResults[activeIndex].id}`
@@ -351,19 +395,18 @@ export function PlanHeader({
     }
   };
 
-  const getCategoryIcon = (category: SearchCategory) => {
-    const icons: Record<SearchCategory, React.ReactNode> = {
-      property: <Buildings className="w-4 h-4" />,
-      candidate: <Users className="w-4 h-4" />,
-      contract: <FileText className="w-4 h-4" />,
-      lease: <House className="w-4 h-4" />,
-      payment: <CreditCard className="w-4 h-4" />,
-      application: <FileText className="w-4 h-4" />,
-      document: <FileText className="w-4 h-4" />,
-      message: <Chat className="w-4 h-4" />,
+  const getCategoryIcon = (category: CategoriaDelPortal) => {
+    const icons: Record<CategoriaDelPortal, React.ReactNode> = {
+      pago: <CreditCard className="w-4 h-4" />,
+      recibo: <Receipt className="w-4 h-4" />,
+      contrato: <House className="w-4 h-4" />,
+      solicitud: <Lifebuoy className="w-4 h-4" />,
+      acuerdo: <Handshake className="w-4 h-4" />,
+      pagina: <Compass className="w-4 h-4" />,
     };
     return icons[category];
   };
+  const getCategoryLabel = (category: CategoriaDelPortal) => NOMBRE_DE_CATEGORIA[category];
 
   const handleLogout = async () => {
     try {
@@ -392,7 +435,7 @@ export function PlanHeader({
             pushes the right-side cluster off-screen. */}
         {leftSlot && <div className="min-w-0 flex-1 truncate">{leftSlot}</div>}
 
-        {showMagnifyingGlass && (
+        {conBuscador && (
           <div
             ref={searchRef}
             className={cn(
@@ -416,16 +459,13 @@ export function PlanHeader({
               aria-controls="plan-search-listbox"
               aria-autocomplete="list"
               aria-activedescendant={activeOptionId}
-              aria-label={isLandlord
-                ? (locale === 'es' ? "Buscar propiedades, candidatos..." : "Search properties, candidates...")
-                : t('header.search')}
+              aria-label={locale === 'es' ? 'Busca tus pagos, recibos y solicitudes' : 'Search your payments, receipts and requests'}
               value={searchQuery}
               onChange={handleMagnifyingGlass}
               onFocus={() => setMagnifyingGlassFocused(true)}
+              onClick={() => setMagnifyingGlassFocused(true)}
               onKeyDown={handleSearchKeyDown}
-              placeholder={isLandlord
-                ? (locale === 'es' ? "Buscar propiedades, candidatos..." : "Search properties, candidates...")
-                : t('header.search')}
+              placeholder={locale === 'es' ? 'Busca tus pagos, recibos, solicitudes…' : 'Search your payments, receipts, requests…'}
               className={cn(
                 'w-full h-10 pl-10 pr-4',
                 'bg-surface-muted border border-border rounded-full',
@@ -442,7 +482,7 @@ export function PlanHeader({
                 id="plan-search-listbox"
                 role="listbox"
                 className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border shadow-lg rounded-lg max-h-[min(400px,60dvh)] overflow-y-auto overscroll-contain z-50 overflow-hidden">
-                {searchQuery.length >= 2 ? (
+                {consultaLista ? (
                   // Show search results
                   searchResults.length > 0 ? (
                     <div>
@@ -450,7 +490,7 @@ export function PlanHeader({
                         <div key={category}>
                           <div className="px-4 py-2.5 bg-surface-muted border-b border-border-faint">
                             <p className="text-[11px] font-medium text-fg-muted uppercase tracking-wider">
-                              {getCategoryLabel(category as SearchCategory)}
+                              {getCategoryLabel(category as CategoriaDelPortal)}
                             </p>
                           </div>
                           {items.map((result) => {
@@ -470,14 +510,14 @@ export function PlanHeader({
                               )}
                             >
                               <div className="w-9 h-9 bg-surface-muted rounded-full flex items-center justify-center text-fg-muted">
-                                {getCategoryIcon(result.category)}
+                                {getCategoryIcon(result.categoria)}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-[13px] font-medium text-fg truncate">
-                                  {result.title}
+                                  {result.titulo}
                                 </p>
                                 <p className="text-[11px] text-fg-muted truncate">
-                                  {result.subtitle}
+                                  {result.detalle}
                                 </p>
                               </div>
                             </button>
@@ -485,6 +525,12 @@ export function PlanHeader({
                           })}
                         </div>
                       ))}
+                    </div>
+                  ) : buscador.cargando || !buscador.indice ? (
+                    <div className="px-4 py-10 text-center" role="status">
+                      <p className="text-[13px] text-fg-muted">
+                        {locale === 'es' ? 'Buscando en lo tuyo…' : 'Searching your things…'}
+                      </p>
                     </div>
                   ) : (
                     // No results
@@ -498,6 +544,13 @@ export function PlanHeader({
                       <p className="text-[12px] text-fg-subtle mt-1">
                         {locale === 'es' ? `No encontramos "${searchQuery}"` : `We couldn't find "${searchQuery}"`}
                       </p>
+                      {buscador.incompleto && (
+                        <p className="text-[12px] text-fg-subtle mt-1">
+                          {locale === 'es'
+                            ? 'Parte de tu información no se pudo leer: puede que esté y no salga. Vuelve a intentarlo en un momento.'
+                            : 'Part of your information could not be read. Try again in a moment.'}
+                        </p>
+                      )}
                     </div>
                   )
                 ) : (
@@ -526,14 +579,14 @@ export function PlanHeader({
                         )}
                       >
                         <div className="w-9 h-9 bg-surface-muted rounded-full flex items-center justify-center text-fg-muted">
-                          {getCategoryIcon(link.category)}
+                          {getCategoryIcon(link.categoria)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-[13px] font-medium text-fg">
-                            {link.title}
+                            {link.titulo}
                           </p>
                           <p className="text-[11px] text-fg-muted">
-                            {link.subtitle}
+                            {link.detalle}
                           </p>
                         </div>
                       </button>
@@ -571,7 +624,7 @@ export function PlanHeader({
         {/* Right: Actions */}
         <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
           {/* Mobile search toggle — replaces the inline input below sm */}
-          {showMagnifyingGlass && (
+          {conBuscador && (
             <button
               ref={mobileSearchBtnRef}
               type="button"
@@ -613,7 +666,7 @@ export function PlanHeader({
             <>
 
               {/* Subscription Popover — admin-only in inmobiliaria context */}
-              {canShowAdminActions && <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
+              {canShowAdminActions && !sinPlanPropio && <Popover open={subscriptionOpen} onOpenChange={setSubscriptionOpen}>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
@@ -627,103 +680,127 @@ export function PlanHeader({
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
-                  className="w-[calc(100vw-2rem)] sm:w-[340px] p-0 bg-surface border border-border shadow-lg rounded-lg overflow-hidden"
+                  className="w-[calc(100vw-2rem)] sm:w-[340px] p-0 bg-surface border border-border shadow-md rounded-lg overflow-hidden"
                   align="end"
                   sideOffset={8}
                 >
-                  {/* Header */}
-                  <div className="px-5 py-4 border-b border-border-faint bg-surface-muted">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-[15px] font-semibold text-fg">Tu Suscripción</h3>
-                      <button
-                        onClick={() => setSubscriptionOpen(false)}
-                        aria-label={t('common.close')}
-                        className="text-fg-subtle hover:text-fg-muted transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
+                  {/* «Tu suscripción» (glow up, Nico 03-10: «a este también hay que
+                      hacerle un glow up»). Sin la franja gris de cabecera ni la
+                      loseta clara de la corona (`surface-muted` y `plan-primary` en
+                      oscuro son grises amarillentos sobre el negro): la etiqueta en
+                      mono, la ✕ única de la casa, la loseta en cobalto, lo incluido
+                      en un pozo con sus vistos escalonados y las acciones como
+                      píldoras. Mismos datos, mismas rutas y mismos estados. */}
+                  <div className="flex items-center justify-between gap-3 pl-5 pr-4 pt-4">
+                    <h3 className="font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
+                      Tu suscripción
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setSubscriptionOpen(false)}
+                      aria-label={t('common.close')}
+                      className={cn(ASPA_DE_CIERRE, 'size-8')}
+                    >
+                      <X size={14} weight="bold" aria-hidden />
+                    </button>
                   </div>
 
-                  {/* Current Plan */}
-                  <div className="p-5">
+                  <div className="px-5 pb-5 pt-3">
                     {effectiveSubError ? (
                       /* Honest error state — do not assert a plan name we could not load */
-                      <div className="flex flex-col items-center gap-3 py-2 text-center">
+                      <div className="flex flex-col items-center gap-3 rounded-md border border-dashed border-border px-4 py-5 text-center">
                         <p className="text-[13px] text-fg-muted">
                           No pudimos cargar tu plan
                         </p>
-                        <button
-                          type="button"
-                          onClick={effectiveSubRefetch}
-                          className="text-[12px] font-medium text-[#1A40FF] dark:text-[#5570FF] hover:underline"
-                        >
+                        <Button type="button" variant="secondary" size="sm" onClick={effectiveSubRefetch}>
                           Reintentar
-                        </button>
+                        </Button>
                       </div>
                     ) : isPlanCatalogLoading ? (
                       /* Catalog not resolved yet — never flash a wrong plan name (e.g.
                          "Starter" for a paying agency) while it loads. */
-                      <div className="flex items-center justify-center py-6">
+                      <div className="flex items-center justify-center py-8">
                         <Spinner size="sm" variant="muted" />
                       </div>
                     ) : (
                       <>
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className={cn(
-                            'w-10 h-10 flex items-center justify-center rounded-sm',
-                            isBaseTier ? 'bg-muted' : 'bg-plan-primary'
-                          )}>
+                        {/* El plan */}
+                        <div className="flex items-center gap-3.5">
+                          <div
+                            className={cn(
+                              'flex size-12 shrink-0 items-center justify-center rounded-md',
+                              isBaseTier ? 'border border-border bg-surface text-fg-muted' : 'bg-primary-soft text-primary'
+                            )}
+                          >
                             {isBaseTier ? (
-                              <Lightning className="w-5 h-5 text-plan-secondary" />
+                              <Lightning size={22} weight="duotone" aria-hidden />
                             ) : (
-                              <Crown className="w-5 h-5 text-plan-accent" />
+                              <Crown size={22} weight="duotone" aria-hidden />
                             )}
                           </div>
-                          <div>
-                            <p className="text-[14px] font-semibold text-plan-primary">
+                          <div className="min-w-0">
+                            <p className="truncate text-[17px] font-semibold leading-tight tracking-[-0.01em] text-fg">
                               Plan {currentPlan.name}
                             </p>
-                            <p className="text-[12px] text-plan-secondary">
-                              {isBaseTier
-                                ? 'Funciones limitadas'
-                                : isInmobiliaria
-                                  ? (agencyLivePlan?.pricingModel === 'percentage'
-                                      ? `${agencyLivePlan.canonPercentage ?? 1}% del canon administrado`
-                                      : agencyLivePlan?.pricingModel === 'custom'
-                                        ? 'Precio personalizado'
-                                        : 'Facturación mensual')
-                                  : `Facturación ${subscription?.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
-                              }
+                            <p className="mt-1 text-[13px] leading-snug text-fg-muted">
+                              {isBaseTier ? (
+                                'Funciones limitadas'
+                              ) : isInmobiliaria ? (
+                                agencyLivePlan?.pricingModel === 'percentage' ? (
+                                  <>
+                                    <span className="font-mono tabular-nums text-fg">{agencyLivePlan.canonPercentage ?? 1}%</span>
+                                    {' del canon administrado'}
+                                  </>
+                                ) : agencyLivePlan?.pricingModel === 'custom' ? (
+                                  'Precio personalizado'
+                                ) : (
+                                  'Facturación mensual'
+                                )
+                              ) : (
+                                `Facturación ${subscription?.billingCycle === 'monthly' ? 'mensual' : 'anual'}`
+                              )}
                             </p>
                           </div>
                         </div>
 
-                        {/* Features preview */}
-                        <div className="space-y-2 mb-4">
+                        {/* Lo que incluye: un pozo con los vistos que entran escalonados */}
+                        <Stagger
+                          as="ul"
+                          aria-label="Lo que incluye tu plan"
+                          layout={false}
+                          className="mt-4 space-y-2.5 rounded-md border border-border-faint bg-bg p-3.5"
+                        >
                           {currentPlan.features.slice(0, 4).map((feature) => (
-                            <div key={feature.id} className="flex items-center gap-2">
-                              <div className={cn(
-                                'w-4 h-4 flex items-center justify-center rounded-sm',
-                                feature.included ? 'bg-plan-status-green-bg text-[#2C7A53]' : 'bg-muted text-plan-muted'
-                              )}>
-                                <Check className="w-3 h-3" />
-                              </div>
-                              <span className={cn(
-                                'text-[12px]',
-                                feature.included ? 'text-foreground' : 'text-plan-muted'
-                              )}>
-                                {feature.name}
-                                {feature.limit && feature.limit !== 'unlimited' && ` (${feature.limit})`}
+                            <StaggerItem key={feature.id} as="li" className="flex items-start gap-2.5 text-[13px] leading-snug">
+                              <span
+                                aria-hidden
+                                className={cn(
+                                  'mt-px flex size-[18px] shrink-0 items-center justify-center rounded-full',
+                                  feature.included ? 'bg-success-soft text-success' : 'border border-border text-fg-subtle'
+                                )}
+                              >
+                                {feature.included ? <Check size={11} weight="bold" /> : <Minus size={11} weight="bold" />}
                               </span>
-                            </div>
+                              <span className={feature.included ? 'text-fg' : 'text-fg-subtle'}>
+                                {feature.name}
+                                {feature.limit && feature.limit !== 'unlimited' && (
+                                  <span className="font-mono tabular-nums"> ({feature.limit})</span>
+                                )}
+                              </span>
+                            </StaggerItem>
                           ))}
-                        </div>
+                          {currentPlan.features.length > 4 && (
+                            <StaggerItem key="mas" as="li" className="pl-[28px] text-[12px] text-fg-subtle">
+                              y <span className="font-mono tabular-nums">{currentPlan.features.length - 4}</span> más en tu plan
+                            </StaggerItem>
+                          )}
+                        </Stagger>
 
                         {/* Pending change echo (T-0089) — the fuller "Deshacer" action
                             lives in ConfigFacturacion; this is a one-line heads-up. */}
                         {pendingPlanTier && (
-                          <p className="text-[11px] text-warning mb-3">
+                          <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-2.5 py-1 text-[12px] text-warning">
+                            <Clock size={13} aria-hidden />
                             Cambia a {pendingPlanDisplay?.name ?? pendingPlanTier}
                             {pendingPlanEffectiveAt ? ` el ${formatDate(pendingPlanEffectiveAt)}` : ''}
                           </p>
@@ -731,277 +808,86 @@ export function PlanHeader({
 
                         {/* Upgrade CTA — hide only when already on the top tier */}
                         {!isTopTier && (
-                          <Link
-                            href={upgradePlanHref}
-                            onClick={() => setSubscriptionOpen(false)}
-                            className="block w-full py-2.5 bg-[#1A40FF] hover:opacity-90 text-white text-[12px] font-semibold text-center rounded-lg transition-colors"
-                          >
-                            {isBaseTier ? 'Mejorar Plan' : 'Ver Planes'}
-                          </Link>
+                          <Button asChild className="mt-5 w-full">
+                            <Link href={upgradePlanHref} onClick={() => setSubscriptionOpen(false)}>
+                              {isBaseTier ? 'Mejorar plan' : 'Ver planes'}
+                            </Link>
+                          </Button>
                         )}
                       </>
                     )}
 
                     {/* Manage subscription — always visible */}
-                    <Link
-                      href={manageSubscriptionHref}
-                      onClick={() => setSubscriptionOpen(false)}
-                      className="block mt-3 text-center text-[13px] font-medium text-fg-muted hover:text-fg underline underline-offset-2 decoration-border-strong hover:decoration-fg-muted transition-colors"
+                    <Button
+                      asChild
+                      variant="secondary"
+                      className={cn('w-full', !effectiveSubError && !isPlanCatalogLoading && isTopTier ? 'mt-5' : 'mt-2')}
                     >
-                      Gestionar suscripción
-                    </Link>
+                      <Link href={manageSubscriptionHref} onClick={() => setSubscriptionOpen(false)}>
+                        Gestionar suscripción
+                      </Link>
+                    </Button>
                   </div>
                 </PopoverContent>
               </Popover>}
 
-              {/* Team Invite Popover — admin-only in inmobiliaria context */}
-              {canShowAdminActions && <Popover open={teamInviteOpen} onOpenChange={(open) => {
-                setTeamInviteOpen(open);
-                if (!open) {
-                  setInviteEmail('');
-                  setInviteRole('viewer');
-                  setInviteSent(false);
-                }
-              }}>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label={locale === 'es' ? 'Invitar a tu equipo' : 'Invite your team'}
-                    className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
-                  >
-                    <UserPlus className="w-5 h-5 stroke-[1.5px]" />
-                    {pendingInvites.length > 0 && (
-                      <span className="absolute top-0 right-0 w-4 h-4 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[9px] font-medium flex items-center justify-center rounded-full">
-                        {pendingInvites.length}
-                      </span>
-                    )}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[calc(100vw-2rem)] sm:w-[380px] p-0 bg-surface border border-border shadow-lg rounded-lg overflow-hidden"
-                  align="end"
-                  sideOffset={8}
+              {/*
+                «Invitar a tu equipo» (02-10-2026): ya no es un popover. Abre un
+                modal (`InvitarAlEquipo`) con «Con acceso» e «Invitar» y el
+                enlace personal de cada invitación. Sólo en el panel de la
+                inmobiliaria y para quien puede ver el equipo.
+              */}
+              {puedeVerElEquipo && (
+                <button
+                  type="button"
+                  onClick={() => setEquipoAbierto(true)}
+                  aria-haspopup="dialog"
+                  aria-label={
+                    pendingInvites.length > 0
+                      ? `Invitar a tu equipo (${pendingInvites.length} ${pendingInvites.length === 1 ? 'invitación pendiente' : 'invitaciones pendientes'})`
+                      : 'Invitar a tu equipo'
+                  }
+                  title="Invitar a tu equipo"
+                  className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
                 >
-                  {/* Header */}
-                  <div className="px-5 py-4 border-b border-border-faint bg-surface-muted">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-[15px] font-semibold text-fg">Invitar al Equipo</h3>
-                      <button
-                        onClick={() => setTeamInviteOpen(false)}
-                        aria-label={t('common.close')}
-                        className="text-fg-subtle hover:text-fg-muted transition-colors"
+                  <UserPlus className="w-5 h-5 stroke-[1.5px]" />
+                  {/* El contador salta al aparecer y la cifra nueva llega en
+                      su lugar al invitar o cancelar (`movimiento.ts`). */}
+                  <AnimatePresence initial={false}>
+                    {pendingInvites.length > 0 && (
+                      <motion.span
+                        key="pendientes"
+                        aria-hidden="true"
+                        initial={movimiento.salta.initial}
+                        animate={movimiento.salta.animate}
+                        exit={movimiento.salta.exit}
+                        className="absolute top-0 right-0 w-4 h-4 overflow-hidden bg-primary text-primary-fg font-mono tabular-nums text-[9px] font-medium flex items-center justify-center rounded-full"
                       >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                    <p className="text-[12px] text-fg-muted mt-1">
-                      Colabora con tu equipo en la gestión de propiedades
-                    </p>
-                  </div>
-
-                  <div className="p-5">
-                    {inviteSent ? (
-                      /* Result state — success or partial-success (email not delivered) */
-                      <div className="text-center py-4">
-                        {inviteEmailUndelivered ? (
-                          <>
-                            <div className="w-12 h-12 bg-warning-soft rounded-full flex items-center justify-center mx-auto mb-3">
-                              <Warning className="w-6 h-6 text-warning" />
-                            </div>
-                            <p className="text-[14px] font-medium text-plan-primary">Invitación creada</p>
-                            <p className="text-[12px] text-plan-secondary mt-1">
-                              No pudimos enviar el correo a {inviteEmail}. Usa &quot;Reenviar invitación&quot; o verifica la dirección.
-                            </p>
-                          </>
-                        ) : (
-                          <>
-                            <div className="w-12 h-12 bg-plan-status-green-bg rounded-full flex items-center justify-center mx-auto mb-3">
-                              <Check className="w-6 h-6 text-[#2C7A53]" />
-                            </div>
-                            <p className="text-[14px] font-medium text-plan-primary">Invitación enviada</p>
-                            <p className="text-[12px] text-plan-secondary mt-1">
-                              Se envió un correo a {inviteEmail}
-                            </p>
-                          </>
-                        )}
-                        <button
-                          onClick={() => {
-                            setInviteSent(false);
-                            setInviteEmailUndelivered(false);
-                            setInviteName('');
-                            setInviteEmail('');
-                            setInviteRole('viewer');
-                          }}
-                          className="mt-4 text-[13px] text-plan-secondary hover:text-plan-primary"
+                        <motion.span
+                          key={pendingInvites.length}
+                          initial={movimiento.cambia.initial}
+                          animate={movimiento.cambia.animate}
                         >
-                          Invitar a otra persona
-                        </button>
-                      </div>
-                    ) : (
-                      /* Invite form */
-                      <>
-                        {/* Name input */}
-                        <div className="mb-4">
-                          <label className="block text-[12px] font-medium text-foreground mb-1.5">
-                            Nombre
-                          </label>
-                          <div className="relative">
-                            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
-                            <input
-                              type="text"
-                              value={inviteName}
-                              onChange={(e) => setInviteName(e.target.value)}
-                              placeholder="Nombre del colaborador"
-                              aria-label="Nombre del colaborador"
-                              className="w-full h-10 pl-9 pr-4 bg-muted border border-plan-border rounded-lg text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1 focus:ring-plan-primary"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Email input */}
-                        <div className="mb-4">
-                          <label className="block text-[12px] font-medium text-foreground mb-1.5">
-                            Correo electrónico
-                          </label>
-                          <div className="relative">
-                            <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-plan-muted" />
-                            <input
-                              type="email"
-                              value={inviteEmail}
-                              onChange={(e) => { setInviteEmail(e.target.value); setInviteEmailError(''); }}
-                              onBlur={() => { if (inviteEmail && !isValidEmail(inviteEmail)) setInviteEmailError('Ingresa un correo válido'); }}
-                              placeholder="correo@ejemplo.com"
-                              aria-label="Correo electrónico para invitación"
-                              className={cn(
-                                "w-full h-10 pl-9 pr-4 bg-muted border rounded-lg text-[13px] placeholder:text-plan-muted focus:outline-none focus:ring-1",
-                                inviteEmailError ? 'border-[#C4503B]/30 focus:ring-[#C4503B]' : 'border-plan-border focus:ring-plan-primary'
-                              )}
-                            />
-                          </div>
-                          {inviteEmailError && (
-                            <p className="text-xs text-[#C4503B] mt-1">{inviteEmailError}</p>
-                          )}
-                        </div>
-
-                        {/* Role selector */}
-                        <div className="mb-4">
-                          <label className="block text-[12px] font-medium text-foreground mb-1.5">
-                            Rol
-                          </label>
-                          <div className="space-y-2">
-                            {TEAM_ROLES.map((role) => (
-                              <button
-                                key={role.id}
-                                onClick={() => setInviteRole(role.id)}
-                                className={cn(
-                                  'w-full flex items-start gap-3 p-3 text-left border rounded-lg transition-all',
-                                  inviteRole === role.id
-                                    ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40 bg-[#EEF1FF]/50 dark:bg-[#1A40FF]/20'
-                                    : 'border-border hover:border-border-strong'
-                                )}
-                              >
-                                <div className={cn(
-                                  'w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 transition-colors',
-                                  inviteRole === role.id ? 'border-[#1A40FF]/30 dark:border-[#1A40FF]/40' : 'border-border-strong'
-                                )}>
-                                  {inviteRole === role.id && (
-                                    <div className="w-2 h-2 rounded-full bg-[#1A40FF] dark:bg-[#5570FF]" />
-                                  )}
-                                </div>
-                                <div className="flex-1">
-                                  <p className="text-[13px] font-medium text-plan-primary">{role.name}</p>
-                                  <p className="text-[11px] text-plan-secondary">{role.description}</p>
-                                </div>
-                              </button>
-                            ))}
-
-                            {/* Agente — redirige a /panel/inmobiliaria/configuracion/equipo */}
-                            <button
-                              onClick={() => {
-                                setTeamInviteOpen(false);
-                                router.push(AGENTE_TEAM_ENTRY.redirectTo);
-                              }}
-                              className="w-full flex items-start gap-3 p-3 text-left border rounded-lg transition-all border-border hover:border-border-strong"
-                            >
-                              <div className="w-4 h-4 rounded-full border-2 border-border-strong flex items-center justify-center mt-0.5" />
-                              <div className="flex-1">
-                                <p className="text-[13px] font-medium text-plan-primary">{AGENTE_TEAM_ENTRY.name}</p>
-                                <p className="text-[11px] text-plan-secondary">{AGENTE_TEAM_ENTRY.description}</p>
-                              </div>
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Submit */}
-                        <button
-                          onClick={async () => {
-                            if (!inviteEmail || !isValidEmail(inviteEmail)) return;
-                            setInviteLoading(true);
-                            try {
-                              const result = await inmobiliariaConfigApi.inviteUser({
-                                email: inviteEmail,
-                                name: inviteName.trim(),
-                                role: inviteRole,
-                              });
-                              setInviteEmailUndelivered(result.emailDelivered === false);
-                              setInviteSent(true);
-                              void refetchTeam();
-                            } catch {
-                              toast.error('No se pudo enviar la invitación. Intenta de nuevo.');
-                            } finally {
-                              setInviteLoading(false);
-                            }
-                          }}
-                          disabled={!inviteEmail || !isValidEmail(inviteEmail) || inviteLoading}
-                          className={cn(
-                            'w-full py-2.5 text-[12px] font-semibold text-center rounded-lg transition-colors flex items-center justify-center gap-2',
-                            inviteEmail && isValidEmail(inviteEmail) && !inviteLoading
-                              ? 'bg-[#1A40FF] hover:opacity-90 text-white'
-                              : 'bg-muted text-plan-muted cursor-not-allowed'
-                          )}
-                        >
-                          {inviteLoading ? (
-                            <>
-                              <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                              </svg>
-                              Enviando...
-                            </>
-                          ) : (
-                            'Enviar Invitación'
-                          )}
-                        </button>
-                      </>
+                          {pendingInvites.length}
+                        </motion.span>
+                      </motion.span>
                     )}
-
-                    {/* Current team preview */}
-                    {teamMembers.length > 1 && !inviteSent && (
-                      <div className="mt-4 pt-4 border-t border-border">
-                        <p className="text-[11px] font-normal text-plan-muted font-mono uppercase tracking-wide mb-2">
-                          Equipo actual ({teamMembers.length})
-                        </p>
-                        <div className="flex -space-x-2">
-                          {teamMembers.slice(0, 5).map((member) => (
-                            <div
-                              key={member.id}
-                              className="w-8 h-8 rounded-full bg-muted border-2 border-surface flex items-center justify-center text-[11px] font-medium text-plan-secondary"
-                              title={member.name || member.email}
-                            >
-                              {(member.name || member.email).charAt(0).toUpperCase()}
-                            </div>
-                          ))}
-                          {teamMembers.length > 5 && (
-                            <div className="w-8 h-8 rounded-full bg-[#1A40FF] border-2 border-surface flex items-center justify-center text-[10px] font-medium text-white uppercase tracking-wide font-mono">
-                              +{teamMembers.length - 5}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </PopoverContent>
-              </Popover>}
+                  </AnimatePresence>
+                </button>
+              )}
+              {puedeVerElEquipo && (
+                <InvitarAlEquipo
+                  open={equipoAbierto}
+                  onOpenChange={setEquipoAbierto}
+                  miembros={teamMembers}
+                  cargando={teamLoading ?? false}
+                  error={teamError}
+                  onReintentar={refetchTeam}
+                  onCambio={refetchTeam}
+                  puedeInvitar={puedeInvitarAlEquipo}
+                  correoPropio={user?.email}
+                />
+              )}
             </>
           )}
 
@@ -1063,6 +949,15 @@ export function PlanHeader({
                 onNavigate={() => setNotificationsOpen(false)}
               />
 
+              {/* QA 04-10 (NO-01…NO-08): en el panel de la inmobiliaria, la bandeja
+                  agrupada con el total real, el contenido y «Ver todas» a su página. */}
+              {isInmobiliaria ? (
+                <CampanaDeLaInmobiliaria
+                  onCerrar={() => setNotificationsOpen(false)}
+                  onCambio={() => { void activeNotifs.refetch(); }}
+                />
+              ) : (
+              <>
               {/* Tabs — Cadence SegmentedControl */}
               <div className="px-5 py-3 border-b border-border-faint">
                 <SegmentedControl
@@ -1075,9 +970,9 @@ export function PlanHeader({
                       label: (
                         <span className="inline-flex items-center">
                           {locale === 'es' ? 'Todas' : 'All'}
-                          {notifications.length > 0 && (
+                          {activeNotifs.total > 0 && (
                             <span className="ml-1.5 px-1.5 py-0.5 bg-[#1A40FF] text-white uppercase tracking-wide font-mono text-[10px] rounded-full">
-                              {notifications.length}
+                              {activeNotifs.total}
                             </span>
                           )}
                         </span>
@@ -1138,7 +1033,11 @@ export function PlanHeader({
                       )}
                       onClick={() => handleNotificationClick(notification)}
                     >
-                      {notification.title.charAt(0).toUpperCase()}
+                      {(() => {
+                        // NO-03 (QA 04-10): el ícono del tipo, no la primera letra.
+                        const Icono = iconoDelAviso(notification.type, notification.category, (notification as { metadata?: unknown }).metadata);
+                        return <Icono className="w-[18px] h-[18px]" weight={notification.read ? 'regular' : 'fill'} aria-hidden="true" />;
+                      })()}
                     </div>
 
                     {/* Content */}
@@ -1166,18 +1065,26 @@ export function PlanHeader({
 
                     {/* Actions */}
                     <div className="flex-shrink-0 flex items-center">
-                      {!notification.read ? (
+                      {/* «Eliminar» en todas, leídas o no (QA 04-10). */}
+                      {!notification.read && (
                         <div className="w-2 h-2 rounded-full bg-plan-status-blue" />
-                      ) : (
+                      )}
+                      {(
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            activeNotifs.deleteNotification(notification.id).catch(() => {
-                              toast.error(t('header.notificationActionError'));
+                            activeNotifs.deleteNotification(notification.id).catch((err: unknown) => {
+                              toast.error(
+                                mensajeParaLaPersona(err, {
+                                  porDefecto: t('header.notificationActionError'),
+                                  accion: 'borrar la notificación',
+                                }),
+                              );
                             });
                           }}
-                          className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-sm text-fg-subtle hover:text-danger hover:bg-danger-soft transition-all"
+                          className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded-sm text-fg-subtle hover:text-danger hover:bg-danger-soft transition-[opacity,color,background-color] duration-fast"
                           title="Eliminar"
+                          aria-label="Eliminar la notificación"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
@@ -1202,6 +1109,8 @@ export function PlanHeader({
                   {t('header.viewAll')}
                 </button>
               </div>
+              </>
+              )}
             </PopoverContent>
           </Popover>
 
@@ -1212,10 +1121,8 @@ export function PlanHeader({
                 // Anclaje del recorrido guiado del panel (`TourDelPanel`): acá
                 // viven perfil, configuración y el enlace que vuelve a lanzarlo.
                 data-tour-target="perfil"
-                // A 390 px sólo el avatar: el sello del plan y la flecha se
-                // van a partir de `sm`. Con ellos el encabezado medía 447 px y
-                // la página entera scrolleaba de lado (24-09). El plan sigue a
-                // un toque, en el rayo de «Tu suscripción».
+                // A 390 px sólo el avatar: la flecha se va a partir de `sm`.
+                // El plan sigue a un toque, en el rayo de «Tu suscripción».
                 className="flex items-center gap-2 py-1.5 pl-1.5 pr-1.5 sm:pr-2.5 rounded-lg bg-surface-muted hover:bg-border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 {/* Avatar */}
@@ -1224,24 +1131,16 @@ export function PlanHeader({
                     {user?.name?.charAt(0).toUpperCase() || 'U'}
                   </span>
                 </div>
-                {/* Subscription badge */}
-                {isLandlord ? (
-                  <span className="hidden sm:inline-flex">
-                    <AvatarSubscriptionIndicator
-                      variant="landlord"
-                      planId={planId}
-                      agencyPlan={
-                        isInmobiliaria && agencyLivePlan
-                          ? {
-                              name: agencyLivePlan.name,
-                              isDefault: agencyLivePlan.isDefault ?? false,
-                              level: agencyLivePlan.level ?? null,
-                            }
-                          : undefined
-                      }
-                    />
-                  </span>
-                ) : tenantSubscription ? (
+                {/*
+                  🔴 02-10-2026 (Nico): «¿qué es eso de la corona y porcentaje?
+                  Quítalo, porque por ahora no usamos nada de eso». Junto al
+                  avatar del propietario y de la inmobiliaria iba el sello del
+                  plan de la suscripción: con el plan «Porcentaje» del catálogo
+                  (slug `flex`, cobro por uso, `level: null`) salía una corona
+                  dorada. Sólo deja de mostrarse: el plan, su cobro y el rayo de
+                  «Tu suscripción» siguen igual. El «Pass» del inquilino se queda.
+                */}
+                {!isLandlord && tenantSubscription ? (
                   <span className="hidden sm:inline-flex">
                     <AvatarSubscriptionIndicator
                       variant="tenant"
@@ -1313,7 +1212,7 @@ export function PlanHeader({
                   </DropdownListItem>
                 </>
               )}
-              {isLandlord && (
+              {isLandlord && !sinPlanPropio && (
                 <DropdownListItem asChild>
                   <Link
                     href={upgradePlanHref}

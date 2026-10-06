@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { contractsApi } from '@/lib/api/contracts.service';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { motivoDelFalloDelContrato } from '@/lib/contratos/errores-del-contrato';
 import { describirEstadoDeSello } from '@/lib/contratos/estado-del-sello';
 import type { DocumentoFirmado } from '@/lib/types/contract';
 
@@ -44,7 +44,12 @@ export function SealStatusBadge({
       toast.success('Reintentando el sello del documento.');
       onReintentado?.();
     } catch (err) {
-      toast.error('No se pudo reintentar el sello.', { description: mensajeDelFallo(err, '') });
+      toast.error('No se pudo reintentar el sello.', {
+        description: motivoDelFalloDelContrato(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'reintentar el sello',
+        }),
+      });
     } finally {
       setIsRetrying(false);
     }

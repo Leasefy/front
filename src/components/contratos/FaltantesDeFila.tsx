@@ -8,7 +8,8 @@
  * que no existe no se parece en nada a corregir un correo mal escrito.
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Presence } from "@leasefy/cadence";
 import { Buildings, Envelope, User, Warning } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import {
   contractsApi,
   type FilaDeMigracion,
 } from "@/lib/api/contracts.service";
+import { SIN_TIPO, TIPOS_DE_INMUEBLE_FALTANTE } from "@/lib/contratos/tipos-de-inmueble-faltante";
 import { propietariosApi } from "@/lib/api/inmobiliaria.service";
 import { formatCurrency } from "@/lib/format";
 import {
@@ -33,8 +35,79 @@ import {
 } from "./SelectorDeInmueble";
 import type { Propietario } from "@/lib/types/inmobiliaria";
 import { documentoParaMostrar } from "@/lib/propietarios/datos-por-completar";
+import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
+import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
+import {
+  errorDeLaComision,
+  errorDelCanon,
+  errorDelDiaDePago,
+  erroresDeLasFechas,
+} from "@/components/migracion/limites-de-la-migracion";
+import { usePlataConCentavos } from "@/lib/plata/use-plata-con-centavos";
+
+/**
+ * Los campos de esta fila que tienen dónde pintar su error, con el nombre que
+ * usa el back (`ResolverFilaDto`, `RegistrarPropietarioDto`,
+ * `CrearInmuebleDeFilaDto`). Un error de otro campo (el `propertyId` de un
+ * botón, un correo del propietario que no se ve acá) va al aviso de la fila.
+ */
+const CAMPOS_CON_LUGAR = [
+  "inquilinoCorreo",
+  "inquilinoNombre",
+  "inquilinoDocumento",
+  "monthlyRent",
+  "startDate",
+  "endDate",
+  "paymentDay",
+  "usoInmueble",
+  "nombre",
+  "documento",
+  "comisionPorcentaje",
+  "address",
+  "city",
+  // El tipo del inmueble que se crea desde la fila (QA-MIG-A, MG-34).
+  "tipo",
+] as const;
+
+/** El `id` del control de un campo de la fila (y `${id}-error`, el de su error). */
+export function idDelCampo(filaId: string, campo: string): string {
+  return `faltante-${filaId}-${campo}`;
+}
+
+/** Lo que el back dijo de cada campo en el último guardado de la fila. */
+type ErroresPorCampo = Partial<Record<string, string>>;
 
 /** El nombre humano de cada faltante, y por qué importa. */
+/**
+ * La explicación de un faltante mirando lo que la fila TRAE, no sólo el
+ * código. «fechas» y «canon» los da el back igual cuando el dato está mal y
+ * cuando no vino: decir «la de fin no es posterior a la de inicio» a una fila
+ * sin fecha de fin, o «el canon está en cero» a un «2.1M» que no se pudo leer,
+ * manda a buscar el error donde no está (QA-MIG-A, MG-25).
+ */
+export function explicacionDe(
+  fila: { datos?: unknown },
+  faltante: string,
+): { titulo: string; porque: string } | undefined {
+  const datos = (fila.datos ?? {}) as { startDate?: unknown; endDate?: unknown; monthlyRent?: unknown }
+  const vacio = (v: unknown) => v === undefined || v === null || String(v).trim() === ''
+  if (faltante === 'fechas') {
+    const sinInicio = vacio(datos.startDate)
+    const sinFin = vacio(datos.endDate)
+    const porque = 'El archivo no la trae o no se pudo leer como fecha (día/mes/año). Escríbela acá.'
+    if (sinInicio && sinFin) return { titulo: 'Faltan las fechas del contrato', porque: 'El archivo no las trae o no se pudieron leer como fecha (día/mes/año). Escríbelas acá.' }
+    if (sinInicio) return { titulo: 'Falta la fecha de inicio', porque }
+    if (sinFin) return { titulo: 'Falta la fecha de terminación', porque }
+  }
+  if (faltante === 'canon' && vacio(datos.monthlyRent)) {
+    return {
+      titulo: 'Falta el canon',
+      porque: 'El archivo no lo trae o no se pudo leer como pesos (por ejemplo «2.1M»). Escríbelo acá.',
+    }
+  }
+  return EXPLICACION[faltante]
+}
+
 export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
   inmueble: {
     titulo: "No encontramos el inmueble",
@@ -73,10 +146,15 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
     porque:
       "Los cobros se generan desde la consignación: sin ella no habrá cartera.",
   },
+  /*
+   * El back frena con `inquilino_correo` cuando la fila no trae NI documento NI
+   * correo: el documento basta para identificarlo (Nico, 09-09). Pedir sólo
+   * el correo escondía la salida buena (QA-MIG-A, MG-35).
+   */
   inquilino_correo: {
-    titulo: "Falta el correo del inquilino",
+    titulo: "Falta el documento o el correo del inquilino",
     porque:
-      "Sin correo no hay a quién invitar ni cómo distinguirlo de un homónimo.",
+      "Con el documento basta para saber quién es; el correo sirve para invitarlo al portal. Escribe uno de los dos.",
   },
   inquilino_nombre: { titulo: "Falta el nombre del inquilino", porque: "" },
   consecutivo_repetido: {
@@ -197,20 +275,61 @@ interface Props {
 }
 
 export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
+  // «Centavos en todo»: el canon corregido a mano acepta centavos con la llave
+  // de los contratos (`ResolverFilaDto` del back).
+  const contratosConCentavos = usePlataConCentavos('contratos_y_cuotas');
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * Sistema de errores (02-10-2026): un 400 con `campos` se pinta debajo de
+   * SU campo y le da el foco; lo que no tiene campo acá (o un 5xx, o la red)
+   * va al aviso de la fila, con el traductor — nunca el `message` crudo.
+   */
+  const [erroresDelServidor, setErroresDelServidor] = useState<ErroresPorCampo>({});
+  /**
+   * El campo que hay que enfocar cuando termine de guardar: mientras guarda,
+   * algunos controles (el uso) están apagados y un `focus()` no hace nada.
+   */
+  const [porEnfocar, setPorEnfocar] = useState<string | null>(null);
+  useEffect(() => {
+    if (ocupado || !porEnfocar) return;
+    document.getElementById(idDelCampo(fila.id, porEnfocar))?.focus();
+    setPorEnfocar(null);
+  }, [ocupado, porEnfocar, fila.id]);
+  const quitarErrorDe = (campo: string) =>
+    setErroresDelServidor((previos) => {
+      if (!previos[campo]) return previos;
+      const { [campo]: _quitado, ...resto } = previos;
+      void _quitado;
+      return resto;
+    });
 
   async function correr(accion: () => Promise<FilaDeMigracion>) {
     setOcupado(true);
     setError(null);
+    setErroresDelServidor({});
     try {
       onResuelta(await accion());
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo guardar.");
+      const reparto = repartirErroresDelServidor(e, {
+        campos: CAMPOS_CON_LUGAR,
+        porDefecto: "No pudimos guardar el cambio. Prueba de nuevo en un momento.",
+        accion: "guardar el cambio",
+      });
+      setErroresDelServidor(reparto.porCampo);
+      setError(reparto.sueltos.length > 0 ? reparto.sueltos.join(" · ") : null);
+      setPorEnfocar(reparto.orden[0] ?? null);
     } finally {
       setOcupado(false);
     }
   }
+
+  /** Lo que comparten todos los campos: su id, su error del back y cómo borrarlo. */
+  const campo = (nombre: string) => ({
+    id: idDelCampo(fila.id, nombre),
+    mensaje: erroresDelServidor[nombre] ?? null,
+    onEditar: () => quitarErrorDe(nombre),
+  });
 
   return (
     <div className="space-y-3">
@@ -220,11 +339,11 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
         <div key={f} className="rounded-lg border border-border p-3">
           <p className="flex items-center gap-1.5 text-sm font-medium text-foreground">
             <Warning className="h-4 w-4 text-warning" />
-            {EXPLICACION[f]?.titulo ?? f}
+            {explicacionDe(fila, f)?.titulo ?? f}
           </p>
-          {EXPLICACION[f]?.porque ? (
+          {explicacionDe(fila, f)?.porque ? (
             <p className="mt-0.5 text-caption text-muted-foreground">
-              {EXPLICACION[f].porque}
+              {explicacionDe(fila, f)?.porque}
             </p>
           ) : null}
           {celdaDelFaltante(fila, f) ? (
@@ -243,35 +362,63 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
             {f === "inmueble" ||
             f === "inmueble_ambiguo" ||
             f === "inmueble_codigo" ? (
-              <ElegirInmueble fila={fila} ocupado={ocupado} correr={correr} />
+              <ElegirInmueble
+                fila={fila}
+                ocupado={ocupado}
+                correr={correr}
+                campo={campo}
+              />
             ) : null}
             {f === "inmueble_ocupado" ? (
-              <InmuebleOcupado fila={fila} ocupado={ocupado} correr={correr} />
+              <InmuebleOcupado
+                fila={fila}
+                ocupado={ocupado}
+                correr={correr}
+                campo={campo}
+              />
             ) : null}
             {f === "propietario" ? (
               <RegistrarPropietario
                 fila={fila}
                 ocupado={ocupado}
                 correr={correr}
+                campo={campo}
               />
             ) : null}
             {f === "inquilino_correo" ? (
-              <CampoSimple
-                icono={Envelope}
-                etiqueta="Correo del inquilino"
-                tipo="email"
-                ocupado={ocupado}
-                onGuardar={(v) =>
-                  correr(() =>
-                    contractsApi.migracion.resolver(fila.id, {
-                      inquilinoCorreo: v,
-                    }),
-                  )
-                }
-              />
+              <div className="space-y-2">
+                <CampoSimple
+                  {...campo("inquilinoDocumento")}
+                  icono={User}
+                  etiqueta="Documento del inquilino"
+                  ocupado={ocupado}
+                  onGuardar={(v) =>
+                    correr(() =>
+                      contractsApi.migracion.resolver(fila.id, {
+                        inquilinoDocumento: v,
+                      }),
+                    )
+                  }
+                />
+                <CampoSimple
+                  {...campo("inquilinoCorreo")}
+                  icono={Envelope}
+                  etiqueta="Correo del inquilino"
+                  tipo="email"
+                  ocupado={ocupado}
+                  onGuardar={(v) =>
+                    correr(() =>
+                      contractsApi.migracion.resolver(fila.id, {
+                        inquilinoCorreo: v,
+                      }),
+                    )
+                  }
+                />
+              </div>
             ) : null}
             {f === "inquilino_nombre" ? (
               <CampoSimple
+                {...campo("inquilinoNombre")}
                 icono={User}
                 etiqueta="Nombre del inquilino"
                 ocupado={ocupado}
@@ -289,84 +436,107 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
                 fila={fila}
                 ocupado={ocupado}
                 correr={correr}
+                campo={campo}
               />
             ) : null}
             {f === "uso" ? (
-              <Select
-                onValueChange={(v) =>
+              <UsoDelInmueble
+                {...campo("usoInmueble")}
+                ocupado={ocupado}
+                onElegir={(v) =>
                   void correr(() =>
                     contractsApi.migracion.resolver(fila.id, {
-                      usoInmueble: v as "VIVIENDA" | "COMERCIAL",
+                      usoInmueble: v,
                     }),
                   )
                 }
-              >
-                <SelectTrigger className="max-w-xs">
-                  <SelectValue placeholder="Elige el uso" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="VIVIENDA">Vivienda</SelectItem>
-                  <SelectItem value="COMERCIAL">Comercial</SelectItem>
-                </SelectContent>
-              </Select>
+              />
             ) : null}
             {f === "canon" ? (
               <CampoSimple
+                {...campo("monthlyRent")}
                 etiqueta="Canon mensual"
                 tipo="number"
                 ocupado={ocupado}
+                // El mismo tope y la misma frase que `ResolverFilaDto`.
+                validar={(v) => errorDelCanon(v, { conCentavos: contratosConCentavos })}
                 onGuardar={(v) =>
                   correr(() =>
                     contractsApi.migracion.resolver(fila.id, {
-                      monthlyRent: Number(v) || 0,
+                      monthlyRent: Number(v),
                     }),
                   )
                 }
               />
             ) : null}
             {f === "fechas" ? (
-              <Fechas fila={fila} ocupado={ocupado} correr={correr} />
+              <Fechas
+                fila={fila}
+                ocupado={ocupado}
+                correr={correr}
+                campo={campo}
+              />
             ) : null}
             {f === "reparto_del_canon" ? (
               <RepartoEditable fila={fila} ocupado={ocupado} correr={correr} />
             ) : null}
             {f === "dia_de_pago" ? (
               <CampoSimple
+                {...campo("paymentDay")}
                 etiqueta="Día de pago (1-28)"
                 tipo="number"
                 ocupado={ocupado}
-                onGuardar={(v) => {
-                  const dia = Number(v);
-                  if (!Number.isFinite(dia) || dia < 1 || dia > 28) return;
+                // Antes un 30 no hacía nada y no decía por qué.
+                validar={errorDelDiaDePago}
+                onGuardar={(v) =>
                   correr(() =>
                     contractsApi.migracion.resolver(fila.id, {
-                      paymentDay: dia,
+                      paymentDay: Number(v),
                     }),
-                  );
-                }}
+                  )
+                }
               />
             ) : null}
           </div>
         </div>
       ))}
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {/* Lo que no es de un campo de acá: un 409, un 5xx con su referencia,
+          la red. Es el aviso de la fila, no el error de un campo. */}
+      <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-destructive" role="alert" data-testid="error-de-faltantes">
+        {error}
+      </Presence>
     </div>
   );
 }
+
+/** Las props de un campo de la fila: su id, su error del back y cómo borrarlo. */
+type PropsDelCampo = {
+  id: string;
+  mensaje: string | null;
+  onEditar: () => void;
+};
+
+type Correr = (a: () => Promise<FilaDeMigracion>) => Promise<void>;
 
 function ElegirInmueble({
   fila,
   ocupado,
   correr,
+  campo,
 }: {
   fila: FilaDeMigracion;
   ocupado: boolean;
-  correr: (a: () => Promise<FilaDeMigracion>) => Promise<void>;
+  correr: Correr;
+  campo: (nombre: string) => PropsDelCampo;
 }) {
   const [creando, setCreando] = useState(false);
   const [ciudad, setCiudad] = useState("");
   const direccion = fila.datos.direccion ?? "";
+  const dir = campo("address");
+  const ciu = campo("city");
+  const tip = campo("tipo");
+  const [tipoNuevo, setTipoNuevo] = useState<string>(SIN_TIPO);
   /*
    * El portafolio entero, para elegir a mano. Se pide una vez y lo comparten
    * todas las filas de la pantalla (ver `usePortafolioDeLaAgencia`).
@@ -473,27 +643,83 @@ function ElegirInmueble({
       </div>
 
       {creando ? (
-        <div className="flex flex-wrap items-end gap-2">
+        <div className="flex flex-wrap items-start gap-2">
           <div className="min-w-[180px] flex-1">
-            <label className="text-caption text-muted-foreground">Dirección</label>
-            <Input defaultValue={direccion} id={`dir-${fila.id}`} />
+            <label htmlFor={dir.id} className="text-caption text-muted-foreground">
+              Dirección
+            </label>
+            <Input
+              defaultValue={direccion}
+              id={dir.id}
+              aria-invalid={dir.mensaje ? true : undefined}
+              invalid={Boolean(dir.mensaje)}
+              aria-describedby={dir.mensaje ? `${dir.id}-error` : undefined}
+              onChange={dir.onEditar}
+            />
+            <ErrorDelCampo id={`${dir.id}-error`} mensaje={dir.mensaje} />
           </div>
           <div className="w-40">
-            <label className="text-caption text-muted-foreground">Ciudad</label>
-            <Input value={ciudad} onChange={(e) => setCiudad(e.target.value)} />
+            <label htmlFor={ciu.id} className="text-caption text-muted-foreground">
+              Ciudad
+            </label>
+            <Input
+              id={ciu.id}
+              value={ciudad}
+              aria-invalid={ciu.mensaje ? true : undefined}
+              invalid={Boolean(ciu.mensaje)}
+              aria-describedby={ciu.mensaje ? `${ciu.id}-error` : undefined}
+              onChange={(e) => {
+                setCiudad(e.target.value);
+                ciu.onEditar();
+              }}
+            />
+            <ErrorDelCampo id={`${ciu.id}-error`} mensaje={ciu.mensaje} />
+          </div>
+          <div className="w-44">
+            <label htmlFor={tip.id} className="text-caption text-muted-foreground">
+              Tipo
+            </label>
+            <Select
+              value={tipoNuevo}
+              onValueChange={(v) => {
+                setTipoNuevo(v);
+                tip.onEditar();
+              }}
+            >
+              <SelectTrigger
+                id={tip.id}
+                aria-invalid={tip.mensaje ? true : undefined}
+                aria-describedby={tip.mensaje ? `${tip.id}-error` : undefined}
+                data-testid={`tipo-del-inmueble-${fila.id}`}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SIN_TIPO}>El que diga la dirección</SelectItem>
+                {TIPOS_DE_INMUEBLE_FALTANTE.map((t) => (
+                  <SelectItem key={t.valor} value={t.valor}>
+                    {t.etiqueta}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <ErrorDelCampo id={`${tip.id}-error`} mensaje={tip.mensaje} />
           </div>
           <Button
             size="sm"
             hideArrow
+            className="mt-5"
             disabled={ocupado || !ciudad.trim()}
             onClick={() => {
-              const el = document.getElementById(
-                `dir-${fila.id}`,
-              ) as HTMLInputElement | null;
+              const el = document.getElementById(dir.id) as HTMLInputElement | null;
               void correr(async () => {
                 const r = await contractsApi.migracion.crearInmueble(fila.id, {
                   address: el?.value?.trim() || direccion,
                   city: ciudad.trim(),
+                  // Sólo si la persona lo eligió: si la dirección lo dice, manda
+                  // la dirección; si no dice nada y no se eligió, el back pide
+                  // el tipo bajo este campo (QA-MIG-A, MG-34).
+                  ...(tipoNuevo !== SIN_TIPO ? { tipo: tipoNuevo } : {}),
                 });
                 // El recién creado tiene que aparecer en el desplegable de las
                 // OTRAS filas; si no, alguien lo crearía por segunda vez.
@@ -533,14 +759,16 @@ function InmuebleOcupado({
   fila,
   ocupado,
   correr,
+  campo,
 }: {
   fila: FilaDeMigracion;
   ocupado: boolean;
-  correr: (a: () => Promise<FilaDeMigracion>) => Promise<void>;
+  correr: Correr;
+  campo: (nombre: string) => PropsDelCampo;
 }) {
   return (
     <div className="space-y-3">
-      <ElegirInmueble fila={fila} ocupado={ocupado} correr={correr} />
+      <ElegirInmueble fila={fila} ocupado={ocupado} correr={correr} campo={campo} />
       <Button
         variant="outline"
         size="sm"
@@ -564,16 +792,24 @@ function RegistrarPropietario({
   fila,
   ocupado,
   correr,
+  campo,
 }: {
   fila: FilaDeMigracion;
   ocupado: boolean;
-  correr: (a: () => Promise<FilaDeMigracion>) => Promise<void>;
+  correr: Correr;
+  campo: (nombre: string) => PropsDelCampo;
 }) {
   const [nombre, setNombre] = useState("");
   const [documento, setDocumento] = useState("");
   const [comision, setComision] = useState(
     String(fila.datos.comisionPorcentaje ?? ""),
   );
+  const cNombre = campo("nombre");
+  const cDocumento = campo("documento");
+  const cComision = campo("comisionPorcentaje");
+  /** La comisión se ataja acá: el back sólo acepta de 0 a 100. */
+  const [errorDeComision, setErrorDeComision] = useState<string | null>(null);
+  const mensajeDeComision = errorDeComision ?? cComision.mensaje;
   const [correo, setCorreo] = useState<string | undefined>(undefined);
   const [telefono, setTelefono] = useState<string | undefined>(undefined);
   /*
@@ -665,43 +901,83 @@ function RegistrarPropietario({
           está en vez de duplicarlo.
         </p>
       ) : null}
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="flex flex-wrap items-start gap-2">
         <div className="min-w-[160px] flex-1">
-          <label className="text-caption text-muted-foreground">
+          <label htmlFor={cNombre.id} className="text-caption text-muted-foreground">
             Nombre del propietario
           </label>
-          <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
+          <Input
+            id={cNombre.id}
+            value={nombre}
+            aria-invalid={cNombre.mensaje ? true : undefined}
+            invalid={Boolean(cNombre.mensaje)}
+            aria-describedby={cNombre.mensaje ? `${cNombre.id}-error` : undefined}
+            onChange={(e) => {
+              setNombre(e.target.value);
+              cNombre.onEditar();
+            }}
+          />
+          <ErrorDelCampo id={`${cNombre.id}-error`} mensaje={cNombre.mensaje} />
         </div>
         <div className="w-36">
-          <label className="text-caption text-muted-foreground">Documento</label>
+          <label htmlFor={cDocumento.id} className="text-caption text-muted-foreground">
+            Documento
+          </label>
           <Input
+            id={cDocumento.id}
             value={documento}
-            onChange={(e) => setDocumento(e.target.value)}
+            aria-invalid={cDocumento.mensaje ? true : undefined}
+            invalid={Boolean(cDocumento.mensaje)}
+            aria-describedby={cDocumento.mensaje ? `${cDocumento.id}-error` : undefined}
+            onChange={(e) => {
+              setDocumento(e.target.value);
+              cDocumento.onEditar();
+            }}
           />
+          <ErrorDelCampo id={`${cDocumento.id}-error`} mensaje={cDocumento.mensaje} />
         </div>
-        <div className="w-24">
-          <label className="text-caption text-muted-foreground">Comisión %</label>
+        <div className="w-28">
+          <label htmlFor={cComision.id} className="text-caption text-muted-foreground">
+            Comisión %
+          </label>
           <Input
+            id={cComision.id}
             type="number"
             value={comision}
-            onChange={(e) => setComision(e.target.value)}
+            aria-invalid={mensajeDeComision ? true : undefined}
+            invalid={Boolean(mensajeDeComision)}
+            aria-describedby={mensajeDeComision ? `${cComision.id}-error` : undefined}
+            onChange={(e) => {
+              setComision(e.target.value);
+              setErrorDeComision(null);
+              cComision.onEditar();
+            }}
           />
+          <ErrorDelCampo id={`${cComision.id}-error`} mensaje={mensajeDeComision} />
         </div>
         <Button
           size="sm"
           hideArrow
+          className="mt-5"
           disabled={ocupado || !nombre.trim() || !documento.trim()}
-          onClick={() =>
+          onClick={() => {
+            const m = errorDeLaComision(comision);
+            if (m) {
+              setErrorDeComision(m);
+              document.getElementById(cComision.id)?.focus();
+              return;
+            }
             void correr(() =>
               contractsApi.migracion.registrarPropietario(fila.id, {
                 nombre: nombre.trim(),
                 documento: documento.trim(),
                 correo,
                 telefono,
-                comisionPorcentaje: Number(comision) || undefined,
+                // Vacío no viaja; un 0 escrito sí: el 0 % es una comisión real.
+                comisionPorcentaje: comision.trim() ? Number(comision) : undefined,
               }),
-            )
-          }
+            );
+          }}
         >
           Registrar y consignar
         </Button>
@@ -714,45 +990,84 @@ function Fechas({
   fila,
   ocupado,
   correr,
+  campo,
 }: {
   fila: FilaDeMigracion;
   ocupado: boolean;
-  correr: (a: () => Promise<FilaDeMigracion>) => Promise<void>;
+  correr: Correr;
+  campo: (nombre: string) => PropsDelCampo;
 }) {
   const [inicio, setInicio] = useState(
     fila.datos.startDate?.slice(0, 10) ?? "",
   );
   const [fin, setFin] = useState(fila.datos.endDate?.slice(0, 10) ?? "");
+  const cInicio = campo("startDate");
+  const cFin = campo("endDate");
+  /** Lo que se ataja antes de mandar: el rango del back y el orden de las dos. */
+  const [locales, setLocales] = useState<Partial<Record<"startDate" | "endDate", string>>>({});
+  const mensajeDeInicio = locales.startDate ?? cInicio.mensaje;
+  const mensajeDeFin = locales.endDate ?? cFin.mensaje;
   return (
-    <div className="flex flex-wrap items-end gap-2">
+    <div className="flex flex-wrap items-start gap-2">
       <div>
-        <label className="text-caption text-muted-foreground">Inicio</label>
+        <label htmlFor={cInicio.id} className="text-caption text-muted-foreground">
+          Inicio
+        </label>
         <Input
+          id={cInicio.id}
           type="date"
           value={inicio}
-          onChange={(e) => setInicio(e.target.value)}
+          aria-invalid={mensajeDeInicio ? true : undefined}
+          invalid={Boolean(mensajeDeInicio)}
+          aria-describedby={mensajeDeInicio ? `${cInicio.id}-error` : undefined}
+          onChange={(e) => {
+            setInicio(e.target.value);
+            setLocales({});
+            cInicio.onEditar();
+          }}
         />
+        <ErrorDelCampo id={`${cInicio.id}-error`} mensaje={mensajeDeInicio} />
       </div>
       <div>
-        <label className="text-caption text-muted-foreground">Fin</label>
+        <label htmlFor={cFin.id} className="text-caption text-muted-foreground">
+          Fin
+        </label>
         <Input
+          id={cFin.id}
           type="date"
           value={fin}
-          onChange={(e) => setFin(e.target.value)}
+          aria-invalid={mensajeDeFin ? true : undefined}
+          invalid={Boolean(mensajeDeFin)}
+          aria-describedby={mensajeDeFin ? `${cFin.id}-error` : undefined}
+          onChange={(e) => {
+            setFin(e.target.value);
+            setLocales({});
+            cFin.onEditar();
+          }}
         />
+        <ErrorDelCampo id={`${cFin.id}-error`} mensaje={mensajeDeFin} />
       </div>
       <Button
         size="sm"
         hideArrow
+        className="mt-5"
         disabled={ocupado || !inicio || !fin}
-        onClick={() =>
+        onClick={() => {
+          const errores = erroresDeLasFechas(inicio, fin);
+          if (errores.startDate || errores.endDate) {
+            setLocales(errores);
+            document
+              .getElementById(errores.startDate ? cInicio.id : cFin.id)
+              ?.focus();
+            return;
+          }
           void correr(() =>
             contractsApi.migracion.resolver(fila.id, {
               startDate: inicio,
               endDate: fin,
             }),
-          )
-        }
+          );
+        }}
       >
         Guardar
       </Button>
@@ -772,14 +1087,17 @@ function DocumentoDelInquilino({
   fila,
   ocupado,
   correr,
+  campo,
 }: {
   fila: FilaDeMigracion;
   ocupado: boolean;
-  correr: (a: () => Promise<FilaDeMigracion>) => Promise<void>;
+  correr: Correr;
+  campo: (nombre: string) => PropsDelCampo;
 }) {
   return (
     <div className="space-y-2">
       <CampoSimple
+        {...campo("inquilinoDocumento")}
         icono={User}
         etiqueta="Documento del inquilino"
         ocupado={ocupado}
@@ -948,41 +1266,118 @@ function RepartoEditable({
   );
 }
 
+/**
+ * El uso del inmueble, con su error debajo si el back lo rechazó.
+ */
+function UsoDelInmueble({
+  id,
+  mensaje,
+  onEditar,
+  ocupado,
+  onElegir,
+}: PropsDelCampo & {
+  ocupado: boolean;
+  onElegir: (v: "VIVIENDA" | "COMERCIAL") => void;
+}) {
+  return (
+    <div className="max-w-xs">
+      <Select
+        disabled={ocupado}
+        onValueChange={(v) => {
+          onEditar();
+          onElegir(v as "VIVIENDA" | "COMERCIAL");
+        }}
+      >
+        <SelectTrigger
+          id={id}
+          aria-invalid={mensaje ? true : undefined}
+          aria-describedby={mensaje ? `${id}-error` : undefined}
+        >
+          <SelectValue placeholder="Elige el uso" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="VIVIENDA">Vivienda</SelectItem>
+          <SelectItem value="COMERCIAL">Comercial</SelectItem>
+        </SelectContent>
+      </Select>
+      <ErrorDelCampo id={`${id}-error`} mensaje={mensaje} />
+    </div>
+  );
+}
+
+/**
+ * Un campo con su botón de guardar. El error —el del cliente (`validar`, con
+ * los mismos topes y frases del back) o el que mandó el back en `campos`— va
+ * DEBAJO del campo con `ErrorDelCampo`, y el campo queda `aria-invalid`.
+ */
 function CampoSimple({
+  id,
+  mensaje,
+  onEditar,
   icono: Icono,
   etiqueta,
   tipo = "text",
   ocupado,
+  validar,
   onGuardar,
-}: {
+}: PropsDelCampo & {
   icono?: React.ComponentType<{ className?: string }>;
   etiqueta: string;
   tipo?: string;
   ocupado: boolean;
+  /** El error del cliente para este valor, o `null` si se puede mandar. */
+  validar?: (v: string) => string | null;
   onGuardar: (v: string) => void;
 }) {
   const [valor, setValor] = useState("");
+  const [errorLocal, setErrorLocal] = useState<string | null>(null);
+  const campoRef = useRef<HTMLInputElement>(null);
+  const error = errorLocal ?? mensaje;
   return (
-    <div className="flex flex-wrap items-end gap-2">
-      <div className="min-w-[200px] flex-1">
-        <label className="flex items-center gap-1.5 text-caption text-muted-foreground">
-          {Icono ? <Icono className="h-3.5 w-3.5" /> : null}
-          {etiqueta}
-        </label>
-        <Input
-          type={tipo}
-          value={valor}
-          onChange={(e) => setValor(e.target.value)}
-        />
+    <div>
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="min-w-[200px] flex-1">
+          <label
+            htmlFor={id}
+            className="flex items-center gap-1.5 text-caption text-muted-foreground"
+          >
+            {Icono ? <Icono className="h-3.5 w-3.5" /> : null}
+            {etiqueta}
+          </label>
+          <Input
+            ref={campoRef}
+            id={id}
+            type={tipo}
+            value={valor}
+            aria-invalid={error ? true : undefined}
+            invalid={Boolean(error)}
+            aria-describedby={error ? `${id}-error` : undefined}
+            onChange={(e) => {
+              setValor(e.target.value);
+              setErrorLocal(null);
+              onEditar();
+            }}
+          />
+        </div>
+        <Button
+          size="sm"
+          hideArrow
+          disabled={ocupado || !valor.trim()}
+          onClick={() => {
+            const v = valor.trim();
+            const m = validar?.(v) ?? null;
+            if (m) {
+              setErrorLocal(m);
+              campoRef.current?.focus();
+              return;
+            }
+            onGuardar(v);
+          }}
+        >
+          Guardar
+        </Button>
       </div>
-      <Button
-        size="sm"
-        hideArrow
-        disabled={ocupado || !valor.trim()}
-        onClick={() => onGuardar(valor.trim())}
-      >
-        Guardar
-      </Button>
+      <ErrorDelCampo id={`${id}-error`} mensaje={error} />
     </div>
   );
 }

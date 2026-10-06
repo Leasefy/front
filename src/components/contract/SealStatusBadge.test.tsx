@@ -110,4 +110,32 @@ describe('<SealStatusBadge>', () => {
 
     expect(toast.error).toHaveBeenCalled();
   });
+
+  it('🔴 02-10 · un 5xx dice que falló de nuestro lado, con la referencia; status 0, la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    vi.mocked(toast.error).mockClear();
+    reintentarSelloMock.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: '7c8d9e0f' }),
+    );
+    render();
+    await act(async () => {
+      (container.querySelector('[data-testid="seal-retry-button"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const [, opciones] = vi.mocked(toast.error).mock.calls[0] as [string, { description: string }];
+    expect(opciones.description).toContain('No pudimos reintentar el sello: algo falló de nuestro lado.');
+    expect(opciones.description).toContain('7c8d9e0f');
+    expect(opciones.description).not.toContain('conexión');
+
+    vi.mocked(toast.error).mockClear();
+    reintentarSelloMock.mockRejectedValueOnce(new ApiError(0, 'Failed to fetch'));
+    await act(async () => {
+      (container.querySelector('[data-testid="seal-retry-button"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const [, otra] = vi.mocked(toast.error).mock.calls[0] as [string, { description: string }];
+    expect(otra.description).toContain('conexión');
+  });
 });

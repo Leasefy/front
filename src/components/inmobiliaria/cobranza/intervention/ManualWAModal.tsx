@@ -33,6 +33,9 @@ import * as React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { erroresDeLaIntervencion } from './error-de-la-intervencion'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
@@ -55,6 +58,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 void React
 
@@ -132,14 +136,20 @@ export function ManualWAModal({
       try {
         const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/wa-templates`)
-        if (!res.ok) throw new Error(`${res.status}`)
+        if (!res.ok) throw await falloDelMicro(res)
         const json = (await res.json()) as { templates: WATemplate[] }
         if (cancelled) return
         setTemplates(json.templates ?? [])
         if (json.templates?.[0]) setSelectedId(json.templates[0].id)
       } catch (err) {
+        // Antes: «500» o «Failed to load templates».
         if (!cancelled)
-          setError(err instanceof Error ? err.message : 'Failed to load templates')
+          setError(
+            mensajeParaLaPersona(err, {
+              porDefecto: 'No pudimos cargar las plantillas de WhatsApp.',
+              accion: 'cargar las plantillas de WhatsApp',
+            }),
+          )
       } finally {
         if (!cancelled) setTemplatesLoading(false)
       }
@@ -193,7 +203,7 @@ export function ManualWAModal({
       return
     }
     if (!selectedId) {
-      setError('No template selected')
+      setError('Elige la plantilla que vas a enviar.')
       return
     }
     setSubmitting(true)
@@ -206,18 +216,19 @@ export function ManualWAModal({
           body: JSON.stringify({ template_id: selectedId, variables }),
         },
       )
-      if (!res.ok) {
-        setError(`${res.status}`)
-        return
-      }
+      if (!res.ok) throw await falloDelMicro(res)
       onSuccess()
       onClose()
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : t('inmobiliaria.ai.cobranza.detail.acciones.genericError'),
-      )
+      // Antes: el status crudo («409», «502»). Una valla legal dice cuál; un
+      // 502 del proveedor, que falló de nuestro lado; la red, la conexión.
+      const r = erroresDeLaIntervencion<never>(err, {
+        campos: [],
+        porDefecto: 'No pudimos enviar el WhatsApp.',
+        accion: 'enviar el WhatsApp',
+        noEncontrado: 'No encontramos a este deudor o no tiene un teléfono registrado.',
+      })
+      setError(r.general)
     } finally {
       setSubmitting(false)
     }
@@ -225,7 +236,7 @@ export function ManualWAModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="max-w-md">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>
             {t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.modalTitle')}
@@ -235,6 +246,12 @@ export function ManualWAModal({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Cargando plantillas → el formulario (o «no hay plantillas»): cada
+            estado entra con su fundido; `popLayout` monta el nuevo ya. */}
+        <CrossFade
+          mode="popLayout"
+          swapKey={envMissing ? 'sin-agente' : templatesLoading ? 'cargando' : templates.length === 0 ? 'sin-plantillas' : 'formulario'}
+        >
         {envMissing ? (
           <p className="text-sm text-warning">
             {t('inmobiliaria.ai.cobranza.detail.acciones.envMissing')}
@@ -269,6 +286,8 @@ export function ManualWAModal({
 
             {/* La vista previa va ARRIBA de los campos: lo primero que tiene
                 que ver quien va a mandar un mensaje es el mensaje. */}
+            {/* Otra plantilla, otra vista previa: se cruzan con un fundido. */}
+            <CrossFade swapKey={selectedId} mode="popLayout" direction="none">
             {vistaPrevia && (
               <div>
                 <p className="mb-1 text-xs font-medium text-fg-subtle">
@@ -276,7 +295,7 @@ export function ManualWAModal({
                 </p>
                 <div
                   data-testid="wa-preview"
-                  className="whitespace-pre-wrap rounded-md border border-border bg-surface-muted px-3 py-2.5 text-xs leading-relaxed text-fg"
+                  className="whitespace-pre-wrap rounded-[14px] border border-border bg-surface-hover px-3 py-2.5 text-xs leading-relaxed text-fg"
                 >
                   {vistaPrevia.texto}
                 </div>
@@ -287,6 +306,7 @@ export function ManualWAModal({
                 )}
               </div>
             )}
+            </CrossFade>
 
             {selectedTemplate && selectedTemplate.variables.length > 0 && (
               <div>
@@ -335,23 +355,26 @@ export function ManualWAModal({
             )}
           </div>
         )}
+        </CrossFade>
 
-        {error && <p className="text-xs text-danger">{error}</p>}
+        <Presence as="p" show={Boolean(error)} role="alert" className="text-xs text-danger" data-testid="intervencion-error">
+            {error}
+        </Presence>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter>
           <Button
             variant="outline"
-            size="sm"
+            hideArrow
             onClick={onClose}
             disabled={submitting}
           >
             {t('inmobiliaria.ai.cobranza.detail.pii.modalCancel')}
           </Button>
           <Button
-            size="sm"
             hideArrow
             onClick={() => void handleSubmit()}
-            disabled={submitting || envMissing || templates.length === 0}
+            disabled={envMissing || templates.length === 0}
+            isLoading={submitting}
           >
             {submitting
               ? t('inmobiliaria.ai.cobranza.detail.acciones.manualWA.confirming')

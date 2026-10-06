@@ -13,10 +13,10 @@
  * test). Acá sólo se pintan.
  */
 
+import { fechaLarga } from "@/lib/fechas/fecha-de-la-casa";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CheckCircle, Info, Plus, Warning, X } from "@phosphor-icons/react";
-import { CurrencyInput } from "@leasefy/cadence";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,10 +53,15 @@ import {
   problemasDeApertura,
   puedeEnviarApertura,
   totalesDeApertura,
+  fraseDelDescuadre,
   type FilaDeApertura,
   type ProblemaDeApertura,
 } from "@/lib/migracion/asiento-de-apertura";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrencyEnDocumento } from "@/lib/format";
+
+/** La plata de los saldos: con sus centavos si los trae, nunca redondeada. */
+const plataDeLosSaldos = (valor: number) => formatCurrencyEnDocumento(valor, false);
+import { CampoDePlata } from "@/components/ui/campo-de-plata";
 
 import { mensajeDeContabilidad } from "./contabilidad-errores";
 import { TerceroDeApertura } from "./TerceroDeApertura";
@@ -71,7 +76,7 @@ const TEXTO_DEL_PROBLEMA: Record<ProblemaDeApertura, string> = {
   SIN_MONTO: "Hay una línea con cuenta pero sin monto.",
   AMBIGUA: "Una línea tiene débito y crédito a la vez: elige uno.",
   FUERA_DE_RANGO:
-    "Un monto es demasiado grande para una sola línea: partilo en dos.",
+    "Un monto es demasiado grande para una sola línea: pártelo en dos líneas.",
   CUENTA_REPETIDA:
     "La misma cuenta aparece dos veces: suma los saldos en una línea.",
   DESCUADRADO: "No cuadra: los débitos tienen que ser iguales a los créditos.",
@@ -238,14 +243,14 @@ export function AsientoDeApertura({
             <h2 className="text-sm font-medium text-fg">
               {yaEstaba
                 ? `Este asiento ya estaba registrado: es el N.º ${registrado.numero}`
-                : `Asiento N.º ${registrado.numero} registrado con fecha ${registrado.fecha.slice(0, 10)}`}
+                : `Asiento N.º ${registrado.numero} registrado con fecha del ${fechaLarga(registrado.fecha)}`}
             </h2>
             <p className="mt-1 text-sm text-fg-muted">
               {yaEstaba
                 ? `No se creó ninguno nuevo: este envío devolvió el que ya había quedado, ` +
-                  `con fecha ${registrado.fecha.slice(0, 10)} y ${registrado.movimientos.length} líneas por ` +
-                  `${formatCurrency(montoDelAsiento)}. Los saldos iniciales están contados una sola vez.`
-                : `${registrado.movimientos.length} líneas por ${formatCurrency(montoDelAsiento)}. ` +
+                  `con fecha del ${fechaLarga(registrado.fecha)} y ${registrado.movimientos.length} líneas por ` +
+                  `${plataDeLosSaldos(montoDelAsiento)}. Los saldos iniciales están contados una sola vez.`
+                : `${registrado.movimientos.length} líneas por ${plataDeLosSaldos(montoDelAsiento)}. ` +
                   `Los asientos no se editan: si algo quedó mal, se reversa y se registra de nuevo.`}
             </p>
           </div>
@@ -382,7 +387,10 @@ export function AsientoDeApertura({
                   ) : null}
                 </TableCell>
                 <TableCell>
-                  <CurrencyInput
+                  <CampoDePlata
+                    areas="contabilidad_facturacion_y_exogena"
+                    // Los saldos iniciales guardan sus centavos (Nico, 04-10-2026).
+                    siempreConCentavos
                     aria-label={`Débito de la línea ${i + 1}`}
                     value={fila.debitoCop > 0 ? fila.debitoCop : undefined}
                     onChange={(v) =>
@@ -394,7 +402,10 @@ export function AsientoDeApertura({
                   />
                 </TableCell>
                 <TableCell>
-                  <CurrencyInput
+                  <CampoDePlata
+                    areas="contabilidad_facturacion_y_exogena"
+                    // Los saldos iniciales guardan sus centavos (Nico, 04-10-2026).
+                    siempreConCentavos
                     aria-label={`Crédito de la línea ${i + 1}`}
                     value={fila.creditoCop > 0 ? fila.creditoCop : undefined}
                     onChange={(v) =>
@@ -475,7 +486,7 @@ export function AsientoDeApertura({
           {problemas.map((p) => (
             <li key={p} className="flex items-start gap-2">
               <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-              {TEXTO_DEL_PROBLEMA[p]}
+              {p === "DESCUADRADO" ? (fraseDelDescuadre(totales) ?? TEXTO_DEL_PROBLEMA[p]) : TEXTO_DEL_PROBLEMA[p]}
             </li>
           ))}
         </ul>
@@ -529,7 +540,7 @@ function Total({
               : "text-fg"
         }`}
       >
-        {formatCurrency(valor)}
+        {plataDeLosSaldos(valor)}
       </p>
       {nota ? (
         <p

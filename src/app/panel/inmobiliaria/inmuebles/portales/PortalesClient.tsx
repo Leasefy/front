@@ -56,25 +56,38 @@
  * cambia de estado solo.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
 import {
   CloudArrowUp,
   DownloadSimple,
+  HouseLine,
+  Plug,
   Plus,
-  X,
   Warning,
   CheckCircle,
   MagnifyingGlass,
 } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { PasosExplicados, type PasoExplicado } from '@/components/ui/pasos-explicados'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AvisoInmuebleSinCanon } from '@/components/inmobiliaria/CanonPorConfirmar'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
-import { useLenis } from '@/components/providers/SmoothScroll'
 import { toast } from '@/components/ui/toast'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import {
   Badge,
   Button,
@@ -118,32 +131,26 @@ const ROTULO: Record<
 const PIDE_MANO: readonly EstadoDePublicacion[] = ['POR_EXPORTAR', 'POR_DESPUBLICAR']
 
 /**
- * 🔴 DESIGN §8: todo modal para a Lenis mientras está abierto y lo vuelve a
- * arrancar al cerrar (incluido el cleanup). Sin esto la rueda del mouse queda
- * secuestrada y el cuerpo del modal se ve congelado. El contenedor que scrollea
- * además lleva `data-lenis-prevent`.
+ * Los campos del diálogo de la cuenta que pueden traer un error del back
+ * (`GuardarCuentaDePortalDto`: etiqueta ≤ 120, identificador ≤ 120, notas ≤ 500,
+ * los mismos `maxLength` que tienen los campos).
  */
-function useLenisQuieto() {
-  const lenis = useLenis()
-  useEffect(() => {
-    lenis.stop()
-    return () => lenis.start()
-  }, [lenis])
-}
-
-/** El 503 y el 400 del back traen su motivo redactado: vale más que un genérico. */
-function mensajeDeError(e: unknown, porDefecto: string): string {
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: unknown }).message
-    if (typeof m === 'string' && m.trim()) return m
-  }
-  return porDefecto
-}
+type CampoDeLaCuenta = 'etiqueta' | 'identificadorEnElPortal' | 'notas'
+const CAMPOS_DE_LA_CUENTA: readonly CampoDeLaCuenta[] = ['etiqueta', 'identificadorEnElPortal', 'notas']
 
 // ═══════════════════════════════════════════════════════════════════════════
 // El armazón de un modal, que los dos comparten
 // ═══════════════════════════════════════════════════════════════════════════
 
+/**
+ * El `Dialog` de la casa con el título y la ayuda de cada uno. Velo, Esc, ✕,
+ * foco, Lenis y bloqueo del scroll los pone la primitiva.
+ *
+ * 🔴 `children` llega TAL CUAL como hijos directos del `DialogContent`, que
+ * reparte por banda: el cuerpo va al scroll y un `<DialogFooter>` que venga en
+ * `children` (como hermano, NO envuelto en un fragmento ni en un `div`) sale al
+ * pie fijo. Mientras `bloqueado`, no se sale por ningún lado.
+ */
 function Modal({
   titulo,
   ayuda,
@@ -157,37 +164,21 @@ function Modal({
   bloqueado?: boolean
   children: React.ReactNode
 }) {
-  useLenisQuieto()
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={bloqueado ? undefined : onCerrar}
-      />
-      <div
-        data-lenis-prevent
-        style={{ overscrollBehavior: 'contain' }}
-        className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-y-auto rounded-lg bg-background"
-      >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-border bg-background px-6 py-4">
-          <div className="space-y-0.5">
-            <h2 className="text-base font-semibold text-fg">{titulo}</h2>
-            {ayuda ? <p className="text-sm text-fg-muted">{ayuda}</p> : null}
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            hideArrow
-            onClick={onCerrar}
-            disabled={bloqueado}
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        if (!abierto && !bloqueado) onCerrar()
+      }}
+    >
+      <DialogContent {...(ayuda ? {} : { 'aria-describedby': undefined })}>
+        <DialogHeader>
+          <DialogTitle>{titulo}</DialogTitle>
+          {ayuda ? <DialogDescription>{ayuda}</DialogDescription> : null}
+        </DialogHeader>
         {children}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -211,11 +202,20 @@ function DialogoDeCuenta({
   const [notas, setNotas] = useState(portal.cuenta?.notas ?? '')
   const [activa, setActiva] = useState(portal.cuenta?.activa ?? true)
   const [guardando, setGuardando] = useState(false)
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaCuenta, string>>>({})
+  const refs = {
+    etiqueta: useRef<HTMLInputElement>(null),
+    identificadorEnElPortal: useRef<HTMLInputElement>(null),
+    notas: useRef<HTMLTextAreaElement>(null),
+  }
   const conexion = comoSeConecta(portal.portal)
+  const sinError = (campo: CampoDeLaCuenta) =>
+    setErrores((prev) => (prev[campo] ? { ...prev, [campo]: undefined } : prev))
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault()
     setGuardando(true)
+    setErrores({})
     try {
       const r = await publicacionApi.guardarCuenta({
         portal: portal.portal,
@@ -235,7 +235,17 @@ function DialogoDeCuenta({
       invalidar('portafolio')
       onGuardado()
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo guardar la cuenta'))
+      // Un 400 con `campos` va debajo de su campo, con el foco en el primero;
+      // al toast sólo lo que no tiene dónde ir (un 5xx, la red, un 503).
+      const r = repartirErroresDelServidor<CampoDeLaCuenta>(err, {
+        campos: CAMPOS_DE_LA_CUENTA,
+        porDefecto: 'No se pudo guardar la cuenta',
+        accion: 'guardar la cuenta',
+      })
+      setErrores(r.porCampo)
+      const primero = r.orden[0]
+      if (primero) refs[primero].current?.focus()
+      if (r.sueltos.length > 0) toast.error(r.sueltos.join(' · '))
     } finally {
       setGuardando(false)
     }
@@ -250,19 +260,39 @@ function DialogoDeCuenta({
       onCerrar={onCerrar}
       bloqueado={guardando}
     >
-      <form onSubmit={enviar} className="space-y-4 p-6" data-testid="form-de-cuenta">
+      {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
+          el botón de guardar lo apunta con `form=`. */}
+      <form
+        id={ID_DEL_FORM_DE_CUENTA}
+        onSubmit={enviar}
+        className="space-y-4"
+        data-testid="form-de-cuenta"
+      >
         <div className="space-y-1.5">
           <Label htmlFor="cuenta-etiqueta">Cómo la llamas</Label>
           <Input
+            ref={refs.etiqueta}
             id="cuenta-etiqueta"
             value={etiqueta}
-            onChange={(e) => setEtiqueta(e.target.value)}
+            onChange={(e) => {
+              setEtiqueta(e.target.value)
+              sinError('etiqueta')
+            }}
             maxLength={120}
             placeholder={`Plan ${portal.nombre} 2026`}
+            invalid={!!errores.etiqueta}
+            aria-invalid={errores.etiqueta ? true : undefined}
+            aria-describedby="cuenta-etiqueta-error"
           />
-          <p className="text-xs text-fg-subtle">
-            Para reconocerla si mañana tienes más de una. Opcional.
-          </p>
+          <ErrorDelCampo
+            id="cuenta-etiqueta-error"
+            mensaje={errores.etiqueta}
+            pista={
+              <span className="text-xs text-fg-subtle">
+                Para reconocerla si mañana tienes más de una. Opcional.
+              </span>
+            }
+          />
         </div>
 
         {/* 🔴 El identificador se llama como lo llama SU portal (Nico, 19-09:
@@ -274,17 +304,30 @@ function DialogoDeCuenta({
         <div className="space-y-1.5">
           <Label htmlFor="cuenta-identificador">{conexion.rotuloDelIdentificador}</Label>
           <Input
+            ref={refs.identificadorEnElPortal}
             id="cuenta-identificador"
             value={identificador}
-            onChange={(e) => setIdentificador(e.target.value)}
+            onChange={(e) => {
+              setIdentificador(e.target.value)
+              sinError('identificadorEnElPortal')
+            }}
             maxLength={120}
             placeholder={conexion.ejemploDelIdentificador}
+            invalid={!!errores.identificadorEnElPortal}
+            aria-invalid={errores.identificadorEnElPortal ? true : undefined}
+            aria-describedby="cuenta-identificador-error"
             data-testid="cuenta-identificador"
           />
-          <p className="text-xs text-fg-subtle">
-            No guardamos contraseñas. Esto es sólo para que el equipo sepa con
-            qué usuario cargar el archivo.
-          </p>
+          <ErrorDelCampo
+            id="cuenta-identificador-error"
+            mensaje={errores.identificadorEnElPortal}
+            pista={
+              <span className="text-xs text-fg-subtle">
+                No guardamos contraseñas. Esto es sólo para que el equipo sepa con
+                qué usuario cargar el archivo.
+              </span>
+            }
+          />
           {conexion.cuidado && (
             <p className="text-xs text-warning" data-testid="cuidado-del-portal">
               {conexion.cuidado}
@@ -309,13 +352,20 @@ function DialogoDeCuenta({
         <div className="space-y-1.5">
           <Label htmlFor="cuenta-notas">Notas</Label>
           <Textarea
+            ref={refs.notas}
             id="cuenta-notas"
             value={notas}
-            onChange={(e) => setNotas(e.target.value)}
+            onChange={(e) => {
+              setNotas(e.target.value)
+              sinError('notas')
+            }}
             maxLength={500}
             rows={3}
             placeholder="Cuántos avisos incluye el plan, cuándo se renueva, a quién llamar…"
+            aria-invalid={errores.notas ? true : undefined}
+            aria-describedby="cuenta-notas-error"
           />
+          <ErrorDelCampo id="cuenta-notas-error" mensaje={errores.notas} />
         </div>
 
         <label className="flex items-start gap-2.5 rounded-lg border border-border p-3">
@@ -335,19 +385,32 @@ function DialogoDeCuenta({
             </span>
           </span>
         </label>
-
-        <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={onCerrar} disabled={guardando}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={guardando} data-testid="guardar-cuenta">
-            {guardando ? 'Guardando…' : 'Guardar la cuenta'}
-          </Button>
-        </div>
       </form>
+
+      <DialogFooter>
+        <Button
+          type="button"
+          variant="outline"
+          hideArrow
+          onClick={onCerrar}
+          disabled={guardando}
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="submit"
+          form={ID_DEL_FORM_DE_CUENTA}
+          disabled={guardando}
+          data-testid="guardar-cuenta"
+        >
+          {guardando ? 'Guardando…' : 'Guardar la cuenta'}
+        </Button>
+      </DialogFooter>
     </Modal>
   )
 }
+
+const ID_DEL_FORM_DE_CUENTA = 'form-cuenta-del-portal'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Paso 2 — sacar un inmueble a los portales
@@ -411,7 +474,12 @@ function DialogoDePublicar({
     try {
       setRevision(await publicacionApi.revision(i.propertyId))
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No pudimos revisar ese inmueble'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos revisar ese inmueble',
+          accion: 'revisar ese inmueble',
+        }),
+      )
       setElegido(null)
     } finally {
       setRevisando(false)
@@ -432,7 +500,12 @@ function DialogoDePublicar({
       invalidar('portafolio')
       onPublicado()
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo publicar'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo publicar',
+          accion: 'publicar el inmueble',
+        }),
+      )
     } finally {
       setPublicando(false)
     }
@@ -447,7 +520,7 @@ function DialogoDePublicar({
       onCerrar={onCerrar}
       bloqueado={publicando}
     >
-      <div className="space-y-5 p-6">
+      <div className="space-y-5">
         {/* ── Escoger el inmueble ─────────────────────────────────────── */}
         {!elegido ? (
           <div className="space-y-3">
@@ -476,21 +549,22 @@ function DialogoDePublicar({
                   : 'Ningún inmueble coincide con eso.'}
               </p>
             ) : (
-              <ul className="divide-y rounded-lg border border-border" data-testid="resultados">
+              <Stagger as="ul" layout={false} className="divide-y rounded-lg border border-border" data-testid="resultados">
                 {resultados.map((i) => (
-                  <li key={i.propertyId}>
+                  <StaggerItem as="li" key={i.propertyId}>
                     <button
                       type="button"
                       onClick={() => void escoger(i)}
-                      className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-surface-muted"
+                      className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-surface-hover"
                       data-testid={`elegir-${i.propertyId}`}
                     >
                       <span className="min-w-0">
                         <span className="block truncate text-sm font-medium text-fg">
                           {i.titulo}
                           {i.codigo != null ? (
-                            <span className="ml-1.5 font-normal text-fg-subtle">
-                              #{i.codigo}
+                            <span className="font-normal text-fg-subtle">
+                              {/* IN-23: con separador, no «Local en Laureles#46». */}
+                              {' · #'}{i.codigo}
                             </span>
                           ) : null}
                         </span>
@@ -499,9 +573,9 @@ function DialogoDePublicar({
                         </span>
                       </span>
                     </button>
-                  </li>
+                  </StaggerItem>
                 ))}
-              </ul>
+              </Stagger>
             )}
           </div>
         ) : (
@@ -526,6 +600,12 @@ function DialogoDePublicar({
             </div>
 
             {/* ── Qué dice el back de ese inmueble ───────────────────── */}
+            {/* Revisando → lo que dijo el back, con un fundido (popLayout: lo
+                nuevo ya, lo viejo se va encima). */}
+            <CrossFade
+              mode="popLayout"
+              swapKey={revisando ? 'revisando' : revision ? (puedeSalir ? 'completo' : 'le-falta') : 'nada'}
+            >
             {revisando ? (
               <p className="text-sm text-fg-muted">Revisando el inmueble…</p>
             ) : revision ? (
@@ -567,6 +647,7 @@ function DialogoDePublicar({
                 </div>
               )
             ) : null}
+            </CrossFade>
 
             {/* ── En qué portales ────────────────────────────────────── */}
             {puedeSalir ? (
@@ -615,20 +696,20 @@ function DialogoDePublicar({
             ) : null}
           </>
         )}
-
-        <div className="flex justify-end gap-2 pt-1">
-          <Button variant="ghost" onClick={onCerrar} disabled={publicando}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={() => void publicar()}
-            disabled={!puedeSalir || marcados.length === 0 || publicando}
-            data-testid="confirmar-publicar"
-          >
-            {publicando ? 'Publicando…' : 'Publicar'}
-          </Button>
-        </div>
       </div>
+
+      <DialogFooter>
+        <Button variant="outline" hideArrow onClick={onCerrar} disabled={publicando}>
+          Cancelar
+        </Button>
+        <Button
+          onClick={() => void publicar()}
+          disabled={!puedeSalir || marcados.length === 0 || publicando}
+          data-testid="confirmar-publicar"
+        >
+          {publicando ? 'Publicando…' : 'Publicar'}
+        </Button>
+      </DialogFooter>
     </Modal>
   )
 }
@@ -838,23 +919,47 @@ function TarjetaDePortal({
 /**
  * Los pasos van numerados porque son de verdad una secuencia —el 2 no se puede
  * sin el 1, y el back lo hace cumplir—, no porque un «01 / 02 / 03» decore.
+ *
+ * 05-10-2026 (Nico: «explica mejor cada cosa y más bonito»): cada paso dice
+ * quién lo hace y lo que te toca, en el cajón de `ParaEntenderMas`. El paso 1
+ * dice «Anota» y no «Conecta»: no hay integración, sólo se anota la cuenta, y
+ * el que no deja publicar sin ella es Leasefy, no el portal (verificado contra
+ * `publicacion.service.ts`, `SIN_CUENTA_EN_EL_PORTAL`).
  */
-const PASOS: { que: string; como: string }[] = [
+const PASOS: PasoExplicado[] = [
   {
-    que: 'Conecta tu cuenta',
-    como: 'La que tu inmobiliaria ya paga en ese portal. Sin eso, el portal no acepta el aviso.',
+    id: 'cuenta',
+    icono: Plug,
+    titulo: 'Anota tu cuenta del portal',
+    explicacion:
+      'La que tu inmobiliaria ya paga en ese portal: nosotros no vendemos estas cuentas. Sin ella, Leasefy no te deja publicar ahí.',
+    quien: 'tu',
+    tuParte: 'en «Tus cuentas de portal», toca «Configurar» en cada portal donde tengas cuenta.',
   },
   {
-    que: 'Elige el inmueble',
-    como: 'Cuál publicas y en qué portales. Te avisamos antes si le falta algo.',
+    id: 'inmueble',
+    icono: HouseLine,
+    titulo: 'Elige el inmueble y los portales',
+    explicacion:
+      'Cuál publicas y en cuáles portales. Antes de seguir te avisamos si al inmueble le falta algo que el portal pide.',
+    quien: 'tu',
   },
   {
-    que: 'Sube el archivo',
-    como: 'Lo descargas de acá y lo cargas en la página del portal, con tu usuario.',
+    id: 'archivo',
+    icono: DownloadSimple,
+    titulo: 'Descarga el archivo y súbelo al portal',
+    explicacion:
+      'Lo descargas de acá y lo cargas en la página del portal, con tu usuario. Este paso lo hace una persona.',
+    quien: 'tu',
+    tuParte: 'usa «Descargar archivo» en la tarjeta del portal y súbelo en su página.',
   },
   {
-    que: 'Confirma que ya salió',
-    como: 'Así dejamos de pedírtelo y queda registrado cuándo se publicó.',
+    id: 'salio',
+    icono: CheckCircle,
+    titulo: 'Confirma que ya salió',
+    explicacion: 'Así dejamos de pedírtelo y queda registrado cuándo se publicó.',
+    quien: 'tu',
+    tuParte: 'cuando el aviso ya esté arriba, toca «Ya la subí».',
   },
 ]
 
@@ -871,38 +976,23 @@ const PASOS: { que: string; como: string }[] = [
  */
 function ComoFunciona() {
   return (
-    <div data-testid="como-funciona">
-      <ol className="grid gap-4 sm:grid-cols-2">
-        {PASOS.map((p, i) => (
-          <li key={p.que} className="flex gap-3">
-            <span
-              aria-hidden="true"
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-fg text-xs font-medium text-background"
-            >
-              {i + 1}
-            </span>
-            <span className="space-y-0.5">
-              <span className="block text-sm font-medium text-fg">{p.que}</span>
-              <span className="block text-sm leading-relaxed text-fg-muted">{p.como}</span>
-            </span>
-          </li>
-        ))}
-      </ol>
-      <p
-        className="mt-4 border-t border-border pt-4 text-sm leading-relaxed text-fg-muted"
-        data-testid="aviso-sin-api-detalle"
-      >
-        Los pasos 3 y 4 los hace una persona porque{' '}
-        <span className="font-medium text-fg">
-          todavía no hemos construido ninguna de las integraciones
-        </span>
-        , no porque los portales no las tengan. Mercado Libre y Ciencuadras se
-        conectan por cuenta propia, sin hablar con nadie; Properati va por
-        Proppit, que hay que pedir que lo habilite; Fincaraíz y Metrocuadrado sí
-        exigen un acuerdo con su equipo. Sólo «Sitio propio» —el catálogo de
-        Leasefy— sale solo. Cada tarjeta dice qué pide la suya.
-      </p>
-    </div>
+    <PasosExplicados
+      data-testid="como-funciona"
+      pasos={PASOS}
+      nota={
+        <p data-testid="aviso-sin-api-detalle">
+          Los pasos 3 y 4 los hace una persona porque{' '}
+          <span className="font-medium text-fg">
+            todavía no hemos construido ninguna de las integraciones
+          </span>
+          , no porque los portales no las tengan. Mercado Libre y Ciencuadras se
+          conectan por cuenta propia, sin hablar con nadie; Properati va por
+          Proppit, que hay que pedir que lo habilite; Fincaraíz y Metrocuadrado sí
+          exigen un acuerdo con su equipo. Sólo «Sitio propio» —el catálogo de
+          Leasefy— sale solo. Cada tarjeta dice qué pide la suya.
+        </p>
+      }
+    />
   )
 }
 
@@ -971,7 +1061,12 @@ export function PortalesClient() {
       toast.success('Queda registrado que el aviso ya está arriba.')
       invalidar('portafolio')
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo guardar'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo guardar que el aviso ya está arriba.',
+          accion: 'registrar que el aviso ya está arriba',
+        }),
+      )
     } finally {
       setConfirmando(null)
     }
@@ -989,7 +1084,12 @@ export function PortalesClient() {
       )
       invalidar('portafolio')
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo despublicar'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo despublicar',
+          accion: 'despublicar el aviso',
+        }),
+      )
     } finally {
       setBajando(null)
     }
@@ -1019,8 +1119,8 @@ export function PortalesClient() {
           etiqueta="Cómo se publica un inmueble"
           titulo="Cómo se publica un inmueble"
           descripcion="Cuatro pasos. Los dos últimos los hace una persona, y acá está por qué."
-          ancho="ancho"
-          className="shrink-0"
+          variante="secundario"
+          className="self-start shrink-0"
         >
           <ComoFunciona />
         </ParaEntenderMas>
@@ -1122,12 +1222,16 @@ export function PortalesClient() {
                       <th className="py-2 font-medium">Qué falta</th>
                     </tr>
                   </thead>
-                  <tbody>
+                  {/* Publicar, subir o confirmar: las filas entran y salen
+                      (como `TableBodyAnimado`: sin `layout`, salida «sync»). */}
+                  <Stagger as="tbody" layout={false}>
                     {ordenadas.map((f) => {
                       const rotulo = ROTULO[f.estado]
                       const clave = `${f.propertyId}:${f.portal}`
                       return (
-                        <tr
+                        <StaggerItem
+                          as="tr"
+                          layout={false}
                           key={f.id}
                           className={cn(
                             'border-b last:border-0',
@@ -1140,8 +1244,8 @@ export function PortalesClient() {
                               {f.inmueble?.title ?? 'Inmueble'}
                             </span>
                             {f.inmueble?.code ? (
-                              <span className="ml-1.5 text-fg-subtle">
-                                #{f.inmueble.code}
+                              <span className="text-fg-subtle">
+                                {' · #'}{f.inmueble.code}
                               </span>
                             ) : null}
                             <div className="text-fg-muted">
@@ -1200,10 +1304,10 @@ export function PortalesClient() {
                               ) : null}
                             </div>
                           </td>
-                        </tr>
+                        </StaggerItem>
                       )
                     })}
-                  </tbody>
+                  </Stagger>
                 </table>
               </div>
             </EstadoDeDatos>

@@ -95,7 +95,8 @@ export const propertiesApi = {
    */
   async create(data: {
     title: string;
-    description: string;
+    /** Opcional desde el 04-10-2026 (IN-16): si viene, 20 a 5.000 caracteres. */
+    description?: string;
     type: string;
     city: string;
     /** `null` desde el 2026-09-09: dejó de ser NOT NULL en la base. */

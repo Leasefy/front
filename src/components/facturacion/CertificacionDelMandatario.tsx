@@ -50,10 +50,12 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import {
   facturacionElectronicaService,
-  pesos,
   type CertificacionesDelMandatario,
 } from '@/lib/api/facturacion-electronica.service'
+import { formatCurrency } from '@/lib/format'
+import { faltaEnLaBase } from '@/lib/facturacion/por-facturar'
 import { CajonDeLaCertificacion } from './CajonDeLaCertificacion'
+import { BotonPdfDeLaCertificacion } from './BotonPdfDeLaCertificacion'
 
 /**
  * El CSV sigue exportándose desde acá para quien ya lo importaba; vive en
@@ -126,7 +128,8 @@ export function CertificacionDelMandatario({
             className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning"
             weight="fill"
           />
-          <p className="text-caption text-fg">{datos.explicacion}</p>
+          {/* FA-R27: sin el id de la migración que el back pone en su frase. */}
+          <p className="text-caption text-fg">{faltaEnLaBase('La certificación del mandatario')}</p>
         </div>
       )}
 
@@ -200,25 +203,29 @@ export function CertificacionDelMandatario({
                     Retenciones
                   </TableHead>
                   <TableHead className="whitespace-nowrap text-right">Total</TableHead>
+                  <TableHead className="whitespace-nowrap">
+                    <span className="sr-only">Documento</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginado.pageItems.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="p-0">
+                    <TableCell colSpan={8} className="p-0">
                       <SinDatos
                         queSon="certificaciones del mandatario"
                         icono={Certificate}
                         titulo={
                           sinMigracion
-                            ? 'La certificación llega con una migración que falta'
+                            ? 'La certificación todavía no está disponible'
                             : todas.length > 0
                               ? `Ninguna certificación coincide con «${busqueda.trim()}»`
                               : 'Todavía no has generado ninguna certificación'
                         }
                         descripcion={
-                          datos?.explicacion ??
-                          'Es lo que cada propietario necesita para declarar: lo que le facturaste a sus inquilinos por su cuenta, con su IVA y sus retenciones. Genera la primera con el botón de arriba.'
+                          sinMigracion
+                            ? faltaEnLaBase('La certificación del mandatario')
+                            : 'Es lo que cada propietario necesita para declarar: lo que le facturaste a sus inquilinos por su cuenta, con su IVA y sus retenciones. Genera la primera con el botón de arriba.'
                         }
                       />
                     </TableCell>
@@ -239,16 +246,26 @@ export function CertificacionDelMandatario({
                         {c.facturasContadas}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
-                        {pesos(c.baseCop)}
+                        {formatCurrency(c.baseCop)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
-                        {pesos(c.ivaCop)}
+                        {formatCurrency(c.ivaCop)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg-muted">
-                        {pesos(c.retefuenteCop + c.reteivaCop + c.reteicaCop)}
+                        {formatCurrency(c.retefuenteCop + c.reteivaCop + c.reteicaCop)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right font-mono tabular-nums text-fg">
-                        {pesos(c.totalCop)}
+                        {formatCurrency(c.totalCop)}
+                      </TableCell>
+                      {/* 🔴 QA-FACT-CONTA-95 r2 (FA-E-05): el PDF de la certificación. */}
+                      <TableCell className="w-10">
+                        <BotonPdfDeLaCertificacion
+                          id={c.id}
+                          propietario={c.propietarioNombre}
+                          desde={String(c.periodoDesde)}
+                          hasta={String(c.periodoHasta)}
+                          compacto
+                        />
                       </TableCell>
                     </TableRow>
                   ))

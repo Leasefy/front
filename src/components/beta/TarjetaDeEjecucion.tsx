@@ -518,7 +518,7 @@ function TarjetaEnCursoDelHilo({ t: c, messageId, ensayo, repite }: PropsComunes
             )}
             {seguimiento.errorAlCancelar && (
               <p role="alert" className="font-body text-[14px] text-danger">
-                {t('beta.enElChat.tarjeta.enCurso.noPudeCancelar', { motivo: seguimiento.errorAlCancelar })}
+                {seguimiento.errorAlCancelar}
               </p>
             )}
           </Pie>

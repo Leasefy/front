@@ -57,9 +57,17 @@ export function bloqueoDeLaConsulta(r: ParaIniciarUnContrato | null | undefined)
   };
 }
 
-/** A dónde manda el enlace: la sección del inventario en la ficha del inmueble. */
-export function enlaceAlInventario(consignacionId: string): string {
-  return `/panel/inmobiliaria/inmuebles/${consignacionId}#inventario`;
+/**
+ * A dónde manda el enlace: la sección del inventario en la ficha del inmueble.
+ *
+ * Con `volver` (QA con avatares, 04-10: desde «Nuevo contrato»), la ficha
+ * ofrece regresar a ese lugar cuando el inventario quede listo. El `?volver=`
+ * va ANTES del `#inventario`: después del ancla el navegador no lo lee.
+ */
+export function enlaceAlInventario(consignacionId: string, volver?: string | null): string {
+  const base = `/panel/inmobiliaria/inmuebles/${consignacionId}`;
+  const regreso = volver ? `?volver=${encodeURIComponent(volver)}` : '';
+  return `${base}${regreso}#inventario`;
 }
 
 /** «A-12» si trae el número del sistema viejo, «#12» si no. */

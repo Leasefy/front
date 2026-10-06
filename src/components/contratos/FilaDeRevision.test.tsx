@@ -514,19 +514,25 @@ describe('<FilaDeRevision> — el reparto entre los dueños', () => {
     expect(filas[1]).toContain('59 %')
   })
 
-  it('en partes iguales lo dice, para que no se lea como un dato del archivo', () => {
+  it('🔴 sin porcentaje en el archivo: «Falta el porcentaje de cada propietario», sin un 50/50 y con el giro frenado (Nico, 04-10-2026)', () => {
+    // Desde el 04-10 el back ya no manda el 50 % provisional: los dueños van
+    // sin % (`bps: null`) y la revisión dice qué pasa.
     montar(
       conReparto({
         explicito: false,
         problema: null,
         duenos: [
-          { documento: '1', nombre: 'A', bps: 5000, canon: 550000 },
-          { documento: '2', nombre: 'B', bps: 5000, canon: 550000 },
+          { documento: '1', nombre: 'A', bps: null, canon: null },
+          { documento: '2', nombre: 'B', bps: null, canon: null },
         ],
       }),
     )
-    expect(document.querySelector('[data-testid="reparto-de-duenos"]')?.textContent).toContain(
-      'partes iguales',
+    const texto = document.querySelector('[data-testid="reparto-de-duenos"]')?.textContent ?? ''
+    expect(texto).toContain('falta el porcentaje de cada propietario')
+    expect(texto).not.toContain('partes iguales')
+    expect(texto).not.toMatch(/\d+ %/)
+    expect(document.querySelector('[data-testid="reparto-sin-porcentaje"]')?.textContent).toContain(
+      'el giro de este inmueble no sale',
     )
   })
 
@@ -573,5 +579,108 @@ describe('<FilaDeRevision> — 🔴 el dueño de un contrato histórico (QA 22-0
   it('sin diferencia no dice nada', () => {
     montar({ propietarioDelHistorico: null })
     expect(container.querySelector('[data-testid="propietario-del-historico"]')).toBeNull()
+  })
+})
+
+/*
+ * Sistema de errores (02-10-2026): lo que el back señala por campo va debajo
+ * del propietario o de la comisión; lo demás, al aviso de la fila, por el
+ * traductor — un 5xx con su referencia y sin culpar a la conexión.
+ */
+describe('<FilaDeRevision> — el error en su lugar', () => {
+  async function apiError(status: number, cuerpo: Record<string, unknown>) {
+    const { ApiError } = await import('@/lib/api/client')
+    return new ApiError(status, cuerpo.message as string | string[], cuerpo.code as string, cuerpo)
+  }
+
+  const escribirComision = async (v: string) => {
+    const input = $('[data-testid="comision-fila-0"]') as HTMLInputElement
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )!.set!
+      setter.call(input, v)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    return input
+  }
+
+  const consignada = {
+    propietario: { id: 'po-1', nombre: 'Jorge', documento: '712' },
+    comisionPorcentaje: 9,
+    faltantes: [],
+    estado: 'LISTO' as const,
+  }
+
+  it('🔴 un 400 en comisionPorcentaje va debajo de la comisión, con aria y foco', async () => {
+    vi.mocked(contractsApi.migracion.corregirPropietario).mockRejectedValue(
+      await apiError(400, {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['La comisión no puede ser mayor que 100.'],
+        campos: [
+          { campo: 'comisionPorcentaje', regla: 'maximo', mensaje: 'La comisión no puede ser mayor que 100.' },
+        ],
+      }),
+    )
+    montar(consignada)
+    const input = await escribirComision('12')
+
+    const error = document.getElementById('revision-f-1-comision-error')
+    expect(error?.textContent).toBe('La comisión no puede ser mayor que 100.')
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(input.getAttribute('aria-describedby')).toBe('revision-f-1-comision-error')
+    expect(document.activeElement).toBe(input)
+    expect($('[data-testid="error-de-fila"]')).toBeNull()
+  })
+
+  it('un 400 en el documento de la ficha elegida va debajo del propietario', async () => {
+    vi.mocked(contractsApi.migracion.registrarPropietario).mockRejectedValue(
+      await apiError(400, {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['El documento no es válido.'],
+        campos: [{ campo: 'documento', regla: 'formato', mensaje: 'El documento no es válido.' }],
+      }),
+    )
+    montar()
+    await elegirAJorge()
+
+    expect(document.getElementById('revision-f-1-propietario-error')?.textContent).toBe(
+      'El documento no es válido.',
+    )
+    expect(document.activeElement).toBe($('[data-testid="propietario-fila-0-elegir-po-1"]'))
+  })
+
+  it('🔴 un 5xx va al aviso de la fila: de nuestro lado, con la referencia, sin «conexión»', async () => {
+    vi.mocked(contractsApi.migracion.corregirPropietario).mockRejectedValue(
+      await apiError(500, {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'ab12cd34',
+      }),
+    )
+    montar(consignada)
+    await escribirComision('12')
+
+    const texto = $('[data-testid="error-de-fila"]')?.textContent ?? ''
+    expect(texto).toMatch(/^No pudimos guardar el cambio: algo falló de nuestro lado/)
+    expect(texto).toContain('ab12cd34')
+    expect(texto).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta: ahí sí la conexión', async () => {
+    vi.mocked(contractsApi.migracion.corregirPropietario).mockRejectedValue(
+      new TypeError('Failed to fetch'),
+    )
+    montar(consignada)
+    await escribirComision('12')
+    expect($('[data-testid="error-de-fila"]')?.textContent).toMatch(/conexión/)
   })
 })

@@ -16,6 +16,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 export interface SubscriptionRow {
   email_enabled: boolean
@@ -61,18 +63,27 @@ export function useSubscription(): UseSubscriptionResult {
     const url = baseUrl()
     if (!url) {
       setIsLoading(false)
-      if (!process.env.NEXT_PUBLIC_AGENT_URL) setError('NEXT_PUBLIC_AGENT_URL not configured')
+      if (!process.env.NEXT_PUBLIC_AGENT_URL) {
+        setError('El agente de cobranza no está configurado para tu inmobiliaria.')
+      }
       return
     }
     try {
       const res = await agentFetch(url)
-      if (!res.ok) throw new Error(`${res.status}`)
+      if (!res.ok) throw await falloDelMicro(res)
       const json = (await res.json()) as SubscriptionRow
       setData(json)
       lastConfirmedRef.current = json
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'fetch_failed')
+      // `error` es SIEMPRE la frase para la persona (el traductor): «conexión»
+      // sólo si el `fetch` no salió; un 5xx, «de nuestro lado» con la referencia.
+      setError(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos cargar tu suscripción.',
+          accion: 'cargar tu suscripción',
+        }),
+      )
     } finally {
       setIsLoading(false)
     }
@@ -97,7 +108,7 @@ export function useSubscription(): UseSubscriptionResult {
         headers: agentAuthHeaders({ 'content-type': 'application/json' }),
         body: JSON.stringify(patch),
       })
-      if (!res.ok) throw new Error(`${res.status}`)
+      if (!res.ok) throw await falloDelMicro(res)
       const json = (await res.json()) as SubscriptionRow
       setData(json)
       lastConfirmedRef.current = json
@@ -105,7 +116,13 @@ export function useSubscription(): UseSubscriptionResult {
     } catch (err) {
       // Revert optimistic state
       if (lastConfirmedRef.current) setData(lastConfirmedRef.current)
-      setError(err instanceof Error ? err.message : 'patch_failed')
+      // Antes: el status crudo («500») detrás de «Error al actualizar suscripción».
+      setError(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos actualizar tu suscripción.',
+          accion: 'actualizar tu suscripción',
+        }),
+      )
     } finally {
       setIsSaving(false)
     }

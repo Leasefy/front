@@ -27,8 +27,14 @@
  *    falta y se enlaza a completarlo, en vez de mostrar medio escenario.
  */
 
+import { useState } from 'react'
 import { Scales, WarningCircle, Info } from '@phosphor-icons/react'
 
+import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/toast'
+import { contractsApi } from '@/lib/api/contracts.service'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { diaEnColombia, fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 import type {
   Contract,
   EscenarioTributarioDelContrato,
@@ -36,7 +42,11 @@ import type {
 } from '@/lib/types/contract'
 
 interface Props {
-  contract: Pick<Contract, 'escenarioTributario'>
+  contract: Pick<Contract, 'escenarioTributario'> & { id?: string }
+  /** QA-CONT-95 B-32: quien edita contratos puede confirmar el escenario. */
+  puedeEditar?: boolean
+  /** Después de confirmar: la ficha vuelve a leer el contrato. */
+  onConfirmado?: () => void
 }
 
 /** A quién le pega cada línea, en palabras de recibo. */
@@ -56,7 +66,7 @@ function porcentaje(n: number): string {
   return `${n.toLocaleString('es-CO', { maximumFractionDigits: 2 })} %`
 }
 
-export function EscenarioTributario({ contract }: Props) {
+export function EscenarioTributario({ contract, puedeEditar = false, onConfirmado }: Props) {
   const escenario = contract.escenarioTributario
 
   return (
@@ -85,7 +95,12 @@ export function EscenarioTributario({ contract }: Props) {
           actualizarse.
         </p>
       ) : (
-        <Contenido escenario={escenario} />
+        <Contenido
+          escenario={escenario}
+          contractId={contract.id}
+          puedeEditar={puedeEditar}
+          onConfirmado={onConfirmado}
+        />
       )}
     </section>
   )
@@ -93,8 +108,14 @@ export function EscenarioTributario({ contract }: Props) {
 
 function Contenido({
   escenario,
+  contractId,
+  puedeEditar,
+  onConfirmado,
 }: {
   escenario: EscenarioTributarioDelContrato
+  contractId?: string
+  puedeEditar: boolean
+  onConfirmado?: () => void
 }) {
   const sinDefinir = escenario.codigo === 'SIN_DEFINIR'
   // El motivo del archivo ya va en su propio bloque, con el texto del archivo
@@ -123,7 +144,23 @@ function Contenido({
           tiene que decir — si no, «confirmado» parece salido de la nada. Y
           cuando NO se pudo usar (un escenario con IVA en una vivienda), el
           motivo va acá, con la salida. */}
-      {escenario.delArchivo && (
+      {/* 🔴 QA-CONT-95 B-32: el archivo dice un escenario y la ficha del
+          propietario otro (Constructora Ñandú: «Escenario 1 · entre personas
+          naturales» siendo una empresa que retiene). No se elige solo: la
+          persona confirma cuál rige y, mientras tanto, la factura del canon
+          espera. */}
+      {escenario.delArchivo?.conflicto && (
+        <ChoqueConLaFicha
+          codigoDelArchivo={escenario.delArchivo.codigo}
+          conflicto={escenario.delArchivo.conflicto}
+          textoDelArchivo={escenario.delArchivo.texto}
+          contractId={contractId}
+          puedeEditar={puedeEditar}
+          onConfirmado={onConfirmado}
+        />
+      )}
+
+      {escenario.delArchivo && !escenario.delArchivo.conflicto && (
         <div
           className={
             escenario.delArchivo.aplicado
@@ -133,7 +170,22 @@ function Contenido({
           data-testid="escenario-del-archivo"
         >
           <p className="text-sm text-foreground">
-            {escenario.delArchivo.aplicado ? (
+            {escenario.delArchivo.aplicado && escenario.delArchivo.confirmado ? (
+              <span data-testid="escenario-confirmado-por">
+                <span className="font-medium">
+                  Confirmado
+                  {escenario.delArchivo.confirmado.por
+                    ? ` por ${escenario.delArchivo.confirmado.por}`
+                    : ''}{' '}
+                  el {fechaLarga(diaEnColombia(escenario.delArchivo.confirmado.el))}
+                  {escenario.delArchivo.codigo
+                    ? ` (${etiqueta(escenario.delArchivo.codigo)})`
+                    : ''}
+                  .
+                </span>{' '}
+                Con él se facturan los impuestos de este contrato.
+              </span>
+            ) : escenario.delArchivo.aplicado ? (
               <>
                 <span className="font-medium">
                   Confirmado por el sistema anterior
@@ -157,7 +209,9 @@ function Contenido({
           </p>
           <p className="text-caption text-muted-foreground">
             En el archivo:{' '}
-            <span className="font-mono">{escenario.delArchivo.texto}</span>
+            <span className="font-mono">
+              {escenario.delArchivo.confirmado?.textoDelArchivo ?? escenario.delArchivo.texto}
+            </span>
           </p>
         </div>
       )}
@@ -256,7 +310,7 @@ function Contenido({
 
       {/* Deducido ≠ confirmado, y la diferencia es plata: el cobro sólo
           practica lo declarado. */}
-      {escenario.certeza === 'DEDUCIDO' && (
+      {escenario.certeza === 'DEDUCIDO' && !escenario.delArchivo?.conflicto && (
         <div
           className="rounded-lg bg-surface-muted p-3 space-y-1"
           data-testid="escenario-deducido"
@@ -304,4 +358,106 @@ function Contenido({
 /** «Escenario 5» a partir de `E5`. El código es de la base, no de la pantalla. */
 function etiqueta(codigo: string): string {
   return `Escenario ${codigo.slice(1)}`
+}
+
+type CodigoDelCatalogo = 'E1' | 'E2' | 'E3' | 'E4' | 'E5' | 'E6' | 'E7' | 'E8' | 'E9'
+
+/**
+ * QA-CONT-95 B-32: el escenario del archivo choca con la ficha del
+ * propietario. Dos salidas, la de la ficha primero (es el dato más nuevo: lo
+ * escribió la inmobiliaria en Leasefy).
+ */
+function ChoqueConLaFicha({
+  codigoDelArchivo,
+  conflicto,
+  textoDelArchivo,
+  contractId,
+  puedeEditar,
+  onConfirmado,
+}: {
+  codigoDelArchivo: CodigoDelCatalogo | null
+  conflicto: NonNullable<NonNullable<EscenarioTributarioDelContrato['delArchivo']>['conflicto']>
+  textoDelArchivo: string
+  contractId?: string
+  puedeEditar: boolean
+  onConfirmado?: () => void
+}) {
+  const [enviando, setEnviando] = useState<CodigoDelCatalogo | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const confirmar = async (codigo: CodigoDelCatalogo) => {
+    if (!contractId) return
+    setEnviando(codigo)
+    setError(null)
+    try {
+      await contractsApi.confirmarEscenario(contractId, codigo)
+      toast.success(`Confirmado: rige el ${etiqueta(codigo).toLowerCase()}.`, {
+        description: 'Las cuotas desde hoy se rehacen con ese escenario.',
+      })
+      onConfirmado?.()
+    } catch (e) {
+      setError(mensajeParaLaPersona(e, { accion: 'confirmar el escenario' }))
+    } finally {
+      setEnviando(null)
+    }
+  }
+
+  const opciones: { codigo: CodigoDelCatalogo; texto: string; principal: boolean }[] = []
+  if (conflicto.codigoDeLaFicha) {
+    opciones.push({
+      codigo: conflicto.codigoDeLaFicha,
+      texto: `Rige el ${etiqueta(conflicto.codigoDeLaFicha).toLowerCase()} (la ficha del propietario)`,
+      principal: true,
+    })
+  }
+  if (codigoDelArchivo) {
+    opciones.push({
+      codigo: codigoDelArchivo,
+      texto: `Rige el ${etiqueta(codigoDelArchivo).toLowerCase()} (el archivo)`,
+      principal: !conflicto.codigoDeLaFicha,
+    })
+  }
+
+  return (
+    <div
+      className="rounded-lg border border-warning/40 bg-warning-soft p-3 space-y-2"
+      data-testid="escenario-choque-con-la-ficha"
+    >
+      <div className="flex items-start gap-2">
+        <WarningCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning-700 dark:text-warning-100" />
+        <div className="space-y-1 text-sm text-foreground">
+          <p className="font-medium">El archivo y la ficha del propietario no coinciden.</p>
+          <p>{conflicto.motivo}</p>
+          <p className="text-caption text-muted-foreground">
+            En el archivo: <span className="font-mono">{textoDelArchivo}</span>
+          </p>
+        </div>
+      </div>
+      {puedeEditar && contractId ? (
+        <div className="flex flex-wrap gap-2 pl-6">
+          {opciones.map((o) => (
+            <Button
+              key={o.codigo}
+              size="sm"
+              variant={o.principal ? 'default' : 'outline'}
+              disabled={enviando !== null}
+              onClick={() => void confirmar(o.codigo)}
+              data-testid={`confirmar-escenario-${o.codigo}`}
+            >
+              {enviando === o.codigo ? 'Confirmando…' : o.texto}
+            </Button>
+          ))}
+        </div>
+      ) : (
+        <p className="pl-6 text-caption text-muted-foreground" data-testid="escenario-choque-sin-permiso">
+          Lo confirma quien puede editar contratos en tu inmobiliaria.
+        </p>
+      )}
+      {error ? (
+        <p className="pl-6 text-sm text-danger" role="alert" data-testid="escenario-choque-error">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  )
 }

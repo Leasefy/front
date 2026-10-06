@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck, Target, ClipboardText, Lifebuoy, Scroll, Receipt } from '@phosphor-icons/react';
+import { SquaresFour, House, FileMagnifyingGlass, Handshake, CreditCard, FileText, Chat, MagnifyingGlass, SealCheck, Target, ClipboardText, Scroll, Receipt } from '@phosphor-icons/react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PlanSidebar, ProfileCompletionStep } from '@/components/ui/plan/PlanSidebar';
 import { PlanHeader } from '@/components/ui/plan/PlanHeader';
@@ -48,7 +48,9 @@ function useTenantNavItems() {
     { label: locale === 'es' ? 'Estado de cuenta' : 'Account statement', href: '/inquilino/estado-de-cuenta', icon: Receipt },
     { label: locale === 'es' ? 'Acuerdos' : 'Agreements', href: '/inquilino/acuerdos', icon: Scroll },
     { label: locale === 'es' ? 'Mis casos' : 'My cases', href: '/inquilino/casos', icon: ClipboardText },
-    { label: locale === 'es' ? 'Solicitudes' : 'Requests', href: '/inquilino/solicitudes', icon: Lifebuoy },
+    // SO-07 (PQRS-FIX, 04-10-2026): «Solicitudes» y «Mis casos» eran dos
+    // entradas para lo mismo (el clic en Solicitudes abría el caso y el menú
+    // saltaba a «Mis casos»). Queda una: «Mis casos», con «Nueva solicitud».
     { label: t('nav.documents'), href: '/inquilino/documentos', icon: FileText },
     // Sin badge fijo: el 2 estaba escrito a mano. Ahora el conteo sale de
     // useUnreadMessages (polling), así el sidebar nunca promete no-leídos falsos.

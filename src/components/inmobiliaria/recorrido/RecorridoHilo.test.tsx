@@ -26,15 +26,19 @@ vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'))
 // ya estás, así que necesita un pathname.
 vi.mock('next/navigation', () => ({ usePathname: () => '/panel/inmobiliaria/otra-cosa' }))
 
-// Mismo doble que usa `para-entender-mas.test.tsx`: un modal de verdad no
-// aporta nada acá y mete a Radix y a los portales en el medio.
-vi.mock('@/components/ui/dialog', () => ({
-  Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
-    open ? <div data-testid="modal">{children}</div> : null,
-  DialogContent: ({ children, ...p }: { children: React.ReactNode }) => <div {...p}>{children}</div>,
-  DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
-  DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
+// Un cajón de verdad no aporta nada acá y mete a Radix y a los portales en el
+// medio. Desde el 05-10-2026 `ParaEntenderMas` abre el CAJÓN de la casa (antes
+// un modal): el doble sigue al componente, las aserciones no cambian.
+vi.mock('@/components/ui/cajon', () => ({
+  Cajon: ({ abierto, children }: { abierto: boolean; children: React.ReactNode }) =>
+    abierto ? <div data-testid="modal">{children}</div> : null,
+  CajonCabecera: ({ titulo, descripcion }: { titulo: React.ReactNode; descripcion?: React.ReactNode }) => (
+    <div>
+      <h2>{titulo}</h2>
+      {descripcion ? <p>{descripcion}</p> : null}
+    </div>
+  ),
+  CajonCuerpo: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
 // Sin esto React avisa en cada render que el entorno no soporta act(). No

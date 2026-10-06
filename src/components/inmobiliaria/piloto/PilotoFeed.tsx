@@ -46,6 +46,7 @@ import { EsqueletoTarjetas } from '@/components/estado/EsqueletoTabla'
 import { useI18n } from '@/lib/i18n'
 import { relativeTime, workspaceVocab } from '@/components/inmobiliaria/ai/ColaHumana'
 import type { ActivityItem } from '@/lib/api/piloto'
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada'
 
 /** Icono por tipo de evento; el orden importa (primero el match más preciso). */
 const TIPO_ICONS: Array<{ match: RegExp; icon: Icon }> = [
@@ -84,16 +85,25 @@ interface Dia {
  */
 const HECHOS_INICIALES = 8
 
+/**
+ * 🔴 QA-IA-95 (05-10-2026, IA95-04): el día se toma en la hora de Colombia, para la etiqueta Y
+ * para agrupar. Antes la clave era el día UTC (`toISOString`) y la etiqueta el día local: lo de
+ * ayer después de las 7 p. m. caía en otro grupo y la Actividad decía «AYER» dos veces seguidas.
+ */
+const ZONA = 'America/Bogota'
+/** «2026-10-04» del instante en la hora de Colombia. */
+function diaEnColombia(d: Date): string {
+  return d.toLocaleDateString('en-CA', { timeZone: ZONA })
+}
+
 function etiquetaDeDia(iso: string, hoy: Date): string {
   const d = new Date(iso)
   const dias = Math.round(
-    (new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate()).getTime() -
-      new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) /
-      86_400_000,
+    (Date.parse(`${diaEnColombia(hoy)}T00:00:00Z`) - Date.parse(`${diaEnColombia(d)}T00:00:00Z`)) / 86_400_000,
   )
   if (dias === 0) return 'Hoy'
   if (dias === 1) return 'Ayer'
-  return d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })
+  return d.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', timeZone: ZONA })
 }
 
 /** Agrupa por día y pliega repeticiones consecutivas del mismo hecho. */
@@ -103,7 +113,7 @@ function agrupar(items: ActivityItem[]): Dia[] {
   for (const item of items) {
     const fecha = new Date(item.at)
     if (Number.isNaN(fecha.getTime())) continue
-    const clave = fecha.toISOString().slice(0, 10)
+    const clave = diaEnColombia(fecha)
     let dia = dias.at(-1)
     if (!dia || dia.clave !== clave) {
       dia = { clave, etiqueta: etiquetaDeDia(item.at, hoy), hechos: [] }
@@ -138,7 +148,8 @@ function recortar(dias: Dia[], limite: number): Dia[] {
 export interface PilotoFeedProps {
   items: ActivityItem[]
   isLoading: boolean
-  error: string | null
+  /** El error entero (no su texto): `FalloDeCarga` dice qué pasó. `null` si no falló. */
+  error: unknown
   /** El micro no publicó el endpoint (404) o no se pudo consultar. */
   notAvailable?: boolean
   onRefetch?: () => Promise<void>
@@ -230,7 +241,7 @@ export function PilotoFeed({
                             className="min-w-0 truncate rounded text-left text-body-sm text-fg after:absolute after:inset-0 after:content-[''] hover:underline"
                             data-testid={`piloto-feed-fila-${item.id}`}
                           >
-                            {item.titulo}
+                            {conLaPlataPegada(item.titulo)}
                             {veces > 1 && (
                               <span className="ml-1.5 rounded-full bg-surface-muted px-1.5 py-0.5 font-mono text-label tabular-nums text-fg-muted">
                                 ×{veces}

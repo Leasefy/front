@@ -13,7 +13,9 @@
  * 404 esa propuesta no es tuya.
  */
 
-import { agentAuthHeaders } from './agent-auth';
+import { agentFetch } from './agent-fetch';
+import { ApiError } from './client';
+import { falloDelMicro } from './fallo-del-micro';
 
 /** Una fila de la tarjeta. El contacto viene ENMASCARADO desde el agente. */
 export interface BackendDestinatarioDeAccion {
@@ -56,13 +58,19 @@ export interface RespuestaDeAccion {
   resueltaEn: string;
 }
 
-/** Error con el código HTTP a la vista, para que la tarjeta diga la verdad. */
-export class ErrorDeAccion extends Error {
-  readonly status: number;
-  constructor(status: number, mensaje: string) {
-    super(mensaje);
+/**
+ * Error con el código HTTP a la vista, para que la tarjeta diga la verdad.
+ *
+ * Es un `ApiError` (02-10-2026) con el cuerpo entero en `detalle`: el
+ * traductor lee de ahí la `referencia` de un 5xx. Su texto es SÓLO el
+ * `message` del sobre; el `error` del cuerpo viejo (a veces en inglés,
+ * «Forbidden — …») o el «ai-hub acción 500» que se armaba acá ya no llegan a
+ * la tarjeta.
+ */
+export class ErrorDeAccion extends ApiError {
+  constructor(status: number, mensaje: string | string[], code?: string, detalle?: Record<string, unknown>) {
+    super(status, mensaje, code, detalle);
     this.name = 'ErrorDeAccion';
-    this.status = status;
   }
 }
 
@@ -80,16 +88,10 @@ async function postAccion(
   const url = `${agentBaseUrl()}/api/agency/${agencyId}/ai-hub/chat/acciones/${encodeURIComponent(
     propuestaId,
   )}/${ruta}`;
-  const res = await fetch(url, { method: 'POST', headers: agentAuthHeaders() });
+  const res = await agentFetch(url, { method: 'POST' });
   if (!res.ok) {
-    let mensaje = '';
-    try {
-      const cuerpo = (await res.json()) as { error?: string };
-      mensaje = cuerpo?.error ?? '';
-    } catch {
-      /* el cuerpo no era JSON: alcanza con el código */
-    }
-    throw new ErrorDeAccion(res.status, mensaje || `ai-hub acción ${res.status}`);
+    const fallo = await falloDelMicro(res);
+    throw new ErrorDeAccion(fallo.status, fallo.messages ?? fallo.message, fallo.code, fallo.detalle);
   }
   return (await res.json()) as RespuestaDeAccion;
 }

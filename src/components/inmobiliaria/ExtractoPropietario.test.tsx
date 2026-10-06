@@ -113,11 +113,14 @@ describe('<ExtractoPropietario>', () => {
     expect(chips[0].closest('tr')?.textContent).toContain('La Floresta');
   });
 
+  // P-23 (QA-PROP, 03-10): el número va ENMASCARADO, como en la ficha
+  // (antes esta prueba esperaba el número completo, `36500386693`).
   it('la cuenta bancaria sale del extracto, aunque la lista de propietarios venga sin bankAccount', async () => {
     await render();
     const banco = container.querySelector('[data-testid="extracto-banco"]')!.textContent;
     expect(banco).toContain('Banco Caja Social');
-    expect(banco).toContain('36500386693');
+    expect(banco).toContain('****6693');
+    expect(banco).not.toContain('36500386693');
   });
 
   it('sin cuenta registrada lo dice, no deja el bloque en blanco', async () => {
@@ -145,11 +148,34 @@ describe('<ExtractoPropietario>', () => {
     expect(toast.success).toHaveBeenCalledWith('inmobiliaria.propietario.extracto.pdfDownloaded', expect.anything());
   });
 
-  it('si el PDF falla no dice «descargado»: dice qué pasó', async () => {
+  it('si el PDF falla no dice «descargado»: dice qué pasó, sin el status crudo', async () => {
     await render({ onDownloadPDF: vi.fn(async () => { throw new Error('503'); }) });
     await clickTestId('extracto-descargar');
     expect(toast.success).not.toHaveBeenCalled();
-    expect(toast.error).toHaveBeenCalledWith('inmobiliaria.propietario.extracto.pdfError', { description: '503' });
+    const [titulo, { description }] = toast.error.mock.calls[0] as [string, { description: string }];
+    expect(titulo).toBe('inmobiliaria.propietario.extracto.pdfError');
+    expect(description).not.toBe('503');
+    expect(description).toMatch(/de nuestro lado|Leasefy/);
+  });
+
+  it('🔴 un 5xx al mandar el correo dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const onEmail = vi.fn(async () => {
+      throw new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' });
+    });
+    await render({ onEmail });
+    await clickTestId('extracto-enviar');
+    const [, { description }] = toast.error.mock.calls[0] as [string, { description: string }];
+    expect(description).toMatch(/^No pudimos mandar el extracto por correo: algo falló de nuestro lado/);
+    expect(description).toContain('ab12cd34');
+    expect(description).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('sin respuesta (la red) al mandar el correo, habla de la conexión', async () => {
+    await render({ onEmail: vi.fn(async () => { throw new TypeError('Failed to fetch'); }) });
+    await clickTestId('extracto-enviar');
+    const [, { description }] = toast.error.mock.calls[0] as [string, { description: string }];
+    expect(description).toMatch(/conexión/);
   });
 
   it('«Enviar por Email» manda de verdad y sólo dice «enviado» si el envío resolvió', async () => {
@@ -228,7 +254,7 @@ describe('extracto con deducciones', () => {
       },
     });
 
-    expect(container.querySelector('[data-testid="extracto-neto-a-recibir"]')?.textContent).toBe('$0');
+    expect(container.querySelector('[data-testid="extracto-neto-a-recibir"]')?.textContent).toBe('$\u00a00');
     const bloque = container.querySelector('[data-testid="bloque-de-deducciones"]');
     expect(bloque?.textContent).toContain('Saldo en contra del mes anterior');
     expect(bloque?.textContent).toContain('Descuento: Predial 2026');
@@ -239,7 +265,52 @@ describe('extracto con deducciones', () => {
 
   it('sin deducciones el extracto se lee como siempre', async () => {
     await render({ extracto: { ...extracto, totals: { ...extracto.totals, totalNet: 720_000 } } });
-    expect(container.querySelector('[data-testid="extracto-neto-a-recibir"]')?.textContent).toBe('$720.000');
+    expect(container.querySelector('[data-testid="extracto-neto-a-recibir"]')?.textContent).toBe('$\u00a0720.000');
     expect(container.querySelector('[data-testid="bloque-de-deducciones"]')).toBeNull();
+  });
+});
+
+
+/**
+ * 🔴 P-23 (QA-PROP, 03-10): la tabla no cabía en el diálogo y Neto, fija,
+ * tapaba Comisión y Conceptos; el título y la dirección se repetían; las
+ * acciones quedaban detrás del scroll.
+ */
+describe('<ExtractoPropietario> — que quepa y se lea (P-23)', () => {
+  it('«Com. %» ya no es una columna: el porcentaje va debajo de la comisión', async () => {
+    await render({ extracto: { ...extracto, lineItems: [linea({ commissionPercent: 10, commissionAmount: 72_000 })] } });
+    const encabezados = Array.from(container.querySelectorAll('[data-testid="extracto-tabla"] th')).map((th) => th.textContent);
+    expect(encabezados).not.toContain('inmobiliaria.propietario.extracto.thCommPct');
+    expect(encabezados).toHaveLength(9);
+    expect(container.querySelector('[data-testid="extracto-comision-pct"]')!.textContent).toBe('10 %');
+  });
+
+  it('la dirección sale sólo si dice algo distinto del título', async () => {
+    await render({
+      extracto: {
+        ...extracto,
+        lineItems: [
+          linea({ cuotaId: 'a', propertyTitle: 'Calle 16 # 46-16 Apto 106', propertyAddress: 'Calle 16 # 46-16 Apto 106' }),
+          linea({ cuotaId: 'b', propertyTitle: 'Apartamento en La Floresta', propertyAddress: 'Cra 42' }),
+        ],
+      },
+    });
+    const primera = container.querySelectorAll('[data-testid="extracto-tabla"] tbody tr')[0].querySelector('td')!.textContent;
+    expect(primera).toBe('Calle 16 # 46-16 Apto 106');
+    const segunda = container.querySelectorAll('[data-testid="extracto-tabla"] tbody tr')[1].querySelector('td')!.textContent;
+    expect(segunda).toContain('Cra 42');
+  });
+
+  it('con `acciones="afuera"` el documento no pinta su pie: lo pone quien lo hospeda (el diálogo, fijo)', async () => {
+    await render({ onDownloadPDF: vi.fn(), onEmail: vi.fn(), acciones: 'afuera' });
+    expect(container.querySelector('[data-testid="extracto-descargar"]')).toBeNull();
+    expect(container.querySelector('[data-testid="extracto-enviar"]')).toBeNull();
+  });
+
+  it('cuentaEnmascarada deja los últimos cuatro', async () => {
+    const { cuentaEnmascarada } = await import('./ExtractoPropietario');
+    expect(cuentaEnmascarada('20345678912')).toBe('****8912');
+    expect(cuentaEnmascarada('****8912')).toBe('****8912');
+    expect(cuentaEnmascarada('123')).toBe('123');
   });
 });

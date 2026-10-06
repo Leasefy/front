@@ -3,8 +3,11 @@ import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { LandingFooterV2 } from "@/components/landing-v2/LandingFooterV2";
 import { SectionLabel } from "@/components/ui/section-label";
 import { IndiceLegal, TextoLegal } from "@/components/legal/TextoLegal";
-import { POLITICA_V3 } from "@/lib/legal/politica-v3";
-import { VERSION_POLITICA_DE_TRATAMIENTO } from "@/lib/legal/versiones";
+import { POLITICA_V4 } from "@/lib/legal/politica-v4";
+import {
+  VERSION_POLITICA_DE_TRATAMIENTO,
+  VIGENCIA_POLITICA_DE_TRATAMIENTO,
+} from "@/lib/legal/versiones";
 
 /**
  * Política de Tratamiento de Datos Personales.
@@ -36,13 +39,15 @@ import { VERSION_POLITICA_DE_TRATAMIENTO } from "@/lib/legal/versiones";
  *   colombiana (el art. 2.2.2.25.3.1 del Decreto 1074 enumera el contenido
  *   mínimo y los encargados no están), publicaba el stack completo, y
  *   convertía cada cambio de proveedor en una afirmación falsa en un
- *   documento legal. La lista con nombres va en el Anexo de Encargo que
- *   firma la inmobiliaria, y se entrega a quien la pida por correo.
+ *   documento legal. La lista con nombres se entrega a quien la pida por
+ *   correo y la recibe la inmobiliaria con su contrato de mandato (🔴 el
+ *   «Anexo de Encargo» no existe y no se inventa: decisión 2 del 05-10-2026,
+ *   PENDIENTE REVISIÓN LEGAL).
  *   Al 2026-09-05 es: Supabase (infraestructura) · Anthropic y Cohere
  *   (modelos) · Vapi (telefonía) · Deepgram (transcripción) · Kapso
  *   (WhatsApp) · Resend (correo) · Wompi y Bold (pagos) · Certicámara
  *   (firma) · Sentry (errores). Si entra o sale uno, actualizar acá y en
- *   el Anexo — pero la tabla publicada sólo cambia si cambia una FUNCIÓN
+ *   esa lista — pero la tabla publicada sólo cambia si cambia una FUNCIÓN
  *   o el país desde donde se procesa.
  * · Los correos son @leasefy.co. La versión anterior mandaba a
  *   privacidad@leasefy.com, un dominio que no es el canónico del producto.
@@ -53,6 +58,16 @@ export const metadata: Metadata = {
   description:
     "Cómo Leasefy recolecta, usa, comparte y protege los datos personales, conforme a la Ley 1581 de 2012 y la Ley 1266 de 2008.",
 };
+
+/** «2026-10-04» → «4 de octubre de 2026» (la fecha de la casa). */
+function fechaDeVigencia(iso: string): string {
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString("es-CO", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "America/Bogota",
+  });
+}
 
 export default function PrivacidadPage() {
   return (
@@ -82,14 +97,16 @@ export default function PrivacidadPage() {
               <dd className="text-muted-foreground">Colombia, únicamente</dd>
               <dt className="font-medium text-foreground">Versión</dt>
               <dd className="text-muted-foreground">{VERSION_POLITICA_DE_TRATAMIENTO}</dd>
+              <dt className="font-medium text-foreground">Vigente desde</dt>
+              <dd className="text-muted-foreground">{fechaDeVigencia(VIGENCIA_POLITICA_DE_TRATAMIENTO)}</dd>
               <dt className="font-medium text-foreground">Vigencia de la base de datos</dt>
               <dd className="text-muted-foreground">
                 Mientras dure la relación y los plazos legales de conservación (§13)
               </dd>
             </dl>
 
-            <IndiceLegal secciones={POLITICA_V3} />
-            <TextoLegal secciones={POLITICA_V3} />
+            <IndiceLegal secciones={POLITICA_V4} />
+            <TextoLegal secciones={POLITICA_V4} />
           </div></div>
         </section>
       </main>

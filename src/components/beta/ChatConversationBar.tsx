@@ -1,14 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Cards, Check, X, ArrowUUpLeft } from '@phosphor-icons/react';
+import { Check, X, ArrowUUpLeft } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
-import { ChatTemplatesMenu } from './ChatTemplates';
+import { BotonDelEquipo } from '@/components/agentes/BotonDelEquipo';
 
 interface ChatConversationBarProps {
-  onSelectTemplate: (prompt: string) => void;
   className?: string;
 }
 
@@ -23,26 +22,28 @@ interface ChatConversationBarProps {
  * ni siquiera hay barra lateral de conversaciones, así que la trampa era
  * total.
  *
- * Dos controles, los dos que faltaban:
+ * Lo que lleva:
  *
- *  - **Plantillas** — el mismo menú del estado-0, ahora alcanzable mientras se
- *    conversa, que era justamente el punto de mudarlas a un menú.
+ *  - **El equipo** (02-10-2026) — los orbes de quienes responden; abre el
+ *    modal «El equipo» (`BotonDelEquipo`).
  *  - **Terminar** — cierra la conversación actual y abre una vacía. La que se
  *    cierra NO se borra: queda en el historial del estado-0, que es de donde
  *    se retoma. Por eso pide confirmación en vez de un diálogo: el gesto es
  *    reversible, pero perder el hilo a mitad de una respuesta no se siente
  *    así.
+ *
+ * «Plantillas» se mudó al compositor (02-10): sale desde su botón, como en la
+ * llegada, y sigue alcanzable mientras se conversa.
  */
-export function ChatConversationBar({ onSelectTemplate, className }: ChatConversationBarProps) {
+export function ChatConversationBar({ className }: ChatConversationBarProps) {
   const { t } = useI18n();
   const { createConversation } = useBetaChatContext();
-  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [confirmandoFin, setConfirmandoFin] = useState(false);
 
   return (
     <div
       className={cn(
-        'relative z-30 flex shrink-0 items-center justify-between gap-3',
+        'relative z-30 flex shrink-0 items-center justify-end gap-2',
         // Franja separada por la LÍNEA, no por el relleno (Nico, 2026-08-27:
         // «¿por qué fondo blanco? manejala con el mismo fondo de todo»).
         //
@@ -57,30 +58,8 @@ export function ChatConversationBar({ onSelectTemplate, className }: ChatConvers
         className
       )}
     >
-      {/* Plantillas */}
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setTemplatesOpen((v) => !v)}
-          aria-expanded={templatesOpen}
-          aria-haspopup="menu"
-          className={cn(
-            'inline-flex items-center gap-[7px] rounded-full border border-border bg-surface px-[13px] py-[6px]',
-            'font-body text-[13px] font-medium text-fg',
-            'transition-colors duration-150 hover:bg-bg hover:border-border-strong',
-            'outline-none focus-visible:ring-2 focus-visible:ring-ring'
-          )}
-        >
-          <Cards size={14} />
-          {t('beta.templates.button')}
-        </button>
-
-        <ChatTemplatesMenu
-          open={templatesOpen}
-          onClose={() => setTemplatesOpen(false)}
-          onSelect={onSelectTemplate}
-        />
-      </div>
+      {/* El equipo: los orbes de quienes responden (abre «El equipo»). */}
+      <BotonDelEquipo conTexto={false} />
 
       {/* Terminar conversación */}
       {confirmandoFin ? (

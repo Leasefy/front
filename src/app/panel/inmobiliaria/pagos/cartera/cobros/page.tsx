@@ -5,7 +5,6 @@ import { mesEnTitulo } from '@/lib/utils/mes';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import {
   CurrencyCircleDollar,
   GearSix,
@@ -36,7 +35,7 @@ import {
   MOTIVO_SIN_PERMISO_DE_RECIBO,
   usePuedeHacerRecibo,
 } from '@/components/inmobiliaria/permiso-de-recibo';
-import { IconButton, SegmentedControl } from '@leasefy/cadence';
+import { CrossFade, IconButton, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   useCobros,
   useCobroSummary,
@@ -71,6 +70,9 @@ import {
   useCopyDeMigracionEnLista,
 } from '@/components/migracion/VeredictoDeMigracion';
 import { vacioPorMigracion } from '@/components/migracion/muro-reglas';
+import { loQueDijoElServidor } from '@/components/inmobiliaria/recordatorio-de-cobro';
+import { CobrosSinCuota } from '@/components/cartera/CobrosSinCuota';
+import { hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa';
 import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
 
 // View modes
@@ -378,21 +380,29 @@ function CobrosContent() {
    */
   const handleSendReminder = useCallback(
     async (cobro: Cobro) => {
-      await cobrosApi.sendReminder(cobro.id);
-
-      setCobrosData((prev) => {
-        if (!prev) return prev;
-        return prev.map((c) =>
-          c.id === cobro.id
-            ? {
-                ...c,
-                remindersSent: c.remindersSent + 1,
-                lastReminderDate: new Date().toISOString().split('T')[0],
-                updatedAt: new Date().toISOString(),
-              }
-            : c
-        );
-      });
+      const respuesta = await cobrosApi.sendReminder(cobro.id);
+      /*
+       * 🔴 PG-R01 (03-10-2026): el contador sube sólo si el back CONFIRMA que
+       * salió (`enviado: true`). La respuesta vuelve al cajón, que dice lo que
+       * pasó (`recordatorio-de-cobro.ts`).
+       */
+      if (loQueDijoElServidor(respuesta).salio) {
+        setCobrosData((prev) => {
+          if (!prev) return prev;
+          return prev.map((c) =>
+            c.id === cobro.id
+              ? {
+                  ...c,
+                  remindersSent: c.remindersSent + 1,
+                  // PG-R11: el día de Colombia; a las 7 p. m. UTC ya es mañana.
+                  lastReminderDate: hoyEnColombia(),
+                  updatedAt: new Date().toISOString(),
+                }
+              : c
+          );
+        });
+      }
+      return respuesta;
     },
     [setCobrosData]
   );
@@ -580,11 +590,19 @@ function CobrosContent() {
           la cartera, no un módulo aparte (Nico + CEO, 2026-09-15). */}
       <PestanasDeCartera />
 
-      {/* Summary Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
+      {/* PG-07 (QA de Pagos, 03-10-2026): los cobros sin cuota y su plata,
+          sólo para el administrador y sólo si hay alguno. */}
+      <CobrosSinCuota
+        onReaplicado={() => {
+          void refetchCobros();
+          void refetchSummary();
+        }}
+      />
+
+      {/* Summary Section — la página ya no anima su propia entrada (la pone el
+          `template.tsx`); se anima el CAMBIO: esqueleto → resumen → fallo. */}
+      <CrossFade
+        swapKey={apiSummary ? 'resumen' : summaryLoading ? 'cargando' : summaryError ? 'fallo' : 'nada'}
       >
         <FranjaDelResumen
           resumen={apiSummary}
@@ -600,15 +618,10 @@ function CobrosContent() {
             />
           )}
         </FranjaDelResumen>
-      </motion.div>
+      </CrossFade>
 
       {/* Unified Data Card - View Toggle + Filters + Content + Pagination */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="rounded-lg border border-border bg-card"
-      >
+      <div className="rounded-lg border border-border bg-card">
         {/* View Toggle Header - FIRST (Primary hierarchy) */}
         {/* 🔴 24-09-2026 (a 390 px desbordaba): la barra de la tarjeta se parte
             en líneas —vista · mes y conteo · vigentes/anulados— como la de
@@ -692,8 +705,21 @@ function CobrosContent() {
           cobroCountByStatus={cobroCountByStatus}
         />
 
-        {/* Content */}
-        <div>
+        {/* Content — cargando → fallo / tabla / tarjetas / vacío se cruzan
+            (también tabla ⇄ tarjetas). */}
+        <CrossFade
+          swapKey={
+            cobrosLoading
+              ? 'cargando'
+              : cobrosError
+                ? 'fallo'
+                : paginatedCobros.length > 0
+                  ? viewMode
+                  : hayFiltrosPuestos
+                    ? 'sin-resultados'
+                    : 'vacio'
+          }
+        >
           {cobrosLoading ? (
             /*
              * C5 (auditoría 13-09) — era un spinner centrado con «Cargando
@@ -716,6 +742,7 @@ function CobrosContent() {
             viewMode === 'table' ? (
               <CobroTable
                 cobros={paginatedCobros}
+                clave={`${filters.month}|${verAnulados}|${page}|${pageSize}`}
                 onCobroClick={handleCobroClick}
                 onRegisterPayment={verAnulados ? undefined : handleRegisterPaymentClick}
                 // Un cobro anulado sale de la lista: se vuelve a leer del back.
@@ -723,17 +750,21 @@ function CobrosContent() {
                 showSummary
               />
             ) : (
-              <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Stagger
+                key={`${filters.month}|${verAnulados}|${page}|${pageSize}`}
+                className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+              >
                 {paginatedCobros.map((cobro) => (
+                  <StaggerItem key={cobro.id}>
                   <CobroCard
-                    key={cobro.id}
                     cobro={cobro}
                     onClick={handleCobroClick}
                     onRegisterPayment={verAnulados ? undefined : handleRegisterPaymentClick}
                     onCobroAnulado={verAnulados ? undefined : () => void refetchCobros()}
                   />
+                  </StaggerItem>
                 ))}
-              </div>
+              </Stagger>
             )
           ) : hayFiltrosPuestos ? (
             /*
@@ -782,7 +813,7 @@ function CobrosContent() {
               )}
             </div>
           )}
-        </div>
+        </CrossFade>
 
         {/* Pie de tabla del design system: «X cobros · Filas por página · n/m».
             Se monta con una sola fila también — decirle a alguien que tiene 3
@@ -800,7 +831,7 @@ function CobrosContent() {
             />
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Cobro Detail Modal */}
       <CobroDetail

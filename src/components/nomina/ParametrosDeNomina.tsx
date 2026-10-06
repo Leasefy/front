@@ -30,7 +30,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/toast';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { atributosDelError, useErroresDelFormulario } from './errores-del-formulario';
+import {
+  PARAMETRO_MAXIMO_DE_NOMINA_COP,
+  TOPE_DE_LAS_CIFRAS_DEL_ESTADO,
+  pasaDe,
+} from './limites-de-nomina';
 import { nominaApi } from '@/lib/api/nomina.service';
 import type {
   FactoresDeNomina,
@@ -40,6 +46,14 @@ import { SIN_MEDIR } from '@/lib/tasas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { Avisos, ParaValidar, TituloDeBloque } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
+
+/** Las tres cifras que fija el Estado: plata, con su tope (🔁 el del back). */
+type CifraDelEstado = keyof typeof TOPE_DE_LAS_CIFRAS_DEL_ESTADO;
+const CIFRAS_DEL_ESTADO = Object.keys(TOPE_DE_LAS_CIFRAS_DEL_ESTADO) as CifraDelEstado[];
+/** 🔁 `GuardarParametrosDto.notas` (back): hasta 1.000 caracteres. */
+const LARGO_MAXIMO_DE_LAS_NOTAS = 1_000;
+/** El id del control de cada campo es su nombre en el DTO; las notas, aparte. */
+const idDelParametro = (campo: string) => (campo === 'notas' ? 'notas-de-parametros' : campo);
 
 /** Los grupos del formulario, en el orden en que un contador los revisa. */
 const GRUPOS: {
@@ -163,6 +177,21 @@ function Formulario({
   const [valores, setValores] = useState<Record<string, string>>({});
   const [notas, setNotas] = useState(datos.guardado?.notas ?? '');
   const [guardando, setGuardando] = useState(false);
+  const errores = useErroresDelFormulario<string>(idDelParametro);
+
+  /** 🔁 Las tres cifras del Estado con un cero de más, con la frase del back. */
+  const fueraDeRango: Partial<Record<CifraDelEstado, string>> = {};
+  for (const clave of CIFRAS_DEL_ESTADO) {
+    if (pasaDe(valores[clave] ?? '', PARAMETRO_MAXIMO_DE_NOMINA_COP)) {
+      fueraDeRango[clave] = TOPE_DE_LAS_CIFRAS_DEL_ESTADO[clave];
+    }
+  }
+  const errorDe = (campo: string): string | undefined =>
+    fueraDeRango[campo as CifraDelEstado] ?? errores.delServidor[campo];
+  const cambiar = (campo: string, valor: string) => {
+    errores.olvidar(campo);
+    setValores((v) => ({ ...v, [campo]: valor }));
+  };
 
   const reset = useCallback(() => {
     if (!partida) return;
@@ -200,7 +229,13 @@ function Formulario({
   };
 
   const guardar = async (confirmado: boolean) => {
+    const primeraFueraDeRango = CIFRAS_DEL_ESTADO.find((c) => fueraDeRango[c]);
+    if (primeraFueraDeRango) {
+      document.getElementById(primeraFueraDeRango)?.focus();
+      return;
+    }
     setGuardando(true);
+    errores.limpiar();
     try {
       const factores: Record<string, number | boolean> = {};
       for (const g of GRUPOS) {
@@ -228,9 +263,15 @@ function Formulario({
       );
       await onGuardado();
     } catch (error) {
-      toast.error(
-        mensajeDelFallo(error, 'No se pudieron guardar los parámetros.'),
-      );
+      errores.repartir(error, {
+        campos: [
+          ...CIFRAS_DEL_ESTADO,
+          ...GRUPOS.flatMap((g) => g.campos.map((c) => c.campo as string)),
+          'notas',
+        ],
+        porDefecto: 'No se pudieron guardar los parámetros.',
+        accion: 'guardar los parámetros',
+      });
     } finally {
       setGuardando(false);
     }
@@ -343,11 +384,11 @@ function Formulario({
                 inputMode="numeric"
                 placeholder="Sin cargar"
                 value={valores[clave] ?? ''}
-                onChange={(e) =>
-                  setValores((v) => ({ ...v, [clave]: e.target.value }))
-                }
+                onChange={(e) => cambiar(clave, e.target.value)}
                 data-testid={`campo-${clave}`}
+                {...atributosDelError(clave, errorDe(clave))}
               />
+              <ErrorDelCampo id={`${clave}-error`} mensaje={errorDe(clave)} />
               <p className="text-caption text-fg-muted" data-testid={`ref-${clave}`}>
                 {referencia != null
                   ? `En ${referencia.anio} fue ${
@@ -381,11 +422,11 @@ function Formulario({
                   type="number"
                   inputMode="numeric"
                   value={valores[c.campo] ?? ''}
-                  onChange={(e) =>
-                    setValores((v) => ({ ...v, [c.campo]: e.target.value }))
-                  }
+                  onChange={(e) => cambiar(c.campo, e.target.value)}
                   data-testid={`campo-${c.campo}`}
+                  {...atributosDelError(c.campo, errorDe(c.campo))}
                 />
+                <ErrorDelCampo id={`${c.campo}-error`} mensaje={errorDe(c.campo)} />
                 <p className="text-caption text-fg-muted">
                   {c.unidad === 'bps'
                     ? `${((entero(c.campo) ?? 0) / 100).toFixed(2)} %`
@@ -431,9 +472,15 @@ function Formulario({
           id="notas-de-parametros"
           className="min-h-20 w-full rounded-md border border-border bg-surface p-3 text-sm text-fg"
           value={notas}
-          onChange={(e) => setNotas(e.target.value)}
+          maxLength={LARGO_MAXIMO_DE_LAS_NOTAS}
+          onChange={(e) => {
+            errores.olvidar('notas');
+            setNotas(e.target.value);
+          }}
           data-testid="campo-notas"
+          {...atributosDelError('notas-de-parametros', errores.delServidor.notas)}
         />
+        <ErrorDelCampo id="notas-de-parametros-error" mensaje={errores.delServidor.notas} />
         <div className="flex flex-wrap gap-2">
           <Button
             onClick={() => void guardar(false)}

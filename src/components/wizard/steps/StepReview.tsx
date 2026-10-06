@@ -85,7 +85,7 @@ export function StepReview() {
       {/* Personal Information Summary */}
       <SummaryCard
         icon={<User className="h-5 w-5 text-muted-foreground" />}
-        title="Información Personal"
+        title="Información personal"
         onEdit={() => goToStep(1)}
       >
         <div className="space-y-1.5 text-sm">
@@ -196,7 +196,7 @@ export function StepReview() {
             <span className="text-sm text-foreground/70">
               Acepto los{' '}
               <a href="/terminos" className="text-foreground underline hover:no-underline">
-                terminos y condiciones
+                términos y condiciones
               </a>{' '}
               del servicio
             </span>

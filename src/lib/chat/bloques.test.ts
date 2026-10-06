@@ -110,6 +110,8 @@ describe('leerEntidades — persona → contratos → inmueble → propietario �
       diasDeMoraMaximo: 12,
       // Sin interés en el payload, 0 (nunca `undefined` en la tarjeta).
       interesDeMoraCop: 0,
+      // Lo vencido dentro del plazo (QA-CHAT 04-10): sin el dato, 0.
+      vencidaEnPlazoCop: 0,
     });
   });
 

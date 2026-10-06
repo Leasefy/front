@@ -25,11 +25,14 @@
  * los prenda (y el 14-09 ya costó ~680 correos reales desde un back local).
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
+import { agendaApi } from '@/lib/api/agenda.service'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import { CalendarCheck, UserPlus } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { Stagger, StaggerItem } from '@leasefy/cadence'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import {
   Badge,
@@ -48,6 +51,24 @@ import { leadsApi, visitasApi } from '@/lib/api/crm.service'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { useCrm } from '@/lib/hooks/use-crm'
+import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+
+/**
+ * Cuando una acción de la fila falla (02-10-2026). Antes eran try/finally sin
+ * `catch`: el botón dejaba de girar y nada decía que no se guardó (y la
+ * promesa quedaba sin atrapar). Ahora pasa por el traductor: «conexión» sólo
+ * sin respuesta; un 5xx es nuestro, con la referencia; un 4xx, lo que dijo el
+ * back («la visita ya pasó», «ese asesor no es de la inmobiliaria»).
+ */
+function avisarQueNoSeGuardo(error: unknown, titulo: string, accion: string) {
+  toast.error(titulo, {
+    description: mensajeParaLaPersona(error, {
+      porDefecto: 'No se guardó. Prueba de nuevo en un momento.',
+      accion,
+    }),
+  })
+}
 
 export function VisitasClient() {
   const { canAccess } = usePermissions()
@@ -63,6 +84,23 @@ export function VisitasClient() {
 
   const [tocando, setTocando] = useState<string | null>(null)
   const [marcando, setMarcando] = useState(false)
+
+  /*
+   * 🔴 PL-21 (04-10-2026): «Tus avisos no reciben visitas». Sin horario, el
+   * aviso público decía «Sin disponibilidad… vuelve pronto» y nadie en el
+   * panel se enteraba. Ahora se dice acá, con cuáles y cómo arreglarlo.
+   */
+  const [sinHorario, setSinHorario] = useState<Awaited<ReturnType<typeof agendaApi.avisosSinHorario>> | null>(null)
+  useEffect(() => {
+    let vivo = true
+    Promise.resolve()
+      .then(() => agendaApi.avisosSinHorario())
+      .then((r) => vivo && setSinHorario(r ?? null))
+      .catch(() => vivo && setSinHorario(null))
+    return () => {
+      vivo = false
+    }
+  }, [])
 
   const visitas = porAtender.datos?.visitas ?? []
   const pendientes = recordatorios.datos?.visitas ?? []
@@ -85,6 +123,8 @@ export function VisitasClient() {
     try {
       await visitasApi.asignarAsesor(visitId, asesorUserId)
       invalidar('visitas')
+    } catch (e) {
+      avisarQueNoSeGuardo(e, 'No se asignó el asesor', 'asignar el asesor')
     } finally {
       setTocando(null)
     }
@@ -95,6 +135,8 @@ export function VisitasClient() {
     try {
       await visitasApi.avisoAlInquilino(visitId, 'WHATSAPP')
       invalidar('visitas')
+    } catch (e) {
+      avisarQueNoSeGuardo(e, 'No se guardó el aviso al inquilino', 'guardar el aviso al inquilino')
     } finally {
       setTocando(null)
     }
@@ -106,6 +148,12 @@ export function VisitasClient() {
       if (ya) await visitasApi.quitarNoShow(visitId)
       else await visitasApi.marcarNoShow(visitId)
       invalidar('visitas')
+    } catch (e) {
+      avisarQueNoSeGuardo(
+        e,
+        ya ? 'No se quitó la marca de «no llegó»' : 'No se marcó que no llegó',
+        ya ? 'quitar la marca de «no llegó»' : 'marcar que no llegó',
+      )
     } finally {
       setTocando(null)
     }
@@ -116,6 +164,8 @@ export function VisitasClient() {
     try {
       await visitasApi.recordatorios(true)
       invalidar('visitas')
+    } catch (e) {
+      avisarQueNoSeGuardo(e, 'No se marcaron los recordatorios', 'marcar los recordatorios')
     } finally {
       setMarcando(false)
     }
@@ -152,6 +202,41 @@ export function VisitasClient() {
         </p>
       </header>
 
+      {sinHorario && sinHorario.sinHorario > 0 && (
+        <div
+          role="status"
+          className="rounded-lg border border-warning/40 bg-warning-soft p-4"
+          data-testid="avisos-sin-horario"
+        >
+          <p className="font-medium text-fg">
+            {sinHorario.sinHorario === sinHorario.publicados
+              ? 'Tus avisos no reciben visitas'
+              : `${sinHorario.sinHorario} de tus ${sinHorario.publicados} avisos no reciben visitas`}
+          </p>
+          <p className="mt-1 text-sm text-fg-muted">
+            Ni el inmueble ni su asesor tienen horario de visitas, así que el aviso no ofrece turnos: quien
+            quiere visitar sólo puede dejar su nombre y su teléfono para que lo llamen. Pon el horario del
+            asesor (en su perfil) o el del inmueble (en su ficha, «Visitas»).
+          </p>
+          <ul className="mt-2 flex flex-wrap gap-1.5">
+            {sinHorario.inmuebles.slice(0, 8).map((i) => (
+              <li key={i.id}>
+                <Link
+                  href={`/panel/inmobiliaria/inmuebles/${i.id}`}
+                  className="inline-flex rounded-full border border-border bg-card px-2.5 py-1 text-caption text-fg hover:border-primary/40"
+                >
+                  {i.codigo != null ? `#${i.codigo} · ` : ''}
+                  {i.titulo}
+                </Link>
+              </li>
+            ))}
+            {sinHorario.inmuebles.length > 8 && (
+              <li className="px-1 py-1 text-caption text-fg-muted">y {sinHorario.sinHorario - 8} más</li>
+            )}
+          </ul>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Por atender</CardTitle>
@@ -182,9 +267,10 @@ export function VisitasClient() {
                 />
               }
             >
-              <ul className="divide-y" data-testid="lista-de-visitas">
+              {/* Asignar asesor o avisar: las visitas entran escalonadas y la que se resuelve sale. */}
+              <Stagger as="ul" className="divide-y" data-testid="lista-de-visitas">
                 {ordenadas.map((v) => (
-                  <li
+                  <StaggerItem as="li"
                     key={v.visitId}
                     className="space-y-2 py-3"
                     data-testid={`visita-${v.visitId}`}
@@ -279,9 +365,9 @@ export function VisitasClient() {
                         {v.noShow ? 'No, sí llegó' : 'No llegó'}
                       </Button>
                     ) : null}
-                  </li>
+                  </StaggerItem>
                 ))}
-              </ul>
+              </Stagger>
             </EstadoDeDatos>
           )}
         </CardContent>
@@ -331,16 +417,17 @@ export function VisitasClient() {
                 Esta pantalla NO envía: arma el texto y deja la constancia. El
                 envío sale por los avisos de la inmobiliaria.
               </p>
-              <ul className="divide-y" data-testid="lista-recordatorios">
+              {/* Los recordatorios entran escalonados; el que se marca, sale. */}
+              <Stagger as="ul" className="divide-y" data-testid="lista-recordatorios">
                 {pendientes.map((r) => (
-                  <li key={r.visitId} className="space-y-1 py-3">
+                  <StaggerItem as="li" key={r.visitId} className="space-y-1 py-3">
                     <p className="text-sm">{r.mensaje}</p>
                     <p className="text-muted-foreground text-xs">
                       {r.correo ?? r.telefono ?? 'sin correo ni teléfono'}
                     </p>
-                  </li>
+                  </StaggerItem>
                 ))}
-              </ul>
+              </Stagger>
             </EstadoDeDatos>
           )}
         </CardContent>

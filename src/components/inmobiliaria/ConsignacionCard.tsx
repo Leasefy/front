@@ -1,9 +1,12 @@
 'use client';
 
+import { SituacionComercialCorta } from '@/components/comercial/SituacionComercial';
+import type { VacanciaYMandato } from '@/lib/comercial/comercial';
 import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { CanonPorConfirmarBadge } from './CanonPorConfirmar';
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { Pressable, motionSpring } from '@leasefy/cadence';
 import {
   Buildings,
   House,
@@ -15,7 +18,6 @@ import {
   CaretRight,
   Eye,
   PencilSimple,
-  Percent,
   CalendarPlus,
   Car,
   Mountains,
@@ -26,6 +28,8 @@ import { useI18n } from '@/lib/i18n';
 import type { Consignacion, PropertyAvailability, ConsignacionStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
+import { cajonDelInmueble } from '@/lib/inmobiliaria/cajon-del-inmueble';
 
 interface ConsignacionCardProps {
   consignacion: Consignacion;
@@ -38,6 +42,8 @@ interface ConsignacionCardProps {
   onAgendarCita?: () => void;
   selected?: boolean;
   variant?: 'default' | 'compact';
+  /** COMERCIAL (04-10-2026): días de vacancia y mandato que se vence. */
+  comercial?: VacanciaYMandato;
 }
 
 // Property type icons
@@ -67,6 +73,7 @@ export function ConsignacionCard({
   onAgendarCita,
   selected,
   variant = 'default',
+  comercial,
 }: ConsignacionCardProps) {
   const { t, locale } = useI18n();
 
@@ -127,18 +134,28 @@ export function ConsignacionCard({
   // latent trap the moment either type widens — the same trap this task
   // already found and fixed in the table.
   const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType] ?? Buildings;
-  const availability = AVAILABILITY_COLORS[consignacion.availability] ?? AVAILABILITY_COLORS.available;
+  // QA con avatares (04-10): un borrador salía «Disponible». Misma regla que
+  // el chip «Borrador» de la lista (`cajonDelInmueble`).
+  const availability =
+    cajonDelInmueble({ kind: 'consignacion', ...consignacion }) === 'borrador'
+      ? {
+          bg: 'bg-surface-muted dark:bg-ink',
+          text: 'text-fg-muted dark:text-fg-subtle',
+          label: t('inmobiliaria.portafolio.card.availability.draft'),
+        }
+      : AVAILABILITY_COLORS[consignacion.availability] ?? AVAILABILITY_COLORS.available;
   const status = STATUS_COLORS[consignacion.status] ?? STATUS_COLORS.active;
 
   // Compact variant - single row for list views
   if (variant === 'compact') {
     return (
-      <motion.button
+      <Pressable
+        as="button"
+        hover="scale"
+        press="sm"
         onClick={onClick}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
         className={cn(
-          'w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 text-left',
+          'w-full flex items-center gap-3 p-3 rounded-lg border transition-colors duration-base text-left',
           selected
             ? 'border-primary/30 bg-primary-soft dark:border-primary/30'
             : 'border-border dark:border-border-strong bg-surface dark:bg-bg hover:border-border dark:hover:border-border-strong'
@@ -167,7 +184,7 @@ export function ConsignacionCard({
           <p className="text-xs text-fg-muted dark:text-fg-subtle truncate">
             {consignacion.propertyZone} ·{' '}
             {consignacion.listingType === 'sale'
-              ? (consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—')
+              ? textoDeLaComision(consignacion)
               : consignacion.canonPorConfirmar
                 ? TEXTO_CANON_POR_CONFIRMAR
                 : consignacion.monthlyRent != null
@@ -187,6 +204,7 @@ export function ConsignacionCard({
             <motion.svg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
+              transition={motionSpring.bouncy}
               className="w-3 h-3 text-primary-fg"
               fill="none"
               viewBox="0 0 24 24"
@@ -196,16 +214,17 @@ export function ConsignacionCard({
             </motion.svg>
           </div>
         )}
-      </motion.button>
+      </Pressable>
     );
   }
 
   // Default variant - full card with stats
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
+    <Pressable
+      hover="lift"
+      press="none"
       className={cn(
-        'w-full rounded-lg border bg-surface dark:bg-bg overflow-hidden transition-all duration-200 group',
+        'w-full rounded-lg border bg-surface dark:bg-bg overflow-hidden transition-[border-color,box-shadow] duration-base group',
         selected
           ? 'border-primary/30 ring-2 ring-primary/30'
           : 'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong hover:',
@@ -237,9 +256,9 @@ export function ConsignacionCard({
         {/* Commission pill - top right */}
         <div className="absolute top-3 right-3">
           <span className="px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium flex items-center gap-1">
-            <Percent className="w-3 h-3" />
             {/* contract-addendum-2.md §A.3 — a SALE mandate's commissionPercent
-                is always 0; the agreed figure is saleCommissionPercent. */}
+                is always 0; the agreed figure is saleCommissionPercent.
+                IN-03: sin el ícono de porcentaje — el texto ya dice «10 %». */}
             {textoDeLaComision(consignacion)}
           </span>
         </div>
@@ -262,8 +281,9 @@ export function ConsignacionCard({
           </h3>
           <div className="flex items-center gap-1.5 text-sm text-fg-muted dark:text-fg-subtle">
             <MapPin className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">{consignacion.propertyZone}, {consignacion.propertyCity}</span>
+            <span className="truncate">{barrioYCiudad(consignacion.propertyZone, consignacion.propertyCity)}</span>
           </div>
+          <SituacionComercialCorta datos={comercial} />
         </div>
 
         {/* Rent Info — a SALE mandate has no canon (§A.2): show the sale
@@ -271,7 +291,7 @@ export function ConsignacionCard({
         {consignacion.listingType === 'sale' ? (
           <div className="flex items-baseline gap-2 mb-4">
             <span className="text-xl font-bold text-fg">
-              {consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—'}
+              {textoDeLaComision(consignacion)}
             </span>
             <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.saleCommission')}</span>
           </div>
@@ -287,7 +307,8 @@ export function ConsignacionCard({
             ) : (
               <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.perMonth')}</span>
             )}
-            {consignacion.adminFee && consignacion.adminFee > 0 && (
+            {/* COMERCIAL (QA 04-10): con `adminFee === 0` pintaba un «0» suelto al lado del canon. */}
+            {consignacion.adminFee != null && consignacion.adminFee > 0 && (
               <span className="text-xs text-fg-subtle dark:text-fg-muted">
                 + {formatCurrency(consignacion.adminFee)} {t('inmobiliaria.portafolio.card.admin')}
               </span>
@@ -401,7 +422,7 @@ export function ConsignacionCard({
           )}
         </div>
       </div>
-    </motion.div>
+    </Pressable>
   );
 }
 

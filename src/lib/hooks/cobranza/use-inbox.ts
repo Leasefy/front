@@ -27,6 +27,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import {
   INBOX_GRUPOS,
@@ -138,9 +139,13 @@ export interface UseCobranzaInboxResult {
   error: string | null
   refetch: () => Promise<void>
   /**
-   * Marca un hilo como leído (POST /read) y refresca la lista. Fail-soft: si
-   * el backend no está desplegado responde un no-op 200; cualquier error se
-   * traga (devuelve false) sin romper la UI. T-323: NO contacta al deudor.
+   * Marca un hilo como leído (POST /read) y refresca la lista. Si el backend
+   * no está desplegado responde un no-op 200. T-323: NO contacta al deudor.
+   *
+   * Devuelve `false` sólo si ni se intentó (sin agente, sin agencia, sin
+   * hilo). Si el micro dice que no, TIRA su `ApiError` (`falloDelMicro`); si el
+   * `fetch` no salió, tira ese error tal cual. Antes se tragaba todo y la
+   * pantalla (un try/finally sin catch) no decía nada.
    */
   markRead: (threadId: string) => Promise<boolean>
 }
@@ -193,22 +198,17 @@ export function useCobranzaInbox(): UseCobranzaInboxResult {
     async (threadId: string): Promise<boolean> => {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId || !threadId) return false
-      try {
-        const res = await agentFetch(
-          `${agentUrl}/api/agency/${agencyId}/cobranza/inbox/${threadId}/read`,
-          {
-            method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
-          },
-        )
-        if (!res.ok) throw new Error(`${res.status}`)
-        // Refresca la lista para que el contador de no leídos se actualice.
-        await fetchData()
-        return true
-      } catch {
-        // Fail-soft: no rompemos la UI si el endpoint no está desplegado.
-        return false
-      }
+      const res = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/cobranza/inbox/${threadId}/read`,
+        {
+          method: 'POST',
+          headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+        },
+      )
+      if (!res.ok) throw await falloDelMicro(res)
+      // Refresca la lista para que el contador de no leídos se actualice.
+      await fetchData()
+      return true
     },
     [agencyId, fetchData],
   )

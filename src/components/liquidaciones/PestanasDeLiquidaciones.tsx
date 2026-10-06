@@ -6,8 +6,9 @@
  *   · Liquidaciones — el neto por propietario del mes: el canon (causado o
  *     recaudado, según la base), comisión, conceptos a favor y a cargo. Lo que
  *     se le VA a girar.
- *   · Por aprobar   — las facturas de proveedor esperando la firma del
- *     contador (triple-gate de AP). Lo que sale por fuera del giro.
+ *   · Facturas de proveedores (antes «Por aprobar») — las facturas de
+ *     proveedor esperando la firma del contador (triple-gate de AP). Lo que
+ *     sale por fuera del giro.
  *
  * 🔴 «Por aprobar» llegó acá el 2026-09-16 (Nico). Era `/pagos/cola`, una
  * pestaña del tercer renglón del módulo —la Sala del agente de Pagos—, que
@@ -28,7 +29,10 @@ const RAIZ = '/panel/inmobiliaria/pagos/liquidaciones'
 
 export const PESTANAS_DE_LIQUIDACIONES: readonly PestanaDelRiel[] = [
   { href: RAIZ, labelKey: 'inmobiliaria.nav.liquidaciones', icon: Wallet },
-  { href: `${RAIZ}/por-aprobar`, labelKey: 'inmobiliaria.ai.nav.pagosCola', icon: CheckSquareOffset },
+  // PG-16 (03-10-2026): «Por aprobar» a secas, al lado de las liquidaciones de
+  // los propietarios, se leía «liquidaciones por aprobar»; es la cola de las
+  // facturas de PROVEEDOR. Se llama como lo que es.
+  { href: `${RAIZ}/por-aprobar`, labelKey: 'inmobiliaria.nav.facturasDeProveedores', icon: CheckSquareOffset },
 ]
 
 export function PestanasDeLiquidaciones() {

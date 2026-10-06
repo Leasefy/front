@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import {
   SortAscending,
   SortDescending,
@@ -22,10 +21,11 @@ import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableFooter,
   TableHead,
   TableRow,
+  TableRowAnimada,
   TableCell,
 } from '@/components/ui/table';
 import {
@@ -65,6 +65,12 @@ interface DispersionTableProps {
   onProcess?: (dispersion: Dispersion) => void;
   onDownloadExtracto?: (dispersion: Dispersion) => void;
   showSummary?: boolean;
+  /**
+   * Qué mes/página se está mirando. Al cambiar, el cuerpo se monta de nuevo y
+   * las filas entran escalonadas sin esperar a que salgan las de antes;
+   * buscar o filtrar, en cambio, saca las que ya no están.
+   */
+  clave?: string;
 }
 
 // formatMonth removed - now uses i18n formatDate
@@ -94,6 +100,7 @@ export function DispersionTable({
   onProcess,
   onDownloadExtracto,
   showSummary = false,
+  clave,
 }: DispersionTableProps) {
   const { t, formatDate, formatCurrency } = useI18n();
   const baseDelCanon = useMemo(() => baseDeLasDispersiones(dispersiones), [dispersiones]);
@@ -238,20 +245,22 @@ export function DispersionTable({
             <TableHead className="w-12 p-4" />
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {sortedDispersiones.map((dispersion, index) => {
+        {/* Las filas entran escalonadas con el techo de 320 ms (antes
+            `index * 0.02` sin tope) y, al filtrar o cambiar de mes, las que
+            se van salen en su lugar (`key` = el id). */}
+        <TableBodyAnimado key={clave}>
+          {sortedDispersiones.map((dispersion) => {
             const statusLabel = t(`inmobiliaria.dispersiones.statusLabels.${dispersion.status}`);
 
             return (
-              <motion.tr
+              <TableRowAnimada
                 key={dispersion.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.02 }}
                 onClick={() => onViewDetail?.(dispersion)}
                 className={cn(
-                  'border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors',
-                  dispersion.status === 'completed' && 'opacity-75'
+                  'border-b last:border-b border-border/50 hover:bg-muted/30 cursor-pointer transition-colors',
+                  // En las celdas: la fila anima su propia opacidad al entrar
+                  // y pisaría un `opacity-75` puesto en ella.
+                  dispersion.status === 'completed' && '[&>td]:opacity-75'
                 )}
               >
                 {/* Propietario */}
@@ -394,10 +403,10 @@ export function DispersionTable({
                     </DropdownListContent>
                   </DropdownList>
                 </TableCell>
-              </motion.tr>
+              </TableRowAnimada>
             );
           })}
-        </TableBody>
+        </TableBodyAnimado>
 
         {/* Summary Row */}
         {showSummary && dispersiones.length > 0 && (

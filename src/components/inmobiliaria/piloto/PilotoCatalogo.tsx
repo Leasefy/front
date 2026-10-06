@@ -53,7 +53,8 @@ const COLUMNAS = ['proceso', 'quien', 'cuando', 'ultima'] as const
 export interface PilotoCatalogoProps {
   data: PilotoCatalogoResponse | null
   isLoading: boolean
-  error: string | null
+  /** El error entero (no su texto): `FalloDeCarga` dice qué pasó. `null` si no falló. */
+  error: unknown
   notAvailable: boolean
   onRefetch?: () => Promise<void> | void
 }
@@ -67,6 +68,37 @@ function coincide(p: ProcesoDelCatalogo, q: string): boolean {
   )
 }
 
+type FiltroDeArea = AreaDeProceso | 'todas'
+type FiltroDeModo = AutonomiaModo | 'sistema' | 'todos'
+
+const pasaElArea = (p: ProcesoDelCatalogo, area: FiltroDeArea) => area === 'todas' || p.area === area
+const pasaElModo = (p: ProcesoDelCatalogo, modo: FiltroDeModo) =>
+  modo === 'todos' ? true : modo === 'sistema' ? p.modo === null : p.modo === modo
+
+/**
+ * 🟡 PI-33 (QA-PILOTO 04-10-2026; PILOTO-ACTIVO): el número de cada chip
+ * cuenta lo que QUEDA si lo tocas, con los OTROS filtros puestos (el área, el
+ * modo y la búsqueda). Antes «Sin modo 26» con «Captación» elegida mostraba 2
+ * filas: los chips de modo contaban todo el catálogo, sin el área.
+ */
+export function conteosDelCatalogo(
+  procesos: readonly ProcesoDelCatalogo[],
+  filtros: { area: FiltroDeArea; modo: FiltroDeModo; busqueda: string },
+): { porArea: Record<FiltroDeArea, number>; porModo: Record<FiltroDeModo, number> } {
+  const buscados = procesos.filter((p) => coincide(p, filtros.busqueda))
+  const conElModo = buscados.filter((p) => pasaElModo(p, filtros.modo))
+  const conElArea = buscados.filter((p) => pasaElArea(p, filtros.area))
+  const porArea = Object.fromEntries(AREAS.map((a) => [a, conElModo.filter((p) => pasaElArea(p, a)).length])) as Record<
+    FiltroDeArea,
+    number
+  >
+  const porModo = Object.fromEntries(MODOS.map((m) => [m, conElArea.filter((p) => pasaElModo(p, m)).length])) as Record<
+    FiltroDeModo,
+    number
+  >
+  return { porArea, porModo }
+}
+
 export function PilotoCatalogo({ data, isLoading, error, notAvailable, onRefetch }: PilotoCatalogoProps) {
   const { t } = useI18n()
   const k = (s: string) => `inmobiliaria.piloto.catalogo.${s}`
@@ -78,15 +110,10 @@ export function PilotoCatalogo({ data, isLoading, error, notAvailable, onRefetch
   const procesos = useMemo(() => data?.procesos ?? [], [data])
 
   const visibles = useMemo(
-    () =>
-      procesos.filter((p) => {
-        if (area !== 'todas' && p.area !== area) return false
-        if (modo === 'sistema' && p.modo !== null) return false
-        if (modo !== 'todos' && modo !== 'sistema' && p.modo !== modo) return false
-        return coincide(p, busqueda)
-      }),
+    () => procesos.filter((p) => pasaElArea(p, area) && pasaElModo(p, modo) && coincide(p, busqueda)),
     [procesos, area, modo, busqueda],
   )
+  const conteos = useMemo(() => conteosDelCatalogo(procesos, { area, modo, busqueda }), [procesos, area, modo, busqueda])
 
   const hayFiltros = area !== 'todas' || modo !== 'todos' || busqueda.trim() !== ''
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
@@ -120,6 +147,14 @@ export function PilotoCatalogo({ data, isLoading, error, notAvailable, onRefetch
               })}
             </p>
           )}
+          {/* PI-15 (Nico, 05-10-2026: «un solo conteo»): las filas son tareas de
+              la plataforma; los PROCESOS son los del Piloto (la perilla), el
+              mismo número de «¿Opera sola?». */}
+          {typeof data?.procesosDelPiloto === 'number' && (
+            <p className="text-caption text-fg-muted" data-testid="catalogo-procesos-del-piloto">
+              {t(k('procesosDelPiloto'), { n: String(data.procesosDelPiloto) })}
+            </p>
+          )}
         </div>
 
         <fieldset className="flex flex-wrap items-center gap-2">
@@ -133,11 +168,7 @@ export function PilotoCatalogo({ data, isLoading, error, notAvailable, onRefetch
               data-testid={`catalogo-area-${a}`}
             >
               {t(k(`area.${a}`))}{' '}
-              {data && (
-                <span className="tabular-nums">
-                  {a === 'todas' ? data.totales.total : data.porArea[a]}
-                </span>
-              )}
+              {data && <span className="tabular-nums">{conteos.porArea[a]}</span>}
             </Chip>
           ))}
         </fieldset>
@@ -145,12 +176,7 @@ export function PilotoCatalogo({ data, isLoading, error, notAvailable, onRefetch
         <fieldset className="flex flex-wrap items-center gap-2">
           <legend className="sr-only">{t(k('filtrarModo'))}</legend>
           {MODOS.map((m) => {
-            const n =
-              m === 'todos'
-                ? procesos.length
-                : m === 'sistema'
-                  ? procesos.filter((p) => p.modo === null).length
-                  : procesos.filter((p) => p.modo === m).length
+            const n = conteos.porModo[m]
             return (
               <Chip
                 key={m}

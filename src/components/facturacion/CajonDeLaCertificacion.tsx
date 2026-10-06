@@ -37,14 +37,17 @@ import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { propietariosApi } from '@/lib/api/inmobiliaria.service'
 import type { Propietario } from '@/lib/types/inmobiliaria'
 import {
   facturacionElectronicaService,
-  pesos,
   type CertificacionGenerada,
 } from '@/lib/api/facturacion-electronica.service'
 import { comoCsv } from './certificacion-en-csv'
+import { CampoDeFecha } from './CampoDeFecha'
+import { formatCurrency } from '@/lib/format'
+import { BotonPdfDeLaCertificacion } from './BotonPdfDeLaCertificacion'
 
 /** Cuántos resultados se muestran: es un buscador, no un listado. */
 const CUANTOS_RESULTADOS = 8
@@ -139,12 +142,18 @@ export function CajonDeLaCertificacion({
       )
       setUltima(c)
       toast.success(
-        `Certificación de ${c.propietario.nombre} generada (${c.facturasContadas} facturas)`,
+        // FA-23: «1 factura», no «1 facturas».
+        `Certificación de ${c.propietario.nombre} generada (${c.facturasContadas.toLocaleString('es-CO')} ${c.facturasContadas === 1 ? 'factura' : 'facturas'})`,
       )
       await onGenerada()
     } catch (e) {
+      // Con la regla de oro (02-10-2026): un 5xx dice «de nuestro lado» con
+      // la referencia; «conexión», sólo sin respuesta.
       toast.error(
-        e instanceof Error ? e.message : 'No se pudo generar la certificación.',
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo generar la certificación.',
+          accion: 'generar la certificación',
+        }),
       )
     } finally {
       setGenerando(false)
@@ -257,23 +266,12 @@ export function CajonDeLaCertificacion({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="cert-desde">Desde</Label>
-            <Input
-              id="cert-desde"
-              type="date"
-              value={desde}
-              onChange={(e) => setDesde(e.target.value)}
-              data-testid="cert-desde"
-            />
+            {/* FA-R29: el selector de fecha del DS, no el `type="date"` nativo. */}
+            <CampoDeFecha id="cert-desde" value={desde} onChange={setDesde} testid="cert-desde" />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="cert-hasta">Hasta</Label>
-            <Input
-              id="cert-hasta"
-              type="date"
-              value={hasta}
-              onChange={(e) => setHasta(e.target.value)}
-              data-testid="cert-hasta"
-            />
+            <CampoDeFecha id="cert-hasta" value={hasta} onChange={setHasta} testid="cert-hasta" />
           </div>
         </div>
 
@@ -287,15 +285,20 @@ export function CajonDeLaCertificacion({
             </p>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
               {[
-                ['Facturas', `${ultima.facturasContadas} facturas`],
-                ['Base', pesos(ultima.baseCop)],
-                ['IVA', pesos(ultima.ivaCop)],
                 [
-                  'Retenciones',
-                  pesos(
-                    ultima.retefuenteCop + ultima.reteivaCop + ultima.reteicaCop,
-                  ),
+                  'Facturas',
+                  `${ultima.facturasContadas.toLocaleString('es-CO')} ${ultima.facturasContadas === 1 ? 'factura' : 'facturas'}`,
                 ],
+                // FA-R28: la plata con un solo formato en toda la sección.
+                ['Base', formatCurrency(ultima.baseCop)],
+                ['IVA', formatCurrency(ultima.ivaCop)],
+                /* 🔴 QA-FACT-CONTA-95 r2 (FA3-12): cada retención por su lado —
+                   el propietario las declara en renglones distintos (el CSV ya
+                   las separaba; el resumen las juntaba en «Retenciones»). */
+                ['Retención en la fuente', formatCurrency(ultima.retefuenteCop)],
+                ['Retención de IVA', formatCurrency(ultima.reteivaCop)],
+                ['Retención de ICA', formatCurrency(ultima.reteicaCop)],
+                ['Total', formatCurrency(ultima.totalCop)],
               ].map(([rotulo, valor]) => (
                 <div key={rotulo}>
                   <dt className="text-caption text-fg-muted">{rotulo}</dt>
@@ -329,6 +332,15 @@ export function CajonDeLaCertificacion({
             >
               Descargar el detalle (CSV)
             </Button>
+            {/* 🔴 QA-FACT-CONTA-95 r2 (FA-E-05): el documento para declarar. */}
+            {ultima.id ? (
+              <BotonPdfDeLaCertificacion
+                id={ultima.id}
+                propietario={ultima.propietario.nombre}
+                desde={ultima.periodo.desde}
+                hasta={ultima.periodo.hasta}
+              />
+            ) : null}
           </div>
         )}
       </CajonCuerpo>

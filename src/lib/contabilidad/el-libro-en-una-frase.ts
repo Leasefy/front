@@ -43,8 +43,21 @@ function asientos(n: number): string {
   return n === 1 ? 'asiento' : 'asientos'
 }
 
+/** CB-A-07: lo que dice la portada cuando la inmobiliaria todavía no tiene plan de cuentas. */
+export const FRASE_SIN_PLAN_DE_CUENTAS =
+  'Todavía no hay plan de cuentas: sin él no se puede asentar nada. Siembra el PUC base o sube el de tu sistema desde «Plan de cuentas».'
+
 export function elLibroEnUnaFrase(d: DatosDelLibro): TrozoDeLaFrase[] {
   const { cuentasActivas, asientosEnElLibro, asientosDelMes, ultimoDia } = d
+
+  /*
+   * 🔴 QA-FACT-CONTA-95 r2 (CB-A-07): SIN plan de cuentas no hay nada «listo
+   * para recibir»: decía «tiene 0 cuentas activas y está listo para
+   * recibirlos». El vacío dice qué hacer.
+   */
+  if (cuentasActivas === 0) {
+    return [texto(FRASE_SIN_PLAN_DE_CUENTAS)]
+  }
 
   /*
    * 🔴 El libro VACÍO se dice distinto. «0 asientos sobre 2.790 cuentas» es

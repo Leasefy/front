@@ -41,6 +41,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { Appear, Collapse } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
 import { MotivosDelValidador } from './MotivosDelValidador';
 import {
@@ -131,14 +132,16 @@ export function ArmarContratoDesdePlantilla({ modo, estado, arrendatario }: Prop
       )}
 
       {errorDePreparacion && (
-        <p
+        <Appear
+          as="p"
+          distance="xs"
           data-testid="plantilla-error-preparacion"
           role="alert"
           className="flex items-start gap-2 rounded-lg bg-danger-soft px-4 py-3 text-body-sm text-danger"
         >
           <Warning weight="fill" aria-hidden="true" className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <span>{errorDePreparacion}</span>
-        </p>
+        </Appear>
       )}
 
       {preparando && !preparacion && (
@@ -390,6 +393,18 @@ function RevisionDeLaPropuesta({
         motivos={propuesta.pendientes}
       />
 
+      {/* QA-CONT-95 r3 (EX-01): notas cortas para quien revisa (no frenan nada),
+          p. ej. que en vivienda «sin mascotas» quedó como constancia. */}
+      {(propuesta.avisos ?? []).map((aviso) => (
+        <p
+          key={aviso}
+          className="text-caption text-warning-700 dark:text-warning-100"
+          data-testid="plantilla-aviso-propuesta"
+        >
+          {aviso}
+        </p>
+      ))}
+
       {propuestas.length === 0 ? (
         <p className="text-body-sm text-fg-muted" data-testid="plantilla-propuesta-sin-clausulas">
           {quitadas.length > 0
@@ -572,7 +587,9 @@ function CamposDelContrato({
       {campos.map((campo) => {
         const id = `plantilla-campo-${campo.nombre}`;
         const valor = valores[campo.nombre] ?? '';
-        const vacio = campo.requerida && valor.trim() === '';
+        // 🔴 ARREGLOS-4 (03-10-2026): un requerido vacío no lleva `aria-invalid`:
+        // el adaptador del campo pinta el borde rojo con él, y el formulario no
+        // puede abrirse ya en rojo.
         return (
           <div key={campo.nombre} className="space-y-1.5">
             <Label htmlFor={id}>
@@ -592,7 +609,6 @@ function CamposDelContrato({
                 data-testid={id}
                 rows={3}
                 value={valor}
-                aria-invalid={vacio}
                 onChange={(e) => onEscribir(campo.nombre, e.target.value)}
               />
             ) : (
@@ -600,7 +616,6 @@ function CamposDelContrato({
                 id={id}
                 data-testid={id}
                 value={valor}
-                aria-invalid={vacio}
                 inputMode={
                   campo.tipo === 'numero' ||
                   campo.tipo === 'porcentaje' ||
@@ -751,8 +766,39 @@ function TopesLegalesDelContrato({
           </div>
         ))}
       </dl>
-      <p className="text-caption text-fg-muted mt-2">Fuente del IPC: {topes.fuente}</p>
+      <FuenteDelIpc fuente={topes.fuente} />
     </div>
+  );
+}
+
+/**
+ * QA-CONT C-14: la fuente del IPC era una URL cruda en pantalla
+ * («Fuente del IPC: https://www.dane.gov.co/…»). Si es un enlace, se lee como
+ * enlace con su nombre («Fuente: DANE»); si es texto, se dice tal cual.
+ */
+function FuenteDelIpc({ fuente }: { fuente: string }) {
+  let url: URL | null = null;
+  try {
+    url = /^https?:\/\//i.test(fuente) ? new URL(fuente) : null;
+  } catch {
+    url = null;
+  }
+  if (!url) return <p className="text-caption text-fg-muted mt-2">Fuente del IPC: {fuente}</p>;
+  const host = url.hostname.replace(/^www\./, '');
+  const nombre = /(^|\.)dane\.gov\.co$/.test(host) ? 'DANE' : host;
+  return (
+    <p className="text-caption text-fg-muted mt-2" title="Fuente del IPC">
+      Fuente:{' '}
+      <a
+        href={url.toString()}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-medium text-primary underline underline-offset-2"
+        data-testid="fuente-del-ipc"
+      >
+        {nombre}
+      </a>
+    </p>
   );
 }
 
@@ -787,8 +833,10 @@ function ContratoListo({
 
   return (
     <div className="space-y-3">
+      {/* «Quedó armado» y «quedó viejo» llegan con su entrada (`Appear`);
+          uno reemplaza al otro sin esperar a que el anterior se vaya. */}
       {generado && !quedoViejo && (
-        <div
+        <Appear
           data-testid="plantilla-contrato-listo"
           className="rounded-lg border border-success/30 bg-success-soft p-4"
         >
@@ -823,23 +871,25 @@ function ContratoListo({
                   {verDetalle ? 'Ocultar las cláusulas' : 'Ver qué cláusulas quedaron'}
                 </Button>
               )}
-              {verDetalle && (
+              <Collapse open={verDetalle}>
                 <ul className="mt-1 list-disc pl-4 text-caption text-fg-muted">
                   {generado.clausulas.map((c) => (
                     <li key={c}>{c}</li>
                   ))}
                 </ul>
-              )}
+              </Collapse>
             </div>
           </div>
-        </div>
+        </Appear>
       )}
 
       {/* 🔴 Cambió algo que va IMPRESO después de generar. Sin este aviso se
           crea el contrato con el canon nuevo en la base y el viejo en el PDF
           que firman las partes. */}
       {quedoViejo && (
-        <p
+        <Appear
+          as="p"
+          distance="xs"
           data-testid="plantilla-quedo-viejo"
           role="alert"
           className="flex items-start gap-2 rounded-lg bg-warning-soft px-4 py-3 text-body-sm text-warning"
@@ -849,7 +899,7 @@ function ContratoListo({
             Cambiaste algo después de armar el contrato. Vuelve a generarlo para que el
             PDF diga lo mismo que el formulario.
           </span>
-        </p>
+        </Appear>
       )}
 
       <div className="flex flex-wrap items-center justify-end gap-2">

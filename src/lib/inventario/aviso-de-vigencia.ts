@@ -62,3 +62,14 @@ export function textoDelBloqueo(b: BloqueoPorInventario): { clave: string; param
   if (b.motivo === 'SOLO_BORRADOR') return { clave: `${B}.bloqueoSoloBorrador` };
   return { clave: `${B}.bloqueoSinInventario` };
 }
+
+/**
+ * Lo que dice el botón del bloqueo: lo que hay que hacer, no «ir a» (QA con
+ * avatares, 04-10). Sin inventario, «Hacer el inventario»; en borrador,
+ * «Completar…»; tras un contrato que terminó, «Actualizar…».
+ */
+export function accionDelBloqueo(b: Pick<BloqueoPorInventario, 'motivo'>): string {
+  if (b.motivo === 'SOLO_BORRADOR') return `${B}.bloqueoCompletar`;
+  if (b.motivo === 'ANTERIOR_AL_FIN_DEL_CONTRATO') return `${B}.bloqueoActualizar`;
+  return `${B}.bloqueoHacer`;
+}

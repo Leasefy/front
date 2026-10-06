@@ -352,6 +352,16 @@ describe('el mes', () => {
   it('mesesRecientes va del más nuevo al más viejo y cruza el año', () => {
     expect(mesesRecientes(3, new Date(2026, 1, 15))).toEqual(['2026-02', '2026-01', '2025-12'])
   })
+
+  it('🔴 PG-R18 (03-10-2026): con `adelante` ofrece los meses que vienen, también cruzando el año', () => {
+    expect(mesesRecientes(2, new Date(2026, 10, 15), 3)).toEqual([
+      '2027-02',
+      '2027-01',
+      '2026-12',
+      '2026-11',
+      '2026-10',
+    ])
+  })
 })
 
 describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
@@ -630,6 +640,12 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     expect(host.querySelector('[data-testid="resumen-del-mes"]')).toBeNull()
   })
 
+  it('🔴 PG-13 (03-10-2026): «Leído contra el 15 de septiembre de 2026», no «2026-09-15»', () => {
+    montar()
+    expect(host.textContent).toContain('Leído contra el 15 de septiembre de 2026')
+    expect(host.textContent).not.toContain('2026-09-15')
+  })
+
   it('🔴 la columna «Período» dice el mes: el back manda `mes`, no `month`', () => {
     // El espejo del tipo decía `month` y el back siempre mandó `mes`: la
     // columna venía leyendo `undefined` y salía en blanco.
@@ -719,6 +735,16 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
       )
     })
 
+    it('🔴 PG-R12 (03-10-2026): el cajón de la cuota ofrece SU cuenta de cobro, que sale de la cuota y no de un cobro', () => {
+      montar()
+      act(() => {
+        ($('[data-testid="cuota-fila"]') as HTMLElement).click()
+      })
+      expect(
+        document.body.querySelector('[data-testid="cajon-cuenta-de-cobro"]')?.getAttribute('href'),
+      ).toBe('/panel/inmobiliaria/pagos/cartera/cuotas/q1/cuenta-de-cobro?volver=%2Fpanel%2Finmobiliaria%2Fpagos')
+    })
+
     it('el pie lo dice con palabras: cada fila es un mes del estado de cuenta', () => {
       montar()
       expect(host.textContent).toContain('estado de cuenta')
@@ -763,22 +789,22 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     montar()
 
     // Las cifras grandes no cambian: siguen siendo capital.
-    expect($('[data-testid="mes-falta"]').textContent).toBe('$6.000.000')
-    expect($('[data-testid="mes-cartera"]').textContent).toBe('$2.000.000')
+    expect($('[data-testid="mes-falta"]').textContent).toBe('$\u00a06.000.000')
+    expect($('[data-testid="mes-cartera"]').textContent).toBe('$\u00a02.000.000')
     expect($('[data-testid="mes-intereses"]').textContent).toBe(
-      'cartera.interes.masIntereses:$52.000',
+      'cartera.interes.masIntereses:$\u00a052.000',
     )
     // `toContain` y no `toBe` desde el 21-09: el resumen del mes dejó de ser
     // tres fichas y pasó a ser una frase, así que este renglón vive dentro de
     // ella y trae el espacio y el punto de la oración. Lo que la prueba cuida
     // es que el interés se diga aparte del capital, no la puntuación.
     expect($('[data-testid="mes-falta-con-intereses"]').textContent).toContain(
-      'cartera.interes.conIntereses:$6.052.000',
+      'cartera.interes.conIntereses:$\u00a06.052.000',
     )
     expect(todos('[data-testid="cuota-intereses"]').map((e) => e.textContent)).toEqual(
       expect.arrayContaining([
-        'cartera.interes.masIntereses:$40.000',
-        'cartera.interes.masIntereses:$12.000',
+        'cartera.interes.masIntereses:$\u00a040.000',
+        'cartera.interes.masIntereses:$\u00a012.000',
       ]),
     )
   })

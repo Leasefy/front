@@ -20,18 +20,21 @@
 import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import { Handshake, PencilSimple, Trash } from '@phosphor-icons/react'
-import { Card } from '@leasefy/cadence'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { Card, CrossFade, Presence } from '@leasefy/cadence'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 
 import {
   Button,
   Switch,
   Spinner,
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui'
 import {
   AlertDialog,
@@ -85,7 +88,12 @@ export function AcuerdosGeneralesTabla() {
       try {
         await editar(a.id, { active: !a.active })
       } catch (e) {
-        setErrorAccion(e instanceof Error ? e.message : 'No pudimos guardar el cambio.')
+        setErrorAccion(
+          mensajeParaLaPersona(e, {
+            porDefecto: a.active ? 'No pudimos apagar el acuerdo.' : 'No pudimos activar el acuerdo.',
+            accion: a.active ? 'apagar el acuerdo' : 'activar el acuerdo',
+          }),
+        )
       } finally {
         setOcupado(null)
       }
@@ -104,11 +112,19 @@ export function AcuerdosGeneralesTabla() {
     try {
       await borrar(a.id)
     } catch (e) {
-      setErrorAccion(e instanceof Error ? e.message : 'No pudimos borrar el acuerdo.')
+      setErrorAccion(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos borrar el acuerdo.',
+          accion: 'borrar el acuerdo',
+        }),
+      )
     } finally {
       setOcupado(null)
     }
   }, [aBorrar, borrar])
+
+  // El diálogo de borrar sigue nombrando el acuerdo mientras se cierra.
+  const aBorrarVisible = useUltimoPresente(aBorrar)
 
   return (
     <Card>
@@ -133,12 +149,14 @@ export function AcuerdosGeneralesTabla() {
       </div>
 
       {/* Cargando, falló, y no hay: tres cosas distintas, tres mensajes. */}
-      {error && (
-        <div
+      <Presence
+          show={Boolean(error)}
           role="alert"
           className="flex items-center justify-between gap-3 flex-wrap border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger"
         >
-          <span>No pudimos cargar los acuerdos generales. {error}</span>
+          {/* `error` ya es la frase entera (el traductor del hook): «No pudimos
+              cargar…» con el porqué. */}
+          <span>{error}</span>
           <Button
             variant="link"
             size="sm"
@@ -148,18 +166,28 @@ export function AcuerdosGeneralesTabla() {
           >
             Reintentar
           </Button>
-        </div>
-      )}
+      </Presence>
 
-      {errorAccion && (
-        <div
+      <Presence
+          show={Boolean(errorAccion)}
           role="alert"
           className="border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger"
         >
           {errorAccion}
-        </div>
-      )}
+      </Presence>
 
+      {/* Cargando → vacío → tabla: cada estado entra con su fundido. */}
+      <CrossFade
+        swapKey={
+          isLoading && acuerdos.length === 0 && !error
+            ? 'cargando'
+            : acuerdos.length === 0 && !error
+              ? 'vacio'
+              : acuerdos.length > 0
+                ? 'tabla'
+                : 'nada'
+        }
+      >
       {isLoading && acuerdos.length === 0 && !error ? (
         <div className="flex items-center justify-center py-12">
           <Spinner size="md" />
@@ -196,9 +224,10 @@ export function AcuerdosGeneralesTabla() {
                 </TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* Crear, borrar o paginar: las filas entran escalonadas y la que se borra sale. */}
+            <TableBodyAnimado>
               {pageItems.map((a) => (
-                <TableRow key={a.id} data-testid={`acuerdo-general-${a.id}`}>
+                <TableRowAnimada key={a.id} data-testid={`acuerdo-general-${a.id}`}>
                   <TableCell>
                     <span className="font-medium text-fg">{a.name}</span>
                     <span className="block text-xs text-fg-muted">{a.conditionEs}</span>
@@ -242,12 +271,13 @@ export function AcuerdosGeneralesTabla() {
                       </div>
                     )}
                   </TableCell>
-                </TableRow>
+                </TableRowAnimada>
               ))}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
         </div>
       ) : null}
+      </CrossFade>
 
       {acuerdos.length > 1 && (
         <p className="border-t border-border px-4 py-2 text-xs text-fg-muted">
@@ -269,10 +299,11 @@ export function AcuerdosGeneralesTabla() {
         </div>
       )}
 
+      {/* Se cierra al confirmar: el progreso se ve en la fila (`ocupado`). */}
       <AlertDialog open={aBorrar !== null} onOpenChange={(abierto) => !abierto && setABorrar(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive">
           <AlertDialogHeader>
-            <AlertDialogTitle>¿Borrar «{aBorrar?.name}»?</AlertDialogTitle>
+            <AlertDialogTitle>¿Borrar «{aBorrarVisible?.name}»?</AlertDialogTitle>
             <AlertDialogDescription>
               El agente deja de ofrecerlo desde la próxima llamada. Para pausarlo sin perderlo,
               apágalo con el interruptor.

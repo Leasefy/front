@@ -49,10 +49,14 @@ describe('asegurabilidad — pestañas que eran maquetas', () => {
     expect(hrefs).not.toContain(`${RESUMEN}/comparar`)
     expect(hrefs).not.toContain(`${RESUMEN}/ejecucion`)
     expect(hrefs).not.toContain(`${RESUMEN}/integraciones`)
-    // Las seis que sí van a producción siguen ahí.
+    // Las cinco que sí van a producción siguen ahí. «Por revisar» (`/cola`)
+    // salió el 05-10-2026 (PROMESAS-Y-DIRECTOR, opción A de main): la cola del
+    // cotizador el micro la devuelve SIEMPRE vacía a propósito
+    // (`agency-ai-hub-work-items.ts`, `case 'cotizador'` → `emptyResponse`: el
+    // motor resuelve cada cotización solo y no deja nada que aprobar). Una
+    // pestaña que lleva a nada es una pestaña muerta; la ruta sigue viva por URL.
     expect(hrefs).toEqual([
       RESUMEN,
-      `${RESUMEN}/cola`,
       `${RESUMEN}/aseguradoras`,
       `${RESUMEN}/insights`,
       `${RESUMEN}/costos`,

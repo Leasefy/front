@@ -22,6 +22,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { CaretLeft, Printer } from '@phosphor-icons/react';
+import { CrossFade } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,9 @@ import {
   type FiltrosDelEstadoDeCuenta,
 } from './filas';
 import { useTextoDelEstado } from './textos';
+import { ContextoDeRefrescarElEstado } from './refrescar-el-estado';
+import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 /**
  * ¿El fallo es «este cliente todavía no tiene contratos»?
@@ -89,6 +93,12 @@ export interface PantallaProps {
   /** Apaga la barra de filtros (el enlace público muestra el documento entero). */
   sinFiltros?: boolean;
   /**
+   * QA-PROP-95 PO-27 (04-10): el vacío «sin contratos» dicho a la persona que
+   * mira (el portal le habla a ella: «todavía no tienes…»). Sin esto, el texto
+   * del panel («Este cliente no tiene contratos»).
+   */
+  textosSinContratos?: { titulo: string; detalle: string };
+  /**
    * A dónde se configuran las reglas de mora. Sólo el PANEL lo pasa: con él,
    * las cuotas en mora sin intereses dicen por qué y llevan a configurarlas.
    * El portal y el enlace público no lo pasan: ese motivo es interno.
@@ -107,6 +117,8 @@ export interface PantallaProps {
    */
   filtrosIniciales?: Partial<FiltrosDelEstadoDeCuenta>;
   className?: string;
+  /** SO-09 (04-10): firma el soporte de un descuento del propietario. */
+  abrirSoporteDeLaDeduccion?: (deduccionId: string) => Promise<string>;
 }
 
 export function PantallaDelEstadoDeCuenta({
@@ -115,10 +127,12 @@ export function PantallaDelEstadoDeCuenta({
   volverA,
   hoy: hoyProp,
   sinFiltros = false,
+  textosSinContratos,
   reglasDeMoraHref,
   conAnticipoDelContrato = false,
   filtrosIniciales,
   className,
+  abrirSoporteDeLaDeduccion,
 }: PantallaProps) {
   const t = useTextoDelEstado();
   const hoy = hoyProp ?? hoyLocal();
@@ -176,6 +190,23 @@ export function PantallaDelEstadoDeCuenta({
   React.useEffect(() => {
     void pedir();
   }, [pedir]);
+
+  /*
+   * 🔴 ARREGLOS-7 · Una acción de una sección (la devolución del saldo a favor,
+   * «Revisado») cambia la deuda: se vuelve a pedir el documento entero SIN
+   * pasar por «cargando», así nada se desmonta y la sección conserva su aviso.
+   * El recorte de un filtro se vuelve a pedir solo (el efecto de abajo mira
+   * `entero`). Si falla, el documento de antes se queda y se dice.
+   */
+  const refrescar = React.useCallback(async () => {
+    try {
+      setEntero(await cargar());
+    } catch (e) {
+      toast.error('No pudimos actualizar los totales del estado de cuenta', {
+        description: mensajeParaLaPersona(e),
+      });
+    }
+  }, [cargar]);
 
   const conFiltros = hayFiltros(filtros);
 
@@ -254,7 +285,7 @@ export function PantallaDelEstadoDeCuenta({
 
   return (
     <div
-      className={cn('mx-auto w-full max-w-[1200px] space-y-5 p-4 sm:p-6 lg:p-8', className)}
+      className={cn('relative mx-auto w-full max-w-[1200px] space-y-5 p-4 sm:p-6 lg:p-8', className)}
       data-estado-pagina
     >
       <div data-estado-barra className="space-y-3">
@@ -297,6 +328,28 @@ export function PantallaDelEstadoDeCuenta({
         </div>
       </div>
 
+      {/* Movimiento (ola 2, 03-10-2026): cargando → el documento / vacío /
+          fallo se cruzan (`popLayout`: lo nuevo entra ya y el esqueleto se va
+          por encima). Las filas del documento NO se animan: es un documento
+          que se imprime, y una fila a media entrada saldría transparente en
+          el papel. */}
+      <CrossFade
+        mode="popLayout"
+        swapKey={
+          cargando
+            ? 'cargando'
+            : sinContratos(error)
+              ? 'sin-contratos'
+              : error
+                ? 'fallo'
+                : entero && vista
+                  ? vista.contratos.length === 0 && conFiltros
+                    ? 'sin-resultados'
+                    : 'documento'
+                  : 'nada'
+        }
+        className="empty:hidden"
+      >
       {cargando ? (
         <div className="space-y-4 rounded-lg border border-border bg-surface p-10">
           <Skeleton className="h-8 w-1/3" />
@@ -315,9 +368,9 @@ export function PantallaDelEstadoDeCuenta({
           data-testid="estado-sin-contratos-pantalla"
           className="rounded-lg border border-border bg-surface p-10 text-center"
         >
-          <p className="text-body text-fg">{t('estadoDeCuenta.sinContratos')}</p>
+          <p className="text-body text-fg">{textosSinContratos?.titulo ?? t('estadoDeCuenta.sinContratos')}</p>
           <p className="mt-1 text-body-sm text-fg-muted">
-            {t('estadoDeCuenta.sinContratosDetalle')}
+            {textosSinContratos?.detalle ?? t('estadoDeCuenta.sinContratosDetalle')}
           </p>
         </div>
       ) : error ? (
@@ -356,9 +409,11 @@ export function PantallaDelEstadoDeCuenta({
               </Button>
             </div>
           ) : (
+            <ContextoDeRefrescarElEstado.Provider value={refrescar}>
             <EstadoDeCuentaDocumento
               doc={vista}
               hoy={hoy}
+              abrirSoporteDeLaDeduccion={abrirSoporteDeLaDeduccion}
               /* 🔴 El resumen de arriba se calcula del ENTERO: «resta por
                  pagar», «próxima cuota» y «al día» son hechos del cliente, no
                  del recorte. Antes se calculaban de `vista`, así que filtrar a
@@ -396,9 +451,11 @@ export function PantallaDelEstadoDeCuenta({
                 recargando && 'opacity-60 transition-opacity',
               )}
             />
+            </ContextoDeRefrescarElEstado.Provider>
           )}
         </section>
       ) : null}
+      </CrossFade>
     </div>
   );
 }

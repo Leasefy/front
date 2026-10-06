@@ -16,11 +16,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
 import {
+  fetchPilotoActivo,
   fetchPilotoLoQueHizo,
   fetchPilotoPreferencias,
   fetchPilotoQueFalta,
+  putPilotoActivo,
   putPilotoPreferencias,
   type CambiosDePreferencias,
+  type PilotoActivoResponse,
   type PilotoFetchResult,
   type PilotoLoQueHizoResponse,
   type PilotoPreferenciasResponse,
@@ -30,7 +33,13 @@ import {
 export interface LecturaDelPiloto<T> {
   data: T | null
   isLoading: boolean
-  error: string | null
+  /**
+   * El error ENTERO, no su texto (ARREGLOS-4, 03-10-2026): el `ApiError` del
+   * micro, el 503 «el asistente de Leasefy no está disponible» de
+   * `agentFetch`, el de red o el de «no contestó a tiempo». La pantalla lo dice
+   * con `FalloDeCarga` / `mensajeParaLaPersona`. `null` si no falló.
+   */
+  error: unknown
   notAvailable: boolean
   refetch: () => Promise<void>
 }
@@ -43,7 +52,7 @@ function useLecturaDelPiloto<T>(
   const agencyId = agency?.id ?? null
   const [data, setData] = useState<T | null>(null)
   const [isLoading, setIsLoading] = useState(habilitada)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const [notAvailable, setNotAvailable] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
 
@@ -65,7 +74,7 @@ function useLecturaDelPiloto<T>(
       setError(null)
     } catch (err) {
       if (controller.signal.aborted) return
-      setError(err instanceof Error ? err.message : 'error')
+      setError(err ?? new Error('error'))
     } finally {
       if (!controller.signal.aborted) setIsLoading(false)
     }
@@ -92,8 +101,12 @@ export function usePilotoLoQueHizo(abierto: boolean): LecturaDelPiloto<PilotoLoQ
 
 export interface UsePilotoPreferenciasResult extends LecturaDelPiloto<PilotoPreferenciasResponse> {
   guardando: boolean
-  /** Guarda y, si salió, vuelve a leer (el «quién y cuándo» cambia). */
-  guardar: (cambios: CambiosDePreferencias) => Promise<{ ok: boolean; error?: string }>
+  /**
+   * Guarda y, si salió, vuelve a leer (el «quién y cuándo» cambia). `fallo`
+   * es el error entero (el 400 trae `campos` para cada tope); `error`, el
+   * código viejo (no es para la persona).
+   */
+  guardar: (cambios: CambiosDePreferencias) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
 }
 
 /** Topes y gracia de la inmobiliaria. Se lee cuando `abierto`. */
@@ -109,7 +122,9 @@ export function usePilotoPreferencias(abierto: boolean): UsePilotoPreferenciasRe
       try {
         const r = await putPilotoPreferencias(agency.id, cambios)
         if (r.ok) await refetch()
-        return r.ok ? { ok: true } : { ok: false, ...(r.error ? { error: r.error } : {}) }
+        return r.ok
+          ? { ok: true }
+          : { ok: false, ...(r.error ? { error: r.error } : {}), ...(r.fallo !== undefined ? { fallo: r.fallo } : {}) }
       } finally {
         setGuardando(false)
       }
@@ -117,4 +132,39 @@ export function usePilotoPreferencias(abierto: boolean): UsePilotoPreferenciasRe
     [agency?.id, refetch],
   )
   return { ...lectura, guardando, guardar }
+}
+
+export interface UsePilotoActivoResult extends LecturaDelPiloto<PilotoActivoResponse> {
+  cambiando: boolean
+  /**
+   * Prende o apaga el Piloto de la inmobiliaria (PI-01). Devuelve `fallo`
+   * entero: si es `SEGUNDO_FACTOR_RECIENTE`, el diálogo pide el código y lo
+   * repite. Si salió, la respuesta ya trae el estado nuevo.
+   */
+  cambiar: (activo: boolean) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
+}
+
+/** El Piloto automático de la inmobiliaria: ¿activo?, la prueba y lo que le falta. Se lee al montar. */
+export function usePilotoActivo(): UsePilotoActivoResult {
+  const lectura = useLecturaDelPiloto(fetchPilotoActivo, true)
+  const { agency } = useAuth()
+  const [cambiando, setCambiando] = useState(false)
+  const { refetch } = lectura
+  const cambiar = useCallback(
+    async (activo: boolean) => {
+      if (!agency?.id) return { ok: false, error: 'sin_inmobiliaria' }
+      setCambiando(true)
+      try {
+        const r = await putPilotoActivo(agency.id, activo)
+        if (r.ok) await refetch()
+        return r.ok
+          ? { ok: true }
+          : { ok: false, ...(r.error ? { error: r.error } : {}), ...(r.fallo !== undefined ? { fallo: r.fallo } : {}) }
+      } finally {
+        setCambiando(false)
+      }
+    },
+    [agency?.id, refetch],
+  )
+  return { ...lectura, cambiando, cambiar }
 }

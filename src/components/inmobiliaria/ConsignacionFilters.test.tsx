@@ -39,6 +39,7 @@ const CONTEO: Record<CajonDelInmueble, number> = {
   arrendado: 105,
   enProceso: 0,
   mantenimiento: 0,
+  borrador: 0,
   sinMandato: 25,
 }
 
@@ -82,7 +83,7 @@ afterEach(() => {
 describe('la franja de cajones de Inmuebles', () => {
   it('hay un chip por cajón, más «Todos»: ninguna fila se queda sin dónde mirarse', () => {
     montar()
-    for (const cajon of ['all', 'disponible', 'arrendado', 'enProceso', 'mantenimiento', 'sinMandato']) {
+    for (const cajon of ['all', 'disponible', 'arrendado', 'enProceso', 'mantenimiento', 'borrador', 'sinMandato']) {
       expect(chip(cajon)).not.toBeNull()
     }
   })
@@ -94,6 +95,7 @@ describe('la franja de cajones de Inmuebles', () => {
       numero('arrendado') +
       numero('enProceso') +
       numero('mantenimiento') +
+      numero('borrador') +
       numero('sinMandato')
     expect(suma).toBe(numero('all'))
     expect(numero('all')).toBe(133)
@@ -121,6 +123,35 @@ describe('la franja de cajones de Inmuebles', () => {
     expect(onFiltersChange).toHaveBeenCalledWith(
       expect.objectContaining({ cajon: 'sinMandato' }),
     )
+  })
+
+  it('🔴 «Borrador» tiene su chip: un borrador no se cuenta como disponible (QA con avatares 04-10)', () => {
+    montar({ conteo: { ...CONTEO, disponible: 2, borrador: 1 }, total: 133 })
+    expect(chip('borrador')?.textContent).toContain('inmobiliaria.consignaciones.filters.draft')
+    expect(numero('borrador')).toBe(1)
+    const onFiltersChange = vi.fn()
+    montar({ onFiltersChange })
+    act(() => {
+      chip('borrador')!.click()
+    })
+    expect(onFiltersChange).toHaveBeenCalledWith(expect.objectContaining({ cajon: 'borrador' }))
+  })
+
+  /*
+   * IN-03 (QA 04-10): a 1440 px el filtro «Tipo» caía solo a un segundo
+   * renglón, porque los chips, el separador y los cuatro desplegables iban en
+   * UNA fila que no cabía. El buscador y los desplegables van juntos en la
+   * primera fila; los cajones, en la suya.
+   */
+  it('IN-03: los cuatro desplegables van en la fila del buscador, no detrás de los chips', () => {
+    montar()
+    const fila1 = container.querySelector('[data-testid="filtros-fila-1"]')!
+    const cajones = container.querySelector('[data-testid="filtros-cajones"]')!
+    expect(fila1.querySelector('input')).not.toBeNull()
+    const desplegables = fila1.querySelectorAll('[data-testid="filtros-desplegables"] button[role="combobox"]')
+    expect(desplegables.length).toBe(4)
+    expect(cajones.querySelectorAll('[data-testid^="cajon-"]').length).toBe(7)
+    expect(cajones.querySelector('button[role="combobox"]')).toBeNull()
   })
 
   it('el chip del cajón elegido se ve distinto de los demás', () => {

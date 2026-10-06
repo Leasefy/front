@@ -20,7 +20,7 @@
  * like the generic agent-workspace fetchers treat 404. If the backend contract
  * shifts before it merges, only the `PagosHomeMetrics` mapping below changes.
  *
- * Follows the NEXT_PUBLIC_AGENT_URL + agentAuthHeaders + 404→notAvailable
+ * Follows the NEXT_PUBLIC_AGENT_URL + agentFetch + 404→notAvailable
  * pattern of `agent-workspace.ts`.
  *
  * ── 🔴 Quién lo usa hoy (2026-09-16) ───────────────────────────────────────
@@ -60,7 +60,7 @@
  *               basado en la cartera»), leyendo las CUOTAS del contrato.
  */
 
-import { agentAuthHeaders } from './agent-auth'
+import { agentFetch } from './agent-fetch'
 import type {
   AgentOverviewResponse,
   AgentWorkspaceFetchResult,
@@ -140,7 +140,7 @@ const NOT_AVAILABLE_STATUSES = new Set([404, 503]) // 404 not deployed · 503 PA
 async function getJson<T>(path: string, signal?: AbortSignal): Promise<{ data: T | null; notAvailable: boolean }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) throw new Error('not_configured')
-  const res = await globalThis.fetch(`${agentUrl}${path}`, { headers: agentAuthHeaders(), signal })
+  const res = await agentFetch(`${agentUrl}${path}`, { signal })
   // 404 (not deployed) OR 503 (flag off) → graceful empty, NOT an error.
   if (NOT_AVAILABLE_STATUSES.has(res.status)) return { data: null, notAvailable: true }
   if (!res.ok) throw new Error(`${res.status}`)

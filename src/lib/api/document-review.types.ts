@@ -33,8 +33,20 @@ export interface ReviewQueueDocument {
   rejectionReason?: string | null;
 }
 
-/** The tenant/application a group of documents belongs to. */
+/**
+ * The tenant/application a group of documents belongs to.
+ *
+ * 🔴 QA-IA-A (04-10-2026): el back manda `fullName` (`ReviewQueueTenantDto`)
+ * y este tipo decía `title`, así que la columna «Candidato» salía vacía en
+ * TODAS las filas: no se sabía de quién era cada cédula.
+ */
 export interface ReviewQueueTenant {
+  id: string;
+  fullName: string;
+}
+
+/** El inmueble al que se postuló (`ReviewQueuePropertyDto` del back). */
+export interface ReviewQueueProperty {
   id: string;
   title: string;
 }
@@ -43,6 +55,7 @@ export interface ReviewQueueTenant {
 export interface ReviewQueueItem {
   applicationId: string;
   tenant: ReviewQueueTenant;
+  property?: ReviewQueueProperty;
   documents: ReviewQueueDocument[];
 }
 

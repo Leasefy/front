@@ -14,6 +14,7 @@ import {
   mensajeDeCuota,
   mensajeDeDocumento,
   mensajeDeGiro,
+  mensajeDeLosGiros,
   mesEnCurso,
   mesEnPalabras,
 } from './pendientes-a-mensaje';
@@ -166,3 +167,23 @@ describe('mensajeDeDocumento', () => {
     expect(texto).toBe('Hola Ana, te comparto el acta «Acta de entrega».');
   });
 });
+
+describe('🔴 mensajeDeLosGiros — el total, con la misma cifra del titular (Nico, 04-10-2026)', () => {
+  it('dice el neto hasta el mes en curso y las deducciones ya descontadas', () => {
+    expect(
+      mensajeDeLosGiros(
+        { porGirarCop: 9_108_600, porGirarHastaMes: '2026-10', deduccionesCop: 230_000 },
+        'Paula',
+      ),
+    ).toBe(
+      'Hola Paula, te cuento cómo van tus giros: $9.108.600 netos hasta octubre de 2026, ya descontados $230.000 de deducciones. Te aviso apenas salgan.',
+    );
+  });
+
+  it('sin deducciones ni mes (un back anterior), la frase sigue siendo verdad', () => {
+    expect(mensajeDeLosGiros({ porGirarCop: 2_400_000 }, 'Ana')).toBe(
+      'Hola Ana, te cuento cómo van tus giros: $2.400.000 netos. Te aviso apenas salgan.',
+    );
+  });
+});
+

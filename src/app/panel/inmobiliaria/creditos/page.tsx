@@ -1,12 +1,12 @@
 'use client';
 
+import { AnimatedNumber, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useEffect, useState, useCallback } from 'react';
 import {
   Sparkle,
   Coin,
   ShoppingCart,
   WarningCircle,
-  X,
   Info,
   Calendar,
   Lock,
@@ -16,6 +16,14 @@ import { formatCurrency } from '@/lib/format';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { BackButton } from '@/components/ui/back-button';
 import { Button, Badge, Input, Spinner } from '@/components/ui';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import {
   Select,
@@ -27,6 +35,9 @@ import {
 import { agentCreditsApi } from '@/lib/api/agent-credits.service';
 import { pseCheckoutApi } from '@/lib/api/pse-checkout.service';
 import { useAuth } from '@/lib/auth';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import type {
   AgentCreditsBalance,
   AgentCreditPack,
@@ -36,6 +47,9 @@ import type {
   PseLegalIdType,
   PseUserType,
 } from '@/lib/api/pse-checkout.types';
+
+// La cifra tal cual la pintaba la pantalla (sin separador de miles), contando.
+const comoEntero = (n: number) => String(Math.round(n));
 
 // ============================================================================
 // Page
@@ -47,6 +61,14 @@ function CreditosContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [selectedPack, setSelectedPack] = useState<AgentCreditPack | null>(null);
+  /*
+   * El modal se CIERRA con su salida (ARREGLOS-8, MOV-A6): el pack elegido se
+   * queda montado y `compraAbierta` lo abre y lo cierra. `vezDeLaCompra` lo
+   * vuelve a montar en cada apertura, así el formulario arranca limpio como
+   * antes. Con `{selectedPack && …}` se desmontaba de golpe al cerrar.
+   */
+  const [compraAbierta, setCompraAbierta] = useState(false);
+  const [vezDeLaCompra, setVezDeLaCompra] = useState(0);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -98,7 +120,8 @@ function CreditosContent() {
           </p>
         </header>
 
-        {/* Balance */}
+        {/* Balance: cargando → saldo (o el fallo) con fundido cruzado. */}
+        <CrossFade swapKey={isLoading ? 'cargando' : error ? 'fallo' : balance ? 'saldo' : 'nada'}>
         {isLoading ? (
           <div className="rounded-lg border border-border bg-card p-8 flex items-center justify-center">
             <Spinner size="md" variant="muted" />
@@ -118,7 +141,8 @@ function CreditosContent() {
                   Saldo total
                 </p>
                 <p className="text-5xl font-bold tabular-nums">
-                  {balance.total}
+                  {/* Después de comprar, el saldo cuenta hasta el nuevo. */}
+                  <AnimatedNumber value={balance.total} format={comoEntero} />
                   <span className="text-2xl font-normal text-white/80 ml-2">créditos</span>
                 </p>
               </div>
@@ -128,7 +152,7 @@ function CreditosContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-6 pt-6 border-t border-white/20">
               <div>
                 <p className="text-xs text-white/70 mb-1">Del plan</p>
-                <p className="text-2xl font-semibold tabular-nums">{balance.planBalance}</p>
+                <p className="text-2xl font-semibold tabular-nums"><AnimatedNumber value={balance.planBalance} format={comoEntero} /></p>
                 {expiresAt && (
                   <p className="text-xs text-white/70 mt-1 flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
@@ -138,12 +162,13 @@ function CreditosContent() {
               </div>
               <div>
                 <p className="text-xs text-white/70 mb-1">Comprados</p>
-                <p className="text-2xl font-semibold tabular-nums">{balance.purchasedBalance}</p>
+                <p className="text-2xl font-semibold tabular-nums"><AnimatedNumber value={balance.purchasedBalance} format={comoEntero} /></p>
                 <p className="text-xs text-white/70 mt-1">Sin vencimiento</p>
               </div>
             </div>
           </section>
         ) : null}
+        </CrossFade>
 
         {/* How consumption works */}
         <div className="rounded-lg bg-primary-soft border border-primary/30 p-4 mb-8">
@@ -165,15 +190,21 @@ function CreditosContent() {
               Comprar créditos extra
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Los packs llegan después de cargar: entran escalonados (ARREGLOS-8, MOV-A6). */}
+            <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {packs.map((pack) => (
-                <PackCard
-                  key={pack.packSize}
-                  pack={pack}
-                  onSelect={() => setSelectedPack(pack)}
-                />
+                <StaggerItem key={pack.packSize} className="grid">
+                  <PackCard
+                    pack={pack}
+                    onSelect={() => {
+                      setSelectedPack(pack);
+                      setVezDeLaCompra((n) => n + 1);
+                      setCompraAbierta(true);
+                    }}
+                  />
+                </StaggerItem>
               ))}
-            </div>
+            </Stagger>
           </>
         )}
 
@@ -189,8 +220,10 @@ function CreditosContent() {
       {/* Purchase modal */}
       {selectedPack && (
         <PurchaseModal
+          key={vezDeLaCompra}
+          abierto={compraAbierta}
           pack={selectedPack}
-          onClose={() => setSelectedPack(null)}
+          onClose={() => setCompraAbierta(false)}
           onRedirect={(url) => {
             window.location.assign(url);
           }}
@@ -293,18 +326,32 @@ const DOCUMENT_TYPES: Array<{ value: PseLegalIdType; label: string }> = [
 /** La misma regla que el back (`PseCreditsCheckoutDto.legalId`). */
 const DOCUMENTO_VALIDO = /^\d{6,15}$/;
 
+/** Los campos del pagador que pueden traer un error del back (02-10-2026). */
+type CampoDelPagador = 'banco' | 'documento' | 'nombre' | 'correo';
+
+/** El `id` de cada campo, para el foco y el `aria-describedby` de su error. */
+const ID_DEL_CAMPO: Record<CampoDelPagador, string> = {
+  banco: 'creditos-banco',
+  documento: 'creditos-documento',
+  nombre: 'creditos-nombre',
+  correo: 'creditos-correo',
+};
+
 function PurchaseModal({
+  abierto,
   pack,
   onClose,
   onRedirect,
 }: {
+  abierto: boolean;
   pack: AgentCreditPack;
   onClose: () => void;
   onRedirect: (url: string) => void;
 }) {
   const { user } = useAuth();
   const [bancos, setBancos] = useState<PseFinancialInstitution[]>([]);
-  const [bancosError, setBancosError] = useState(false);
+  /** El fallo al traer los bancos; se dice con el traductor bajo el campo. */
+  const [bancosError, setBancosError] = useState<unknown>(null);
   const [banco, setBanco] = useState('');
   const [tipoDePersona, setTipoDePersona] = useState<PseUserType>('NATURAL');
   const [tipoDeDocumento, setTipoDeDocumento] = useState<PseLegalIdType>('CC');
@@ -313,6 +360,15 @@ function PurchaseModal({
   const [correo, setCorreo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  /** Lo que el back dijo de cada campo del pagador: va debajo de su campo. */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDelPagador, string>>>({});
+  const olvidar = (campo: CampoDelPagador) =>
+    setDelServidor((previo) => (campo in previo ? { ...previo, [campo]: undefined } : previo));
+  /** Lo que el input dice de su error, para el lector de pantalla. */
+  const aria = (campo: CampoDelPagador, mensaje?: string | null) => ({
+    'aria-invalid': mensaje ? true : undefined,
+    'aria-describedby': mensaje ? `${ID_DEL_CAMPO[campo]}-error` : undefined,
+  });
 
   useEffect(() => {
     if (user?.email) setCorreo((actual) => actual || user.email);
@@ -322,8 +378,16 @@ function PurchaseModal({
     pseCheckoutApi
       .getFinancialInstitutions()
       .then(setBancos)
-      .catch(() => setBancosError(true));
+      .catch((e: unknown) => setBancosError(e ?? new Error('Sin bancos')));
   }, []);
+
+  /** El error del banco: la lista que no llegó, o lo que dijo el back. */
+  const errorDelBanco = bancosError
+    ? mensajeParaLaPersona(bancosError, {
+        porDefecto: 'No pudimos traer la lista de bancos de PSE. Cierra y vuelve a intentar.',
+        accion: 'traer la lista de bancos de PSE',
+      })
+    : (delServidor.banco ?? null);
 
   const datosCompletos =
     !!banco &&
@@ -337,6 +401,7 @@ function PurchaseModal({
 
     setIsSubmitting(true);
     setSubmitError(null);
+    setDelServidor({});
     try {
       const res = await agentCreditsApi.startPseCheckout({
         packSize: pack.packSize,
@@ -355,59 +420,60 @@ function PurchaseModal({
         'El banco todavía no devolvió el enlace de pago. Intenta de nuevo en un momento.'
       );
     } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : 'No se pudo iniciar el pago por PSE.'
-      );
+      // Lo que el back dijo de un dato del pagador va debajo de ese dato, con
+      // el foco ahí (02-10-2026); lo demás, al aviso, con la regla de oro.
+      const reparto = repartirErroresDelServidor<CampoDelPagador>(err, {
+        mapa: {
+          legalId: 'documento',
+          email: 'correo',
+          fullName: 'nombre',
+          financialInstitutionCode: 'banco',
+        },
+        campos: ['banco', 'documento', 'nombre', 'correo'],
+        porDefecto: 'No se pudo iniciar el pago por PSE.',
+        accion: 'iniciar el pago por PSE',
+      });
+      setDelServidor(reparto.porCampo);
+      const primero = reparto.orden[0];
+      if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus();
+      setSubmitError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null);
     }
     setIsSubmitting(false);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={isSubmitting ? undefined : onClose}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="comprar-creditos-titulo"
-        className="relative bg-background rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto"
-      >
-        {/* Header */}
-        <div className="sticky top-0 bg-background border-b border-border px-6 py-4 flex items-center justify-between">
-          <div>
-            <h3 id="comprar-creditos-titulo" className="text-base font-semibold text-fg">
-              Comprar créditos
-            </h3>
-            <p className="text-sm text-fg-muted">
-              <span className="font-mono">{pack.packSize}</span> créditos ·{' '}
-              <span className="font-mono">{formatCurrency(pack.price)}</span>
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            disabled={isSubmitting}
-            hideArrow
-            aria-label="Cerrar"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
+    <Dialog
+      open={abierto}
+      onOpenChange={(sigueAbierto) => {
+        // Mientras se inicia el pago no se sale (ni con Esc, ni con el velo, ni con la ✕).
+        if (!sigueAbierto && !isSubmitting) onClose();
+      }}
+    >
+      <DialogContent size="sm">
+        <DialogHeader>
+          <DialogTitle>Comprar créditos</DialogTitle>
+          <DialogDescription>
+            <span className="font-mono tabular-nums">{pack.packSize}</span> créditos ·{' '}
+            <span className="font-mono tabular-nums">{formatCurrency(pack.price)}</span>
+          </DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
+            el botón de pagar lo apunta con `form=`. */}
+        <form id={ID_DE_LA_COMPRA} onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="creditos-banco" className="block text-sm font-medium text-foreground mb-1">
               Banco
             </label>
             <Select
               value={banco || undefined}
-              onValueChange={setBanco}
-              disabled={bancosError || bancos.length === 0}
+              onValueChange={(v) => {
+                setBanco(v);
+                olvidar('banco');
+              }}
+              disabled={Boolean(bancosError) || bancos.length === 0}
             >
-              <SelectTrigger id="creditos-banco">
+              <SelectTrigger id="creditos-banco" {...aria('banco', errorDelBanco)}>
                 <SelectValue placeholder="Selecciona tu banco" />
               </SelectTrigger>
               <SelectContent>
@@ -418,11 +484,7 @@ function PurchaseModal({
                 ))}
               </SelectContent>
             </Select>
-            {bancosError && (
-              <p className="text-sm text-danger mt-1">
-                No pudimos traer la lista de bancos de PSE. Cierra y vuelve a intentar.
-              </p>
-            )}
+            <ErrorDelCampo id="creditos-banco-error" mensaje={errorDelBanco} />
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -472,8 +534,13 @@ function PurchaseModal({
               autoComplete="off"
               className="font-mono"
               value={documento}
-              onChange={(e) => setDocumento(e.target.value.replace(/\D/g, '').slice(0, 15))}
+              onChange={(e) => {
+                setDocumento(e.target.value.replace(/\D/g, '').slice(0, 15));
+                olvidar('documento');
+              }}
+              {...aria('documento', delServidor.documento)}
             />
+            <ErrorDelCampo id="creditos-documento-error" mensaje={delServidor.documento} />
           </div>
 
           <div>
@@ -485,8 +552,13 @@ function PurchaseModal({
               autoComplete="name"
               maxLength={200}
               value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              onChange={(e) => {
+                setNombre(e.target.value);
+                olvidar('nombre');
+              }}
+              {...aria('nombre', delServidor.nombre)}
             />
+            <ErrorDelCampo id="creditos-nombre-error" mensaje={delServidor.nombre} />
           </div>
 
           <div>
@@ -498,8 +570,13 @@ function PurchaseModal({
               type="email"
               autoComplete="email"
               value={correo}
-              onChange={(e) => setCorreo(e.target.value)}
+              onChange={(e) => {
+                setCorreo(e.target.value);
+                olvidar('correo');
+              }}
+              {...aria('correo', delServidor.correo)}
             />
+            <ErrorDelCampo id="creditos-correo-error" mensaje={delServidor.correo} />
           </div>
 
           {submitError && (
@@ -517,34 +594,35 @@ function PurchaseModal({
             Pago por PSE. Te llevamos al sitio de tu banco; los créditos llegan cuando el banco
             confirme el pago.
           </p>
-
-          <div className="flex gap-2 pt-2">
-            <Button
-              type="button"
-              variant="secondary"
-              hideArrow
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              hideArrow
-              isLoading={isSubmitting}
-              disabled={isSubmitting || !datosCompletos}
-              title={!datosCompletos ? 'Completa los datos del pagador' : undefined}
-              className="flex-1"
-            >
-              Pagar <span className="font-mono">{formatCurrency(pack.price)}</span>
-            </Button>
-          </div>
         </form>
-      </div>
-    </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            hideArrow
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={ID_DE_LA_COMPRA}
+            hideArrow
+            isLoading={isSubmitting}
+            disabled={isSubmitting || !datosCompletos}
+            title={!datosCompletos ? 'Completa los datos del pagador' : undefined}
+          >
+            Pagar <span className="font-mono tabular-nums">{formatCurrency(pack.price)}</span>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
+
+const ID_DE_LA_COMPRA = 'form-comprar-creditos';
 
 // ============================================================================
 // Default export

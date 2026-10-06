@@ -59,6 +59,7 @@ export function ACargoDeDialog({
   onOpenChange,
   cotizacion,
   sugerencia = null,
+  preseleccion = null,
   onConfirmar,
 }: {
   abierto: boolean;
@@ -66,6 +67,12 @@ export function ACargoDeDialog({
   cotizacion: CotizacionPorAprobar | null;
   /** A cargo de quién sugiere el agente. Sólo se dice; decide la persona. */
   sugerencia?: ACargoDeLaReparacion | null;
+  /**
+   * 🔴 SO-11 (QA 04-10): el «Responsable del pago» que se escogió al crear la
+   * solicitud llega ya marcado (la persona lo puede cambiar). Antes se volvía
+   * a preguntar desde cero.
+   */
+  preseleccion?: ACargoDeLaReparacion | null;
   /**
    * Se espera: si el back rechaza, el diálogo queda abierto. Con
    * `emergencia`, la reparación del propietario se aprueba SIN esperarlo (D12).
@@ -93,7 +100,7 @@ export function ACargoDeDialog({
 
   useEffect(() => {
     if (abierto) {
-      setEleccion(null);
+      setEleccion(preseleccion);
       setAprobando(false);
       setEsEmergencia(false);
       setMotivoDeEmergencia('');
@@ -101,7 +108,7 @@ export function ACargoDeDialog({
       setInquilinoPct(50);
       setMotivoInmobiliaria('');
     }
-  }, [abierto]);
+  }, [abierto, preseleccion]);
 
   const emergenciaIncompleta =
     eleccion === 'PROPIETARIO' && esEmergencia && (!motivoDeEmergencia.trim() || !soporte);
@@ -199,7 +206,7 @@ export function ACargoDeDialog({
                 'w-full rounded-lg border p-4 text-left transition-colors',
                 eleccion === o.valor
                   ? 'border-primary bg-primary-soft'
-                  : 'border-border bg-surface hover:bg-surface-muted',
+                  : 'border-border bg-surface hover:bg-surface-hover',
               )}
               data-testid={`a-cargo-de-${o.valor}`}
             >
@@ -210,7 +217,7 @@ export function ACargoDeDialog({
         </div>
 
         {eleccion === 'PROPIETARIO' && (
-          <div className="space-y-3 rounded-lg border border-border bg-surface-muted p-4" data-testid="emergencia">
+          <div className="space-y-3 rounded-lg border border-border bg-surface-hover p-4" data-testid="emergencia">
             <label className="flex items-start gap-2 text-sm text-fg">
               <Checkbox className="mt-0.5" checked={esEmergencia} onCheckedChange={(marcada: boolean) => setEsEmergencia(marcada)} data-testid="emergencia-marcar" />
               <span>
@@ -249,7 +256,7 @@ export function ACargoDeDialog({
 
         {eleccion === 'COMPARTIDA' && (
           <div
-            className="space-y-3 rounded-lg border border-border bg-surface-muted p-4"
+            className="space-y-3 rounded-lg border border-border bg-surface-hover p-4"
             data-testid="reparto"
           >
             <label className="block text-xs font-medium text-fg" htmlFor="reparto-inquilino">
@@ -288,7 +295,7 @@ export function ACargoDeDialog({
 
         {eleccion === 'INMOBILIARIA' && (
           <div
-            className="space-y-3 rounded-lg border border-border bg-surface-muted p-4"
+            className="space-y-3 rounded-lg border border-border bg-surface-hover p-4"
             data-testid="motivo-inmobiliaria"
           >
             <label
@@ -315,6 +322,7 @@ export function ACargoDeDialog({
           <Button
             hideArrow
             onClick={() => void confirmar()}
+            isLoading={aprobando}
             disabled={noSePuede}
             data-testid="a-cargo-de-confirmar"
           >

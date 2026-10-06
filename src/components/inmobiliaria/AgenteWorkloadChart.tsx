@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   ChartBar,
   Buildings,
@@ -10,6 +10,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece';
 import { SIN_MEDIR, promedioMedido } from '@/lib/tasas';
 import type { Agente } from '@/lib/types/inmobiliaria';
 
@@ -154,12 +155,10 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
       {/* Chart */}
       <div>
         {sortedAgentes.length > 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="divide-y divide-border"
-          >
-            {sortedAgentes.map((agente, index) => {
+          // Las filas entran escalonadas con el techo del sistema (antes, un
+          // retraso a mano por índice, sin tope).
+          <Stagger className="divide-y divide-border">
+            {sortedAgentes.map((agente) => {
               const propertyCount = agente.assignedPropertyIds.length;
               const percentage = scaleMax > 0 ? (propertyCount / scaleMax) * 100 : 0;
               const { level, color } = getWorkloadLevel(propertyCount);
@@ -171,11 +170,8 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
               };
 
               return (
-                <motion.div
+                <StaggerItem
                   key={agente.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
                   className="px-5 py-3 hover:bg-muted/30 transition-colors"
                 >
                   <div className="flex items-center gap-4 mb-2">
@@ -224,11 +220,11 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
                       style={{ left: `${(RECOMMENDED_MAX / scaleMax) * 100}%` }}
                     />
 
-                    {/* Progress Bar */}
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${percentage}%` }}
-                      transition={{ duration: 0.5, ease: 'easeOut', delay: index * 0.05 }}
+                    {/* Progress Bar: crece desde la izquierda con `scaleX`; el
+                        ancho es el dato y ya no se anima. */}
+                    <BarraQueCrece
+                      eje="x"
+                      style={{ width: `${percentage}%` }}
                       className={cn(
                         'h-full rounded-full',
                         propertyCount > OVERLOADED_THRESHOLD
@@ -239,10 +235,10 @@ export function AgenteWorkloadChart({ agentes, className }: AgenteWorkloadChartP
                       )}
                     />
                   </div>
-                </motion.div>
+                </StaggerItem>
               );
             })}
-          </motion.div>
+          </Stagger>
         ) : (
           <div className="px-5 py-12 text-center">
             <ChartBar className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />

@@ -36,13 +36,15 @@ import {
   Table,
   TableHeader,
   TableBody,
+  TableBodyAnimado,
   TableRow,
+  TableRowAnimada,
   TableHead,
   TableCell,
 } from '@/components/ui'
 import { Button } from '@/components/ui'
 import { TablePagination } from '@/components/ui/pagination'
-import { Card, Chip } from '@leasefy/cadence'
+import { Card, Chip, CrossFade, Presence } from '@leasefy/cadence'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import {
   useTablePagination,
@@ -276,8 +278,11 @@ function LlamadasContent() {
     (columnas.duracion ? 1 : 0)
 
   // ── Skeleton ────────────────────────────────────────────────────────────────
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // llamadas, → vacío, → fallo); lo que ya estaba al montarse no se anima.
   if (isLoading && calls.length === 0 && !error) {
     return (
+      <CrossFade swapKey="esqueleto">
       <div className="p-4 lg:p-8" aria-busy="true">
         <header className="mb-5 space-y-2">
           <div className="h-7 w-40 rounded bg-surface-muted animate-pulse" />
@@ -299,12 +304,14 @@ function LlamadasContent() {
           </Table>
         </Card>
       </div>
+      </CrossFade>
     )
   }
 
   // ── Vacío global (sin filtros, sin datos, sin error) ─────────────────────────
   if (!isLoading && !hasFilters && calls.length === 0 && !error) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8">
         <EmptyState
           icon={PhoneCall}
@@ -312,12 +319,14 @@ function LlamadasContent() {
           description={t('inmobiliaria.ai.cobranza.llamadas.list.empty.description')}
         />
       </div>
+      </CrossFade>
     )
   }
 
   // ── Error sin datos: la pantalla NO puede afirmar nada sobre las llamadas ────
   if (error && calls.length === 0) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="p-6 lg:p-8">
         {/* Interpolaba el error crudo del agente dentro del mensaje —«respondió
             con un error (Failed to fetch)»—: no le dice nada a quien lo lee y
@@ -329,10 +338,12 @@ function LlamadasContent() {
           onReintentar={refetch}
         />
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="llamadas">
     <div className="p-4 lg:p-8">
       <div className="mb-5 space-y-1">
         <h1 className="text-h2 text-fg">
@@ -405,7 +416,7 @@ function LlamadasContent() {
           </div>
         </fieldset>
 
-        {hasFilters && (
+        <Presence show={hasFilters} direction="none" initial={false} className="self-center">
           <Button
             variant="link"
             size="sm"
@@ -415,15 +426,15 @@ function LlamadasContent() {
           >
             Limpiar filtros
           </Button>
-        )}
+        </Presence>
       </div>
 
       {/*
         Error CON datos en pantalla: el refresco falló pero lo que se ve sigue
         siendo válido, sólo que viejo. Se avisa sin borrar la tabla.
       */}
-      {error && calls.length > 0 && (
-        <div
+      <Presence
+          show={Boolean(error && calls.length > 0)}
           role="status"
           className="border-b border-border bg-warning-soft px-4 py-3 text-sm text-warning flex items-center gap-2"
         >
@@ -440,8 +451,7 @@ function LlamadasContent() {
           >
             Reintentar
           </Button>
-        </div>
-      )}
+      </Presence>
 
         <div className="overflow-x-auto">
         <Table>
@@ -456,9 +466,11 @@ function LlamadasContent() {
               <TableHead>Cuándo</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          {/* Filtrar o paginar: las filas entran escalonadas (techo 320 ms) y
+              las que sobran salen; filtrado a cero, la fila del vacío entra. */}
+          <TableBodyAnimado>
             {calls.length === 0 && !isLoading && (
-              <TableRow>
+              <TableRowAnimada key="vacio">
                 <TableCell colSpan={columnCount} className="py-12 text-center">
                   <p className="text-sm text-fg-muted">
                     Ninguna llamada coincide con los filtros seleccionados.
@@ -473,13 +485,13 @@ function LlamadasContent() {
                     Limpiar filtros
                   </Button>
                 </TableCell>
-              </TableRow>
+              </TableRowAnimada>
             )}
 
             {pageItems.map((call) => {
               const outcome = displayOutcome(call)
               return (
-                <TableRow
+                <TableRowAnimada
                   key={call.id}
                   onClick={() => navigateToCall(call.id)}
                   role="link"
@@ -572,10 +584,10 @@ function LlamadasContent() {
                   <TableCell muted className="whitespace-nowrap">
                     {formatRelative(call.initiatedAt, locale)}
                   </TableCell>
-                </TableRow>
+                </TableRowAnimada>
               )
             })}
-          </TableBody>
+          </TableBodyAnimado>
         </Table>
         </div>
 
@@ -594,6 +606,7 @@ function LlamadasContent() {
         )}
       </Card>
     </div>
+    </CrossFade>
   )
 }
 

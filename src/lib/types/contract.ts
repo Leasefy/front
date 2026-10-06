@@ -28,6 +28,65 @@ export type ContractStatus =
   | 'cancelled';                       // Cancelado - terminated early
 
 /**
+ * QA-CONT C-05/C-01 (back `contracts/estado-para-mostrar.ts`, commit ff282197):
+ * el estado que se muestra de un contrato, UNA regla para la lista, la ficha e
+ * Inquilinos. Espejo de `EstadoDelContratoParaMostrar`.
+ */
+export interface EstadoDelContratoDelBack {
+  estado: 'BORRADOR' | 'EN_FIRMA' | 'POR_EMPEZAR' | 'ACTIVO' | 'TERMINADO';
+  vigencia: 'VIGENTE' | 'POR_EMPEZAR' | 'TERMINADO' | 'SIN_VIGENCIA';
+  /** `AAAA-MM-DD`, sólo POR_EMPEZAR. */
+  empiezaEl: string | null;
+  /** `AAAA-MM-DD` del último día que rige. */
+  terminaEl: string | null;
+  porVencer: boolean;
+  vencidoSinRenovar: boolean;
+  /** C-01: la terminación con fecha futura; `null` sin ninguna. */
+  terminacionProgramada: {
+    /** `AAAA-MM-DD`: el último día que rige. */
+    fecha: string;
+    motivo: string | null;
+    motivoLegible: string | null;
+    nota: string | null;
+    finPactadoOriginal: string | null;
+  } | null;
+  /** La frase del back, con las fechas en palabras. */
+  leyenda: string;
+}
+
+/**
+ * QA-CONT C-07 (back `contracts/regla-de-cobro.ts`): cuándo se genera y vence
+ * la cuota. `paymentDay` viaja como LEGADO (`diaDePagoLegado`): no decide nada.
+ */
+export interface ReglaDeCobroDelBack {
+  modo: 'PRORRATEADO' | 'FECHA_A_FECHA';
+  /** 1 en prorrateado; el día de la cartera en fecha a fecha; `null` si no se sabe. */
+  venceElDia: number | null;
+  primeraCuotaVenceEl: string | null;
+  diasDePlazo: number;
+  origenDelPlazo: 'CONTRATO' | 'INMOBILIARIA';
+  /** `null` si no se sabe o si la inmobiliaria no fijó su plazo (no corre mora, CR-31). */
+  moraDesdeElDia: number | null;
+  /**
+   * 🔴 CR-31: la inmobiliaria todavía no fijó sus días de plazo: la cuota vence,
+   * pero no corre mora ni entra a la cartera. Sólo llega (`true`) en ese caso.
+   */
+  plazoSinFijar?: true;
+  diaDePagoLegado: number | null;
+  diaDePagoAplica: false;
+  /** La frase lista para la ficha. */
+  frase: string;
+}
+
+/** QA-CONT CR-11 (back `contracts/deposito-del-contrato.ts`). */
+export interface DepositoDelContratoDelBack {
+  /** `true` en un inmueble comercial: ahí se pacta y se muestra. */
+  aplica: boolean;
+  /** El valor guardado; `null` si no hay. En vivienda, sólo uno viejo. */
+  valorCop: number | null;
+}
+
+/**
  * Tipo de rechazo cuando un tenant rechaza un contrato en PENDING_TENANT_SIGNATURE.
  * - DEFINITIVE: cierra el proceso, contrato → CANCELLED, application → CONTRACT_FAILED.
  * - MODIFICATIONS: pide cambios, contrato → REJECTED_PENDING_MODIFICATIONS, landlord debe editar.
@@ -107,8 +166,9 @@ export const CONTRACT_TYPE_DESCRIPTIONS: Record<ContractType, string> = {
  */
 export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
   draft: 'Borrador',
-  pending_landlord: 'Pendiente firma arrendador',
-  pending_tenant: 'Pendiente firma arrendatario',
+  // QA-CONT-95 (A-11): las palabras de la casa, inquilino y propietario.
+  pending_landlord: 'Pendiente firma del propietario',
+  pending_tenant: 'Pendiente firma del inquilino',
   rejected_pending_modifications: 'Modificaciones solicitadas',
   signed: 'Firmado — pendiente activar',
   active: 'Activo',
@@ -119,15 +179,21 @@ export const CONTRACT_STATUS_LABELS: Record<ContractStatus, string> = {
 /**
  * Status badge colors for contract status
  */
+/*
+ * QA-CONT-95 I-09 (04-10-2026): la TINTA va en el tono de texto de cada color
+ * (axe: el azul #3B82F6 sobre #DBEAFE daba 3,01:1; el verde sobre su fondo
+ * oscuro 3,28:1; el rojo 4,46:1 y 3,71:1). Fondo suave igual; letra legible
+ * (≥ 5:1 en claro y en oscuro).
+ */
 export const CONTRACT_STATUS_COLORS: Record<ContractStatus, string> = {
   draft: 'bg-muted text-foreground',
-  pending_landlord: 'bg-plan-status-yellow-bg text-plan-status-yellow',
-  pending_tenant: 'bg-plan-status-blue-bg text-plan-status-blue',
-  rejected_pending_modifications: 'bg-[#F8F0E0] text-[#B7791F] dark:bg-[#B7791F]/15 dark:text-[#D2992F]',
-  signed: 'bg-plan-status-blue-bg text-plan-status-blue',
-  active: 'bg-plan-status-green-bg text-plan-status-green',
+  pending_landlord: 'bg-plan-status-yellow-bg text-warning-700 dark:text-warning-100',
+  pending_tenant: 'bg-plan-status-blue-bg text-primary',
+  rejected_pending_modifications: 'bg-[#F8F0E0] text-warning-700 dark:bg-[#B7791F]/15 dark:text-warning-100',
+  signed: 'bg-plan-status-blue-bg text-primary',
+  active: 'bg-plan-status-green-bg text-success-700 dark:text-success-100',
   expired: 'bg-muted text-muted-foreground',
-  cancelled: 'bg-plan-status-red-bg text-plan-status-red',
+  cancelled: 'bg-plan-status-red-bg text-danger',
 };
 
 // ============================================================================
@@ -313,6 +379,12 @@ export interface PerfilesDelContrato {
 export interface PropietarioDelContrato {
   id: string;
   name: string;
+  /**
+   * QA-PROP-95 B-06 (04-10): el dueño del archivo de un contrato migrado sin
+   * ficha de propietario. Su `id` es el de la parte, no el de una ficha: no se
+   * enlaza. Ausente = tiene ficha.
+   */
+  sinFicha?: boolean;
   /** `null` = ficha creada sin documento (T-0128): se completa desde Propietarios. */
   documentNumber: string | null;
   documentType: string | null;
@@ -438,6 +510,25 @@ export interface EscenarioDelArchivo {
   aplicado: boolean;
   /** Por qué no se aplicó. En español, se muestra tal cual. */
   motivo: string | null;
+  /**
+   * QA-CONT-95 B-32: el escenario del archivo choca con lo que la ficha del
+   * propietario afirma sobre la retención. Mientras venga, el escenario NO
+   * está confirmado y la ficha ofrece confirmar cuál rige.
+   */
+  conflicto?: {
+    /** El escenario que sale con la ficha; `null` si no está en el catálogo. */
+    codigoDeLaFicha: Exclude<CodigoDeEscenario, 'SIN_DEFINIR'> | null;
+    propietarioRetiene: boolean;
+    motivo: string;
+  };
+  /** Sólo cuando una persona de la inmobiliaria ya confirmó cuál rige. */
+  confirmado?: {
+    /** ISO. */
+    el: string;
+    por: string | null;
+    /** Lo que decía el archivo antes de confirmar. */
+    textoDelArchivo: string | null;
+  };
 }
 
 // ============================================================================
@@ -502,6 +593,18 @@ export interface Contract {
   /** Hasta cuándo se había pactado, antes de que la terminación moviera `endDate`. */
   finPactadoOriginal?: string | null;
 
+  /**
+   * 🔴 QA-CONT C-05/C-01 (back ff282197): el estado que se MUESTRA, con la
+   * terminación programada. Lo manda la lista y la ficha; la lista NO manda
+   * `terminadoEn`, así que «Activo · Termina el 31 oct» sólo se puede decir
+   * desde aquí. `undefined` = un back anterior.
+   */
+  estadoParaMostrar?: EstadoDelContratoDelBack;
+  /** 🔴 QA-CONT C-07: UNA regla de cuándo se genera y vence la cuota. Sólo la ficha. */
+  reglaDeCobro?: ReglaDeCobroDelBack;
+  /** 🔴 QA-CONT CR-11 (Nico: «Dejarlo sólo para comercial»): si el depósito aplica. Sólo la ficha. */
+  depositoDelContrato?: DepositoDelContratoDelBack;
+
   // Snapshot fields (Opción A — capturados al crear el contrato, inmutables).
   // Pueden venir '' cuando el backfill no encontró el dato original.
   propertyAddress: string;
@@ -523,6 +626,12 @@ export interface Contract {
    * "$ 0"/epoch, indistinguible de un dato real).
    */
   monthlyRent: number | null;
+  /**
+   * Depósito en COP. Nico (03-10-2026): «dejarlo sólo para comercial» — en
+   * vivienda no hay depósito en dinero (Ley 820, art. 16). Ausente = el back
+   * no lo mandó.
+   */
+  deposit?: number | null;
   adminFee: number;
   startDate: string | null;      // ISO date
   endDate: string | null;        // ISO date

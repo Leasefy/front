@@ -28,8 +28,10 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Appear, Presence } from '@leasefy/cadence';
 import { Warning } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
+import { camposDelError, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui';
 import {
@@ -47,6 +49,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useContracts } from '@/lib/hooks/useContracts';
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import {
+  errorDeLaFechaDeVigencia,
+  vigenciaComoIso,
+} from '@/lib/documentos/limites-de-los-documentos';
 import {
   elSelectorSirve,
   loQueDiceUnSelector,
@@ -142,6 +149,20 @@ export function GenerarDocumentoDialog({
   const [preparando, setPreparando] = useState(false);
   const [generando, setGenerando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * 02-10-2026 · Lo que el back rechazó de la fecha de vigencia AL GENERAR
+   * (`GenerateDocumentDto.overrides`, Nico): va bajo «Fecha de vigencia», no en
+   * el aviso general. Se borra al escribir en ese campo.
+   */
+  const [vigenciaRechazada, setVigenciaRechazada] = useState<string | null>(null);
+  /*
+   * 02-10-2026 (Nico: «¿no tenemos parsers…?»): la fecha de vigencia se
+   * escribe como la escribe una persona («01/12/2026», «1 de diciembre de
+   * 2026»…). Lo que todavía se puede arreglar tecleando (falta el año, aún no
+   * se entiende) se dice cuando sale del campo o pide generar: `true` desde
+   * ese momento hasta que vuelve a escribir.
+   */
+  const [vigenciaTerminada, setVigenciaTerminada] = useState(false);
 
   const plantilla = useMemo(
     () => plantillas.find((p) => p.codigo === codigo) ?? null,
@@ -164,7 +185,13 @@ export function GenerarDocumentoDialog({
         if (vigente) setPlantillas(p);
       })
       .catch((e: unknown) => {
-        if (vigente) setError(e instanceof Error ? e.message : 'No pudimos cargar los tipos de documento.');
+        if (vigente)
+          setError(
+            mensajeParaLaPersona(e, {
+              porDefecto: 'No pudimos cargar los tipos de documento.',
+              accion: 'cargar los tipos de documento',
+            }),
+          );
       });
     return () => {
       vigente = false;
@@ -182,6 +209,8 @@ export function GenerarDocumentoDialog({
     setPreparacion(null);
     setValores({});
     setError(null);
+    setVigenciaRechazada(null);
+    setVigenciaTerminada(false);
     // `fechaDeVigencia` es SÓLO de la carta de incremento: es lo que fija el
     // tope del art. 20. Si sobrevive al cierre, el próximo documento —un
     // inventario, un acta— se prepara con un parámetro que no es suyo.
@@ -197,9 +226,24 @@ export function GenerarDocumentoDialog({
    */
   const escribirCampo = useCallback((nombre: string, valor: string) => {
     setValores((v) => ({ ...v, [nombre]: valor }));
-    if (nombre === 'fechaDeVigencia' && /^\d{4}-\d{2}-\d{2}$/.test(valor)) {
-      setVigenciaPedida(valor);
-    }
+    if (nombre !== 'fechaDeVigencia') return;
+    setVigenciaRechazada(null);
+    setVigenciaTerminada(false);
+    // 🔴 02-10-2026 · Un día que no existe (`2026-02-31`) o fuera de 2000–2100
+    // no se le pregunta al back: se dice bajo el campo con su misma frase.
+    // Con el año de cuatro cifras («01/12/2026», «1 de diciembre de 2026») ya
+    // está entera y se le pregunta el tope de una; con dos («1/12/26») se
+    // espera a que salga del campo: «1/12/20» también es una fecha y pediría
+    // el tope de 2020 a mitad de camino.
+    const iso = vigenciaComoIso(valor);
+    if (iso && /\d{4}/.test(valor)) setVigenciaPedida(iso);
+  }, []);
+
+  /** Salir de la fecha de vigencia: ahí se dice lo que falta y se pide el tope. */
+  const terminarLaVigencia = useCallback((valor: string) => {
+    setVigenciaTerminada(true);
+    const iso = vigenciaComoIso(valor);
+    if (iso) setVigenciaPedida(iso);
   }, []);
 
   // Los campos prellenados los calcula el backend con los datos reales del
@@ -238,7 +282,12 @@ export function GenerarDocumentoDialog({
       .catch((e: unknown) => {
         if (!vigente) return;
         setPreparacion(null);
-        setError(e instanceof Error ? e.message : 'No pudimos preparar el documento.');
+        setError(
+          mensajeParaLaPersona(e, {
+            porDefecto: 'No pudimos preparar el documento.',
+            accion: 'preparar el documento',
+          }),
+        );
       })
       .finally(() => {
         if (vigente) setPreparando(false);
@@ -297,6 +346,14 @@ export function GenerarDocumentoDialog({
 
   const faltantes = preparacion ? camposFaltantes(preparacion.campos, valores) : [];
 
+  // La fecha de vigencia que el back rechazaría (`@EsDiaDelCalendario` +
+  // `@FechaEntre`): con ella no se genera la carta.
+  const tieneVigencia = preparacion?.campos.some((c) => c.nombre === 'fechaDeVigencia') ?? false;
+  const errorDeLaVigencia = tieneVigencia
+    ? (errorDeLaFechaDeVigencia(valores.fechaDeVigencia, { terminada: vigenciaTerminada }) ??
+      vigenciaRechazada)
+    : null;
+
   /* Una propia se puede generar en cuanto hay sobre qué; si no usa variables,
      desde el momento en que se elige. */
   const sePuedeLaPropia =
@@ -305,6 +362,7 @@ export function GenerarDocumentoDialog({
   const sePuede =
     sePuedeLaPropia ||
     (!!preparacion &&
+    !errorDeLaVigencia &&
     puedeGenerar({
       plantilla,
       contractId: contractId || undefined,
@@ -334,7 +392,12 @@ export function GenerarDocumentoDialog({
         onGenerado(documento);
         onOpenChange(false);
       } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : 'No pudimos generar el documento.');
+        setError(
+          mensajeParaLaPersona(e, {
+            porDefecto: 'No pudimos generar el documento.',
+            accion: 'generar el documento',
+          }),
+        );
       } finally {
         setGenerando(false);
       }
@@ -342,6 +405,17 @@ export function GenerarDocumentoDialog({
     }
 
     if (!codigo || !preparacion) return;
+    // La fecha de vigencia que todavía no se entiende se dice bajo el campo y
+    // no se manda: el back diría lo mismo.
+    if (
+      tieneVigencia &&
+      errorDeLaFechaDeVigencia(valores.fechaDeVigencia, { terminada: true })
+    ) {
+      setVigenciaTerminada(true);
+      return;
+    }
+    // Viaja en AAAA-MM-DD (el back también la lee escrita, pero no hace falta).
+    const vigenciaIso = tieneVigencia ? vigenciaComoIso(valores.fechaDeVigencia) : null;
     setGenerando(true);
     setError(null);
     try {
@@ -349,17 +423,37 @@ export function GenerarDocumentoDialog({
         codigo,
         contractId: contractId || undefined,
         consignacionId: consignacionId || undefined,
-        overrides: valores,
+        overrides: vigenciaIso ? { ...valores, fechaDeVigencia: vigenciaIso } : valores,
         name: preparacion.nombreSugerido,
       });
       toast.success('Documento generado', { description: documento.name });
       onGenerado(documento);
       onOpenChange(false);
     } catch (e: unknown) {
+      // 02-10-2026 · La fecha de vigencia que el back rechaza al generar
+      // (`overrides`, regla `fecha`) va bajo su campo, con la frase del back.
+      const deLaVigencia = tieneVigencia
+        ? camposDelError(e).find(
+            (c) =>
+              c.campo === 'overrides.fechaDeVigencia' ||
+              c.campo === 'fechaDeVigencia' ||
+              (c.campo === 'overrides' && c.regla === 'fecha'),
+          )
+        : undefined;
+      if (deLaVigencia) {
+        setVigenciaRechazada(deLaVigencia.mensaje);
+        return;
+      }
       // El mensaje del backend tal cual: cuando faltan variables dice
       // exactamente cuáles, y cuando el incremento se pasa del tope dice el
-      // artículo y el IPC.
-      setError(e instanceof Error ? e.message : 'No pudimos generar el documento.');
+      // artículo y el IPC. Por el traductor (02-10-2026): un 5xx dice que falló
+      // de nuestro lado con su referencia, y «conexión» sólo sin respuesta.
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos generar el documento.',
+          accion: 'generar el documento',
+        }),
+      );
     } finally {
       setGenerando(false);
     }
@@ -370,13 +464,14 @@ export function GenerarDocumentoDialog({
     consignacionId,
     valores,
     preparacion,
+    tieneVigencia,
     onGenerado,
     onOpenChange,
   ]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Generar documento</DialogTitle>
           {/* La frase nombra los DOS orígenes desde que el selector lista también
@@ -388,9 +483,12 @@ export function GenerarDocumentoDialog({
           </DialogDescription>
         </DialogHeader>
 
+        {/* Este scroll propio es a propósito (no el del cuerpo del modal): deja
+            el error y el «falta completar» de abajo pegados al pie. Ver el 🔴. */}
         <div
           data-testid="doc-campos"
           className="max-h-[60vh] space-y-5 overflow-y-auto px-1 py-1"
+          data-lenis-prevent
         >
           {/* 1 — Tipo */}
           <div className="space-y-1.5">
@@ -498,7 +596,7 @@ export function GenerarDocumentoDialog({
               </div>
               {!contractId && !consignacionId && (
                 <p
-                  className="rounded-lg border border-border bg-surface-muted px-4 py-3 text-body-sm text-fg-muted"
+                  className="rounded-[14px] border border-border px-4 py-3 text-body-sm text-fg-muted"
                   data-testid="doc-propia-falta-sobre-que"
                 >
                   Elige el contrato o el inmueble de donde salen los datos: esta plantilla
@@ -581,7 +679,7 @@ export function GenerarDocumentoDialog({
 
           {/* 3 — Campos */}
           {plantilla && !listo && (
-            <p className="rounded-lg border border-border bg-surface-muted px-4 py-3 text-body-sm text-fg-muted">
+            <p className="rounded-[14px] border border-border px-4 py-3 text-body-sm text-fg-muted">
               {queFaltaElegir(plantilla)}
             </p>
           )}
@@ -592,9 +690,10 @@ export function GenerarDocumentoDialog({
             </div>
           )}
 
+          {/* Lo que el servidor preparó llega con su entrada (el spinner se va). */}
           {preparacion && !preparando && (
-            <div className="space-y-4">
-              <div className="rounded-lg border border-border bg-surface-muted px-4 py-3">
+            <Appear className="space-y-4">
+              <div className="rounded-[14px] border border-border px-4 py-3">
                 <p className="text-body-sm text-fg">{preparacion.nombreSugerido}</p>
                 <p className="text-caption text-fg-muted">
                   {preparacion.contrato
@@ -620,7 +719,7 @@ export function GenerarDocumentoDialog({
                     'flex items-start gap-2 rounded-lg px-4 py-3 text-body-sm',
                     aviso.bloquea
                       ? 'bg-danger-soft text-danger'
-                      : 'bg-surface-muted text-fg-muted',
+                      : 'bg-surface-hover text-fg-muted',
                   )}
                 >
                   {aviso.bloquea && <Warning className="mt-0.5 h-4 w-4 shrink-0" weight="fill" />}
@@ -652,7 +751,7 @@ export function GenerarDocumentoDialog({
               {preparacion.certificado?.puedeEmitirse && (
                 <p
                   data-testid="doc-certificado-procede"
-                  className="rounded-lg bg-surface-muted px-4 py-3 text-body-sm text-fg-muted"
+                  className="rounded-[14px] bg-surface-hover px-4 py-3 text-body-sm text-fg-muted"
                 >
                   El estado de cuenta de este contrato está en cero. Las cifras del documento
                   las toma el sistema del estado de cuenta: no se escriben a mano.
@@ -671,7 +770,8 @@ export function GenerarDocumentoDialog({
                   {preparacion.campos.map((campo) => {
                     const id = `doc-campo-${campo.nombre}`;
                     const valor = valores[campo.nombre] ?? '';
-                    const vacio = campo.requerida && valor.trim() === '';
+                    const errorDelCampo =
+                      campo.nombre === 'fechaDeVigencia' ? errorDeLaVigencia : null;
                     return (
                       <div key={campo.nombre} className="space-y-1.5">
                         {/* El Combobox del DS no acepta `id`, así que para la
@@ -695,7 +795,10 @@ export function GenerarDocumentoDialog({
                             onChange={(v) => escribirCampo(campo.nombre, v ?? '')}
                             placeholder="Elige la ciudad"
                             searchPlaceholder="Ciudad o departamento"
-                            invalid={vacio}
+                            // ARREGLOS-7 (ARREGLOS-4 Q3 A): sin `invalid` por estar
+                            // vacía. La ciudad abría en rojo antes de que nadie
+                            // intentara nada; que falta lo dice el pie, como en
+                            // los demás campos del diálogo.
                             contentClassName="z-[400]"
                           />
                         ) : campo.tipo === 'parrafo' ? (
@@ -704,7 +807,6 @@ export function GenerarDocumentoDialog({
                             data-testid={id}
                             rows={3}
                             value={valor}
-                            aria-invalid={vacio}
                             onChange={(e) => escribirCampo(campo.nombre, e.target.value)}
                           />
                         ) : (
@@ -717,9 +819,29 @@ export function GenerarDocumentoDialog({
                                 ? 'decimal'
                                 : undefined
                             }
-                            aria-invalid={vacio}
+                            aria-invalid={!!errorDelCampo}
+                            // 🔴 03-10 (pruebas en el navegador): el borde rojo lo pinta
+                            // el DS con `invalid`; con sólo `aria-invalid` la fecha
+                            // rechazada se veía igual que una buena. Sólo con el error
+                            // dicho: un requerido vacío lo dice el pie, no un borde rojo
+                            // desde que se abre el diálogo.
+                            invalid={!!errorDelCampo}
+                            aria-describedby={
+                              campo.nombre === 'fechaDeVigencia' ? `${id}-error` : undefined
+                            }
+                            placeholder={
+                              campo.nombre === 'fechaDeVigencia' ? 'Por ejemplo 01/12/2026' : undefined
+                            }
                             onChange={(e) => escribirCampo(campo.nombre, e.target.value)}
+                            onBlur={
+                              campo.nombre === 'fechaDeVigencia'
+                                ? (e) => terminarLaVigencia(e.target.value)
+                                : undefined
+                            }
                           />
+                        )}
+                        {campo.nombre === 'fechaDeVigencia' && (
+                          <ErrorDelCampo id={`${id}-error`} mensaje={errorDelCampo} />
                         )}
                         {campo.ayuda && (
                           <p className="text-caption text-fg-muted">{campo.ayuda}</p>
@@ -729,7 +851,7 @@ export function GenerarDocumentoDialog({
                   })}
                 </div>
               )}
-            </div>
+            </Appear>
           )}
 
         </div>
@@ -745,15 +867,9 @@ export function GenerarDocumentoDialog({
          * pasó nada». Acá, pegados al pie, aparecen justo encima del botón que
          * los produjo. `role="alert"` para que un lector de pantalla los cante.
          */}
-        {error && (
-          <p
-            data-testid="doc-error"
-            role="alert"
-            className="mx-1 rounded-lg bg-danger-soft px-4 py-3 text-body-sm text-danger"
-          >
-            {error}
-          </p>
-        )}
+        <Presence show={Boolean(error)} initial={false} distance="xs" as="p" data-testid="doc-error" role="alert" className="mx-1 rounded-lg bg-danger-soft px-4 py-3 text-body-sm text-danger">
+          {error}
+        </Presence>
 
         {faltantes.length > 0 && preparacion && (
           <p data-testid="doc-faltantes" className="px-1 text-caption text-fg-muted">
@@ -762,7 +878,7 @@ export function GenerarDocumentoDialog({
         )}
 
         <DialogFooter>
-          <Button variant="ghost" hideArrow onClick={() => onOpenChange(false)} disabled={generando}>
+          <Button variant="outline" hideArrow onClick={() => onOpenChange(false)} disabled={generando}>
             Cancelar
           </Button>
           <Button
@@ -770,6 +886,7 @@ export function GenerarDocumentoDialog({
             data-testid="doc-generar"
             onClick={() => void generar()}
             disabled={!sePuede || generando}
+            isLoading={generando}
           >
             {generando ? 'Generando…' : 'Generar'}
           </Button>

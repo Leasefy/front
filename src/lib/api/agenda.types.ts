@@ -59,6 +59,26 @@ export interface EventoAgenda {
   /** Cómo ubicar a quien visita. Sólo en `tipo: 'visita'`. */
   contactoTelefono?: string;
   contactoEmail?: string;
+  /** AG-06: quien ATIENDE la visita (del equipo) y el interesado del embudo. */
+  asesorId?: string;
+  asesorNombre?: string;
+  pipelineItemId?: string;
+  sinAsesor?: boolean;
+  /** AG-13: quién creó la tarea (la fila dice «Tú» sólo a quien la creó). */
+  creadaPorId?: string;
+  creadaPorNombre?: string;
+}
+
+/** AG-02: las tres vistas de la agenda. */
+export type VistaDeAgenda = 'proximas' | 'vencidas' | 'hechas';
+
+/** Alguien del equipo activo (`GET /inmobiliaria/agenda/equipo`). */
+export interface MiembroDelEquipo {
+  userId: string;
+  nombre: string;
+  rol: string;
+  /** Recibe visitas e interesados (administrador y asesor). */
+  asesor: boolean;
 }
 
 /** Conteos por tipo de evento para el resumen de la agenda. */
@@ -84,6 +104,9 @@ export interface AgendaListResponse {
   total: number;
   page: number;
   pageSize: number;
+  /** AG-02: cuántos hay en cada vista (sólo cuando se pidió una vista). */
+  porVista?: Record<VistaDeAgenda, number>;
+  vista?: VistaDeAgenda;
 }
 
 /** Lo que muestra la tabla de una (`DEFAULT_PAGE_SIZE` de `useTablePagination`). */

@@ -54,8 +54,8 @@ import {
   applicationStatusToTone,
   paymentStatusToLabel,
   paymentStatusToTone,
-  pqrsToCase,
-} from '@/lib/types/tenant-case';
+  pqrsToCase, casoAbierto } from '@/lib/types/tenant-case';
+import { solicitudesQueSonCaso } from '@/lib/casos/solicitudes-que-son-caso';
 
 const RESPONSABLE_INMOBILIARIA = 'Inmobiliaria';
 const PAGOS_LINK = '/inquilino/pagos';
@@ -223,7 +223,9 @@ export function useTenantCases(options?: { skip?: boolean }): UseTenantCasesResu
     const out: TenantCase[] = [];
 
     // PAGO — non-terminal payment requests (single source of truth).
-    for (const req of requests) {
+    // QA-INQ-95: un rechazo que ya se reintentó (otro intento después, del mismo
+    // arriendo y período) no es un caso abierto: `solicitudesQueSonCaso`.
+    for (const req of solicitudesQueSonCaso(requests)) {
       if (OPEN_PAYMENT_STATUSES.has(req.status)) {
         out.push(paymentRequestToCase(req));
       }
@@ -312,7 +314,8 @@ export function useTenantCases(options?: { skip?: boolean }): UseTenantCasesResu
 
   return {
     cases,
-    openCasesCount: cases.length,
+    // SO-16: sólo los que siguen abiertos (no los resueltos ni los aprobados).
+    openCasesCount: cases.filter(casoAbierto).length,
     primaryLease: primaryLease ?? null,
     isLoading,
     error,

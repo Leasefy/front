@@ -56,7 +56,18 @@ export const SSERecoverySchema = z.object({
 
 export const SSEFinalVerdictSchema = z.object({
   asegurabilidad: z.enum(['yes', 'partial', 'no']),
-  mejor_opcion: z.object({ carrier: z.string(), prima_mensual_cop: z.number() }).nullable(),
+  /**
+   * 🔴 QA-IA-95 (05-10-2026, IA-A-11): el micro manda la mejor opción como `AseguradoraQuote`
+   * (`aseguradora`, `prima_mensual_cop`, …), no con `carrier`. El esquema exigía `carrier`: el veredicto
+   * final no pasaba, se descartaba como `unknown` y el detalle decía «Estado general: Sin resultado» con
+   * dos aseguradoras aprobadas. Se acepta cualquiera de los dos nombres y se deja en `carrier`.
+   */
+  mejor_opcion: z
+    .object({ carrier: z.string().optional(), aseguradora: z.string().optional(), prima_mensual_cop: z.number().nullable() })
+    .passthrough()
+    .refine((m) => Boolean(m.carrier ?? m.aseguradora), { message: 'la mejor opción sin aseguradora' })
+    .transform((m) => ({ ...m, carrier: (m.carrier ?? m.aseguradora) as string, prima_mensual_cop: m.prima_mensual_cop ?? 0 }))
+    .nullable(),
   reasoning_trace_es: z.string().nullable(),
   cohort_insights: z.object({
     cohort_id: z.string(),
@@ -64,6 +75,12 @@ export const SSEFinalVerdictSchema = z.object({
     confidence: z.number(),
   }).nullable(),
   failed_carriers: z.array(z.string()),
+  /**
+   * 🔴 QA-IA-95: el micro dice si las aseguradoras fueron SIMULADAS. Sin esto, el detalle deducía «estimado»
+   * de `started_at_ms === 0`, que el micro ya no manda en cero: decía «Confirmado por la aseguradora» con
+   * aseguradoras de prueba.
+   */
+  stub_mode: z.boolean().optional(),
 })
 
 export const SSEHeartbeatSchema = z.object({
@@ -75,9 +92,14 @@ export const SSEHeartbeatSchema = z.object({
 // Custom schema (not in original 7 — emitted by the agent pipeline)
 // ---------------------------------------------------------------------------
 
+/**
+ * 🔴 En PESOS (Nico, 04-10-2026: ninguna pantalla de la inmobiliaria con
+ * dólares). Quien emita el costo de una cotización en vivo lo manda en COP,
+ * ya convertido con la tasa de la plataforma (`COSTOS_TASA_COP_POR_USD`).
+ */
 export const SSECostRecordedSchema = z.object({
-  cost_usd: z.number(),
-  running_total_usd: z.number(),
+  cost_cop: z.number(),
+  running_total_cop: z.number(),
 })
 
 // ---------------------------------------------------------------------------

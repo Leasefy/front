@@ -16,9 +16,18 @@
  * sale y la pantalla lo dice.
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { Chip, RadioGroup, RadioGroupItem } from '@leasefy/cadence';
-import { Bank, CheckCircle, Paperclip, ShieldWarning, WarningCircle } from '@phosphor-icons/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Chip, CrossFade, RadioGroup, RadioGroupItem, Presence } from '@leasefy/cadence';
+import {
+  Bank,
+  CheckCircle,
+  Paperclip,
+  Prohibit,
+  ShieldWarning,
+  Stamp,
+  WarningCircle,
+  XCircle,
+} from '@phosphor-icons/react';
 
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Button } from '@/components/ui/button';
@@ -44,6 +53,9 @@ import {
   type CuentaDelReparto,
 } from '@/lib/api/mandato.service';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { camposDelError } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ESTADO_DEL_CAMBIO_DE_CUENTA } from '@/lib/mandato/textos';
 import { COLOMBIAN_BANKS, type BankCode } from '@/lib/types/payment-accounts';
@@ -62,6 +74,9 @@ import {
 import {
   RepartoDeCuentasCampos,
   cuentaVacia,
+  enfocarCampoDeLaCuenta,
+  erroresDelServidorEnElReparto,
+  idDelCampoDeLaCuenta,
   type CuentaDelFormulario,
   type ErroresDeLaCuenta,
 } from '@/components/inmobiliaria/mandato/RepartoDeCuentasCampos';
@@ -228,6 +243,27 @@ function esReparto(c: CuentaBancaria): boolean {
   return !!c.reparto && c.reparto.length > 1;
 }
 
+/** Los campos de la cuenta única que pueden traer un error del servidor. */
+type CampoDelCambio = 'banco' | 'tipo' | 'numero' | 'certificacion';
+const CAMPOS_DEL_CAMBIO: readonly CampoDelCambio[] = ['banco', 'tipo', 'numero', 'certificacion'];
+/** El nombre del campo en `SolicitarCambioDeCuentaDto` → el del formulario. */
+const CAMPOS_DEL_CAMBIO_EN_EL_BACK: Record<string, CampoDelCambio> = {
+  bankCode: 'banco',
+  bankName: 'banco',
+  bankAccountType: 'tipo',
+  bankAccountNumber: 'numero',
+  certificacion: 'certificacion',
+};
+const ID_DEL_CAMPO_DEL_CAMBIO: Record<CampoDelCambio, string> = {
+  banco: 'banco-nuevo',
+  tipo: 'tipo-nuevo',
+  numero: 'numero-nuevo',
+  certificacion: 'certificacion',
+};
+/** Espejo de los topes del back (`mandato.dto.ts`). */
+const MAX_LARGO_DEL_NUMERO_DE_CUENTA = 40;
+const MAX_LARGO_DEL_MOTIVO_DE_CIERRE = 500;
+
 const ARCHIVOS_DE_CERTIFICACION = 'application/pdf,image/jpeg,image/png,image/webp';
 
 /** «2», «2 y 3», «2, 3 y 4». */
@@ -239,11 +275,12 @@ function enumerar(partes: readonly string[], y: string): string {
 /**
  * De los errores en vivo, los que se marcan EN el campo: lo escrito que está
  * mal. Lo vacío no se pinta en rojo antes de que la persona llegue a él; lo
- * nombra la frase de al lado del botón.
+ * nombra la frase de al lado del botón (y el porcentaje vacío, la suma de
+ * abajo del reparto).
  */
 function loEscritoQueEstaMal(
   e: ErroresDeLaCuenta,
-  c: { titular: ValorDelTitular; numero?: string },
+  c: { titular: ValorDelTitular; numero?: string; porcentaje?: string },
 ): ErroresDeLaCuenta {
   const titular: ErroresDelTitular = {};
   if (e.titular?.numero && c.titular.numero.trim()) titular.numero = e.titular.numero;
@@ -251,7 +288,58 @@ function loEscritoQueEstaMal(
   return {
     ...(Object.keys(titular).length > 0 ? { titular } : {}),
     ...(e.numero && c.numero?.trim() ? { numero: e.numero } : {}),
+    ...(e.porcentaje && c.porcentaje?.trim() ? { porcentaje: e.porcentaje } : {}),
   };
+}
+
+/** Lo del servidor gana sobre lo del cliente, campo por campo (el titular, por sub-campo). */
+function fusionarErrores(delServidor: ErroresDeLaCuenta | undefined, enVivo: ErroresDeLaCuenta): ErroresDeLaCuenta {
+  if (!delServidor) return enVivo;
+  const titular = { ...enVivo.titular, ...delServidor.titular };
+  return {
+    ...enVivo,
+    ...delServidor,
+    ...(Object.keys(titular).length > 0 ? { titular } : {}),
+  };
+}
+
+/**
+ * Los errores del servidor que dejan de valer porque la persona tocó el campo:
+ * cada campo cambiado borra el suyo en esa cuenta. Un porcentaje cambiado los
+ * borra en TODAS (la suma es de todas), y una cuenta que se va se lleva los suyos.
+ */
+function sinLoQueSeCorrigio(
+  errores: Record<string, ErroresDeLaCuenta>,
+  antes: readonly CuentaDelFormulario[],
+  despues: readonly CuentaDelFormulario[],
+): Record<string, ErroresDeLaCuenta> {
+  const anterior = new Map(antes.map((c) => [c.llave, c]));
+  const cambioUnPorcentaje = despues.some((c) => anterior.get(c.llave)?.porcentaje !== c.porcentaje);
+  const quedan: Record<string, ErroresDeLaCuenta> = {};
+  for (const c of despues) {
+    const e = errores[c.llave];
+    const a = anterior.get(c.llave);
+    if (!e || !a) continue;
+    const { titular, banco, tipo, numero, porcentaje, certificacion } = e;
+    const delTitular =
+      titular && a.titular.titular === c.titular.titular
+        ? {
+            ...(titular.nombre && a.titular.nombre === c.titular.nombre ? { nombre: titular.nombre } : {}),
+            ...(titular.tipo && a.titular.tipo === c.titular.tipo ? { tipo: titular.tipo } : {}),
+            ...(titular.numero && a.titular.numero === c.titular.numero ? { numero: titular.numero } : {}),
+          }
+        : {};
+    const sigue: ErroresDeLaCuenta = {
+      ...(Object.keys(delTitular).length > 0 ? { titular: delTitular } : {}),
+      ...(banco && a.banco === c.banco ? { banco } : {}),
+      ...(tipo && a.tipo === c.tipo ? { tipo } : {}),
+      ...(numero && a.numero === c.numero ? { numero } : {}),
+      ...(porcentaje && !cambioUnPorcentaje ? { porcentaje } : {}),
+      ...(certificacion ? { certificacion } : {}),
+    };
+    if (Object.keys(sigue).length > 0) quedan[c.llave] = sigue;
+  }
+  return quedan;
 }
 
 export function CambioDeCuentaBancaria({
@@ -260,7 +348,14 @@ export function CambioDeCuentaBancaria({
   puedeEditar,
   onCuentaCambiada,
   propietario,
+  pedirCambio = 0,
 }: {
+  /**
+   * Sube cada vez que alguien de afuera pide «Cambiar cuenta» (el lápiz de la
+   * tarjeta de la cuenta, P-14/QA-PROP 03-10). Abre el pedido si se puede; si
+   * ya hay un cambio en curso, lleva la vista a esta sección, que lo dice.
+   */
+  pedirCambio?: number;
   propietarioId: string;
   /**
    * Nombre y documento del propietario (22-09): para decir si la cuenta es suya
@@ -283,6 +378,32 @@ export function CambioDeCuentaBancaria({
   const [enlaceDePrueba, setEnlaceDePrueba] = useState<string | null>(null);
 
   const [errorDeCarga, setErrorDeCarga] = useState<unknown>(null);
+  const seccion = useRef<HTMLElement>(null);
+
+  /*
+   * SEGUIMIENTO-FRONT: un pedido que llega ANTES de leer los cambios (la ficha
+   * abierta con `?cambiarCuenta=1`) se guarda y se atiende cuando llegan; antes
+   * se perdía, porque sin `datos` no se puede saber si ya hay uno en curso.
+   */
+  const pedidoAtendido = useRef(0);
+  useEffect(() => {
+    if (!pedirCambio || pedidoAtendido.current === pedirCambio) return;
+    // Sin leer todavía, espera; si la lectura falló, lleva a la sección (que lo dice).
+    if (!datos && !errorDeCarga) return;
+    pedidoAtendido.current = pedirCambio;
+    const ultimoCambio = datos?.cambios[0] ?? null;
+    const enCurso =
+      ultimoCambio && (ultimoCambio.estado === 'PENDIENTE_CONFIRMACION' || ultimoCambio.estado === 'CONFIRMADO');
+    if (puedeEditar && datos?.disponible && tieneCuenta && !enCurso) {
+      setPidiendo(true);
+      return;
+    }
+    seccion.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    seccion.current?.focus({ preventScroll: true });
+    // Un pedido nuevo, o los datos que faltaban para atender uno guardado
+    // (`pedidoAtendido` evita repetirlo con cada lectura).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pedirCambio, datos, errorDeCarga]);
 
   const cargar = useCallback(async () => {
     try {
@@ -321,7 +442,9 @@ export function CambioDeCuentaBancaria({
       onCuentaCambiada();
       await cargar();
     } catch (e) {
-      toast.error('No se pudo confirmar.', { description: mensajeDelFallo(e, 'Intenta de nuevo.') });
+      toast.error('No se pudo confirmar.', {
+        description: mensajeDelFallo(e, 'No pudimos confirmar el cambio con ese código.'),
+      });
       await cargar();
     } finally {
       setTrabajando(false);
@@ -338,7 +461,12 @@ export function CambioDeCuentaBancaria({
   }
 
   return (
-    <section className="rounded-lg border border-border bg-card p-5 space-y-3" data-testid="cambio-de-cuenta">
+    <section
+      ref={seccion}
+      tabIndex={-1}
+      className="rounded-lg border border-border bg-card p-5 space-y-3 focus:outline-none"
+      data-testid="cambio-de-cuenta"
+    >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Bank className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
@@ -633,6 +761,39 @@ function PedirCambioDeCuenta({
     .filter((i): i is number => i !== null);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /*
+   * Lo que el back rechazó POR CAMPO en la cuenta única (02-10-2026): un 400
+   * `DATOS_INVALIDOS` trae `campos[]` con los nombres del DTO y cada uno va
+   * bajo SU campo, con el foco en el primero. Lo que no tiene campo acá (el
+   * titular, un 5xx, la red) sigue en el aviso de abajo.
+   */
+  const [erroresDelServidor, setErroresDelServidor] = useState<Partial<Record<CampoDelCambio, string>>>({});
+  const limpiarDelServidor = (campo: CampoDelCambio) =>
+    setErroresDelServidor((antes) => {
+      if (!antes[campo]) return antes;
+      const { [campo]: _quitado, ...resto } = antes;
+      return resto;
+    });
+  /*
+   * Lo que el back rechazó del REPARTO (02-10-2026, Nico: el error va en su
+   * campo, no en un aviso de bloque). Por la llave estable de la cuenta, no
+   * por la posición: quitar la cuenta 2 no le pasa su error a la 3.
+   */
+  const [rechazosDelReparto, setRechazosDelReparto] = useState<
+    Record<string, ErroresDeLaCuenta>
+  >({});
+  const cambiarCuentas = (nuevas: CuentaDelFormulario[]) => {
+    setRechazosDelReparto((antes) =>
+      Object.keys(antes).length > 0 ? sinLoQueSeCorrigio(antes, cuentas, nuevas) : antes,
+    );
+    setCuentas(nuevas);
+  };
+  const limpiarCertificacionDelServidor = (llave: string) =>
+    setRechazosDelReparto((antes) => {
+      if (!antes[llave]?.certificacion) return antes;
+      const { certificacion: _quitada, ...resto } = antes[llave];
+      return { ...antes, [llave]: resto };
+    });
 
   const problema = modo === 'VARIAS' ? problemaDelReparto(cuentas.map((c) => ({ banco: c.banco, numero: c.numero, porcentaje: c.porcentaje }))) : null;
 
@@ -698,6 +859,7 @@ function PedirCambioDeCuenta({
     if (!listo) return;
     setGuardando(true);
     setError(null);
+    setRechazosDelReparto({});
     try {
       const r = await mandatoApi.solicitarCambioDeCuenta(propietarioId, {
         reparto: cuentas.map((c) => {
@@ -729,7 +891,20 @@ function PedirCambioDeCuenta({
       });
       onPedido(r.enlaceDePrueba);
     } catch (e) {
-      setError(mensajeDelFallo(e, 'No se pudo pedir el reparto.'));
+      // Cada error a su cuenta y su campo, con el foco en el primero; lo que no
+      // tiene campo (un 5xx, la red) sigue en el aviso del diálogo.
+      const reparto = erroresDelServidorEnElReparto(e, cuentas.length, {
+        porDefecto: 'No se pudo pedir el reparto.',
+      });
+      setRechazosDelReparto(
+        Object.fromEntries(
+          cuentas.flatMap((c, i) =>
+            Object.keys(reparto.porCuenta[i]).length > 0 ? [[c.llave, reparto.porCuenta[i]]] : [],
+          ),
+        ),
+      );
+      setError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null);
+      if (reparto.primero) enfocarCampoDeLaCuenta(reparto.primero.indice, reparto.primero.campo);
     } finally {
       setGuardando(false);
     }
@@ -741,6 +916,7 @@ function PedirCambioDeCuenta({
     const tercero = titular.titular === 'TERCERO';
     setGuardando(true);
     setError(null);
+    setErroresDelServidor({});
     try {
       const r = await mandatoApi.solicitarCambioDeCuenta(propietarioId, {
         bankCode: mapBankCodeToWire(banco),
@@ -764,7 +940,18 @@ function PedirCambioDeCuenta({
       });
       onPedido(r.enlaceDePrueba);
     } catch (e) {
-      setError(mensajeDelFallo(e, 'No se pudo pedir el cambio.'));
+      const reparto = repartirErroresDelServidor<CampoDelCambio>(e, {
+        mapa: CAMPOS_DEL_CAMBIO_EN_EL_BACK,
+        campos: CAMPOS_DEL_CAMBIO,
+        porDefecto: 'No se pudo pedir el cambio.',
+      });
+      if (reparto.orden.length > 0) {
+        setErroresDelServidor(reparto.porCampo);
+        setError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null);
+        document.getElementById(ID_DEL_CAMPO_DEL_CAMBIO[reparto.orden[0]])?.focus();
+      } else {
+        setError(mensajeDelFallo(e, 'No se pudo pedir el cambio.'));
+      }
     } finally {
       setGuardando(false);
     }
@@ -772,7 +959,7 @@ function PedirCambioDeCuenta({
 
   return (
     <Dialog open onOpenChange={(v) => !v && onCerrar()}>
-      <DialogContent className="sm:max-w-lg" data-testid="pedir-cambio">
+      <DialogContent size="md" data-testid="pedir-cambio">
         <DialogHeader>
           <DialogTitle>Cambiar la cuenta bancaria</DialogTitle>
           <DialogDescription>
@@ -820,92 +1007,125 @@ function PedirCambioDeCuenta({
             ) : null}
           </div>
 
-          {modo === 'VARIAS' ? (
-            <RepartoDeCuentasCampos
-              cuentas={cuentas}
-              onCambiar={setCuentas}
-              errores={cuentas.map((c, i) => loEscritoQueEstaMal(erroresDelReparto[i], c))}
+          {/* Una cuenta o varias: los campos de una se cruzan con los de la otra
+              (`popLayout`: lo nuevo entra YA y lo viejo se va por encima). */}
+          <CrossFade swapKey={modo} mode="popLayout" className="space-y-3">
+            {modo === 'VARIAS' ? (
+              <RepartoDeCuentasCampos
+                cuentas={cuentas}
+                onCambiar={cambiarCuentas}
+                errores={cuentas.map((c, i) =>
+                  fusionarErrores(rechazosDelReparto[c.llave], loEscritoQueEstaMal(erroresDelReparto[i], c)),
+                )}
+                nombreDelPropietario={propietario?.nombre ?? ''}
+                pieDeCuenta={(c, i) => {
+                  const opcional = requisito(c) === 'OPCIONAL';
+                  const idDelArchivo = idDelCampoDeLaCuenta(i, 'certificacion');
+                  const errorDelArchivo = rechazosDelReparto[c.llave]?.certificacion;
+                  return (
+                    <div className="space-y-1.5">
+                      {opcional ? (
+                        <p className="flex gap-2 text-sm text-muted-foreground" data-testid={`cuenta-ya-certificada-${i}`}>
+                          <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                          {t('inmobiliaria.propietario.cambioDeCuenta.yaCertificada')}
+                        </p>
+                      ) : null}
+                      <Label htmlFor={idDelArchivo}>
+                        {opcional
+                          ? t('inmobiliaria.propietario.cambioDeCuenta.certificacionNuevaOpcional')
+                          : c.titular.titular === 'TERCERO'
+                            ? t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeTercero')
+                            : t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeLaCuenta')}
+                      </Label>
+                      <SelectorDeArchivo
+                        id={idDelArchivo}
+                        accept={ARCHIVOS_DE_CERTIFICACION}
+                        archivo={certificaciones[c.llave] ?? null}
+                        invalido={Boolean(errorDelArchivo)}
+                        onElegir={(elegido) => {
+                          setCertificaciones((antes) => ({ ...antes, [c.llave]: elegido }));
+                          limpiarCertificacionDelServidor(c.llave);
+                        }}
+                        testid={`certificacion-cuenta-${i}`}
+                      />
+                      <ErrorDelCampo id={`${idDelArchivo}-error`} mensaje={errorDelArchivo} className="mt-0" />
+                    </div>
+                  );
+                }}
+              />
+            ) : (
+            <>
+            {/* Primero de quién es la cuenta; después, la cuenta (Nico, 22-09). */}
+            <TitularDeLaCuentaCampos
+              valor={titular}
+              onCambiar={setTitular}
+              errores={loEscritoQueEstaMal({ titular: erroresTitular }, { titular }).titular}
               nombreDelPropietario={propietario?.nombre ?? ''}
-              pieDeCuenta={(c, i) => {
-                const opcional = requisito(c) === 'OPCIONAL';
-                return (
-                  <div className="space-y-1.5">
-                    {opcional ? (
-                      <p className="flex gap-2 text-sm text-muted-foreground" data-testid={`cuenta-ya-certificada-${i}`}>
-                        <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-                        {t('inmobiliaria.propietario.cambioDeCuenta.yaCertificada')}
-                      </p>
-                    ) : null}
-                    <Label htmlFor={`reparto-${i}-certificacion`}>
-                      {opcional
-                        ? t('inmobiliaria.propietario.cambioDeCuenta.certificacionNuevaOpcional')
-                        : c.titular.titular === 'TERCERO'
-                          ? t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeTercero')
-                          : t('inmobiliaria.propietario.cambioDeCuenta.certificacionDeLaCuenta')}
-                    </Label>
-                    <SelectorDeArchivo
-                      id={`reparto-${i}-certificacion`}
-                      accept={ARCHIVOS_DE_CERTIFICACION}
-                      archivo={certificaciones[c.llave] ?? null}
-                      onElegir={(elegido) => setCertificaciones((antes) => ({ ...antes, [c.llave]: elegido }))}
-                      testid={`certificacion-cuenta-${i}`}
-                    />
-                  </div>
-                );
-              }}
             />
-          ) : (
-          <>
-          {/* Primero de quién es la cuenta; después, la cuenta (Nico, 22-09). */}
-          <TitularDeLaCuentaCampos
-            valor={titular}
-            onCambiar={setTitular}
-            errores={loEscritoQueEstaMal({ titular: erroresTitular }, { titular }).titular}
-            nombreDelPropietario={propietario?.nombre ?? ''}
-          />
-          <div className="space-y-1.5">
-            <Label htmlFor="banco-nuevo">Banco</Label>
-            <select
-              id="banco-nuevo"
-              className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
-              value={banco}
-              onChange={(e) => setBanco(e.target.value as BankCode)}
-            >
-              <option value="">Escoge el banco</option>
-              {COLOMBIAN_BANKS.map((b) => (
-                <option key={b.code} value={b.code}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <RadioGroup
-            className="flex gap-x-5 gap-y-2"
-            value={tipo}
-            onValueChange={(v) => setTipo(v as typeof tipo)}
-          >
-            {(['AHORROS', 'CORRIENTE'] as const).map((t) => (
-              <label
-                key={t}
-                className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg"
+            <div className="space-y-1.5">
+              <Label htmlFor="banco-nuevo">Banco</Label>
+              <select
+                id="banco-nuevo"
+                className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm"
+                value={banco}
+                aria-invalid={Boolean(erroresDelServidor.banco) || undefined}
+                aria-describedby="banco-nuevo-error"
+                onChange={(e) => {
+                  setBanco(e.target.value as BankCode);
+                  limpiarDelServidor('banco');
+                }}
               >
-                <RadioGroupItem value={t} />
-                <span>{t === 'AHORROS' ? 'Ahorros' : 'Corriente'}</span>
-              </label>
-            ))}
-          </RadioGroup>
-          <div className="space-y-1.5">
-            <Label htmlFor="numero-nuevo">Número de cuenta</Label>
-            <Input
-              id="numero-nuevo"
-              inputMode="numeric"
-              className="font-mono"
-              value={numero}
-              onChange={(e) => setNumero(e.target.value.replace(/[^0-9]/g, ''))}
-            />
-          </div>
-          </>
-          )}
+                <option value="">Escoge el banco</option>
+                {COLOMBIAN_BANKS.map((b) => (
+                  <option key={b.code} value={b.code}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+              <ErrorDelCampo id="banco-nuevo-error" mensaje={erroresDelServidor.banco} className="mt-0" />
+            </div>
+            <RadioGroup
+              className="flex gap-x-5 gap-y-2"
+              value={tipo}
+              onValueChange={(v) => {
+                setTipo(v as typeof tipo);
+                limpiarDelServidor('tipo');
+              }}
+              id="tipo-nuevo"
+              aria-describedby="tipo-nuevo-error"
+            >
+              {(['AHORROS', 'CORRIENTE'] as const).map((t) => (
+                <label
+                  key={t}
+                  className="flex cursor-pointer items-center gap-2.5 text-body-sm text-fg"
+                >
+                  <RadioGroupItem value={t} />
+                  <span>{t === 'AHORROS' ? 'Ahorros' : 'Corriente'}</span>
+                </label>
+              ))}
+            </RadioGroup>
+            <ErrorDelCampo id="tipo-nuevo-error" mensaje={erroresDelServidor.tipo} className="mt-0" />
+            <div className="space-y-1.5">
+              <Label htmlFor="numero-nuevo">Número de cuenta</Label>
+              <Input
+                id="numero-nuevo"
+                inputMode="numeric"
+                className="font-mono"
+                // El mismo tope que el DTO del back (`bankAccountNumber`, 40).
+                maxLength={MAX_LARGO_DEL_NUMERO_DE_CUENTA}
+                value={numero}
+                aria-invalid={Boolean(erroresDelServidor.numero) || undefined}
+                aria-describedby="numero-nuevo-error"
+                onChange={(e) => {
+                  setNumero(e.target.value.replace(/[^0-9]/g, ''));
+                  limpiarDelServidor('numero');
+                }}
+              />
+              <ErrorDelCampo id="numero-nuevo-error" mensaje={erroresDelServidor.numero} className="mt-0" />
+            </div>
+            </>
+            )}
+          </CrossFade>
           {modo === 'UNA' ? (
             <div className="space-y-1.5">
               <Label htmlFor="certificacion">Certificación bancaria (PDF o foto, obligatoria)</Label>
@@ -913,9 +1133,13 @@ function PedirCambioDeCuenta({
                 id="certificacion"
                 accept={ARCHIVOS_DE_CERTIFICACION}
                 archivo={archivo}
-                onElegir={setArchivo}
+                onElegir={(elegido) => {
+                  setArchivo(elegido);
+                  limpiarDelServidor('certificacion');
+                }}
                 testid="archivo-certificacion"
               />
+              <ErrorDelCampo id="certificacion-error" mensaje={erroresDelServidor.certificacion} className="mt-0" />
             </div>
           ) : null}
           {/* El botón apagado dice por qué: lo que falta, todo de una vez. */}
@@ -938,12 +1162,10 @@ function PedirCambioDeCuenta({
                   })}
             </p>
           ) : null}
-          {error ? (
-            <p className="text-sm text-danger flex gap-2" role="alert">
-              <WarningCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-              {error}
-            </p>
-          ) : null}
+          <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-danger flex gap-2" role="alert">
+            <WarningCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            {error}
+          </Presence>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onCerrar} disabled={guardando}>
@@ -997,7 +1219,7 @@ function AprobarCambio({
 
   return (
     <Dialog open onOpenChange={(v) => !v && onCerrar()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent size="md" variant="confirm" icon={<Stamp weight="bold" />}>
         <DialogHeader>
           <DialogTitle>Aprobar el giro a la cuenta nueva</DialogTitle>
           <DialogDescription>
@@ -1040,11 +1262,9 @@ function AprobarCambio({
             Sin soporte, la bitácora anexa la certificación sobre la que se aprobó.
           </p>
         </div>
-        {error ? (
-          <p className="text-sm text-danger" role="alert">
-            {error}
-          </p>
-        ) : null}
+        <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-danger" role="alert">
+          {error}
+        </Presence>
         <DialogFooter>
           <Button variant="outline" onClick={onCerrar} disabled={guardando}>
             Cancelar
@@ -1072,17 +1292,26 @@ function CerrarCambio({
   const [motivo, setMotivo] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
   const rechazo = cambio.estado === 'CONFIRMADO';
 
   async function cerrar() {
     setGuardando(true);
     setError(null);
+    setErrorDelMotivo(null);
     try {
       await mandatoApi.cerrarCambioDeCuenta(propietarioId, cambio.id, motivo.trim());
       toast.success(rechazo ? 'Cambio rechazado: volvió la cuenta anterior.' : 'Cambio anulado.');
       onCerrado();
     } catch (e) {
-      setError(mensajeDelFallo(e, 'No se pudo cerrar el cambio.'));
+      // Un motivo rechazado (400 con `campos`) va bajo el motivo, con el foco.
+      const delMotivo = camposDelError(e).find((c) => c.campo === 'motivo');
+      if (delMotivo) {
+        setErrorDelMotivo(delMotivo.mensaje);
+        document.getElementById('motivo-de-cierre')?.focus();
+      } else {
+        setError(mensajeDelFallo(e, 'No se pudo cerrar el cambio.'));
+      }
     } finally {
       setGuardando(false);
     }
@@ -1090,7 +1319,11 @@ function CerrarCambio({
 
   return (
     <Dialog open onOpenChange={(v) => !v && onCerrar()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent
+        size="sm"
+        variant="destructive"
+        icon={rechazo ? <XCircle weight="bold" /> : <Prohibit weight="bold" />}
+      >
         <DialogHeader>
           <DialogTitle>{rechazo ? 'Rechazar el cambio de cuenta' : 'Anular el cambio de cuenta'}</DialogTitle>
           <DialogDescription>
@@ -1101,13 +1334,24 @@ function CerrarCambio({
         </DialogHeader>
         <div className="space-y-1.5">
           <Label htmlFor="motivo-de-cierre">Motivo</Label>
-          <Textarea id="motivo-de-cierre" rows={2} value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+          <Textarea
+            id="motivo-de-cierre"
+            rows={2}
+            value={motivo}
+            // El mismo tope que el DTO del back (`CerrarCambioDeCuentaDto.motivo`, 500).
+            maxLength={MAX_LARGO_DEL_MOTIVO_DE_CIERRE}
+            aria-invalid={Boolean(errorDelMotivo) || undefined}
+            aria-describedby="motivo-de-cierre-error"
+            onChange={(e) => {
+              setMotivo(e.target.value);
+              setErrorDelMotivo(null);
+            }}
+          />
+          <ErrorDelCampo id="motivo-de-cierre-error" mensaje={errorDelMotivo} className="mt-0" />
         </div>
-        {error ? (
-          <p className="text-sm text-danger" role="alert">
-            {error}
-          </p>
-        ) : null}
+        <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-danger" role="alert">
+          {error}
+        </Presence>
         <DialogFooter>
           <Button variant="outline" onClick={onCerrar} disabled={guardando}>
             Cancelar

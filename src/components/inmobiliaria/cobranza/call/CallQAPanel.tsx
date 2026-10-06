@@ -5,6 +5,7 @@
 // Read-only; parent owns loading/error state of useCallDetail.
 
 import { useI18n } from '@/lib/i18n'
+import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece'
 import type { CallQAScores } from '@/lib/hooks/cobranza/use-call-detail'
 
 interface CallQAPanelProps {
@@ -67,8 +68,11 @@ function ScoreRow({
         aria-label={label}
         className="h-1.5 rounded-full bg-surface-muted overflow-hidden"
       >
-        <div
-          className={`h-full ${c.bar} transition-all`}
+        {/* Crece desde la izquierda al aparecer (sólo `scaleX`); el ancho es
+            el dato y ya no se anima (era `transition-all`). */}
+        <BarraQueCrece
+          eje="x"
+          className={`h-full ${c.bar}`}
           style={{ width: `${pct ?? 0}%` }}
         />
       </div>

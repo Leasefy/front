@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
 import { CargaDeMarca } from '@/components/ui/carga-de-marca'
+import { NoPudimosConfirmarTuSesion } from './NoPudimosConfirmarTuSesion'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useSinSenal } from '@/lib/hooks/use-sin-senal'
 import { getRoleHomeRoute, isPanelRoleAllowed } from '@/lib/auth/role-routes'
@@ -49,7 +50,14 @@ interface ProtectedRouteProps {
  * <ProtectedRoute allowedRoles={['landlord']}>{children}</ProtectedRoute>
  */
 export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, allowAgencyMembers }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading, mfaRequired, mfaEnrollRequired, needsOnboarding, perfilElegido, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked, refreshUser } = useAuth()
+  const { user, isAuthenticated, isLoading, mfaRequired, mfaEnrollRequired, mfaCheckStatus, needsOnboarding, perfilElegido, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked, refreshUser } = useAuth()
+  /*
+   * 🔴 Nico, 02-10-2026: sin saber si a la sesión le falta el código, no se
+   * entra. `pending` = todavía se pregunta (cargador); `failed` = no respondió
+   * ni reintentando («No pudimos confirmar tu sesión»). Ninguno de los dos
+   * redirige ni cierra la sesión: sólo bloquea hasta poder verificar.
+   */
+  const sinVerificarElSegundoFactor = isAuthenticated && (mfaCheckStatus === 'pending' || mfaCheckStatus === 'failed')
   const router = useRouter()
   const pathname = usePathname()
   const sinSenal = useSinSenal()
@@ -88,6 +96,8 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   useEffect(() => {
     // Wait for both auth context and storage check to complete
     if (isLoading || isCheckingStorage) return
+    // Sin el veredicto del segundo factor no se decide nada (ver arriba).
+    if (sinVerificarElSegundoFactor) return
 
     // JWT valid but backend has no user record yet → send to onboarding
     // IMPORTANT: this check must come BEFORE !effectiveIsAuthenticated, because
@@ -201,13 +211,24 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
       router.replace('/panel/inmobiliaria')
       return
     }
-  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, blockedAgencyRoles, allowAgencyMembers, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole, isAgencyUser, pathname, router, mfaRequired, mfaEnrollRequired, user, needsOnboarding, perfilElegido])
+  }, [sinVerificarElSegundoFactor, isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, blockedAgencyRoles, allowAgencyMembers, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole, isAgencyUser, pathname, router, mfaRequired, mfaEnrollRequired, user, needsOnboarding, perfilElegido])
 
   // Show loading state while checking auth
   if (isLoading || isCheckingStorage) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <CargaDeMarca tamano="lg" disposicion="apilada" texto="Verificando acceso..." />
+      </div>
+    )
+  }
+
+  if (isAuthenticated && mfaCheckStatus === 'failed') {
+    return <NoPudimosConfirmarTuSesion />
+  }
+  if (sinVerificarElSegundoFactor) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Verificando seguridad..." />
       </div>
     )
   }

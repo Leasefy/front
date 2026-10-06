@@ -20,7 +20,8 @@ describe('el lote que armó y aprobó la misma persona', () => {
   it('🔴 quien mira es quien lo armó y aprobó: «aprobado por ti como administrador (P-4)»', () => {
     const nota = notaDelLote({ creadoPorUserId: 'u-nico', aprobadoPorUserId: 'u-nico' }, 'u-nico');
     expect(nota?.titulo).toBe(APROBADO_POR_TI);
-    expect(APROBADO_POR_TI).toBe('Aprobado por ti como administrador (P-4)');
+    expect(APROBADO_POR_TI).toBe('Aprobado por ti como administrador');
+    expect(APROBADO_POR_TI).not.toContain('P-4');
     expect(nota?.detalle).toMatch(/mismo paso, sin código/);
   });
 
@@ -41,7 +42,7 @@ describe('el castigo firmado por los dos lados por la misma persona', () => {
   it('🔴 lo dice, y sólo cuando la firma es la misma', () => {
     const suyo = { admin: { userId: 'u-nico' }, contador: { userId: 'u-nico' } };
     expect(castigadoPorUnaSolaPersona(suyo)).toBe(true);
-    expect(notaDelCastigo(suyo, 'u-nico')?.titulo).toBe('Castigado por ti como administrador (P-4)');
+    expect(notaDelCastigo(suyo, 'u-nico')?.titulo).toBe('Castigado por ti como administrador');
     expect(notaDelCastigo({ admin: { userId: 'u-nico' }, contador: { userId: 'u-beto' } }, 'u-nico')).toBeNull();
     expect(notaDelCastigo({ admin: { userId: 'u-nico' }, contador: null }, 'u-nico')).toBeNull();
   });

@@ -73,18 +73,21 @@ describe('<PilotoDocumento>', () => {
 
   it('sale del borde izquierdo del cajón padre, y sin velo que lo apague', async () => {
     // 🔴 La corrección de Nico: no es un cajón nuevo encima, es una capa del
-    // que ya está abierto. `right` = el ancho del padre (36rem), velo
-    // transparente para que el caso siga legible al lado.
+    // que ya está abierto. `right` = el margen del cajón flotante (1rem) + el
+    // ancho del padre (36rem), velo transparente para que el caso siga
+    // legible al lado.
     agentFetchMock.mockResolvedValue({ ok: true, blob: async () => new Blob(['%PDF']) })
     montar('art-77')
     await act(async () => { await Promise.resolve() })
-    // En teléfono no hay ancho para dos paneles, así que ahí conserva el
-    // `right-0` de la base y ocupa todo; el corrimiento entra desde `sm`.
-    expect(panel()?.className).toContain('sm:!right-[36rem]')
+    // Debajo de `lg` no hay ancho para dos paneles, así que ahí se para
+    // encima del caso; el corrimiento entra desde `lg`.
+    expect(panel()?.className).toContain('lg:!right-[calc(1rem+36rem)]')
     const velo = document.body.querySelector('[data-state="open"][class*="bg-transparent"]')
     expect(velo).toBeTruthy()
     // La costura va a ras: sin esto quedan dos ventanas sueltas con una
     // muesca en el medio.
-    expect(panel()?.className).toContain('sm:!rounded-r-none')
+    expect(panel()?.className).toContain('lg:!rounded-r-none')
+    // Su ✕ dice qué cierra: al lado hay otra, la del caso.
+    expect(document.body.querySelector('[aria-label="Cerrar el documento"]')).toBeTruthy()
   })
 })

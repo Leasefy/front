@@ -23,6 +23,13 @@ import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
 import type { AnticipoDelContrato } from '@/lib/api/recibos-de-caja.types';
 import { mesEnTitulo } from '@/lib/utils/mes';
 
+/**
+ * El `medio` con el que el back anota lo que quedó del anticipo al terminar el
+ * contrato y pasa al saldo a favor (`MEDIO_DEL_TRASLADO` de
+ * `back/src/inmobiliaria/recibos-de-caja/saldo-a-favor-del-contrato.ts`).
+ */
+const MEDIO_DEL_TRASLADO = 'traslado';
+
 type Lectura =
   | { estado: 'cargando' }
   | { estado: 'error' }
@@ -102,7 +109,14 @@ export function AnticipoDelContratoSeccion({ contractId }: { contractId: string 
               {m.fecha} ·{' '}
               {m.tipo === 'ENTRADA'
                 ? t(k('entrada'))
-                : t(k('descuento'), { mes: m.mes ? mesEnTitulo(m.mes) : '' })}
+                : m.mes
+                  ? t(k('descuento'), { mes: mesEnTitulo(m.mes) })
+                  : /* ARREGLOS-7: sin mes decía «Descuento de» vacío. El
+                       traslado al terminar el contrato (`medio: 'traslado'`
+                       del back) no paga un mes: pasa al saldo a favor. */
+                    m.medio === MEDIO_DEL_TRASLADO
+                    ? t(k('alSaldoAFavor'))
+                    : t(k('descuentoSinMes'))}
               {m.reciboNumero !== null && <> · {t(k('recibo'), { numero: m.reciboNumero })}</>}
               {m.anulado && <> · {t(k('anulado'))}</>}
             </span>

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Download } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { contractsApi } from '@/lib/api/contracts.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import type { ContractStatus } from '@/lib/types/contract';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -17,6 +18,11 @@ export interface DownloadContractPdfButtonProps {
   className?: string;
   /** Texto custom — default "Descargar PDF" / "Descargar contrato". */
   label?: string;
+  /**
+   * QA-CONT-95 (B-06): el número del contrato que ve la inmobiliaria («53»,
+   * «1686»): el archivo se llama `contrato-53.pdf`, no `contrato-2dea8734.pdf`.
+   */
+  numero?: string | number | null;
 }
 
 /**
@@ -30,6 +36,7 @@ export function DownloadContractPdfButton({
   variant = 'secondary',
   className,
   label,
+  numero,
 }: DownloadContractPdfButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -42,19 +49,27 @@ export function DownloadContractPdfButton({
       // con un blob:// URL local. Así el usuario NO ve la URL de Supabase en la barra.
       const { url } = await contractsApi.getSignedPdfUrl(contractId);
       const response = await fetch(url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      // El status pelado: el traductor lo lee como tal (404 = no está, 5xx =
+      // nuestro), en vez de pintar «HTTP 500» en la cara de la persona.
+      if (!response.ok) throw new Error(String(response.status));
       const blob = await response.blob();
       blobUrl = URL.createObjectURL(blob);
 
       const a = document.createElement('a');
       a.href = blobUrl;
-      a.download = `contrato-${contractId.slice(0, 8)}.pdf`;
+      a.download = nombreDelPdfDelContrato(contractId, numero);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'No se pudo descargar el PDF';
-      toast.error(msg);
+      // 02-10-2026: regla de oro — «conexión» sólo si no hubo respuesta; un
+      // 5xx es nuestro, con la referencia; nunca el texto crudo del error.
+      toast.error('No se pudo descargar el PDF.', {
+        description: mensajeParaLaPersona(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'descargar el PDF del contrato',
+        }),
+      });
     } finally {
       // Liberamos el blob URL después de un tick — el click ya disparó la descarga.
       if (blobUrl) setTimeout(() => URL.revokeObjectURL(blobUrl!), 1000);
@@ -104,4 +119,10 @@ function tooltipForStatus(status: ContractStatus): string {
     default:
       return 'Descargar contrato en PDF.';
   }
+}
+
+/** QA-CONT-95 (B-06): `contrato-53.pdf`; sin número, los primeros 8 del id. */
+export function nombreDelPdfDelContrato(contractId: string, numero?: string | number | null): string {
+  const limpio = String(numero ?? '').replace(/^#/, '').trim().replace(/[^\p{L}\p{N}_-]+/gu, '-');
+  return limpio ? `contrato-${limpio}.pdf` : `contrato-${contractId.slice(0, 8)}.pdf`;
 }

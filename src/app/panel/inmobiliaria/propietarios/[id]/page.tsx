@@ -3,11 +3,10 @@ import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { mesEnTitulo } from '@/lib/utils/mes';
 
-import { Suspense, useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { Suspense, useState, useEffect, useId, useRef } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   CaretLeft,
   User,
@@ -22,7 +21,6 @@ import {
   CurrencyDollar,
   House,
   CheckCircle,
-  X,
   FileText,
   Download,
   Plus,
@@ -34,11 +32,20 @@ import {
 import { toast } from '@/components/ui/toast';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InterruptorDeWhatsapp } from '@/components/messages/InterruptorDeWhatsapp';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
-import { SegmentedControl, IconButton } from '@leasefy/cadence';
+import { SegmentedControl, IconButton, CrossFade, Pressable, Stagger, StaggerItem } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -73,121 +80,128 @@ import {
   useDispersiones,
 } from '@/lib/hooks/useInmobiliaria';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
-import { ApiError } from '@/lib/api/client';
 import { descargarDatosDelPropietario } from '@/lib/propietarios/exportar-datos';
 import { conRegreso, lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
-import type { PropietarioFormData, Consignacion, Dispersion } from '@/lib/types/inmobiliaria';
-import { formatCurrency } from '@/lib/types/inmobiliaria';
+import type { PropietarioFormData, Consignacion, Dispersion, InmuebleDelPropietario } from '@/lib/types/inmobiliaria';
+import { formatCurrency, formatParticipacion } from '@/lib/types/inmobiliaria';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
 import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
+import { SinPorcentajeDelPropietario } from '@/components/inmobiliaria/SinPorcentajeDelPropietario';
+import { FALTA_EL_PORCENTAJE } from '@/lib/inmuebles/participaciones-desconocidas';
+import { datosPendientesDelPropietario } from '@/lib/propietarios/giros-del-propietario';
+import { CajonDelFormularioDelPropietario } from '@/components/inmobiliaria/CajonDelFormularioDelPropietario';
+import { documentoDelPropietarioConDv } from '@/lib/propietarios/documento-con-dv';
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 
 const LISTA_DE_PROPIETARIOS = '/panel/inmobiliaria/propietarios';
 
-/** Qué decirle a quien falló una llamada: el mensaje del back si vino, si no el genérico. */
-function mensajeDe(error: unknown, porDefecto: string): string {
-  if (error instanceof ApiError) return error.messages?.join(' · ') ?? error.message;
-  if (error instanceof Error && error.message) return error.message;
-  return porDefecto;
-}
-
 /**
- * Modal Component - Uses portal to render at document.body level
+ * La cáscara de los tres diálogos de la ficha: editar, eliminar y notas.
+ *
+ * Era un portal hecho a mano (capa `fixed inset-0`, ✕ propia y bloqueo del
+ * scroll del body), sin Esc, sin foco atrapado y sin `role="dialog"`. Ahora es
+ * el `Dialog` de la plataforma (DESIGN.md §17): el velo, la ✕, el Esc, el foco
+ * y el bloqueo del scroll los pone la primitiva.
+ *
+ * El pie va por `footer` y no dentro de `children`: el `DialogContent` reparte
+ * sólo a sus hijos DIRECTOS, y un pie metido en el cuerpo se iría con el
+ * scroll. `variant="destructive"` (eliminar) pone el medallón rojo; el botón
+ * rojo lo trae el pie.
  */
 function Modal({
   open,
   onClose,
   title,
+  description,
   children,
+  footer,
   size = 'md',
+  variant,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
-  children: React.ReactNode;
+  description?: React.ReactNode;
+  children?: React.ReactNode;
+  footer?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  variant?: 'destructive';
 }) {
-  const [mounted, setMounted] = useState(false);
-
-  const sizeClasses = {
-    sm: 'max-w-sm',
-    md: 'max-w-md',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-  };
-
-  // Mount check for portal
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Block body scroll when modal is open
-  useEffect(() => {
-    if (open) {
-      const originalStyle = window.getComputedStyle(document.body).overflow;
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = originalStyle;
-        document.documentElement.style.overflow = '';
-      };
-    }
-  }, [open]);
-
-  if (!open || !mounted) return null;
-
-  const modalContent = (
-    <>
-      {/* Backdrop - separate fixed element */}
-      {/* Modal layer = z-[300] (misma capa que <Dialog>/<Sheet>). Antes z-[9998/9999],
-          que tapaba cualquier AlertDialog disparado desde adentro. Ver DESIGN.md §17. */}
-      <div
-        className="fixed inset-0 z-[300] bg-black/50 backdrop-blur-sm"
-        style={{ top: 0, left: 0, right: 0, bottom: 0 }}
-        onClick={onClose}
-      />
-
-      {/* Modal Container */}
-      <div
-        className="fixed inset-0 z-[300] flex items-center justify-center p-4 pointer-events-none"
-        style={{ top: 0, left: 0, right: 0, bottom: 0 }}
-        onWheel={(e) => e.stopPropagation()}
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose();
+      }}
+    >
+      <DialogContent
+        size={size}
+        variant={variant}
+        // Sin descripción visible, Radix no tiene a qué apuntar: se le avisa.
+        {...(description ? {} : { 'aria-describedby': undefined })}
       >
-        {/* Modal */}
-        <div
-          className={cn(
-            'pointer-events-auto bg-card w-full rounded-[20px] flex flex-col max-h-[85vh]',
-            sizeClasses[size]
-          )}
-        >
-          <div className="flex items-center justify-between px-6 py-5 border-b border-border shrink-0">
-            <h3 className="text-base font-semibold text-foreground">
-              {title}
-            </h3>
-            <IconButton
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              aria-label="Cerrar"
-              icon={<X className="w-4 h-4" />}
-            />
-          </div>
-          <div className="flex-1 overflow-y-auto overscroll-contain p-6">{children}</div>
-        </div>
-      </div>
-    </>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {description ? <DialogDescription>{description}</DialogDescription> : null}
+        </DialogHeader>
+        {children}
+        {footer ? <DialogFooter>{footer}</DialogFooter> : null}
+      </DialogContent>
+    </Dialog>
   );
-
-  // Render modal at document.body level to escape any transform contexts
-  return createPortal(modalContent, document.body);
 }
 
 /**
  * Property Card Component
+ *
+ * 🔴 P-18 (QA-PROP, 03-10): era un `div` con cursor de mano y sin `onClick`:
+ * no llevaba a ningún lado y con el teclado no se llegaba. Ahora es un enlace a
+ * la ficha del inmueble. El subtítulo repetía el título (casi siempre el título
+ * ES la dirección): sale sólo si dice otra cosa. Y en copropiedad dice qué
+ * parte es suya — «Copropiedad · 50 %» —, que antes no se veía.
+ *
+ * 🔴 P-22: a 390 px cortaba la dirección y el inquilino («David…»): el título
+ * se parte en renglones y las cifras bajan de renglón cuando no caben.
  */
-function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
+function PropertyCard({
+  consignacion,
+  propietarioId,
+  inmueble,
+  sinPorcentaje = false,
+}: {
+  consignacion: Consignacion;
+  propietarioId: string;
+  /**
+   * 🔴 P-02 (back 5731a4e2): el inmueble visto desde ESTE dueño — su %, si hay
+   * contrato vigente y SU parte del canon del contrato. Sin él (un back
+   * anterior, o la plata oculta), lo de siempre: el canon del mandato.
+   */
+  inmueble?: InmuebleDelPropietario | null;
+  /**
+   * 🔴 Copropiedad migrada sin porcentaje (Nico, 04-10-2026): su % es
+   * provisional; se dice «Sin porcentaje» y no se calcula «su parte».
+   */
+  sinPorcentaje?: boolean;
+}) {
   const { t } = useI18n();
+  // Copropiedad: su parte del canon del contrato, con el entero al lado.
+  const suParteDelCanon =
+    !sinPorcentaje && inmueble && inmueble.participacionBps < 10_000 && inmueble.canonCop !== null
+      ? inmueble
+      : null;
+  // El canon que se cobra es el del CONTRATO vigente (P-01), si lo hay.
+  const canonDelContrato = inmueble?.arrendado ? inmueble.canonDelContratoCop : null;
+  const direccionDistinta =
+    !!consignacion.propertyAddress &&
+    consignacion.propertyAddress.trim().toLowerCase() !== (consignacion.propertyTitle ?? '').trim().toLowerCase();
+  // Con un solo dueño no se dice nada: el 100 % es lo normal.
+  const suParte =
+    inmueble && inmueble.participacionBps < 10_000
+      ? inmueble.participacionBps
+      : (consignacion.copropietarios?.length ?? 0) > 1
+        ? consignacion.copropietarios.find((c) => c.propietarioId === propietarioId)?.participacionBps ?? null
+        : null;
 
   const statusColors = {
     available: 'bg-success-soft text-success',
@@ -204,13 +218,18 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
   };
 
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
-      className="p-4 rounded-lg border border-border bg-card transition-all cursor-pointer"
+    <Link
+      href={`/panel/inmobiliaria/inmuebles/${consignacion.id}`}
+      className="block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+      data-testid={`inmueble-del-propietario-${consignacion.id}`}
     >
-      <div className="flex items-start gap-4">
+    <Pressable
+      press="sm"
+      className="p-4 rounded-lg border border-border bg-card"
+    >
+      <div className="flex items-start gap-3 sm:gap-4">
         {/* Thumbnail */}
-        <div className="w-20 h-20 rounded-xl bg-surface-muted flex items-center justify-center shrink-0 overflow-hidden">
+        <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-xl bg-surface-muted flex items-center justify-center shrink-0 overflow-hidden">
           {consignacion.propertyThumbnail ? (
             <img
               src={consignacion.propertyThumbnail}
@@ -225,20 +244,37 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <div>
-              <h4 className="text-base font-semibold text-foreground line-clamp-1">
+            <div className="min-w-0">
+              <h4 className="text-base font-semibold text-foreground break-words">
                 {consignacion.propertyTitle}
               </h4>
-              <p className="text-sm text-muted-foreground line-clamp-1">
-                {consignacion.propertyAddress}
-              </p>
+              {direccionDistinta && (
+                <p className="text-sm text-muted-foreground break-words" data-testid="direccion-del-inmueble">
+                  {consignacion.propertyAddress}
+                </p>
+              )}
+              {sinPorcentaje ? (
+                <span
+                  className="mt-1 inline-block rounded-full bg-warning-soft px-2 py-0.5 text-[11px] font-medium text-warning"
+                  data-testid="copropiedad-sin-porcentaje"
+                >
+                  Copropiedad · {FALTA_EL_PORCENTAJE.toLowerCase()}
+                </span>
+              ) : suParte != null && (
+                <span
+                  className="mt-1 inline-block rounded-full bg-primary-soft px-2 py-0.5 font-mono text-[11px] tabular-nums text-primary"
+                  data-testid="copropiedad-del-inmueble"
+                >
+                  {t('inmobiliaria.propietarios.detail.copropiedadPct', { pct: formatParticipacion(suParte) })}
+                </span>
+              )}
             </div>
             <span className={cn('px-2 py-1 rounded-full text-xs font-medium shrink-0', statusColors[consignacion.availability])}>
               {statusLabels[consignacion.availability]}
             </span>
           </div>
 
-          <div className="flex items-center gap-4 mt-3">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3">
             {/* contract-addendum-2.md §A.2/§A.10 — a SALE mandate has no
                 canon (`monthlyRent: null`) and `commissionPercent: 0`; the
                 agreed figure lives in `saleCommissionPercent` instead. */}
@@ -251,15 +287,32 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
               </div>
             ) : (
               <>
-                <div>
-                  <p className="text-base font-semibold tabular-nums text-foreground">
-                    {consignacion.canonPorConfirmar
-                      ? TEXTO_CANON_POR_CONFIRMAR
-                      : consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.common.perMonth')}</p>
-                </div>
-                <div className="h-8 w-px bg-border" />
+                {suParteDelCanon ? (
+                  <div data-testid="su-parte-del-canon">
+                    <p className="text-base font-semibold tabular-nums text-foreground">
+                      {formatCurrency(suParteDelCanon.canonCop ?? 0)}
+                    </p>
+                    <p className="text-caption text-muted-foreground">
+                      {suParteDelCanon.canonDelContratoCop !== null
+                        ? t('inmobiliaria.propietarios.detail.suParteDe', {
+                            canon: formatCurrency(suParteDelCanon.canonDelContratoCop),
+                          })
+                        : t('inmobiliaria.propietarios.detail.suParteAlMes')}
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-base font-semibold tabular-nums text-foreground">
+                      {canonDelContrato !== null && canonDelContrato !== undefined
+                        ? formatCurrency(canonDelContrato)
+                        : consignacion.canonPorConfirmar
+                          ? TEXTO_CANON_POR_CONFIRMAR
+                          : consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{t('inmobiliaria.common.perMonth')}</p>
+                  </div>
+                )}
+                <div className="hidden h-8 w-px bg-border sm:block" />
                 <div>
                   <p className="text-sm font-medium text-foreground">
                     {textoDeLaComision(consignacion)}
@@ -270,9 +323,9 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
             )}
             {consignacion.currentTenantName && (
               <>
-                <div className="h-8 w-px bg-border" />
-                <div>
-                  <p className="text-sm font-medium text-foreground line-clamp-1">
+                <div className="hidden h-8 w-px bg-border sm:block" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground break-words">
                     {consignacion.currentTenantName}
                   </p>
                   <p className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.detail.tenant')}</p>
@@ -282,7 +335,8 @@ function PropertyCard({ consignacion }: { consignacion: Consignacion }) {
           </div>
         </div>
       </div>
-    </motion.div>
+    </Pressable>
+    </Link>
   );
 }
 
@@ -330,7 +384,13 @@ function PaymentHistoryItem({ dispersion }: { dispersion: Dispersion }) {
             {monthLabel}
           </p>
           <p className="text-sm text-muted-foreground">
-            {dispersion.items.length} {t('inmobiliaria.propietarios.detail.propertiesCount')}
+            {/* P-26: «1 propiedad», «3 propiedades»; no «propiedad(es)». */}
+            {dispersion.items.length}{' '}
+            {t(
+              dispersion.items.length === 1
+                ? 'inmobiliaria.propietarios.detail.propertiesCountUno'
+                : 'inmobiliaria.propietarios.detail.propertiesCount',
+            )}
           </p>
         </div>
       </div>
@@ -419,6 +479,8 @@ function PropietarioDetailContent() {
   const rutaDeEstaFicha = `${LISTA_DE_PROPIETARIOS}/${id}`;
 
   const [showEditModal, setShowEditModal] = useState(false);
+  /** COLA-FRONT (04-10): el resumen dijo «Sin día de giro» (algo arrendado y ningún giro programado). */
+  const [sinDiaDeGiro, setSinDiaDeGiro] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showNotesModal, setShowNotesModal] = useState(false);
   const [showExtracto, setShowExtracto] = useState(false);
@@ -433,6 +495,18 @@ function PropietarioDetailContent() {
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   // El motivo del back al editar, dentro del diálogo (duplicado → al lado del documento).
   const [errorAlEditar, setErrorAlEditar] = useState<ErrorAlGuardarPropietario | null>(null);
+  // «Editar» va en el CAJÓN de «Nuevo propietario» (Nico, 03-10): su pie manda el formulario por `form=`.
+  const [guardandoEdicion, setGuardandoEdicion] = useState(false);
+  const idDeLaEdicion = `propietario-editar-${useId().replace(/:/g, '')}`;
+  /*
+   * 🔴 P-24 (QA-PROP, 03-10): la invitación que NO salió. El back crea la cuenta
+   * igual (y devuelve su id), así que el bloque «Invitar» desaparecía como si el
+   * correo hubiera llegado. Mientras esto tenga algo, el bloque se queda en
+   * «Invitación sin entregar» con «Reintentar».
+   */
+  const [invitacionSinEntregar, setInvitacionSinEntregar] = useState<{ motivo?: string } | null>(null);
+  // Sube cuando el lápiz de la cuenta pide abrir «Cambiar cuenta».
+  const [pedirCambioDeCuenta, setPedirCambioDeCuenta] = useState(0);
 
   /*
    * 🔴 Las llaves con que el back protege cada acción de esta ficha
@@ -440,7 +514,7 @@ function PropietarioDetailContent() {
    * delete). Un CONTADOR o un VIEWER tienen sólo `view`: veían Editar,
    * Eliminar y las notas, y el clic terminaba en 403.
    */
-  const { canAccess } = usePermissions();
+  const { canAccess, isLoading: cargandoPermisos } = usePermissions();
   const puedeEditar = canAccess('propietarios', 'edit');
   const puedeEliminar = canAccess('propietarios', 'delete');
   /*
@@ -450,6 +524,19 @@ function PropietarioDetailContent() {
    * ficha no le ofrece lo que el back le va a negar.
    */
   const veLaPlata = canAccess('dispersiones', 'view');
+  /*
+   * 🔴 PR-11 (QA-PROP, 03-10): los inmuebles salen de `GET /consignaciones`,
+   * que el back protege con `portafolio:view`. El contador y el auxiliar no lo
+   * tienen: la pestaña terminaba en un 403 pintado como «no pudimos leer». Sin
+   * el permiso no se pide y la pestaña dice por qué.
+   */
+  const vePortafolio = canAccess('portafolio', 'view');
+  /*
+   * El perfil tributario decide el IVA del canon y las retenciones de los
+   * giros: lo cambian un administrador o el contador, nunca el asesor (Nico,
+   * 03-10, P-20). Es la llave de mover la plata del propietario.
+   */
+  const puedeEditarPerfil = canAccess('dispersiones', 'edit');
 
   // Fetch propietario and keep local state for updates
   const {
@@ -485,13 +572,36 @@ function PropietarioDetailContent() {
     isLoading: cargandoConsignaciones,
     errorCrudo: errorConsignaciones,
     refetch: recargarConsignaciones,
-  } = useConsignaciones({ propietarioId: id });
+  } = useConsignaciones({ propietarioId: id }, { skip: cargandoPermisos || !vePortafolio });
   const {
     dispersiones,
     isLoading: cargandoDispersiones,
     errorCrudo: errorDispersiones,
     refetch: recargarDispersiones,
-  } = useDispersiones({ propietarioId: id });
+  } = useDispersiones({ propietarioId: id }, { skip: cargandoPermisos || !veLaPlata });
+
+  /*
+   * `?cambiarCuenta=1` (P-14): el enlace «Cambiar cuenta» del formulario de la
+   * LISTA trae aquí, porque el cambio de una cuenta que ya existe pasa por el
+   * flujo controlado de la ficha (certificación, confirmación del propietario,
+   * aprobación). Hasta hoy la ficha ignoraba el parámetro y no abría nada.
+   * Con la ficha leída y el permiso, se pide UNA vez y se quita de la URL (un
+   * «atrás» o un refresco no lo vuelven a abrir).
+   */
+  const cambioDeCuentaPedidoPorUrl = useRef(false);
+  const pideCambiarCuenta = searchParams.get('cambiarCuenta') === '1';
+  useEffect(() => {
+    if (!pideCambiarCuenta || cambioDeCuentaPedidoPorUrl.current) return;
+    if (!propietario || cargandoPermisos) return;
+    cambioDeCuentaPedidoPorUrl.current = true;
+    if (puedeEditar && veLaPlata && !propietario.datosBancariosOcultos) {
+      setPedirCambioDeCuenta((n) => n + 1);
+    }
+    const resto = new URLSearchParams(searchParams.toString());
+    resto.delete('cambiarCuenta');
+    const consulta = resto.toString();
+    router.replace(`${rutaDeEstaFicha}${consulta ? `?${consulta}` : ''}`, { scroll: false });
+  }, [pideCambiarCuenta, propietario, cargandoPermisos, puedeEditar, veLaPlata, searchParams, router, rutaDeEstaFicha]);
 
   // Mientras carga no es «no encontrado»: ese cartel salía un instante en
   // cada ficha y después llegaba el dato (Nico, 2026-09-02 12:47).
@@ -516,7 +626,14 @@ function PropietarioDetailContent() {
    * cuando reintentar puede cambiar algo (un 404 sí es «no existe», y ahí
    * muestra exactamente eso, con el camino de vuelta).
    */
-  if (!propietario && errorPropietario) {
+  // QA-PROP-95 (B-03): un enlace con un id que no es un UUID («/propietarios/abc»)
+  // responde 400 y es «no existe», no «fue un problema nuestro»: cae al cartel de abajo.
+  const idInvalido =
+    !!errorPropietario &&
+    typeof errorPropietario === 'object' &&
+    (errorPropietario as { status?: unknown }).status === 400 &&
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '');
+  if (!propietario && errorPropietario && !idInvalido) {
     return (
       <div className="p-6 lg:p-8 space-y-6" data-testid="propietario-fallo">
         <BackButton href={rutaDeVuelta} label={etiquetaDeVuelta} />
@@ -576,6 +693,7 @@ function PropietarioDetailContent() {
   // salía y nada se guardaba. Ahora pegan al back y la ficha se vuelve a leer.
   const handleEditSubmit = async (data: PropietarioFormData) => {
     setErrorAlEditar(null);
+    setGuardandoEdicion(true);
     try {
       const actualizado = await propietariosApi.update(propietario.id, data);
       setPropietario(actualizado);
@@ -586,6 +704,8 @@ function PropietarioDetailContent() {
       // No un toast que se va solo: «ese documento ya está cargado» va al lado
       // del documento y el diálogo se queda abierto con lo que escribiste.
       setErrorAlEditar(errorAlGuardarPropietario(error));
+    } finally {
+      setGuardandoEdicion(false);
     }
   };
 
@@ -601,8 +721,10 @@ function PropietarioDetailContent() {
       toast.success(t('inmobiliaria.propietarios.toasts.deleted', { name: propietario.name }));
       router.push(LISTA_DE_PROPIETARIOS);
     } catch (error) {
+      // El motivo con la regla de oro: el 409 dice qué lo retiene; un 5xx no
+      // culpa a nadie; «conexión» sólo si no hubo respuesta.
       toast.error(t('inmobiliaria.propietarios.toasts.deleteError'), {
-        description: mensajeDe(error, ''),
+        description: mensajeParaLaPersona(error, { porDefecto: '', accion: 'eliminar el propietario' }),
       });
       setIsDeleting(false);
     }
@@ -618,7 +740,7 @@ function PropietarioDetailContent() {
       await refetch();
     } catch (error) {
       toast.error(t('inmobiliaria.propietarios.toasts.updateError'), {
-        description: mensajeDe(error, ''),
+        description: mensajeParaLaPersona(error, { porDefecto: '', accion: 'guardar las notas' }),
       });
     } finally {
       setIsSavingNotes(false);
@@ -636,6 +758,17 @@ function PropietarioDetailContent() {
      * como si el propietario no tuviera inmuebles. Un archivo incompleto es
      * peor que ningún archivo, porque sobrevive al error que lo causó.
      */
+    /*
+     * PR-11: sin permiso para el portafolio o la plata, esas hojas no se
+     * pudieron leer por una razón que reintentar no arregla. Se dice ESA razón
+     * y no «no pudimos leer…».
+     */
+    if (!vePortafolio || !veLaPlata) {
+      toast.error(t('inmobiliaria.propietarios.detail.exportError'), {
+        description: t('inmobiliaria.propietarios.detail.exportSinPermiso'),
+      });
+      return;
+    }
     if (errorConsignaciones || errorDispersiones) {
       toast.error(t('inmobiliaria.propietarios.detail.exportError'), {
         description: t('inmobiliaria.propietarios.detail.exportIncompleto'),
@@ -650,7 +783,7 @@ function PropietarioDetailContent() {
       });
     } catch (error) {
       toast.error(t('inmobiliaria.propietarios.detail.exportError'), {
-        description: mensajeDe(error, ''),
+        description: mensajeParaLaPersona(error, { porDefecto: '' }),
       });
     } finally {
       setIsExporting(false);
@@ -687,7 +820,8 @@ function PropietarioDetailContent() {
             </h1>
             <div className="flex flex-wrap items-center gap-1.5" data-testid="propietario-chips">
               <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs tabular-nums text-foreground">
-                {documentoConTipo(propietario.documentType, propietario.documentNumber, ' ')}
+                {/* P-06: un NIT con su dígito de verificación («NIT 900555006-0»). */}
+                {documentoConTipo(propietario.documentType, documentoDelPropietarioConDv(propietario), ' ')}
               </span>
               <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
                 {t(isCompany ? 'inmobiliaria.propietarios.detail.personaJuridica' : 'inmobiliaria.propietarios.detail.personaNatural')}
@@ -701,9 +835,15 @@ function PropietarioDetailContent() {
             </div>
             {/* T-0128: una ficha creada por la migración puede venir sin documento. */}
             <DatosPorCompletar
-              pendientes={propietario.datosPendientes}
+              pendientes={
+                sinDiaDeGiro
+                  ? datosPendientesDelPropietario({ ...propietario, proximoGiro: null })
+                  : datosPendientesDelPropietario(propietario)
+              }
               onCompletar={puedeEditar ? () => setShowEditModal(true) : undefined}
             />
+            {/* 🔴 Copropiedad migrada sin porcentaje: no se le gira (Nico, 04-10). */}
+            <SinPorcentajeDelPropietario inmuebles={propietario.inmueblesSinPorcentaje} />
             <p className="text-sm text-muted-foreground" data-testid="propietario-resumen">
               {[
                 // 🔴 23-09 (QA): quitarle la «s» a «Propiedades» daba «1 propiedade».
@@ -790,16 +930,22 @@ function PropietarioDetailContent() {
           inmobiliaria le ha girado y lo que le falta por girar. Se pinta solo
           si hay contratos; si la llamada falla, no se pinta nada, porque un
           «$0» sobre datos que no llegaron se lee «no le debemos nada». */}
-      <ResumenEnLaFicha
-        tipo="propietario"
-        id={propietario.id}
-        volverA={`/panel/inmobiliaria/propietarios/${propietario.id}`}
-      />
+      {/* Sin `dispersiones:view` el back niega el resumen (403): no se pide. */}
+      {veLaPlata && (
+        <ResumenEnLaFicha
+          tipo="propietario"
+          id={propietario.id}
+          volverA={`/panel/inmobiliaria/propietarios/${propietario.id}`}
+          tieneArrendados={(propietario.activeLeases ?? 0) + (propietario.copropiedadesArrendadas ?? 0) > 0}
+          onSinDiaDeGiro={setSinDiaDeGiro}
+        />
+      )}
 
       {/* Stats */}
       <PropietarioStats
         propietario={propietario}
         variant="full"
+        sinDiaDeGiro={sinDiaDeGiro}
         consignaciones={consignaciones}
         onCargarCuenta={puedeEditar ? () => setShowEditModal(true) : undefined}
       />
@@ -862,10 +1008,12 @@ function PropietarioDetailContent() {
              * Detrás de `propietarios:edit`, que es con lo que el back protege
              * `POST :id/invitar-al-portal`.
              */}
-            {!propietario.cuentaDePortalId && puedeEditar && (
+            {(!propietario.cuentaDePortalId || invitacionSinEntregar) && puedeEditar && (
               <InvitarAlPortal
                 propietarioId={propietario.id}
                 correo={propietario.email}
+                sinEntregar={invitacionSinEntregar}
+                onSinEntregar={setInvitacionSinEntregar}
                 onInvitado={(cuenta) =>
                   setPropietario((p) => (p ? { ...p, cuentaDePortalId: cuenta } : p))
                 }
@@ -873,24 +1021,36 @@ function PropietarioDetailContent() {
             )}
           </section>
 
+          {/* P-20: el perfil dice él mismo qué cambió, con «Deshacer», en UN
+              aviso que se reemplaza (antes se apilaban «Propietario
+              actualizado»). */}
           <PerfilTributarioDelPropietario
             propietario={propietario}
-            onActualizado={(p) => {
-              setPropietario(p);
-              toast.success(t('inmobiliaria.propietarios.toasts.updated'));
-            }}
+            puedeEditar={puedeEditarPerfil}
+            onActualizado={setPropietario}
           />
 
-          {veLaPlata ? (
+          {/* P-21: con la cuenta oculta por rol (`datosBancariosOcultos`) no se
+              dibuja «sin cuenta bancaria»: se dice que no la puede ver. */}
+          {veLaPlata && !propietario.datosBancariosOcultos ? (
             <>
               {/* Huellas del extracto mensual: qué mes salió, solo o a mano, y por qué no. */}
               <ExtractosEnviadosDelPropietario propietarioId={propietario.id} version={extractosVersion} />
 
               {/* Bank Info */}
+              {/* El lápiz: con cuenta, «Cambiar cuenta» (certificación,
+                  confirmación y aprobación: el back no deja cambiarla desde
+                  «Editar», P-14); sin cuenta, «Editar» para cargar la primera. */}
               <PropietarioBankInfo
                 bankAccount={propietario.bankAccount}
                 propietario={{ nombre: propietario.name, documento: propietario.documentNumber ?? '' }}
-                onEdit={puedeEditar ? () => setShowEditModal(true) : undefined}
+                onEdit={
+                  puedeEditar
+                    ? propietario.bankAccount?.accountNumber
+                      ? () => setPedirCambioDeCuenta((n) => n + 1)
+                      : () => setShowEditModal(true)
+                    : undefined
+                }
               />
 
               {/* 🔴 17-09: cambiar una cuenta que ya existe pide certificación,
@@ -902,6 +1062,7 @@ function PropietarioDetailContent() {
                 propietario={{ nombre: propietario.name, documento: propietario.documentNumber ?? '' }}
                 puedeEditar={puedeEditar}
                 onCuentaCambiada={() => void refetch()}
+                pedirCambio={pedirCambioDeCuenta}
               />
             </>
           ) : (
@@ -917,7 +1078,9 @@ function PropietarioDetailContent() {
 
         {/* Right Column - Properties & Payments */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Tabs */}
+          {/* Tabs — P-22: a 390 px las cuatro no caben (la página medía 406);
+              se corren dentro de su riel en vez de correr la página. */}
+          <div className="max-w-full overflow-x-auto overscroll-x-contain" data-lenis-prevent data-testid="pestanas-del-propietario">
           <SegmentedControl<typeof activeTab>
             value={activeTab}
             onChange={setTab}
@@ -931,7 +1094,7 @@ function PropietarioDetailContent() {
                 label: (
                   <span className="flex items-center gap-2">
                     {t('inmobiliaria.propietarios.detail.properties')}
-                    {!cargandoConsignaciones && !errorConsignaciones && (
+                    {vePortafolio && !cargandoConsignaciones && !errorConsignaciones && (
                       <span className="tabular-nums text-fg-muted">{consignaciones.length}</span>
                     )}
                   </span>
@@ -963,142 +1126,142 @@ function PropietarioDetailContent() {
               },
             ]}
           />
+          </div>
 
-          {/* Tab Content */}
-          <AnimatePresence mode="wait">
-            {activeTab === 'properties' && (
-              <motion.div
-                key="properties"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-4"
+          {/* Tab Content — el contenido de la pestaña se cruza con el de la
+              nueva (`CrossFade`: sale en 150 ms y el nuevo sube 4 px). */}
+          <CrossFade
+            swapKey={activeTab}
+            className={activeTab === 'properties' || activeTab === 'payments' ? 'space-y-4' : undefined}
+          >
+            {/* Carga → fallo → vacío → datos, en ese orden y en un solo
+                lugar. Antes el vacío se evaluaba primero y «este
+                propietario no tiene inmuebles consignados» salía tanto
+                mientras cargaba como cuando la petición se caía. */}
+            {activeTab === 'properties' && !vePortafolio && !cargandoPermisos && (
+              <div
+                className="p-4 rounded-lg border border-dashed border-border bg-surface text-sm text-fg-muted"
+                data-testid="propietario-portafolio-oculto"
               >
-                {/* Carga → fallo → vacío → datos, en ese orden y en un solo
-                    lugar. Antes el vacío se evaluaba primero y «este
-                    propietario no tiene inmuebles consignados» salía tanto
-                    mientras cargaba como cuando la petición se caía. */}
-                <EstadoDeDatos
-                  cargando={cargandoConsignaciones}
-                  error={errorConsignaciones}
-                  queEs="los inmuebles de este propietario"
-                  onReintentar={recargarConsignaciones}
-                  vacio={consignaciones.length === 0}
-                  cuandoVacio={
-                    <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
-                      <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
-                        <House className="w-6 h-6 text-muted-foreground" weight="duotone" />
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-                        {t('inmobiliaria.propietarios.detail.noProperties')}
-                      </p>
-                      <Button hideArrow onClick={nuevaConsignacion} data-testid="nueva-consignacion">
-                        <Plus className="w-4 h-4" />
-                        {t('inmobiliaria.propietarios.detail.newConsignment')}
-                      </Button>
+                {t('inmobiliaria.propietarios.detail.portafolioOculto')}
+              </div>
+            )}
+            {activeTab === 'properties' && (vePortafolio || cargandoPermisos) && (
+              <EstadoDeDatos
+                cargando={cargandoConsignaciones || cargandoPermisos}
+                error={errorConsignaciones}
+                queEs="los inmuebles de este propietario"
+                onReintentar={recargarConsignaciones}
+                vacio={consignaciones.length === 0}
+                cuandoVacio={
+                  <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
+                      <House className="w-6 h-6 text-muted-foreground" weight="duotone" />
                     </div>
-                  }
-                >
+                    <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+                      {t('inmobiliaria.propietarios.detail.noProperties')}
+                    </p>
+                    <Button hideArrow onClick={nuevaConsignacion} data-testid="nueva-consignacion">
+                      <Plus className="w-4 h-4" />
+                      {t('inmobiliaria.propietarios.detail.newConsignment')}
+                    </Button>
+                  </div>
+                }
+              >
+                <Stagger className="space-y-4">
                   {consignaciones.map((consignacion) => (
-                    <PropertyCard key={consignacion.id} consignacion={consignacion} />
+                    <StaggerItem key={consignacion.id}>
+                      <PropertyCard
+                        consignacion={consignacion}
+                        propietarioId={propietario.id}
+                        inmueble={propietario.inmuebles?.find((i) => i.consignacionId === consignacion.id) ?? null}
+                        sinPorcentaje={
+                          propietario.inmueblesSinPorcentaje?.some(
+                            (i) => i.consignacionId === consignacion.id,
+                          ) ?? false
+                        }
+                      />
+                    </StaggerItem>
                   ))}
-                </EstadoDeDatos>
-              </motion.div>
+                </Stagger>
+              </EstadoDeDatos>
             )}
 
+            {/* Lo mismo del otro lado, y acá pesa más: «no hay giros»
+                sobre una lectura caída se lee como «no le hemos pagado». */}
             {veLaPlata && activeTab === 'payments' && (
-              <motion.div
-                key="payments"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="space-y-4"
-              >
-                {/* Lo mismo del otro lado, y acá pesa más: «no hay giros»
-                    sobre una lectura caída se lee como «no le hemos pagado». */}
-                <EstadoDeDatos
-                  cargando={cargandoDispersiones}
-                  error={errorDispersiones}
-                  queEs="los giros a este propietario"
-                  onReintentar={recargarDispersiones}
-                  vacio={dispersiones.length === 0}
-                  cuandoVacio={
-                    <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
-                      <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
-                        <CurrencyDollar className="w-6 h-6 text-muted-foreground" weight="duotone" />
-                      </div>
-                      <p className="text-sm text-muted-foreground max-w-sm">
-                        {t('inmobiliaria.propietarios.detail.noPayments')}
-                      </p>
+              <EstadoDeDatos
+                cargando={cargandoDispersiones}
+                error={errorDispersiones}
+                queEs="los giros a este propietario"
+                onReintentar={recargarDispersiones}
+                vacio={dispersiones.length === 0}
+                cuandoVacio={
+                  <div className="flex flex-col items-center text-center py-14 rounded-lg border border-border bg-card">
+                    <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
+                      <CurrencyDollar className="w-6 h-6 text-muted-foreground" weight="duotone" />
                     </div>
-                  }
-                >
+                    <p className="text-sm text-muted-foreground max-w-sm">
+                      {t('inmobiliaria.propietarios.detail.noPayments')}
+                    </p>
+                  </div>
+                }
+              >
+                <Stagger className="space-y-4">
                   {dispersiones.map((dispersion) => (
-                    <PaymentHistoryItem key={dispersion.id} dispersion={dispersion} />
+                    <StaggerItem key={dispersion.id}>
+                      <PaymentHistoryItem dispersion={dispersion} />
+                    </StaggerItem>
                   ))}
-                </EstadoDeDatos>
-              </motion.div>
+                </Stagger>
+              </EstadoDeDatos>
             )}
 
+            {/* Los inmuebles salen de las consignaciones ya leídas: el
+                descuento puede quedar atado a uno o a ninguno. */}
             {veLaPlata && activeTab === 'deducciones' && (
-              <motion.div
-                key="deducciones"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-              >
-                {/* Los inmuebles salen de las consignaciones ya leídas: el
-                    descuento puede quedar atado a uno o a ninguno. */}
-                <DeduccionesDelPropietario
-                  propietarioId={propietario.id}
-                  inmuebles={consignaciones.map((c) => ({
-                    consignacionId: c.id,
-                    titulo: c.propertyTitle,
-                  }))}
-                />
-              </motion.div>
+              <DeduccionesDelPropietario
+                propietarioId={propietario.id}
+                inmuebles={consignaciones.map((c) => ({
+                  consignacionId: c.id,
+                  titulo: c.propertyTitle,
+                }))}
+              />
             )}
 
             {activeTab === 'notes' && (
-              <motion.div
-                key="notes"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-              >
-                <div className="p-5 rounded-lg border border-border bg-card">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Note className="w-5 h-5 text-muted-foreground" />
-                    <h3 className="text-base font-semibold text-foreground">
-                      {t('inmobiliaria.propietarios.detail.internalNotes')}
-                    </h3>
-                  </div>
-
-                  {propietario.notes ? (
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                      {propietario.notes}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">{t('inmobiliaria.propietarios.detail.noNotes')}</p>
-                  )}
-
-                  {puedeEditar && (
-                    <Button
-                      variant="link"
-                      hideArrow
-                      className="mt-4 h-auto p-0"
-                      onClick={() => {
-                        setNotesValue(propietario.notes || '');
-                        setShowNotesModal(true);
-                      }}
-                    >
-                      {propietario.notes ? t('inmobiliaria.propietarios.detail.editNotes') : t('inmobiliaria.propietarios.detail.addNotes')}
-                    </Button>
-                  )}
+              <div className="p-5 rounded-lg border border-border bg-card">
+                <div className="flex items-center gap-2 mb-4">
+                  <Note className="w-5 h-5 text-muted-foreground" />
+                  <h3 className="text-base font-semibold text-foreground">
+                    {t('inmobiliaria.propietarios.detail.internalNotes')}
+                  </h3>
                 </div>
-              </motion.div>
+
+                {propietario.notes ? (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {propietario.notes}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">{t('inmobiliaria.propietarios.detail.noNotes')}</p>
+                )}
+
+                {puedeEditar && (
+                  <Button
+                    variant="link"
+                    hideArrow
+                    className="mt-4 h-auto p-0"
+                    onClick={() => {
+                      setNotesValue(propietario.notes || '');
+                      setShowNotesModal(true);
+                    }}
+                  >
+                    {propietario.notes ? t('inmobiliaria.propietarios.detail.editNotes') : t('inmobiliaria.propietarios.detail.addNotes')}
+                  </Button>
+                )}
+              </div>
             )}
-          </AnimatePresence>
+          </CrossFade>
         </div>
       </div>
 
@@ -1107,67 +1270,49 @@ function PropietarioDetailContent() {
           sin permiso. Debajo de las pestañas: vale para todas. */}
       <BitacoraDelRecurso tipo="propietario" id={propietario.id} />
 
-      {/* Edit Modal */}
-      <Modal
-        open={showEditModal && puedeEditar}
-        onClose={cerrarEdicion}
-        title={t('inmobiliaria.propietarios.editOwner')}
-        size="lg"
+      {/* Editar — el MISMO cajón de «Nuevo propietario» y de «Editar» en la
+          lista (Nico, 03-10: el formulario del propietario va en un cajón, no
+          en un modal). Cabecera, cuerpo que se desplaza y pie fijo; lo que el
+          back dijo sin campo, arriba del cuerpo. «Cambiar cuenta» abre el
+          cambio controlado aquí mismo (P-14). */}
+      <CajonDelFormularioDelPropietario
+        abierto={showEditModal && puedeEditar}
+        onCerrar={cerrarEdicion}
+        titulo={t('inmobiliaria.propietarios.editOwner')}
+        descripcion={propietario.name}
+        aviso={errorAlEditar?.general}
+        idDelFormulario={idDeLaEdicion}
+        textoDelBoton={t('inmobiliaria.propietario.form.saveChanges')}
+        guardando={guardandoEdicion}
       >
-        {errorAlEditar?.general && (
-          <p
-            role="alert"
-            data-testid="aviso-en-el-dialogo"
-            className="mb-4 rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
-          >
-            {errorAlEditar.general}
-          </p>
-        )}
         <PropietarioForm
           initialData={propietario}
           onSubmit={handleEditSubmit}
           onCancel={cerrarEdicion}
           mode="edit"
           serverError={errorAlEditar?.campo ?? null}
+          serverErrors={errorAlEditar?.porCampo ?? null}
+          accionesAfuera
+          idDelFormulario={idDeLaEdicion}
+          onCambiarCuenta={() => {
+            cerrarEdicion();
+            setPedirCambioDeCuenta((n) => n + 1);
+          }}
         />
-      </Modal>
+      </CajonDelFormularioDelPropietario>
 
-      {/* Delete Modal */}
+      {/* Delete Modal — destructiva: dice qué se borra (la ficha entera; el
+          back hace un `delete`, no lo archiva) y, si algo lo retiene, por qué
+          y a dónde ir. Con algo que lo retiene, el botón no se ofrece. */}
       <Modal
         open={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         title={t('inmobiliaria.propietarios.deleteOwner')}
+        description={t('inmobiliaria.propietarios.deleteConfirm', { name: propietario.name })}
         size="sm"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            {t('inmobiliaria.propietarios.deleteConfirm', { name: propietario.name })}
-          </p>
-          {/* Con inmuebles consignados el back no lo deja borrar: se dice
-              antes, con lo que hay que hacer, y el botón no se ofrece. */}
-          {propietario.propertyCount > 0 && (
-            <AlertaAccionable
-              severidad="danger"
-              titulo={t('inmobiliaria.propietarios.deleteBloqueado.titulo', { count: propietario.propertyCount })}
-              accion={{ label: t('inmobiliaria.propietarios.deleteBloqueado.accion'), href: '/panel/inmobiliaria/inmuebles' }}
-              data-testid="borrar-bloqueado"
-            >
-              {t('inmobiliaria.propietarios.deleteBloqueado.detalle')}
-            </AlertaAccionable>
-          )}
-          {/* Lo mismo si es COPROPIETARIO sin ser principal: la FK lo retiene
-              igual y el back responde 409 (antes era un 500). */}
-          {propietario.propertyCount === 0 && (propietario.copropiedadesCount ?? 0) > 0 && (
-            <AlertaAccionable
-              severidad="danger"
-              titulo={t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietario', { count: propietario.copropiedadesCount ?? 0 })}
-              accion={{ label: t('inmobiliaria.propietarios.deleteBloqueado.accion'), href: '/panel/inmobiliaria/inmuebles' }}
-              data-testid="borrar-bloqueado-copropietario"
-            >
-              {t('inmobiliaria.propietarios.deleteBloqueado.detalleCopropietario')}
-            </AlertaAccionable>
-          )}
-          <div className="flex items-center gap-3 justify-end pt-4">
+        variant="destructive"
+        footer={
+          <>
             <Button variant="secondary" hideArrow onClick={() => setShowDeleteModal(false)} disabled={isDeleting}>
               {t('inmobiliaria.common.cancel')}
             </Button>
@@ -1176,8 +1321,41 @@ function PropietarioDetailContent() {
                 {t('inmobiliaria.common.delete')}
               </Button>
             )}
-          </div>
-        </div>
+          </>
+        }
+      >
+        {/* Con inmuebles consignados el back no lo deja borrar: se dice
+            antes, con lo que hay que hacer, y el botón no se ofrece. */}
+        {propietario.propertyCount > 0 && (
+          <AlertaAccionable
+            severidad="danger"
+            titulo={
+              propietario.propertyCount === 1
+                ? t('inmobiliaria.propietarios.deleteBloqueado.tituloUno')
+                : t('inmobiliaria.propietarios.deleteBloqueado.tituloN', { count: propietario.propertyCount })
+            }
+            accion={{ label: t('inmobiliaria.propietarios.deleteBloqueado.accion'), href: '/panel/inmobiliaria/inmuebles' }}
+            data-testid="borrar-bloqueado"
+          >
+            {t('inmobiliaria.propietarios.deleteBloqueado.detalle')}
+          </AlertaAccionable>
+        )}
+        {/* Lo mismo si es COPROPIETARIO sin ser principal: la FK lo retiene
+            igual y el back responde 409 (antes era un 500). */}
+        {propietario.propertyCount === 0 && (propietario.copropiedadesCount ?? 0) > 0 && (
+          <AlertaAccionable
+            severidad="danger"
+            titulo={
+              propietario.copropiedadesCount === 1
+                ? t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietarioUno')
+                : t('inmobiliaria.propietarios.deleteBloqueado.tituloCopropietarioN', { count: propietario.copropiedadesCount ?? 0 })
+            }
+            accion={{ label: t('inmobiliaria.propietarios.deleteBloqueado.accion'), href: '/panel/inmobiliaria/inmuebles' }}
+            data-testid="borrar-bloqueado-copropietario"
+          >
+            {t('inmobiliaria.propietarios.deleteBloqueado.detalleCopropietario')}
+          </AlertaAccionable>
+        )}
       </Modal>
 
       {/* Extracto del mes */}
@@ -1187,6 +1365,8 @@ function PropietarioDetailContent() {
         abierto={showExtracto}
         onOpenChange={setShowExtracto}
         onEnviado={() => setExtractosVersion((v) => v + 1)}
+        // QA-PROP-95 C-24/F-08: mandarlo pide `dispersiones:edit` (como el back).
+        puedeEnviar={canAccess('dispersiones', 'edit')}
       />
 
       {/* Notes Modal */}
@@ -1195,24 +1375,8 @@ function PropietarioDetailContent() {
         onClose={() => setShowNotesModal(false)}
         title={t('inmobiliaria.propietarios.detail.internalNotes')}
         size="md"
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-2">
-              {t('inmobiliaria.propietarios.detail.notesAbout', { name: propietario.name })}
-            </label>
-            <Textarea
-              value={notesValue}
-              onChange={(e) => setNotesValue(e.target.value)}
-              placeholder={t('inmobiliaria.propietarios.detail.notesPlaceholder')}
-              rows={6}
-              className="resize-none"
-            />
-            <p className="mt-2 text-xs text-muted-foreground">
-              {t('inmobiliaria.propietarios.detail.notesPrivacy')}
-            </p>
-          </div>
-          <div className="flex items-center gap-3 justify-end pt-2">
+        footer={
+          <>
             <Button variant="secondary" hideArrow onClick={() => setShowNotesModal(false)}>
               {t('inmobiliaria.common.cancel')}
             </Button>
@@ -1224,7 +1388,24 @@ function PropietarioDetailContent() {
             >
               {isSavingNotes ? t('inmobiliaria.common.saving') : t('inmobiliaria.propietarios.detail.saveNotes')}
             </Button>
-          </div>
+          </>
+        }
+      >
+        <div>
+          <label htmlFor="notas-internas-del-propietario" className="block text-sm font-medium text-foreground mb-2">
+            {t('inmobiliaria.propietarios.detail.notesAbout', { name: propietario.name })}
+          </label>
+          <Textarea
+            id="notas-internas-del-propietario"
+            value={notesValue}
+            onChange={(e) => setNotesValue(e.target.value)}
+            placeholder={t('inmobiliaria.propietarios.detail.notesPlaceholder')}
+            rows={6}
+            className="resize-none"
+          />
+          <p className="mt-2 text-xs text-muted-foreground">
+            {t('inmobiliaria.propietarios.detail.notesPrivacy')}
+          </p>
         </div>
       </Modal>
     </div>

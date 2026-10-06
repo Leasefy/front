@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { FileText, MapPin, Clock, CheckCircle, XCircle, ArrowUpRight, GridFour, List, CaretLeft, CaretRight, ListBullets, Warning } from '@phosphor-icons/react';
-import { SegmentedControl, IconButton } from '@leasefy/cadence';
+import { SegmentedControl, IconButton, CrossFade, MotionIndicator } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 
 import { useTenantApplications } from '@/lib/hooks/useApplications';
 import { cn } from '@/lib/utils';
@@ -153,6 +154,8 @@ export default function AplicacionesPage() {
   const [activeTab, setTab] = useState<'active' | 'completed'>('active');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [currentPage, setCurrentPage] = useState(1);
+  // La píldora de la vista activa (lista/cuadrícula) se desliza de un botón al otro.
+  const idDeLaVista = useId();
 
   const formatShortDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
@@ -204,6 +207,13 @@ export default function AplicacionesPage() {
       icon: XCircle,
       progress: 100,
     },
+    // QA-IA-A: el inmueble quedó para otra persona. No es un rechazo.
+    no_adjudicado: {
+      label: locale === 'es' ? 'Quedó para otra persona' : 'Went to someone else',
+      color: 'bg-surface-muted text-fg-muted',
+      icon: XCircle,
+      progress: 100,
+    },
   };
 
   const currentApplications = activeTab === 'active' ? activeApplications : completedApplications;
@@ -227,6 +237,8 @@ export default function AplicacionesPage() {
   };
 
   // Loading state
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isOnboardingLoading || isAppsLoading);
   if (isOnboardingLoading || isAppsLoading) {
     return (
       <div className="min-h-screen bg-bg">
@@ -267,30 +279,21 @@ export default function AplicacionesPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <h1 className="text-3xl font-medium text-fg tracking-tight">
             {t('applications.title')}
           </h1>
           <p className="mt-1 text-fg-muted">
             {t('applications.subtitle')}
           </p>
-        </motion.header>
+        </header>
 
         {/* Stats Grid */}
         {!sinPostulaciones && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           <div className="rounded-xl bg-surface-muted p-6">
             <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
               <FileText className="w-5 h-5 text-fg-subtle" />
@@ -323,17 +326,12 @@ export default function AplicacionesPage() {
             </p>
             <p className="text-sm text-fg-muted mt-2">{locale === 'es' ? 'Aprobadas o rechazadas' : 'Approved or rejected'}</p>
           </div>
-        </motion.div>
+        </div>
         )}
 
         {/* Controls: Tabs + View Toggle */}
         {!sinPostulaciones && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
-        >
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           {/* Tabs — Cadence SegmentedControl */}
           <SegmentedControl
             value={activeTab}
@@ -369,46 +367,55 @@ export default function AplicacionesPage() {
             ]}
           />
 
-          {/* View Toggle */}
+          {/* View Toggle — el fondo blanco del activo es un `MotionIndicator`
+              que se desliza al otro botón (antes saltaba). */}
           <div className="flex items-center gap-1 p-1 bg-surface-muted rounded-full w-fit">
-            <IconButton
-              variant="ghost"
-              onClick={() => setViewMode('list')}
-              aria-pressed={viewMode === 'list'}
-              className={cn(
-                'p-2 rounded-full',
-                viewMode === 'list'
-                  ? 'bg-surface text-fg'
-                  : 'text-fg-muted hover:text-fg'
+            <span className="relative isolate inline-flex rounded-full">
+              {viewMode === 'list' && (
+                <MotionIndicator layoutId={`${idDeLaVista}-vista`} className="inset-0 -z-10 rounded-full bg-surface" />
               )}
-              title={locale === 'es' ? 'Vista de lista' : 'List view'}
-              aria-label={locale === 'es' ? 'Vista de lista' : 'List view'}
-              icon={<ListBullets className="w-4 h-4" />}
-            />
-            <IconButton
-              variant="ghost"
-              onClick={() => setViewMode('grid')}
-              aria-pressed={viewMode === 'grid'}
-              className={cn(
-                'p-2 rounded-full',
-                viewMode === 'grid'
-                  ? 'bg-surface text-fg'
-                  : 'text-fg-muted hover:text-fg'
+              <IconButton
+                variant="ghost"
+                onClick={() => setViewMode('list')}
+                aria-pressed={viewMode === 'list'}
+                className={cn(
+                  'p-2 rounded-full',
+                  viewMode === 'list'
+                    ? 'text-fg'
+                    : 'text-fg-muted hover:text-fg'
+                )}
+                title={locale === 'es' ? 'Vista de lista' : 'List view'}
+                aria-label={locale === 'es' ? 'Vista de lista' : 'List view'}
+                icon={<ListBullets className="w-4 h-4" />}
+              />
+            </span>
+            <span className="relative isolate inline-flex rounded-full">
+              {viewMode === 'grid' && (
+                <MotionIndicator layoutId={`${idDeLaVista}-vista`} className="inset-0 -z-10 rounded-full bg-surface" />
               )}
-              title={locale === 'es' ? 'Vista de cuadrícula' : 'Grid view'}
-              aria-label={locale === 'es' ? 'Vista de cuadrícula' : 'Grid view'}
-              icon={<GridFour className="w-4 h-4" />}
-            />
+              <IconButton
+                variant="ghost"
+                onClick={() => setViewMode('grid')}
+                aria-pressed={viewMode === 'grid'}
+                className={cn(
+                  'p-2 rounded-full',
+                  viewMode === 'grid'
+                    ? 'text-fg'
+                    : 'text-fg-muted hover:text-fg'
+                )}
+                title={locale === 'es' ? 'Vista de cuadrícula' : 'Grid view'}
+                aria-label={locale === 'es' ? 'Vista de cuadrícula' : 'Grid view'}
+                icon={<GridFour className="w-4 h-4" />}
+              />
+            </span>
           </div>
-        </motion.div>
+        </div>
         )}
 
-        {/* Applications */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
+        {/* Applications — cambiar de pestaña, de vista o de página cruza el
+            contenido (sale el viejo en 150 ms y entra el nuevo). */}
+        <section>
+          <CrossFade swapKey={`${activeTab}-${viewMode}-${currentPage}`}>
           {paginatedApplications.length > 0 ? (
             <>
               {/* List View */}
@@ -423,14 +430,9 @@ export default function AplicacionesPage() {
                     const StatusIcon = status.icon;
 
                     return (
-                      <motion.div
-                        key={application.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                      >
+                      <div key={application.id}>
                         <Link href={`/inquilino/aplicaciones/${application.id}`}>
-                          <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300 overflow-hidden">
+                          <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden">
                             <div className="flex flex-col lg:flex-row">
                               {/* Image */}
                               <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
@@ -441,7 +443,7 @@ export default function AplicacionesPage() {
                                   quality={90}
                                   sizes="(max-width: 1024px) 100vw, 288px"
                                   priority={index === 0}
-                                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                  className="object-cover transition-transform duration-reveal group-hover:scale-105"
                                 />
                                 <div className="absolute top-4 left-4">
                                   <span className={cn(
@@ -507,7 +509,7 @@ export default function AplicacionesPage() {
                                   <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
                                     <div
                                       className={cn(
-                                        "h-full rounded-full transition-all duration-500",
+                                        "h-full w-full rounded-full transition-transform duration-slow ease-enter",
                                         application.status === 'rejected' || application.status === 'withdrawn' || application.status === 'contract_failed'
                                           ? "bg-danger"
                                           : application.status === 'approved'
@@ -516,7 +518,7 @@ export default function AplicacionesPage() {
                                           ? "bg-warning"
                                           : "bg-primary"
                                       )}
-                                      style={{ width: `${status.progress}%` }}
+                                      style={{ transform: `translateX(${status.progress - 100}%)` }}
                                     />
                                   </div>
                                 </div>
@@ -564,7 +566,7 @@ export default function AplicacionesPage() {
                             </div>
                           </div>
                         </Link>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
@@ -573,7 +575,7 @@ export default function AplicacionesPage() {
               {/* Grid View */}
               {viewMode === 'grid' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                  {paginatedApplications.map((application, index) => {
+                  {paginatedApplications.map((application) => {
                     const fallbackStatus = statusConfig[application.status] || statusConfig.submitted;
                     const contractStatus = application.status === 'approved'
                       ? displayStatusForApproved(contractsByApp[application.id], locale)
@@ -582,14 +584,9 @@ export default function AplicacionesPage() {
                     const StatusIcon = status.icon;
 
                     return (
-                      <motion.div
-                        key={application.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                      >
+                      <div key={application.id}>
                         <Link href={`/inquilino/aplicaciones/${application.id}`}>
-                          <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300 overflow-hidden h-full flex flex-col">
+                          <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden h-full flex flex-col">
                             {/* Image */}
                             <div className="relative aspect-[4/3] overflow-hidden">
                               <Image
@@ -598,7 +595,7 @@ export default function AplicacionesPage() {
                                 fill
                                 quality={90}
                                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                className="object-cover transition-transform duration-reveal group-hover:scale-105"
                               />
                               <div className="absolute top-3 left-3">
                                 <span className={cn(
@@ -641,7 +638,7 @@ export default function AplicacionesPage() {
                                   <div className="h-1.5 bg-surface-muted rounded-full overflow-hidden">
                                     <div
                                       className={cn(
-                                        "h-full rounded-full transition-all duration-500",
+                                        "h-full w-full rounded-full transition-transform duration-slow ease-enter",
                                         application.status === 'rejected' || application.status === 'withdrawn' || application.status === 'contract_failed'
                                           ? "bg-danger"
                                           : application.status === 'approved'
@@ -650,7 +647,7 @@ export default function AplicacionesPage() {
                                           ? "bg-warning"
                                           : "bg-primary"
                                       )}
-                                      style={{ width: `${status.progress}%` }}
+                                      style={{ transform: `translateX(${status.progress - 100}%)` }}
                                     />
                                   </div>
                                 </div>
@@ -669,7 +666,7 @@ export default function AplicacionesPage() {
                             </div>
                           </div>
                         </Link>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
@@ -755,9 +752,10 @@ export default function AplicacionesPage() {
               action={activeTab === 'active' ? { label: locale === 'es' ? 'Ver propiedades para mí' : 'See properties for me', href: '/inquilino/para-ti' } : undefined}
             />
           )}
-        </motion.section>
+          </CrossFade>
+        </section>
 
-      </div>
+      </motion.div>
     </div>
   );
 }

@@ -13,9 +13,11 @@
  * `null` entra, `null` sale — quien renderiza decide el placeholder.
  */
 
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
+
 export function formatCanon(value: number | null | undefined): string {
   if (value == null) return 'Sin definir';
-  return new Intl.NumberFormat('es-CO', {
+  return plataEnPantalla('es-CO', {
     style: 'currency',
     currency: 'COP',
     minimumFractionDigits: 0,

@@ -61,7 +61,7 @@ export interface DondeSeVe {
 }
 
 export interface Especialista {
-  id: 'gabriela' | 'laura' | 'nicolas' | 'valentina' | 'samuel' | 'sofia'
+  id: 'gabriela' | 'cuenti' | 'nicolas' | 'valentina' | 'samuel' | 'sofia'
   nombre: string
   /** El oficio, en tres o cuatro palabras. */
   rol: string
@@ -88,12 +88,17 @@ export const EQUIPO_DE_PAGOS: readonly Especialista[] = [
     sinPantalla: 'No tiene pantalla propia: coordina a los demás.',
   },
   {
-    // `laura.ts`: tool-light; el ERP es dueño de emitir la factura.
-    id: 'laura',
-    nombre: 'Laura',
+    // `laura.ts` del micro (el archivo conserva su nombre): tool-light; el ERP
+    // es dueño de emitir la factura. 🔴 IA95-10 (Nico, 05-10-2026: «créale un
+    // nombre así como los otros agentes»): se llamaba «Laura», que es SÓLO la
+    // voz y el WhatsApp de cobranza. Ahora es Cuenti (Nico, 05-10-2026 22:25:
+    // «son nombres inventados como el de Fixi»; como Cobri, Niti o Fixi, sale
+    // de lo que hace: las cuentas del cobro).
+    id: 'cuenti',
+    nombre: 'Cuenti',
     rol: 'Prepara el cobro',
     queHace:
-      'Arma el cobro del período de cada contrato, con sus conceptos y su total. El que lo emite es el ERP, no ella.',
+      'Arma el cobro del período de cada contrato, con sus conceptos y su total. Emitirlo no le toca: lo emite Leasefy cuando se genera el cobro.',
     icon: Receipt,
     dondeSeVe: { nombre: 'Cartera › Cobros emitidos', href: `${P}/pagos/cartera/cobros`, module: 'cobros' },
   },
@@ -103,10 +108,10 @@ export const EQUIPO_DE_PAGOS: readonly Especialista[] = [
     nombre: 'Nicolás',
     rol: 'Envía el link de pago',
     queHace:
-      'Le pide al ERP el link de pago del cobro y se lo manda al inquilino por WhatsApp, correo o SMS.',
+      'Pide el link de pago del cobro y se lo manda al inquilino por WhatsApp, correo o SMS.',
     icon: LinkSimple,
     dondeSeVe: null,
-    sinPantalla: 'No tiene pantalla propia: trabaja sobre el cobro que preparó Laura.',
+    sinPantalla: 'No tiene pantalla propia: trabaja sobre el cobro que preparó Cuenti.',
   },
   {
     // `valentina.ts`: sugiere; la ejecución la confirma una persona (D-45-01).

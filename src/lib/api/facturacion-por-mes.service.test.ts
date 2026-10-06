@@ -23,6 +23,7 @@ vi.mock('./client', () => ({
 
 import {
   facturacionPorMesService,
+  fechaEnFrase,
   fechaLegible,
   mesActual,
   mesLegible,
@@ -175,8 +176,21 @@ describe('fechaLegible', () => {
     // Un `@db.Date` llega como `...T00:00:00.000Z` y en Bogotá (UTC−5) un
     // `new Date()` lo pinta el día anterior. Una vigencia que dice el día
     // equivocado es el defecto que no se puede tener en una resolución.
-    expect(fechaLegible('2028-01-15T00:00:00.000Z')).toBe('15/01/2028')
-    expect(fechaLegible('2028-01-15')).toBe('15/01/2028')
+    // FA-R29 (03-10): con la fecha de la casa, «15 ene 2028», no `15/01/2028`.
+    expect(fechaLegible('2028-01-15T00:00:00.000Z')).toBe('15 ene 2028')
+    expect(fechaLegible('2028-01-15')).toBe('15 ene 2028')
+  })
+
+  it('🔴 FA-R29: un instante se lee en la hora de Colombia, no en UTC', () => {
+    // Una nota crédito de las 8 de la noche del 3 de octubre en Bogotá es la
+    // 1 de la mañana del 4 en UTC: antes salía con el día de MAÑANA.
+    expect(fechaLegible('2026-10-04T01:00:00.000Z')).toBe('3 oct 2026')
+    expect(fechaLegible('2026-10-03T15:30:00.000Z')).toBe('3 oct 2026')
+  })
+
+  it('dentro de una frase, la fecha larga', () => {
+    expect(fechaEnFrase('2027-09-01')).toBe('1 de septiembre de 2027')
+    expect(fechaEnFrase(null)).toBe('—')
   })
 
   it('sin fecha devuelve una raya, no «Invalid Date»', () => {

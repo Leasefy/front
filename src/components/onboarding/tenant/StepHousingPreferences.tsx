@@ -1,15 +1,25 @@
 'use client'
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { motion } from 'framer-motion'
 import { Check, MapPin, PawPrint, Plus, WifiHigh, Car, Shield, Barbell, Tree, Warehouse, Waves, Sparkle, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
-import { DatePicker, IconButton } from '@leasefy/cadence'
+import { Collapse, DatePicker, IconButton, Presence } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { useI18n } from '@/lib/i18n'
-import { useTenantOnboarding } from '@/lib/context/TenantOnboardingContext'
+import { useTenantOnboarding, type ErroresDelServidor } from '@/lib/context/TenantOnboardingContext'
 import { aFechaIso, fechaLocal, hoyLocal } from '@/lib/fechas-locales'
+import {
+  MAX_AMENIDADES,
+  MAX_LARGO_AMENIDAD,
+  MAX_LARGO_MASCOTAS,
+  MAX_LARGO_ZONA,
+  MAX_ZONAS,
+  MENSAJES_DEL_PERFIL,
+  revisarPreferenciasDelInquilino,
+  type CampoDePreferencias,
+} from '@/lib/onboarding/preferencias-del-inquilino'
 import { useIntentosDeAvanzar } from './intento-de-avanzar'
 
 const CITIES = [
@@ -37,9 +47,17 @@ const AMENITIES = [
 ]
 
 const IDS_DE_AMENIDADES = AMENITIES.map((a) => a.id)
-/** El back no guarda más de 30 amenidades (`UpdatePreferencesDto`). */
-const MAX_AMENIDADES = 30
-const MAX_LARGO_AMENIDAD = 40
+
+/** Dónde se pone el foco cuando un campo tiene error (el primero, en este orden). */
+const FOCO_DEL_CAMPO: Record<CampoDePreferencias, string> = {
+  budgetMin: 'budgetMin',
+  budgetMax: 'budgetMax',
+  preferredZones: 'otraZona',
+  moveInDate: 'moveInDate',
+  petDetails: 'petDetails',
+  preferredAmenities: 'otraAmenidad',
+}
+const ORDEN_DE_LOS_CAMPOS = Object.keys(FOCO_DEL_CAMPO) as CampoDePreferencias[]
 
 /*
  * Estilos de las opciones que se marcan (ciudades, mascotas, amenidades,
@@ -65,45 +83,59 @@ function Rotulo({ children, requerido }: { children: ReactNode; requerido?: bool
   )
 }
 
-/** Aparece despacio y en orden; con «reducir movimiento», sólo el fundido. */
-function Seccion({ children, orden }: { children: ReactNode; orden: number }) {
-  return (
-    <motion.section
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.04 * orden, duration: 0.24 }}
-    >
-      {children}
-    </motion.section>
-  )
+/**
+ * Una sección del paso. Antes: «Aparece despacio y en orden; con «reducir
+ * movimiento», sólo el fundido». Ahora sin entrada propia: el paso entero ya
+ * entra con el `CrossFade` del asistente (`TenantOnboardingShell`); sumarle
+ * otra por sección (con su retraso por `orden`) era una «doble entrada»
+ * (DESIGN.md §8b). `orden` se conserva en la firma: ya no mueve nada.
+ */
+function Seccion({ children }: { children: ReactNode; orden: number }) {
+  return <section>{children}</section>
 }
+
+/** Sin proveedor que los traiga (las pruebas de cada paso), no hay errores del servidor. */
+const SIN_ERRORES_DEL_SERVIDOR: ErroresDelServidor = {}
 
 export function StepHousingPreferences() {
   const { locale } = useI18n()
-  const { draft, updateDraft } = useTenantOnboarding()
+  const { draft, updateDraft, erroresDelServidor = SIN_ERRORES_DEL_SERVIDOR } = useTenantOnboarding()
   const intentos = useIntentosDeAvanzar()
   const presupuestoRef = useRef<HTMLInputElement>(null)
 
   /*
-   * El aviso del presupuesto ya no es un bloque amarillo fijo: sale bajo el
-   * presupuesto, con el estilo de error de la casa, cuando la persona intenta
-   * completar el perfil sin él. La regla es la de siempre (`isStepValid(2)`):
-   * mínimo mayor que cero y máximo no menor que el mínimo.
+   * Los errores salen bajo su campo, con el estilo de error de la casa:
+   *  · los del cliente (las MISMAS reglas y frases que el back, en
+   *    `preferencias-del-inquilino`), cuando la persona intenta completar el
+   *    perfil con algo mal — nunca desde que se abre el paso;
+   *  · los del servidor (02-10-2026), en cuanto llegan, hasta que se edite
+   *    ese campo.
    */
-  const faltaPresupuesto = !draft.budgetMin || draft.budgetMin <= 0 || !draft.budgetMax
-  const maximoMenor = !faltaPresupuesto && (draft.budgetMax as number) < (draft.budgetMin as number)
-  const errorDelPresupuesto =
-    intentos > 0 && (faltaPresupuesto || maximoMenor)
-      ? faltaPresupuesto
-        ? 'Ingresa tu presupuesto mínimo y máximo para continuar'
-        : 'El máximo no puede ser menor que el mínimo'
-      : null
+  const delCliente = revisarPreferenciasDelInquilino(draft)
+  const errorDe = (campo: CampoDePreferencias): string | undefined =>
+    erroresDelServidor[campo] ?? (intentos > 0 ? delCliente[campo] : undefined)
+
+  const errorMinimo = errorDe('budgetMin')
+  const errorMaximo = errorDe('budgetMax')
+  const errorDelPresupuesto = errorMinimo ?? errorMaximo ?? null
+  // «Falta el presupuesto» marca los dos; un tope o el cruce, sólo el suyo.
+  const ambos = errorDelPresupuesto === MENSAJES_DEL_PERFIL.faltaPresupuesto
+
+  const primeroConError = ORDEN_DE_LOS_CAMPOS.find((c) => errorDe(c))
 
   useEffect(() => {
-    if (intentos > 0 && (faltaPresupuesto || maximoMenor)) presupuestoRef.current?.focus()
+    if (intentos === 0 || !primeroConError) return
+    if (primeroConError === 'budgetMin' || (primeroConError === 'budgetMax' && ambos)) presupuestoRef.current?.focus()
+    else document.getElementById(FOCO_DEL_CAMPO[primeroConError])?.focus()
     // Sólo al intentar: no robar el foco mientras la persona escribe.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [intentos])
+
+  useEffect(() => {
+    // Lo que rechazó el servidor: foco en el primero, una vez por respuesta.
+    const primero = ORDEN_DE_LOS_CAMPOS.find((c) => erroresDelServidor[c])
+    if (primero) document.getElementById(FOCO_DEL_CAMPO[primero])?.focus()
+  }, [erroresDelServidor])
   const [customZone, setCustomZone] = useState('')
   /*
    * «Otra amenidad» (Nico, 2026-09-15): las ocho de la lista no son todas las
@@ -134,11 +166,14 @@ export function StepHousingPreferences() {
     updateDraft({ budgetMax: value ? parseInt(value) : undefined })
   }
 
+  const zonasLlenas = (draft.preferredZones || []).length >= MAX_ZONAS
+
   const toggleZone = (zone: string) => {
     const currentZones = draft.preferredZones || []
     if (currentZones.includes(zone)) {
       updateDraft({ preferredZones: currentZones.filter((z) => z !== zone) })
-    } else {
+    } else if (currentZones.length < MAX_ZONAS) {
+      // El back guarda hasta 10 (`preferred_cities`): la 11.ª no se agrega.
       updateDraft({ preferredZones: [...currentZones, zone] })
     }
   }
@@ -146,7 +181,7 @@ export function StepHousingPreferences() {
   const addCustomZone = () => {
     if (customZone.trim()) {
       const currentZones = draft.preferredZones || []
-      if (!currentZones.includes(customZone.trim())) {
+      if (!currentZones.includes(customZone.trim()) && currentZones.length < MAX_ZONAS) {
         updateDraft({ preferredZones: [...currentZones, customZone.trim()] })
       }
       setCustomZone('')
@@ -189,8 +224,8 @@ export function StepHousingPreferences() {
           <div className="grid grid-cols-2 gap-3">
             {(
               [
-                { id: 'budgetMin', etiqueta: 'Presupuesto mínimo mensual', placeholder: 'Mínimo', valor: draft.budgetMin, onChange: handleBudgetMinChange, ref: presupuestoRef },
-                { id: 'budgetMax', etiqueta: 'Presupuesto máximo mensual', placeholder: 'Máximo', valor: draft.budgetMax, onChange: handleBudgetMaxChange, ref: undefined },
+                { id: 'budgetMin', etiqueta: 'Presupuesto mínimo mensual', placeholder: 'Mínimo', valor: draft.budgetMin, onChange: handleBudgetMinChange, ref: presupuestoRef, conError: ambos || !!errorMinimo },
+                { id: 'budgetMax', etiqueta: 'Presupuesto máximo mensual', placeholder: 'Máximo', valor: draft.budgetMax, onChange: handleBudgetMaxChange, ref: undefined, conError: ambos || (!errorMinimo && !!errorMaximo) },
               ] as const
             ).map((campo) => (
               <div key={campo.id} className="relative">
@@ -206,8 +241,8 @@ export function StepHousingPreferences() {
                   inputMode="numeric"
                   id={campo.id}
                   aria-label={campo.etiqueta}
-                  aria-invalid={errorDelPresupuesto ? true : undefined}
-                  invalid={!!errorDelPresupuesto}
+                  aria-invalid={campo.conError ? true : undefined}
+                  invalid={campo.conError}
                   value={campo.valor ? formatCurrency(campo.valor).replace('COP', '').trim() : ''}
                   onChange={campo.onChange}
                   placeholder={campo.placeholder}
@@ -216,13 +251,11 @@ export function StepHousingPreferences() {
               </div>
             ))}
           </div>
-          {errorDelPresupuesto ? (
-            <p id="presupuesto-error" role="alert" className="mt-1.5 text-caption text-danger">
-              {errorDelPresupuesto}
-            </p>
-          ) : (
-            <p className="mt-1.5 text-caption text-fg-subtle">En pesos colombianos, lo que pagarías al mes.</p>
-          )}
+          <ErrorDelCampo
+            id="presupuesto-error"
+            mensaje={errorDelPresupuesto}
+            pista="En pesos colombianos, lo que pagarías al mes."
+          />
         </fieldset>
       </Seccion>
 
@@ -283,7 +316,12 @@ export function StepHousingPreferences() {
               />
               <Input
                 type="text"
+                id="otraZona"
                 aria-label="Otro barrio o zona"
+                aria-invalid={errorDe('preferredZones') ? true : undefined}
+                aria-describedby={errorDe('preferredZones') ? 'zonas-error' : undefined}
+                invalid={!!errorDe('preferredZones')}
+                maxLength={MAX_LARGO_ZONA}
                 value={customZone}
                 onChange={(e) => setCustomZone(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && addCustomZone()}
@@ -296,12 +334,16 @@ export function StepHousingPreferences() {
               variant="outline"
               hideArrow
               onClick={addCustomZone}
-              disabled={!customZone.trim()}
+              disabled={!customZone.trim() || zonasLlenas}
               className="h-11 shrink-0"
             >
               Agregar
             </Button>
           </div>
+          <ErrorDelCampo id="zonas-error" mensaje={errorDe('preferredZones')} />
+          <Presence show={zonasLlenas && !errorDe('preferredZones')} direction="down" distance="xs">
+            <p className="mt-1.5 text-caption text-fg-subtle">{MENSAJES_DEL_PERFIL.zonasMaximas}</p>
+          </Presence>
         </fieldset>
       </Seccion>
 
@@ -321,7 +363,11 @@ export function StepHousingPreferences() {
             onChange={(d) => updateDraft({ moveInDate: aFechaIso(d), moveInDateUnknown: false })}
             minDate={hoyLocal()}
             placeholder="Elige una fecha"
-            className={cn('h-11 w-full min-w-0 px-4 text-body-sm', draft.moveInDate && 'border-primary/40')}
+            className={cn(
+              'h-11 w-full min-w-0 px-4 text-body-sm',
+              draft.moveInDate && 'border-primary/40',
+              errorDe('moveInDate') && 'border-danger',
+            )}
           />
           <button
             type="button"
@@ -339,6 +385,7 @@ export function StepHousingPreferences() {
             Aún no lo sé
           </button>
         </div>
+        <ErrorDelCampo id="mudanza-error" mensaje={errorDe('moveInDate')} />
       </Seccion>
 
       {/* Pets */}
@@ -373,21 +420,23 @@ export function StepHousingPreferences() {
             </button>
           </div>
 
-          {draft.hasPets && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              className="mt-2"
-            >
+          {/* Se abre y se cierra con su altura (`Collapse`); antes sólo abría
+              y al desmarcar desaparecía de golpe. `pt-2` adentro, no `mt-2`. */}
+          <Collapse open={Boolean(draft.hasPets)} className="pt-2">
               <Input
                 type="text"
+                id="petDetails"
                 aria-label="Describe tus mascotas"
+                aria-invalid={errorDe('petDetails') ? true : undefined}
+                aria-describedby={errorDe('petDetails') ? 'mascotas-error' : undefined}
+                invalid={!!errorDe('petDetails')}
+                maxLength={MAX_LARGO_MASCOTAS}
                 value={draft.petDetails || ''}
                 onChange={(e) => updateDraft({ petDetails: e.target.value })}
                 placeholder="Describe tus mascotas (tipo, tamaño, cantidad)"
               />
-            </motion.div>
-          )}
+          </Collapse>
+          <ErrorDelCampo id="mascotas-error" mensaje={errorDe('petDetails')} />
         </fieldset>
       </Seccion>
 
@@ -461,6 +510,7 @@ export function StepHousingPreferences() {
               <Input
                 type="text"
                 id="otraAmenidad"
+                invalid={!!errorDe('preferredAmenities')}
                 aria-label="Otra amenidad importante para ti"
                 value={otraAmenidad}
                 maxLength={MAX_LARGO_AMENIDAD}
@@ -486,6 +536,7 @@ export function StepHousingPreferences() {
               </Button>
             </div>
           )}
+          <ErrorDelCampo id="amenidades-error" mensaje={errorDe('preferredAmenities')} />
         </fieldset>
       </Seccion>
     </div>

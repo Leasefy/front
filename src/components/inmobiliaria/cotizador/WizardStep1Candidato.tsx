@@ -5,6 +5,7 @@ import { useRef } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 
 interface Step1Value {
   cedula: string
@@ -49,10 +50,11 @@ export function WizardStep1Candidato({
 
       {/* Cédula */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-fg">
+        <label htmlFor="cotizador-cedula" className="text-sm font-medium text-fg">
           {t('inmobiliaria.ai.cotizador.nueva.step1.cedulaLabel')}
         </label>
         <Input
+          id="cotizador-cedula"
           type="text"
           inputMode="numeric"
           autoFocus
@@ -66,20 +68,22 @@ export function WizardStep1Candidato({
               nombreRef.current?.focus()
             }
           }}
+          aria-invalid={errors.cedula ? true : undefined}
+          aria-describedby={errors.cedula ? 'cotizador-cedula-error' : undefined}
           className={errors.cedula ? 'border-danger/40 focus-visible:ring-danger/20' : ''}
         />
-        {errors.cedula && (
-          <p className="text-sm text-danger">{errors.cedula}</p>
-        )}
+        {/* 02-10-2026: el error entra suave (Cadence), con o sin servidor detrás. */}
+        <ErrorDelCampo id="cotizador-cedula-error" mensaje={errors.cedula} className="mt-0" />
       </div>
 
       {/* Nombre */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-fg">
+        <label htmlFor="cotizador-nombre" className="text-sm font-medium text-fg">
           {t('inmobiliaria.ai.cotizador.nueva.step1.nombreLabel')}
         </label>
         <Input
           ref={nombreRef}
+          id="cotizador-nombre"
           type="text"
           value={value.nombre}
           placeholder={t('inmobiliaria.ai.cotizador.nueva.step1.nombrePlaceholder')}
@@ -90,20 +94,22 @@ export function WizardStep1Candidato({
               ciudadRef.current?.focus()
             }
           }}
+          aria-invalid={errors.nombre ? true : undefined}
+          aria-describedby={errors.nombre ? 'cotizador-nombre-error' : undefined}
           className={errors.nombre ? 'border-danger/40 focus-visible:ring-danger/20' : ''}
         />
-        {errors.nombre && (
-          <p className="text-sm text-danger">{errors.nombre}</p>
-        )}
+        {/* 02-10-2026: el error entra suave (Cadence), con o sin servidor detrás. */}
+        <ErrorDelCampo id="cotizador-nombre-error" mensaje={errors.nombre} className="mt-0" />
       </div>
 
       {/* Ciudad */}
       <div className="space-y-1.5">
-        <label className="text-sm font-medium text-fg">
+        <label htmlFor="cotizador-ciudad" className="text-sm font-medium text-fg">
           {t('inmobiliaria.ai.cotizador.nueva.step1.ciudadLabel')}
         </label>
         <Input
           ref={ciudadRef}
+          id="cotizador-ciudad"
           type="text"
           value={value.ciudad}
           placeholder={t('inmobiliaria.ai.cotizador.nueva.step1.ciudadPlaceholder')}
@@ -115,11 +121,12 @@ export function WizardStep1Candidato({
               else nextBtnRef.current?.focus()
             }
           }}
+          aria-invalid={errors.ciudad ? true : undefined}
+          aria-describedby={errors.ciudad ? 'cotizador-ciudad-error' : undefined}
           className={errors.ciudad ? 'border-danger/40 focus-visible:ring-danger/20' : ''}
         />
-        {errors.ciudad && (
-          <p className="text-sm text-danger">{errors.ciudad}</p>
-        )}
+        {/* 02-10-2026: el error entra suave (Cadence), con o sin servidor detrás. */}
+        <ErrorDelCampo id="cotizador-ciudad-error" mensaje={errors.ciudad} className="mt-0" />
       </div>
 
       <Button

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
+import { AnimatedNumber, Appear, motionDuration, motionEase } from '@leasefy/cadence'
 import { Check, Circle, House, Camera, FileText, PaperPlaneTilt, ArrowRight, BookOpen, TrendUp, Shield, Sparkle, CaretRight, Buildings, X } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth'
@@ -104,35 +105,24 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
 
   return (
     <div className="min-h-screen bg-plan-page">
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      {/* Llega después de cargar los inmuebles del inicio: entra UNA vez, con
+          4 px (carga → contenido). Sin las ocho entradas escalonadas a mano
+          (hasta 0,8 s) que tenía cada bloque. */}
+      <Appear distance="xs" className="max-w-5xl mx-auto px-6 py-8">
         {/* Header with dismiss */}
         <header className="mb-8">
           <div className="flex items-start justify-between">
             <div>
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-soft rounded-full text-xs font-semibold text-primary mb-3"
-              >
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-soft rounded-full text-xs font-semibold text-primary mb-3">
                 <Sparkle className="w-3.5 h-3.5" />
                 Configurando tu cuenta
-              </motion.div>
-              <motion.h1
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="text-2xl font-semibold text-plan-primary"
-              >
+              </div>
+              <h1 className="text-2xl font-semibold text-plan-primary">
                 {greeting}, {firstName}!
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="mt-1 text-plan-secondary"
-              >
+              </h1>
+              <p className="mt-1 text-plan-secondary">
                 Estás a {totalTasks - completedCount} pasos de recibir tu primer inquilino
-              </motion.p>
+              </p>
             </div>
 
             {onDismiss && (
@@ -148,26 +138,23 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
         </header>
 
         {/* Progress Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mb-8"
-        >
+        <section className="mb-8">
           <div className="bg-card border border-plan-border rounded-md overflow-hidden">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-semibold text-plan-primary">Progreso de configuración</h2>
-                <span className="text-2xl font-bold text-primary">{progressPercentage}%</span>
+                <span className="text-2xl font-bold text-primary">
+                  <AnimatedNumber value={progressPercentage} from={0} format={(n) => String(Math.round(n))} />%
+                </span>
               </div>
 
-              {/* Progress bar */}
+              {/* Progress bar — se revela desde 0 con `transform` (no `width`). */}
               <div className="h-3 bg-surface-muted rounded-full overflow-hidden mb-6">
                 <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPercentage}%` }}
-                  transition={{ duration: 1, delay: 0.5 }}
-                  className="h-full bg-primary-soft dark:bg-[#1A40FF]/12 rounded-full"
+                  initial={{ x: '-100%' }}
+                  animate={{ x: `${progressPercentage - 100}%` }}
+                  transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
+                  className="h-full w-full bg-primary-soft dark:bg-[#1A40FF]/12 rounded-full"
                 />
               </div>
 
@@ -178,12 +165,7 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
                   const isNext = !task.completed && tasks.slice(0, index).every((t) => t.completed)
 
                   return (
-                    <motion.div
-                      key={task.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.4 + index * 0.1 }}
-                    >
+                    <div key={task.id}>
                       {task.completed ? (
                         <div className="p-4 rounded-lg bg-success-soft border border-success/20">
                           <div className="w-10 h-10 rounded-md bg-success flex items-center justify-center mb-3">
@@ -195,7 +177,7 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
                       ) : isNext ? (
                         <Link
                           href={task.href}
-                          className="block p-4 rounded-lg bg-primary-soft border-2 border-primary/30 hover:border-primary/30 hover: transition-all group"
+                          className="block p-4 rounded-lg bg-primary-soft border-2 border-primary/30 hover:border-primary/30 hover: transition-colors group"
                         >
                           <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
                             <Icon className="w-5 h-5 text-white" />
@@ -215,22 +197,17 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
                           <p className="text-xs text-fg-subtle mt-0.5">Pendiente</p>
                         </div>
                       )}
-                    </motion.div>
+                    </div>
                   )
                 })}
               </div>
             </div>
           </div>
-        </motion.section>
+        </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Property Draft Card */}
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="lg:col-span-2"
-          >
+          <section className="lg:col-span-2">
             <div className="bg-card border border-plan-border rounded-md overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 border-b border-plan-border">
                 <h2 className="font-semibold text-plan-primary">Tu propiedad en borrador</h2>
@@ -284,14 +261,10 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
                 </div>
               </div>
             </div>
-          </motion.section>
+          </section>
 
           {/* Resources Section */}
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-          >
+          <section>
             <div className="bg-card border border-plan-border rounded-md overflow-hidden">
               <div className="px-5 py-4 border-b border-plan-border">
                 <h2 className="font-semibold text-plan-primary">Recursos para ti</h2>
@@ -321,16 +294,11 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
                 })}
               </div>
             </div>
-          </motion.section>
+          </section>
         </div>
 
         {/* Quick tips */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="mt-6"
-        >
+        <section className="mt-6">
           <div className="bg-primary-soft dark:bg-[#1A40FF]/12 rounded-md p-6 text-primary">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 rounded-xl bg-surface flex items-center justify-center flex-shrink-0">
@@ -345,8 +313,8 @@ export function SetupDashboard({ onDismiss }: SetupDashboardProps) {
               </div>
             </div>
           </div>
-        </motion.section>
-      </div>
+        </section>
+      </Appear>
     </div>
   )
 }

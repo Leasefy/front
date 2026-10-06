@@ -10,5 +10,7 @@ import { redirect } from 'next/navigation';
  * caerían en un 404. Se manda a Configuración, que es donde está todo lo demás.
  */
 export default function AgentesIaOcultoPage() {
-  redirect('/panel/inmobiliaria/configuracion');
+  // CF-01 (QA 04-10): a la raíz no decía nada; la automatización con IA vive
+  // en Configuración → Automatización IA, así que se llega ahí.
+  redirect('/panel/inmobiliaria/configuracion/ia');
 }

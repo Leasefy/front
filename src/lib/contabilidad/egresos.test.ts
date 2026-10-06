@@ -204,7 +204,8 @@ describe('🔴 la doble firma', () => {
     expect(p.aprobar).toEqual({ puede: true, motivo: null });
     // Y a quien no es administrador, el motivo lo dice.
     expect(permisosDelLote(lote('BORRADOR', { creadoPorUserId: 'u-yo' }), 'u-yo', false).aprobar.motivo).toContain(
-      'Sólo lo que arma un administrador queda aprobado por él mismo (P-4)',
+      // CB-07 (03-10-2026): sin el código interno «(P-4)» y de tú («lo armaste tú»).
+      'Sólo lo que arma un administrador queda aprobado por él mismo',
     );
   });
 
@@ -245,5 +246,11 @@ describe('nombreDelArchivoDelLote', () => {
 
   it('sin formato no inventa uno', () => {
     expect(nombreDelArchivoDelLote('l1', null)).toBe('egresos-lote-l1.csv');
+  });
+
+  it('CB-E-16 (QA-FACT-CONTA-95 r2): sin el uuid entero en el nombre', () => {
+    expect(nombreDelArchivoDelLote('b800fd15-5d66-4ffe-84b4-9747ecb35917', 'BANCOLOMBIA_PAB')).toBe(
+      'egresos-lote-b800fd15-bancolombia_pab.csv',
+    );
   });
 });

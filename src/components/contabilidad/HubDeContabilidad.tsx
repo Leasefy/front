@@ -88,6 +88,7 @@ import {
   TreeStructure,
   Warning,
   WarningCircle,
+  Notebook,
 } from '@phosphor-icons/react';
 import type { Icon } from '@phosphor-icons/react';
 
@@ -102,6 +103,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from '@/components/ui/toast';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
@@ -130,12 +132,14 @@ import { formatosConFilas, formatosSinVistoBueno } from '@/lib/contabilidad/exog
 // Sólo el nombre del archivo: armarlo ya no es tarea del navegador (CT3).
 import { nombreDelCsv } from '@/lib/contabilidad/csv';
 import {
+  diaDe,
   diaLegible,
   hoy,
   primerDiaDelMes,
   rangoDelMesAnterior,
   rangoInvertido,
 } from '@/lib/contabilidad/fechas';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { clasificarFallo } from '@/lib/errores/clasificar';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -145,6 +149,8 @@ import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/caj
 import { CierreDePeriodo } from './asientos/CierreDePeriodo';
 import { EN_CURSO_EN_EL_CENTRO } from '@/components/procesos/estado-del-proceso';
 import { DetalleDeAsiento } from './asientos/DetalleDeAsiento';
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
+import { leerFallo } from '@/lib/errores/traductor-de-errores';
 
 const BASE = '/panel/inmobiliaria/contabilidad';
 
@@ -344,7 +350,7 @@ function usePortada() {
 // ══ Piezas ══════════════════════════════════════════════════════════════════
 
 /** Por qué no cargó, en palabras cortas: va detrás de «No cargó:». */
-function motivoDelFallo(error: unknown): string {
+export function motivoDelFallo(error: unknown): string {
   switch (clasificarFallo(error).tipo) {
     case 'sinPermiso':
       return 'tu rol no tiene acceso a esta consulta';
@@ -356,8 +362,13 @@ function motivoDelFallo(error: unknown): string {
       return 'hubo demasiadas consultas seguidas, espera un momento';
     case 'noExiste':
       return 'el servidor no encontró esta consulta';
-    default:
-      return 'falló del lado del servidor';
+    default: {
+      // QA-FACT-CONTA-95 (CB-J-08): un 5xx dice su referencia, para que soporte lo encuentre.
+      const referencia = leerFallo(error).referencia;
+      return referencia
+        ? `falló del lado del servidor (referencia ${referencia})`
+        : 'falló del lado del servidor';
+    }
   }
 }
 
@@ -416,12 +427,10 @@ const PINTURA: Record<AlertaDescrita['severidad'], { caja: string; icono: string
 function Alerta({
   alerta,
   onReprocesar,
-  onCerrarMes,
   ocupado,
 }: {
   alerta: AlertaDescrita;
   onReprocesar: () => void;
-  onCerrarMes: () => void;
   ocupado: boolean;
 }) {
   const { caja, icono, Icono } = PINTURA[alerta.severidad];
@@ -453,11 +462,12 @@ function Alerta({
           <ArrowsClockwise className="mr-1.5 h-4 w-4" aria-hidden="true" />
           {alerta.accion.label}
         </Button>
-      ) : (
-        <Button variant="outline" size="sm" hideArrow onClick={onCerrarMes}>
-          {alerta.accion.label}
-        </Button>
-      )}
+      ) : null}
+      {/* 🔴 CB-04 (QA de Contabilidad, 03-10-2026): «Cerrar el mes» de esta
+          alerta y «Cerrar período…» de la tarjeta del período, en la misma
+          pantalla, eran dos botones para lo mismo — y el de la alerta sólo
+          llevaba a la tarjeta. Queda uno: el de la tarjeta, que es donde se
+          elige el día y se confirma. La alerta dice qué mes falta cerrar. */}
     </div>
   );
 }
@@ -512,6 +522,10 @@ function UltimosAsientos({
         </Link>
       </header>
 
+      {/* Esqueleto → lo último que entró (o el vacío, o el fallo) con fundido. */}
+      <CrossFade
+        swapKey={cargando ? 'cargando' : fallo ? 'fallo' : asientos === null ? 'sin-leer' : asientos.length === 0 ? 'vacio' : 'asientos'}
+      >
       {cargando ? (
         <ul className="divide-y divide-border-faint" data-testid="ultimos-asientos-cargando">
           {Array.from({ length: ULTIMOS }, (_, i) => (
@@ -547,11 +561,13 @@ function UltimosAsientos({
                 className="grid w-full grid-cols-[6.5rem_minmax(0,1fr)_auto] items-baseline gap-3 px-5 py-3 text-left transition-colors hover:bg-surface-hover focus-visible:bg-surface-hover"
                 data-testid={`ultimo-asiento-${a.id}`}
               >
-                <span className="truncate font-mono text-caption tabular-nums text-fg-muted">
-                  {diaLegible(a.fecha)}
+                {/* 🔴 CB-04: «4 de oct de …» se cortaba en la columna; la fecha
+                    corta de la casa («4 oct 2026») cabe entera. */}
+                <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">
+                  {fechaCorta(diaDe(a.fecha))}
                 </span>
-                <span className="truncate text-sm text-fg" title={a.descripcion}>
-                  {a.descripcion}
+                <span className="truncate text-sm text-fg" title={conLaPlataPegada(a.descripcion)}>
+                  {conLaPlataPegada(a.descripcion)}
                 </span>
                 <Monto
                   valor={a.movimientos.reduce((s, m) => s + (m.debitoCop ?? 0), 0)}
@@ -562,6 +578,7 @@ function UltimosAsientos({
           ))}
         </ul>
       )}
+      </CrossFade>
     </section>
   );
 }
@@ -1024,6 +1041,8 @@ export function HubDeContabilidad() {
         facturas: datos.facturas,
         lotes: datos.lotes,
         exogena: datos.exogena,
+        // QA-FACT-CONTA-95 r2 (CB-A-07): sin plan de cuentas, lo primero es eso.
+        cuentasActivas: datos.cuentasActivas,
       }).map((a) => describirAlerta(a, formatCurrency)),
     [datos, formatCurrency],
   );
@@ -1074,16 +1093,6 @@ export function HubDeContabilidad() {
     }
   };
 
-  // El botón de la alerta no cierra nada solo: lleva al bloque de cierre, que
-  // es donde se escribe la fecha para confirmar. Cerrar un mes con un clic
-  // desde una alerta sería irreversible sin haberlo leído.
-  const irAlCierre = () => {
-    const nodo = cierreRef.current;
-    if (!nodo) return;
-    nodo.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    nodo.focus({ preventScroll: true });
-  };
-
   // Un cero de este mes no significa un libro vacío: si el último asiento es
   // de agosto y estamos en septiembre, el 0 es correcto y engañoso a la vez.
   // `elLibroEnUnaFrase` es la que decide cómo se dice eso.
@@ -1107,6 +1116,8 @@ export function HubDeContabilidad() {
         className="rounded-lg border border-border bg-surface p-5"
         aria-label="Resumen del libro"
       >
+        {/* Esqueleto → la frase del libro con fundido cruzado. */}
+        <CrossFade swapKey={cargando ? 'cargando' : 'frase'}>
         {cargando ? (
           // La forma de la frase que va a llegar —un renglón largo y uno más
           // corto—, no una barra suelta (Nico, 22-09: «ese diseño de carga es
@@ -1137,6 +1148,7 @@ export function HubDeContabilidad() {
             )}
           </p>
         )}
+        </CrossFade>
         {/* Cada consulta falla por separado y lo DICE: sin esto, un número que
             no se pudo leer saldría como un guion mudo. */}
         {!cargando &&
@@ -1171,19 +1183,19 @@ export function HubDeContabilidad() {
         </section>
       ) : null}
 
-      {alertas.length > 0 ? (
-        <section className="space-y-3" aria-label="Alertas de contabilidad">
+      {/* Las alertas entran escalonadas y, al resolverse (reprocesar, cerrar
+          el mes), SALEN; sin ninguna, el bloque no ocupa lugar (`empty:hidden`). */}
+      <Stagger as="section" className="space-y-3 empty:hidden" aria-label="Alertas de contabilidad">
           {alertas.map((a) => (
+            <StaggerItem key={a.clave}>
             <Alerta
-              key={a.clave}
               alerta={a}
               onReprocesar={() => setConfirmandoReproceso(true)}
-              onCerrarMes={irAlCierre}
               ocupado={reprocesando}
             />
+            </StaggerItem>
           ))}
-        </section>
-      ) : null}
+      </Stagger>
 
       {/* 🔴 22-09 · LA JERARQUÍA (Nico: «no le hiciste el glow up y eso se ve
           por ahí tirado todo»). Lo que un contador hace acá, en orden:
@@ -1203,8 +1215,8 @@ export function HubDeContabilidad() {
           1.606 px. Las columnas de `lg` también son `minmax(0, …)` por lo
           mismo. */}
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-        {/* `tabIndex={-1}`: la alerta «Cerrar el mes» trae el foco acá, y sin
-            esto un div no lo recibe. */}
+        {/* `tabIndex={-1}`: el bloque del cierre puede recibir el foco. (Desde
+            CB-04 la alerta «Cerrar el mes» ya no trae botón: la acción es ésta.) */}
         <div
           ref={cierreRef}
           tabIndex={-1}
@@ -1273,7 +1285,11 @@ export function HubDeContabilidad() {
           if (!abierto && !reprocesando) setConfirmandoReproceso(false);
         }}
       >
-        <AlertDialogContent data-testid="confirmar-reproceso-dialogo">
+        <AlertDialogContent
+          variant="confirm"
+          icon={<Notebook weight="bold" />}
+          data-testid="confirmar-reproceso-dialogo"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               {faltantes
@@ -1295,7 +1311,7 @@ export function HubDeContabilidad() {
                 e.preventDefault();
                 void reprocesar();
               }}
-              disabled={reprocesando}
+              loading={reprocesando}
               data-testid="confirmar-reproceso"
             >
               Asentar

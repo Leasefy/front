@@ -61,7 +61,20 @@ export interface ResumenDeRecaudo {
   comisionesCop: number;
   /** Recaudado acumulado − dispersado acumulado − comisiones acumuladas, al cierre. */
   disponibleCop: number;
-  porMedio: Array<{ medio: string; valorCop: number; cantidad: number }>;
+  /**
+   * 🔴 PG-11 (QA de Pagos, 03-10-2026): el back agrupa por el TIPO del medio
+   * (`TRANSFERENCIA`, `PSE`…) y manda su `nombre`. Un back anterior agrupaba
+   * por el texto libre («transferencia», «Transferencia», «pse») y no mandaba
+   * nombre: la pantalla vuelve a agrupar por las dudas (`porMedioAgrupado`).
+   */
+  porMedio: Array<{ medio: string; nombre?: string; valorCop: number; cantidad: number }>;
+  /**
+   * 🔴 PG-10: lo PAGADO de las cuotas del mes (entrara cuando entrara): el
+   * numerador de la tasa sobre lo causado. No es `recaudadoCop` (recibos con
+   * FECHA en el mes, de cualquier período). Opcional: un back anterior no lo
+   * manda.
+   */
+  pagadoDeLasCuotasDelMesCop?: number;
 
   // ── LA TASA ──────────────────────────────────────────────────────────────
   /**
@@ -78,7 +91,10 @@ export interface PuntoDeLaSerie {
   deudaDelMesCop: number;
   /** Lo que se emitió como documento ese mes. Puede ser 0 con deuda real. */
   facturadoCop: number;
+  /** Los recibos con FECHA en el mes, de cualquier período. */
   recaudadoCop: number;
+  /** 🔴 PG-10: lo pagado de las cuotas de ESE mes. Opcional: un back anterior no lo manda. */
+  pagadoDeLasCuotasDelMesCop?: number;
   dispersadoCop: number;
   /** La tasa de recaudo de ese mes, como la eligió la inmobiliaria. */
   tasaDeRecaudo?: TasaDeRecaudo;

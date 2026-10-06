@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import type { Consignacion, Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { detalleDelAtraso, girosDelPropietario } from '@/lib/propietarios/giros-del-propietario';
 
 interface PropietarioStatsProps {
   propietario: Propietario;
@@ -30,6 +31,11 @@ interface PropietarioStatsProps {
   consignaciones?: Consignacion[];
   /** Abre el formulario para cargar la cuenta bancaria (alerta «no se le puede girar»). */
   onCargarCuenta?: () => void;
+  /**
+   * La ficha lo sabe por el resumen de su estado de cuenta: algo arrendado y
+   * ningún giro programado (COLA-FRONT, 04-10). Se suma a `proximoGiro: null`.
+   */
+  sinDiaDeGiro?: boolean;
 }
 
 interface StatCardProps {
@@ -114,6 +120,23 @@ function StatCard({ icon: Icon, label, value, subValue, trend, color }: StatCard
 }
 
 /**
+ * Las líneas de cada celda de la franja según la rejilla (P-22). El `Stat` de
+ * Cadence trae `border-l` (menos la primera) y el aire de una FILA; en una
+ * columna (celular) las celdas se separan con una línea arriba, y en dos
+ * (tableta) la de la izquierda no lleva línea a su izquierda. Desde `xl`,
+ * como siempre.
+ */
+function celdaDeLaFranja(i: number): string {
+  return cn(
+    'max-xl:min-w-0 max-xl:px-1 max-xl:py-3',
+    i > 0 && 'max-sm:border-l-0 max-sm:border-t',
+    i % 2 === 0 && 'sm:max-xl:border-l-0',
+    i % 2 === 1 && 'sm:max-xl:pl-4',
+    i >= 2 && 'sm:max-xl:border-t',
+  );
+}
+
+/**
  * PropietarioStats - KPI stats display for a property owner
  * Shows key metrics like property count, monthly rent, pending balances
  */
@@ -123,9 +146,31 @@ export function PropietarioStats({
   className,
   consignaciones,
   onCargarCuenta,
+  sinDiaDeGiro: sinDiaDeGiroPorLaFicha = false,
 }: PropietarioStatsProps) {
   const { t, locale } = useI18n();
-  const hasPendingBalance = propietario.pendingBalance > 0;
+  /*
+   * 🔴 P-21 (QA-PROP, 03-10): quien no ve la plata del propietario (el asesor)
+   * recibe los montos en `null` y la cuenta en blanco, con `plataOculta` /
+   * `datosBancariosOcultos` diciendo por qué. Leídos como cero, la ficha le
+   * decía «Canon $0», «Neto $0», «Al día» y «No tiene cuenta bancaria» a una
+   * propietaria que SÍ la tiene. Con la plata oculta no hay cifra ni aviso de
+   * plata: «—» y «Sin acceso a la plata».
+   */
+  const plataOculta = propietario.plataOculta === true;
+  const cuentaOculta = plataOculta || propietario.datosBancariosOcultos === true;
+  const hasPendingBalance = !plataOculta && propietario.pendingBalance > 0;
+  /*
+   * 🔴 P-10 (back 5731a4e2): `pendingBalance` ya es el GIRO ATRASADO (vencido
+   * y sin girar, la misma fuente del estado de cuenta), con cuántas cuotas y
+   * desde cuándo; lo generado en Dispersiones viene aparte (`generadoSinGirar`).
+   * Antes la alerta decía «son dispersiones ya generadas» sobre este número.
+   */
+  const giros = girosDelPropietario(propietario);
+  /* COLA-FRONT (04-10, la recomendada): sin giro programado no está «Al día». */
+  const sinDiaDeGiro = !hasPendingBalance && (giros.sinDiaDeGiro || sinDiaDeGiroPorLaFicha);
+  const detalleDelGiro = detalleDelAtraso(giros, t);
+  const generado = giros.generadoSinGirar ?? 0;
   const occupancyRate = propietario.propertyCount > 0
     ? Math.round((propietario.activeLeases / propietario.propertyCount) * 100)
     : 0;
@@ -139,7 +184,7 @@ export function PropietarioStats({
   const sinArrendar = (consignaciones ?? []).filter(
     (c) => c.listingType !== 'sale' && c.availability === 'available',
   );
-  const sinCuenta = !propietario.bankAccount?.accountNumber;
+  const sinCuenta = !cuentaOculta && !propietario.bankAccount?.accountNumber;
 
   if (variant === 'mini') {
     return (
@@ -200,7 +245,11 @@ export function PropietarioStats({
               ? 'text-warning'
               : 'text-success'
           )}>
-            {hasPendingBalance ? formatCurrency(propietario.pendingBalance) : t('inmobiliaria.propietario.stats.upToDate')}
+            {hasPendingBalance
+              ? formatCurrency(propietario.pendingBalance)
+              : sinDiaDeGiro
+                ? t('inmobiliaria.propietario.giros.sinDiaDeGiro')
+                : t('inmobiliaria.propietario.stats.upToDate')}
           </p>
         </div>
       </div>
@@ -216,10 +265,19 @@ export function PropietarioStats({
   const ultimoGiro = propietario.lastPaymentDate
     ? new Date(propietario.lastPaymentDate).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', { day: 'numeric', month: 'short' })
     : null;
+  const sinAcceso = t('inmobiliaria.propietario.stats.sinAccesoALaPlata');
   return (
     <div className={cn('space-y-4', className)}>
-      <StatStrip className="rounded-lg border border-border bg-card px-4" data-testid="resumen-del-propietario">
+      {/* 🔴 P-22 (QA-PROP, 03-10): a 390 px la franja de cuatro medía 690 px y
+          corría la página entera de lado. Debajo de `xl` va en rejilla (una
+          columna en el celular, dos en tableta) y desde `xl` en fila, como
+          antes. Las líneas entre celdas siguen la rejilla (`celdaDeLaFranja`). */}
+      <StatStrip
+        className="grid grid-cols-1 rounded-lg border border-border bg-card px-4 sm:grid-cols-2 xl:flex"
+        data-testid="resumen-del-propietario"
+      >
         <Stat
+          className={celdaDeLaFranja(0)}
           label={t('inmobiliaria.propietario.stats.properties')}
           value={String(propietario.propertyCount)}
           delta={
@@ -238,33 +296,68 @@ export function PropietarioStats({
                 ? t('inmobiliaria.propietario.stats.copropiedades', { n: propietario.copropiedadesCount ?? 0 })
                 : t('inmobiliaria.propietario.stats.sinPropiedades')
           }
-          deltaDirection={
-            propietario.propertyCount > 0 && propietario.activeLeases < propietario.propertyCount ? 'down' : 'neutral'
+          /* 🔴 P-17: «7 de 8 arrendados» y «Último giro» no son una tendencia:
+             van en texto neutro, sin flecha ni rojo (antes `down`/`up`). */
+          compact
+        />
+        <Stat
+          className={celdaDeLaFranja(1)}
+          label={t('inmobiliaria.propietario.stats.monthlyRent')}
+          value={plataOculta ? '—' : formatCurrency(propietario.totalMonthlyRent)}
+          delta={
+            plataOculta
+              ? sinAcceso
+              : comisionReal != null
+                ? `${formatCurrency(comisionReal)} ${t('inmobiliaria.propietario.stats.commission')}`
+                : undefined
           }
           compact
         />
         <Stat
-          label={t('inmobiliaria.propietario.stats.monthlyRent')}
-          value={formatCurrency(propietario.totalMonthlyRent)}
-          delta={comisionReal != null ? `${formatCurrency(comisionReal)} ${t('inmobiliaria.propietario.stats.commission')}` : undefined}
-          compact
-        />
-        <Stat
+          className={celdaDeLaFranja(2)}
           label={t('inmobiliaria.propietario.stats.netToOwner')}
-          value={formatCurrency(neto)}
-          delta={t('inmobiliaria.propietario.stats.netToOwnerHint')}
+          value={plataOculta ? '—' : formatCurrency(neto)}
+          delta={plataOculta ? sinAcceso : t('inmobiliaria.propietario.stats.netToOwnerHint')}
           compact
         />
         <Stat
+          className={celdaDeLaFranja(3)}
           label={t('inmobiliaria.propietario.stats.pendingBalance')}
-          value={hasPendingBalance ? formatCurrency(propietario.pendingBalance) : t('inmobiliaria.propietario.stats.upToDate')}
-          delta={ultimoGiro ? `${t('inmobiliaria.propietario.stats.lastPayment')}: ${ultimoGiro}` : undefined}
-          deltaDirection={hasPendingBalance ? 'down' : 'up'}
+          value={
+            plataOculta
+              ? '—'
+              : hasPendingBalance
+                ? formatCurrency(propietario.pendingBalance)
+                : sinDiaDeGiro
+                  ? t('inmobiliaria.propietario.giros.sinDiaDeGiro')
+                  : t('inmobiliaria.propietario.stats.upToDate')
+          }
+          delta={
+            plataOculta
+              ? sinAcceso
+              : detalleDelGiro
+                ? detalleDelGiro
+                : ultimoGiro
+                  ? `${t('inmobiliaria.propietario.stats.lastPayment')}: ${ultimoGiro}`
+                  : undefined
+          }
           compact
         />
       </StatStrip>
 
       {/* Alertas: qué pasó (con el número), qué hacer, y el botón que lo hace. */}
+      {/* QA-PROP-95 B-40: el banco devolvió su giro por la cuenta → retenido hasta aprobar el cambio. */}
+      {!plataOculta && propietario.giroRetenidoPorLaCuenta === true && (
+        <AlertaAccionable
+          severidad="danger"
+          titulo="El banco devolvió su último giro por la cuenta"
+          accion={{ label: 'Cambiar cuenta', href: `/panel/inmobiliaria/propietarios/${propietario.id}?cambiarCuenta=1` }}
+          data-testid="alerta-giro-retenido"
+        >
+          Lo que se le debe queda retenido: no entra a ningún lote de giros hasta que un administrador apruebe el cambio de su cuenta bancaria.
+        </AlertaAccionable>
+      )}
+
       {sinCuenta && propietario.activeLeases > 0 && (
         <AlertaAccionable
           severidad="danger"
@@ -272,7 +365,9 @@ export function PropietarioStats({
           accion={onCargarCuenta ? { label: t('inmobiliaria.propietario.alertas.sinCuenta.accion'), onClick: onCargarCuenta } : undefined}
           data-testid="alerta-sin-cuenta"
         >
-          {t('inmobiliaria.propietario.alertas.sinCuenta.detalle', { n: propietario.activeLeases })}
+          {propietario.activeLeases === 1
+            ? t('inmobiliaria.propietario.alertas.sinCuenta.detalleUno')
+            : t('inmobiliaria.propietario.alertas.sinCuenta.detalle', { n: propietario.activeLeases })}
         </AlertaAccionable>
       )}
 
@@ -283,7 +378,29 @@ export function PropietarioStats({
           accion={{ label: t('inmobiliaria.propietario.alertas.pendienteDeGiro.accion'), href: '/panel/inmobiliaria/pagos/dispersiones' }}
           data-testid="alerta-pendiente-de-giro"
         >
-          {t('inmobiliaria.propietario.alertas.pendienteDeGiro.detalle')}
+          {[
+            detalleDelGiro ? `${detalleDelGiro}.` : null,
+            t('inmobiliaria.propietario.alertas.pendienteDeGiro.detalle'),
+            generado > 0
+              ? t('inmobiliaria.propietario.alertas.pendienteDeGiro.generado', { monto: formatCurrency(generado) })
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        </AlertaAccionable>
+      )}
+
+      {/* P-10: sin giros atrasados pero con dispersiones generadas que no han
+          salido (el mes que todavía no vence, por ejemplo): se dice aparte y
+          con su nombre, sin llamarlo atraso. */}
+      {!plataOculta && !hasPendingBalance && generado > 0 && (
+        <AlertaAccionable
+          severidad="info"
+          titulo={t('inmobiliaria.propietario.alertas.generadoSinGirar.titulo', { monto: formatCurrency(generado) })}
+          accion={{ label: t('inmobiliaria.propietario.alertas.generadoSinGirar.accion'), href: '/panel/inmobiliaria/pagos/dispersiones' }}
+          data-testid="alerta-generado-sin-girar"
+        >
+          {t('inmobiliaria.propietario.alertas.generadoSinGirar.detalle')}
         </AlertaAccionable>
       )}
 

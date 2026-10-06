@@ -185,6 +185,33 @@ describe('handleSSEEvent', () => {
     expect(calls).toEqual(['tool:cobranza:checkAgencyPolicy:Revisar los límites que autorizó la inmobiliaria']);
   });
 
+  // 02-10 (el equipo en el chat): campos ADITIVOS que el micro todavía no
+  // manda. El front queda listo: si llegan, se leen; si no, nada cambia.
+  it('lee el id del despacho y de quién es cada herramienta, cuando el micro los mande', () => {
+    const vistos: unknown[] = [];
+    const handlers: ChatStreamHandlers = {
+      onDispatchStart: (agent, task, extra) => vistos.push(['start', agent, task, extra]),
+      onToolStep: (paso) => vistos.push(['tool', paso]),
+    };
+    handleSSEEvent('event: dispatch_start\ndata: {"agent":"cobranza","taskDescription":"t","id":"d-1"}', handlers);
+    handleSSEEvent('event: dispatch_start\ndata: {"agent":"pagos","taskDescription":"u"}', handlers);
+    handleSSEEvent('event: tool_step\ndata: {"agent":"cobranza","tool":"x","label":"X","dispatchId":"d-1"}', handlers);
+    expect(vistos).toEqual([
+      ['start', 'cobranza', 't', { id: 'd-1' }],
+      ['start', 'pagos', 'u', {}],
+      ['tool', { agent: 'cobranza', tool: 'x', label: 'X', dispatchId: 'd-1' }],
+    ]);
+  });
+
+  it('pasa «lo que pensó» del `done` tal cual (lo lee `leerRazonamiento`); sin el campo, no aparece', () => {
+    const finales: Array<Record<string, unknown>> = [];
+    const handlers: ChatStreamHandlers = { onDone: (f) => finales.push(f as unknown as Record<string, unknown>) };
+    handleSSEEvent('event: done\ndata: {"responseText":"ok","razonamiento":[{"texto":"Miré la cartera"}]}', handlers);
+    handleSSEEvent('event: done\ndata: {"responseText":"ok"}', handlers);
+    expect(finales[0].razonamiento).toEqual([{ texto: 'Miré la cartera' }]);
+    expect('razonamiento' in finales[1]).toBe(false);
+  });
+
   it('cae al nombre crudo de la herramienta cuando no viene etiqueta', () => {
     const { calls, handlers } = collect();
     handleSSEEvent(
@@ -476,5 +503,42 @@ describe('postChatTurn / streamChatTurn — el fallo conserva status y cuerpo', 
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+});
+
+describe('mapBackendBriefing — la forma de hoy del micro (`armarBriefing`)', () => {
+  const DEL_MICRO = {
+    fecha: '2026-10-01',
+    saludo: 'Buenos días',
+    resumen: ['Hay 3 decisiones de cobranza.', 'Hoy los agentes llevan 12 llamadas.'],
+    necesitanDeTi: [{ titulo: 'Aprobar acuerdo de pago', href: '/panel/inmobiliaria/piloto' }],
+    numeros: { pendientes: 3, altas: 1, llamadasHoy: 12, promesasCreadasHoy: 0, recuperadoMesCop: 4_500_000 },
+  };
+
+  it('ya no se pierde: trae saludo, resumen y las cifras', () => {
+    const b = mapBackendBriefing(DEL_MICRO);
+    expect(b).not.toBeNull();
+    expect(b!.id).toBe('brief_real_2026-10-01');
+    expect(b!.date.getDate()).toBe(1);
+    expect(b!.greeting).toBe('Buenos días, este es el resumen de tu inmobiliaria hoy.');
+    expect(b!.overallSummary).toBe('Hay 3 decisiones de cobranza. Hoy los agentes llevan 12 llamadas.');
+    expect(b!.numeros).toEqual({ pendientes: 3, altas: 1, llamadasHoy: 12, promesasCreadasHoy: 0, recuperadoMesCop: 4_500_000 });
+    // Los enlaces del panel no se vuelven botones: en el chat nada navega.
+    expect(b!.sections).toEqual([]);
+  });
+
+  it('sin `recuperadoMesCop` (el micro no lo manda si es 0) no aparece: ausente, no cero', () => {
+    const { recuperadoMesCop: _fuera, ...sinRecuperado } = DEL_MICRO.numeros;
+    const b = mapBackendBriefing({ ...DEL_MICRO, numeros: sinRecuperado });
+    expect(b!.numeros).not.toHaveProperty('recuperadoMesCop');
+  });
+
+  it('descarta números que no son números', () => {
+    const b = mapBackendBriefing({ saludo: 'Hola', numeros: { pendientes: '3', llamadasHoy: Number.NaN, altas: -1, promesasCreadasHoy: 2 } });
+    expect(b!.numeros).toEqual({ promesasCreadasHoy: 2 });
+  });
+
+  it('sin cifras ni resumen no hay briefing', () => {
+    expect(mapBackendBriefing({ saludo: 'Hola', resumen: [], numeros: {} })).toBeNull();
   });
 });

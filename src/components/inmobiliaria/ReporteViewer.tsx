@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { motion } from 'framer-motion';
+import { CrossFade } from '@leasefy/cadence';
 import { useRouter } from 'next/navigation';
 import {
   FileText,
@@ -21,12 +21,7 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Button } from '@/components/ui/button';
 import type { CarteraReport, ReportDefinition, ReportCategory } from '@/lib/types/inmobiliaria';
@@ -153,6 +148,17 @@ function EsperandoElReporte({
   );
 }
 
+/**
+ * Esperando → el reporte. Las DOS salidas de cada vista (la espera y el
+ * reporte) pasan por acá con su clave: React ve el mismo componente y el
+ * `CrossFade` cruza el esqueleto (o el fallo) con el reporte que llegó. Lo que
+ * ya estaba en caché al abrir el cajón no se anima (`CrossFade` no anima el
+ * primer contenido).
+ */
+function LlegaElReporte({ listo, children }: { listo: boolean; children: React.ReactNode }) {
+  return <CrossFade swapKey={listo ? 'listo' : 'esperando'}>{children}</CrossFade>;
+}
+
 /** Un bloque del cajón con su título: la vista se lee por partes, no como una pila. */
 function SeccionDelReporte({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
@@ -175,10 +181,15 @@ function SeccionDelReporte({ titulo, children }: { titulo: string; children: Rea
 function ComisionesAgentePreview({ t }: { t: Traductor }) {
   const { report: data, isLoading, errorCrudo, refetch } = useComisionesReport(mesEnCurso());
   if (!data) {
-    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="las comisiones" />;
+    return (
+      <LlegaElReporte listo={false}>
+        <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="las comisiones" />
+      </LlegaElReporte>
+    );
   }
 
   return (
+    <LlegaElReporte listo>
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-3 gap-3">
@@ -227,11 +238,12 @@ function ComisionesAgentePreview({ t }: { t: Traductor }) {
           ))}
         </div>
         <p className="text-xs text-muted-foreground">
-          La comisión de los asesores se liquida por fuera de Leasefy. Quién captó y quién
-          arrendó, con nombre y detalle, está en Configuración › Equipo › Captaciones y arriendos.
+          La comisión de cada asesor está en Captación y arriendo › Comisiones y metas. Quién captó y
+          quién arrendó, con nombre y detalle, está en Configuración › Equipo › Captaciones y arriendos.
         </p>
       </div>
     </div>
+    </LlegaElReporte>
   );
 }
 
@@ -245,9 +257,17 @@ function VistaDeOcupacion() {
   const { report, isLoading, errorCrudo, refetch } = useOcupacionReport();
   const datos = React.useMemo(() => adaptOccupancy(report), [report]);
   if (!datos) {
-    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la ocupación" />;
+    return (
+      <LlegaElReporte listo={false}>
+        <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la ocupación" />
+      </LlegaElReporte>
+    );
   }
-  return <OccupancyReport data={datos} />;
+  return (
+    <LlegaElReporte listo>
+      <OccupancyReport data={datos} />
+    </LlegaElReporte>
+  );
 }
 
 /** Cartera por edades: los tramos y, debajo, el recaudo y la mora del período. */
@@ -279,18 +299,24 @@ function VistaDeRendimiento() {
   );
   if (!datos) {
     return (
-      <EsperandoElReporte
-        cargando={rendimiento.isLoading || comisiones.isLoading}
-        error={rendimiento.errorCrudo ?? comisiones.errorCrudo}
-        onReintentar={() => {
-          void rendimiento.refetch();
-          void comisiones.refetch();
-        }}
-        queEs="el desempeño de los agentes"
-      />
+      <LlegaElReporte listo={false}>
+        <EsperandoElReporte
+          cargando={rendimiento.isLoading || comisiones.isLoading}
+          error={rendimiento.errorCrudo ?? comisiones.errorCrudo}
+          onReintentar={() => {
+            void rendimiento.refetch();
+            void comisiones.refetch();
+          }}
+          queEs="el desempeño de los agentes"
+        />
+      </LlegaElReporte>
     );
   }
-  return <AgentPerformanceReport data={datos} />;
+  return (
+    <LlegaElReporte listo>
+      <AgentPerformanceReport data={datos} />
+    </LlegaElReporte>
+  );
 }
 
 /** Flujo de caja: los meses y, debajo, el resumen ejecutivo que sale de ellos. */
@@ -326,7 +352,11 @@ function VistaDeRentabilidad({ periodo }: { periodo: ReporteFiltersState['period
   const { desde, hasta } = parametrosDelPeriodo('rentabilidad-inmueble', periodo).params;
   const { report, isLoading, errorCrudo, refetch } = useRentabilidadReport(desde, hasta);
   if (!report) {
-    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la rentabilidad" />;
+    return (
+      <LlegaElReporte listo={false}>
+        <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la rentabilidad" />
+      </LlegaElReporte>
+    );
   }
   const { totales } = report;
   const cifras = [
@@ -336,6 +366,7 @@ function VistaDeRentabilidad({ periodo }: { periodo: ReporteFiltersState['period
     { rotulo: 'Neto al propietario', valor: formatCurrency(totales.netoPropietarioCop) },
   ];
   return (
+    <LlegaElReporte listo>
     <div className="space-y-8">
       <SeccionDelReporte titulo={`De ${report.desde} a ${report.hasta} · ${totales.inmuebles} inmuebles`}>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -362,6 +393,7 @@ function VistaDeRentabilidad({ periodo }: { periodo: ReporteFiltersState['period
         <ArrowRight className="ml-2 h-4 w-4" />
       </Button>
     </div>
+    </LlegaElReporte>
   );
 }
 
@@ -399,7 +431,11 @@ function VistaDeExtractos({ reportId }: { reportId: ReportId }) {
 function VencimientosPreview({ t }: { t: Traductor }) {
   const { report: data, isLoading, errorCrudo, refetch } = useVencimientosReport();
   if (!data) {
-    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="los vencimientos" />;
+    return (
+      <LlegaElReporte listo={false}>
+        <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="los vencimientos" />
+      </LlegaElReporte>
+    );
   }
 
   const bucketColors = {
@@ -410,6 +446,7 @@ function VencimientosPreview({ t }: { t: Traductor }) {
   };
 
   return (
+    <LlegaElReporte listo>
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-4 gap-2">
@@ -473,6 +510,7 @@ function VencimientosPreview({ t }: { t: Traductor }) {
         </div>
       </div>
     </div>
+    </LlegaElReporte>
   );
 }
 
@@ -482,10 +520,15 @@ function VencimientosPreview({ t }: { t: Traductor }) {
 function FlujoCajaPreview({ t, fmtDate }: { t: Traductor; fmtDate: (d: string) => string }) {
   const { report: data, isLoading, errorCrudo, refetch } = useFlujoCajaReport('semester');
   if (!data) {
-    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="el flujo de caja" />;
+    return (
+      <LlegaElReporte listo={false}>
+        <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="el flujo de caja" />
+      </LlegaElReporte>
+    );
   }
 
   return (
+    <LlegaElReporte listo>
     <div className="space-y-4">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3">
@@ -540,6 +583,7 @@ function FlujoCajaPreview({ t, fmtDate }: { t: Traductor; fmtDate: (d: string) =
         </div>
       </div>
     </div>
+    </LlegaElReporte>
   );
 }
 
@@ -581,10 +625,15 @@ const TONO_DEL_TRAMO: Record<ReturnType<typeof tramosDelInformeDeEdades>[number]
 export function CarteraEdadesPreview({ t }: { t: Traductor }) {
   const { report: data, isLoading, errorCrudo, refetch } = useCarteraReport();
   if (!data) {
-    return <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la cartera" />;
+    return (
+      <LlegaElReporte listo={false}>
+        <EsperandoElReporte cargando={isLoading} error={errorCrudo} onReintentar={refetch} queEs="la cartera" />
+      </LlegaElReporte>
+    );
   }
 
   return (
+    <LlegaElReporte listo>
     <div className="space-y-4">
       {/* Summary Cards.
 
@@ -656,6 +705,7 @@ export function CarteraEdadesPreview({ t }: { t: Traductor }) {
         </div>
       </div>
     </div>
+    </LlegaElReporte>
   );
 }
 
@@ -736,12 +786,11 @@ export function ReporteViewer({
           pie fijo) con `SheetContent` propio: `Cajon` apaga `aria-describedby`
           y este cajón SÍ registra su descripción (ver el test de al lado). */}
       {/* Ancho: la vista completa trae tablas y gráficos; en 576 px no cabían. */}
-      <SheetContent className="flex w-full flex-col gap-0 !p-0 sm:max-w-3xl">
-        {/* Header */}
-        <div className="flex-none border-b border-border px-6 py-5 pr-14">
-          {/* La ✕ la pone `SheetContent`: es la misma de todos los cajones y
-              modales del producto. Acá había una segunda, dibujada a mano. */}
-          <div className="flex items-start gap-4">
+      <SheetContent size="xl">
+        {/* Header — la ✕ la pone `SheetContent`: es la misma de todos los
+            cajones y modales del producto. */}
+        <SheetHeader
+          leading={
             <div
               className={cn(
                 'w-12 h-12 rounded-xl flex items-center justify-center shrink-0',
@@ -750,60 +799,56 @@ export function ReporteViewer({
             >
               <Icon className={cn('w-6 h-6', iconColor)} weight="duotone" />
             </div>
-            <div className="flex-1 min-w-0">
-              <SheetTitle className="text-lg font-semibold text-foreground">
-                {report.title}
-              </SheetTitle>
-              {/*
-                `SheetDescription`, no un `<p>` suelto: `SheetContent` es un
-                Radix Dialog, y un diálogo sin descripción registrada avisa en
-                consola («Missing `Description` … for {DialogContent}») y se
-                abre sin `aria-describedby`, así que el lector de pantalla
-                anuncia el título y nada más. El texto ya estaba acá; lo único
-                que faltaba era que el diálogo supiera que es SU descripción.
-              */}
-              <SheetDescription className="text-sm text-muted-foreground mt-0.5">
-                {report.description}
-              </SheetDescription>
-              <div className="flex items-center gap-2 mt-3">
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
-                    getReportCategoryColor(report.category)
-                  )}
-                >
-                  {report.category}
-                </span>
-                {formatoDelArchivoQueBaja && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-success-soft text-success">
-                    <FileCsv className="w-3 h-3" />
-                    {formatoDelArchivoQueBaja}
-                  </span>
-                )}
-              </div>
-            </div>
+          }
+          title={report.title}
+          /*
+            `description` registra el texto como `SheetDescription`, no un `<p>`
+            suelto: `SheetContent` es un Radix Dialog, y un diálogo sin
+            descripción registrada avisa en consola («Missing `Description` …
+            for {DialogContent}») y se abre sin `aria-describedby`, así que el
+            lector de pantalla anuncia el título y nada más.
+          */
+          description={report.description}
+        >
+          <div className="flex items-center gap-2 mt-2.5">
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
+                getReportCategoryColor(report.category)
+              )}
+            >
+              {report.category}
+            </span>
+            {formatoDelArchivoQueBaja && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-success-soft text-success">
+                <FileCsv className="w-3 h-3" />
+                {formatoDelArchivoQueBaja}
+              </span>
+            )}
           </div>
-        </div>
+        </SheetHeader>
 
         {/* Preview Content */}
         <CajonCuerpo>
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-          >
-            <PreviewContent />
-          </motion.div>
+          {/* Sin entrada propia: el cajón ya entra con su coreografía. Si
+              cambia el reporte con el cajón abierto, se cruzan. Se llama
+              como función (no `<PreviewContent />`): definida dentro del
+              render, como componente se volvía a montar en cada render y
+              cortaba la entrada de «esperando → reporte». */}
+          <CrossFade swapKey={report.id}>{PreviewContent()}</CrossFade>
         </CajonCuerpo>
 
         {/* Actions Footer */}
-        <CajonPie>
-          {notaDelArchivo && (
-            <p className="mr-auto flex min-w-0 items-center gap-2 text-caption text-fg-muted" data-testid="nota-del-archivo">
-              <CalendarBlank className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span>{notaDelArchivo}</span>
-            </p>
-          )}
+        <CajonPie
+          izquierda={
+            notaDelArchivo && (
+              <p className="flex min-w-0 items-center gap-2 text-caption text-fg-muted" data-testid="nota-del-archivo">
+                <CalendarBlank className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{notaDelArchivo}</span>
+              </p>
+            )
+          }
+        >
           {/* Sin archivo (los extractos) no hay botón: antes decía «Descargar
               CSV» y respondía «todavía no se puede descargar». */}
           {formatoDelArchivoQueBaja && (

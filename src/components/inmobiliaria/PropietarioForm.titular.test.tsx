@@ -193,7 +193,14 @@ describe('<PropietarioForm> — ¿a quién pertenece la cuenta?', () => {
     expect(container.textContent).toContain('inmobiliaria.propietario.form.titularErrDv')
   })
 
-  it('al editar una ficha vieja con el titular a medias SIN tocar la pregunta, no bloquea y viaja como estaba', async () => {
+  /*
+   * P-14 (QA de Propietarios, 03-10): antes esta prueba fijaba que la cuenta
+   * viajaba «como estaba» al editar; con la cuenta YA registrada, ahora es de
+   * sólo lectura y NO viaja (el cambio va por «Cambiar cuenta», el flujo
+   * controlado). La intención —que una ficha vieja con el titular a medias no
+   * bloquee cambiar otro dato— se conserva.
+   */
+  it('al editar una ficha vieja con el titular a medias, la cuenta es de sólo lectura y no bloquea ni viaja', async () => {
     const propietario: Propietario = {
       id: 'po-1',
       name: 'Jorge Restrepo',
@@ -218,13 +225,17 @@ describe('<PropietarioForm> — ¿a quién pertenece la cuenta?', () => {
       updatedAt: '2026-09-07',
     }
     const onSubmit = await render({ mode: 'edit', initialData: propietario })
-    expect($('titular-tercero')!.getAttribute('aria-checked')).toBe('true')
+    expect($('titular-tercero')).toBeNull()
+    // A nombre de quién está la cuenta se sigue diciendo (el `t` de esta prueba no interpola).
+    expect($('cuenta-de-solo-lectura')?.textContent).toContain('inmobiliaria.propietario.form.aNombreDe')
     expect($('propietario-departamento')?.textContent).toContain('Bogotá D.C.')
 
     await submit()
     expect(onSubmit).toHaveBeenCalledTimes(1)
     const enviado = onSubmit.mock.calls[0][0] as PropietarioFormData
     expect(enviado.titularDeLaCuenta).toBeUndefined()
-    expect(enviado).toMatchObject({ department: 'Bogotá D.C.', accountHolder: 'Carlos Restrepo' })
+    expect(enviado).toMatchObject({ department: 'Bogotá D.C.' })
+    expect(enviado.accountHolder).toBeUndefined()
+    expect(enviado.accountNumber).toBeUndefined()
   })
 })

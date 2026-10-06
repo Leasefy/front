@@ -26,7 +26,8 @@ type CostPerPesoResponse = {
   populated: boolean;
   reason?: 'agency-gate' | 'insufficient-data';
   cost_per_peso?: number | null;
-  numerator_usd_voice?: number | null;
+  /** 🔴 En pesos (Nico, 04-10-2026). */
+  numerator_cop_voice?: number | null;
   denominator_cop_paid?: number | null;
   sparkline_90d?: Array<{
     day: string;                   // ISO date 'YYYY-MM-DD'
@@ -41,13 +42,12 @@ interface CostPerPesoKpiProps {
 
 // ─── Formatters ───────────────────────────────────────────────────────────────
 
-const usdFmt = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-});
-
+/*
+ * 🔴 TODO EN PESOS (Nico, 04-10-2026: «¿para qué manejar dólares?»). El back
+ * manda `cost_per_peso` como pesos gastados en voz por cada peso recuperado
+ * (los dos lados en COP): se dice «$ X por cada $ 1.000.000 recuperados».
+ * Antes se pintaba ese cociente como dólares («US$0.01 por $1.000.000»).
+ */
 const copFmt = new Intl.NumberFormat('es-CO', {
   style: 'currency',
   currency: 'COP',
@@ -55,11 +55,8 @@ const copFmt = new Intl.NumberFormat('es-CO', {
   maximumFractionDigits: 0,
 });
 
-const tooltipFmt = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 4,
-});
+/** Pesos de voz por cada millón recuperado. */
+const porMillon = (ratio: number): string => copFmt.format(ratio * 1_000_000);
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -91,8 +88,8 @@ export function CostPerPesoKpi({ data, isLoading }: CostPerPesoKpiProps) {
   const ratioValue = data.cost_per_peso ?? 0;
   const sparklineData = data.sparkline_90d ?? [];
 
-  // Format: "$X.XX USD por $1.000.000 COP"
-  const formattedUsd = usdFmt.format(ratioValue);
+  // «$ X por cada $ 1.000.000 recuperados», todo en pesos.
+  const formattedCosto = porMillon(ratioValue);
   const formattedCop = copFmt.format(1_000_000);
 
   return (
@@ -101,8 +98,8 @@ export function CostPerPesoKpi({ data, isLoading }: CostPerPesoKpiProps) {
       className="relative"
     >
       <p className="text-3xl font-bold tabular-nums">
-        {formattedUsd}{' '}
-        <span className="text-base font-normal text-fg-muted">por</span>{' '}
+        {formattedCosto}{' '}
+        <span className="text-base font-normal text-fg-muted">por cada</span>{' '}
         {formattedCop}
       </p>
       <p className="text-xs text-fg-muted mt-1 mb-3">
@@ -121,7 +118,7 @@ export function CostPerPesoKpi({ data, isLoading }: CostPerPesoKpiProps) {
           />
           <Tooltip
             formatter={(val: unknown) => [
-              tooltipFmt.format(Number(val)),
+              porMillon(Number(val)),
               t('inmobiliaria.ai.cobranza.analitica.widgets.costPerPeso.sparklineLabel'),
             ]}
           />

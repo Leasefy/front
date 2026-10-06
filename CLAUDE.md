@@ -37,7 +37,8 @@ activity feed, execution panel).
 - Formularios: react-hook-form + zod. Toasts: sonner. Iconos: Phosphor + Lucide.
 - Estado: React Context + hooks custom (`src/lib/context/`, `src/lib/hooks/`). SIN Zustand/Redux.
 - Mapas: maplibre 6 (react-map-gl 8) + supercluster. El worker de MapLibre se sirve desde
-  `public/maplibre/<versión>/` (lo copia el `postinstall`); todo `<Map>` importa
+  `public/maplibre/<versión>/` (lo copian el `postinstall` y `next.config.mjs` al arrancar `next dev`/`build`/`start`,
+  idempotente; sin worker, la ficha dice «El mapa no cargó» con «Abrir en Google Maps»); todo `<Map>` importa
   `src/components/map/trabajador-de-maplibre.ts` o el mapa sale gris. Gráficas: recharts. Scroll: lenis.
 - Auth: Supabase (`@supabase/ssr`) + MFA TOTP. Push: Firebase FCM.
 
@@ -233,7 +234,8 @@ Nico: «cuando algún servicio se caiga, deberíamos de avisarle al usuario». D
   `code: 'LEASEFY_NO_RESPONDE'` y un mensaje humano. La base caída (5xx con `servicio: 'base'`)
   también va por acá: sin Postgres no funciona nada. Cualquier otra respuesta del back → `bien`.
   Lo pinta `<AvisoDeConexion>` (UNA vez, en `src/app/layout.tsx` junto al Toaster): franja flotante
-  abajo (sube 5rem bajo `lg` por `MobileNavBar`) que pregunta a `/health` con espera creciente (5/10/20/40 s, tope 60 s) y se va con el
+  abajo (sube 5rem bajo `lg` por `MobileNavBar`, y con `translateY` por encima del pie de un cajón
+  abierto para no tapar sus acciones) que pregunta a `/health` con espera creciente (5/10/20/40 s, tope 60 s) y se va con el
   primer 200. No borra, no cierra sesión, no redirige. Las llamadas directas al micro de agentes
   NO pasan por acá (son capa 2, servicio `asistente`).
 - **Capa 2 — se cayó una parte** (`servicio-no-disponible.ts`): 502 o 503
@@ -249,6 +251,75 @@ Nico: «cuando algún servicio se caiga, deberíamos de avisarle al usuario». D
   (`useEstadoDelServicio`, que pregunta sólo con un error de ese servicio en pantalla).
 - Mientras la franja esté, un fallo de red en pantalla no repite el rojo: «Esperando a Leasefy…»
   con su reintento.
+
+## Errores: un solo traductor y la regla de oro (02-10-2026)
+
+Nico: «no hay ningún sistema de errores completo». El back y el micro mandan el mismo sobre
+(`back/src/common/errores/contrato-de-error.ts`): `{ statusCode, code, message, campos?:
+[{ campo, regla, mensaje, valor? }], servicio?, referencia? }`. `ApiError` lo guarda entero en
+`detalle`.
+
+- **Fuente de verdad**: `src/lib/errores/traductor-de-errores.ts` (`leerFallo`,
+  `camposDelError`, `mensajeParaLaPersona(error, { porDefecto, accion })`). `mensajeDelFallo`,
+  `errorEnCristiano`, `descripcionDelError` y `motivosDelError` delegan ahí; no escribas otro.
+- 🔴 **Regla de oro**: «conexión» SÓLO cuando no hubo respuesta (status 0 / `fetch` que no
+  salió). Un 4xx dice qué está mal. Un 5xx dice que falló de nuestro lado, sin culpar a nadie,
+  con la `referencia` del back. Las caídas (503 `SERVICIO_NO_DISPONIBLE`) siguen con
+  `src/lib/conexion/`.
+- **Formularios**: `aplicarErroresDelServidor(error, form, { mapa, campos })`
+  (`src/lib/errores/errores-en-el-formulario.ts`) hace `setError` en cada campo (mapa servidor →
+  formulario), enfoca el primero y deja en un toast SÓLO lo que quedó sin campo. Sin RHF:
+  `repartirErroresDelServidor`. La validación del cliente usa los MISMOS topes y frases que el
+  DTO del back. Referencia: el onboarding del inquilino (`TenantOnboardingContext` +
+  `lib/onboarding/preferencias-del-inquilino.ts`, espejo de `back/src/users/dto/limites-del-perfil.ts`).
+- **El error bajo el campo entra suave**: `<ErrorDelCampo id mensaje pista? />`
+  (`src/components/estado/ErrorDelCampo.tsx`, adaptador fino sobre el `FormError` de Cadence v1.1.1;
+  con `pista`, la ayuda y el error se cruzan). `id` = el de `aria-describedby` (`${id}-error` en un `FormField`).
+- **402** (códigos en `src/lib/errores/codigos-del-plan.ts`, espejo del back): `PLAN_REQUERIDO` en un GET
+  del panel lleva a `/panel/inmobiliaria/upgrade` (`el402LlevaAlPlan`, `client.ts`); `LIMITE_DEL_PLAN`
+  (trae `limite`: `LimiteDelPlan` = `agentes|inmuebles|evaluaciones`; el tope de evaluaciones del mes era un 429)
+  NUNCA navega, se dice donde pasó con «Ver planes» a la mano (`limiteDelPlanDelError`, `use-agent.ts`); `NOMINA_NO_HABILITADA` lo pinta su cartel; un 402 sin
+  `code` (back viejo) sigue la regla de antes. El registro nunca saca al fundador. `clasificarFallo`
+  titula cada código (sin código = «sin créditos de IA»).
+- **Frase por código** (`FRASES_DE_LOS_CODIGOS` / `fraseDelCodigo`): el `message` del back gana si se
+  lee; la frase del código, si no. Un `message` se muestra hasta `LARGO_MAXIMO_DE_UN_MENSAJE` (800: los
+  409 de caja pasan de 300) y nunca si trae saltos de línea, HTML, una traza, `node_modules`, un
+  `archivo.ts:N`, Prisma o un JSON. `RegistrarPagoModal` ya pasa por el traductor.
+- Un `code` estable decide; nunca el texto (P2002 del back viejo → `YA_EXISTE`; «should not
+  exist» → `campos[].regla === 'no_permitido'`).
+- **El micro (cobranza, piloto, agentes IA, conciliación; 02-10-2026)**: `agentFetch` devuelve la
+  `Response` cruda. Una que no salió bien se vuelve `ApiError` con `falloDelMicro(res)`
+  (`src/lib/api/fallo-del-micro.ts`): status, `code`, el `message` del sobre y `campos`; el `error`
+  en inglés del cuerpo viejo nunca se muestra (queda en `detalle`, y como `code` si parece uno). Los
+  hooks que devuelven `{ ok: false, error }` conservan `error` (hay pantallas que deciden con
+  `'not_configured'`) y suman `fallo` (ese `ApiError`, o el `TypeError` de red tal cual):
+  `lib/hooks/ai/accion-del-micro.ts`. La pantalla pinta `mensajeParaLaPersona(r.fallo, …)`.
+- **Acciones que declaran su cuerpo (cola humana, 02-10-2026)**: `WorkItemAction.campos?: CampoDeLaAccion[]`
+  (`lib/api/work-item.ts`). Con `campos`, la cola (`ColaHumana`) y el detalle (`AccionSugerida`) pintan
+  `FormularioDeLaAccion` (valida con `ai/campos-de-la-accion.ts`, manda esas claves, un 400 con `campos` va a
+  cada campo); sin `campos`, el motivo de siempre (`{ reason }`).
+- **Acción vs lectura (02-10-2026)**: `clasificarFallo(e, { accion: 'resolver el caso' })` no titula un 4xx
+  como «problema nuestro» (tipo `rechazado`, la descripción dice qué está mal); sin `accion`, igual que
+  siempre. `mensajeDelFallo(e, porDefecto, accion?)`. `FalloDeCarga` no muestra referencia sin respuesta
+  (red, corte por tiempo). El «fetch failed» de Node es red caída: `RED_CAIDA` de `lib/conexion/leer-el-error.ts`
+  (la usa `clasificarFallo`) y `leerElError` da `status: 0` a ese `TypeError` (así lo lee el traductor).
+- **Configuración**: los topes de `UpdateAgencyDto`/`InviteMemberDto` y de los medios de pago tienen
+  su espejo en `src/lib/configuracion/limites-de-la-inmobiliaria.ts` y `limites-de-los-medios-de-pago.ts`
+  (sólo se mira lo que cambió: un dato viejo no impide guardar lo demás). `SeccionPerfil` toastea por
+  el traductor; con `campos`, los datos de la empresa los pintan en su campo y el toast calla.
+- **La plata (pagos, caja, dispersiones, tesorería, cartera, contabilidad, facturación, nómina; 02-10-2026)**:
+  la plata en `int4` se topa en **$2.000.000.000** («… no puede pasar de $2.000.000.000. Revisa que no
+  sobren ceros.»); espejos en `src/lib/{recaudo,cobros,tesoreria,cartera,dispersiones,facturacion,contabilidad,finanzas}/limites-*.ts`
+  y `components/nomina/limites-de-nomina.ts`, cada uno con su archivo del back. Los traductores del módulo
+  (`mensajeDeContabilidad`, `motivoLegible`/`motivoDeLaAccion`, `explicarGiro`, `mensajeDelFalloDeEmision`,
+  `motivoDeCompartir`, `motivoDelFalloDelRecordatorio`) se quedan SÓLO con sus códigos; lo demás, al traductor.
+  🔴 `FalloDeCarga` es para LECTURAS: `clasificarFallo` titula un 400/409 como «problema nuestro». En una
+  ACCIÓN, el 4xx va por `mensajeParaLaPersona` (ver `GenerarCobrosDialog`). Los 400 de caja sin `campos`
+  que son de un campo (`FECHA_FUTURA`, `FECHA_NO_VALIDA`, el 409 del número de factura repetido) van bajo
+  ese campo, no al banner. **Extracto bancario** (Nico, 02-10 tarde): hasta 20.000 líneas y
+  ±$1.000.000.000.000 por línea (`lib/cobros/limites-del-extracto.ts`); una línea de más de
+  $2.000.000.000 SÍ viaja («columna más grande»): sin la migración del back se descarta allá y vuelve en
+  `avisos` + `descartadasPorValor`.
 
 ## Carga de inmuebles reanudable (T-0130)
 
@@ -296,6 +367,11 @@ La «Revisión con IA» (espera inventada de 2 s) se eliminó.
   resumen; `LISTA` con `creacion.creadas > 0` (una fila corregida después de terminar) abre el paso 4 con «Crear las N que faltan».
   `GET lotes` deja una carga TERMINADA 24 h: `CargasAMedias` la dibuja aparte («Terminada: X creadas, Y fallidas»), no «a medias».
 - **409** `LOTE_INCOMPLETO` (aún se sube, ubica o revisa) y `NADA_PARA_CREAR` se traducen en `lib/mensajeDeCarga.ts`.
+- **Errores de la carga (02-10-2026)**: `mensajeDeCarga` deja SÓLO los códigos del lote con su frase; lo demás va por
+  `mensajeParaLaPersona` con su `accion` (5xx = «de nuestro lado» + referencia; «conexión» sólo sin respuesta). Los topes
+  de lo que una persona escribe (corregir una fila, el masivo) son el espejo `lib/limites-de-la-importacion.ts` del
+  `ResolverInmuebleDto` del back; una celda del ARCHIVO no se topa en el DTO (C13: una fila rara no tumba la tanda), la
+  aparta `valorQueNoCabe` al crear con su cifra y su campo.
 - `inmueblesImportacionApi.activar` y `activarLoteCompleto` se retiraron del front (el back conserva `activar` por compatibilidad).
 - `useAvisoAlSalir` sigue SÓLO mientras se sube o se ubica (y con un archivo leído sin subir).
 
@@ -337,6 +413,335 @@ el SERVIDOR (no `localStorage` ni la memoria de la pestaña). El back es la mism
 - **Identificación editable** (`ArmarContratoDesdePlantilla`, prop `arrendatario`): nombre, tipo y número de documento,
   siempre visibles y prellenados; pasan a obligatorios (`Label required`, `aria-required`) cuando el validador reporta
   `ARTICULO_3_INCOMPLETO` literal a). El tipo sólo viaja si hay documento escrito. Con inquilino NUEVO tecleado no se pinta.
+
+## Conciliación, Fase 1: la cuenta, los saldos y la pasarela (02-10-2026)
+
+Nico (P3): «la cuenta es OBLIGATORIA al cargar el extracto; la conciliación, el saldo y el cierre van por
+cuenta». (P4): la pasarela sólo se ignora sola con el id de la transacción; si no, se propone. Todo en
+`src/components/cobros/extracto-bancario/` (lógica pura en `cuentas-del-extracto.ts`, con sus pruebas).
+
+- **Cargar** (`CargarExtracto`): la cuenta sale de `conciliacionBancariaApi.cuentas()` (los medios de pago de
+  la inmobiliaria con número; sin ninguna, el aviso lleva a Configuración → Medios de pago). Con una sola
+  activa se preselecciona; sin elegir, «Cargar» no se aprieta. Bloque «Saldos y período»: la columna
+  «Saldo» del archivo (nueva en `COLUMNAS_DE_EXTRACTO`, viaja como `filas[].saldoCop`), saldo inicial y
+  final escritos (`leerSaldoEscrito`, espejo del tope del back) con el cuadre EN VIVO, y el período (sólo
+  viaja si la persona lo cambió). El 409 `EXTRACTO_DE_OTRA_CUENTA` abre una confirmación y reenvía con
+  `aceptarIgualesDeOtraCuenta`. `tesoreriaApi.cuentasDeclaradas` se retiró (sin llamadores).
+- **Por cuenta** (`PorCuenta`): pastillas Todas / cada cuenta / «Sin cuenta» (lo cargado antes) /
+  «Pasarela»; filtran `listar` y `resumen` (`cuenta`). La ficha: % conciliado por número y valor, saldo del
+  banco frente al de los movimientos, última carga y días sin extracto. Sin la migración del back
+  (`disponible: false`) se dice por qué y no hay filtro; un back sin la ruta, la pantalla queda como antes.
+- **Pasarela en la fila** (`PropuestaDeLaPasarela`, ARRIBA de los cruces): «Es este pago en línea» →
+  `esDeLaPasarela` (no emite nada); con otro valor no se ofrece. El pago en línea que no calzó con el canon
+  se ve en la cola («Pago en línea») con lo que hay que hacer.
+- Todo bloque nuevo entra con `useAparecer` (tokens de Cadence; con movimiento reducido, en el lugar).
+
+## Conciliación, ola C2: las salidas del extracto (03-10-2026)
+
+Nico (P5): «se concilian TODAS las salidas: giros a propietarios, egresos/proveedores, 4×1000, comisiones
+bancarias y devoluciones». API en `src/lib/api/salidas-del-extracto.ts` (`/inmobiliaria/conciliacion-bancaria/salidas`).
+
+- **La página** (`SalidasDelExtracto.tsx`): `SalidasDeLaPagina` envuelve la tabla y pide UNA vez por lectura de la
+  lista las propuestas de las salidas (y de las entradas que hablan de un reverso, `hayQuePreguntarPorLaLinea`);
+  `AvisosDeLasSalidas` (arriba de la tabla) muestra el giro que NO salió o salió DOS veces y «Conciliar las salidas
+  seguras» (confirmación; sólo lo `alta` + único, regla P7).
+- **La fila** (`SalidaDelExtracto.tsx`, dentro de `MovimientoFila`): hasta 3 propuestas con su regla con nombre y
+  «Segura»; «Conciliar» manda ESA propuesta (el back re-verifica); sin propuesta, «Es un gasto del banco» (4×1000,
+  comisión, IVA o cuota); conciliada, contra qué quedó (y si fue el Piloto) y «Deshacer» con motivo (ADMIN/CONTADOR).
+  Un back sin la ruta o sin respuesta: la fila queda como antes («se puede ignorar»). Sin la migración, se ve pero
+  «Conciliar» está apagado.
+
+## Conciliación, ola C2: deshacer, cuentas de las diferencias y confianza (03-10-2026)
+
+- **Deshacer** (`DeshacerLaConciliacion.tsx`, columna de acciones de `MovimientoFila`; API
+  `src/lib/api/deshacer-la-conciliacion.ts`): Nico (P11) «desvincular con motivo y bitácora, sin anular el recibo. Sólo
+  administrador o contador». Sólo ADMIN/CONTADOR (`agencyRole`), sólo entradas CONCILIADAS que no son de la pasarela y
+  sin vínculo de salida (ésas tienen el «Deshacer» de `SalidaDelExtracto`). Pide motivo (5–500); el aviso dice qué recibos
+  quedaron vivos.
+- **Confianza** (Nico, C1-MEDIR Q1): «Confianza alta|media|baja» y, si el back manda `deCadaDiez` (medido por su banco de
+  casos), «de cada 10 así, N son la correcta» con la barra hasta ese número. Nunca el porcentaje de la fórmula. La cola del
+  agente (`/conciliacion/cola`) muestra sólo el nivel.
+- **Configuración → Costos de la plata**: `CuentasDeLasDiferencias.tsx` (API `src/lib/api/cuentas-de-las-diferencias.ts`)
+  elige la cuenta del 4×1000, de la comisión y de la retención del inquilino (asiento automático, P1), ofrece la de la
+  semilla, avisa sin migración y «Asentarlas» para lo aprobado sin asiento. La retención configurada lleva su clase
+  (en la fuente / ICA / IVA) para el certificado del propietario.
+
+## Conciliación, ola 3: cierre del mes, alerta, efectivo y aseguradoras (03-10-2026)
+
+API en `src/lib/api/cierre-de-conciliacion.ts`; lo puro (exportar, leer la relación) en
+`components/cobros/extracto-bancario/cierre-del-mes.ts`.
+
+- **Cierre del mes** (`CierreDelMes.tsx`, debajo de «Por cuenta» con una cuenta elegida): Nico (P9) «por cuenta y mes, con la
+  firma del contador; el mes queda BLOQUEADO; reabrirlo exige un administrador con motivo». Meses con su estado; el borrador
+  (`VistaDeLaFoto`) se ve siempre; «Firmar y cerrar» sólo para CONTADOR y con la casilla de «revisé»; «Reabrir el mes» sólo
+  ADMIN con motivo 10–500. Excel y PDF (`xlsx` y `jspdf`, import perezoso) salen de la FOTO guardada con su huella, nunca
+  recalculada. Un 409 `MES_CERRADO` de cualquier acción ya llega con su frase (el traductor la muestra).
+- **Alerta de partidas** (`AlertaDePartidas.tsx`, arriba del extracto y en la Sala `/conciliacion`): P10, a los 30 días por
+  defecto, rangos 0–30/31–60/más de 60; sin nada viejo no se pinta. Sin correos.
+- **Planilla de caja** (`PlanillaDeCaja.tsx`): sólo con el efectivo PRENDIDO (apagado por defecto, «sólo transferencia y
+  pasarela»); «Conciliar» manda el día y la línea.
+- **Pagos de aseguradoras** (`RelacionDeAseguradora.tsx`): el archivo se lee aquí (`parseSpreadsheetFile`), la persona elige qué
+  columna es cada campo (sugerido por nombre, recordado por aseguradora), `leerLaRelacion` aparta las filas malas (todo o
+  nada) y el cruce trae la línea del banco propuesta; «Conciliar con N recibos» = `conciliarConRecibos`.
+- **Configuración → Costos de la plata** (`ConciliacionCierreYEfectivo.tsx`): días de la alerta, el interruptor del efectivo y
+  la cuenta contable (grupo 11) de cada cuenta bancaria.
+
+## Conciliación, seguimiento 6 (ola E, E3; 03-10-2026)
+
+- **«Conciliar las salidas seguras» con confirmación** (Nico, C2-SALIDAS Q3; `SalidasDelExtracto.tsx`): el diálogo pide
+  `salidasDelExtractoApi.seguras()` y muestra cuántas, cuánto y cuáles; «Conciliar N salidas» manda ESA lista
+  (`aplicarSeguras(vista)`). Sin seguras / sin migración / sin respuesta: lo dice y el botón queda apagado.
+- **«Asentarlas»** (`CuentasDeLasDiferencias.tsx`): dice cuántas por asentar vienen de las salidas y los gastos del banco del
+  extracto que se reconocen solos; con gastos, un diálogo con la lista y la casilla «También conciliar…» (marcada si la
+  persona tiene `cobros:create`; si no, el porqué). `reprocesar(gastos | null)`.
+- **El cajón del movimiento** (`LoQueProponeElAgente.tsx`, botón «Lo que propone el agente» en cada línea pendiente): lee
+  `GET {micro}/…/movimientos/{id}/agente` SÓLO al abrir (`src/lib/api/agente-de-conciliacion.ts`); «Por el alias» con
+  cuántas veces se confirmó, las salidas que propone (el gasto del banco se concilia por la ruta del back; un giro o egreso,
+  en la fila), «No es esta» / «No es esta persona». 409 = agente apagado; 404 = micro sin la ruta.
+- **Egresos elige la salida del extracto** (`ElegirLaSalidaDelExtracto.tsx`, API `src/lib/api/salidas-del-egreso.ts`): radios
+  con búsqueda (pausa de 300 ms), primero lo que calza con el neto. Ya no se teclea el id.
+- **Configuración → cuenta contable de cada cuenta bancaria**: ahí se asientan los recibos conciliados desde su extracto; si la
+  cuenta es mayor o está inactiva, lo dice (`porQueNoAsientaLosRecibos`).
+- ⚠ Las rutas nuevas del back (`salidas/seguras`, `egresos/:id/salidas-del-extracto`) no están en `rutas-del-back.json`
+  todavía: las llaman archivos que el guardián no barre (no son `*.service.ts`); regenerarlo con el back de esta ola.
+
+## Conciliación, pruebas en el navegador (PRUEBAS-CONCILIACION, 03-10-2026)
+
+- **«Cruce sugerido» mide ~300 px aun en escritorio**: sus tarjetas (candidatos, pasarela, giro de Leasefy, salidas) van
+  APILADAS, nunca en fila por el breakpoint de la ventana (guardián `cruce-sugerido-apilado.test.ts`).
+- **PDF con jsPDF (Helvetica)**: el «−» tipográfico sale como basura y espacia la línea; el cierre pasa todo por
+  `textoParaElPdf` (como `documento-de-la-liquidacion.ts`). El Excel y la pantalla conservan el «−».
+- Nada de la clase `capitalize` en español (sube cada palabra): `conMayusculaInicial`. Las fechas en pantalla con `diaLegible`
+  (planilla, relación, «Asentarlas»), y cada cifra con su número gramatical («Queda 1…», «1 cruzada», «te la propone»).
+- La carga del extracto separa `descartadasPorMesCerrado` de las ilegibles; «idéntica a otra del archivo cuenta aparte» (no
+  «entró»: en una recarga no entra nada). Huecos: «Falta el extracto del …».
+
+## Conciliación, ARREGLOS-5 (03-10-2026, Nico Q2/Q4/Q6 a)
+
+- **Un solo interruptor de efectivo**: «La inmobiliaria recibe efectivo» (`ConciliacionCierreYEfectivo.tsx`) y «Efectivo» de
+  Medios de recibo (`SeccionMediosDeRecibo.tsx`) son el MISMO dato (lo guarda el back en los medios de recibo); los dos lo dicen.
+  El de la conciliación se aprieta con `cobros:edit` + `configuracion:edit` y con `efectivoSePuedeGuardar(config)` (un back sin el
+  campo: como antes, con `disponible`).
+- **Recibo de más**: con recibos YA emitidos que suman exacto la línea (`yaLaRespaldanRecibosEmitidos`, `muchos-a-uno.ts`), la fila no
+  ofrece las cuotas del 1:1 ni «Conciliar con un cliente»; dice por qué (`sin-uno-a-uno-<id>`).
+- **«Calza exacto» es sólo el del lote** (referencia de recaudo + valor): en muchos a uno y en «Corregir» la suma dice «Suma exacta»;
+  en el cajón del agente, «Valor exacto».
+- La planilla y la tarjeta del giro de Leasefy dicen qué pasa en libros al conciliar; el aviso de la planilla, el día en palabras.
+
+## /admin/recaudo-en-linea: el reporte de Wompi y las liquidaciones de Leasefy (ola E, E2; 03-10-2026)
+
+Nico (C2-AGREGADOR Q3/Q4): Leasefy recauda en SU cuenta de Wompi y le gira a cada inmobiliaria con una liquidación.
+Pantalla `src/app/admin/(panel)/recaudo-en-linea/` (ítem 35 del `Nav`), cliente `src/lib/admin/recaudo-en-linea.ts`
+(back `src/admin/resources/recaudo-en-linea/`). Tres pestañas (`MotionIndicator` + `CrossFade`):
+- **Liquidaciones**: filtros inmobiliaria / fecha del giro / estado (`generada | girada | conciliada`); cada una se abre
+  (`Collapse`) con sus pagos y lo descontado TAL COMO VINO; «Descargar Excel/PDF» (`src/lib/admin/documento-de-la-liquidacion.ts`,
+  `xlsx`/`jspdf` perezosos, sale del detalle del back; en el PDF el menos es «-»: Helvetica no trae «−»); «Marcar como
+  girada» con confirmación, día (no futuro) y comprobante. **Generar liquidaciones** (`GenerarLiquidaciones.tsx`): rango +
+  fecha del giro + «sólo lo que Wompi ya desembolsó» (marcado), vista previa por inmobiliaria con lo que queda FUERA y su
+  frase; un descuento de Leasefy (concepto + valor, tal como viene) obliga a actualizar la vista previa antes de generar.
+- 🔴 **«Frecuencia del giro: por definir»** se ve siempre arriba (`FRECUENCIA_POR_DEFINIR`); no se inventa una.
+- **Reporte de Wompi**: el CSV (tope 10 MB, como el back) va a la vista previa; las frenadas se listan con su frase;
+  «Importar N» manda sólo lo legible (idempotente).
+- **Cuadre Wompi → Leasefy**: totales, tabla por desembolso y diferencias marcadas.
+- Sin la migración del agregador lo dice y no pide nada más; sin la del giro, todo menos «girada».
+- **Desmarcar «girada»** (ola E, E6 · Nico E2 Q2 a; `DesmarcarGirada` en `Liquidaciones.tsx`, `desmarcarGirada(id, motivo)`):
+  sólo en una girada, con el motivo OBLIGATORIO (10 a 500, contador y botón apagado hasta entonces) y `Presence`; la
+  liquidación vuelve a «generada». El detalle muestra la **historia del giro** (`historiaDelGiro`: marcada/desmarcada, quién,
+  cuándo, el motivo y la fecha del giro antes → después). Sin la migración de la bitácora (`desmarcarDisponible: false`) lo
+  dice; un back anterior (sin el campo) no lo ofrece.
+
+## ARREGLOS-2 (03-10-2026, modo autónomo)
+
+- **PQRS desde el portal del inquilino** (Nico Q4 a): `POST /pqrs` existe. `GET /pqrs/mine` trae
+  `contratosParaRadicar`; `pqrsApi.listMineConDisponibilidad` devuelve `{ items, disponible, contratos }` y
+  `useTenantPqrs` expone `contratos`. «Nueva solicitud» se prende con un contrato vigente; con más de uno,
+  `NuevaSolicitudModal` pregunta sobre cuál (`#solicitud-contrato`, 400 `ELIGE_EL_CONTRATO` bajo ese campo). Las fotos
+  siguen sin ruta (la PQRS no tiene adjuntos): el aviso de siempre.
+- **El registro sólo se le pregunta a quien lo hizo**: `GET /users/me/onboarding/session` trae `esQuienLaRegistro`; con
+  `false`, `preguntarPorElRegistro` no pide el resume del micro (era un 403 en cada pantalla del contador y la asesora).
+- **«Mis propiedades» (`/panel/propiedades`) a 390 px**: esqueleto mientras carga (nunca el vacío ni contadores en 0),
+  el error con reintento, el «+» solo en pantallas chicas y el filtro de estado se desplaza dentro de su riel.
+- **El worker de MapLibre** (`public/maplibre/<versión>/`) lo copia el `postinstall`; un árbol con `node_modules` en
+  symlink (worktrees, copias del laboratorio) no lo tenía y respondía 404 también con `next build` (desde el 03-10 lo
+  asegura `next.config.mjs` al arrancar; a mano sigue sirviendo). Correr
+  `node scripts/copiar-trabajador-de-maplibre.mjs` en ese árbol.
+
+## ARREGLOS-4 (03-10-2026, modo autónomo)
+
+- **Al micro, SIEMPRE `agentFetch`** (Nico, PRUEBAS-RESTO Q1 a): con el micro caído y el back sano dice «El asistente
+  de Leasefy no está disponible» (503 del servicio `asistente`) y reintenta una vez ante un token vencido. Guardián
+  `src/lib/api/micro-por-agent-fetch.guardian.test.ts` (AST: ningún `fetch` crudo en un archivo que habla con el
+  micro; excepciones declaradas con su porqué: ARCO y embudo públicos, `/admin`, `senales.ts`, `PermissionsContext`).
+  Los hooks del Piloto guardan el error ENTERO (`error: unknown`), no su texto: la pantalla lo dice con
+  `FalloDeCarga`/`mensajeParaLaPersona`; `piloto.ts` lanza el `ApiError` de `falloDelMicro`, no `Error('500')`.
+- **`aria-invalid` pinta el borde** (Q2 a): `Input`, `Textarea` y `SelectTrigger` del adaptador ponen `data-invalid`
+  con `aria-invalid` verdadero (`ui/campo-invalido.ts`). Un requerido VACÍO no lleva `aria-invalid` hasta que haya
+  un error dicho; el guardián de `ui/campo-invalido.test.tsx` no deja `aria-invalid={vacio}` ni `{!valor}`.
+- **El vacío dentro de una tabla ancha**: `<AlAnchoVisible>` (`ui/al-ancho-visible.tsx`) lo pega a la izquierda con el
+  ancho VISIBLE del contenedor que se desplaza (a 390 px se cortaba en Documentos).
+- El layout del panel pide `/inmobiliaria/config` sólo con `configuracion:view` y los lotes de migración sólo con
+  `contratos:view` (`useInmobiliariaConfig(activo)`, `useMigracionesPendientes(activo)`).
+- Un `route.ts` sólo exporta verbos y configuración del segmento (`src/app/rutas-solo-exportan-lo-de-next.test.ts`).
+- «Completa tu perfil» de la barra del propietario y la tarjeta del perfil leen `lib/perfil/pasos-del-perfil-del-propietario.ts`.
+
+## ARREGLOS-3 (03-10-2026, modo autónomo; Nico, PRUEBAS-PAGOS Q1–Q8 a)
+
+- **Fotos y firmas del acta** (`FotosYFirmasDelActa.tsx`, montado en Documentos bajo `ActaEntregaViewer sinFirmas`; API
+  `lib/api/firma-del-acta.service.ts`): fotos por espacio (subir/borrar, se vuelve a leer el detalle tras cada cambio), «Firmar
+  como asesor» con `SignaturePad` y el enlace del inquilino (copiar; el correo sale del back). La página pública
+  `/firmar/acta/[token]` (sin sesión) muestra el acta con sus fotos y firma con código al correo; 503
+  `FIRMA_DEL_ACTA_NO_DISPONIBLE` = falta la migración del back.
+- **Saldo a favor «en revisión»** (`SaldoAFavorAlTerminar.tsx`, `Egresos.tsx`): el egreso frenado no se marca para el lote y la
+  devolución ofrece «Revisado» (`saldoAFavorApi.revisado`). La cuota `ANULADA` al terminar no ofrece «Anular recibo».
+- **Portal: la inicial del acuerdo es la «Cuota 0 · inicial»** (`CuotaPlanTable`, «Pagar la cuota inicial» en `PagarCuota`; la
+  ruta `wompi-session` acepta `cuotaNumber` 0 y firma `acuerdo-<plan>-c0`). El conteo de cuotas del listado no la cuenta.
+- **Venta en un mandato de arriendo**: `sinComisionDeVentaPactada(vista)` (`lib/captacion/venta-del-inmueble.ts`) dice que hace
+  falta un mandato de VENTA y cómo crearlo (`data-testid="venta-sin-comision"`).
+
+## ARREGLOS-6b (03-10-2026, modo autónomo; Nico, la recomendada)
+
+- **La fila del extracto con la regla del back** (Q1 a): `yaLaRespaldanRecibosEmitidos` usa `muchosAUno.recibosYaEmitidos` cuando el
+  back lo manda (recibos de la MISMA persona del 1:1 o que la línea misma nombra); un recibo de otra persona que sólo empata en el
+  valor ya no quita las cuotas. `RecibosYaEmitidos.tsx` dice cuáles («Los recibos N.º 51 y 52…») y, si no son una propuesta de muchos
+  a uno, ofrece «Conciliar con esos recibos» (`conciliarConRecibos`). Un back anterior: el criterio de antes.
+- **La línea del giro de Leasefy** no ofrece cuotas ni «Conciliar con un cliente» (`MovimientoFila`, `sin-uno-a-uno-<id>`).
+- **Anticipo de impuestos**: `CuentasDeLasDiferencias` muestra la cuarta cuenta (`ANTICIPO_DE_IMPUESTOS`, semilla 135515); con
+  `disponible: false` (falta la migración del back) se ve apagada con su `motivo` (`sin-guardar-<evento>`).
+- **Comisión de venta de un inmueble sin contrato**: la revisión dice «…, de otro inmueble del mismo propietario (dirección): este
+  inmueble no tiene contrato de arriendo» (`contrato.delMismoPropietario`).
+
+## QA de Inquilinos (QA-INQ, 03-10-2026)
+
+- **Lista** (`inquilinos/page.tsx`): el orden vive en la PÁGINA y se aplica a la lista ENTERA antes de paginar
+  (`lib/inquilinos/lista.ts`; cambiar el orden vuelve a la página 1; `aria-sort`). Los tres KPI son del PORTAFOLIO
+  («activos» sin búsqueda: sin filtros es la misma lista; con filtro, `useInquilinos(…, { portafolio: true })` lo pide
+  aparte, con su carga y su error). A < 768 px la tabla pasa a tarjetas (`TarjetasDeInquilinos`).
+- **Estados** (`estadoParaMostrar`): `EN_FIRMA` («En firma», nunca «Terminado») y `POR_EMPEZAR` («Empieza el …»; se deduce
+  de `desde` > hoy si el back no lo manda). Ninguno es vigente: no suman en «Arriendos vigentes» ni en el canon.
+- **La cuenta** (`cuentaDelPortal`): `tenantId` puede ser `doc:`/`correo:`/`contrato:` o una ficha; lo que habla con un
+  `User` (WhatsApp, «Enviar mensaje») recibe sólo una cuenta (`tieneCuentaDelPortal` del back). Sin cuenta: «Sin cuenta en
+  el portal» (Nico: la invitación sólo desde el contrato). Los ids viajan con `encodeURIComponent`.
+- **«Editar datos»** (E-16): el MISMO `NuevoInquilinoDrawer` con `editando`; manda sólo lo que cambió
+  (`PATCH /inmobiliaria/inquilinos/:tenantId`, `contratos:edit`); el 409 `CONFIRMA_EL_CAMBIO_DE_CORREO` pide confirmar y
+  reenvía con `confirmarCambioDeCorreo`. Los rechazos con `campo` (y `FALTA_CORREO_DEL_TERCERO`) van bajo su campo; el 409
+  `INQUILINO_YA_EXISTE` de «Nuevo» trae «Ver a esa persona». El «correo obligatorio» se lee de `terceros-sin-correo`.
+- **NIT**: se muestra con su DV (`lib/inquilinos/documento-con-dv.ts`, sobre `digitoDeVerificacion`); un DV escrito que no
+  corresponde se dice bajo el campo.
+- **Invitaciones**: nunca un código crudo (`fraseDelMotivo`); `total − vencidas` es «no les ha llegado»; vence / vencida /
+  «Reenviar»; sin `clientes:edit` no se ofrece mandar. La tabla del cajón va A SANGRE (`-mx-6`, primera y última celda
+  `pl-6`/`pr-6`).
+- **Contrato manual**: `?inquilino=<identidad>` llega elegido (sin cuenta, como «Nuevo» con sus datos); un campo vacío no
+  abre en rojo (su error sale al dejarlo) y el botón apagado dice qué falta (`lo-que-falta`).
+
+## QA de Facturación (QA-FACT, 03-10-2026; decisiones de Nico de las 18:30 y 19:4x)
+
+- **Lo que se emite y lo que no** (`lib/facturacion/por-facturar.ts`, puro y probado): `sePuedeEmitirHoy`, `seSugiere`,
+  `estadoDeLaFila`, `porQueNoSeEmite`. Lee `codigoNoEmitible` del back (`MES_NO_EMPEZO`, `ESCENARIO_SIN_CONFIRMAR`,
+  `GIRO_SIN_PAGAR`, `ANTES_DE_LA_FECHA_DE_CARTERA`, `ANULADA_POR_NOTA_CREDITO`, `COPROPIEDAD_SIN_MIGRACION`,
+  `PARTICIPACIONES_NO_SUMAN_100`); con un back anterior, `emitible`/`impuestosSinConfirmar`. Sin escenario confirmado
+  NO se emite («Confirmar en el contrato»); la comisión dice «Se factura cuando se le gire»; la preselección es sólo de
+  inquilinos; copropiedad «Jorge · 70 %» (`participacionBps`, clave de 4 partes con el propietario).
+- **«Por facturar»** (`NuevaFactura.tsx`): cinco columnas (cabe a 1440), tarjetas bajo 768 px (`useIsMobile`), la mora
+  sin intereses UNA vez arriba (`moraDelMes`; la factura del mes no lleva intereses), el pie con
+  `BarraDeAccionesMasivas compacta` (una línea + «Ver más»; bajo `lg` encima de la barra del celular). Emitir SIEMPRE
+  confirma a quién, cuánto y con qué números (`numerosQueSalen`); emitir UNA no abre el centro de procesos.
+  Propietarios numera con `resolucionDeLaComision` (o `porTipo` de `GET /resolucion`). Las facturas de intereses ya
+  pagados, aparte (`FacturasDeIntereses.tsx`: `intereses/por-emitir` e `intereses/emitir`, resolución de «Otros»).
+- **Notas**: la pestaña lee `notas/lista?mes=` (por el día de emisión, NC y ND, lo que movió en la deuda, «Emitir» en las
+  generadas con `notas-credito/:id/emitir`, PDF con `notas-credito/:id/pdf`); un back sin la ruta, lo de antes. Anular
+  dice que la deuda baja; «sólo un dato del documento» manda `efecto: 'SOLO_EL_DOCUMENTO'` (sale la corregida). «Emitir» y
+  el PDF van en su columna; bajo 768 px las notas son tarjetas (como Ventas); un 409 al emitir vuelve a leer la lista. La
+  factura anulada por completo lo dice UNA vez (sin las correcciones). La nota débito avisa su valor, el IVA que puso el
+  back (escenario de la factura; intereses y cobranza sin IVA) y qué hizo en la deuda.
+- **Electrónica**: el filtro con el `Select` del DS y `NOMBRE_DEL_ESTADO_DE_TRANSMISION`; sin proveedor no se ofrece
+  reintentar; la entrega «Sin entregar · falta el correo» sale de `sinEntregar` del back y entonces ni corre la tácita
+  ni se ofrecen «La aceptó / La rechazó» (tampoco en una SIMULADA).
+- **Textos y formatos**: sin «M2», ids de migración (`faltaEnLaBase`) ni «Cárgala en Facturación → Resolución» estando
+  ahí (`sinLaRutaDeFacturacion`); plata con `formatCurrency` en mono; fechas con `fechaLegible` (un instante en la hora
+  de Colombia) / `fechaEnFrase`; fechas de formulario con `CampoDeFecha` (DatePicker de Cadence); valores con
+  `MoneyInput`. Resolución: casilla «Es una resolución de prueba» (`esDePrueba`), sugerencia del último número y rango
+  cruzado (`resolucion/sugerencia`), anular sólo el administrador. «Ver el detalle» (kebab, ambos roles) abre
+  `CajonDelDetalleDeLaResolucion`: el interruptor «de prueba» (`PATCH resolucion/:id { esDePrueba }`) sólo para el
+  administrador y sólo con `sePuedeMarcarDePrueba` (lo numerado lo cuenta el back en `documentosNumerados`, no `usados`);
+  apagado, dice por qué; sin esos campos (back anterior) no se ofrece. Documento soporte: registrar al proveedor ahí mismo.
+- **Quién entra**: `PageGuard roles=[ADMIN, CONTADOR] seccion="Facturación"`; «Hoy» filtra con `lib/nav/se-ve-el-enlace.ts`.
+
+## Seguimiento de Propietarios, Contratos e Inquilinos (SEGUIMIENTO-FRONT, 03-10-2026; back 5731a4e2, ff282197, 2a681c93)
+
+- 🔴 **`Propietario.pendingBalance` CAMBIÓ de significado**: ya no es lo generado en Dispersiones sino el GIRO ATRASADO (vencido
+  y sin girar, la fuente de su estado de cuenta), con `girosVencidos`/`giroVencidoDesde`; lo generado va en `generadoSinGirar`.
+  Se lee con `lib/propietarios/giros-del-propietario.ts` (lista, tarjetas, ficha, KPI, Excel). Rótulo: «Giro atrasado».
+- **Ficha del propietario**: «Editar» abre el MISMO cajón que «Nuevo» (`CajonDelFormularioDelPropietario`, compartido con la
+  lista); `?cambiarCuenta=1` abre «Cambiar cuenta» una vez y se quita de la URL; el NIT con su DV (`documento-con-dv.ts`, sobre
+  `digitoDeVerificacion`); en copropiedad cada tarjeta dice SU parte (`inmuebles[]`). P-16: la próxima cuota del propietario es
+  `doc.proximaCuota` (suma de sus contratos), no la primera fila. «Hacer principal» en un empate (`consignacionesApi.elegirPrincipal`,
+  sólo ADMIN/CONTADOR); el chip «Principal» va en `propietario.id`, no en el primero de la lista.
+- **Contratos**: «Nuevo contrato» toma el prorrateo, el plazo y el fin de `GET /contracts/valores-por-defecto`
+  (`lib/contratos/valores-por-defecto.ts`, dice de dónde sale); el estado de la LISTA lee `estadoParaMostrar.terminacionProgramada`
+  («Activo · Termina el 15 de dic»; la lista no trae `terminadoEn`); «Cuándo paga» = `reglaDeCobro.frase`; el depósito sólo si
+  `depositoDelContrato.aplica` (Nico: sólo comercial; en comercial sin valor, «Sin depósito pactado»). «Cambiar de inquilino»
+  (`CambioDeInquilino`, cajón, hoy o antes; el 409 `INQUILINO_SALIENTE_CON_DEUDA` se dice DENTRO del cajón). El correo del
+  inquilino nuevo del contrato manual es obligatorio (Nico, CR-14) y el botón del contrato sin cuenta es «Invitar al portal».
+- **Estado de cuenta**: el concepto del back nuevo cierra con el rango EN PALABRAS («Canon. Del 1 al 31 de octubre de 2026»,
+  «El 31 de octubre de 2026»); `filas.ts` lo lee además de la cola de Nui. CR-31 `plazoSinFijar`: aviso «sin días de plazo
+  fijados no corre interés» con «Fijar los días de plazo» (intereses del estado de cuenta y cajón del inquilino). CR-18: «Generar
+  cobros» dice los trimestrales cuyo mes va en la cuota de otro (`dentroDeOtraCuota`).
+- El «correo obligatorio» de Nuevo inquilino y del propietario sale de `terceros-sin-correo` con `cobros:view` y, sin él (el
+  asesor), de `exigeCorreoDelTercero` de `GET /inmobiliaria/agency` (`lib/terceros/correo-obligatorio.ts`).
+
+## Centavos en todo: la plata con centavos detrás de las llaves del back (C3-FRONT, 03-10-2026)
+
+Nico: «que no se redondee, se trae tal cual» y «centavos en todo». El front NO decide: pregunta al back
+`GET /config/plata` → `{ conCentavos: { [area]: boolean } }` (9 áreas de C2; `src/lib/plata/con-centavos.ts`,
+servicio `src/lib/api/config-de-plata.service.ts`). Una pregunta cada 60 s compartida por todos; sólo un `true`
+literal prende un área; un back viejo (404), caído o raro = sin centavos, EXACTAMENTE como hoy.
+
+- **Hook** `usePlataConCentavos(areas)` (`lib/plata/use-plata-con-centavos.ts`): `false` en el servidor, en la
+  primera pintada y sin `areas`. Con varias áreas, TODAS. La deuda (canon, recibos, conceptos) pide las dos:
+  `AREAS_DE_LA_DEUDA`. Fuera de React (servicios, traductores) se mira la foto `configDePlataAhora()`.
+- **Campos**: `MoneyInput` con `areas` acepta coma decimal (hasta 2; el tercero se frena con una pista animada,
+  `Presence` de Cadence, i18n `plata.hastaDosDecimales`) y entrega `"1234567.29"`; sin `areas` es el de siempre.
+  `MoneyInputNumerico` (valor `number`, `NaN` = vacío) y `CampoDePlata` (= el `CurrencyInput` de Cadence con la
+  llave apagada) para las pantallas que guardaban número. Cableados: contrato nuevo/editar (deuda; el depósito al
+  editar sigue entero porque `UpdateContractDto.deposit` es `@IsInt`), conceptos, recibo de caja, deducciones
+  (`dispersion_y_liquidacion`), asiento manual y de apertura (`contabilidad_facturacion_y_exogena`), extracto,
+  saldo del cierre y relación de aseguradoras (`tesoreria_y_conciliacion`), migración de contratos
+  (`contratos_y_cuotas`).
+- **Espejos**: cada `limites-*` / regla de entero recibe la llave (`esPlataQueSeAcepta`, `fraseDeLaPlata`): la
+  frase «sin centavos» SÓLO con la llave apagada; prendida, `MENSAJE_PLATA_HASTA_EL_CENTAVO` (la del back). Las
+  cuentas espejo del back (`imputarPago`, `liquidar`, la partida doble, el cuadre del extracto, la apertura) van
+  en centavos enteros con la llave. Un espejo se prende SÓLO si el DTO del back ya usa `@EsPlataDeLasAreas`.
+- **Formatos (P8 a)** en `lib/plata/escribir-plata.ts`: en pantalla, centavos SÓLO si el valor los tiene Y
+  alguna llave está prendida (`seMuestranLosCentavos`; la respuesta la pide `components/plata/LlavesDeLaPlata`
+  en el layout raíz y el `formatCurrency` de `useI18n` se repinta al cambiar). Con TODAS apagadas, cada pantalla
+  es EXACTAMENTE la de hoy, también una cifra con fracción (regla de Nico «no dañar lo que ya estaba»).
+  `formatCurrency` de las dos copias, `plataEnPantalla(locale, opcionesDeHoy)` en lugar de un `Intl` con
+  `maximumFractionDigits: 0`; con un entero el texto es idéntico al de antes; en documentos (PDF del estado de
+  cuenta, Excel/PDF del cierre, PDF de la liquidación del recaudo) con la llave del área SIEMPRE dos decimales
+  (`formatCurrencyEnDocumento`, `plataEnDocumento`), sin ella como siempre. Precios del SaaS (P12), avalúos,
+  conteos y abreviaturas («$620 M») no se tocan.
+- **Wompi**: las rutas `wompi-session` (arriendo y acuerdo) calculan `amountInCents` con `aCentavosWompi`
+  ($1.234.567,29 → 123456729), nunca `pesos * 100`.
+
+
+### C4 — limpieza de los centavos (03-10-2026)
+- 🔴 **UNA sola `formatCurrency`**: la de `@/lib/types/inmobiliaria` delega en la de `@/lib/format` → «$ 1.234.567»
+  CON espacio en todas las pantallas (C1-ESQUEMA Q4 a; antes esa copia escribía «$1.234.567» y «$-2.500»).
+  🔴 Ese espacio es DURO (U+00A0, `ESPACIO_DE_LA_PLATA` de `lib/plata/escribir-plata.ts`; Nico, 04-10): en una
+  tarjeta angosta el «$» ya no queda solo en una línea. También lo llevan los `pesos()` de cierre, liquidación,
+  neto del propietario y facturación electrónica. Una prueba que compare el texto exacto (`toBe`, `toContain`
+  sobre `textContent`) escribe `'$\u00a01.234.567'`; `getByText`/`toHaveTextContent` normalizan y aceptan
+  «$ 1.234.567». En el PDF de jsPDF (`pesosEnPdf`) va espacio normal: jsPDF mide de más el U+00A0.
+- **Renovación por IPC** (Q2 a): `calculateNewRent(canon, ipc, { conCentavos })` / `topeConIpc` = `canonConIncremento`
+  del back; `AREAS_DE_LA_RENOVACION` (`lib/renovaciones/reglas.ts`: `inmuebles_y_mandato` + la deuda) prende el tope,
+  el `MoneyInput` del canon y `erroresDeLosValores(…, { canonConCentavos })`. El depósito al EDITAR un contrato
+  acepta centavos con la deuda (como al crear).
+- **Documentos con la llave apagada (Q3 a)**: `decimalesEnDocumento` / `formatCurrencyEnDocumento` escriben los
+  centavos GUARDADOS (`lib/plata/centavos-guardados.ts`); un entero o una cuenta a medias, como hoy.
+- **La llave del MICRO** (Q4 a): `usePlataDelMicroConCentavos()` (`lib/plata/micro-con-centavos.ts`, `GET
+  /config/plata` del micro; micro viejo o falla = sin centavos). Todavía NO la usa ningún formulario (acuerdos de
+  pago y facturas de proveedor siguen en pesos enteros): falta que `MoneyInput` acepte una llave que no sea de áreas
+  del back.
 
 ## Agente de proyecto y skills
 

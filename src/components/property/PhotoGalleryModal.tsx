@@ -187,7 +187,7 @@ export function PhotoGalleryModal({
                 aria-label={`Ver foto ${index + 1}`}
                 aria-current={activeIndex === index}
                 className={cn(
-                  'relative aspect-[4/3] w-16 md:w-20 flex-shrink-0 rounded-md overflow-hidden transition-all duration-150',
+                  'relative aspect-[4/3] w-16 md:w-20 flex-shrink-0 rounded-md overflow-hidden transition-[opacity,box-shadow] duration-fast',
                   'focus:outline-none focus-visible:ring-2 focus-visible:ring-white',
                   activeIndex === index ? 'ring-2 ring-white opacity-100' : 'opacity-50 hover:opacity-90'
                 )}

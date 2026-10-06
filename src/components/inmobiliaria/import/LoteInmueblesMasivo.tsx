@@ -15,6 +15,9 @@
  *  - «Descartar»: sólo con el permiso `portafolio:delete`.
  */
 import { mensajeDeCarga } from './lib/mensajeDeCarga';
+import { errorDelNumero } from './lib/limites-de-la-importacion';
+import { camposDelError } from '@/lib/errores/traductor-de-errores';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -40,7 +43,7 @@ import {
 } from '@/lib/api/inmuebles-importacion.service';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { AVISO_CANON_POR_DEFECTO } from '@/lib/inmuebles/canon-por-confirmar';
-import { etiquetaDeFaltante } from './lib/faltantesInmuebles';
+import { etiquetaDeFaltante, etiquetaDelGrupoDeFaltante } from './lib/faltantesInmuebles';
 
 const N = (n: number) => n.toLocaleString('es-CO');
 
@@ -140,9 +143,15 @@ interface Props {
   deshabilitado?: boolean;
   /** Algo cambió en las filas: que la pantalla recargue su lista y sus totales. */
   onCambio: () => void;
+  /**
+   * Los totales del lote como los ve la pantalla. Cuando cambian por fuera de
+   * este panel (se descartó o se corrigió una fila suelta, y con ella se liberó
+   * su repetida), los grupos se vuelven a contar (MIG-C, 04-10).
+   */
+  firmaDelLote?: string;
 }
 
-export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: Props) {
+export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio, firmaDelLote }: Props) {
   const permisos = usePermissionsContextSafe();
   const puedeDescartar = permisos === null || permisos.canAccess('portafolio', 'delete');
 
@@ -155,6 +164,8 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
   const [corriendo, setCorriendo] = useState<'valor' | 'descartar' | null>(null);
   const [avance, setAvance] = useState<{ procesadas: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** El error del campo «Valor»: va debajo de él, no en el resultado de abajo. */
+  const [errorDelValor, setErrorDelValor] = useState<string | null>(null);
   const [resultado, setResultado] = useState<ResultadoMasivoPorFiltroInmuebles | null>(null);
   const [confirmaDescarte, setConfirmaDescarte] = useState(false);
   const vivo = useRef(true);
@@ -177,7 +188,7 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
 
   useEffect(() => {
     void cargarMotivos();
-  }, [cargarMotivos]);
+  }, [cargarMotivos, firmaDelLote]);
 
   const campo = CAMPOS.find((c) => c.clave === clave) ?? CAMPOS[0];
   const cantidad = cuantasDe(alcanceElegido, motivos);
@@ -195,7 +206,7 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
       : []),
     ...motivosQueBloquean.map((m) => ({
       id: `motivo:${m.codigo}` as AlcanceId,
-      etiqueta: `Sin ${etiquetaDeFaltante(m.codigo)}`,
+      etiqueta: etiquetaDelGrupoDeFaltante(m.codigo),
       filas: m.filas,
     })),
   ].filter((a) => a.id === 'pendientes' || a.filas > 0);
@@ -205,6 +216,8 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
     setError(null);
     setResultado(null);
     setAvance({ procesadas: 0, total: cantidad });
+    /** Un error del campo «Valor»: el formulario queda abierto para corregirlo. */
+    let quedaAbierto = false;
     const suma: ResultadoMasivoPorFiltroInmuebles = {
       totalAlEmpezar: 0,
       procesadas: 0,
@@ -236,7 +249,7 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
     } catch (e) {
       if (!vivo.current) return;
       if (suma.procesadas > 0) {
-        suma.interrumpida = { motivo: mensajeDeCarga(e, 'Se cortó la conexión a mitad.') };
+        suma.interrumpida = { motivo: mensajeDeCarga(e, 'Se cortó a mitad.', 'aplicar el cambio') };
         setResultado(suma);
       } else if (e instanceof ApiError && e.status === 403 && cambios.descartar) {
         setError('Descartar filas en bloque requiere el permiso de eliminar inmuebles y tu rol no lo tiene.');
@@ -246,14 +259,24 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
         setError('Esa carga todavía se está preparando. Espera a que termine.');
       } else if (e instanceof ApiError && e.code === 'SIN_CAMBIOS') {
         setError('No hay nada que aplicar.');
+      } else if (e instanceof ApiError && e.code === 'CAMPO_INVALIDO' && cambios.campos) {
+        // Desde el 02-10-2026 el back dice cada valor que no sirve en `campos[]`,
+        // con su frase en español (la misma de `limites-de-la-importacion`): va
+        // debajo de SU input. Un back viejo sólo nombraba el campo en inglés;
+        // ahí queda la frase de acá.
+        quedaAbierto = true;
+        const delCampo = camposDelError(e).find((c) => c.campo === campo.clave)?.mensaje;
+        setErrorDelValor(
+          delCampo ?? `Ese valor no sirve para «${campo.etiqueta.toLowerCase()}». Revísalo y vuelve a aplicarlo.`,
+        );
       } else {
-        setError(mensajeDeCarga(e, 'No pudimos aplicar el cambio.'));
+        setError(mensajeDeCarga(e, 'No pudimos aplicar el cambio.', 'aplicar el cambio'));
       }
     } finally {
       if (vivo.current) {
         setCorriendo(null);
         setAvance(null);
-        setSeleccionado(false);
+        if (!quedaAbierto) setSeleccionado(false);
       }
       await cargarMotivos();
       onCambio();
@@ -262,16 +285,26 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
 
   const ponerValor = () => {
     let dato: string | number;
+    setErrorDelValor(null);
     if (campo.tipo === 'numero') {
       const n = aNumero(valor);
       if (n === null) {
-        setError(`Escribe un número mayor que cero para «${campo.etiqueta.toLowerCase()}».`);
+        setErrorDelValor(`Escribe un número mayor que cero para «${campo.etiqueta.toLowerCase()}».`);
+        return;
+      }
+      // Los mismos topes que la corrección de una fila (espejo del back).
+      const tope =
+        campo.clave === 'monthlyRent' || campo.clave === 'salePrice' || campo.clave === 'area'
+          ? errorDelNumero(campo.clave, n)
+          : null;
+      if (tope) {
+        setErrorDelValor(tope);
         return;
       }
       dato = n;
     } else {
       if (!valor.trim()) {
-        setError(`Escribe el valor para «${campo.etiqueta.toLowerCase()}».`);
+        setErrorDelValor(`Escribe el valor para «${campo.etiqueta.toLowerCase()}».`);
         return;
       }
       dato = valor.trim();
@@ -351,6 +384,7 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
                     setClave(e.target.value as keyof CamposMasivosInmuebles);
                     setValor('');
                     setError(null);
+                    setErrorDelValor(null);
                   }}
                   data-testid="masivo-inmuebles-campo"
                 >
@@ -369,7 +403,12 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
                     className="h-10 rounded-md border border-border bg-surface px-2 text-sm text-fg"
                     value={valor}
                     disabled={bloqueado}
-                    onChange={(e) => setValor(e.target.value)}
+                    aria-invalid={errorDelValor ? true : undefined}
+                    aria-describedby={errorDelValor ? `${campoDeValorId}-error` : undefined}
+                    onChange={(e) => {
+                      setValor(e.target.value);
+                      setErrorDelValor(null);
+                    }}
                   >
                     <option value="">Elige…</option>
                     {campo.opciones?.map((o) => (
@@ -385,7 +424,13 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
                     inputMode={campo.tipo === 'numero' ? 'numeric' : undefined}
                     value={valor}
                     disabled={bloqueado}
-                    onChange={(e) => setValor(e.target.value)}
+                    invalid={!!errorDelValor}
+                    aria-invalid={errorDelValor ? true : undefined}
+                    aria-describedby={errorDelValor ? `${campoDeValorId}-error` : undefined}
+                    onChange={(e) => {
+                      setValor(e.target.value);
+                      setErrorDelValor(null);
+                    }}
                     placeholder={campo.clave === 'monthlyRent' ? 'Ej. 1' : undefined}
                     data-testid="masivo-inmuebles-valor"
                   />
@@ -403,6 +448,8 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
                 Aplicar a {nombreDelAlcance(alcanceElegido, cantidad)}
               </Button>
             </div>
+            {/* Fuera del `<label>`: dentro sería parte del nombre del campo. */}
+            <ErrorDelCampo id={`${campoDeValorId}-error`} mensaje={errorDelValor} />
             <label className="flex items-center gap-2 cursor-pointer">
               <Checkbox
                 checked={reemplazar}
@@ -455,8 +502,9 @@ export function LoteInmueblesMasivo({ lote, deshabilitado = false, onCambio }: P
 
       <Resultado resultado={resultado} error={error} />
 
+      {/* Se cierra al confirmar: el avance se ve debajo, en la barra de la carga. */}
       <AlertDialog open={confirmaDescarte} onOpenChange={setConfirmaDescarte}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive">
           <AlertDialogHeader>
             <AlertDialogTitle>{`¿No traer ${N(cantidad)} ${cantidad === 1 ? 'fila' : 'filas'}?`}</AlertDialogTitle>
             <AlertDialogDescription>

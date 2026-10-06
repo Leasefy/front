@@ -15,8 +15,32 @@ import {
 } from '@/components/ui/select';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { useI18n } from '@/lib/i18n';
+import { ApiError } from '@/lib/api/client';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { CAMPOS_DEL_ARCO, revisarSolicitudArco, type CampoDelArco } from './limites-del-arco';
 
-type ErrorType = 'rateLimit' | 'generic' | null;
+/**
+ * El aviso de arriba del formulario. 02-10-2026 (sistema de errores): antes
+ * todo lo que no era un 429 decía el mismo «no pudimos enviar», también un
+ * dato mal escrito (el micro respondía 422 con Zod en inglés y nadie lo leía)
+ * o la red caída. Ahora el 400 va a cada campo y el resto pasa por el
+ * traductor (la regla de oro).
+ */
+type ErrorType = { tipo: 'rateLimit' } | { tipo: 'mensaje'; texto: string } | null;
+
+const ID_DEL_CAMPO: Record<CampoDelArco, string> = {
+  requester_name: 'arco-name',
+  requester_email: 'arco-email',
+  requester_cedula: 'arco-cedula',
+  type: 'arco-type',
+  description: 'arco-description',
+};
+
+function enfocar(campo: CampoDelArco) {
+  if (typeof document !== 'undefined') document.getElementById(ID_DEL_CAMPO[campo])?.focus();
+}
 
 export function ArcoFormClient() {
   const { t } = useI18n();
@@ -33,6 +57,20 @@ export function ArcoFormClient() {
   const [submitted, setSubmitted] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState('');
   const [error, setError] = useState<ErrorType>(null);
+  const [errores, setErrores] = useState<Partial<Record<CampoDelArco, string>>>({});
+
+  const limpiar = (campo: CampoDelArco) =>
+    setErrores((prev) => {
+      if (prev[campo] === undefined) return prev;
+      const next = { ...prev };
+      delete next[campo];
+      return next;
+    });
+
+  const describir = (campo: CampoDelArco) =>
+    errores[campo]
+      ? { 'aria-invalid': true as const, 'aria-describedby': `${ID_DEL_CAMPO[campo]}-error` }
+      : {};
 
   function handleCedulaChange(value: string) {
     // Strip non-numeric characters
@@ -46,6 +84,7 @@ export function ArcoFormClient() {
     setRequestType('');
     setDescription('');
     setError(null);
+    setErrores({});
     setSubmitted(false);
     setSubmittedEmail('');
   }
@@ -54,23 +93,32 @@ export function ArcoFormClient() {
     e.preventDefault();
     setError(null);
 
+    const body = {
+      requester_name: requesterName,
+      requester_cedula: requesterCedula,
+      requester_email: requesterEmail,
+      type: requestType,
+      description,
+    };
+
+    // Lo que el micro rechazaría se ataja antes, con sus mismas frases.
+    const locales = revisarSolicitudArco(body);
+    setErrores(locales);
+    const primero = CAMPOS_DEL_ARCO.find((c) => locales[c]);
+    if (primero) {
+      enfocar(primero);
+      return;
+    }
+
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL;
     if (!agentUrl) {
-      setError('generic');
+      setError({ tipo: 'mensaje', texto: t('inmobiliaria.ai.arco.public.submitError') });
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const body = {
-        requester_name: requesterName,
-        requester_cedula: requesterCedula,
-        requester_email: requesterEmail,
-        type: requestType,
-        description,
-      };
-
       const res = await fetch(`${agentUrl}/api/arco`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -80,13 +128,33 @@ export function ArcoFormClient() {
       if (res.ok) {
         setSubmittedEmail(requesterEmail);
         setSubmitted(true);
-      } else if (res.status === 429) {
-        setError('rateLimit');
-      } else {
-        setError('generic');
+        return;
       }
-    } catch {
-      setError('generic');
+      if (res.status === 429) {
+        setError({ tipo: 'rateLimit' });
+        return;
+      }
+      const cuerpo = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+      const fallo = new ApiError(
+        res.status,
+        (cuerpo?.message as string | string[] | undefined) ?? '',
+        typeof cuerpo?.code === 'string' ? cuerpo.code : undefined,
+        cuerpo ?? undefined,
+      );
+      const reparto = repartirErroresDelServidor<CampoDelArco>(fallo, {
+        campos: CAMPOS_DEL_ARCO,
+        accion: 'enviar tu solicitud',
+        porDefecto: t('inmobiliaria.ai.arco.public.submitError'),
+      });
+      setErrores(reparto.porCampo);
+      if (reparto.orden[0]) enfocar(reparto.orden[0]);
+      if (reparto.sueltos.length > 0) setError({ tipo: 'mensaje', texto: reparto.sueltos.join(' · ') });
+    } catch (err) {
+      // Sin respuesta: la regla de oro habla de la conexión.
+      setError({
+        tipo: 'mensaje',
+        texto: mensajeParaLaPersona(err, { porDefecto: t('inmobiliaria.ai.arco.public.submitError') }),
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -143,16 +211,14 @@ export function ArcoFormClient() {
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           {/* Error alert */}
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" role="alert">
               <AlertTitle>
-                {error === 'rateLimit'
+                {error.tipo === 'rateLimit'
                   ? t('inmobiliaria.ai.arco.public.rateLimitTitle')
                   : t('inmobiliaria.ai.arco.error.load').split('.')[0]}
               </AlertTitle>
               <AlertDescription>
-                {error === 'rateLimit'
-                  ? t('inmobiliaria.ai.arco.public.rateLimitBody')
-                  : t('inmobiliaria.ai.arco.public.submitError')}
+                {error.tipo === 'rateLimit' ? t('inmobiliaria.ai.arco.public.rateLimitBody') : error.texto}
               </AlertDescription>
             </Alert>
           )}
@@ -171,9 +237,14 @@ export function ArcoFormClient() {
               required
               maxLength={200}
               value={requesterName}
-              onChange={(e) => setRequesterName(e.target.value)}
+              onChange={(e) => {
+                setRequesterName(e.target.value);
+                limpiar('requester_name');
+              }}
               autoComplete="name"
+              {...describir('requester_name')}
             />
+            <ErrorDelCampo id="arco-name-error" mensaje={errores.requester_name} />
           </div>
 
           {/* Field: Cedula */}
@@ -191,12 +262,20 @@ export function ArcoFormClient() {
               required
               pattern="[0-9]{5,12}"
               value={requesterCedula}
-              onChange={(e) => handleCedulaChange(e.target.value)}
+              onChange={(e) => {
+                handleCedulaChange(e.target.value);
+                limpiar('requester_cedula');
+              }}
               autoComplete="off"
+              {...describir('requester_cedula')}
             />
-            <p className="text-xs text-fg-subtle">
-              {t('inmobiliaria.ai.arco.public.cedulaHint')}
-            </p>
+            {/* La ayuda y el error se cruzan (sin verse los dos ni saltar el alto). */}
+            <ErrorDelCampo
+              id="arco-cedula-error"
+              mensaje={errores.requester_cedula}
+              pista={t('inmobiliaria.ai.arco.public.cedulaHint')}
+              className="mt-0"
+            />
           </div>
 
           {/* Field: Email */}
@@ -212,9 +291,14 @@ export function ArcoFormClient() {
               type="email"
               required
               value={requesterEmail}
-              onChange={(e) => setRequesterEmail(e.target.value)}
+              onChange={(e) => {
+                setRequesterEmail(e.target.value);
+                limpiar('requester_email');
+              }}
               autoComplete="email"
+              {...describir('requester_email')}
             />
+            <ErrorDelCampo id="arco-email-error" mensaje={errores.requester_email} />
           </div>
 
           {/* Field: Type */}
@@ -225,8 +309,15 @@ export function ArcoFormClient() {
             >
               {t('inmobiliaria.ai.arco.public.tipoLabel')}
             </label>
-            <Select value={requestType} onValueChange={setRequestType} required>
-              <SelectTrigger id="arco-type" className="min-h-[44px]">
+            <Select
+              value={requestType}
+              onValueChange={(v) => {
+                setRequestType(v);
+                limpiar('type');
+              }}
+              required
+            >
+              <SelectTrigger id="arco-type" className="min-h-[44px]" {...describir('type')}>
                 <SelectValue placeholder={t('inmobiliaria.ai.arco.public.tipoLabel')} />
               </SelectTrigger>
               <SelectContent>
@@ -244,6 +335,7 @@ export function ArcoFormClient() {
                 </SelectItem>
               </SelectContent>
             </Select>
+            <ErrorDelCampo id="arco-type-error" mensaje={errores.type} />
           </div>
 
           {/* Field: Description */}
@@ -262,9 +354,14 @@ export function ArcoFormClient() {
               rows={4}
               placeholder={t('inmobiliaria.ai.arco.public.descripcionPlaceholder')}
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                limpiar('description');
+              }}
               className="min-h-[44px]"
+              {...describir('description')}
             />
+            <ErrorDelCampo id="arco-description-error" mensaje={errores.description} />
             <p className={`text-xs text-right ${descriptionColorClass}`}>
               {description.length}/1000
             </p>

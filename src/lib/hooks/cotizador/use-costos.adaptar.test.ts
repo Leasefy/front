@@ -8,13 +8,14 @@ import { resumenDesdeElAgente, serieMensualDesdeDias } from './use-costos'
 
 describe('resumenDesdeElAgente', () => {
   const delAgente = {
-    costPerQuoteUsd: 0.42,
-    monthlyBurnUsd: 12.5,
-    forecast30dUsd: null,
-    anthropicTotal: '10.2500',
-    carrierApiTotal: '2.0000',
-    sekureCommissionTotal: '0.2500',
-    datacreditoTotal: '0.0000',
+    // 🔴 En pesos desde el 04-10-2026: el micro ya no manda dólares.
+    costPerQuoteCop: 1764,
+    monthlyBurnCop: 52500,
+    forecast30dCop: null,
+    anthropicTotalCop: 43050,
+    carrierApiTotalCop: 8400,
+    sekureCommissionTotalCop: 1050,
+    datacreditoTotalCop: 0,
     costSources: [
       { source: 'anthropic', populated: true, computationStrategyNote: null },
       { source: 'carrier_api', populated: false, computationStrategyNote: 'Sin API todavía' },
@@ -25,11 +26,11 @@ describe('resumenDesdeElAgente', () => {
 
   it('toma los KPI y los totales de donde el agente los pone, como números', () => {
     const r = resumenDesdeElAgente(delAgente)
-    expect(r.kpis).toEqual({ costPerQuoteUsd: 0.42, monthlyBurnUsd: 12.5, forecast30dUsd: null })
+    expect(r.kpis).toEqual({ costPerQuoteCop: 1764, monthlyBurnCop: 52500, forecast30dCop: null })
     expect(r.sources).toEqual({
-      anthropicTotal: 10.25,
-      carrierApiTotal: 2,
-      sekureCommissionTotal: 0.25,
+      anthropicTotal: 43050,
+      carrierApiTotal: 8400,
+      sekureCommissionTotal: 1050,
       datacreditoTotal: 0,
     })
   })
@@ -37,9 +38,25 @@ describe('resumenDesdeElAgente', () => {
   it('cada fuente trae una `key` que la pantalla puede usar, y un nombre', () => {
     const r = resumenDesdeElAgente(delAgente)
     expect(r.costSources.map((f) => f.key)).toEqual(['anthropic', 'carrier_api', 'fuente_nueva'])
-    expect(r.costSources[1]).toMatchObject({ label: 'API de las aseguradoras', populated: false, notes: 'Sin API todavía' })
+    expect(r.costSources[1]).toMatchObject({ label: 'API de las aseguradoras', populated: false, notes: null })
     // Una fuente que no conocemos muestra su nombre crudo, no «undefined».
     expect(r.costSources[2].label).toBe('fuente_nueva')
+  })
+
+  it('🔴 la nota interna del registro (en inglés y en dólares) nunca llega a la pantalla (Nico, 04-10-2026)', () => {
+    const r = resumenDesdeElAgente({
+      ...delAgente,
+      costSources: [
+        {
+          source: 'carrier_api',
+          populated: true,
+          computationStrategyNote:
+            'Zero placeholder until real carrier integration. value_usd=$0 until ops fills COTIZADOR_*_PER_QUOTE_COST_USD',
+        },
+      ],
+    })
+    expect(r.costSources[0].notes).toBeNull()
+    expect(JSON.stringify(r)).not.toMatch(/usd/i)
   })
 })
 
@@ -47,11 +64,11 @@ describe('serieMensualDesdeDias', () => {
   it('suma los días del agente por mes, en orden, con el rótulo del gráfico', () => {
     const dia = (day: string, total: string) => ({
       day,
-      anthropicCostUsd: total,
-      carrierApiCostUsd: '0',
-      sekureCommissionUsd: '0',
-      datacreditoCostUsd: '0',
-      totalCostUsd: total,
+      anthropicCostCop: Number(total),
+      carrierApiCostCop: 0,
+      sekureCommissionCop: 0,
+      datacreditoCostCop: 0,
+      totalCostCop: Number(total),
       quoteCount: 1,
     })
     const s = serieMensualDesdeDias([

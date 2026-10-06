@@ -90,6 +90,7 @@ vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ formatCurrency: (n: number) => `$${n.toLocaleString('es-CO')}` }),
 }));
 
+import { ApiError } from '@/lib/api/client';
 import { FacturasDeProveedor, estadoDe } from './FacturasDeProveedor';
 
 const factura = (extra: Partial<FacturaDeProveedor> = {}): FacturaDeProveedor => ({
@@ -406,5 +407,51 @@ describe('<FacturasDeProveedor>', () => {
     await pintar();
 
     expect(q('factura-f1')).not.toBeNull();
+  });
+});
+
+/*
+ * Sistema de errores (02-10-2026): causar una factura que falla dice la regla
+ * de oro. Un código de la contabilidad sigue con su frase; un 5xx, «de nuestro
+ * lado» con la referencia; sin respuesta, la conexión.
+ */
+describe('<FacturasDeProveedor> · causar con la regla de oro', () => {
+  async function causar() {
+    await pintar();
+    await act(async () => {
+      (q('causar-f1') as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    return toastMock.error.mock.calls.at(-1)?.[0] as string;
+  }
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    gastos.facturas.causar.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'abcd1234',
+      }),
+    );
+    const texto = await causar();
+    expect(texto).toMatch(/No pudimos causar la factura: algo falló de nuestro lado/);
+    expect(texto).toContain('abcd1234');
+  });
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    gastos.facturas.causar.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    const texto = await causar();
+    expect(texto).toMatch(/conexi[oó]n/i);
+    expect(texto).not.toContain('Failed to fetch');
+  });
+
+  it('un código de la contabilidad sigue con su frase', async () => {
+    gastos.facturas.causar.mockRejectedValue(
+      new ApiError(400, 'periodo cerrado', 'PERIODO_CERRADO', { code: 'PERIODO_CERRADO' }),
+    );
+    expect(await causar()).toBe('Esa fecha cae en un período que ya se cerró.');
   });
 });

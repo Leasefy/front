@@ -29,6 +29,7 @@ import {
   useCarteraImport,
   type CarteraImportSummary,
 } from '@/lib/hooks/cobranza/use-cartera-import'
+import { CrossFade } from '@leasefy/cadence'
 
 export interface CobranzaImportCardProps {
   /** Se invoca tras un import exitoso (p.ej. para refrescar la lista/overview). */
@@ -146,6 +147,9 @@ export function CobranzaImportCard({
         </Button>
       </div>
 
+      {/* El resultado de la carga cambia con el estado: «listo para subir» →
+          error / no disponible / resumen, cada uno entra con su fundido. */}
+      <CrossFade swapKey={`${status}-${file ? 'archivo' : 'nada'}`}>
       {file && status === 'idle' && (
         <p className="mt-2 text-xs text-muted-foreground truncate">
           Listo para subir
@@ -159,10 +163,15 @@ export function CobranzaImportCard({
         </div>
       )}
 
-      {/* Error real (400/401/403/503) — mensaje honesto, no rompe la pantalla */}
+      {/* Error real (un 4xx, un 5xx, la red) — `message` ya es la frase entera
+          del traductor, con el porqué; no rompe la pantalla. */}
       {status === 'error' && (
-        <div className="mt-3 rounded-md border border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-danger">
-          No se pudo importar: {message ?? 'error desconocido'}
+        <div
+          role="alert"
+          data-testid="cartera-import-error"
+          className="mt-3 rounded-md border border-danger/30 bg-danger-soft px-3 py-2.5 text-sm text-danger"
+        >
+          {message ?? 'No pudimos importar la cartera.'}
         </div>
       )}
 
@@ -289,6 +298,7 @@ export function CobranzaImportCard({
           </Button>
         </div>
       )}
+      </CrossFade>
     </div>
   )
 }

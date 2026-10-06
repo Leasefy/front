@@ -13,8 +13,7 @@
  * este mes. Eso lo decide el back con su regla; la pantalla no lo calcula.
  */
 
-import { useEffect, useState } from 'react';
-import { Paperclip } from '@phosphor-icons/react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
   Dialog,
@@ -28,10 +27,47 @@ import { Button, Input } from '@/components/ui';
 import { MoneyInput } from '@/components/ui/money-input';
 import { useI18n } from '@/lib/i18n';
 import type { NuevoDescuento } from '@/lib/types/deducciones';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { SelectorDeArchivo } from '@/components/ui/selector-de-archivo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 
 /** Lo que el back acepta como soporte. */
 export const TIPOS_DE_SOPORTE = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 export const MAX_BYTES_DEL_SOPORTE = 10 * 1024 * 1024;
+
+/** Los campos del formulario. */
+export type CampoDelDescuento = 'motivo' | 'valor' | 'consignacionId' | 'soporte';
+
+/**
+ * El nombre del campo en el back → el del formulario (02-10-2026). Un 400
+ * `DATOS_INVALIDOS` trae `campos[]` con los nombres del DTO; cada uno va bajo
+ * SU campo y lo que no tiene campo acá va al toast de quien guardó.
+ */
+export const CAMPOS_DEL_DESCUENTO_EN_EL_BACK: Record<string, CampoDelDescuento> = {
+  motivo: 'motivo',
+  valorCop: 'valor',
+  consignacionId: 'consignacionId',
+  soporte: 'soporte',
+  archivo: 'soporte',
+};
+export const CAMPOS_DEL_DESCUENTO: readonly CampoDelDescuento[] = ['motivo', 'valor', 'consignacionId', 'soporte'];
+
+/** El `id` de cada campo en el formulario. */
+const ID_DEL_CAMPO: Record<CampoDelDescuento, string> = {
+  motivo: 'descuento-motivo',
+  valor: 'descuento-valor',
+  consignacionId: 'descuento-inmueble',
+  soporte: 'descuento-soporte',
+};
+
+/** Lo que va a un toast al registrar: sólo lo que no tiene campo en el formulario. */
+export function loSueltoAlRegistrar(error: unknown): string[] {
+  return repartirErroresDelServidor<CampoDelDescuento>(error, {
+    mapa: CAMPOS_DEL_DESCUENTO_EN_EL_BACK,
+    campos: CAMPOS_DEL_DESCUENTO,
+    accion: 'registrar el descuento',
+  }).sueltos;
+}
 
 export interface InmuebleParaElDescuento {
   consignacionId: string;
@@ -62,8 +98,17 @@ export function RegistrarDescuentoDialog({
   const [valor, setValor] = useState('');
   const [consignacionId, setConsignacionId] = useState('');
   const [soporte, setSoporte] = useState<File | null>(null);
-  const [errores, setErrores] = useState<Record<string, string>>({});
+  const [errores, setErrores] = useState<Partial<Record<CampoDelDescuento, string>>>({});
   const [guardando, setGuardando] = useState(false);
+  const raiz = useRef<HTMLDivElement>(null);
+
+  /** Al corregir un campo, su error se va. */
+  const limpiar = (campo: CampoDelDescuento) =>
+    setErrores((antes) => {
+      if (!antes[campo]) return antes;
+      const { [campo]: _quitado, ...resto } = antes;
+      return resto;
+    });
 
   useEffect(() => {
     if (abierto) {
@@ -76,14 +121,32 @@ export function RegistrarDescuentoDialog({
     }
   }, [abierto]);
 
+  /*
+   * 🔴 P-27 (QA-PROP, 03-10): al enviar con errores el foco se quedaba en el
+   * botón y el primer error podía quedar fuera de la vista. Va al primer campo
+   * con error, en el orden del formulario (el del soporte es su botón «Elegir
+   * archivo»: el input de verdad está escondido).
+   */
+  const enfocarElPrimero = (orden: readonly CampoDelDescuento[]) => {
+    const primero = CAMPOS_DEL_DESCUENTO.find((c) => orden.includes(c));
+    if (!primero) return;
+    const el =
+      primero === 'soporte'
+        ? raiz.current?.querySelector<HTMLElement>('[data-testid="descuento-soporte-selector"] button')
+        : raiz.current?.querySelector<HTMLElement>(`#${ID_DEL_CAMPO[primero]}`);
+    el?.focus();
+    el?.scrollIntoView?.({ block: 'center' });
+  };
+
   const validar = () => {
-    const nuevos: Record<string, string> = {};
+    const nuevos: Partial<Record<CampoDelDescuento, string>> = {};
     if (motivo.trim().length < 3) nuevos.motivo = t(k('faltaMotivo'));
     if (!valor || Number(valor) <= 0) nuevos.valor = t(k('faltaValor'));
     if (!soporte) nuevos.soporte = t(k('faltaSoporte'));
     else if (!TIPOS_DE_SOPORTE.includes(soporte.type)) nuevos.soporte = t(k('soporteTipo'));
     else if (soporte.size > MAX_BYTES_DEL_SOPORTE) nuevos.soporte = t(k('soporteMuyPesado'));
     setErrores(nuevos);
+    enfocarElPrimero(Object.keys(nuevos) as CampoDelDescuento[]);
     return Object.keys(nuevos).length === 0;
   };
 
@@ -98,8 +161,18 @@ export function RegistrarDescuentoDialog({
         soporte,
       });
       onOpenChange(false);
-    } catch {
-      // El motivo lo dice quien guardó. Acá sólo se devuelve el control.
+    } catch (e) {
+      // Lo que el back rechazó POR CAMPO va bajo su campo, con el foco en el
+      // primero; lo demás (un 5xx, la red) lo dice quien guardó, en un toast.
+      const reparto = repartirErroresDelServidor<CampoDelDescuento>(e, {
+        mapa: CAMPOS_DEL_DESCUENTO_EN_EL_BACK,
+        campos: CAMPOS_DEL_DESCUENTO,
+      });
+      if (reparto.orden.length > 0) {
+        setErrores(reparto.porCampo);
+        const id = ID_DEL_CAMPO[reparto.orden[0]];
+        raiz.current?.querySelector<HTMLElement>(`#${id}`)?.focus();
+      }
       setGuardando(false);
     }
   };
@@ -112,34 +185,47 @@ export function RegistrarDescuentoDialog({
           <DialogDescription>{t(k('descripcion'))}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4" ref={raiz}>
           <div className="space-y-2">
             <label htmlFor="descuento-motivo" className="block text-sm font-medium text-fg">
               {t(k('motivo'))} <span className="text-danger">*</span>
             </label>
             <Input
               id="descuento-motivo"
+              aria-required="true"
               value={motivo}
               maxLength={500}
-              onChange={(e) => setMotivo(e.target.value)}
+              onChange={(e) => {
+                setMotivo(e.target.value);
+                limpiar('motivo');
+              }}
               placeholder={t(k('motivoPlaceholder'))}
-              aria-invalid={Boolean(errores.motivo)}
+              aria-invalid={Boolean(errores.motivo) || undefined}
+              aria-describedby="descuento-motivo-error"
             />
-            <p className="text-xs text-fg-muted">{t(k('motivoAyuda'))}</p>
-            {errores.motivo && <p className="text-xs text-danger">{errores.motivo}</p>}
+            <ErrorDelCampo id="descuento-motivo-error" mensaje={errores.motivo} pista={t(k('motivoAyuda'))} className="mt-0" />
           </div>
 
           <div className="space-y-2">
             <label htmlFor="descuento-valor" className="block text-sm font-medium text-fg">
               {t(k('valor'))} <span className="text-danger">*</span>
             </label>
+            {/* «Centavos en todo»: la deducción es plata de la liquidación al
+                propietario; con esa área prendida acepta centavos
+                (`@EsPlataDeLasAreas(['dispersion_y_liquidacion'])` del back). */}
             <MoneyInput
               id="descuento-valor"
+              aria-required="true"
+              areas="dispersion_y_liquidacion"
               value={valor}
-              onChange={(crudo) => setValor(crudo)}
-              aria-invalid={Boolean(errores.valor)}
+              onChange={(crudo) => {
+                setValor(crudo);
+                limpiar('valor');
+              }}
+              aria-invalid={Boolean(errores.valor) || undefined}
+              aria-describedby="descuento-valor-error"
             />
-            {errores.valor && <p className="text-xs text-danger">{errores.valor}</p>}
+            <ErrorDelCampo id="descuento-valor-error" mensaje={errores.valor} className="mt-0" />
           </div>
 
           {inmuebles.length > 0 && (
@@ -150,7 +236,12 @@ export function RegistrarDescuentoDialog({
               <select
                 id="descuento-inmueble"
                 value={consignacionId}
-                onChange={(e) => setConsignacionId(e.target.value)}
+                onChange={(e) => {
+                  setConsignacionId(e.target.value);
+                  limpiar('consignacionId');
+                }}
+                aria-invalid={Boolean(errores.consignacionId) || undefined}
+                aria-describedby="descuento-inmueble-error"
                 className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
               >
                 <option value="">{t(k('inmuebleNinguno'))}</option>
@@ -160,7 +251,12 @@ export function RegistrarDescuentoDialog({
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-fg-muted">{t(k('inmuebleAyuda'))}</p>
+              <ErrorDelCampo
+                id="descuento-inmueble-error"
+                mensaje={errores.consignacionId}
+                pista={t(k('inmuebleAyuda'))}
+                className="mt-0"
+              />
             </div>
           )}
 
@@ -168,20 +264,23 @@ export function RegistrarDescuentoDialog({
             <label htmlFor="descuento-soporte" className="block text-sm font-medium text-fg">
               {t(k('soporte'))} <span className="text-danger">*</span>
             </label>
-            <div className="flex items-center gap-2 rounded-md border border-dashed border-border bg-surface-muted px-3 py-2">
-              <Paperclip className="h-4 w-4 flex-shrink-0 text-fg-muted" />
-              <input
-                id="descuento-soporte"
-                type="file"
-                accept={TIPOS_DE_SOPORTE.join(',')}
-                onChange={(e) => setSoporte(e.target.files?.[0] ?? null)}
-                className="min-w-0 flex-1 text-sm text-fg file:mr-3 file:rounded-full file:border-0 file:bg-surface file:px-3 file:py-1 file:text-sm file:text-fg"
-                aria-invalid={Boolean(errores.soporte)}
-                data-testid="descuento-soporte"
-              />
-            </div>
-            <p className="text-xs text-fg-muted">{t(k('soporteAyuda'))}</p>
-            {errores.soporte && <p className="text-xs text-danger">{errores.soporte}</p>}
+            {/* P-27: la tarjeta de archivo de la casa (`SelectorDeArchivo`), no
+                el «Choose File» del navegador. */}
+            <SelectorDeArchivo
+              id="descuento-soporte"
+              accept={TIPOS_DE_SOPORTE.join(',')}
+              archivo={soporte}
+              onElegir={(elegido) => {
+                setSoporte(elegido);
+                limpiar('soporte');
+              }}
+              testid="descuento-soporte"
+              invalido={Boolean(errores.soporte)}
+              deshabilitado={guardando}
+              describedBy="descuento-soporte-error"
+              requerido
+            />
+            <ErrorDelCampo id="descuento-soporte-error" mensaje={errores.soporte} pista={t(k('soporteAyuda'))} className="mt-0" />
           </div>
         </div>
 
@@ -189,7 +288,13 @@ export function RegistrarDescuentoDialog({
           <Button variant="outline" hideArrow onClick={() => onOpenChange(false)} disabled={guardando}>
             {t(k('cancelar'))}
           </Button>
-          <Button hideArrow onClick={() => void guardar()} disabled={guardando} data-testid="descuento-guardar">
+          <Button
+            hideArrow
+            onClick={() => void guardar()}
+            isLoading={guardando}
+            disabled={guardando}
+            data-testid="descuento-guardar"
+          >
             {guardando ? t(k('guardando')) : t(k('guardar'))}
           </Button>
         </DialogFooter>

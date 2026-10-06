@@ -206,11 +206,14 @@ describe('estaVigente', () => {
 /**
  * T-0132 (asegurabilidad-opcional-al-postular) — contract §3.3: the
  * approval study never blocks applying any more. `AntesDePostularte` gets a
- * "continue without knowing" exit for every motivo except `sin_sesion`
- * (O-1, out of scope, unchanged); `rechazado` additionally shows a warning
- * alert (likely rejection); `sin_aprobacion` / `vencida` / `en_proceso` show
- * a neutral note instead (A-1: the owner treats en_proceso/vencida the same
- * as "no study").
+ * "continue without knowing" exit for every motivo; `rechazado` additionally
+ * shows a warning alert (likely rejection); `sin_aprobacion` / `vencida` /
+ * `en_proceso` / `sin_sesion` show a neutral note instead (A-1: the owner
+ * treats en_proceso/vencida the same as "no study").
+ *
+ * T-0143 (postular-sin-sesion-y-copy-opcional) closes O-1: `sin_sesion` now
+ * gets the same continue-without exit too, alongside its two original paths
+ * ("Es mi primera vez" / "Ya tengo cuenta, entrar").
  */
 describe('<AntesDePostularte> — T-0132', () => {
   let container: HTMLDivElement
@@ -249,10 +252,10 @@ describe('<AntesDePostularte> — T-0132', () => {
     )
   }
 
-  it('sin_sesion: unchanged — NO continue-without-knowing exit (out of scope, O-1)', () => {
+  it('sin_sesion: T-0143 closes O-1 — gains the continue-without-knowing exit too', () => {
     render('sin_sesion')
-    expect(continuar()).toBeFalsy()
-    // The two original exits are still there.
+    expect(continuar()?.getAttribute('href')).toBe('/aplicar/prop-X')
+    // The two original exits stay — the new one is additive, not a replacement.
     expect(container.textContent).toContain('Es mi primera vez')
     expect(container.textContent).toContain('Ya tengo cuenta, entrar')
   })
@@ -272,7 +275,7 @@ describe('<AntesDePostularte> — T-0132', () => {
     expect(links).toContain('/inquilino/aprobacion')
   })
 
-  it.each(['sin_aprobacion', 'vencida', 'en_proceso'] as const)(
+  it.each(['sin_aprobacion', 'vencida', 'en_proceso', 'sin_sesion'] as const)(
     '%s: shows the NEUTRAL note (no alert) and a continue exit to /aplicar/:id',
     (motivo) => {
       render(motivo)
@@ -306,6 +309,21 @@ describe('<AntesDePostularte> — T-0132', () => {
       render(motivo)
       expect(container.textContent?.toLowerCase()).not.toContain('asegurabilidad')
       expect(container.textContent?.toLowerCase()).not.toContain('estudio')
+    }
+  })
+
+  /*
+   * T-0143: the approval study is optional/recommended, never required — the
+   * back stopped gating applications on it back in T-0132, but the copy
+   * still said "necesitas" (sin_aprobacion) and implied a wait was mandatory
+   * (en_proceso, vencida). No dialog may read as "you must" any more.
+   */
+  it('copy never presents the study as required ("necesitas"/"obligatorio")', () => {
+    for (const motivo of ['sin_aprobacion', 'vencida', 'en_proceso', 'rechazado', 'sin_sesion'] as const) {
+      render(motivo)
+      const texto = container.textContent?.toLowerCase() ?? ''
+      expect(texto).not.toContain('necesitas')
+      expect(texto).not.toContain('obligatorio')
     }
   })
 

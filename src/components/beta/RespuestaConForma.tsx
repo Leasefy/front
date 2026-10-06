@@ -276,13 +276,19 @@ function BloqueTabla({ bloque, turnoId }: { bloque: Extract<BloqueDeRespuesta, {
           scroller anidado. Se fija `overflow-y: hidden`: la rueda vertical
           encima de la tabla mueve el chat; a lo ancho, en el teléfono, la tabla
           se desplaza dentro de su caja sin arrastrar la página (ni el gesto de
-          «atrás» del trackpad). */}
+          «atrás» del trackpad).
+          🔴 Sin pie, la tabla llega al borde de abajo de la caja: sus esquinas de
+          abajo llevan el radio de ADENTRO de la caja (14 px del ChatContentCard −
+          1 px de filete = 13 px). Con esquinas rectas, el blanco de la última fila
+          tapaba la curva y el filete de la caja (Nico, 05-10-2026: «no deja bien
+          el stroke»). La tabla de Cadence ya recorta con `overflow-hidden`, así
+          que el hover de la última fila también respeta la curva. */}
       <div
         data-desplazamiento-de-la-tabla
         className={cn(
           '-mx-4 [&>div]:rounded-none [&>div]:border-x-0 [&>div]:border-b-0',
           '[&>div>div]:overflow-y-hidden [&>div>div]:overscroll-x-contain',
-          ocultas === 0 && '-mb-4',
+          ocultas === 0 && '-mb-4 [&>div]:rounded-b-[13px]',
         )}
       >
         <Table>

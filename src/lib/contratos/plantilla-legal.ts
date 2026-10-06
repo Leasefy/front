@@ -172,6 +172,8 @@ export function huellaDelBorrador(
   return JSON.stringify([
     borrador.consignacionId ?? null,
     borrador.propertyId ?? null,
+    borrador.applicationId ?? null,
+    borrador.tenantId ?? null,
     borrador.uso ?? null,
     borrador.arrendatarioNombre ?? null,
     borrador.arrendatarioDocumento ?? null,

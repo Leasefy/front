@@ -302,6 +302,18 @@ export interface LandlordApplicationTimelineEvent {
 }
 
 export interface LandlordApplicationDetail extends LandlordCandidate {
+  /**
+   * El inquilino, tal como lo manda `GET /landlord/applications/:id`. Ese
+   * endpoint NO trae `tenantName` (es de la tarjeta de la lista): el nombre
+   * está acá. Ver `nombreDelCandidato`.
+   */
+  tenant?: {
+    id: string;
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string | null;
+    phone?: string | null;
+  };
   documents?: LandlordApplicationDocument[];
   timeline?: LandlordApplicationTimelineEvent[];
   property?: {

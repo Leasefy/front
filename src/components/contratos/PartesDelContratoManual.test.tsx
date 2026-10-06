@@ -203,4 +203,41 @@ describe('PartesDelContratoManual', () => {
       inquilino: { modo: 'nuevo', nombre: '', documento: '', correo: '', telefono: '' },
     })
   })
+
+  it('al elegir un inquilino existente avisa quién es: nombre, documento, correo y teléfono (T-0145)', async () => {
+    getAllMock.mockResolvedValue([])
+    useInquilinosMock.mockReturnValue({
+      inquilinos: [
+        {
+          tenantId: 'doc:79123456',
+          nombre: 'Beatriz Rojas',
+          email: 'b@x.co',
+          telefono: '3001112233',
+          documento: '79123456',
+          arriendos: [],
+        },
+      ],
+      cargando: false,
+      error: null,
+      refrescar: vi.fn(),
+    })
+    const onCambio = vi.fn()
+    await act(async () => {
+      root.render(<PartesDelContratoManual valor={PARTES_VACIAS} onCambio={onCambio} />)
+    })
+    const select = container.querySelector<HTMLSelectElement>('[data-testid="inquilino-combobox"]')!
+    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!
+    act(() => {
+      setter.call(select, 'doc:79123456')
+      select.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    expect(onCambio).toHaveBeenCalledWith({
+      ...PARTES_VACIAS,
+      inquilino: {
+        modo: 'existente',
+        tenantId: 'doc:79123456',
+        datos: { nombre: 'Beatriz Rojas', documento: '79123456', correo: 'b@x.co', telefono: '3001112233' },
+      },
+    })
+  })
 })

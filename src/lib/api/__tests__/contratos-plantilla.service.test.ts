@@ -87,6 +87,43 @@ describe('preparar', () => {
   })
 })
 
+describe('quién es el arrendatario (T-0145)', () => {
+  it('manda applicationId y los datos de identificación en preparar', async () => {
+    await contratosPlantillaApi.preparar({
+      borrador: {
+        applicationId: 'a-1',
+        arrendatarioNombre: 'Ana Pérez',
+        arrendatarioTipoDocumento: 'CE',
+        arrendatarioDocumento: '123456',
+      },
+    })
+    expect(cuerpoEnviado()).toEqual({
+      applicationId: 'a-1',
+      arrendatarioNombre: 'Ana Pérez',
+      arrendatarioTipoDocumento: 'CE',
+      arrendatarioDocumento: '123456',
+    })
+  })
+
+  it('manda tenantId en generar y en redactarConIa', async () => {
+    await contratosPlantillaApi.generar({ borrador: { tenantId: 't-1' } })
+    expect(cuerpoEnviado()).toEqual({ tenantId: 't-1' })
+
+    post.mockReset()
+    post.mockResolvedValue({})
+    await contratosPlantillaApi.redactarConIa({
+      borrador: { tenantId: 't-1' },
+      instrucciones: 'Se prohíbe subarrendar',
+    })
+    expect(cuerpoEnviado()).toEqual({ tenantId: 't-1', instrucciones: 'Se prohíbe subarrendar' })
+  })
+
+  it('un id vacío no viaja', async () => {
+    await contratosPlantillaApi.preparar({ borrador: { applicationId: '', tenantId: '' } })
+    expect(cuerpoEnviado()).toEqual({})
+  })
+})
+
 describe('generar', () => {
   it('agrega valores, cláusulas y estipulaciones ya recortadas', async () => {
     await contratosPlantillaApi.generar({

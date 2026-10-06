@@ -305,7 +305,9 @@ describe('avisoDeLoQueFalta', () => {
 
 describe('margenLegible', () => {
   it('un decimal y el signo de porcentaje', () => {
-    expect(margenLegible(37.3, '—')).toBe('37.3%');
+    // QA-FACT-CONTA-95: coma decimal, «−» y el «%» separado (sin partir).
+    expect(margenLegible(37.3, '—')).toBe('37,3\u00a0%');
+    expect(margenLegible(-385.6, '—')).toBe('−385,6\u00a0%');
   });
 
   it('🔴 `null` es guion: dividir por cero no es 0 %', () => {
@@ -315,7 +317,8 @@ describe('margenLegible', () => {
   });
 
   it('un margen negativo se dice, no se esconde', () => {
-    expect(margenLegible(-12.5, '—')).toBe('-12.5%');
+    // QA-FACT-CONTA-95: con el «−» de la casa y la coma decimal.
+    expect(margenLegible(-12.5, '—')).toBe('−12,5\u00a0%');
   });
 });
 

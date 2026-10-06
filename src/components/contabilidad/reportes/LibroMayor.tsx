@@ -49,8 +49,18 @@ import { descuadreDelMayor, mesesConDatos } from '@/lib/contabilidad/estados-fin
 import { hoy, rangoDelMesAnterior } from '@/lib/contabilidad/fechas';
 // CB-17: la plata de Contabilidad con UN formato («$ 1.234.567», «−$ 119.100»).
 import { plata as formatCurrency } from '@/lib/contabilidad/plata';
+
+const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'];
+/** `2026-06` → «jun 2026» (la columna del mes en el libro mayor). */
+export function mesDelMayor(mes: string): string {
+  const [anio, mm] = mes.split('-');
+  const nombre = MESES_CORTOS[Number(mm) - 1];
+  return anio && nombre ? `${nombre} ${anio}` : mes;
+}
 import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
+import { DescargarElInforme } from './DescargarElInforme';
+import { tablasDelMayor } from '@/lib/contabilidad/tablas-de-los-informes';
 import { Bloqueos, Nota, TarjetaDeInforme } from '../piezas';
 
 /** Las clases del PUC que se pueden pedir sueltas. */
@@ -159,6 +169,15 @@ export function LibroMayor() {
             ))}
           </select>
         </div>
+        {/* CB-C-13 (QA-FACT-CONTA-95 r2): lo que el contador firma se baja. */}
+        <div className="sm:col-span-4">
+          <DescargarElInforme
+            informe="Libro mayor"
+            periodo={rango}
+            tablas={() => (mayor ? tablasDelMayor(mayor, meses) : [])}
+            disabled={!mayor || mayor.filas.length === 0}
+          />
+        </div>
         </>
       }
     >
@@ -211,8 +230,9 @@ export function LibroMayor() {
                       <TableHead className="sticky left-0 bg-surface">Cuenta</TableHead>
                       <TableHead className="text-right">Saldo anterior</TableHead>
                       {meses.map((m) => (
-                        <TableHead key={m} colSpan={2} className="text-center">
-                          {m}
+                        <TableHead key={m} colSpan={2} className="text-center" data-testid={`mes-del-mayor-${m}`}>
+                          {/* QA-FACT-CONTA-95 (CB-C-03): «jun 2026», no «2026-06». */}
+                          {mesDelMayor(m)}
                         </TableHead>
                       ))}
                       <TableHead className="text-right">Débitos</TableHead>

@@ -111,10 +111,12 @@ describe('<LibroMayor>', () => {
   it('🔴 no dibuja los meses que todavía no llegaron', async () => {
     await pintar();
     const encabezados = [...q('libro-mayor')!.querySelectorAll('th')].map((t) => t.textContent);
-    expect(encabezados).toContain('2026-08');
-    expect(encabezados).toContain('2026-09');
-    expect(encabezados).not.toContain('2026-10');
-    expect(encabezados).not.toContain('2026-11');
+    // QA-FACT-CONTA-95 (CB-C-03): los meses legibles («ago 2026», no «2026-08»).
+    expect(encabezados).toContain('ago 2026');
+    expect(encabezados).toContain('sept 2026');
+    expect(encabezados).not.toContain('oct 2026');
+    expect(encabezados).not.toContain('nov 2026');
+    expect(encabezados).not.toContain('2026-08');
   });
 
   it('🔴 y dice cuántas columnas se recortaron, para que nadie las busque', async () => {

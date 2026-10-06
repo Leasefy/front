@@ -66,6 +66,27 @@ import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-error
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { diaLegible } from '@/lib/contabilidad/fechas';
+
+/** `2026-10-04T05:02:50Z` → «4 de octubre de 2026, 12:02 a. m.» (hora de Colombia). */
+function momentoLegible(iso: string): string {
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return iso;
+  const dia = new Intl.DateTimeFormat('es-CO', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'America/Bogota',
+  }).format(fecha);
+  const hora = new Intl.DateTimeFormat('es-CO', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'America/Bogota',
+  })
+    .format(fecha)
+    .replace(/\s+/g, ' ');
+  return `${dia}, ${hora}`;
+}
 import {
   frasesDeLaReapertura,
   movimientoDeLaFrontera,
@@ -353,17 +374,17 @@ export function Reapertura({
                     {/* El motivo COMPLETO: es lo que hace que la bitácora sirva. */}
                     <p className="whitespace-pre-wrap text-fg">{r.motivo}</p>
                     <p>
-                      <span className="font-mono tabular-nums">
-                        {new Date(r.reabiertoAt).toLocaleString('es-CO')}
-                      </span>{' '}
+                      {/* QA-FACT-CONTA-95 (CB-B-26): la fecha de la casa en la hora de
+                          Colombia y QUIÉN por su nombre, nunca su UUID. */}
+                      <span data-testid="reapertura-cuando">{momentoLegible(r.reabiertoAt)}</span>{' '}
                       ·{' '}
-                      {r.reabiertoPorUserId === null ? (
-                        'sin usuario registrado'
-                      ) : r.reabiertoPorUserId === permiso.usuarioId ? (
-                        'tú'
-                      ) : (
-                        <span className="font-mono">{r.reabiertoPorUserId}</span>
-                      )}
+                      <span data-testid="reapertura-quien">
+                        {r.reabiertoPorUserId === null
+                          ? 'sin usuario registrado'
+                          : r.reabiertoPorUserId === permiso.usuarioId
+                            ? 'tú'
+                            : (r.reabiertoPorNombre ?? 'una persona que ya no está en la inmobiliaria')}
+                      </span>
                     </p>
                   </li>
                 ),

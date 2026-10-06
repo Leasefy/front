@@ -337,12 +337,18 @@ export type TipoDeOrigenLegible =
   | 'TRASLADO_AL_BANCO'
   | 'TRASLADO_DE_COMISION'
   | 'GIRO_DEVUELTO'
-  | 'NOMINA';
+  | 'NOMINA'
+  | 'SALDO_A_FAVOR';
 
 export interface OrigenLegible {
   tipo: TipoDeOrigenLegible | string;
   rotulo: string;
   id: string | null;
+  /**
+   * Sólo en una REVERSA: el documento anulado que la hizo (CB-B-19,
+   * QA-FACT-CONTA-95 r2). «Cobro anulado» / «Recibo anulado» en el libro.
+   */
+  anula?: 'COBRO' | 'RECIBO_DE_CAJA';
 }
 
 /**
@@ -476,6 +482,8 @@ export interface SinAsentar {
   lotes: number;
   cobros: number;
   total: number;
+  /** CB-B-25 (QA-FACT-CONTA-95 r2): la plata de esos documentos; ausente con un back anterior. */
+  valorCop?: number | null;
 }
 
 /** `CerrarPeriodoDto`: un solo campo. */
@@ -527,6 +535,11 @@ export interface ReaperturaContable {
   fronteraNueva: string | null;
   motivo: string;
   reabiertoPorUserId: string | null;
+  /**
+   * QA-FACT-CONTA-95 (CB-B-26): el NOMBRE de quien reabrió (o su correo).
+   * `null`/ausente = sin usuario, una cuenta que ya no existe o un back anterior.
+   */
+  reabiertoPorNombre?: string | null;
   reabiertoAt: string;
 }
 
@@ -591,7 +604,8 @@ export interface FilaDeBalance {
  * contrato, con cada diferencia y su motivo («sin explicar» si no se sabe).
  */
 export interface MotivoDeLaDiferenciaDeCartera {
-  tipo: 'SIN_CAUSAR' | 'YA_NO_SE_DEBE' | 'SIN_EXPLICAR';
+  /** CB-K-03: `CAUSADO_CON_OTRO_VALOR` = la causación del cobro y su cuota no coinciden y el texto dice por qué. */
+  tipo: 'SIN_CAUSAR' | 'YA_NO_SE_DEBE' | 'CAUSADO_CON_OTRO_VALOR' | 'SIN_EXPLICAR';
   /** `AAAA-MM` del cobro o de la cuota. */
   mes: string | null;
   texto: string;
@@ -649,6 +663,9 @@ export interface RenglonDeAuxiliar {
   descripcion: string | null;
   terceroTipo: string | null;
   terceroId: string | null;
+  /** CB-C-04 (QA-FACT-CONTA-95 r2): el nombre y el documento del tercero; ausentes con un back anterior. */
+  terceroNombre?: string | null;
+  terceroDocumento?: string | null;
   debitoCop: number;
   creditoCop: number;
   /** Saldo corrido, en la naturaleza de la cuenta. */
@@ -1583,9 +1600,14 @@ export const contabilidadApi = {
       return apiClient.get<AsientoContable>(`${BASE}/asientos/${encodeURIComponent(id)}`);
     },
 
-    /** Hasta qué día está cerrada la contabilidad. */
-    async cierre(): Promise<Cierre> {
-      return apiClient.get<Cierre>(`${BASE}/asientos/cierre`);
+    /**
+     * Hasta qué día está cerrada la contabilidad. Con `hasta`, lo que quedaría
+     * sin asiento si se cierra hasta ese día (CB-B-25, QA-FACT-CONTA-95 r2).
+     */
+    async cierre(hasta?: string): Promise<Cierre> {
+      return apiClient.get<Cierre>(
+        `${BASE}/asientos/cierre${hasta ? `?hasta=${encodeURIComponent(hasta)}` : ''}`,
+      );
     },
 
     /** Recibos, giros y cobros que quedaron sin asiento por falta de mapeo. */

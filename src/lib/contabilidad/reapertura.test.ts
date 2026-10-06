@@ -112,13 +112,20 @@ describe('frasesDeLaReapertura', () => {
 describe('movimientoDeLaFrontera', () => {
   it('nombra las dos fechas', () => {
     expect(movimientoDeLaFrontera('2025-12-31T00:00:00.000Z', '2025-11-30T00:00:00.000Z')).toBe(
-      `de ${diaLegible('2025-12-31')} a ${diaLegible('2025-11-30')}`,
+      `Estaba cerrada hasta el ${diaLegible('2025-12-31')}; quedó cerrada hasta el ${diaLegible('2025-11-30')}.`,
     );
   });
 
   it('🔴 `null` no se pinta como un guion: se dice que no quedó nada cerrado', () => {
     expect(movimientoDeLaFrontera('2025-12-31', null)).toBe(
-      `de ${diaLegible('2025-12-31')} a sin ninguna fecha cerrada`,
+      `Estaba cerrada hasta el ${diaLegible('2025-12-31')}; quedó sin ninguna fecha cerrada.`,
     );
+  });
+
+  it('🔴 QA-FACT-CONTA-95 (CB-J): se lee como una frase, nunca «de … a sin ninguna fecha cerrada»', () => {
+    const frase = movimientoDeLaFrontera('2026-08-30', null);
+    expect(frase).not.toMatch(/\ba sin\b/);
+    expect(frase).toMatch(/^Estaba cerrada hasta el .+; quedó sin ninguna fecha cerrada\.$/);
+    expect(movimientoDeLaFrontera(null, '2026-08-30')).toMatch(/^No tenía fecha cerrada; quedó cerrada hasta el /);
   });
 });

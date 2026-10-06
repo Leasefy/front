@@ -30,7 +30,15 @@
 
 import type { AsientosFaltantes, Cierre, EventoContable } from '@/lib/api/contabilidad.service';
 import { mesEnTitulo } from '@/lib/utils/mes';
-import { diaLegible } from './fechas';
+import { diaDe } from './fechas';
+
+/** QA-FACT-CONTA-95 (CB-J-04): el día de la casa en una frase, largo: «30 de septiembre de 2026». */
+export function diaEnFrase(valor: string): string {
+  const dia = diaDe(valor);
+  if (!dia) return valor;
+  const [y, m, d] = dia.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
+}
 
 export interface MesAnterior {
   /** `AAAA-MM`. */
@@ -82,9 +90,17 @@ export interface EntradaDeAlertas {
   facturas?: EstadoDeFacturas | null;
   lotes?: EstadoDeLotes | null;
   exogena?: EstadoDeExogena | null;
+  /**
+   * QA-FACT-CONTA-95 r2 (CB-A-07): las cuentas activas del PUC. `0` = la
+   * inmobiliaria todavía no tiene plan: la primera alerta lo dice y las del
+   * mapeo se callan (sin cuentas no hay nada que elegir). `null`/ausente = no
+   * se pudo preguntar.
+   */
+  cuentasActivas?: number | null;
 }
 
 export type AlertaContable =
+  | { tipo: 'SIN_PLAN_DE_CUENTAS' }
   | {
       tipo: 'SIN_ASIENTO';
       total: number;
@@ -108,6 +124,8 @@ export type AlertaContable =
  */
 export function alertasDeContabilidad(entrada: EntradaDeAlertas): AlertaContable[] {
   const alertas: AlertaContable[] = [];
+  const sinPlan = entrada.cuentasActivas === 0;
+  if (sinPlan) alertas.push({ tipo: 'SIN_PLAN_DE_CUENTAS' });
 
   if (entrada.balance && !entrada.balance.cuadra) {
     alertas.push({ tipo: 'NO_CUADRA', diferenciaCop: entrada.balance.diferenciaCop });
@@ -125,7 +143,7 @@ export function alertasDeContabilidad(entrada: EntradaDeAlertas): AlertaContable
         mapeoCompleto: f.mapeoCompleto,
         eventosSinCuenta: f.eventosSinCuenta,
       });
-    } else if (!f.mapeoCompleto && f.eventosSinCuenta.length > 0) {
+    } else if (!sinPlan && !f.mapeoCompleto && f.eventosSinCuenta.length > 0) {
       alertas.push({ tipo: 'MAPEO_INCOMPLETO', eventosSinCuenta: f.eventosSinCuenta });
     }
   }
@@ -145,7 +163,7 @@ export function alertasDeContabilidad(entrada: EntradaDeAlertas): AlertaContable
   // portada se lee de arriba abajo.
 
   const r = entrada.rubros;
-  if (r && !r.completo && r.faltantes.length > 0) {
+  if (!sinPlan && r && !r.completo && r.faltantes.length > 0) {
     alertas.push({ tipo: 'RUBROS_INCOMPLETOS', faltantes: r.faltantes });
   }
 
@@ -216,6 +234,15 @@ export function describirAlerta(
   formatoDeMonto: (n: number) => string,
 ): AlertaDescrita {
   switch (alerta.tipo) {
+    case 'SIN_PLAN_DE_CUENTAS':
+      return {
+        clave: 'sin-plan-de-cuentas',
+        severidad: 'warning',
+        titulo: 'Todavía no hay plan de cuentas',
+        detalle:
+          'Sin cuentas no se asienta nada ni se puede completar el mapeo. Siembra el PUC base (Decreto 2650) o sube el plan de cuentas de tu sistema actual.',
+        accion: { tipo: 'ir', label: 'Ir al plan de cuentas', href: `${BASE}/puc` },
+      };
     case 'NO_CUADRA':
       return {
         clave: 'no-cuadra',
@@ -259,7 +286,8 @@ export function describirAlerta(
         severidad: 'info',
         // `mesEnTitulo`, no `capitalize` de CSS: eso pondría «Agosto De 2026».
         titulo: `${mesEnTitulo(alerta.mes)} tiene ${plural(alerta.asientos, 'asiento', 'asientos')} y sigue abierto`,
-        detalle: `Ciérralo hasta el ${diaLegible(alerta.hasta)} para que nada con fecha de ese mes se pueda asentar ni reversar adentro.`,
+        // QA-FACT-CONTA-95 (CB-J-04): en una frase, el día largo («30 de septiembre de 2026»), no «30 de sept de 2026».
+        detalle: `Ciérralo hasta el ${diaEnFrase(alerta.hasta)} para que nada con fecha de ese mes se pueda asentar ni reversar adentro.`,
         accion: { tipo: 'cerrar-mes', label: 'Cerrar el mes', hasta: alerta.hasta },
       };
     }

@@ -235,7 +235,8 @@ describe('<Reapertura>', () => {
     await pintar('2025-11-30');
 
     const fila = todos('fila-de-reapertura')[0];
-    expect(fila.textContent).toContain(`de ${diaLegible('2025-12-31')} a ${diaLegible('2025-11-30')}`);
+    // QA-FACT-CONTA-95 (CB-J): en una frase, cómo estaba y cómo quedó.
+    expect(fila.textContent).toContain(`Estaba cerrada hasta el ${diaLegible('2025-12-31')}; quedó cerrada hasta el ${diaLegible('2025-11-30')}.`);
     expect(fila.textContent).toContain('proveedor de aseo');
   });
 

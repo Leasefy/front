@@ -19,6 +19,7 @@
  */
 
 import { useCallback, useId, useMemo, useState } from 'react';
+import { plata } from '@/lib/contabilidad/plata';
 import { toast } from '@/components/ui/toast';
 import { LockKey, LockSimple, LockSimpleOpen } from '@phosphor-icons/react';
 import { Banner } from '@leasefy/cadence';
@@ -43,6 +44,7 @@ import {
   contabilidadApi,
   type Cierre,
   type ResultadoDeCierre,
+  type SinAsentar,
 } from '@/lib/api/contabilidad.service';
 import { aTextoDeDia, diaDe, diaLegible } from '@/lib/contabilidad/fechas';
 import { elPeriodoEnUnaFrase, estadoDelPeriodo } from '@/lib/contabilidad/el-periodo-en-una-frase';
@@ -71,8 +73,8 @@ export interface CierreDePeriodoProps {
 }
 
 /** «Hay 3 movimientos sin asiento hasta el 30 sep 2026 (2 recibos, 1 cobro): …». */
-function fraseDeLoSinAsentar(
-  s: { recibos: number; lotes: number; cobros: number; total: number },
+export function fraseDeLoSinAsentar(
+  s: { recibos: number; lotes: number; cobros: number; total: number; valorCop?: number | null },
   hasta: string | null,
 ): string {
   const partes = [
@@ -81,7 +83,10 @@ function fraseDeLoSinAsentar(
     s.cobros ? `${s.cobros} ${s.cobros === 1 ? 'cobro' : 'cobros'}` : null,
   ].filter(Boolean);
   const cuantos = s.total === 1 ? 'Hay 1 movimiento sin asiento' : `Hay ${s.total.toLocaleString('es-CO')} movimientos sin asiento`;
-  return `${cuantos}${hasta ? ` hasta el ${diaLegible(hasta)}` : ''}${partes.length ? ` (${partes.join(', ')})` : ''}: asiéntalos («Reprocesar» en el inicio de Contabilidad) antes de cerrar, o quedan por fuera del período.`;
+  // CB-B-25 (QA-FACT-CONTA-95 r2): y cuánta plata es, si el back la sabe.
+  const cuanto =
+    typeof s.valorCop === 'number' && s.valorCop > 0 ? ` por ${plata(s.valorCop)}` : '';
+  return `${cuantos}${hasta ? ` hasta el ${diaLegible(hasta)}` : ''}${partes.length ? ` (${partes.join(', ')})` : ''}${cuanto}: asiéntalos («Reprocesar» en el inicio de Contabilidad) antes de cerrar, o quedan por fuera del período.`;
 }
 
 /** El último día del mes anterior: lo que normalmente se cierra. */
@@ -119,6 +124,12 @@ export function CierreDePeriodo({
    * dato.
    */
   const [errorDeLaFecha, setErrorDeLaFecha] = useState<string | null>(null);
+  /**
+   * 🔴 QA-FACT-CONTA-95 r2 (CB-B-25): lo que quedaría sin asiento si se cierra
+   * hasta la fecha ELEGIDA, dicho DENTRO del diálogo y antes de confirmar
+   * (cuántos y cuánta plata). Se pregunta al abrir; si falla, el diálogo sigue.
+   */
+  const [sinAsentarAlCerrar, setSinAsentarAlCerrar] = useState<SinAsentar | null>(null);
 
   const problema = useMemo(() => {
     if (!diaDe(hasta)) return 'Elige un día.';
@@ -135,8 +146,13 @@ export function CierreDePeriodo({
     setEscrito('');
     setError(null);
     setErrorDeLaFecha(null);
+    setSinAsentarAlCerrar(null);
     setConfirmando(true);
-  }, []);
+    void Promise.resolve()
+      .then(() => contabilidadApi.asientos.cierre(hasta))
+      .then((c) => setSinAsentarAlCerrar(c?.sinAsentar ?? null))
+      .catch(() => setSinAsentarAlCerrar(null));
+  }, [hasta]);
 
   const cerrarDialogo = useCallback(() => {
     if (enviando) return;
@@ -325,6 +341,12 @@ export function CierreDePeriodo({
               lo que esté mal sólo se corrige con una reversa fechada después.
             </DialogDescription>
           </DialogHeader>
+
+          {sinAsentarAlCerrar && sinAsentarAlCerrar.total > 0 ? (
+            <Banner variant="warning" role="status" data-testid="sin-asentar-en-el-dialogo">
+              {fraseDeLoSinAsentar(sinAsentarAlCerrar, hasta)}
+            </Banner>
+          ) : null}
 
           <div className="space-y-2">
             <Label htmlFor={`${id}-escribir`}>

@@ -47,6 +47,9 @@ import { CampoDeDia } from '../CampoDeDia';
 const ETIQUETA_DEL_MOTIVO = {
   SIN_CAUSAR: 'Sin causar',
   YA_NO_SE_DEBE: 'Ya no se debe',
+  // 🔴 CB-K-03 (QA-FACT-CONTA-95 r2): la causación del cobro y su cuota dicen
+  // valores distintos y el back dice cuánto y por qué (p. ej. el IVA).
+  CAUSADO_CON_OTRO_VALOR: 'Causado con otro valor',
   SIN_EXPLICAR: 'Sin explicar',
 } as const;
 

@@ -798,8 +798,11 @@ function ContratoDetalleContent() {
                 sola lista mezclada no deja ver nada (Nico, 2026-09-12).
               */}
               {/* QA-CONT-95 (H-04): los comprobantes son de Contabilidad; quien no la
-                  lee (el de sólo lectura) no dispara un 403 en cada ficha. */}
-              {canAccess('contabilidad', 'view') && <ComprobantesDelSistemaAnterior contractId={contract.id} />}
+                  lee (el de sólo lectura) no dispara un 403 en cada ficha.
+                  CB-E-14 (QA-FACT-CONTA-95 r2): la lectura de la contabilidad es el
+                  módulo `reportes` (ContabilidadLecturaGuard del back); `contabilidad`
+                  no existe en los permisos y escondía la sección hasta al contador. */}
+              {canAccess('reportes', 'view') && <ComprobantesDelSistemaAnterior contractId={contract.id} />}
               {/* El seguimiento de PQRS del contrato (Nico, 2026-09-12). */}
               <PqrsDelContrato contractId={contract.id} />
               {/* 17-09: lo que la inmobiliaria le cobra al PROPIETARIO por

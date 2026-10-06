@@ -40,6 +40,7 @@
  * no está incompleto: está mal, y nadie lo sabe.
  */
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -54,6 +55,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DescargarElInforme } from '@/components/contabilidad/reportes/DescargarElInforme';
+import { tablasDelBalanceGeneral, tablasDelPyg } from '@/lib/contabilidad/tablas-de-los-informes';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Avisos, Cifra, CifraDeTexto, TituloDeBloque } from '@/components/finanzas/piezas';
 // CB-17 (QA de Contabilidad, 03-10-2026): la plata de Contabilidad con UN formato.
@@ -79,6 +82,8 @@ import {
   leyendaDelCanon,
   margenLegible,
   motivoSinComparacionPorRubro,
+  notaSinGastosDelMes,
+  RUTA_DE_GASTOS,
   totalDelOtroLado,
 } from '@/lib/contabilidad/estados-financieros';
 import { mesActual } from '@/lib/recaudo/meses';
@@ -227,6 +232,21 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                 ))}
               </select>
             </label>
+            {/* CB-C-13 (QA-FACT-CONTA-95 r2): el P&G y el balance general se bajan. */}
+            <DescargarElInforme
+              informe={informe === 'pyg' ? 'Estado de resultados (P&G)' : 'Balance general'}
+              periodo={informe === 'pyg' ? { desde: `${mes}-01`, hasta } : { hasta }}
+              tablas={() =>
+                informe === 'pyg'
+                  ? pyg
+                    ? tablasDelPyg(pyg, comparar.includes('anioAnterior'))
+                    : []
+                  : balance
+                    ? tablasDelBalanceGeneral(balance)
+                    : []
+              }
+              disabled={!informeActual || cargando}
+            />
           </div>
         </div>
 
@@ -286,6 +306,23 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                   definicion="Utilidad sobre ingresos. Con «—» no hubo ingresos: «vendiste y no ganaste» y «no vendiste» no son lo mismo."
                 />
               </dl>
+
+              {/* CB-C-09 (QA-FACT-CONTA-95 r2): sin gastos en el mes, lo dice y
+                  lleva a Gastos, que es donde nacen. */}
+              {notaSinGastosDelMes(pyg.resultado.gastosMesCop) ? (
+                <Nota testId="pyg-sin-gastos">
+                  <p>
+                    {notaSinGastosDelMes(pyg.resultado.gastosMesCop)}{' '}
+                    <Link
+                      href={RUTA_DE_GASTOS}
+                      className="font-medium text-primary underline underline-offset-2"
+                      data-testid="pyg-ir-a-gastos"
+                    >
+                      Ir a Gastos
+                    </Link>
+                  </p>
+                </Nota>
+              ) : null}
 
               {/* ── El árbol ──────────────────────────────────────────── */}
               <section

@@ -68,6 +68,7 @@ import {
 import { diaLegible, hoy } from '@/lib/contabilidad/fechas';
 import { CampoDeDia } from '../CampoDeDia';
 import { Monto } from '../Monto';
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
 
 const LARGO_MAXIMO_DEL_MOTIVO = 200;
 
@@ -180,7 +181,7 @@ export function DetalleDeAsiento({ asiento: delPadre, abierto, onCerrar, onRever
               <p className="font-mono text-xs uppercase tracking-wide text-fg-muted">
                 Asiento n.º {asiento.numero}
               </p>
-              <SheetTitle>{asiento.descripcion}</SheetTitle>
+              <SheetTitle>{conLaPlataPegada(asiento.descripcion)}</SheetTitle>
               <p className="font-mono text-sm tabular-nums text-fg-muted">
                 {diaLegible(asiento.fecha)}
               </p>
@@ -211,7 +212,7 @@ export function DetalleDeAsiento({ asiento: delPadre, abierto, onCerrar, onRever
                           <span className="block text-sm text-fg">{m.cuenta?.nombre ?? ''}</span>
                         </TableCell>
                         <TableCell muted>
-                          <span className="block text-sm">{m.descripcion ?? ''}</span>
+                          <span className="block text-sm">{conLaPlataPegada(m.descripcion) ?? ''}</span>
                           {textoDelTercero(m) ? (
                             <span
                               className="block text-caption text-fg-subtle"

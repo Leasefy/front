@@ -43,6 +43,7 @@ import {
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import {
   LIMITE_POR_DEFECTO_DE_TERCEROS,
+  MAX_LIMITE_DE_TERCEROS,
   estadosFinancierosApi,
   type AuxiliarPorTercero as Auxiliar,
 } from '@/lib/api/estados-financieros.service';
@@ -51,6 +52,8 @@ import { loQueLeFaltaAlAuxiliar } from '@/lib/contabilidad/estados-financieros';
 import { useI18n } from '@/lib/i18n';
 import { Monto } from '../Monto';
 import { RangoDeFechas } from '../RangoDeFechas';
+import { DescargarElInforme } from './DescargarElInforme';
+import { tablasDelAuxiliarPorTercero } from '@/lib/contabilidad/tablas-de-los-informes';
 import { Bloqueos, Nota, TarjetaDeInforme } from '../piezas';
 
 /** Los tipos de tercero que el libro usa, tal como se asientan. */
@@ -154,6 +157,29 @@ export function AuxiliarPorTercero() {
           />
           Sólo los que tienen saldo
         </label>
+        {/* CB-C-13 (QA-FACT-CONTA-95 r2): el archivo trae TODOS los terceros, no sólo la página: los pide de 200 en 200. */}
+        <div className="sm:col-span-4">
+          <DescargarElInforme
+            informe="Auxiliar por tercero"
+            periodo={rango}
+            tablas={async () => {
+              const filtros = {
+                desde: rango.desde || undefined,
+                hasta: rango.hasta || undefined,
+                terceroTipo: terceroTipo || undefined,
+                conSaldo,
+              };
+              let todo = null as Auxiliar | null;
+              for (let desde = 0; ; desde += MAX_LIMITE_DE_TERCEROS) {
+                const pagina = await estadosFinancierosApi.terceros({ ...filtros, limite: MAX_LIMITE_DE_TERCEROS, desplazamiento: desde });
+                todo = todo ? { ...todo, terceros: [...todo.terceros, ...pagina.terceros] } : pagina;
+                if (pagina.terceros.length === 0 || desde + pagina.terceros.length >= pagina.total) break;
+              }
+              return todo ? tablasDelAuxiliarPorTercero(todo) : [];
+            }}
+            disabled={!auxiliar || auxiliar.terceros.length === 0}
+          />
+        </div>
         </>
       }
     >

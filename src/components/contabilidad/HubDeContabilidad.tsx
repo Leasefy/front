@@ -149,6 +149,8 @@ import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/caj
 import { CierreDePeriodo } from './asientos/CierreDePeriodo';
 import { EN_CURSO_EN_EL_CENTRO } from '@/components/procesos/estado-del-proceso';
 import { DetalleDeAsiento } from './asientos/DetalleDeAsiento';
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
+import { leerFallo } from '@/lib/errores/traductor-de-errores';
 
 const BASE = '/panel/inmobiliaria/contabilidad';
 
@@ -348,7 +350,7 @@ function usePortada() {
 // ══ Piezas ══════════════════════════════════════════════════════════════════
 
 /** Por qué no cargó, en palabras cortas: va detrás de «No cargó:». */
-function motivoDelFallo(error: unknown): string {
+export function motivoDelFallo(error: unknown): string {
   switch (clasificarFallo(error).tipo) {
     case 'sinPermiso':
       return 'tu rol no tiene acceso a esta consulta';
@@ -360,8 +362,13 @@ function motivoDelFallo(error: unknown): string {
       return 'hubo demasiadas consultas seguidas, espera un momento';
     case 'noExiste':
       return 'el servidor no encontró esta consulta';
-    default:
-      return 'falló del lado del servidor';
+    default: {
+      // QA-FACT-CONTA-95 (CB-J-08): un 5xx dice su referencia, para que soporte lo encuentre.
+      const referencia = leerFallo(error).referencia;
+      return referencia
+        ? `falló del lado del servidor (referencia ${referencia})`
+        : 'falló del lado del servidor';
+    }
   }
 }
 
@@ -559,8 +566,8 @@ function UltimosAsientos({
                 <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">
                   {fechaCorta(diaDe(a.fecha))}
                 </span>
-                <span className="truncate text-sm text-fg" title={a.descripcion}>
-                  {a.descripcion}
+                <span className="truncate text-sm text-fg" title={conLaPlataPegada(a.descripcion)}>
+                  {conLaPlataPegada(a.descripcion)}
                 </span>
                 <Monto
                   valor={a.movimientos.reduce((s, m) => s + (m.debitoCop ?? 0), 0)}
@@ -1034,6 +1041,8 @@ export function HubDeContabilidad() {
         facturas: datos.facturas,
         lotes: datos.lotes,
         exogena: datos.exogena,
+        // QA-FACT-CONTA-95 r2 (CB-A-07): sin plan de cuentas, lo primero es eso.
+        cuentasActivas: datos.cuentasActivas,
       }).map((a) => describirAlerta(a, formatCurrency)),
     [datos, formatCurrency],
   );

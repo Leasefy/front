@@ -52,6 +52,8 @@ import { cn } from '@/lib/utils';
 import { Monto } from '../Monto';
 import { TarjetaDeInforme } from '../piezas';
 import { RangoDeFechas } from '../RangoDeFechas';
+import { DescargarElInforme } from './DescargarElInforme';
+import { tablasDelEstadoDeCuenta } from '@/lib/contabilidad/tablas-de-los-informes';
 import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 
 const TIPOS = ['PROPIETARIO', 'ARRENDATARIO', 'PROVEEDOR', 'OTRO'] as const;
@@ -303,6 +305,17 @@ export function EstadoDeCuenta() {
         </div>
 
         <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
+        {/* CB-C-13 (QA-FACT-CONTA-95 r2): lo que el contador firma se baja, con TODAS las filas. */}
+        <DescargarElInforme
+          informe="Estado de cuenta del tercero"
+          periodo={rango}
+          tablas={() =>
+            estado
+              ? tablasDelEstadoDeCuenta(estado, elegido ? `${elegido.nombre} · ${elegido.detalle}` : `${terceroTipo} ${terceroId}`)
+              : []
+          }
+          disabled={!estado || !listo}
+        />
         </>
       }
     >

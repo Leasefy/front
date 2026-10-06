@@ -1110,7 +1110,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
               Esto numera {pagando?.cantidad ?? 0}{' '}
               {pagando?.cantidad === 1 ? 'comprobante de egreso' : 'comprobantes de egreso'} y
               asienta la salida del banco: <strong>un asiento por egreso</strong>, para que anular
-              uno no reverse el pago de los demás. Hacelo sólo después de haber subido el archivo al
+              uno no reverse el pago de los demás. Hazlo sólo después de haber subido el archivo al
               banco.
             </AlertDialogDescription>
           </AlertDialogHeader>

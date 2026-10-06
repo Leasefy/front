@@ -118,6 +118,8 @@ export const NOMBRE_DEL_TIPO_DE_ORIGEN: Record<string, string> = {
   TRASLADO_DE_COMISION: 'Traslado de comisión',
   GIRO_DEVUELTO: 'Giro devuelto',
   NOMINA: 'Nómina',
+  // CB-K-08 (QA-FACT-CONTA-95 r2): el saldo a favor del inquilino, donde nace.
+  SALDO_A_FAVOR: 'Saldo a favor',
 };
 
 /**
@@ -127,6 +129,10 @@ export const NOMBRE_DEL_TIPO_DE_ORIGEN: Record<string, string> = {
  */
 export function nombreDelOrigen(a: Pick<AsientoContable, 'origen' | 'origenLegible'>): string {
   const tipo = a.origenLegible?.tipo;
+  // CB-B-19 (QA-FACT-CONTA-95 r2): la reversa que hizo la anulación de un
+  // cobro o de un recibo se llama por lo que pasó, no «Reversa» ni «Manual».
+  if (tipo === 'REVERSA' && a.origenLegible?.anula === 'COBRO') return 'Cobro anulado';
+  if (tipo === 'REVERSA' && a.origenLegible?.anula === 'RECIBO_DE_CAJA') return 'Recibo anulado';
   if (tipo && NOMBRE_DEL_TIPO_DE_ORIGEN[tipo]) return NOMBRE_DEL_TIPO_DE_ORIGEN[tipo];
   return NOMBRE_DE_ORIGEN[a.origen] ?? a.origen;
 }

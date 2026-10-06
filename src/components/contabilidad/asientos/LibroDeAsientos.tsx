@@ -81,6 +81,7 @@ import { useCuentas } from '../use-cuentas';
 import { AsientoManual } from './AsientoManual';
 import { CierreDePeriodo } from './CierreDePeriodo';
 import { DetalleDeAsiento } from './DetalleDeAsiento';
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
 
 const TODOS = '__todos__';
 const COLUMNAS = 7;
@@ -316,7 +317,7 @@ export function LibroDeAsientos() {
                           </span>
                           <Monto valor={totales.debitos} className="text-sm font-medium text-fg" />
                         </span>
-                        <span className="line-clamp-2 text-sm text-fg">{asiento.descripcion}</span>
+                        <span className="line-clamp-2 text-sm text-fg">{conLaPlataPegada(asiento.descripcion)}</span>
                         <span className="flex flex-wrap items-center gap-2">
                           <span
                             className={cn(
@@ -390,8 +391,8 @@ export function LibroDeAsientos() {
                       </TableCell>
                       <TableCell className="max-w-[340px]">
                         <span className="flex items-baseline gap-1.5">
-                          <span className="truncate text-fg" title={asiento.descripcion}>
-                            {asiento.descripcion}
+                          <span className="truncate text-fg" title={conLaPlataPegada(asiento.descripcion)}>
+                            {conLaPlataPegada(asiento.descripcion)}
                           </span>
                           <span className="shrink-0 whitespace-nowrap text-caption text-fg-muted">
                             · {textoDeLineas(asiento.movimientos.length)}

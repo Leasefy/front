@@ -14,6 +14,7 @@
 
 import { useId, useState } from 'react';
 import { CrossFade } from '@leasefy/cadence';
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
 
 export function ExplicacionDelEvento({ texto, testId }: { texto: string; testId?: string }) {
   const [abierta, setAbierta] = useState(false);
@@ -24,7 +25,7 @@ export function ExplicacionDelEvento({ texto, testId }: { texto: string; testId?
       <CrossFade swapKey={abierta ? 'abierta' : 'cerrada'} mode="popLayout">
         {abierta ? (
           <p id={id} className="whitespace-normal leading-relaxed">
-            {texto}{' '}
+            {conLaPlataPegada(texto)}{' '}
             <button
               type="button"
               onClick={() => setAbierta(false)}
@@ -37,7 +38,7 @@ export function ExplicacionDelEvento({ texto, testId }: { texto: string; testId?
           </p>
         ) : (
           <p id={id} className="flex min-w-0 items-baseline gap-1.5">
-            <span className="min-w-0 truncate">{texto}</span>
+            <span className="min-w-0 truncate">{conLaPlataPegada(texto)}</span>
             <button
               type="button"
               onClick={() => setAbierta(true)}

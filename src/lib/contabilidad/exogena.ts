@@ -146,8 +146,13 @@ export function frasesDeCuantiasMenores(
   formatoDeMonto: (n: number) => string,
 ): string | null {
   if (!cuantias.activa) return null;
+  // QA-FACT-CONTA-95 r2: un back que no manda cuántas (antes del arreglo) no
+  // escribe «undefined filas»: dice la regla sin el número.
+  const cuantas = Number.isFinite(cuantias.filas)
+    ? `${cuantias.filas} ${cuantias.filas === 1 ? 'fila se agrupa' : 'filas se agrupan'}`
+    : 'Los pagos de cada tercero que no llegan al tope se agrupan'
   return (
-    `${cuantias.filas} ${cuantias.filas === 1 ? 'fila se agrupa' : 'filas se agrupan'} en cuantías menores ` +
+    `${cuantas} en cuantías menores ` +
     `(pagos por debajo de ${formatoDeMonto(cuantias.topeCop)}) bajo el NIT ${cuantias.nit}. ` +
     'El tope y la agrupación los fija la resolución de la DIAN del año: confírmalos con el contador.'
   );

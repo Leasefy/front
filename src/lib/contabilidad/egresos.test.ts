@@ -247,4 +247,10 @@ describe('nombreDelArchivoDelLote', () => {
   it('sin formato no inventa uno', () => {
     expect(nombreDelArchivoDelLote('l1', null)).toBe('egresos-lote-l1.csv');
   });
+
+  it('CB-E-16 (QA-FACT-CONTA-95 r2): sin el uuid entero en el nombre', () => {
+    expect(nombreDelArchivoDelLote('b800fd15-5d66-4ffe-84b4-9747ecb35917', 'BANCOLOMBIA_PAB')).toBe(
+      'egresos-lote-b800fd15-bancolombia_pab.csv',
+    );
+  });
 });

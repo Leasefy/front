@@ -35,13 +35,20 @@ import {
 } from '@/components/ui/table';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
-import { contabilidadApi, type LibroAuxiliar as Libro } from '@/lib/api/contabilidad.service';
+import {
+  contabilidadApi,
+  type LibroAuxiliar as Libro,
+  type RenglonDeAuxiliar,
+} from '@/lib/api/contabilidad.service';
 import { diaLegible, hoy, primerDiaDelMes, rangoInvertido } from '@/lib/contabilidad/fechas';
+import { textoDelTercero } from '@/lib/contabilidad/asientos';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { cn } from '@/lib/utils';
 import { Monto } from '../Monto';
 import { TarjetaDeInforme } from '../piezas';
 import { RangoDeFechas } from '../RangoDeFechas';
+import { DescargarElInforme } from './DescargarElInforme';
+import { tablasDelAuxiliar } from '@/lib/contabilidad/tablas-de-los-informes';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
 import { useCuentas } from '../use-cuentas';
 
@@ -120,6 +127,15 @@ export function LibroAuxiliar() {
           ) : null}
         </div>
         <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
+        {/* CB-C-13 (QA-FACT-CONTA-95 r2): lo que el contador firma se baja, con TODAS las filas. */}
+        <div className="lg:col-span-2">
+          <DescargarElInforme
+            informe={libro ? `Libro auxiliar ${libro.cuenta.codigo}` : 'Libro auxiliar'}
+            periodo={rango}
+            tablas={() => (libro && cuentaId ? tablasDelAuxiliar(libro) : [])}
+            disabled={!libro || !cuentaId}
+          />
+        </div>
         </>
       }
     >
@@ -201,16 +217,7 @@ export function LibroAuxiliar() {
                           </span>
                         </TableCell>
                         <TableCell muted className="whitespace-nowrap">
-                          {r.terceroTipo ? (
-                            <span
-                              className="font-mono text-caption"
-                              title={`${r.terceroTipo} ${r.terceroId ?? ''}`.trim()}
-                            >
-                              {r.terceroTipo}
-                            </span>
-                          ) : (
-                            <span className="text-fg-subtle">—</span>
-                          )}
+                          <TerceroDelAuxiliar r={r} />
                         </TableCell>
                         <TableCell numeric className="whitespace-nowrap">
                           <Monto valor={r.debitoCop} vacioSiCero />
@@ -262,4 +269,32 @@ export function LibroAuxiliar() {
         </EstadoDeDatos>
     </TarjetaDeInforme>
   );
+}
+
+/**
+ * CB-C-04 (QA-FACT-CONTA-95 r2): el tercero de una línea del auxiliar con su
+ * nombre y su documento, nunca el tipo suelto («PROPIETARIO») ni el id.
+ */
+export function TerceroDelAuxiliar({
+  r,
+}: {
+  r: Pick<RenglonDeAuxiliar, 'terceroTipo' | 'terceroNombre' | 'terceroDocumento'>;
+}) {
+  const texto = textoDelTercero(r);
+  if (texto) {
+    return (
+      <span className="block max-w-[16rem] truncate text-caption" title={texto} data-testid="auxiliar-tercero">
+        {r.terceroNombre}
+        {r.terceroDocumento ? <span className="text-fg-subtle"> · {r.terceroDocumento}</span> : null}
+      </span>
+    );
+  }
+  if (r.terceroTipo) {
+    return (
+      <span className="text-caption" title="El tercero de esta línea no se pudo identificar." data-testid="auxiliar-tercero">
+        {r.terceroTipo.charAt(0) + r.terceroTipo.slice(1).toLowerCase().replace(/_/g, ' ')} sin identificar
+      </span>
+    );
+  }
+  return <span className="text-fg-subtle">—</span>;
 }

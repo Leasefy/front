@@ -163,10 +163,14 @@ export function permisosDelLote(
 export const MOTIVO_DEL_MISMO_APROBADOR =
   'Este lote lo armó la misma persona que está aprobando. La aprobación es la segunda firma sobre plata que sale del banco: la tiene que dar otra persona de la inmobiliaria (ADMIN o CONTADOR).';
 
-/** `egresos-lote-<id>-<formato>.csv`, para que el archivo del banco se reconozca. */
+/**
+ * `egresos-lote-<8 primeros del id>-<formato>.csv`, para que el archivo del banco
+ * se reconozca. CB-E-16 (QA-FACT-CONTA-95 r2): sin el uuid entero en el nombre
+ * (el back nombra igual: `egresos-<8>.<ext>`).
+ */
 export function nombreDelArchivoDelLote(loteId: string, formato: string | null): string {
   const sufijo = formato ? `-${formato.toLowerCase()}` : '';
-  return `egresos-lote-${loteId}${sufijo}.csv`;
+  return `egresos-lote-${loteId.slice(0, 8)}${sufijo}.csv`;
 }
 
 /**

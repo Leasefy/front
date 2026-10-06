@@ -43,7 +43,14 @@ interface Candidato {
   id: string;
   nombre: string;
   detalle: string;
+  /**
+   * QA-FACT-CONTA-95: el inquilino sin cuenta en el portal (`doc:…`, `correo:…`)
+   * no tiene el id que la contabilidad guarda: elegirlo daba «Este dato no tiene
+   * un valor válido» al crear el asiento. Se muestra, apagado, con el porqué.
+   */
+  sinCuenta?: boolean;
 }
+
 
 /** Las dos listas del panel, con el id que la contabilidad entiende. */
 async function buscarCandidatos(tipo: TipoDeTerceroDeApertura, q: string): Promise<Candidato[]> {
@@ -58,6 +65,7 @@ async function buscarCandidatos(tipo: TipoDeTerceroDeApertura, q: string): Promi
     id: i.tenantId,
     nombre: i.nombre,
     detalle: i.email ?? i.telefono ?? '',
+    sinCuenta: i.tieneCuentaDelPortal === false,
   }));
 }
 
@@ -158,8 +166,11 @@ export function TerceroDeApertura({
                 type="button"
                 role="option"
                 aria-selected={false}
-                className="flex w-full items-center justify-between gap-2 px-2 py-1 text-left text-caption hover:bg-surface-muted"
+                aria-disabled={c.sinCuenta || undefined}
+                disabled={c.sinCuenta}
+                className="flex w-full items-center justify-between gap-2 px-2 py-1 text-left text-caption hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-70"
                 onClick={() => {
+                  if (c.sinCuenta) return;
                   onCambio({ tipo, id: c.id, nombre: c.nombre });
                   setBusqueda('');
                   setCandidatos([]);
@@ -167,7 +178,11 @@ export function TerceroDeApertura({
                 data-testid={`${testId}-opcion-${c.id}`}
               >
                 <span className="font-medium text-fg">{c.nombre}</span>
-                <span className="text-fg-subtle">{c.detalle}</span>
+                <span className="text-fg-subtle">
+                  {c.sinCuenta
+                    ? 'Sin cuenta en el portal: todavía no se puede usar de tercero del asiento.'
+                    : c.detalle}
+                </span>
               </button>
             </li>
           ))}

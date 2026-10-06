@@ -169,7 +169,13 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
     module: 'cotizador',
     items: [
       { labelKey: 'inmobiliaria.ai.nav.cotizadorResumen', href: ASEGURABILIDAD, icon: SquaresFour, exact: true, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizadorCola', href: `${ASEGURABILIDAD}/cola`, icon: ClipboardText, module: 'cotizador' },
+      // OCULTA — «Por revisar» (05-10-2026, PROMESAS-Y-DIRECTOR con el visto de main):
+      // la cola del cotizador el micro la devuelve SIEMPRE vacía a propósito
+      // (`agency-ai-hub-work-items.ts`, `case 'cotizador'` → `emptyResponse`: el
+      // motor resuelve cada cotización solo, no deja nada que aprobar). Una
+      // pestaña que lleva a nada es una pestaña muerta. La RUTA sigue viva por URL
+      // y su vacío lo dice.
+      // { labelKey: 'inmobiliaria.ai.nav.cotizadorCola', href: `${ASEGURABILIDAD}/cola`, icon: ClipboardText, module: 'cotizador' },
       // OCULTA — «Nueva consulta». Nico (2026-09-08): «¿para qué tienes una
       // sección de nueva consulta si tienes un CTA en Resumen? Deja lo de
       // Resumen y ya». La pestaña duplicaba el botón primario del Resumen: dos

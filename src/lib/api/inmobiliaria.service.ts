@@ -1444,6 +1444,16 @@ export const avaluosApi = {
   },
 
   /**
+   * El PDF del certificado firmado de UN avalúo de la inmobiliaria
+   * (`GET /inmobiliaria/avaluos/:id/certificate`, back `avaluos.controller.ts`).
+   * El back lo acota a la agencia por su correo (anti-IDOR): un avalúo ajeno
+   * es 404, y con el servicio caído, 502 con `servicio: 'avaluos'`.
+   */
+  certificado(id: string): Promise<Blob> {
+    return apiClient.getBlob(`${BASE}/avaluos/${encodeURIComponent(id)}/certificate`);
+  },
+
+  /**
    * Request a new avalúo for the agency. The back resolves the agency identity
    * server-side (permission `avaluos.create`) and answers with either a ready
    * `wizardUrl` (shape a) or an `agencyToken` + `wizardPath` (shape b) to compose

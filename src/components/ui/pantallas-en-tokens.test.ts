@@ -99,7 +99,9 @@ const COBERTURA: string[] = [
   'app/panel/inmobiliaria/postulaciones/asegurabilidad/costos/page.tsx',
   'app/panel/inmobiliaria/postulaciones/asegurabilidad/configuracion/page.tsx',
   'components/inmobiliaria/cotizador/CotizadorRecentQuotesFeed.tsx',
-  'components/inmobiliaria/cotizador/CotizadorPriorityInbox.tsx',
+  // `CotizadorPriorityInbox.tsx` se borró el 05-10-2026 (PROMESAS-Y-DIRECTOR):
+  // «Consultas que necesitan atención» leía la cola del cotizador, que el micro
+  // devuelve siempre vacía. No se renombró: dejó de existir.
   'components/inmobiliaria/cotizador/CotizadorCarriersStatus.tsx',
   'components/inmobiliaria/cotizador/CarrierRegistryTable.tsx',
   'components/inmobiliaria/cotizador/CarrierOverridePopover.tsx',

@@ -6071,18 +6071,7 @@
               "label": "Nueva cotización"
             }
           },
-          "radarSubtitle": "Tu radar de asegurabilidad: el agente consulta varias aseguradoras a la vez y te avisa qué candidatos puedes cerrar y cuáles necesitan tu atención.",
-          "inbox": {
-            "titulo": "Consultas que necesitan atención",
-            "desc": "Casos priorizados por urgencia que esperan tu decisión.",
-            "accionSugerida": "Acción sugerida",
-            "verTodas": "Ver todas",
-            "error": "No pudimos cargar la cola de consultas",
-            "empty": {
-              "title": "Todo al día",
-              "description": "No hay consultas pendientes de revisión. Aparecerán aquí cuando una requiera tu atención."
-            }
-          }
+          "radarSubtitle": "Tu radar de asegurabilidad: el agente consulta varias aseguradoras a la vez y te trae el veredicto de cada una, con su porqué."
         },
         "nueva": {
           "title": "Nueva cotización",
@@ -8656,9 +8645,9 @@
           "estudio": {
             "eyebrow": "Agente · Evaluación de candidatos",
             "salaTitulo": "Evaluación de candidatos",
-            "salaDesc": "El agente estudia a cada candidato — identidad y capacidad de pago — y te trae solo los casos dudosos para que decidas tú.",
+            "salaDesc": "El candidato pide su estudio desde su portal (es opcional). El resultado se ve en la ficha de su postulación y la decisión es tuya.",
             "colaDesc": "Revisa el resultado del estudio (nivel y puntaje) y su evidencia, y decide tú.",
-            "colaEmptyHint": "No hay estudios pendientes — buena señal. Los estudios llegan cuando un candidato se postula; los casos dudosos aparecerán aquí para tu decisión.",
+            "colaEmptyHint": "Esta bandeja no recibe estudios: el estudio lo pide el candidato desde su portal y su resultado se ve en la ficha de su postulación.",
             "casoColaLabel": "Cola de estudio",
             "crossPregunta": "¿Qué propiedad le calza?",
             "crossDestino": "Workspace de Matching",
@@ -8795,12 +8784,11 @@
           "cotizador": {
             "eyebrow": "Agente · Asegurabilidad",
             "colaTitle": "Cotizaciones por revisar",
-            "colaDescPre": "Cotizaciones cuyo veredicto de asegurabilidad quedó",
-            "colaDescStrong": "con condiciones",
-            "colaDescPost": "(sin una aprobación limpia). Abre cada una para elegir aseguradora, ajustar las condiciones o re-cotizar. Casos de los últimos 30 días.",
+            "colaDescPre": "El motor de asegurabilidad resuelve cada cotización solo y",
+            "colaDescStrong": "no deja nada por aprobar",
+            "colaDescPost": "aquí. Las cotizaciones, con el veredicto de cada aseguradora, están en el Resumen, en «Últimas cotizaciones».",
             "porRevisar": "Por revisar",
-            "colaEmptyHint": "Todo al día: ninguna cotización quedó con condiciones.",
-            "colaLabel": "Por revisar",
+            "colaEmptyHint": "No hay nada que aprobar: el motor resuelve cada cotización solo. Abre la que necesites desde «Últimas cotizaciones», en el Resumen.",
             "salaSubtitle": "Averigua en minutos si tu candidato es asegurable: el agente consulta varias aseguradoras a la vez y te trae el veredicto de cada una.",
             "comoFunciona": {
               "title": "¿Cómo funciona?",
@@ -8860,6 +8848,10 @@
             "abrirAhora": "Abrir ahora",
             "errorCopiar": "No pudimos copiar el link. Cópialo manualmente.",
             "errorSolicitar": "No pudimos solicitar el avalúo. Intenta de nuevo.",
+            "descargarCertificado": "Descargar certificado",
+            "descargarCertificadoDe": "Descargar el certificado de",
+            "descargandoCertificado": "Descargando…",
+            "errorDescargar": "No pudimos descargar el certificado. Intenta de nuevo.",
             "listaTitulo": "Avalúos de tu inmobiliaria",
             "queEs": "los avalúos",
             "queSon": "avalúos",
@@ -8872,7 +8864,8 @@
               "estado": "Estado",
               "propietario": "Propietario",
               "valor": "Valor",
-              "creado": "Creado"
+              "creado": "Creado",
+              "certificado": "Certificado"
             },
             "estados": {
               "borrador": "Borrador",
@@ -9092,15 +9085,9 @@
         },
         "overview": {
           "title": "Estudios de inquilinos",
-          "subtitle": "Evalúa candidatos, valida su información y decide con mayor seguridad quién puede avanzar en el proceso de arriendo.",
+          "subtitle": "El estudio es opcional y lo pide el candidato desde su portal. Su resultado aparece en la ficha del candidato, dentro de su postulación, y ahí decides tú.",
           "lastUpdated": "Actualizado hace",
-          "verEstudios": "Ver estudios",
           "errorLoading": "Error al cargar los estudios",
-          "atencion": {
-            "title": "Qué necesita tu atención",
-            "desc": "Revisa los estudios priorizados por severidad y abre cada caso para decidir.",
-            "cta": "Abrir bandeja"
-          },
           "pipeline": {
             "title": "Pipeline por estado"
           },
@@ -9108,8 +9095,9 @@
             "title": "Actividad reciente"
           },
           "empty": {
-            "title": "Aún no hay estudios",
-            "description": "Cuando llegue un estudio de inquilino, sus métricas y pendientes aparecerán aquí."
+            "title": "Cada estudio se ve en su postulación",
+            "description": "Esta sala no junta los estudios: el resultado de cada uno aparece en la ficha del candidato, dentro de su postulación.",
+            "cta": "Ir a Postulaciones"
           }
         },
         "list": {

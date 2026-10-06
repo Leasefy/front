@@ -6037,18 +6037,7 @@
               "label": "New quote"
             }
           },
-          "radarSubtitle": "Your insurability radar: the agent queries several insurers at once and flags which candidates you can close and which need your attention.",
-          "inbox": {
-            "titulo": "Queries that need attention",
-            "desc": "Cases prioritized by urgency awaiting your decision.",
-            "accionSugerida": "Suggested action",
-            "verTodas": "See all",
-            "error": "We couldn't load the queries queue",
-            "empty": {
-              "title": "All caught up",
-              "description": "No queries pending review. They'll appear here when one needs your attention."
-            }
-          }
+          "radarSubtitle": "Your insurability radar: the agent queries several insurers at once and brings you each one's verdict, with its reason."
         },
         "nueva": {
           "title": "New Quote",
@@ -8621,9 +8610,9 @@
           "estudio": {
             "eyebrow": "Agent · Candidate evaluation",
             "salaTitulo": "Candidate evaluation",
-            "salaDesc": "The agent screens every candidate — identity and ability to pay — and brings you only the doubtful cases so you decide.",
+            "salaDesc": "The candidate requests their study from their portal (it is optional). The result shows up on their application file and the decision is yours.",
             "colaDesc": "Review the screening result (level and score) and its evidence, and you make the call.",
-            "colaEmptyHint": "No screenings pending — a good sign. Screenings arrive when a candidate applies; doubtful cases will appear here for your decision.",
+            "colaEmptyHint": "This inbox does not receive studies: the candidate requests the study from their portal and its result shows up on their application file.",
             "casoColaLabel": "Screening queue",
             "crossPregunta": "Which property fits them?",
             "crossDestino": "Matching workspace",
@@ -8760,12 +8749,11 @@
           "cotizador": {
             "eyebrow": "Agent · Insurability",
             "colaTitle": "Quotes to review",
-            "colaDescPre": "Quotes whose insurability verdict came back",
-            "colaDescStrong": "with conditions",
-            "colaDescPost": "(no clean approval). Open each one to pick a carrier, adjust the conditions or re-quote. Cases from the last 30 days.",
+            "colaDescPre": "The insurability engine resolves each quote on its own and",
+            "colaDescStrong": "leaves nothing to approve",
+            "colaDescPost": "here. Quotes, with each insurer's verdict, are on the Overview, under «Recent quotes».",
             "porRevisar": "To review",
-            "colaEmptyHint": "All caught up: no quote came back with conditions.",
-            "colaLabel": "To review",
+            "colaEmptyHint": "There is nothing to approve: the engine resolves each quote on its own. Open the one you need from «Recent quotes» on the Overview.",
             "salaSubtitle": "Find out in minutes whether your candidate is insurable: the agent queries several insurers at once and brings you each one's verdict.",
             "comoFunciona": {
               "title": "How does it work?",
@@ -8825,6 +8813,10 @@
             "abrirAhora": "Open now",
             "errorCopiar": "We couldn't copy the link. Copy it manually.",
             "errorSolicitar": "We couldn't request the appraisal. Try again.",
+            "descargarCertificado": "Download certificate",
+            "descargarCertificadoDe": "Download the certificate of",
+            "descargandoCertificado": "Downloading…",
+            "errorDescargar": "We couldn't download the certificate. Try again.",
             "listaTitulo": "Your agency's appraisals",
             "queEs": "the appraisals",
             "queSon": "appraisals",
@@ -8837,7 +8829,8 @@
               "estado": "Status",
               "propietario": "Owner",
               "valor": "Value",
-              "creado": "Created"
+              "creado": "Created",
+              "certificado": "Certificate"
             },
             "estados": {
               "borrador": "Draft",
@@ -9057,15 +9050,9 @@
         },
         "overview": {
           "title": "Tenant studies",
-          "subtitle": "Evaluate candidates, validate their information, and decide with more confidence who can move forward in the lease process.",
+          "subtitle": "The study is optional and the candidate requests it from their portal. Its result shows up on the candidate's file, inside their application, and that is where you decide.",
           "lastUpdated": "Updated",
-          "verEstudios": "View studies",
           "errorLoading": "Error loading studies",
-          "atencion": {
-            "title": "What needs your attention",
-            "desc": "Review studies prioritized by severity and open each case to decide.",
-            "cta": "Open inbox"
-          },
           "pipeline": {
             "title": "Pipeline by status"
           },
@@ -9073,8 +9060,9 @@
             "title": "Recent activity"
           },
           "empty": {
-            "title": "No studies yet",
-            "description": "When a tenant study comes in, its metrics and pending items will appear here."
+            "title": "Each study lives in its application",
+            "description": "This room does not collect studies: each result shows up on the candidate's file, inside their application.",
+            "cta": "Go to Applications"
           }
         },
         "list": {

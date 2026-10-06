@@ -405,6 +405,22 @@ Referencias: `CandidateDrawer.tsx` (cabecera con avatar + pie con decidir),
 `PlanDetailSheet.tsx` (sub-cajón), `InquilinoDrawer.tsx` (encabezado de persona con chips de
 contacto). En Cadence: historia `Overlays/Sheet › Referencia · Candidatura`.
 
+**«¿Cómo funciona?» — la explicación va en un cajón, no en la pantalla** (05-10-2026). Nico, mirando
+Avalúos: «eso no debe de estar ahí siempre […] llévalas al botón que al dar clic abre drawer y explica
+mejor cada cosa y más bonito». Toda explicación de cómo funciona algo (pasos, «qué es esta bandeja»,
+«por qué hay dos marcas») vive detrás de `ParaEntenderMas` (`ui/para-entender-mas.tsx`):
+
+- el botón va en el **encabezado**, con `variante="secundario"`, donde iría el botón de acción;
+- abre el `Cajon` (`md` 560 px; `ancho="ancho"` → `xl` 880 px); en el celular sube como hoja;
+- el contenido no se monta hasta abrir, y al cerrar (Esc, clic afuera, ✕) el foco vuelve al botón;
+- los pasos van con `PasosExplicados` (`ui/pasos-explicados.tsx`): número + ícono en un riel vertical,
+  **quién lo hace** (`quien`: tú · el agente · Leasefy · tu cliente · el candidato), una explicación
+  concreta y «Lo que haces tú» resaltado (`tuParte`) sólo donde hay algo que hacer; entran escalonados
+  (`Stagger`). Lo que digan tiene que ser verdad en el código.
+- 🔴 Lo que la pantalla TIENE que decir se queda a la vista: un aviso de que algo falló o está
+  desconectado, un requisito que falta, el motivo de un botón apagado, una advertencia de lo que la
+  herramienta NO hace («hoy el aviso lo subes tú», «armar el lote no gira plata»).
+
 ### Sidebar / Layout
 The `PlanSidebar` + `PlanHeader` pattern (`src/components/ui/plan/`) is the canonical layout. Use as-is.
 - **Unified shell background:** sidebar, page body, and header all share the cadence page bg

@@ -27,8 +27,10 @@
  */
 
 import { useState } from 'react';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { Input } from '@/components/ui/input';
 import {
   Table,
@@ -45,6 +47,54 @@ import type { ClaseDeConcepto, Conceptos } from '@/lib/api/nomina.types';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Avisos, TituloDeBloque } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
+
+/**
+ * «Por qué hay DOS marcas y no una» — era una caja de texto puesta sobre el
+ * catálogo, siempre a la vista. Desde el 05-10-2026 vive detrás de un botón
+ * en el encabezado de la pantalla (`nomina/conceptos/page.tsx`; junto a
+ * «Sembrar» no cabía a 390 px: la acción del bloque no se parte en dos
+ * renglones y se corría 161 px) y abre un cajón (Nico: «eso no debe de estar
+ * ahí siempre […] llévalas al botón que al dar clic abre drawer y explica
+ * mejor cada cosa y más bonito»). Las frases y las citas de ley son las
+ * mismas, ordenadas: qué mide cada marca, el caso que las separa y qué pasa si
+ * se unifican.
+ */
+export function PorQueDosMarcas() {
+  return (
+    <ParaEntenderMas
+      etiqueta="Por qué hay dos marcas"
+      titulo="Por qué hay DOS marcas y no una"
+      descripcion="«Salarial» y «Prestacional» miden cosas distintas, y un concepto puede tener una sin la otra."
+      variante="secundario"
+    >
+      <Stagger className="space-y-5" layout={false} data-testid="por-que-dos-marcas">
+        <StaggerItem>
+          <dl className="grid gap-3">
+            <div className="rounded-lg border border-border bg-surface-muted p-4">
+              <dt className="text-body-sm font-semibold text-fg">«Salarial»</dt>
+              <dd className="mt-1 text-body-sm text-fg-muted">Significa que entra al IBC de seguridad social.</dd>
+            </div>
+            <div className="rounded-lg border border-border bg-surface-muted p-4">
+              <dt className="text-body-sm font-semibold text-fg">«Prestacional»</dt>
+              <dd className="mt-1 text-body-sm text-fg-muted">Significa que entra a la base de prima y cesantías.</dd>
+            </div>
+          </dl>
+        </StaggerItem>
+        <StaggerItem className="space-y-1.5">
+          <h3 className="text-body-sm font-semibold text-fg">El caso que las separa: el auxilio de transporte</h3>
+          <p className="text-body-sm text-fg-muted">
+            <strong className="text-fg">No es salario</strong> (Ley 15 de 1959 art. 2) pero{' '}
+            <strong className="text-fg">sí es base de prima y cesantías</strong> (CST art. 249) —
+            y no de vacaciones (art. 192).
+          </p>
+        </StaggerItem>
+        <StaggerItem as="p" className="rounded-lg bg-primary-soft px-3 py-2.5 text-body-sm text-fg">
+          Unificarlas hace cotizar de más y provisionar de menos.
+        </StaggerItem>
+      </Stagger>
+    </ParaEntenderMas>
+  );
+}
 
 const NOMBRE_DE_CLASE: Record<ClaseDeConcepto, string> = {
   DEVENGADO: 'Devengados',
@@ -136,24 +186,6 @@ export function ConceptosDeNominaPanel() {
                   </Button>
                 }
               />
-
-              <div
-                className="rounded-lg border border-border bg-surface p-4 text-caption leading-relaxed text-fg-muted"
-                data-testid="por-que-dos-marcas"
-              >
-                <p className="font-medium text-fg">
-                  Por qué hay DOS marcas y no una
-                </p>
-                <p>
-                  «Salarial» significa que entra al IBC de seguridad social.
-                  «Prestacional» significa que entra a la base de prima y cesantías.
-                  El auxilio de transporte es el caso que las separa:{' '}
-                  <strong>no es salario</strong> (Ley 15 de 1959 art. 2) pero{' '}
-                  <strong>sí es base de prima y cesantías</strong> (CST art. 249) —
-                  y no de vacaciones (art. 192). Unificarlas hace cotizar de más y
-                  provisionar de menos.
-                </p>
-              </div>
 
               {(Object.keys(NOMBRE_DE_CLASE) as ClaseDeConcepto[]).map((clase) => {
                 const lista = datos.conceptos.filter((c) => c.clase === clase);

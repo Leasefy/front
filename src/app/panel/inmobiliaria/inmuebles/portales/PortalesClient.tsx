@@ -61,6 +61,8 @@ import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
 import {
   CloudArrowUp,
   DownloadSimple,
+  HouseLine,
+  Plug,
   Plus,
   Warning,
   CheckCircle,
@@ -70,6 +72,7 @@ import {
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { PasosExplicados, type PasoExplicado } from '@/components/ui/pasos-explicados'
 import { Checkbox } from '@/components/ui/checkbox'
 import { AvisoInmuebleSinCanon } from '@/components/inmobiliaria/CanonPorConfirmar'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
@@ -916,23 +919,47 @@ function TarjetaDePortal({
 /**
  * Los pasos van numerados porque son de verdad una secuencia —el 2 no se puede
  * sin el 1, y el back lo hace cumplir—, no porque un «01 / 02 / 03» decore.
+ *
+ * 05-10-2026 (Nico: «explica mejor cada cosa y más bonito»): cada paso dice
+ * quién lo hace y lo que te toca, en el cajón de `ParaEntenderMas`. El paso 1
+ * dice «Anota» y no «Conecta»: no hay integración, sólo se anota la cuenta, y
+ * el que no deja publicar sin ella es Leasefy, no el portal (verificado contra
+ * `publicacion.service.ts`, `SIN_CUENTA_EN_EL_PORTAL`).
  */
-const PASOS: { que: string; como: string }[] = [
+const PASOS: PasoExplicado[] = [
   {
-    que: 'Conecta tu cuenta',
-    como: 'La que tu inmobiliaria ya paga en ese portal. Sin eso, el portal no acepta el aviso.',
+    id: 'cuenta',
+    icono: Plug,
+    titulo: 'Anota tu cuenta del portal',
+    explicacion:
+      'La que tu inmobiliaria ya paga en ese portal: nosotros no vendemos estas cuentas. Sin ella, Leasefy no te deja publicar ahí.',
+    quien: 'tu',
+    tuParte: 'en «Tus cuentas de portal», toca «Configurar» en cada portal donde tengas cuenta.',
   },
   {
-    que: 'Elige el inmueble',
-    como: 'Cuál publicas y en qué portales. Te avisamos antes si le falta algo.',
+    id: 'inmueble',
+    icono: HouseLine,
+    titulo: 'Elige el inmueble y los portales',
+    explicacion:
+      'Cuál publicas y en cuáles portales. Antes de seguir te avisamos si al inmueble le falta algo que el portal pide.',
+    quien: 'tu',
   },
   {
-    que: 'Sube el archivo',
-    como: 'Lo descargas de acá y lo cargas en la página del portal, con tu usuario.',
+    id: 'archivo',
+    icono: DownloadSimple,
+    titulo: 'Descarga el archivo y súbelo al portal',
+    explicacion:
+      'Lo descargas de acá y lo cargas en la página del portal, con tu usuario. Este paso lo hace una persona.',
+    quien: 'tu',
+    tuParte: 'usa «Descargar archivo» en la tarjeta del portal y súbelo en su página.',
   },
   {
-    que: 'Confirma que ya salió',
-    como: 'Así dejamos de pedírtelo y queda registrado cuándo se publicó.',
+    id: 'salio',
+    icono: CheckCircle,
+    titulo: 'Confirma que ya salió',
+    explicacion: 'Así dejamos de pedírtelo y queda registrado cuándo se publicó.',
+    quien: 'tu',
+    tuParte: 'cuando el aviso ya esté arriba, toca «Ya la subí».',
   },
 ]
 
@@ -949,38 +976,23 @@ const PASOS: { que: string; como: string }[] = [
  */
 function ComoFunciona() {
   return (
-    <div data-testid="como-funciona">
-      <ol className="grid gap-4 sm:grid-cols-2">
-        {PASOS.map((p, i) => (
-          <li key={p.que} className="flex gap-3">
-            <span
-              aria-hidden="true"
-              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-fg text-xs font-medium text-background"
-            >
-              {i + 1}
-            </span>
-            <span className="space-y-0.5">
-              <span className="block text-sm font-medium text-fg">{p.que}</span>
-              <span className="block text-sm leading-relaxed text-fg-muted">{p.como}</span>
-            </span>
-          </li>
-        ))}
-      </ol>
-      <p
-        className="mt-4 border-t border-border pt-4 text-sm leading-relaxed text-fg-muted"
-        data-testid="aviso-sin-api-detalle"
-      >
-        Los pasos 3 y 4 los hace una persona porque{' '}
-        <span className="font-medium text-fg">
-          todavía no hemos construido ninguna de las integraciones
-        </span>
-        , no porque los portales no las tengan. Mercado Libre y Ciencuadras se
-        conectan por cuenta propia, sin hablar con nadie; Properati va por
-        Proppit, que hay que pedir que lo habilite; Fincaraíz y Metrocuadrado sí
-        exigen un acuerdo con su equipo. Sólo «Sitio propio» —el catálogo de
-        Leasefy— sale solo. Cada tarjeta dice qué pide la suya.
-      </p>
-    </div>
+    <PasosExplicados
+      data-testid="como-funciona"
+      pasos={PASOS}
+      nota={
+        <p data-testid="aviso-sin-api-detalle">
+          Los pasos 3 y 4 los hace una persona porque{' '}
+          <span className="font-medium text-fg">
+            todavía no hemos construido ninguna de las integraciones
+          </span>
+          , no porque los portales no las tengan. Mercado Libre y Ciencuadras se
+          conectan por cuenta propia, sin hablar con nadie; Properati va por
+          Proppit, que hay que pedir que lo habilite; Fincaraíz y Metrocuadrado sí
+          exigen un acuerdo con su equipo. Sólo «Sitio propio» —el catálogo de
+          Leasefy— sale solo. Cada tarjeta dice qué pide la suya.
+        </p>
+      }
+    />
   )
 }
 
@@ -1107,8 +1119,8 @@ export function PortalesClient() {
           etiqueta="Cómo se publica un inmueble"
           titulo="Cómo se publica un inmueble"
           descripcion="Cuatro pasos. Los dos últimos los hace una persona, y acá está por qué."
-          ancho="ancho"
-          className="shrink-0"
+          variante="secundario"
+          className="self-start shrink-0"
         >
           <ComoFunciona />
         </ParaEntenderMas>

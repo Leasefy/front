@@ -259,14 +259,16 @@ describe('<ListaDeLotes> — el mes no se ve vacío', () => {
     expect(botonQueDice('Armar el lote de')).toBeUndefined();
   });
 
-  it('los pasos del lote se leen en una línea', async () => {
+  // COMO-FUNCIONA (05-10-2026): los cinco pasos dibujados se fueron al botón
+  // «¿Cómo funciona?» del encabezado de la pantalla (`ComoSaleUnLote`, con su
+  // prueba). En la tarjeta del mes queda a la vista sólo el aviso de seguridad.
+  it('los pasos del lote ya no están dibujados en la tarjeta; queda el aviso de que armar no gira plata', async () => {
     await montar('2026-09');
 
-    const pasos = document.body.querySelector('[aria-label="Cómo sale un pago"]')?.textContent ?? '';
-    expect(pasos).toContain('otra persona lo aprueba con un código');
-    expect(pasos).toContain('descargas el archivo de ese banco (o su planilla)');
-    expect(pasos).toContain('lo subes al portal del banco');
-    expect(pasos).toContain('marcas el lote pagado');
+    expect(document.body.querySelector('[aria-label="Cómo sale un pago"]')).toBeNull();
+    const aviso = document.body.querySelector('[data-testid="lote-no-gira-solo"]')?.textContent ?? '';
+    expect(aviso).toContain('no gira plata');
+    expect(aviso).toContain('lo subes tú al portal del banco');
   });
 });
 

@@ -58,6 +58,18 @@
       "quitar": "Remove",
       "quitarArchivo": "Remove {{nombre}}",
       "ninguno": "No file chosen"
+    },
+    "comoFunciona": {
+      "boton": "How does it work?",
+      "paso": "Step {{n}}",
+      "tuParte": "What you do:",
+      "quien": {
+        "tu": "You do it",
+        "agente": "The agent does it",
+        "leasefy": "Leasefy does it",
+        "cliente": "Your client does it",
+        "candidato": "The candidate does it"
+      }
     }
   },
   "nav": {
@@ -8074,7 +8086,21 @@
         },
         "intro": {
           "eyebrow": "Habeas Data · Colombian Law 1581 of 2012",
-          "body": "When someone whose data you hold asks to see it, correct it, delete it, or stop you from using it, the request lands here. The law gives you a deadline in business days, and the clock starts when the person confirms their email.",
+          "titulo": "How a personal-data request works",
+          "descripcion": "From the request to your answer, within the legal deadline.",
+          "paso1": {
+            "title": "Someone asks for their data",
+            "desc": "A person whose data you hold asks to see it, correct it, delete it, or stop you from using it. The request lands in this inbox."
+          },
+          "paso2": {
+            "title": "They confirm their email and the clock starts",
+            "desc": "The law gives you a deadline in business days to answer, and the clock starts when the person confirms their email. The deadlines being applied are shown on this screen."
+          },
+          "paso3": {
+            "title": "You answer before it expires",
+            "desc": "Inside the request you resolve it or reject it with its reason. What you do stays in the inbox as your record of answering on time.",
+            "tuParte": "open each request from the list and answer it before the deadline."
+          },
           "deadlinesTitle": "The deadlines",
           "deadlineAcceso": "Access: {days} business days",
           "deadlineReclamo": "Rectification, cancellation and opposition: {days} business days",
@@ -8564,17 +8590,21 @@
             "accionDesc": "The agent matches every transaction with your collections and leaves only the doubtful ones for you to review.",
             "comoFunciona": {
               "title": "How does it work?",
+              "titulo": "How reconciliation works",
+              "descripcion": "From the bank statement to every reconciled transaction, in three steps.",
               "step1": {
                 "title": "You upload the bank statement",
-                "desc": "A CSV file straight from your bank."
+                "desc": "As CSV or Excel, just as the bank exports it, and you choose which account it belongs to: without the account it can't be loaded.",
+                "tuParte": "use «Upload bank statement» in the first card of this screen."
               },
               "step2": {
-                "title": "The agent matches each transaction with your collections",
-                "desc": "It identifies collections, payouts and fees automatically."
+                "title": "The agent matches every transaction",
+                "desc": "Each deposit against your tenants' installments and receipts; each withdrawal against owner payouts, supplier payments and bank charges (4×1000, fees). It proposes what to reconcile it with."
               },
               "step3": {
-                "title": "You approve the doubtful cases",
-                "desc": "Only the transactions that need your eye reach you."
+                "title": "You approve what it proposes",
+                "desc": "In Copilot nothing is reconciled without your click: exact matches wait in a batch for your approval and doubtful ones for your decision. In Autonomous it reconciles only exact matches and leaves the rest to you. Online payments through the gateway are reconciled on their own.",
+                "tuParte": "review «Lo que encontró el agente» (what the agent found) and approve or fix each match."
               }
             },
             "estado": {
@@ -8602,21 +8632,24 @@
             "colaLabel": "Screenings to review",
             "comoFunciona": {
               "title": "How does it work?",
+              "titulo": "How a candidate screening works",
+              "descripcion": "The screening is optional and the candidate requests it. A person always makes the decision.",
               "step1": {
-                "title": "The candidate applies",
-                "desc": "Every application enters the screening automatically."
+                "title": "The candidate requests the screening",
+                "desc": "It's optional: the candidate requests and pays for it from their portal, and authorizes the check by email."
               },
               "step2": {
-                "title": "The agent verifies identity and ability to pay",
-                "desc": "It cross-checks documents, income and background in minutes."
+                "title": "Their history and ability to pay are checked",
+                "desc": "With the candidate's authorization, the surety company checks their credit-bureau history and restrictive lists, and works out how much they can pay per month."
               },
               "step3": {
-                "title": "Doubtful cases land here for your decision",
-                "desc": "You review the evidence and approve or reject."
+                "title": "You see the result and decide",
+                "desc": "The result shows up in the candidate's file, inside their application. That's where you approve or reject it.",
+                "tuParte": "open the candidate's application and decide whether they move forward."
               },
               "step4": {
-                "title": "Every decision is recorded and audited",
-                "desc": "With the right to human review guaranteed."
+                "title": "Every decision stays in the history",
+                "desc": "The agent rejects no one: a person decides, and every change to the application is recorded in its history."
               }
             },
             "estado": {
@@ -8647,17 +8680,20 @@
             },
             "comoFunciona": {
               "title": "How does it work?",
+              "titulo": "How matching works",
+              "descripcion": "When a candidate loses a property, the agent looks for others among yours.",
               "step1": {
                 "title": "A candidate loses a property",
-                "desc": "They were rejected, someone else got the property, or you asked for compatible ones from their file."
+                "desc": "You rejected them, another candidate got the property, or you asked for compatible ones from their file."
               },
               "step2": {
                 "title": "The agent matches them with your available properties",
-                "desc": "It compares income, job tenure, budget and area with every property for rent."
+                "desc": "It compares their income, job tenure, budget and area with your properties available for rent, and keeps the ones that match 70% or more."
               },
               "step3": {
                 "title": "You decide whether to send the options",
-                "desc": "In copilot they wait in the queue for your go-ahead; in autonomous they go out by email on their own (at most one a day per candidate)."
+                "desc": "In copilot the options wait in the queue for your go-ahead; in autonomous they go out by email on their own if at least two match. Never more than one email every 24 hours per candidate.",
+                "tuParte": "in copilot, review the queue and approve each candidate's options."
               }
             },
             "estado": {
@@ -8733,21 +8769,25 @@
             "salaSubtitle": "Find out in minutes whether your candidate is insurable: the agent queries several insurers at once and brings you each one's verdict.",
             "comoFunciona": {
               "title": "How does it work?",
+              "titulo": "How a quote works",
+              "descripcion": "From the candidate to each insurer's verdict, in four steps.",
               "step1": {
-                "title": "You create the candidate's quote",
-                "desc": "Enter the candidate's and the property's details in a single form."
+                "title": "You fill in the candidate's quote",
+                "desc": "It's a short wizard: the candidate's details (ID number, name and city) and the property's (rent and type).",
+                "tuParte": "tap «New quote» at the top of this screen."
               },
               "step2": {
-                "title": "The agent queries several insurers at once",
-                "desc": "In parallel, without you having to call any of them."
+                "title": "The agent queries the insurers at once",
+                "desc": "It asks every active insurer in parallel; you don't call any of them. If one answers in test mode, its result is marked as an estimate."
               },
               "step3": {
                 "title": "It brings you each verdict with its why",
-                "desc": "Compare approvals, conditions and premiums in a single view."
+                "desc": "In a single matrix you see each insurer's result, conditions and cost, with the reason behind each answer."
               },
               "step4": {
-                "title": "Cases with conditions land in To review",
-                "desc": "You decide: pick an insurer, adjust conditions or re-quote."
+                "title": "You decide with the result",
+                "desc": "Inside the quote you can ask for the conditions to be explained, re-quote with other details or download the PDF.",
+                "tuParte": "open the quote from «Recent quotes»."
               }
             },
             "estado": {
@@ -8808,21 +8848,25 @@
             },
             "comoFunciona": {
               "title": "How does it work?",
+              "titulo": "How an appraisal works",
+              "descripcion": "Four steps, from the request to the signed certificate. Nobody visits the property.",
               "step1": {
-                "title": "Mint and share the link",
-                "desc": "Send the link to your client; the property details and online payment are captured."
+                "title": "You request the appraisal",
+                "desc": "Open the wizard and enter the property details yourself, or mint a link for your client to fill in. Either way, the appraisal is issued in your agency's name.",
+                "tuParte": "above, under «Request an appraisal», choose «Request appraisal» to do it yourself or «Mint a shareable link» and send the link to your client."
               },
               "step2": {
-                "title": "Market-data estimate",
-                "desc": "The engine crunches market data and generates the reference value estimate, with no physical visit."
+                "title": "The details are entered and paid online",
+                "desc": "Whoever opens the wizard (you or your client) enters the property details and pays online. Meanwhile, the appraisal shows as «Draft» in the list below."
               },
               "step3": {
-                "title": "Review and signature",
-                "desc": "A Leasefy reviewer reviews the estimate and signs the certificate."
+                "title": "Leasefy estimates the value and a reviewer signs it",
+                "desc": "Once the payment is confirmed, the engine matches the property details against market data and computes the reference value estimate, with no physical visit. Then a Leasefy reviewer reviews it and signs the certificate; in the list it shows «In review»."
               },
               "step4": {
-                "title": "Signed certificate",
-                "desc": "Download the signed certificate; it also arrives at the agency's email."
+                "title": "You get the signed certificate",
+                "desc": "It arrives at the agency's email with the PDF and a download link, and in the list it moves to «Delivered». You can also get it from the list with «Download certificate».",
+                "tuParte": "look for it in the agency's email and share it with your client."
               }
             },
             "firmaNota": "The review and the certificate signature are handled by a Leasefy reviewer. No physical visit to the property is performed."
@@ -8833,21 +8877,24 @@
             "accionDesc": "Cases the agent can't resolve on its own land here for your decision.",
             "comoFunciona": {
               "title": "How does it work?",
+              "titulo": "How collections work",
+              "descripcion": "What the agent does on its own, within which rules, and what it leaves to you.",
               "step1": {
-                "title": "You import your portfolio",
-                "desc": "Upload your debtors and the agent gets going on its own."
+                "title": "Your portfolio comes in on its own",
+                "desc": "Every night Leasefy hands the agent the overdue installments of your contracts that are past the grace days. If you collect debts from outside Leasefy, you can also upload them in a file."
               },
               "step2": {
                 "title": "The agent contacts every debtor within Ley 2300",
-                "desc": "Calls, WhatsApp and letters during permitted hours."
+                "desc": "It calls and writes by WhatsApp and email Monday to Friday from 8 a.m. to 7 p.m. and Saturdays until 3 p.m., never on Sundays or holidays, and at most once a day per person. Calls and WhatsApp are switched on by Leasefy for your agency, and only in Autonomous mode does it reach out without waiting for your click."
               },
               "step3": {
-                "title": "It records payments and promises automatically",
-                "desc": "Your portfolio stays up to date without you lifting a finger."
+                "title": "It records promises and payments",
+                "desc": "It records the payment promises it receives. Payments made through the link are recorded on their own, and the receipt a tenant sends reaches you to verify. Pre-legal letters are drafted for you to approve."
               },
               "step4": {
-                "title": "It escalates only the critical cases",
-                "desc": "You decide only where your judgment is needed."
+                "title": "It leaves you what needs a person",
+                "desc": "«Te toca a ti» (your turn) holds disputes and cases it couldn't resolve, letters and payment plans to approve, insurance claims and the WhatsApp messages it didn't answer.",
+                "tuParte": "check «Te toca a ti» on this screen and resolve what it left you."
               }
             },
             "importarNota": "First portfolio? Write to your Leasefy contact to load it."

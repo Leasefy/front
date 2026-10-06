@@ -58,6 +58,18 @@
       "quitar": "Quitar",
       "quitarArchivo": "Quitar {{nombre}}",
       "ninguno": "Ningún archivo elegido"
+    },
+    "comoFunciona": {
+      "boton": "¿Cómo funciona?",
+      "paso": "Paso {{n}}",
+      "tuParte": "Lo que haces tú:",
+      "quien": {
+        "tu": "Lo haces tú",
+        "agente": "Lo hace el agente",
+        "leasefy": "Lo hace Leasefy",
+        "cliente": "Lo hace tu cliente",
+        "candidato": "Lo hace el candidato"
+      }
     }
   },
   "nav": {
@@ -8108,7 +8120,21 @@
         },
         "intro": {
           "eyebrow": "Habeas Data · Ley 1581 de 2012",
-          "body": "Cuando alguien de quien tienes datos pide verlos, corregirlos, borrarlos o que dejes de usarlos, la solicitud llega acá. La ley te da un plazo en días hábiles para responder, y el reloj arranca cuando la persona confirma su correo.",
+          "titulo": "Cómo funciona una solicitud de datos personales",
+          "descripcion": "De la solicitud a tu respuesta, dentro del plazo de la ley.",
+          "paso1": {
+            "title": "Alguien pide sus datos",
+            "desc": "Una persona de quien tienes datos pide verlos, corregirlos, borrarlos o que dejes de usarlos. La solicitud llega a esta bandeja."
+          },
+          "paso2": {
+            "title": "Confirma su correo y arranca el plazo",
+            "desc": "La ley te da un plazo en días hábiles para responder, y el reloj arranca cuando la persona confirma su correo. Los plazos que se están aplicando se ven en esta pantalla."
+          },
+          "paso3": {
+            "title": "Respondes antes de que venza",
+            "desc": "Dentro de la solicitud la resuelves o la rechazas con su motivo. Lo que hagas queda en la bandeja como registro de que respondiste a tiempo.",
+            "tuParte": "abre cada solicitud desde la lista y respóndela antes de que se cumpla el plazo."
+          },
           "deadlinesTitle": "Los plazos",
           "deadlineAcceso": "Acceso: {days} días hábiles",
           "deadlineReclamo": "Rectificación, cancelación y oposición: {days} días hábiles",
@@ -8599,17 +8625,21 @@
             "accionDesc": "El agente cruza cada movimiento con tus cobros y te deja solo los dudosos para revisar.",
             "comoFunciona": {
               "title": "¿Cómo funciona?",
+              "titulo": "Cómo funciona la conciliación",
+              "descripcion": "Del extracto del banco a cada movimiento conciliado, en tres pasos.",
               "step1": {
                 "title": "Subes el extracto del banco",
-                "desc": "Un archivo CSV directo desde tu banco."
+                "desc": "En CSV o Excel, tal como lo exporta el banco, y eliges de qué cuenta es: sin la cuenta no se puede cargar.",
+                "tuParte": "usa «Subir extracto del banco» en la primera tarjeta de esta pantalla."
               },
               "step2": {
-                "title": "El agente cruza cada movimiento con tus cobros",
-                "desc": "Identifica recaudos, dispersiones y comisiones automáticamente."
+                "title": "El agente cruza cada movimiento",
+                "desc": "Cada entrada, con las cuotas y los recibos de tus inquilinos; cada salida, con los giros a propietarios, los pagos a proveedores y los gastos del banco (4×1000, comisiones). Te propone con qué conciliarlo."
               },
               "step3": {
-                "title": "Tú apruebas los casos dudosos",
-                "desc": "Solo te llegan los movimientos que necesitan tu ojo."
+                "title": "Tú apruebas lo que propone",
+                "desc": "En Copiloto nada se concilia sin tu clic: lo exacto te queda en un lote para aprobar y lo dudoso, para que lo decidas. En Autónomo concilia solo lo exacto y te deja lo demás. Los pagos en línea por la pasarela se concilian solos.",
+                "tuParte": "revisa «Lo que encontró el agente» y aprueba o corrige cada cruce."
               }
             },
             "estado": {
@@ -8637,21 +8667,24 @@
             "colaLabel": "Estudios por revisar",
             "comoFunciona": {
               "title": "¿Cómo funciona?",
+              "titulo": "Cómo funciona el estudio de un candidato",
+              "descripcion": "El estudio es opcional y lo pide el candidato. La decisión siempre la toma una persona.",
               "step1": {
-                "title": "El candidato se postula",
-                "desc": "Cada postulación entra automáticamente al estudio."
+                "title": "El candidato pide su estudio",
+                "desc": "Es opcional: lo pide y lo paga el candidato desde su portal, y autoriza la consulta por correo."
               },
               "step2": {
-                "title": "El agente verifica identidad y capacidad de pago",
-                "desc": "Cruza documentos, ingresos y antecedentes en minutos."
+                "title": "Se consulta su historial y su capacidad de pago",
+                "desc": "Con la autorización del candidato, la afianzadora consulta su historial en centrales de riesgo y en listas restrictivas, y calcula cuánto puede pagar al mes."
               },
               "step3": {
-                "title": "Los casos dudosos llegan aquí para tu decisión",
-                "desc": "Revisas la evidencia y apruebas o rechazas tú."
+                "title": "Ves el resultado y decides",
+                "desc": "El resultado aparece en la ficha del candidato, dentro de su postulación. Ahí lo apruebas o lo rechazas tú.",
+                "tuParte": "abre la postulación del candidato y decide si sigue en el proceso."
               },
               "step4": {
-                "title": "Cada decisión queda registrada y auditada",
-                "desc": "Con derecho a revisión humana garantizado."
+                "title": "Cada decisión queda en el historial",
+                "desc": "El agente no rechaza a nadie: decide una persona, y cada cambio de la postulación queda registrado en su historial."
               }
             },
             "estado": {
@@ -8682,17 +8715,20 @@
             },
             "comoFunciona": {
               "title": "¿Cómo funciona?",
+              "titulo": "Cómo funciona el matching",
+              "descripcion": "Cuando un candidato se queda sin inmueble, el agente le busca otros entre los tuyos.",
               "step1": {
                 "title": "Un candidato se queda sin inmueble",
-                "desc": "Lo rechazaron, otro se quedó con el inmueble, o pediste compatibles desde su ficha."
+                "desc": "Lo rechazaste, otro candidato se quedó con el inmueble, o pediste compatibles desde su ficha."
               },
               "step2": {
                 "title": "El agente lo cruza con tus inmuebles disponibles",
-                "desc": "Compara ingresos, antigüedad laboral, presupuesto y zona con cada inmueble en arriendo."
+                "desc": "Compara sus ingresos, antigüedad laboral, presupuesto y zona con tus inmuebles disponibles en arriendo, y se queda con los que calzan 70 % o más."
               },
               "step3": {
                 "title": "Decides si se le mandan las opciones",
-                "desc": "En copiloto quedan en la cola para tu visto bueno; en autónomo salen solas por correo (máximo uno al día por candidato)."
+                "desc": "En copiloto las opciones esperan en la cola tu visto bueno; en autónomo salen solas por correo si hay al menos dos que calcen. Nunca más de un correo cada 24 horas por candidato.",
+                "tuParte": "en copiloto, revisa la cola y da el visto bueno a las opciones de cada candidato."
               }
             },
             "estado": {
@@ -8768,21 +8804,25 @@
             "salaSubtitle": "Averigua en minutos si tu candidato es asegurable: el agente consulta varias aseguradoras a la vez y te trae el veredicto de cada una.",
             "comoFunciona": {
               "title": "¿Cómo funciona?",
+              "titulo": "Cómo funciona una cotización",
+              "descripcion": "Del candidato al veredicto de cada aseguradora, en cuatro pasos.",
               "step1": {
-                "title": "Creas la cotización del candidato",
-                "desc": "Ingresas los datos del candidato y de la propiedad en un solo formulario."
+                "title": "Llenas la cotización del candidato",
+                "desc": "Es un asistente corto: los datos del candidato (cédula, nombre y ciudad) y los del inmueble (canon y tipo).",
+                "tuParte": "toca «Nueva cotización» arriba en esta pantalla."
               },
               "step2": {
-                "title": "El agente consulta varias aseguradoras a la vez",
-                "desc": "En paralelo, sin que tengas que llamar a ninguna."
+                "title": "El agente consulta las aseguradoras a la vez",
+                "desc": "Le pregunta en paralelo a cada aseguradora activa; tú no llamas a ninguna. Si alguna responde en modo de prueba, su resultado sale marcado como estimado."
               },
               "step3": {
                 "title": "Te trae el veredicto de cada una con su porqué",
-                "desc": "Comparas aprobaciones, condiciones y primas en una sola vista."
+                "desc": "En una sola matriz ves el resultado, las condiciones y el costo de cada aseguradora, con la razón de cada respuesta."
               },
               "step4": {
-                "title": "Los casos con condiciones llegan a Por revisar",
-                "desc": "Tú decides: eliges aseguradora, ajustas condiciones o re-cotizas."
+                "title": "Decides con el resultado",
+                "desc": "Dentro de la cotización puedes pedir que te expliquen las condiciones, volver a cotizar con otros datos o descargar el PDF.",
+                "tuParte": "abre la cotización desde «Últimas cotizaciones»."
               }
             },
             "estado": {
@@ -8843,21 +8883,25 @@
             },
             "comoFunciona": {
               "title": "¿Cómo funciona?",
+              "titulo": "Cómo funciona un avalúo",
+              "descripcion": "Cuatro pasos, del pedido al certificado firmado. Nadie visita el inmueble.",
               "step1": {
-                "title": "Generas y compartes el enlace",
-                "desc": "Envías el link a tu cliente; se cargan los datos del inmueble y el pago en línea."
+                "title": "Pides el avalúo",
+                "desc": "Abres el asistente y llenas tú los datos del inmueble, o generas un enlace para que lo llene tu cliente. En los dos casos, el avalúo sale a nombre de tu inmobiliaria.",
+                "tuParte": "arriba, en «Solicitar un avalúo», elige «Solicitar avalúo» para hacerlo tú o «Generar link para compartir» y mándale el enlace a tu cliente."
               },
               "step2": {
-                "title": "Estimación con datos de mercado",
-                "desc": "El motor cruza datos del mercado y genera la estimación de valor referencial, sin visita física."
+                "title": "Se cargan los datos y se paga en línea",
+                "desc": "Quien abre el asistente (tú o tu cliente) carga los datos del inmueble y paga en línea. Mientras tanto, en la lista de abajo el avalúo aparece como «Borrador»."
               },
               "step3": {
-                "title": "Revisión y firma",
-                "desc": "Un revisor de Leasefy revisa la estimación y firma el certificado."
+                "title": "Leasefy estima el valor y un revisor lo firma",
+                "desc": "Con el pago confirmado, el motor cruza los datos del inmueble con datos del mercado y calcula la estimación de valor referencial, sin visita física. Después, un revisor de Leasefy la revisa y firma el certificado; en la lista lo ves «En revisión»."
               },
               "step4": {
-                "title": "Certificado firmado",
-                "desc": "Descargas el certificado firmado y llega al correo de la inmobiliaria."
+                "title": "Te llega el certificado firmado",
+                "desc": "Llega al correo de la inmobiliaria con el PDF y un enlace para descargarlo, y en la lista pasa a «Entregado». Desde la lista también lo bajas con «Descargar certificado».",
+                "tuParte": "búscalo en el correo de la inmobiliaria y compártelo con tu cliente."
               }
             },
             "firmaNota": "La revisión y la firma del certificado las hace un revisor de Leasefy. No se realiza visita física al inmueble."
@@ -8868,21 +8912,24 @@
             "accionDesc": "Los casos que el agente no puede resolver solo llegan aquí para tu decisión.",
             "comoFunciona": {
               "title": "¿Cómo funciona?",
+              "titulo": "Cómo funciona la cobranza",
+              "descripcion": "Qué hace el agente solo, dentro de qué reglas y qué te deja a ti.",
               "step1": {
-                "title": "Importas tu cartera",
-                "desc": "Subes tus deudores y el agente arranca solo."
+                "title": "Tu cartera entra sola",
+                "desc": "Cada noche Leasefy le pasa al agente las cuotas vencidas de tus contratos que ya pasaron los días de plazo. Si cobras deudas de fuera de Leasefy, también puedes subirlas en un archivo."
               },
               "step2": {
-                "title": "El agente contacta a cada deudor cumpliendo la Ley 2300",
-                "desc": "Llamadas, WhatsApp y cartas en horarios permitidos."
+                "title": "El agente contacta a cada deudor dentro de la Ley 2300",
+                "desc": "Llama y escribe por WhatsApp y correo de lunes a viernes de 8 a. m. a 7 p. m. y los sábados hasta las 3 p. m., nunca domingos ni festivos, y como máximo una vez al día por persona. La llamada y el WhatsApp los activa Leasefy para tu inmobiliaria, y sólo en modo Autónomo contacta sin esperar tu clic."
               },
               "step3": {
-                "title": "Registra pagos y promesas automáticamente",
-                "desc": "Tu cartera se actualiza sin que muevas un dedo."
+                "title": "Anota las promesas y registra los pagos",
+                "desc": "Anota las promesas de pago que le hacen. Los pagos con el enlace se registran solos, y el comprobante que mande un inquilino te llega para que lo verifiques. Las cartas prejurídicas te las prepara para que las apruebes."
               },
               "step4": {
-                "title": "Te escala solo los casos críticos",
-                "desc": "Tú decides únicamente donde tu criterio hace falta."
+                "title": "Te deja lo que necesita una persona",
+                "desc": "En «Te toca a ti» quedan las disputas y los casos que no supo resolver, las cartas y los acuerdos por aprobar, los siniestros y los WhatsApp que no contestó.",
+                "tuParte": "revisa «Te toca a ti» en esta pantalla y resuelve lo que te dejó."
               }
             },
             "importarNota": "¿Primera cartera? Escríbele a tu contacto Leasefy para cargarla."

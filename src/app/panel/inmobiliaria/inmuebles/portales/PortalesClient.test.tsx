@@ -349,7 +349,9 @@ describe('Publicación en portales', () => {
     await abrirComoSePublica()
     const pasos = enElModal('como-funciona')!.querySelectorAll('ol > li')
     expect(pasos.length).toBe(4)
-    expect(pasos[0].textContent).toMatch(/Conecta tu cuenta/)
+    // 05-10-2026: «Anota», no «Conecta» — no hay integración, sólo se anota la
+    // cuenta (y el que no deja publicar sin ella es Leasefy, no el portal).
+    expect(pasos[0].textContent).toMatch(/Anota tu cuenta/)
     expect(pasos[3].textContent).toMatch(/Confirma que ya salió/)
   })
 

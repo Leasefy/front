@@ -138,17 +138,13 @@ export function frasesDeLasExclusiones(porTipo: NonNullable<PendientesDelMes['po
   return frases;
 }
 
-/**
- * Los pasos de un lote, en una línea. Es lo que la persona no sabía al entrar:
- * que armar no gira nada y que el archivo lo sube ella al portal del banco.
+/*
+ * Los pasos de un lote (armar → aprobar → descargar → subir al banco → marcar
+ * pagado) viven desde el 05-10-2026 en `ComoSaleUnLote.tsx` (`PASOS_DE_UN_LOTE`),
+ * detrás del botón «¿Cómo funciona?» del encabezado. Lo que la persona no sabía
+ * al entrar —que armar no gira nada y que el archivo lo sube ella al portal del
+ * banco— sigue a la vista en la tarjeta del mes (`lote-no-gira-solo`).
  */
-export const PASOS_DEL_LOTE = [
-  'Armas el lote eligiendo el banco',
-  'otra persona lo aprueba con un código',
-  'descargas el archivo de ese banco (o su planilla)',
-  'lo subes al portal del banco',
-  'marcas el lote pagado',
-] as const;
 
 function pasaElFiltro(lote: LoteResumen, filtro: Filtro): boolean {
   if (filtro === 'todos') return true;
@@ -246,15 +242,14 @@ export function ListaDeLotes({ mesInicial }: { mesInicial?: string | null } = {}
           )}
         </div>
         <FraseDelMes mes={mes} pendientes={pendientes} error={errorDePendientes} />
-        <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-caption text-fg-muted" aria-label="Cómo sale un pago">
-          {PASOS_DEL_LOTE.map((paso, i) => (
-            <li key={paso} className="flex items-center gap-1.5">
-              <span className="font-mono text-fg-subtle">{i + 1}.</span>
-              {paso}
-              {i < PASOS_DEL_LOTE.length - 1 && <ArrowRight className="h-3 w-3" aria-hidden="true" />}
-            </li>
-          ))}
-        </ol>
+        {/* COMO-FUNCIONA (05-10-2026): los cinco pasos dibujados que iban acá
+            se fueron al botón «¿Cómo funciona?» del encabezado (`ComoSaleUnLote`).
+            Queda a la vista sólo el aviso de seguridad, como la línea de Portales:
+            armar no gira plata y el archivo lo sube una persona al banco. */}
+        <p className="text-caption text-fg-muted" data-testid="lote-no-gira-solo">
+          Armar el lote <span className="font-medium text-fg">no gira plata</span>: el archivo lo subes tú al
+          portal del banco.
+        </p>
       </section>
 
       {lotes.length > 0 && (

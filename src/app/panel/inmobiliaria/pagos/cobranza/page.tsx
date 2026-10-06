@@ -15,6 +15,7 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
 import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useStageTransitionsRealtime } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
 import type { StageTransitionEvent } from '@/lib/hooks/cobranza/use-stage-transitions-realtime'
@@ -42,40 +43,48 @@ const TENANT_PLACEHOLDER = ''
 
 const PAGES_NS = 'inmobiliaria.ai.workspace.pages.cobranza'
 
-/** "¿Cómo funciona?" — el viaje de la cobranza en 4 pasos (patrón avalúos). */
-const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] = [
-  { icon: ClipboardText, titleKey: `${PAGES_NS}.comoFunciona.step1.title`, descKey: `${PAGES_NS}.comoFunciona.step1.desc` },
-  { icon: ChatCircleText, titleKey: `${PAGES_NS}.comoFunciona.step2.title`, descKey: `${PAGES_NS}.comoFunciona.step2.desc` },
-  { icon: CreditCard, titleKey: `${PAGES_NS}.comoFunciona.step3.title`, descKey: `${PAGES_NS}.comoFunciona.step3.desc` },
-  { icon: UsersThree, titleKey: `${PAGES_NS}.comoFunciona.step4.title`, descKey: `${PAGES_NS}.comoFunciona.step4.desc` },
+/**
+ * «¿Cómo funciona?» — el viaje de la cobranza en 4 pasos, SIEMPRE detrás del
+ * botón del encabezado (Nico, 05-10-2026: «eso no debe de estar ahí siempre
+ * […] llévalas al botón que al dar clic abre drawer y explica mejor cada
+ * cosa»). Antes: puesto sobre el tablero cuando no había mora, y un botón al
+ * pie cuando sí.
+ *
+ * Verificado contra el código (05-10): la cartera entra sola cada noche desde
+ * las cuotas vencidas (`mora-sync`, 2 a. m.) y subir un archivo es opcional;
+ * horario y frecuencia de la Ley 2300 (`compliance/schedule.ts`,
+ * `frecuencia-por-persona.ts`); voz y WhatsApp los prende Leasefy; las cartas
+ * las aprueba una persona; «Te toca a ti» junta más que «los críticos».
+ */
+const COMO_FUNCIONA_STEPS: { icon: Icon; clave: string; quien: QuienLoHace; tuParte?: true }[] = [
+  { icon: ClipboardText, clave: 'step1', quien: 'leasefy' },
+  { icon: ChatCircleText, clave: 'step2', quien: 'agente' },
+  { icon: CreditCard, clave: 'step3', quien: 'agente' },
+  { icon: UsersThree, clave: 'step4', quien: 'tu', tuParte: true },
 ]
 
-/**
- * Los cuatro pasos, en un solo lugar: se pintan sueltos cuando la pantalla no
- * tiene cartera que mostrar, y dentro del modal de «Cómo funciona» cuando sí.
- */
-function PasosDeComoFunciona() {
+function ComoFuncionaCobranza() {
   const { t } = useI18n()
   return (
-    <ol className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {COMO_FUNCIONA_STEPS.map((step, i) => {
-        const StepIcon = step.icon
-        return (
-          <li key={step.titleKey} className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="w-7 h-7 rounded-lg bg-primary-soft flex items-center justify-center shrink-0">
-                <StepIcon className="w-4 h-4 text-primary" weight="duotone" aria-hidden="true" />
-              </span>
-              <span className="text-xs font-medium text-fg-muted font-mono tabular-nums">
-                {i + 1}
-              </span>
-            </div>
-            <p className="text-sm font-semibold text-fg leading-tight">{t(step.titleKey)}</p>
-            <p className="text-xs text-fg-muted leading-snug">{t(step.descKey)}</p>
-          </li>
-        )
-      })}
-    </ol>
+    <ParaEntenderMas
+      etiqueta={t(`${PAGES_NS}.comoFunciona.title`)}
+      titulo={t(`${PAGES_NS}.comoFunciona.titulo`)}
+      descripcion={t(`${PAGES_NS}.comoFunciona.descripcion`)}
+      variante="secundario"
+      className="self-start sm:shrink-0"
+    >
+      <PasosExplicados
+        data-testid="cobranza-como-funciona"
+        pasos={COMO_FUNCIONA_STEPS.map((step) => ({
+          id: step.clave,
+          icono: step.icon,
+          titulo: t(`${PAGES_NS}.comoFunciona.${step.clave}.title`),
+          explicacion: t(`${PAGES_NS}.comoFunciona.${step.clave}.desc`),
+          quien: step.quien,
+          tuParte: step.tuParte ? t(`${PAGES_NS}.comoFunciona.${step.clave}.tuParte`) : undefined,
+        }))}
+      />
+    </ParaEntenderMas>
   )
 }
 
@@ -239,11 +248,14 @@ export default function CobranzaOverviewPage() {
     return (
       <CrossFade swapKey="fallo">
       <div className="p-6 lg:p-8 space-y-6">
-        <header>
-          <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.cobranza.overview.title')}</h1>
-          <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
-            {t(`${PAGES_NS}.salaDesc`)}
-          </p>
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.cobranza.overview.title')}</h1>
+            <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
+              {t(`${PAGES_NS}.salaDesc`)}
+            </p>
+          </div>
+          <ComoFuncionaCobranza />
         </header>
         <FalloDeCarga
           error={error}
@@ -281,13 +293,17 @@ export default function CobranzaOverviewPage() {
       {/* Header. Sin el «Actualizado hace ahora mismo» de la derecha: la
           página se carga al entrar y no hay botón de refrescar al que ese
           dato le sirva (Nico, 2026-09-03). */}
-      <header>
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.cobranza.overview.title')}
-        </h1>
-        <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
-          {t(`${PAGES_NS}.salaDesc`)}
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-h2 text-fg">
+            {t('inmobiliaria.ai.cobranza.overview.title')}
+          </h1>
+          <p className="text-fg-muted mt-0.5 text-sm line-clamp-2 max-w-2xl">
+            {t(`${PAGES_NS}.salaDesc`)}
+          </p>
+        </div>
+        {/* ¿Cómo funciona? — donde iría el botón de acción (05-10-2026). */}
+        <ComoFuncionaCobranza />
       </header>
 
       {/* QA-IA-B (04-10-2026): sin días de plazo fijados, lo vencido no entra a
@@ -419,42 +435,6 @@ export default function CobranzaOverviewPage() {
           </div>
         </div>
       </section>
-
-      {/* ═══ ¿Cómo funciona? ═══════════════════════════════════════════════
-          Contenido de aprendizaje, no de operación. Estaba clavado en mitad
-          del tablero, ocupando el mismo peso que las decisiones del día, todos
-          los días — también al año de usar el producto.
-
-          🔴 Segunda vuelta (21-09). Estaba plegado en un `<details>` que
-          arrancaba ABIERTO cuando no había cartera. La mitad de esa decisión
-          era correcta y se conserva; la otra mitad no:
-
-            · con cartera en mora, desplegarlo empujaba el tablero hacia abajo,
-              así que ahora se abre ENCIMA y devuelve la pantalla intacta;
-            · sin cartera todavía no hay nada que empujar, y los cuatro pasos
-              son lo único que la pantalla tiene para ofrecer: ahí se quedan
-              puestos, sin pedirle un clic a nadie.
-
-          Los mismos cuatro pasos en los dos casos (`PasosDeComoFunciona`). */}
-      {enMora === 0 ? (
-        <section
-          className="rounded-lg border border-border bg-card px-5 py-4"
-          data-testid="cobranza-como-funciona"
-        >
-          <h2 className="mb-4 text-sm font-semibold text-fg">
-            {t(`${PAGES_NS}.comoFunciona.title`)}
-          </h2>
-          <PasosDeComoFunciona />
-        </section>
-      ) : (
-        <div>
-          <ParaEntenderMas etiqueta={t(`${PAGES_NS}.comoFunciona.title`)} ancho="ancho">
-            <div data-testid="cobranza-como-funciona">
-              <PasosDeComoFunciona />
-            </div>
-          </ParaEntenderMas>
-        </div>
-      )}
 
     </div>
     </CrossFade>

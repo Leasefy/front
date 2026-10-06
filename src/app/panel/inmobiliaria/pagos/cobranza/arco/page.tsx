@@ -20,6 +20,7 @@ import {
   ArrowClockwise,
   CheckCircle,
   Clock,
+  IdentificationCard,
   Scales,
   ShieldCheck,
   Warning,
@@ -41,6 +42,8 @@ import { SlaCountdownBadge } from '@/components/inmobiliaria/cobranza/SlaCountdo
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui/button'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { PasosExplicados, type PasoExplicado } from '@/components/ui/pasos-explicados'
 import { Badge } from '@/components/ui/badge'
 import {
   Table,
@@ -79,9 +82,43 @@ const TYPE_VARIANT: Record<ArcoRequestType, 'default' | 'secondary' | 'warning' 
 // ─── Cabecera explicativa ─────────────────────────────────────────────────────
 
 /**
- * Qué es esta pantalla, en el menor espacio posible. Es una bandeja que se
- * visita poco y con consecuencias legales: quien entra por primera vez no
- * debería tener que preguntar para qué sirve.
+ * «¿Cómo funciona?» — el viaje de una solicitud, detrás del botón del
+ * encabezado (Nico, 05-10-2026: «eso no debe de estar ahí siempre […]
+ * llévalas al botón que al dar clic abre drawer y explica mejor cada cosa»).
+ * Era el párrafo «qué es esta bandeja» puesto en la cabecera; sus frases
+ * siguen acá, repartidas en tres pasos.
+ */
+function ComoFuncionaArco() {
+  const { t } = useI18n()
+  const pasos: PasoExplicado[] = [
+    { id: 'paso1', icono: IdentificationCard, titulo: t(`${NS}.intro.paso1.title`), explicacion: t(`${NS}.intro.paso1.desc`) },
+    { id: 'paso2', icono: Clock, titulo: t(`${NS}.intro.paso2.title`), explicacion: t(`${NS}.intro.paso2.desc`) },
+    {
+      id: 'paso3',
+      icono: CheckCircle,
+      titulo: t(`${NS}.intro.paso3.title`),
+      explicacion: t(`${NS}.intro.paso3.desc`),
+      quien: 'tu',
+      tuParte: t(`${NS}.intro.paso3.tuParte`),
+    },
+  ]
+  return (
+    <ParaEntenderMas
+      etiqueta={t('common.comoFunciona.boton')}
+      titulo={t(`${NS}.intro.titulo`)}
+      descripcion={t(`${NS}.intro.descripcion`)}
+      variante="secundario"
+    >
+      <PasosExplicados data-testid="arco-como-funciona" pasos={pasos} />
+    </ParaEntenderMas>
+  )
+}
+
+/**
+ * Lo que esta bandeja TIENE que decir, siempre a la vista: la ley que la rige,
+ * la consecuencia de responder tarde (aviso legal) y los plazos que se están
+ * aplicando (datos reales). El «qué es esta pantalla» se fue al botón
+ * «¿Cómo funciona?» del encabezado (05-10-2026).
  */
 function IntroPanel({ terms }: { terms: ArcoSlaTerms }) {
   const { t } = useI18n()
@@ -103,9 +140,6 @@ function IntroPanel({ terms }: { terms: ArcoSlaTerms }) {
       <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-8">
         <div className="min-w-0 flex-1 space-y-2">
           <Eyebrow>{t(`${NS}.intro.eyebrow`)}</Eyebrow>
-          <p className="max-w-[62ch] text-sm leading-relaxed text-fg-muted">
-            {t(`${NS}.intro.body`)}
-          </p>
           <p className="max-w-[62ch] text-sm leading-relaxed text-fg-muted">
             {t(`${NS}.intro.consequence`)}
           </p>
@@ -446,21 +480,25 @@ export default function ArcoInboxPage() {
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          hideArrow
-          onClick={() => void refetch()}
-          disabled={isRefreshing}
-          aria-label={t('common.refresh')}
-        >
-          <ArrowClockwise
-            className={cn('mr-1.5 h-4 w-4', isRefreshing && 'animate-spin')}
-            weight="regular"
-            aria-hidden="true"
-          />
-          {t('common.refresh')}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* ¿Cómo funciona? — el cajón con el viaje de una solicitud (05-10-2026). */}
+          <ComoFuncionaArco />
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
+            onClick={() => void refetch()}
+            disabled={isRefreshing}
+            aria-label={t('common.refresh')}
+          >
+            <ArrowClockwise
+              className={cn('mr-1.5 h-4 w-4', isRefreshing && 'animate-spin')}
+              weight="regular"
+              aria-hidden="true"
+            />
+            {t('common.refresh')}
+          </Button>
+        </div>
       </div>
 
       <IntroPanel terms={slaTerms} />

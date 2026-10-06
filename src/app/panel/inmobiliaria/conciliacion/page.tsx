@@ -20,7 +20,8 @@
  *      monto), en la misma familia de tarjeta que el resto del panel,
  *   4. qué pasó con la última corrida, si se pidió una,
  *   5. la actividad reciente del agente,
- *   6. «¿Cómo funciona?», plegado, que es ayuda y no dato.
+ *   6. «¿Cómo funciona?», que es ayuda y no dato: desde el 05-10-2026 es el
+ *      botón del encabezado y abre un cajón (antes, un botón al pie).
  *
  * ── Por qué esta Sala no usa <SalaAgente> ───────────────────────────────────
  * `<SalaAgente>` monta SIEMPRE el CTA primario de la cola en su encabezado y
@@ -74,6 +75,7 @@ import {
 import { PageGuard } from '@/components/auth/PageGuard'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
@@ -103,11 +105,20 @@ const SONDEO_MS = 5000
 /** Seis vueltas ≈ 30 s. */
 const VUELTAS_DEL_SONDEO = 6
 
-/** «Cómo funciona» — el viaje de la conciliación en 3 pasos. */
-const COMO_FUNCIONA_STEPS: { icon: Icon; titleKey: string; descKey: string }[] = [
-  { icon: UploadSimple, titleKey: `${PAGES_NS}.comoFunciona.step1.title`, descKey: `${PAGES_NS}.comoFunciona.step1.desc` },
-  { icon: ArrowsClockwise, titleKey: `${PAGES_NS}.comoFunciona.step2.title`, descKey: `${PAGES_NS}.comoFunciona.step2.desc` },
-  { icon: CheckCircle, titleKey: `${PAGES_NS}.comoFunciona.step3.title`, descKey: `${PAGES_NS}.comoFunciona.step3.desc` },
+/**
+ * «Cómo funciona» — el viaje de la conciliación en 3 pasos, cada uno con quién
+ * lo hace (Nico, 05-10-2026: «explica mejor cada cosa y más bonito»).
+ *
+ * Verificado contra el código (05-10): el extracto entra en CSV o Excel y la
+ * cuenta es obligatoria (`CargarExtracto`); las entradas se cruzan con cuotas y
+ * recibos y las salidas con giros, egresos y gastos del banco; en Copiloto no
+ * se aplica nada sin el clic, en Autónomo sólo lo exacto, y la pasarela se
+ * concilia sola.
+ */
+const COMO_FUNCIONA_STEPS: { icon: Icon; clave: string; quien: QuienLoHace; tuParte?: true }[] = [
+  { icon: UploadSimple, clave: 'step1', quien: 'tu', tuParte: true },
+  { icon: ArrowsClockwise, clave: 'step2', quien: 'agente' },
+  { icon: CheckCircle, clave: 'step3', quien: 'tu', tuParte: true },
 ]
 
 /**
@@ -368,10 +379,33 @@ function ConciliacionSala() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6" data-testid="sala-agente-conciliacion">
-      {/* Encabezado — sin CTA: la acción vive en la tarjeta que la explica. */}
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">{t(`${PAGES_NS}.salaTitulo`)}</h1>
-        <p className="text-body text-fg-muted max-w-2xl">{t(`${PAGES_NS}.salaDesc`)}</p>
+      {/* Encabezado — sin CTA: la acción vive en la tarjeta que la explica. A la
+          derecha, sólo «¿Cómo funciona?» (05-10-2026): estaba al pie de la
+          pantalla, debajo de la actividad, y ahí no lo encontraba nadie. */}
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-h2 text-fg">{t(`${PAGES_NS}.salaTitulo`)}</h1>
+          <p className="text-body text-fg-muted max-w-2xl">{t(`${PAGES_NS}.salaDesc`)}</p>
+        </div>
+        <ParaEntenderMas
+          etiqueta={t(`${PAGES_NS}.comoFunciona.title`)}
+          titulo={t(`${PAGES_NS}.comoFunciona.titulo`)}
+          descripcion={t(`${PAGES_NS}.comoFunciona.descripcion`)}
+          variante="secundario"
+          className="self-start sm:shrink-0"
+        >
+          <PasosExplicados
+            data-testid="conciliacion-como-funciona"
+            pasos={COMO_FUNCIONA_STEPS.map((step) => ({
+              id: step.clave,
+              icono: step.icon,
+              titulo: t(`${PAGES_NS}.comoFunciona.${step.clave}.title`),
+              explicacion: t(`${PAGES_NS}.comoFunciona.${step.clave}.desc`),
+              quien: step.quien,
+              tuParte: step.tuParte ? t(`${PAGES_NS}.comoFunciona.${step.clave}.tuParte`) : undefined,
+            }))}
+          />
+        </ParaEntenderMas>
       </header>
 
       {/* D-CONCILIACION (Nico, P10): el aviso de las partidas que pasan de los días de la alerta. */}
@@ -511,39 +545,6 @@ function ConciliacionSala() {
           </Stagger>
         </section>
       )}
-
-      {/* 6. ¿Cómo funciona? — ayuda, no dato. Estaba plegada al final de la
-          pantalla; desde el 21-09 se abre ENCIMA: un `<details>` abierto crece
-          dentro de la pantalla y empuja las sugerencias que la persona vino a
-          revisar. El `data-testid` se conserva en el contenido para que las
-          pruebas sigan buscando lo mismo. */}
-      <ParaEntenderMas
-        etiqueta={t(`${PAGES_NS}.comoFunciona.title`)}
-        ancho="ancho"
-      >
-        <ol
-          className="grid grid-cols-1 gap-4 sm:grid-cols-3"
-          data-testid="conciliacion-como-funciona"
-        >
-          {COMO_FUNCIONA_STEPS.map((step, i) => {
-            const StepIcon = step.icon
-            return (
-              <li key={step.titleKey} className="flex items-start gap-2.5">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-muted">
-                  <StepIcon className="h-4 w-4 text-fg-muted" weight="duotone" aria-hidden="true" />
-                </span>
-                <div className="min-w-0 space-y-0.5">
-                  <p className="text-body-sm font-medium leading-tight text-fg">
-                    <span className="tabular-nums text-fg-subtle">{i + 1}. </span>
-                    {t(step.titleKey)}
-                  </p>
-                  <p className="text-caption leading-snug text-fg-muted">{t(step.descKey)}</p>
-                </div>
-              </li>
-            )
-          })}
-        </ol>
-      </ParaEntenderMas>
 
       {/* Confirmación humana de "Conciliar ahora" (T-323) */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>

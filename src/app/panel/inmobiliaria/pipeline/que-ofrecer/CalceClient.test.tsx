@@ -31,21 +31,23 @@ const { api } = vi.hoisted(() => ({
  */
 /*
  * 21-09: «Cómo se decide» pasó de un `<details>` al pie a un modal
- * (`ParaEntenderMas`). Se moquea el diálogo, no el botón: lo que hay que poder
+ * (`ParaEntenderMas`; desde el 05-10 un cajón). Se moquea el cajón, no el botón: lo que hay que poder
  * seguir probando es que la explicación EXISTE y dice lo mismo, no que esté
  * puesta sobre la pantalla.
  */
-// Mock PARCIAL: el resto de la primitiva sigue siendo la de verdad, porque
-// `responsive-dialog.tsx` (que llega por `@/components/ui`) pide
-// `DialogTrigger`, `DialogClose`… y un mock entero los dejaba en `undefined`.
-vi.mock('@/components/ui/dialog', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/components/ui/dialog')>()),
-  Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
-    open ? <div data-testid="modal">{children}</div> : null,
-  DialogContent: ({ children, ...p }: { children: React.ReactNode }) => <div {...p}>{children}</div>,
-  DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
-  DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
+// 05-10-2026: `ParaEntenderMas` abre el CAJÓN de la casa (antes un modal), así
+// que el doble pasó del diálogo al cajón; las aserciones no cambian. Un cajón
+// de verdad pinta en un portal fuera del contenedor y mete a Radix en el medio.
+vi.mock('@/components/ui/cajon', () => ({
+  Cajon: ({ abierto, children }: { abierto: boolean; children: React.ReactNode }) =>
+    abierto ? <div data-testid="modal">{children}</div> : null,
+  CajonCabecera: ({ titulo, descripcion }: { titulo: React.ReactNode; descripcion?: React.ReactNode }) => (
+    <div>
+      <h2>{titulo}</h2>
+      {descripcion ? <p>{descripcion}</p> : null}
+    </div>
+  ),
+  CajonCuerpo: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({

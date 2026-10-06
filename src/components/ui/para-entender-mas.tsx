@@ -23,6 +23,22 @@
  * hasta que se abre**. Once tarjetas con sus iconos y sus enlaces no se
  * calculan para nadie que no las pidió.
  *
+ * ── Un cajón, no un modal (Nico, 05-10-2026) ──────────────────────────────
+ *
+ * Mirando Avalúos: «llévalas al botón que al dar clic abre drawer y explica
+ * mejor cada cosa y más bonito». Desde ese día el botón abre el CAJÓN de la
+ * casa (`Cajon`: el Sheet flotante de Cadence, a la derecha; en el celular sube
+ * como hoja desde abajo), no un modal centrado. La explicación se lee al lado
+ * de la pantalla que explica, con su cabecera fija y un cuerpo que scrollea.
+ * Para los pasos de un «¿Cómo funciona?» está `PasosExplicados`
+ * (`ui/pasos-explicados.tsx`): quién hace cada paso y lo que te toca a ti.
+ *
+ * El contenido sigue sin montarse hasta que se abre (Radix no monta el cajón
+ * cerrado) y se va cuando termina de salir. Al cerrar —Esc, clic afuera o la
+ * ✕— el foco vuelve al botón: `Cajon` recuerda qué tenía el foco al abrir, y
+ * el clic se lo da al botón ANTES de abrir (Safari no enfoca un botón al
+ * hacerle clic, y sin eso el foco caía al principio de la página).
+ *
  * ── Cuándo NO usar esto ────────────────────────────────────────────────────
  *
  * Esto es para lo EXPLICATIVO —cómo funciona algo, qué pide un portal—, no
@@ -34,18 +50,13 @@
 import { useState, type ReactNode } from 'react';
 import { Question } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { Cajon, CajonCabecera } from '@/components/ui/cajon';
+import { SheetBody } from '@/components/ui/sheet';
 
 export interface ParaEntenderMasProps {
   /** Lo que dice el botón. Concreto: «Cómo funciona una postulación». */
   etiqueta: string;
-  /** El título del modal. Si no se da, el del botón. */
+  /** El título del cajón. Si no se da, el del botón. */
   titulo?: string;
   /** Una línea que enmarque lo que se va a leer. Opcional. */
   descripcion?: string;
@@ -71,13 +82,6 @@ export function ParaEntenderMas({
   className,
 }: ParaEntenderMasProps) {
   const [abierto, setAbierto] = useState(false);
-  /*
-   * Movimiento: el modal SALE con su animación (Cadence, 150 ms), y para que
-   * no se encoja vacío el contenido sigue montado hasta que terminó de salir
-   * — Radix avisa con `onCloseAutoFocus`, que llega cuando el contenido ya se
-   * desmontó—. Cerrado, sigue sin montarse.
-   */
-  const [contenidoMontado, setContenidoMontado] = useState(false);
 
   return (
     <>
@@ -87,8 +91,11 @@ export function ParaEntenderMas({
         size="sm"
         hideArrow
         className={className}
-        onClick={() => {
-          setContenidoMontado(true);
+        aria-haspopup="dialog"
+        aria-expanded={abierto}
+        onClick={(e) => {
+          // El foco en el botón ANTES de abrir: es adonde `Cajon` lo devuelve.
+          e.currentTarget.focus();
           setAbierto(true);
         }}
         data-testid="para-entender-mas"
@@ -97,29 +104,34 @@ export function ParaEntenderMas({
         {etiqueta}
       </Button>
 
-      <Dialog open={abierto} onOpenChange={setAbierto}>
-        <DialogContent
-          className={ancho === 'ancho' ? 'sm:max-w-5xl' : 'sm:max-w-lg'}
-          data-testid="para-entender-mas-contenido"
-          /* Sin `descripcion`, se dice EXPLÍCITO que no hay: Radix avisaba en la
-             consola «Missing `Description` or `aria-describedby={undefined}`»
-             en cada apertura (QA 23-09). El contenido del modal ya es la
-             explicación; una descripción de relleno repetiría el título. */
-          {...(descripcion ? {} : { 'aria-describedby': undefined })}
-          onCloseAutoFocus={() => setContenidoMontado(false)}
+      {/* «normal» = el cajón mediano (560 px), «ancho» = el grande (880 px):
+          la misma traducción que `Cajon` hace de los anchos viejos del modal
+          (`sm:max-w-lg` y `sm:max-w-5xl`). */}
+      <Cajon
+        abierto={abierto}
+        onOpenChange={setAbierto}
+        tamano={ancho === 'ancho' ? 'xl' : 'md'}
+        data-testid="para-entender-mas-contenido"
+      >
+        <CajonCabecera titulo={titulo ?? etiqueta} descripcion={descripcion} />
+        {/* El cuerpo es lo único que scrollea (`data-lenis-prevent` incluido).
+            Montado sólo mientras el cajón está abierto o saliendo.
+
+            Es `SheetBody` (lo mismo que `CajonCuerpo`) para poder darle
+            `tabIndex`: una explicación es texto sin un solo control, y una
+            región que scrollea sin nada enfocable no se puede leer con el
+            teclado (axe, `scrollable-region-focusable`, «serious»; QA 05-10).
+            Con foco propio, las flechas la recorren; el anillo sólo con
+            teclado. */}
+        <SheetBody
+          tabIndex={0}
+          role="region"
+          aria-label={titulo ?? etiqueta}
+          className="outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
         >
-          <DialogHeader>
-            <DialogTitle>{titulo ?? etiqueta}</DialogTitle>
-            {descripcion ? <DialogDescription>{descripcion}</DialogDescription> : null}
-          </DialogHeader>
-          {/* `data-lenis-prevent`: el scroll suave de la casa se apropia de la
-              rueda dentro de los modales si no se le dice que no. */}
-          <div className="max-h-[70vh] overflow-y-auto" data-lenis-prevent>
-            {/* Montado sólo mientras está abierto (y lo que dura su salida). */}
-            {abierto || contenidoMontado ? children : null}
-          </div>
-        </DialogContent>
-      </Dialog>
+          {children}
+        </SheetBody>
+      </Cajon>
     </>
   );
 }

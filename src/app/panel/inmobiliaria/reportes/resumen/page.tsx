@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
+// AVISO-TIPO-DOC (05-10-2026): los propietarios cuyo documento frena la factura por mandato.
+import { AvisoTipoDeDocumento } from '@/components/inmobiliaria/AvisoTipoDeDocumento';
 import {
   Buildings,
   Users,
@@ -747,6 +749,9 @@ function ResumenDelNegocio() {
           data-testid="aviso-de-la-deuda"
         />
       ))}
+      {/* AVISO-TIPO-DOC: sólo para quien puede completarlo (administrador, o
+          contador que edita propietarios); se va solo con la última ficha. */}
+      <AvisoTipoDeDocumento />
       {pendingMaintenance.length > 0 && (
         <AlertaAccionable
           severidad="info"

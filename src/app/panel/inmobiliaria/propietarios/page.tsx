@@ -16,6 +16,7 @@ import {
   CaretRight,
   Users,
   UserCircle,
+  Funnel,
 } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import {
@@ -72,6 +73,9 @@ import {
 import { descargarListaDePropietarios } from '@/lib/propietarios/exportar-datos';
 import { laListaOcultaLaPlata } from '@/lib/propietarios/lo-que-muestra-la-lista';
 import { generadoSinGirarDeLaLista } from '@/lib/propietarios/giros-del-propietario';
+// AVISO-TIPO-DOC (05-10-2026): el aviso y la lista filtrada por lo que falta.
+import { AvisoTipoDeDocumento } from '@/components/inmobiliaria/AvisoTipoDeDocumento';
+import { FALTA_TIPO_DE_DOCUMENTO, PARAMETRO_FALTA } from '@/lib/propietarios/falta-del-documento';
 import { SegmentedControl, KpiCard, AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 
 type ViewMode = 'table' | 'grid';
@@ -192,7 +196,12 @@ function PropietariosContent() {
    * El orden correcto —filtrar → ordenar → paginar— sólo se puede hacer donde
    * está la lista completa. Ver `lib/propietarios/filtrar-propietarios.ts`.
    */
-  const [filtros, setFiltros] = useState<FiltrosDePropietarios>(FILTROS_INICIALES);
+  // AVISO-TIPO-DOC: `?falta=tipo-de-documento` (el enlace del aviso) entra ya filtrado.
+  const faltaEnLaUrl = searchParams.get(PARAMETRO_FALTA) === FALTA_TIPO_DE_DOCUMENTO;
+  const [filtros, setFiltros] = useState<FiltrosDePropietarios>(() => ({
+    ...FILTROS_INICIALES,
+    falta: faltaEnLaUrl ? 'tipoDocumento' : null,
+  }));
   const propietariosFiltrados = useMemo(
     () => filtrarPropietarios(propietarios, filtros),
     [propietarios, filtros],
@@ -265,6 +274,29 @@ function PropietariosContent() {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  /*
+   * AVISO-TIPO-DOC: el botón del aviso en esta misma pantalla cambia la URL sin
+   * montarla de nuevo; el filtro la sigue. El parámetro queda en la barra
+   * mientras el filtro está puesto: al volver de la ficha («atrás») la lista
+   * sigue filtrada, que es justo el trabajo de completar una ficha tras otra.
+   */
+  useEffect(() => {
+    if (!faltaEnLaUrl) return;
+    setFiltros((f) => (f.falta === 'tipoDocumento' ? f : { ...f, falta: 'tipoDocumento' }));
+    setCurrentPage(1);
+  }, [faltaEnLaUrl]);
+
+  /** Quitar el filtro de lo que falta: también de la barra (con `replaceState`, sin remontar la página). */
+  const quitarFiltroDeLoQueFalta = () => {
+    setFiltros((f) => ({ ...f, falta: null }));
+    setCurrentPage(1);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete(PARAMETRO_FALTA);
+      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    }
+  };
 
   // Open modal if ?nuevo=true query param is present
   useEffect(() => {
@@ -592,6 +624,10 @@ function PropietariosContent() {
         )}
       </div>
 
+      {/* AVISO-TIPO-DOC: los propietarios cuyo documento frena la factura por
+          mandato (sólo para quien puede arreglarlo; se va solo al completarlos). */}
+      <AvisoTipoDeDocumento enLaLista filtroPuesto={filtros.falta === 'tipoDocumento'} />
+
       {/* El clic que vino de otra pantalla y no llegó a ningún lado. Se dice:
           una lista que se queda igual parece un botón roto. */}
       <Presence
@@ -662,6 +698,32 @@ function PropietariosContent() {
           deltaDirection={kpiSinDato || plataOculta ? 'neutral' : stats.pendingCount > 0 ? 'down' : 'up'}
         />
       </div>
+
+      {/* AVISO-TIPO-DOC: qué filtra la lista y cómo volver a verla entera. */}
+      <Presence
+        show={filtros.falta === 'tipoDocumento'}
+        data-testid="filtro-falta-documento"
+        className="flex flex-col gap-3 rounded-lg border border-border bg-surface-muted px-4 py-3 sm:flex-row sm:items-center"
+      >
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <Funnel className="mt-0.5 h-5 w-5 flex-shrink-0 text-fg-muted" weight="fill" aria-hidden="true" />
+          <p className="text-sm text-fg">
+            {paginationData.totalItems === 0
+              ? 'Ya no queda ningún propietario con mandato y el documento por completar.'
+              : `${paginationData.totalItems === 1 ? 'Se muestra 1 propietario' : `Se muestran ${paginationData.totalItems} propietarios`} con mandato y el documento por completar: sus facturas por mandato no se emiten hasta completarlo.`}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          hideArrow
+          onClick={quitarFiltroDeLoQueFalta}
+          className="self-start sm:self-auto"
+          data-testid="quitar-filtro-falta-documento"
+        >
+          Quitar filtro
+        </Button>
+      </Presence>
 
       {/* Unified Data Card - View Toggle + Content + Pagination.
           Sin entrada propia: la página ya entra con el `template.tsx`; lo que

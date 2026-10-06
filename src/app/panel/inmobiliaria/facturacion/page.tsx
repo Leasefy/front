@@ -55,6 +55,8 @@ import {
   mesLegible,
 } from '@/lib/api/facturacion-por-mes.service';
 import { ResolucionDeFacturacion } from '@/components/facturacion/ResolucionDeFacturacion';
+// AVISO-TIPO-DOC (05-10-2026): los propietarios cuyo documento frena la factura por mandato.
+import { AvisoTipoDeDocumento } from '@/components/inmobiliaria/AvisoTipoDeDocumento';
 import type { FacturacionTab } from '@/lib/api/facturacion.types';
 
 interface TabDef {
@@ -191,6 +193,11 @@ function FacturacionContent() {
           textoDeAntes={{ titulo: t(k('m2BannerTitle')), descripcion: t(k('m2BannerDesc')) }}
         />
       ) : null}
+
+      {/* AVISO-TIPO-DOC: en «Por facturar», el total de lo frenado por el
+          documento del propietario y el camino a completarlo (cada fila frenada
+          ya dice su motivo con «Completar en el propietario»). */}
+      {active === 'nueva' ? <AvisoTipoDeDocumento /> : null}
 
       {/* UNA tarjeta: pestañas arriba, tabla debajo. Sin título encima. */}
       <Tabs

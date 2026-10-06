@@ -23,6 +23,7 @@
  */
 
 import type { Propietario } from '@/lib/types/inmobiliaria';
+import { faltaDelDocumentoDelPropietario } from '@/lib/propietarios/falta-del-documento';
 
 export type CampoDeOrden =
   | 'name'
@@ -32,6 +33,13 @@ export type CampoDeOrden =
   | 'lastPaymentDate';
 export type SentidoDeOrden = 'asc' | 'desc';
 export type TipoDePropietario = 'all' | 'person' | 'company';
+/**
+ * AVISO-TIPO-DOC (05-10-2026): «lo que falta». `tipoDocumento` = los que tienen
+ * mandato y el documento frena su factura por mandato (sin número, sin tipo o
+ * el tipo por revisar), con la misma regla del freno. Llega por
+ * `?falta=tipo-de-documento` desde el aviso.
+ */
+export type FaltaDeLaLista = 'tipoDocumento' | null;
 
 export interface FiltrosDePropietarios {
   busqueda: string;
@@ -39,6 +47,8 @@ export interface FiltrosDePropietarios {
   soloConSaldo: boolean;
   campo: CampoDeOrden;
   sentido: SentidoDeOrden;
+  /** AVISO-TIPO-DOC: opcional, así los filtros armados a mano siguen valiendo. */
+  falta?: FaltaDeLaLista;
 }
 
 export const FILTROS_INICIALES: FiltrosDePropietarios = {
@@ -47,6 +57,7 @@ export const FILTROS_INICIALES: FiltrosDePropietarios = {
   soloConSaldo: false,
   campo: 'name',
   sentido: 'asc',
+  falta: null,
 };
 
 /** ¿Hay algo puesto que explique por qué la lista es más corta? El orden no cuenta. */
@@ -54,7 +65,8 @@ export function hayFiltros(filtros: FiltrosDePropietarios): boolean {
   return (
     filtros.busqueda.trim().length > 0 ||
     filtros.tipo !== 'all' ||
-    filtros.soloConSaldo
+    filtros.soloConSaldo ||
+    Boolean(filtros.falta)
   );
 }
 
@@ -123,6 +135,11 @@ function soloFiltrar(
   // de confiar en la coerción.
   if (filtros.soloConSaldo) {
     resultado = resultado.filter((p) => (p.pendingBalance ?? 0) > 0);
+  }
+
+  // AVISO-TIPO-DOC: los que el aviso cuenta (mandato + documento que frena).
+  if (filtros.falta === 'tipoDocumento') {
+    resultado = resultado.filter((p) => faltaDelDocumentoDelPropietario(p) !== null);
   }
 
   if (filtros.tipo === 'person') {

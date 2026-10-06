@@ -41,6 +41,8 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
+import { inventarioDeLaFicha, useActasDelMandato } from '@/lib/actas/actas-del-mandato';
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 
 // Bank name mapping
 const BANK_NAMES: Record<string, string> = {
@@ -847,6 +849,19 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
   const filaClase =
     'w-full flex items-center gap-3 p-3 rounded-lg bg-surface-muted dark:bg-bg hover:bg-surface-hover dark:hover:bg-ink transition-colors text-left';
   const itemsDeInventario = consignacion.inventoryItems?.length || 0;
+  // IA95-28: con el inventario de la captación vacío, el de sus actas (Vidi o Documentos).
+  const actasDelMandato = useActasDelMandato(consignacion.id, itemsDeInventario === 0);
+  const inventario = inventarioDeLaFicha(itemsDeInventario, actasDelMandato);
+  const subtituloDelActa =
+    inventario.de === 'acta'
+      ? t(k(inventario.items === 1 ? 'handoverFromActaOne' : 'handoverFromActa'), {
+          count: inventario.items,
+          acta: t(k(inventario.tipo === 'devolucion' ? 'actaDeDevolucion' : 'actaDeEntrega')),
+          fecha: fechaLarga(inventario.fecha),
+        })
+      : t(k(itemsDeInventario === 1 ? 'inventoryItemsCountOne' : 'inventoryItemsCount'), { count: itemsDeInventario });
+  const hrefDelActa =
+    inventario.de === 'acta' ? '/panel/inmobiliaria/documentos?tab=actas' : `/panel/inmobiliaria/inmuebles/${consignacion.id}/acta`;
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [subiendo, setSubiendo] = useState(false);
@@ -964,7 +979,7 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
         )}
 
         <Link
-          href={`/panel/inmobiliaria/inmuebles/${consignacion.id}/acta`}
+          href={hrefDelActa}
           className={filaClase}
           data-testid="documento-acta"
         >
@@ -974,7 +989,7 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
           <div className="flex-1 min-w-0">
             <p className="font-medium text-fg text-sm">{t(k('handoverReport'))}</p>
             <p className="text-xs text-fg-muted">
-              {t(k('inventoryItemsCount'), { count: itemsDeInventario })}
+              {subtituloDelActa}
             </p>
           </div>
           <ArrowRight className="w-4 h-4 shrink-0 text-fg-subtle" />

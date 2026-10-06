@@ -76,7 +76,7 @@ import { PageGuard } from '@/components/auth/PageGuard'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
+import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
 import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
 import { useExtractoDelBack } from '@/lib/hooks/conciliacion/use-extracto-del-back'
@@ -569,7 +569,7 @@ function ConciliacionSala() {
 
 export default function ConciliacionSalaPage() {
   return (
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+    <PageGuard roles={[...ROLES_QUE_CONCILIAN]}>
       <ConciliacionSala />
     </PageGuard>
   )

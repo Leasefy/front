@@ -73,7 +73,7 @@ const NAV_CATALOG: NavEntry[] = [
   // Dinero). Se encuentra por los nombres de sus agentes y por lo que hace.
   // Sin `permission`: la fila se gatea por rol (ADMIN y CONTADOR) y la página
   // se defiende sola, igual que Conciliación.
-  { kind: 'page', title: 'Agente de pagos', context: 'Agentes IA', href: `${P}/pagos/agente`, keywords: 'agente ia equipo de pagos gabriela mariana nicolas valentina samuel sofia link de pago cobro automatico liquidacion automatica' }, // IA95-10: Mariana prepara el cobro (Laura es la voz de cobranza)
+  { kind: 'page', title: 'Agente de pagos', context: 'Agentes IA', href: `${P}/pagos/agente`, keywords: 'agente ia equipo de pagos gabriela cuenti nicolas valentina samuel sofia link de pago cobro automatico liquidacion automatica' }, // IA95-10: Cuenti prepara el cobro (Laura es la voz de cobranza)
   { kind: 'page', title: 'Desempeño IA', context: 'Agentes IA', href: `${P}/reportes/ia`, keywords: 'analytics analitica metricas ia agentes desempeño', permission: { module: 'analytics', action: 'view' } },
 
   // ── Captación y arriendo ──────────────────────────────────────────────────

@@ -23,7 +23,7 @@ import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { FloppyDisk } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
+import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos'
 import { useAgentAutonomia } from '@/lib/hooks/ai/use-agent-autonomia'
 import {
   useConciliacionPolicy,
@@ -432,7 +432,7 @@ function ConciliacionConfiguracion() {
 
 export default function ConciliacionConfiguracionPage() {
   return (
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+    <PageGuard roles={[...ROLES_QUE_CONCILIAN]}>
       <ConciliacionConfiguracion />
     </PageGuard>
   )

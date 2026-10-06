@@ -96,6 +96,16 @@ describe('IA95-41: el cartel dice lo que de verdad falla', () => {
     expect(container.textContent).toContain('No tienes acceso a Cobros')
   })
 
+  it('con más de tres roles (todos menos el tuyo) no los enumera: nombra el tuyo', () => {
+    permisos.agencyRole = AGENCY_ROLES.AUXILIAR_CARTERA
+    permisos.canAccess = () => true
+    const todosMenosElAuxiliar = Object.values(AGENCY_ROLES).filter((r) => r !== AGENCY_ROLES.AUXILIAR_CARTERA)
+    pintar({ module: 'cobros', roles: todosMenosElAuxiliar })
+    const texto = container.textContent ?? ''
+    expect(texto).toContain('Esta pantalla no es de tu rol en la inmobiliaria (el auxiliar de cartera)')
+    expect(texto).not.toContain('el asesor comercial')
+  })
+
   it('rolesEnPalabras: uno, dos, tres y desconocidos', () => {
     expect(rolesEnPalabras('ADMIN')).toBe('el administrador')
     expect(rolesEnPalabras('ADMIN,CONTADOR')).toBe('el administrador y el contador')

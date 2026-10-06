@@ -40,6 +40,7 @@ import {
 import { formatParticipacion } from '@/lib/types/inmobiliaria';
 import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 import type { InventoryItem } from '@/lib/types/inmobiliaria';
+import { useActasDelMandato } from '@/lib/actas/actas-del-mandato';
 
 const ESTILO_DE_IMPRESION = `
 @media print {
@@ -87,6 +88,8 @@ export default function ActaDeEntregaPage() {
   };
 
   const items = consignacion?.inventoryItems ?? [];
+  // IA95-28: con el inventario de la captación vacío, ¿el inmueble tiene actas con el suyo?
+  const actasDelInmueble = useActasDelMandato(consignacion?.id, Boolean(consignacion) && items.length === 0);
   const duenos =
     consignacion && consignacion.copropietarios.length > 1
       ? consignacion.copropietarios.map((c) => ({
@@ -191,11 +194,23 @@ export default function ActaDeEntregaPage() {
                 {t('inmobiliaria.acta.inventorySection')} · {items.length} {t('inmobiliaria.acta.itemsLabel')}
               </h2>
               {items.length === 0 ? (
-                <EmptyState
-                  icon={Package}
-                  title={t('inmobiliaria.acta.noInventory')}
-                  description={t('inmobiliaria.acta.noInventoryDesc')}
-                />
+                <>
+                  <EmptyState
+                    icon={Package}
+                    title={t('inmobiliaria.acta.noInventory')}
+                    description={t('inmobiliaria.acta.noInventoryDesc')}
+                  />
+                  {/* IA95-28: el inventario de la captación está vacío, pero el
+                      inmueble tiene actas (Vidi o Documentos) con el suyo. */}
+                  {actasDelInmueble.length > 0 && (
+                    <p className="mt-3 text-sm text-fg-muted" data-acta-oculto data-testid="acta-inventario-en-las-actas">
+                      {t('inmobiliaria.acta.inventarioEnLasActas')}{' '}
+                      <Link href="/panel/inmobiliaria/documentos?tab=actas" className="text-fg underline underline-offset-2">
+                        {t('inmobiliaria.acta.verLasActas')}
+                      </Link>
+                    </p>
+                  )}
+                </>
               ) : (
                 <Table>
                   <TableHeader>

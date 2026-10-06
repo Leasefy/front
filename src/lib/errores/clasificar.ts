@@ -596,14 +596,19 @@ export function clasificarFallo(error: unknown, ctx: Contexto = {}): FalloDeCarg
      * mandaba a pedir un permiso que ya tenía. Se dice quiénes la usan.
      */
     if (cuerpo.code === 'SIN_PERMISO_POR_ROL') {
-      const quienes = rolesEnPalabras(cuerpo.roles)
+      // Con más de tres roles la lista no ayuda («todos menos el tuyo»): se nombra el tuyo.
+      const cuantos = (cuerpo.roles ?? '').split(',').filter((r) => r.trim()).length
+      const quienes = cuantos <= 3 ? rolesEnPalabras(cuerpo.roles) : null
+      const tuRol = rolesEnPalabras(cuerpo.role)
       const seccion = cuerpo.module ? (NOMBRE_DEL_MODULO[cuerpo.module] ?? cuerpo.module) : null
       return {
         tipo: 'sinPermiso',
         titulo: seccion ? `No tienes acceso a ${seccion}` : 'No tienes acceso a esta pantalla',
         descripcion: quienes
           ? `Esta pantalla la usan ${quienes}, y tu rol en la inmobiliaria no está entre ellos. Si la necesitas, pídele a un administrador.`
-          : 'Esta pantalla es de otros roles de la inmobiliaria, y el tuyo no está entre ellos. Si la necesitas, pídele a un administrador.',
+          : tuRol
+            ? `Esta pantalla no es de tu rol en la inmobiliaria (${tuRol}). Si la necesitas, pídele a un administrador.`
+            : 'Esta pantalla es de otros roles de la inmobiliaria, y el tuyo no está entre ellos. Si la necesitas, pídele a un administrador.',
         sePuedeReintentar: false,
         status,
         mensajeOriginal,

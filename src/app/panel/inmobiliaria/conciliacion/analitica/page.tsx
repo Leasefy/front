@@ -8,7 +8,7 @@
  */
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
+import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos'
 import { useAgentAnalitica } from '@/lib/hooks/ai/use-agent-analitica'
 import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
 import { AnaliticaAgente } from '@/components/inmobiliaria/ai/AnaliticaAgente'
@@ -45,7 +45,7 @@ function ConciliacionAnalitica() {
 
 export default function ConciliacionAnaliticaPage() {
   return (
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+    <PageGuard roles={[...ROLES_QUE_CONCILIAN]}>
       <ConciliacionAnalitica />
     </PageGuard>
   )

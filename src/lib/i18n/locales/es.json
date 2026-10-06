@@ -4343,7 +4343,12 @@
         "consignmentContract": "Contrato de consignación",
         "consignmentContractDesc": "PDF - Documento legal",
         "handoverReport": "Acta de entrega",
-        "inventoryItemsCount": "{{count}} items en inventario",
+        "inventoryItemsCount": "{{count}} ítems en el inventario",
+        "inventoryItemsCountOne": "1 ítem en el inventario",
+        "handoverFromActa": "{{count}} ítems en el {{acta}} del {{fecha}}",
+        "handoverFromActaOne": "1 ítem en el {{acta}} del {{fecha}}",
+        "actaDeEntrega": "acta de entrega",
+        "actaDeDevolucion": "acta de devolución",
         "consignmentContractView": "Abrir el PDF",
         "consignmentContractMissing": "Todavía no hay uno cargado",
         "consignmentContractGenerate": "Generar desde una plantilla",
@@ -5210,6 +5215,8 @@
       "total": "Total",
       "noInventory": "No hay ítems de inventario",
       "noInventoryDesc": "Agrega ítems al inventario del inmueble",
+      "inventarioEnLasActas": "El inventario de este inmueble está en sus actas de entrega y devolución.",
+      "verLasActas": "Ver las actas",
       "addInventory": "Agregar inventario",
       "thActions": "Acciones",
       "editItem": "Editar ítem",
@@ -7794,7 +7801,7 @@
           "optOut": {
             "empty": {
               "title": "Ningún deudor ha cerrado un canal",
-              "description": "Cuando un deudor pide que no lo contacten por un canal concreto (por ejemplo, «no me llamen»), ese canal se cierra y aparece aquí; la cobranza sigue por los demás. Un «no me contacten más» genérico no cierra ningún canal."
+              "description": "Cuando un deudor pide que no le escriban por un canal concreto (por ejemplo, «no me escriban por WhatsApp»), ese canal se cierra y aparece aquí; la cobranza sigue por los demás. «No me llamen más» y un «no me contacten más» genérico no cierran ningún canal: se anotan y la gestión sigue."
             },
             "errors": {
               "ackFailed": "No se pudo registrar el acuse del opt-out. Intenta de nuevo."

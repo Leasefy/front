@@ -51,7 +51,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui'
 import { PageGuard } from '@/components/auth/PageGuard'
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
+import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos'
 import { Spinner } from '@/components/ui/spinner'
 import {
   Table,
@@ -690,7 +690,7 @@ function ConciliacionLiquidaciones() {
 
 export default function ConciliacionLiquidacionesPage() {
   return (
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+    <PageGuard roles={[...ROLES_QUE_CONCILIAN]}>
       <ConciliacionLiquidaciones />
     </PageGuard>
   )

@@ -214,6 +214,8 @@ describe('PartesDelContratoManual', () => {
           email: 'b@x.co',
           telefono: '3001112233',
           documento: '79123456',
+          // Only people with a portal account are offered (the create would 404 otherwise).
+          tieneCuentaDelPortal: true,
           arriendos: [],
         },
       ],

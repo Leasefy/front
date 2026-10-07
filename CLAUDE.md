@@ -41,6 +41,12 @@ activity feed, execution panel).
   idempotente; sin worker, la ficha dice «El mapa no cargó» con «Abrir en Google Maps»); todo `<Map>` importa
   `src/components/map/trabajador-de-maplibre.ts` o el mapa sale gris. Gráficas: recharts. Scroll: lenis.
 - Auth: Supabase (`@supabase/ssr`) + MFA TOTP. Push: Firebase FCM.
+- Cadence (`@leasefy/cadence`, `file:../cadence`): el CI y Vercel clonan el repo hermano `Leasefy/cadence` antes de
+  instalar. La rama o tag a clonar sale de `.cadence-ref` (raíz de `front/`, una sola línea); sin el archivo se
+  usa `main`. Lo actualiza quien cambia la versión de Cadence que la rama necesita, en el mismo commit que el
+  lockfile; mientras una rama fije un ref, `main` de Cadence no gobierna sus builds. Hoy: `bugs-nico-1`
+  (Cadence 1.2.3, sin tag; solo existe `v1.0.3`). Al integrar a `develop`/`main`, borrar o cambiar el archivo
+  cuando Cadence publique ese ref en `main`.
 
 ## Estructura
 

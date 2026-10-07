@@ -417,6 +417,12 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   const [mode, setMode] = React.useState<AuthMode>('login');
   const [registerStep, setRegisterStep] = React.useState<RegisterStep>('credentials');
   const [isLoading, setIsLoading] = React.useState(false);
+  // Qué botón carga: el de Google sólo dice «Conectando…» si se tocó él; mientras
+  // entra con el correo, Google queda apagado sin girar (Nico, 07-10).
+  const [conGoogle, setConGoogle] = React.useState(false);
+  React.useEffect(() => {
+    if (!isLoading) setConGoogle(false);
+  }, [isLoading]);
   const [error, setError] = React.useState<string | null>(null);
   const [resetEmail, setResetEmail] = React.useState<string>('');
   /*
@@ -740,6 +746,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // ── Login ────────────────────────────────────────────────────────────────
   const handleGoogleLogin = async () => {
     setIsLoading(true);
+    setConGoogle(true);
     setError(null);
     olvidarAviso();
     try {
@@ -825,6 +832,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // ── Register ─────────────────────────────────────────────────────────────
   const handleGoogleRegister = async () => {
     setIsLoading(true);
+    setConGoogle(true);
     setError(null);
     olvidarAviso();
     try {
@@ -1109,85 +1117,87 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
         {/* ── Login ─────────────────────────────────────────────────────── */}
         {mode === 'login' && (
           <div>
-            <GoogleButton onClick={handleGoogleLogin} disabled={isLoading} isLoading={isLoading}>
-              {isLoading ? 'Conectando...' : 'Continuar con Google'}
+            <GoogleButton onClick={handleGoogleLogin} disabled={isLoading} isLoading={isLoading && conGoogle}>
+              {isLoading && conGoogle ? 'Conectando...' : 'Continuar con Google'}
             </GoogleButton>
 
             <MonoDivider>o con email</MonoDivider>
 
             <form method="post" onSubmit={loginForm.handleSubmit(handleLoginSubmit)} className="space-y-4">
-              <div className="space-y-1.5">
-                <AuthInput
-                  label="Email"
-                  type="email"
-                  placeholder="tu@email.com"
-                  {...correoDeLogin}
-                  onBlur={(e) => {
-                    void correoDeLogin.onBlur(e);
-                    alSalirDelCorreo(
-                      () => loginForm.getValues('email'),
-                      (correo) => loginForm.setValue('email', correo, { shouldValidate: true }),
-                    );
-                  }}
-                  error={loginForm.formState.errors.email?.message}
-                />
-                <SugerenciaDeCorreo
-                  valor={loginForm.watch('email')}
-                  onUsar={(correo) => loginForm.setValue('email', correo, { shouldValidate: true })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <AuthInput
-                  label="Contraseña"
-                  type="password"
-                  placeholder="Tu contraseña"
-                  {...loginForm.register('password', {
-                    required: 'La contraseña es requerida',
-                    minLength: { value: 6, message: 'Mínimo 6 caracteres' },
-                  })}
-                  error={loginForm.formState.errors.password?.message}
-                />
-                <div className="text-right">
-                  <button
-                    type="button"
-                    onClick={() => handleModeSwitch('forgot-password')}
-                    className="text-[12.5px] text-fg-subtle hover:text-fg transition-colors"
-                  >
-                    ¿Olvidaste tu contraseña?
-                  </button>
+              <fieldset disabled={isLoading} className="min-w-0 space-y-4">
+                <div className="space-y-1.5">
+                  <AuthInput
+                    label="Email"
+                    type="email"
+                    placeholder="tu@email.com"
+                    {...correoDeLogin}
+                    onBlur={(e) => {
+                      void correoDeLogin.onBlur(e);
+                      alSalirDelCorreo(
+                        () => loginForm.getValues('email'),
+                        (correo) => loginForm.setValue('email', correo, { shouldValidate: true }),
+                      );
+                    }}
+                    error={loginForm.formState.errors.email?.message}
+                  />
+                  <SugerenciaDeCorreo
+                    valor={loginForm.watch('email')}
+                    onUsar={(correo) => loginForm.setValue('email', correo, { shouldValidate: true })}
+                  />
                 </div>
-              </div>
-              <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
-              <ErrorBanner mensaje={error} />
-              {error && correoSinConfirmar && (
-                <ReenvioDeConfirmacion reenvio={reenvio} onReenviar={reenviarConfirmacion} />
-              )}
-              {error && correoSinCuenta && (
-                <p className="text-[13px] text-fg-subtle">
-                  <button
-                    type="button"
-                    onClick={() => handleModeSwitch('register', correoSinCuenta)}
-                    className={ENLACE}
-                    data-testid="crear-cuenta-con-este-correo"
-                  >
-                    Crear una cuenta con este correo
-                  </button>
-                </p>
-              )}
-              <Button
-                type="submit"
-                disabled={isLoading || !hidratado}
-                className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]"
-              >
-                {isLoading ? (
-                  <>
-                    <SpinnerGap className="mr-2 h-4 w-4 animate-spin" />
-                    Ingresando…
-                  </>
-                ) : (
-                  'Iniciar sesión'
+                <div className="space-y-1.5">
+                  <AuthInput
+                    label="Contraseña"
+                    type="password"
+                    placeholder="Tu contraseña"
+                    {...loginForm.register('password', {
+                      required: 'La contraseña es requerida',
+                      minLength: { value: 6, message: 'Mínimo 6 caracteres' },
+                    })}
+                    error={loginForm.formState.errors.password?.message}
+                  />
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => handleModeSwitch('forgot-password')}
+                      className="text-[12.5px] text-fg-subtle hover:text-fg transition-colors"
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </button>
+                  </div>
+                </div>
+                <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
+                <ErrorBanner mensaje={error} />
+                {error && correoSinConfirmar && (
+                  <ReenvioDeConfirmacion reenvio={reenvio} onReenviar={reenviarConfirmacion} />
                 )}
-              </Button>
+                {error && correoSinCuenta && (
+                  <p className="text-[13px] text-fg-subtle">
+                    <button
+                      type="button"
+                      onClick={() => handleModeSwitch('register', correoSinCuenta)}
+                      className={ENLACE}
+                      data-testid="crear-cuenta-con-este-correo"
+                    >
+                      Crear una cuenta con este correo
+                    </button>
+                  </p>
+                )}
+                <Button
+                  type="submit"
+                  disabled={isLoading || !hidratado}
+                  className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]"
+                >
+                  {isLoading ? (
+                    <>
+                      <SpinnerGap className="mr-2 h-4 w-4 animate-spin" />
+                      Ingresando…
+                    </>
+                  ) : (
+                    'Iniciar sesión'
+                  )}
+                </Button>
+              </fieldset>
             </form>
 
             <NotaLegal />
@@ -1208,81 +1218,83 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
         {/* ── Register: Credentials ──────────────────────────────────────── */}
         {mode === 'register' && registerStep === 'credentials' && (
           <div>
-            <GoogleButton onClick={handleGoogleRegister} disabled={isLoading} isLoading={isLoading}>
+            <GoogleButton onClick={handleGoogleRegister} disabled={isLoading} isLoading={isLoading && conGoogle}>
               Registrarse con Google
             </GoogleButton>
 
             <MonoDivider>o con tu email</MonoDivider>
 
             <form method="post" onSubmit={registerForm.handleSubmit(handleRegisterSubmit)} className="space-y-4">
-              <div className="space-y-1.5">
+              <fieldset disabled={isLoading} className="min-w-0 space-y-4">
+                <div className="space-y-1.5">
+                  <AuthInput
+                    label="Email"
+                    type="email"
+                    placeholder="tu@email.com"
+                    {...correoDeRegistro}
+                    onBlur={(e) => {
+                      void correoDeRegistro.onBlur(e);
+                      alSalirDelCorreo(
+                        () => registerForm.getValues('email'),
+                        (correo) => registerForm.setValue('email', correo, { shouldValidate: true }),
+                      );
+                    }}
+                    error={registerForm.formState.errors.email?.message}
+                  />
+                  <SugerenciaDeCorreo
+                    valor={correoEscritoEnRegistro}
+                    aceptado={correoAceptado}
+                    onUsar={(correo) => {
+                      aceptarCorreoTalCual(null);
+                      registerForm.setValue('email', correo, { shouldValidate: true });
+                    }}
+                    onAceptar={() => {
+                      aceptarCorreoTalCual(validarCorreo(registerForm.getValues('email')).correo);
+                      void registerForm.trigger('email');
+                    }}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <AuthInput
+                    label="Contraseña"
+                    type="password"
+                    isNewPassword
+                    placeholder="Mínimo 8 caracteres"
+                    {...contrasenaDeRegistro}
+                    error={registerForm.formState.errors.password?.message}
+                  />
+                  {/* Las cinco barras: rojo, naranja, verde (Nico, 2026-09-07). */}
+                  <MedidorDeContrasena contrasena={contrasenaEscrita} correo={correoEscritoEnRegistro} />
+                </div>
                 <AuthInput
-                  label="Email"
-                  type="email"
-                  placeholder="tu@email.com"
-                  {...correoDeRegistro}
-                  onBlur={(e) => {
-                    void correoDeRegistro.onBlur(e);
-                    alSalirDelCorreo(
-                      () => registerForm.getValues('email'),
-                      (correo) => registerForm.setValue('email', correo, { shouldValidate: true }),
-                    );
-                  }}
-                  error={registerForm.formState.errors.email?.message}
-                />
-                <SugerenciaDeCorreo
-                  valor={correoEscritoEnRegistro}
-                  aceptado={correoAceptado}
-                  onUsar={(correo) => {
-                    aceptarCorreoTalCual(null);
-                    registerForm.setValue('email', correo, { shouldValidate: true });
-                  }}
-                  onAceptar={() => {
-                    aceptarCorreoTalCual(validarCorreo(registerForm.getValues('email')).correo);
-                    void registerForm.trigger('email');
-                  }}
-                />
-              </div>
-              <div className="space-y-2">
-                <AuthInput
-                  label="Contraseña"
+                  label="Confirmar contraseña"
                   type="password"
                   isNewPassword
-                  placeholder="Mínimo 8 caracteres"
-                  {...contrasenaDeRegistro}
-                  error={registerForm.formState.errors.password?.message}
+                  placeholder="Repite tu contraseña"
+                  {...registerForm.register('confirmPassword', {
+                    required: 'Confirma tu contraseña',
+                    validate: (val) => val === registerForm.watch('password') || 'Las contraseñas no coinciden',
+                  })}
+                  error={registerForm.formState.errors.confirmPassword?.message}
                 />
-                {/* Las cinco barras: rojo, naranja, verde (Nico, 2026-09-07). */}
-                <MedidorDeContrasena contrasena={contrasenaEscrita} correo={correoEscritoEnRegistro} />
-              </div>
-              <AuthInput
-                label="Confirmar contraseña"
-                type="password"
-                isNewPassword
-                placeholder="Repite tu contraseña"
-                {...registerForm.register('confirmPassword', {
-                  required: 'Confirma tu contraseña',
-                  validate: (val) => val === registerForm.watch('password') || 'Las contraseñas no coinciden',
-                })}
-                error={registerForm.formState.errors.confirmPassword?.message}
-              />
-              <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
-              <ErrorBanner mensaje={error} />
-              {error && correoYaRegistrado && (
-                <p className="text-[13px] text-fg-subtle">
-                  <button
-                    type="button"
-                    onClick={() => handleModeSwitch('login', correoYaRegistrado)}
-                    className={ENLACE}
-                    data-testid="entrar-con-este-correo"
-                  >
-                    Iniciar sesión con este correo
-                  </button>
-                </p>
-              )}
-              <Button type="submit" disabled={isLoading || !hidratado} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
-                {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
-              </Button>
+                <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
+                <ErrorBanner mensaje={error} />
+                {error && correoYaRegistrado && (
+                  <p className="text-[13px] text-fg-subtle">
+                    <button
+                      type="button"
+                      onClick={() => handleModeSwitch('login', correoYaRegistrado)}
+                      className={ENLACE}
+                      data-testid="entrar-con-este-correo"
+                    >
+                      Iniciar sesión con este correo
+                    </button>
+                  </p>
+                )}
+                <Button type="submit" disabled={isLoading || !hidratado} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
+                  {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
+                </Button>
+              </fieldset>
             </form>
 
             <NotaLegal />
@@ -1355,34 +1367,36 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
             onSubmit={forgotPasswordForm.handleSubmit(handleForgotPasswordSubmit)}
             className="space-y-4"
           >
-            <div className="space-y-1.5">
-              <AuthInput
-                label="Email"
-                type="email"
-                placeholder="tu@email.com"
-                {...correoDeRecuperacion}
-                onBlur={(e) => {
-                  void correoDeRecuperacion.onBlur(e);
-                  alSalirDelCorreo(
-                    () => forgotPasswordForm.getValues('email'),
-                    (correo) => forgotPasswordForm.setValue('email', correo, { shouldValidate: true }),
-                  );
-                }}
-                error={forgotPasswordForm.formState.errors.email?.message}
-              />
-              <SugerenciaDeCorreo
-                valor={forgotPasswordForm.watch('email')}
-                onUsar={(correo) => forgotPasswordForm.setValue('email', correo, { shouldValidate: true })}
-              />
-            </div>
-            <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
-            <ErrorBanner mensaje={error} />
-            <Button type="submit" disabled={isLoading || !hidratado} className="w-full h-11 rounded-full text-[14px]">
-              {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando...</>) : 'Enviar enlace de recuperación'}
-            </Button>
-            <p className="text-[12px] text-fg-subtle leading-relaxed">
-              Ingresa el email asociado a tu cuenta y te enviaremos un enlace para restablecer tu contraseña.
-            </p>
+            <fieldset disabled={isLoading} className="min-w-0 space-y-4">
+              <div className="space-y-1.5">
+                <AuthInput
+                  label="Email"
+                  type="email"
+                  placeholder="tu@email.com"
+                  {...correoDeRecuperacion}
+                  onBlur={(e) => {
+                    void correoDeRecuperacion.onBlur(e);
+                    alSalirDelCorreo(
+                      () => forgotPasswordForm.getValues('email'),
+                      (correo) => forgotPasswordForm.setValue('email', correo, { shouldValidate: true }),
+                    );
+                  }}
+                  error={forgotPasswordForm.formState.errors.email?.message}
+                />
+                <SugerenciaDeCorreo
+                  valor={forgotPasswordForm.watch('email')}
+                  onUsar={(correo) => forgotPasswordForm.setValue('email', correo, { shouldValidate: true })}
+                />
+              </div>
+              <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
+              <ErrorBanner mensaje={error} />
+              <Button type="submit" disabled={isLoading || !hidratado} className="w-full h-11 rounded-full text-[14px]">
+                {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando...</>) : 'Enviar enlace de recuperación'}
+              </Button>
+              <p className="text-[12px] text-fg-subtle leading-relaxed">
+                Ingresa el email asociado a tu cuenta y te enviaremos un enlace para restablecer tu contraseña.
+              </p>
+            </fieldset>
           </form>
         )}
 

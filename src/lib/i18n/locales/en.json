@@ -7483,6 +7483,15 @@
           "aprobarDisabledPerm": "You need cobranza:approve permission.",
           "wompiLinkTitle": "Plan approved. Payment link:",
           "wompiLinkLabel": "Open Wompi link",
+          "estado": {
+            "aprobado": "Approved: waiting for the tenant to accept it.",
+            "vigente": "Active: the tenant accepted it; collection pauses while it is kept.",
+            "cumplido": "Completed: the agreement is paid.",
+            "rechazado": "Rejected.",
+            "cancelado": "Cancelled.",
+            "incumplido": "Defaulted: back to collection.",
+            "contraoferta": "Modified: a new proposal was sent."
+          },
           "aceptacion": {
             "titulo": "The tenant accepted the agreement",
             "ayuda": "If the tenant accepted by phone or in person, record it here: the agreement becomes active and collections pause while it is kept.",

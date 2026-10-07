@@ -313,6 +313,28 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
   const esperaAceptacion =
     plan.status === 'offered' || plan.status === 'pending' || plan.status === 'approved'
   const puedeRegistrarAceptacion = esperaAceptacion && estaAprobado && !sinAprobarDelServidor
+  /*
+   * 🔴 N-44 (QA-PAGOS-95 r3): un plan que ya no está por decidir (aprobado,
+   * vigente, cumplido, rechazado…) no ofrece «Aprobar · Rechazar · Modificar»
+   * apagados: dice en qué quedó. Antes el plan VIGENTE de Tomás seguía con los
+   * tres botones.
+   */
+  const estadoDelPlan =
+    plan.status === 'active'
+      ? t('inmobiliaria.ai.cobranza.planes.estado.vigente')
+      : plan.status === 'completed'
+        ? t('inmobiliaria.ai.cobranza.planes.estado.cumplido')
+        : plan.status === 'rejected'
+          ? t('inmobiliaria.ai.cobranza.planes.estado.rechazado')
+          : plan.status === 'cancelled'
+            ? t('inmobiliaria.ai.cobranza.planes.estado.cancelado')
+            : plan.status === 'defaulted'
+              ? t('inmobiliaria.ai.cobranza.planes.estado.incumplido')
+              : plan.status === 'counter_offered'
+                ? t('inmobiliaria.ai.cobranza.planes.estado.contraoferta')
+                : estaAprobado
+                  ? t('inmobiliaria.ai.cobranza.planes.estado.aprobado')
+                  : null
 
   const handleAceptar = async (): Promise<void> => {
     setAceptando(true)
@@ -461,7 +483,13 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
         </div>
       )}
 
-      {/* Action buttons */}
+      {/* Action buttons: sólo mientras está por decidir (N-44). */}
+      {!isPending && estadoDelPlan && (
+        <p role="status" data-testid="plan-estado" className="text-sm text-fg">
+          {estadoDelPlan}
+        </p>
+      )}
+      {isPending && (
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
@@ -496,6 +524,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
           {t('inmobiliaria.ai.cobranza.planes.modificar')}
         </Button>
       </div>
+      )}
 
       {/* «El inquilino aceptó» — sólo con el plan aprobado (Nico, S5 Q4) */}
       {/* «Primero apruébalo» ⇄ «Registrar que lo aceptó»: el uno se va y el

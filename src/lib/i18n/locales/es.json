@@ -7518,6 +7518,15 @@
           "aprobarDisabledPerm": "Necesitas permiso cobranza:aprobar.",
           "wompiLinkTitle": "Plan aprobado. Enlace de pago:",
           "wompiLinkLabel": "Abrir enlace Wompi",
+          "estado": {
+            "aprobado": "Aprobado: espera que el inquilino lo acepte.",
+            "vigente": "Vigente: el inquilino lo aceptó; la cobranza se frena mientras lo cumpla.",
+            "cumplido": "Cumplido: el acuerdo quedó pagado.",
+            "rechazado": "Rechazado.",
+            "cancelado": "Cancelado.",
+            "incumplido": "Incumplido: volvió a la cobranza.",
+            "contraoferta": "Modificado: se le mandó una propuesta nueva."
+          },
           "aceptacion": {
             "titulo": "El inquilino aceptó el acuerdo",
             "ayuda": "Si el inquilino aceptó por teléfono o en persona, regístralo aquí: el acuerdo queda vigente y la cobranza se frena mientras se cumpla.",

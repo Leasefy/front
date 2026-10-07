@@ -214,12 +214,13 @@ describe('🔴 «El inquilino aceptó» — el panel TAMBIÉN exige la aprobaci�
   // QA-IA-B (04-10-2026, en el laboratorio): aprobado el plan, «Aprobar»,
   // «Rechazar» y «Modificar» seguían prendidos. Aprobar dos veces o rechazar
   // uno aprobado son 409 en el micro: el botón prometía algo que no se puede.
-  it('aprobado: ya no ofrece aprobar, rechazar ni modificar', async () => {
+  it('aprobado: ya no ofrece aprobar, rechazar ni modificar (N-44: ni apagados) y dice en qué quedó', async () => {
     estado.aprobadoEn = '2026-10-02T15:00:00.000Z'
     await montar()
     for (const id of ['approval-aprobar-plan', 'approval-rechazar-plan', 'approval-modificar-plan']) {
-      expect(contenedor.querySelector<HTMLButtonElement>(`[data-testid="${id}"]`)?.disabled).toBe(true)
+      expect(contenedor.querySelector(`[data-testid="${id}"]`)).toBeNull()
     }
+    expect(contenedor.querySelector('[data-testid="plan-estado"]')?.textContent).toBe('inmobiliaria.ai.cobranza.planes.estado.aprobado')
   })
 
   it('un plan ya vigente no ofrece nada de esto', async () => {
@@ -227,6 +228,21 @@ describe('🔴 «El inquilino aceptó» — el panel TAMBIÉN exige la aprobaci�
     await montar()
     expect(contenedor.querySelector('[data-testid="plan-sin-aprobar"]')).toBeNull()
     expect(contenedor.querySelector('[data-testid="plan-registrar-aceptacion"]')).toBeNull()
+  })
+
+  it('🔴 N-44 (QA-PAGOS-95 r3): el plan VIGENTE o CUMPLIDO dice su estado, sin «Aprobar · Rechazar · Modificar»', async () => {
+    for (const [status, clave] of [
+      ['active', 'vigente'],
+      ['completed', 'cumplido'],
+    ] as const) {
+      estado.status = status
+      estado.aprobadoEn = '2026-10-06T18:10:40.062Z'
+      await montar()
+      expect(contenedor.querySelector('[data-testid="approval-aprobar-plan"]')).toBeNull()
+      expect(contenedor.querySelector('[data-testid="approval-rechazar-plan"]')).toBeNull()
+      expect(contenedor.querySelector('[data-testid="approval-modificar-plan"]')).toBeNull()
+      expect(contenedor.querySelector('[data-testid="plan-estado"]')?.textContent).toBe(`inmobiliaria.ai.cobranza.planes.estado.${clave}`)
+    }
   })
 })
 

@@ -32,6 +32,8 @@ export function SelectorDeArchivo({
   testid,
   deshabilitado = false,
   invalido = false,
+  describedBy,
+  requerido = false,
   className,
 }: {
   /** El `id` del input: la etiqueta de afuera lo apunta con `htmlFor`. */
@@ -45,6 +47,10 @@ export function SelectorDeArchivo({
   deshabilitado?: boolean;
   /** Falta y es obligatorio: el borde lo dice. */
   invalido?: boolean;
+  /** El `id` del error o la ayuda bajo el campo (va en `aria-describedby` del input). */
+  describedBy?: string;
+  /** Obligatorio: el lector de pantalla lo anuncia (`aria-required`). */
+  requerido?: boolean;
   className?: string;
 }) {
   const { t } = useI18n();
@@ -67,6 +73,9 @@ export function SelectorDeArchivo({
         accept={accept}
         className="sr-only"
         disabled={deshabilitado}
+        aria-describedby={describedBy}
+        aria-required={requerido || undefined}
+        aria-invalid={invalido || undefined}
         data-testid={testid}
         onChange={(e) => {
           onElegir(e.target.files?.[0] ?? null);

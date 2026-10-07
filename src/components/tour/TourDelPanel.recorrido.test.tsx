@@ -211,6 +211,21 @@ describe('el recorrido, de punta a punta', () => {
     expect(q('[data-testid="tour-del-panel"]')).toBeNull()
   })
 
+  it('una sola ✕ por pantalla, rotulada «Cerrar…» (en la bienvenida y el cierre va en la esquina del modal)', () => {
+    plantarAnclajes(PASOS_DEL_TOUR.map((p) => p.selector))
+    pintar()
+    const aspas = () => document.querySelectorAll('[data-testid="tour-cerrar"]')
+    expect(aspas()).toHaveLength(1)
+    expect(aspas()[0]!.getAttribute('aria-label')).toBe('inmobiliaria.tour.cerrar')
+    clic('[data-testid="tour-siguiente"]')
+    expect(aspas()).toHaveLength(1)
+    for (let i = 0; i < PASOS_DEL_TOUR.length; i++) clic('[data-testid="tour-siguiente"]')
+    expect(q('[data-testid="tour-del-panel"]')?.getAttribute('data-pantalla')).toBe('cierre')
+    expect(aspas()).toHaveLength(1)
+    clic('[data-testid="tour-cerrar"]')
+    expect(prefs.cerrarRecorrido).toHaveBeenCalledWith('omitido')
+  })
+
   it('el cuerpo y el dato del paso salen de sus claves', () => {
     plantarAnclajes([PASOS_DEL_TOUR[0]!.selector])
     pintar()
@@ -222,7 +237,10 @@ describe('el recorrido, de punta a punta', () => {
   it('el progreso dice en qué paso va', () => {
     plantarAnclajes(PASOS_DEL_TOUR.map((p) => p.selector))
     pintar()
-    expect(q('[data-testid="tour-progreso"]')?.getAttribute('aria-valuenow')).toBe('0')
+    // La bienvenida no lleva avance (Nico, 30-09: la barra de paradas, la ruta
+    // y el renglón de datos «no es necesario dejarlo ahí»): el cuerpo ya dice
+    // cuántas paradas son. El avance arranca con la primera parada.
+    expect(q('[data-testid="tour-progreso"]')).toBeNull()
     clic('[data-testid="tour-siguiente"]')
     expect(q('[data-testid="tour-progreso"]')?.getAttribute('aria-valuenow')).toBe('1')
     expect(q('[data-testid="tour-progreso"]')?.getAttribute('aria-valuemax')).toBe(

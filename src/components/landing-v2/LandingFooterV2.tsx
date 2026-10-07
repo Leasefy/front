@@ -14,9 +14,9 @@ const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"], 
  *
  * Vivía incrustado dentro del home —que es un port de un HTML autónomo con su
  * propio header y footer— así que el resto de la landing usaba otro pie
- * distinto: `components/layout/Footer`, azul, con boletín y un LEASEFY
- * gigante. Seis páginas públicas mostraban un cierre que no era el nuestro
- * (Nico, 2026-09-05, mirando /terminos).
+ * distinto (uno azul, con boletín y un LEASEFY gigante, que ya no existe).
+ * Seis páginas públicas mostraban un cierre que no era el nuestro (Nico,
+ * 2026-09-05, mirando /terminos).
  *
  * Los estilos son los del CSS de la landing (`.fstrip`, `.fgrid2`, `.fbrand`…),
  * que `LandingChrome` ya carga. Por eso este componente sólo sirve dentro del

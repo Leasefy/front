@@ -64,7 +64,7 @@ describe('describirFormula', () => {
 
   it('monto fijo en pesos, con el formato de plata del producto', () => {
     expect(describirFormula({ formula: 'MONTO_FIJO', valor: 50000, base: 'CANON' })).toBe(
-      '$ 50.000 fijo',
+      '$\u00a050.000 fijo',
     );
   });
 });
@@ -75,7 +75,7 @@ describe('describirTope', () => {
     expect(describirTope(undefined)).toBe('sin tope');
   });
   it('con tope', () => {
-    expect(describirTope(500000)).toBe('hasta $ 500.000');
+    expect(describirTope(500000)).toBe('hasta $\u00a0500.000');
   });
 });
 
@@ -90,7 +90,7 @@ describe('describirRegla', () => {
         base: 'CANON',
         topeCop: 500000,
       }),
-    ).toBe('Se dispara a los 5 días de mora y cobra 0,0667 % diario sobre el canon, hasta $ 500.000.');
+    ).toBe('Se dispara a los 5 días de mora y cobra 0,0667 % diario sobre el canon, hasta $\u00a0500.000.');
 
     expect(
       describirRegla({

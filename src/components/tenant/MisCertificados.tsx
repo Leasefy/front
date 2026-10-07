@@ -24,6 +24,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CheckCircle, Certificate, Download, WarningCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 import { Button } from '@/components/ui/button';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
@@ -37,6 +38,7 @@ import {
 const NOMBRE_DEL_CERTIFICADO: Record<TipoDeCertificado, string> = {
   PAZ_Y_SALVO: 'Paz y salvo',
   CERTIFICADO_ESTAR_AL_DIA: 'Certificado de estar al día',
+  CERTIFICADO_DE_SU_TIEMPO: 'Certificado de que no debe nada por el tiempo en que fue inquilino',
 };
 
 const QUE_CERTIFICA: Record<TipoDeCertificado, string> = {
@@ -44,6 +46,8 @@ const QUE_CERTIFICA: Record<TipoDeCertificado, string> = {
     'El contrato terminó y no queda nada por pagar. Lo emite tu inmobiliaria contra su estado de cuenta.',
   CERTIFICADO_ESTAR_AL_DIA:
     'El contrato sigue vigente y no tienes nada vencido a la fecha. No es un paz y salvo.',
+  CERTIFICADO_DE_SU_TIEMPO:
+    'Saliste de este contrato por un cambio de inquilino: certifica que no debes nada del tiempo en que fuiste el inquilino. No es el paz y salvo del contrato.',
 };
 
 export function MisCertificados() {
@@ -84,10 +88,12 @@ export function MisCertificados() {
       // El veredicto pudo cambiar (y el documento ya quedó en la inmobiliaria).
       void cargar();
     } catch (e) {
+      // 02-10-2026 · Regla de oro: el motivo por el traductor, no `e.message` crudo.
       toast.error(
-        e instanceof Error && e.message
-          ? e.message
-          : 'No pudimos emitir el certificado.',
+        mensajeParaLaPersona(e, {
+          accion: 'emitir el certificado',
+          porDefecto: 'No pudimos emitir el certificado.',
+        }),
       );
     } finally {
       if (url) setTimeout(() => URL.revokeObjectURL(url!), 1000);
@@ -96,9 +102,9 @@ export function MisCertificados() {
   }, [cargar]);
 
   return (
-    <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6 space-y-4">
+    <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6 space-y-4">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
           <Certificate className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
         </div>
         <div>

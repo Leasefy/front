@@ -27,6 +27,7 @@
 import * as React from 'react'
 
 import { MonoLabel } from '@leasefy/cadence'
+import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece'
 
 import Link from 'next/link'
 import { useI18n } from '@/lib/i18n'
@@ -180,8 +181,11 @@ export function HabeasDataSlaCard({ request }: HabeasDataSlaCardProps) {
           color === 'red-pulse' ? 'redPulse' : color
         }`)}
       >
-        <div
-          className={['h-full transition-all', BAR_BG_BY_COLOR[color]].join(' ')}
+        {/* Crece desde la izquierda al aparecer (sólo `scaleX`); el ancho es
+            el dato y ya no se anima (era `transition-all`). */}
+        <BarraQueCrece
+          eje="x"
+          className={['h-full', BAR_BG_BY_COLOR[color]].join(' ')}
           style={{ width: `${pct}%` }}
         />
       </div>

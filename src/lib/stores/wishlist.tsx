@@ -6,6 +6,7 @@ import type { Property } from '@/lib/types/property';
 import { wishlistsApi } from '@/lib/api/wishlists.service';
 import { useAuth } from '@/lib/auth';
 import { useOptionalI18n } from '@/lib/i18n';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 const STORAGE_KEY = 'arriendo-facil-wishlist';
 
@@ -46,11 +47,17 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   // Wishlists son sólo para TENANT — los landlord/agency no las cargan.
   const isTenant = isAuthenticated && user?.role === 'tenant';
 
-  // Mensaje de error de favoritos: usa i18n cuando hay provider, con fallback ES.
+  // Mensaje de error de favoritos (02-10-2026: con la regla de oro del
+  // traductor; el texto de i18n queda como `porDefecto`). Antes era SIEMPRE el
+  // mismo, también sin red o con un 5xx: no decía qué había pasado.
   const wishlistErrorMessage = useCallback(
-    () =>
-      i18n?.t('wishlist.errors.saveFailed') ??
-      'No se pudo actualizar tus favoritos. Intenta de nuevo.',
+    (error: unknown, accion: string) =>
+      mensajeParaLaPersona(error, {
+        accion,
+        porDefecto:
+          i18n?.t('wishlist.errors.saveFailed') ??
+          'No se pudo actualizar tus favoritos. Intenta de nuevo.',
+      }),
     [i18n],
   );
 
@@ -152,9 +159,9 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     wishlistActual.current = [...wishlistActual.current, propertyId];
     if (isTenant) {
       // Optimista: se agrega abajo. Si falla, se saca y se avisa.
-      wishlistsApi.add(propertyId).catch(() => {
+      wishlistsApi.add(propertyId).catch((error: unknown) => {
         setWishlist((cur) => cur.filter((id) => id !== propertyId));
-        toast.error(wishlistErrorMessage());
+        toast.error(wishlistErrorMessage(error, 'guardarlo en tus favoritos'));
       });
     }
     setWishlist((prev) => (prev.includes(propertyId) ? prev : [...prev, propertyId]));
@@ -166,9 +173,9 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
     wishlistActual.current = wishlistActual.current.filter((id) => id !== propertyId);
     if (isTenant) {
       // Optimista: se quita abajo. Si falla, se repone y se avisa.
-      wishlistsApi.remove(propertyId).catch(() => {
+      wishlistsApi.remove(propertyId).catch((error: unknown) => {
         setWishlist((cur) => (cur.includes(propertyId) ? cur : [...cur, propertyId]));
-        toast.error(wishlistErrorMessage());
+        toast.error(wishlistErrorMessage(error, 'quitarlo de tus favoritos'));
       });
     }
     setWishlist((prev) => prev.filter((id) => id !== propertyId));

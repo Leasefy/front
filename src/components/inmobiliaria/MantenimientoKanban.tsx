@@ -15,7 +15,8 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
+import { Collapse, CrossFade, StaggerItem } from '@leasefy/cadence';
 import {
   Wrench,
   Lightning,
@@ -75,6 +76,13 @@ interface MantenimientoKanbanProps {
     solicitudId: string,
     nuevoEstado: MantenimientoStatus,
   ) => void | Promise<void>;
+  /**
+   * 🔴 SO-14 (QA 04-10): «arrastrar en el tablero respeta las mismas reglas»
+   * que los botones del cajón. Si devuelve `true`, la página se encargó (abrió
+   * «Aprobar cotización» o «Completar con fotos y costo final») y el tablero NO
+   * cambia el estado a pelo.
+   */
+  alSoltar?: (solicitud: SolicitudMantenimiento, destino: MantenimientoStatus) => boolean;
 }
 
 // ============================================================================
@@ -201,7 +209,7 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
         'w-full text-left p-3 rounded-md border-l-4 bg-surface',
         'border border-border dark:border-border-strong',
         'hover:border-border dark:hover:border-border-strong',
-        'transition-all group',
+        'transition-[border-color,box-shadow] duration-base group',
         onClick && 'cursor-pointer',
         arrastrable && 'cursor-grab active:cursor-grabbing',
         arrastrando && 'shadow-md',
@@ -254,16 +262,19 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2 text-fg-subtle">
-          <span className="flex items-center gap-1">
+      {/* SO-15: con cinco columnas la tarjeta es angosta: el pie se parte en
+          renglones enteros en vez de cortar «$» de su cifra. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-fg-subtle">
+          <span className="flex items-center gap-1 whitespace-nowrap">
             <CalendarBlank className="w-3 h-3" />
-            {daysSince}d
+            {/* SO-11/SO-15: en palabras, no «1d». */}
+            {daysSince <= 0 ? 'Hoy' : daysSince === 1 ? 'Hace 1 día' : `Hace ${daysSince} días`}
           </span>
           {solicitud.quotes.length > 0 && (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 whitespace-nowrap">
               <CurrencyCircleDollar className="w-3 h-3" />
-              {solicitud.quotes.length}
+              {solicitud.quotes.length === 1 ? '1 cotización' : `${solicitud.quotes.length} cotizaciones`}
             </span>
           )}
         </div>
@@ -285,7 +296,7 @@ function KanbanCard({ solicitud, onClick, arrastrable, arrastrando, t }: KanbanC
 
         {/* Approved Amount */}
         {solicitud.approvedAmount && (
-          <span className="font-medium text-success">
+          <span className="font-medium text-success whitespace-nowrap">
             {formatCurrency(solicitud.approvedAmount)}
           </span>
         )}
@@ -326,7 +337,7 @@ function TarjetaArrastrable({
     <div
       ref={setNodeRef}
       style={style}
-      className={cn('transition-opacity duration-200', isDragging && 'opacity-40')}
+      className={cn('transition-opacity duration-base', isDragging && 'opacity-40')}
       {...attributes}
       {...listeners}
     >
@@ -367,7 +378,7 @@ function KanbanColumnComponent({
   const { setNodeRef } = useDroppable({ id: column.id, data: { estado: column.id } });
 
   return (
-    <div className="flex flex-col min-w-[280px] max-w-[320px] flex-1" data-testid={`columna-${column.id}`}>
+    <div className="flex flex-col min-w-0" data-testid={`columna-${column.id}`}>
       {/* Column Header */}
       <div
         className={cn(
@@ -393,7 +404,7 @@ function KanbanColumnComponent({
       <div
         ref={setNodeRef}
         className={cn(
-          'flex-1 p-2 space-y-2 rounded-b-xl border overflow-y-auto transition-all duration-200',
+          'relative flex-1 p-2 space-y-2 rounded-b-xl border overflow-y-auto transition-[border-color,box-shadow] duration-base',
           'bg-surface-muted',
           'min-h-[200px] max-h-[calc(100vh-400px)]',
           encima
@@ -401,33 +412,43 @@ function KanbanColumnComponent({
             : 'border-border dark:border-border-strong'
         )}
       >
-        {/* Sin `AnimatePresence mode="popLayout"` alrededor de las tarjetas:
+        {/* Sin `AnimatePresence mode="popLayout"` DIRECTO sobre las tarjetas:
             ese modo mide a cada hijo con un `ref`, y una tarjeta arrastrable es
             un componente de función que no reenvía refs — React lo avisa en
-            consola en cada render. `PipelineBoard`, que hace exactamente esto
-            desde hace meses, tampoco lo usa. */}
+            consola en cada render.
+            Movimiento (03-10): cada tarjeta va en un `StaggerItem` (un
+            `motion.div` con su `ref`, así que no hay aviso de refs). La que
+            LLEGA a la columna (al soltarla o al cambiar de estado) entra con
+            un fundido; la que se va, sale, y las de abajo suben a su lugar.
+            `initial={false}`: las que ya estaban al montarse no se animan.
+            Vacía ⇄ con tarjetas se cruza con `popLayout` (lo nuevo ya). */}
+        <CrossFade
+          swapKey={items.length > 0 ? 'con-tarjetas' : 'vacia'}
+          mode="popLayout"
+          className="space-y-2"
+        >
         {items.length > 0 ? (
-          items.map((item) =>
-            arrastrable ? (
-              <TarjetaArrastrable
-                key={item.id}
-                solicitud={item}
-                onClick={() => onViewDetails?.(item)}
-                t={t}
-              />
-            ) : (
-              <KanbanCard
-                key={item.id}
-                solicitud={item}
-                onClick={() => onViewDetails?.(item)}
-                t={t}
-              />
-            )
-          )
+          <AnimatePresence initial={false}>
+            {items.map((item) => (
+              <StaggerItem key={item.id}>
+                {arrastrable ? (
+                  <TarjetaArrastrable
+                    solicitud={item}
+                    onClick={() => onViewDetails?.(item)}
+                    t={t}
+                  />
+                ) : (
+                  <KanbanCard
+                    solicitud={item}
+                    onClick={() => onViewDetails?.(item)}
+                    t={t}
+                  />
+                )}
+              </StaggerItem>
+            ))}
+          </AnimatePresence>
         ) : (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+          <div
             className={cn(
               'flex flex-col items-center justify-center h-full py-8 text-fg-subtle',
               encima && 'rounded-md border-2 border-dashed border-primary/30 bg-primary-soft/50'
@@ -438,19 +459,18 @@ function KanbanColumnComponent({
             {arrastrable && (
               <p className="text-[10px] mt-1 opacity-70">{t('inmobiliaria.pipeline.dragHere')}</p>
             )}
-          </motion.div>
+          </div>
         )}
+        </CrossFade>
 
-        {/* Zona de soltar al final, cuando la columna ya tiene tarjetas */}
-        {items.length > 0 && encima && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            className="flex items-center justify-center py-4 rounded-md border-2 border-dashed border-primary/30 bg-primary-soft/50"
-          >
-            <p className="text-xs text-primary">{t('inmobiliaria.pipeline.dropHere')}</p>
-          </motion.div>
-        )}
+        {/* Zona de soltar al final, cuando la columna ya tiene tarjetas: abre
+            su lugar con la altura y se cierra al soltar o salir. */}
+        <Collapse
+          open={items.length > 0 && encima}
+          className="flex items-center justify-center py-4 rounded-md border-2 border-dashed border-primary/30 bg-primary-soft/50"
+        >
+          <p className="text-xs text-primary">{t('inmobiliaria.pipeline.dropHere')}</p>
+        </Collapse>
       </div>
     </div>
   );
@@ -489,6 +509,7 @@ export function MantenimientoKanban({
   data,
   onViewDetails,
   onStatusChange,
+  alSoltar: interceptar,
   onCrear,
   hayFiltros = false,
   onLimpiarFiltros,
@@ -573,6 +594,7 @@ export function MantenimientoKanban({
 
       const solicitud = data.find((m) => m.id === solicitudId);
       if (!solicitud || solicitud.status === destino) return;
+      if (interceptar?.(solicitud, destino)) return;
 
       try {
         await onStatusChange(solicitudId, destino);
@@ -580,7 +602,7 @@ export function MantenimientoKanban({
         // Ya lo dijo quien intentó guardarlo, con el motivo que vino del back.
       }
     },
-    [data, onStatusChange]
+    [data, onStatusChange, interceptar]
   );
 
   // Tablero vacío: cinco columnas en cero no dicen nada y no ofrecen nada.
@@ -599,7 +621,10 @@ export function MantenimientoKanban({
 
   const tablero = (
     <>
-      <div className="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4">
+      {/* SO-15 (QA 04-10): las cinco columnas a la vista (a 1440 la de
+          «Completada» quedaba fuera, a la derecha). En pantallas chicas se
+          apilan; nunca hay que desplazar de lado para encontrar una tarjeta. */}
+      <div className="grid grid-cols-1 gap-3 pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {KANBAN_COLUMNS.map((column) => (
           <KanbanColumnComponent
             key={column.id}

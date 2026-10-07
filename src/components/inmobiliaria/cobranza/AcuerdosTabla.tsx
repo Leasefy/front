@@ -17,17 +17,18 @@
 
 import { useMemo } from 'react'
 import { CaretRight, Handshake } from '@phosphor-icons/react'
-import { Card, SegmentedControl } from '@leasefy/cadence'
+import { AnimatedNumber, Card, CrossFade, Presence, SegmentedControl } from '@leasefy/cadence'
 import { Badge, Button } from '@/components/ui'
 
 import { useI18n } from '@/lib/i18n'
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui'
 import { TablePagination } from '@/components/ui/pagination'
 import {
@@ -101,12 +102,13 @@ export function AcuerdosTabla({
           aria-label="Filtrar acuerdos por estado"
         />
         <span className="text-xs text-fg-muted tabular-nums">
-          {total} {total === 1 ? 'acuerdo' : 'acuerdos'}
+          <AnimatedNumber value={total} format={(n) => String(Math.round(n))} />{' '}
+          {total === 1 ? 'acuerdo' : 'acuerdos'}
         </span>
       </div>
 
-      {error && (
-        <div
+      <Presence
+          show={Boolean(error)}
           role="alert"
           className="flex items-center justify-between gap-3 flex-wrap border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger"
         >
@@ -122,9 +124,10 @@ export function AcuerdosTabla({
               Reintentar
             </Button>
           )}
-        </div>
-      )}
+      </Presence>
 
+      {/* Filtrado a cero ⇄ con acuerdos: el uno sale y el otro entra. */}
+      <CrossFade swapKey={visibles.length === 0 ? 'vacio' : 'tabla'}>
       {visibles.length === 0 ? (
         /* El vacío vive DENTRO de la Card, no flotando en la pantalla. */
         <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
@@ -159,11 +162,12 @@ export function AcuerdosTabla({
                 </TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* Filtrar o paginar: las filas entran escalonadas (techo 320 ms) y las que sobran salen. */}
+            <TableBodyAnimado>
               {pageItems.map((a) => {
                 const estado = ACUERDO_ESTADO[a.estado]
                 return (
-                  <TableRow
+                  <TableRowAnimada
                     key={a.key}
                     data-testid={`acuerdo-${a.key}`}
                     onClick={() => onAbrir(a)}
@@ -202,13 +206,14 @@ export function AcuerdosTabla({
                         aria-hidden="true"
                       />
                     </TableCell>
-                  </TableRow>
+                  </TableRowAnimada>
                 )
               })}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
         </div>
       )}
+      </CrossFade>
 
       {/* Un paginador que no pagina es ruido. */}
       {shouldPaginate && (

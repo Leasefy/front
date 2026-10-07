@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import {
   planFormSchema,
@@ -18,6 +18,11 @@ export interface PlanFormProps {
   isSubmitting?: boolean
   /** Backend/inline error (409 slug dup, 400 config) rendered form-level. */
   submitError?: string | null
+  /**
+   * Los errores que el back mandó por campo (`campos[]`), ya en los nombres
+   * del formulario: van debajo de SU campo y el primero recibe el foco.
+   */
+  serverFieldErrors?: FieldErrors
   onSubmit: (values: PlanFormValues) => void
   onCancel: () => void
 }
@@ -52,11 +57,21 @@ export function PlanForm({
   otherDefaultExists = false,
   isSubmitting = false,
   submitError,
+  serverFieldErrors,
   onSubmit,
   onCancel,
 }: PlanFormProps) {
   const [values, setValues] = useState<PlanFormValues>(initialValues ?? PLAN_FORM_DEFAULTS)
   const [errors, setErrors] = useState<FieldErrors>({})
+
+  // Lo que el back rechazó por campo, debajo de su campo, con el foco en el primero.
+  useEffect(() => {
+    if (!serverFieldErrors) return
+    const campos = Object.keys(serverFieldErrors) as (keyof PlanFormValues)[]
+    if (campos.length === 0) return
+    setErrors((prev) => ({ ...prev, ...serverFieldErrors }))
+    document.getElementById(`plan-${campos[0]}`)?.focus()
+  }, [serverFieldErrors])
 
   const isEdit = mode === 'edit'
   const usageCanon = values.billingMode === 'USAGE_CANON'
@@ -97,7 +112,7 @@ export function PlanForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="plan-name" required>Nombre</Label>
-          <input id="plan-name" className="input" value={values.name} onChange={text('name')} />
+          <input id="plan-name" aria-required="true" className="input" value={values.name} onChange={text('name')} />
           <FieldError message={errors.name} />
         </div>
         <div>
@@ -130,6 +145,7 @@ export function PlanForm({
         <Label htmlFor="plan-billingMode" required>Modo de cobro</Label>
         <select
           id="plan-billingMode"
+          aria-required="true"
           className="input"
           value={values.billingMode}
           onChange={(e) => set('billingMode', e.target.value as PlanFormValues['billingMode'])}
@@ -148,7 +164,7 @@ export function PlanForm({
         {usageCanon ? (
           <div>
             <Label htmlFor="plan-usageFeePct" required>% de canon</Label>
-            <input id="plan-usageFeePct" className="input tabular-nums" inputMode="decimal" value={values.usageFeePct} onChange={text('usageFeePct')} />
+            <input id="plan-usageFeePct" aria-required="true" className="input tabular-nums" inputMode="decimal" value={values.usageFeePct} onChange={text('usageFeePct')} />
             <Help>En porcentaje (ej. 1.5). Se guarda en basis points (×100).</Help>
             <FieldError message={errors.usageFeePct} />
           </div>
@@ -156,12 +172,12 @@ export function PlanForm({
           <>
             <div>
               <Label htmlFor="plan-monthlyPrice" required>Precio mensual (COP)</Label>
-              <input id="plan-monthlyPrice" className="input tabular-nums" inputMode="numeric" value={values.monthlyPrice} onChange={text('monthlyPrice')} />
+              <input id="plan-monthlyPrice" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.monthlyPrice} onChange={text('monthlyPrice')} />
               <FieldError message={errors.monthlyPrice} />
             </div>
             <div>
               <Label htmlFor="plan-annualPrice" required>Precio anual (COP)</Label>
-              <input id="plan-annualPrice" className="input tabular-nums" inputMode="numeric" value={values.annualPrice} onChange={text('annualPrice')} />
+              <input id="plan-annualPrice" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.annualPrice} onChange={text('annualPrice')} />
               <FieldError message={errors.annualPrice} />
             </div>
           </>
@@ -172,12 +188,12 @@ export function PlanForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="plan-scoringViewPrice" required>Precio scoring view (COP)</Label>
-          <input id="plan-scoringViewPrice" className="input tabular-nums" inputMode="numeric" value={values.scoringViewPrice} onChange={text('scoringViewPrice')} />
+          <input id="plan-scoringViewPrice" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.scoringViewPrice} onChange={text('scoringViewPrice')} />
           <FieldError message={errors.scoringViewPrice} />
         </div>
         <div>
           <Label htmlFor="plan-evaluationCreditPrice" required>Precio crédito evaluación (COP)</Label>
-          <input id="plan-evaluationCreditPrice" className="input tabular-nums" inputMode="numeric" value={values.evaluationCreditPrice} onChange={text('evaluationCreditPrice')} />
+          <input id="plan-evaluationCreditPrice" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.evaluationCreditPrice} onChange={text('evaluationCreditPrice')} />
           <FieldError message={errors.evaluationCreditPrice} />
         </div>
       </div>
@@ -186,31 +202,31 @@ export function PlanForm({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="plan-maxProperties" required>Máx. propiedades</Label>
-          <input id="plan-maxProperties" className="input tabular-nums" inputMode="numeric" value={values.maxProperties} onChange={text('maxProperties')} />
+          <input id="plan-maxProperties" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.maxProperties} onChange={text('maxProperties')} />
           <Help>{SENTINEL_HELP}</Help>
           <FieldError message={errors.maxProperties} />
         </div>
         <div>
           <Label htmlFor="plan-maxUsers" required>Máx. usuarios</Label>
-          <input id="plan-maxUsers" className="input tabular-nums" inputMode="numeric" value={values.maxUsers} onChange={text('maxUsers')} />
+          <input id="plan-maxUsers" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.maxUsers} onChange={text('maxUsers')} />
           <Help>{SENTINEL_HELP}</Help>
           <FieldError message={errors.maxUsers} />
         </div>
         <div>
           <Label htmlFor="plan-maxScoringViews" required>Máx. scoring views</Label>
-          <input id="plan-maxScoringViews" className="input tabular-nums" inputMode="numeric" value={values.maxScoringViews} onChange={text('maxScoringViews')} />
+          <input id="plan-maxScoringViews" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.maxScoringViews} onChange={text('maxScoringViews')} />
           <Help>{SENTINEL_HELP}</Help>
           <FieldError message={errors.maxScoringViews} />
         </div>
         <div>
           <Label htmlFor="plan-monthlyEvalCap" required>Tope mensual evaluaciones</Label>
-          <input id="plan-monthlyEvalCap" className="input tabular-nums" inputMode="numeric" value={values.monthlyEvalCap} onChange={text('monthlyEvalCap')} />
+          <input id="plan-monthlyEvalCap" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.monthlyEvalCap} onChange={text('monthlyEvalCap')} />
           <Help>{SENTINEL_HELP}</Help>
           <FieldError message={errors.monthlyEvalCap} />
         </div>
         <div>
           <Label htmlFor="plan-monthlyCreditGrant" required>Bono mensual de créditos</Label>
-          <input id="plan-monthlyCreditGrant" className="input tabular-nums" inputMode="numeric" value={values.monthlyCreditGrant} onChange={text('monthlyCreditGrant')} />
+          <input id="plan-monthlyCreditGrant" aria-required="true" className="input tabular-nums" inputMode="numeric" value={values.monthlyCreditGrant} onChange={text('monthlyCreditGrant')} />
           <Help>Entero {'>'}= 0.</Help>
           <FieldError message={errors.monthlyCreditGrant} />
         </div>

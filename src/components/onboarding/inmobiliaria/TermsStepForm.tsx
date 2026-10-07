@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet'
 import { TerminosContenido } from '@/components/legal/TerminosContenido'
 import { ArrowRight } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Spinner } from '@/components/ui/spinner'
+import { Presence } from '@leasefy/cadence'
 
 export interface TermsStepFormProps {
   isSubmitting: boolean
@@ -34,6 +35,9 @@ export interface TermsStepFormProps {
 export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStepFormProps) {
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [terminosAbiertos, setTerminosAbiertos] = useState(false)
+  // El último error, para que no se vacíe mientras sale (`Presence`).
+  const [ultimoError, setUltimoError] = useState(submitError ?? null)
+  if (submitError && submitError !== ultimoError) setUltimoError(submitError)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,7 +51,7 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
         Para finalizar tu registro, lee y acepta los términos y condiciones de Leasefy.
       </p>
 
-      <div className="flex items-start gap-2.5">
+      <div className="flex items-start gap-3 rounded-md border border-border bg-bg p-4">
         <Checkbox
           id="accept-terms"
           data-testid="terms-accept"
@@ -56,7 +60,7 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
           disabled={isSubmitting}
           className="mt-0.5 shrink-0"
         />
-        <span className="text-sm text-fg-muted leading-snug">
+        <span className="text-body-sm leading-snug text-fg-muted">
           <label htmlFor="accept-terms" className="cursor-pointer">
             He leído y acepto los
           </label>{' '}
@@ -66,7 +70,7 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
           <button
             type="button"
             onClick={() => setTerminosAbiertos(true)}
-            className="text-primary underline underline-offset-2 hover:text-primary/80"
+            className="rounded-sm text-primary underline underline-offset-2 hover:text-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
             data-testid="abrir-terminos"
           >
             términos y condiciones
@@ -76,28 +80,25 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
       </div>
 
       <Sheet open={terminosAbiertos} onOpenChange={setTerminosAbiertos}>
-        <SheetContent side="right" className="flex w-full flex-col p-0 sm:max-w-2xl">
-          <SheetHeader className="shrink-0 border-b border-border px-6 py-4 text-left">
-            <SheetTitle>Términos y condiciones</SheetTitle>
-            <SheetDescription>Los mismos que en leasefy.co/terminos. Puedes cerrar y seguir donde estabas.</SheetDescription>
-          </SheetHeader>
-          <div
-            className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5"
-            data-lenis-prevent
-            data-testid="terminos-en-cajon"
-          >
+        <SheetContent side="right" size="lg">
+          <SheetHeader
+            title="Términos y condiciones"
+            description="Los mismos que en leasefy.co/terminos. Puedes cerrar y seguir donde estabas."
+          />
+          {/* Lo único que scrollea (`data-lenis-prevent` y `overscroll-behavior: contain`). */}
+          <SheetBody data-testid="terminos-en-cajon">
             <TerminosContenido />
-          </div>
+          </SheetBody>
         </SheetContent>
       </Sheet>
 
-      {submitError && (
-        <div data-testid="terms-step-form-error" className="rounded-md bg-danger-soft border border-border p-3">
-          <p className="text-sm text-danger">{submitError}</p>
+      <Presence show={Boolean(submitError)}>
+        <div data-testid="terms-step-form-error" className="rounded-md border border-danger/20 bg-danger-soft p-3">
+          <p className="text-sm text-danger">{submitError || ultimoError}</p>
         </div>
-      )}
+      </Presence>
 
-      <Button type="submit" disabled={isSubmitting || !acceptedTerms} hideArrow size="lg" className="w-full">
+      <Button type="submit" disabled={isSubmitting || !acceptedTerms} hideArrow className="w-full">
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
@@ -106,7 +107,7 @@ export function TermsStepForm({ isSubmitting, onSubmit, submitError }: TermsStep
         ) : (
           <>
             Continuar
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
       </Button>

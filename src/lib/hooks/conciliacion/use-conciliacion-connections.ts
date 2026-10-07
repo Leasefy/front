@@ -29,7 +29,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { accionQueNoSalio, accionSinRespuesta } from '@/lib/hooks/ai/accion-del-micro'
 
 // ── Closed sets (mirror the backend CHECK constraints) ───────────────────────
 
@@ -88,7 +90,10 @@ export interface PatchConnectionInput {
 export interface ConnectionActionResult {
   ok: boolean
   connection?: ConciliacionConnection
+  /** El código viejo (`not_configured`, el `error` del cuerpo o el status). NO es para la persona. */
   error?: string
+  /** El error entero para el traductor (`mensajeParaLaPersona`): el `ApiError` del micro o el de red tal cual. */
+  fallo?: unknown
 }
 
 // ── Hook ───────────────────────────────────────────────────────────────────
@@ -97,6 +102,13 @@ export interface UseConciliacionConnectionsResult {
   items: ConciliacionConnection[]
   isLoading: boolean
   error: string | null
+  /**
+   * El error ENTERO de la última lectura (ARREGLOS-7, ARREGLOS-4 Q1 A): el
+   * `ApiError` del micro (status, `code`, referencia) o el de `agentFetch` con
+   * el micro caído. Es lo que va a `FalloDeCarga`/`EstadoDeDatos`: con el texto
+   * de `error` la pantalla sólo podía decir «Fue un problema nuestro».
+   */
+  errorCrudo: unknown
   /** Backend 404/503 — endpoint not deployed / not migrated (NOT an error). */
   notAvailable: boolean
   refetch: () => Promise<void>
@@ -111,6 +123,7 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
   const [items, setItems] = useState<ConciliacionConnection[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null)
   const [notAvailable, setNotAvailable] = useState(false)
 
   /** Stale-response guard: each fetch aborts the previous one (agency switch). */
@@ -133,11 +146,12 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
     abortRef.current = controller
 
     const url = `${agentUrl}/api/agency/${agencyId}/conciliacion/connections`
+    /** El `ApiError` del micro cuando respondió que no; el texto de `error` sigue igual. */
+    let fallo: unknown = null
 
     try {
       setIsLoading(true)
-      const res = await globalThis.fetch(url, {
-        headers: agentAuthHeaders(),
+      const res = await agentFetch(url, {
         signal: controller.signal,
       })
       if (controller.signal.aborted) return
@@ -146,18 +160,24 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
         setItems([])
         setNotAvailable(true)
         setError(null)
+        setErrorCrudo(null)
         return
       }
-      if (!res.ok) throw new Error(`${res.status}`)
+      if (!res.ok) {
+        fallo = await falloDelMicro(res)
+        throw new Error(`${res.status}`)
+      }
       const json = (await res.json()) as ConnectionsListResponse
       setItems(Array.isArray(json.items) ? json.items : [])
       setNotAvailable(false)
       setError(null)
+      setErrorCrudo(null)
     } catch (err) {
       if (controller.signal.aborted) return
       // Network error / unexpected non-OK → degrade to empty list, honest error.
       setItems([])
       setError(err instanceof Error ? err.message : 'Failed to fetch connections')
+      setErrorCrudo(fallo ?? err)
     } finally {
       if (!controller.signal.aborted) setIsLoading(false)
     }
@@ -192,23 +212,20 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
       }
 
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/conciliacion/connections`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify(body),
           },
         )
-        if (!res.ok) {
-          const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: errBody.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         const connection = (await res.json()) as ConciliacionConnection
         await fetchData()
         return { ok: true, connection }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'create_failed' }
+        return accionSinRespuesta(err, 'create_failed')
       }
     },
     [agencyId, fetchData],
@@ -227,23 +244,20 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
       }
 
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/conciliacion/connections/${id}`,
           {
             method: 'PATCH',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify(body),
           },
         )
-        if (!res.ok) {
-          const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: errBody.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         const connection = (await res.json()) as ConciliacionConnection
         await fetchData()
         return { ok: true, connection }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'patch_failed' }
+        return accionSinRespuesta(err, 'patch_failed')
       }
     },
     [agencyId, fetchData],
@@ -253,6 +267,7 @@ export function useConciliacionConnections(): UseConciliacionConnectionsResult {
     items,
     isLoading,
     error,
+    errorCrudo,
     notAvailable,
     refetch: fetchData,
     createConnection,

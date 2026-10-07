@@ -18,7 +18,7 @@
  * camino, se manda al paso 4.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BookOpen, Receipt, Scales, Warning } from "@phosphor-icons/react";
 import { SegmentedControl } from "@leasefy/cadence";
@@ -27,11 +27,13 @@ import { Button } from "@/components/ui/button";
 import {
   contabilidadApi,
   MAX_LIMITE_DE_ASIENTOS,
+  type CargaAbierta,
   type CuentaPuc,
 } from "@/lib/api/contabilidad.service";
 import { formatDate } from "@/lib/format";
 
 import { AsientoDeApertura } from "./AsientoDeApertura";
+import { CargasDeAsientosAbiertas } from "./CargasDeAsientosAbiertas";
 import { DocumentosContables } from "./DocumentosContables";
 import { MigrarAsientos } from "./MigrarAsientos";
 import { mensajeDeContabilidad } from "./contabilidad-errores";
@@ -61,6 +63,27 @@ export function RegistrosContables({
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 } = {}) {
   const [camino, setCamino] = useState<Camino>("apertura");
+  /*
+   * T-0125 · la carga de asientos que se está CONTINUANDO (viene de la franja
+   * de cargas a medias) y el contador que la franja usa para volver a leer.
+   * `ocupado` espeja lo que los caminos le avisan al muro: mientras algo
+   * corre, la franja no deja continuar ni descartar.
+   */
+  const [continuar, setContinuar] = useState<CargaAbierta | null>(null);
+  const [versionDeCargas, setVersionDeCargas] = useState(0);
+  const [ocupado, setOcupado] = useState(false);
+  const estabaOcupado = useRef(false);
+  const marcarOcupado = useCallback(
+    (hayTrabajo: boolean, cancelar?: () => void) => {
+      setOcupado(hayTrabajo);
+      // Al soltarse —terminó o se cortó— las cargas pudieron cambiar: se relee.
+      // Sólo en la transición ocupado → libre, no en cada aviso de «libre».
+      if (!hayTrabajo && estabaOcupado.current) setVersionDeCargas((v) => v + 1);
+      estabaOcupado.current = hayTrabajo;
+      onOcupado?.(hayTrabajo, cancelar);
+    },
+    [onOcupado],
+  );
   const [cuentas, setCuentas] = useState<CuentaPuc[] | null>(null);
   const [resumen, setResumen] = useState<ResumenDeCargado | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -124,7 +147,7 @@ export function RegistrosContables({
     <div className="space-y-6">
       {error ? (
         <div
-          className="flex flex-wrap items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+          className="flex flex-wrap items-start gap-2 rounded-md bg-danger-soft p-3"
           role="alert"
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
@@ -145,7 +168,7 @@ export function RegistrosContables({
 
       {falloDeAsientos ? (
         <section
-          className="rounded-lg border border-warning bg-warning-soft p-4"
+          className="rounded-lg bg-warning-soft p-4"
           data-testid="contables-cargado-fallo"
         >
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -169,54 +192,23 @@ export function RegistrosContables({
         </section>
       ) : null}
 
-      {/* Con la lectura caída, el resumen que quedó es de ANTES: mostrarlo
-          diría «0 asientos» a quien acaba de registrar la apertura. */}
-      {resumen && !falloDeAsientos ? (
-        <section
-          className="rounded-lg border border-border bg-surface p-4"
-          data-testid="contables-resumen"
-          aria-live="polite"
-        >
-          {resumen.total === 0 ? (
-            <p className="text-sm text-fg-muted">
-              Todavía no hay registros contables.
-            </p>
-          ) : (
-            <p className="text-sm text-fg">
-              Ya cargados:{" "}
-              <span className="font-mono font-semibold tabular-nums">
-                {resumen.total}
-              </span>{" "}
-              {resumen.total === 1 ? "asiento" : "asientos"}
-              {resumen.desde && resumen.hasta ? (
-                <span className="text-fg-muted">
-                  {" "}
-                  · del {formatDate(resumen.desde)} al{" "}
-                  {formatDate(resumen.hasta)}
-                  {resumen.parcial
-                    ? ` (fechas de los ${MAX_LIMITE_DE_ASIENTOS} más recientes)`
-                    : ""}
-                </span>
-              ) : null}
-            </p>
-          )}
-        </section>
-      ) : null}
+      {/* El resumen de lo ya cargado baja a la tarjeta del camino (abajo):
+          era una isla de una sola línea flotando arriba de todo. */}
 
       {cuentas.length === 0 && !falloDeCuentas ? (
         <section
-          className="rounded-lg border border-warning bg-warning-soft p-5"
+          className="rounded-lg bg-warning-soft p-5"
           data-testid="contables-sin-puc"
         >
           <div className="flex items-start gap-2">
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <div>
-              <h2 className="font-medium text-fg">
+              <h2 className="text-sm font-medium text-fg">
                 Primero el plan de cuentas
               </h2>
               <p className="mt-0.5 text-sm text-fg-muted">
                 Un asiento se imputa a cuentas, y todavía no hay ninguna que
-                reciba movimientos. Carga el plan en el paso 4 y vuelve.
+                reciba movimientos. Carga el plan de cuentas y vuelve.
               </p>
             </div>
           </div>
@@ -228,13 +220,13 @@ export function RegistrosContables({
               onClick={onIrAlPuc}
               data-testid="contables-ir-al-puc"
             >
-              Ir al paso 4
+              Ir al plan de cuentas
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
           ) : (
             <Button asChild size="sm" className="mt-4" hideArrow>
               <Link href={RUTA_DEL_PASO_4} data-testid="contables-ir-al-puc">
-                Ir al paso 4
+                Ir al plan de cuentas
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Link>
             </Button>
@@ -245,7 +237,61 @@ export function RegistrosContables({
         // éxito. No sabemos si hay plan — ni «ve al paso 4» ni un selector
         // de cuentas vacío; queda el cartel de arriba con su Reintentar.
         <>
-          <div className="space-y-3">
+          {/* La salida de una carga a medias va ANTES de los caminos: la pestaña
+              de por defecto es la de saldos iniciales, no la del libro diario. */}
+          <CargasDeAsientosAbiertas
+            version={versionDeCargas}
+            ocupado={ocupado}
+            onContinuar={(carga) => {
+              setContinuar(carga);
+              setCamino("historico");
+            }}
+          />
+
+          {/*
+           * El camino elegido ES un filtro de esta pantalla, así que el
+           * selector, su explicación y lo ya cargado van en UNA tarjeta
+           * (glow-up 30-09) — antes el segmentado y su texto flotaban entre
+           * dos islas.
+           */}
+          <section className="space-y-4 rounded-lg border border-border-faint bg-surface p-6 shadow-sm">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2 className="text-sm font-medium text-fg">
+                Cómo entran tus registros
+              </h2>
+              {/* Con la lectura caída, el resumen que quedó es de ANTES:
+                  mostrarlo diría «0 asientos» a quien acaba de registrar la
+                  apertura. */}
+              {resumen && !falloDeAsientos ? (
+                <p
+                  className="text-caption text-fg-muted"
+                  data-testid="contables-resumen"
+                  aria-live="polite"
+                >
+                  {resumen.total === 0 ? (
+                    "Todavía no hay registros contables."
+                  ) : (
+                    <>
+                      Ya cargados:{" "}
+                      <span className="font-mono tabular-nums text-fg">
+                        {resumen.total}
+                      </span>{" "}
+                      {resumen.total === 1 ? "asiento" : "asientos"}
+                      {resumen.desde && resumen.hasta ? (
+                        <>
+                          {" "}
+                          · del {formatDate(resumen.desde)} al{" "}
+                          {formatDate(resumen.hasta)}
+                          {resumen.parcial
+                            ? ` (fechas de los ${MAX_LIMITE_DE_ASIENTOS} más recientes)`
+                            : ""}
+                        </>
+                      ) : null}
+                    </>
+                  )}
+                </p>
+              ) : null}
+            </div>
             <SegmentedControl<Camino>
               value={camino}
               onChange={setCamino}
@@ -289,12 +335,12 @@ export function RegistrosContables({
             />
             <p className="max-w-2xl text-sm text-fg-muted">
               {camino === "apertura"
-                ? "Lo más rápido: un asiento con los saldos a la fecha de corte y desde mañana operás acá. El detalle histórico queda en tu sistema anterior."
+                ? "Lo más rápido: un asiento con los saldos a la fecha de corte y desde mañana operas aquí. El detalle histórico queda en tu sistema anterior."
                 : camino === "historico"
                   ? "El libro diario exportado de tu sistema actual, en Excel o CSV. Más trabajo, pero cada movimiento viejo queda acá, con su comprobante."
                   : "El export de comprobantes: facturas, comprobantes de ingreso y de egreso, con su fecha y su concepto. No son asientos —no traen cuenta por línea— y por eso van a la ficha del contrato, no al libro diario."}
             </p>
-          </div>
+          </section>
 
           {camino === "apertura" ? (
             <AsientoDeApertura
@@ -302,20 +348,25 @@ export function RegistrosContables({
               onCreado={() => void cargar()}
               onRevisarCargado={() => void cargar()}
               enElMuro={Boolean(onIrAlPuc)}
-              onOcupado={onOcupado}
+              onOcupado={marcarOcupado}
             />
           ) : camino === "historico" ? (
             <MigrarAsientos
-              onAplicado={() => void cargar()}
+              onAplicado={() => {
+                void cargar();
+                setVersionDeCargas((v) => v + 1);
+              }}
+              continuar={continuar}
+              onDejarDeContinuar={() => setContinuar(null)}
               onIrAlPuc={onIrAlPuc}
               /* El archivo de comprobantes metido en el libro diario tiene su
                  puerta acá al lado: el aviso la abre en vez de nombrarla. */
               onIrAComprobantes={() => setCamino("documentos")}
               enElMuro={Boolean(onIrAlPuc)}
-              onOcupado={onOcupado}
+              onOcupado={marcarOcupado}
             />
           ) : (
-            <DocumentosContables onOcupado={onOcupado} />
+            <DocumentosContables onOcupado={marcarOcupado} />
           )}
         </>
       )}

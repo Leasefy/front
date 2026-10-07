@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/lib/auth/use-auth'
 import { getRoleHomeRoute } from '@/lib/auth/role-routes'
+import { HuecoDeBotonDeSesion } from './LandingAuthCta'
 
 interface LandingRegistroCtaProps {
   /**
@@ -29,14 +30,18 @@ const VARIANT_CLASS: Record<LandingRegistroCtaProps['variant'], string> = {
  * Registering while already authenticated errors out, so this hides
  * (header/mobile) or redirects to the panel (banner) instead.
  *
- * SSR/hydration note: same as LandingAuthCta — useAuth()'s initial state is
- * always `{ user: null, isLoading: true }` on server + first client render,
- * so this always renders the logged-out branch until AuthProvider's effect
- * settles post-mount — no hydration mismatch.
+ * Mientras la sesión no se sabe: el mismo hueco invisible que LandingAuthCta
+ * (QA 01-10-2026: «Empezar ahora» aparecía y desaparecía solo).
  */
 export function LandingRegistroCta({ variant }: LandingRegistroCtaProps) {
-  const { user, isAuthenticated, isLoading } = useAuth()
+  const { user, isAuthenticated, isLoading, confirmacionDeLaSesion } = useAuth()
   const className = VARIANT_CLASS[variant]
+
+  // 🔴 LOGIN-BUCLE: pasado el tope de una sesión guardada sin confirmar, el
+  // hueco no se queda para siempre (mismo criterio que LandingAuthCta).
+  if (isLoading && confirmacionDeLaSesion !== 'sin-confirmar') {
+    return <HuecoDeBotonDeSesion className={className} texto="Empezar ahora" />
+  }
   const authenticated = !isLoading && isAuthenticated && !!user
 
   if (authenticated) {

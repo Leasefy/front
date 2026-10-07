@@ -138,18 +138,18 @@ function deriveAgencyFeatures(
   // Evaluation copy reflects the billing mode, the per-eval price AND the
   // monthly cap so we never show a stale "Hasta N/mes" that the backend dropped.
   if (backend.billingMode === 'USAGE_CANON') {
-    features.push('Evaluaciones AI ilimitadas incluidas');
+    features.push('Evaluaciones IA ilimitadas incluidas');
   } else {
     const priced =
       backend.evaluationCreditPrice > 0
         ? ` a $${backend.evaluationCreditPrice.toLocaleString('es-CO')} COP c/u`
         : ' incluidas';
     if (evalLimit === null) {
-      features.push(`Evaluaciones AI ilimitadas${priced}`);
+      features.push(`Evaluaciones IA ilimitadas${priced}`);
     } else if (evalLimit > 0) {
-      features.push(`Hasta ${evalLimit} evaluaciones AI/mes${priced}`);
+      features.push(`Hasta ${evalLimit} evaluaciones IA al mes${priced}`);
     } else {
-      features.push(`Evaluaciones AI${priced}`);
+      features.push(`Evaluaciones IA${priced}`);
     }
   }
 

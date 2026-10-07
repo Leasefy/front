@@ -19,10 +19,25 @@
  * lo dice el cajón que la crea.
  */
 
-import { apiClient } from './client';
+import { ApiError, apiClient } from './client';
 
-/** Los cuatro estados de `LeaseStatus` en el back. No se inventan otros. */
-export type EstadoDeArriendo = 'ACTIVE' | 'ENDING_SOON' | 'ENDED' | 'TERMINATED';
+/**
+ * Los cuatro estados de `LeaseStatus` en el back, más dos del CONTRATO
+ * (QA-INQ, 03-10):
+ *  · `EN_FIRMA` (E-01): un contrato en borrador, esperando firmas o firmado y
+ *    sin arrancar. Antes el back lo mandaba como `ENDED` y la persona salía
+ *    «Terminado» y caía en «Terminados» antes de empezar.
+ *  · `POR_EMPEZAR` (I-04, Nico): vigente pero con la fecha de inicio en el
+ *    futuro. Se pinta «Empieza el 1 de nov» y NO suma en lo vigente. Si el
+ *    back todavía no lo manda, se calcula con `desde` (`estadoParaMostrar`).
+ */
+export type EstadoDeArriendo =
+  | 'ACTIVE'
+  | 'ENDING_SOON'
+  | 'ENDED'
+  | 'TERMINATED'
+  | 'EN_FIRMA'
+  | 'POR_EMPEZAR';
 
 /**
  * El filtro de la lista. `activos` es el default del back — se manda igual
@@ -84,9 +99,99 @@ export interface Inquilino {
   nombre: string;
   email: string | null;
   telefono: string | null;
-  /** Ya normalizado por el back (una cédula son sólo dígitos). */
+  /** Ya normalizado por el back (una cédula son sólo dígitos; un NIT, sin su DV). */
   documento: string | null;
+  /**
+   * El tipo del documento, si el back lo manda (I-14: con él se sabe que es un
+   * NIT y se muestra con su dígito de verificación). Ausente = no se sabe.
+   */
+  tipoDocumento?: TipoDeDocumento | null;
+  /** Qué falta de su ficha (T-0128). Ausente = completa, o un back anterior. */
+  datosPendientes?: ['documento'];
+  /**
+   * I-22 (Nico, 03-10): si la persona tiene cuenta del portal. Cuando lo dice
+   * el back, `tenantId` es su `User.id` con `true`. Ausente = un back
+   * anterior: ver `cuentaDelPortal`.
+   */
+  tieneCuentaDelPortal?: boolean;
   arriendos: ArriendoDeInquilino[];
+}
+
+/**
+ * El `User.id` de la persona, o `null` si no tiene cuenta del portal.
+ *
+ * 🔴 I-12: el `tenantId` de la lista NO siempre es una cuenta. Sin cuenta es
+ * una identidad sintética (`doc:<n>`, `correo:<c>`, `contrato:<uuid>`) o el id
+ * de su ficha de tercero. Lo que habla con un `User` (el interruptor de
+ * WhatsApp) recibía eso y respondía 400. Con `tieneCuentaDelPortal` manda el
+ * back; sin él, sólo un uuid sin prefijo pasa por cuenta.
+ */
+export function cuentaDelPortal(persona: Pick<Inquilino, 'tenantId' | 'tieneCuentaDelPortal'>): string | null {
+  if (persona.tieneCuentaDelPortal === false) return null;
+  if (persona.tieneCuentaDelPortal === true) return persona.tenantId;
+  return UUID.test(persona.tenantId) ? persona.tenantId : null;
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Hoy en Colombia, `YYYY-MM-DD`: el día con el que se comparan las vigencias. */
+export function hoyEnColombia(ahora: Date = new Date()): string {
+  return ahora.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+}
+
+/**
+ * El estado con el que se PINTA un arriendo.
+ *
+ * I-04 (Nico, 03-10): un arriendo vigente cuya fecha de inicio todavía no
+ * llega es «Por empezar», no «Activo». El back lo va a mandar como
+ * `POR_EMPEZAR`; mientras tanto se deduce de `desde` (un día, sin hora:
+ * `slice(0, 10)`, ver `diaDeVigencia`).
+ */
+export function estadoParaMostrar(
+  arriendo: Pick<ArriendoDeInquilino, 'estado' | 'desde'>,
+  hoy: string = hoyEnColombia(),
+): EstadoDeArriendo {
+  if (
+    (arriendo.estado === 'ACTIVE' || arriendo.estado === 'ENDING_SOON') &&
+    arriendo.desde !== null &&
+    arriendo.desde.slice(0, 10) > hoy
+  ) {
+    return 'POR_EMPEZAR';
+  }
+  return arriendo.estado;
+}
+
+/** Lo que se manda para corregir sus datos (E-16). Sólo lo que cambió. */
+export interface CambiosDelInquilino {
+  nombre?: string;
+  tipoDocumento?: TipoDeDocumento;
+  /** `''` para borrarlo no existe: un dato que se quita se manda `null`. */
+  documento?: string | null;
+  correo?: string | null;
+  telefono?: string | null;
+  /**
+   * El correo de alguien CON cuenta es con el que entra al portal: el back
+   * responde 409 hasta que la persona lo confirma (`pideConfirmarCambioDeCorreo`).
+   */
+  confirmarCambioDeCorreo?: boolean;
+}
+
+/**
+ * ¿Es el 409 con el que el back pide confirmar el cambio del correo de una
+ * cuenta del portal (`CONFIRMA_EL_CAMBIO_DE_CORREO`, con `correoActual` y
+ * `correoNuevo`)? Se reconoce por el código (cualquiera que hable de confirmar
+ * el correo) o por la marca `confirmarCambioDeCorreo` del sobre.
+ */
+export function pideConfirmarCambioDeCorreo(error: unknown): boolean {
+  if (!(error instanceof ApiError) || error.status !== 409) return false;
+  const code = (error.code ?? '').toUpperCase();
+  if (code.includes('CORREO') && code.includes('CONFIRM')) return true;
+  const detalle = (error as { detalle?: unknown }).detalle;
+  return Boolean(
+    detalle &&
+      typeof detalle === 'object' &&
+      'confirmarCambioDeCorreo' in (detalle as Record<string, unknown>),
+  );
 }
 
 /** Los cinco tipos de `PropietarioDocumentType` en el back. No hay otros. */
@@ -169,6 +274,23 @@ export const inquilinosApi = {
       `/inmobiliaria/inquilinos/${encodeURIComponent(tenantId)}`,
     );
   },
+
+  /**
+   * E-16 (Nico, 03-10): corregir sus datos (`contratos:edit`). `identidad` es
+   * el `tenantId` de la lista (puede ser `doc:…`), codificado como en
+   * `obtener`. Devuelve la persona como una fila de la lista —su `tenantId`
+   * puede haber cambiado— y los `avisos` que el back quiere que se digan
+   * (p. ej. que se le debe una invitación nueva al correo cambiado).
+   */
+  async actualizar(
+    identidad: string,
+    cambios: CambiosDelInquilino,
+  ): Promise<{ inquilino: Inquilino; avisos: string[] }> {
+    return apiClient.patch<{ inquilino: Inquilino; avisos: string[] }>(
+      `/inmobiliaria/inquilinos/${encodeURIComponent(identidad)}`,
+      cambios,
+    );
+  },
 };
 
 /**
@@ -178,8 +300,14 @@ export const inquilinosApi = {
  * vence pronto. Tratarlo como terminado haría desaparecer de «activos» a
  * gente a la que todavía hay que cobrarle.
  */
-export function arriendosVigentes(inquilino: Inquilino): ArriendoDeInquilino[] {
-  return inquilino.arriendos.filter(
-    (a) => a.estado === 'ACTIVE' || a.estado === 'ENDING_SOON',
-  );
+export function arriendosVigentes(inquilino: Inquilino, hoy: string = hoyEnColombia()): ArriendoDeInquilino[] {
+  /*
+   * 🔴 El que todavía no empieza NO es vigente (I-04, Nico 03-10): no suma en
+   * «Arriendos vigentes» ni en «Canon mensual vigente» — es plata que este mes
+   * no entra. `estadoParaMostrar` lo saca aunque el back lo mande `ACTIVE`.
+   */
+  return inquilino.arriendos.filter((a) => {
+    const estado = estadoParaMostrar(a, hoy);
+    return estado === 'ACTIVE' || estado === 'ENDING_SOON';
+  });
 }

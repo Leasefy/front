@@ -24,6 +24,26 @@ import type {
   AgencyBillingMode,
 } from '@/lib/admin/plans'
 
+/**
+ * 🔁 Los topes de `back/src/admin/resources/plans/dto/admin-{create,update}-plan.dto.ts`
+ * (02-10-2026): `SubscriptionPlanConfig` guarda todo en `int4` y `name` en
+ * `VarChar(100)`; sin tope, un precio de once cifras daba 500 (P2020). Mismos
+ * números y MISMAS frases que el back: lo que el back rechaza no sale.
+ */
+export const MAX_LARGO_NOMBRE_DEL_PLAN = 100
+export const PRECIO_MAXIMO_DEL_PLAN_COP = 1_000_000_000
+export const LIMITE_MAXIMO_DEL_PLAN = 1_000_000
+export const CREDITOS_MAXIMOS_DEL_MES = 1_000_000
+export const COMISION_MAXIMA_BPS = 10_000
+
+export const MENSAJES_DEL_PLAN = {
+  nombreLargo: 'El nombre del plan puede tener hasta 100 caracteres.',
+  precioMaximo: 'El precio no puede pasar de $1.000.000.000. Revisa que no sobren ceros.',
+  limiteMaximo: 'El límite no puede pasar de 1.000.000 (usa -1 para ilimitado).',
+  creditosMaximos: 'Los créditos del mes no pueden pasar de 1.000.000.',
+  comisionMaxima: 'La comisión por uso no puede pasar de 10.000 puntos básicos (100 %).',
+} as const
+
 const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/
 const INT_RE = /^-?\d+$/
 const UINT_RE = /^\d+$/
@@ -31,7 +51,11 @@ const DECIMAL_RE = /^\d+(\.\d+)?$/
 
 export const planFormSchema = z
   .object({
-    name: z.string().trim().min(1, 'El nombre es obligatorio.'),
+    name: z
+      .string()
+      .trim()
+      .min(1, 'El nombre es obligatorio.')
+      .max(MAX_LARGO_NOMBRE_DEL_PLAN, MENSAJES_DEL_PLAN.nombreLargo),
     slug: z.string().trim(),
     description: z.string().trim(),
     monthlyPrice: z.string().trim(),
@@ -68,6 +92,10 @@ export const planFormSchema = z
       }
       if (!UINT_RE.test(raw)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${label} debe ser un entero en pesos (>= 0).` })
+        return
+      }
+      if (Number(raw) > PRECIO_MAXIMO_DEL_PLAN_COP) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: MENSAJES_DEL_PLAN.precioMaximo })
       }
     }
 
@@ -83,6 +111,10 @@ export const planFormSchema = z
       }
       if (Number(raw) < -1) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${label} no puede ser menor que -1.` })
+        return
+      }
+      if (Number(raw) > LIMITE_MAXIMO_DEL_PLAN) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: MENSAJES_DEL_PLAN.limiteMaximo })
       }
     }
 
@@ -94,6 +126,10 @@ export const planFormSchema = z
       }
       if (!UINT_RE.test(raw)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${label} debe ser un entero >= 0.` })
+        return
+      }
+      if (Number(raw) > CREDITOS_MAXIMOS_DEL_MES) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: MENSAJES_DEL_PLAN.creditosMaximos })
       }
     }
 
@@ -117,6 +153,9 @@ export const planFormSchema = z
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['usageFeePct'], message: 'El % de canon es obligatorio en modo USAGE_CANON.' })
       } else if (!DECIMAL_RE.test(v.usageFeePct)) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['usageFeePct'], message: 'El % de canon debe ser un número >= 0 (ej. 1.5).' })
+      } else if (Math.round(Number(v.usageFeePct) * 100) > COMISION_MAXIMA_BPS) {
+        // El back recibe puntos básicos (% × 100): 100 % = 10.000.
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['usageFeePct'], message: MENSAJES_DEL_PLAN.comisionMaxima })
       }
     }
   })

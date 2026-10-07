@@ -27,7 +27,7 @@ import {
  * (T-0020 — the rest of the job-detail fields were removed).
  */
 export function StepEmployment() {
-  const { application, updateEmployment, attemptedAdvance } = useApplication();
+  const { application, updateEmployment, attemptedAdvance, erroresDelServidor } = useApplication();
   const employment = application.employment;
 
   // Track which fields have been touched for error display
@@ -45,11 +45,15 @@ export function StepEmployment() {
   }, []);
 
   // Get error message for a field (show if touched OR if user attempted to advance)
+  // Lo que el back rechazó al enviar (02-10-2026) va primero: se ve aunque
+  // el campo no se haya tocado, y se borra en cuanto la persona lo corrige.
   const getError = useCallback(
     (fieldName: string): string | undefined => {
+      const delServidor = (erroresDelServidor as Record<string, string | undefined> | undefined)?.[fieldName];
+      if (delServidor) return delServidor;
       return (touched[fieldName] || attemptedAdvance) ? validation.errors[fieldName] : undefined;
     },
-    [touched, validation.errors, attemptedAdvance]
+    [touched, validation.errors, attemptedAdvance, erroresDelServidor]
   );
 
   // Handle input changes
@@ -134,14 +138,14 @@ export function StepEmployment() {
 
           {/* Company Name */}
           <FormField
-            label="Nombre de la empresa"
+            label={employment.employmentStatus === 'self-employed' ? 'Tu negocio o actividad' : 'Nombre de la empresa'}
             htmlFor="companyName"
             error={getError('companyName')}
             required
           >
             <LightInput
               id="companyName"
-              placeholder="Empresa donde trabajas"
+              placeholder={employment.employmentStatus === 'self-employed' ? 'Ej.: diseño gráfico, tienda de barrio' : 'Empresa donde trabajas'}
               value={employment.companyName || ''}
               onChange={(e) => handleInputChange('companyName', e.target.value)}
               onBlur={() => handleBlur('companyName')}

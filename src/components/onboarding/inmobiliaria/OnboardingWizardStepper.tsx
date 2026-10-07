@@ -1,8 +1,7 @@
 'use client'
 
-import { Check } from '@phosphor-icons/react'
-import { cn } from '@/lib/utils'
 import type { OnboardingWizardStep } from '@/lib/hooks/use-onboarding-session'
+import { OnboardingStepList, type PasoDeLaLista } from '@/components/onboarding/wizard'
 import { WIZARD_STEPS, wizardStepIndex } from './wizard-steps'
 
 export interface OnboardingWizardStepperProps {
@@ -16,19 +15,21 @@ export interface OnboardingWizardStepperProps {
   reachedStep?: OnboardingWizardStep | null
   /**
    * Con esto, cada paso ya hecho (y el paso donde el asistente quedó) es un
-   * botón que lleva ahí. Sin esto, la barra es sólo informativa.
+   * botón que lleva ahí. Sin esto, la lista es sólo informativa.
    */
   onNavigateToStep?: (step: OnboardingWizardStep) => void
 }
 
 /**
- * 4-step visual stepper. The active step is derived from `currentStep`
- * (the hook's rehydrated state) — never local component state — so a page
- * refresh mid-wizard renders on the correct step automatically.
+ * Los 4 pasos visibles del alta de la inmobiliaria. El activo sale de
+ * `currentStep` (el estado rehidratado del hook), nunca de estado local: al
+ * recargar a mitad del asistente se pinta en el paso correcto.
  *
- * Pattern: numbered circle + connector line, following the stepper the old
- * inmobiliaria onboarding used (`git log` pre-Cadence version), re-tokenized
- * to Cadence semantic classes (bg-primary / text-on-primary / border-border).
+ * ── Vertical, como el del inquilino (Nico, 30-09) ─────────────────────────
+ * «Utiliza la forma en cómo tiene los steps inquilino que son verticales a la
+ * izquierda». Antes era una fila horizontal metida en la cabecera; ahora es la
+ * lista compartida del marco (`OnboardingStepList`): columna con nombre y una
+ * línea de qué se pide en escritorio, fila de círculos en teléfono.
  *
  * ── Volver a un paso (Nico, 2026-09-07) ────────────────────────────────────
  * «En estos steps no me deja devolverme al paso anterior, quizás dando clic
@@ -44,66 +45,28 @@ export function OnboardingWizardStepper({
   const activeIndex = wizardStepIndex(currentStep)
   const reachedIndex = Math.max(activeIndex, wizardStepIndex(reachedStep ?? currentStep))
 
+  const pasos: PasoDeLaLista[] = WIZARD_STEPS.map((step, idx) => {
+    const isCurrent = idx === activeIndex
+    const isDone = idx < reachedIndex && !isCurrent
+    // Se puede ir a lo hecho y a donde el asistente quedó; no a lo que falta.
+    const navegable = Boolean(onNavigateToStep) && !isCurrent && idx <= reachedIndex
+    return {
+      key: step.key,
+      label: step.label,
+      descripcion: step.descripcion,
+      estado: isCurrent ? 'actual' : isDone ? 'hecho' : 'pendiente',
+      onSelect: navegable ? () => onNavigateToStep?.(step.key) : undefined,
+      etiquetaDelBoton: `Volver a ${step.label}`,
+      testId: `wizard-step-${step.key}`,
+      testIdDelBoton: `wizard-step-link-${step.key}`,
+    }
+  })
+
   return (
-    <ol
-      aria-label="Progreso del registro de la inmobiliaria"
-      className="flex items-center gap-1.5 sm:gap-2"
-    >
-      {WIZARD_STEPS.map((step, idx, arr) => {
-        const isCurrent = idx === activeIndex
-        const isDone = idx < reachedIndex && !isCurrent
-        // Se puede ir a lo hecho y a donde el asistente quedó; no a lo que falta.
-        const navegable = Boolean(onNavigateToStep) && !isCurrent && idx <= reachedIndex
-
-        const contenido = (
-          <>
-            <div
-              data-testid={`wizard-step-${step.key}`}
-              data-active={isCurrent}
-              aria-current={isCurrent ? 'step' : undefined}
-              className={cn(
-                'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold font-mono tabular-nums transition-colors',
-                isDone
-                  ? 'bg-primary border-2 border-primary text-primary-fg'
-                  : isCurrent
-                    ? 'bg-surface border-2 border-primary text-primary'
-                    : 'bg-surface border border-border text-fg-subtle',
-              )}
-            >
-              {isDone ? <Check className="w-3.5 h-3.5" weight="bold" /> : idx + 1}
-            </div>
-            <span
-              className={cn(
-                'hidden md:inline text-xs font-medium',
-                isCurrent ? 'text-primary' : isDone ? 'text-fg' : 'text-fg-subtle',
-              )}
-            >
-              {step.label}
-            </span>
-          </>
-        )
-
-        return (
-          <li key={step.key} className="flex items-center gap-1.5 sm:gap-2">
-            {navegable ? (
-              <button
-                type="button"
-                onClick={() => onNavigateToStep?.(step.key)}
-                aria-label={`Volver a ${step.label}`}
-                data-testid={`wizard-step-link-${step.key}`}
-                className="flex items-center gap-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 [&>div]:hover:border-primary/70 [&>span]:hover:text-primary"
-              >
-                {contenido}
-              </button>
-            ) : (
-              <div className="flex items-center gap-2">{contenido}</div>
-            )}
-            {idx < arr.length - 1 && (
-              <div className={cn('w-3 sm:w-6 h-0.5 transition-colors', isDone ? 'bg-primary' : 'bg-border')} />
-            )}
-          </li>
-        )
-      })}
-    </ol>
+    <OnboardingStepList
+      pasos={pasos}
+      etiqueta="Progreso del registro de la inmobiliaria"
+      nota="Cada paso queda guardado al continuar"
+    />
   )
 }

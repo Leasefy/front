@@ -27,7 +27,9 @@ import type { Egreso, LoteDeEgreso } from '@/lib/api/gastos.service';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const { gastos, escrituraMock, cambioMock, toastMock } = vi.hoisted(() => ({
+const { gastos, escrituraMock, cambioMock, toastMock, salidasDelEgreso } = vi.hoisted(() => ({
+  // Seguimiento 6: la salida del extracto se elige de una lista (ya no se teclea el id).
+  salidasDelEgreso: { listar: vi.fn() },
   gastos: {
     egresos: {
       listar: vi.fn(),
@@ -75,6 +77,30 @@ vi.mock('../use-puede-escribir', async () => {
   };
 });
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
+vi.mock('@/lib/api/salidas-del-egreso', () => ({ salidasDelEgresoApi: salidasDelEgreso }));
+// CB-R09 (COLA-FRONT, 04-10): el archivo del banco sale desde una cuenta de la
+// inmobiliaria; con una sola, queda elegida.
+vi.mock('@/lib/api/conciliacion-bancaria.service', () => ({
+  conciliacionBancariaApi: {
+    cuentas: () =>
+      Promise.resolve({
+        disponible: true,
+        motivo: null,
+        cuentas: [
+          {
+            id: 'medio-1',
+            nombre: 'Bancolombia ahorros recaudo',
+            banco: 'Bancolombia',
+            tipoDeCuenta: 'AHORROS',
+            numeroEnmascarado: '•••• 5678',
+            activa: true,
+          },
+        ],
+        sinCuenta: null,
+        pasarela: null,
+      }),
+  },
+}));
 vi.mock('@/lib/i18n', async () => {
   const { t } = await import('@/lib/i18n/i18n-test-stub');
   return {
@@ -273,9 +299,15 @@ describe('<Egresos>', () => {
       const barra = q('armar-lote')!;
       expect(barra.querySelector('[data-testid="concepto-del-lote"]')).not.toBeNull();
       expect(barra.querySelector('[data-testid="crear-lote"]')).not.toBeNull();
-      // Pegada al borde de abajo mientras se recorren los egresos.
-      expect(barra.className).toContain('sticky');
-      expect(barra.className).toContain('bottom-0');
+      // 🔴 CB-07 (03-10-2026): sin nada marcado la barra sólo explica, y pegada
+      // abajo tapaba la segunda fila: va en su lugar, al final de la tabla.
+      expect(barra.className).not.toContain('sticky');
+      // Con algo marcado sí se pega al borde de abajo mientras se recorren los egresos.
+      await act(async () => {
+        (q('marcar-e1') as HTMLElement).click();
+      });
+      expect(q('armar-lote')!.className).toContain('sticky');
+      expect(q('armar-lote')!.className).toContain('bottom-0');
     });
 
     it('🔴 y la barra vive DENTRO de la tabla, como su último renglón', async () => {
@@ -309,6 +341,45 @@ describe('<Egresos>', () => {
 
     expect(q('falta-e1')!.textContent).toContain('el banco');
     expect(q('pendientes-sin-datos')!.textContent).toContain('el archivo saldría corto');
+  });
+});
+
+/**
+ * 🔴 ARREGLOS-3 (03-10-2026, Nico, la recomendada «a» de PRUEBAS-PAGOS): la
+ * devolución del saldo a favor que quedó por un valor viejo (llegó deuda
+ * después) dice que está EN REVISIÓN y no se puede meter a un lote.
+ */
+describe('🔴 la devolución del saldo a favor EN REVISIÓN', () => {
+  it('dice que está en revisión, con el porqué, y no se puede marcar para el lote', async () => {
+    gastos.egresos.listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 1,
+      egresos: [
+        egreso({
+          beneficiarioTipo: 'INQUILINO' as Egreso['beneficiarioTipo'],
+          beneficiarioNombre: 'Pedro Prueba',
+          concepto: 'Devolución del saldo a favor — contrato 9',
+          revision: {
+            motivo: 'Después de registrar la devolución llegó deuda nueva: el inquilino debe $500.000.',
+            debeCop: 500_000,
+            contractId: 'ct-9',
+          },
+        }),
+      ],
+    });
+    await pintar();
+    const aviso = q('en-revision-e1')!;
+    expect(aviso.textContent).toContain('En revisión');
+    expect(aviso.textContent).toContain('estado de cuenta del contrato');
+    expect(aviso.getAttribute('title')).toContain('debe $500.000');
+    expect((q('marcar-e1') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('sin revisión (o un back anterior) la fila sigue como siempre', async () => {
+    await pintar();
+    expect(q('en-revision-e1')).toBeNull();
+    expect((q('marcar-e1') as HTMLButtonElement).disabled).toBe(false);
   });
 });
 
@@ -383,7 +454,8 @@ describe('🔴 P-4: el administrador no se confirma a sí mismo', () => {
     expect(gastos.lotes.crear).toHaveBeenCalledTimes(1);
     const [mensaje] = toastMock.success.mock.calls.at(-1)!;
     expect(mensaje).toContain('Lote armado y aprobado');
-    expect(mensaje).toContain('Aprobado por ti como administrador (P-4)');
+    expect(mensaje).toContain('Aprobado por ti como administrador');
+    expect(mensaje).not.toContain('(P-4)');
     expect(mensaje).not.toContain('Lo tiene que aprobar otra persona');
   });
 
@@ -395,7 +467,7 @@ describe('🔴 P-4: el administrador no se confirma a sí mismo', () => {
       lotes: [lote({ estado: 'APROBADO', creadoPorUserId: 'u-yo', aprobadoPorUserId: 'u-yo', aprobadoAt: '2026-09-24T15:00:00.000Z' })],
     });
     await pintar('lotes');
-    expect(q('aprobado-por-la-misma-persona-l1')!.textContent).toContain('Aprobado por ti como administrador (P-4)');
+    expect(q('aprobado-por-la-misma-persona-l1')!.textContent).toContain('Aprobado por ti como administrador');
   });
 
   it('🔴 un borrador que el administrador armó (de antes de la regla): «Aprobar» prendido', async () => {
@@ -553,6 +625,49 @@ describe('conciliación y comprobante', () => {
     const boton = q('anular-egreso-e1') as HTMLButtonElement;
     expect(boton.disabled).toBe(true);
     expect(q('anular-egreso-e1-motivo')!.textContent).toContain('Un egreso pagado no se anula');
+  });
+
+  /**
+   * 🔴 Seguimiento 6 (pendiente técnico de las salidas): conciliar ya no pide
+   * el id del movimiento a mano: se elige la salida de la lista del extracto
+   * (primero lo que calza con el neto) y eso es lo que viaja.
+   */
+  it('🔴 conciliar: se ELIGE la salida del extracto de la lista y viaja su id (sin teclearlo)', async () => {
+    gastos.egresos.listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 1,
+      egresos: [egreso({ id: 'e1', estado: 'PAGADO', numero: 87, movimientoBancarioId: null })],
+    });
+    salidasDelEgreso.listar.mockResolvedValue({
+      egreso: { id: 'e1', netoCop: 462_960, fecha: '2026-09-10', beneficiario: 'Ferretería El Tornillo SAS' },
+      sePuedeConciliar: true,
+      porQueNo: null,
+      total: 2,
+      salidas: [
+        { id: 'mb-calza', fecha: '2026-09-11', descripcion: 'PAGO PROVEEDOR FERRETERIA', referencia: null, valorCop: 462_960, calza: true, dias: 1, cuenta: { id: 'c1', nombre: 'Ahorros Bancolombia •••• 6789' } },
+        { id: 'mb-otra', fecha: '2026-09-12', descripcion: 'PAGO ABOGADO', referencia: null, valorCop: 900_000, calza: false, dias: 2, cuenta: null },
+      ],
+    });
+    gastos.egresos.conciliar.mockResolvedValue({});
+    await pintar();
+    await act(async () => (q('conciliar-e1') as HTMLButtonElement).click());
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(salidasDelEgreso.listar).toHaveBeenCalledWith('e1', '');
+    expect(q('movimiento-bancario')).toBeNull();
+    expect(q('salida-del-egreso-mb-calza')!.textContent).toContain('Calza con el neto');
+    expect((q('confirmar-conciliacion') as HTMLButtonElement).disabled).toBe(true);
+    const radio = q('salida-del-egreso-mb-calza')!.querySelector('input[type="radio"]') as HTMLInputElement;
+    await act(async () => radio.click());
+    expect((q('confirmar-conciliacion') as HTMLButtonElement).disabled).toBe(false);
+    await act(async () => {
+      (q('confirmar-conciliacion') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    expect(gastos.egresos.conciliar).toHaveBeenCalledWith('e1', 'mb-calza');
   });
 
   it('un egreso pagado dice si quedó conciliado o no', async () => {
@@ -805,6 +920,29 @@ describe('🔴 el cajón del egreso', () => {
     expect(toastMock.error).toHaveBeenCalledWith(MOTIVO_SIN_CAMBIO_DE_EGRESO);
   });
 
+  it('🔴 un 5xx al corregir dice «de nuestro lado» con la referencia, no «Error interno»', async () => {
+    gastos.egresos.cambiar.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'dead0042',
+      }),
+    );
+    await abrir();
+    await act(async () => {
+      escribir(q('egreso-fecha') as HTMLInputElement, '2026-09-10');
+      escribir(q('egreso-motivo') as HTMLTextAreaElement, 'Rechazo');
+    });
+    await act(async () => {
+      (q('guardar-cambio-del-egreso') as HTMLButtonElement).click();
+    });
+    const texto = toastMock.error.mock.calls.at(-1)![0] as string;
+    expect(texto).toMatch(/de nuestro lado/);
+    expect(texto).toContain('dead0042');
+    expect(texto).not.toContain('Error interno del servidor');
+  });
+
   it('un egreso sin pagar no deja cambiar la fecha, pero sí la nota', async () => {
     await abrir(egreso());
     expect((q('egreso-fecha') as HTMLInputElement).disabled).toBe(true);
@@ -853,5 +991,86 @@ describe('🔴 el cajón del egreso', () => {
     expect(q('cambios-sin-migracion')!.textContent).not.toContain('20260922150000');
     expect((q('egreso-fecha') as HTMLInputElement).disabled).toBe(true);
     expect(q('guardar-cambio-del-egreso')).toBeNull();
+  });
+});
+
+/*
+ * Sistema de errores (02-10-2026): lo que el back dice de un campo de un
+ * diálogo va bajo ese campo; lo demás, al toast con la regla de oro.
+ */
+describe('Egresos · errores de los diálogos', () => {
+  async function abrirPago() {
+    gastos.lotes.listar.mockResolvedValue({
+      disponible: true,
+      motivo: null,
+      total: 1,
+      lotes: [lote({ estado: 'ARCHIVO_GENERADO', cantidad: 2 })],
+    });
+    await pintar('lotes');
+    await act(async () => {
+      (q('pagado-l1') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+  }
+
+  async function confirmarPago() {
+    await act(async () => {
+      (q('confirmar-pago') as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+  }
+
+  it('🔴 un 400 con `campos` en `referenciaBanco` va bajo la referencia y la enfoca', async () => {
+    const mensaje = 'La referencia del banco puede tener hasta 120 caracteres.';
+    gastos.lotes.pagado.mockRejectedValue(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'referenciaBanco', regla: 'longitud_maxima', mensaje }],
+      }),
+    );
+    await abrirPago();
+    await confirmarPago();
+
+    const campo = q('referencia-del-banco')!;
+    expect(campo.getAttribute('aria-invalid')).toBe('true');
+    expect(document.getElementById(campo.getAttribute('aria-describedby')!)?.textContent).toBe(mensaje);
+    expect(document.activeElement).toBe(campo);
+    expect(toastMock.error).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    gastos.lotes.pagado.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'beef0001',
+      }),
+    );
+    await abrirPago();
+    await confirmarPago();
+
+    const texto = toastMock.error.mock.calls.at(-1)![0] as string;
+    expect(texto).toMatch(/No pudimos marcar el lote como pagado: algo falló de nuestro lado/);
+    expect(texto).toContain('beef0001');
+  });
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    gastos.lotes.pagado.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await abrirPago();
+    await confirmarPago();
+
+    const texto = toastMock.error.mock.calls.at(-1)![0] as string;
+    expect(texto).toMatch(/conexi[oó]n/i);
+    expect(texto).not.toContain('Failed to fetch');
+  });
+
+  it('🔁 la referencia y el motivo no dejan escribir más de lo que el back acepta', async () => {
+    await abrirPago();
+    expect((q('referencia-del-banco') as HTMLInputElement).maxLength).toBe(120);
   });
 });

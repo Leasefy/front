@@ -23,7 +23,7 @@
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
-import { Spinner } from '@/components/ui';
+import { Spinner } from '@/components/ui/spinner';
 
 export default function AvaluoDetalleLegacyPage() {
   const params = useParams<{ id: string }>();
@@ -40,7 +40,8 @@ export default function AvaluoDetalleLegacyPage() {
 
   return (
     <div className="flex items-center justify-center py-24">
-      <Spinner size="md" variant="muted" />
+      {/* Dentro del panel va el spinner, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+      <Spinner size="md" variant="muted" label="Cargando" />
     </div>
   );
 }

@@ -32,8 +32,9 @@ function ImportarContent() {
         </div>
       </div>
 
-      {/* Wizard */}
-      <ImportWizard />
+      {/* Wizard. Desde Inmuebles la importación SÍ va al centro de procesos
+          (decisión (b) de Nico, 06-10); la de la Puesta en marcha no. */}
+      <ImportWizard origen="inmuebles" />
     </div>
   );
 }

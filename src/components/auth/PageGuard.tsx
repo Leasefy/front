@@ -4,6 +4,7 @@ import { type ReactNode } from 'react';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ProveedorDeAcceso } from '@/components/auth/acceso-de-la-pantalla';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { Spinner } from '@/components/ui/spinner';
 import { estaSinSenal, useSinSenal } from '@/lib/hooks/use-sin-senal';
 import type { AgencyRole } from '@/lib/auth/agency-roles';
 
@@ -23,6 +24,13 @@ interface PageGuardProps {
    * Combines with `module` (both must pass when both are provided).
    */
   roles?: AgencyRole[];
+  /**
+   * El nombre de la sección en el cartel de «No tienes acceso a …», cuando no
+   * es el del módulo que la protege (QA-INQ I-25: Inquilinos se protege con
+   * `contratos` y el cartel decía «No tienes acceso a Contratos» estando en
+   * Inquilinos). Sin él, el del módulo.
+   */
+  seccion?: string;
   children: ReactNode;
 }
 
@@ -40,8 +48,8 @@ interface PageGuardProps {
  * The inner component only mounts when access is confirmed, so its hooks
  * never fire for unauthorized users.
  */
-export function PageGuard({ module, modulos, action = 'view', adminOnly = false, roles, children }: PageGuardProps) {
-  const { canAccess, isAdmin, isLoading, agencyRole } = usePermissions();
+export function PageGuard({ module, modulos, action = 'view', adminOnly = false, roles, seccion, children }: PageGuardProps) {
+  const { canAccess, isAdmin, isLoading, agencyRole, permisosDelBack, refetch } = usePermissions();
   const sinSenal = useSinSenal();
 
   const moduleAllowed =
@@ -95,12 +103,59 @@ export function PageGuard({ module, modulos, action = 'view', adminOnly = false,
     return <>{children}</>;
   }
 
+  /*
+   * 🔴 H-09 (QA-PAGOS-95 r2; main, con la recomendada): los permisos del back
+   * NO se pudieron saber (`my-permissions` respondió 5xx o no respondió). Eso
+   * no es «no tienes acceso»: se muestra la pantalla con el aviso y un
+   * «Reintentar». No afloja nada: cada llamada la sigue decidiendo el back.
+   */
+  if (!isLoading && !hasAccess && permisosDelBack === 'sin-verificar') {
+    return (
+      <>
+        <div className="px-4 pt-4 md:px-6 md:pt-6" data-testid="permisos-sin-verificar">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-warning-soft px-3 py-2 text-sm text-warning">
+            <span>
+              No pudimos verificar tus permisos: el servidor no respondió. Te mostramos la pantalla; si algo no te
+              corresponde, te lo diremos al intentarlo.
+            </span>
+            <button
+              type="button"
+              className="font-medium underline underline-offset-4"
+              onClick={() => void refetch()}
+              data-testid="permisos-reintentar"
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
+        {children}
+      </>
+    );
+  }
+
   if (!isLoading && !hasAccess) {
+    /*
+     * 🟡 IA95-41 (QA-IA-95, 05-10-2026): lo que falla es el ROL, no el módulo.
+     * El auxiliar de cartera (con Cobros) abría una pantalla de `roles` y leía
+     * «No tienes acceso a Cobros. Tu rol no incluye Cobros», que es falso: su
+     * rol sí tiene Cobros. Cuando el módulo pasa y el rol no, el cartel dice
+     * quiénes usan la pantalla.
+     */
+    if (!adminOnly && moduleAllowed && !roleAllowed && roles && roles.length > 0) {
+      return (
+        <div className="p-4 md:p-6" data-testid="pantalla-negada">
+          <FalloDeCarga
+            error={{ status: 403, code: 'SIN_PERMISO_POR_ROL', module: seccion, roles: roles.join(','), role: agencyRole ?? undefined }}
+            volverA={{ label: 'Ir al inicio del panel', href: '/panel/inmobiliaria' }}
+          />
+        </div>
+      );
+    }
     const modulo = adminOnly ? undefined : module ?? (modulos && modulos.length === 1 ? modulos[0] : undefined);
     return (
       <div className="p-4 md:p-6" data-testid="pantalla-negada">
         <FalloDeCarga
-          error={{ status: 403, code: 'SIN_PERMISO_DE_MODULO', module: modulo, action }}
+          error={{ status: 403, code: 'SIN_PERMISO_DE_MODULO', module: seccion ?? modulo, action }}
           volverA={{ label: 'Ir al inicio del panel', href: '/panel/inmobiliaria' }}
         />
       </div>
@@ -110,7 +165,8 @@ export function PageGuard({ module, modulos, action = 'view', adminOnly = false,
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+        {/* Dentro del panel va el spinner, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <Spinner size="md" variant="muted" label="Cargando" />
       </div>
     );
   }

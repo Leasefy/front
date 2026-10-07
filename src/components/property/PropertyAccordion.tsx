@@ -1,5 +1,6 @@
 'use client';
 
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import {
   Accordion,
   AccordionContent,
@@ -79,7 +80,7 @@ export function PropertyAccordion({
         <AccordionContent className="pb-5">
           <div className="space-y-3">
             <p className="text-[14px] text-foreground/80 leading-relaxed">
-              Ubicado en <span className="font-medium text-foreground">{property.neighborhood}</span>, {property.city}.
+              Ubicado en <span className="font-medium text-foreground">{barrioYCiudad(property.neighborhood, property.city)}</span>.
             </p>
             <p className="text-[14px] text-foreground/80">
               Dirección: {property.address}

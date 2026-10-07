@@ -5,14 +5,29 @@ import { act } from 'react'
 
 void React
 
+// Se renderiza con `createRoot` + `act` directo (el patrón de la casa).
+;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+
 import { CompleteStepForm, RUTA_DEL_PANEL, resumenDelRegistro } from './CompleteStepForm'
 import { OnboardingSessionError } from '@/lib/api/onboarding-session.service'
 import type { OnboardingSessionStepConflict } from '@/lib/api/generated/agency'
 
 // `CompleteStepForm` refresca la sesión antes de salir (arreglo del bucle del
 // 2026-09-07); sin este mock `useAuth()` revienta fuera del AuthProvider.
+const { refreshUser, confettiMock, movimiento } = vi.hoisted(() => {
+  const confettiMock = Object.assign(vi.fn(), { reset: vi.fn() })
+  return { refreshUser: vi.fn<() => Promise<unknown>>(async () => undefined), confettiMock, movimiento: { reducido: false } }
+})
 vi.mock('@/lib/auth/use-auth', () => ({
-  useAuth: () => ({ refreshUser: async () => {}, user: null, isAuthenticated: false, isLoading: false }),
+  useAuth: () => ({ refreshUser, user: null, isAuthenticated: false, isLoading: false }),
+}))
+
+// La celebración: el confeti se espía (en happy-dom no hay canvas) y
+// `prefers-reduced-motion` se controla desde la prueba.
+vi.mock('canvas-confetti', () => ({ default: confettiMock }))
+vi.mock('framer-motion', async (original) => ({
+  ...(await original<typeof import('framer-motion')>()),
+  useReducedMotion: () => movimiento.reducido,
 }))
 
 /**
@@ -31,6 +46,11 @@ let root: Root
 
 beforeEach(() => {
   routerReplace.mockClear()
+  refreshUser.mockReset()
+  refreshUser.mockResolvedValue(undefined)
+  confettiMock.mockClear()
+  confettiMock.reset.mockClear()
+  movimiento.reducido = false
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -64,6 +84,26 @@ function byTestId(testId: string): HTMLElement {
   return el as HTMLElement
 }
 
+function enElDocumento(testId: string): HTMLElement | null {
+  // La celebración va por portal a `document.body`, fuera del contenedor.
+  return document.body.querySelector(`[data-testid="${testId}"]`)
+}
+
+/** La celebración no tiene botón: se va sola; acá sólo se le adelanta el reloj. */
+async function esperarLaSalida() {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(10_000)
+  })
+}
+
+const RESPUESTA_OK = {
+  tenantId: 'tenant-1',
+  agencyId: 'agency-1',
+  sessionId: 'sess-1',
+  status: 'COMPLETED',
+  dashboardUrl: '/panel/inmobiliaria',
+}
+
 async function clickFinish() {
   const btn = byTestId('complete-step-finish') as HTMLButtonElement
   await act(async () => {
@@ -83,24 +123,153 @@ describe('<CompleteStepForm>', () => {
       // caía en ERR_CONNECTION_REFUSED tres veces.
       dashboardUrl: 'http://localhost:3001/panel/inmobiliaria?agencyId=tenant-1',
     })
-    render({ onSubmit })
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      render({ onSubmit })
 
-    await clickFinish()
+      await clickFinish()
+      await esperarLaSalida()
 
-    expect(onSubmit).toHaveBeenCalledTimes(1)
+      expect(onSubmit).toHaveBeenCalledTimes(1)
+      expect(routerReplace).toHaveBeenCalledTimes(1)
+      const destino = routerReplace.mock.calls[0]?.[0] as string
+      expect(destino).toBe(RUTA_DEL_PANEL)
+      // Ni el origen del servidor ni el `?agencyId=` que no hace falta.
+      expect(destino).not.toContain('localhost:3001')
+      expect(destino).not.toContain('http')
+      expect(destino).not.toContain('agencyId')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  const resultadoOk = { tenantId: 't', agencyId: 'a', sessionId: 's', dashboardUrl: 'http://localhost:3001/panel/inmobiliaria' }
+
+  /** The celebration auto-exits after a delay: finish, then fast-forward the clock. */
+  async function terminarYSalir() {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      render({ onSubmit: vi.fn().mockResolvedValue(resultadoOk) })
+      await clickFinish()
+      await esperarLaSalida()
+    } finally {
+      vi.useRealTimers()
+    }
+  }
+
+  it('T-0123 (a) second factor required and no factor enrolled: goes to /auth/mfa-enroll carrying the panel as returnUrl, never to the panel', async () => {
+    refreshUser.mockResolvedValue('enroll')
+    await terminarYSalir()
+
     expect(routerReplace).toHaveBeenCalledTimes(1)
-    const destino = routerReplace.mock.calls[0]?.[0] as string
-    expect(destino).toBe(RUTA_DEL_PANEL)
-    // Ni el origen del servidor ni el `?agencyId=` que no hace falta.
-    expect(destino).not.toContain('localhost:3001')
-    expect(destino).not.toContain('http')
-    expect(destino).not.toContain('agencyId')
+    expect(routerReplace).toHaveBeenCalledWith(`/auth/mfa-enroll?returnUrl=${encodeURIComponent(RUTA_DEL_PANEL)}`)
+  })
+
+  it('T-0123 verified factor but aal1 session: goes to /auth/mfa-verify carrying the panel as returnUrl', async () => {
+    refreshUser.mockResolvedValue('verify')
+    await terminarYSalir()
+
+    expect(routerReplace).toHaveBeenCalledTimes(1)
+    expect(routerReplace).toHaveBeenCalledWith(`/auth/mfa-verify?returnUrl=${encodeURIComponent(RUTA_DEL_PANEL)}`)
+  })
+
+  it('T-0123 (b) requirement false or session already aal2: straight to the panel', async () => {
+    refreshUser.mockResolvedValue('none')
+    await terminarYSalir()
+
+    expect(routerReplace).toHaveBeenCalledTimes(1)
+    expect(routerReplace).toHaveBeenCalledWith(RUTA_DEL_PANEL)
+  })
+
+  it('T-0123 refreshUser throws: still navigates to the panel (the guard re-checks on its own)', async () => {
+    refreshUser.mockRejectedValue(new Error('network'))
+    await terminarYSalir()
+
+    expect(routerReplace).toHaveBeenCalledWith(RUTA_DEL_PANEL)
   })
 
   it('no navega si `/complete` no devolvió nada', async () => {
     render({ onSubmit: vi.fn().mockResolvedValue(null) })
     await clickFinish()
     expect(routerReplace).not.toHaveBeenCalled()
+    expect(enElDocumento('inmobiliaria-creada')).toBeNull()
+  })
+
+  it('el botón dice en español lo que hace: «Crear mi inmobiliaria»', () => {
+    render()
+    const btn = byTestId('complete-step-finish')
+    expect(btn.textContent).toContain('Crear mi inmobiliaria')
+    expect(btn.textContent).not.toMatch(/onboarding/i)
+  })
+
+  it('🔴 al crearla se celebra con su nombre y, al terminar, se va sola al panel una vez (Nico, 30-09: «para evitar que dé clic clic clic»)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      render({
+        onSubmit: vi.fn().mockResolvedValue(RESPUESTA_OK),
+        draft: { legalName: 'Inmobiliaria Altavista S.A.S.' },
+      })
+      await clickFinish()
+
+      const celebracion = enElDocumento('inmobiliaria-creada')
+      expect(celebracion?.getAttribute('role')).toBe('dialog')
+      expect(celebracion?.textContent).toContain('Tu inmobiliaria quedó creada')
+      expect(enElDocumento('inmobiliaria-creada-nombre')?.textContent).toBe('Inmobiliaria Altavista S.A.S.')
+      expect(routerReplace).not.toHaveBeenCalled()
+
+      // Pasa la celebración (chispa incluida) y se va sola, refrescando antes.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10_000)
+      })
+      expect(confettiMock).toHaveBeenCalled()
+      expect(refreshUser).toHaveBeenCalledTimes(1)
+      expect(routerReplace).toHaveBeenCalledTimes(1)
+      expect(routerReplace).toHaveBeenCalledWith(RUTA_DEL_PANEL)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('al salir refresca la sesión y LUEGO lleva al panel (el arreglo del bucle del 07-09), sin ningún botón', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    try {
+      const orden: string[] = []
+      refreshUser.mockImplementationOnce(async () => {
+        orden.push('refresh')
+      })
+      routerReplace.mockImplementationOnce(() => orden.push('replace'))
+      render({ onSubmit: vi.fn().mockResolvedValue(RESPUESTA_OK) })
+      await clickFinish()
+
+      // Sin botón (Nico, 30-09): la celebración no tiene nada que apretar.
+      const botones = enElDocumento('inmobiliaria-creada')?.querySelectorAll('button') ?? []
+      expect(botones).toHaveLength(0)
+
+      await esperarLaSalida()
+
+      expect(orden).toEqual(['refresh', 'replace'])
+      expect(routerReplace).toHaveBeenCalledWith(RUTA_DEL_PANEL)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('con `prefers-reduced-motion` celebra igual, pero sin confeti', async () => {
+    movimiento.reducido = true
+    render({ onSubmit: vi.fn().mockResolvedValue(RESPUESTA_OK) })
+    await clickFinish()
+
+    expect(enElDocumento('inmobiliaria-creada')).not.toBeNull()
+    expect(confettiMock).not.toHaveBeenCalled()
+  })
+
+  it('sin razón social en el borrador se celebra igual, sin inventar un nombre', async () => {
+    render({ onSubmit: vi.fn().mockResolvedValue(RESPUESTA_OK), draft: null })
+    await clickFinish()
+
+    expect(enElDocumento('inmobiliaria-creada')?.textContent).toContain('Tu inmobiliaria quedó creada')
+    expect(enElDocumento('inmobiliaria-creada-nombre')).toBeNull()
+    expect(enElDocumento('inmobiliaria-creada')?.textContent).not.toContain('undefined')
   })
 
   it('🔴 muestra el resumen de lo cargado: «revisa que todo esté en orden» sin nada que revisar no significa nada', () => {
@@ -179,6 +348,25 @@ describe('<CompleteStepForm>', () => {
 
     expect(container.querySelector('[data-testid="complete-step-missing"]')).toBeFalsy()
     expect(container.querySelector('[data-testid="complete-step-form"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="complete-step-error"]')).toBeFalsy()
+  })
+
+  // 02-10-2026 · Un 400 al crearla no llegaba a ningún lado: el botón se
+  // volvía a prender sin decir nada. Ahora se dice, con sus palabras.
+  it('🔴 un 400 al crear la inmobiliaria se dice bajo el botón, con lo que mandó el micro', () => {
+    const error = new OnboardingSessionError(
+      'validation',
+      400,
+      'Para crearla falta aceptar los Términos y Condiciones.',
+      undefined,
+      [],
+    )
+    render({ error })
+
+    const aviso = container.querySelector('[data-testid="complete-step-error"]')
+    expect(aviso?.getAttribute('role')).toBe('alert')
+    expect(aviso?.textContent).toBe('Para crearla falta aceptar los Términos y Condiciones.')
+    expect(container.querySelector('[data-testid="complete-step-finish"]')).toBeTruthy()
   })
 })
 
@@ -198,8 +386,8 @@ describe('resumenDelRegistro', () => {
     })
     expect(lineas).toEqual([
       { etiqueta: 'Razón social', valor: 'Altavista' },
-      { etiqueta: 'Correo de contacto', valor: 'hola@altavista.co' },
-      { etiqueta: 'Teléfono', valor: '3105551234' },
+      { etiqueta: 'Correo de la cuenta', valor: 'hola@altavista.co' },
+      { etiqueta: 'Teléfono de la cuenta', valor: '3105551234', mono: true },
     ])
   })
 

@@ -25,6 +25,7 @@ import { alCambiar } from '@/lib/api/refresco-de-datos';
 import { procesosApi, RECURSO_DE_PROCESOS } from '@/lib/api/procesos.service';
 import type { EstadoDeProceso, Proceso } from '@/lib/api/procesos.types';
 import { MS_CON_ALGO_VIVO } from '@/lib/hooks/use-centro-de-procesos';
+import { mensajeDelFalloDeLaAccion } from '@/lib/chat/fallo-de-la-accion';
 
 export const ESTADOS_FINALES: EstadoDeProceso[] = ['TERMINADO', 'FALLO', 'CANCELADO'];
 
@@ -40,7 +41,12 @@ export interface SeguimientoDelProceso {
   /** «Cancelar» del Centro de procesos (sólo si el back dice `sePuedeCancelar`). */
   cancelar: () => Promise<void>;
   cancelando: boolean;
-  /** Por qué no se pudo cancelar, con las palabras del back. */
+  /**
+   * Por qué no se pudo cancelar, en una frase completa para la persona (el
+   * traductor: un 409 con las palabras del back, un 5xx «de nuestro lado» con
+   * la referencia, «la conexión» sólo si no hubo respuesta). La tarjeta la
+   * pinta tal cual: con «No pude cancelarlo: …» delante lo decía dos veces.
+   */
   errorAlCancelar: string | null;
 }
 
@@ -104,7 +110,15 @@ export function useProcesoDelChat(
     try {
       setProceso(await procesosApi.cancelar(procesoId));
     } catch (e) {
-      setErrorAlCancelar(e instanceof Error && e.message ? e.message : 'no contestó');
+      // 🔴 Antes: `e.message` tal cual («Failed to fetch», «Error interno del
+      // servidor») o «no contestó». Ahora, lo mismo que dice el Centro de
+      // procesos del panel (`FilaDeProceso`).
+      setErrorAlCancelar(
+        mensajeDelFalloDeLaAccion(e, {
+          accion: 'detener el proceso',
+          porDefecto: 'No pude detenerlo. Prueba de nuevo en un momento.',
+        }),
+      );
     } finally {
       setCancelando(false);
     }

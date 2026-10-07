@@ -6,6 +6,7 @@ import { CreditCard, Lock, Check, Buildings, WarningCircle } from '@phosphor-ico
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Input, Spinner } from '@/components/ui';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import {
   Select,
   SelectContent,
@@ -26,6 +27,18 @@ import { useAuth } from '@/lib/auth';
 import type { PlanId, BillingCycle } from '@/lib/types/subscription';
 import type { AppliedCoupon } from '@/lib/types/coupon';
 import { useI18n } from '@/lib/i18n';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+
+/** Los campos del pagador que el back valida (`PseSubscriptionCheckoutDto`). */
+type CampoDelPago = 'banco' | 'documento' | 'nombre' | 'correo';
+const CAMPOS_DEL_PAGO: readonly CampoDelPago[] = ['banco', 'documento', 'nombre', 'correo'];
+const ID_DEL_CAMPO: Record<CampoDelPago, string> = {
+  banco: 'pse-banco',
+  documento: 'pse-documento',
+  nombre: 'pse-nombre',
+  correo: 'pse-correo',
+};
 
 const TIPOS_DE_DOCUMENTO: PSEDocumentType[] = ['CC', 'CE', 'NIT', 'PP'];
 
@@ -69,6 +82,18 @@ function CheckoutContent() {
   const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
   const [pagoError, setPagoError] = useState<string | null>(null);
+  const [erroresDelPago, setErroresDelPago] = useState<Partial<Record<CampoDelPago, string>>>({});
+  const limpiar = (campo: CampoDelPago) =>
+    setErroresDelPago((prev) => {
+      if (prev[campo] === undefined) return prev;
+      const next = { ...prev };
+      delete next[campo];
+      return next;
+    });
+  const describir = (campo: CampoDelPago) =>
+    erroresDelPago[campo]
+      ? { 'aria-invalid': true as const, 'aria-describedby': `${ID_DEL_CAMPO[campo]}-error` }
+      : {};
 
   useEffect(() => {
     if (user?.email) setCorreo((actual) => actual || user.email);
@@ -140,6 +165,7 @@ function CheckoutContent() {
     if (!backendPlanId || !datosCompletos || enPausa) return;
     setIsProcessing(true);
     setPagoError(null);
+    setErroresDelPago({});
     try {
       const res = await subscriptionsApi.startPseCheckout({
         planId: backendPlanId,
@@ -158,7 +184,25 @@ function CheckoutContent() {
       }
       setPagoError(t('landlord.checkout.bankLinkMissing'));
     } catch (err) {
-      setPagoError(err instanceof Error ? err.message : t('landlord.checkout.paymentStartError'));
+      // 02-10-2026: lo que el back rechaza por campo (documento, nombre,
+      // correo, banco) va bajo su campo; lo demás, al aviso de abajo con la
+      // regla de oro (antes, `err.message` crudo: un 5xx decía «Error interno
+      // del servidor.»).
+      const reparto = repartirErroresDelServidor<CampoDelPago>(err, {
+        mapa: {
+          legalId: 'documento',
+          fullName: 'nombre',
+          email: 'correo',
+          financialInstitutionCode: 'banco',
+        },
+        campos: CAMPOS_DEL_PAGO,
+        accion: 'iniciar el pago',
+        porDefecto: t('landlord.checkout.paymentStartError'),
+      });
+      setErroresDelPago(reparto.porCampo);
+      const primero = reparto.orden[0];
+      if (primero && typeof document !== 'undefined') document.getElementById(ID_DEL_CAMPO[primero])?.focus();
+      setPagoError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null);
     }
     setIsProcessing(false);
   };
@@ -298,8 +342,15 @@ function CheckoutContent() {
                 <label htmlFor="pse-banco" className="text-sm font-medium text-foreground mb-1 block">
                   {t('landlord.checkout.bank')}
                 </label>
-                <Select value={banco} onValueChange={setBanco} disabled={bancosError || bancos.length === 0}>
-                  <SelectTrigger id="pse-banco">
+                <Select
+                  value={banco}
+                  onValueChange={(v) => {
+                    setBanco(v);
+                    limpiar('banco');
+                  }}
+                  disabled={bancosError || bancos.length === 0}
+                >
+                  <SelectTrigger id="pse-banco" {...describir('banco')}>
                     <SelectValue placeholder={t('landlord.checkout.bankPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -310,9 +361,10 @@ function CheckoutContent() {
                     ))}
                   </SelectContent>
                 </Select>
-                {bancosError && (
-                  <p className="text-sm text-destructive mt-1">{t('landlord.checkout.banksError')}</p>
-                )}
+                <ErrorDelCampo
+                  id="pse-banco-error"
+                  mensaje={erroresDelPago.banco ?? (bancosError ? t('landlord.checkout.banksError') : null)}
+                />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -360,8 +412,13 @@ function CheckoutContent() {
                     autoComplete="off"
                     className="font-mono"
                     value={documento}
-                    onChange={(e) => setDocumento(e.target.value.replace(/\D/g, '').slice(0, 15))}
+                    onChange={(e) => {
+                      setDocumento(e.target.value.replace(/\D/g, '').slice(0, 15));
+                      limpiar('documento');
+                    }}
+                    {...describir('documento')}
                   />
+                  <ErrorDelCampo id="pse-documento-error" mensaje={erroresDelPago.documento} />
                 </div>
                 <div>
                   <label htmlFor="pse-nombre" className="text-sm font-medium text-foreground mb-1 block">
@@ -372,8 +429,13 @@ function CheckoutContent() {
                     autoComplete="name"
                     maxLength={200}
                     value={nombre}
-                    onChange={(e) => setNombre(e.target.value)}
+                    onChange={(e) => {
+                      setNombre(e.target.value);
+                      limpiar('nombre');
+                    }}
+                    {...describir('nombre')}
                   />
+                  <ErrorDelCampo id="pse-nombre-error" mensaje={erroresDelPago.nombre} />
                 </div>
               </div>
 
@@ -386,8 +448,13 @@ function CheckoutContent() {
                   type="email"
                   autoComplete="email"
                   value={correo}
-                  onChange={(e) => setCorreo(e.target.value)}
+                  onChange={(e) => {
+                    setCorreo(e.target.value);
+                    limpiar('correo');
+                  }}
+                  {...describir('correo')}
                 />
+                <ErrorDelCampo id="pse-correo-error" mensaje={erroresDelPago.correo} />
               </div>
             </div>
           </div>
@@ -506,8 +573,9 @@ function CheckoutORegreso() {
 export default function CheckoutPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Spinner size="md" />
+      <div className="min-h-screen bg-background">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="detail" className="mx-auto max-w-2xl" />
       </div>
     }>
       <CheckoutORegreso />

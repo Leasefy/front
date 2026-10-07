@@ -85,10 +85,10 @@
  * no tienen con qué identificarse y no llevan enlace.
  */
 
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { Appear, MotionIndicator, Presence } from '@leasefy/cadence'
 import {
-  CaretDown,
   CaretRight,
   CurrencyCircleDollar,
   DotsThreeVertical,
@@ -123,6 +123,7 @@ import { refDesdeLaClave } from '@/lib/estado-de-cuenta/con-quien-se-abre'
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { mesEnTitulo } from '@/lib/utils/mes'
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 import type {
   FilaDeCarteraDelInquilino,
   InquilinoEnCartera,
@@ -149,6 +150,7 @@ import {
   sumarIntereses,
 } from '@/components/cartera/interes-de-mora'
 import { InquilinoEnCarteraCajon } from './InquilinoEnCarteraCajon'
+import { documentoDelCliente } from '@/components/estado-de-cuenta/filas';
 
 /**
  * La columna del saldo queda PEGADA al borde derecho.
@@ -243,6 +245,8 @@ export function CarteraPorConcepto() {
    * que sólo podía expresar dos estados de cuatro (Nico, 21-09).
    */
   const [cajon, setCajon] = useState<CajonDeLaCartera>('TODAS')
+  /** La marca de la pestaña elegida (una por pantalla): se desliza a la nueva. */
+  const marca = `${useId()}-cajon`
   const [abiertos, setAbiertos] = useState<ReadonlySet<string>>(new Set())
   /** El deudor abierto en el cajón. `null` = cerrado. */
   const [enElCajon, setEnElCajon] = useState<InquilinoEnCartera | null>(null)
@@ -253,12 +257,21 @@ export function CarteraPorConcepto() {
     [datos, busqueda, cajon],
   )
   const totalesDeLoVisible = useMemo(() => sumarTotales(inquilinos), [inquilinos])
+  /** 🔴 CR-31: la inmobiliaria no ha fijado su plazo: lo vencido no está «en plazo». */
+  const hayVencidasSinPlazo = useMemo(
+    () => (datos?.inquilinos ?? []).some((i) => i.filas.some((f) => f.plazoSinFijar)),
+    [datos],
+  )
   /* El interés de lo visible, de las MISMAS filas que el pie. */
   const interesDeLoVisible = useMemo(
     () => sumarIntereses(inquilinos.flatMap((i) => i.filas)),
     [inquilinos],
   )
-  const interesTotal = (datos?.totales as { interesCop?: number } | undefined)?.interesCop ?? 0
+  // 🔴 CR-31 (COLA-FRONT, 04-10): con vencidas sin plazo fijado, se suma de las
+  // filas (que no cuentan el interés de esas cuotas: no corre).
+  const interesTotal = hayVencidasSinPlazo
+    ? sumarIntereses((datos?.inquilinos ?? []).flatMap((i) => i.filas))
+    : ((datos?.totales as { interesCop?: number } | undefined)?.interesCop ?? 0)
   const sinReglasDeMora =
     (datos as { sinReglasDeMora?: boolean } | undefined)?.sinReglasDeMora === true ||
     faltanReglasDeMora((datos?.inquilinos ?? []).flatMap((i) => i.filas))
@@ -345,7 +358,7 @@ export function CarteraPorConcepto() {
           amortización no es un contrato sin deuda: es una deuda que todavía
           nadie generó. Callarlo deja la franja mintiendo por omisión.
         */}
-        {avisos.length > 0 && (
+        <Presence show={avisos.length > 0} initial={false}>
           <div
             className="flex gap-2 rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm text-fg"
             data-testid="avisos-de-la-cartera"
@@ -368,7 +381,7 @@ export function CarteraPorConcepto() {
               ) : null}
             </div>
           </div>
-        )}
+        </Presence>
 
         <section className="overflow-hidden rounded-lg border border-border bg-surface">
           {/* 🔴 Las pestañas, DENTRO de la tarjeta de la tabla que gobiernan, y
@@ -387,6 +400,7 @@ export function CarteraPorConcepto() {
               Ver en la tabla
             </span>
             <PestanaDeLaCartera
+              marca={marca}
               label="Toda la deuda"
               monto={datos?.totales.saldoCop ?? 0}
               detalle="Los tres momentos juntos."
@@ -395,6 +409,7 @@ export function CarteraPorConcepto() {
               onClick={() => setCajon('TODAS')}
             />
             <PestanaDeLaCartera
+              marca={marca}
               label="Por vencer"
               monto={datos?.totales.porVencerCop ?? 0}
               detalle="Todavía no vence. Es deuda, no cartera."
@@ -404,15 +419,21 @@ export function CarteraPorConcepto() {
               onClick={() => setCajon('POR_VENCER')}
             />
             <PestanaDeLaCartera
-              label="Vencido, en plazo"
+              marca={marca}
+              label={hayVencidasSinPlazo ? 'Vencido' : 'Vencido, en plazo'}
               monto={datos?.totales.vencidaEnPlazoCop ?? 0}
-              detalle="Venció, pero el plazo del contrato sigue corriendo."
+              detalle={
+                hayVencidasSinPlazo
+                  ? 'Venció. Sin plazo fijado no es cartera ni corre mora.'
+                  : 'Venció, pero el plazo del contrato sigue corriendo.'
+              }
               tono="warning"
               activa={cajon === 'VENCIDA_EN_PLAZO'}
               testId="cajon-vencido-en-plazo"
               onClick={() => setCajon('VENCIDA_EN_PLAZO')}
             />
             <PestanaDeLaCartera
+              marca={marca}
               label="Cartera"
               monto={datos?.totales.enMoraCop ?? 0}
               detalle="Pasó el plazo. Es lo único que la cobranza persigue."
@@ -442,7 +463,12 @@ export function CarteraPorConcepto() {
             className="border-b border-border px-4 py-2 text-xs text-fg-muted"
             data-testid="que-es-este-cajon"
           >
-            {QUE_ES_ESTE_CAJON[cajon]}
+            {/* La frase del cajón nuevo entra con un fundido. */}
+            <Appear as="span" key={cajon} direction="none">
+            {cajon === 'VENCIDA_EN_PLAZO' && hayVencidasSinPlazo
+              ? 'Venció, y la inmobiliaria todavía no fijó sus días de plazo: no es cartera, no corre interés de mora y la cobranza no la toca hasta que los fije.'
+              : QUE_ES_ESTE_CAJON[cajon]}
+            </Appear>
           </p>
 
           <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -552,7 +578,7 @@ export function CarteraPorConcepto() {
           <p className="text-xs text-fg-muted">
             La deuda sale de las cuotas del contrato, no de los cobros emitidos: existe desde que
             se firma. Los conceptos salen de las líneas de cada cuota, y lo que se abona se imputa
-            primero a los intereses y después al capital. Leído contra el {datos.hoy}.
+            primero a los intereses y después al capital. Leído contra el {fechaLarga(datos.hoy)}.
           </p>
         ) : null}
 
@@ -604,6 +630,7 @@ function PestanaDeLaCartera({
   testId,
   onClick,
   extra,
+  marca,
 }: {
   label: string
   monto: number
@@ -614,6 +641,8 @@ function PestanaDeLaCartera({
   testId: string
   onClick: () => void
   extra?: React.ReactNode
+  /** El `layoutId` de la marca de la elegida. */
+  marca: string
 }) {
   return (
     <button
@@ -647,13 +676,11 @@ function PestanaDeLaCartera({
         {formatCurrency(monto)}
       </span>
       {extra}
-      <span
-        aria-hidden="true"
-        className={cn(
-          'absolute inset-x-0 bottom-0 h-0.5 bg-primary transition-opacity',
-          activa ? 'opacity-100' : 'opacity-0',
-        )}
-      />
+      {/* La marca de la elegida SE DESLIZA a la nueva (antes se apagaba en
+          una y se prendía en la otra). */}
+      {activa ? (
+        <MotionIndicator layoutId={marca} className="inset-x-0 bottom-0 h-0.5 bg-primary" />
+      ) : null}
     </button>
   )
 }
@@ -688,7 +715,6 @@ function FilasDelInquilino({
   onAlternar: () => void
   onAbrirDetalle: () => void
 }) {
-  const Caret = abierto ? CaretDown : CaretRight
   const interesDelInquilino = sumarIntereses(inquilino.filas)
   const href = hrefDelEstadoDeCuenta(inquilino.clave)
   return (
@@ -725,13 +751,21 @@ function FilasDelInquilino({
             aria-label={`Ver los meses de ${inquilino.nombre ?? 'este inquilino'} en la tabla`}
             className="flex items-start gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <Caret className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+            {/* Un solo caret que gira (antes se cambiaba un ícono por otro). */}
+            <CaretRight
+              className={cn(
+                'mt-0.5 h-4 w-4 shrink-0 text-fg-muted transition-transform duration-slow ease-emphasis',
+                abierto && 'rotate-90',
+              )}
+              aria-hidden="true"
+            />
             <span>
               <span className="block font-medium text-fg">
                 {inquilino.nombre ?? 'Sin nombre en el contrato'}
               </span>
               <span className="block text-xs text-fg-muted">
-                {inquilino.documento ? `CC ${inquilino.documento} · ` : ''}
+                {/* N-01 (QA-PAGOS-95): el tipo real o «NIT/CC», nunca un «CC» inventado. */}
+                {inquilino.documento ? `${documentoDelCliente(inquilino)} · ` : ''}
                 {inquilino.filas.length} {inquilino.filas.length === 1 ? 'mes' : 'meses'}
                 {inquilino.contratos.length > 1
                   ? ` · ${inquilino.contratos.length} contratos`
@@ -873,6 +907,11 @@ function FilaDelMes({
           ) : fila.enMora ? (
             <span className="text-danger">
               Cartera · {fila.diasDeMora} {fila.diasDeMora === 1 ? 'día' : 'días'} de mora
+            </span>
+          ) : fila.esVencida && fila.plazoSinFijar ? (
+            /* 🔴 CR-31: sin plazo fijado no hay plazo: «Vencida», sin mora. */
+            <span className="text-warning" data-testid="vencida-sin-plazo">
+              Vencida · venció el {fechaLarga(fila.vence)} · sin plazo fijado, no corre mora
             </span>
           ) : fila.esVencida ? (
             <span className="text-warning">

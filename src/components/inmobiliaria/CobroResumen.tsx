@@ -1,7 +1,6 @@
 'use client';
 
-import * as React from 'react';
-import { motion } from 'framer-motion';
+import { AnimatedNumber } from '@leasefy/cadence';
 import {
   CurrencyCircleDollar,
   CheckCircle,
@@ -20,6 +19,7 @@ import { anchoDeBarra, textoDeTasa } from '@/lib/tasas';
 import { claveDelRotulo, fraseDeLasCifras } from '@/lib/tasa-de-recaudo';
 import type { CobroSummary } from '@/lib/types/inmobiliaria';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/types/inmobiliaria';
+import { BarraDeAvance } from '@/components/inmobiliaria/pagos/BarraDeAvance';
 
 interface CobroResumenProps {
   summary: CobroSummary;
@@ -29,42 +29,13 @@ interface CobroResumenProps {
   className?: string;
 }
 
-/**
- * Animated counter component
+/*
+ * Movimiento (ola 2, 03-10-2026): las cifras cuentan con el `AnimatedNumber`
+ * de Cadence (desde 0 al llegar, desde la anterior al cambiar de mes). Antes
+ * había acá un contador casero con `requestAnimationFrame` que arrancaba en 0
+ * en cada render y no respetaba el movimiento reducido. La tarjeta ya no anima
+ * su propia entrada: la página entra con su `template.tsx`.
  */
-function AnimatedNumber({
-  value,
-  duration = 0.8,
-  className,
-  formatFn,
-}: {
-  value: number;
-  duration?: number;
-  className?: string;
-  formatFn: (amount: number) => string;
-}) {
-  const [displayValue, setDisplayValue] = React.useState(0);
-
-  React.useEffect(() => {
-    const startTime = Date.now();
-    const startValue = displayValue;
-    const diff = value - startValue;
-
-    const updateValue = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / (duration * 1000), 1);
-      const eased = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      setDisplayValue(Math.round(startValue + diff * eased));
-      if (progress < 1) {
-        requestAnimationFrame(updateValue);
-      }
-    };
-
-    requestAnimationFrame(updateValue);
-  }, [value, duration]);
-
-  return <span className={className}>{formatFn(displayValue)}</span>;
-}
 
 /**
  * CobroResumen - Monthly summary card with collection stats
@@ -142,9 +113,7 @@ export function CobroResumen({
   });
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+    <div
       className={cn(
         'rounded-lg border border-border bg-card overflow-hidden',
         className
@@ -157,8 +126,9 @@ export function CobroResumen({
             <ChartLineUp className="w-5 h-5 text-primary" weight="duotone" />
           </div>
           <div>
-            <h3 className="text-base font-semibold text-fg capitalize">
-              {monthDisplay}
+            {/* N-14 (QA-PAGOS-95): «Octubre de 2026», no «Octubre De 2026». */}
+            <h3 className="text-base font-semibold text-fg">
+              {monthDisplay.charAt(0).toUpperCase() + monthDisplay.slice(1)}
             </h3>
             <p className="text-sm text-fg-muted">
               {t('inmobiliaria.cobros.resumen.summaryTitle')}
@@ -194,14 +164,20 @@ export function CobroResumen({
               {rotuloDeLaTasa}
             </p>
             <div className="flex items-baseline gap-2" data-testid="cobros-tasa">
-              <motion.span
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2, type: 'spring' }}
+              {/* La tasa cuenta como las demás cifras; sin tasa medida, el «—»
+                  quieto (no hay número que contar). */}
+              {summary.collectionRate === null ? (
+                <span className="text-4xl font-bold text-foreground">
+                  {textoDeTasa(summary.collectionRate)}
+                </span>
+              ) : (
+                <AnimatedNumber
+                  value={summary.collectionRate}
+                  from={0}
+                  format={(n) => textoDeTasa(n)}
                 className="text-4xl font-bold text-foreground"
-              >
-                {textoDeTasa(summary.collectionRate)}
-              </motion.span>
+                />
+              )}
               {rateInfo.label && (
                 <span className={cn('text-sm font-medium', rateInfo.text)}>
                   {rateInfo.label}
@@ -223,19 +199,14 @@ export function CobroResumen({
           <div className="text-right">
             <p className="text-sm text-muted-foreground mb-1">{t('inmobiliaria.cobros.resumen.toCollect')}</p>
             <p className="text-2xl font-bold text-foreground">
-              {formatCurrency(summary.totalExpected)}
+              <AnimatedNumber value={summary.totalExpected} from={0} format={formatCurrency} />
             </p>
           </div>
         </div>
 
-        {/* Progress Bar */}
+        {/* Progress Bar — se corre con `transform`, no con el ancho. */}
         <div className="h-2 rounded-full overflow-hidden bg-muted mb-5">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: anchoDeBarra(summary.collectionRate) }}
-            transition={{ duration: 0.8, delay: 0.3, ease: 'easeOut' }}
-            className={cn('h-full rounded-full', rateInfo.fill)}
-          />
+          <BarraDeAvance ancho={anchoDeBarra(summary.collectionRate)} className={rateInfo.fill} />
         </div>
 
         {/* Stats Row */}
@@ -255,7 +226,8 @@ export function CobroResumen({
             <AnimatedNumber
               value={summary.totalCollected}
               className="text-lg font-bold text-foreground"
-              formatFn={formatCurrency}
+              from={0}
+              format={formatCurrency}
             />
             <p className="text-xs text-muted-foreground mt-0.5">
               {t('inmobiliaria.cobros.resumen.payments', { count: summary.cobrosPaid })}
@@ -275,26 +247,35 @@ export function CobroResumen({
             <AnimatedNumber
               value={Math.max(0, summary.totalPending - summary.totalLate)}
               className="text-lg font-bold text-foreground"
-              formatFn={formatCurrency}
+              from={0}
+              format={formatCurrency}
             />
             <p className="text-xs text-muted-foreground mt-0.5">
               {t('inmobiliaria.cobros.resumen.collections', { count: summary.cobrosPending })}
             </p>
           </div>
 
-          {/* En mora */}
-          <div className="p-3 rounded-md bg-muted/30">
+          {/* En mora. 🔴 N-22 (QA-PAGOS-95, CR-31): sin plazo fijado lo vencido NO
+              es mora —así lo dicen Cartera, Deuda del mes y Tablero—; los cobros
+              conservan su `LATE`, y esta tarjeta decía «En mora · Ver morosos». */}
+          <div className="p-3 rounded-md bg-muted/30" data-testid="cobros-resumen-vencido">
             <div className="flex items-center gap-2 mb-1">
-              <Warning className="w-4 h-4 text-danger" weight="fill" />
-              <span className="text-xs font-medium text-fg-muted">{t('inmobiliaria.cobros.resumen.lateLabel')}</span>
+              <Warning className={cn('w-4 h-4', summary.plazoSinFijar ? 'text-warning' : 'text-danger')} weight="fill" />
+              <span className="text-xs font-medium text-fg-muted">
+                {summary.plazoSinFijar ? 'Vencido' : t('inmobiliaria.cobros.resumen.lateLabel')}
+              </span>
             </div>
             <AnimatedNumber
               value={summary.totalLate}
               className="text-lg font-bold text-foreground"
-              formatFn={formatCurrency}
+              from={0}
+              format={formatCurrency}
             />
             <p className="text-xs text-muted-foreground mt-0.5">
               {t('inmobiliaria.cobros.resumen.collections', { count: summary.cobrosLate })}
+              {summary.plazoSinFijar && (
+                <span data-testid="vencido-sin-plazo"> · sin plazo fijado: no corre mora</span>
+              )}
             </p>
           </div>
         </div>
@@ -327,8 +308,8 @@ export function CobroResumen({
                 className="flex-1 justify-between group"
               >
                 <span className="flex items-center gap-2">
-                  <Warning className="w-4 h-4 text-danger" weight="fill" />
-                  {t('inmobiliaria.cobros.resumen.viewLate')}
+                  <Warning className={cn('w-4 h-4', summary.plazoSinFijar ? 'text-warning' : 'text-danger')} weight="fill" />
+                  {summary.plazoSinFijar ? 'Ver vencidos' : t('inmobiliaria.cobros.resumen.viewLate')}
                 </span>
                 <CaretRight className="w-4 h-4 text-fg-muted group-hover:text-fg transition-colors" />
               </Button>
@@ -336,7 +317,7 @@ export function CobroResumen({
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -401,10 +382,7 @@ export function CobroResumenCompact({
         </div>
       </div>
       <div className="h-2 rounded-full overflow-hidden bg-muted mb-3">
-        <div
-          className={cn('h-full rounded-full transition-all duration-500', rateInfo.fill)}
-          style={{ width: anchoDeBarra(summary.collectionRate) }}
-        />
+        <BarraDeAvance ancho={anchoDeBarra(summary.collectionRate)} className={rateInfo.fill} />
       </div>
       <div className="flex items-center justify-between text-xs">
         <span className="text-foreground font-medium">

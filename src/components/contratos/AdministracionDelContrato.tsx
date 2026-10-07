@@ -14,7 +14,8 @@
  */
 
 import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/contratos/modo-de-cobro'
-import { useState } from 'react'
+import { Presence } from '@leasefy/cadence'
+import { useRef, useState } from 'react'
 import { Receipt, WarningCircle } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -36,6 +37,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { contractsApi } from '@/lib/api/contracts.service'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import type { Contract } from '@/lib/types/contract'
 
 const USOS = { VIVIENDA: 'Vivienda', COMERCIAL: 'Comercial' } as const
@@ -51,6 +54,28 @@ const PERIODICIDADES = {
 type Uso = keyof typeof USOS
 type Periodicidad = keyof typeof PERIODICIDADES
 
+/** Los campos que pueden traer un error propio (del cliente o del back). */
+type CampoDeAdministracion = 'comision' | 'diasDePlazo' | 'penalidad' | 'referencia'
+const CAMPOS_DE_ADMINISTRACION: readonly CampoDeAdministracion[] = [
+  'comision',
+  'diasDePlazo',
+  'penalidad',
+  'referencia',
+]
+const ID_DEL_CAMPO: Record<CampoDeAdministracion, string> = {
+  comision: 'comision-de-administracion',
+  diasDePlazo: 'dias-de-plazo',
+  penalidad: 'penalidad-canones',
+  referencia: 'referencia-de-recaudo',
+}
+/** Nombre en `ActualizarAdministracionDto` → campo de este formulario. */
+const MAPA_DEL_SERVIDOR: Record<string, CampoDeAdministracion> = {
+  comisionPorcentaje: 'comision',
+  diasDePlazo: 'diasDePlazo',
+  penalidadTerminacionCanones: 'penalidad',
+  referenciaDeRecaudo: 'referencia',
+}
+
 interface Props {
   contract: Contract
   puedeEditar: boolean
@@ -65,10 +90,17 @@ export function AdministracionDelContrato({
   const [editando, setEditando] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // El error de un campo va debajo de ESE campo, en lugar de su ayuda gris.
+  const [errores, setErrores] = useState<Partial<Record<CampoDeAdministracion, string>>>({})
+  const formulario = useRef<HTMLDivElement | null>(null)
 
   const [uso, setUso] = useState<Uso | ''>((contract.usoInmueble as Uso) ?? '')
+  // NI-05: si el archivo no la traía, el MENSUAL de la base no se ofrece como
+  // elegido: queda vacío hasta que alguien la elija.
   const [periodicidad, setPeriodicidad] = useState<Periodicidad | ''>(
-    (contract.periodicidad as Periodicidad) ?? '',
+    contract.loQueTraiaElArchivo?.traiaPeriodicidad === false
+      ? ''
+      : ((contract.periodicidad as Periodicidad) ?? ''),
   )
   const [comision, setComision] = useState(
     contract.comisionPorcentaje != null ? String(contract.comisionPorcentaje) : '',
@@ -145,23 +177,41 @@ export function AdministracionDelContrato({
   const discrepan =
     delContrato != null && deConsignacion != null && delContrato !== deConsignacion
 
+  const limpiar = (campo: CampoDeAdministracion) =>
+    setErrores((prev) => (prev[campo] ? { ...prev, [campo]: undefined } : prev))
+
+  /** Pinta los errores en sus campos y le da el foco al primero. */
+  function marcar(porCampo: Partial<Record<CampoDeAdministracion, string>>, orden: CampoDeAdministracion[]) {
+    setErrores(porCampo)
+    const primero = orden[0]
+    if (primero) {
+      formulario.current?.querySelector<HTMLElement>(`#${ID_DEL_CAMPO[primero]}`)?.focus()
+    }
+  }
+
   async function guardar() {
     setGuardando(true)
     setError(null)
+    setErrores({})
     try {
+      // Los mismos rangos que `ActualizarAdministracionDto`, atajados acá y
+      // dichos debajo de su campo.
       const n = comision.trim() === '' ? undefined : Number(comision)
-      if (n !== undefined && (!Number.isFinite(n) || n < 0 || n > 100)) {
-        setError('La comisión va entre 0 y 100.')
-        return
-      }
       const plazo = diasDePlazo.trim() === '' ? null : Number(diasDePlazo)
-      if (plazo !== null && (!Number.isInteger(plazo) || plazo < 0 || plazo > 60)) {
-        setError('Los días de plazo van entre 0 y 60, sin decimales.')
-        return
-      }
       const canones = penalidad.trim() === '' ? null : Number(penalidad.replace(',', '.'))
+      const delCliente: Partial<Record<CampoDeAdministracion, string>> = {}
+      if (n !== undefined && (!Number.isFinite(n) || n < 0 || n > 100)) {
+        delCliente.comision = 'La comisión va entre 0 y 100.'
+      }
+      if (plazo !== null && (!Number.isInteger(plazo) || plazo < 0 || plazo > 60)) {
+        delCliente.diasDePlazo = 'Los días de plazo van entre 0 y 60, sin decimales.'
+      }
       if (canones !== null && (!Number.isFinite(canones) || canones < 0 || canones > 99)) {
-        setError('La penalidad va en cánones, entre 0 y 99.')
+        delCliente.penalidad = 'La penalidad va en cánones, entre 0 y 99.'
+      }
+      const conError = CAMPOS_DE_ADMINISTRACION.filter((c) => delCliente[c])
+      if (conError.length > 0) {
+        marcar(delCliente, conError)
         return
       }
       const actualizado = await contractsApi.actualizarAdministracion(contract.id, {
@@ -191,7 +241,16 @@ export function AdministracionDelContrato({
       onActualizado(actualizado)
       setEditando(false)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo guardar.')
+      // Un 400 con `campos` va a su campo; lo demás (un 503 sin la migración,
+      // un 5xx con su referencia, la red) al pie, por el traductor.
+      const { porCampo, orden, sueltos } = repartirErroresDelServidor(e, {
+        mapa: MAPA_DEL_SERVIDOR,
+        campos: CAMPOS_DE_ADMINISTRACION,
+        porDefecto: 'No se pudo guardar.',
+        accion: 'guardar cómo se cobra el contrato',
+      })
+      marcar(porCampo, orden)
+      setError(sueltos.length ? sueltos.join(' · ') : null)
     } finally {
       setGuardando(false)
     }
@@ -231,26 +290,64 @@ export function AdministracionDelContrato({
           valor={contract.usoInmueble ? USOS[contract.usoInmueble as Uso] : null}
           ausente="Sin definir — no se sabe si el canon lleva IVA"
         />
+        {/*
+          NI-05 (Nico, 06-10): la base guarda MENSUAL cuando el archivo de la
+          migración no traía la periodicidad. Eso no es un dato del archivo: se
+          dice «Sin definir» y que, mientras tanto, las cuotas salen mes a mes.
+        */}
         <Fila
           etiqueta="Periodicidad"
           valor={
-            contract.periodicidad
-              ? PERIODICIDADES[contract.periodicidad as Periodicidad]
-              : null
+            contract.loQueTraiaElArchivo?.traiaPeriodicidad === false
+              ? null
+              : contract.periodicidad
+                ? PERIODICIDADES[contract.periodicidad as Periodicidad]
+                : null
           }
-          ausente="Sin definir"
+          ausente={
+            contract.loQueTraiaElArchivo?.traiaPeriodicidad === false
+              ? 'Sin definir: el archivo no la traía. Mientras no la elijas, las cuotas salen mes a mes'
+              : 'Sin definir'
+          }
         />
+        {/*
+          QA-CONT C-07: UNA regla. La ficha decía «Se genera el 1… sin días de
+          plazo» arriba y «Día de pago · Día 5» acá. Manda el modo de cobro
+          (`regla-del-arriendo.ts` del back, 16-09): prorrateado vence el 1;
+          fecha a fecha, el día de la cartera. El día del contrato, si es otro,
+          se dice como lo que es: una referencia que no decide el vencimiento.
+        */}
         <Fila
           etiqueta="Día de pago"
-          valor={contract.paymentDueDay ? `Día ${contract.paymentDueDay}` : null}
+          valor={(() => {
+            // El back ya resolvió la regla (`reglaDeCobro`, ff282197): vence el
+            // día `venceElDia` y el pactado viaja como legado. Un back
+            // anterior: la misma cuenta, hecha aquí.
+            const regla = contract.reglaDeCobro;
+            const diaDeCartera = Number((contract.fechaDeCartera ?? contract.startDate ?? '').slice(8, 10)) || null;
+            const queRige = regla ? regla.venceElDia : contract.prorratearPrimerMes ? 1 : diaDeCartera;
+            const pactado = regla ? regla.diaDePagoLegado : contract.paymentDueDay;
+            if (!queRige) return pactado ? `Día ${pactado}` : null;
+            const referencia =
+              pactado && pactado !== queRige
+                ? ` (el contrato dice el ${pactado}: es sólo referencia)`
+                : '';
+            return `Día ${queRige}${referencia}`;
+          })()}
           ausente="El de la inmobiliaria"
         />
         <Fila
           etiqueta="Plazo antes de la mora"
           valor={
-            contract.diasDePlazo != null
-              ? `${contract.diasDePlazo} ${contract.diasDePlazo === 1 ? 'día' : 'días'}`
-              : null
+            // 🔴 CR-31: mientras la inmobiliaria no fije su plazo no corre
+            // mora (lo dice el back en `reglaDeCobro.plazoSinFijar`).
+            contract.reglaDeCobro?.plazoSinFijar
+              ? contract.diasDePlazo != null
+                ? `${contract.diasDePlazo} ${contract.diasDePlazo === 1 ? 'día' : 'días'} · no corre mora: la inmobiliaria no ha fijado su plazo`
+                : 'Sin fijar: no corre mora hasta que la inmobiliaria lo fije'
+              : contract.diasDePlazo != null
+                ? `${contract.diasDePlazo} ${contract.diasDePlazo === 1 ? 'día' : 'días'}`
+                : null
           }
           ausente="Los días de la inmobiliaria"
         />
@@ -286,10 +383,27 @@ export function AdministracionDelContrato({
           }
           ausente="Sin definir"
         />
+        {/*
+          CO-28 (QA-MIGRACION-95, 06-10): un mandato que SÍ existe pero cuyo
+          archivo no traía la comisión llega con `comisionDeConsignacion: null`
+          y la ficha decía «Sin consignación: este inmueble no genera cobros»,
+          que es falso. Se dice lo que pasa: no venía, y sin ella (si el
+          contrato tampoco la trae) no se arma la tabla de cuotas.
+        */}
         <Fila
           etiqueta="Comisión"
-          valor={deConsignacion != null ? `${deConsignacion}%` : null}
-          ausente="Sin consignación: este inmueble no genera cobros"
+          valor={
+            deConsignacion != null
+              ? `${deConsignacion}%`
+              : contract.comisionSinDefinir && delContrato != null
+                ? `${delContrato}% (la del contrato: el mandato no la traía)`
+                : null
+          }
+          ausente={
+            contract.comisionSinDefinir
+              ? 'No venía en el archivo: escríbela con «Corregir»'
+              : 'Sin consignación: este inmueble no genera cobros'
+          }
         />
         {discrepan ? (
           <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft/40 p-2.5">
@@ -345,7 +459,10 @@ export function AdministracionDelContrato({
             <NaturalezaDeLaParte
               key={p.id}
               etiqueta={propietarios.length > 1 ? p.name : 'Propietario'}
-              tipoPersona={p.documentType === 'NIT' ? 'JURIDICA' : 'NATURAL'}
+              // T-0128: sin tipo de documento NO se infiere la naturaleza («NATURAL»
+              // parecería un perfil tributario): se dice «sin definir».
+              tipoPersona={!p.documentType ? null : p.documentType === 'NIT' ? 'JURIDICA' : 'NATURAL'}
+              tipoSinDefinir={!p.documentType}
               responsableIva={p.responsableIva}
               agenteRetenedorRenta={p.agenteRetenedorRenta}
               agenteRetenedorIva={p.agenteRetenedorIva}
@@ -380,7 +497,7 @@ export function AdministracionDelContrato({
         columnas, agrupados por lo que deciden.
       */}
       <Dialog open={editando} onOpenChange={(v) => !guardando && setEditando(v)}>
-        <DialogContent className="max-w-3xl" data-testid="administracion-dialogo">
+        <DialogContent size="xl" data-testid="administracion-dialogo">
           <DialogHeader>
             <DialogTitle>Cómo se cobra este contrato</DialogTitle>
             <DialogDescription>
@@ -389,7 +506,7 @@ export function AdministracionDelContrato({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2">
+          <div className="grid gap-x-6 gap-y-4 sm:grid-cols-2" ref={formulario}>
             <fieldset className="space-y-3">
               <legend className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Cobro
@@ -433,40 +550,57 @@ export function AdministracionDelContrato({
               </div>
 
               <div className="space-y-1">
-                <label className="text-caption text-muted-foreground">Comisión de administración (%)</label>
+                <label className="text-caption text-muted-foreground" htmlFor={ID_DEL_CAMPO.comision}>
+                  Comisión de administración (%)
+                </label>
                 <Input
+                  id={ID_DEL_CAMPO.comision}
                   type="number"
                   step="0.01"
                   min="0"
                   max="100"
                   value={comision}
-                  onChange={(e) => setComision(e.target.value)}
+                  onChange={(e) => {
+                    setComision(e.target.value)
+                    limpiar('comision')
+                  }}
+                  aria-invalid={errores.comision ? true : undefined}
+                  aria-describedby={`${ID_DEL_CAMPO.comision}-error`}
                 />
-                <p className="text-caption text-muted-foreground">
-                  Se guarda también en la consignación: es de donde sale lo que
-                  se le descuenta al propietario.
-                </p>
+                <ErrorDelCampo
+                  id={`${ID_DEL_CAMPO.comision}-error`}
+                  mensaje={errores.comision}
+                  pista="Se guarda también en la consignación: es de donde sale lo que se le descuenta al propietario."
+                  className="mt-0"
+                />
               </div>
 
               <div className="space-y-1">
-                <label className="text-caption text-muted-foreground">
+                <label className="text-caption text-muted-foreground" htmlFor={ID_DEL_CAMPO.diasDePlazo}>
                   Días de plazo antes de la mora
                 </label>
                 <Input
+                  id={ID_DEL_CAMPO.diasDePlazo}
                   type="number"
                   step="1"
                   min="0"
                   max="60"
                   value={diasDePlazo}
-                  onChange={(e) => setDiasDePlazo(e.target.value)}
+                  onChange={(e) => {
+                    setDiasDePlazo(e.target.value)
+                    limpiar('diasDePlazo')
+                  }}
                   placeholder="Los de la inmobiliaria"
                   data-testid="dias-de-plazo"
+                  aria-invalid={errores.diasDePlazo ? true : undefined}
+                  aria-describedby={`${ID_DEL_CAMPO.diasDePlazo}-error`}
                 />
-                <p className="text-caption text-muted-foreground">
-                  El día del vencimiento cuenta como el primero: con 3, del 1 al 3
-                  está en plazo y desde el 4 corre la mora. Vacío = los días de la
-                  inmobiliaria.
-                </p>
+                <ErrorDelCampo
+                  id={`${ID_DEL_CAMPO.diasDePlazo}-error`}
+                  mensaje={errores.diasDePlazo}
+                  pista="El día del vencimiento cuenta como el primero: con 3, del 1 al 3 está en plazo y desde el 4 corre la mora. Vacío = los días de la inmobiliaria."
+                  className="mt-0"
+                />
               </div>
 
               <div className="space-y-1">
@@ -474,26 +608,39 @@ export function AdministracionDelContrato({
                   Penalidad por terminación anticipada (cánones)
                 </label>
                 <Input
-                  id="penalidad-canones"
+                  id={ID_DEL_CAMPO.penalidad}
                   inputMode="decimal"
                   value={penalidad}
-                  onChange={(e) => setPenalidad(e.target.value)}
+                  onChange={(e) => {
+                    setPenalidad(e.target.value)
+                    limpiar('penalidad')
+                  }}
                   placeholder="La de la inmobiliaria"
                   data-testid="penalidad-canones"
+                  aria-invalid={errores.penalidad ? true : undefined}
+                  aria-describedby={`${ID_DEL_CAMPO.penalidad}-error`}
                 />
-                <p className="text-caption text-muted-foreground">
-                  Se le cobra al inquilino si termina antes; al propietario le llega
-                  menos la comisión. Vacío = la de la inmobiliaria.
-                </p>
+                <ErrorDelCampo
+                  id={`${ID_DEL_CAMPO.penalidad}-error`}
+                  mensaje={errores.penalidad}
+                  pista="Se le cobra al inquilino si termina antes; al propietario le llega menos la comisión. Vacío = la de la inmobiliaria."
+                  className="mt-0"
+                />
               </div>
 
               <div className="space-y-1">
-                <label className="text-caption text-muted-foreground">
+                <label className="text-caption text-muted-foreground" htmlFor={ID_DEL_CAMPO.referencia}>
                   Referencia de recaudo
                 </label>
                 <Input
+                  id={ID_DEL_CAMPO.referencia}
                   value={referencia}
-                  onChange={(e) => setReferencia(e.target.value)}
+                  onChange={(e) => {
+                    setReferencia(e.target.value)
+                    limpiar('referencia')
+                  }}
+                  aria-invalid={errores.referencia ? true : undefined}
+                  aria-describedby={`${ID_DEL_CAMPO.referencia}-error`}
                   maxLength={60}
                   placeholder={
                     contract.code != null
@@ -502,11 +649,12 @@ export function AdministracionDelContrato({
                   }
                   data-testid="referencia-de-recaudo"
                 />
-                <p className="text-caption text-muted-foreground">
-                  El número con el que el inquilino paga y que viene escrito en
-                  el extracto: es lo que deja que la conciliación reconozca el
-                  pago sola. Vacío = se usa el consecutivo del contrato.
-                </p>
+                <ErrorDelCampo
+                  id={`${ID_DEL_CAMPO.referencia}-error`}
+                  mensaje={errores.referencia}
+                  pista="El número con el que el inquilino paga y que viene escrito en el extracto: es lo que deja que la conciliación reconozca el pago sola. Vacío = se usa el consecutivo del contrato."
+                  className="mt-0"
+                />
               </div>
 
               <label className="flex cursor-pointer items-start gap-2 text-sm text-foreground">
@@ -594,7 +742,9 @@ export function AdministracionDelContrato({
             </fieldset>
           </div>
 
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          <Presence show={Boolean(error)} initial={false} distance="xs" as="p" role="alert" className="text-sm text-destructive" data-testid="administracion-error">
+            {error}
+          </Presence>
 
           <DialogFooter>
             <Button
@@ -604,6 +754,7 @@ export function AdministracionDelContrato({
               onClick={() => {
                 setEditando(false)
                 setError(null)
+                setErrores({})
               }}
             >
               Cancelar
@@ -657,6 +808,7 @@ function leerIvaDelCanon(contract: Contract): { valor: string | null; ausente: s
 function NaturalezaDeLaParte({
   etiqueta,
   tipoPersona,
+  tipoSinDefinir = false,
   responsableIva,
   agenteRetenedorRenta,
   agenteRetenedorIva,
@@ -665,6 +817,8 @@ function NaturalezaDeLaParte({
 }: {
   etiqueta: string
   tipoPersona: TipoPersona | null
+  /** T-0128: el propietario no tiene tipo de documento; no se infiere la persona. */
+  tipoSinDefinir?: boolean
   responsableIva: boolean | null
   agenteRetenedorRenta: boolean | null
   agenteRetenedorIva: boolean | null
@@ -687,11 +841,15 @@ function NaturalezaDeLaParte({
             estado="si"
             testId="chip-tipo-persona"
           />
+        ) : tipoSinDefinir ? (
+          <span className="text-caption text-muted-foreground" data-testid="tipo-persona-sin-definir">
+            Tipo de persona: sin definir
+          </span>
         ) : null}
         {tiene.map((t) => (
           <Chip key={t} texto={t} estado="si" testId="chip-naturaleza" />
         ))}
-        {tipoPersona === null && tiene.length === 0 ? (
+        {tipoPersona === null && !tipoSinDefinir && tiene.length === 0 ? (
           /* Una fila vacía se lee como «no tiene ninguna responsabilidad», que
              es una afirmación que nadie hizo. */
           <span className="text-caption text-muted-foreground">Sin datos tributarios</span>

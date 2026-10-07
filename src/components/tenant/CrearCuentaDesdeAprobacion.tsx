@@ -34,6 +34,23 @@ import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useHidratado } from '@/lib/hooks/use-hidratado'
 import { useTf, type Tf } from '@/lib/i18n/use-tf'
+import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo'
+import { codigoDeSupabase, mensajeDeSupabase } from '@/lib/auth/errores-de-supabase'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+
+type CampoDeLaCuenta = 'nombre' | 'email' | 'password'
+
+/** Los errores de Supabase que son de UN campo (por su código, nunca por el texto). */
+function campoDelErrorDeSupabase(codigo: string | undefined): CampoDeLaCuenta | null {
+  if (codigo === 'weak_password') return 'password'
+  if (codigo === 'email_address_invalid') return 'email'
+  return null
+}
+
+/** El foco al primer campo con error: la persona ve dónde está el problema. */
+function enfocar(campo: CampoDeLaCuenta | undefined) {
+  if (campo) document.getElementById(campo)?.focus()
+}
 
 const NS = 'inquilino.crearCuenta'
 
@@ -77,13 +94,13 @@ export function CrearCuentaDesdeAprobacion({
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [errores, setErrores] = useState<Record<string, string>>({})
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaCuenta, string>>>({})
   const [enviando, setEnviando] = useState(false)
   const [errorGeneral, setErrorGeneral] = useState<string | null>(null)
   const [confirmarCorreo, setConfirmarCorreo] = useState(false)
 
   function validar(): boolean {
-    const e: Record<string, string> = {}
+    const e: Partial<Record<CampoDeLaCuenta, string>> = {}
     if (nombre.trim().length < 2) e.nombre = tf(`${NS}.err.nombre`, 'Escribe tu nombre.')
     const correo = validarCorreo(email)
     if (!correo.ok) e.email = correo.motivo
@@ -93,7 +110,14 @@ export function CrearCuentaDesdeAprobacion({
       e.password = tf(`${NS}.err.password`, 'Todavía es débil: sigue el consejo de abajo.')
     }
     setErrores(e)
+    enfocar((['nombre', 'email', 'password'] as const).find((c) => e[c]))
     return Object.keys(e).length === 0
+  }
+
+  /** Lo que la persona corrige deja de estar en rojo. */
+  function cambiar(campo: CampoDeLaCuenta, valor: string, poner: (v: string) => void) {
+    poner(valor)
+    if (errores[campo]) setErrores((prev) => ({ ...prev, [campo]: undefined }))
   }
 
   async function crear(ev: React.FormEvent) {
@@ -106,7 +130,7 @@ export function CrearCuentaDesdeAprobacion({
       const { requiresConfirmation } = await signUpWithEmail(
         normalizarCorreo(email),
         password,
-        `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(DESTINO)}`,
+        urlDeRegresoDelRegistro(window.location.origin, DESTINO),
         'tenant',
         {
           full_name: nombre.trim(),
@@ -122,11 +146,26 @@ export function CrearCuentaDesdeAprobacion({
       // Mismo destino que el link de confirmación, por la misma razón.
       router.push(DESTINO)
     } catch (err) {
-      const msg = err instanceof Error ? err.message : ''
+      // Por el código de Supabase, nunca por el texto en inglés; con la regla
+      // de oro: «conexión» sólo sin respuesta, un 5xx es nuestro (02-10-2026).
+      const codigo = codigoDeSupabase(err)
+      if (codigo === 'user_already_exists' || codigo === 'email_exists') {
+        setErrorGeneral(
+          tf(`${NS}.err.existe`, 'Ya existe una cuenta con este correo. Inicia sesión y tu aprobación te espera adentro.'),
+        )
+        return
+      }
+      const campo = campoDelErrorDeSupabase(codigo)
+      if (campo) {
+        setErrores((prev) => ({ ...prev, [campo]: mensajeDeSupabase(err) }))
+        enfocar(campo)
+        return
+      }
       setErrorGeneral(
-        /already registered|already exists|User already/i.test(msg)
-          ? tf(`${NS}.err.existe`, 'Ya existe una cuenta con este correo. Inicia sesión y tu aprobación te espera adentro.')
-          : tf(`${NS}.err.generico`, 'No pudimos crear tu cuenta. Intenta de nuevo.'),
+        mensajeDeSupabase(err, {
+          porDefecto: tf(`${NS}.err.generico`, 'No pudimos crear tu cuenta. Intenta de nuevo.'),
+          accion: 'crear tu cuenta',
+        }),
       )
     } finally {
       setEnviando(false)
@@ -167,7 +206,9 @@ export function CrearCuentaDesdeAprobacion({
               autoComplete="name"
               placeholder={tf(`${NS}.ph.nombre`, 'Ej: María Restrepo')}
               value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
+              onChange={(e) => cambiar('nombre', e.target.value, setNombre)}
+              aria-invalid={errores.nombre ? true : undefined}
+              aria-describedby={errores.nombre ? 'nombre-error' : undefined}
             />
           </Campo>
 
@@ -178,7 +219,9 @@ export function CrearCuentaDesdeAprobacion({
               autoComplete="email"
               placeholder={tf(`${NS}.ph.correo`, 'Ej: maria@correo.com')}
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => cambiar('email', e.target.value, setEmail)}
+              aria-invalid={errores.email ? true : undefined}
+              aria-describedby={errores.email ? 'email-error' : undefined}
             />
           </Campo>
 
@@ -189,13 +232,17 @@ export function CrearCuentaDesdeAprobacion({
               autoComplete="new-password"
               placeholder={tf(`${NS}.ph.password`, 'Mínimo 8 caracteres')}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => cambiar('password', e.target.value, setPassword)}
+              aria-invalid={errores.password ? true : undefined}
+              aria-describedby={errores.password ? 'password-error' : undefined}
             />
             <MedidorDeContrasena contrasena={password} correo={email} className="mt-2" />
           </Campo>
 
           {errorGeneral && (
-            <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">{errorGeneral}</p>
+            <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+              {errorGeneral}
+            </p>
           )}
 
           <div className="space-y-2">
@@ -280,7 +327,8 @@ function Campo({
         {label}
       </Label>
       {children}
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {/* El error entra suave (Cadence `FormError`); el campo lo nombra en `aria-describedby`. */}
+      <ErrorDelCampo id={`${id}-error`} mensaje={error} />
     </div>
   )
 }

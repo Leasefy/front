@@ -115,14 +115,16 @@ describe('Contracts.csv: el encabezado real', () => {
   })
 
   /*
-   * `faltantesEsenciales` es la compuerta que frena el import. El archivo real
-   * NO trae ni el correo ni el día de pago: eso tiene que seguir frenando —
-   * decirlo antes es la diferencia entre corregir el archivo y crear 1.850
-   * contratos vacíos.
+   * `faltantesEsenciales` es la compuerta que frena el import. Mirando sólo el
+   * mapeo, el archivo real no trae columna de correo ni de documento del
+   * inquilino. El día de pago YA NO frena (QA-MIG-A, MG-18, 04-10): el
+   * arriendo se genera el día 1 con su plazo (regla del 16-09) y este export
+   * nunca trae esa columna — frenarlo era bloquear el archivo de la
+   * inmobiliaria entero.
    */
   it('dice honestamente qué le falta al archivo para poder migrar', () => {
     const faltan = faltantesEsenciales(mapeo).map((f) => f.clave)
-    expect(faltan).toEqual(['contactoInquilino', 'diaDePago'])
+    expect(faltan).toEqual(['contactoInquilino'])
   })
 
   /*
@@ -131,15 +133,18 @@ describe('Contracts.csv: el encabezado real', () => {
    * NOMBRE»). Mirando sólo el mapeo, la compuerta frenaba 1.851 contratos que
    * sí traían el documento en 1.847 de sus filas.
    */
-  it('mirando los datos, el documento del inquilino ya NO frena el archivo', () => {
+  it('mirando los datos, el documento del inquilino ya NO frena el archivo (y el archivo pasa)', () => {
     const faltan = faltantesEsencialesConDatos([FILA_INVENTADA], mapeo).map((f) => f.clave)
-    expect(faltan).toEqual(['diaDePago'])
+    expect(faltan).toEqual([])
   })
 
   it('lo que de verdad no está sigue frenando', () => {
-    // Sin día de pago en ninguna fila, la compuerta lo dice igual.
-    const faltan = faltantesEsencialesConDatos([FILA_INVENTADA], mapeo)
-    expect(faltan.map((f) => f.clave)).toContain('diaDePago')
+    // Sin canon en ninguna fila, la compuerta lo dice igual.
+    const sinCanon = mapeo.map((m) =>
+      m.campo === 'canon' || m.campo === 'canonTotal' ? { ...m, campo: null } : m,
+    )
+    const faltan = faltantesEsencialesConDatos([FILA_INVENTADA], sinCanon)
+    expect(faltan.map((f) => f.clave)).toContain('canon')
   })
 })
 

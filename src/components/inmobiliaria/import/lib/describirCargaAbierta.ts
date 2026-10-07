@@ -28,8 +28,24 @@ export interface CargaDescrita {
   frena: number;
   /** Filas a las que les falta un dato. No frenan. */
   porRevisar: number;
-  /** El worker todavía la está procesando: no se puede descartar ni retomar. */
+  /** El job del servidor la está procesando: no se puede descartar ni reintentar. */
   enVuelo: boolean;
+  /**
+   * T-0130 — la etapa en que quedó: todavía llegan filas (`subiendo`), faltan
+   * direcciones por ubicar en el mapa (`ubicando`) o ya se revisa y crea.
+   * T-0131 — `creando`: el servidor está creando los inmuebles (un solo proceso).
+   */
+  etapa: 'subiendo' | 'ubicando' | 'revision' | 'creando';
+  /** «1.230 de 2.000 creadas · 120 por revisar · 3 fallidas», o lo que aplique a la etapa. */
+  avance: string;
+  /** Cuántas filas fallaron al crearse (o 0). */
+  fallidas: number;
+  /** T-0131 — la carga TERMINÓ (el servidor la dejará de listar a las 24 h): se muestra como resumen, no «a medias». */
+  terminada: boolean;
+  /** Cuántas filas se crearon (`creacion`; sin él, las activadas). */
+  creadas: number;
+  /** Se puede tocar «Reintentar»: job muerto o filas fallidas. */
+  puedeReintentar: boolean;
   /**
    * Qué conviene hacer con ella, en una palabra.
    *
@@ -40,7 +56,7 @@ export interface CargaDescrita {
    * `sin-frenar` — sólo le quedan filas por revisar. Descartarla no pierde
    *   ningún inmueble: los que entraron ya están.
    */
-  queHacer: 'procesando' | 'frena' | 'terminada' | 'sin-frenar';
+  queHacer: 'procesando' | 'creando' | 'frena' | 'terminada' | 'sin-frenar' | 'fallida' | 'a-medias';
 }
 
 /**
@@ -51,22 +67,128 @@ export function describirCargaAbierta(
   lote: EstadoDeLoteInmuebles,
   ahora: Date,
 ): CargaDescrita {
-  const enVuelo = lote.estado === 'ENCOLADO' || lote.estado === 'PROCESANDO';
-  const frena = lote.listos;
+  const etapa = etapaDeLaCarga(lote);
+  // Mientras se sube o se ubica NO hay job del servidor: lo hace el navegador.
+  const enVuelo =
+    etapa === 'revision' && (lote.estado === 'ENCOLADO' || lote.estado === 'PROCESANDO');
+  const creando = etapa === 'creando';
+  // Las cuentas del lote llegan en 0 hasta que está LISTO; después, los campos
+  // nuevos (que ya descuentan lo fallido) mandan sobre los de siempre.
+  const frena = lote.listas ?? lote.listos;
+  const porRevisar = lote.porRevisar ?? lote.pendientes;
+  const yaEntraron = lote.activadas ?? lote.activados;
+  const fallidas = lote.creacion?.fallidas ?? lote.fallidas ?? 0;
+  const terminada = lote.fase === 'TERMINADA';
   return {
+    terminada,
+    creadas: lote.creacion?.creadas ?? yaEntraron,
     cuando: cuandoSeSubio(lote.creadoEn, ahora),
-    yaEntraron: lote.activados,
+    yaEntraron,
     frena,
-    porRevisar: lote.pendientes,
+    porRevisar,
     enVuelo,
-    queHacer: enVuelo
-      ? 'procesando'
-      : frena > 0
-        ? 'frena'
-        : lote.activados > 0
+    etapa,
+    fallidas,
+    puedeReintentar: lote.puedeReintentar === true,
+    avance: describirAvance(lote, etapa, { yaEntraron, porRevisar, fallidas }),
+    queHacer:
+      creando
+        ? 'creando'
+        : terminada
           ? 'terminada'
-          : 'sin-frenar',
+        : etapa !== 'revision'
+        ? 'a-medias'
+        : lote.estado === 'FALLIDO'
+          ? 'fallida'
+          : enVuelo
+            ? 'procesando'
+            : frena > 0
+              ? 'frena'
+              : yaEntraron > 0
+                ? 'terminada'
+                : 'sin-frenar',
   };
+}
+
+/** En qué etapa quedó la carga. Sin `fase` (back anterior) todo es revisión. */
+export function etapaDeLaCarga(
+  lote: EstadoDeLoteInmuebles,
+): 'subiendo' | 'ubicando' | 'revision' | 'creando' {
+  if (lote.fase === 'RECIBIENDO') return 'subiendo';
+  if (lote.fase === 'CREANDO') return 'creando';
+  if (lote.fase === 'UBICANDO' && faltaUbicar(lote)) return 'ubicando';
+  return 'revision';
+}
+
+/**
+ * T-0131 — en cuál de los 4 pasos visibles del asistente va el lote:
+ * 1 Subir y mapear columnas · 2 Ubicar direcciones · 3 Revisar lo que falta ·
+ * 4 Crear todas. Sale de `fase`; sin lote (o sin leerlo todavía) es el 1. La
+ * revisión del servidor (`REVISANDO`) es parte del 3: ahí se espera la lista.
+ */
+export type PasoVisible = 1 | 2 | 3 | 4;
+
+export function pasoVisibleDeLaCarga(lote: EstadoDeLoteInmuebles | null): PasoVisible {
+  if (!lote) return 1;
+  switch (lote.fase) {
+    case 'RECIBIENDO':
+      return 1;
+    case 'UBICANDO':
+      return faltaUbicar(lote) ? 2 : 3;
+    case 'CREANDO':
+    case 'TERMINADA':
+      return 4;
+    default:
+      return 3;
+  }
+}
+
+/**
+ * ¿El lote sigue en la etapa de ubicar? Incluye el caso `ubicadas === total`
+ * sin avanzar (un corte justo antes de que el back pasara a revisar): ahí no hay
+ * nada que buscar pero sí hay que dar el paso, y «Continuar» lo da.
+ */
+export function faltaUbicar(lote: EstadoDeLoteInmuebles): boolean {
+  return lote.fase === 'UBICANDO' && lote.ubicacion !== undefined;
+}
+
+/** Todas ubicadas pero el lote no avanzó: sólo falta darle «Continuar». */
+export function ubicacionCompleta(lote: EstadoDeLoteInmuebles): boolean {
+  const u = lote.ubicacion;
+  return lote.fase === 'UBICANDO' && u !== undefined && u.ubicadas >= u.total;
+}
+
+const n = (x: number) => x.toLocaleString('es-CO');
+
+function describirAvance(
+  lote: EstadoDeLoteInmuebles,
+  etapa: 'subiendo' | 'ubicando' | 'revision' | 'creando',
+  c: { yaEntraron: number; porRevisar: number; fallidas: number },
+): string {
+  if (etapa === 'subiendo') {
+    return `Subiendo el archivo: llegaron ${n(lote.recibidas ?? 0)} de ${n(lote.total)} filas`;
+  }
+  if (etapa === 'ubicando') {
+    const u = lote.ubicacion;
+    return `Ubicando direcciones: ${n(u?.ubicadas ?? 0)} de ${n(u?.total ?? lote.total)}`;
+  }
+  if (lote.fase === 'TERMINADA') {
+    const creadas = lote.creacion?.creadas ?? c.yaEntraron;
+    const partes = [`Terminada: ${n(creadas)} ${creadas === 1 ? 'creada' : 'creadas'}`];
+    if (c.fallidas > 0) partes.push(`${n(c.fallidas)} ${c.fallidas === 1 ? 'fallida' : 'fallidas'}`);
+    return partes.join(', ');
+  }
+  if (etapa === 'creando') {
+    const cr = lote.creacion;
+    const partes = [`Creando: ${n(cr?.creadas ?? c.yaEntraron)} de ${n(cr?.total ?? lote.total)} creadas`];
+    const fallidas = cr?.fallidas ?? c.fallidas;
+    if (fallidas > 0) partes.push(`${n(fallidas)} ${fallidas === 1 ? 'fallida' : 'fallidas'}`);
+    return partes.join(' · ');
+  }
+  const partes = [`${n(c.yaEntraron)} de ${n(lote.total)} creadas`];
+  if (c.porRevisar > 0) partes.push(`${n(c.porRevisar)} por revisar`);
+  if (c.fallidas > 0) partes.push(`${n(c.fallidas)} ${c.fallidas === 1 ? 'fallida' : 'fallidas'}`);
+  return partes.join(' · ');
 }
 
 /**

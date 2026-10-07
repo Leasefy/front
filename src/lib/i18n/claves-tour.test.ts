@@ -33,6 +33,7 @@ const CLAVES_PLANAS = [
   'bienvenida.titulo',
   'bienvenida.tuInmobiliaria',
   'bienvenida.cuerpo',
+  'cierre.eyebrow',
   'cierre.titulo',
   'cierre.punto1',
   'cierre.punto2',

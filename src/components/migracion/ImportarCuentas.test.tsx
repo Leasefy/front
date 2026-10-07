@@ -19,6 +19,9 @@ import type {
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+const { celular } = vi.hoisted(() => ({ celular: { es: false } }));
+vi.mock('@/hooks/use-mobile', () => ({ useIsMobile: () => celular.es }));
+
 vi.mock('@/components/inmobiliaria/import/lib/parseFile', () => ({
   parseSpreadsheetFile: vi.fn(),
 }));
@@ -246,5 +249,180 @@ describe('fraseDeLoQueNoSeAsigno — el motivo verdadero (QA 22-09)', () => {
 
   it('sin motivo (back anterior) se lee como antes', () => {
     expect(fraseDeLoQueNoSeAsigno([{ codigo: '110505' }])).toBe('Tu plan no tiene 110505.');
+  });
+});
+
+/*
+ * T-0125 · aviso antes de cerrar la pestaña. El archivo leído vive sólo en el
+ * navegador hasta que se importa; la importación es atómica en el back.
+ */
+describe('aviso antes de cerrar la pestaña', () => {
+  function intentarSalir(): boolean {
+    const evento = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(evento);
+    return evento.defaultPrevented;
+  }
+
+  it('sin archivo, cerrar no pregunta', async () => {
+    await pintar();
+    expect(intentarSalir()).toBe(false);
+  });
+
+  it('🔴 con el archivo leído y sin importar, cerrar pregunta', async () => {
+    await pintar();
+    await subirArchivo();
+    expect(intentarSalir()).toBe(true);
+  });
+
+  it('🔴 mientras importa, cerrar pregunta', async () => {
+    api.puc.importar.mockReturnValue(new Promise(() => undefined)); // nunca termina
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-cuentas'));
+    await click(q('puc-importar'));
+    expect(intentarSalir()).toBe(true);
+  });
+
+  it('importado el plan, cerrar no pregunta', async () => {
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-cuentas'));
+    await click(q('puc-importar'));
+    expect(q('puc-importacion-resultado')).not.toBeNull();
+    expect(intentarSalir()).toBe(false);
+  });
+});
+
+
+/*
+ * Sistema de errores (02-10-2026): la regla de oro también al importar el
+ * plan. Un 5xx dice «de nuestro lado» con la referencia; sin respuesta, la
+ * conexión; un 400 dice lo que mandó el back.
+ */
+describe('ImportarCuentas · la regla de oro', () => {
+  it('🔴 un 5xx al revisar dice «de nuestro lado» con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    api.puc.revisarImportacion.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'c0ffee00',
+      }),
+    );
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-cuentas'));
+
+    const alerta = container.querySelector('[role="alert"]');
+    expect(alerta?.textContent).toMatch(/No pudimos revisar el archivo: algo falló de nuestro lado/);
+    expect(alerta?.textContent).toContain('c0ffee00');
+  });
+
+  it('🔴 sin respuesta (status 0) al importar habla de la conexión y de que no se duplica', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    api.puc.importar.mockRejectedValueOnce(new ApiError(0, 'Failed to fetch'));
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-cuentas'));
+    await click(q('puc-importar'));
+
+    const alerta = container.querySelector('[role="alert"]');
+    expect(alerta?.textContent).toMatch(/conexión/);
+    expect(alerta?.textContent).toMatch(/no se duplican/);
+    expect(alerta?.textContent).not.toContain('Failed to fetch');
+  });
+
+  it('un 400 dice lo que mandó el back', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const mensaje = 'Puedes mandar hasta 5.000 cuentas a la vez.';
+    api.puc.revisarImportacion.mockRejectedValueOnce(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'cuentas', regla: 'lista_maxima', mensaje }],
+      }),
+    );
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-cuentas'));
+
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain(mensaje);
+  });
+});
+
+/*
+ * QA-MIG-B (04-10) — lo que el archivo no traía se DICE, y los exports con
+ * títulos arriba se leen desde su tabla.
+ */
+describe('QA-MIG-B — lo deducido se ve', () => {
+  it('🔴 las advertencias del back (naturaleza por la clase, todas activas) se muestran en la revisión', async () => {
+    api.puc.revisarImportacion.mockResolvedValue({
+      ...REVISION,
+      filas: REVISION.filas.map((f) => (f.indice === 1 ? { ...f, naturalezaDe: 'CLASE' as const } : f)),
+      advertencias: ['2 cuentas no traen naturaleza en el archivo: se toma la de su clase en el PUC.'],
+    });
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-cuentas'));
+
+    expect(q('puc-avisos-del-archivo')?.textContent).toContain('se toma la de su clase');
+    expect(q('naturaleza-deducida-1')?.textContent).toBe('por su clase');
+    // La que traía la naturaleza no lleva la marca.
+    expect(q('naturaleza-deducida-0')).toBeNull();
+  });
+
+  it('un archivo de sólo encabezados lo dice en vez de quedarse callado', async () => {
+    await pintar();
+    await subirArchivo([], ['Código', 'Nombre']);
+    expect(container.textContent).toContain('sólo trae los encabezados');
+  });
+});
+
+describe('QA-MIG-B — la frase del mapeo', () => {
+  it('un código que proponen dos asientos automáticos se dice una vez', () => {
+    expect(
+      fraseDeLoQueNoSeAsigno([
+        { codigo: '112005', motivo: 'NO_EXISTE' },
+        { codigo: '28150505', motivo: 'NO_EXISTE' },
+        { codigo: '112005', motivo: 'NO_EXISTE' },
+      ]),
+    ).toBe('Tu plan no tiene 112005, 28150505.');
+  });
+});
+
+describe('QA-MIG-B — a 390 px', () => {
+  afterEach(() => {
+    celular.es = false;
+  });
+  it('🟠 la revisión va en tarjetas: el motivo se lee sin correr la tabla de lado', async () => {
+    celular.es = true;
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-cuentas'));
+    expect(q('revision-cuentas-tarjetas')).not.toBeNull();
+    expect(q('revision-cuenta-3')?.textContent).toContain('no son sólo dígitos');
+    expect(container.querySelector('table')).toBeNull();
+  });
+});
+
+describe('QA-MIG-B (MC-29) — lo que ya existe con otro estado, y las sueltas', () => {
+  it('dice que el archivo trae otro estado y marca la que entra sin su cuenta mayor', async () => {
+    api.puc.revisarImportacion.mockResolvedValue({
+      ...REVISION,
+      filas: REVISION.filas.map((f) =>
+        f.indice === 2
+          ? { ...f, motivo: 'Ya está como «Bancos nacionales»; se conserva ese nombre. El archivo la trae inactiva y en tu plan está activa: no se cambió. Desactívala en el plan si corresponde.' }
+          : f.indice === 1
+            ? { ...f, sinPadre: true }
+            : f,
+      ),
+    });
+    await pintar();
+    await subirArchivo();
+    await click(q('revisar-cuentas'));
+    expect(q('otro-estado-2')?.textContent).toBe('El archivo la trae inactiva y en tu plan está activa: no se cambió. Desactívala en el plan si corresponde.');
+    expect(q('revision-cuenta-1')?.textContent).toContain('sin su cuenta mayor');
   });
 });

@@ -37,9 +37,10 @@ import { Button } from '@/components/ui/button';
 import {
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableHead,
   TableRow,
+  TableRowAnimada,
   TableCell,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
@@ -54,8 +55,17 @@ import { useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { ordenarReglas, reglasDeMoraApi } from '@/lib/api/reglas-de-mora.service';
 import type { ReglaDeMora } from '@/lib/api/reglas-de-mora.types';
 import { cn } from '@/lib/utils';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { EditorDeRegla } from './EditorDeRegla';
-import { PLANTILLAS, type PlantillaDeRegla, type ValoresDeRegla, topeDeUsuraDe } from './esquema';
+import {
+  PLANTILLAS,
+  TASA_DIARIA_DEL_2_MENSUAL,
+  type PlantillaDeRegla,
+  type ValoresDeRegla,
+  topeDeUsuraDe,
+} from './esquema';
+import { AjusteDeLaCondonacion } from './AjusteDeLaCondonacion';
+import { esFormulaDeInteres } from '@/lib/api/reglas-de-mora.types';
 import {
   describirDisparador,
   describirFormula,
@@ -67,7 +77,7 @@ import {
 } from './legible';
 
 const ICONO_DE_LA_PLANTILLA: Record<PlantillaDeRegla['id'], typeof Percent> = {
-  'interes-diario': Percent,
+  'interes-mensual': Percent,
   'gasto-administrativo': Receipt,
 };
 
@@ -88,13 +98,12 @@ export function plantillasQueFaltan(reglas: readonly ReglaDeMora[]): PlantillaDe
         (regla) =>
           regla.concepto === plantilla.valores.concepto &&
           regla.disparador === plantilla.valores.disparador &&
-          regla.formula === plantilla.valores.formula,
+          // PPF-05: una regla de interés (diaria o mensual) ya cubre la del
+          // interés sugerido: dos reglas de interés cobrarían doble.
+          (regla.formula === plantilla.valores.formula ||
+            (esFormulaDeInteres(regla.formula) && esFormulaDeInteres(plantilla.valores.formula))),
       ),
   );
-}
-
-function mensajeDe(error: unknown, siNo: string): string {
-  return error instanceof Error && error.message ? error.message : siNo;
 }
 
 export function ReglasDeMora() {
@@ -105,7 +114,9 @@ export function ReglasDeMora() {
   // El dato vivo: `GET /inmobiliaria/config` trae la fila entera de la agencia,
   // con `motorDeCobrosV2`. Sin el dato (cargando o back viejo) se avisa en
   // neutro; nunca se afirma que está prendido sin verlo.
-  const { config } = useInmobiliariaConfig();
+  // N-15 (QA-PAGOS-95): la fila la cierra `configuracion:view`; sin él (el
+  // contador) no se pide —era un 403 en cada visita— y el aviso queda neutro.
+  const { config } = useInmobiliariaConfig(!permisosCargando && canAccess('configuracion', 'view'));
   const motorPrendido = config?.agency?.motorDeCobrosV2;
 
   const [reglas, setReglas] = useState<ReglaDeMora[] | null>(null);
@@ -183,11 +194,34 @@ export function ReglasDeMora() {
   const usarPlantilla = async (plantilla: PlantillaDeRegla) => {
     setPlantillaEnCurso(plantilla.id);
     try {
-      const regla = await reglasDeMoraApi.crear(plantilla.valores);
+      let regla;
+      try {
+        regla = await reglasDeMoraApi.crear(plantilla.valores);
+      } catch (error) {
+        /*
+         * PPF-05: con un back sin la migración de la fórmula mensual (503
+         * `FALTA_UNA_MIGRACION`), la sugerida sale como antes: 0,0667 % diario.
+         */
+        if (
+          plantilla.valores.formula !== 'INTERES_MENSUAL' ||
+          (error as { code?: string }).code !== 'FALTA_UNA_MIGRACION'
+        ) {
+          throw error;
+        }
+        regla = await reglasDeMoraApi.crear({
+          ...plantilla.valores,
+          formula: 'INTERES_DIARIO',
+          valor: TASA_DIARIA_DEL_2_MENSUAL,
+        });
+      }
       ponerRegla(regla);
       toast.success(`«${regla.nombre}» quedó creada.`);
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo crear la regla.'));
+      // Por el traductor (02-10-2026): un 5xx dice que fue nuestro, con la
+      // referencia; «conexión» sólo cuando no hubo respuesta.
+      toast.error(
+        mensajeParaLaPersona(error, { porDefecto: 'No se pudo crear la regla.', accion: 'crear la regla' }),
+      );
     } finally {
       setPlantillaEnCurso(null);
     }
@@ -198,7 +232,12 @@ export function ReglasDeMora() {
     try {
       ponerRegla(await reglasDeMoraApi.actualizar(regla.id, { activa }));
     } catch (error) {
-      toast.error(mensajeDe(error, activa ? 'No se pudo prender la regla.' : 'No se pudo apagar la regla.'));
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: activa ? 'No se pudo prender la regla.' : 'No se pudo apagar la regla.',
+          accion: activa ? 'prender la regla' : 'apagar la regla',
+        }),
+      );
     } finally {
       marcarOcupada(regla.id, false);
     }
@@ -300,7 +339,9 @@ export function ReglasDeMora() {
                         </TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    {/* Una regla nueva (de una plantilla o del editor) ENTRA en
+                        su lugar; cada página es un cuerpo nuevo. */}
+                    <TableBodyAnimado key={`${page}|${pageSize}`}>
                       {pageItems.map((regla) => (
                         <FilaDeRegla
                           key={regla.id}
@@ -311,7 +352,7 @@ export function ReglasDeMora() {
                           onCambiarActiva={(activa) => void cambiarActiva(regla, activa)}
                         />
                       ))}
-                    </TableBody>
+                    </TableBodyAnimado>
                   </Table>
                 </div>
 
@@ -347,6 +388,9 @@ export function ReglasDeMora() {
         )}
       </EstadoDeDatos>
 
+      {/* B-13 (QA-PAGOS-95 r2): qué condona «Total» en esta inmobiliaria. */}
+      <AjusteDeLaCondonacion />
+
       <EditorDeRegla
         abierto={editor.abierto}
         regla={editor.regla}
@@ -374,16 +418,17 @@ function FilaDeRegla({
   const { t } = useI18n();
 
   return (
-    <TableRow
+    <TableRowAnimada
       data-testid={`regla-${regla.id}`}
       // La frase entera sigue disponible al pasar el mouse: las columnas la
       // parten para poder comparar dos reglas de un vistazo, no para esconderla.
       title={describirRegla(regla)}
       onClick={puedeEditar ? onEditar : undefined}
       className={cn(
-        'border-b border-border/50 transition-colors',
+        'border-b last:border-b border-border/50 transition-colors',
         puedeEditar && 'cursor-pointer hover:bg-muted/50',
-        !regla.activa && 'opacity-70',
+        // En las celdas: la fila anima su propia opacidad al entrar.
+        !regla.activa && '[&>td]:opacity-70',
       )}
     >
       <TableCell className="p-4 align-middle">
@@ -450,7 +495,7 @@ function FilaDeRegla({
           {t('reglasDeMora.tabla.editar')}
         </Button>
       </TableCell>
-    </TableRow>
+    </TableRowAnimada>
   );
 }
 

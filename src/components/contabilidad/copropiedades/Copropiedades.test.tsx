@@ -41,6 +41,12 @@ vi.mock('@/lib/api/copropiedades.service', async () => {
   };
 });
 
+const toastError = vi.fn();
+vi.mock('@/components/ui/toast', () => ({
+  toast: { success: vi.fn(), error: (...a: unknown[]) => toastError(...a), info: vi.fn(), warning: vi.fn() },
+}));
+
+import { ApiError } from '@/lib/api/client';
 import { Copropiedades } from './Copropiedades';
 
 let host: HTMLDivElement | null = null;
@@ -166,5 +172,65 @@ describe('Copropiedades', () => {
     expect(crear).toHaveBeenCalledWith(
       expect.objectContaining({ nombre: 'Torre 1', nit: '900123456' }),
     );
+  });
+});
+
+/*
+ * Sistema de errores (02-10-2026): registrar una copropiedad que el back
+ * rechaza dice el motivo bajo SU campo; un 5xx dice «de nuestro lado» con la
+ * referencia (antes, la `descripcion` de un fallo de CARGA).
+ */
+describe('Copropiedades · errores al registrar', () => {
+  async function registrarCon(error: unknown) {
+    listar.mockResolvedValue({ faltaLaMigracion: false, migracion: 'm', copropiedades: [] });
+    crear.mockRejectedValue(error);
+    toastError.mockReset();
+    await montar();
+    await act(async () => {
+      $('[data-testid="abrir-nueva-copropiedad"]')!.click();
+    });
+    const set = (el: HTMLInputElement, v: string) => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!.call(el, v);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    await act(async () => {
+      set(document.querySelector<HTMLInputElement>('#copro-nombre')!, 'Torre 1');
+      set(document.querySelector<HTMLInputElement>('#copro-nit')!, '900123456');
+    });
+    await act(async () => {
+      $('[data-testid="guardar-copropiedad"]')!.click();
+    });
+    await esperar();
+  }
+
+  it('🔴 un 400 con `campos` en `nit` va bajo el NIT y lo enfoca', async () => {
+    const mensaje = 'El NIT de la copropiedad tiene entre 5 y 15 dígitos.';
+    await registrarCon(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'nit', regla: 'longitud', mensaje }],
+      }),
+    );
+    const nit = document.querySelector<HTMLInputElement>('#copro-nit')!;
+    expect(nit.getAttribute('aria-invalid')).toBe('true');
+    expect(document.getElementById('copro-nit-error')?.textContent).toBe(mensaje);
+    expect(document.activeElement).toBe(nit);
+    expect(toastError).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    await registrarCon(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: '7e7e7e7e',
+      }),
+    );
+    const texto = toastError.mock.calls.at(-1)![0] as string;
+    expect(texto).toMatch(/No pudimos registrar la copropiedad: algo falló de nuestro lado/);
+    expect(texto).toContain('7e7e7e7e');
   });
 });

@@ -26,6 +26,7 @@
 import { use } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useEntradaTrasCargar, type EntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   CreditCard,
   FileText,
@@ -50,10 +51,11 @@ import { useI18n } from '@/lib/i18n';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PlanActivityTimeline, type TimelineItem } from '@/components/ui/plan/PlanActivityTimeline';
 import type { BadgeProps } from '@/components/ui/badge';
 import type { CaseTone, CaseType, TenantCase } from '@/lib/types/tenant-case';
+import { RespuestaYArchivosDelCaso } from '@/components/tenant/RespuestaYArchivosDelCaso';
 
 // ============================================================================
 // Neutral mappers (view-only — never recompute a status)
@@ -111,7 +113,7 @@ function formatRelative(iso: string, locale: string): string {
 
 function PageShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-10">{children}</div>
     </div>
   );
@@ -133,7 +135,16 @@ function BackLink({ locale }: { locale: string }) {
 // Resolved detail
 // ============================================================================
 
-function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
+function CaseDetail({
+  caso,
+  locale,
+  entrada,
+}: {
+  caso: TenantCase;
+  locale: string;
+  /** Carga → contenido: la entrada de 4 px si se vio el esqueleto (si no, quieto). */
+  entrada: EntradaTrasCargar;
+}) {
   const badge = TONE_BADGE[caso.tone];
   const ToneIcon = badge.icon;
   const TypeIcon = TYPE_ICON[caso.type] ?? ClipboardText;
@@ -152,7 +163,12 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
   // `slaVenceAt` wins; otherwise a soft, weekday-only estimate labeled "estimado".
   // Never blank, neutral tone — no live countdown, no red styling, no hard
   // deadline framing on the estimate (soft "hacia el …", not a due-date claim).
-  const sla = caso.solicitud
+  // SO-06: ya respondida, resuelta o cerrada, «Respuesta esperada» ya no aplica.
+  const yaRespondida =
+    !!caso.solicitud?.respuesta ||
+    caso.solicitud?.estado === 'resuelta' ||
+    caso.solicitud?.estado === 'cerrada';
+  const sla = caso.solicitud && !yaRespondida
     ? resolveExpectedResponse(caso.solicitud.createdAt, caso.solicitud.slaVenceAt)
     : null;
   const slaDate = sla
@@ -164,20 +180,21 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
     : '';
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
+    <motion.div {...entrada} className="space-y-6">
       {/* Header — title + neutral status badge */}
       <header className="flex items-start gap-4">
-        <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+        <div className="w-12 h-12 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
           <TypeIcon className="w-6 h-6 text-fg-muted dark:text-fg-subtle" aria-hidden="true" />
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-medium text-fg dark:text-white tracking-tight">
             {caso.titulo}
           </h1>
+          {caso.solicitud?.radicado && (
+            <p className="mt-1 font-mono text-sm text-fg-muted" data-testid="caso-radicado">
+              {caso.solicitud.radicado}
+            </p>
+          )}
           <div className="mt-2">
             <Badge variant={badge.variant} className="inline-flex items-center gap-1">
               <ToneIcon className="w-3 h-3" aria-hidden="true" />
@@ -188,7 +205,7 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
       </header>
 
       {/* Summary card — role responsable + relative updatedAt + source out-link */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6 space-y-4">
+      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6 space-y-4">
         <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex items-center gap-2.5">
             <User className="w-4 h-4 text-fg-subtle flex-shrink-0" aria-hidden="true" />
@@ -270,6 +287,11 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
         </div>
       </section>
 
+      {/* SO-06/SO-18 (PQRS-FIX): la respuesta de la inmobiliaria y los archivos. */}
+      {caso.solicitud && (caso.solicitud.respuesta || caso.solicitud.adjuntos !== undefined) && (
+        <RespuestaYArchivosDelCaso caseId={caso.id} solicitud={caso.solicitud} />
+      )}
+
       {/* Ley 820 cost responsibility + approve-only quote affordance (SOLI-04) —
           shown only for PQRS cases with a backend-set cost determination. */}
       {caso.solicitud && caso.solicitud.costoResponsable && (
@@ -277,7 +299,7 @@ function CaseDetail({ caso, locale }: { caso: TenantCase; locale: string }) {
       )}
 
       {/* State timeline (CASO-02 core) — source-timestamp-only events */}
-      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-5 sm:p-6">
+      <section className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 sm:p-6">
         <h2 className="text-sm font-semibold text-fg dark:text-white mb-4">
           {locale === 'es' ? 'Historial' : 'Timeline'}
         </h2>
@@ -303,11 +325,15 @@ export default function CaseDetailPage(props: { params: Promise<{ caseId: string
   // aggregated list — NO API call with the raw route id, NO fetch-by-id hook.
   const caso = cases.find((c) => c.id === params.caseId);
 
+  // Carga → contenido: el caso entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isLoading);
+
   // Loading gate — never flash a fake not-found while any source is in flight.
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
-        <Spinner size="lg" variant="current" className="text-primary" />
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="detail" className="mx-auto max-w-3xl" />
       </div>
     );
   }
@@ -349,7 +375,7 @@ export default function CaseDetailPage(props: { params: Promise<{ caseId: string
   return (
     <PageShell>
       <BackLink locale={locale} />
-      <CaseDetail caso={caso} locale={locale} />
+      <CaseDetail caso={caso} locale={locale} entrada={entrada} />
     </PageShell>
   );
 }

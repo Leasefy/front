@@ -10,7 +10,7 @@ import { ArrowLeft } from '@phosphor-icons/react';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import { SectionLabel } from '@/components/ui/section-label';
-import { ConceptosDeNominaPanel } from '@/components/nomina/ConceptosDeNomina';
+import { ConceptosDeNominaPanel, PorQueDosMarcas } from '@/components/nomina/ConceptosDeNomina';
 
 /**
  * 🔴 EL GATE DE ESTA PÁGINA TIENE DOS MITADES, y las dos hacen falta.
@@ -35,10 +35,19 @@ export default function ConceptosDeNominaPage() {
             Nómina
           </Link>
           <SectionLabel>Nómina</SectionLabel>
-          <h1 className="text-h2 text-fg">Conceptos y cuentas</h1>
-          <p className="max-w-2xl text-sm text-fg-muted">
-            Lo que se devenga, lo que se deduce, lo que aporta el empleador y lo que se provisiona, con la cuenta del PUC a la que va cada renglón. Un concepto sin cuenta no impide liquidar, pero sí impide asentar: el asiento no se escribe a medias.
-          </p>
+          {/* «Por qué hay dos marcas» a la derecha, donde iría el botón de
+              acción (05-10-2026): era una caja de texto sobre el catálogo. */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1.5">
+              <h1 className="text-h2 text-fg">Conceptos y cuentas</h1>
+              <p className="max-w-2xl text-sm text-fg-muted">
+                Lo que se devenga, lo que se deduce, lo que aporta el empleador y lo que se provisiona, con la cuenta del PUC a la que va cada renglón. Un concepto sin cuenta no impide liquidar, pero sí impide asentar: el asiento no se escribe a medias.
+              </p>
+            </div>
+            <div className="self-start sm:shrink-0">
+              <PorQueDosMarcas />
+            </div>
+          </div>
         </header>
         <ConceptosDeNominaPanel />
       </div>

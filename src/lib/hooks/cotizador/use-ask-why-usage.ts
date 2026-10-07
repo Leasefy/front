@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 export interface AskWhyUsage {
   used_today: number
@@ -50,9 +50,8 @@ export function useAskWhyUsage(agencyId: string | null): {
     setIsLoading(true)
     void (async () => {
       try {
-        const res = await globalThis.fetch(
-          `${agentUrl}/api/agency/${agencyId}/cotizador/ask-why/usage`,
-          { headers: agentAuthHeaders() },
+        const res = await agentFetch(
+          `${agentUrl}/api/agency/${agencyId}/cotizador/ask-why/usage`
         )
         if (cancelled) return
         if (!res.ok) {

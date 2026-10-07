@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 // ---------------------------------------------------------------------------
 // Response types (mirrors backend 35-04 shapes)
@@ -58,11 +58,12 @@ export interface AssumptionRow {
 
 export interface MonthlyCostTrendRow {
   month: string           // ISO "2026-01"
-  anthropic: string       // string — parse via parseFloat (Decimal/BigInt safety)
-  carrier_api: string
-  sekure_commission: string
-  datacredito: string
-  total: string
+  /** 🔴 En pesos desde el 04-10-2026 (el micro convierte: ninguna pantalla con dólares). */
+  anthropic: number | string
+  carrier_api: number | string
+  sekure_commission: number | string
+  datacredito: number | string
+  total: number | string
 }
 
 export interface InsightsData {
@@ -118,14 +119,13 @@ export function useInsights(): UseInsightsResult {
     }
 
     const base = `${agentUrl}/api/agency/${agencyId}/cotizador/insights`
-    const opts: RequestInit = { headers: agentAuthHeaders() }
 
     try {
       const [approvalRes, primaRes, assumptionsRes, costRes] = await Promise.all([
-        globalThis.fetch(`${base}/approval-rate-monthly`, opts),
-        globalThis.fetch(`${base}/prima-distribution`, opts),
-        globalThis.fetch(`${base}/assumptions`, opts),
-        globalThis.fetch(`${base}/monthly-cost-trend`, opts),
+        agentFetch(`${base}/approval-rate-monthly`),
+        agentFetch(`${base}/prima-distribution`),
+        agentFetch(`${base}/assumptions`),
+        agentFetch(`${base}/monthly-cost-trend`),
       ])
 
       // Parse each response; on individual failure preserve previous data

@@ -13,13 +13,18 @@
  * neto puede ser negativo y se dice «queda debiendo».
  */
 
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
-import type { VistaPreviaDeDispersiones } from '@/lib/types/inmobiliaria';
+import {
+  NOMBRE_DEL_ESTADO,
+  type PropietarioDeLaLiquidacion,
+} from '@/lib/liquidaciones/liquidacion-del-mes';
 import { cn } from '@/lib/utils';
 import { titularEnUnaLinea } from '@/lib/propietarios/titular-de-la-cuenta';
+import { maskAccountNumber } from '@/lib/types/payment-accounts';
 
-type Propietario = VistaPreviaDeDispersiones['propietarios'][number];
+type Propietario = PropietarioDeLaLiquidacion;
 
 function Renglon({
   etiqueta,
@@ -66,10 +71,21 @@ export function CajonDeLaLiquidacion({
         <>
           <CajonCabecera
             titulo={p.propietarioName}
-            descripcion={`Liquidación de ${mes} · ${p.yaExiste ? 'dispersión generada' : 'pendiente de generar'}`}
+            descripcion={`Liquidación de ${mes} · ${
+              // PG-02: con el mes completo, el estado verdadero de la fila.
+              p.liquidacion
+                ? NOMBRE_DEL_ESTADO[p.liquidacion.estado].toLowerCase()
+                : p.yaExiste
+                  ? 'dispersión generada'
+                  : 'pendiente de generar'
+            }`}
           />
-          <CajonCuerpo className="space-y-6">
-            <section>
+          <CajonCuerpo>
+            {/* Movimiento (ola 2, 03-10-2026): las secciones llegan escalonadas
+                (techo de 320 ms, 4 px) mientras entra el cajón, como en el
+                cajón del cobro y el de la dispersión. */}
+            <Stagger className="space-y-6" distance="xs" layout={false}>
+            <StaggerItem as="section" key="el-mes">
               <h3 className="mb-1 text-sm font-semibold text-fg">El mes, en plata</h3>
               <div className="divide-y divide-border-faint">
                 <Renglon
@@ -115,6 +131,11 @@ export function CajonDeLaLiquidacion({
                     {d.deducciones.map((x) => (
                       <Renglon key={x.id} etiqueta={x.motivo} valor={x.valorCop} signo="−" tono="text-danger" />
                     ))}
+                    {/* La liquidación del mes completo trae el total, no cada
+                        deducción: se dice el total, sin inventar renglones. */}
+                    {d.deducciones.length === 0 && (
+                      <Renglon etiqueta="Deducciones" valor={d.deduccionesCop} signo="−" tono="text-danger" />
+                    )}
                     <Renglon
                       etiqueta="A girar"
                       valor={d.aGirarCop}
@@ -135,10 +156,28 @@ export function CajonDeLaLiquidacion({
                   </p>
                 )}
               </div>
-            </section>
+            </StaggerItem>
+
+            {/* 🔴 PG-02: el mes partido en lo ya generado y lo que falta generar. */}
+            {p.liquidacion && (p.liquidacion.generado || p.liquidacion.pendiente) && (
+              <StaggerItem as="section" key="generado-y-pendiente" data-testid="cajon-liquidacion-partes">
+                <h3 className="mb-1 text-sm font-semibold text-fg">Lo generado y lo que falta</h3>
+                <div className="divide-y divide-border-faint">
+                  {p.liquidacion.generado && (
+                    <Renglon
+                      etiqueta={`Generado en ${p.liquidacion.dispersiones.length === 1 ? 'una dispersión' : `${p.liquidacion.dispersiones.length} dispersiones`} · a girar`}
+                      valor={p.liquidacion.generado.aGirarCop}
+                    />
+                  )}
+                  {p.liquidacion.pendiente && (
+                    <Renglon etiqueta="Por generar · a girar" valor={p.liquidacion.pendiente.aGirarCop} />
+                  )}
+                </div>
+              </StaggerItem>
+            )}
 
             {p.items.length > 0 && (
-              <section>
+              <StaggerItem as="section" key="inmuebles">
                 <h3 className="mb-1 text-sm font-semibold text-fg">Inmueble por inmueble</h3>
                 <ul className="divide-y divide-border-faint" data-testid="cajon-liquidacion-inmuebles">
                   {p.items.map((i, n) => (
@@ -154,14 +193,15 @@ export function CajonDeLaLiquidacion({
                     </li>
                   ))}
                 </ul>
-              </section>
+              </StaggerItem>
             )}
 
-            <section>
+            <StaggerItem as="section" key="a-donde">
               <h3 className="mb-1 text-sm font-semibold text-fg">A dónde se gira</h3>
               <p className="text-sm text-fg-muted">
+                {/* PG-06 (QA de Pagos, 03-10-2026): enmascarada, como en la ficha. */}
                 {p.propietarioBankAccount
-                  ? `${p.propietarioBankName ?? ''} ${p.propietarioBankAccount}`.trim()
+                  ? `${p.propietarioBankName ?? ''} ${maskAccountNumber(p.propietarioBankAccount.replace(/\s+/g, ''))}`.trim()
                   : 'Sin cuenta bancaria: no se le puede girar hasta que la cargues en su ficha.'}
               </p>
               {/* 🔴 22-09: la cuenta puede ser de otra persona; se dice de quién. */}
@@ -170,7 +210,8 @@ export function CajonDeLaLiquidacion({
                   A nombre de {titularEnUnaLinea(p.titularDeLaCuenta) || 'otra persona, sin datos'} (otra persona)
                 </p>
               ) : null}
-            </section>
+            </StaggerItem>
+            </Stagger>
           </CajonCuerpo>
         </>
       )}

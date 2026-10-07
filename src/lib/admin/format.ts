@@ -3,11 +3,13 @@
  * Kept separate from the customer app's own formatters so the admin stays
  * self-contained. The API returns raw numbers / ISO strings; the SPA formats.
  */
+
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 export function fmtCOP(n: number | string | null | undefined): string {
   if (n == null) return '—'
   const num = typeof n === 'string' ? parseFloat(n) : n
   if (!Number.isFinite(num)) return '—'
-  return new Intl.NumberFormat('es-CO', {
+  return plataEnPantalla('es-CO', {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,

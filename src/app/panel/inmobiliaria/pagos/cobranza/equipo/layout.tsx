@@ -8,6 +8,11 @@
  * editar el JSX de cada pantalla, y para que una pantalla nueva en esta
  * carpeta nazca ya rotulada.
  *
+ * QA-IA-B (04-10-2026): el texto de abajo decía «LOTE_EJEMPLO (page.tsx:182)…
+ * useEquipo() en src/lib/hooks/useInmobiliaria.ts… no encontré endpoint»:
+ * jerga de programador delante del usuario. Ahora dice qué es ilustrativo y
+ * dónde está lo real.
+ *
  * 🔴 Esto NO arregla la pantalla: la deja de mentir. Lo que sigue es cablearla
  * a su fuente real o retirarla, y eso lo decide Nico.
  */
@@ -20,7 +25,7 @@ export default function CobranzaEquipoLayout({ children }: { children: React.Rea
       <div className="px-4 pt-4 sm:px-6 lg:px-8">
         <AvisoDatosDeEjemplo
           queEsInventado="El lote de gestión y la gestión atribuida a cada persona"
-          queFalta="LOTE_EJEMPLO (page.tsx:182) inventa contactos, promesas de pago y escalamientos. El equipo real de la agencia sale de useEquipo() en src/lib/hooks/useInmobiliaria.ts; para las métricas por subagente IA no encontré endpoint."
+          queFalta="La tabla «En un caso, así se ve» es un ejemplo para explicar cómo trabaja el equipo. Lo que el agente hace con tus deudores de verdad está en Casos, Acuerdos de pago y Llamadas."
         />
       </div>
       {children}

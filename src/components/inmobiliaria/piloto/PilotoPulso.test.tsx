@@ -151,3 +151,46 @@ describe('🔴 el pulso dice qué es y nunca pinta «bajo control» sin lectura 
     expect(container.textContent).not.toContain('inmobiliaria.piloto.pulso.estado.ok')
   })
 })
+
+describe('el titular del pulso se lee como título de tarjeta, no de página (Nico, 30-09)', () => {
+  let container: HTMLDivElement
+  let root: Root
+
+  beforeEach(() => {
+    ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(() => {
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  const ESCALA_GIGANTE = /\btext-(h1|h2|display|display-lg|display-xl|stat|2xl|3xl|4xl|5xl)\b/
+
+  it.each([
+    ['todo tranquilo', { ...DATA_OK, titular: 'Todo tranquilo: no hay nada esperando por ti.' }],
+    [
+      'con cosas esperando',
+      {
+        ...DATA_OK,
+        estado: 'critico' as const,
+        titular: '23 promesas de pago vencidas.',
+        alertas: [
+          { id: 'a1', severidad: 'critica' as const, titulo: '23 promesas de pago vencidas', detalle: 'Desde el lunes' },
+        ],
+      },
+    ],
+  ])('%s: el titular no usa la escala gigante', (_caso, data) => {
+    act(() =>
+      root.render(<PilotoPulso data={data} isLoading={false} error={null} notAvailable={false} />),
+    )
+    const titular = container.querySelector('[data-testid="piloto-pulso-titular"]')
+    expect(titular).not.toBeNull()
+    expect(titular?.textContent).toBe(data.titular)
+    expect(titular?.className).not.toMatch(ESCALA_GIGANTE)
+    expect(titular?.className).toMatch(/\btext-lg\b/)
+  })
+})

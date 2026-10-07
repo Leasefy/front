@@ -2,9 +2,9 @@
  * TopScriptsTable.test.tsx — Phase 37 plan 37-10
  *
  * TopScriptsTable is permanently deferred (LANDMINE-1). This test asserts:
- *   1. NoDataYetBadge is always rendered (contains phase 38 reference)
+ *   1. NoDataYetBadge is always rendered (sin la píldora «Fase N»: N-11)
  *   2. No table rows / td / tr elements in the DOM
- *   3. Rendered text contains "38" (from NoDataYetBadge phase={38} → "Fase 38")
+ *   3. (N-11, QA-PAGOS-95) ya no pinta «Fase 38»
  *
  * Uses createRoot + act pattern (same as CadenceChannelMixChart.test.tsx baseline).
  */
@@ -47,12 +47,14 @@ afterEach(() => {
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('<TopScriptsTable>', () => {
-  it('renders NoDataYetBadge with phase 38 reference (text contains "38")', () => {
+  it('renders NoDataYetBadge sin la píldora interna «Fase N» (N-11, QA-PAGOS-95)', () => {
     act(() => {
       root.render(React.createElement(TopScriptsTable))
     })
-    // NoDataYetBadge renders "Fase {phase}" → "Fase 38"
-    expect(container.textContent).toMatch(/38/)
+    // Antes pintaba «Fase 38»: la fase interna del desarrollo, ilegible para
+    // la inmobiliaria. El aviso sigue (role="status"), sin la jerga.
+    expect(container.querySelector('[role="status"]')).not.toBeNull()
+    expect(container.textContent).not.toMatch(/Fase \d+/)
   })
 
   it('renders no table rows or cells', () => {

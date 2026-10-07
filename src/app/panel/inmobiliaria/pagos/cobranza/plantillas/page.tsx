@@ -41,6 +41,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from '@/components/ui/tabs'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 // =============================================================================
 // Constants
@@ -209,12 +210,15 @@ function TemplateGrid({
     )
   }
 
+  // Las tarjetas entran escalonadas al abrir la pestaña (techo 320 ms).
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
       {templates.map((tpl) => (
-        <TemplateCard key={tpl.id} tpl={tpl} t={t} />
+        <StaggerItem key={tpl.id} className="min-w-0">
+          <TemplateCard tpl={tpl} t={t} />
+        </StaggerItem>
       ))}
-    </div>
+    </Stagger>
   )
 }
 
@@ -252,8 +256,14 @@ export default function PlantillasPage() {
   }, [refetch, showErrorToast, t])
 
   // Phase 38-05a: list skeleton during initial fetch — replaces local SkeletonGrid.
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // plantillas, → vacío); lo que ya estaba al montarse no se anima.
   if (isLoading && !data) {
-    return <PageSkeleton variant="list" />
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="list" />
+      </CrossFade>
+    )
   }
 
   // Phase 38-05a: page-level EmptyState when the catalog is empty (backend
@@ -262,6 +272,7 @@ export default function PlantillasPage() {
   // continues to use NoDataYetBadge inside TemplateGrid below.
   if (data && data.templates.length === 0 && !error) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-6">
         <header>
           <h1 className="text-h2 text-fg" style={{ fontFamily: 'var(--font-heading, inherit)' }}>
@@ -281,10 +292,12 @@ export default function PlantillasPage() {
           description={t('inmobiliaria.ai.cobranza.plantillas.empty.description')}
         />
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="plantillas">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="flex items-start justify-between gap-4 flex-wrap">
@@ -305,8 +318,7 @@ export default function PlantillasPage() {
       </header>
 
       {/* Error banner */}
-      {error && !data && (
-        <div className="rounded-lg bg-danger-soft border border-danger/30 text-danger px-4 py-3 text-sm flex items-center justify-between gap-4">
+      <Presence show={Boolean(error && !data)} className="rounded-lg bg-danger-soft border border-danger/30 text-danger px-4 py-3 text-sm flex items-center justify-between gap-4">
           <span>{t('inmobiliaria.ai.templates.error.load')}</span>
           <Button
             variant="link"
@@ -317,8 +329,7 @@ export default function PlantillasPage() {
           >
             {t('inmobiliaria.ai.templates.error.retry')}
           </Button>
-        </div>
-      )}
+      </Presence>
 
       {/* Tabs */}
       {data && (
@@ -354,11 +365,10 @@ export default function PlantillasPage() {
       )}
 
       {/* Error toast — refetch failures */}
-      {errorToast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-lg border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-sm">
+      <Presence show={Boolean(errorToast)} className="fixed bottom-4 right-4 z-50 max-w-xs rounded-lg border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-sm">
           {errorToast}
-        </div>
-      )}
+      </Presence>
     </div>
+    </CrossFade>
   )
 }

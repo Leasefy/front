@@ -16,8 +16,8 @@
  * hace. El aviso al inquilino se GENERA y se revisa acá; nunca se envía solo.
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { RadioGroup, RadioGroupItem } from '@leasefy/cadence';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { RadioGroup, RadioGroupItem, Presence } from '@leasefy/cadence';
 import { ArrowSquareOut, DownloadSimple, FileText, SignOut, WarningCircle } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,14 @@ import {
   type PrevisualizacionDelCorte,
 } from '@/lib/api/mandato.service';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { leerFallo } from '@/lib/errores/traductor-de-errores';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import {
+  MAX_LARGO_DEL_MOTIVO_DEL_RETIRO,
+  errorDeLaFechaDeCorte,
+  errorDelMotivoDelRetiro,
+} from '@/lib/mandato/limites-de-la-modalidad-y-el-retiro';
 import { PESOS, diaLegible, mesLegible } from '@/lib/mandato/textos';
 
 function hoy(): string {
@@ -67,13 +75,23 @@ export function RetiroDeLaAdministracionDialog({
   const [fecha, setFecha] = useState(hoy);
   const [motivo, setMotivo] = useState('');
   const [previa, setPrevia] = useState<PrevisualizacionDelCorte | null>(null);
-  const [errorDePrevia, setErrorDePrevia] = useState<string | null>(null);
+  /**
+   * Por qué no se pudo calcular el corte. Si el back dijo que la FECHA no sirve
+   * (un 4xx), va debajo del campo de la fecha; si fue la red o un 5xx, es un
+   * aviso de bloque donde iba la vista del corte.
+   */
+  const [errorDePrevia, setErrorDePrevia] = useState<{ mensaje: string; deLaFecha: boolean } | null>(null);
   const [guardando, setGuardando] = useState(false);
+  /** Lo que no es de un campo: aviso de bloque. */
   const [error, setError] = useState<string | null>(null);
+  const [errores, setErrores] = useState<{ fecha?: string; motivo?: string }>({});
+  const fechaRef = useRef<HTMLInputElement>(null);
+  const motivoRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (!abierto) return;
     setError(null);
+    setErrores({});
     mandatoApi
       .estadoDelRetiro(consignacionId)
       .then(setEstado)
@@ -83,12 +101,22 @@ export function RetiroDeLaAdministracionDialog({
   const pedirPrevia = useCallback(
     async (f: string) => {
       if (!f) return;
+      // Una fecha a medio escribir no se manda: el back la rechazaría.
+      if (errorDeLaFechaDeCorte(f)) {
+        setPrevia(null);
+        setErrorDePrevia(null);
+        return;
+      }
       try {
         setPrevia(await mandatoApi.previsualizarRetiro(consignacionId, f));
         setErrorDePrevia(null);
       } catch (e) {
         setPrevia(null);
-        setErrorDePrevia(mensajeDelFallo(e, 'No se pudo calcular el corte.'));
+        const { tipo } = leerFallo(e);
+        setErrorDePrevia({
+          mensaje: mensajeDelFallo(e, 'No se pudo calcular el corte.'),
+          deLaFecha: tipo === 'datos' || tipo === 'conflicto',
+        });
       }
     },
     [consignacionId],
@@ -101,8 +129,24 @@ export function RetiroDeLaAdministracionDialog({
   const puedeConfirmar =
     !guardando && !!estado?.disponible && !!modo && (modo === 'HASTA_FIN_DEL_CONTRATO' || (!!fecha && !!previa));
 
+  function marcar(nuevos: { fecha?: string; motivo?: string }) {
+    setErrores(nuevos);
+    if (nuevos.fecha) fechaRef.current?.focus();
+    else if (nuevos.motivo) motivoRef.current?.focus();
+  }
+
   async function confirmar() {
     if (!modo) return;
+    // Los mismos topes que el DTO, antes de mandar.
+    const delCliente = {
+      ...(modo === 'CORTE' && errorDeLaFechaDeCorte(fecha) ? { fecha: errorDeLaFechaDeCorte(fecha) ?? undefined } : {}),
+      ...(errorDelMotivoDelRetiro(motivo) ? { motivo: errorDelMotivoDelRetiro(motivo) ?? undefined } : {}),
+    };
+    if (delCliente.fecha || delCliente.motivo) {
+      marcar(delCliente);
+      return;
+    }
+    setErrores({});
     setGuardando(true);
     setError(null);
     try {
@@ -119,17 +163,38 @@ export function RetiroDeLaAdministracionDialog({
       });
       onRetirado(r);
     } catch (e) {
-      setError(mensajeDelFallo(e, 'No se pudo registrar el retiro.'));
+      // Un 400 en `fechaDeCorte` o `motivo` va debajo de su campo; lo demás es
+      // un aviso del diálogo, por el traductor (regla de oro).
+      const r = repartirErroresDelServidor<'fecha' | 'motivo'>(e, {
+        mapa: { fechaDeCorte: modo === 'CORTE' ? 'fecha' : null, motivo: 'motivo' },
+        campos: ['fecha', 'motivo'],
+        porDefecto: 'No se pudo registrar el retiro.',
+        accion: 'registrar el retiro',
+      });
+      if (r.orden.length > 0) marcar(r.porCampo);
+      if (r.delServidor.length === 0) setError(mensajeDelFallo(e, 'No se pudo registrar el retiro.'));
+      else if (r.sueltos.length > 0) setError(r.sueltos.join(' · '));
     } finally {
       setGuardando(false);
     }
   }
 
   const vigente = estado?.contratoVigente ?? null;
+  // La fecha tiene dos fuentes de error: lo que dijo el back al confirmar y por
+  // qué no se pudo calcular el corte de ESA fecha.
+  const errorDeLaFecha =
+    errores.fecha ?? (errorDePrevia?.deLaFecha ? errorDePrevia.mensaje : undefined);
 
   return (
     <Dialog open={abierto} onOpenChange={(v) => !v && !guardando && onCerrar()}>
-      <DialogContent className="sm:max-w-2xl" data-testid="retiro-de-la-administracion">
+      {/* Destructiva: termina la consignación. El medallón es el de retirar
+          (`SignOut`), no la papelera. */}
+      <DialogContent
+        size="lg"
+        variant="destructive"
+        icon={<SignOut weight="bold" />}
+        data-testid="retiro-de-la-administracion"
+      >
         <DialogHeader>
           <DialogTitle>El propietario retira la administración</DialogTitle>
           <DialogDescription>
@@ -140,7 +205,7 @@ export function RetiroDeLaAdministracionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="max-h-[60vh] overflow-y-auto space-y-4 pr-1" data-lenis-prevent>
+        <div className="space-y-4">
           {estado && !estado.disponible && estado.motivo ? (
             <div className="rounded-md bg-warning-soft px-3 py-2 text-sm text-warning flex gap-2">
               <WarningCircle className="w-4 h-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
@@ -196,16 +261,25 @@ export function RetiroDeLaAdministracionDialog({
               <div className="space-y-1.5">
                 <Label htmlFor="fecha-de-corte">Último día que administra la inmobiliaria</Label>
                 <Input
+                  ref={fechaRef}
                   id="fecha-de-corte"
                   type="date"
                   value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
+                  onChange={(e) => {
+                    setFecha(e.target.value);
+                    setErrores((prev) => ({ ...prev, fecha: undefined }));
+                  }}
+                  invalid={!!errorDeLaFecha}
+                  aria-invalid={errorDeLaFecha ? true : undefined}
+                  aria-describedby="fecha-de-corte-error"
                   data-testid="fecha-de-corte"
                 />
+                <ErrorDelCampo id="fecha-de-corte-error" mensaje={errorDeLaFecha} />
               </div>
-              {errorDePrevia ? (
-                <p className="text-sm text-danger" role="alert">
-                  {errorDePrevia}
+              {/* Aviso de BLOQUE (la red, un 5xx): no es un error de la fecha. */}
+              {errorDePrevia && !errorDePrevia.deLaFecha ? (
+                <p className="text-sm text-danger" role="alert" data-testid="retiro-error-de-previa">
+                  {errorDePrevia.mensaje}
                 </p>
               ) : previa ? (
                 <VistaDelCorte previa={previa} />
@@ -217,20 +291,28 @@ export function RetiroDeLaAdministracionDialog({
             <div className="space-y-1.5">
               <Label htmlFor="motivo-del-retiro">Motivo (opcional)</Label>
               <Textarea
+                ref={motivoRef}
                 id="motivo-del-retiro"
                 value={motivo}
-                onChange={(e) => setMotivo(e.target.value)}
+                onChange={(e) => {
+                  setMotivo(e.target.value);
+                  setErrores((prev) => ({ ...prev, motivo: undefined }));
+                }}
                 placeholder="El propietario vendió el inmueble."
                 rows={2}
+                maxLength={MAX_LARGO_DEL_MOTIVO_DEL_RETIRO}
+                aria-invalid={errores.motivo ? true : undefined}
+                aria-describedby="motivo-del-retiro-error"
               />
+              <ErrorDelCampo id="motivo-del-retiro-error" mensaje={errores.motivo} />
             </div>
           ) : null}
 
-          {error ? (
-            <p className="text-sm text-danger" role="alert" data-testid="retiro-error">
-              {error}
-            </p>
-          ) : null}
+          {/* Aviso de BLOQUE: un 409, un 5xx o la red. Los de un campo van
+              debajo de su campo. */}
+          <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-danger" role="alert" data-testid="retiro-error">
+            {error}
+          </Presence>
         </div>
 
         <DialogFooter>
@@ -258,7 +340,7 @@ function VistaDelCorte({ previa }: { previa: PrevisualizacionDelCorte }) {
   const delInquilino = porLado('INQUILINO');
   const delPropietario = porLado('PROPIETARIO');
   return (
-    <div className="space-y-3 rounded-md border border-border bg-surface-muted p-3" data-testid="vista-del-corte">
+    <div className="space-y-3 rounded-md border border-border bg-surface-hover p-3" data-testid="vista-del-corte">
       <p className="text-sm text-foreground">
         Salen de la cartera <strong>{delInquilino.length}</strong> cuotas del inquilino (
         <span className="font-mono">{PESOS.format(previa.liquidacionFinal.anuladoInquilinoCop)}</span>) y{' '}
@@ -377,7 +459,7 @@ export function RetiroRegistrado({ consignacionId }: { consignacionId: string })
 
       {aviso !== null ? (
         <Dialog open onOpenChange={(v) => !v && setAviso(null)}>
-          <DialogContent className="sm:max-w-2xl">
+          <DialogContent size="lg">
             <DialogHeader>
               <DialogTitle>Aviso al inquilino</DialogTitle>
               <DialogDescription>

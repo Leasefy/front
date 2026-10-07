@@ -1,3 +1,4 @@
+import { Stagger, StaggerItem } from '@leasefy/cadence'
 import { LoadingBlock, ErrorBlock, EmptyBlock } from './states'
 
 export interface Column<T> {
@@ -52,9 +53,14 @@ export function DataTable<T>({
             ))}
           </tr>
         </thead>
-        <tbody>
+        {/* Movimiento (Cadence): las filas entran escalonadas (techo de 320 ms)
+            cuando llegan los datos o cambia la página/filtro, y las que se van
+            salen con fundido. Sin `layout`: una tabla de cientos de filas no
+            se mide en cada cambio. */}
+        <Stagger as="tbody" layout={false}>
           {rows.map((row, ri) => (
-            <tr
+            <StaggerItem
+              as="tr"
               key={getKey(row, ri)}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
               className={onRowClick ? 'cursor-pointer' : undefined}
@@ -64,9 +70,9 @@ export function DataTable<T>({
                   {c.cell(row)}
                 </td>
               ))}
-            </tr>
+            </StaggerItem>
           ))}
-        </tbody>
+        </Stagger>
       </table>
     </div>
   )

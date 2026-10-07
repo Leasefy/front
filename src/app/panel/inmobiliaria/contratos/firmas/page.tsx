@@ -1,4 +1,5 @@
 import { PageGuard } from '@/components/auth/PageGuard'
+import { ROLES_DE_CONTRATOS } from '@/lib/contratos/roles-de-contratos'
 
 import { FirmasClient } from './FirmasClient'
 
@@ -9,7 +10,7 @@ import { FirmasClient } from './FirmasClient'
  */
 export default function FirmasPage() {
   return (
-    <PageGuard module="contratos">
+    <PageGuard module="contratos" roles={ROLES_DE_CONTRATOS}>
       <FirmasClient />
     </PageGuard>
   )

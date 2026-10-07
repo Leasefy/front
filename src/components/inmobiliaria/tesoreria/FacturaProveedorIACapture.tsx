@@ -1,6 +1,8 @@
 'use client';
 
+import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { CrossFade } from '@leasefy/cadence';
 import {
   Sparkle,
   UploadSimple,
@@ -27,7 +29,9 @@ import { Combobox } from '@/components/ui/combobox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { apApi, ApUnavailableError, mediaTypeDeFactura, validarArchivosFactura } from '@/lib/api/ap.service';
-import { ApiError } from '@/lib/api/client';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { FACTURA_MAX_ARCHIVOS, FACTURA_PDF_MEDIA_TYPE } from '@/lib/api/ap.types';
 import type {
   ApBill,
@@ -39,6 +43,7 @@ import type {
   FacturaExtraida,
   FacturaItem,
 } from '@/lib/api/ap.types';
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 
 interface FacturaProveedorIACaptureProps {
   agencyId: string;
@@ -48,6 +53,9 @@ interface FacturaProveedorIACaptureProps {
 }
 
 type Step = 'upload' | 'extracting' | 'review' | 'error';
+
+/** El orden de los pasos: con él se decide si el cruce va hacia adelante o hacia atrás. */
+const ORDEN_DEL_PASO: Record<Step, number> = { upload: 0, extracting: 1, error: 1, review: 2 };
 
 /** Lo que el `<input type="file">` deja elegir: fotos y PDF. */
 const ACCEPT = ['image/*', FACTURA_PDF_MEDIA_TYPE, '.pdf'].join(',');
@@ -108,10 +116,45 @@ function IconoDeArchivo({ file }: { file: File }) {
   return mediaTypeDeFactura(file) === FACTURA_PDF_MEDIA_TYPE ? <FilePdf className={cls} /> : <FileImage className={cls} />;
 }
 
-function mensajeDeError(err: unknown, generico: string): string {
-  if (err instanceof ApiError || err instanceof Error) return err.message || generico;
-  return generico;
+/** Los campos del alta (`POST /ap/bills`) → los del formulario (02-10-2026). */
+const CAMPOS_DE_LA_FACTURA: readonly (keyof FormFactura)[] = [
+  'vendorId',
+  'invoiceNumber',
+  'issuedAt',
+  'dueDate',
+  'subtotal',
+  'iva',
+  'total',
+  'concepto',
+  'costCenterCode',
+];
+const CAMPO_DEL_SERVIDOR: Partial<Record<string, keyof FormFactura | null>> = {
+  amountCop: 'total',
+  baseGravableCop: 'subtotal',
+  ivaCop: 'iva',
+  adjuntoUrl: null,
+};
+/** Enfoca el control; si el id es de una envoltura (el combobox), su primer botón. */
+function enfocar(id: string) {
+  const el = document.getElementById(id);
+  const destino = el?.matches('input, textarea, button, select, [tabindex]')
+    ? el
+    : el?.querySelector<HTMLElement>('input, button');
+  destino?.focus();
 }
+
+/** El control que recibe el foco cuando el servidor señala ese campo. */
+const ID_DEL_CAMPO: Record<keyof FormFactura, string> = {
+  vendorId: 'factura-proveedor',
+  invoiceNumber: 'factura-numero',
+  issuedAt: 'factura-emision',
+  dueDate: 'factura-vencimiento',
+  subtotal: 'factura-subtotal',
+  iva: 'factura-iva',
+  total: 'factura-total',
+  concepto: 'factura-concepto',
+  costCenterCode: 'factura-centro',
+};
 
 /**
  * Captura de una factura de proveedor por IA: subir la foto/PDF, la IA la
@@ -125,6 +168,11 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
   const k = useCallback((s: string) => `inmobiliaria.tesoreria.facturas.${s}`, []);
 
   const [step, setStep] = useState<Step>('upload');
+  /** El paso de antes, para saber hacia dónde se mueve el asistente. */
+  const pasoAnterior = useRef<Step>(step);
+  useEffect(() => {
+    pasoAnterior.current = step;
+  }, [step]);
   const [files, setFiles] = useState<File[]>([]);
   const [arrastrando, setArrastrando] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -164,7 +212,9 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
       setVendors(v);
       setCostCenters(cc);
     } catch (err) {
-      setCatalogosError(mensajeDeError(err, ''));
+      // `''` = sin nada legible: al pintar se usa el genérico. Por el traductor
+      // (02-10-2026): un 5xx dice que fue nuestro; «conexión» sólo sin respuesta.
+      setCatalogosError(mensajeParaLaPersona(err, { porDefecto: '', accion: 'cargar los proveedores' }));
     }
   }, [agencyId]);
 
@@ -242,7 +292,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
         // Clave i18n de validarArchivosFactura.
         setErrorMsg(t(k(err.message), { max: String(FACTURA_MAX_ARCHIVOS) }));
       } else {
-        setErrorMsg(mensajeDeError(err, t(k('errorGeneric'))));
+        setErrorMsg(mensajeParaLaPersona(err, { porDefecto: t(k('errorGeneric')), accion: 'leer la factura' }));
       }
       setStep('error');
     }
@@ -329,7 +379,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
       setCandidatos([]);
       toast.success(t(k('proveedorCreado')));
     } catch (err) {
-      toast.error(mensajeDeError(err, t(k('errorGeneric'))));
+      toast.error(mensajeParaLaPersona(err, { porDefecto: t(k('errorGeneric')), accion: 'crear el proveedor' }));
     } finally {
       setCreandoProveedor(false);
     }
@@ -369,13 +419,55 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
       toast.success(t(k('successTitle')), { description: t(k('successDesc')) });
       onRegistrada(bill);
     } catch (err) {
-      toast.error(mensajeDeError(err, t(k('errorGeneric'))));
+      /*
+       * 02-10-2026 · Un 400 con `campos` va a SU campo con el foco; el 409 del
+       * número repetido va bajo el número y el centro de costo inválido bajo
+       * el centro. Al toast, sólo lo que no tiene campo (un 5xx con su
+       * referencia, la red).
+       */
+      const reparto = repartirErroresDelServidor<keyof FormFactura>(err, {
+        mapa: CAMPO_DEL_SERVIDOR,
+        campos: CAMPOS_DE_LA_FACTURA,
+        porDefecto: t(k('errorGeneric')),
+        accion: 'registrar la factura',
+      });
+      const porCampo = { ...reparto.porCampo };
+      const orden = [...reparto.orden];
+      let sueltos = reparto.sueltos;
+      const { status, mensajes } = leerFallo(err);
+      const propio = mensajes[0];
+      if (reparto.delServidor.length === 0 && propio && status === 409) {
+        porCampo.invoiceNumber = propio;
+        orden.push('invoiceNumber');
+        sueltos = [];
+      } else if (reparto.delServidor.length === 0 && propio && status === 400 && /centro de costo/i.test(propio)) {
+        porCampo.costCenterCode = propio;
+        orden.push('costCenterCode');
+        sueltos = [];
+      }
+      setErroresForm(porCampo);
+      if (orden[0]) enfocar(ID_DEL_CAMPO[orden[0]]);
+      if (sueltos.length > 0) toast.error(sueltos.join(' · '));
     } finally {
       setGuardando(false);
     }
   };
 
   const confidencePct = Math.round(confidence * 100);
+
+  /*
+   * Movimiento (ola 2, 03-10-2026): los pasos (subir → leyendo → revisar, y el
+   * error) se CRUZAN con dirección: hacia adelante el nuevo entra por la
+   * derecha; al volver a subir, por la izquierda. `popLayout`: el nuevo entra
+   * ya (no espera los 150 ms de salida del viejo). Todos los `return` pasan
+   * por aquí, así el `CrossFade` es el mismo y sólo cambia su `swapKey`.
+   */
+  const haciaAdelante = ORDEN_DEL_PASO[step] >= ORDEN_DEL_PASO[pasoAnterior.current];
+  const envolver = (contenido: React.ReactNode) => (
+    <CrossFade swapKey={step} mode="popLayout" direction={haciaAdelante ? 'forward' : 'backward'}>
+      {contenido}
+    </CrossFade>
+  );
 
   // ── Review ──────────────────────────────────────────────────────────────
   if (step === 'review') {
@@ -385,7 +477,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
     const proveedorSinMatch = extracted?.proveedorNombre && !form.vendorId;
     const nitParaCrear = nitNuevo.replace(/\D/g, '');
 
-    return (
+    return envolver(
       <form onSubmit={handleSubmit} className="space-y-5" noValidate data-testid="factura-form">
         {extracted ? (
           <div className="rounded-lg bg-warning-soft border border-warning/30 p-3 flex items-start gap-2.5">
@@ -459,21 +551,24 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
             <div className="space-y-1.5">
               <Label htmlFor="factura-proveedor">{t(k('proveedorLabel'))}</Label>
               {vendors === null && catalogosError === null ? (
-                <p className="text-xs text-muted-foreground inline-flex items-center gap-2">
+                <p className="text-caption text-muted-foreground inline-flex items-center gap-2">
                   <Spinner size="sm" variant="muted" /> {t(k('proveedorCargando'))}
                 </p>
               ) : (
-                <Combobox
-                  value={form.vendorId || undefined}
-                  onChange={(v) => set('vendorId', v ?? '')}
-                  options={vendorOptions}
-                  placeholder={t(k('proveedorPlaceholder'))}
-                  searchPlaceholder={t(k('proveedorBuscar'))}
-                  invalid={Boolean(erroresForm.vendorId)}
-                  className="w-full"
-                />
+                // `contents`: la envoltura no dibuja caja; sólo da el id para el foco.
+                <div id="factura-proveedor" className="contents">
+                  <Combobox
+                    value={form.vendorId || undefined}
+                    onChange={(v) => set('vendorId', v ?? '')}
+                    options={vendorOptions}
+                    placeholder={t(k('proveedorPlaceholder'))}
+                    searchPlaceholder={t(k('proveedorBuscar'))}
+                    invalid={Boolean(erroresForm.vendorId)}
+                    className="w-full"
+                  />
+                </div>
               )}
-              {erroresForm.vendorId ? <p className="text-xs text-danger">{erroresForm.vendorId}</p> : null}
+              <ErrorDelCampo id="factura-proveedor-error" mensaje={erroresForm.vendorId} />
 
               {proveedorSinMatch ? (
                 <div
@@ -548,9 +643,10 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
                   value={form.invoiceNumber}
                   onChange={(e) => set('invoiceNumber', e.target.value)}
                   aria-invalid={Boolean(erroresForm.invoiceNumber)}
+                  aria-describedby="factura-numero-error"
                   data-testid="factura-numero"
                 />
-                {erroresForm.invoiceNumber ? <p className="text-xs text-danger">{erroresForm.invoiceNumber}</p> : null}
+                <ErrorDelCampo id="factura-numero-error" mensaje={erroresForm.invoiceNumber} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-emision">{t(k('emisionLabel'))}</Label>
@@ -560,9 +656,10 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
                   value={form.issuedAt}
                   onChange={(e) => set('issuedAt', e.target.value)}
                   aria-invalid={Boolean(erroresForm.issuedAt)}
+                  aria-describedby="factura-emision-error"
                   data-testid="factura-emision"
                 />
-                {erroresForm.issuedAt ? <p className="text-xs text-danger">{erroresForm.issuedAt}</p> : null}
+                <ErrorDelCampo id="factura-emision-error" mensaje={erroresForm.issuedAt} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-vencimiento">{t(k('vencimientoLabel'))}</Label>
@@ -572,13 +669,15 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
                   value={form.dueDate}
                   onChange={(e) => set('dueDate', e.target.value)}
                   aria-invalid={Boolean(erroresForm.dueDate)}
+                  aria-describedby="factura-vencimiento-error"
                   data-testid="factura-vencimiento"
                 />
-                {erroresForm.dueDate ? (
-                  <p className="text-xs text-danger">{erroresForm.dueDate}</p>
-                ) : extracted && !form.dueDate ? (
-                  <p className="text-xs text-muted-foreground">{t(k('vencimientoHint'))}</p>
-                ) : null}
+                {/* La pista (la IA no leyó el vencimiento) y el error se cruzan. */}
+                <ErrorDelCampo
+                  id="factura-vencimiento-error"
+                  mensaje={erroresForm.dueDate}
+                  pista={extracted && !form.dueDate ? t(k('vencimientoHint')) : undefined}
+                />
               </div>
             </div>
 
@@ -604,9 +703,10 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
                   value={form.total}
                   onChange={(v) => set('total', v)}
                   aria-invalid={Boolean(erroresForm.total)}
+                  aria-describedby="factura-total-error"
                   data-testid="factura-total"
                 />
-                {erroresForm.total ? <p className="text-xs text-danger">{erroresForm.total}</p> : null}
+                <ErrorDelCampo id="factura-total-error" mensaje={erroresForm.total} />
               </div>
             </div>
 
@@ -628,7 +728,12 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
             <div className="space-y-1.5">
               <Label htmlFor="factura-centro">{t(k('centroLabel'))}</Label>
               <Select value={form.costCenterCode || undefined} onValueChange={(v) => set('costCenterCode', v)}>
-                <SelectTrigger id="factura-centro" aria-invalid={Boolean(erroresForm.costCenterCode)} data-testid="factura-centro">
+                <SelectTrigger
+                  id="factura-centro"
+                  aria-invalid={Boolean(erroresForm.costCenterCode)}
+                  aria-describedby="factura-centro-error"
+                  data-testid="factura-centro"
+                >
                   <SelectValue placeholder={t(k('centroPlaceholder'))} />
                 </SelectTrigger>
                 <SelectContent>
@@ -639,7 +744,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
                   ))}
                 </SelectContent>
               </Select>
-              {erroresForm.costCenterCode ? <p className="text-xs text-danger">{erroresForm.costCenterCode}</p> : null}
+              <ErrorDelCampo id="factura-centro-error" mensaje={erroresForm.costCenterCode} />
             </div>
           </div>
 
@@ -697,7 +802,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
                       </span>
                       {it.valorCop !== null ? (
                         <span className="font-mono tabular-nums text-muted-foreground flex-shrink-0">
-                          {new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(it.valorCop)}
+                          {plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(it.valorCop)}
                         </span>
                       ) : null}
                     </li>
@@ -723,7 +828,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
 
   // ── Extracting ──────────────────────────────────────────────────────────
   if (step === 'extracting') {
-    return (
+    return envolver(
       <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
         <Spinner size="md" variant="muted" />
         <p className="text-sm text-muted-foreground">{t(k('extractingN'), { n: String(files.length) })}</p>
@@ -733,7 +838,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
 
   // ── Error ───────────────────────────────────────────────────────────────
   if (step === 'error') {
-    return (
+    return envolver(
       <div className="flex flex-col items-center justify-center gap-4 py-10 px-6 text-center">
         <div className="w-14 h-14 rounded-full bg-danger-soft flex items-center justify-center">
           <WarningCircle className="w-7 h-7 text-danger" />
@@ -759,7 +864,7 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
   }
 
   // ── Upload (default) ────────────────────────────────────────────────────
-  return (
+  return envolver(
     <div className="space-y-5">
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">

@@ -4,22 +4,29 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { CrossFade, Presence, motionScale, motionSpring } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
+import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
 import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
 import { tomarAvisoDeCierre, PARAM_MOTIVO, type MotivoDeCierre } from '@/lib/auth/session-terminal';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
 import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
-import { SesionYaAbierta } from './SesionYaAbierta';
+import { SesionYaAbierta, type MotivoDelCambioDeCuenta } from './SesionYaAbierta';
+import { NoPudimosConfirmarTuSesion } from './NoPudimosConfirmarTuSesion';
+import { CargaDeMarca } from '@/components/ui/carga-de-marca';
 import { MedidorDeContrasena } from './MedidorDeContrasena';
 import { normalizarCorreo, validarCorreo, webmailDelCorreo } from '@/lib/auth/correo';
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import { limpiarCredencialesDeLaUrl } from '@/lib/auth/credenciales-en-la-url';
 import { useHidratado } from '@/lib/hooks/use-hidratado';
+import { correoTieneCuentaApi } from '@/lib/api/correo-tiene-cuenta.service';
+import { codigoDeSupabase, leerErrorDeSupabase, mensajeDeSupabase } from '@/lib/auth/errores-de-supabase';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import {
   SpinnerGap,
   ArrowLeft,
@@ -105,7 +112,7 @@ function GoogleButton({ onClick, disabled, isLoading, children }: { onClick: () 
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-border bg-surface text-[14px] font-medium text-fg shadow-[0_1px_2px_rgba(20,19,15,0.05)] transition-all hover:-translate-y-px hover:border-border-strong hover:shadow-[0_6px_16px_-8px_rgba(20,19,15,0.25)] active:translate-y-0 active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50"
+      className="flex h-12 w-full items-center justify-center gap-2.5 rounded-full border border-border bg-surface text-[14px] font-medium text-fg shadow-[0_1px_2px_rgba(20,19,15,0.05)] transition-[transform,box-shadow,border-color] duration-fast ease-standard hover:-translate-y-px hover:border-border-strong hover:shadow-[0_6px_16px_-8px_rgba(20,19,15,0.25)] active:translate-y-0 active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50"
     >
       {isLoading ? (
         <SpinnerGap className="w-4 h-4 animate-spin text-fg-subtle" />
@@ -125,7 +132,11 @@ const AVISOS_DE_SESION: Record<string, string> = {
   expirada: 'Tu sesión expiró. Vuelve a entrar para seguir donde estabas.',
   revocada: 'Cerramos esta sesión porque entraste desde otro dispositivo.',
   inactividad: 'Cerramos tu sesión por inactividad. Vuelve a entrar para continuar.',
+  'contrasena-actualizada': 'Tu contraseña quedó actualizada. Inicia sesión con la nueva.',
 };
+
+/** Avisos que confirman algo que salió bien: van en verde, no en ámbar. */
+const AVISOS_DE_CONFIRMACION = new Set(['contrasena-actualizada']);
 
 /**
  * Aviso de por qué el usuario terminó acá sin pedirlo.
@@ -134,29 +145,46 @@ const AVISOS_DE_SESION: Record<string, string> = {
  * un error del usuario ni una falla del sistema, es lo que tiene que pasar. El
  * rojo del ErrorBanner de abajo queda para lo que sí salió mal.
  */
-function AvisoBanner({ children }: { children: React.ReactNode }) {
+function AvisoBanner({ mensaje, confirmacion = false }: { mensaje: string | null; confirmacion?: boolean }) {
+  const texto = useUltimoTexto(mensaje);
+  // `Presence`: entra subiendo 8 px y, cuando la persona vuelve a intentar,
+  // SALE acelerando en vez de cortarse. `initial={false}`: si ya viene puesto
+  // al montar no arranca invisible.
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -6 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="px-3.5 py-2.5 rounded-lg bg-warning-soft border border-warning/30"
-    >
-      <p className="text-[12.5px] text-warning">{children}</p>
-    </motion.div>
+    <Presence show={Boolean(mensaje)} initial={false}>
+      <div
+        role="status"
+        data-testid="aviso-de-sesion"
+        className={confirmacion
+          ? 'px-3.5 py-2.5 rounded-lg bg-success-soft border border-success/30'
+          : 'px-3.5 py-2.5 rounded-lg bg-warning-soft border border-warning/30'}
+      >
+        <p className={confirmacion ? 'text-[12.5px] text-success' : 'text-[12.5px] text-warning'}>{texto}</p>
+      </div>
+    </Presence>
   );
 }
 
-/** Brand-critical error banner. */
-function ErrorBanner({ children }: { children: React.ReactNode }) {
+/** Brand-critical error banner. Entra y sale con `Presence` (ver `AvisoBanner`). */
+function ErrorBanner({ mensaje }: { mensaje: string | null }) {
+  const texto = useUltimoTexto(mensaje);
   return (
-    <motion.div
-      initial={{ opacity: 0, y: -6 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="px-3.5 py-2.5 rounded-lg bg-danger-soft border border-danger/30"
-    >
-      <p className="text-[12.5px] text-danger">{children}</p>
-    </motion.div>
+    <Presence show={Boolean(mensaje)} initial={false}>
+      <div className="px-3.5 py-2.5 rounded-lg bg-danger-soft border border-danger/30">
+        <p className="text-[12.5px] text-danger">{texto}</p>
+      </div>
+    </Presence>
   );
+}
+
+/**
+ * El último texto no vacío. Mientras un aviso SALE sigue diciendo lo que
+ * decía; sin esto se vaciaba en plena salida y se encogía antes de irse.
+ */
+function useUltimoTexto(texto: string | null): string | null {
+  const [ultimo, setUltimo] = React.useState(texto);
+  if (texto && texto !== ultimo) setUltimo(texto);
+  return texto || ultimo;
 }
 
 /** El enlace de texto azul de esta pantalla («Crear cuenta», «Inicia sesión»…). */
@@ -182,9 +210,13 @@ function SugerenciaDeCorreo({
   onAceptar?: () => void;
 }) {
   const r = validarCorreo(valor ?? '');
-  if (!r.sugerencia || (aceptado && aceptado === r.correo)) return null;
-  const sugerencia = r.sugerencia;
+  const visible = Boolean(r.sugerencia) && !(aceptado && aceptado === r.correo);
+  // Mientras sale, sigue diciendo la última sugerencia (no se vacía).
+  const sugerencia = useUltimoTexto(visible ? r.sugerencia ?? null : null) ?? '';
+  // Aparece y se va con `Presence` (4 px): se escribe letra a letra, así que
+  // no puede saltar al ritmo del teclado.
   return (
+    <Presence show={visible} distance="xs" initial={false}>
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px]" data-testid="sugerencia-de-correo">
       <button type="button" onClick={() => onUsar(sugerencia)} className="text-fg-muted transition-colors hover:text-fg">
         ¿Quisiste decir <span className="font-medium text-[#1A40FF]">{sugerencia}</span>?
@@ -200,6 +232,7 @@ function SugerenciaDeCorreo({
         </button>
       )}
     </div>
+    </Presence>
   );
 }
 
@@ -225,7 +258,41 @@ type EstadoDeReenvio = {
   /** Segundos hasta poder reenviar otra vez; Supabase limita a uno por minuto. */
   espera: number;
   error: string | null;
+  /** Ya se reenvió el máximo: no se ofrece otro (`MAXIMO_DE_REENVIOS`). */
+  agotado?: boolean;
 };
+
+/**
+ * 🔴 El freno de «Reenviar» (Nico, 01-10: «¿tienes algo para cuando reenvían
+ * muchas veces, que paren, para que no saturen la API ni nos hagan perder
+ * dinero?»). Antes: un reenvío por minuto, para siempre. Ahora la espera
+ * crece (1, 2, 5 y 10 minutos) y a los cuatro reenvíos del mismo correo se
+ * deja de ofrecer: si cuatro enlaces no llegaron, un quinto tampoco, y lo que
+ * sirve es escribirnos. Se cuenta por correo en `sessionStorage`, así que
+ * recargar no reinicia la cuenta. Supabase tiene además su propio tope por
+ * correo y por proyecto; esto es la primera barrera, no la única.
+ */
+const ESPERAS_DE_REENVIO_S = [60, 120, 300, 600] as const;
+export const MAXIMO_DE_REENVIOS = ESPERAS_DE_REENVIO_S.length;
+const claveDeReenvios = (correo: string) => `leasefy:reenvios:${correo}`;
+
+function reenviosHechos(correo: string): number {
+  try {
+    return Number(window.sessionStorage.getItem(claveDeReenvios(correo))) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function anotarReenvio(correo: string): number {
+  const n = reenviosHechos(correo) + 1;
+  try {
+    window.sessionStorage.setItem(claveDeReenvios(correo), String(n));
+  } catch {
+    // Sin almacenamiento: el freno vale mientras la pantalla siga abierta.
+  }
+  return n;
+}
 
 /**
  * «¿No te llegó? Reenviar el enlace», con su espera y su error. Lo usan la
@@ -244,7 +311,21 @@ function ReenvioDeConfirmacion({
 }) {
   return (
     <div className="space-y-1.5 text-[13px] text-fg-subtle" data-testid="reenvio-de-confirmacion">
-      {reenvio.estado === 'enviado' ? (
+      {/* «¿No te llegó?» → «Listo, te lo reenviamos» (o el tope): se cruzan,
+          no se reemplazan de golpe. La cuenta regresiva del botón NO entra
+          acá: cambia cada segundo y no es un cambio de estado. */}
+      <CrossFade
+        swapKey={reenvio.agotado ? 'agotado' : reenvio.estado === 'enviado' ? 'enviado' : 'ofrecer'}
+      >
+      {reenvio.agotado ? (
+        <p data-testid="reenvio-agotado">
+          Ya te enviamos {MAXIMO_DE_REENVIOS} enlaces. Si no aparecen en tu bandeja ni en spam, escríbenos a{' '}
+          <a href="mailto:hola@leasefy.co" className={ENLACE}>
+            hola@leasefy.co
+          </a>{' '}
+          y lo revisamos.
+        </p>
+      ) : reenvio.estado === 'enviado' ? (
         <p className="text-success" role="status">
           Listo, te lo reenviamos. Dale un minuto y revisa también spam.
         </p>
@@ -261,16 +342,13 @@ function ReenvioDeConfirmacion({
             {reenvio.estado === 'enviando'
               ? 'Reenviando…'
               : reenvio.espera > 0
-                ? `Reenviar en ${reenvio.espera} s`
+                ? `Reenviar en ${reenvio.espera >= 60 ? `${Math.floor(reenvio.espera / 60)}:${String(reenvio.espera % 60).padStart(2, '0')}` : `${reenvio.espera} s`}`
                 : 'Reenviar el enlace'}
           </button>
         </p>
       )}
-      {reenvio.error && (
-        <p className="text-danger" role="alert">
-          {reenvio.error}
-        </p>
-      )}
+      </CrossFade>
+      <ErrorDelCampo id="reenvio-de-confirmacion-error" mensaje={reenvio.error} className="mt-0" />
       {onCorregir && (
         <p>
           ¿Te equivocaste de correo?{' '}
@@ -283,10 +361,38 @@ function ReenvioDeConfirmacion({
   );
 }
 
+/** Lo que dice el login cuando el error no se reconoce (nunca el inglés de Supabase). */
+const POR_DEFECTO_AL_ENTRAR = 'Error al iniciar sesión. Intenta de nuevo.';
+
+/**
+ * Los errores de Supabase al crear la cuenta que son de UN campo: van debajo
+ * de él, no al banner. La contraseña se dice con lo que Supabase explicó
+ * (`weak_password` trae por qué: corta, sin variedad o filtrada).
+ */
+function campoDelErrorDeRegistro(codigo: string | undefined): 'email' | 'password' | null {
+  if (codigo === 'weak_password') return 'password';
+  if (codigo === 'email_address_invalid') return 'email';
+  return null;
+}
+
+/** ¿Supabase frenó el envío de correos (por código o por un 429)? */
+function esLimiteDeEnvios(err: unknown): boolean {
+  const { status, codigo } = leerErrorDeSupabase(err);
+  return codigo === 'over_email_send_rate_limit' || codigo === 'over_request_rate_limit' || status === 429;
+}
+
+/** Google: «conexión» sólo sin respuesta; lo demás, la frase de siempre. */
+function errorDeGoogle(err: unknown): string {
+  return mensajeDeSupabase(err, {
+    porDefecto: 'Error con Google. Intenta de nuevo.',
+    accion: 'conectarte con Google',
+  });
+}
+
 export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, sendPasswordReset, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership } = useAuth();
+  const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, sendPasswordReset, signOut, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, mfaCheckStatus, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, confirmacionDeLaSesion } = useAuth();
 
   /*
    * 🔴 Sin esto el correo y la contraseña terminaban en la URL (prueba en vivo,
@@ -330,6 +436,13 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   const [reenvio, setReenvio] = React.useState<EstadoDeReenvio>({ estado: 'listo', espera: 0, error: null });
   /** El correo con el que intentó entrar y Supabase dijo «sin confirmar»: ahí se ofrece reenviar. */
   const [correoSinConfirmar, setCorreoSinConfirmar] = React.useState<string | null>(null);
+  /**
+   * El correo con el que intentó entrar y el back confirmó que NO tiene cuenta:
+   * ahí se ofrece crearla con ese mismo correo (Nico, 01-10).
+   */
+  const [correoSinCuenta, setCorreoSinCuenta] = React.useState<string | null>(null);
+  /** Se intentó registrar un correo que ya tiene cuenta: se ofrece entrar con él. */
+  const [correoYaRegistrado, setCorreoYaRegistrado] = React.useState<string | null>(null);
   React.useEffect(() => {
     if (reenvio.espera <= 0) return;
     const id = setTimeout(() => {
@@ -392,6 +505,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
    */
   const olvidarAviso = React.useCallback(() => setMotivoDeCierre(null), []);
   const avisoDeSesion = motivoDeCierre ? AVISOS_DE_SESION[motivoDeCierre] ?? null : null;
+  const avisoDeConfirmacion = !!motivoDeCierre && AVISOS_DE_CONFIRMACION.has(motivoDeCierre);
   /*
    * Llegar acá con sesión abierta no es un error: pasa cada vez que alguien
    * toca «Postularme» y la puerta lo manda a entrar. Antes veía un formulario
@@ -399,6 +513,27 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
    * Se le pregunta con cuál cuenta sigue; `quiereOtraCuenta` es su respuesta.
    */
   const [quiereOtraCuenta, setQuiereOtraCuenta] = React.useState(false);
+  /*
+   * 🔴 LOGIN-BUCLE (06-10-2026): «Continuar» de `SesionYaAbierta` puede
+   * descubrir que la sesión ya no servía (token vencido y la renovación falló
+   * de verdad). Entonces se pasa al formulario CON el porqué, el mismo aviso de
+   * «tu sesión expiró» de siempre.
+   */
+  const alCambiarDeCuenta = React.useCallback((motivo?: MotivoDelCambioDeCuenta) => {
+    setQuiereOtraCuenta(true);
+    if (motivo === 'sesion-vencida') setMotivoDeCierre('expirada');
+  }, []);
+  const [saliendoDeLaEspera, setSaliendoDeLaEspera] = React.useState(false);
+  /** «Entrar con otra cuenta» mientras se revisa la sesión guardada. */
+  const entrarConOtraDesdeLaEspera = async () => {
+    setSaliendoDeLaEspera(true);
+    try {
+      await signOut();
+    } finally {
+      setSaliendoDeLaEspera(false);
+      setQuiereOtraCuenta(true);
+    }
+  };
 
   // A fatal auth-bootstrap error (e.g. 409: this email already belongs to
   // another account) is handed over by auth-context via sessionStorage across
@@ -419,6 +554,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   React.useEffect(() => {
     if (!didAuthenticateInForm.current) return;
     if (authLoading) return;
+    // Nico, 02-10-2026: sin el veredicto del segundo factor no se navega a
+    // ningún lado. `failed` pinta «No pudimos confirmar tu sesión» abajo.
+    if (mfaCheckStatus === 'pending' || mfaCheckStatus === 'failed') return;
     // MFA gate first (security): never bypass a pending second factor, regardless
     // of onboarding/returnUrl state (mirrors ProtectedRoute.tsx:127-130).
     // T-0099: enroll-pending (no factor to step up to) takes priority over
@@ -451,8 +589,18 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     // Onboarding sin terminar: retomar donde lo dejó — el onboarding del
     // perfil que eligió, o el selector si nunca eligió (Nico, 2026-09-07).
     if (!user.onboardingCompleted) {
-      window.location.href = rutaDeOnboarding(perfilElegido);
-      return;
+      // 🟡 BU-06 (04-10-2026): la asesora (miembro INVITADO, su registro es el
+      // de la inmobiliaria: «onboarding una vez por inmobiliaria») pasaba un
+      // instante por /onboarding/seleccionar-rol antes del panel. Mismo criterio
+      // que `ProtectedRoute`: un miembro activo de una inmobiliaria no hace el
+      // onboarding personal; se espera la membresía y sigue a su panel (si el
+      // registro de la inmobiliaria está a medias, el candado del panel lo lleva).
+      const deUnaInmobiliaria = user.role === 'agency' || user.backendRole === 'AGENT';
+      if (deUnaInmobiliaria && !agencyMembershipChecked && !probeWaitElapsed) return;
+      if (!(deUnaInmobiliaria && hasActiveAgencyMembership)) {
+        window.location.href = rutaDeOnboarding(perfilElegido);
+        return;
+      }
     }
     if (returnUrl && returnUrl !== '/') {
       window.location.href = returnUrl;
@@ -466,7 +614,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     const isAgencyUser = user.role === 'agency' || hasActiveAgencyMembership;
     if (isAgencyUser && !agencyMembershipChecked && !probeWaitElapsed) return;
     window.location.href = getRoleHomeRoute(user.role, agencyRole);
-  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed]);
+  }, [isAuthenticated, user, authLoading, returnUrl, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, mfaCheckStatus, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, probeWaitElapsed]);
   // A caller may deep-link with the role already chosen — via the `defaultRole`
   // prop (e.g. the publish wizard) or a `?role=` query. When present, the
   // post-signup destination skips the picker and goes straight to that role's
@@ -521,16 +669,36 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     }
   }, [initialMode, explicitRole]);
 
-  const handleModeSwitch = (newMode: AuthMode) => {
+  const handleModeSwitch = (newMode: AuthMode, correoDado?: string) => {
+    // El correo ya escrito viaja entre «Iniciar sesión», «Recupera tu
+    // contraseña» y «Crea tu cuenta»: volver a pedirlo era un paso de más
+    // (Nico, 01-10). La contraseña nunca viaja.
+    const correoEscrito = (
+      correoDado ??
+      (mode === 'forgot-password'
+        ? forgotPasswordForm.getValues('email')
+        : mode === 'register'
+          ? registerForm.getValues('email')
+          : loginForm.getValues('email'))
+    )?.trim() ?? '';
     setMode(newMode);
     setRegisterStep('credentials');
     setError(null);
     aceptarCorreoTalCual(null);
     setReenvio({ estado: 'listo', espera: 0, error: null });
     setCorreoSinConfirmar(null);
-    loginForm.reset();
-    registerForm.reset();
-    forgotPasswordForm.reset();
+    setCorreoSinCuenta(null);
+    loginForm.reset(
+      newMode === 'login' && correoEscrito ? { email: correoEscrito, password: '' } : undefined,
+    );
+    registerForm.reset(
+      newMode === 'register' && correoEscrito
+        ? { email: correoEscrito, password: '', confirmPassword: '' }
+        : undefined,
+    );
+    forgotPasswordForm.reset(
+      newMode === 'forgot-password' && correoEscrito ? { email: correoEscrito } : undefined,
+    );
   };
 
   // Role → onboarding entry point (the map lives in perfil-de-onboarding.ts).
@@ -553,9 +721,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   // /auth/callback (which exchanges the code server-side and honors returnUrl)
   // instead of Supabase's default Site URL (the root "/"), which would drop the
   // invitation/onboarding context and land the user as a bare TENANT.
+  // Con la marca del registro y siempre con «?»: la plantilla del correo le
+  // pega «&token_hash=…» (ver `regreso-del-correo.ts`, QA 28-09).
   const enlaceDeConfirmacion = () => {
     const dest = returnUrl && returnUrl !== '/' ? returnUrl : onboardingDest();
-    return `${window.location.origin}/auth/callback?returnUrl=${encodeURIComponent(dest)}`;
+    return urlDeRegresoDelRegistro(window.location.origin, dest);
   };
 
   // Redirect to the correct dashboard based on user role
@@ -576,9 +746,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       didAuthenticateInForm.current = true;
       await signInWithGoogle();
       onSuccess?.();
-    } catch {
+    } catch (err) {
       didAuthenticateInForm.current = false;
-      setError('Error con Google. Intenta de nuevo.');
+      setError(errorDeGoogle(err));
     } finally {
       setIsLoading(false);
     }
@@ -593,6 +763,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     setIsLoading(true);
     setError(null);
     setCorreoSinConfirmar(null);
+    setCorreoSinCuenta(null);
     olvidarAviso();
     const correo = normalizarCorreo(data.email);
     try {
@@ -610,7 +781,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           message = sessionStorage.getItem(AUTH_BOOTSTRAP_ERROR_KEY);
           if (message) sessionStorage.removeItem(AUTH_BOOTSTRAP_ERROR_KEY);
         } catch {}
-        setError(message || 'Error al iniciar sesión. Intenta de nuevo.');
+        setError(message || POR_DEFECTO_AL_ENTRAR);
         setIsLoading(false);
         return;
       }
@@ -618,20 +789,35 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       // El useEffect de arriba se encargará de la redirección al detectar el cambio de auth
     } catch (err: unknown) {
       didAuthenticateInForm.current = false;
+      // Por el código de Supabase, nunca por el texto en inglés (02-10-2026).
+      const codigo = codigoDeSupabase(err);
+      if (codigo === 'invalid_credentials') {
+        // Supabase dice lo mismo para contraseña mala y para correo sin
+        // cuenta. Se pregunta al back SÓLO acá, tras el intento fallido; si no
+        // contesta un «no» claro, queda el mensaje de siempre (Nico, 01-10).
+        const tieneCuenta = await correoTieneCuentaApi.consultar(correo);
+        setIsLoading(false);
+        if (tieneCuenta === false) {
+          setCorreoSinCuenta(correo);
+          setError('No hay una cuenta con este correo.');
+        } else {
+          setError('Correo o contraseña incorrectos.');
+        }
+        return;
+      }
       setIsLoading(false);
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('Invalid login credentials') || msg.includes('invalid_credentials')) {
-        setError('Correo o contraseña incorrectos.');
-      } else if (msg.includes('Email not confirmed')) {
+      if (codigo === 'email_not_confirmed') {
         // Acá llega quien abrió un enlace de confirmación vencido: /auth/enlace
         // lo manda a entrar. Sin el reenvío no tenía cómo pedir otro.
         setResetEmail(correo);
         redirectDeConfirmacion.current = enlaceDeConfirmacion();
         setReenvio({ estado: 'listo', espera: 0, error: null });
         setCorreoSinConfirmar(correo);
-        setError('Tu correo todavía no está confirmado. Busca el enlace en tu bandeja (y en spam) o pide uno nuevo.');
+        setError(mensajeDeSupabase(err));
       } else {
-        setError('Error al iniciar sesión. Intenta de nuevo.');
+        // Regla de oro: «conexión» sólo sin respuesta; un 5xx dice que fue
+        // nuestro; lo que no se reconoce, la frase de siempre (nunca el inglés).
+        setError(mensajeDeSupabase(err, { porDefecto: POR_DEFECTO_AL_ENTRAR, accion: 'iniciar tu sesión' }));
       }
     }
   };
@@ -645,9 +831,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       didAuthenticateInForm.current = true;
       await signInWithGoogle();
       onSuccess?.();
-    } catch {
+    } catch (err) {
       didAuthenticateInForm.current = false;
-      setError('Error con Google. Intenta de nuevo.');
+      setError(errorDeGoogle(err));
     } finally {
       setIsLoading(false);
     }
@@ -672,6 +858,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       // dos personas para quien lo mira sin saber.
       const correo = normalizarCorreo(data.email);
       redirectDeConfirmacion.current = emailRedirectTo;
+      setCorreoYaRegistrado(null);
       const { requiresConfirmation } = await signUpWithEmail(correo, data.password, emailRedirectTo, explicitRole ?? undefined);
       if (requiresConfirmation) {
         // El flujo termina en pantalla («Revisa tu correo»), no en un redirect:
@@ -688,14 +875,25 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       }
     } catch (err: unknown) {
       setIsLoading(false);
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.includes('already registered') || msg.includes('User already registered')) {
-        setError('Este correo ya está registrado. Inicia sesión en su lugar.');
-      } else if (msg.includes('Password should be')) {
-        setError('La contraseña debe tener al menos 6 caracteres.');
-      } else {
-        setError('Error al crear la cuenta. Intenta de nuevo.');
+      // Por el código de Supabase, nunca por el texto en inglés (02-10-2026).
+      const codigo = codigoDeSupabase(err);
+      if (codigo === 'user_already_exists' || codigo === 'email_exists') {
+        setError(mensajeDeSupabase(err));
+        setCorreoYaRegistrado(normalizarCorreo(data.email));
+        return;
       }
+      // Lo que es de un campo va a SU campo, con el foco ahí (la contraseña
+      // débil o filtrada, el correo que Supabase no acepta).
+      const campo = campoDelErrorDeRegistro(codigo);
+      if (campo) {
+        registerForm.setError(
+          campo,
+          { type: 'server', message: mensajeDeSupabase(err) },
+          { shouldFocus: true },
+        );
+        return;
+      }
+      setError(mensajeDeSupabase(err, { porDefecto: 'No pudimos crear tu cuenta. Intenta de nuevo.', accion: 'crear tu cuenta' }));
     }
   };
 
@@ -705,19 +903,31 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
    * acepta un reenvío por minuto; la espera se muestra en el propio enlace.
    */
   const reenviarConfirmacion = async () => {
+    if (reenviosHechos(resetEmail) >= MAXIMO_DE_REENVIOS) {
+      setReenvio({ estado: 'listo', espera: 0, error: null, agotado: true });
+      return;
+    }
     setReenvio({ estado: 'enviando', espera: 0, error: null });
     try {
       await resendSignUpEmail(resetEmail, redirectDeConfirmacion.current ?? undefined);
-      setReenvio({ estado: 'enviado', espera: 60, error: null });
+      const n = anotarReenvio(resetEmail);
+      setReenvio(
+        n >= MAXIMO_DE_REENVIOS
+          ? { estado: 'enviado', espera: 0, error: null, agotado: true }
+          : { estado: 'enviado', espera: ESPERAS_DE_REENVIO_S[n - 1], error: null },
+      );
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message.toLowerCase() : '';
-      const limite = msg.includes('rate') || msg.includes('over_email') || msg.includes('security purposes');
+      // El límite de Supabase, por su código o su 429 (nunca por el texto).
+      const limite = esLimiteDeEnvios(err);
       setReenvio({
         estado: 'listo',
         espera: limite ? 60 : 0,
         error: limite
           ? 'Ya se envió uno hace poco. Espera un minuto y revisa spam antes de pedir otro.'
-          : 'No se pudo reenviar. Intenta de nuevo en un momento.',
+          : mensajeDeSupabase(err, {
+              porDefecto: 'No se pudo reenviar. Intenta de nuevo en un momento.',
+              accion: 'reenviarte el enlace',
+            }),
       });
     }
   };
@@ -733,16 +943,45 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       setResetEmail(correo);
       setMode('reset-sent');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : '';
-      if (msg.toLowerCase().includes('rate limit') || msg.toLowerCase().includes('over_email')) {
+      if (esLimiteDeEnvios(err)) {
         setError('Límite de envíos alcanzado. Espera unos minutos e intenta de nuevo.');
+      } else if (codigoDeSupabase(err) === 'email_address_invalid') {
+        forgotPasswordForm.setError(
+          'email',
+          { type: 'server', message: mensajeDeSupabase(err) },
+          { shouldFocus: true },
+        );
       } else {
-        setError('Ocurrió un error. Intenta de nuevo.');
+        setError(
+          mensajeDeSupabase(err, {
+            porDefecto: 'No pudimos enviarte el enlace. Intenta de nuevo.',
+            accion: 'enviarte el enlace',
+          }),
+        );
       }
     } finally {
       setIsLoading(false);
     }
   };
+
+  /*
+   * La consulta del segundo factor no respondió ni reintentando (Nico,
+   * 02-10-2026): ni se sigue al destino ni se ofrece «Continuar como…»; sólo
+   * «Reintentar». La sesión no se cierra.
+   */
+  if (
+    !authLoading &&
+    isAuthenticated &&
+    user &&
+    mfaCheckStatus === 'failed' &&
+    (didAuthenticateInForm.current || (!quiereOtraCuenta && returnUrl && returnUrl !== '/'))
+  ) {
+    return (
+      <div className={cn('w-full', className)}>
+        <NoPudimosConfirmarTuSesion variante="tarjeta" />
+      </div>
+    );
+  }
 
   /*
    * Sesión ya abierta: se pregunta antes de nada.
@@ -765,13 +1004,60 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   ) {
     return (
       <div className={cn('w-full', className)}>
-        <SesionYaAbierta destino={returnUrl} onCambiarDeCuenta={() => setQuiereOtraCuenta(true)} />
+        <SesionYaAbierta destino={returnUrl} onCambiarDeCuenta={alCambiarDeCuenta} />
       </div>
     );
   }
 
+  /*
+   * 🔴 LOGIN-BUCLE (Nico, 06-10-2026): «vuelve a salir el login y luego de unos
+   * segundos se cambia al de sigue con tu cuenta porque la identifica». Con una
+   * sesión GUARDADA que todavía se está confirmando, el formulario vacío decía
+   * algo falso («no tienes sesión») y segundos después lo reemplazaba la
+   * tarjeta. Mientras se revisa —y sólo cuando venía a algo (`returnUrl`), el
+   * mismo caso de la tarjeta— se dice eso, con la salida a otra cuenta a la
+   * mano. Pasado el tope (`sin-confirmar`) vuelve el formulario.
+   */
+  if (
+    authLoading &&
+    confirmacionDeLaSesion === 'revisando' &&
+    !didAuthenticateInForm.current &&
+    !quiereOtraCuenta &&
+    returnUrl &&
+    returnUrl !== '/'
+  ) {
+    return (
+      <div className={cn('w-full', className)}>
+        <div className="flex w-full flex-col items-center gap-5 py-10 text-center" data-testid="revisando-sesion">
+          <CargaDeMarca tamano="lg" disposicion="apilada" texto="Revisando tu sesión…" />
+          <button
+            type="button"
+            className="text-sm text-muted-foreground underline underline-offset-4 disabled:opacity-60"
+            onClick={() => void entrarConOtraDesdeLaEspera()}
+            disabled={saliendoDeLaEspera}
+            data-testid="revisando-sesion-otra-cuenta"
+          >
+            Entrar con otra cuenta
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /*
+   * La vista de la tarjeta. Al cambiar (entrar ↔ crear cuenta ↔ recuperar,
+   * «Revisa tu correo»), el encabezado y el formulario salen JUNTOS y entra la
+   * vista nueva: `CrossFade` (sale en 150 ms acelerando, entra en 200 ms
+   * subiendo 4 px). Antes el título cambiaba de golpe y sólo el cuerpo se
+   * fundía. Su `initial` es `false`: la vista del primer pintado llega visible
+   * desde el HTML del servidor (antes el login nacía en `opacity: 0` hasta
+   * hidratar).
+   */
+  const vista = mode === 'register' ? `register-${registerStep}` : mode;
+
   return (
     <div className={cn('w-full', className)}>
+      <CrossFade swapKey={vista}>
       {/* Header — left-aligned, quiet hierarchy. `lg:pr-12`: la ✕ de la
           tarjeta vive en esta misma fila, a la derecha. */}
       <div className="mb-7 lg:pr-12">
@@ -787,10 +1073,11 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
         )}
 
         {(mode === 'reset-sent' || (mode === 'register' && registerStep === 'confirm-email')) && (
+          // El visto «llega» con el resorte de rebote leve del sistema.
           <motion.div
-            initial={{ scale: 0.6, opacity: 0 }}
+            initial={{ scale: motionScale.pop, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            transition={motionSpring.bouncy}
             className="w-10 h-10 mb-5 rounded-xl bg-success-soft flex items-center justify-center"
           >
             <CheckCircle className="w-5 h-5 text-success" weight="fill" />
@@ -809,25 +1096,19 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
           {mode === 'login' && 'Ingresa a tu cuenta para continuar.'}
           {mode === 'register' && registerStep === 'credentials' && 'Ingresa tus datos para continuar.'}
           {mode === 'register' && registerStep === 'confirm-email' && (
-            <>Enviamos un enlace de confirmación a <span className="font-medium text-fg-muted">{resetEmail}</span>.</>
+            // Sin punto al final: pegado al correo se leía como parte de él (Nico, 01-10).
+            <>Enviamos un enlace de confirmación a <span className="font-medium text-fg-muted">{resetEmail}</span></>
           )}
           {mode === 'forgot-password' && 'Te enviaremos un enlace para restablecer tu contraseña.'}
           {mode === 'reset-sent' && (
-            <>Enviamos un enlace de recuperación a <span className="font-medium text-fg-muted">{resetEmail}</span>.</>
+            <>Enviamos un enlace de recuperación a <span className="font-medium text-fg-muted">{resetEmail}</span></>
           )}
         </p>
       </div>
 
-      <AnimatePresence mode="wait">
         {/* ── Login ─────────────────────────────────────────────────────── */}
         {mode === 'login' && (
-          <motion.div
-            key="login"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
+          <div>
             <GoogleButton onClick={handleGoogleLogin} disabled={isLoading} isLoading={isLoading}>
               {isLoading ? 'Conectando...' : 'Continuar con Google'}
             </GoogleButton>
@@ -876,15 +1157,27 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                   </button>
                 </div>
               </div>
-              {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
-              {error && <ErrorBanner>{error}</ErrorBanner>}
+              <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
+              <ErrorBanner mensaje={error} />
               {error && correoSinConfirmar && (
                 <ReenvioDeConfirmacion reenvio={reenvio} onReenviar={reenviarConfirmacion} />
+              )}
+              {error && correoSinCuenta && (
+                <p className="text-[13px] text-fg-subtle">
+                  <button
+                    type="button"
+                    onClick={() => handleModeSwitch('register', correoSinCuenta)}
+                    className={ENLACE}
+                    data-testid="crear-cuenta-con-este-correo"
+                  >
+                    Crear una cuenta con este correo
+                  </button>
+                </p>
               )}
               <Button
                 type="submit"
                 disabled={isLoading || !hidratado}
-                className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]"
+                className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]"
               >
                 {isLoading ? (
                   <>
@@ -909,18 +1202,12 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 Crear cuenta
               </button>
             </p>
-          </motion.div>
+          </div>
         )}
 
         {/* ── Register: Credentials ──────────────────────────────────────── */}
         {mode === 'register' && registerStep === 'credentials' && (
-          <motion.div
-            key="register-credentials"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
+          <div>
             <GoogleButton onClick={handleGoogleRegister} disabled={isLoading} isLoading={isLoading}>
               Registrarse con Google
             </GoogleButton>
@@ -979,9 +1266,21 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 })}
                 error={registerForm.formState.errors.confirmPassword?.message}
               />
-              {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
-              {error && <ErrorBanner>{error}</ErrorBanner>}
-              <Button type="submit" disabled={isLoading || !hidratado} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] transition-all hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
+              <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
+              <ErrorBanner mensaje={error} />
+              {error && correoYaRegistrado && (
+                <p className="text-[13px] text-fg-subtle">
+                  <button
+                    type="button"
+                    onClick={() => handleModeSwitch('login', correoYaRegistrado)}
+                    className={ENLACE}
+                    data-testid="entrar-con-este-correo"
+                  >
+                    Iniciar sesión con este correo
+                  </button>
+                </p>
+              )}
+              <Button type="submit" disabled={isLoading || !hidratado} className="h-12 w-full rounded-full text-[14px] shadow-[0_12px_32px_-12px_rgba(26,64,255,0.65)] hover:-translate-y-px hover:shadow-[0_16px_40px_-12px_rgba(26,64,255,0.7)] active:translate-y-0 active:scale-[0.995]">
                 {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Creando cuenta...</>) : 'Crear cuenta'}
               </Button>
             </form>
@@ -998,19 +1297,12 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 Inicia sesión
               </button>
             </p>
-          </motion.div>
+          </div>
         )}
 
         {/* ── Register: Confirm email ────────────────────────────────────── */}
         {mode === 'register' && registerStep === 'confirm-email' && (
-          <motion.div
-            key="confirm-email"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="space-y-5"
-          >
+          <div className="space-y-5">
             {/*
               Acá había «Vuelve aquí e inicia sesión» y un botón «Ir a iniciar
               sesión» (Nico, 2026-09-07: «¿para qué, si debe ir al correo?»).
@@ -1053,17 +1345,12 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 Inicia sesión
               </button>
             </p>
-          </motion.div>
+          </div>
         )}
 
         {/* ── Forgot Password ────────────────────────────────────────────── */}
         {mode === 'forgot-password' && (
-          <motion.form
-            key="forgot-password"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+          <form
             method="post"
             onSubmit={forgotPasswordForm.handleSubmit(handleForgotPasswordSubmit)}
             className="space-y-4"
@@ -1088,27 +1375,20 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 onUsar={(correo) => forgotPasswordForm.setValue('email', correo, { shouldValidate: true })}
               />
             </div>
-            {avisoDeSesion && !error && <AvisoBanner>{avisoDeSesion}</AvisoBanner>}
-              {error && <ErrorBanner>{error}</ErrorBanner>}
+            <AvisoBanner mensaje={avisoDeSesion && !error ? avisoDeSesion : null} confirmacion={avisoDeConfirmacion} />
+            <ErrorBanner mensaje={error} />
             <Button type="submit" disabled={isLoading || !hidratado} className="w-full h-11 rounded-full text-[14px]">
               {isLoading ? (<><SpinnerGap className="w-4 h-4 mr-2 animate-spin" />Enviando...</>) : 'Enviar enlace de recuperación'}
             </Button>
             <p className="text-[12px] text-fg-subtle leading-relaxed">
               Ingresa el email asociado a tu cuenta y te enviaremos un enlace para restablecer tu contraseña.
             </p>
-          </motion.form>
+          </form>
         )}
 
         {/* ── Reset Email Sent ───────────────────────────────────────────── */}
         {mode === 'reset-sent' && (
-          <motion.div
-            key="reset-sent"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="space-y-5"
-          >
+          <div className="space-y-5">
             <div className="rounded-lg border border-border bg-surface p-4 space-y-2.5">
               <span className="font-mono text-[10px] font-medium uppercase tracking-[0.08em] text-fg-subtle">
                 Próximos pasos
@@ -1140,9 +1420,9 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 Reenviar enlace
               </button>
             </p>
-          </motion.div>
+          </div>
         )}
-      </AnimatePresence>
+      </CrossFade>
     </div>
   );
 }

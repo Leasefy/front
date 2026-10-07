@@ -68,7 +68,7 @@ import {
   Textarea,
   toast,
 } from '@/components/ui'
-import { Eyebrow, SegmentedControl } from '@leasefy/cadence'
+import { AnimatedNumber, CrossFade, Eyebrow, Presence, SegmentedControl } from '@leasefy/cadence'
 
 import {
   cobranzaSecuenciaApi,
@@ -76,20 +76,34 @@ import {
 } from '@/lib/api/cobranza-secuencia.service'
 import {
   ETIQUETA_DEL_MOTIVO,
+  FIJAR_EL_PLAZO_HREF,
   MOTIVOS_DE_EXCLUSION,
   type CalendarioDeLaSecuencia,
   type CanalDeCobranza,
   type SecuenciaDeCobranza,
   type VistaPreviaDeCobranza,
 } from '@/lib/api/cobranza-secuencia.types'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import {
+  erroresDelReglaje,
+  type CampoDelReglaje,
+} from '@/lib/hooks/cobranza/limites-de-cobranza'
+import { ESPACIO_DE_LA_PLATA, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata'
+// QA-IA-95 (05-10-2026): el mes en palabras («octubre de 2026»), no «2026-10».
+import { nombreDelMes } from '@/lib/recaudo/meses'
 
 const CANALES: { value: CanalDeCobranza; label: string }[] = [
   { value: 'CORREO', label: 'Correo' },
   { value: 'WHATSAPP', label: 'WhatsApp' },
 ]
 
+/** P8 a («centavos en todo»): los centavos sólo si los hay. CE-01 (QA-PAGOS-95 r2): «$ » con espacio duro. */
 function pesos(valor: number): string {
-  return `$${Math.round(valor).toLocaleString('es-CO')}`
+  return seMuestranLosCentavos(valor)
+    ? `$${ESPACIO_DE_LA_PLATA}${valor.toLocaleString('es-CO', decimalesEnPantalla(valor))}`
+    : `$${ESPACIO_DE_LA_PLATA}${Math.round(valor).toLocaleString('es-CO')}`
 }
 
 /** `2026-10-04` → `sábado, 4 de octubre`. Sin husos: es un día del calendario. */
@@ -103,9 +117,20 @@ function fechaLegible(iso: string): string {
   })
 }
 
-function mensajeDeError(err: unknown): string {
-  const posible = err as { message?: string; response?: { data?: { message?: string } } }
-  return posible?.response?.data?.message ?? posible?.message ?? 'No se pudo completar la acción.'
+/** Cada campo del reglaje y el `id` de su control (el error vive en `${id}-error`). */
+const ID_DEL_CAMPO: Record<CampoDelReglaje, string> = {
+  diaDelRecordatorio: 'dia-recordatorio',
+  diasEntreAvisos: 'dias-entre',
+  maxAvisosConInteres: 'max-avisos',
+  mensajeDelRecordatorio: 'msg-recordatorio',
+  mensajeDelAviso: 'msg-aviso',
+}
+const CAMPOS_DEL_REGLAJE = Object.keys(ID_DEL_CAMPO) as CampoDelReglaje[]
+
+/** Lleva el foco al primer campo con error, en el orden de la pantalla. */
+function enfocarElPrimero(errores: Partial<Record<CampoDelReglaje, string>>) {
+  const primero = CAMPOS_DEL_REGLAJE.find((c) => errores[c])
+  if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus()
 }
 
 function Aviso({ tono, children }: { tono: 'info' | 'warning'; children: React.ReactNode }) {
@@ -150,11 +175,29 @@ function PagosRecordatorios() {
   const [consultando, setConsultando] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /** El error de cada campo del reglaje: el del cliente (topes) o el que mandó el back en `campos`. */
+  const [erroresDeCampo, setErroresDeCampo] = useState<Partial<Record<CampoDelReglaje, string>>>({})
 
   // El borrador de la configuración: se edita en local y sólo viaja al guardar.
   const [borrador, setBorrador] = useState<Partial<SecuenciaDeCobranza>>({})
   const valor = <K extends keyof SecuenciaDeCobranza>(clave: K): SecuenciaDeCobranza[K] | undefined =>
     (borrador[clave] ?? secuencia?.[clave]) as SecuenciaDeCobranza[K] | undefined
+
+  /** Cambiar un campo del reglaje: guarda el valor y borra su error, que ya no aplica. */
+  const cambiar = <K extends CampoDelReglaje>(clave: K, v: SecuenciaDeCobranza[K]) => {
+    setBorrador((b) => ({ ...b, [clave]: v }))
+    setErroresDeCampo((e) => {
+      if (!e[clave]) return e
+      const resto = { ...e }
+      delete resto[clave]
+      return resto
+    })
+  }
+  /** Lo que lleva el control de un campo para leer su error. */
+  const aria = (clave: CampoDelReglaje) => ({
+    'aria-invalid': erroresDeCampo[clave] ? true : undefined,
+    'aria-describedby': erroresDeCampo[clave] ? `${ID_DEL_CAMPO[clave]}-error` : undefined,
+  })
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -165,7 +208,12 @@ function PagosRecordatorios() {
       setBorrador({})
       setCanal((actual) => actual ?? config.canalPreferido)
     } catch (err) {
-      setError(mensajeDeError(err))
+      setError(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos cargar las condiciones de cobro.',
+          accion: 'cargar las condiciones de cobro',
+        }),
+      )
     } finally {
       setCargando(false)
     }
@@ -195,6 +243,14 @@ function PagosRecordatorios() {
 
   const guardar = async () => {
     if (Object.keys(borrador).length === 0) return
+    // Lo que el back rechazaría se ataja acá, con su misma frase.
+    const delCliente = erroresDelReglaje(borrador)
+    if (Object.keys(delCliente).length > 0) {
+      setErroresDeCampo(delCliente)
+      enfocarElPrimero(delCliente)
+      return
+    }
+    setErroresDeCampo({})
     setGuardando(true)
     try {
       const config = await cobranzaSecuenciaApi.guardar({
@@ -223,7 +279,15 @@ function PagosRecordatorios() {
       setSeleccion(null)
       toast.success('Se guardaron las condiciones de cobro.')
     } catch (err) {
-      toast.error(mensajeDeError(err))
+      // Un 400 con `campos` va debajo de cada campo; al toast, sólo lo suelto.
+      const reparto = repartirErroresDelServidor<CampoDelReglaje>(err, {
+        campos: CAMPOS_DEL_REGLAJE,
+        porDefecto: 'No pudimos guardar las condiciones de cobro.',
+        accion: 'guardar las condiciones de cobro',
+      })
+      setErroresDeCampo(reparto.porCampo)
+      enfocarElPrimero(reparto.porCampo)
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '))
     } finally {
       setGuardando(false)
     }
@@ -241,7 +305,12 @@ function PagosRecordatorios() {
       })
       setPrevia(vista)
     } catch (err) {
-      toast.error(mensajeDeError(err))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos ver a quién le llega el aviso.',
+          accion: 'ver a quién le llega el aviso',
+        }),
+      )
     } finally {
       setConsultando(false)
     }
@@ -270,7 +339,12 @@ function PagosRecordatorios() {
       // Después de enviar, la vista previa vieja miente: se vuelve a pedir.
       await consultar()
     } catch (err) {
-      toast.error(mensajeDeError(err))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos enviar los avisos.',
+          accion: 'enviar los avisos',
+        }),
+      )
     } finally {
       setEnviando(false)
     }
@@ -313,22 +387,31 @@ function PagosRecordatorios() {
       return siguiente
     })
 
+  // Movimiento: cada salida en un `CrossFade` con su clave (cargando →
+  // condiciones, → fallo); lo que ya estaba al montarse no se anima.
   if (cargando) {
-    return <div className="p-6 text-sm text-fg-muted lg:p-8">Cargando las condiciones de cobro…</div>
+    return (
+      <CrossFade swapKey="cargando">
+        <div className="p-6 text-sm text-fg-muted lg:p-8">Cargando las condiciones de cobro…</div>
+      </CrossFade>
+    )
   }
 
   if (error) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="space-y-4 p-6 lg:p-8">
         <Aviso tono="warning">{error}</Aviso>
         <Button hideArrow onClick={() => void cargar()}>
           Reintentar
         </Button>
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="condiciones">
     <div className="space-y-6 p-6 lg:p-8">
       <header className="space-y-2">
         <Eyebrow>Cobranza</Eyebrow>
@@ -383,13 +466,14 @@ function PagosRecordatorios() {
                 max={28}
                 value={valor('diaDelRecordatorio') ?? 1}
                 disabled={!secuencia?.disponible}
-                onChange={(e) =>
-                  setBorrador((b) => ({ ...b, diaDelRecordatorio: Number(e.target.value) }))
-                }
+                onChange={(e) => cambiar('diaDelRecordatorio', Number(e.target.value))}
+                {...aria('diaDelRecordatorio')}
               />
-              <p className="text-xs text-fg-muted">
-                Hasta 28: el 30 no existe en febrero y ese mes no saldría.
-              </p>
+              <ErrorDelCampo
+                id="dia-recordatorio-error"
+                mensaje={erroresDeCampo.diaDelRecordatorio}
+                pista="Hasta 28: el 30 no existe en febrero y ese mes no saldría."
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="dias-entre">Días entre avisos</Label>
@@ -400,11 +484,14 @@ function PagosRecordatorios() {
                 max={30}
                 value={valor('diasEntreAvisos') ?? 3}
                 disabled={!secuencia?.disponible}
-                onChange={(e) =>
-                  setBorrador((b) => ({ ...b, diasEntreAvisos: Number(e.target.value) }))
-                }
+                onChange={(e) => cambiar('diasEntreAvisos', Number(e.target.value))}
+                {...aria('diasEntreAvisos')}
               />
-              <p className="text-xs text-fg-muted">Lo que se le da al inquilino para pagar.</p>
+              <ErrorDelCampo
+                id="dias-entre-error"
+                mensaje={erroresDeCampo.diasEntreAvisos}
+                pista="Lo que se le da al inquilino para pagar."
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="max-avisos">Avisos con interés</Label>
@@ -415,11 +502,14 @@ function PagosRecordatorios() {
                 max={10}
                 value={valor('maxAvisosConInteres') ?? 3}
                 disabled={!secuencia?.disponible}
-                onChange={(e) =>
-                  setBorrador((b) => ({ ...b, maxAvisosConInteres: Number(e.target.value) }))
-                }
+                onChange={(e) => cambiar('maxAvisosConInteres', Number(e.target.value))}
+                {...aria('maxAvisosConInteres')}
               />
-              <p className="text-xs text-fg-muted">El tope. Sin él, «y así» sería para siempre.</p>
+              <ErrorDelCampo
+                id="max-avisos-error"
+                mensaje={erroresDeCampo.maxAvisosConInteres}
+                pista="El tope. Sin él, «y así» sería para siempre."
+              />
             </div>
           </div>
 
@@ -446,10 +536,10 @@ function PagosRecordatorios() {
                 placeholder="Opcional. Se agrega al correo de la plantilla."
                 value={valor('mensajeDelRecordatorio') ?? ''}
                 disabled={!secuencia?.disponible}
-                onChange={(e) =>
-                  setBorrador((b) => ({ ...b, mensajeDelRecordatorio: e.target.value }))
-                }
+                onChange={(e) => cambiar('mensajeDelRecordatorio', e.target.value)}
+                {...aria('mensajeDelRecordatorio')}
               />
+              <ErrorDelCampo id="msg-recordatorio-error" mensaje={erroresDeCampo.mensajeDelRecordatorio} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="msg-aviso">Tu texto en el aviso con interés</Label>
@@ -460,8 +550,10 @@ function PagosRecordatorios() {
                 placeholder="Opcional. Se agrega al correo de la plantilla."
                 value={valor('mensajeDelAviso') ?? ''}
                 disabled={!secuencia?.disponible}
-                onChange={(e) => setBorrador((b) => ({ ...b, mensajeDelAviso: e.target.value }))}
+                onChange={(e) => cambiar('mensajeDelAviso', e.target.value)}
+                {...aria('mensajeDelAviso')}
               />
+              <ErrorDelCampo id="msg-aviso-error" mensaje={erroresDeCampo.mensajeDelAviso} />
             </div>
           </div>
 
@@ -513,12 +605,12 @@ function PagosRecordatorios() {
             </div>
           </div>
 
-          {hayCambios && (
+          <Presence show={hayCambios} initial={false}>
             <Aviso tono="info">
               Estás viendo el calendario de las condiciones <strong>guardadas</strong>. Guarda los
               cambios para verlos reflejados acá.
             </Aviso>
-          )}
+          </Presence>
 
           {calendario && calendario.pasos.length > 0 ? (
             <ol className="space-y-2">
@@ -558,7 +650,7 @@ function PagosRecordatorios() {
           <div className="space-y-1">
             <Eyebrow>Disparo desde la cartera</Eyebrow>
             <h2 className="text-base font-semibold text-fg">
-              A quién le va a llegar el aviso de {mes}
+              A quién le va a llegar el aviso de {nombreDelMes(mes)}
             </h2>
             <p className="max-w-2xl text-sm text-fg-muted">
               Sólo a quienes deban ese mes. Quien ya pagó —o adelantó la cuota— no recibe nada, y en
@@ -610,12 +702,24 @@ function PagosRecordatorios() {
             </Button>
           </div>
 
+          {/* «Ver a quién le llega» ⇄ la lista: la vista previa entra con su
+              fundido la primera vez (`popLayout`: monta ya, sin esperar a que
+              el aviso termine de irse); al cambiar de paso o de canal se queda
+              y sus cifras cuentan. */}
+          <CrossFade swapKey={previa ? 'previa' : 'sin-previa'} mode="popLayout" className="space-y-4">
           {previa && (
             <div className="space-y-4">
               <div className="rounded-lg border border-border bg-surface-muted px-4 py-3">
                 <p className="text-sm text-fg">
-                  De <strong>{previa.revisados}</strong> cuotas de {previa.mes}, le va a llegar a{' '}
-                  <strong className="text-primary">{previa.lesLlega}</strong> por{' '}
+                  De{' '}
+                  <strong>
+                    <AnimatedNumber value={previa.revisados} format={(n) => String(Math.round(n))} />
+                  </strong>{' '}
+                  cuotas de {nombreDelMes(previa.mes)}, le va a llegar a{' '}
+                  <strong className="text-primary">
+                    <AnimatedNumber value={previa.lesLlega} format={(n) => String(Math.round(n))} />
+                  </strong>{' '}
+                  por{' '}
                   {previa.canal === 'CORREO' ? 'correo' : 'WhatsApp'}.
                 </p>
                 {/*
@@ -638,6 +742,26 @@ function PagosRecordatorios() {
                       </li>
                     ))}
                   </ul>
+                )}
+                {/*
+                  🔴 QA-CONT CR-31 (Nico, 03-10-2026): sin días de plazo fijados,
+                  lo vencido no es cartera y no entra a la cobranza. El conteo
+                  solo no alcanza: hay que decir qué hacer para que entre.
+                */}
+                {(previa.excluidos.PLAZO_SIN_FIJAR ?? 0) > 0 && (
+                  <div
+                    className="mt-3 flex items-start gap-2 rounded-lg bg-warning-soft p-3 text-xs text-warning ring-1 ring-warning/30"
+                    data-testid="aviso-plazo-sin-fijar"
+                  >
+                    <Warning className="mt-0.5 h-4 w-4 shrink-0" weight="fill" aria-hidden="true" />
+                    <p className="leading-relaxed">
+                      La inmobiliaria no ha fijado sus días de plazo: la cuota vencida no entra a la
+                      cobranza hasta fijarlos.{' '}
+                      <Link href={FIJAR_EL_PLAZO_HREF} className="font-medium underline underline-offset-2">
+                        Fijar los días de plazo
+                      </Link>
+                    </p>
+                  </div>
                 )}
               </div>
 
@@ -684,7 +808,9 @@ function PagosRecordatorios() {
                           <span className="ml-2 text-xs text-fg-muted">
                             {d.esCartera
                               ? `cartera · ${d.diasDeMora} ${d.diasDeMora === 1 ? 'día' : 'días'} de mora`
-                              : 'deuda · dentro del plazo'}
+                              : d.motivo === 'PLAZO_SIN_FIJAR'
+                                ? 'vencida · plazo sin fijar'
+                                : 'deuda · dentro del plazo'}
                           </span>
                         </td>
                         <td className="px-3 py-2 text-fg-muted">{d.inmueble}</td>
@@ -736,9 +862,11 @@ function PagosRecordatorios() {
               cobro sin saber a cuántos le llega.
             </Aviso>
           )}
+          </CrossFade>
         </CardContent>
       </Card>
     </div>
+    </CrossFade>
   )
 }
 

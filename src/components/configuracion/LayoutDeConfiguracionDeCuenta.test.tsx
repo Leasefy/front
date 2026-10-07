@@ -19,6 +19,11 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k, locale: 'es' }),
 }))
+// QA-PROP-95: el layout del propietario pregunta si una inmobiliaria le administra contratos.
+let administrados: { doc: unknown; cargando: boolean } = { doc: null, cargando: false }
+vi.mock('@/components/landlord/ContratosConLaInmobiliaria', () => ({
+  useContratosAdministrados: () => administrados,
+}))
 
 import ConfiguracionDelInquilinoLayout from '@/app/inquilino/configuracion/layout'
 import ConfiguracionDelPropietarioLayout from '@/app/panel/(landlord)/configuracion/layout'
@@ -80,7 +85,8 @@ describe('Configuración del inquilino', () => {
 })
 
 describe('Configuración del propietario', () => {
-  it('abre en «Tu plan» y trae equipo y cuentas de recaudo', async () => {
+  it('el independiente abre en «Tu plan» y trae equipo y cuentas de recaudo', async () => {
+    administrados = { doc: null, cargando: false }
     pathname = '/panel/configuracion'
     await render(ConfiguracionDelPropietarioLayout)
     expect(enlaces()).toEqual([
@@ -95,6 +101,19 @@ describe('Configuración del propietario', () => {
     ])
     expect(marcado()).toEqual(['/panel/configuracion'])
     expect(container.querySelector('h2')?.textContent).toBe('Tu plan')
+    pathname = '/inquilino/configuracion'
+  })
+
+  it('a quien le administra una inmobiliaria no le ofrece plan, equipo ni cuentas de recaudo (QA-PROP-95)', async () => {
+    administrados = { doc: { contratos: [{ rol: 'PROPIETARIO' }] }, cargando: false }
+    pathname = '/panel/configuracion'
+    await render(ConfiguracionDelPropietarioLayout)
+    const hrefs = enlaces()
+    expect(hrefs).not.toContain('/panel/configuracion/equipo')
+    expect(hrefs).not.toContain('/panel/configuracion/cuentas-de-recaudo')
+    expect(container.textContent).not.toContain('Tu plan')
+    expect(hrefs).toContain('/panel/configuracion/seguridad')
+    administrados = { doc: null, cargando: false }
     pathname = '/inquilino/configuracion'
   })
 })

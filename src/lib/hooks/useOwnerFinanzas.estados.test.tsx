@@ -75,6 +75,17 @@ describe('useOwnerFinanzas — fallo ≠ no habilitado (O1)', () => {
     expect(ultimo?.unavailable).toBe(false);
   });
 
+  it('el fallo lleva el error entero (status + cuerpo con la referencia) para <FalloDeCarga> (02-10-2026)', async () => {
+    const error = Object.assign(new Error(''), { status: 500, detalle: { referencia: 'ab12cd34' } });
+    api.getPortafolioConEstado.mockResolvedValue({ estado: 'fallo', status: 500, mensaje: 'm', error });
+    await act(async () => {
+      root.render(<Sonda />);
+    });
+    await esperar();
+
+    expect(ultimo?.fallo?.error).toBe(error);
+  });
+
   it('con el portal apagado es «no disponible», sin fallo', async () => {
     api.getPortafolioConEstado.mockResolvedValue({ estado: 'no-habilitado' });
     await act(async () => {

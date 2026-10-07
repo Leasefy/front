@@ -19,13 +19,14 @@
  *
  * Shell + gates are copied from `casos/page.tsx` (Spinner loading → onboarding
  * `CompleteProfileFirst` → error `EmptyState`; `min-h-screen bg-[#f8f8f8]
- * dark:bg-[#0e0e10]` + `max-w-7xl`). Neutral tone only (no red, no countdown, no
+ * dark:bg-bg` + `max-w-7xl`). Neutral tone only (no red, no countdown, no
  * credit-bureau copy). Buttons/labels sentence case (DESIGN §4).
  */
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   Scroll,
   CaretRight,
@@ -46,8 +47,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import type { BadgeProps } from '@/components/ui/badge';
-import { Spinner } from '@/components/ui/spinner';
-import { acuerdoStatusToTone, acuerdoStatusToLabel } from '@/lib/types/tenant-case';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
+import { tonoDelAcuerdo, etiquetaDelAcuerdo, acuerdoNoSeCobra } from '@/lib/types/tenant-case';
 import type { CaseTone } from '@/lib/types/tenant-case';
 import type { AcuerdoDetail } from '@/lib/api/tenant-acuerdos.types';
 
@@ -65,22 +66,20 @@ const TONE_BADGE: Record<CaseTone, { variant: NonNullable<BadgeProps['variant']>
 // Acuerdo row — plan header (link to detail) + verbatim cuota plan
 // ============================================================================
 
-function AcuerdoRow({ p, index, locale }: { p: AcuerdoDetail; index: number; locale: string }) {
+function AcuerdoRow({ p, locale }: { p: AcuerdoDetail; locale: string }) {
   const { formatCurrency } = useI18n();
-  const badge = TONE_BADGE[acuerdoStatusToTone(p.status)];
+  const badge = TONE_BADGE[tonoDelAcuerdo(p)];
   const ToneIcon = badge.icon;
-  const nCuotas = p.installments.length;
+  // La inicial viaja como la «cuota 0» (ARREGLOS-3): el conteo dice las cuotas
+  // del plan (1, 2, 3…); la tabla las muestra todas, la inicial primero.
+  const nCuotas = p.installments.filter((c) => c.number >= 1).length;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-    >
+    <div>
       <Link href={`/inquilino/acuerdos/${encodeURIComponent(p.planId)}`} className="group block">
-        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-4 sm:p-5 hover:border-primary/40 transition-colors">
+        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-4 sm:p-5 hover:border-primary/40 transition-colors">
           <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+            <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
               <Scroll className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
             </div>
 
@@ -91,7 +90,7 @@ function AcuerdoRow({ p, index, locale }: { p: AcuerdoDetail; index: number; loc
                 </h3>
                 <Badge variant={badge.variant} className="inline-flex items-center gap-1">
                   <ToneIcon className="w-3 h-3" aria-hidden="true" />
-                  {acuerdoStatusToLabel(p.status)}
+                  {etiquetaDelAcuerdo(p)}
                 </Badge>
               </div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mt-1">
@@ -99,9 +98,14 @@ function AcuerdoRow({ p, index, locale }: { p: AcuerdoDetail; index: number; loc
                   {formatCurrency(p.totalDueCop)}
                 </span>
                 {' · '}
-                {locale === 'es'
-                  ? `${nCuotas} ${nCuotas === 1 ? 'cuota' : 'cuotas'}`
-                  : `${nCuotas} ${nCuotas === 1 ? 'installment' : 'installments'}`}
+                {/* Sin cuotas es un pago único (el compromiso de pagar todo), no «0 cuotas». */}
+                {nCuotas === 0
+                  ? locale === 'es'
+                    ? 'pago único'
+                    : 'single payment'
+                  : locale === 'es'
+                    ? `${nCuotas} ${nCuotas === 1 ? 'cuota' : 'cuotas'}`
+                    : `${nCuotas} ${nCuotas === 1 ? 'installment' : 'installments'}`}
               </p>
             </div>
 
@@ -109,14 +113,14 @@ function AcuerdoRow({ p, index, locale }: { p: AcuerdoDetail; index: number; loc
           </div>
 
           {/* Cuota plan — rendered VERBATIM from the record (no saldo math) */}
-          {nCuotas > 0 && (
+          {p.installments.length > 0 && (
             <div className="mt-4 pt-4 border-t border-border dark:border-border-strong">
-              <CuotaPlanTable installments={p.installments} locale={locale} />
+              <CuotaPlanTable installments={p.installments} locale={locale} acuerdoCerrado={acuerdoNoSeCobra(p)} />
             </div>
           )}
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 }
 
@@ -132,11 +136,15 @@ export default function AcuerdosPage() {
   // The only mutation entry point on this read surface: propose a payment plan.
   const [requestOpen, setRequestOpen] = useState(false);
 
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isOnboardingLoading || isLoading);
+
   // Loading gate — never flash a fake-empty while a source is in flight.
   if (isOnboardingLoading || isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
-        <Spinner size="lg" variant="current" className="text-primary" />
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
     );
   }
@@ -144,7 +152,7 @@ export default function AcuerdosPage() {
   // Onboarding gate.
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="rental" />
         </div>
@@ -156,7 +164,7 @@ export default function AcuerdosPage() {
   // fires on a genuine (non-404/403/0) failure.
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <EmptyState
             icon={XCircle}
@@ -170,15 +178,11 @@ export default function AcuerdosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-        >
+        <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
               {locale === 'es' ? 'Acuerdos de pago' : 'Payment agreements'}
@@ -197,18 +201,14 @@ export default function AcuerdosPage() {
           >
             {locale === 'es' ? 'Solicitar un plan de pago' : 'Request a payment plan'}
           </Button>
-        </motion.header>
+        </header>
 
         {/* List — real own-acuerdos, or an honest empty-state (incl. not-live []) */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
+        <section>
           {items.length > 0 ? (
             <div className="space-y-3">
-              {items.map((p, index) => (
-                <AcuerdoRow key={p.planId} p={p} index={index} locale={locale} />
+              {items.map((p) => (
+                <AcuerdoRow key={p.planId} p={p} locale={locale} />
               ))}
             </div>
           ) : (
@@ -227,8 +227,8 @@ export default function AcuerdosPage() {
               </Button>
             </div>
           )}
-        </motion.section>
-      </div>
+        </section>
+      </motion.div>
 
       {/* Propose-a-plan modal — intent only; the agency defines and approves terms. */}
       <SolicitarPlanPagoModal

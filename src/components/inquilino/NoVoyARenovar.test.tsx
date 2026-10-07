@@ -28,10 +28,24 @@ vi.mock('sonner', () => ({ toast: h.toast }));
 vi.mock('@/components/ui/dialog', () => ({
   Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
     open ? <div data-testid="modal">{children}</div> : null,
-  DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  // La variante viaja como `data-variant`, igual que en el Content de Cadence.
+  DialogContent: ({
+    children,
+    variant,
+    'data-testid': testId,
+  }: {
+    children: React.ReactNode;
+    variant?: string;
+    'data-testid'?: string;
+  }) => (
+    <div data-testid={testId} data-variant={variant}>
+      {children}
+    </div>
+  ),
   DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children: React.ReactNode }) => <h2>{children}</h2>,
   DialogDescription: ({ children }: { children: React.ReactNode }) => <p>{children}</p>,
+  DialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 import { NoVoyARenovar, diasHastaElFin } from './NoVoyARenovar';
@@ -151,6 +165,17 @@ describe('el plazo se dice ANTES de apretar', () => {
 });
 
 describe('avisar', () => {
+  it('es destructivo: rojo, y dice qué pasa con la prórroga y que se puede retirar', async () => {
+    await montar(arriendo(150));
+    await abrir();
+    const dialogo = porTestId('dialogo-no-voy-a-renovar')!;
+    // DESIGN.md §17: medallón rojo y el botón principal rojo.
+    expect(dialogo.getAttribute('data-variant')).toBe('destructive');
+    expect(porTestId('confirmar-no-renovar')!.className).toContain('bg-danger');
+    expect(dialogo.textContent).toContain('Sin aviso se prorroga solo');
+    expect(dialogo.textContent).toContain('puedes retirarlo');
+  });
+
   it('sin motivo no se puede: no es burocracia, es lo que la inmobiliaria lee', async () => {
     await montar(arriendo(150));
     await abrir();
@@ -185,6 +210,64 @@ describe('avisar', () => {
       (porTestId('confirmar-no-renovar') as HTMLButtonElement).click();
     });
     expect(h.toast.success).toHaveBeenCalledWith(expect.stringContaining('12 días'));
+  });
+});
+
+describe('errores con la regla de oro (02-10-2026)', () => {
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    return Object.assign(new Error(String(cuerpo.message ?? '')), {
+      name: 'ApiError',
+      status,
+      code: cuerpo.code,
+      detalle: cuerpo,
+    });
+  }
+
+  it('🔴 un 400 en el motivo va bajo el motivo, sin toast', async () => {
+    const LARGO = 'El motivo puede tener hasta 500 caracteres.';
+    h.api.avisarQueNoRenueva.mockRejectedValue(
+      errorDelBack(400, {
+        code: 'DATOS_INVALIDOS',
+        message: [LARGO],
+        campos: [{ campo: 'motivo', regla: 'largo', mensaje: LARGO }],
+      }),
+    );
+    await montar(arriendo(150));
+    await abrir();
+    await escribirMotivo('Me mudo de ciudad');
+    await act(async () => {
+      (porTestId('confirmar-no-renovar') as HTMLButtonElement).click();
+    });
+    expect(document.getElementById('motivo-no-renovar-error')?.textContent).toBe(LARGO);
+    expect(porTestId('motivo-no-renovar')!.getAttribute('aria-invalid')).toBe('true');
+    expect(h.toast.error).not.toHaveBeenCalled();
+  });
+
+  it('🔴 retirar el aviso con un 5xx dice que fue nuestro, con la referencia', async () => {
+    h.api.retirarElAvisoDeNoRenovacion.mockRejectedValue(
+      errorDelBack(500, { code: 'ERROR_INTERNO', message: 'Internal server error', referencia: 'ab12cd34' }),
+    );
+    await montar(
+      arriendo(150, { at: '2026-09-01T00:00:00.000Z', por: 'INQUILINO', motivo: 'Me mudo' }),
+    );
+    await act(async () => {
+      (porTestId('retirar-aviso') as HTMLButtonElement).click();
+    });
+    const { description } = h.toast.error.mock.calls[0][1] as { description: string };
+    expect(description).toMatch(/^No pudimos retirar el aviso: algo falló de nuestro lado/);
+    expect(description).toContain('ab12cd34');
+  });
+
+  it('sin respuesta: habla de la conexión', async () => {
+    h.api.avisarQueNoRenueva.mockRejectedValue(new TypeError('Failed to fetch'));
+    await montar(arriendo(150));
+    await abrir();
+    await escribirMotivo('Me mudo de ciudad');
+    await act(async () => {
+      (porTestId('confirmar-no-renovar') as HTMLButtonElement).click();
+    });
+    const { description } = h.toast.error.mock.calls[0][1] as { description: string };
+    expect(description).toMatch(/conexión/);
   });
 });
 
@@ -225,5 +308,25 @@ describe('diasHastaElFin', () => {
     expect(diasHastaElFin('2026-12-20T00:00:00.000Z', new Date('2026-09-21T23:00:00'))).toBe(
       diasHastaElFin('2026-12-20T00:00:00.000Z', new Date('2026-09-21T01:00:00')),
     );
+  });
+});
+
+describe('D-19 (QA-INQ-95 ronda 2) · el aviso del contrato y la fecha del fin', () => {
+  it('el aviso que registró la inmobiliaria EN EL CONTRATO (sin renovación) se muestra', async () => {
+    await montar({
+      id: 'l-1',
+      endDate: '2027-07-31T00:00:00.000Z',
+      renovacion: null,
+      avisoNoRenovar: { at: '2026-10-04T15:00:00.000Z', por: 'INMOBILIARIA', motivo: 'El propietario necesita el inmueble' },
+    } as never);
+    const caja = porTestId('aviso-de-no-renovacion')!;
+    expect(caja.textContent).toContain('Tu inmobiliaria registró');
+    expect(porTestId('abrir-no-renovar')).toBeNull();
+  });
+
+  it('el fin del contrato es un DÍA: «31 de julio», no el 30 (medianoche UTC en Bogotá)', async () => {
+    await montar({ id: 'l-1', endDate: '2027-07-31T00:00:00.000Z', renovacion: null } as never);
+    await abrir();
+    expect(porTestId('dialogo-no-voy-a-renovar')!.textContent).toContain('31 de julio de 2027');
   });
 });

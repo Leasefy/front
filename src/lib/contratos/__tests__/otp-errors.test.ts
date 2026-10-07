@@ -41,6 +41,22 @@ describe('describirErrorDeOtp — contract.md §3.3', () => {
   })
 })
 
+describe('describirErrorDeOtp — la regla de oro (02-10-2026)', () => {
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia, no «Error interno del servidor.»', () => {
+    const err = new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' })
+    const d = describirErrorDeOtp(err, 'enviar el código')
+    expect(d.mensaje).toContain('No pudimos enviar el código: algo falló de nuestro lado.')
+    expect(d.mensaje).toContain('ab12cd34')
+    expect(d.mensaje).not.toContain('Error interno')
+    expect(d.mensaje).not.toContain('conexión')
+  })
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', () => {
+    const d = describirErrorDeOtp(new ApiError(0, 'Failed to fetch'))
+    expect(d.mensaje).toContain('conexión')
+  })
+})
+
 describe('debeReiniciarOtp', () => {
   it('TOKEN_DE_FIRMA_INVALIDO — reiniciar el flujo de OTP', () => {
     expect(debeReiniciarOtp(new ApiError(400, 'Token inválido.', 'TOKEN_DE_FIRMA_INVALIDO'))).toBe(true)

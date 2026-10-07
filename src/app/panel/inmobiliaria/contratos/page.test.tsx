@@ -68,6 +68,14 @@ vi.mock('@/components/ui/dropdown-menu', () => ({
   },
 }))
 
+// QA-CONT-95 (MC-15): la página lee si se puede migrar (crear contratos).
+const { permisosMock } = vi.hoisted(() => ({
+  permisosMock: { canAccess: (_m: string, _a?: string): boolean => true, isAdmin: true, isLoading: false, agencyRole: 'ADMIN' as string | null },
+}))
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => permisosMock,
+}))
+
 const { deudaMock } = vi.hoisted(() => ({ deudaMock: vi.fn() }))
 vi.mock('@/lib/hooks/use-migracion-con-deuda', () => ({
   useMigracionConDeuda: () => deudaMock(),
@@ -112,6 +120,19 @@ vi.mock('@/components/ui/pagination', () => ({
 vi.mock('@leasefy/cadence', () => ({
   Eyebrow: ({ children }: { children?: React.ReactNode }) =>
     React.createElement('p', null, children),
+  // Movimiento (03-10-2026): la cifra que cuenta y el «Limpiar» que entra y
+  // sale. Acá se pintan en su valor final, sin animar.
+  AnimatedNumber: ({ value, format }: { value: number; format?: (n: number) => string }) =>
+    React.createElement('span', null, format ? format(value) : String(value)),
+  Presence: ({
+    show,
+    children,
+    initial: _i,
+    direction: _d,
+    distance: _di,
+    ...rest
+  }: Record<string, unknown> & { show: boolean; children?: React.ReactNode }) =>
+    show ? React.createElement('div', rest, children) : null,
   // El buscador de la tabla (2026-09-12): acá sólo hace falta que exista.
   Input: (props: Record<string, unknown>) => React.createElement('input', props),
   IconButton: ({ icon, ...props }: Record<string, unknown> & { icon?: React.ReactNode }) =>
@@ -202,7 +223,11 @@ vi.mock('@/components/ui/table', () => {
     Table: el('table'),
     TableHeader: el('thead'),
     TableBody: el('tbody'),
+    // Las filas que entran y salen (03-10-2026) van con el mismo reemplazo
+    // plano: acá importa QUÉ se pinta, no cómo entra.
+    TableBodyAnimado: el('tbody'),
     TableRow: el('tr'),
+    TableRowAnimada: el('tr'),
     TableHead: el('th'),
     TableCell: el('td'),
   }
@@ -701,5 +726,30 @@ describe('ContratosPage — la consulta caída no se disfraza de cero ni de vac�
     expect(kpis()[0].textContent).toContain('2')
     expect(container.textContent).not.toContain('No se pudo traer')
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
+  })
+})
+
+describe('ContratosPage — QA-CONT-95 (MC-15): quien sólo ve contratos no recibe el enlace a migrar', () => {
+  afterEach(() => {
+    permisosMock.canAccess = () => true
+    permisosMock.isAdmin = true
+    permisosMock.agencyRole = 'ADMIN'
+  })
+
+  it('🔴 el contador ve el aviso pero sin «Completarlos en la migración» ni «Migrar contratos» en el engranaje', async () => {
+    permisosMock.canAccess = (_m: string, a?: string) => (a ?? 'view') === 'view'
+    permisosMock.isAdmin = false
+    permisosMock.agencyRole = 'CONTADOR'
+    deudaMock.mockReturnValue({ sinInmueble: 0, sinPropietario: 84 })
+    withContracts([])
+
+    await renderPage()
+
+    const alerta = container.querySelector('[data-testid="alerta-migrados-sin-cobrar"]')!
+    expect(alerta.textContent).toContain('84 contratos migrados sin propietario')
+    expect(alerta.querySelector('a')).toBeNull()
+    const menu = container.querySelector('[data-testid="menu-configuracion"]')!
+    const enlaces = Array.from(menu.querySelectorAll('a')).map((a) => a.getAttribute('href'))
+    expect(enlaces).toEqual(['/panel/inmobiliaria/contratos/conceptos'])
   })
 })

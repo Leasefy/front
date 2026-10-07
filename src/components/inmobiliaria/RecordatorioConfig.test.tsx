@@ -140,3 +140,55 @@ describe('Guardar recordatorios', () => {
     expect(successMock).toHaveBeenCalledTimes(1);
   });
 });
+
+/*
+ * 🔴 Tanda 2 del sistema de errores (02-10-2026): un 400 sobre los días va
+ * bajo SU grupo con el foco; un 5xx dice «de nuestro lado» con la referencia;
+ * sólo sin respuesta se habla de la conexión. Nada de `error.message` crudo.
+ */
+describe('Guardar recordatorios: los errores, cada uno en su lugar', () => {
+  async function guardarCon(error: unknown) {
+    await montar(vi.fn().mockRejectedValue(error));
+    await act(async () => {
+      botonGuardar().click();
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+  }
+
+  it('🔴 un 400 en `reminderDaysAfter` va bajo «después del vencimiento», con el foco', async () => {
+    const frase = 'Puedes elegir hasta 10 días de recordatorio.';
+    const { ApiError } = await import('@/lib/api/client');
+    await guardarCon(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'reminderDaysAfter', regla: 'maximo', mensaje: frase }],
+      }),
+    );
+
+    expect(document.querySelector('#recordatorio-dias-despues-error')?.textContent).toBe(frase);
+    expect(document.activeElement?.closest('#recordatorio-dias-despues')).toBeTruthy();
+    expect(errorMock).not.toHaveBeenCalled();
+    expect(successMock).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia, y no el texto crudo', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    await guardarCon(new ApiError(500, 'Internal server error', 'ERROR_INTERNO', { referencia: '1234abcd' }));
+
+    const descripcion = String(errorMock.mock.calls[0]?.[1]?.description ?? '');
+    expect(descripcion).toContain('No pudimos guardar los recordatorios: algo falló de nuestro lado');
+    expect(descripcion).toContain('1234abcd');
+    expect(descripcion).not.toContain('Internal server error');
+  });
+
+  it('sin respuesta (status 0) habla de la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    await guardarCon(new ApiError(0, 'Failed to fetch'));
+
+    expect(String(errorMock.mock.calls[0]?.[1]?.description ?? '')).toMatch(/conexión/);
+  });
+});

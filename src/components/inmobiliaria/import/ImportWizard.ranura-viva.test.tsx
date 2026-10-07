@@ -142,3 +142,14 @@ describe('<ImportWizard> — la ranura viva', () => {
     ).toBeTruthy();
   });
 });
+
+describe('<ImportWizard> — QA-MIG-A MG-29: el pie cabe a 390 px', () => {
+  it('el pie y sus botones se envuelven en vez de empujar el ancho de la página', async () => {
+    await pintar(false);
+    const pie = q('pie-del-asistente')!;
+    expect(pie.className).toContain('flex-wrap');
+    expect(pie.className).toContain('px-4');
+    const botones = pie.lastElementChild as HTMLElement;
+    expect(botones.className).toContain('flex-wrap');
+  });
+});

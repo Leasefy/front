@@ -193,7 +193,7 @@ function Pagination({
   return (
     <nav
       role="navigation"
-      aria-label="pagination"
+      aria-label="Paginación"
       className={cn('flex items-center', className)}
       {...props}
     >
@@ -204,7 +204,7 @@ function Pagination({
               href={isUsingLinks ? getPageHref!(1) : undefined}
               onClick={() => onPageChange?.(1)}
               disabled={currentPage === 1}
-              aria-label="Go to first page"
+              aria-label="Ir a la primera página"
             >
               <CaretDoubleLeft className="h-4 w-4" />
             </PageControl>
@@ -220,7 +220,7 @@ function Pagination({
             }
             onClick={() => onPageChange?.(currentPage - 1)}
             disabled={currentPage === 1}
-            aria-label="Go to previous page"
+            aria-label="Página anterior"
             className="gap-1 px-2.5"
           >
             <CaretLeft className="h-4 w-4" />
@@ -236,7 +236,7 @@ function Pagination({
                 className="flex h-9 w-9 items-center justify-center"
               >
                 <DotsThree className="h-4 w-4 text-muted-foreground" />
-                <span className="sr-only">More pages</span>
+                <span className="sr-only">Más páginas</span>
               </span>
             ) : (
               <PageControl
@@ -259,7 +259,7 @@ function Pagination({
             }
             onClick={() => onPageChange?.(currentPage + 1)}
             disabled={currentPage === totalPages}
-            aria-label="Go to next page"
+            aria-label="Página siguiente"
             className="gap-1 px-2.5"
           >
             <span className="hidden sm:inline">Siguiente</span>
@@ -273,7 +273,7 @@ function Pagination({
               href={isUsingLinks ? getPageHref!(totalPages) : undefined}
               onClick={() => onPageChange?.(totalPages)}
               disabled={currentPage === totalPages}
-              aria-label="Go to last page"
+              aria-label="Ir a la última página"
             >
               <CaretDoubleRight className="h-4 w-4" />
             </PageControl>

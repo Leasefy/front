@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Wrench,
   Lightning,
@@ -11,8 +10,6 @@ import {
   Key,
   DotsThreeCircle,
   Warning,
-  Camera,
-  X,
   Upload,
   Check,
   User,
@@ -23,8 +20,16 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button, Input, Textarea } from '@/components/ui';
-import { IconButton, RadioCardGroup, RadioCard } from '@leasefy/cadence';
+import { Collapse, Presence, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { CajonCuerpo, CajonPie } from '@/components/ui/cajon';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
+import {
+  MAX_LARGO_TITULO_DEL_MANTENIMIENTO,
+  MENSAJES_DEL_MANTENIMIENTO,
+  fotosQueEntran,
+} from '@/lib/mantenimiento/limites-del-mantenimiento';
+import { SelectorDeFotosDelMantenimiento } from '@/components/inmobiliaria/mantenimiento/SelectorDeFotosDelMantenimiento';
 import type {
   Consignacion,
   MantenimientoType,
@@ -43,9 +48,39 @@ export interface MantenimientoFormData {
   priority: MantenimientoPriority;
   title: string;
   description: string;
-  photoUrls?: string[];
+  /**
+   * 🔴 02-10-2026: los ARCHIVOS, no una URL. Antes viajaba la vista previa del
+   * navegador (`blob:`) en `photoUrls` y nadie más la podía abrir. Quien crea
+   * la solicitud sube estas fotos después, una por una
+   * (`mantenimientoApi.subirFoto`).
+   */
+  fotos?: File[];
   paidBy: MantenimientoPaidBy;
 }
+
+/**
+ * Los campos del formulario, con el nombre que les da `CreateMantenimientoDto`.
+ * Las fotos se llaman `photoUrls` en el back: ahí van sus errores.
+ */
+export type CampoDelMantenimiento =
+  | 'consignacionId'
+  | 'type'
+  | 'priority'
+  | 'title'
+  | 'description'
+  | 'photoUrls'
+  | 'paidBy';
+
+/** En el orden en que se ven: el foco va al primero con error. */
+export const CAMPOS_DEL_MANTENIMIENTO: readonly CampoDelMantenimiento[] = [
+  'consignacionId',
+  'type',
+  'priority',
+  'title',
+  'description',
+  'photoUrls',
+  'paidBy',
+];
 
 interface MantenimientoFormProps {
   consignaciones: Consignacion[];
@@ -53,6 +88,11 @@ interface MantenimientoFormProps {
   onSubmit: (data: MantenimientoFormData) => void;
   onCancel: () => void;
   isSubmitting?: boolean;
+  /**
+   * Lo que rechazó el back, por campo (02-10-2026). Se pinta bajo su campo,
+   * el primero recibe el foco, y cada uno se borra al corregirlo.
+   */
+  erroresDelServidor?: Partial<Record<CampoDelMantenimiento, string>>;
 }
 
 // ============================================================================
@@ -249,14 +289,13 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
             />
           </div>
 
-          <AnimatePresence>
-            {isOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg"
-              >
+          {/* Los resultados bajan apenas desde el buscador y se van rápido. */}
+          <Presence
+            show={isOpen}
+            direction="down"
+            distance="xs"
+            className="absolute z-10 w-full mt-2 max-h-64 overflow-y-auto rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg"
+          >
                 {filteredConsignaciones.length > 0 ? (
                   filteredConsignaciones.map((consignacion) => (
                     // allowlist: search-result list-row (property thumbnail + 2-line text as ONE
@@ -297,9 +336,7 @@ function PropertySelector({ consignaciones, selectedId, onSelect, t }: PropertyS
                     {t('inmobiliaria.mantenimiento.noPropertiesFound')}
                   </div>
                 )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          </Presence>
         </div>
       )}
     </div>
@@ -399,74 +436,6 @@ function PrioritySelector({ selected, onSelect, t }: PrioritySelectorProps) {
 }
 
 // ============================================================================
-// Photo Upload Component
-// ============================================================================
-
-interface PhotoUploadProps {
-  photos: string[];
-  onAdd: (url: string) => void;
-  onRemove: (index: number) => void;
-  t: (key: string, params?: Record<string, string | number>) => string;
-}
-
-function PhotoUpload({ photos, onAdd, onRemove, t }: PhotoUploadProps) {
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // In a real app, this would upload to a server
-      // For now, create a local URL
-      const url = URL.createObjectURL(file);
-      onAdd(url);
-    }
-    e.target.value = '';
-  };
-
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
-        {t('inmobiliaria.mantenimiento.photosOptional')}
-      </label>
-      <p className="text-xs text-fg-muted dark:text-fg-subtle">
-        {t('inmobiliaria.mantenimiento.photosHint')}
-      </p>
-
-      <div className="flex flex-wrap gap-3 mt-3">
-        {/* Photo previews */}
-        {photos.map((photo, index) => (
-          <div key={index} className="relative w-24 h-24 rounded-xl overflow-hidden group">
-            <img src={photo} alt={`Foto ${index + 1}`} className="w-full h-full object-cover" />
-            <IconButton
-              type="button"
-              variant="ghost"
-              size="sm"
-              icon={<X className="w-4 h-4" />}
-              onClick={() => onRemove(index)}
-              aria-label={t('inmobiliaria.mantenimiento.change')}
-              className="absolute top-1 right-1 bg-danger text-white hover:bg-danger/90 opacity-0 group-hover:opacity-100 transition-opacity"
-            />
-          </div>
-        ))}
-
-        {/* Add photo button */}
-        {photos.length < 5 && (
-          <label className="w-24 h-24 rounded-xl border-2 border-dashed border-border dark:border-border-strong flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary/30 hover:bg-primary-soft transition-all">
-            <Camera className="w-6 h-6 text-fg-subtle" />
-            <span className="text-xs text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.mantenimiento.addPhoto')}</span>
-            {/* allowlist: hidden type=file behind a custom camera dropzone tile (playbook hidden/file-input allowlist) */}
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </label>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
 // Paid By Selector Component
 // ============================================================================
 
@@ -519,15 +488,17 @@ export function MantenimientoForm({
   onSubmit,
   onCancel,
   isSubmitting = false,
+  erroresDelServidor,
 }: MantenimientoFormProps) {
   const { t } = useI18n();
+  const raiz = useRef<HTMLDivElement>(null);
   const [formData, setFormData] = useState<{
     consignacionId: string;
     type: MantenimientoType | '';
     priority: MantenimientoPriority | '';
     title: string;
     description: string;
-    photoUrls: string[];
+    fotos: File[];
     paidBy: MantenimientoPaidBy;
   }>({
     consignacionId: preselectedConsignacionId || '',
@@ -535,12 +506,30 @@ export function MantenimientoForm({
     priority: '',
     title: '',
     description: '',
-    photoUrls: [],
+    fotos: [],
     paidBy: 'owner',
   });
+  // El aviso de prioridad alta se cierra con su altura: mientras se va, sigue
+  // diciendo lo que decía (no salta al texto de la otra prioridad).
+  const prioridadAlta = useUltimoPresente(
+    formData.priority === 'high' || formData.priority === 'emergency' ? formData.priority : null,
+  );
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  // Lo que mandó el servidor entra a los errores de cada campo y lleva el foco
+  // al primero. Un objeto nuevo por cada rechazo: el efecto corre una vez.
+  useEffect(() => {
+    if (!erroresDelServidor) return;
+    const conError = CAMPOS_DEL_MANTENIMIENTO.filter((c) => erroresDelServidor[c]);
+    if (conError.length === 0) return;
+    setErrors((prev) => ({ ...prev, ...erroresDelServidor }) as Record<string, string>);
+    setTouched((prev) => ({ ...prev, ...Object.fromEntries(conError.map((c) => [c, true])) }));
+    raiz.current
+      ?.querySelector<HTMLElement>(`[data-campo="${conError[0]}"] :is(input, textarea, button)`)
+      ?.focus();
+  }, [erroresDelServidor]);
 
   const updateField = <K extends keyof typeof formData>(key: K, value: typeof formData[K]) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -551,6 +540,32 @@ export function MantenimientoForm({
         delete newErrors[key];
         return newErrors;
       });
+    }
+  };
+
+  const limpiarErrorDeLasFotos = () => {
+    setErrors((prev) => {
+      if (!prev.photoUrls) return prev;
+      const sin = { ...prev };
+      delete sin.photoUrls;
+      return sin;
+    });
+  };
+
+  /**
+   * Las fotos elegidas se revisan ANTES de mandar nada, con las reglas del
+   * back (tipo, peso y el tope de 30 por solicitud): la que no sirve no entra y el
+   * motivo sale bajo las fotos. Las que sí sirven entran igual.
+   */
+  const agregarFotos = (elegidas: File[]) => {
+    const { entran, problemas } = fotosQueEntran(formData.fotos.length, elegidas);
+    if (entran.length > 0) {
+      setFormData((prev) => ({ ...prev, fotos: [...prev.fotos, ...entran] }));
+    }
+    if (problemas.length > 0) {
+      setErrors((prev) => ({ ...prev, photoUrls: problemas.join(' · ') }));
+    } else {
+      limpiarErrorDeLasFotos();
     }
   };
 
@@ -570,6 +585,9 @@ export function MantenimientoForm({
       newErrors.title = t('inmobiliaria.mantenimiento.errTitleRequired');
     } else if (formData.title.length < 5) {
       newErrors.title = t('inmobiliaria.mantenimiento.errTitleMinLength');
+    } else if (formData.title.length > MAX_LARGO_TITULO_DEL_MANTENIMIENTO) {
+      // La misma frase del back (`limites-del-mantenimiento.ts`).
+      newErrors.title = MENSAJES_DEL_MANTENIMIENTO.tituloLargo;
     }
     if (!formData.description.trim()) {
       newErrors.description = t('inmobiliaria.mantenimiento.errDescRequired');
@@ -600,7 +618,7 @@ export function MantenimientoForm({
       priority: formData.priority as MantenimientoPriority,
       title: formData.title,
       description: formData.description,
-      photoUrls: formData.photoUrls.length > 0 ? formData.photoUrls : undefined,
+      fotos: formData.fotos.length > 0 ? formData.fotos : undefined,
       paidBy: formData.paidBy,
     });
   };
@@ -623,9 +641,9 @@ export function MantenimientoForm({
   return (
     <form onSubmit={handleSubmit} className="contents">
       <CajonCuerpo>
-      <div className="space-y-8">
+      <div className="space-y-8" ref={raiz}>
       {/* Section 1: Property Selection */}
-      <div className="space-y-4">
+      <div className="space-y-4" data-campo="consignacionId">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-fg">
           <HouseLine className="h-4 w-4 text-fg-muted" />
           {t('inmobiliaria.mantenimiento.property')}
@@ -636,12 +654,10 @@ export function MantenimientoForm({
           onSelect={(id) => updateField('consignacionId', id)}
           t={t}
         />
-        {touched.consignacionId && errors.consignacionId && (
-          <p className="text-sm text-danger flex items-center gap-1">
-            <Warning className="w-4 h-4" />
-            {errors.consignacionId}
-          </p>
-        )}
+        <ErrorDelCampo
+          id="mantenimiento-consignacionId-error"
+          mensaje={touched.consignacionId ? errors.consignacionId : undefined}
+        />
       </div>
 
       {/* Section 2: Request Details */}
@@ -652,77 +668,82 @@ export function MantenimientoForm({
         </h3>
 
         {/* Type */}
-        <TypeSelector
-          selected={formData.type}
-          onSelect={(type) => updateField('type', type)}
-          t={t}
-        />
-        {touched.type && errors.type && (
-          <p className="text-sm text-danger flex items-center gap-1">
-            <Warning className="w-4 h-4" />
-            {errors.type}
-          </p>
-        )}
+        <div data-campo="type">
+          <TypeSelector
+            selected={formData.type}
+            onSelect={(type) => updateField('type', type)}
+            t={t}
+          />
+          <ErrorDelCampo id="mantenimiento-type-error" mensaje={touched.type ? errors.type : undefined} />
+        </div>
 
         {/* Priority */}
-        <PrioritySelector
-          selected={formData.priority}
-          onSelect={(priority) => updateField('priority', priority)}
-          t={t}
-        />
-        {touched.priority && errors.priority && (
-          <p className="text-sm text-danger flex items-center gap-1">
-            <Warning className="w-4 h-4" />
-            {errors.priority}
-          </p>
-        )}
+        <div data-campo="priority">
+          <PrioritySelector
+            selected={formData.priority}
+            onSelect={(priority) => updateField('priority', priority)}
+            t={t}
+          />
+          <ErrorDelCampo
+            id="mantenimiento-priority-error"
+            mensaje={touched.priority ? errors.priority : undefined}
+          />
+        </div>
 
         {/* Emergency explanation */}
-        {(formData.priority === 'high' || formData.priority === 'emergency') && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="p-4 rounded-lg bg-warning-soft border border-warning/30"
-          >
+        {/* Se abre con su altura (y ahora también se CIERRA así: antes
+            desaparecía de golpe al bajar la prioridad). */}
+        <Collapse
+          open={formData.priority === 'high' || formData.priority === 'emergency'}
+          className="p-4 rounded-lg bg-warning-soft border border-warning/30"
+        >
             <div className="flex gap-3">
               <Warning className="w-5 h-5 text-warning shrink-0 mt-0.5" />
               <p className="text-sm text-warning">
-                {formData.priority === 'emergency'
+                {prioridadAlta === 'emergency'
                   ? t('inmobiliaria.mantenimiento.emergencyWarning')
                   : t('inmobiliaria.mantenimiento.highPriorityWarning')}
               </p>
             </div>
-          </motion.div>
-        )}
+        </Collapse>
 
         {/* Title */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+        <div className="space-y-2" data-campo="title">
+          <label htmlFor="mantenimiento-title" className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.mantenimiento.requestTitle')} <span className="text-danger">*</span>
           </label>
           <Input
+            id="mantenimiento-title"
+            aria-required="true"
             type="text"
             value={formData.title}
             onChange={(e) => updateField('title', e.target.value)}
             onBlur={() => setTouched((prev) => ({ ...prev, title: true }))}
             placeholder={t('inmobiliaria.mantenimiento.titlePlaceholder')}
+            maxLength={MAX_LARGO_TITULO_DEL_MANTENIMIENTO}
+            aria-invalid={touched.title && errors.title ? true : undefined}
+            aria-describedby={touched.title && errors.title ? 'mantenimiento-title-error' : undefined}
             className={cn('w-full', touched.title && errors.title && 'border-danger/30')}
           />
-          {touched.title && errors.title && (
-            <p className="text-sm text-danger flex items-center gap-1">
-              <Warning className="w-4 h-4" />
-              {errors.title}
-            </p>
-          )}
+          <ErrorDelCampo
+            id="mantenimiento-title-error"
+            mensaje={touched.title ? errors.title : undefined}
+            className="mt-0"
+          />
         </div>
 
         {/* Description */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+        <div className="space-y-2" data-campo="description">
+          <label htmlFor="mantenimiento-description" className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.mantenimiento.problemDescription')} <span className="text-danger">*</span>
           </label>
           <Textarea
+            id="mantenimiento-description"
+            aria-required="true"
+            aria-invalid={touched.description && errors.description ? true : undefined}
+            aria-describedby={
+              touched.description && errors.description ? 'mantenimiento-description-error' : undefined
+            }
             value={formData.description}
             onChange={(e) => updateField('description', e.target.value)}
             onBlur={() => setTouched((prev) => ({ ...prev, description: true }))}
@@ -730,26 +751,34 @@ export function MantenimientoForm({
             placeholder={t('inmobiliaria.mantenimiento.descriptionPlaceholder')}
             className={cn('w-full resize-none', touched.description && errors.description && 'border-danger/30')}
           />
-          {touched.description && errors.description && (
-            <p className="text-sm text-danger flex items-center gap-1">
-              <Warning className="w-4 h-4" />
-              {errors.description}
-            </p>
-          )}
+          <ErrorDelCampo
+            id="mantenimiento-description-error"
+            mensaje={touched.description ? errors.description : undefined}
+            className="mt-0"
+          />
         </div>
 
         {/* Photo Upload */}
-        <PhotoUpload
-          photos={formData.photoUrls}
-          onAdd={(url) => updateField('photoUrls', [...formData.photoUrls, url])}
-          onRemove={(index) =>
+        <div data-campo="photoUrls">
+        <SelectorDeFotosDelMantenimiento
+          id="mantenimiento-fotos"
+          etiqueta={t('inmobiliaria.mantenimiento.photosOptional')}
+          pista={t('inmobiliaria.mantenimiento.photosHint')}
+          textoAgregar={t('inmobiliaria.mantenimiento.addPhoto')}
+          idDelError="mantenimiento-photoUrls-error"
+          fotos={formData.fotos}
+          onAgregar={agregarFotos}
+          onQuitar={(index) => {
             updateField(
-              'photoUrls',
-              formData.photoUrls.filter((_, i) => i !== index)
-            )
-          }
-          t={t}
+              'fotos',
+              formData.fotos.filter((_, i) => i !== index)
+            );
+            limpiarErrorDeLasFotos();
+          }}
+          conError={Boolean(errors.photoUrls)}
         />
+        <ErrorDelCampo id="mantenimiento-photoUrls-error" mensaje={errors.photoUrls} />
+        </div>
       </div>
 
       {/* Section 3: Responsibility */}
@@ -759,11 +788,14 @@ export function MantenimientoForm({
           {t('inmobiliaria.mantenimiento.responsibility')}
         </h3>
 
-        <PaidBySelector
-          selected={formData.paidBy}
-          onSelect={(paidBy) => updateField('paidBy', paidBy)}
-          t={t}
-        />
+        <div data-campo="paidBy">
+          <PaidBySelector
+            selected={formData.paidBy}
+            onSelect={(paidBy) => updateField('paidBy', paidBy)}
+            t={t}
+          />
+          <ErrorDelCampo id="mantenimiento-paidBy-error" mensaje={errors.paidBy} />
+        </div>
       </div>
 
       </div>

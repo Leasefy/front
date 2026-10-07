@@ -11,16 +11,24 @@ vi.mock('@/lib/api/inmuebles-importacion.service', () => ({
   inmueblesImportacionApi: { estadoDeLote: (lote: string) => estadoDeLoteMock(lote) },
 }))
 
-import { useEstadoDeLoteInmuebles } from './use-estado-de-lote-inmuebles'
+import {
+  useEstadoDeLoteInmuebles,
+  INTERVALO_LENTO_MS,
+  TECHO_MS,
+} from './use-estado-de-lote-inmuebles'
 
 type Resultado = ReturnType<typeof useEstadoDeLoteInmuebles>
 
 /**
  * Same polling contract as `use-estado-de-lote.ts` (contracts precedent):
- * 3s cadence while ENCOLADO/PROCESANDO, 10-minute ceiling, then falls back
- * to the `PROPERTY_IMPORT_COMPLETED` notification. A convenience while the
- * tab stays open — never the completion mechanism, since the batch is
- * durable server-side (WU-4).
+ * 3s cadence while ENCOLADO/PROCESANDO, then falls back to the
+ * `PROPERTY_IMPORT_COMPLETED` notification. A convenience while the tab stays
+ * open — never the completion mechanism, since the batch is durable
+ * server-side (WU-4).
+ *
+ * 🔴 T-0130 (`5409c377`, 01-10-2026) subió el techo de 10 a 30 minutos y
+ * espació el sondeo a 8 s tras el primer minuto (la revisión de un lote grande
+ * son varios minutos). Esta prueba seguía esperando el techo en 10 minutos.
  */
 describe('useEstadoDeLoteInmuebles', () => {
   let root: Root
@@ -116,10 +124,33 @@ describe('useEstadoDeLoteInmuebles', () => {
     expect(result.current?.agotado).toBe(false)
   })
 
-  it('deja de sondear al llegar al techo de 10 minutos y marca "agotado"', async () => {
+  it('tras el primer minuto pregunta cada 8 s, no cada 3 s', async () => {
+    estadoDeLoteMock.mockResolvedValue(loteBase())
+    await montar('lote-1')
+    // Las preguntas del primer minuto: t = 0, 3, 6 … 60 s (21). La de los
+    // 60 s ya agenda la siguiente con la espera larga.
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000) })
+    const llamadasAlMinuto = estadoDeLoteMock.mock.calls.length
+    expect(llamadasAlMinuto).toBe(21)
+
+    await act(async () => { await vi.advanceTimersByTimeAsync(INTERVALO_LENTO_MS - 1) })
+    expect(estadoDeLoteMock).toHaveBeenCalledTimes(llamadasAlMinuto)
+    await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+    expect(estadoDeLoteMock).toHaveBeenCalledTimes(llamadasAlMinuto + 1)
+  })
+
+  it('a los 10 minutos todavía NO se agota: el techo es de 30', async () => {
     estadoDeLoteMock.mockResolvedValue(loteBase())
     await montar('lote-1')
     await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60_000) })
+    expect(result.current?.agotado).toBe(false)
+  })
+
+  it('deja de sondear al llegar al techo de 30 minutos y marca "agotado"', async () => {
+    expect(TECHO_MS).toBe(30 * 60_000)
+    estadoDeLoteMock.mockResolvedValue(loteBase())
+    await montar('lote-1')
+    await act(async () => { await vi.advanceTimersByTimeAsync(TECHO_MS + INTERVALO_LENTO_MS) })
     expect(result.current?.agotado).toBe(true)
 
     const llamadasEnElTecho = estadoDeLoteMock.mock.calls.length

@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { CrossFade } from '@leasefy/cadence';
 import { FileText, Prohibit, Receipt, WarningCircle } from '@phosphor-icons/react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { pagareApi } from '@/lib/api/pagare.service';
 import type { FirmanteDelPagareResponse, PagareResponse } from '@/lib/api/pagare.types';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { motivoDelFalloDelContrato } from '@/lib/contratos/errores-del-contrato';
 import {
   describirEstadoDelFirmante,
   describirEstadoDelPagare,
@@ -68,7 +69,13 @@ export function PagareSection({ contractId, puedeEditar }: PagareSectionProps) {
         </div>
         <h3 className="font-semibold text-fg">Pagaré y carta de instrucciones</h3>
       </div>
-      <div className="p-5">
+      {/* Cargando → el pagaré (o el fallo): se cruzan. `popLayout`: lo nuevo
+          entra YA y lo viejo se va por encima. */}
+      <CrossFade
+        swapKey={cargando ? 'cargando' : error ? 'fallo' : !disponible ? 'no-disponible' : 'pagare'}
+        mode="popLayout"
+        className="p-5"
+      >
         {cargando ? (
           <div className="flex items-center justify-center py-6">
             <Spinner size="sm" variant="muted" />
@@ -82,7 +89,7 @@ export function PagareSection({ contractId, puedeEditar }: PagareSectionProps) {
         ) : (
           <Contenido contractId={contractId} pagare={pagare} puedeEditar={puedeEditar} onCambio={cargar} />
         )}
-      </div>
+      </CrossFade>
     </div>
   );
 }
@@ -109,7 +116,9 @@ function Contenido({
       toast.success('Pagaré emitido. Se invitó a los firmantes.');
       onCambio();
     } catch (err) {
-      toast.error('No se pudo emitir el pagaré.', { description: mensajeDelFallo(err, '') });
+      toast.error('No se pudo emitir el pagaré.', {
+        description: motivoDelFalloDelContrato(err, { porDefecto: 'Prueba de nuevo en un momento.', accion: 'emitir el pagaré' }),
+      });
     } finally {
       setEmitiendo(false);
     }
@@ -123,7 +132,9 @@ function Contenido({
       toast.success('Pagaré cancelado.');
       onCambio();
     } catch (err) {
-      toast.error('No se pudo cancelar.', { description: mensajeDelFallo(err, '') });
+      toast.error('No se pudo cancelar.', {
+        description: motivoDelFalloDelContrato(err, { porDefecto: 'Prueba de nuevo en un momento.', accion: 'cancelar el pagaré' }),
+      });
     } finally {
       setCancelando(false);
     }
@@ -224,7 +235,9 @@ function FirmanteDelPagareRow({
       toast.success(`${firmante.nombre}: firma simulada.`);
       onCambio();
     } catch (err) {
-      toast.error('No se pudo simular la firma.', { description: mensajeDelFallo(err, '') });
+      toast.error('No se pudo simular la firma.', {
+        description: motivoDelFalloDelContrato(err, { porDefecto: 'Prueba de nuevo en un momento.', accion: 'simular la firma' }),
+      });
     } finally {
       setSimulando(false);
     }
@@ -290,7 +303,9 @@ function DocumentoDelPagareLink({
       const doc = await pagareApi.documento(contractId, tipo);
       window.open(doc.url, '_blank', 'noopener,noreferrer');
     } catch (err) {
-      toast.error('No se pudo abrir el documento.', { description: mensajeDelFallo(err, '') });
+      toast.error('No se pudo abrir el documento.', {
+        description: motivoDelFalloDelContrato(err, { porDefecto: 'Prueba de nuevo en un momento.', accion: 'abrir el documento' }),
+      });
     } finally {
       setCargando(false);
     }

@@ -48,6 +48,7 @@ import {
   Warning,
 } from '@phosphor-icons/react';
 
+import { AnimatedNumber, Appear, Collapse, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -65,7 +66,7 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { mesEnTitulo } from '@/lib/utils/mes';
-import { leerLiquidacionFrenada, motivoLegible } from '@/lib/api/dispersiones-errores';
+import { leerLiquidacionFrenada, motivoDeUnaAccion } from '@/lib/api/dispersiones-errores';
 import {
   ROTULO_DEL_CANON,
   baseDeLaLiquidacion,
@@ -78,6 +79,9 @@ import {
   type NumerosDelMandato,
 } from '../mandato/ElMandatoEnLaLiquidacion';
 import { FalloDelAsistente, MesSinGiros } from './FalloDelAsistente';
+import { AvisoSinPorcentaje } from '@/components/inmobiliaria/AvisoSinPorcentaje';
+import { enmascarar } from '@/components/inmobiliaria/medios-de-pago/legible';
+import { AvisoPorLiquidarAMano } from '@/components/inmobiliaria/AvisoPorLiquidarAMano';
 import {
   NADA_FUERA,
   elTotalDeLaCorrida,
@@ -203,6 +207,12 @@ export function GenerarDispersion({
   );
   const tardias: CuotasTardias[] = previa?.tardias ?? [];
   const tardiasQueSeSuman = useMemo(() => tardias.filter((t) => t.seSuman), [tardias]);
+  /**
+   * 🔴 PG-R03 (Nico, 03-10-2026): las tardías de un mes ya cerrado van en una
+   * liquidación COMPLEMENTARIA. El back la arma sólo si el propietario viaja en
+   * la lista, igual que las que se suman.
+   */
+  const tardiasComplementarias = useMemo(() => tardias.filter((t) => t.complementaria === true), [tardias]);
   const haySumables = tardiasQueSeSuman.length > 0;
   const base: BaseDelCanon = previa ? baseDeLaLiquidacion(previa) : 'CAUSADO';
   const mandato: NumerosDelMandato = {
@@ -233,6 +243,24 @@ export function GenerarDispersion({
   const total = previa
     ? elTotalDeLaCorrida({ previa, ajustada: ajustadaVigente, seleccion })
     : null;
+
+  /*
+   * 🔴 CONSISTENCIA (04-10-2026): quién de los marcados NO tiene cuenta
+   * bancaria se dice ANTES de generar, como en «Lotes al banco». Antes se
+   * generaba igual y el problema aparecía al armar el lote (un Borrador con
+   * «0 pagos por $0»).
+   */
+  const sinCuenta = useMemo(
+    () => dentro.filter((p) => !p.propietarioBankAccount),
+    [dentro],
+  );
+  const dejarAfueraLosSinCuenta = useCallback(() => {
+    setSeleccion((prev) => {
+      const fuera = new Set(prev.propietariosFuera);
+      for (const p of sinCuenta) fuera.add(p.propietarioId);
+      return { ...prev, propietariosFuera: fuera };
+    });
+  }, [sinCuenta]);
 
   // ── Marcar y destildar ──────────────────────────────────────────────────
   const alternarPropietario = useCallback((p: PropietarioDeLaPrevia) => {
@@ -339,6 +367,7 @@ export function GenerarDispersion({
             ...new Set([
               ...viaje.propietarioIds,
               ...tardiasQueSeSuman.map((t) => t.propietarioId),
+              ...tardiasComplementarias.map((t) => t.propietarioId),
             ]),
           ]
         : undefined;
@@ -351,10 +380,14 @@ export function GenerarDispersion({
 
       const sumadas = r.tardias?.sumadas ?? [];
       const sinSumar = r.tardias?.sinSumar ?? [];
+      const complementarias = r.tardias?.complementarias ?? [];
       const cuotasSumadas = sumadas.reduce((n, t) => n + t.cuotas, 0);
       const deLasTardias = [
         sumadas.length > 0
           ? `${cuotasSumadas === 1 ? 'Se sumó 1 cuota que llegó tarde' : `Se sumaron ${cuotasSumadas} cuotas que llegaron tarde`} a ${sumadas.length} ${sumadas.length === 1 ? 'liquidación' : 'liquidaciones'} del mes.`
+          : '',
+        complementarias.length > 0
+          ? `Se ${complementarias.length === 1 ? 'armó 1 liquidación complementaria' : `armaron ${complementarias.length} liquidaciones complementarias`} con lo que llegó tarde a un mes ya girado: ${complementarias.length === 1 ? 'entra' : 'entran'} al próximo lote.`
           : '',
         sinSumar.length > 0
           ? `${sinSumar.length} ${sinSumar.length === 1 ? 'propietario tiene' : 'propietarios tienen'} cuotas tardías que no se pudieron sumar.`
@@ -363,7 +396,7 @@ export function GenerarDispersion({
         .filter(Boolean)
         .join(' ');
 
-      if (r.created === 0 && sumadas.length > 0) {
+      if (r.created === 0 && (sumadas.length > 0 || complementarias.length > 0)) {
         toast.success('Cuotas sumadas a las liquidaciones del mes', {
           description: deLasTardias,
         });
@@ -399,13 +432,16 @@ export function GenerarDispersion({
        */
       setErrorAlGenerar(e);
       const frenada = leerLiquidacionFrenada(e);
+      // Lo que no es un dato del inmueble va con la regla de oro: un 5xx dice
+      // «de nuestro lado» con la referencia; «conexión», sólo sin respuesta.
+      // Antes un 5xx o la red dejaban el toast sin una palabra de por qué.
       toast.error(frenada?.titulo ?? 'No se generaron las dispersiones', {
-        description: frenada?.mensaje ?? motivoLegible(e) ?? undefined,
+        description: frenada?.mensaje ?? motivoDeUnaAccion(e, 'generar las dispersiones'),
       });
     } finally {
       setEnviando(false);
     }
-  }, [previa, seleccion, mes, tardiasQueSeSuman, onComplete]);
+  }, [previa, seleccion, mes, tardiasQueSeSuman, tardiasComplementarias, onComplete]);
 
   const hayQueElegir = !cargando && !error && (candidatos.length > 0 || haySumables);
 
@@ -426,6 +462,13 @@ export function GenerarDispersion({
         <SelectorDeMes mes={mes} onCambiar={cambiarMes} testId="mes-de-la-liquidacion" />
       </div>
 
+      {/* 🔴 Los inmuebles que no se giran porque les falta el porcentaje de
+          cada propietario (copropiedad migrada sin %, Nico 04-10-2026). */}
+      <AvisoSinPorcentaje inmuebles={previa?.sinPorcentaje} />
+      {/* 🔴 N-19: los que la corrida aparta «por liquidar a mano», con su motivo. */}
+      <AvisoPorLiquidarAMano cuotas={previa?.porLiquidarAMano} />
+
+      <Presence show={previa != null && previa.yaGenerados > 0} initial={false}>
       {previa != null && previa.yaGenerados > 0 && (
         <AlertaAccionable
           severidad="warning"
@@ -436,6 +479,7 @@ export function GenerarDispersion({
           después, se les suman a la liquidación que ya existe.
         </AlertaAccionable>
       )}
+      </Presence>
 
       {cargando ? (
         <div className="rounded-lg border border-dashed border-border p-12 text-center">
@@ -457,8 +501,11 @@ export function GenerarDispersion({
         />
       ) : null}
 
+      {/* Movimiento (ola 2, 03-10-2026): al terminar de calcular, lo que hay
+          que elegir ENTRA (fundido y 4 px) en vez de aparecer de golpe donde
+          estaba «Calculando…». */}
       {hayQueElegir && (
-        <>
+        <Appear distance="xs" className="space-y-4">
           {/* D1/D2: qué parte del mes se gira sin recaudo y qué intereses le
               tocan al propietario. */}
           <ResumenDelMandato numeros={mandato} />
@@ -476,13 +523,17 @@ export function GenerarDispersion({
                 <h2 className="text-base font-semibold text-fg">
                   ¿A quién le giras este mes?
                 </h2>
+                {/* ARREGLOS-8: sin nadie por liquidar (sólo cuotas tardías que
+                    se suman) no hay «0 de 0» que contar. */}
+                {candidatos.length > 0 && (
                 <span
                   className="font-mono text-sm text-fg-muted tabular-nums"
                   data-testid="cuantos-seleccionados"
                 >
-                  {dentro.length} de {candidatos.length}{' '}
+                  <AnimatedNumber value={dentro.length} format={conteo} /> de {candidatos.length}{' '}
                   {candidatos.length === 1 ? 'propietario' : 'propietarios'}
                 </span>
+                )}
               </div>
               <p className="text-sm text-fg-muted">
                 Vienen todos marcados. Destilda a quien quieras dejar para
@@ -491,6 +542,28 @@ export function GenerarDispersion({
                 les gira. Lo que dejes afuera no se pierde: vuelve el mes que
                 viene.
               </p>
+              {sinCuenta.length > 0 && (
+                <div
+                  className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-warning/30 bg-warning/5 px-3 py-2 text-sm text-fg"
+                  data-testid="marcados-sin-cuenta"
+                >
+                  <p className="min-w-0 flex-1">
+                    {sinCuenta.length === 1
+                      ? `${sinCuenta[0].propietarioName} no tiene cuenta bancaria registrada: su liquidación se genera, pero no se le puede girar ni entra a un lote hasta registrar la cuenta en su ficha.`
+                      : `${sinCuenta.length} de los marcados no tienen cuenta bancaria registrada (${nombresEnLista(sinCuenta.map((p) => p.propietarioName))}): sus liquidaciones se generan, pero no se les puede girar ni entran a un lote hasta registrar la cuenta en su ficha.`}
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    hideArrow
+                    onClick={dejarAfueraLosSinCuenta}
+                    data-testid="dejar-afuera-sin-cuenta"
+                  >
+                    {sinCuenta.length === 1 ? 'Dejarlo afuera' : 'Dejarlos afuera'}
+                  </Button>
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-2">
                 <div className="relative min-w-[16rem] flex-1">
                   <MagnifyingGlass
@@ -506,6 +579,8 @@ export function GenerarDispersion({
                     data-testid="buscar-propietario"
                   />
                 </div>
+                {/* ARREGLOS-8: con 0 propietarios no hay a quién destildar. */}
+                {candidatos.length > 0 && (
                 <Button
                   type="button"
                   variant="outline"
@@ -518,15 +593,29 @@ export function GenerarDispersion({
                     ? 'Destildar todos'
                     : 'Marcar todos'}
                 </Button>
+                )}
               </div>
             </header>
 
             {paginado.pageItems.length === 0 ? (
               <p className="px-4 py-10 text-center text-sm text-fg-muted" data-testid="sin-resultados">
-                Ningún propietario ni inmueble coincide con «{busqueda}».
+                {/* ARREGLOS-7 (MOV-A1): sin nadie por liquidar (sólo cuotas
+                    tardías que se suman) no hay búsqueda que no coincida: decía
+                    «Ningún propietario ni inmueble coincide con «»». */}
+                {candidatos.length === 0
+                  ? 'Este mes no queda ningún propietario por liquidar: sólo se suman las cuotas que llegaron tarde a las liquidaciones que ya existen.'
+                  : `Ningún propietario ni inmueble coincide con «${busqueda}».`}
               </p>
             ) : (
-              <ul className="divide-y divide-border-faint">
+              /* Las filas entran escalonadas; al buscar, la que ya no coincide
+                 sale. Cada página es una lista nueva. */
+              <Stagger
+                as="ul"
+                key={`${paginado.page}|${paginado.pageSize}`}
+                className="divide-y divide-border-faint"
+                distance="xs"
+                layout={false}
+              >
                 {paginado.pageItems.map((p) => (
                   <FilaDelPropietario
                     key={p.propietarioId}
@@ -543,7 +632,7 @@ export function GenerarDispersion({
                     }
                   />
                 ))}
-              </ul>
+              </Stagger>
             )}
 
             {paginado.shouldPaginate && (
@@ -559,16 +648,18 @@ export function GenerarDispersion({
               </div>
             )}
           </section>
-        </>
+        </Appear>
       )}
 
       {/* El motivo del back al confirmar, pegado al botón que lo disparó. */}
+      <Presence show={errorAlGenerar != null} initial={false}>
       {errorAlGenerar != null && (
         <FalloDelAsistente
           error={errorAlGenerar}
           queNoSalio="No se generaron las dispersiones"
         />
       )}
+      </Presence>
 
       {/* ── LO QUE VAS A GIRAR, y confirmar acá mismo. Era el paso 6. */}
       {hayQueElegir && total != null && (
@@ -580,17 +671,18 @@ export function GenerarDispersion({
             <dl className="flex flex-wrap items-end gap-x-8 gap-y-2">
               <Cifra
                 rotulo="Propietarios"
-                valor={String(total.propietarios)}
+                monto={total.propietarios}
+                formato={conteo}
                 testId="total-propietarios"
               />
               <Cifra
                 rotulo={ROTULO_DEL_CANON[base]}
-                valor={formatCurrency(total.canonCop)}
+                monto={total.canonCop}
                 testId="total-canon"
               />
               <Cifra
                 rotulo="Comisiones"
-                valor={formatCurrency(total.comisionesCop)}
+                monto={total.comisionesCop}
                 testId="total-comisiones"
               />
               {/* 🔴 22-09: el IVA de la comisión, entre la comisión y lo que
@@ -598,13 +690,13 @@ export function GenerarDispersion({
               {total.ivaComisionesCop > 0 && (
                 <Cifra
                   rotulo="IVA de las comisiones"
-                  valor={formatCurrency(total.ivaComisionesCop)}
+                  monto={total.ivaComisionesCop}
                   testId="total-iva-comisiones"
                 />
               )}
               <Cifra
                 rotulo="Total a girar"
-                valor={formatCurrency(total.aGirarCop)}
+                monto={total.aGirarCop}
                 testId="total-a-girar"
                 grande
               />
@@ -624,9 +716,15 @@ export function GenerarDispersion({
                 data-testid="confirmar"
               >
                 <Check className="h-4 w-4" weight="bold" />
-                {dentro.length === 1
-                  ? 'Generar 1 dispersión'
-                  : `Generar ${dentro.length} dispersiones`}
+                {/* ARREGLOS-8: sin dispersiones nuevas, lo que hace el botón es
+                    sumar las cuotas tardías; decía «Generar 0 dispersiones». */}
+                {dentro.length === 0 && haySumables
+                  ? tardiasQueSeSuman.length === 1
+                    ? 'Sumar a 1 liquidación'
+                    : `Sumar a ${tardiasQueSeSuman.length} liquidaciones`
+                  : dentro.length === 1
+                    ? 'Generar 1 dispersión'
+                    : `Generar ${dentro.length} dispersiones`}
               </Button>
             </div>
           </div>
@@ -658,14 +756,26 @@ export function GenerarDispersion({
   );
 }
 
+/**
+ * Un conteo mientras cuenta: entero y sin separador de miles, igual que el
+ * `{n}` que se pintaba antes (la cifra final no cambia).
+ */
+const conteo = (n: number) => String(Math.round(n));
+
+/**
+ * Una cifra del total. Cuenta desde la anterior cuando la selección cambia
+ * (`AnimatedNumber`): destildar a un propietario se VE bajar en el total.
+ */
 function Cifra({
   rotulo,
-  valor,
+  monto,
+  formato = formatCurrency,
   testId,
   grande,
 }: {
   rotulo: string;
-  valor: string;
+  monto: number;
+  formato?: (n: number) => string;
   testId: string;
   grande?: boolean;
 }) {
@@ -679,7 +789,7 @@ function Cifra({
         )}
         data-testid={testId}
       >
-        {valor}
+        <AnimatedNumber value={monto} format={formato} />
       </dd>
     </div>
   );
@@ -730,8 +840,9 @@ function FilaDelPropietario({
        dato que se busca con el ojo— y ninguna línea por debajo de 14 px: la
        cuenta bancaria y el desglose estaban en 12, que no es un texto
        secundario, es un texto que no se lee. */
-    <li
-      className={cn('px-4 py-4', !dentro && 'bg-surface-muted/40')}
+    <StaggerItem
+      as="li"
+      className={cn('px-4 py-4 transition-colors duration-base', !dentro && 'bg-surface-muted/40')}
       data-testid="fila-propietario"
       data-propietario={p.propietarioId}
       data-dentro={dentro ? 'si' : 'no'}
@@ -759,7 +870,7 @@ function FilaDelPropietario({
                 girar plata, un dato inventado se ve igual que uno real. */}
             <span className="text-sm text-fg-muted">
               {p.propietarioBankAccount
-                ? `${p.propietarioBankName ?? 'Cuenta'} ${p.propietarioBankAccount}`
+                ? `${p.propietarioBankName ?? 'Cuenta'} ${enmascarar(p.propietarioBankAccount)}` /* N-07: enmascarada */
                 : 'Sin cuenta registrada'}
             </span>
           </div>
@@ -781,18 +892,22 @@ function FilaDelPropietario({
               aria-expanded={abierto}
               aria-controls={`inmuebles-de-${p.propietarioId}`}
               className={cn(
-                'inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-sm transition',
+                'inline-flex h-8 items-center gap-1.5 rounded-md border px-2.5 text-sm transition-colors',
                 abierto
                   ? 'border-primary/40 bg-primary-soft text-primary'
                   : 'border-border bg-surface text-fg-muted hover:border-primary/40 hover:text-primary',
               )}
               data-testid="abrir-inmuebles"
             >
-              {abierto ? (
-                <CaretDown className="h-3.5 w-3.5" aria-hidden="true" />
-              ) : (
-                <CaretRight className="h-3.5 w-3.5" aria-hidden="true" />
+              {/* Un solo caret que gira con la curva de los paneles (antes se
+                  cambiaba de golpe un ícono por otro). */}
+              <CaretRight
+                className={cn(
+                  'h-3.5 w-3.5 transition-transform duration-slow ease-emphasis',
+                  abierto && 'rotate-90',
               )}
+                aria-hidden="true"
+              />
               <span className="font-mono tabular-nums">{inmuebles.length}</span>
               {abierto ? 'inmuebles — ocultar' : 'inmuebles — ver cuáles'}
               {conInmueblesFuera > 0 && (
@@ -820,7 +935,7 @@ function FilaDelPropietario({
             )}
             data-testid="neto-del-propietario"
           >
-            {formatCurrency(numeros.netoCop)}
+            <AnimatedNumber value={numeros.netoCop} format={formatCurrency} />
           </p>
           <p className="font-mono text-sm text-fg-muted tabular-nums">
             {ROTULO_DEL_CANON[base]} {formatCurrency(numeros.canonCop)} · comisión{' '}
@@ -852,7 +967,8 @@ function FilaDelPropietario({
           con el total.
           Y trae su propio «dejarlos todos fuera / volver a marcarlos»: sin eso,
           apagar 27 de 28 inmuebles son 27 clics. */}
-      {varios && abierto && (
+      {/* Se abre y se cierra con `Collapse` (altura + fundido). */}
+      <Collapse open={varios && abierto}>
         <div
           id={`inmuebles-de-${p.propietarioId}`}
           className="ml-9 mt-4 overflow-hidden rounded-lg border border-border-faint"
@@ -946,9 +1062,18 @@ function FilaDelPropietario({
             })}
           </ul>
         </div>
-      )}
-    </li>
+      </Collapse>
+    </StaggerItem>
   );
 }
 
 export default GenerarDispersion;
+
+/** «Ana, Luis y Marta» (hasta 4 nombres; si hay más, «y N más»). */
+function nombresEnLista(nombres: readonly string[]): string {
+  const visibles = nombres.slice(0, 4);
+  const resto = nombres.length - visibles.length;
+  if (resto > 0) return `${visibles.join(', ')} y ${resto} más`;
+  if (visibles.length <= 1) return visibles.join('');
+  return `${visibles.slice(0, -1).join(', ')} y ${visibles[visibles.length - 1]}`;
+}

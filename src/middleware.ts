@@ -35,8 +35,11 @@ export function middleware(request: NextRequest) {
   }
 
   const nonce = nuevoNonce();
+  const modo = modoDeLaPolitica(process.env.CSP_MODO);
   const politica = politicaDeContenido(nonce, {
     desarrollo: process.env.NODE_ENV !== 'production',
+    // En sólo-reporte `upgrade-insecure-requests` no aplica y ensucia la consola.
+    soloReporte: modo === 'reporte',
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL,
     NEXT_PUBLIC_AGENT_URL: process.env.NEXT_PUBLIC_AGENT_URL,
@@ -44,7 +47,7 @@ export function middleware(request: NextRequest) {
     NEXT_PUBLIC_ADMIN_API_URL: process.env.NEXT_PUBLIC_ADMIN_API_URL,
     NEXT_PUBLIC_AI_API_URL: process.env.NEXT_PUBLIC_AI_API_URL,
   });
-  const cabecera = cabeceraDeLaPolitica(modoDeLaPolitica(process.env.CSP_MODO));
+  const cabecera = cabeceraDeLaPolitica(modo);
 
   const deLaPeticion = new Headers(request.headers);
   deLaPeticion.set(CABECERA_DEL_NONCE, nonce);

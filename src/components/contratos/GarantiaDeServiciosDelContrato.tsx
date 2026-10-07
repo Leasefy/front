@@ -32,9 +32,13 @@ import {
   type GarantiaDeServicios,
   type TipoDeMovimientoDeGarantia,
 } from '@/lib/api/ciclo-de-vida.service';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { errorDeLaFechaDelMovimiento } from '@/lib/contratos/limites-de-la-garantia';
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
+import { diaLegible } from '@/lib/mandato/textos';
 
-const PESOS = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+const PESOS = plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
 const NOMBRE_DEL_TIPO: Record<TipoDeMovimientoDeGarantia, string> = {
   RECAUDO: 'Recaudo al inquilino',
@@ -122,7 +126,9 @@ export function GarantiaDeServiciosDelContrato({
       const { url } = await cicloDeVidaApi.soporteDeLaGarantia(contractId, movimientoId);
       window.open(url, '_blank', 'noopener');
     } catch (e) {
-      toast.error('No se pudo abrir el soporte.', { description: mensajeDelFallo(e, 'Intenta de nuevo.') });
+      toast.error('No se pudo abrir el soporte.', {
+        description: mensajeParaLaPersona(e, { porDefecto: 'No pudimos abrir el soporte.', accion: 'abrir el soporte' }),
+      });
     }
   };
 
@@ -159,7 +165,7 @@ export function GarantiaDeServiciosDelContrato({
       )}
 
       {datos.avisoDelTope && (
-        <p className="text-caption text-plan-status-yellow" data-testid="garantia-aviso-del-tope">
+        <p className="text-caption text-warning-700 dark:text-warning-100" data-testid="garantia-aviso-del-tope">
           {datos.avisoDelTope}
         </p>
       )}
@@ -179,7 +185,14 @@ export function GarantiaDeServiciosDelContrato({
                 toast.success('Garantía registrada.');
                 return true;
               } catch (e) {
-                toast.error('No se pudo registrar la garantía.', { description: mensajeDelFallo(e, 'Intenta de nuevo.') });
+                // Un 400 trae su frase (el tope, el soporte); un 5xx dice que es
+                // nuestro con la referencia; sólo la red habla de conexión.
+                toast.error('No se pudo registrar la garantía.', {
+                  description: mensajeParaLaPersona(e, {
+                    porDefecto: 'No pudimos registrar la garantía.',
+                    accion: 'registrar la garantía',
+                  }),
+                });
                 return false;
               }
             }}
@@ -200,7 +213,12 @@ export function GarantiaDeServiciosDelContrato({
               );
               return true;
             } catch (e) {
-              toast.error('No se pudo registrar el movimiento.', { description: mensajeDelFallo(e, 'Intenta de nuevo.') });
+              toast.error('No se pudo registrar el movimiento.', {
+                description: mensajeParaLaPersona(e, {
+                  porDefecto: 'No pudimos registrar el movimiento.',
+                  accion: 'registrar el movimiento',
+                }),
+              });
               return false;
             }
           }}
@@ -217,7 +235,12 @@ export function GarantiaDeServiciosDelContrato({
               setDatos(await cicloDeVidaApi.anularMovimientoDeGarantia(contractId, movimientoId, motivo));
               toast.success('Movimiento anulado.');
             } catch (e) {
-              toast.error('No se pudo anular.', { description: mensajeDelFallo(e, 'Intenta de nuevo.') });
+              toast.error('No se pudo anular.', {
+                description: mensajeParaLaPersona(e, {
+                  porDefecto: 'No pudimos anular el movimiento.',
+                  accion: 'anular el movimiento',
+                }),
+              });
             }
           }}
         />
@@ -257,7 +280,7 @@ function Cuenta({ datos, onSoporte }: { datos: GarantiaDeServicios; onSoporte: (
         </div>
       </dl>
       {c.faltaPorRecaudarCop > 0 && (
-        <p className="text-caption text-plan-status-yellow">Falta por recaudar {PESOS.format(c.faltaPorRecaudarCop)}.</p>
+        <p className="text-caption text-warning-700 dark:text-warning-100">Falta por recaudar {PESOS.format(c.faltaPorRecaudarCop)}.</p>
       )}
       {c.diferenciaPorCobrarCop > 0 && (
         <p className="text-caption text-destructive" data-testid="garantia-diferencia">
@@ -398,7 +421,15 @@ function RegistrarGarantia({
       ) : (
         <label className="block text-caption">
           Promedio mensual de los servicios
-          <Input inputMode="numeric" value={promedio} onChange={(e) => setPromedio(e.target.value)} className="mt-1 w-40" data-testid="garantia-promedio" />
+          <Input
+            inputMode="numeric"
+            value={promedio}
+            onChange={(e) => setPromedio(e.target.value)}
+            className="mt-1 w-40"
+            data-testid="garantia-promedio"
+            aria-invalid={pasaElTope ? true : undefined}
+            aria-describedby="garantia-sobre-el-tope-error"
+          />
         </label>
       )}
 
@@ -421,9 +452,13 @@ function RegistrarGarantia({
         )}
       </p>
       {pasaElTope && (
-        <p className="text-caption text-destructive" data-testid="garantia-sobre-el-tope">
-          Pasa el tope: no se puede registrar por ese valor.
-        </p>
+        <div data-testid="garantia-sobre-el-tope">
+          <ErrorDelCampo
+            id="garantia-sobre-el-tope-error"
+            mensaje="Pasa el tope: no se puede registrar por ese valor."
+            className="mt-0"
+          />
+        </div>
       )}
 
       <label className="block text-caption">
@@ -493,9 +528,13 @@ function NuevoMovimiento({
           : null;
   const v = soloDigitos(valor);
   const pideSoporte = tipo === 'PAGO_DE_SERVICIO';
+  // El back rechaza un día que no existe o fuera de 2000–2100 (Nico,
+  // 02-10-2026): se dice bajo la fecha antes de mandar, con su misma frase.
+  const errorDeLaFecha = errorDeLaFechaDelMovimiento(fecha);
   const listo =
     v > 0 &&
     (tope == null || v <= tope) &&
+    !errorDeLaFecha &&
     descripcion.trim().length >= 3 &&
     (!pideSoporte || soporte != null) &&
     !enviando;
@@ -527,13 +566,22 @@ function NuevoMovimiento({
         </label>
         <label className="text-caption">
           Fecha
-          <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="mt-1" />
+          <Input
+            type="date"
+            value={fecha}
+            onChange={(e) => setFecha(e.target.value)}
+            className="mt-1"
+            data-testid="movimiento-fecha"
+            aria-invalid={errorDeLaFecha ? true : undefined}
+            aria-describedby="movimiento-fecha-error"
+          />
         </label>
         <label className="text-caption">
           Medio
           <Input value={medio} onChange={(e) => setMedio(e.target.value)} placeholder="transferencia" className="mt-1 w-32" />
         </label>
       </div>
+      <ErrorDelCampo id="movimiento-fecha-error" mensaje={errorDeLaFecha} className="mt-0" />
       {tope != null && (
         <p className="text-caption text-muted-foreground" data-testid="movimiento-tope">
           Máximo {PESOS.format(tope)}.
@@ -600,7 +648,7 @@ function Movimientos({
       <ul className="space-y-2 text-caption">
         {datos.movimientos.map((m) => (
           <li key={m.id} className={m.anulado ? 'text-muted-foreground line-through' : ''} data-testid={`movimiento-${m.id}`}>
-            <span className="font-medium">{m.fecha}</span> · {NOMBRE_DEL_TIPO[m.tipo]} · {PESOS.format(m.valorCop)} ·{' '}
+            <span className="font-medium">{diaLegible(m.fecha)}</span> · {NOMBRE_DEL_TIPO[m.tipo]} · {PESOS.format(m.valorCop)} ·{' '}
             {m.descripcion}
             {m.medio ? ` (${m.medio})` : ''}
             {m.soporteNombre && (

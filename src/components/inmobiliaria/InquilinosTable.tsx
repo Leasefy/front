@@ -51,21 +51,36 @@ import {
   SortDescending,
   Warning,
 } from '@phosphor-icons/react';
-import { IconButton, SearchInput, SegmentedControl } from '@leasefy/cadence';
+import { IconButton, SearchInput, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Table,
   TableHeader,
-  TableBody,
   TableHead,
   TableRow,
   TableCell,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 import { useI18n } from '@/lib/i18n';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import {
+  canonVigente,
+  canonDeLaFila,
+  ordenarInquilinos,
+  siguienteOrden,
+  type CampoDeOrden,
+  type OrdenDeInquilinos,
+} from '@/lib/inquilinos/lista';
 import {
   arriendosVigentes,
+  estadoParaMostrar,
+  hoyEnColombia,
   type ArriendoDeInquilino,
   type ConteosDeInquilinos,
   type EstadoDeArriendo,
@@ -81,24 +96,87 @@ import {
 export const RUTA_DEL_CONTRATO_MANUAL =
   '/panel/inmobiliaria/contratos/nuevo?modo=manual';
 
+/**
+ * I-29 (QA-INQ, 03-10): «Crear su contrato» de UNA persona abre el contrato
+ * manual con ella ya elegida. Antes llevaba al contrato en blanco y había que
+ * volver a buscarla.
+ */
+export function rutaDelContratoManualPara(persona: Pick<Inquilino, 'tenantId'>): string {
+  return `${RUTA_DEL_CONTRATO_MANUAL}&inquilino=${encodeURIComponent(persona.tenantId)}`;
+}
+
+/**
+ * QA-INQ-95 ronda 2 (T-10): un contrato sin canon (o con el canon en cero, que
+ * no es un canon) se pinta «—», nunca «$ 0»: «$ 0» se lee como un inquilino que
+ * no paga.
+ */
+export function canonParaMostrar(
+  canonCop: number | null | undefined,
+  formatCurrency: (n: number) => string,
+): string {
+  return typeof canonCop === 'number' && Number.isFinite(canonCop) && canonCop > 0 ? formatCurrency(canonCop) : '—';
+}
+
 /** Cómo se pinta cada estado de `LeaseStatus`. Color + palabra, nunca color solo. */
 export const TONO_DEL_ARRIENDO: Record<
   EstadoDeArriendo,
-  { variant: 'success' | 'warning' | 'secondary'; clave: string }
+  { variant: 'success' | 'warning' | 'secondary' | 'outline'; clave: string }
 > = {
   ACTIVE: { variant: 'success', clave: 'inquilinos.estados.activo' },
   ENDING_SOON: { variant: 'warning', clave: 'inquilinos.estados.porVencer' },
   ENDED: { variant: 'secondary', clave: 'inquilinos.estados.terminado' },
   TERMINATED: { variant: 'secondary', clave: 'inquilinos.estados.cancelado' },
+  /* E-01: firmándose (o firmado sin arrancar) NO es «Terminado». */
+  EN_FIRMA: { variant: 'outline', clave: 'inquilinos.estados.enFirma' },
+  /* I-04: «Empieza el 1 de nov» — la fecha la pone `EstadoDelArriendo`. */
+  POR_EMPEZAR: { variant: 'outline', clave: 'inquilinos.estados.porEmpezar' },
 };
 
-export type CampoDeOrden = 'nombre' | 'arriendos' | 'canon';
-type Sentido = 'asc' | 'desc';
-
-/** El canon que la persona paga HOY: sólo lo vigente, nunca lo histórico. */
-export function canonVigente(persona: Inquilino): number {
-  return arriendosVigentes(persona).reduce((suma, a) => suma + a.canonCop, 0);
+/**
+ * La etiqueta de un arriendo: color + palabra, con la fecha cuando todavía no
+ * empieza. Un estado que el back agregue mañana se muestra crudo, no se
+ * esconde: mejor una etiqueta rara que una fila que miente.
+ */
+export function EstadoDelArriendo({ arriendo }: { arriendo: ArriendoDeInquilino }) {
+  const { t, formatDate } = useI18n();
+  const estado = estadoParaMostrar(arriendo);
+  const tono = TONO_DEL_ARRIENDO[estado];
+  const dia = diaDeVigencia(arriendo.desde);
+  /* «Empieza el 1 de nov» (Nico): el año sólo si no es el de hoy. */
+  const conAnio = dia !== null && dia.slice(0, 4) !== hoyEnColombia().slice(0, 4);
+  return (
+    <Badge variant={tono?.variant ?? 'secondary'} data-estado={estado} className="whitespace-nowrap">
+      {estado === 'POR_EMPEZAR' && dia
+        ? t('inquilinos.estados.empiezaEl', {
+            fecha: formatDate(dia, { day: 'numeric', month: 'short', ...(conAnio ? { year: 'numeric' } : {}) }),
+          })
+        : tono
+          ? t(tono.clave)
+          : arriendo.estado}
+    </Badge>
+  );
 }
+
+/** «1 vigente», «0 vigentes», «2 vigentes» (I-08: decía «1 vigentes»). */
+export function textoDeVigentes(
+  t: (clave: string, p?: Record<string, string | number>) => string,
+  n: number,
+): string {
+  return n === 1 ? t('inquilinos.tabla.nVigentesUno') : t('inquilinos.tabla.nVigentes', { n });
+}
+
+/*
+ * El orden y el canon vigente viven en `lib/inquilinos/lista` desde el QA de
+ * Inquilinos (03-10): la PÁGINA ordena la lista entera antes de paginar
+ * (I-01). Se vuelven a exportar acá, donde siempre estuvieron.
+ */
+export {
+  canonVigente,
+  ordenarInquilinos,
+  siguienteOrden,
+  type CampoDeOrden,
+  type OrdenDeInquilinos,
+} from '@/lib/inquilinos/lista';
 
 /**
  * Cuál de los arriendos representa a la persona en la fila.
@@ -137,25 +215,6 @@ function fechaOGuion(
 ): string {
   const dia = diaDeVigencia(fecha);
   return dia === null ? '—' : formatDate(dia);
-}
-
-/** Ordena sin mutar. El nombre con `localeCompare` es-CO: «Ñ» va donde debe. */
-export function ordenarInquilinos(
-  inquilinos: readonly Inquilino[],
-  campo: CampoDeOrden,
-  sentido: Sentido,
-): Inquilino[] {
-  const signo = sentido === 'asc' ? 1 : -1;
-  return [...inquilinos].sort((a, b) => {
-    switch (campo) {
-      case 'arriendos':
-        return (a.arriendos.length - b.arriendos.length) * signo;
-      case 'canon':
-        return (canonVigente(a) - canonVigente(b)) * signo;
-      default:
-        return a.nombre.localeCompare(b.nombre, 'es-CO') * signo;
-    }
-  });
 }
 
 export interface BarraDeInquilinosProps {
@@ -267,13 +326,36 @@ export interface InquilinosTableProps {
   inquilinos: readonly Inquilino[];
   /** Abre el cajón de detalle. La fila entera, y el nombre por teclado. */
   onAbrir: (persona: Inquilino) => void;
+  /**
+   * El orden, cuando lo maneja la página (I-01): la página ordena la lista
+   * ENTERA y le pasa a la tabla sólo la página ya ordenada. Sin estas dos, la
+   * tabla lo maneja sola, como antes (ordena lo que recibe).
+   */
+  orden?: OrdenDeInquilinos;
+  onOrdenar?: (orden: OrdenDeInquilinos) => void;
 }
 
-export function InquilinosTable({ inquilinos, onAbrir }: InquilinosTableProps) {
+/**
+ * QA-INQ-95 (E-19 / PR-02): «Crear su contrato» lleva a una pantalla que pide
+ * `contratos:create`; al contador y al viewer les quedaba vivo un enlace que
+ * rebota. Fuera del panel (pruebas) no hay contexto de permisos y se muestra.
+ */
+function usePuedeCrearContrato(): boolean {
+  const permisos = usePermissionsContextSafe();
+  return permisos ? permisos.canAccess('contratos', 'create') : true;
+}
+
+export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar }: InquilinosTableProps) {
   const { t } = useI18n();
-  const [campo, setCampo] = useState<CampoDeOrden>('nombre');
-  const [sentido, setSentido] = useState<Sentido>('asc');
+  const [ordenPropio, setOrdenPropio] = useState<OrdenDeInquilinos>({ campo: 'nombre', sentido: 'asc' });
+  const { campo, sentido } = orden ?? ordenPropio;
   const [desplegados, setDesplegados] = useState<Set<string>>(new Set());
+  /*
+   * I-27 (QA-INQ, 03-10): a 390 px la tabla se corría de lado y sólo se veía
+   * el nombre. En el celular cada persona es una TARJETA con nombre, estado,
+   * canon y vigencia a la vista. El primer pintado (servidor) es la tabla.
+   */
+  const esCelular = useIsMobile();
 
   const ordenados = useMemo(
     () => ordenarInquilinos(inquilinos, campo, sentido),
@@ -281,13 +363,9 @@ export function InquilinosTable({ inquilinos, onAbrir }: InquilinosTableProps) {
   );
 
   const ordenarPor = (siguiente: CampoDeOrden) => {
-    if (siguiente === campo) {
-      setSentido((s) => (s === 'asc' ? 'desc' : 'asc'));
-      return;
-    }
-    setCampo(siguiente);
-    // Nombre se lee A→Z; los números interesan de mayor a menor.
-    setSentido(siguiente === 'nombre' ? 'asc' : 'desc');
+    const nuevo = siguienteOrden({ campo, sentido }, siguiente);
+    if (onOrdenar) onOrdenar(nuevo);
+    else setOrdenPropio(nuevo);
   };
 
   const alternar = (tenantId: string) =>
@@ -301,7 +379,11 @@ export function InquilinosTable({ inquilinos, onAbrir }: InquilinosTableProps) {
   const Ordenable = ({ campo: propio, children }: { campo: CampoDeOrden; children: React.ReactNode }) => {
     const Icono = sentido === 'asc' ? SortAscending : SortDescending;
     return (
-      <TableHead className="p-4 text-left">
+      <TableHead
+        className="p-4 text-left"
+        // I-11: el lector de pantalla también sabe por qué columna va ordenada.
+        aria-sort={campo === propio ? (sentido === 'asc' ? 'ascending' : 'descending') : 'none'}
+      >
         {/* allowlist: disparador de orden — no hay primitiva en Cadence.
             `uppercase` explícito: un <button> trae text-transform:none del
             navegador y perdía las mayúsculas del TH. Ver PropietarioTable. */}
@@ -318,6 +400,10 @@ export function InquilinosTable({ inquilinos, onAbrir }: InquilinosTableProps) {
     );
   };
 
+  if (esCelular) {
+    return <TarjetasDeInquilinos inquilinos={ordenados} onAbrir={onAbrir} />;
+  }
+
   return (
     <div className="overflow-x-auto">
       <Table className="min-w-[760px]" data-testid="inquilinos-tabla">
@@ -332,7 +418,9 @@ export function InquilinosTable({ inquilinos, onAbrir }: InquilinosTableProps) {
             <TableHead className="p-4 text-left">{t('inquilinos.tabla.vigencia')}</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        {/* Las filas entran escalonadas (techo de 320 ms) y, al cambiar el
+            filtro o la búsqueda, las que se van salen (`key` = la persona). */}
+        <TableBodyAnimado>
           {ordenados.map((persona) => (
             <FilaDeInquilino
               key={persona.tenantId}
@@ -342,7 +430,7 @@ export function InquilinosTable({ inquilinos, onAbrir }: InquilinosTableProps) {
               onAbrir={() => onAbrir(persona)}
             />
           ))}
-        </TableBody>
+        </TableBodyAnimado>
       </Table>
     </div>
   );
@@ -360,10 +448,10 @@ function FilaDeInquilino({
   onAbrir: () => void;
 }) {
   const { t, formatCurrency, formatDate } = useI18n();
+  const puedeCrearContrato = usePuedeCrearContrato();
   const vigentes = arriendosVigentes(persona);
   const varios = persona.arriendos.length > 1;
   const principal = arriendoPrincipal(persona);
-  const tono = principal ? TONO_DEL_ARRIENDO[principal.estado] : undefined;
   const sinContacto = !persona.email && !persona.telefono;
   /*
    * Cargada a mano o traída por el paso «Terceros» de la migración, todavía
@@ -374,7 +462,7 @@ function FilaDeInquilino({
 
   return (
     <>
-      <TableRow
+      <TableRowAnimada
         className="group cursor-pointer border-b border-border/50 transition-colors hover:bg-muted/50"
         onClick={onAbrir}
         data-testid="inquilino-fila"
@@ -416,7 +504,10 @@ function FilaDeInquilino({
               e.stopPropagation();
               onAbrir();
             }}
-            className="block min-w-0 max-w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            // Un nombre de empresa de 80 letras no puede empujar el estado y el
+            // canon fuera de la tabla: se corta a 20rem y el completo va en `title`.
+            title={persona.nombre}
+            className="block min-w-0 max-w-[20rem] text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             data-testid="inquilino-abrir"
           >
             <span className="block truncate font-medium text-fg group-hover:text-primary">
@@ -426,6 +517,8 @@ function FilaDeInquilino({
               {persona.email ?? t('inquilinos.tabla.sinCorreo')}
             </span>
           </button>
+          {/* T-0128: creado por la migración sin documento. */}
+          <DatosPorCompletar pendientes={persona.datosPendientes} className="mt-1 flex" />
         </TableCell>
 
         <TableCell className="p-4 align-middle">
@@ -488,26 +581,24 @@ function FilaDeInquilino({
              */
             <div className="flex flex-col items-start gap-1">
               <Badge variant="secondary">{t('inquilinos.sinArriendo')}</Badge>
-              <Link
-                href={RUTA_DEL_CONTRATO_MANUAL}
-                onClick={(e) => e.stopPropagation()}
-                className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline"
-                data-testid="inquilino-crear-contrato"
-              >
-                <Plus className="h-3 w-3" weight="bold" aria-hidden="true" />
-                {t('inquilinos.crearSuContrato')}
-              </Link>
+              {puedeCrearContrato ? (
+                <Link
+                  href={rutaDelContratoManualPara(persona)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 text-xs text-primary underline-offset-2 hover:underline"
+                  data-testid="inquilino-crear-contrato"
+                >
+                  <Plus className="h-3 w-3" weight="bold" aria-hidden="true" />
+                  {t('inquilinos.crearSuContrato')}
+                </Link>
+              ) : null}
             </div>
           ) : varios ? (
             <span className="text-sm text-fg-muted tabular-nums">
-              {t('inquilinos.tabla.nVigentes', { n: vigentes.length })}
+              {textoDeVigentes(t, vigentes.length)}
             </span>
           ) : principal ? (
-            <Badge variant={tono?.variant ?? 'secondary'}>
-              {/* Un estado que el back agregue mañana se muestra crudo, no se
-                  esconde: mejor una etiqueta rara que una fila que miente. */}
-              {tono ? t(tono.clave) : principal.estado}
-            </Badge>
+            <EstadoDelArriendo arriendo={principal} />
           ) : null}
         </TableCell>
 
@@ -518,7 +609,7 @@ function FilaDeInquilino({
             <span className="text-sm text-fg-subtle">—</span>
           ) : (
             <span className="whitespace-nowrap font-mono text-sm tabular-nums text-fg">
-              {formatCurrency(varios ? canonVigente(persona) : (principal?.canonCop ?? 0))}
+              {canonParaMostrar(canonDeLaFila(persona), formatCurrency)}
             </span>
           )}
         </TableCell>
@@ -537,10 +628,12 @@ function FilaDeInquilino({
           )}
         </TableCell>
 
-      </TableRow>
+      </TableRowAnimada>
 
+      {/* El despliegue de los arriendos entra bajando su fila (la misma
+          entrada de las filas); al contraer se va de una. */}
       {varios && desplegada && (
-        <TableRow data-testid="inquilino-arriendos">
+        <TableRowAnimada data-testid="inquilino-arriendos">
           <TableCell colSpan={7} className="bg-surface-muted/50 p-4">
             <ul className="space-y-2">
               {persona.arriendos.map((a) => (
@@ -553,7 +646,7 @@ function FilaDeInquilino({
               ))}
             </ul>
           </TableCell>
-        </TableRow>
+        </TableRowAnimada>
       )}
     </>
   );
@@ -562,13 +655,10 @@ function FilaDeInquilino({
 /** Un arriendo en una línea. Se usa en el despliegue y en la ficha. */
 export function RenglonDeArriendo({ arriendo }: { arriendo: ArriendoDeInquilino }) {
   const { t, formatCurrency, formatDate } = useI18n();
-  const tono = TONO_DEL_ARRIENDO[arriendo.estado];
 
   return (
     <div className={cn('flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md bg-surface px-3 py-2')}>
-      <Badge variant={tono?.variant ?? 'secondary'}>
-        {tono ? t(tono.clave) : arriendo.estado}
-      </Badge>
+      <EstadoDelArriendo arriendo={arriendo} />
 
       {arriendo.inmueble ? (
         <Link
@@ -585,11 +675,98 @@ export function RenglonDeArriendo({ arriendo }: { arriendo: ArriendoDeInquilino 
       )}
 
       <span className="font-mono text-sm tabular-nums text-fg">
-        {formatCurrency(arriendo.canonCop)}
+        {canonParaMostrar(arriendo.canonCop, formatCurrency)}
       </span>
       <span className="font-mono text-xs tabular-nums text-fg-muted">
         {fechaOGuion(arriendo.desde, formatDate)} — {fechaOGuion(arriendo.hasta, formatDate)}
       </span>
     </div>
+  );
+}
+
+/**
+ * I-27: la lista en el celular. Una tarjeta por PERSONA (la misma regla que la
+ * fila), con lo que en la tabla eran columnas: estado, canon y vigencia. Toda
+ * la tarjeta abre el cajón; «Crear su contrato» va aparte (un enlace no puede
+ * vivir dentro de un botón).
+ */
+function TarjetasDeInquilinos({
+  inquilinos,
+  onAbrir,
+}: {
+  inquilinos: readonly Inquilino[];
+  onAbrir: (persona: Inquilino) => void;
+}) {
+  const { t, formatCurrency, formatDate } = useI18n();
+  const puedeCrearContrato = usePuedeCrearContrato();
+  return (
+    <Stagger as="ul" className="divide-y divide-border" data-testid="inquilinos-tarjetas">
+      {inquilinos.map((persona) => {
+        const vigentes = arriendosVigentes(persona);
+        const varios = persona.arriendos.length > 1;
+        const principal = arriendoPrincipal(persona);
+        const sinArriendo = persona.arriendos.length === 0;
+        return (
+          <StaggerItem
+            as="li"
+            key={persona.tenantId}
+            className="px-4 py-3.5"
+            data-testid="inquilino-tarjeta"
+            data-tenant-id={persona.tenantId}
+          >
+            <button
+              type="button"
+              onClick={() => onAbrir(persona)}
+              className="block w-full min-w-0 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              data-testid="inquilino-abrir"
+            >
+              <span className="flex items-start justify-between gap-3">
+                <span className="min-w-0">
+                  {/* El nombre se ajusta en dos renglones; nunca «Ana So…». */}
+                  <span className="block break-words font-medium text-fg">{persona.nombre}</span>
+                  <span className="block truncate text-sm text-fg-muted">
+                    {persona.email ?? persona.telefono ?? t('inquilinos.tabla.sinCorreo')}
+                  </span>
+                </span>
+                <span className="shrink-0">
+                  {sinArriendo ? (
+                    <Badge variant="secondary">{t('inquilinos.sinArriendo')}</Badge>
+                  ) : varios ? (
+                    <span className="text-sm text-fg-muted tabular-nums">
+                      {textoDeVigentes(t, vigentes.length)}
+                    </span>
+                  ) : principal ? (
+                    <EstadoDelArriendo arriendo={principal} />
+                  ) : null}
+                </span>
+              </span>
+              {!sinArriendo ? (
+                <span className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                  <span className="whitespace-nowrap font-mono text-sm tabular-nums text-fg">
+                    {canonParaMostrar(canonDeLaFila(persona), formatCurrency)}
+                  </span>
+                  <span className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted">
+                    {varios || !principal
+                      ? t('inquilinos.tabla.variosInmuebles', { n: persona.arriendos.length })
+                      : `${fechaOGuion(principal.desde, formatDate)} → ${fechaOGuion(principal.hasta, formatDate)}`}
+                  </span>
+                </span>
+              ) : null}
+            </button>
+            <DatosPorCompletar pendientes={persona.datosPendientes} className="mt-1.5 flex" />
+            {sinArriendo && puedeCrearContrato ? (
+              <Link
+                href={rutaDelContratoManualPara(persona)}
+                className="mt-1.5 inline-flex items-center gap-1 text-caption text-primary underline-offset-2 hover:underline"
+                data-testid="inquilino-crear-contrato"
+              >
+                <Plus className="h-3 w-3" weight="bold" aria-hidden="true" />
+                {t('inquilinos.crearSuContrato')}
+              </Link>
+            ) : null}
+          </StaggerItem>
+        );
+      })}
+    </Stagger>
   );
 }

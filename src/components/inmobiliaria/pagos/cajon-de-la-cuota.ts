@@ -13,7 +13,7 @@
  * misma le dio, con la Ley 2300 de por medio.
  */
 
-import type { CajonDeLaCuota } from '@/lib/api/cartera.types'
+import type { CajonDeLaCuota, SaldadaPorNota } from '@/lib/api/cartera.types'
 
 export const NOMBRE_DEL_CAJON: Record<CajonDeLaCuota, string> = {
   CARTERA: 'Cartera',
@@ -30,6 +30,48 @@ export const VARIANTE_DEL_CAJON: Record<
   VENCIDA_EN_PLAZO: 'warning',
   POR_VENCER: 'secondary',
   SIN_DEUDA: 'success',
+}
+
+/**
+ * 🔴 CR-31 (Nico, 03-10-2026: «Sin plazo… avisar en notificaciones»): una cuota
+ * vencida cuando la inmobiliaria todavía no fijó sus días de plazo no es
+ * cartera ni está «en plazo» —no hay plazo—: es «Vencida», sin mora.
+ */
+export const VENCIDA_SIN_PLAZO = 'Vencida'
+
+/** «Saldada por nota crédito NC-12» (sin número si la nota todavía no lo tiene). */
+export function saldadaPorNotaEnPalabras(nota: SaldadaPorNota): string {
+  return nota.numero
+    ? `Saldada por nota crédito ${nota.numero}`
+    : 'Saldada por nota crédito'
+}
+
+/** Lo que hace falta de una fila para nombrar su cajón. */
+export interface FilaConCajon {
+  cajon: CajonDeLaCuota
+  enSiniestro?: boolean
+  plazoSinFijar?: true
+  saldadaPorNota?: SaldadaPorNota | null
+}
+
+/**
+ * El rótulo de UNA fila: el de su cajón, salvo las tres excepciones que el
+ * back marca —siniestro, saldada por nota crédito (aunque `estado` siga
+ * `PENDIENTE`) y vencida sin plazo fijado—. La tabla y el cajón lo leen de acá.
+ */
+export function nombreDeLaFila(f: FilaConCajon): string {
+  if (f.enSiniestro) return 'En siniestro'
+  if (f.saldadaPorNota) return saldadaPorNotaEnPalabras(f.saldadaPorNota)
+  if (f.plazoSinFijar && f.cajon === 'VENCIDA_EN_PLAZO') return VENCIDA_SIN_PLAZO
+  return NOMBRE_DEL_CAJON[f.cajon]
+}
+
+/** El color de esa misma fila (la saldada por nota no se pinta «Pagada» en verde). */
+export function varianteDeLaFila(
+  f: FilaConCajon,
+): 'destructive' | 'warning' | 'secondary' | 'success' {
+  if (f.saldadaPorNota) return 'secondary'
+  return VARIANTE_DEL_CAJON[f.cajon]
 }
 
 /**

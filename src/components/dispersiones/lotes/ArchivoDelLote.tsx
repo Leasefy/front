@@ -31,16 +31,13 @@ import type { Proceso } from '@/lib/api/procesos.types';
 import { lotesDeDispersionApi } from '@/lib/api/lotes-de-dispersion.service';
 import type { ArchivoGenerado, EstadoDelLote } from '@/lib/api/lotes-de-dispersion.types';
 import { formatDateTime } from '@/lib/format';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { esSinVerificar } from './estado-del-lote';
 
 const CON_ARCHIVO: readonly EstadoDelLote[] = ['ARCHIVO_GENERADO', 'PAGADO'];
 
 function descargable(p: Proceso | null): p is Proceso {
   return Boolean(p && p.estado === 'TERMINADO' && p.archivo && !p.archivo.vencido);
-}
-
-function mensajeDe(e: unknown, respaldo: string): string {
-  return e instanceof Error && e.message ? e.message : respaldo;
 }
 
 /**
@@ -100,7 +97,14 @@ export function useArchivoDelLote(
       // 3. Sin centro en el back: como antes.
       await porElGetDelLote(r.nombreArchivo);
     } catch (e) {
-      setError(mensajeDe(e, 'No se pudo descargar el archivo.'));
+      // Con la regla de oro (02-10-2026): un 5xx dice «de nuestro lado» con la
+      // referencia; «conexión», sólo sin respuesta. Antes iba `e.message` crudo.
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo descargar el archivo.',
+          accion: 'descargar el archivo del lote',
+        }),
+      );
     } finally {
       setPreparando(false);
     }

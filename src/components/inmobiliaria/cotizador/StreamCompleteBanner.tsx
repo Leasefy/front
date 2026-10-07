@@ -4,6 +4,7 @@
 // The hook now takes { agencyId, quoteId, filenamePrefix } instead of the
 // rich VerdictPdfProps object — backend renders the PDF.
 
+import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { CheckCircle, FilePdf, ArrowCounterClockwise, ArrowLeft } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
@@ -11,7 +12,7 @@ import { usePdfDownload } from '@/lib/cotizador/use-pdf-download'
 
 interface StreamCompleteBannerProps {
   carrierCount: number
-  totalCostUsd: number
+  totalCostCop: number
   isStubMode: boolean         // true when all carriers are stubs
   onReQuote: () => void       // Phase 33 placeholder
   /** @deprecated — PDF download is now handled internally via usePdfDownload */
@@ -28,7 +29,7 @@ interface StreamCompleteBannerProps {
 
 export function StreamCompleteBanner({
   carrierCount,
-  totalCostUsd,
+  totalCostCop,
   isStubMode,
   onReQuote,
   onBack,
@@ -92,7 +93,7 @@ export function StreamCompleteBanner({
             {t('inmobiliaria.ai.cotizador.detail.banner.allReadyTemplate')
               .replace('{count}', String(carrierCount))
               .replace('{total}', String(carrierCount))
-              .replace('{cost}', totalCostUsd.toFixed(3))}
+              .replace('{cost}', formatCurrency(totalCostCop))}
           </p>
         </div>
       </div>

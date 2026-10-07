@@ -119,6 +119,12 @@ export interface TenantCase {
     cotizacionMonto?: number;
     cotizacionId?: string;
     cotizacionAprobadaAt?: string;
+    /** PQRS-FIX (04-10-2026, SO-20): el número de radicado, en la lista y el caso. */
+    radicado?: string;
+    /** SO-06: la respuesta de la inmobiliaria, cuando ya respondió. */
+    respuesta?: { texto: string; at: string; medio: string } | null;
+    /** SO-18: los archivos de la solicitud (se abren con URL firmada). */
+    adjuntos?: Array<{ id: string; nombre: string; tipo: string; subidoAt: string }>;
   };
   /**
    * Acuerdo-only pass-through metadata (v7-07). Carries the agent's plan `status`,
@@ -203,6 +209,7 @@ export function applicationStatusToTone(status: TenantApplicationStatus): CaseTo
     case 'rejected':
     case 'withdrawn':
     case 'contract_failed':
+    case 'no_adjudicado':
       return 'neutral';
     default:
       return assertNever(status);
@@ -277,17 +284,38 @@ export function pqrsStatusToLabel(estado: PqrsEstado): string {
  * lands in the `'mantenimiento'` lane; every other tipo in `'pqrs'`. Events are built
  * from SOURCE timestamps only — nothing synthesized/padded.
  */
+/** Cada paso del historial de la PQRS, en palabras de quien la radicó (SO-06). */
+const PASO_DEL_PORTAL: Record<string, (detalle: string | null) => string> = {
+  RADICADA: () => 'Radicada',
+  ASIGNADA: (d) => (d ? `La atiende ${d}` : 'Asignada a un responsable'),
+  REASIGNADA: (d) => (d ? `Ahora la atiende ${d}` : 'Cambió de responsable'),
+  EN_PROCESO: () => 'En proceso',
+  EN_COTIZACION: () => 'En cotización',
+  RESPUESTA: () => 'Respuesta de la inmobiliaria',
+  RESUELTA: () => 'Resuelta',
+  CERRADA: () => 'Cerrada',
+  ADJUNTO: (d) => (d ? `Archivo adjunto: ${d}` : 'Archivo adjunto'),
+};
+
 export function pqrsToCase(s: SolicitudPqrs): TenantCase {
-  const events: CaseEvent[] = [
-    { id: `${s.id}:recibida`, label: 'Recibida', timestamp: s.createdAt },
-  ];
-  // A quote milestone only when the request actually moved into cotización.
-  if (s.estado === 'en_cotizacion' && s.updatedAt !== s.createdAt) {
-    events.push({ id: `${s.id}:cotizacion`, label: 'En cotización', timestamp: s.updatedAt });
-  }
-  // A resolution milestone only when a real close timestamp exists.
-  if (s.resueltaAt) {
-    events.push({ id: `${s.id}:resuelta`, label: 'Resuelta', timestamp: s.resueltaAt });
+  let events: CaseEvent[];
+  if (s.historial && s.historial.length > 0) {
+    // PQRS-FIX: el historial REAL del back (quién la atiende, la respuesta…).
+    events = s.historial.map((e, i) => ({
+      id: `${s.id}:${i}:${e.tipo}`,
+      label: (PASO_DEL_PORTAL[e.tipo] ?? (() => e.tipo))(e.detalle),
+      timestamp: e.at,
+    }));
+  } else {
+    events = [{ id: `${s.id}:recibida`, label: 'Recibida', timestamp: s.createdAt }];
+    // A quote milestone only when the request actually moved into cotización.
+    if (s.estado === 'en_cotizacion' && s.updatedAt !== s.createdAt) {
+      events.push({ id: `${s.id}:cotizacion`, label: 'En cotización', timestamp: s.updatedAt });
+    }
+    // A resolution milestone only when a real close timestamp exists.
+    if (s.resueltaAt) {
+      events.push({ id: `${s.id}:resuelta`, label: 'Resuelta', timestamp: s.resueltaAt });
+    }
   }
 
   return {
@@ -311,6 +339,13 @@ export function pqrsToCase(s: SolicitudPqrs): TenantCase {
       cotizacionMonto: s.cotizacionMonto,
       cotizacionId: s.cotizacionId,
       cotizacionAprobadaAt: s.cotizacionAprobadaAt,
+      radicado: s.radicado,
+      respuesta: s.respuestaDetalle
+        ? { texto: s.respuestaDetalle.texto, at: s.respuestaDetalle.at, medio: s.respuestaDetalle.medio }
+        : s.respuesta
+          ? { texto: s.respuesta, at: s.resueltaAt ?? s.updatedAt, medio: 'PORTAL' }
+          : null,
+      adjuntos: s.adjuntos?.map(({ id, nombre, tipo, subidoAt }) => ({ id, nombre, tipo, subidoAt })),
     },
   };
 }
@@ -318,6 +353,36 @@ export function pqrsToCase(s: SolicitudPqrs): TenantCase {
 // ============================================================================
 // Acuerdos de pago — pure, TOTAL mappers + pass-through projection (v7-07)
 // ============================================================================
+
+/**
+ * QA-INQ-95 (04-10-2026): un acuerdo CERRADO ya no se cobra. `completed` (lo
+ * que financiaba se pagó, por el acuerdo o por fuera: el micro lo cierra cuando
+ * el deudor se queda sin deuda), `cancelled` y `defaulted`. Sus cuotas sin pagar
+ * no se ofrecen ni se leen como deuda.
+ */
+export const ESTADOS_DEL_ACUERDO_CERRADO = ['completed', 'cancelled', 'defaulted'] as const;
+
+export function acuerdoEstaCerrado(status: string): boolean {
+  return (ESTADOS_DEL_ACUERDO_CERRADO as readonly string[]).includes(status);
+}
+
+/**
+ * QA-INQ-95: un acuerdo no se cobra si está cerrado o si el back dice que la
+ * deuda que financiaba ya se saldó (`deudaSaldada`, pagada por fuera).
+ */
+export function acuerdoNoSeCobra(p: { status: string; deudaSaldada?: boolean }): boolean {
+  return acuerdoEstaCerrado(p.status) || p.deudaSaldada === true;
+}
+
+/** La etiqueta del acuerdo para la persona: «Saldado» cuando ya no debe nada. */
+export function etiquetaDelAcuerdo(p: { status: string; deudaSaldada?: boolean }): string {
+  return p.deudaSaldada === true ? 'Saldado' : acuerdoStatusToLabel(p.status);
+}
+
+/** El tono: un acuerdo saldado se apaga (neutral), como uno completado. */
+export function tonoDelAcuerdo(p: { status: string; deudaSaldada?: boolean }): CaseTone {
+  return p.deudaSaldada === true ? 'neutral' : acuerdoStatusToTone(p.status);
+}
 
 /**
  * Acuerdo plan `status` → tone. The agent `status` is a FREE string (not a closed
@@ -350,10 +415,14 @@ export function acuerdoStatusToLabel(status: string): string {
   switch (status) {
     case 'offered':
       return 'Propuesto';
+    case 'accepted':
+      return 'Aceptado';
     case 'active':
       return 'Activo';
     case 'completed':
       return 'Completado';
+    case 'defaulted':
+      return 'Incumplido';
     case 'cancelled':
       return 'Cancelado';
     default:
@@ -385,8 +454,8 @@ export function acuerdoToCase(p: AcuerdoDetail): TenantCase {
     id: p.planId,
     type: 'acuerdo',
     titulo: 'Acuerdo de pago',
-    estadoLabel: acuerdoStatusToLabel(p.status),
-    tone: acuerdoStatusToTone(p.status),
+    estadoLabel: etiquetaDelAcuerdo(p),
+    tone: tonoDelAcuerdo(p),
     responsable: RESPONSABLE_INMOBILIARIA,
     // Real source timestamps only — accepted when present, else offered.
     updatedAt: p.acceptedAt ?? p.offeredAt,
@@ -403,4 +472,15 @@ export function acuerdoToCase(p: AcuerdoDetail): TenantCase {
       acceptedAt: p.acceptedAt,
     },
   };
+}
+
+/**
+ * SO-16 (PQRS-FIX, 04-10-2026): ¿el caso sigue abierto? «Casos abiertos» del
+ * Inicio contaba también los terminados (una PQRS resuelta, una postulación
+ * aprobada). Terminado = tono neutral (pagado, cancelado, resuelta, cerrada,
+ * acuerdo cumplido) o una postulación ya aprobada.
+ */
+export function casoAbierto(c: Pick<TenantCase, 'tone' | 'estadoLabel'>): boolean {
+  if (c.tone === 'neutral') return false;
+  return !/^aprobad/i.test(c.estadoLabel.trim());
 }

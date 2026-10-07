@@ -3,9 +3,17 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { CheckCircle, WarningCircle, EnvelopeSimple, ArrowsClockwise } from '@phosphor-icons/react';
 import { Spinner } from '@/components/ui/spinner';
+import { CrossFade, Presence } from '@leasefy/cadence';
 import { contractsApi } from '@/lib/api/contracts.service';
 import type { ContractOtpRole, OtpChannelResult } from '@/lib/api/contracts.types';
 import { describirCanales } from '@/lib/contratos/otp-channels';
@@ -83,6 +91,12 @@ export interface OTPVerificationProps {
   onCancel: () => void;
   /** Additional CSS classes */
   className?: string;
+  /**
+   * Qué se firma, para la nota del pie: «solo tú puedes firmar {queSeFirma}».
+   * Por defecto «este contrato» (ARREGLOS-7: el acta de entrega decía
+   * «contrato»).
+   */
+  queSeFirma?: string;
 }
 
 type OTPStatus = 'idle' | 'sending' | 'verifying' | 'verified' | 'error';
@@ -112,6 +126,7 @@ export function OTPVerification({
   onVerified,
   onCancel,
   className,
+  queSeFirma = 'este contrato',
 }: OTPVerificationProps) {
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [status, setStatus] = useState<OTPStatus>('idle');
@@ -143,8 +158,8 @@ export function OTPVerification({
       setChannels(canales ?? []);
       setStatus('idle');
     } catch (err) {
-      const d = describirErrorDeOtp(err);
-      setSendError(d.mensaje || 'No se pudo enviar el código. Intenta de nuevo.');
+      const d = describirErrorDeOtp(err, 'enviar el código');
+      setSendError(d.mensaje);
       // CODIGO_EN_ESPERA (reenvío dentro del cooldown, contract.md §3.3):
       // el back YA está contando ese cooldown — se refleja acá para que
       // "Reenviar" no vuelva a pegarle antes de tiempo y repita el mismo 429.
@@ -276,11 +291,18 @@ export function OTPVerification({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
-      <DialogContent className={cn('sm:max-w-md', className)}>
+      {/* La variante sigue al estado (DESIGN.md §17): el sobre mientras se pide
+          el código y el ✓ de éxito al verificar. Un error del código se queda
+          en el cuerpo, junto a los dígitos: el modal sigue siendo para escribir. */}
+      <DialogContent
+        size="sm"
+        variant={status === 'verified' ? 'success' : undefined}
+        icon={status === 'verified' ? undefined : <EnvelopeSimple weight="bold" />}
+        className={className}
+      >
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <EnvelopeSimple className="h-5 w-5 text-primary" />
-            Verificación de identidad
+          <DialogTitle>
+            {status === 'verified' ? 'Verificación exitosa' : 'Verificación de identidad'}
           </DialogTitle>
           <DialogDescription>
             {/* T-0109 — con `channels` (back WU-1+) el detalle por canal de
@@ -294,7 +316,7 @@ export function OTPVerification({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-6">
           {/* Detalle por canal (T-0109 contract.md §3.0.1/§3.3 — SendOtpResponse.channels
               / CODIGO_NO_ENTREGADO.details.channels). Ausente en un back anterior a WU-1. */}
           {channels.length > 0 && (
@@ -318,72 +340,76 @@ export function OTPVerification({
             </ul>
           )}
 
-          {/* Error de envío (antes de poder ingresar código) */}
-          {sendError && (
-            <div className="flex items-start gap-2 rounded-[14px] border border-danger/30 bg-danger-soft p-3 text-sm text-danger">
-              <WarningCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-              <span>{sendError}</span>
-            </div>
-          )}
+          {/* Enviando → los seis dígitos (o el error del envío): uno se cruza
+              con el otro. `popLayout`: los dígitos se montan YA (el foco al
+              primero llega a los 100 ms) y lo viejo se va por encima. */}
+          <CrossFade swapKey={sendError ? 'error' : sentTo ? 'codigo' : 'enviando'} mode="popLayout">
+            {/* Error de envío (antes de poder ingresar código) */}
+            {sendError && (
+              <div className="flex items-start gap-2 rounded-[14px] border border-danger/30 bg-danger-soft p-3 text-sm text-danger">
+                <WarningCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <span>{sendError}</span>
+              </div>
+            )}
 
-          {/* OTP inputs — solo si ya se envió */}
-          {sentTo && !sendError && (
-            <div className="flex justify-center gap-2" onPaste={handlePaste}>
-              {digits.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={(el) => { inputRefs.current[index] = el; }}
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  aria-label={`Dígito ${index + 1} de ${OTP_LENGTH}`}
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  disabled={status === 'verifying' || status === 'verified'}
-                  className={cn(
-                    'h-[56px] w-[46px] rounded-[12px] bg-surface text-center font-mono text-[22px] font-semibold transition-all',
-                    'focus:border-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-[rgba(26,64,255,0.14)]',
-                    digit ? 'border-[1.5px] border-fg' : 'border border-border',
-                    status === 'error' && 'border-danger bg-danger-soft animate-shake',
-                    status === 'verified' && 'border-success bg-success-soft',
-                    (status === 'verifying' || status === 'verified') && 'opacity-70'
-                  )}
-                />
-              ))}
-            </div>
-          )}
+            {/* OTP inputs — solo si ya se envió */}
+            {sentTo && !sendError && (
+              <div className="flex justify-center gap-2" onPaste={handlePaste}>
+                {digits.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => { inputRefs.current[index] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    aria-label={`Dígito ${index + 1} de ${OTP_LENGTH}`}
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    disabled={status === 'verifying' || status === 'verified'}
+                    className={cn(
+                      'h-[56px] w-[46px] rounded-[12px] bg-surface text-center font-mono text-[22px] font-semibold transition-[color,background-color,border-color,box-shadow,opacity]',
+                      'focus:border-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-[rgba(26,64,255,0.14)]',
+                      digit ? 'border-[1.5px] border-fg' : 'border border-border',
+                      status === 'error' && 'border-danger bg-danger-soft animate-shake',
+                      status === 'verified' && 'border-success bg-success-soft',
+                      (status === 'verifying' || status === 'verified') && 'opacity-70'
+                    )}
+                  />
+                ))}
+              </div>
+            )}
 
-          {/* Loader inicial */}
-          {!sentTo && !sendError && (
-            <div className="flex items-center justify-center gap-2 py-6 text-sm text-fg-muted">
-              <Spinner size="sm" variant="current" />
-              Enviando código a tu correo...
-            </div>
-          )}
+            {/* Loader inicial */}
+            {!sentTo && !sendError && (
+              <div className="flex items-center justify-center gap-2 py-6 text-sm text-fg-muted">
+                <Spinner size="sm" variant="current" />
+                Enviando código a tu correo...
+              </div>
+            )}
+          </CrossFade>
 
           {/* Estado en vivo */}
-          {status === 'verifying' && (
-            <div className="flex items-center justify-center gap-2 text-sm text-fg-muted">
-              <Spinner size="sm" variant="current" />
-              Verificando...
-            </div>
-          )}
+          <Presence
+            show={status === 'verifying'}
+            initial={false}
+            distance="xs"
+            className="flex items-center justify-center gap-2 text-sm text-fg-muted"
+          >
+            <Spinner size="sm" variant="current" />
+            Verificando...
+          </Presence>
 
-          {status === 'verified' && (
-            <div className="flex items-center justify-center gap-2 text-sm text-success">
-              <CheckCircle className="h-4 w-4" />
-              Verificación exitosa
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-center justify-center gap-2 text-sm text-danger">
-              <WarningCircle className="h-4 w-4" />
-              {error}
-            </div>
-          )}
+          <Presence
+            show={Boolean(error)}
+            initial={false}
+            distance="xs"
+            className="flex items-center justify-center gap-2 text-sm text-danger"
+          >
+            <WarningCircle className="h-4 w-4" />
+            {error}
+          </Presence>
 
           {/* Reenviar */}
           {status !== 'verified' && sentTo && (
@@ -408,24 +434,25 @@ export function OTPVerification({
           )}
 
           {/* Help text */}
-          <div className="rounded-[14px] bg-surface-muted p-3 text-xs text-fg-muted">
+          <div className="rounded-[14px] border border-border p-3 text-xs text-fg-muted">
             <p>
               <strong>Nota:</strong> La verificación por código enviado a tu correo garantiza que
-              solo tú puedes firmar este contrato. Este proceso cumple con la Ley 527/1999 sobre
+              solo tú puedes firmar {queSeFirma}. Este proceso cumple con la Ley 527/1999 sobre
               firmas electrónicas.
             </p>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3">
+        <DialogFooter>
           <Button
             variant="outline"
+            hideArrow
             onClick={onCancel}
             disabled={status === 'verifying' || status === 'verified'}
           >
             Cancelar
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

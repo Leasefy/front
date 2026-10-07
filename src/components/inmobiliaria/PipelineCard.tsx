@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import { motionSpring } from '@leasefy/cadence';
 import {
   HouseLine,
   User,
@@ -9,6 +10,7 @@ import {
   Phone,
   Warning,
 } from '@phosphor-icons/react';
+import { createContext, useContext } from 'react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
@@ -26,6 +28,12 @@ const RISK_LEVEL_COLORS: Record<string, { bg: string; text: string }> = {
 // Overdue warning thresholds
 const DAYS_WARNING_THRESHOLD = 7;
 const DAYS_CRITICAL_THRESHOLD = 14;
+
+/**
+ * Quién es cada agente (por id de miembro y por id de usuario). Lo pone el
+ * tablero; sin él la tarjeta no inventa un «Agente #a1b» con el final de un id.
+ */
+export const NombresDeAgentesContext = createContext<Record<string, string>>({});
 
 interface PipelineCardProps {
   item: PipelineItem;
@@ -46,6 +54,7 @@ export function PipelineCard({
 }: PipelineCardProps) {
   const { t, formatDate: formatDateI18n } = useI18n();
   const stageInfo = getPipelineStageInfo(item.stage);
+  const nombreDelAgente = useContext(NombresDeAgentesContext)[item.agenteId];
   const riskColors = item.riskLevel ? RISK_LEVEL_COLORS[item.riskLevel] : null;
 
   // Check if overdue
@@ -67,14 +76,16 @@ export function PipelineCard({
   return (
     <motion.div
       layoutId={`pipeline-card-${item.id}`}
-      whileHover={!isDragging ? { y: -2, boxShadow: '0 8px 25px -5px rgba(0, 0, 0, 0.1)' } : undefined}
-      animate={isDragging ? { scale: 1.02, boxShadow: '0 20px 40px -10px rgba(0, 0, 0, 0.2)' } : { scale: 1 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+      // Sólo `transform`: sube 2px al pasar y crece un poco al arrastrarla. La
+      // sombra la pone el CSS (`hover:shadow-md`, `shadow-lg` arrastrando).
+      whileHover={!isDragging ? { y: -2 } : undefined}
+      animate={isDragging ? { scale: 1.02 } : { scale: 1 }}
+      transition={motionSpring.snappy}
       className={cn(
-        'w-full rounded-lg border bg-card overflow-hidden transition-all duration-200 cursor-pointer group',
+        'w-full rounded-lg border bg-card overflow-hidden transition-[border-color,box-shadow] duration-base cursor-pointer group',
         isDragging
-          ? 'border-primary/30 ring-2 ring-primary/20'
-          : 'border-border hover:border-primary/30',
+          ? 'border-primary/30 ring-2 ring-primary/20 shadow-lg'
+          : 'border-border hover:border-primary/30 hover:shadow-md',
       )}
       onClick={() => onClick?.(item)}
       {...dragHandleProps}
@@ -119,7 +130,7 @@ export function PipelineCard({
               {item.monthlyRent != null ? (
                 <>
                   {formatCurrency(item.monthlyRent)}
-                  <span className="text-xs font-normal text-muted-foreground">/{t('inmobiliaria.pipeline.month')}</span>
+                  <span className="text-xs font-normal text-muted-foreground">{t('inmobiliaria.pipeline.month')}</span>
                 </>
               ) : (
                 '—'
@@ -225,7 +236,7 @@ export function PipelineCard({
           {/* Assigned Agent (small text) */}
           <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <User className="w-3 h-3" />
-            <span className="truncate max-w-[80px]">{t('inmobiliaria.pipeline.agent')} #{item.agenteId.slice(-3)}</span>
+            <span className="truncate max-w-[80px]">{nombreDelAgente ?? 'Sin asignar'}</span>
           </div>
         </div>
       </div>

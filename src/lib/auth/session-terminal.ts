@@ -39,6 +39,12 @@ export type MotivoDeCierre =
   | 'revocada'
   /** Nadie tocó nada durante el tope configurado. */
   | 'inactividad'
+  /**
+   * La persona puso su contraseña nueva desde el enlace de recuperación: esa
+   * sesión se cierra y se entra con la nueva (QA 01-10-2026). No es un
+   * vencimiento: el aviso es una confirmación, no una advertencia.
+   */
+  | 'contrasena-actualizada'
 
 /** El valor que viaja en `?reason=` hacia /auth. */
 export const PARAM_MOTIVO = 'reason'
@@ -143,17 +149,39 @@ export function purgarSesionLocal(): void {
  */
 const CLAVE_DE_SESION = /^sb-.+-auth-token/
 
+/**
+ * 🔴 LOGIN-BUCLE (06-10-2026): la clave de ESTE proyecto de Supabase, la misma
+ * que arma supabase-js (`sb-<primer pedazo del host>-auth-token`). Desde que
+ * «hay una sesión guardada» decide si se espera o se manda al login, una cookie
+ * de OTRO proyecto (en localhost las cookies no distinguen puertos: el lab, otra
+ * app) no puede contar: haría esperar a un visitante que no tiene sesión acá.
+ * Sin la URL (las pruebas) se usa la regla general de siempre.
+ */
+function claveDeEsteProyecto(): RegExp {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!url) return CLAVE_DE_SESION
+  try {
+    const ref = new URL(url).hostname.split('.')[0]
+    if (!ref) return CLAVE_DE_SESION
+    const escapada = ref.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`^sb-${escapada}-auth-token(\\.\\d+)?$`)
+  } catch {
+    return CLAVE_DE_SESION
+  }
+}
+
 export function haySesionGuardada(): boolean {
+  const clave = claveDeEsteProyecto()
   if (typeof document !== 'undefined') {
     const hayCookie = document.cookie
       .split(';')
-      .some((c) => CLAVE_DE_SESION.test(c.split('=')[0]?.trim() ?? ''))
+      .some((c) => clave.test(c.split('=')[0]?.trim() ?? ''))
     if (hayCookie) return true
   }
 
   if (typeof window === 'undefined') return false
   try {
-    return Object.keys(window.localStorage).some((k) => CLAVE_DE_SESION.test(k))
+    return Object.keys(window.localStorage).some((k) => clave.test(k))
   } catch {
     return false
   }
@@ -190,6 +218,15 @@ const VIGENCIA_DEL_AVISO_MS = 60_000
 interface AvisoGuardado {
   motivo: MotivoDeCierre
   en: number
+}
+
+/**
+ * Deja el aviso para /auth sin pasar por `terminarSesion`: para un cierre que
+ * la pantalla hace ella misma y espera (la contraseña nueva cierra la sesión
+ * del enlace y después navega). Mismo almacenamiento y misma vigencia.
+ */
+export function anunciarCierre(motivo: MotivoDeCierre): void {
+  guardarAviso(motivo)
 }
 
 function guardarAviso(motivo: MotivoDeCierre): void {
@@ -241,7 +278,7 @@ export function tomarAvisoDeCierre(motivoEnLaUrl?: string | null): MotivoDeCierr
   }
 }
 
-const MOTIVOS: readonly string[] = ['expirada', 'revocada', 'inactividad']
+const MOTIVOS: readonly string[] = ['expirada', 'revocada', 'inactividad', 'contrasena-actualizada']
 
 function esMotivo(v: unknown): v is MotivoDeCierre {
   return typeof v === 'string' && MOTIVOS.includes(v)
@@ -349,6 +386,25 @@ export function terminarSesion(motivo: MotivoDeCierre): void {
   destino.searchParams.set('returnUrl', `${pathname}${search}`)
   destino.searchParams.set(PARAM_MOTIVO, motivo)
   window.location.replace(destino.toString())
+}
+
+/**
+ * 🔴 LOGIN-BUCLE (06-10-2026): en las RUTAS_DE_SALIDA (/auth, /invitacion,
+ * /registro) `terminarSesion` no navega —ya se está en la salida— y la persona
+ * vuelve a entrar SIN recargar. Con la bandera cerrada, el `claim` y el
+ * bootstrap de ese ingreso nuevo salían como 401 `SESSION_TERMINATED` sin ir a
+ * la red, y entrar fallaba («No pudimos iniciar tu sesión») hasta recargar.
+ * Pasaba al llegar a /auth con una sesión que auth-js descarta al cargar, y al
+ * validar la sesión con «Continuar» de `SesionYaAbierta`.
+ *
+ * El AuthProvider la llama con un SIGNED_IN: una sesión NUEVA ya existe, así que
+ * la muerte declarada era la de la anterior. El panel no se ve afectado: allí
+ * `terminarSesion` purga la sesión y navega, y sin sesión guardada auth-js no
+ * puede emitir SIGNED_IN.
+ */
+export function reabrirTrasUnIngresoNuevo(): void {
+  cerrada = false
+  motivoDeCierre = null
 }
 
 /**

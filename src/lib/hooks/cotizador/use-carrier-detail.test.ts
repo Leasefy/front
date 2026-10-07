@@ -30,7 +30,7 @@ const MOCK_PAYLOAD: CarrierDetailPayload = {
     latencyP95Ms: 420,
     errorRate24h: 0.02,
     approvalRate30d: 0.75,
-    costPerQuoteUsd30d: 0.015,
+    costPerQuoteCop30d: 63,
   },
   latencySparkline: [
     { hour: '2026-05-01T00:00:00Z', p95LatencyMs: 380 },

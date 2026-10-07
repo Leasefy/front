@@ -47,7 +47,8 @@
 
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { CaretDown, CaretRight, MagnifyingGlass, Users, Warning } from '@phosphor-icons/react'
+import { CaretRight, MagnifyingGlass, Users, Warning } from '@phosphor-icons/react'
+import { AnimatedNumber, Collapse, Presence } from '@leasefy/cadence'
 
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
@@ -69,13 +70,37 @@ import { useCarteraConPropietarios } from '@/lib/hooks/use-cartera'
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { mesEnTitulo } from '@/lib/utils/mes'
+import { mesActual } from '@/lib/recaudo/meses'
+import {
+  definicionDePorGirar,
+  rotuloDePorGirar,
+  rotuloDeProximosGiros,
+} from '@/lib/propietarios/por-girar'
 import type { MesDelPropietario, PropietarioEnCartera } from '@/lib/api/cartera.types'
 import { NOMBRE_DEL_ESTADO_DEL_GIRO, filtrarPropietarios } from '@/lib/cartera/conceptos'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
 
-/** Columnas fijas: propietario · meses · neto · girado · pendiente. */
-const COLUMNAS = 5
+/** Columnas fijas: propietario · meses · neto · girado · se le debe · próximos. */
+const COLUMNAS = 6
+
+/**
+ * 🔴 Lo que se le debe a un dueño HASTA el mes en curso y lo de los meses
+ * siguientes, de sus mismos meses (Nico, 04-10-2026: «Por girar» es una sola
+ * cifra, hasta el mes en curso; lo futuro aparte como «próximos giros»).
+ */
+export function partirPorElMesEnCurso(
+  meses: readonly MesDelPropietario[],
+  hastaMes: string,
+): { pendienteCop: number; proximosCop: number } {
+  return meses.reduce(
+    (t, m) =>
+      m.month <= hastaMes
+        ? { ...t, pendienteCop: t.pendienteCop + m.pendienteCop }
+        : { ...t, proximosCop: t.proximosCop + m.pendienteCop },
+    { pendienteCop: 0, proximosCop: 0 },
+  )
+}
 
 function Peso({ valor, className }: { valor: number; className?: string }) {
   if (valor === 0) {
@@ -85,8 +110,14 @@ function Peso({ valor, className }: { valor: number; className?: string }) {
       </span>
     )
   }
+  // Cuenta desde la cifra anterior cuando cambia (al buscar, el total de lo
+  // filtrado baja contando).
   return (
-    <span className={cn('font-mono tabular-nums', className)}>{formatCurrency(valor)}</span>
+    <AnimatedNumber
+      value={valor}
+      format={formatCurrency}
+      className={cn('font-mono tabular-nums', className)}
+    />
   )
 }
 
@@ -100,17 +131,23 @@ export function CarteraDePropietarios() {
     () => filtrarPropietarios(datos?.propietarios ?? [], busqueda),
     [datos, busqueda],
   )
+  /** El mes en curso que manda el back; con un back anterior, el de hoy. */
+  const hastaMes = datos?.porGirar?.hastaMes ?? mesActual()
   const visibles = useMemo(
     () =>
       propietarios.reduce(
-        (acumulado, p) => ({
-          netoCop: acumulado.netoCop + p.totales.netoCop,
-          giradoCop: acumulado.giradoCop + p.totales.giradoCop,
-          pendienteCop: acumulado.pendienteCop + p.totales.pendienteCop,
-        }),
-        { netoCop: 0, giradoCop: 0, pendienteCop: 0 },
+        (acumulado, p) => {
+          const partes = partirPorElMesEnCurso(p.meses, hastaMes)
+          return {
+            netoCop: acumulado.netoCop + p.totales.netoCop,
+            giradoCop: acumulado.giradoCop + p.totales.giradoCop,
+            pendienteCop: acumulado.pendienteCop + partes.pendienteCop,
+            proximosCop: acumulado.proximosCop + partes.proximosCop,
+          }
+        },
+        { netoCop: 0, giradoCop: 0, pendienteCop: 0, proximosCop: 0 },
       ),
-    [propietarios],
+    [propietarios, hastaMes],
   )
 
   const hayFiltros = busqueda.trim().length > 0
@@ -141,11 +178,31 @@ export function CarteraDePropietarios() {
           className="grid grid-cols-1 divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface sm:grid-cols-3 sm:divide-x sm:divide-y-0"
           data-testid="resumen-por-pagar"
         >
-          <div className="p-4">
-            <p className="text-xs text-fg-muted">Pendiente de girar</p>
-            <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg">
-              {formatCurrency(datos?.totales.pendienteCop ?? 0)}
+          {/* 🔴 «Por girar» → UNA sola cifra (Nico, 04-10-2026): la del back,
+              la misma del Tablero, Liquidaciones y el chat, neta de
+              deducciones. Lo de los meses siguientes, aparte. */}
+          <div className="p-4" data-testid="por-girar-por-pagar">
+            <p className="text-xs text-fg-muted" title={definicionDePorGirar(hastaMes)}>
+              {rotuloDePorGirar(hastaMes)}
             </p>
+            <p
+              className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg"
+              data-testid="por-girar-cifra"
+            >
+              {formatCurrency(datos?.porGirar?.porGirarCop ?? visibles.pendienteCop)}
+            </p>
+            {datos?.porGirar ? (
+              <p className="mt-0.5 text-caption text-fg-muted" data-testid="proximos-giros">
+                {rotuloDeProximosGiros(
+                  datos.porGirar.proximosGiros.desdeMes,
+                  datos.porGirar.proximosGiros.hastaMes,
+                )}
+                :{' '}
+                <span className="font-mono tabular-nums">
+                  {formatCurrency(datos.porGirar.proximosGiros.totalCop)}
+                </span>
+              </p>
+            ) : null}
             <p className="mt-0.5 text-xs text-fg-muted">
               {datos?.propietarios.length ?? 0}{' '}
               {datos?.propietarios.length === 1 ? 'propietario' : 'propietarios'} ·{' '}
@@ -169,7 +226,7 @@ export function CarteraDePropietarios() {
         </div>
 
         {/* Los meses que no se pudieron liquidar, con su porqué. */}
-        {datos?.avisos.length ? (
+        <Presence show={Boolean(datos?.avisos.length)} initial={false}>
           <div
             className="rounded-lg border border-border bg-warning-soft p-4 text-sm text-fg"
             data-testid="avisos-de-liquidacion"
@@ -179,14 +236,14 @@ export function CarteraDePropietarios() {
               Hay meses que no se pudieron liquidar completos
             </p>
             <ul className="mt-2 space-y-1">
-              {datos.avisos.map((aviso) => (
+              {(datos?.avisos ?? []).map((aviso) => (
                 <li key={aviso.month}>
                   <span className="font-medium">{mesEnTitulo(aviso.month)}:</span> {aviso.mensaje}
                 </li>
               ))}
             </ul>
           </div>
-        ) : null}
+        </Presence>
 
         <section className="overflow-hidden rounded-lg border border-border bg-surface">
           <div className="flex flex-col gap-3 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-end">
@@ -213,7 +270,10 @@ export function CarteraDePropietarios() {
                 <TableHead className="whitespace-nowrap text-right">Meses</TableHead>
                 <TableHead className="whitespace-nowrap text-right">Neto</TableHead>
                 <TableHead className="whitespace-nowrap text-right">Girado</TableHead>
-                <TableHead className="whitespace-nowrap text-right">Se le debe</TableHead>
+                <TableHead className="whitespace-nowrap text-right">
+                  Se le debe hasta {mesEnTitulo(hastaMes)}
+                </TableHead>
+                <TableHead className="whitespace-nowrap text-right">Próximos giros</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -235,6 +295,7 @@ export function CarteraDePropietarios() {
                   <FilasDelPropietario
                     key={propietario.propietarioId}
                     propietario={propietario}
+                    hastaMes={hastaMes}
                     abierto={abiertos.has(propietario.propietarioId)}
                     onAlternar={() => alternar(propietario.propietarioId)}
                   />
@@ -256,6 +317,9 @@ export function CarteraDePropietarios() {
                   </TableCell>
                   <TableCell className="text-right font-semibold text-fg">
                     <Peso valor={visibles.pendienteCop} />
+                  </TableCell>
+                  <TableCell className="text-right text-fg-muted">
+                    <Peso valor={visibles.proximosCop} />
                   </TableCell>
                 </TableRow>
               </TableFooter>
@@ -301,14 +365,17 @@ const VOLVER_A = '/panel/inmobiliaria/pagos/cartera/por-pagar'
 
 function FilasDelPropietario({
   propietario,
+  hastaMes,
   abierto,
   onAlternar,
 }: {
   propietario: PropietarioEnCartera
+  /** `AAAA-MM`: el mes en curso, último que entra en «Se le debe». */
+  hastaMes: string
   abierto: boolean
   onAlternar: () => void
 }) {
-  const Caret = abierto ? CaretDown : CaretRight
+  const partes = partirPorElMesEnCurso(propietario.meses, hastaMes)
   return (
     <>
       <TableRow data-testid="fila-propietario">
@@ -319,7 +386,14 @@ function FilasDelPropietario({
             aria-expanded={abierto}
             className="flex items-center gap-2 text-left font-medium text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <Caret className="h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
+            {/* Un solo caret que gira con la curva de los paneles. */}
+            <CaretRight
+              className={cn(
+                'h-4 w-4 shrink-0 text-fg-muted transition-transform duration-slow ease-emphasis',
+                abierto && 'rotate-90',
+              )}
+              aria-hidden="true"
+            />
             {propietario.nombre || 'Sin nombre'}
           </button>
           {/* Fuera del `button`: un enlace no vive dentro de otro control.
@@ -343,17 +417,26 @@ function FilasDelPropietario({
           <Peso valor={propietario.totales.giradoCop} />
         </TableCell>
         <TableCell className="text-right font-medium text-fg">
-          <Peso valor={propietario.totales.pendienteCop} />
+          <Peso valor={partes.pendienteCop} />
+        </TableCell>
+        <TableCell className="text-right text-fg-muted">
+          <Peso valor={partes.proximosCop} />
         </TableCell>
       </TableRow>
 
-      {abierto ? (
-        <TableRow className="bg-surface-muted/40">
-          <TableCell colSpan={COLUMNAS} className="px-4 py-3">
+      {/* El mes a mes se abre y se cierra con `Collapse` (altura + fundido).
+          La fila queda montada, en cero de alto y sin borde, mientras está
+          cerrado: así también se ANIMA el cierre. */}
+      <TableRow
+        className={cn('bg-surface-muted/40 hover:bg-surface-muted/40', !abierto && 'border-b-0')}
+        aria-hidden={abierto ? undefined : true}
+      >
+        <TableCell colSpan={COLUMNAS} className="p-0">
+          <Collapse open={abierto} className="px-4 py-3">
             <DetalleDeMeses meses={propietario.meses} />
+          </Collapse>
           </TableCell>
         </TableRow>
-      ) : null}
     </>
   )
 }

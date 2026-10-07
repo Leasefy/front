@@ -26,6 +26,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 export interface ThresholdRow {
   version: number | null
@@ -83,12 +85,14 @@ export function useThresholds(): UseThresholdsResult {
     const activeUrl = base('')
     if (!activeUrl) {
       setIsLoading(false)
-      if (!process.env.NEXT_PUBLIC_AGENT_URL) setError('NEXT_PUBLIC_AGENT_URL not configured')
+      if (!process.env.NEXT_PUBLIC_AGENT_URL) {
+        setError('El agente de cobranza no está configurado para tu inmobiliaria.')
+      }
       return
     }
     try {
       const activeRes = await agentFetch(activeUrl)
-      if (!activeRes.ok) throw new Error(`${activeRes.status}`)
+      if (!activeRes.ok) throw await falloDelMicro(activeRes)
       const activeJson = (await activeRes.json()) as ThresholdRow
       setActive(activeJson)
 
@@ -116,7 +120,12 @@ export function useThresholds(): UseThresholdsResult {
       }
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'fetch_failed')
+      setError(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos cargar los umbrales.',
+          accion: 'cargar los umbrales',
+        }),
+      )
     } finally {
       setIsLoading(false)
     }
@@ -130,16 +139,15 @@ export function useThresholds(): UseThresholdsResult {
   const updateThresholds = useCallback(
     async (body: ThresholdUpdateBody): Promise<ThresholdRow> => {
       const url = base('')
-      if (!url) throw new Error('not_ready')
+      if (!url) throw new Error('El agente de cobranza no está configurado para tu inmobiliaria.')
       const res = await agentFetch(url, {
         method: 'PUT',
         headers: agentAuthHeaders({ 'content-type': 'application/json' }),
         body: JSON.stringify(body),
       })
-      if (!res.ok) {
-        const text = await res.text().catch(() => '')
-        throw new Error(`${res.status}: ${text || 'update_failed'}`)
-      }
+      // El `ApiError` del micro (status, `code`, `campos` de un 400): la
+      // pantalla lo reparte por campo. Antes: «400: {cuerpo crudo}».
+      if (!res.ok) throw await falloDelMicro(res)
       const row = (await res.json()) as ThresholdRow
       await fetchAll()
       return row
@@ -150,16 +158,13 @@ export function useThresholds(): UseThresholdsResult {
   const rollbackTo = useCallback(
     async (version: number): Promise<ThresholdRow> => {
       const url = base('/rollback')
-      if (!url) throw new Error('not_ready')
+      if (!url) throw new Error('El agente de cobranza no está configurado para tu inmobiliaria.')
       const res = await agentFetch(url, {
         method: 'POST',
         headers: agentAuthHeaders({ 'content-type': 'application/json' }),
         body: JSON.stringify({ to_version: version }),
       })
-      if (!res.ok) {
-        const text = await res.text().catch(() => '')
-        throw new Error(`${res.status}: ${text || 'rollback_failed'}`)
-      }
+      if (!res.ok) throw await falloDelMicro(res)
       const row = (await res.json()) as ThresholdRow
       await fetchAll()
       return row

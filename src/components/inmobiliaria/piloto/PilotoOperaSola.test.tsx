@@ -185,22 +185,24 @@ describe('PilotoOperaSolaContenido — la inmobiliaria de hoy', () => {
     expect(q('[data-testid="piloto-opera-sola-agente-retencion"]')!.textContent).toContain('inmobiliaria.piloto.operaSola.estadoAgente.apagado')
   })
 
-  it('los interruptores: encendido, apagado o «no se ve desde aquí», con el nombre de la variable', () => {
+  it('los interruptores: encendido, apagado o «no se ve desde aquí», SIN el nombre de la variable (PI-02)', () => {
     pintar(lectura(HOY))
     const gerente = q('[data-testid="piloto-opera-sola-interruptor-PILOTO_GERENTE_V2"]')!
     expect(gerente.textContent).toContain('inmobiliaria.piloto.operaSola.interruptor.encendido')
     expect(gerente.textContent).toContain('Encendido para tu inmobiliaria.')
     const pases = q('[data-testid="piloto-opera-sola-interruptor-PILOTO_PASES_ENABLED"]')!
     expect(pases.textContent).toContain('inmobiliaria.piloto.operaSola.interruptor.noSeVe')
-    expect(pases.textContent).toContain('PILOTO_PASES_ENABLED · PILOTO_CREDENCIAL_SECRET')
-    expect(pases.textContent).toContain('inmobiliaria.piloto.operaSola.interruptor.donde.back')
+    // PI-02 (04-10-2026): ante la inmobiliaria, ni variables ni secretos.
+    expect(pases.textContent).not.toContain('PILOTO_PASES_ENABLED')
+    expect(pases.textContent).not.toContain('PILOTO_CREDENCIAL_SECRET')
     expect(q('[data-testid="piloto-opera-sola-interruptor-CHAT_EJECUCION_SIN_CLIC_ENABLED"]')!.textContent).toContain(
       'inmobiliaria.piloto.operaSola.interruptor.apagado',
     )
     // Sólo la migración que falta, no la aplicada.
     const migraciones = q('[data-testid="piloto-opera-sola-migraciones"]')!
-    expect(migraciones.textContent).toContain('20260924110000_chat_ejecuciones')
-    expect(migraciones.textContent).not.toContain('20260924030000_perilla_del_piloto')
+    // PI-02: lo que falta se dice por lo que habilita, nunca por el nombre de la migración.
+    expect(migraciones.querySelectorAll('li')).toHaveLength(1)
+    expect(migraciones.textContent).not.toContain('20260924110000_chat_ejecuciones')
   })
 
   it('por agente: modo, «nadie eligió», a nombre de quién, y sus procesos con su estado', () => {

@@ -49,11 +49,9 @@ function MatchingCaso() {
       colaLabel={t('inmobiliaria.ai.workspace.pages.matching.casoColaLabel')}
       icon={GitMerge}
       onAction={handleAction}
-      crossLink={{
-        pregunta: t('inmobiliaria.ai.workspace.pages.matching.crossPregunta'),
-        destino: t('inmobiliaria.ai.workspace.pages.matching.crossDestino'),
-        href: '/panel/inmobiliaria/postulaciones/estudio',
-      }}
+      /* QA-IA-A (04-10-2026): sin enlace cruzado. Llevaba a «Evaluación de
+         candidatos», sección OCULTA desde el 08-09 cuyo layout devuelve a
+         Postulaciones: el botón prometía un destino que no existe. */
     />
   )
 }

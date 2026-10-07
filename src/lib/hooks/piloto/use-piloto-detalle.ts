@@ -23,7 +23,13 @@ import { fetchPilotoDetalle, type PilotoDetalle } from '@/lib/api/piloto'
 export interface UsePilotoDetalleResult {
   data: PilotoDetalle | null
   isLoading: boolean
-  error: string | null
+  /**
+   * El error ENTERO, no su texto (ARREGLOS-4, 03-10-2026): el `ApiError` del
+   * micro, el 503 «el asistente de Leasefy no está disponible» de
+   * `agentFetch`, el de red o el de «no contestó a tiempo». La pantalla lo dice
+   * con `FalloDeCarga` / `mensajeParaLaPersona`. `null` si no falló.
+   */
+  error: unknown
   notAvailable: boolean
   refetch: () => Promise<void>
 }
@@ -34,7 +40,7 @@ export function usePilotoDetalle(itemId: string | null): UsePilotoDetalleResult 
 
   const [data, setData] = useState<PilotoDetalle | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const [notAvailable, setNotAvailable] = useState(false)
 
   const abortRef = useRef<AbortController | null>(null)
@@ -60,7 +66,7 @@ export function usePilotoDetalle(itemId: string | null): UsePilotoDetalleResult 
       setNotAvailable(res.notAvailable)
     } catch (err) {
       if (controller.signal.aborted) return
-      setError(err instanceof Error ? err.message : 'Failed to fetch piloto detalle')
+      setError(err ?? new Error('Failed to fetch piloto detalle'))
     } finally {
       if (!controller.signal.aborted) setIsLoading(false)
     }

@@ -67,7 +67,8 @@ import {
 } from '@/components/ui/select';
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
+  TableRowAnimada,
   TableCell,
   TableHead,
   TableHeader,
@@ -371,22 +372,24 @@ export function TablaDeProveedores({
             <TableHead className="w-px" />
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {cargando && proveedores.length === 0 && <FilasDeCarga />}
+        {/* Buscar, filtrar, paginar, registrar o apagar: las filas entran
+            escalonadas y las que sobran salen; el esqueleto se va de una. */}
+        <TableBodyAnimado>
+          {cargando && proveedores.length === 0 && <FilasDeCarga key="cargando" />}
 
           {/* Falló → vacío, en ese orden: con la petición muerta la lista llega
               vacía, y decir «todavía no hay proveedores» sería afirmar algo que
               nadie pudo verificar. */}
           {!cargando && Boolean(error) && (
-            <TableRow>
+            <TableRowAnimada key="fallo">
               <TableCell colSpan={COLUMNAS} className="p-0">
                 <FalloDeCarga error={error} queEs="los proveedores" onReintentar={onReintentar} />
               </TableCell>
-            </TableRow>
+            </TableRowAnimada>
           )}
 
           {!cargando && !error && filtrados.length === 0 && (
-            <TableRow>
+            <TableRowAnimada key="vacio">
               <TableCell colSpan={COLUMNAS} className="p-0">
                 <SinDatos
                   queSon="proveedores"
@@ -402,14 +405,16 @@ export function TablaDeProveedores({
                   }
                 />
               </TableCell>
-            </TableRow>
+            </TableRowAnimada>
           )}
 
           {pageItems.map((p) => (
-            <TableRow
+            <TableRowAnimada
               key={p.id}
               data-testid="proveedor"
-              className={cn('border-b border-border last:border-0', !p.activo && 'opacity-70')}
+              // El apagado se atenúa en sus celdas: la opacidad de la fila la
+              // maneja su entrada animada.
+              className={cn('border-b border-border last:border-0', !p.activo && '[&>td]:opacity-70')}
             >
               <TableCell className="max-w-[280px] px-5 py-4 align-top">
                 <div className="flex flex-wrap items-center gap-2">
@@ -519,9 +524,9 @@ export function TablaDeProveedores({
                   )}
                 </div>
               </TableCell>
-            </TableRow>
+            </TableRowAnimada>
           ))}
-        </TableBody>
+        </TableBodyAnimado>
       </Table>
 
       {shouldPaginate && (

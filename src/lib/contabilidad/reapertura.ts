@@ -160,7 +160,11 @@ export function movimientoDeLaFrontera(
 ): string {
   const antes = diaDe(fronteraAnterior);
   const despues = diaDe(fronteraNueva);
-  const desde = antes ? diaLegible(antes) : 'sin fecha cerrada';
-  if (!despues) return `de ${desde} a sin ninguna fecha cerrada`;
-  return `de ${desde} a ${diaLegible(despues)}`;
+  /*
+   * QA-FACT-CONTA-95 (CB-J): decía «de 30 de ago de 2026 a sin ninguna fecha
+   * cerrada», que no se lee. Ahora son dos frases cortas: cómo estaba y cómo quedó.
+   */
+  const estaba = antes ? `Estaba cerrada hasta el ${diaLegible(antes)}` : 'No tenía fecha cerrada';
+  const quedo = despues ? `quedó cerrada hasta el ${diaLegible(despues)}` : 'quedó sin ninguna fecha cerrada';
+  return `${estaba}; ${quedo}.`;
 }

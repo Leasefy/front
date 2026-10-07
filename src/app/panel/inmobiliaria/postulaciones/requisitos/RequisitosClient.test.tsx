@@ -119,6 +119,16 @@ function porTestId(id: string) {
   return contenedor.querySelector(`[data-testid="${id}"]`)
 }
 
+/**
+ * Lo que vive DENTRO de un modal no está en el contenedor del test: el
+ * `Dialog`/`AlertDialog` de la casa (Radix) se pinta con un portal, colgado del
+ * `body`. Buscarlo con `porTestId` devuelve null y el test falla por la razón
+ * equivocada.
+ */
+function enElModal(id: string) {
+  return document.body.querySelector(`[data-testid="${id}"]`)
+}
+
 async function clic(el: Element | null) {
   await act(async () => {
     el?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
@@ -137,6 +147,13 @@ afterEach(() => {
 })
 
 describe('Requisitos por tipo de inquilino', () => {
+  it('QA-IA-A — no promete que el candidato ve esta lista: dice cómo se usa hoy', async () => {
+    await montar()
+    expect(contenedor.textContent).not.toContain('exactamente lo que ve quien se postula')
+    expect(porTestId('requisitos-como-se-usa')!.textContent).toContain('la cédula y el extracto bancario')
+    expect(porTestId('requisitos-como-se-usa')!.textContent).toContain('«Pedir info»')
+  })
+
   it('P2 — en «Todos» la lista va agrupada por perfil, no plana', async () => {
     await montar()
     const empleado = porTestId('grupo-EMPLEADO')
@@ -154,6 +171,14 @@ describe('Requisitos por tipo de inquilino', () => {
     expect(contenedor.textContent).not.toContain('Hace algo')
     expect(porTestId('requisito-r-2')!.textContent).toContain('Hace un trámite')
     expect(porTestId('requisito-r-1')!.textContent).toContain('Sube un archivo')
+  })
+
+  it('🔴 el estudio es OPCIONAL (Nico, 04-10-2026): lo dice y no promete que frena', async () => {
+    await montar()
+    const fila = porTestId('requisito-r-2')!
+    expect(fila.textContent).toContain('Opcional')
+    expect(fila.textContent).not.toContain('Nadie se postula ni firma sin estudio')
+    expect(porTestId('estudio-candado-r-2')!.textContent).toContain('No frena la postulación')
   })
 
   it('P3 — el estudio no lleva interruptor ni botón de quitar', async () => {
@@ -180,7 +205,7 @@ describe('Requisitos por tipo de inquilino', () => {
     h.api.crearRequisito.mockResolvedValue({})
     await montar()
     await clic(porTestId('abrir-agregar'))
-    const etiqueta = porTestId('req-etiqueta') as HTMLInputElement
+    const etiqueta = enElModal('req-etiqueta') as HTMLInputElement
     await act(async () => {
       const setter = Object.getOwnPropertyDescriptor(
         HTMLInputElement.prototype,
@@ -190,7 +215,7 @@ describe('Requisitos por tipo de inquilino', () => {
       etiqueta.dispatchEvent(new Event('input', { bubbles: true }))
     })
     await act(async () => {
-      porTestId('form-requisito')!.dispatchEvent(
+      enElModal('form-requisito')!.dispatchEvent(
         new Event('submit', { bubbles: true, cancelable: true }),
       )
     })
@@ -203,20 +228,45 @@ describe('Requisitos por tipo de inquilino', () => {
     )
   })
 
+  it('P1c — «Agregar» vive en el pie del diálogo, fuera del form, y lo envía', async () => {
+    // 02-10-2026: el diálogo pasó al `Dialog` de la casa; el pie es fijo y el
+    // botón apunta al formulario con `form=`.
+    h.api.crearRequisito.mockResolvedValue({})
+    await montar()
+    await clic(porTestId('abrir-agregar'))
+    const etiqueta = enElModal('req-etiqueta') as HTMLInputElement
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        'value',
+      )!.set!
+      setter.call(etiqueta, 'Certificado de contador')
+      etiqueta.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    const agregar = enElModal('guardar-requisito')!
+    expect(enElModal('form-requisito')!.contains(agregar)).toBe(false)
+    await clic(agregar)
+    expect(h.api.crearRequisito).toHaveBeenCalledWith(
+      expect.objectContaining({ perfil: 'EMPLEADO', etiqueta: 'Certificado de contador' }),
+    )
+  })
+
   it('P1b — y quitar el que no se pide', async () => {
     h.api.borrarRequisito.mockResolvedValue(undefined)
     await montar()
     await clic(porTestId('borrar-r-1'))
-    await clic(porTestId('confirmar-borrado-si'))
+    await clic(enElModal('confirmar-borrado-si'))
     expect(h.api.borrarRequisito).toHaveBeenCalledWith('r-1')
   })
 
   it('P6 — quitar PREGUNTA antes, y sin el diálogo del navegador', async () => {
     await montar()
     await clic(porTestId('borrar-r-1'))
-    const dialogo = porTestId('confirmar-borrado')
+    const dialogo = enElModal('confirmar-borrado')
     expect(dialogo).not.toBeNull()
     expect(dialogo!.getAttribute('role')).toBe('alertdialog')
+    // Es destructiva: el medallón y la acción salen en rojo por la variante.
+    expect(dialogo!.getAttribute('data-variant')).toBe('destructive')
     expect(dialogo!.textContent).toContain('Cédula por las dos caras')
     // Preguntar y nada más: sin confirmar, no se borró.
     expect(h.api.borrarRequisito).not.toHaveBeenCalled()
@@ -273,5 +323,66 @@ describe('los cambios del 18-09 de noche', () => {
     await montar()
     expect(porTestId('poner-opcional-r-2')).toBeNull()
     expect(porTestId('estudio-candado-r-2')).not.toBeNull()
+  })
+})
+
+/**
+ * 02-10-2026 · Sistema de errores: lo que el back rechaza al agregar va
+ * debajo de su campo (con el foco); lo demás por el traductor.
+ */
+describe('Requisitos — cuando el back dice que no', () => {
+  async function agregarCon(error: unknown) {
+    h.api.crearRequisito.mockRejectedValue(error)
+    await montar()
+    await clic(porTestId('abrir-agregar'))
+    const etiqueta = enElModal('req-etiqueta') as HTMLInputElement
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+      setter.call(etiqueta, 'Certificado de contador')
+      etiqueta.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      enElModal('form-requisito')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+    return etiqueta
+  }
+
+  it('🔴 un 400 con campos va bajo su campo y le da el foco', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    const frase = 'La etiqueta puede tener hasta 200 caracteres.'
+    const etiqueta = await agregarCon(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'etiqueta', regla: 'longitud_maxima', mensaje: frase }],
+      }),
+    )
+    expect(document.getElementById('req-etiqueta-error')?.textContent).toBe(frase)
+    expect(etiqueta.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(etiqueta)
+    expect(h.toast.error).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un 5xx dice que es nuestro, con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    await agregarCon(
+      new ApiError(500, 'Internal server error', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Internal server error',
+        referencia: '77aa88bb',
+      }),
+    )
+    const texto = String(h.toast.error.mock.calls[0]?.[0] ?? '')
+    expect(texto).toContain('de nuestro lado')
+    expect(texto).toContain('77aa88bb')
+    expect(texto).not.toContain('Internal server error')
+  })
+
+  it('🔴 sin respuesta (status 0), la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    await agregarCon(new ApiError(0, 'Failed to fetch'))
+    expect(String(h.toast.error.mock.calls[0]?.[0] ?? '').toLowerCase()).toContain('conexión')
   })
 })

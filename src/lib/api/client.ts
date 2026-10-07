@@ -5,6 +5,22 @@ import {
   mensajeDeDemasiadasSolicitudes,
   segundosDeEspera,
 } from './demasiadas-solicitudes'
+import {
+  avisarFallaDeRed,
+  avisarQueLeasefyNoResponde,
+  avisarQueLeasefyRespondio,
+  CODIGO_LEASEFY_NO_RESPONDE,
+  esRespuestaDeCaidaGeneral,
+  esStatusDeIntermediario,
+  MENSAJE_LEASEFY_NO_RESPONDE,
+} from '@/lib/conexion/estado-de-conexion'
+import {
+  esCaidaDeLaBase,
+  esServicioNoDisponible,
+  servicioDelError,
+  textoParaUnAviso,
+} from '@/lib/conexion/servicio-no-disponible'
+import { CODIGO_PLAN_REQUERIDO } from '@/lib/errores/codigos-del-plan'
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000'
 
@@ -219,6 +235,54 @@ async function renovarTokenVencido(usado: string | null): Promise<string | null>
 }
 
 /**
+ * T-0130 — renueva el access token ANTES de una llamada si le queda poco.
+ *
+ * Las cargas largas (subir por tandas, activar de a 50, sondear la ubicación)
+ * hacen cientos de llamadas a lo largo de media hora y cruzan varias
+ * renovaciones del token (dura una hora). `request` ya repite UNA vez un 401
+ * `AUTH_TOKEN_EXPIRED`, pero llegar al 401 cada vez es una ida y vuelta de más
+ * y, si cae junto a una carrera de renovación, un corte. Esto lo evita: si el
+ * token vence en menos de `margenMs` (o ya venció) se le pide uno al
+ * AuthProvider, y las llamadas siguientes salen con el nuevo.
+ *
+ * NUNCA lanza ni cierra la sesión: si no hay refresher, el token no se puede
+ * leer o la renovación falla, la llamada sale igual y `request` decide qué
+ * hacer con el 401 (incluido declarar la sesión muerta). Varias llamadas a la
+ * vez comparten UNA renovación.
+ */
+let _renovacionEnVuelo: Promise<void> | null = null
+
+function vencimientoDelToken(token: string): number | null {
+  try {
+    const carga = token.split('.')[1]
+    if (!carga) return null
+    const json = atob(carga.replace(/-/g, '+').replace(/_/g, '/'))
+    const exp = (JSON.parse(json) as { exp?: unknown }).exp
+    return typeof exp === 'number' ? exp * 1000 : null
+  } catch {
+    return null
+  }
+}
+
+export async function asegurarSesionVigente(margenMs = 90_000): Promise<void> {
+  if (sesionTerminada()) return
+  const token = getAccessToken()
+  if (!token || !_refrescarToken) return
+  const vence = vencimientoDelToken(token)
+  if (vence === null || vence - Date.now() > margenMs) return
+  if (!_renovacionEnVuelo) {
+    const refrescar = _refrescarToken
+    _renovacionEnVuelo = (async () => {
+      const nuevo = await refrescar().catch(() => null)
+      if (nuevo && nuevo !== token) setAccessToken(nuevo)
+    })().finally(() => {
+      _renovacionEnVuelo = null
+    })
+  }
+  await _renovacionEnVuelo
+}
+
+/**
  * `fetch` a una ruta PROPIA del front (`/api/**`) con la sesión puesta.
  *
  * Las rutas que bajan URLs de afuera (`/api/inmuebles/desde-enlace`,
@@ -276,7 +340,15 @@ export class ApiError extends Error {
      */
     public detalle?: Record<string, unknown>,
   ) {
-    super(Array.isArray(message) ? message.join(' · ') : message)
+    // T-0129 · el 409 de un inmueble sin canon dice siempre lo mismo y lleva a la
+    // misma salida, venga de publicar, consignar o crear un contrato.
+    super(
+      code === 'INMUEBLE_SIN_CANON'
+        ? 'Este inmueble tiene el canon por confirmar. Ponle el canon para continuar.'
+        : Array.isArray(message)
+          ? message.join(' · ')
+          : message,
+    )
     this.name = 'ApiError'
     if (Array.isArray(message)) this.messages = message
   }
@@ -315,6 +387,120 @@ export async function errorDeDemasiadasSolicitudes(res: Response): Promise<ApiEr
   return new ApiError(429, message, code, { ...cuerpo, reintentarEnSegundos: segundos })
 }
 
+/**
+ * `fetch` tiró antes de que hubiera respuesta: sin red, back apagado, DNS,
+ * CORS. Además de construir el `ApiError(0)` de siempre, le avisa a la franja
+ * global (`<AvisoDeConexion>`) — ver `src/lib/conexion/estado-de-conexion.ts`.
+ */
+function errorDeRed(err: unknown): ApiError {
+  avisarFallaDeRed()
+  const raw = err instanceof Error ? err.message : String(err)
+  const message = typeof navigator !== 'undefined' && !navigator.onLine
+    ? 'Sin conexión a internet. Verifica tu red e intenta de nuevo.'
+    : 'No pudimos conectarnos al servidor. Verifica tu conexión o intenta más tarde.'
+  return new ApiError(0, `${message}${raw ? ` (${raw})` : ''}`)
+}
+
+/**
+ * ¿Este 402 se lleva a la persona a la página del plan? (02-10-2026)
+ *
+ * Antes, CUALQUIER 402 de una ruta `/inmobiliaria/*` navegaba a
+ * `/panel/inmobiliaria/upgrade`. Pero el back manda 402 por tres motivos, y
+ * desde el 02-10-2026 cada uno con su `code` (`lib/errores/codigos-del-plan.ts`):
+ *
+ *  · `PLAN_REQUERIDO` — la inmobiliaria no tiene un plan activo
+ *    (`AgencyActiveSubscriptionGuard`): corta TODO el panel, y al CARGAR una
+ *    pantalla ahí sí va la página del plan;
+ *  · `LIMITE_DEL_PLAN` — llegó al tope de su plan (agentes, inmuebles): nace de
+ *    una ACCIÓN —invitar, consignar— y la pantalla lo dice en su sitio con «Ver
+ *    planes» (`InvitarAlEquipo`), con lo que la persona escribió intacto. NUNCA
+ *    navega, ni en un GET;
+ *  · `NOMINA_NO_HABILITADA` — un módulo de pago sin contratar: lo activa
+ *    Leasefy, no la página del plan. Lo pinta su propio cartel.
+ *
+ * Un 402 SIN `code` es un back anterior: conserva la regla de antes (era el
+ * del plan vencido). Y el fundador que invita a su equipo desde el ASISTENTE
+ * DE REGISTRO (`/onboarding/inmobiliaria`) nunca sale del asistente.
+ *
+ * Regla: sólo un GET (cargar una pantalla del panel), con `PLAN_REQUERIDO` o
+ * sin `code`, y sólo si la persona está en el panel (nunca desde el registro,
+ * el onboarding o la página del plan / el pago, que haría un bucle).
+ */
+export function el402LlevaAlPlan({
+  method,
+  path,
+  code,
+  pagina,
+}: {
+  method: string
+  path: string
+  code?: string
+  pagina: string
+}): boolean {
+  if (method.toUpperCase() !== 'GET') return false
+  if (code && code !== CODIGO_PLAN_REQUERIDO) return false
+  if (!path.startsWith('/inmobiliaria')) return false
+  if (!pagina.startsWith('/panel/inmobiliaria')) return false
+  return (
+    !pagina.startsWith('/panel/inmobiliaria/upgrade') &&
+    !pagina.startsWith('/panel/inmobiliaria/checkout')
+  )
+}
+
+/** El cuerpo de un error como objeto: un `null` o un texto suelto no traen claves. */
+function cuerpoComoObjeto(cuerpo: unknown): Record<string, unknown> {
+  return cuerpo && typeof cuerpo === 'object' && !Array.isArray(cuerpo)
+    ? (cuerpo as Record<string, unknown>)
+    : {}
+}
+
+/**
+ * Un no-2xx que no es 401/402/403/429, leído y convertido en `ApiError`.
+ *
+ * Tres casos se separan acá, por el contrato de caídas del 01-10-2026 (las
+ * reglas viven en `src/lib/conexion/`; acá sólo se aplican):
+ *
+ *   · Leasefy entero no responde (capa 1): un 502/503/504 que NO mandó el
+ *     back (sin `statusCode` ni `code`: el balanceador), o la base caída
+ *     (`servicio: 'base'`; sin Postgres no funciona nada). Se avisa a la
+ *     franja global y el error sale con `code: 'LEASEFY_NO_RESPONDE'` y un
+ *     mensaje humano en vez de «Error 503».
+ *   · Se cayó UNA parte (capa 2): 502/503 `SERVICIO_NO_DISPONIBLE` (los
+ *     proxies de avalúos y del cotizador siguen en 502), o cualquier 5xx con
+ *     `servicio` (el 502 `WOMPI_NO_RESPONDIO` cuando Wompi se cayó). El
+ *     `status` y el `code` no se tocan —la página de avalúos mira el 502 y
+ *     dispersiones el code—; el `message` pasa a ser el texto que nombra lo
+ *     caído, así todo toast que pinte `error.message` dice qué se cayó y qué
+ *     hacer. Lo que mandó el back sigue entero en `detalle`.
+ *
+ * Todo lo que no es capa 1 es el back contestando: la conexión está bien.
+ */
+function errorDeLaRespuesta(status: number, errorBody: Record<string, unknown>): ApiError {
+  // La respuesta con la forma que leen las reglas de `src/lib/conexion/`.
+  const respuesta = { status, detalle: errorBody }
+  if (esCaidaDeLaBase(respuesta) || esRespuestaDeCaidaGeneral(status, errorBody)) {
+    avisarQueLeasefyNoResponde()
+    return new ApiError(status, MENSAJE_LEASEFY_NO_RESPONDE, CODIGO_LEASEFY_NO_RESPONDE, errorBody)
+  }
+  avisarQueLeasefyRespondio()
+  // Forwarded generally — not a special case for any one endpoint. 401
+  // already reads `code` above; this makes every other non-2xx status do
+  // the same, so a caller can branch on a machine-readable code instead of
+  // pattern-matching a human `.message` string.
+  const code = typeof errorBody.code === 'string' ? errorBody.code : undefined
+  if (esServicioNoDisponible(respuesta)) {
+    return new ApiError(status, textoParaUnAviso(servicioDelError(respuesta)), code, errorBody)
+  }
+  return new ApiError(
+    status,
+    (errorBody.message as string | string[] | undefined) || `Error ${status}`,
+    code,
+    // El cuerpo entero, para lo que `message` y `code` no alcanzan a decir
+    // (`motivos[]`, `etiquetasFaltantes[]`, …). Ver `ApiError.detalle`.
+    errorBody,
+  )
+}
+
 function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -334,6 +520,8 @@ async function request<T>(
   token?: string,
   /** Interno: evita que el reintento por token renovado se encadene. */
   yaSeReintento = false,
+  /** Cabeceras extra (p. ej. `Idempotency-Key`). Se conservan en el reintento por token. */
+  cabecerasExtra?: Record<string, string>,
 ): Promise<T> {
   const url = `${BACKEND_URL}${path}`
 
@@ -353,6 +541,7 @@ async function request<T>(
   const headers: Record<string, string> = token
     ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
     : getAuthHeaders()
+  if (cabecerasExtra) Object.assign(headers, cabecerasExtra)
 
   let res: Response
   try {
@@ -366,12 +555,12 @@ async function request<T>(
     // `fetch` throws a plain TypeError in these cases — wrap it in ApiError(0)
     // with a user-friendly message so UI code can distinguish "backend down"
     // from "backend returned 4xx/5xx".
-    const raw = err instanceof Error ? err.message : String(err)
-    const message = typeof navigator !== 'undefined' && !navigator.onLine
-      ? 'Sin conexión a internet. Verifica tu red e intenta de nuevo.'
-      : 'No pudimos conectarnos al servidor. Verifica tu conexión o intenta más tarde.'
-    throw new ApiError(0, `${message}${raw ? ` (${raw})` : ''}`)
+    throw errorDeRed(err)
   }
+
+  // Contestó el back. Un 502/503/504 todavía puede ser el balanceador diciendo
+  // que atrás no hay nadie: ése se decide con el cuerpo, en `errorDeLaRespuesta`.
+  if (!esStatusDeIntermediario(res.status)) avisarQueLeasefyRespondio()
 
   if (res.status === 401) {
     // Preserve the backend message so callers can distinguish "User not found"
@@ -389,7 +578,7 @@ async function request<T>(
       if (code === 'AUTH_TOKEN_EXPIRED' && !yaSeReintento) {
         const tokenNuevo = await renovarTokenVencido(tokenUsado)
         if (tokenNuevo) {
-          return request<T>(method, path, body, tokenNuevo, true)
+          return request<T>(method, path, body, tokenNuevo, true, cabecerasExtra)
         }
       }
       // Un SUPERSEDED para un token que YA no es el de esta pestaña es una
@@ -411,7 +600,7 @@ async function request<T>(
     if (!yaSeReintento) {
       const tokenNuevo = await esperarUnTokenDistinto(tokenUsado)
       if (tokenNuevo) {
-        return request<T>(method, path, body, tokenNuevo, true)
+        return request<T>(method, path, body, tokenNuevo, true, cabecerasExtra)
       }
     }
 
@@ -451,22 +640,20 @@ async function request<T>(
   }
 
   if (res.status === 402) {
-    // Payment Required — the backend gates agency endpoints when the agency has
-    // no active paid plan. Backstop the client-side AgencySubscriptionGuard:
-    // bounce any gated /inmobiliaria/* call to the upgrade flow. Skip when we're
-    // already on the upgrade/checkout pages to avoid a redirect loop.
+    // Payment Required — respaldo del `AgencySubscriptionGuard` del cliente:
+    // sin plan activo (`PLAN_REQUERIDO`), cargar el panel va a la página del
+    // plan. SÓLO en ese caso (ver `el402LlevaAlPlan`): el tope de un plan
+    // (`LIMITE_DEL_PLAN`) o un módulo sin contratar se dicen donde está la persona.
     const errorBody = await res.json().catch(() => ({}))
+    const code402 = typeof errorBody.code === 'string' ? errorBody.code : undefined
     if (
       typeof window !== 'undefined' &&
-      path.startsWith('/inmobiliaria') &&
-      !window.location.pathname.startsWith('/panel/inmobiliaria/upgrade') &&
-      !window.location.pathname.startsWith('/panel/inmobiliaria/checkout')
+      el402LlevaAlPlan({ method, path, code: code402, pagina: window.location.pathname })
     ) {
       window.location.href = '/panel/inmobiliaria/upgrade'
     }
     // El mismo reenvío que el 403 y que la rama general: esta rama también
     // devolvía el error pelado por estar antes de aquélla.
-    const code402 = typeof errorBody.code === 'string' ? errorBody.code : undefined
     throw new ApiError(
       402,
       errorBody.message || 'Se requiere un plan activo para continuar',
@@ -481,19 +668,7 @@ async function request<T>(
 
   if (!res.ok) {
     const errorBody = await res.json().catch(() => ({}))
-    // Forwarded generally — not a special case for any one endpoint. 401
-    // already reads `code` above; this makes every other non-2xx status do
-    // the same, so a caller can branch on a machine-readable code instead of
-    // pattern-matching a human `.message` string.
-    const code = typeof errorBody.code === 'string' ? errorBody.code : undefined
-    throw new ApiError(
-      res.status,
-      errorBody.message || `Error ${res.status}`,
-      code,
-      // El cuerpo entero, para lo que `message` y `code` no alcanzan a decir
-      // (`motivos[]`, `etiquetasFaltantes[]`, …). Ver `ApiError.detalle`.
-      errorBody as Record<string, unknown>,
-    )
+    throw errorDeLaRespuesta(res.status, cuerpoComoObjeto(errorBody))
   }
 
   /*
@@ -542,12 +717,10 @@ async function requestBlob(path: string, token?: string, yaSeReintento = false):
   try {
     res = await fetch(url, { method: 'GET', headers })
   } catch (err) {
-    const raw = err instanceof Error ? err.message : String(err)
-    const message = typeof navigator !== 'undefined' && !navigator.onLine
-      ? 'Sin conexión a internet. Verifica tu red e intenta de nuevo.'
-      : 'No pudimos conectarnos al servidor. Verifica tu conexión o intenta más tarde.'
-    throw new ApiError(0, `${message}${raw ? ` (${raw})` : ''}`)
+    throw errorDeRed(err)
   }
+
+  if (!esStatusDeIntermediario(res.status)) avisarQueLeasefyRespondio()
 
   if (res.status === 401) {
     const errorBody = await res.json().catch(() => ({}))
@@ -577,8 +750,10 @@ async function requestBlob(path: string, token?: string, yaSeReintento = false):
   }
 
   if (!res.ok) {
+    // La misma lectura que `request`: antes esta rama tiraba el `code` y el
+    // cuerpo, así que una descarga con el servicio caído decía «Error 503».
     const errorBody = await res.json().catch(() => ({}))
-    throw new ApiError(res.status, errorBody.message || `Error ${res.status}`)
+    throw errorDeLaRespuesta(res.status, cuerpoComoObjeto(errorBody))
   }
   return res.blob()
 }
@@ -631,7 +806,8 @@ export const apiClient = {
    */
   get: <T>(path: string, token?: string) =>
     compartirGet(claveDeGet(path, token), () => request<T>('GET', path, undefined, token)),
-  post: <T>(path: string, body?: unknown, token?: string) => request<T>('POST', path, body, token),
+  post: <T>(path: string, body?: unknown, token?: string, cabecerasExtra?: Record<string, string>) =>
+    request<T>('POST', path, body, token, false, cabecerasExtra),
   put: <T>(path: string, body?: unknown, token?: string) => request<T>('PUT', path, body, token),
   patch: <T>(path: string, body?: unknown, token?: string) => request<T>('PATCH', path, body, token),
   delete: <T>(path: string, token?: string) => request<T>('DELETE', path, undefined, token),

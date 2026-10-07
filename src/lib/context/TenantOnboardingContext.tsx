@@ -10,6 +10,16 @@ import {
   type TenantPreferences,
 } from '@/lib/api/tenant-preferences.service'
 import { useAuth } from '@/lib/auth/use-auth'
+import {
+  datosDelInquilinoCompletos,
+  documentoYCelularParaElBack,
+  type TipoDeDocumentoDelInquilino,
+} from '@/lib/onboarding/datos-del-inquilino'
+import {
+  revisarPreferenciasDelInquilino,
+  type CampoDePreferencias,
+} from '@/lib/onboarding/preferencias-del-inquilino'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 
 // ============================================================================
 // NOTA PARA BACKEND:
@@ -60,8 +70,10 @@ export interface TenantOnboardingDraft extends TenantOnboardingData {
   // Validation tracking
   step1Valid?: boolean
   step2Valid?: boolean
-  /** Cédula de Ciudadanía (Colombia) */
+  /** Número de documento (el tipo va en `documentType`). */
   rut?: string
+  /** Tipo de documento: CC, CE, PPT o pasaporte (`lib/onboarding/datos-del-inquilino`). */
+  documentType?: TipoDeDocumentoDelInquilino
   /**
    * Eligió «Aún no lo sé» en «¿Cuándo planeas mudarte?». Sólo vive en el
    * borrador: al back no se manda fecha, que es lo mismo que no saberla; esto
@@ -101,6 +113,12 @@ interface TenantOnboardingContextTextT {
   resetDraft: () => void
   loadSavedProgress: () => void
 
+  /**
+   * Lo que el back rechazó al guardar, por campo (02-10-2026). Cada paso lo
+   * pinta debajo de su campo; se borra al editar ese campo.
+   */
+  erroresDelServidor: ErroresDelServidor
+
   // Validation
   isStepValid: (step: number) => boolean
   canProceed: boolean
@@ -110,6 +128,59 @@ interface TenantOnboardingContextTextT {
 }
 
 const STORAGE_KEY = 'plan_onboarding_tenant'
+
+/**
+ * Los campos del asistente que pueden mostrar un error del servidor. Los del
+ * paso 1 usan los nombres de `ErroresDelInquilino` (`nombre`, `documento`,
+ * `telefono`); los del paso 2, los del borrador.
+ */
+export type CampoDelInquilino = 'nombre' | 'documento' | 'telefono' | CampoDePreferencias
+
+export type ErroresDelServidor = Partial<Record<CampoDelInquilino, string>>
+
+const CAMPOS_DEL_PASO_1: readonly CampoDelInquilino[] = ['nombre', 'documento', 'telefono']
+const CAMPOS_DEL_ASISTENTE: readonly CampoDelInquilino[] = [
+  ...CAMPOS_DEL_PASO_1,
+  'budgetMin',
+  'budgetMax',
+  'preferredZones',
+  'preferredAmenities',
+  'moveInDate',
+  'petDetails',
+]
+
+/**
+ * 02-10-2026 · El nombre que trae el back en `campos[].campo` → el campo del
+ * asistente. Lo que no está acá (o va en `null`) no tiene campo en pantalla y
+ * sale en el toast.
+ */
+const CAMPO_DEL_SERVIDOR: Partial<Record<string, CampoDelInquilino | null>> = {
+  firstName: 'nombre',
+  lastName: 'nombre',
+  rut: 'documento',
+  documentType: 'documento',
+  phone: 'telefono',
+  hasPets: 'petDetails',
+  preferredContact: null,
+  userType: null,
+}
+
+/** Qué campos del asistente toca cada clave del borrador (para limpiar su error al editar). */
+const CAMPOS_DEL_BORRADOR: Partial<Record<keyof TenantOnboardingDraft, readonly CampoDelInquilino[]>> = {
+  displayName: ['nombre'],
+  rut: ['documento'],
+  documentType: ['documento'],
+  phone: ['telefono'],
+  // El máximo depende del mínimo (y al revés): se limpian juntos.
+  budgetMin: ['budgetMin', 'budgetMax'],
+  budgetMax: ['budgetMin', 'budgetMax'],
+  preferredZones: ['preferredZones'],
+  preferredAmenities: ['preferredAmenities'],
+  moveInDate: ['moveInDate'],
+  moveInDateUnknown: ['moveInDate'],
+  hasPets: ['petDetails'],
+  petDetails: ['petDetails'],
+}
 
 /**
  * Rejection type for "the profile WAS saved but the session refresh failed
@@ -234,6 +305,7 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isComplete, setIsComplete] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
+  const [erroresDelServidor, setErroresDelServidor] = useState<ErroresDelServidor>({})
 
   const totalSteps = TENANT_ONBOARDING_STEPS.length
 
@@ -344,25 +416,39 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
 
   const updateDraft = useCallback((updates: Partial<TenantOnboardingDraft>) => {
     setDraft((prev) => ({ ...prev, ...updates }))
+    // Lo que el back rechazó deja de valer en cuanto la persona toca ese campo.
+    setErroresDelServidor((prev) => {
+      const tocados = (Object.keys(updates) as (keyof TenantOnboardingDraft)[]).flatMap(
+        (k) => CAMPOS_DEL_BORRADOR[k] ?? [],
+      )
+      if (!tocados.some((c) => prev[c] !== undefined)) return prev
+      const next = { ...prev }
+      for (const c of tocados) delete next[c]
+      return next
+    })
   }, [])
+
+  // El documento ya guardado en el back no se cambia desde acá (soporte).
+  const documentoBloqueado = user?.profileSource === 'backend' && !!user.rut
 
   const isStepValid = useCallback(
     (step: number): boolean => {
       switch (step) {
-        case 1: // Welcome - name required
-          return !!draft.displayName && draft.displayName.trim().length > 0
-        case 2: // Preferences - budget required
-          return (
-            !!draft.budgetMin &&
-            draft.budgetMin > 0 &&
-            !!draft.budgetMax &&
-            draft.budgetMax >= draft.budgetMin
-          )
+        // Nombre, documento (tipo + número) y celular: obligatorios y con las
+        // reglas de la plataforma (Nico, 01-10-2026: «él debe llenar esa
+        // información»). Ver `lib/onboarding/datos-del-inquilino`.
+        case 1:
+          return datosDelInquilinoCompletos(draft, { documentoBloqueado })
+        // Presupuesto obligatorio, y todo con las MISMAS reglas que el back
+        // (rangos de las columnas, fecha real, topes): un dato que el back
+        // rechazaría no sale del paso. Ver `lib/onboarding/preferencias-del-inquilino`.
+        case 2:
+          return Object.keys(revisarPreferenciasDelInquilino(draft)).length === 0
         default:
           return false
       }
     },
-    [draft]
+    [draft, documentoBloqueado]
   )
 
   const canProceed = useMemo(() => isStepValid(currentStep), [isStepValid, currentStep])
@@ -404,8 +490,16 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
       setCurrentStep(1)
       return
     }
+    // Un borrador viejo (de antes de que el documento y el celular fueran
+    // obligatorios) puede llegar al último paso sin ellos: se vuelve al 1.
+    if (!datosDelInquilinoCompletos(draft, { documentoBloqueado })) {
+      toast.error('Completa tu documento y tu celular para terminar tu perfil.')
+      setCurrentStep(1)
+      return
+    }
 
     setIsSubmitting(true)
+    setErroresDelServidor({})
     try {
       // Split displayName into first/last for backend (canonical convention:
       // first word → firstName, rest → lastName, falls back to firstName)
@@ -421,10 +515,10 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
         await apiClient.post('/users/me/onboarding', {
           firstName,
           lastName,
-          phone: draft.phone || undefined,
-          // Document number: the backend only writes it when the user has none
-          // (immutable once set — changes go through Leasefy support).
-          rut: draft.rut || undefined,
+          // Documento limpio + su tipo y el celular en E.164 (lo que el back
+          // valida: `^(\+57)?3\d{9}$`). El back escribe el documento una sola
+          // vez; con el documento ya bloqueado no se manda.
+          ...documentoYCelularParaElBack(draft, { documentoBloqueado }),
           userType: 'TENANT',
           preferredContact: draft.preferredContact,
           budgetMin: draft.budgetMin,
@@ -439,7 +533,23 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
         console.error('Error submitting tenant onboarding:', error)
         // Save genuinely failed — the user stays on the step with the draft
         // intact and can retry.
-        toast.error('No pudimos guardar tu perfil. Revisa tu conexión e intenta de nuevo.')
+        //
+        // 🔴 02-10-2026 · Antes, CUALQUIER fallo decía «Revisa tu conexión»,
+        // también el 400/500 de un presupuesto fuera de rango (QA). Ahora:
+        //  · lo que el back rechazó por campo va a SU campo, y el asistente
+        //    vuelve al paso de ese campo;
+        //  · sólo lo que no tiene campo va al toast, con la regla de oro del
+        //    traductor (red sólo si no hubo respuesta; 5xx = fue nuestro).
+        const reparto = repartirErroresDelServidor<CampoDelInquilino>(error, {
+          mapa: CAMPO_DEL_SERVIDOR,
+          campos: CAMPOS_DEL_ASISTENTE,
+          accion: 'guardar tu perfil',
+          porDefecto: 'No pudimos guardar tu perfil. Prueba de nuevo en un momento.',
+        })
+        setErroresDelServidor(reparto.porCampo)
+        const primero = reparto.orden[0]
+        if (primero) setCurrentStep(CAMPOS_DEL_PASO_1.includes(primero) ? 1 : 2)
+        if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '))
         throw error
       }
 
@@ -490,7 +600,7 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
     } finally {
       setIsSubmitting(false)
     }
-  }, [totalSteps, draft, refreshUser, userId])
+  }, [totalSteps, draft, refreshUser, userId, documentoBloqueado])
 
   const resetDraft = useCallback(() => {
     setDraft(initialTenantOnboardingDraft)
@@ -537,6 +647,7 @@ export function TenantOnboardingProvider({ children }: { children: ReactNode }) 
     submitOnboarding,
     resetDraft,
     loadSavedProgress,
+    erroresDelServidor,
     isStepValid,
     canProceed,
     progressPercentage,

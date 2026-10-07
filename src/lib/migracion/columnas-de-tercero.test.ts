@@ -25,6 +25,7 @@ import {
   componerNombre,
   nombreDeLoteSugerido,
   nombreSeArmaPorPartes,
+  placeholderDeEjemplo,
   valorDeParte,
 } from './columnas-de-tercero';
 import type { ColumnaDePlantilla } from '@/lib/api/migracion-terceros.service';
@@ -445,5 +446,47 @@ describe('el nombre partido en columnas', () => {
     ).toBe('MARIA RUIZ GOMEZ');
     expect(componerNombre({ primerNombre: 'MARIA', nombres: 'IGNORADO', apellidos: 'RUIZ GOMEZ' })).toBe('MARIA RUIZ GOMEZ');
     expect(componerNombre({})).toBe('');
+  });
+});
+
+describe('placeholderDeEjemplo', () => {
+  // Nico, 01-10: un «050» o un «7» pelados en un campo vacío se leían como
+  // un valor ya escrito.
+  it('🔴 el ejemplo de la plantilla va marcado como ejemplo', () => {
+    expect(placeholderDeEjemplo('050')).toBe('Ej: 050');
+    expect(placeholderDeEjemplo('7')).toBe('Ej: 7');
+  });
+
+  it('sin ejemplo no hay placeholder (nunca un «Ej:» suelto)', () => {
+    expect(placeholderDeEjemplo('')).toBeUndefined();
+    expect(placeholderDeEjemplo('   ')).toBeUndefined();
+    expect(placeholderDeEjemplo(undefined)).toBeUndefined();
+    expect(placeholderDeEjemplo(null)).toBeUndefined();
+  });
+});
+
+describe('MG-22 (MIG-C 04-10): con las partes, mandan las partes', () => {
+  it('🔴 «Gloria Patricia Úsuga» con sus partes viaja con nombres «Gloria Patricia» y apellidos «Úsuga»', () => {
+    const encabezados = ['Documento', 'Primer Nombre', 'Segundo Nombre', 'Primer Apellido', 'Segundo Apellido', 'Nombre Completo'];
+    const mapeo = mapearColumnas(PLANTILLA_PROPIETARIO, encabezados);
+    const fila = armarFila(
+      {
+        Documento: '32111222',
+        'Primer Nombre': 'Gloria',
+        'Segundo Nombre': 'Patricia',
+        'Primer Apellido': 'Úsuga',
+        'Segundo Apellido': '',
+        'Nombre Completo': 'Gloria Patricia Úsuga',
+      },
+      mapeo,
+    );
+    expect(fila).toMatchObject({ nombre: 'Gloria Patricia Úsuga', nombres: 'Gloria Patricia', apellidos: 'Úsuga' });
+  });
+
+  it('una empresa (sólo «Primer Nombre/Razón Social», sin apellidos) no manda partes', () => {
+    const mapeo = mapearColumnas(PLANTILLA_PROPIETARIO, ['Documento', 'Primer Nombre', 'Primer Apellido']);
+    const fila = armarFila({ Documento: '900456789', 'Primer Nombre': 'Inversiones La Ceja S.A.S.', 'Primer Apellido': '' }, mapeo);
+    expect(fila.nombres).toBeUndefined();
+    expect(fila.apellidos).toBeUndefined();
   });
 });

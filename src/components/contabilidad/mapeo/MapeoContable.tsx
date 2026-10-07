@@ -34,11 +34,12 @@ import { TablePagination } from '@/components/ui/pagination';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/toast';
@@ -52,6 +53,19 @@ import {
 } from '@/lib/api/contabilidad.service';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
+import { ExplicacionDelEvento } from './ExplicacionDelEvento';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { fraseDelCambio, pideConfirmarElCambio } from './mapeo';
 import { useCuentas } from '../use-cuentas';
 import { usePuedeEscribir } from '../use-puede-escribir';
 import { EventosDeGasto } from './EventosDeGasto';
@@ -197,14 +211,40 @@ export function MapeoContable({
       return next;
     });
 
+  /**
+   * 🔴 CB-28 (QA de Contabilidad, 03-10-2026): el rechazo del back (p. ej. una
+   * cuenta de una clase que no cuadra con el evento) queda BAJO su fila, no
+   * sólo en un aviso que se va en cinco segundos.
+   */
+  const [errores, setErrores] = useState<Partial<Record<EventoContable, string>>>({});
+  const errorDe = (evento: EventoContable, mensaje: string | null) =>
+    setErrores((previos) => {
+      if (!mensaje && !previos[evento]) return previos;
+      const siguientes = { ...previos };
+      if (mensaje) siguientes[evento] = mensaje;
+      else delete siguientes[evento];
+      return siguientes;
+    });
+  /** CB-28: el cambio de cuenta que espera la confirmación. */
+  const [porConfirmar, setPorConfirmar] = useState<{
+    evento: EventoContable;
+    cuentaId: string;
+    nombre: string;
+    deGasto: boolean;
+    frase: string;
+  } | null>(null);
+
   const asignar = async (evento: EventoContable, cuentaId: string, nombre: string) => {
     if (!cuentaId) return;
     marcar(evento, true);
     try {
       setMapeo(await contabilidadApi.mapeo.guardar([{ evento, cuentaId }]));
+      errorDe(evento, null);
       toast.success(`«${nombre}» quedó en la cuenta elegida.`);
     } catch (e) {
-      toast.error(mensajeDeContabilidad(e, 'No se pudo guardar la cuenta.'));
+      const mensaje = mensajeDeContabilidad(e, 'No se pudo guardar la cuenta.');
+      errorDe(evento, mensaje);
+      toast.error(mensaje);
     } finally {
       marcar(evento, false);
     }
@@ -236,9 +276,12 @@ export function MapeoContable({
             }
           : previo,
       );
+      errorDe(evento, null);
       toast.success(`«${nombre}» quedó en la cuenta elegida.`);
     } catch (e) {
-      toast.error(mensajeDeContabilidad(e, 'No se pudo guardar la cuenta del gasto.'));
+      const mensaje = mensajeDeContabilidad(e, 'No se pudo guardar la cuenta del gasto.');
+      errorDe(evento, mensaje);
+      toast.error(mensaje);
     } finally {
       marcar(evento, false);
     }
@@ -267,6 +310,58 @@ export function MapeoContable({
       setSembrando(false);
     }
   };
+
+  /**
+   * 🔴 CB-28: elegir una cuenta GUARDABA de una. Cambiar la de un evento que ya
+   * asentó movimientos cambia a dónde van los próximos: se confirma antes,
+   * diciendo qué cambia. Asignar la primera (o la misma) no pregunta.
+   */
+  const pedirAsignar = async (
+    evento: EventoContable,
+    cuentaId: string,
+    nombre: string,
+    deGasto: boolean,
+  ): Promise<void> => {
+    if (!cuentaId) return;
+    const lista = deGasto ? (mapeo?.eventosDeGasto ?? []) : (mapeo?.eventos ?? []);
+    const ev = lista.find((x) => x.evento === evento);
+    if (ev && pideConfirmarElCambio(ev, cuentaId)) {
+      const nueva = cuentas.find((c) => c.id === cuentaId) ?? null;
+      setPorConfirmar({ evento, cuentaId, nombre, deGasto, frase: fraseDelCambio(ev, nueva) });
+      return;
+    }
+    await (deGasto ? asignarGasto(evento, cuentaId, nombre) : asignar(evento, cuentaId, nombre));
+  };
+
+  const confirmarCambio = async () => {
+    if (!porConfirmar) return;
+    const { evento, cuentaId, nombre, deGasto } = porConfirmar;
+    setPorConfirmar(null);
+    await (deGasto ? asignarGasto(evento, cuentaId, nombre) : asignar(evento, cuentaId, nombre));
+  };
+
+  const dialogoDelCambio = (
+    <AlertDialog open={porConfirmar !== null} onOpenChange={(v) => !v && setPorConfirmar(null)}>
+      <AlertDialogContent variant="confirm" data-testid="confirmar-cambio-de-cuenta">
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Cambiar la cuenta de «{porConfirmar?.nombre}»?</AlertDialogTitle>
+          <AlertDialogDescription>{porConfirmar?.frase}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Dejar la de antes</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={(e) => {
+              e.preventDefault();
+              void confirmarCambio();
+            }}
+            data-testid="confirmar-cambio"
+          >
+            Cambiar la cuenta
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 
   if (cargando || cuentasCargando) {
     return (
@@ -390,9 +485,9 @@ export function MapeoContable({
               <TableHead>Propuesta</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBodyAnimado>
             {pageItems.map((e) => (
-              <TableRow key={e.evento} data-testid={`evento-${e.evento}`}>
+              <TableRowAnimada key={e.evento} data-testid={`evento-${e.evento}`}>
                 <TableCell className="max-w-[320px]">
                   {/* La explicación en UNA línea, con el texto entero en el
                       `title`: nueve filas de tres renglones eran media
@@ -405,9 +500,8 @@ export function MapeoContable({
                       </span>
                     )}
                   </p>
-                  <p className="truncate text-caption text-fg-muted" title={e.explicacion}>
-                    {e.explicacion}
-                  </p>
+                  {/* CB-05: una línea, y «Leer completo» la abre en su lugar. */}
+                  <ExplicacionDelEvento texto={e.explicacion} testId={`explicacion-${e.evento}`} />
                 </TableCell>
                 <TableCell className="whitespace-nowrap">
                   <Badge variant={e.lado === 'DEBE' ? 'secondary' : 'outline'}>{NOMBRE_DEL_LADO[e.lado]}</Badge>
@@ -417,7 +511,7 @@ export function MapeoContable({
                     <SelectorDeCuenta
                       cuentas={cuentas}
                       value={e.cuenta?.id ?? ''}
-                      onChange={(cuentaId) => void asignar(e.evento, cuentaId, e.nombre)}
+                      onChange={(cuentaId) => void pedirAsignar(e.evento, cuentaId, e.nombre, false)}
                       soloImputables
                       disabled={guardando.has(e.evento) || !escritura.puede}
                       placeholder="Sin cuenta: este asiento no se genera"
@@ -437,9 +531,21 @@ export function MapeoContable({
                       />
                     )}
                   </div>
+                  <ErrorDelCampo id={`mapeo-${e.evento}-error`} mensaje={errores[e.evento]} />
                 </TableCell>
                 <TableCell>
-                  {e.propuesta ? (
+                  {/* 🔴 CB-05: la propuesta repetía, fila por fila, la cuenta que ya
+                      estaba elegida. Sólo se dice cuando DIFIERE (o no hay cuenta). */}
+                  {e.propuesta && e.cuenta?.id === e.propuesta.id ? (
+                    <span
+                      className="text-caption text-fg-subtle"
+                      title="La cuenta elegida es la propuesta"
+                      aria-label="La cuenta elegida es la propuesta"
+                      data-testid={`propuesta-igual-${e.evento}`}
+                    >
+                      —
+                    </span>
+                  ) : e.propuesta ? (
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-caption text-fg-muted">
                         {e.propuesta.codigo} · {e.propuesta.nombre}
@@ -463,9 +569,9 @@ export function MapeoContable({
                     </span>
                   )}
                 </TableCell>
-              </TableRow>
+              </TableRowAnimada>
             ))}
-          </TableBody>
+          </TableBodyAnimado>
         </Table>
 
         {shouldPaginate ? (
@@ -486,6 +592,7 @@ export function MapeoContable({
 
   return (
     <Tabs value={parte} onValueChange={(v) => setParte(v as ParteDelMapeo)}>
+      {dialogoDelCambio}
       <TabsList variant="underline" className="justify-start">
         <TabsTrigger value="asientos" data-testid="parte-asientos">
           Asientos automáticos
@@ -507,7 +614,8 @@ export function MapeoContable({
               motivo={mapeo.motivoDeLosGastos}
               completo={mapeo.completoGastos}
               cuentas={cuentas}
-              onAsignar={asignarGasto}
+              onAsignar={(evento, cuentaId, nombre) => pedirAsignar(evento, cuentaId, nombre, true)}
+              errores={errores}
               guardando={guardando}
               puedeEscribir={escritura.puede}
               motivoSinEscritura={escritura.motivo}

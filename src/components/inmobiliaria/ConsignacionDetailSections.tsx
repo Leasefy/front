@@ -1,11 +1,12 @@
 'use client';
 
+import { FALTA_EL_PORCENTAJE } from '@/lib/inmuebles/participaciones-desconocidas';
+import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { useRef, useState } from 'react';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InvitarAlPortal } from './InvitarAlPortal';
 import Link from 'next/link';
 import { conRegreso } from '@/lib/nav/ruta-de-regreso';
-import { motion } from 'framer-motion';
 import {
   User,
   Buildings,
@@ -37,6 +38,11 @@ import { ContratoPdfModal } from './ContratoPdfModal';
 import type { Consignacion, Copropietario, Propietario, Agente, AgenteRole } from '@/lib/types/inmobiliaria';
 import { formatParticipacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
+import { inventarioDeLaFicha, useActasDelMandato } from '@/lib/actas/actas-del-mandato';
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 
 // Bank name mapping
 const BANK_NAMES: Record<string, string> = {
@@ -68,9 +74,9 @@ interface SectionCardProps {
 
 function SectionCard({ title, icon, children, className }: SectionCardProps) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
+    // Sin entrada propia: la ficha entera entra con su `CrossFade` al llegar
+    // de la carga (y con el `template.tsx` al navegar).
+    <div
       className={cn(
         'rounded-lg border border-border dark:border-border-strong bg-surface dark:bg-bg overflow-hidden',
         className
@@ -83,7 +89,7 @@ function SectionCard({ title, icon, children, className }: SectionCardProps) {
         <h3 className="font-semibold text-fg">{title}</h3>
       </div>
       <div className="p-5">{children}</div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -112,7 +118,7 @@ export function PropertyInfoSection({ consignacion }: PropertyInfoSectionProps) 
           <div>
             <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('inmobiliaria.consignaciones.detail.zoneCity')}</p>
             <p className="text-sm font-medium text-fg">
-              {consignacion.propertyZone}, {consignacion.propertyCity}
+              {barrioYCiudad(consignacion.propertyZone, consignacion.propertyCity) || '—'}
             </p>
           </div>
         </div>
@@ -169,6 +175,18 @@ interface PropietarioSectionProps {
   onCambiar?: () => void;
   /** La ruta de esta ficha, para que «Volver» en la del propietario regrese acá. */
   rutaDeOrigen?: string;
+  /**
+   * QA-PROP P-03 (seguimiento): en un EMPATE de participación (50/50), elegir
+   * quién queda como principal (`PUT /consignaciones/:id/principal`). Sólo el
+   * administrador o el contador: sin esto no se ofrece.
+   */
+  onElegirPrincipal?: (propietarioId: string) => Promise<void>;
+  /**
+   * 🔴 Copropiedad migrada sin porcentaje (Nico, 04-10-2026): los % guardados
+   * son provisionales; se dice «Falta el porcentaje de cada propietario», no
+   * se muestran como dato y el giro está frenado hasta ponerlos.
+   */
+  participacionesDesconocidas?: boolean;
 }
 
 export function PropietarioSection({
@@ -176,11 +194,41 @@ export function PropietarioSection({
   copropietarios,
   onCambiar,
   rutaDeOrigen,
+  onElegirPrincipal,
+  participacionesDesconocidas = false,
 }: PropietarioSectionProps) {
   const { t } = useI18n();
   // Sólo cuando hay más de uno. Con un dueño al 100 % mostrar «100 %» al lado
   // del nombre es ruido: no informa nada que no se supiera.
   const variosDuenos = (copropietarios?.length ?? 0) > 1;
+  /*
+   * P-03 (seguimiento): el principal es el de MAYOR participación; en un empate
+   * se queda el que ya estaba, y un administrador o el contador puede elegir
+   * a otro de los empatados. Un 30 % nunca puede ser principal de un 70 %.
+   */
+  const mayorParticipacion = Math.max(0, ...(copropietarios ?? []).map((c) => c.participacionBps));
+  const empatados = (copropietarios ?? []).filter((c) => c.participacionBps === mayorParticipacion);
+  const principalEnLaLista = (copropietarios ?? []).some((c) => c.propietarioId === propietario?.id);
+  const [eligiendo, setEligiendo] = useState<string | null>(null);
+  const elegirPrincipal = async (c: Copropietario) => {
+    if (!onElegirPrincipal || eligiendo) return;
+    setEligiendo(c.propietarioId);
+    try {
+      await onElegirPrincipal(c.propietarioId);
+      toast.success(`Ahora el propietario principal es ${c.propietario?.name ?? 'el que elegiste'}.`, {
+        description: 'Las participaciones no cambian: sólo quién figura como principal.',
+      });
+    } catch (e) {
+      toast.error('No se cambió el propietario principal.', {
+        description: mensajeParaLaPersona(e, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'elegir el propietario principal',
+        }),
+      });
+    } finally {
+      setEligiendo(null);
+    }
+  };
   /*
    * La cuenta que acaba de crear el botón «Invitar». Vive acá y no en el
    * padre para que el mensaje aparezca en el acto: recargar la ficha entera
@@ -229,7 +277,7 @@ export function PropietarioSection({
             <div>
               <h4 className="font-semibold text-fg">{propietario.name}</h4>
               <p className="text-sm text-fg-muted dark:text-fg-subtle">
-                {propietario.documentType}: {propietario.documentNumber}
+                {documentoConTipo(propietario.documentType, propietario.documentNumber)}
               </p>
             </div>
           </div>
@@ -264,6 +312,32 @@ export function PropietarioSection({
             El principal (el de mayor participación) lleva el chip, como el
             inquilino principal en la tarjeta «Partes» del contrato: es el que
             figura como dueño en todo lo que sigue leyendo un solo id. */}
+        {variosDuenos && participacionesDesconocidas && (
+          <div
+            className="rounded-lg border border-border bg-warning-soft p-3 text-sm text-fg"
+            data-testid="falta-el-porcentaje"
+            role="status"
+          >
+            <p className="font-medium text-warning">{FALTA_EL_PORCENTAJE}</p>
+            <p className="mt-1 text-fg-muted">
+              Este inmueble vino de la migración con {copropietarios!.length} dueños y el archivo no
+              dice cuánto es de cada uno. No se reparte en partes iguales a ciegas: hasta que pongas
+              el porcentaje de cada uno (que sumen 100 %), el giro de este inmueble no sale.
+            </p>
+            {onCambiar && (
+              <Button
+                size="sm"
+                hideArrow
+                className="mt-2"
+                onClick={onCambiar}
+                data-testid="poner-los-porcentajes"
+              >
+                Poner los porcentajes
+              </Button>
+            )}
+          </div>
+        )}
+
         {variosDuenos && (
           <div
             className="p-3 rounded-lg bg-surface-muted dark:bg-bg space-y-2"
@@ -283,7 +357,11 @@ export function PropietarioSection({
               >
                 <span className="flex min-w-0 items-center gap-2 text-sm text-fg">
                   <span className="truncate">{c.propietario?.name ?? c.propietarioId}</span>
-                  {i === 0 && (
+                  {/* El chip va en EL principal (`propietario`), no en el primero de
+                      la lista: en un empate 50/50 el orden no dice quién es
+                      (SEGUIMIENTO-FRONT, P-03). Si el principal no está en la
+                      lista (dato raro), el primero, como antes. */}
+                  {(principalEnLaLista ? c.propietarioId === propietario.id : i === 0) && (
                     <span
                       className="shrink-0 rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-medium text-primary"
                       data-testid="copropietario-principal-chip"
@@ -292,8 +370,37 @@ export function PropietarioSection({
                     </span>
                   )}
                 </span>
-                <span className="shrink-0 font-mono text-sm tabular-nums text-fg">
-                  {formatParticipacion(c.participacionBps)}
+                <span className="flex shrink-0 items-center gap-3">
+                  {onElegirPrincipal &&
+                    !participacionesDesconocidas &&
+                    empatados.length > 1 &&
+                    c.participacionBps === mayorParticipacion &&
+                    c.propietarioId !== propietario.id && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        hideArrow
+                        onClick={() => void elegirPrincipal(c)}
+                        disabled={eligiendo !== null}
+                        isLoading={eligiendo === c.propietarioId}
+                        className="h-auto px-0 text-caption"
+                        data-testid="hacer-principal"
+                      >
+                        Hacer principal
+                      </Button>
+                    )}
+                  {participacionesDesconocidas ? (
+                    <span
+                      className="text-sm text-warning"
+                      data-testid="copropietario-sin-porcentaje"
+                    >
+                      Sin porcentaje
+                    </span>
+                  ) : (
+                    <span className="font-mono text-sm tabular-nums text-fg">
+                      {formatParticipacion(c.participacionBps)}
+                    </span>
+                  )}
                 </span>
               </div>
             ))}
@@ -649,7 +756,9 @@ export function CurrentLeaseSection({ consignacion }: CurrentLeaseSectionProps) 
                 {/* A SALE mandate can never have `availability: 'RENTED'`
                     (contract-addendum-2.md §A.7 rule R4), so `monthlyRent`
                     is unreachable-null here — narrow the type, never coalesce. */}
-                {consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
+                {consignacion.canonPorConfirmar
+                  ? TEXTO_CANON_POR_CONFIRMAR
+                  : consignacion.monthlyRent != null ? formatCurrency(consignacion.monthlyRent) : '—'}
               </p>
             </div>
           </div>
@@ -740,6 +849,19 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
   const filaClase =
     'w-full flex items-center gap-3 p-3 rounded-lg bg-surface-muted dark:bg-bg hover:bg-surface-hover dark:hover:bg-ink transition-colors text-left';
   const itemsDeInventario = consignacion.inventoryItems?.length || 0;
+  // IA95-28: con el inventario de la captación vacío, el de sus actas (Vidi o Documentos).
+  const actasDelMandato = useActasDelMandato(consignacion.id, itemsDeInventario === 0);
+  const inventario = inventarioDeLaFicha(itemsDeInventario, actasDelMandato);
+  const subtituloDelActa =
+    inventario.de === 'acta'
+      ? t(k(inventario.items === 1 ? 'handoverFromActaOne' : 'handoverFromActa'), {
+          count: inventario.items,
+          acta: t(k(inventario.tipo === 'devolucion' ? 'actaDeDevolucion' : 'actaDeEntrega')),
+          fecha: fechaLarga(inventario.fecha),
+        })
+      : t(k(itemsDeInventario === 1 ? 'inventoryItemsCountOne' : 'inventoryItemsCount'), { count: itemsDeInventario });
+  const hrefDelActa =
+    inventario.de === 'acta' ? '/panel/inmobiliaria/documentos?tab=actas' : `/panel/inmobiliaria/inmuebles/${consignacion.id}/acta`;
 
   const inputRef = useRef<HTMLInputElement>(null);
   const [subiendo, setSubiendo] = useState(false);
@@ -763,8 +885,12 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
       onActualizado?.();
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) return;
+      // Por el traductor (sistema de errores, 02-10-2026). Antes un motivo de
+      // más de 160 caracteres se tiraba entero y un 5xx o la red no decían
+      // nada: ahora va el motivo del back, «de nuestro lado» con la referencia,
+      // o la conexión si no hubo respuesta.
       toast.error(t(k('consignmentContractUploadError')), {
-        description: err instanceof ApiError && err.message.length < 160 ? err.message : undefined,
+        description: mensajeParaLaPersona(err, { accion: 'subir el contrato de consignación' }),
       });
     } finally {
       setSubiendo(false);
@@ -853,7 +979,7 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
         )}
 
         <Link
-          href={`/panel/inmobiliaria/inmuebles/${consignacion.id}/acta`}
+          href={hrefDelActa}
           className={filaClase}
           data-testid="documento-acta"
         >
@@ -863,7 +989,7 @@ export function DocumentsSection({ consignacion, onActualizado }: DocumentsSecti
           <div className="flex-1 min-w-0">
             <p className="font-medium text-fg text-sm">{t(k('handoverReport'))}</p>
             <p className="text-xs text-fg-muted">
-              {t(k('inventoryItemsCount'), { count: itemsDeInventario })}
+              {subtituloDelActa}
             </p>
           </div>
           <ArrowRight className="w-4 h-4 shrink-0 text-fg-subtle" />

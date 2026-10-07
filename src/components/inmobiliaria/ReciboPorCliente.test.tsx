@@ -122,6 +122,23 @@ describe('conceptosDelPeriodo', () => {
   it('sin motor de conceptos no inventa ninguno', () => {
     expect(conceptosDelPeriodo(periodo('c1'))).toEqual([]);
   });
+
+  it('🔴 PG-13: sin la cola cruda de Nui «De 01-Sep-2026 hasta 30-Sep-2026» (el renglón ya dice el mes)', () => {
+    const c = periodo('c1', {
+      conceptos: [
+        {
+          id: '1',
+          tipo: 'CANON',
+          nombre: 'Canon de arrendamiento. De 01-Sep-2026 hasta 30-Sep-2026',
+          valorCop: 1_750_000,
+          resta: false,
+          reglaId: null,
+          orden: 1,
+        },
+      ],
+    });
+    expect(conceptosDelPeriodo(c)).toEqual(['Canon de arrendamiento']);
+  });
 });
 
 describe('separarPorVencimiento — los dos números que no se pueden mezclar', () => {

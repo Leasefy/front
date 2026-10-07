@@ -8,7 +8,7 @@
  *
  *   ${NEXT_PUBLIC_AGENT_URL}/onboarding/session/{sessionId}/<step>
  *
- * Auth: `Authorization: Bearer <Supabase JWT>` via `agentAuthHeaders()`
+ * Auth: `Authorization: Bearer <Supabase JWT>` via `agentFetch`
  * (`src/lib/api/agent-auth.ts`). Pattern mirrors the direct-fetch hooks
  * (`use-agent-work-items.ts`, `use-agreement-propose.ts`) rather than
  * `apiClient` — this is agent traffic, not back traffic.
@@ -21,7 +21,16 @@
  * so the SPA can redirect the user to the step the session is actually on.
  */
 
-import { agentAuthHeaders } from './agent-auth'
+import { VERSION_TERMINOS } from '@/lib/legal/versiones'
+import {
+  camposDelError,
+  leerFallo,
+  mensajeDeUnFalloNuestro,
+  mensajeParaLaPersona,
+  mensajeSinRespuesta,
+  type CampoConError,
+} from '@/lib/errores/traductor-de-errores'
+import { agentFetch } from './agent-fetch'
 import type {
   OnboardingSessionAgencyRequest,
   OnboardingSessionAgencyResponse,
@@ -57,18 +66,35 @@ export class OnboardingSessionError extends Error {
   readonly status: number | null
   /** Only populated for `kind === 'conflict'` — the real current step. */
   readonly conflict?: OnboardingSessionStepConflict
+  /**
+   * 02-10-2026 · Los problemas por campo del sobre de error del micro
+   * (`DATOS_INVALIDOS`), para ponerlos en su campo con
+   * `aplicarErroresDelServidor` (`lib/errores/errores-en-el-formulario.ts`).
+   * Vacío si la respuesta no los trae.
+   */
+  readonly campos: CampoConError[]
+  /**
+   * 02-10-2026 · El cuerpo de la respuesta, entero (como `ApiError.detalle`):
+   * así el traductor (`lib/errores/traductor-de-errores.ts`) lee de acá la
+   * `referencia`/`requestId` de un 5xx, el `code` y los `campos`.
+   */
+  readonly detalle?: Record<string, unknown>
 
   constructor(
     kind: OnboardingSessionErrorKind,
     status: number | null,
     message: string,
     conflict?: OnboardingSessionStepConflict,
+    campos: CampoConError[] = [],
+    detalle?: Record<string, unknown>,
   ) {
     super(message)
     this.name = 'OnboardingSessionError'
     this.kind = kind
     this.status = status
     this.conflict = conflict
+    this.campos = campos
+    this.detalle = detalle
   }
 }
 
@@ -82,12 +108,76 @@ const STATUS_TO_KIND: Record<number, OnboardingSessionErrorKind> = {
   503: 'unavailable',
 }
 
-function isErrorLike(value: unknown): value is { error: string } {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'error' in value &&
-    typeof (value as { error: unknown }).error === 'string'
+/** Lo que se le dice a la persona cuando un paso del registro falla (por el traductor). */
+const OPCIONES_DEL_MENSAJE = {
+  accion: 'continuar con el registro',
+  porDefecto: 'No pudimos continuar con el registro. Revisa los datos e intenta de nuevo.',
+}
+
+/**
+ * El `code` de una respuesta 2xx cuyo cuerpo no se pudo leer (02-10-2026; el mismo que usa
+ * `owner-portal.http.ts`). Hubo respuesta: no es la conexión, es nuestro (va como un 500).
+ */
+const CODIGO_RESPUESTA_ILEGIBLE = 'RESPUESTA_ILEGIBLE'
+
+function respuestaIlegible(statusRecibido: number): OnboardingSessionError {
+  const detalle = { statusCode: 500, code: CODIGO_RESPUESTA_ILEGIBLE, statusRecibido }
+  return new OnboardingSessionError(
+    'unknown',
+    500,
+    mensajeParaLaPersona({ status: 500, detalle }, OPCIONES_DEL_MENSAJE),
+    undefined,
+    [],
+    detalle,
+  )
+}
+
+function cuerpoDelError(err: unknown): Record<string, unknown> | undefined {
+  if (!err || typeof err !== 'object') return undefined
+  const detalle = (err as { detalle?: unknown }).detalle
+  return detalle && typeof detalle === 'object' && !Array.isArray(detalle)
+    ? (detalle as Record<string, unknown>)
+    : undefined
+}
+
+/**
+ * Cualquier fallo como `OnboardingSessionError`, sin perder el status ni el cuerpo (02-10-2026).
+ *
+ * El hook (`use-onboarding-session.ts`) lo usa para todo lo que le llega. Antes, un error que no
+ * era un `OnboardingSessionError` (un `ApiError`, un `SyntaxError`, un error de programación) se
+ * volvía `kind: 'unknown'`, `status: null` y su `message` crudo en inglés: un 400 con `campos`
+ * quedaba sin campos ni status. Ahora decide con el status (nunca con el texto):
+ *  · sin respuesta (status 0 / `fetch` que no salió) → `network`, lo único que habla de la conexión;
+ *  · con status → el `kind` de siempre, los `campos` y el cuerpo en `detalle`, y la frase del traductor;
+ *  · sin status (no vino de una respuesta) → `unknown`, «de nuestro lado»: su texto no es para nadie.
+ */
+export function errorDelOnboarding(err: unknown): OnboardingSessionError {
+  if (err instanceof OnboardingSessionError) return err
+  const fallo = leerFallo(err)
+  if (fallo.tipo === 'sinRespuesta') return new OnboardingSessionError('network', null, mensajeSinRespuesta())
+  const detalle = cuerpoDelError(err)
+  if (fallo.status === null) {
+    return new OnboardingSessionError(
+      'unknown',
+      null,
+      mensajeDeUnFalloNuestro({ ...fallo, mensajes: [] }, OPCIONES_DEL_MENSAJE.accion),
+      undefined,
+      [],
+      detalle,
+    )
+  }
+  const kind = STATUS_TO_KIND[fallo.status] ?? 'unknown'
+  const message =
+    fallo.campos.length > 0
+      ? Array.from(new Set(fallo.campos.map((c) => c.mensaje))).join('; ')
+      : mensajeParaLaPersona(err, OPCIONES_DEL_MENSAJE)
+  return new OnboardingSessionError(
+    kind,
+    fallo.status,
+    message,
+    kind === 'conflict' ? (detalle as OnboardingSessionStepConflict | undefined) : undefined,
+    fallo.campos,
+    detalle,
   )
 }
 
@@ -104,7 +194,7 @@ function isErrorLike(value: unknown): value is { error: string } {
 // English `message`. We translate the leaf field to a Spanish label and the
 // issue code to a short Spanish detail so the user sees "Calle: mínimo 2
 // caracteres" instead of a bare "(400)". Handler-thrown errors keep the
-// `{ error: string }` shape and are handled by `isErrorLike` below.
+// `{ error: string }` shape and go through the traductor below.
 
 interface ZodIssueLike {
   path: (string | number)[]
@@ -131,8 +221,8 @@ const FIELD_LABELS_ES: Record<string, string> = {
   ciudad: 'Ciudad',
   departamento: 'Departamento',
   codigoPostal: 'Código postal',
-  primaryContactEmail: 'Correo de contacto',
-  primaryContactPhone: 'Teléfono de contacto',
+  primaryContactEmail: 'Correo de la cuenta',
+  primaryContactPhone: 'Teléfono de la cuenta',
 }
 
 function issueFieldLabel(issue: ZodIssueLike): string {
@@ -174,13 +264,25 @@ async function throwForErrorResponse(res: Response): Promise<never> {
     parsedBody = null
   }
 
+  // 02-10-2026 · El micro manda el sobre de error del back
+  // (`{ code: 'DATOS_INVALIDOS', message[], campos[] }`) con frases en español
+  // que ya nombran el campo. Se usan primero; el `error.issues` de Zod (en
+  // inglés) queda para un micro anterior.
+  const campos = camposDelError(parsedBody)
+  const detalle =
+    parsedBody && typeof parsedBody === 'object' && !Array.isArray(parsedBody)
+      ? (parsedBody as Record<string, unknown>)
+      : undefined
   let message: string
-  if (isZodValidationBody(parsedBody)) {
+  if (campos.length > 0) {
+    message = Array.from(new Set(campos.map((c) => c.mensaje))).join('; ')
+  } else if (isZodValidationBody(parsedBody)) {
     message = formatZodValidationMessage(parsedBody)
-  } else if (isErrorLike(parsedBody)) {
-    message = parsedBody.error
   } else {
-    message = `La sesión de onboarding respondió con un error (${status}).`
+    // 02-10-2026 · La regla de oro, del traductor: un 4xx dice lo que mandó
+    // el micro (`{ error }` o `message`); un 5xx dice que falló de nuestro
+    // lado, con la referencia (`requestId`), y nunca «(500)» crudo.
+    message = mensajeParaLaPersona({ status, detalle }, OPCIONES_DEL_MENSAJE)
   }
   const kind = STATUS_TO_KIND[status] ?? 'unknown'
 
@@ -190,9 +292,11 @@ async function throwForErrorResponse(res: Response): Promise<never> {
       status,
       message,
       parsedBody as OnboardingSessionStepConflict,
+      campos,
+      detalle,
     )
   }
-  throw new OnboardingSessionError(kind, status, message)
+  throw new OnboardingSessionError(kind, status, message, undefined, campos, detalle)
 }
 
 // ── Fetch helpers ─────────────────────────────────────────────────────────
@@ -204,24 +308,30 @@ function stepUrl(sessionId: string, step: string): string {
 async function request<TRes>(sessionId: string, step: string, init: RequestInit): Promise<TRes> {
   let res: Response
   try {
-    res = await globalThis.fetch(stepUrl(sessionId, step), init)
-  } catch {
-    throw new OnboardingSessionError(
-      'network',
-      null,
-      'No se pudo conectar con el servidor. Verifica tu conexión e inténtalo de nuevo.',
-    )
+    res = await agentFetch(stepUrl(sessionId, step), init)
+  } catch (err) {
+    // Sin respuesta: el único caso en que se habla de la conexión. Con el
+    // micro caído y Leasefy respondiendo, `agentFetch` ya lo dice como «el
+    // asistente no está disponible» (503), y `errorDelOnboarding` lo respeta.
+    throw errorDelOnboarding(err)
   }
   if (!res.ok) {
     await throwForErrorResponse(res)
   }
-  return (await res.json()) as TRes
+  try {
+    return (await res.json()) as TRes
+  } catch {
+    // 02-10-2026 · Contestó 2xx pero el cuerpo no se pudo leer (un HTML de un
+    // proxy, un JSON cortado). Antes subía el `SyntaxError` crudo, en inglés.
+    // Hubo respuesta: NO es la conexión, es nuestro.
+    throw respuestaIlegible(res.status)
+  }
 }
 
 function postStep<TReq, TRes>(sessionId: string, step: string, body: TReq): Promise<TRes> {
   return request<TRes>(sessionId, step, {
     method: 'POST',
-    headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
 }
@@ -278,11 +388,16 @@ export function submitPolicy(
  */
 
 /**
- * Version identifier of the Terms & Conditions text currently rendered by
- * `TermsStepForm`. Sent verbatim to the agent for legal traceability. BUMP THIS
- * whenever the T&C copy changes so acceptances are attributed to the right text.
+ * La versión de los Términos que se registra como aceptada en el paso
+ * «Habeas Data». Sale de `lib/legal/versiones.ts`, el mismo lugar que sube la
+ * versión cuando cambia el texto de `/terminos`.
+ *
+ * 🔴 Hasta el 30-09-2026 era `'2026-08'` escrito a mano: cada inmobiliaria
+ * quedaba registrada aceptando una versión que no es la v2.0 (vigente desde el
+ * 5 de septiembre) que tenía en pantalla. La aceptación dejaba de servir como
+ * prueba de A QUÉ dijo que sí.
  */
-export const CURRENT_TERMS_VERSION = '2026-08'
+export const CURRENT_TERMS_VERSION = VERSION_TERMINOS
 
 export function acceptTerms(
   sessionId: string,
@@ -295,16 +410,10 @@ export function acceptTerms(
 
 /** No request body — the back derives the tenant from the persisted draft. */
 export function completeOnboarding(sessionId: string): Promise<OnboardingSessionCompleteResponse> {
-  return request(sessionId, '/complete', {
-    method: 'POST',
-    headers: agentAuthHeaders(),
-  })
+  return request(sessionId, '/complete', { method: 'POST' })
 }
 
 /** Read-only — rehydrates `{ sessionId, currentStep, nextStep, draft }` on refresh. */
 export function resumeOnboarding(sessionId: string): Promise<OnboardingSessionResumeResponse> {
-  return request(sessionId, '/resume', {
-    method: 'GET',
-    headers: agentAuthHeaders(),
-  })
+  return request(sessionId, '/resume', { method: 'GET' })
 }

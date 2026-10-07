@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { X } from "@phosphor-icons/react"
 import {
   Sheet as DSSheet,
   SheetTrigger as DSSheetTrigger,
@@ -9,153 +10,317 @@ import {
   SheetOverlay as DSSheetOverlay,
   SheetContent as DSSheetContent,
   type SheetContentProps as DSSheetContentProps,
+  SheetHeader as DSSheetHeader,
+  type SheetHeaderProps as DSSheetHeaderProps,
   SheetTitle as DSSheetTitle,
   SheetDescription as DSSheetDescription,
+  SheetNav as DSSheetNav,
+  type SheetNavProps,
+  SheetBody as DSSheetBody,
+  SheetFooter as DSSheetFooter,
+  type SheetFooterProps,
+  SheetSection as DSSheetSection,
+  type SheetSectionProps,
+  sheetCloseClassName,
 } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
-import { AspaDeCierre } from "@/components/ui/dialog"
+import { ASPA_DE_CIERRE } from "@/components/ui/aspa-de-cierre"
 
 /**
- * ADAPTER fino sobre el Sheet de @leasefy/cadence que preserva la API local del mvp:
- * - SheetContent: `side` passthrough (el DS ya lo soporta),
- *   `hideCloseButton` → `hideClose`, overlay `z-[300] bg-black/60`,
- *   contrato de layout legacy (p-6 default, w-3/4 sm:max-w-sm en left/right,
- *   alto auto en top/bottom, display block) y animación legacy 500ms in/out
- *   en lugar del slide-in-only del DS. Todo overridable por className.
- * - Header/Footer mantienen las clases legacy (padding en el Content).
+ * ADAPTER fino sobre el Sheet de @leasefy/cadence.
+ *
+ * El cajón es el FLOTANTE de Cadence (02-10-2026, Nico: «que se separen de
+ * las esquinas, que se sientan hermosos»): 12 px de los bordes (16 desde
+ * `lg`), las cuatro esquinas en 24 px, sombra amplia, velo desenfocado, y en
+ * el celular una hoja desde abajo con asa. El contrato viejo —`p-6`,
+ * `w-3/4 sm:max-w-sm`, `display: block`, animación de 500 ms— se fue.
+ *
+ * Lo que este adaptador agrega encima de Cadence:
+ * - capa `z-[300]` (la de los modales, ver DESIGN.md §17);
+ * - la ✕ del producto (chip gris, `ASPA_DE_CIERRE`) en lugar de la de Cadence;
+ *   `hideCloseButton` la apaga;
+ * - el REPARTO de hijos, igual que `DialogContent`: cabecera y navegación
+ *   arriba y fijas, pie abajo y fijo, y todo lo demás a un `SheetBody` con
+ *   scroll. Así un cajón escrito «a la antigua» —una cabecera y contenido
+ *   suelto— no queda pegado a los bordes ni pierde el título al bajar.
+ *
+ * El reparto se apaga (los hijos van tal cual a la columna) cuando el call
+ * site ya arma su layout: si trae un `SheetBody` (o `CajonCuerpo`) en algún
+ * lugar de su JSX, si pide `layout="manual"`, o —compatibilidad con los
+ * cajones viejos que se armaban solos— si pasa `p-0`/`!p-0` en `className`.
  */
 
-// Scroll locking is handled by Radix (modal by default via react-remove-scroll).
-// The previous manual body-overflow effect only worked for controlled usage
-// (keyed off props.open) and caused scrollbar layout shift — removed.
 const Sheet = DSSheet
-
 const SheetTrigger = DSSheetTrigger
-
 const SheetClose = DSSheetClose
-
 const SheetPortal = DSSheetPortal
 
-const sheetOverlayClasses =
-  "z-[300] bg-black/60 touch-none overscroll-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:duration-500 data-[state=open]:duration-500"
+/** Banda de un cajón. Mismos nombres que `bandaDeModal` de dialog.tsx. */
+type BandaDeCajon = "cabecera" | "navegacion" | "cuerpo" | "pie"
+
+type ConBanda = { bandaDeModal?: string }
+
+function bandaDe(hijo: React.ReactNode): BandaDeCajon | null {
+  if (!React.isValidElement(hijo)) return null
+  if (typeof hijo.type === "string") return null
+  const banda = (hijo.type as ConBanda).bandaDeModal
+  return banda === "cabecera" || banda === "navegacion" || banda === "cuerpo" || banda === "pie"
+    ? banda
+    : null
+}
+
+/** ¿Hay un cuerpo declarado en ALGÚN lugar del JSX (p. ej. dentro de un `<form className="contents">`)? */
+function tieneCuerpo(nodo: React.ReactNode): boolean {
+  let hay = false
+  React.Children.forEach(nodo, (hijo) => {
+    if (hay || !React.isValidElement(hijo)) return
+    if (bandaDe(hijo) === "cuerpo") {
+      hay = true
+      return
+    }
+    const props = hijo.props as { children?: React.ReactNode }
+    if (props.children != null) hay = tieneCuerpo(props.children)
+  })
+  return hay
+}
+
+/** Aplana los fragmentos de primer nivel conservando llaves estables. */
+function aplanar(nodo: React.ReactNode, prefijo = ""): React.ReactNode[] {
+  const salida: React.ReactNode[] = []
+  React.Children.toArray(nodo).forEach((hijo) => {
+    if (React.isValidElement(hijo) && hijo.type === React.Fragment) {
+      const props = hijo.props as { children?: React.ReactNode }
+      salida.push(...aplanar(props.children, `${prefijo}${String(hijo.key)}/`))
+    } else if (React.isValidElement(hijo) && prefijo) {
+      salida.push(React.cloneElement(hijo, { key: `${prefijo}${String(hijo.key)}` }))
+    } else {
+      salida.push(hijo)
+    }
+  })
+  return salida
+}
+
+/**
+ * La ✕ del cajón termina en el padding (24 px), no a 16 px como la deja
+ * Cadence; la cabecera le reserva 24 + 36 (la ✕) + 12 de aire = 72 px.
+ */
+const ASPA_EN_EL_PADDING = "right-6"
+const HUECO_DE_LA_ASPA = "group-data-[close=true]/sheet:pr-[72px]"
+
+const PADDING_CERO = /(^|\s)!?p-0(\s|$)/
+const VELO_TRANSPARENTE = /(^|\s)bg-transparent(\s|$)/
+
+function repartir(children: React.ReactNode, className: string | undefined, layout: "auto" | "manual") {
+  if (layout === "manual" || PADDING_CERO.test(className ?? "") || tieneCuerpo(children)) return children
+
+  const arriba: React.ReactNode[] = []
+  const medio: React.ReactNode[] = []
+  const abajo: React.ReactNode[] = []
+  for (const hijo of aplanar(children)) {
+    const banda = bandaDe(hijo)
+    if (banda === "cabecera" || banda === "navegacion") arriba.push(hijo)
+    else if (banda === "pie") abajo.push(hijo)
+    else medio.push(hijo)
+  }
+  return (
+    <>
+      {arriba}
+      {medio.length > 0 ? <SheetBody>{medio}</SheetBody> : null}
+      {abajo}
+    </>
+  )
+}
 
 const SheetOverlay = React.forwardRef<
   React.ElementRef<typeof DSSheetOverlay>,
   React.ComponentPropsWithoutRef<typeof DSSheetOverlay>
 >(({ className, ...props }, ref) => (
-  <DSSheetOverlay
-    ref={ref}
-    className={cn(sheetOverlayClasses, className)}
-    {...props}
-  />
+  <DSSheetOverlay ref={ref} className={cn("z-[300]", className)} {...props} />
 ))
 SheetOverlay.displayName = "SheetOverlay"
 
-type SheetSide = NonNullable<DSSheetContentProps["side"]>
-
-// Geometría + animación legacy por lado. h-auto/max-h-none anulan las alturas
-// fijas del DS en top/bottom (legacy = alto por contenido).
-const legacySideClasses: Record<SheetSide, string> = {
-  top: "h-auto max-h-none data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
-  bottom:
-    "h-auto max-h-none data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-  left: "w-3/4 sm:max-w-sm data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
-  right:
-    "w-3/4 sm:max-w-sm data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right",
-}
-
 interface SheetContentProps extends Omit<DSSheetContentProps, "hideClose"> {
-  hideCloseButton?: boolean;
+  /** Apaga la ✕. Sólo para un cajón que no se debe abandonar a medias. */
+  hideCloseButton?: boolean
+  /**
+   * Nombre accesible de la ✕. Default «Cerrar»; si hay dos cajones a la vista
+   * (un sub-cajón junto a otro), el de adentro dice qué cierra: «Cerrar el
+   * documento». Siempre empieza por «Cerrar» (ver `aspa-de-cierre.ts`).
+   */
+  closeLabel?: string
+  /**
+   * `auto` (default) reparte los hijos en bandas si el call site no trae su
+   * propio `SheetBody`; `manual` los deja tal cual en la columna.
+   */
+  layout?: "auto" | "manual"
 }
 
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof DSSheetContent>,
   SheetContentProps
->(({ side = "right", className, overlayClassName, children, hideCloseButton = false, ...props }, ref) => {
-  // Lenis escucha la rueda en `window`, así que el scroll-lock de Radix no lo
-  // frena: con un cajón abierto, la rueda movía el fondo. Antes se frenaba acá
-  // al montar, asumiendo que el Content sólo existe mientras el cajón está
-  // abierto — falso: en el panel se monta cerrado y dejaba la página congelada.
-  // Ahora lo decide `SmoothScroll` mirando `data-state="open"`.
-  return (
-  <DSSheetContent
-    ref={ref}
-    side={side}
-    // La ✕ del DS —pelada, `rounded-md`, sin fondo— no se pinta nunca: acá
-    // abajo va el mismo chip gris que en los modales. Un cajón y un diálogo no
-    // pueden cerrarse con dos dibujos distintos.
-    hideClose
-    overlayClassName={cn(sheetOverlayClasses, overlayClassName)}
-    onWheel={(e) => e.stopPropagation()}
-    className={cn(
-      // contrato de layout legacy: padding propio, display block (el DS pone
-      // flex flex-col; los call sites que lo quieren lo pasan explícito)
-      "z-[300] block p-6 overscroll-contain",
-      // animación legacy 500ms in/out; animate-none apaga el slide-in del DS
-      "animate-none transition-transform data-[state=closed]:duration-500 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out [transition-timing-function:cubic-bezier(0.32,0.72,0,1)]",
-      legacySideClasses[side],
-      className
-    )}
-    {...props}
-  >
-    {children}
-    {/* `hideCloseButton` sigue significando «este cajón trae su propio cierre».
-        Sin eso el aspa la pone el Content, donde iba la del DS.
-        Va DESPUÉS de los hijos y en `z-20` a propósito: media docena de cajones
-        tienen la cabecera `sticky top-0 z-10` con fondo opaco, y la del DS
-        —que se pintaba antes que los hijos y en el mismo z— les quedaba
-        debajo. Por eso varios se habían dibujado su propia ✕ adentro de la
-        cabecera: no era gusto, era que la otra no se veía. */}
-    {!hideCloseButton && <AspaDeCierre className="absolute right-4 top-4 z-20" />}
-  </DSSheetContent>
+>(
+  (
+    {
+      side = "right",
+      className,
+      overlayClassName,
+      children,
+      hideCloseButton = false,
+      closeLabel = "Cerrar",
+      layout = "auto",
+      ...props
+    },
+    ref
+  ) => (
+    // Lenis escucha la rueda en `window`, así que el scroll-lock de Radix no
+    // lo frena: lo decide `SmoothScroll` mirando `data-state="open"`.
+    <DSSheetContent
+      ref={ref}
+      side={side}
+      // La ✕ de Cadence no se pinta: va la del producto, la misma de los modales.
+      hideClose
+      // …pero la cabecera tiene que dejarle sitio igual: `data-close` es lo que
+      // mira `SheetHeader` para reservar el hueco.
+      data-close={hideCloseButton ? "false" : "true"}
+      overlayClassName={cn(
+        "z-[300]",
+        // Un velo pedido transparente (sub-cajón junto a otro) tampoco
+        // desenfoca ni oscurece en el tema oscuro: lo de al lado tiene que
+        // seguir legible.
+        VELO_TRANSPARENTE.test(overlayClassName ?? "") && "backdrop-blur-none dark:bg-transparent",
+        overlayClassName
+      )}
+      onWheel={(e) => e.stopPropagation()}
+      className={cn("z-[300]", className)}
+      {...props}
+    >
+      {repartir(children, className, layout)}
+      {/* Después de los hijos y en `z-20`: queda por encima de las cabeceras
+          `sticky` con fondo opaco que traen algunos cajones. */}
+      {!hideCloseButton && (
+        <DSSheetClose
+          aria-label={closeLabel}
+          data-testid="dialog-close"
+          // `right-6` pisa el `right-4` de Cadence: el borde derecho de la ✕ cae
+          // EXACTAMENTE en el padding del cajón (24 px), donde termina el
+          // contenido (Nico, 03-10-2026; DESIGN.md §Drawers, «Contenido
+          // alineado al padding»). Los modales no pasan por acá.
+          className={cn(ASPA_DE_CIERRE, sheetCloseClassName, ASPA_EN_EL_PADDING)}
+        >
+          <X size={16} weight="bold" aria-hidden="true" />
+        </DSSheetClose>
+      )}
+    </DSSheetContent>
   )
-})
+)
 SheetContent.displayName = "SheetContent"
 
-interface SheetHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
+interface SheetHeaderProps extends DSSheetHeaderProps {
   /**
    * Existe sólo para que `ResponsiveDialogHeader` —que es el MISMO call site
    * en móvil y en escritorio— pueda pedir `hideClose` sin que el prop termine
    * escupido en el `<div>`. Acá no hace nada: en un Sheet la ✕ la pone el
-   * `SheetContent`, no la cabecera. Para apagarla se usa `hideCloseButton` en
-   * el Content.
+   * `SheetContent`; para apagarla se usa `hideCloseButton` en el Content.
    */
   hideClose?: boolean
 }
 
-const SheetHeader = ({
-  className,
-  hideClose: _hideClose,
-  ...props
-}: SheetHeaderProps) => (
-  <div
-    className={cn(
-      "flex flex-col space-y-2 text-center sm:text-left",
-      className
-    )}
-    {...props}
-  />
+const SheetHeader = Object.assign(
+  React.forwardRef<HTMLDivElement, SheetHeaderProps>(function SheetHeader(
+    { hideClose: _hideClose, className, ...props },
+    ref
+  ) {
+    // El hueco de la ✕ crece con ella: Cadence reserva `pr-16` (right-4 + la
+    // ✕ + aire); con la ✕ en el padding son 72 px, y el título largo sigue a
+    // 12 px de la ✕ sin meterse debajo.
+    return <DSSheetHeader ref={ref} className={cn(HUECO_DE_LA_ASPA, className)} {...props} />
+  }),
+  { bandaDeModal: "cabecera" as const, displayName: "SheetHeader" }
 )
-SheetHeader.displayName = "SheetHeader"
 
-const SheetFooter = ({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) => (
-  <div
-    className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
-      className
-    )}
-    {...props}
-  />
+/** «‹ Anterior · 1 de 9 del tablero · Siguiente ›», con su filete. */
+const SheetNav = Object.assign(
+  React.forwardRef<HTMLElement, SheetNavProps>(function SheetNav(props, ref) {
+    return <DSSheetNav ref={ref} {...props} />
+  }),
+  { bandaDeModal: "navegacion" as const, displayName: "SheetNav" }
 )
-SheetFooter.displayName = "SheetFooter"
+
+/** El cuerpo: lo único que scrollea (`data-lenis-prevent` + `overscroll-behavior: contain`). */
+const SheetBody = Object.assign(
+  React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(function SheetBody(props, ref) {
+    return <DSSheetBody ref={ref} {...props} />
+  }),
+  { bandaDeModal: "cuerpo" as const, displayName: "SheetBody" }
+)
+
+/** Pie fijo: `start` a la izquierda (rechazar, volver), los hijos a la derecha. */
+const SheetFooter = Object.assign(
+  React.forwardRef<HTMLDivElement, SheetFooterProps>(function SheetFooter(props, ref) {
+    return <DSSheetFooter ref={ref} {...props} />
+  }),
+  { bandaDeModal: "pie" as const, displayName: "SheetFooter" }
+)
+
+/** Tarjeta del cuerpo: borde suave, fondo apenas distinto. */
+const SheetSection = DSSheetSection
+
+/*
+ * ── Contenido alineado al padding (Nico, 03-10-2026: «no respeta pegando bien
+ * el contenido a los paddings») ─────────────────────────────────────────────
+ *
+ * El cajón tiene UN padding lateral, el mismo en `SheetHeader`, `SheetBody` y
+ * `SheetFooter` (24 px). El texto del cuerpo arranca donde arranca el título y
+ * termina en ese padding. Estas piezas son la única forma de salirse de él
+ * (DESIGN.md §Drawers, «Contenido alineado al padding»).
+ */
+
+/** El padding lateral del cajón. Para las filas de una lista que ya va a sangre (cuerpo `p-0`). */
+const RELLENO_DEL_CAJON = "px-6"
+
+/**
+ * Una fila de la cabecera DEBAJO del título (buscador, pestañas) llega hasta el
+ * padding derecho: la cabecera reserva a la derecha el hueco de la ✕ en toda
+ * su altura (72 px), pero la ✕ sólo ocupa la línea del título. 72 − 24 = 48 px
+ * (`-mr-12`). Sólo en una cabecera sin `actions`.
+ */
+const FILA_ANCHA_DE_LA_CABECERA = "group-data-[close=true]/sheet:-mr-12"
+
+/**
+ * Una tabla (o una lista con cabecera) A SANGRE dentro de `SheetBody`: la banda
+ * de la cabecera, el filete y el hover de las filas tocan los bordes del cajón,
+ * y la primera y la última celda de cada fila llevan exactamente el padding del
+ * cajón. Así el primer texto arranca en la línea del título y la última acción
+ * termina en el padding derecho. Las celdas del medio conservan el suyo.
+ *
+ * Va sin marco: una tabla envuelta en `rounded border` adentro del cajón es la
+ * «caja metida» que se lee como otra tarjeta y corre el texto 16 px.
+ */
+const SheetTable = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  function SheetTable({ className, ...props }, ref) {
+    return (
+      <div
+        ref={ref}
+        data-sheet-table=""
+        className={cn(
+          "-mx-6",
+          "[&_tr>*:first-child]:pl-6 [&_tr>*:last-child]:pr-6",
+          // El aviso «esta tabla no cabe entera» también arranca en la línea del título.
+          "[&_[data-testid=aviso-de-desborde]]:px-6",
+          className
+        )}
+        {...props}
+      />
+    )
+  }
+)
 
 const SheetTitle = DSSheetTitle
 
 const SheetDescription = DSSheetDescription
+
+export type { SheetContentProps, SheetHeaderProps, SheetNavProps, SheetFooterProps, SheetSectionProps, BandaDeCajon }
 
 export {
   Sheet,
@@ -165,7 +330,13 @@ export {
   SheetClose,
   SheetContent,
   SheetHeader,
+  SheetNav,
+  SheetBody,
   SheetFooter,
+  SheetSection,
+  SheetTable,
   SheetTitle,
   SheetDescription,
+  RELLENO_DEL_CAJON,
+  FILA_ANCHA_DE_LA_CABECERA,
 }

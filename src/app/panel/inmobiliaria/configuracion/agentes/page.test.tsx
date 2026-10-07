@@ -24,9 +24,9 @@ beforeEach(() => {
 })
 
 describe('Agentes IA — oculto', () => {
-  it('manda a Configuración en vez de mostrar la vitrina', () => {
+  it('manda a Configuración → Automatización IA en vez de mostrar la vitrina (CF-01)', () => {
     AgentesIaOcultoPage()
-    expect(redirectMock).toHaveBeenCalledWith('/panel/inmobiliaria/configuracion')
+    expect(redirectMock).toHaveBeenCalledWith('/panel/inmobiliaria/configuracion/ia')
   })
 
   it('el destino es la raíz, no otra ruta de agentes (si no, vuelve a redirigir)', () => {

@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { User, Sparkle, ArrowUpRight, Scales } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
-import { Button, Textarea, EmptyState, Badge, Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui';
+import { Button, Textarea, EmptyState, Badge, Table, TableHeader, TableRow, TableHead, TableCell } from '@/components/ui';
+import { TableBodyAnimado, TableRowAnimada } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -14,7 +15,7 @@ import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MAXIMO_A_COMPARAR, MINIMO_A_COMPARAR } from '@/lib/inmobiliaria/comparacion';
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
-import { BackButton } from '@leasefy/cadence';
+import { AnimatedNumber, BackButton, CrossFade } from '@leasefy/cadence';
 import { landlordApplicationsApi } from '@/lib/api/applications.service';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
@@ -22,6 +23,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { type ActionType } from '@/components/inmobiliaria/AccionDePostulacion';
 import { useDecisionDeCandidato } from '@/components/inmobiliaria/use-decision-de-candidato';
+import { ChipDeLaMarcaDelEstudio } from '@/components/inmobiliaria/MarcaDelEstudio';
 import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
 import type { PasoKey } from '@/lib/recorrido/pasos';
 import { useContracts } from '@/lib/hooks/useContracts';
@@ -347,16 +349,22 @@ function CandidatosContent() {
     });
   }, []);
 
+  // Esqueleto → lista (o → fallo): cada salida en un `CrossFade` con su clave,
+  // así lo que llega después de cargar entra con su fundido; lo que ya estaba
+  // al montarse no se anima (la página entra con su template).
   if (isLoading && !property) {
     return (
+      <CrossFade swapKey="esqueleto">
       <div className="p-4 md:p-6">
         <EsqueletoTabla columnas={4} filas={5} />
       </div>
+      </CrossFade>
     );
   }
 
   if (error) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="space-y-6 p-6 lg:p-8">
         {/* 🔴 20-09 · El camino de vuelta va ARRIBA, no sólo dentro de la
             tarjeta: un fallo a pantalla completa sin encabezado no dice en qué
@@ -371,10 +379,12 @@ function CandidatosContent() {
           volverA={{ label: 'Inmuebles', href: '/panel/inmobiliaria/inmuebles' }}
         />
       </div>
+      </CrossFade>
     );
   }
 
   return (
+    <CrossFade swapKey="lista">
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="space-y-4">
@@ -388,7 +398,10 @@ function CandidatosContent() {
             <h1 className="text-h2 text-fg">Candidatos</h1>
             {property && (
               <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-                {property.title} · {property.neighborhood}, {property.city}
+                {/* QA-IA-A: sin barrio salía «· , Medellín». */}
+                {[property.title, [property.neighborhood, property.city].filter((v) => v && String(v).trim()).join(', ')]
+                  .filter(Boolean)
+                  .join(' · ')}
               </p>
             )}
           </div>
@@ -438,13 +451,15 @@ function CandidatosContent() {
                     <span className="sr-only">Comparar</span>
                   </TableHead>
                   <TableHead>Candidato</TableHead>
-                  <TableHead>Score</TableHead>
+                  <TableHead>Puntaje</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Fecha</TableHead>
                   <TableHead className="p-4" />
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              {/* Paginar o decidir: las filas entran escalonadas y las que
+                  sobran salen. */}
+              <TableBodyAnimado>
                 {candidatosPagina.map((candidate) => {
                   const statusCfg = STATUS_CONFIG[candidate.status] ?? FALLBACK_STATUS;
                   const initials = candidate.tenantName
@@ -452,7 +467,7 @@ function CandidatosContent() {
                     : '?';
 
                   return (
-                    <TableRow
+                    <TableRowAnimada
                       key={candidate.id}
                       onClick={() => abrir(candidate)}
                       className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
@@ -487,6 +502,9 @@ function CandidatosContent() {
                             <p className="text-xs text-fg-muted">
                               {candidate.tenantEmail || '—'}
                             </p>
+                            {/* 🔴 El estudio es opcional (Nico, 04-10-2026):
+                                qué falta, a la vista. */}
+                            <ChipDeLaMarcaDelEstudio marca={candidate.marcaDelEstudio} className="mt-1" />
                           </div>
                         </div>
                       </TableCell>
@@ -508,10 +526,9 @@ function CandidatosContent() {
                             </span>
                           </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
-                            <Sparkle className="w-3 h-3" />
-                            Ver resultado
-                          </span>
+                          // QA-IA-A: decía «Ver resultado» y la ficha abría «aún no tiene un
+                          // análisis»: prometía algo que no existe.
+                          <span className="text-sm text-fg-muted">Sin puntaje</span>
                         )}
                       </TableCell>
 
@@ -541,10 +558,10 @@ function CandidatosContent() {
                           puedeDecidir={puedeDecidir}
                         />
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   );
                 })}
-              </TableBody>
+              </TableBodyAnimado>
             </Table>
 
             {/* Pie: sólo si hay más de una página. */}
@@ -616,6 +633,7 @@ function CandidatosContent() {
       {/* El cajón con el análisis, las cuatro acciones y el paso 10 */}
       {cajon}
     </div>
+    </CrossFade>
   );
 }
 
@@ -643,7 +661,10 @@ function CandidateStatTile({
         <User className="w-5 h-5" weight="duotone" />
       </div>
       <div className="min-w-0">
-        <p className="text-2xl font-semibold text-fg tabular-nums leading-none">{value}</p>
+        {/* Cuenta cuando cambia (aprobar, rechazar). */}
+        <p className="text-2xl font-semibold text-fg tabular-nums leading-none">
+          <AnimatedNumber value={value} format={(n) => String(Math.round(n))} />
+        </p>
         <p className="text-xs text-fg-muted mt-1 truncate">{label}</p>
       </div>
     </div>

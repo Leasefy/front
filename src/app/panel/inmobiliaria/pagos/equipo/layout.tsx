@@ -8,6 +8,9 @@
  * editar el JSX de cada pantalla, y para que una pantalla nueva en esta
  * carpeta nazca ya rotulada.
  *
+ * QA-IA-B (04-10-2026): el texto decía «LOTE_EJEMPLO (page.tsx:279) pinta
+ * badges…»: jerga de programador delante del usuario.
+ *
  * 🔴 Esto NO arregla la pantalla: la deja de mentir. Lo que sigue es cablearla
  * a su fuente real o retirarla, y eso lo decide Nico.
  */
@@ -20,7 +23,7 @@ export default function PagosEquipoLayout({ children }: { children: React.ReactN
       <div className="px-4 pt-4 sm:px-6 lg:px-8">
         <AvisoDatosDeEjemplo
           queEsInventado="El lote de trabajo del equipo y sus resultados"
-          queFalta="LOTE_EJEMPLO (page.tsx:279) pinta badges de estado de pago reales sobre un lote que no existe."
+          queFalta="El lote del mes de abajo es un ejemplo para explicar cómo trabaja el equipo: no son pagos de tu inmobiliaria. Lo real está en Pagos y en Cobranza."
         />
       </div>
       {children}

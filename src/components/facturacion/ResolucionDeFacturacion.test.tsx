@@ -20,6 +20,7 @@ void React;
 
 const resolucionesMock = vi.fn();
 const crearMock = vi.fn();
+const sugerenciaMock = vi.fn();
 const anularMock = vi.fn();
 const toastOk = vi.fn();
 const toastErr = vi.fn();
@@ -34,6 +35,7 @@ vi.mock('@/lib/api/facturacion-por-mes.service', async () => {
       resoluciones: (...a: unknown[]) => resolucionesMock(...a),
       crearResolucion: (...a: unknown[]) => crearMock(...a),
       anularResolucion: (...a: unknown[]) => anularMock(...a),
+      sugerenciaDeLaResolucion: (...a: unknown[]) => sugerenciaMock(...a),
     },
   };
 });
@@ -45,7 +47,28 @@ vi.mock('@/components/ui/toast', () => ({
   },
 }));
 
+/*
+ * FA-R29 (QA-FACT, 03-10-2026): las fechas usan el selector de fecha del DS
+ * (`CampoDeFecha`, sobre el `DatePicker` de Cadence), que no se escribe. El
+ * doble es un input con el mismo `data-testid`: el formulario sigue hablando en
+ * `AAAA-MM-DD` y las validaciones son las mismas.
+ */
+vi.mock('./CampoDeFecha', async () => {
+  const R = await import('react');
+  return {
+    CampoDeFecha: ({ value, onChange, testid, id }: { value: string; onChange: (v: string) => void; testid?: string; id: string }) =>
+      R.createElement('input', {
+        id,
+        'data-testid': testid,
+        value,
+        onChange: (e: { target: { value: string } }) => onChange(e.target.value),
+      }),
+  };
+});
+
 import { ResolucionDeFacturacion } from './ResolucionDeFacturacion';
+import { ApiError } from '@/lib/api/client';
+import { MENSAJES_DE_LA_FACTURACION } from '@/lib/facturacion/limites-de-la-facturacion';
 
 function respuesta(
   over: Partial<ResolucionesDeLaAgencia> = {},
@@ -139,6 +162,8 @@ beforeEach(() => {
   resolucionesMock.mockReset().mockResolvedValue(respuesta());
   crearMock.mockReset().mockResolvedValue({});
   anularMock.mockReset().mockResolvedValue({});
+  // Por defecto, un back sin la ruta de la sugerencia (Q10): silencio.
+  sugerenciaMock.mockReset().mockRejectedValue(new Error('404'));
   toastOk.mockReset();
   toastErr.mockReset();
 });
@@ -184,9 +209,10 @@ describe('ResolucionDeFacturacion', () => {
     const estado = q('[data-testid="resolucion-estado"]')!;
     expect(estado.textContent).toContain('18764003394379');
     expect(estado.textContent).toContain('FE-1200');
-    expect(estado.textContent).toContain('3801');
+    expect(estado.textContent).toContain('3.801');
     // 🔴 En día civil: `new Date('2028-01-15T00:00:00Z')` en Bogotá es el 14.
-    expect(estado.textContent).toContain('15/01/2028');
+    // FA-R29 (03-10): dentro de una frase, la fecha larga de la casa.
+    expect(estado.textContent).toContain('15 de enero de 2028');
   });
 
   it('🔴 sin resolución vigente dice el motivo, que es lo que se arregla', async () => {
@@ -217,10 +243,13 @@ describe('ResolucionDeFacturacion', () => {
   it('el listado muestra rango, usados, disponibles y vigencia', async () => {
     await montar();
     const fila = q('[data-testid="resolucion-res-1"]')!;
-    expect(fila.textContent).toContain('1–5000');
-    expect(fila.textContent).toContain('1199');
-    expect(fila.textContent).toContain('3801');
-    expect(fila.textContent).toContain('15/01/2026 – 15/01/2028');
+    // FA-14 (03-10): los números con su separador y las fechas de la casa; el
+    // rango, lo usado y lo que queda en UNA columna para que la tabla quepa.
+    expect(fila.textContent).toContain('1–5.000');
+    expect(fila.textContent).toContain('1.199 usados');
+    expect(fila.textContent).toContain('quedan 3.801');
+    expect(fila.textContent).toContain('15 ene 2026');
+    expect(fila.textContent).toContain('hasta el 15 ene 2028');
   });
 
   it('🔴 el botón no deja mandar una resolución a medias', async () => {
@@ -458,7 +487,7 @@ describe('ResolucionDeFacturacion · lo que está mal, al lado del campo', () =>
   it('🔴 un rango que termina antes de empezar se dice en el campo y NO se manda', async () => {
     await llenar({ 'resolucion-campo-desde': '5000', 'resolucion-campo-hasta': '10' });
 
-    const error = q('[data-testid="resolucion-error-hasta"]');
+    const error = q('#resolucion-error-hasta');
     expect(error).not.toBeNull();
     expect(error?.textContent).toContain('termina antes de empezar');
     expect(error?.getAttribute('role')).toBe('alert');
@@ -478,7 +507,7 @@ describe('ResolucionDeFacturacion · lo que está mal, al lado del campo', () =>
       'resolucion-campo-vigente-desde': '2028-01-15',
       'resolucion-campo-vigente-hasta': '2026-01-15',
     });
-    expect(q('[data-testid="resolucion-error-vigente-hasta"]')?.textContent).toContain(
+    expect(q('#resolucion-error-vigente-hasta')?.textContent).toContain(
       'La vigencia termina antes de empezar',
     );
     expect(crearMock).not.toHaveBeenCalled();
@@ -486,10 +515,294 @@ describe('ResolucionDeFacturacion · lo que está mal, al lado del campo', () =>
 
   it('bien escrita, no hay ningún aviso y el botón deja guardar', async () => {
     await llenar();
-    expect(q('[data-testid="resolucion-error-hasta"]')).toBeNull();
-    expect(q('[data-testid="resolucion-error-vigente-hasta"]')).toBeNull();
+    expect(q('#resolucion-error-hasta')).toBeNull();
+    expect(q('#resolucion-error-vigente-hasta')).toBeNull();
     expect(
       (q('[data-testid="resolucion-guardar"]') as HTMLButtonElement | null)?.disabled,
     ).toBe(false);
+  });
+});
+
+/*
+ * 02-10-2026 · La resolución con el sistema de errores. El error del campo es
+ * `<ErrorDelCampo>` (se busca por su `id`, el de su `aria-describedby`); los
+ * topes del DTO se atajan antes de mandar con la MISMA frase del back; lo que
+ * el back diga de un campo va debajo de él con el foco; un 5xx dice «de
+ * nuestro lado» con la referencia; «conexión», sólo sin respuesta.
+ */
+describe('ResolucionDeFacturacion · el sistema de errores (02-10)', () => {
+  async function llenarYGuardar(over: Record<string, string> = {}) {
+    await montar();
+    await abrirCarga();
+    const valores: Record<string, string> = {
+      'resolucion-campo-numero': '18764003394379',
+      'resolucion-campo-fecha': '2026-01-15',
+      'resolucion-campo-desde': '1',
+      'resolucion-campo-hasta': '5000',
+      'resolucion-campo-vigente-desde': '2026-01-15',
+      'resolucion-campo-vigente-hasta': '2028-01-15',
+      ...over,
+    };
+    for (const [testid, valor] of Object.entries(valores)) {
+      await act(async () => escribir(testid, valor));
+    }
+    await act(async () => {
+      (q('[data-testid="resolucion-guardar"]') as HTMLButtonElement).click();
+    });
+  }
+
+  it('🔴 un rango con ceros de más se ataja ANTES de mandar, con la frase del back', async () => {
+    await llenarYGuardar({ 'resolucion-campo-hasta': '15000000000' });
+    expect(crearMock).not.toHaveBeenCalled();
+    expect(q('#resolucion-error-hasta')?.textContent).toBe(MENSAJES_DE_LA_FACTURACION.hastaMaximo);
+    expect(q('#resolucion-hasta')?.getAttribute('aria-describedby')).toBe('resolucion-error-hasta');
+  });
+
+  it('🔴 una fecha de la resolución fuera de 2000–2100 se ataja con la frase del back', async () => {
+    await llenarYGuardar({ 'resolucion-campo-fecha': '1999-12-31' });
+    expect(crearMock).not.toHaveBeenCalled();
+    expect(q('#resolucion-error-fecha')?.textContent).toBe(
+      MENSAJES_DE_LA_FACTURACION.fechaDeLaResolucionFueraDeRango,
+    );
+  });
+
+  it('🔴 el último número usado fuera del rango se ataja con la frase del back', async () => {
+    await llenarYGuardar({ 'resolucion-campo-ultimo': '6000' });
+    expect(crearMock).not.toHaveBeenCalled();
+    expect(q('#resolucion-error-ultimo')?.textContent).toBe(
+      'El último número usado (6000) tiene que estar entre 0 y 5000.',
+    );
+  });
+
+  it('🔴 un 400 con campos pinta el error en SU campo y le da el foco, sin toast', async () => {
+    const mensaje = 'El último número usado (5001) tiene que estar entre 0 y 5000.';
+    crearMock.mockRejectedValue(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'ultimoNumeroUsado', regla: 'rango', mensaje }],
+      }),
+    );
+    await llenarYGuardar();
+
+    expect(crearMock).toHaveBeenCalled();
+    expect(q('#resolucion-error-ultimo')?.textContent).toBe(mensaje);
+    expect(document.activeElement?.id).toBe('resolucion-ultimo');
+    expect(toastErr).not.toHaveBeenCalled();
+
+    // Al corregir el campo, el error del back se va.
+    await act(async () => escribir('resolucion-campo-ultimo', '10'));
+    expect(q('#resolucion-error-ultimo')?.textContent ?? '').not.toContain(mensaje);
+  });
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia, sin culpar a la conexión', async () => {
+    crearMock.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    await llenarYGuardar();
+    const texto = toastErr.mock.calls[0]?.[0] as string;
+    expect(texto).toContain('No pudimos cargar la resolución: algo falló de nuestro lado');
+    expect(texto).toContain('ab12cd34');
+    expect(texto).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('sin respuesta: ahí sí habla de la conexión', async () => {
+    crearMock.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await llenarYGuardar();
+    expect(toastErr.mock.calls[0]?.[0]).toMatch(/conexi[oó]n/);
+  });
+});
+
+describe('ResolucionDeFacturacion · anular con el sistema de errores (02-10)', () => {
+  async function anularCon(error: unknown) {
+    anularMock.mockRejectedValue(error);
+    await montar();
+    const kebab = q('[data-testid="acciones-res-1"]') as HTMLButtonElement;
+    await act(async () => {
+      kebab.dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, pointerId: 1 }),
+      );
+    });
+    await act(async () => {
+      (q('[data-testid="anular-res-1"]') as HTMLElement).click();
+    });
+    const area = q('[data-testid="motivo-anulacion"]') as HTMLTextAreaElement;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!.call(area, 'Rango nuevo');
+      area.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      (q('[data-testid="confirmar-anular"]') as HTMLButtonElement).click();
+    });
+  }
+
+  it('🔴 un 400 sobre el motivo va DEBAJO del motivo, sin toast', async () => {
+    const mensaje = 'El motivo de la anulación puede tener hasta 500 caracteres.';
+    await anularCon(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        campos: [{ campo: 'motivo', regla: 'longitud_maxima', mensaje }],
+      }),
+    );
+    expect(q('#motivo-anulacion-error')?.textContent).toBe(mensaje);
+    expect(document.activeElement?.id).toBe('motivo-anulacion');
+    expect(toastErr).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx: «de nuestro lado» con la referencia', async () => {
+    await anularCon(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        referencia: 'ab12cd34',
+      }),
+    );
+    const texto = toastErr.mock.calls[0]?.[0] as string;
+    expect(texto).toContain('No pudimos anular la resolución: algo falló de nuestro lado');
+    expect(texto).toContain('ab12cd34');
+  });
+});
+
+/**
+ * 🔴 FA-08 (QA-FACT, 03-10-2026): el mismo párrafo «La inmobiliaria no tiene
+ * ninguna resolución… Cárgala en Facturación → Resolución…» salía diez veces en
+ * esta pestaña y mandaba a Facturación → Resolución estando ya ahí.
+ */
+describe('ResolucionDeFacturacion · sin resolución se dice UNA vez (FA-08)', () => {
+  const sinNada = (): ResolucionesDeLaAgencia => {
+    const explicacion = (tipo: string) =>
+      `La inmobiliaria no tiene ninguna resolución de facturación que numere «${tipo}». Cárgala en Facturación → Resolución, eligiendo ese tipo de documento (o una resolución sin tipo, que numera todo).`;
+    const tipos = [
+      ['CANON_INQUILINO', 'Canon del inquilino'],
+      ['COMISION_PROPIETARIO', 'Comisión al propietario'],
+      ['OTROS', 'Otros (intereses, reparaciones, estudios)'],
+    ] as const;
+    return {
+      ...respuesta(),
+      resoluciones: [],
+      vigente: {
+        puedeNumerar: false,
+        motivo: 'SIN_RESOLUCION',
+        explicacion: explicacion('Canon del inquilino'),
+        numero: null,
+        prefijo: null,
+        desde: null,
+        hasta: null,
+        vigenteHasta: null,
+        disponibles: 0,
+        siguiente: null,
+      },
+      porTipoDisponible: true,
+      porTipo: tipos.map(([tipo, nombre]) => ({
+        tipo,
+        nombre,
+        resolucionId: null,
+        resolucionNumero: null,
+        prefijo: null,
+        puedeNumerar: false,
+        porLaGeneral: false,
+        disponibles: 0,
+        siguiente: null,
+        explicacion: explicacion(nombre),
+      })),
+      avisos: tipos.map(([tipo, nombre]) => ({
+        tipo,
+        clase: 'BLOQUEA' as const,
+        motivo: 'SIN_RESOLUCION' as const,
+        resolucionId: null,
+        resolucionNumero: null,
+        disponibles: 0,
+        diasParaVencer: null,
+        explicacion: explicacion(nombre),
+      })),
+    };
+  };
+
+  it('🔴 lo dice una vez arriba, sin mandar a «Facturación → Resolución»', async () => {
+    resolucionesMock.mockResolvedValue(sinNada());
+    await montar();
+    const texto = host.textContent ?? '';
+    expect(texto.split('no tiene ninguna resolución').length - 1).toBe(0);
+    expect(texto).not.toContain('Cárgala en Facturación');
+    expect(q('[data-testid="resolucion-estado"]')!.textContent).toContain(
+      'Todavía no hay ninguna resolución de facturación vigente',
+    );
+    // Ni el resumen por tipo ni las filas repiten el párrafo.
+    expect(q('[data-testid="numeracion-bloqueos"]')).toBeNull();
+    expect(q('[data-testid="numeracion-CANON_INQUILINO"]')!.textContent).toContain('Sin resolución');
+  });
+});
+
+/**
+ * 🔴 Q10 (QA-FACT, 03-10-2026; Nico, la recomendada): la resolución propone el
+ * último número usado (lo migrado incluido) y no deja cargar una que se cruza.
+ */
+describe('ResolucionDeFacturacion · la sugerencia del back (Q10)', () => {
+  const esperarLaSugerencia = () =>
+    act(async () => {
+      await new Promise((r) => setTimeout(r, 450));
+    });
+
+  it('propone seguir desde el mayor número ya usado y lo pone con un clic', async () => {
+    sugerenciaMock.mockResolvedValue({
+      prefijo: 'FE',
+      desde: 1,
+      hasta: 5000,
+      mayorYaUsado: 1042,
+      dondeEstaElMayor: 'comprobantes migrados',
+      ultimoNumeroPropuesto: 1042,
+      siguiente: 'FE-1043',
+      seCruza: false,
+      explicacion: 'Ya hay documentos con este prefijo hasta el 1042 (comprobantes migrados): te proponemos seguir desde el 1043.',
+    });
+    await montar();
+    await abrirCarga();
+    await act(async () => {
+      escribir('resolucion-campo-prefijo', 'FE');
+      escribir('resolucion-campo-desde', '1');
+      escribir('resolucion-campo-hasta', '5000');
+    });
+    await esperarLaSugerencia();
+    expect(sugerenciaMock).toHaveBeenLastCalledWith({ prefijo: 'FE', desde: 1, hasta: 5000 });
+    expect(q('[data-testid="resolucion-sugerencia"]')!.textContent).toContain('comprobantes migrados');
+    await act(async () => {
+      (q('[data-testid="resolucion-usar-sugerencia"]') as HTMLButtonElement).click();
+    });
+    expect((q('[data-testid="resolucion-campo-ultimo"]') as HTMLInputElement).value).toBe('1042');
+  });
+
+  it('🔴 un rango que se cruza con otra resolución se dice y no se deja cargar', async () => {
+    sugerenciaMock.mockResolvedValue({
+      prefijo: 'LAB',
+      desde: 30,
+      hasta: 60,
+      mayorYaUsado: null,
+      dondeEstaElMayor: null,
+      ultimoNumeroPropuesto: 29,
+      siguiente: 'LAB-30',
+      seCruza: true,
+      explicacion: 'El rango 30–60 de LAB se cruza con la resolución PRUEBA-LAB-0001 (1–40).',
+    });
+    await montar();
+    await abrirCarga();
+    await act(async () => {
+      escribir('resolucion-campo-numero', 'PRUEBA-LAB-0002');
+      escribir('resolucion-campo-fecha', '2026-10-01');
+      escribir('resolucion-campo-prefijo', 'LAB');
+      escribir('resolucion-campo-desde', '30');
+      escribir('resolucion-campo-hasta', '60');
+      escribir('resolucion-campo-vigente-desde', '2026-10-01');
+      escribir('resolucion-campo-vigente-hasta', '2026-12-31');
+    });
+    await esperarLaSugerencia();
+    expect(q('[data-testid="resolucion-se-cruza"]')!.textContent).toContain('se cruza');
+    expect((q('[data-testid="resolucion-guardar"]') as HTMLButtonElement).disabled).toBe(true);
   });
 });

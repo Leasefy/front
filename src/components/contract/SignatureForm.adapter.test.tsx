@@ -123,3 +123,30 @@ describe('<SignatureForm adapter> — transporte inyectado (T-0109)', () => {
     expect(onSign).toHaveBeenCalledWith(expect.objectContaining({ otpVerificationToken: 'tok-1' }));
   });
 });
+
+/*
+ * ARREGLOS-7 (de ARREGLOS-3): el modal del código decía «solo tú puedes firmar
+ * este contrato» también al firmar el acta de entrega por enlace.
+ */
+describe('<SignatureForm> — qué se firma, en el modal del código', () => {
+  it('pasa `textos.queSeFirma` al modal del código', () => {
+    act(() => {
+      root.render(
+        <SignatureForm
+          onSign={vi.fn()}
+          adapter={{ send: vi.fn(), verify: vi.fn() }}
+          isLandlord={false}
+          textos={{ boton: 'Firmar el acta', queSeFirma: 'el acta' }}
+        />
+      );
+    });
+    expect(otpVerificationProps.mock.calls.at(-1)![0]).toMatchObject({ queSeFirma: 'el acta' });
+  });
+
+  it('sin `textos.queSeFirma` no le pasa nada (el modal dice «este contrato», como siempre)', () => {
+    act(() => {
+      root.render(<SignatureForm onSign={vi.fn()} contractId="c-1" isLandlord={false} />);
+    });
+    expect(otpVerificationProps.mock.calls.at(-1)![0].queSeFirma).toBeUndefined();
+  });
+});

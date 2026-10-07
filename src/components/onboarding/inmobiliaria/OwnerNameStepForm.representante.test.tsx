@@ -69,6 +69,18 @@ function render(onSubmit = vi.fn()) {
   return onSubmit
 }
 
+/**
+ * 02-10-2026 · La ayuda y el error del campo se cruzan (Cadence `FormError`
+ * con `hint`): el error entra cuando la ayuda terminó de salir.
+ */
+async function esperarElCruce() {
+  for (let i = 0; i < 10; i++) {
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20))
+    })
+  }
+}
+
 function enviar() {
   const form = container.querySelector('form')!
   act(() => { form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })) })
@@ -137,7 +149,7 @@ describe('OwnerNameStepForm — representante legal', () => {
     expect(container.textContent).not.toContain('Escribe tu nombre completo')
   })
 
-  it('pero si escribió y lo borró, al salir sí lo avisa', () => {
+  it('pero si escribió y lo borró, al salir sí lo avisa', async () => {
     render()
 
     escribir('ownerFullName', 'Ana')
@@ -146,6 +158,7 @@ describe('OwnerNameStepForm — representante legal', () => {
     act(() => {
       byId<HTMLInputElement>('ownerFullName')!.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     })
+    await esperarElCruce()
 
     expect(container.textContent).toContain('Escribe tu nombre completo')
   })
@@ -163,5 +176,65 @@ describe('OwnerNameStepForm — representante legal', () => {
     enviar()
 
     expect(onSubmit.mock.calls[0][0].legalRepresentative).toBe('Alex Ramírez')
+  })
+})
+
+describe('OwnerNameStepForm — el NIT se sigue validando (Nico, 30-09: sólo se quitó el eco verde)', () => {
+  function salirDe(id: string) {
+    const input = byId<HTMLInputElement>(id)!
+    act(() => {
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+      input.dispatchEvent(new FocusEvent('blur'))
+    })
+  }
+
+  it('🔴 un NIT corto se marca al salir del campo', async () => {
+    render()
+    escribir('agencyNit', '123')
+    salirDe('agencyNit')
+    await esperarElCruce()
+    expect(container.textContent).toContain('Le faltan dígitos')
+  })
+
+  it('🔴 un dígito de verificación equivocado se marca y dice el correcto', async () => {
+    render()
+    escribir('agencyNit', '900123456-1')
+    salirDe('agencyNit')
+    await esperarElCruce()
+    expect(container.textContent).toContain('El dígito de verificación no corresponde')
+    expect(container.textContent).toContain('es 8')
+  })
+
+  it('🔴 con el NIT malo NO se envía', async () => {
+    const onSubmit = render()
+    escribir('ownerFullName', 'Ana María Pérez')
+    escribir('agencyName', 'Inmobiliaria Andes SAS')
+    escribir('agencyNit', '123')
+    enviar()
+    await esperarElCruce()
+    expect(onSubmit).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('Le faltan dígitos')
+  })
+
+  it('con el NIT bueno no repite el número debajo, y sí lo manda con su dígito', () => {
+    const onSubmit = render()
+    escribir('ownerFullName', 'Ana María Pérez')
+    escribir('agencyName', 'Inmobiliaria Andes SAS')
+    escribir('agencyNit', '900123456')
+    salirDe('agencyNit')
+    expect(container.textContent).not.toContain('900.123.456-8')
+    // Pero sí dice cuál es su dígito de verificación (Nico, 30-09: la ayuda servía).
+    const sugerido = container.querySelector('[data-testid="nit-digito-sugerido"]')
+    expect(sugerido?.textContent).toContain('Su dígito de verificación es 8')
+    enviar()
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ nit: '900123456-8' }))
+  })
+
+  it('si escribió el dígito y está bien, no se le sugiere nada', () => {
+    render()
+    escribir('agencyNit', '900123456-8')
+    salirDe('agencyNit')
+    expect(container.querySelector('[data-testid="nit-digito-sugerido"]')).toBeNull()
+    expect(container.textContent).not.toContain('no corresponde')
   })
 })

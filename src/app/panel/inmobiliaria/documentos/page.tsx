@@ -24,8 +24,9 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ClipboardText, FileText, Plus } from '@phosphor-icons/react';
+import { Archive, ClipboardText, FileText, Plus } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { PermissionGate } from '@/components/auth/PermissionGate';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -43,21 +44,24 @@ import {
   AlertDialogTitle,
 } from '@/components/ui';
 import { Spinner } from '@/components/ui/spinner';
-import { SearchInput } from '@leasefy/cadence';
+import { Presence, SearchInput } from '@leasefy/cadence';
+
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Table,
   TableHeader,
-  TableBody,
   TableRow,
   TableHead,
   TableCell,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { AlAnchoVisible } from '@/components/ui/al-ancho-visible';
 import {
   Select,
   SelectContent,
@@ -67,12 +71,14 @@ import {
 } from '@/components/ui/select';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { ActaEntregaForm, ActaEntregaViewer } from '@/components/inmobiliaria';
+import { FotosYFirmasDelActa } from '@/components/inmobiliaria/FotosYFirmasDelActa';
 import {
   CerrarActaSinFirma,
   sePuedeCerrarSinFirma,
 } from '@/components/inmobiliaria/CerrarActaSinFirma';
 import type { ActaEntrega } from '@/lib/types/inmobiliaria';
 import { useActasEntrega, useConsignaciones, actasApi } from '@/lib/hooks/useInmobiliaria';
+import { cuandoFueLaEntrega, type CuerpoParaCrearElActa } from '@/lib/actas/acta-del-back';
 import {
   documentosLegalesApi,
   type CategoriaDeDocumento,
@@ -212,6 +218,16 @@ function DocumentosContent() {
   const [actaAbierta, setActaAbierta] = useState<ActaEntrega | null>(null);
   const [cerrandoSinFirma, setCerrandoSinFirma] = useState<ActaEntrega | null>(null);
   const [nuevaActaAbierta, setNuevaActaAbierta] = useState(false);
+  /** «Nueva acta» (el vacío de la pestaña y su botón de la cabecera). */
+  const abrirNuevaActa = () => {
+    if (errorConsignaciones) {
+      toast.error('No se pudieron traer los inmuebles arrendados', {
+        description: 'Sin ellos no se puede levantar un acta. Prueba de nuevo en un momento.',
+      });
+      return;
+    }
+    setNuevaActaAbierta(true);
+  };
 
   /*
    * Los dos cajones se cerraban EN BLANCO. `open` ya estaba bien puesto
@@ -222,6 +238,16 @@ function DocumentosContent() {
    */
   const plantillaVisible = useUltimoPresente(plantillaAbierta);
   const actaVisible = useUltimoPresente(actaAbierta);
+  /** ARREGLOS-3: después de una firma, el acta del cajón y la lista se vuelven a leer. */
+  const refrescarElActa = async (id: string) => {
+    void recargarActas();
+    try {
+      const nueva = await actasApi.getById(id);
+      setActaAbierta((abierta) => (abierta && abierta.id === id ? nueva : abierta));
+    } catch {
+      // El cajón se queda con lo que tenía; la lista ya se pidió de nuevo.
+    }
+  };
 
   /* Las que escribió la inmobiliaria: `codigo === null`. Las del sistema se
      generan por su código y no se editan (el back responde 400), así que la
@@ -255,7 +281,7 @@ function DocumentosContent() {
       } catch (e: unknown) {
         ventana?.close();
         toast.error(t(k('errorPdf')), {
-          description: e instanceof Error ? e.message : undefined,
+          description: mensajeParaLaPersona(e, { accion: 'abrir el PDF' }),
         });
       }
     },
@@ -276,7 +302,7 @@ function DocumentosContent() {
         window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
       } catch (e: unknown) {
         toast.error(t(k('errorPdf')), {
-          description: e instanceof Error ? e.message : undefined,
+          description: mensajeParaLaPersona(e, { accion: 'descargar el PDF' }),
         });
       }
     },
@@ -297,7 +323,7 @@ function DocumentosContent() {
         setEditorAbierto(true);
       } catch (e: unknown) {
         toast.error('No se pudo duplicar la plantilla', {
-          description: e instanceof Error ? e.message : undefined,
+          description: mensajeParaLaPersona(e, { accion: 'duplicar la plantilla' }),
         });
       }
     },
@@ -312,24 +338,31 @@ function DocumentosContent() {
       toast.success(`«${borrando.name}» se archivó`);
     } catch (e: unknown) {
       toast.error('No se pudo archivar la plantilla', {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeParaLaPersona(e, { accion: 'archivar la plantilla' }),
       });
     } finally {
       setBorrando(null);
     }
   }, [borrando, recargar]);
 
-  const guardarActa = async (data: ActaEntrega) => {
+  // 🔴 02-10-2026: recibe EXACTAMENTE el cuerpo de `CreateActaDto` (antes un
+  // `ActaEntrega` entero, que el back rechazaba siempre con un 400).
+  const guardarActa = async (cuerpo: CuerpoParaCrearElActa) => {
     try {
-      await actasApi.create(data);
+      await actasApi.create(cuerpo);
       await recargarActas();
       setNuevaActaAbierta(false);
       toast.success(t('inmobiliaria.documentos.toasts.actaCreated'));
     } catch (e) {
       // Lo que dijo el backend, no una clave fija: «El inmueble ya tiene un
-      // acta de entrega abierta» sirve; «No se pudo guardar» no.
+      // acta de entrega abierta» sirve; «No se pudo guardar» no. Por el
+      // traductor (02-10-2026): «conexión» sólo sin respuesta, un 5xx con su
+      // referencia. Es el ÚNICO aviso: el formulario ya no pone otro.
       toast.error(t('inmobiliaria.documentos.toasts.actaError'), {
-        description: e instanceof Error ? e.message : t('inmobiliaria.documentos.toasts.actaErrorDesc'),
+        description: mensajeParaLaPersona(e, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'crear el acta',
+        }),
       });
       throw e;
     }
@@ -358,6 +391,22 @@ function DocumentosContent() {
           <h1 className="text-h2 text-fg">{t('inmobiliaria.documentos.title')}</h1>
           <p className="text-body text-fg-muted max-w-2xl">{t(k('subtitle'))}</p>
         </div>
+        <div className="flex shrink-0 flex-wrap gap-2">
+        {/* 🔴 03-10 (pruebas en el navegador): «Nueva acta» vivía SÓLO en el vacío
+            de la pestaña: con un acta en la lista no había cómo levantar otra.
+            Es acción de SU pestaña (como «Nueva plantilla») y pide su permiso,
+            `portafolio:create`, no el de los documentos: va fuera de ese gate. */}
+        <Presence
+          show={pestana === 'actas' && puedeCrearActas && actas.length > 0}
+          initial={false}
+          direction="right"
+          distance="xs"
+        >
+          <Button variant="outline" hideArrow onClick={abrirNuevaActa} data-testid="acta-nueva">
+            <Plus className="w-4 h-4" weight="bold" />
+            {t('inmobiliaria.documentos.newActa')}
+          </Button>
+        </Presence>
         {/* Un CONTADOR o un VIEWER sólo tienen `documentos:view`, y el back
             responde 403 al preparar. El botón no se dibuja si no se puede. */}
         <PermissionGate module="documentos" action="create" fallback={null}>
@@ -365,7 +414,7 @@ function DocumentosContent() {
             {/* Escribir una plantilla es una acción de SU pestaña: en la de
                 documentos sería un botón que no tiene nada que ver con lo que
                 se está mirando. */}
-            {pestana === 'plantillas' && (
+            <Presence show={pestana === 'plantillas'} initial={false} direction="right" distance="xs">
               <Button
                 variant="outline"
                 hideArrow
@@ -378,7 +427,7 @@ function DocumentosContent() {
                 <Plus className="w-4 h-4" weight="bold" />
                 Nueva plantilla
               </Button>
-            )}
+            </Presence>
             <Button
               onClick={() => setGenerarAbierto(true)}
               hideArrow
@@ -389,6 +438,7 @@ function DocumentosContent() {
             </Button>
           </div>
         </PermissionGate>
+        </div>
       </header>
 
       <section className="rounded-lg border border-border bg-surface overflow-hidden">
@@ -425,55 +475,58 @@ function DocumentosContent() {
             </TabsList>
           </Tabs>
 
-          {pestana === 'documentos' && (
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <SearchInput
-                value={filtros.texto}
-                onChange={(e) => setFiltros((f) => ({ ...f, texto: e.target.value }))}
-                onClear={() => setFiltros((f) => ({ ...f, texto: '' }))}
-                placeholder={t(k('buscar'))}
-                inputSize="md"
-                className="w-full sm:w-64"
-                data-testid="documentos-buscar"
-              />
-              <Select
-                value={filtros.categoria}
-                onValueChange={(v) =>
-                  setFiltros((f) => ({ ...f, categoria: v as FiltrosDeDocumentos['categoria'] }))
-                }
-              >
-                <SelectTrigger className="w-full whitespace-nowrap sm:w-44" data-testid="documentos-filtro-tipo">
-                  <SelectValue placeholder={t(k('tipo'))} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">{t(k('todosLosTipos'))}</SelectItem>
-                  {CATEGORIAS.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {CATEGORIA_LABEL[c]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select
-                value={filtros.estado}
-                onValueChange={(v) =>
-                  setFiltros((f) => ({ ...f, estado: v as FiltrosDeDocumentos['estado'] }))
-                }
-              >
-                <SelectTrigger className="w-full whitespace-nowrap sm:w-44" data-testid="documentos-filtro-estado">
-                  <SelectValue placeholder={t(k('estado'))} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">{t(k('todosLosEstados'))}</SelectItem>
-                  {ESTADOS.map((e) => (
-                    <SelectItem key={e} value={e}>
-                      {ESTADO_LABEL[e]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          <Presence
+            show={pestana === 'documentos'}
+            initial={false}
+            direction="none"
+            className="flex flex-col gap-2 sm:flex-row sm:items-center"
+          >
+            <SearchInput
+              value={filtros.texto}
+              onChange={(e) => setFiltros((f) => ({ ...f, texto: e.target.value }))}
+              onClear={() => setFiltros((f) => ({ ...f, texto: '' }))}
+              placeholder={t(k('buscar'))}
+              inputSize="md"
+              className="w-full sm:w-64"
+              data-testid="documentos-buscar"
+            />
+            <Select
+              value={filtros.categoria}
+              onValueChange={(v) =>
+                setFiltros((f) => ({ ...f, categoria: v as FiltrosDeDocumentos['categoria'] }))
+              }
+            >
+              <SelectTrigger className="w-full whitespace-nowrap sm:w-44" data-testid="documentos-filtro-tipo">
+                <SelectValue placeholder={t(k('tipo'))} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">{t(k('todosLosTipos'))}</SelectItem>
+                {CATEGORIAS.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {CATEGORIA_LABEL[c]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={filtros.estado}
+              onValueChange={(v) =>
+                setFiltros((f) => ({ ...f, estado: v as FiltrosDeDocumentos['estado'] }))
+              }
+            >
+              <SelectTrigger className="w-full whitespace-nowrap sm:w-44" data-testid="documentos-filtro-estado">
+                <SelectValue placeholder={t(k('estado'))} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">{t(k('todosLosEstados'))}</SelectItem>
+                {ESTADOS.map((e) => (
+                  <SelectItem key={e} value={e}>
+                    {ESTADO_LABEL[e]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Presence>
         </div>
 
         <EstadoDeDatos
@@ -499,12 +552,19 @@ function DocumentosContent() {
                 ))}
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* Filas que entran escalonadas (techo de 320 ms) y salen al buscar
+                o filtrar (`key` = el id). Al cambiar de pestaña el cuerpo se
+                monta de nuevo: las de la pestaña nueva entran, sin esperar a
+                que se vayan las de la vieja. */}
+            <TableBodyAnimado key={pestana}>
               {/* ── Documentos ─────────────────────────────────────────── */}
               {pestana === 'documentos' &&
                 (visibles.length === 0 ? (
-                  <TableRow>
+                  <TableRowAnimada key="vacio-documentos">
                     <TableCell colSpan={columnas.length} className="p-0">
+                      {/* 🔴 ARREGLOS-4: a 390 px la tabla es más ancha que la
+                          pantalla; el vacío ocupa lo que SE VE, no la tabla. */}
+                      <AlAnchoVisible>
                       <SinDatos
                         queSon="documentos"
                         icono={FileText}
@@ -522,11 +582,12 @@ function DocumentosContent() {
                         }
                         onLimpiarFiltros={() => setFiltros(FILTROS_VACIOS)}
                       />
+                      </AlAnchoVisible>
                     </TableCell>
-                  </TableRow>
+                  </TableRowAnimada>
                 ) : (
                   paginaDocumentos.pageItems.map((doc) => (
-                    <TableRow
+                    <TableRowAnimada
                       key={doc.id}
                       data-testid="documento-fila"
                       onClick={() => setDocumentoAbierto(doc)}
@@ -600,26 +661,28 @@ function DocumentosContent() {
                           </Button>
                         </div>
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   ))
                 ))}
 
               {/* ── Plantillas ─────────────────────────────────────────── */}
               {pestana === 'plantillas' &&
                 (plantillas.length === 0 ? (
-                  <TableRow>
+                  <TableRowAnimada key="vacio-plantillas">
                     <TableCell colSpan={columnas.length} className="p-0">
+                      <AlAnchoVisible>
                       <SinDatos
                         queSon="plantillas"
                         icono={FileText}
                         titulo={t(k('vacioPlantillas'))}
                         descripcion={t(k('vacioPlantillasDesc'))}
                       />
+                      </AlAnchoVisible>
                     </TableCell>
-                  </TableRow>
+                  </TableRowAnimada>
                 ) : (
                   paginaPlantillas.pageItems.map((p) => (
-                    <TableRow
+                    <TableRowAnimada
                       key={p.id}
                       data-testid="plantilla-fila"
                       // La fila hace lo mismo que «Ver plantilla» (el molde, regla 5).
@@ -710,15 +773,16 @@ function DocumentosContent() {
                           )}
                         </div>
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   ))
                 ))}
 
               {/* ── Actas ──────────────────────────────────────────────── */}
               {pestana === 'actas' &&
                 (actas.length === 0 ? (
-                  <TableRow>
+                  <TableRowAnimada key="vacio-actas">
                     <TableCell colSpan={columnas.length} className="p-0">
+                      <AlAnchoVisible>
                       <SinDatos
                         queSon="actas"
                         icono={ClipboardText}
@@ -730,27 +794,16 @@ function DocumentosContent() {
                         // entero y recién ahí se comía un 403.
                         crear={
                           puedeCrearActas
-                            ? {
-                                label: t('inmobiliaria.documentos.newActa'),
-                                onClick: () => {
-                                  if (errorConsignaciones) {
-                                    toast.error('No se pudieron traer los inmuebles arrendados', {
-                                      description:
-                                        'Sin ellos no se puede levantar un acta. Prueba de nuevo en un momento.',
-                                    });
-                                    return;
-                                  }
-                                  setNuevaActaAbierta(true);
-                                },
-                              }
+                            ? { label: t('inmobiliaria.documentos.newActa'), onClick: abrirNuevaActa }
                             : undefined
                         }
                       />
+                      </AlAnchoVisible>
                     </TableCell>
-                  </TableRow>
+                  </TableRowAnimada>
                 ) : (
                   paginaActas.pageItems.map((acta) => (
-                    <TableRow
+                    <TableRowAnimada
                       key={acta.id}
                       className="cursor-pointer"
                       data-testid="acta-fila"
@@ -776,7 +829,8 @@ function DocumentosContent() {
                         <span className="block truncate text-fg-muted">{acta.tenantName}</span>
                       </TableCell>
                       <TableCell className="whitespace-nowrap tabular-nums text-fg-muted">
-                        {fechaCorta(acta.deliveryDate, locale)}
+                        {/* La fecha y la hora de la entrega; sin ella, la de creación (02-10-2026). */}
+                        {cuandoFueLaEntrega(acta, locale)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <span
@@ -788,10 +842,10 @@ function DocumentosContent() {
                           {ACTA_ESTADO_LABEL[acta.status]}
                         </span>
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   ))
                 ))}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
 
           {pestana === 'documentos' && paginaDocumentos.shouldPaginate && (
@@ -851,7 +905,7 @@ function DocumentosContent() {
           texto— pero los documentos ya generados con ella no cambian, y eso es
           lo que hay que decir para que la decisión se tome informada. */}
       <AlertDialog open={borrando !== null} onOpenChange={(o) => !o && setBorrando(null)}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive" icon={<Archive weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {borrando ? `¿Archivar «${borrando.name}»?` : ''}
@@ -942,11 +996,13 @@ function DocumentosContent() {
                 trae el HTML de la plantilla con su tinta oscura y sin fondo
                 propio, así que con `bg-surface` (#0a0a0a en oscuro) la vista
                 previa quedaría negro sobre negro. El papel es blanco en los
-                dos temas porque es lo que se va a imprimir. */}
+                dos temas porque es lo que se va a imprimir. El papel lleva el
+                relleno de una tarjeta del cajón (`SheetSection`): sin él, el
+                texto del documento quedaba pegado al borde (DESIGN.md §Drawers). */}
             <iframe
               title={plantillaVisible.name}
               srcDoc={plantillaVisible.content}
-              className="min-h-0 w-full flex-1 rounded-lg border border-border bg-white"
+              className="min-h-0 w-full flex-1 rounded-lg border border-border bg-white p-4 sm:p-5"
               sandbox=""
             />
           </CajonCuerpo>
@@ -956,24 +1012,26 @@ function DocumentosContent() {
       <Cajon abierto={nuevaActaAbierta} onOpenChange={setNuevaActaAbierta} ancho="sm:max-w-2xl">
         <CajonCabecera titulo={t('inmobiliaria.documentos.newActa')} />
         <CajonCuerpo>
-          {arrendados.length === 0 ? (
+          {consignaciones.length === 0 ? (
             <p className="text-body-sm text-fg-muted" data-testid="acta-sin-arrendados">
               {errorConsignaciones
-                ? 'No se pudieron traer los inmuebles arrendados. Prueba de nuevo en un momento.'
-                : 'Ninguno de tus inmuebles está arrendado ahora mismo. Un acta de entrega se levanta sobre un arriendo en curso, así que todavía no hay sobre cuál hacerla.'}
+                ? 'No se pudieron traer los inmuebles. Prueba de nuevo en un momento.'
+                : 'Todavía no tienes inmuebles con mandato vigente: un acta se levanta sobre uno de ellos, así que todavía no hay sobre cuál hacerla.'}
             </p>
           ) : (
             <>
               {noArrendados > 0 && (
                 <p className="mb-4 text-caption text-fg-muted" data-testid="acta-solo-arrendados">
-                  Se listan los {arrendados.length} inmuebles arrendados: un acta de entrega se
+                  Para un acta de entrega se listan los {arrendados.length} inmuebles arrendados: se
                   levanta sobre un arriendo en curso. Los otros {noArrendados} del portafolio no
-                  aparecen por eso, no porque falten.
+                  aparecen por eso, no porque falten. Para una de devolución se listan todos: el
+                  inquilino suele entregar con el arriendo ya terminado.
                 </p>
               )}
               <ActaEntregaForm
                 initialData={{ type: 'entrega' }}
                 consignaciones={arrendados}
+                consignacionesDeDevolucion={consignaciones}
                 onSave={guardarActa}
                 onCancel={() => setNuevaActaAbierta(false)}
               />
@@ -991,7 +1049,19 @@ function DocumentosContent() {
         <CajonCuerpo>
           {actaVisible && (
             <>
-              <ActaEntregaViewer acta={actaVisible} />
+              <ActaEntregaViewer acta={actaVisible} sinFirmas />
+              {/*
+                🔴 ARREGLOS-3 (03-10-2026): las fotos por espacio, la firma del
+                asesor (dibujada) y el enlace para que el inquilino firme. Con
+                las dos firmas el acta se cierra (y en una devolución, la cuota
+                de cierre): se vuelve a leer para que el cajón y la lista lo digan.
+              */}
+              <div className="mt-6 border-t border-border pt-6">
+                <FotosYFirmasDelActa
+                  acta={actaVisible}
+                  onCambio={() => void refrescarElActa(actaVisible.id)}
+                />
+              </div>
               {/*
                 🔴 I-03: el inquilino no firma y el acta queda abierta para
                 siempre. El botón sólo aparece cuando de verdad se puede —si el

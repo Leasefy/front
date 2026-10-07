@@ -128,6 +128,7 @@ export function CarrierForm({
           </Label>
           <input
             id="carrier-name"
+            aria-required="true"
             className="input font-mono disabled:opacity-50 disabled:cursor-not-allowed"
             value={values.name}
             onChange={text('name')}
@@ -144,7 +145,7 @@ export function CarrierForm({
           <Label htmlFor="carrier-route" required>
             Ruta
           </Label>
-          <input id="carrier-route" className="input" value={values.route} onChange={text('route')} />
+          <input id="carrier-route" aria-required="true" className="input" value={values.route} onChange={text('route')} />
           <Help>Ej. &quot;direct&quot; para integración directa.</Help>
           <FieldError message={errors.route} />
         </div>
@@ -168,6 +169,7 @@ export function CarrierForm({
           </Label>
           <select
             id="carrier-product_type"
+            aria-required="true"
             className="input"
             value={values.product_type}
             onChange={(e) => set('product_type', e.target.value as CarrierFormValues['product_type'])}
@@ -186,6 +188,7 @@ export function CarrierForm({
           </Label>
           <select
             id="carrier-mode"
+            aria-required="true"
             className="input"
             value={values.mode}
             onChange={(e) => set('mode', e.target.value as CarrierFormValues['mode'])}

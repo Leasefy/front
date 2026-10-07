@@ -63,17 +63,20 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { ApiError } from '@/lib/api/client';
 import {
   APROBADOR_ES_EL_MISMO,
@@ -90,6 +93,7 @@ import {
   type LoteDeEgreso,
 } from '@/lib/api/gastos.service';
 import {
+  ayudaDeLasAcciones,
   MOTIVO_DEL_MISMO_APROBADOR,
   egresosArmables,
   faltaParaGirar,
@@ -100,12 +104,23 @@ import {
   totalDelLote,
 } from '@/lib/contabilidad/egresos';
 import { diaLegible, hoy } from '@/lib/contabilidad/fechas';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Monto } from '../Monto';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
+import { Presence } from '@leasefy/cadence';
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas';
 import { usePuedeCambiarEgresos, usePuedeEscribir } from '../use-puede-escribir';
 import { CajonDelEgreso } from './CajonDelEgreso';
+// Seguimiento 6: la salida del extracto se ELIGE de una lista con búsqueda (ya no se teclea el id).
+import { ElegirLaSalidaDelExtracto } from './ElegirLaSalidaDelExtracto';
 import { APROBADO_POR_TI, notaDelLote } from '@/lib/doble-control/el-administrador';
+import { conciliacionBancariaApi } from '@/lib/api/conciliacion-bancaria.service';
+import {
+  SIN_CUENTA_DE_ORIGEN,
+  cuentasQueSirvenDeOrigen,
+  nombreDeLaCuentaDeOrigen,
+  type CuentaDeOrigen,
+} from './cuenta-de-origen';
 import { useI18n } from '@/lib/i18n';
 
 const TONO_DEL_ESTADO: Record<EstadoDeEgreso, 'secondary' | 'outline' | 'destructive' | 'default'> =
@@ -115,6 +130,21 @@ const TONO_DEL_ESTADO: Record<EstadoDeEgreso, 'secondary' | 'outline' | 'destruc
     PAGADO: 'default',
     ANULADO: 'destructive',
   };
+
+/**
+ * Los campos de los tres diálogos (pago, anulación, conciliación), con el
+ * nombre que el back usa en `campos[].campo`, y el id de su control.
+ */
+type CampoDeUnDialogo = 'fecha' | 'referenciaBanco' | 'motivo' | 'movimientoBancarioId';
+const ID_DEL_CAMPO: Record<CampoDeUnDialogo, string> = {
+  fecha: 'fecha-del-pago',
+  referenciaBanco: 'referencia-del-banco',
+  motivo: 'motivo-de-la-anulacion',
+  movimientoBancarioId: 'movimiento-bancario',
+};
+/** 🔁 Los topes de `GastoMotivoDto` y `MarcarLotePagadoDto` (back). */
+const LARGO_MAXIMO_DEL_MOTIVO = 300;
+const LARGO_MAXIMO_DE_LA_REFERENCIA = 120;
 
 export type ParteDeEgresos = 'egresos' | 'lotes';
 
@@ -127,6 +157,7 @@ export function parteDeEgresos(valor: string | null | undefined): ParteDeEgresos
 
 export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = {}) {
   const { t } = useI18n();
+  const esCelular = useIsMobile();
   const [parte, setParte] = useState<ParteDeEgresos>(inicial);
 
   const [egresos, setEgresos] = useState<Egreso[] | null>(null);
@@ -144,6 +175,31 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [comprobante, setComprobante] = useState<ComprobanteDeEgreso | null>(null);
   const [formato, setFormato] = useState<FormatoDelArchivo>('BANCOLOMBIA_PAB');
+  /*
+   * 🔴 CB-R09 (QA-CONTA): el archivo para el banco sale DESDE una cuenta de la
+   * inmobiliaria, y el back la exige (`cuentaId`, el medio de pago). Se elige
+   * de las cuentas bancarias activas; con una sola, queda elegida.
+   */
+  const [cuentasDeOrigen, setCuentasDeOrigen] = useState<CuentaDeOrigen[] | null>(null);
+  const [cuentaDeOrigen, setCuentaDeOrigen] = useState('');
+  const [errorDeLaCuenta, setErrorDeLaCuenta] = useState<string | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    conciliacionBancariaApi
+      .cuentas()
+      .then((r) => {
+        if (!vivo) return;
+        const activas = cuentasQueSirvenDeOrigen(r?.cuentas ?? []);
+        setCuentasDeOrigen(activas);
+        if (activas.length === 1) setCuentaDeOrigen(activas[0].id);
+      })
+      .catch(() => {
+        if (vivo) setCuentasDeOrigen([]);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, []);
 
   /** El lote que se está marcando pagado, y sus datos. */
   const [pagando, setPagando] = useState<LoteDeEgreso | null>(null);
@@ -165,6 +221,29 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
   /** El egreso que se está conciliando contra el extracto. */
   const [conciliando, setConciliando] = useState<Egreso | null>(null);
   const [movimientoBancarioId, setMovimientoBancarioId] = useState('');
+
+  /**
+   * Lo que el back dijo de un campo de los diálogos (un 400 con `campos`). Se
+   * borra el de un campo cuando la persona lo cambia, y todos al cerrar.
+   */
+  const [errorDelCampo, setErrorDelCampo] = useState<Partial<Record<CampoDeUnDialogo, string>>>({});
+  const olvidar = (campo: CampoDeUnDialogo) =>
+    setErrorDelCampo((e) => (e[campo] ? { ...e, [campo]: undefined } : e));
+  const describir = (campo: CampoDeUnDialogo) =>
+    errorDelCampo[campo]
+      ? { 'aria-invalid': true as const, 'aria-describedby': `${ID_DEL_CAMPO[campo]}-error` }
+      : {};
+  /**
+   * El fallo de una acción de un diálogo: lo que trae campo va a su campo (y se
+   * enfoca); lo demás, al toast con la regla de oro.
+   */
+  const falloDelDialogo = (e: unknown, respaldo: string, campos: CampoDeUnDialogo[]) => {
+    const reparto = repartirErroresDelServidor<CampoDeUnDialogo>(e, { campos });
+    setErrorDelCampo(reparto.porCampo);
+    if (reparto.orden[0]) document.getElementById(ID_DEL_CAMPO[reparto.orden[0]])?.focus();
+    if (reparto.delServidor.length === 0) toast.error(mensajeDeContabilidad(e, respaldo));
+    else if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
+  };
 
   const escritura = usePuedeEscribir();
   // 🔴 22-09: corregir un egreso ya registrado es un permiso PROPIO, no la
@@ -221,7 +300,10 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       toast.success(
         armado?.estado === 'APROBADO'
           ? `Lote armado y aprobado con ${cuantos}. ${APROBADO_POR_TI}: sin código y en el mismo paso. Ya se puede bajar el archivo para el banco.`
-          : `Lote armado con ${cuantos}. Lo tiene que aprobar otra persona.`,
+          : armado?.mismoPaso?.porQueNo === 'SOBRE_EL_MONTO'
+            ? // 🔴 Decisión de Nico (05-10-2026): desde el monto, otra persona.
+              `Lote armado con ${cuantos}. ${armado.mismoPaso.nota}`
+            : `Lote armado con ${cuantos}. Lo tiene que aprobar otra persona.`,
       );
       setElegidos(new Set());
       setConceptoDelLote('');
@@ -257,9 +339,14 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
   };
 
   const bajarArchivo = async (lote: LoteDeEgreso) => {
+    if (!cuentaDeOrigen) {
+      setErrorDeLaCuenta(SIN_CUENTA_DE_ORIGEN);
+      return;
+    }
     setOcupado(lote.id);
+    setErrorDeLaCuenta(null);
     try {
-      const blob = await gastosApi.lotes.archivo(lote.id, formato);
+      const blob = await gastosApi.lotes.archivo(lote.id, formato, cuentaDeOrigen);
       const url = URL.createObjectURL(blob);
       const enlace = document.createElement('a');
       enlace.href = url;
@@ -271,7 +358,12 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       toast.success('Archivo descargado. Súbelo al banco y después marca el lote como pagado.');
       await cargar();
     } catch (e) {
-      toast.error(mensajeDeContabilidad(e, 'No se pudo generar el archivo.'));
+      // 🔴 CB-R09: la cuenta que no sirve se dice bajo su selector.
+      if (e instanceof ApiError && e.code === 'CUENTA_DE_ORIGEN_NO_SIRVE') {
+        setErrorDeLaCuenta(mensajeDeContabilidad(e, SIN_CUENTA_DE_ORIGEN));
+      } else {
+        toast.error(mensajeDeContabilidad(e, 'No se pudo generar el archivo.'));
+      }
     } finally {
       setOcupado(null);
     }
@@ -299,7 +391,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       setReferencia('');
       await cargar();
     } catch (e) {
-      toast.error(mensajeDeContabilidad(e, 'No se pudo marcar el lote como pagado.'));
+      falloDelDialogo(e, 'No se pudo marcar el lote como pagado.', ['fecha', 'referenciaBanco']);
     } finally {
       setOcupado(null);
     }
@@ -321,7 +413,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       setMotivo('');
       await cargar();
     } catch (e) {
-      toast.error(mensajeDeContabilidad(e, 'No se pudo anular.'));
+      falloDelDialogo(e, 'No se pudo anular.', ['motivo']);
     } finally {
       setOcupado(null);
     }
@@ -337,7 +429,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       setMovimientoBancarioId('');
       await cargar();
     } catch (e) {
-      toast.error(mensajeDeContabilidad(e, 'No se pudo conciliar.'));
+      falloDelDialogo(e, 'No se pudo conciliar.', ['movimientoBancarioId']);
     } finally {
       setOcupado(null);
     }
@@ -379,6 +471,76 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
 
   const pendientesSinDatos = armables.filter((e) => faltaParaGirar(e).length > 0);
 
+  /*
+   * 🔴 CB-07 (QA de Contabilidad, 03-10-2026): las tres acciones de un egreso,
+   * con su motivo en el `title` (y para el lector de pantalla) y UNA ayuda
+   * corta debajo. Antes cada botón apagado pintaba su párrafo: la fila medía
+   * ~300 px y la columna se cortaba («Comproban…»). Las usan la fila de la
+   * tabla y la tarjeta del celular.
+   */
+  const accionesDelEgreso = (e: Egreso) => {
+    const ayuda = ayudaDeLasAcciones(e, escritura);
+    return (
+      <div className="space-y-1.5">
+        <div className="flex flex-wrap gap-2">
+          <AccionConMotivo
+            puede={e.numero !== null}
+            motivo="El comprobante se numera cuando el lote se marca pagado."
+            ocupado={ocupado === e.id}
+            onClick={() => void verComprobante(e)}
+            testId={`comprobante-${e.id}`}
+            motivoVisible={false}
+          >
+            <Printer className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+            Comprobante
+          </AccionConMotivo>
+          <AccionConMotivo
+            puede={escritura.puede && e.estado === 'PAGADO'}
+            motivo={
+              escritura.motivo ??
+              'Sólo un egreso pagado se concilia: antes no hay salida en el extracto que amarrar.'
+            }
+            onClick={() => {
+              setConciliando(e);
+              setMovimientoBancarioId(e.movimientoBancarioId ?? '');
+            }}
+            testId={`conciliar-${e.id}`}
+            motivoVisible={false}
+          >
+            <LinkSimple className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+            Conciliar
+          </AccionConMotivo>
+          {/* 🔴 Un egreso PAGADO no se anula (back, 23-09-2026: 409
+              `EGRESO_PAGADO_NO_SE_ANULA`). Antes el botón se ofrecía y
+              el back reversaba el asiento del pago antes de reventar. */}
+          <AccionConMotivo
+            puede={escritura.puede && e.estado !== 'ANULADO' && e.estado !== 'PAGADO'}
+            motivo={
+              escritura.motivo ??
+              (e.estado === 'PAGADO'
+                ? t('inmobiliaria.egresos.anularPagado')
+                : t('inmobiliaria.egresos.anularAnulado'))
+            }
+            onClick={() => {
+              setAnulando({ tipo: 'egreso', egreso: e });
+              setMotivo('');
+            }}
+            testId={`anular-egreso-${e.id}`}
+            motivoVisible={false}
+          >
+            <Prohibit className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+            Anular
+          </AccionConMotivo>
+        </div>
+        {ayuda ? (
+          <p className="text-caption text-fg-muted" data-testid={`ayuda-de-acciones-${e.id}`}>
+            {ayuda}
+          </p>
+        ) : null}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6" data-testid="egresos">
       {/* 🔴 UNA SOLA COSA (Nico, 21-09): «switch tab afuera… deberían estar
@@ -415,7 +577,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
             <p className="max-w-3xl text-caption leading-relaxed text-fg-muted">
               {parte === 'egresos'
                 ? 'Cada egreso es una orden de pago a un tercero: se marcan los que van al mismo giro y se arman en un lote. No es el giro al propietario: ése baja un pasivo con plata que nunca fue de la inmobiliaria y se hace desde Dispersiones.'
-                : 'Un lote se arma, lo aprueba otra persona (si lo arma un administrador, queda aprobado en el mismo paso: P-4), sale el archivo para el banco y se marca pagado. Ese orden no es decorativo: marcar pagado sin haber subido el archivo asienta una salida de banco que no ocurrió.'}
+                : 'Un lote se arma, lo aprueba otra persona (si lo arma un administrador, queda aprobado en el mismo paso), sale el archivo para el banco y se marca pagado. Ese orden no es decorativo: marcar pagado sin haber subido el archivo asienta una salida de banco que no ocurrió.'}
             </p>
           </div>
 
@@ -427,6 +589,69 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 Todavía no hay egresos. Se crean desde una factura de proveedor causada, o sueltos
                 para un anticipo.
               </p>
+            ) : esCelular ? (
+              /* 🔴 CB-22 (QA de Contabilidad, 03-10-2026): a 390 px la tabla se
+                 corría de lado. Bajo 768 px cada egreso es una tarjeta —
+                 beneficiario, concepto, valor, estado y sus acciones— que abre
+                 el mismo cajón; la casilla marca para el lote. */
+              <ul className="divide-y divide-border" data-testid="tarjetas-de-egresos">
+                {egresos.map((e) => (
+                  <li
+                    key={e.id}
+                    data-testid={`egreso-${e.id}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Abrir el egreso a ${e.beneficiarioNombre}`}
+                    onClick={() => setAbierto(e)}
+                    onKeyDown={(ev) => {
+                      if (ev.target !== ev.currentTarget) return;
+                      if (ev.key === 'Enter' || ev.key === ' ') {
+                        ev.preventDefault();
+                        setAbierto(e);
+                      }
+                    }}
+                    className="flex cursor-pointer gap-3 px-4 py-3.5 transition-colors hover:bg-surface-muted/60 focus-visible:bg-surface-muted focus-visible:outline-none"
+                  >
+                    {e.estado === 'PENDIENTE' ? (
+                      <span className="pt-0.5" onClick={(ev) => ev.stopPropagation()}>
+                        <Checkbox
+                          checked={elegidos.has(e.id)}
+                          onCheckedChange={() => alternar(e.id)}
+                          disabled={!escritura.puede || Boolean(e.revision)}
+                          aria-label={`Meter ${e.beneficiarioNombre} en el lote`}
+                          data-testid={`marcar-${e.id}`}
+                        />
+                      </span>
+                    ) : null}
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="min-w-0 break-words font-medium text-fg">{e.beneficiarioNombre}</p>
+                        <Monto valor={e.netoCop} className="shrink-0 text-sm font-medium" />
+                      </div>
+                      <p className="line-clamp-2 text-sm text-fg-muted">{e.concepto}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant={TONO_DEL_ESTADO[e.estado]}>
+                          {NOMBRE_DEL_ESTADO_DE_EGRESO[e.estado]}
+                        </Badge>
+                        {e.numero !== null ? (
+                          <span className="text-caption text-fg-muted">Comprobante N.º {e.numero}</span>
+                        ) : null}
+                        {e.valorCop !== e.netoCop ? (
+                          <span className="text-caption text-fg-muted">
+                            Valor <Monto valor={e.valorCop} className="text-caption" />
+                          </span>
+                        ) : null}
+                      </div>
+                      {e.revision ? (
+                        <p className="text-caption text-warning" data-testid={`en-revision-${e.id}`}>
+                          En revisión: se marca como revisada en el estado de cuenta del contrato.
+                        </p>
+                      ) : null}
+                      <div onClick={(ev) => ev.stopPropagation()}>{accionesDelEgreso(e)}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -435,17 +660,18 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                       <TableHead className="w-10" />
                       <TableHead>Beneficiario</TableHead>
                       <TableHead>Concepto</TableHead>
-                      <TableHead className="text-right">Valor</TableHead>
+                      {/* CB-07: una columna (el neto, y el valor debajo si hay
+                          retenciones): con dos, la tabla no cabía a 1440. */}
                       <TableHead className="text-right">Se le paga</TableHead>
                       <TableHead>Estado</TableHead>
                       <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBodyAnimado>
                     {egresos.map((e) => {
                       const falta = faltaParaGirar(e);
                       return (
-                        <TableRow
+                        <TableRowAnimada
                           key={e.id}
                           data-testid={`egreso-${e.id}`}
                           tabIndex={0}
@@ -467,13 +693,14 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                               <Checkbox
                                 checked={elegidos.has(e.id)}
                                 onCheckedChange={() => alternar(e.id)}
-                                disabled={!escritura.puede}
+                                // ARREGLOS-3: una devolución en revisión no entra a un lote.
+                                disabled={!escritura.puede || Boolean(e.revision)}
                                 aria-label={`Meter ${e.beneficiarioNombre} en el lote`}
                                 data-testid={`marcar-${e.id}`}
                               />
                             ) : null}
                           </TableCell>
-                          <TableCell className="max-w-[16rem]">
+                          <TableCell className="max-w-[14rem]">
                             <p className="truncate text-sm text-fg" title={e.beneficiarioNombre}>
                               {e.beneficiarioNombre}
                             </p>
@@ -489,8 +716,18 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                                 Falta {falta.join(', ')} para girarle.
                               </p>
                             ) : null}
+                            {e.revision ? (
+                              <p
+                                className="text-caption text-warning"
+                                data-testid={`en-revision-${e.id}`}
+                                title={`Llegó deuda nueva del inquilino después de registrar la devolución: no se gira hasta marcarla como revisada. ${e.revision.motivo}`}
+                              >
+                                {/* CB-07: una línea; el porqué completo en el `title`. */}
+                                En revisión: se marca como revisada en el estado de cuenta del contrato.
+                              </p>
+                            ) : null}
                           </TableCell>
-                          <TableCell className="max-w-[18rem]">
+                          <TableCell className="max-w-[14rem]">
                             <p className="truncate text-sm text-fg" title={e.concepto}>
                               {e.concepto}
                             </p>
@@ -507,10 +744,12 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                             ) : null}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Monto valor={e.valorCop} className="text-sm" />
-                          </TableCell>
-                          <TableCell className="text-right">
                             <Monto valor={e.netoCop} className="text-sm" />
+                            {e.valorCop !== e.netoCop ? (
+                              <p className="whitespace-nowrap text-caption text-fg-muted">
+                                de <Monto valor={e.valorCop} className="text-caption" />
+                              </p>
+                            ) : null}
                           </TableCell>
                           <TableCell className="whitespace-nowrap">
                             <Badge variant={TONO_DEL_ESTADO[e.estado]}>
@@ -536,59 +775,13 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                             ) : null}
                           </TableCell>
                           {/* Los botones actúan; no abren el cajón. */}
-                          <TableCell onClick={(ev) => ev.stopPropagation()}>
-                            <div className="flex flex-wrap gap-2">
-                              <AccionConMotivo
-                                puede={e.numero !== null}
-                                motivo="El comprobante se numera cuando el lote se marca pagado."
-                                ocupado={ocupado === e.id}
-                                onClick={() => void verComprobante(e)}
-                                testId={`comprobante-${e.id}`}
-                              >
-                                <Printer className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                                Comprobante
-                              </AccionConMotivo>
-                              <AccionConMotivo
-                                puede={escritura.puede && e.estado === 'PAGADO'}
-                                motivo={
-                                  escritura.motivo ??
-                                  'Sólo un egreso pagado se concilia: antes no hay salida en el extracto que amarrar.'
-                                }
-                                onClick={() => {
-                                  setConciliando(e);
-                                  setMovimientoBancarioId(e.movimientoBancarioId ?? '');
-                                }}
-                                testId={`conciliar-${e.id}`}
-                              >
-                                <LinkSimple className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                                Conciliar
-                              </AccionConMotivo>
-                              {/* 🔴 Un egreso PAGADO no se anula (back, 23-09-2026: 409
-                                  `EGRESO_PAGADO_NO_SE_ANULA`). Antes el botón se ofrecía y
-                                  el back reversaba el asiento del pago antes de reventar. */}
-                              <AccionConMotivo
-                                puede={escritura.puede && e.estado !== 'ANULADO' && e.estado !== 'PAGADO'}
-                                motivo={
-                                  escritura.motivo ??
-                                  (e.estado === 'PAGADO'
-                                    ? t('inmobiliaria.egresos.anularPagado')
-                                    : t('inmobiliaria.egresos.anularAnulado'))
-                                }
-                                onClick={() => {
-                                  setAnulando({ tipo: 'egreso', egreso: e });
-                                  setMotivo('');
-                                }}
-                                testId={`anular-egreso-${e.id}`}
-                              >
-                                <Prohibit className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
-                                Anular
-                              </AccionConMotivo>
-                            </div>
+                          <TableCell onClick={(ev) => ev.stopPropagation()} className="min-w-[19rem]">
+                            {accionesDelEgreso(e)}
                           </TableCell>
-                        </TableRow>
+                        </TableRowAnimada>
                       );
                     })}
-                  </TableBody>
+                  </TableBodyAnimado>
                 </Table>
               </div>
             )}
@@ -600,9 +793,25 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 DENTRO de ella: es parte de la acción, no un campo aparte. Nico:
                 «deben de verse muy bien y que sí estén juntas […] revisa también
                 el resto de tablas para que tengan consistencia». */}
-            {armables.length > 0 ? (
+            {/* La barra SALE animada cuando ya no queda nada por armar (D-MOV
+                4 a). La caja de `Presence` es la que se pega al borde de abajo:
+                adentro, la barra no tendría lugar para pegarse. */}
+            {/* 🔴 CB-07 / CB-22: sin nada marcado la barra sólo explica, y pegada
+                al borde de abajo TAPABA la segunda fila (a 1440 y a 390). Se pega
+                sólo cuando hay algo marcado — ahí sí hay una acción a la mano —, y
+                en el celular encima de la barra de navegación (como «Por facturar»). */}
+            <Presence
+              show={armables.length > 0}
+              initial={false}
+              className={
+                marcados.length > 0
+                  ? 'sticky bottom-[calc(env(safe-area-inset-bottom)+3.5625rem)] z-30 lg:bottom-0'
+                  : undefined
+              }
+            >
               <BarraDeAccionesMasivas
                 variant="pie"
+                className={marcados.length > 0 ? undefined : 'static'}
                 testid="armar-lote"
                 marcadas={marcados.length}
                 queSon={['egreso', 'egresos']}
@@ -611,7 +820,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 ocupado={armando}
                 cuandoNoHayNada={
                   escritura.esAdministrador
-                    ? 'Marca los egresos pendientes que van juntos al banco. Como eres administrador, el lote queda aprobado al armarlo, sin código (P-4).'
+                    ? 'Marca los egresos pendientes que van juntos al banco. Como eres administrador, el lote queda aprobado al armarlo.'
                     : 'Marca los egresos pendientes que van juntos al banco: el lote queda en borrador y lo tiene que aprobar otra persona.'
                 }
                 nota={
@@ -659,7 +868,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                   Armar el lote
                 </AccionConMotivo>
               </BarraDeAccionesMasivas>
-            ) : null}
+            </Presence>
           </div>
         </TabsContent>
 
@@ -777,9 +986,55 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                         </select>
                       </div>
 
+                      <div className="space-y-1">
+                        <Label htmlFor={`cuenta-de-origen-${lote.id}`} className="text-caption">
+                          Sale de la cuenta
+                        </Label>
+                        <select
+                          id={`cuenta-de-origen-${lote.id}`}
+                          className="h-9 max-w-full rounded-md border border-border bg-surface px-2 text-sm text-fg data-[invalid]:border-danger"
+                          value={cuentaDeOrigen}
+                          onChange={(e) => {
+                            setCuentaDeOrigen(e.target.value);
+                            setErrorDeLaCuenta(null);
+                          }}
+                          disabled={!permisos.archivo.puede || cuentasDeOrigen === null}
+                          aria-invalid={errorDeLaCuenta ? true : undefined}
+                          data-invalid={errorDeLaCuenta ? '' : undefined}
+                          aria-describedby={errorDeLaCuenta ? `cuenta-de-origen-${lote.id}-error` : undefined}
+                          data-testid={`cuenta-de-origen-${lote.id}`}
+                        >
+                          <option value="">
+                            {cuentasDeOrigen === null
+                              ? 'Cargando las cuentas…'
+                              : cuentasDeOrigen.length === 0
+                                ? 'Sin cuentas bancarias'
+                                : 'Elige la cuenta'}
+                          </option>
+                          {(cuentasDeOrigen ?? []).map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {nombreDeLaCuentaDeOrigen(c)}
+                            </option>
+                          ))}
+                        </select>
+                        <ErrorDelCampo
+                          id={`cuenta-de-origen-${lote.id}-error`}
+                          mensaje={errorDeLaCuenta ?? undefined}
+                          pista={
+                            cuentasDeOrigen && cuentasDeOrigen.length === 0
+                              ? 'Carga una cuenta bancaria en Configuración → Medios de pago.'
+                              : undefined
+                          }
+                        />
+                      </div>
+
                       <AccionConMotivo
-                        puede={permisos.archivo.puede}
-                        motivo={permisos.archivo.motivo}
+                        puede={permisos.archivo.puede && Boolean(cuentaDeOrigen)}
+                        motivo={
+                          permisos.archivo.puede && !cuentaDeOrigen
+                            ? SIN_CUENTA_DE_ORIGEN
+                            : permisos.archivo.motivo
+                        }
                         ocupado={ocupado === lote.id}
                         textoOcupado="Generando…"
                         onClick={() => void bajarArchivo(lote)}
@@ -841,17 +1096,24 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       <AlertDialog
         open={pagando !== null}
         onOpenChange={(a) => {
-          if (!a && ocupado === null) setPagando(null);
+          if (!a && ocupado === null) {
+            setPagando(null);
+            setErrorDelCampo({});
+          }
         }}
       >
-        <AlertDialogContent data-testid="dialogo-de-pago">
+        <AlertDialogContent
+          variant="confirm"
+          icon={<CheckCircle weight="bold" />}
+          data-testid="dialogo-de-pago"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>¿Marcar el lote como pagado?</AlertDialogTitle>
             <AlertDialogDescription>
               Esto numera {pagando?.cantidad ?? 0}{' '}
               {pagando?.cantidad === 1 ? 'comprobante de egreso' : 'comprobantes de egreso'} y
               asienta la salida del banco: <strong>un asiento por egreso</strong>, para que anular
-              uno no reverse el pago de los demás. Hacelo sólo después de haber subido el archivo al
+              uno no reverse el pago de los demás. Hazlo sólo después de haber subido el archivo al
               banco.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -862,19 +1124,30 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 id="fecha-del-pago"
                 type="date"
                 value={fechaDelPago}
-                onChange={(e) => setFechaDelPago(e.target.value)}
+                onChange={(e) => {
+                  olvidar('fecha');
+                  setFechaDelPago(e.target.value);
+                }}
                 data-testid="fecha-del-pago"
+                {...describir('fecha')}
               />
+              <ErrorDelCampo id="fecha-del-pago-error" mensaje={errorDelCampo.fecha} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="referencia-del-banco">Referencia del banco</Label>
               <Input
                 id="referencia-del-banco"
                 value={referencia}
-                onChange={(e) => setReferencia(e.target.value)}
+                onChange={(e) => {
+                  olvidar('referenciaBanco');
+                  setReferencia(e.target.value);
+                }}
+                maxLength={LARGO_MAXIMO_DE_LA_REFERENCIA}
                 placeholder="PAB-771"
                 data-testid="referencia-del-banco"
+                {...describir('referenciaBanco')}
               />
+              <ErrorDelCampo id="referencia-del-banco-error" mensaje={errorDelCampo.referenciaBanco} />
             </div>
           </div>
           <AlertDialogFooter>
@@ -884,7 +1157,8 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 e.preventDefault();
                 void marcarPagado();
               }}
-              disabled={ocupado !== null || !fechaDelPago}
+              disabled={!fechaDelPago}
+              loading={ocupado !== null}
               data-testid="confirmar-pago"
             >
               {ocupado !== null ? 'Asentando…' : 'Marcar pagado'}
@@ -899,18 +1173,27 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
           if (!a && ocupado === null) {
             setAnulando(null);
             setMotivo('');
+            setErrorDelCampo({});
           }
         }}
       >
-        <AlertDialogContent data-testid="dialogo-de-anulacion">
+        <AlertDialogContent
+          variant="destructive"
+          icon={<Prohibit weight="bold" />}
+          data-testid="dialogo-de-anulacion"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               {anulando?.tipo === 'lote' ? '¿Anular el lote?' : '¿Anular el egreso?'}
             </AlertDialogTitle>
+            {/* Lo que hace el back (`egresos.service.ts`): un egreso PAGADO no se
+                anula (por eso el botón no se ofrece); uno sin pagar queda
+                ANULADO, sale de su lote, reversa su asiento si lo tenía y su
+                factura vuelve a quedar por pagar. */}
             <AlertDialogDescription>
               {anulando?.tipo === 'lote'
                 ? 'Sus egresos vuelven a quedar pendientes y se pueden meter en otro lote.'
-                : 'Si el egreso ya estaba pagado, su asiento se REVERSA con un asiento espejo: no se borra.'}{' '}
+                : 'El egreso queda anulado —no se borra— y sale de su lote. Si ya tenía asiento, se REVERSA con un asiento espejo. Su factura del proveedor vuelve a quedar por pagar: anular el egreso no anula el gasto.'}{' '}
               El motivo se guarda y lo va a leer el contador.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -919,10 +1202,16 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
             <Textarea
               id="motivo-de-la-anulacion"
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
+              onChange={(e) => {
+                olvidar('motivo');
+                setMotivo(e.target.value);
+              }}
+              maxLength={LARGO_MAXIMO_DEL_MOTIVO}
               rows={3}
               data-testid="motivo-de-la-anulacion"
+              {...describir('motivo')}
             />
+            <ErrorDelCampo id="motivo-de-la-anulacion-error" mensaje={errorDelCampo.motivo} />
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={ocupado !== null}>Cancelar</AlertDialogCancel>
@@ -931,7 +1220,8 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 e.preventDefault();
                 void anular();
               }}
-              disabled={ocupado !== null || motivo.trim().length === 0}
+              disabled={motivo.trim().length === 0}
+              loading={ocupado !== null}
               data-testid="confirmar-anulacion"
             >
               {ocupado !== null ? 'Anulando…' : 'Anular'}
@@ -943,24 +1233,41 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       <AlertDialog
         open={conciliando !== null}
         onOpenChange={(a) => {
-          if (!a && ocupado === null) setConciliando(null);
+          if (!a && ocupado === null) {
+            setConciliando(null);
+            setErrorDelCampo({});
+          }
         }}
       >
-        <AlertDialogContent data-testid="dialogo-de-conciliacion">
+        <AlertDialogContent
+          variant="confirm"
+          icon={<LinkSimple weight="bold" />}
+          data-testid="dialogo-de-conciliacion"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>Conciliar contra el extracto</AlertDialogTitle>
             <AlertDialogDescription>
-              Amarra este egreso a la salida del extracto bancario, para que el saldo del banco en el
-              libro y el del banco de verdad digan lo mismo.
+              Elige la salida del extracto bancario que pagó este egreso, para que el saldo del banco en
+              el libro y el del banco de verdad digan lo mismo.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-1.5">
-            <Label htmlFor="movimiento-bancario">Id del movimiento del extracto</Label>
-            <Input
-              id="movimiento-bancario"
-              value={movimientoBancarioId}
-              onChange={(e) => setMovimientoBancarioId(e.target.value)}
-              data-testid="movimiento-bancario"
+            {conciliando && (
+              <ElegirLaSalidaDelExtracto
+                egresoId={conciliando.id}
+                elegido={movimientoBancarioId}
+                onElegir={(id) => {
+                  olvidar('movimientoBancarioId');
+                  setMovimientoBancarioId(id);
+                }}
+                idDeLaBusqueda={ID_DEL_CAMPO.movimientoBancarioId}
+                invalido={!!errorDelCampo.movimientoBancarioId}
+                describirError={errorDelCampo.movimientoBancarioId ? 'movimiento-bancario-error' : undefined}
+              />
+            )}
+            <ErrorDelCampo
+              id="movimiento-bancario-error"
+              mensaje={errorDelCampo.movimientoBancarioId}
             />
           </div>
           <AlertDialogFooter>
@@ -970,7 +1277,8 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
                 e.preventDefault();
                 void conciliar();
               }}
-              disabled={ocupado !== null || movimientoBancarioId.trim().length === 0}
+              disabled={movimientoBancarioId.trim().length === 0}
+              loading={ocupado !== null}
               data-testid="confirmar-conciliacion"
             >
               Conciliar
@@ -991,7 +1299,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
         falso». Por eso el botón sólo se ofrece con `numero !== null`.
       */}
       <AlertDialog open={comprobante !== null} onOpenChange={(a) => !a && setComprobante(null)}>
-        <AlertDialogContent className="max-w-2xl" data-testid="comprobante-de-egreso">
+        <AlertDialogContent size="lg" data-testid="comprobante-de-egreso">
           <AlertDialogHeader>
             <AlertDialogTitle>Comprobante de egreso {comprobante?.numero}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1052,7 +1360,7 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
               {/* Los valores, con las retenciones desglosadas: es lo que el
                   proveedor tiene que poder cotejar contra su propia factura. */}
               <dl
-                className="grid gap-2 rounded-lg border border-border bg-surface-muted p-3 sm:grid-cols-5"
+                className="grid gap-2 rounded-[14px] border border-border p-3 sm:grid-cols-5"
                 data-testid="valores-del-comprobante"
               >
                 <div>

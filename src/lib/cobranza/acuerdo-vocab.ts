@@ -18,7 +18,7 @@
 
 import type { BadgeProps } from '@/components/ui'
 import type { CobranzaPromiseItem } from '@/lib/hooks/cobranza/use-promises'
-import type { PaymentsFunnelItem } from '@/lib/hooks/cobranza/use-payments-funnel'
+import type { PlanDePagoItem } from '@/lib/hooks/cobranza/use-payment-plans'
 
 /**
  * Variantes del ADAPTADOR local (`@/components/ui`), no las de Cadence crudo.
@@ -126,39 +126,81 @@ export function filaDePromesa(p: CobranzaPromiseItem): AcuerdoRow {
   }
 }
 
+function pesosDelAcuerdo(valor: number): string {
+  return `$${Math.round(valor).toLocaleString('es-CO')}`
+}
+
 /**
- * Un plan de pago pendiente de aprobación.
+ * Un plan de pago (acuerdo con cuotas) → fila de la tabla. `null` = no se
+ * muestra (cancelado: ya no es un compromiso de nadie).
  *
- * ⚠️ El payload del funnel de pagos NO trae la fecha de vencimiento ni el
- * número de cuotas del plan, así que `venceEl` va en null y la tabla muestra
- * «—». Inventar una fecha acá sería peor que no tenerla.
+ * 🔴 QA-IA-B (04-10-2026): antes esto leía una fila del EMBUDO DE PAGOS, cuyo
+ * `paymentPlanId` es una promesa y que no trae ningún plan sin pagos. Ahora lee
+ * `GET …/cartera/payment-plans` (la lista real de `agent.payment_plans`).
+ *
+ * Estados: sin la aprobación de la inmobiliaria, un plan ofrecido o aceptado
+ * está «Por aprobar» (ninguno se activa sin que una persona lo apruebe); uno
+ * activo es «Vigente»; terminado de pagar, «Cumplido»; incumplido, como tal.
+ * Un plan ACTIVO sin aprobación registrada no se esconde: se dice en las
+ * condiciones, porque es justo lo que alguien tiene que mirar.
  */
-export function filaDePlan(r: PaymentsFunnelItem): AcuerdoRow {
+export function filaDePlan(p: PlanDePagoItem): AcuerdoRow | null {
+  let estado: AcuerdoEstado
+  switch (p.status) {
+    case 'cancelled':
+      return null
+    case 'completed':
+      estado = 'cumplido'
+      break
+    case 'defaulted':
+      estado = 'incumplido'
+      break
+    case 'active':
+      estado = 'vigente'
+      break
+    default:
+      // offered | accepted
+      estado = p.aprobado ? 'vigente' : 'por_aprobar'
+  }
+  const partes: string[] = []
+  if (p.cuotas > 0) {
+    partes.push(`${p.cuotas} ${p.cuotas === 1 ? 'cuota' : 'cuotas'}, ${p.cuotasPagadas} pagada${p.cuotasPagadas === 1 ? '' : 's'}`)
+  }
+  if (p.initialAmountCop > 0) partes.push(`inicial de ${pesosDelAcuerdo(p.initialAmountCop)}`)
+  if (p.discountAppliedPct > 0) partes.push(`${p.discountAppliedPct} % de descuento en intereses`)
+  if ((p.status === 'offered' || p.status === 'accepted') && p.aprobado) {
+    partes.push('aprobado por la inmobiliaria; falta que el inquilino lo acepte')
+  }
+  if (p.status === 'active' && !p.aprobado) partes.push('activo sin aprobación de la inmobiliaria registrada')
   return {
-    key: `plan-${r.paymentPlanId ?? r.id}`,
-    debtorId: r.debtor.id,
-    deudor: r.debtor.fullName,
+    key: `plan-${p.planId}`,
+    debtorId: p.debtorId,
+    deudor: p.debtorName,
     tipo: 'plan',
-    montoCop: r.amount,
-    venceEl: null,
-    registradoEn: r.createdAt,
-    estado: 'por_aprobar',
+    montoCop: p.totalDueCop,
+    // `vence` es un DÍA ('2026-11-03'). Leído como fecha suelta, el navegador lo
+    // toma como medianoche UTC y en Colombia se pinta el día anterior («2 de
+    // nov»): se ancla al mediodía de Bogotá.
+    venceEl: p.proximaCuota ? `${p.proximaCuota.vence}T12:00:00-05:00` : null,
+    registradoEn: p.offeredAt,
+    estado,
     callId: null,
-    planId: r.paymentPlanId,
+    planId: p.planId,
     canal: null,
-    condiciones: null,
-    resueltoEn: null,
-    cedulaMasked: r.debtor.cedulaMasked,
-    telefonoMasked: r.debtor.phoneMasked,
+    condiciones: partes.length ? partes.join(' · ').replace(/^./, (c) => c.toUpperCase()) + '.' : null,
+    resueltoEn: p.status === 'defaulted' ? p.defaultedAt : null,
+    cedulaMasked: p.cedulaMasked,
+    telefonoMasked: p.phoneMasked,
   }
 }
 
 /** Une los dos orígenes y ordena por lo más reciente. */
 export function componerAcuerdos(
   promesas: CobranzaPromiseItem[],
-  planes: PaymentsFunnelItem[],
+  planes: PlanDePagoItem[],
 ): AcuerdoRow[] {
-  return [...planes.map(filaDePlan), ...promesas.map(filaDePromesa)].sort(
+  const filasDePlanes = planes.map(filaDePlan).filter((f): f is AcuerdoRow => f !== null)
+  return [...filasDePlanes, ...promesas.map(filaDePromesa)].sort(
     (a, b) => b.registradoEn.localeCompare(a.registradoEn),
   )
 }

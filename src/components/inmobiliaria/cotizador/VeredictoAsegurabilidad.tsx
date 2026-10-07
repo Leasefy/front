@@ -26,13 +26,13 @@
 
 import { CheckCircle, WarningCircle, MinusCircle, Sparkle, ArrowRight } from '@phosphor-icons/react'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
-import { motion } from 'framer-motion'
 import { useI18n } from '@/lib/i18n'
 import type {
   CarrierState,
   FinalVerdict,
   PartialRanking,
 } from '@/lib/hooks/cotizador/use-quote-stream'
+import { Appear } from '@leasefy/cadence'
 
 interface VeredictoAsegurabilidadProps {
   finalVerdict: FinalVerdict
@@ -137,10 +137,10 @@ export function VeredictoAsegurabilidad({
   const recommendedCondiciones = recommendedFromGrid?.condiciones ?? []
 
   return (
-    <motion.section
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
+    // El veredicto LLEGA al cerrar la cotización: entra con `Appear` (fundido
+    // + 8px con los tokens del sistema; antes, duración y curva inventadas).
+    <Appear
+      as="section"
       aria-label={t('inmobiliaria.ai.cotizador.detail.veredicto.regionLabel')}
       className="rounded-lg border border-border bg-card overflow-hidden"
     >
@@ -231,9 +231,9 @@ export function VeredictoAsegurabilidad({
                       {t('inmobiliaria.ai.cotizador.detail.veredicto.porQue')}
                     </p>
                     <ul className="mt-1.5 space-y-1">
-                      {recommendedCondiciones.map((c, i) => (
+                      {recommendedCondiciones.map((c) => (
                         <li
-                          key={i}
+                          key={c}
                           className="flex items-start gap-2 text-sm text-fg-muted"
                         >
                           <ArrowRight
@@ -255,6 +255,6 @@ export function VeredictoAsegurabilidad({
           </div>
         </div>
       )}
-    </motion.section>
+    </Appear>
   )
 }

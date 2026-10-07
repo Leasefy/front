@@ -3,6 +3,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAgencyAccess } from '@/lib/auth/useAgencyAccess';
+import { Spinner } from '@/components/ui/spinner';
 
 interface AgencyRoleGuardProps {
   /**
@@ -43,7 +44,8 @@ export function AgencyRoleGuard({
   if (isLoading || !hasAccess) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="w-6 h-6 border-2 border-[#1A40FF]/30 border-t-transparent rounded-full animate-spin" />
+        {/* Dentro del panel va el spinner, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <Spinner size="md" variant="muted" label="Cargando" />
       </div>
     );
   }

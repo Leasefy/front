@@ -16,7 +16,6 @@ import { apiClient } from '@/lib/api/client';
 import { invalidar } from './refresco-de-datos';
 import type {
   CalendarioDelAnio,
-  CuentaDeclarada,
   ConfiguracionDeTesoreria,
   DetalleDelArchivo,
   GuardarConvenio,
@@ -56,6 +55,15 @@ function cuerpoDelConvenio(dto: GuardarConvenio): Record<string, unknown> {
   if (dto.referenciaPrefijo) cuerpo.referenciaPrefijo = dto.referenciaPrefijo;
   if (dto.referenciaDv) cuerpo.referenciaDv = dto.referenciaDv;
   if (dto.activo !== undefined) cuerpo.activo = dto.activo;
+  /*
+   * 🔴 QA-PAGOS-95 r2 (N-33, 06-10-2026): la cuenta que recauda y POR DÓNDE
+   * entra su plata no viajaban. El cajón las pedía y el back las guardaba, pero
+   * el cuerpo las soltaba: toda cuenta quedaba «sin declarar» y la vía, siempre
+   * la de por defecto (ARCHIVO), así que «un camino de entrada por cuenta» no
+   * se podía configurar desde la pantalla y el mismo pago podía entrar dos veces.
+   */
+  if (dto.cuentaBancaria) cuerpo.cuentaBancaria = dto.cuentaBancaria;
+  if (dto.viaDeEntrada) cuerpo.viaDeEntrada = dto.viaDeEntrada;
   return cuerpo;
 }
 
@@ -209,15 +217,12 @@ export const tesoreriaApi = {
     return r;
   },
 
-  /**
-   * 🔴 Las cuentas con camino de entrada declarado. La pantalla del extracto las
-   * ofrece en vez de pedir que alguien teclee un número: si una cuenta recauda
-   * por ARCHIVO, cargar su extracto responde 409, y eso no se puede descubrir
-   * apretando el botón.
+  /*
+   * (02-10-2026) `cuentasDeclaradas` (`GET /inmobiliaria/tesoreria/cuentas`) se
+   * retiró del cliente: la carga del extracto elige ahora entre las cuentas de
+   * la inmobiliaria (`conciliacionBancariaApi.cuentas`), que ya dicen su vía de
+   * entrada. La ruta del back sigue viva.
    */
-  cuentasDeclaradas(): Promise<CuentaDeclarada[]> {
-    return apiClient.get<CuentaDeclarada[]>(`${BASE}/cuentas`);
-  },
 
   // ── El portal del propietario ─────────────────────────────────────────────
 

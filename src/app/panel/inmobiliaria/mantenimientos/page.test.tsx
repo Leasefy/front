@@ -35,6 +35,7 @@ const h = vi.hoisted(() => ({
     approveQuote: vi.fn(),
     updateStatus: vi.fn(),
     addQuote: vi.fn(),
+    subirFoto: vi.fn(),
   },
   mantenimientos: [] as unknown[],
   ultimoForm: null as Props | null,
@@ -138,6 +139,99 @@ describe('M2 — crear una solicitud que el back rechaza', () => {
     expect(h.toast.error).toHaveBeenCalledWith('No se pudo crear la solicitud', {
       description: 'El inmueble no tiene un contrato activo',
     })
+  })
+})
+
+/** Un 5xx como lo manda el back desde el 02-10-2026: con `code` y `referencia`. */
+const falloNuestro = () =>
+  new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+    statusCode: 500,
+    code: 'ERROR_INTERNO',
+    message: 'Error interno del servidor',
+    referencia: 'ab12cd34',
+  })
+
+const SOLICITUD = {
+  consignacionId: 'cons-1',
+  type: 'plumbing',
+  priority: 'medium',
+  title: 'Gotera',
+  description: 'Gotea',
+  photoUrls: [],
+  paidBy: 'owner',
+}
+
+async function crear() {
+  await render()
+  await abrirNuevaSolicitud()
+  await act(async () => {
+    await (h.ultimoForm!.onSubmit as (d: unknown) => Promise<void>)(SOLICITUD)
+  })
+}
+
+describe('M2 · 02-10 — el error de crear, por el sistema de errores', () => {
+  it('🔴 un 400 con campos va al formulario, campo por campo, y no a un toast', async () => {
+    h.api.create.mockRejectedValue(
+      new ApiError(400, ['El título puede tener hasta 200 caracteres.'], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['El título puede tener hasta 200 caracteres.'],
+        campos: [
+          { campo: 'title', regla: 'longitud_maxima', mensaje: 'El título puede tener hasta 200 caracteres.' },
+        ],
+      }),
+    )
+    await crear()
+    expect(h.ultimoForm!.erroresDelServidor).toEqual({
+      title: 'El título puede tener hasta 200 caracteres.',
+    })
+    expect(h.toast.error).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia', async () => {
+    h.api.create.mockRejectedValue(falloNuestro())
+    await crear()
+    const descripcion = h.toast.error.mock.calls[0]?.[1]?.description as string
+    expect(descripcion).toContain('de nuestro lado')
+    expect(descripcion).toContain('ab12cd34')
+    expect(descripcion).not.toMatch(/conexi[oó]n/i)
+  })
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    h.api.create.mockRejectedValue(new ApiError(0, 'Failed to fetch'))
+    await crear()
+    const descripcion = h.toast.error.mock.calls[0]?.[1]?.description as string
+    expect(descripcion).toMatch(/conexi[oó]n/i)
+  })
+})
+
+describe('Mover una solicitud de estado · 02-10', () => {
+  async function mover(fallo: unknown) {
+    h.api.updateStatus.mockRejectedValue(fallo)
+    await render()
+    await act(async () => {
+      ;(h.ultimoViewer!.onStatusChange as (id: string, s: string) => void)('sol-1', 'completed')
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    return h.toast.error.mock.calls[0]?.[1]?.description as string
+  }
+
+  it('un 400 que explica la transición dice el motivo del back', async () => {
+    const d = await mover(new ApiError(400, 'Desde Reportada sólo puede pasar a Cotizada o Cancelada.'))
+    expect(d).toBe('Desde Reportada sólo puede pasar a Cotizada o Cancelada.')
+  })
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia', async () => {
+    const d = await mover(falloNuestro())
+    expect(d).toContain('de nuestro lado')
+    expect(d).toContain('ab12cd34')
+  })
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    const d = await mover(new ApiError(0, 'Failed to fetch'))
+    expect(d).toMatch(/conexi[oó]n/i)
   })
 })
 
@@ -333,5 +427,91 @@ describe('M4 — «Nueva solicitud» cuando los inmuebles no llegaron', () => {
 
     expect(document.body.querySelector('[data-testid="form-stub"]')).not.toBeNull()
     expect(document.body.querySelector('[data-testid="fallo-de-carga"]')).toBeNull()
+  })
+})
+
+/**
+ * 02-10-2026 · Las fotos se suben de verdad, DESPUÉS de crear la solicitud.
+ *
+ * Antes la página mandaba `photoUrls` con la vista previa del navegador
+ * (`blob:`), que nadie más podía abrir. Ahora crea la solicitud sin fotos y
+ * sube cada archivo a `POST …/mantenimiento/:id/fotos`. Una foto que falla no
+ * deshace la solicitud: se dice cuál y por qué.
+ */
+describe('Las fotos de una solicitud nueva', () => {
+  const archivo = (nombre: string) => new File([new Uint8Array(64)], nombre, { type: 'image/jpeg' })
+
+  async function crearCon(fotos: File[]) {
+    await render()
+    await abrirNuevaSolicitud()
+    await act(async () => {
+      await (h.ultimoForm!.onSubmit as (d: unknown) => Promise<void>)({ ...SOLICITUD, fotos })
+    })
+  }
+
+  it('🔴 crea la solicitud SIN fotos y después sube cada archivo a ella, en orden', async () => {
+    const orden: string[] = []
+    h.api.create.mockImplementation(async () => {
+      orden.push('crear')
+      return { id: 'sol-1' }
+    })
+    h.api.subirFoto.mockImplementation(async (_id: string, f: File) => {
+      orden.push(`foto ${f.name}`)
+      return { ruta: 'x', photoUrls: [] }
+    })
+    const a = archivo('a.jpg')
+    const b = archivo('b.jpg')
+    await crearCon([a, b])
+
+    const cuerpo = h.api.create.mock.calls[0][0] as Record<string, unknown>
+    expect(cuerpo).not.toHaveProperty('photoUrls')
+    expect(cuerpo).not.toHaveProperty('fotos')
+    // 🔴 02-10 · las fotos del reporte no mandan `destino` (el back toma `reporte`).
+    expect(h.api.subirFoto.mock.calls).toEqual([
+      ['sol-1', a],
+      ['sol-1', b],
+    ])
+    expect(orden).toEqual(['crear', 'foto a.jpg', 'foto b.jpg'])
+    expect(h.toast.success).toHaveBeenCalledTimes(1)
+    expect(h.toast.error).not.toHaveBeenCalled()
+  })
+
+  it('🔴 una foto que no sube NO deshace la solicitud: se dice cuál y por qué', async () => {
+    h.api.create.mockResolvedValue({ id: 'sol-1' })
+    h.api.subirFoto
+      .mockResolvedValueOnce({ ruta: 'x', photoUrls: [] })
+      .mockRejectedValueOnce(
+        new ApiError(400, 'La foto no puede pesar más de 5 MB.', 'FOTO_MUY_PESADA', {
+          statusCode: 400,
+          code: 'FOTO_MUY_PESADA',
+          message: 'La foto no puede pesar más de 5 MB.',
+        }),
+      )
+    await crearCon([archivo('a.jpg'), archivo('b.jpg')])
+
+    // La solicitud quedó: el aviso de creada sale y el cajón se cierra.
+    expect(h.toast.success).toHaveBeenCalledTimes(1)
+    expect(document.body.querySelector('[data-testid="form-stub"]')).toBeNull()
+    expect(h.toast.error).toHaveBeenCalledWith(
+      'La solicitud quedó creada, pero una foto no se subió',
+      { description: '«b.jpg»: La foto no puede pesar más de 5 MB.' },
+    )
+  })
+
+  it('un 5xx al subir dice que fue de nuestro lado, con la referencia', async () => {
+    h.api.create.mockResolvedValue({ id: 'sol-1' })
+    h.api.subirFoto.mockRejectedValue(falloNuestro())
+    await crearCon([archivo('a.jpg'), archivo('b.jpg')])
+    const [titulo, { description }] = h.toast.error.mock.calls[0] as [string, { description: string }]
+    expect(titulo).toBe('La solicitud quedó creada, pero 2 fotos no se subieron')
+    expect(description).toContain('de nuestro lado')
+    expect(description).toContain('ab12cd34')
+    expect(description).not.toMatch(/conexi[oó]n/i)
+  })
+
+  it('si la solicitud no se creó, ninguna foto se intenta subir', async () => {
+    h.api.create.mockRejectedValue(falloNuestro())
+    await crearCon([archivo('a.jpg')])
+    expect(h.api.subirFoto).not.toHaveBeenCalled()
   })
 })

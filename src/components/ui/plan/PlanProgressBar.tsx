@@ -55,7 +55,7 @@ export function PlanProgressBar({
           className={cn(
             'h-full rounded-full relative overflow-hidden',
             getBarColor(),
-            'transition-all duration-300'
+            'transition-[width] duration-slow ease-enter'
           )}
           style={{ width: `${percentage}%` }}
         >
@@ -161,7 +161,7 @@ export function PlanCircularProgress({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={offset}
-          className="transition-all duration-300"
+          className="transition-[stroke-dashoffset] duration-slow ease-enter"
         />
       </svg>
       {showValue && (

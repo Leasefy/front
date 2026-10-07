@@ -29,11 +29,14 @@ import { toast } from '@/components/ui/toast'
 import { CheckCircle, ShieldCheck, XCircle } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
+import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import {
   Dialog,
   DialogContent,
@@ -44,19 +47,24 @@ import {
 } from '@/components/ui/dialog'
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useExtractoDelBack } from '@/lib/hooks/conciliacion/use-extracto-del-back'
+import {
+  LARGO_MAXIMO_DEL_MOTIVO_DE_RECHAZO,
+  LARGO_MINIMO_DEL_MOTIVO_DE_RECHAZO,
+} from '@/lib/hooks/conciliacion/limites-de-la-conciliacion'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
-import { Chip } from '@leasefy/cadence'
+import { Chip, Presence } from '@leasefy/cadence'
 import { cn } from '@/lib/utils'
 import { useI18n } from '@/lib/i18n'
 import {
@@ -68,6 +76,7 @@ import {
   useConciliacionBulk,
   BULK_CONFIRM_HIGH_CONFIDENCE_FLOOR,
 } from '@/lib/hooks/conciliacion/use-conciliacion-bulk'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 // ── Taxonomía de excepciones (los 7 caseTypes, set cerrado) ──────────────────
 // Copy en español literal (contrato §9 — ES-first, sin keys t() nuevas).
@@ -118,7 +127,7 @@ const COLUMNAS = [
 // ── Formato ──────────────────────────────────────────────────────────────────
 
 function fmtCop(val: number): string {
-  return new Intl.NumberFormat('es-CO', {
+  return plataEnPantalla('es-CO', {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,
@@ -135,6 +144,19 @@ function fmtDate(iso: string | null): string {
 /** Un cruce sugerido en o por encima del piso de alta confianza → va al lote. */
 function isBulkEligible(item: ConciliacionQueueItem): boolean {
   return item.status === 'suggested' && item.confidenceScore >= BULK_CONFIRM_HIGH_CONFIDENCE_FLOOR
+}
+
+/**
+ * 🔴 Sólo alta, media o baja (Nico, C1-MEDIR Q1, 03-10-2026: «si hay número,
+ * el medido»). El puntaje del agente es una fórmula que nadie midió contra lo
+ * que acierta, así que no se muestra. «Alta» es lo que entra al lote (el mismo
+ * piso de `isBulkEligible`); «media» desde 0,50.
+ */
+function nivelDelCruce(score: number | null | undefined): 'alta' | 'media' | 'baja' {
+  const s = typeof score === 'number' && Number.isFinite(score) ? score : 0
+  if (s >= BULK_CONFIRM_HIGH_CONFIDENCE_FLOOR) return 'alta'
+  if (s >= 0.5) return 'media'
+  return 'baja'
 }
 
 // ── Página ───────────────────────────────────────────────────────────────────
@@ -155,6 +177,8 @@ function ConciliacionCola() {
   /** Fila cuyo rechazo está pidiendo motivo. */
   const [rechazando, setRechazando] = useState<ConciliacionQueueItem | null>(null)
   const [motivo, setMotivo] = useState('')
+  /** Lo que el micro dijo del motivo (un 400 con `campos`): va debajo del campo. */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null)
 
   const queueFilters = useMemo(
     () => ({
@@ -165,7 +189,7 @@ function ConciliacionCola() {
     [caseFilter],
   )
 
-  const { items, isLoading, error, refetch, confirmMatch, rejectMatch } =
+  const { items, isLoading, error, errorCrudo, refetch, confirmMatch, rejectMatch } =
     useConciliacionQueue(queueFilters)
   const { bulkConfirmByIds } = useConciliacionBulk()
 
@@ -220,7 +244,11 @@ function ConciliacionCola() {
       toast.error(
         result.error === 'not_configured'
           ? 'No se pudo confirmar: servicio no configurado.'
-          : `No se pudo confirmar la selección (${result.error ?? 'error'}).`,
+          : // Con la regla de oro; antes: «No se pudo confirmar la selección (500).»
+            mensajeParaLaPersona(result.fallo, {
+              porDefecto: 'No se pudo confirmar la selección.',
+              accion: 'confirmar la selección',
+            }),
       )
       return
     }
@@ -242,21 +270,38 @@ function ConciliacionCola() {
     const res = await confirmMatch(item.id)
     setBusyRow(null)
     if (res.ok) toast.success('Cruce aprobado.')
-    else toast.error(`No se pudo aprobar el cruce (${res.error ?? 'error'}).`)
+    // Con la regla de oro; antes: «No se pudo aprobar el cruce (403).»
+    else toast.error(mensajeParaLaPersona(res.fallo, { porDefecto: 'No se pudo aprobar el cruce.', accion: 'aprobar el cruce' }))
   }
 
   /** Rechazar pide motivo: el backend lo exige y queda en la auditoría. */
   async function rechazar() {
     const item = rechazando
     const razon = motivo.trim()
-    if (!item || razon.length < 5) return
+    if (!item || razon.length < LARGO_MINIMO_DEL_MOTIVO_DE_RECHAZO) return
     setBusyRow(item.id)
     const res = await rejectMatch(item.id, razon)
     setBusyRow(null)
-    setRechazando(null)
-    setMotivo('')
-    if (res.ok) toast.success('Cruce rechazado.')
-    else toast.error(`No se pudo rechazar el cruce (${res.error ?? 'error'}).`)
+    if (res.ok) {
+      setRechazando(null)
+      setMotivo('')
+      setErrorDelMotivo(null)
+      toast.success('Cruce rechazado.')
+      return
+    }
+    // Si no salió, el diálogo queda abierto con lo escrito (antes se cerraba
+    // y el motivo se perdía). Lo que el micro dijo del motivo va debajo del
+    // campo, con el foco; lo demás, con la regla de oro, al toast. Antes:
+    // «No se pudo rechazar el cruce (reject_failed).»
+    const reparto = repartirErroresDelServidor<'motivo'>(res.fallo, {
+      mapa: { reason: 'motivo' },
+      campos: ['motivo'],
+      porDefecto: 'No se pudo rechazar el cruce.',
+      accion: 'rechazar el cruce',
+    })
+    setErrorDelMotivo(reparto.porCampo.motivo ?? null)
+    if (reparto.porCampo.motivo) document.getElementById('motivo-rechazo')?.focus()
+    if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '))
   }
 
   return (
@@ -301,7 +346,10 @@ function ConciliacionCola() {
             encabezados de la tabla se sigan viendo. */}
         <EstadoDeDatos
           cargando={isLoading}
-          error={error}
+          /* ARREGLOS-8 (ARREGLOS-4 Q1 A): el error ENTERO (con el micro caído
+             dice «El asistente de Leasefy no está disponible», no «Fue un
+             problema nuestro»). */
+          error={errorCrudo ?? error}
           queEs="la cola de conciliación"
           onReintentar={refetch}
           esqueleto={
@@ -321,9 +369,9 @@ function ConciliacionCola() {
                 ))}
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBodyAnimado>
               {items.length === 0 ? (
-                <TableRow>
+                <TableRow key="vacio">
                   <TableCell colSpan={COLUMNAS.length + 1} className="p-0">
                     <SinDatos
                       hayFiltros={caseFilter !== 'todos'}
@@ -360,11 +408,11 @@ function ConciliacionCola() {
               ) : (
                 pageItems.map((item) => {
                   const elegible = isBulkEligible(item)
-                  const pct = Math.round((item.confidenceScore ?? 0) * 100)
+                  const nivel = nivelDelCruce(item.confidenceScore)
                   const caso = item.caseType ?? null
                   const filaOcupada = busyRow === item.id
                   return (
-                    <TableRow
+                    <TableRowAnimada
                       key={item.id}
                       className={cn(filaOcupada && 'opacity-60')}
                       data-testid={`conciliacion-row-${item.id}`}
@@ -434,7 +482,7 @@ function ConciliacionCola() {
                             elegible ? 'text-success' : 'text-fg-muted',
                           )}
                         >
-                          {pct}% de confianza
+                          Confianza {nivel}
                         </p>
                       </TableCell>
 
@@ -467,11 +515,11 @@ function ConciliacionCola() {
                           </Button>
                         </div>
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   )
                 })
               )}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
 
           {shouldPaginate && (
@@ -499,7 +547,13 @@ function ConciliacionCola() {
             hay marcados— ya lo dice la barra, así que el control sólo tenía que
             saber hacer una cosa, y «marcar los 12 de alta confianza» se lee sin
             tener que interpretar un tilde a medias. */}
-        {!isLoading && !error && eligibleIds.length > 0 && (
+        {/* La barra SALE animada cuando ya no queda nada elegible (D-MOV 4 a).
+            La caja de `Presence` es la que se pega al borde de abajo. */}
+        <Presence
+          show={!isLoading && !error && eligibleIds.length > 0}
+          initial={false}
+          className="sticky bottom-0 z-30"
+        >
           <BarraDeAccionesMasivas
             variant="pie"
             testid="conciliacion-acciones"
@@ -527,8 +581,8 @@ function ConciliacionCola() {
                 disabled={busy}
                 data-testid="conciliacion-marcar-elegibles"
               >
-                Marcar {eligibleIds.length === 1 ? 'el de' : `los ${eligibleIds.length} de`} alta
-                confianza (≥{Math.round(BULK_CONFIRM_HIGH_CONFIDENCE_FLOOR * 100)}%)
+                Marcar {eligibleIds.length === 1 ? 'el de' : `los ${eligibleIds.length} de`} confianza
+                alta
               </Button>
             )}
             {armed ? (
@@ -560,7 +614,7 @@ function ConciliacionCola() {
               </Button>
             )}
           </BarraDeAccionesMasivas>
-        )}
+        </Presence>
         </EstadoDeDatos>
       </section>
 
@@ -572,10 +626,11 @@ function ConciliacionCola() {
           if (!abierto) {
             setRechazando(null)
             setMotivo('')
+            setErrorDelMotivo(null)
           }
         }}
       >
-        <DialogContent>
+        <DialogContent variant="destructive" icon={<XCircle weight="bold" />}>
           <DialogHeader>
             <DialogTitle>Rechazar el cruce</DialogTitle>
             <DialogDescription>
@@ -585,25 +640,39 @@ function ConciliacionCola() {
               El movimiento vuelve a quedar sin identificar y el motivo queda registrado.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 px-6 py-4">
+          <div className="space-y-2">
             <Textarea
               id="motivo-rechazo"
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
+              onChange={(e) => {
+                setMotivo(e.target.value)
+                setErrorDelMotivo(null)
+              }}
               placeholder="No es el pago de ese contrato."
               rows={3}
-              maxLength={300}
+              maxLength={LARGO_MAXIMO_DEL_MOTIVO_DE_RECHAZO}
               aria-label="Motivo del rechazo"
+              {...(errorDelMotivo
+                ? { 'aria-invalid': true as const, 'aria-describedby': 'motivo-rechazo-error' }
+                : {})}
             />
-            <p className="text-caption text-fg-muted">Entre 5 y 300 caracteres.</p>
+            {/* La ayuda y el error del micro se cruzan (ver ErrorDelCampo). */}
+            <ErrorDelCampo
+              id="motivo-rechazo-error"
+              mensaje={errorDelMotivo}
+              pista={`Entre ${LARGO_MINIMO_DEL_MOTIVO_DE_RECHAZO} y ${LARGO_MAXIMO_DEL_MOTIVO_DE_RECHAZO} caracteres.`}
+              className="mt-0 text-caption"
+            />
           </div>
           <DialogFooter>
             <Button
               variant="outline"
               hideArrow
+              disabled={busyRow !== null}
               onClick={() => {
                 setRechazando(null)
                 setMotivo('')
+                setErrorDelMotivo(null)
               }}
             >
               Cancelar
@@ -611,7 +680,8 @@ function ConciliacionCola() {
             <Button
               hideArrow
               variant="destructive"
-              disabled={motivo.trim().length < 5 || busyRow !== null}
+              isLoading={rechazando !== null && busyRow === rechazando.id}
+              disabled={motivo.trim().length < LARGO_MINIMO_DEL_MOTIVO_DE_RECHAZO || busyRow !== null}
               onClick={() => void rechazar()}
               data-testid="conciliacion-confirmar-rechazo"
             >
@@ -626,7 +696,7 @@ function ConciliacionCola() {
 
 export default function ConciliacionColaPage() {
   return (
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+    <PageGuard roles={[...ROLES_QUE_CONCILIAN]}>
       <ConciliacionCola />
     </PageGuard>
   )

@@ -25,9 +25,11 @@ import {
   fechaDeOrigen,
   listaDePersonas,
   listaDePlata,
+  plataDeOrigen,
   repartoEnBps,
   type PersonaDeOrigen,
 } from '@/lib/migracion/valores-de-origen'
+import { aCentavos } from '@/lib/plata/plata'
 import {
   comoEntero,
   comoFecha,
@@ -41,16 +43,75 @@ import {
 } from './leer-celdas'
 
 /**
+ * 🔴 Una cifra con letras de magnitud no se lee. «2.1M», «1,5 millones»,
+ * «850k» o «2 mil» son plata escrita por una persona, y `comoEntero` tira las
+ * letras: «2.1M» quedaba en **$2** — un canon inventado que se ve como dato
+ * (QA-MIG-A, MG-07). Lo único escrito que se tolera es la moneda («COP»,
+ * «pesos», «M/CTE»); cualquier otra letra deja la celda sin leer y la fila
+ * pide el canon, en vez de cobrar una cifra que nadie escribió.
+ */
+export function plataConLetras(v: unknown): boolean {
+  if (typeof v === 'number') return false
+  const sinMoneda = String(v ?? '')
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/\b(cop|col|pesos?|m\s*\/\s*cte|mcte|cte)\b/g, '')
+  return /[a-z]/.test(sinMoneda)
+}
+
+/**
  * Plata de contrato: además de legible tiene que ser POSIBLE. Un canon
  * negativo no es un canon (y contra el `@Min(0)` del back tumba el lote
  * entero con 400, no la fila), y uno que supera el INT4 de Postgres tampoco.
  * Los dos casos vuelven ausentes → faltante visible de ESA fila.
  */
-function plataDeContrato(v: unknown): number | undefined {
+function plataDeContrato(v: unknown, conCentavos = false): number | undefined {
   if (!hayValor(v)) return undefined
-  const n = comoEntero(v)
+  if (plataConLetras(v)) return undefined
+  const n = conCentavos ? plataConCentavosDeLaCelda(v) : comoEntero(v)
   if (n === undefined || n < 0 || n > MAX_COP_POR_MOVIMIENTO) return undefined
   return n
+}
+
+/**
+ * 🔴 EN-38 (QA-MIGRACION-95, 06-10-2026; misma regla que NI-07 en inmuebles):
+ * con la llave de los contratos APAGADA, una celda con centavos de verdad
+ * («2.500.000,29») NO se redondea en silencio. `comoEntero` la volvía
+ * 2.500.000 y el contrato quedaba guardado así, sin decir nada. Ahora el canon
+ * no viaja y viaja la celda tal cual (`canonConCentavosDelArchivo`): el back
+ * frena la fila con su motivo y la persona escribe el canon al peso.
+ */
+export function traeCentavosSinLlave(v: unknown, conCentavos: boolean): boolean {
+  if (conCentavos || !hayValor(v) || plataConLetras(v)) return false
+  const n = plataConCentavosDeLaCelda(v)
+  return typeof n === 'number' && Number.isFinite(n) && !Number.isInteger(n)
+}
+
+/**
+ * «Centavos en todo» (C3-FRONT; P14 a «que no se redondee, se trae tal
+ * cual»): con la llave de los contratos, la celda trae sus centavos
+ * («$2.350.000,29» → 2350000.29). Un entero se lee EXACTAMENTE como siempre
+ * (`comoEntero`); con más de dos decimales la celda no se adivina ni se
+ * redondea: queda ausente y la fila sale con su faltante.
+ */
+function plataConCentavosDeLaCelda(v: unknown): number | undefined {
+  const exacta = plataDeOrigen(v)
+  if (exacta === undefined || Number.isInteger(exacta)) return comoEntero(v)
+  try {
+    return aCentavos(exacta, { talCual: true }) / 100
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * La llave de los contratos para leer la plata del archivo (la misma de
+ * `MigrarContratoDto` en el back: `contratos_y_cuotas`). Ausente = pesos
+ * enteros, como hoy.
+ */
+export interface OpcionesDeLaLectura {
+  conCentavos?: boolean
 }
 
 /**
@@ -136,8 +197,20 @@ export interface FilaLeida {
 export function armarFilaAMigrar(
   fila: Record<string, unknown>,
   mapeo: MapeoDeColumna[],
+  opciones: OpcionesDeLaLectura = {},
 ): FilaAMigrar {
-  return leerFilaDelArchivo(fila, mapeo).fila
+  const armada = leerFilaDelArchivo(fila, mapeo, opciones).fila
+  /*
+   * QA-MIGRACION-95 (C14, como ER-01 en terceros): la fila de la HOJA viaja
+   * aparte para que la lista diga la fila que ve la persona en Excel («Fila 4»
+   * con el encabezado en la fila 3), no la posición entre los datos.
+   * `_rowIndex` es base 0 de SheetJS: la fila del Excel es `_rowIndex + 1`.
+   */
+  const filaDeLaHoja = fila._rowIndex
+  if (typeof filaDeLaHoja === 'number' && Number.isInteger(filaDeLaHoja) && filaDeLaHoja >= 1) {
+    return { ...armada, filaDelArchivo: filaDeLaHoja + 1 }
+  }
+  return armada
 }
 
 /**
@@ -186,6 +259,7 @@ export function diaDelMesDe(valor: unknown): number | undefined {
 export function leerFilaDelArchivo(
   fila: Record<string, unknown>,
   mapeo: MapeoDeColumna[],
+  { conCentavos = false }: OpcionesDeLaLectura = {},
 ): FilaLeida {
   const v = (campo: CampoDeContrato) => valorDe(fila, mapeo, campo)
 
@@ -213,8 +287,38 @@ export function leerFilaDelArchivo(
    * para que la pantalla los muestre y el back los cree como copropietarios /
    * co-inquilinos cuando tenga el campo.
    */
-  const propietarios = listaDePersonas(v('propietarioNombre'))
-  const inquilinos = listaDePersonas(v('inquilinoNombre'))
+  /*
+   * 🔴 Dos personas en la MISMA celda de documento (QA-MIG-A, MG-11): un
+   * archivo hecho a mano escribe los copropietarios «Ana / Luis» con
+   * «43987654 / 98765432», o los co-arrendatarios «Juan y Daniela» con
+   * «1128444555 y 1128444556». Leída como un documento, la llave quedaba
+   * «4398765498765432»: un documento que no es de nadie. Si nombres y
+   * documentos se parten en la misma cantidad, son esas personas, en orden;
+   * si no se pueden emparejar, el documento NO viaja (la fila pide el dato).
+   */
+  const propietariosDeDosColumnas = personasEnDosColumnas(v('propietarioNombre'), v('propietarioDocumento'))
+  const inquilinosDeDosColumnas = personasEnDosColumnas(v('inquilinoNombre'), v('inquilinoDocumento'))
+  const propietarios = propietariosDeDosColumnas?.length
+    ? propietariosDeDosColumnas
+    : listaDePersonas(v('propietarioNombre'))
+  const inquilinos = inquilinosDeDosColumnas?.length
+    ? inquilinosDeDosColumnas
+    : listaDePersonas(v('inquilinoNombre'))
+  const vDocumento = (campo: CampoDeContrato): unknown => {
+    if (campo === 'propietarioDocumento' && propietariosDeDosColumnas) {
+      return propietariosDeDosColumnas[0]?.documento
+    }
+    if (campo === 'inquilinoDocumento' && inquilinosDeDosColumnas) {
+      return inquilinosDeDosColumnas[0]?.documento
+    }
+    if (campo === 'propietarioNombre' && propietariosDeDosColumnas?.length) {
+      return propietariosDeDosColumnas[0].nombre
+    }
+    if (campo === 'inquilinoNombre' && inquilinosDeDosColumnas?.length) {
+      return inquilinosDeDosColumnas[0].nombre
+    }
+    return v(campo)
+  }
 
   /*
    * El canon: manda «Canon Total». «Valor Canon» es el mismo canon repartido
@@ -232,17 +336,28 @@ export function leerFilaDelArchivo(
    * del archivo, no un invento — y sin ella el contrato quedaba en $0.
    */
   const rawCanon = v('canon')
-  const listaDelCanon = listaDePlata(rawCanon)
+  const listaDelCanon = listaDePlata(rawCanon, { conCentavos })
   const canonPorPropietario =
     listaDelCanon && listaDelCanon.length >= 2 && listaDelCanon.every((n) => n >= 0)
       ? listaDelCanon
       : undefined
-  const canonTotal = plataDeContrato(v('canonTotal'))
-  const canonSuelto = canonPorPropietario ? undefined : plataDeContrato(rawCanon)
+  const canonTotal = plataDeContrato(v('canonTotal'), conCentavos)
+  const canonSuelto = canonPorPropietario ? undefined : plataDeContrato(rawCanon, conCentavos)
   const sumaDeLasPartes = canonPorPropietario
-    ? plataDeContrato(canonPorPropietario.reduce((a, n) => a + n, 0))
+    ? plataDeContrato(
+        // Con centavos, la suma exacta al centavo (con enteros, la de siempre).
+        conCentavos
+          ? canonPorPropietario.reduce((a, n) => a + aCentavos(n), 0) / 100
+          : canonPorPropietario.reduce((a, n) => a + n, 0),
+        conCentavos,
+      )
     : undefined
-  const monthlyRent = canonTotal ?? canonSuelto ?? sumaDeLasPartes
+  // EN-38: la celda con centavos (sin la llave) no se redondea: no viaja canon.
+  const celdaConCentavos = [v('canonTotal'), canonPorPropietario ? undefined : rawCanon].find((c) =>
+    traeCentavosSinLlave(c, conCentavos),
+  )
+  const monthlyRent =
+    celdaConCentavos !== undefined ? undefined : (canonTotal ?? canonSuelto ?? sumaDeLasPartes)
 
   /*
    * Lo que el archivo dice del contrato más allá del canon: el consecutivo, el
@@ -272,10 +387,12 @@ export function leerFilaDelArchivo(
     // llevan `@IsOptional()`).
     direccion,
     inquilino: {
-      nombre: inquilinoPrincipal(inquilinos, v),
+      nombre: inquilinoPrincipal(inquilinos, vDocumento),
       correo: String(v('inquilinoCorreo') ?? ''),
       telefono: textoOpcional(v('inquilinoTelefono')),
-      documento: textoOpcional(v('inquilinoDocumento')) ?? inquilinos[0]?.documento,
+      documento: inquilinosDeDosColumnas
+        ? inquilinosDeDosColumnas[0]?.documento
+        : (textoOpcional(v('inquilinoDocumento')) ?? inquilinos[0]?.documento),
     },
     startDate: hayValor(rawInicio) ? comoFecha(rawInicio) : undefined,
     /*
@@ -288,7 +405,10 @@ export function leerFilaDelArchivo(
     referenciaDeRecaudo,
     endDate: hayValor(rawFin) ? comoFecha(rawFin) : undefined,
     monthlyRent,
-    deposit: plataDeContrato(rawDeposito),
+    ...(celdaConCentavos !== undefined
+      ? { canonConCentavosDelArchivo: String(celdaConCentavos).trim().slice(0, 60) }
+      : {}),
+    deposit: plataDeContrato(rawDeposito, conCentavos),
     // X5: un día de pago ausente o fuera de [1,28] viaja ausente, nunca
     // fabricado como "el 1" — eso es lo que hacía que 1383 filas quedaran
     // fechadas al 1 de todos los meses sin que nadie lo pidiera.
@@ -319,7 +439,7 @@ export function leerFilaDelArchivo(
     codigoInmueble:
       codigoDeInmueble(v('codigoInmueble')) ?? codigoDeInmueble(propiedad.codigo),
     ciudad: textoOpcional(v('ciudadInmueble'))?.slice(0, 50),
-    ...propietarioDe(v, propietarios),
+    ...propietarioDe(vDocumento, propietarios),
     // La llave de idempotencia del contrato: sin ella, reimportar duplica el
     // historial y los comprobantes viejos no saben de qué contrato colgarse.
     externalId: consecutivo,
@@ -342,7 +462,11 @@ export function leerFilaDelArchivo(
     fila: filaAMigrar,
     origen: {
       consecutivo,
-      codigoDeOrigen: propiedad.codigo,
+      // QA-MIGRACION-95 (06-10): la columna propia «Código inmueble» también es
+      // el código de origen (el resumen de lectura y la vista previa lo miran).
+      // Antes sólo contaba el código empaquetado en «Propiedad» y la pantalla
+      // decía «0 traen código de origen» de un archivo que lo trae en todas.
+      codigoDeOrigen: textoOpcional(v('codigoInmueble')) ?? propiedad.codigo,
       propietarios,
       inquilinos,
       escenario,
@@ -395,6 +519,44 @@ export function conSuParte(
   if (canon !== undefined && Math.abs(suma - canon) > propietarios.length) return base
   const bps = repartoEnBps(plata)
   return base.map((p, i) => ({ ...p, participacionBps: bps[i] }))
+}
+
+/** Separadores con los que una persona escribe a dos en la misma celda. */
+const SEPARADORES_DE_PERSONAS = [/\s*\/\s*/, /\s*\|\s*/, /\s*;\s*/, /\s+y\s+/i, /\s*,\s*/]
+
+/** ¿Tiene cara de UN documento? (con o sin tipo, puntos o DV): «CC 43.987.654», «900456789-1». */
+const CARA_DE_DOCUMENTO = /^(?:[A-Za-z]{1,3}\.?\s*)?\d[\d.\s]{4,}(?:-\s*\d)?$/
+
+/**
+ * Las personas de una fila que trae nombres y documentos en columnas
+ * separadas y VARIAS personas en la celda del documento.
+ *
+ * - `null`: la celda del documento trae un solo documento (o ninguno): el
+ *   camino de siempre.
+ * - `[]`: trae varios documentos y los nombres no se dejan emparejar: no hay
+ *   documento que mandar sin inventarlo.
+ * - la lista: cada nombre con su documento, en el orden del archivo.
+ */
+export function personasEnDosColumnas(nombre: unknown, documento: unknown): PersonaDeOrigen[] | null {
+  const doc = String(documento ?? '').replace(/\s+/g, ' ').trim()
+  if (!doc) return null
+  let documentos: string[] | null = null
+  for (const sep of SEPARADORES_DE_PERSONAS) {
+    const trozos = doc.split(sep).map((t) => t.trim()).filter(Boolean)
+    if (trozos.length >= 2 && trozos.every((t) => CARA_DE_DOCUMENTO.test(t))) {
+      documentos = trozos
+      break
+    }
+  }
+  if (!documentos) return null
+  const nom = String(nombre ?? '').replace(/\s+/g, ' ').trim()
+  for (const sep of SEPARADORES_DE_PERSONAS) {
+    const nombres = nom.split(sep).map((t) => t.trim()).filter(Boolean)
+    if (nombres.length === documentos.length) {
+      return nombres.map((n, i) => ({ nombre: n, documento: documentos![i].replace(/[.\s]/g, ''), orden: i + 1 }))
+    }
+  }
+  return []
 }
 
 /**

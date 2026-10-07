@@ -1,9 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import Image from 'next/image';
-import { SheetTitle } from '@/components/ui/sheet';
+import { SheetHeader } from '@/components/ui/sheet';
 import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import {
   Dialog,
@@ -39,6 +40,7 @@ import {
   Plus,
   ChatCircle,
   Play,
+  Star,
   Note,
   Camera,
   CaretRight,
@@ -69,6 +71,8 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency, getMantenimientoTypeInfo } from '@/lib/types/inmobiliaria';
 import { CotizacionComparator } from './CotizacionComparator';
+import { CompletarSolicitudDialog } from './mantenimiento/CompletarSolicitudDialog';
+import { CalificarProveedorDialog } from './mantenimiento/CalificarProveedorDialog';
 
 // ============================================================================
 // Types
@@ -89,6 +93,18 @@ export interface MantenimientoViewerProps {
    * handler para las dos puertas, así no se pueden separar.
    */
   onRequestQuote?: (solicitudId: string) => void;
+  /**
+   * La solicitud quedó completada desde el diálogo de cierre, que sube las
+   * fotos del trabajo (Nico, 02-10-2026: «Subir fotos del trabajo»). Con este
+   * callback, «Marcar como completada» abre ese diálogo; sin él, el de siempre
+   * (`onStatusChange(id, 'completed')`, sin fotos).
+   */
+  onCompletada?: (solicitud: SolicitudMantenimiento) => void | Promise<void>;
+  /**
+   * 🔴 SO-14 (QA 04-10): con este callback el cajón ofrece «Calificar al
+   * proveedor» en una solicitud completada con proveedor del registro.
+   */
+  onCalificado?: () => void | Promise<void>;
 }
 
 interface TimelineEvent {
@@ -249,8 +265,6 @@ function PhotoGallery({
   onUpload?: () => void;
   t: (key: string, params?: Record<string, string | number>) => string;
 }) {
-  const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-
   if (!photos || photos.length === 0) {
     return (
       <div className="p-4 rounded-lg border border-dashed border-border text-center space-y-2">
@@ -277,21 +291,33 @@ function PhotoGallery({
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
       <div className="grid grid-cols-3 gap-2">
         {photos.map((url, idx) => (
-          // allowlist: image-tile button (clickable photo thumbnail w/ hover Eye overlay) —
+          // 02-10-2026: la foto SE VE (antes era un ícono y el clic no abría
+          // nada) y se abre entera en otra pestaña. La URL es la firmada que
+          // manda el back, válida una hora: al releer la lista llega otra.
+          // allowlist: image-tile link (clickable photo thumbnail w/ hover Eye overlay) —
           // hosts a fill image; Button/IconButton can't (image-tile precedent).
-          <button
-            key={idx}
-            type="button"
-            onClick={() => setSelectedPhoto(url)}
-            className="aspect-square rounded-md bg-muted overflow-hidden relative group"
+          <a
+            key={`${idx}-${url}`}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Abrir la foto ${idx + 1}`}
+            className="aspect-square rounded-md bg-muted overflow-hidden relative group block"
+            data-testid="mantenimiento-foto-guardada"
           >
             <div className="absolute inset-0 flex items-center justify-center bg-surface-muted dark:bg-surface-muted">
               <ImageIcon className="w-6 h-6 text-muted-foreground" />
             </div>
+            <img
+              src={url}
+              alt={`Foto ${idx + 1}`}
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
               <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
-          </button>
+          </a>
         ))}
         {onUpload && (
           // allowlist: add-photo dropzone tile (aspect-square dashed grid cell) — custom upload
@@ -314,8 +340,10 @@ function PhotoGallery({
 // ============================================================================
 
 function Timeline({ events, fmtDate }: { events: TimelineEvent[]; fmtDate: (d: string) => string }) {
+  // Los hitos entran escalonados; al aprobar, empezar o cerrar desde el
+  // cajón, el nuevo entra arriba y los demás bajan a su lugar.
   return (
-    <div className="space-y-1">
+    <Stagger className="space-y-1">
       {events.map((event, idx) => {
         const isLast = idx === events.length - 1;
         const StatusIcon =
@@ -335,7 +363,7 @@ function Timeline({ events, fmtDate }: { events: TimelineEvent[]; fmtDate: (d: s
             : STATUS_STYLES[event.status as MantenimientoStatus] || STATUS_STYLES.reported;
 
         return (
-          <div key={event.id} className="flex gap-3">
+          <StaggerItem key={event.id} className="flex gap-3">
             {/* Timeline Line */}
             <div className="flex flex-col items-center">
               <div
@@ -378,10 +406,10 @@ function Timeline({ events, fmtDate }: { events: TimelineEvent[]; fmtDate: (d: s
                 )}
               </div>
             </div>
-          </div>
+          </StaggerItem>
         );
       })}
-    </div>
+    </Stagger>
   );
 }
 
@@ -402,15 +430,17 @@ export function MantenimientoViewer({
   onAddNote,
   onUploadPhoto,
   onRequestQuote,
+  onCompletada,
+  onCalificado,
 }: MantenimientoViewerProps) {
   const { t, formatDate: fmtDate } = useI18n();
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
-  const [completionNotes, setCompletionNotes] = useState('');
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | undefined>(undefined);
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const [calificando, setCalificando] = useState(false);
 
   const TypeIcon = solicitud ? TYPE_ICONS[solicitud.type] : Wrench;
   const typeInfo = solicitud ? getMantenimientoTypeInfo(solicitud.type) : null;
@@ -438,9 +468,6 @@ export function MantenimientoViewer({
    */
   const accionesDelMenu = useMemo(() => {
     if (!solicitud) return [];
-    const cerrada = solicitud.status === 'completed' || solicitud.status === 'cancelled';
-    if (cerrada) return [];
-
     const acciones: {
       id: string;
       etiqueta: string;
@@ -448,6 +475,62 @@ export function MantenimientoViewer({
       tono?: string;
       alElegir: () => void;
     }[] = [];
+
+    /*
+     * 🔴 SO-14 (QA 04-10): cada paso tiene su acción, sin arrastrar (en el
+     * celular no se puede). Sólo las que el estado admite.
+     */
+    const aprobacion = solicitud.aprobacionDelPropietario ?? null;
+    const esperaAlPropietario = aprobacion?.estado === 'PENDIENTE';
+    const proveedorId = (solicitud as { proveedorId?: string | null }).proveedorId ?? null;
+    if (solicitud.status === 'completed') {
+      if (onCalificado && proveedorId) {
+        acciones.push({
+          id: 'calificar',
+          etiqueta: 'Calificar al proveedor',
+          icono: Star,
+          tono: 'text-warning',
+          alElegir: () => setCalificando(true),
+        });
+      }
+      return acciones;
+    }
+    if (solicitud.status === 'cancelled') return [];
+
+    if (
+      onApproveQuote &&
+      (solicitud.status === 'reported' || solicitud.status === 'quoted') &&
+      solicitud.quotes.length > 0 &&
+      !esperaAlPropietario
+    ) {
+      const quoteId = solicitud.selectedQuoteId ?? (solicitud.quotes.length === 1 ? solicitud.quotes[0].id : null);
+      if (quoteId) {
+        acciones.push({
+          id: 'aprobar',
+          etiqueta: 'Aprobar cotización',
+          icono: Check,
+          tono: 'text-success',
+          alElegir: () => onApproveQuote(solicitud.id, quoteId),
+        });
+      }
+    }
+    if (onStatusChange && solicitud.status === 'approved') {
+      acciones.push({
+        id: 'iniciar',
+        etiqueta: t('inmobiliaria.mantenimiento.startWork'),
+        icono: Play,
+        alElegir: () => onStatusChange(solicitud.id, 'in_progress'),
+      });
+    }
+    if (onStatusChange && solicitud.status === 'in_progress') {
+      acciones.push({
+        id: 'completar',
+        etiqueta: 'Completar (fotos y costo final)',
+        icono: CheckCircle,
+        tono: 'text-success',
+        alElegir: () => setShowCompleteDialog(true),
+      });
+    }
 
     if (onRequestQuote) {
       acciones.push({
@@ -470,7 +553,7 @@ export function MantenimientoViewer({
     }
 
     return acciones;
-  }, [solicitud, onRequestQuote, onStatusChange, t]);
+  }, [solicitud, onRequestQuote, onStatusChange, onApproveQuote, onCalificado, t]);
 
   const handleAddNote = () => {
     if (solicitud && onAddNote && noteText.trim()) {
@@ -513,11 +596,11 @@ export function MantenimientoViewer({
   return (
     <>
       <Cajon abierto={isOpen} onOpenChange={(open) => !open && onClose()} ancho="sm:max-w-xl">
-        {/* Cabecera fija. El ícono del tipo va a la izquierda del título y las
-            insignias debajo, por eso no usa `CajonCabecera`. El `pr-14` del
-            cajón reserva el hueco de la ✕, que es la misma de todo el producto. */}
-        <div className="flex-none border-b border-border px-6 py-5 pr-14">
-          <div className="flex items-start gap-3">
+        {/* Cabecera fija: el ícono del tipo a la izquierda del título, el menú
+            junto a la ✕ (que es la misma de todo el producto) y las insignias
+            debajo. */}
+        <SheetHeader
+          leading={
             <div
               className={cn(
                 'w-10 h-10 rounded-md flex items-center justify-center flex-shrink-0',
@@ -526,49 +609,48 @@ export function MantenimientoViewer({
             >
               <TypeIcon className={cn('w-5 h-5', priorityStyle.text)} />
             </div>
-            <div className="min-w-0 flex-1">
-              <SheetTitle className="text-left text-lg font-semibold text-fg">{solicitud.title}</SheetTitle>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {typeInfo?.labelEs} · {fmtDate(solicitud.createdAt)}
-              </p>
-            </div>
-
-            {/* Los tres puntos del detalle.
-                🔴 Antes NO existían: el detalle no tenía menú ninguno, así que
-                «agregarle una cotización desde los tres puntos» no era un botón
-                roto, era un botón que no estaba (Nico, 2026-09-12). Sólo lleva
-                acciones que de verdad hacen algo; una solicitud cerrada no
-                muestra menú porque no queda nada que hacerle. */}
-            {accionesDelMenu.length > 0 && (
-              <DropdownList open={menuAbierto} onOpenChange={setMenuAbierto}>
-                <DropdownListTrigger asChild>
-                  <IconButton
-                    variant="ghost"
-                    size="sm"
-                    icon={<DotsThree className="w-5 h-5" weight="bold" />}
-                    aria-label={t('inmobiliaria.mantenimiento.moreActions')}
-                    data-testid="mantenimiento-detalle-menu"
-                  />
-                </DropdownListTrigger>
-                <DropdownListContent align="end" className="w-56">
-                  {accionesDelMenu.map((accion) => (
-                    <DropdownListItem
-                      key={accion.id}
-                      className={cn('gap-3', accion.tono)}
-                      onClick={accion.alElegir}
-                      data-testid={`mantenimiento-detalle-${accion.id}`}
-                    >
-                      <accion.icono className="w-4 h-4" />
-                      <span className="text-sm">{accion.etiqueta}</span>
-                    </DropdownListItem>
-                  ))}
-                </DropdownListContent>
-              </DropdownList>
-            )}
-          </div>
-
+          }
+          title={solicitud.title}
+          description={`${typeInfo?.labelEs ?? ''} · ${fmtDate(solicitud.createdAt)}`}
+          actions={
+            accionesDelMenu.length > 0 ? (
+              <>
+                {/* Los tres puntos del detalle.
+                    🔴 Antes NO existían: el detalle no tenía menú ninguno, así que
+                    «agregarle una cotización desde los tres puntos» no era un botón
+                    roto, era un botón que no estaba (Nico, 2026-09-12). Sólo lleva
+                    acciones que de verdad hacen algo; una solicitud cerrada no
+                    muestra menú porque no queda nada que hacerle. */}
+                <DropdownList open={menuAbierto} onOpenChange={setMenuAbierto}>
+                  <DropdownListTrigger asChild>
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      icon={<DotsThree className="w-5 h-5" weight="bold" />}
+                      aria-label={t('inmobiliaria.mantenimiento.moreActions')}
+                      data-testid="mantenimiento-detalle-menu"
+                    />
+                  </DropdownListTrigger>
+                  <DropdownListContent align="end" className="w-56">
+                    {accionesDelMenu.map((accion) => (
+                      <DropdownListItem
+                        key={accion.id}
+                        className={cn('gap-3', accion.tono)}
+                        onClick={accion.alElegir}
+                        data-testid={`mantenimiento-detalle-${accion.id}`}
+                      >
+                        <accion.icono className="w-4 h-4" />
+                        <span className="text-sm">{accion.etiqueta}</span>
+                      </DropdownListItem>
+                    ))}
+                  </DropdownListContent>
+                </DropdownList>
+              </>
+            ) : undefined
+          }
+        >
           {/* Status & Priority Badges */}
-          <div className="flex flex-wrap gap-2 mt-3">
+          <div className="flex flex-wrap gap-2 mt-2.5">
             <span
               className={cn(
                 'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
@@ -590,7 +672,7 @@ export function MantenimientoViewer({
               {t('inmobiliaria.mantenimiento.priorityLabel')}: {t(priorityStyle.labelKey)}
             </span>
           </div>
-        </div>
+        </SheetHeader>
 
         {/* Content */}
         <CajonCuerpo className="space-y-6">
@@ -627,7 +709,19 @@ export function MantenimientoViewer({
               <FileText className="w-4 h-4" />
               {t('inmobiliaria.mantenimiento.descriptionLabel')}
             </h4>
-            <p className="text-sm text-muted-foreground">{solicitud.description}</p>
+            <p className="whitespace-pre-line text-sm text-muted-foreground">{solicitud.description}</p>
+            {/* PI-28: la reparación que radicó el inquilino (o el propietario) en su portal. */}
+            {solicitud.pqrs ? (
+              <p className="text-sm" data-testid="mantenimiento-de-la-pqrs">
+                Viene de la {solicitud.pqrs.radicado} del portal.{' '}
+                <Link
+                  href={`/panel/inmobiliaria/solicitudes?pqrs=${encodeURIComponent(solicitud.pqrs.id)}`}
+                  className="font-medium text-primary underline-offset-4 hover:underline"
+                >
+                  Ver la PQRS
+                </Link>
+              </p>
+            ) : null}
           </div>
 
           {/* Before Photos */}
@@ -838,9 +932,10 @@ export function MantenimientoViewer({
         </DialogContent>
       </Dialog>
 
-      {/* Cancel Confirmation Dialog */}
+      {/* Cancelar la solicitud: destructiva (medallón y botón rojos). No se
+          borra; el texto dice qué deja de poderse hacer. */}
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <DialogContent>
+        <DialogContent size="sm" variant="destructive" icon={<XCircle weight="bold" />}>
           <DialogHeader>
             <DialogTitle>{t('inmobiliaria.mantenimiento.cancelRequest')}</DialogTitle>
             <DialogDescription>
@@ -866,21 +961,31 @@ export function MantenimientoViewer({
         </DialogContent>
       </Dialog>
 
-      {/* Complete Dialog */}
+      {/* Marcar como completada: confirmación. El medallón cobalto con el ✓ y
+          el botón principal cobalto (nada de verde a mano). Sin campo de notas
+          de cierre: `onStatusChange(id, 'completed')` no las lleva a ningún
+          lado y se perdían al confirmar (Nico, 02-10). */}
+      {onCompletada ? (
+        <CompletarSolicitudDialog
+          abierto={showCompleteDialog}
+          solicitudId={solicitud.id}
+          costoAprobado={solicitud.approvedAmount ?? null}
+          onCerrar={() => setShowCompleteDialog(false)}
+          onCompletada={async (completada) => {
+            setShowCompleteDialog(false);
+            await onCompletada(completada);
+          }}
+          t={t}
+        />
+      ) : (
       <Dialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
-        <DialogContent>
+        <DialogContent variant="confirm" icon={<CheckCircle weight="bold" />}>
           <DialogHeader>
             <DialogTitle>{t('inmobiliaria.mantenimiento.markAsCompleted')}</DialogTitle>
             <DialogDescription>
               {t('inmobiliaria.mantenimiento.completeConfirm')}
             </DialogDescription>
           </DialogHeader>
-          <Textarea
-            value={completionNotes}
-            onChange={(e) => setCompletionNotes(e.target.value)}
-            placeholder={t('inmobiliaria.mantenimiento.completionNotesPlaceholder')}
-            className="w-full min-h-[100px] resize-none"
-          />
           <DialogFooter>
             <Button
               variant="outline"
@@ -889,17 +994,29 @@ export function MantenimientoViewer({
             >
               {t('inmobiliaria.mantenimiento.cancel')}
             </Button>
-            {/* success/green: Cadence Button has no success variant (logged gap) — real Button + bg override. */}
             <Button
               hideArrow
               onClick={handleComplete}
-              className="bg-success text-white hover:bg-success/90"
             >
               {t('inmobiliaria.mantenimiento.confirmCompleted')}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      )}
+
+      {onCalificado && (solicitud as { proveedorId?: string | null }).proveedorId && (
+        <CalificarProveedorDialog
+          abierto={calificando}
+          onOpenChange={setCalificando}
+          proveedorId={(solicitud as { proveedorId?: string | null }).proveedorId as string}
+          proveedorNombre={
+            solicitud.quotes.find((q) => q.id === solicitud.selectedQuoteId)?.providerName ?? 'el proveedor'
+          }
+          solicitudId={solicitud.id}
+          onCalificado={onCalificado}
+        />
+      )}
     </>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/contratos/modo-de-cobro'
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef, useId } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   CaretLeft,
@@ -25,13 +25,40 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import {
   ANIOS_HACIA_ADELANTE,
   ANIOS_HACIA_ATRAS,
-  CANON_MAXIMO_COP,
   dentroDe,
+  finPorDefectoISO,
   hace,
-  oneYearAheadISO,
   todayISO,
 } from './fechas-y-topes';
+import { ResumenDelContratoNuevo } from '@/components/contratos/ResumenDelContratoNuevo';
+import { primerCanon } from '@/lib/contratos/primer-canon';
+import { avanceDelContrato } from '@/lib/contratos/avance-del-contrato';
+import { ritmoDePago } from '@/lib/contratos/ritmo-de-pago';
+import { agencyApi } from '@/lib/api/inmobiliaria.service';
+import type { AgenciaConTerminos } from '@/lib/contratos/terminos-por-defecto';
+import { terminosPorDefectoDeLaAgencia } from '@/lib/contratos/terminos-por-defecto';
+import {
+  porQueSeProponeElProrrateo,
+  terminosConLosValoresDelBack,
+  type ValoresPorDefectoDelContrato,
+} from '@/lib/contratos/valores-por-defecto';
+import { usoPorElTipo } from '@/lib/contratos/uso-del-inmueble';
+import { MENSAJES_DEL_CONTRATO, revisarTerminosDelContrato } from '@/lib/contratos/limites-del-contrato';
+import { AREAS_DE_LA_DEUDA } from '@/lib/plata/con-centavos';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
+import {
+  ariaDelCampoDelContrato,
+  enfocarCampoDelContrato,
+  idDelCampoDelContrato,
+  motivoDelFalloDelContrato,
+  repartirErroresDelContrato,
+  type CampoDelContrato,
+} from '@/lib/contratos/errores-del-contrato';
+import { CampoDelTermino as Field } from '@/components/contract/CampoDelTermino';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Spinner } from '@/components/ui/spinner';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import {
   Select,
   SelectContent,
@@ -39,7 +66,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { IconButton } from '@leasefy/cadence';
+import { CrossFade, IconButton, MotionIndicator, Presence } from '@leasefy/cadence';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { RecorridoHilo } from '@/components/inmobiliaria/recorrido/RecorridoHilo';
 import { RespaldoDelArriendo } from '@/components/inmobiliaria/RespaldoDelArriendo';
@@ -48,11 +75,11 @@ import {
   PartesDelContratoManual,
   validarPartes,
   type PartesManuales,
+  type PersonaDelInquilino,
 } from '@/components/contratos/PartesDelContratoManual';
 import Link from 'next/link';
 import { useContractActions } from '@/lib/hooks/useContracts';
 import {
-  mensajeDelFallo,
   inmuebleOcupado,
   contratoDuplicado,
   isPermissionError,
@@ -75,7 +102,15 @@ import {
   terminosDeCobro,
   validarDiasDePlazo,
 } from '@/lib/contratos/terminos-de-cobro';
-import { ArmarContratoDesdePlantilla } from '@/components/contratos/plantilla/ArmarContratoDesdePlantilla';
+import {
+  ArmarContratoDesdePlantilla,
+  type IdentificacionDelArrendatario,
+} from '@/components/contratos/plantilla/ArmarContratoDesdePlantilla';
+import {
+  NOMBRE_DEL_CANDIDATO_SIN_REGISTRAR,
+  esUuid,
+  nombreDelCandidato,
+} from '@/lib/contratos/arrendatario';
 import { useContratoDesdePlantilla } from '@/lib/contratos/useContratoDesdePlantilla';
 import type {
   BorradorDeContrato,
@@ -83,6 +118,9 @@ import type {
 } from '@/lib/api/contratos-plantilla.service';
 import { BloqueoPorInventario } from '@/components/inmobiliaria/inventario/BloqueoPorInventario';
 import { inventarioDelInmuebleApi } from '@/lib/api/inventario-del-inmueble.service';
+import { AvisoInmuebleSinCanon } from '@/components/inmobiliaria/CanonPorConfirmar';
+import { esErrorInmuebleSinCanon } from '@/lib/inmuebles/canon-por-confirmar';
+import { errorDelArchivoDelContrato } from '@/lib/contratos/archivo-del-contrato';
 import {
   bloqueoDeLaConsulta,
   bloqueoDelError,
@@ -98,6 +136,8 @@ interface FormState {
   pdfFile: File | null;
   startDate: string;
   endDate: string;
+  /** QA-CONT-95 C-16: desde cuándo se cobra (recibe el inmueble). Vacío = desde el inicio. */
+  fechaDeCartera: string;
   monthlyRent: string;    // string for input binding
   deposit: string;
   paymentDay: string;
@@ -111,6 +151,33 @@ interface FormState {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 
+/**
+ * QA-INQ I-30: lo que falta para crear, en palabras, al lado del botón
+ * apagado. Antes la pantalla abría con «El canon no puede ser menor que
+ * $100.000» y «Sube el PDF del contrato» en rojo, antes de escribir nada.
+ */
+const FALTA = {
+  propertyId: 'el inmueble',
+  tenantId: 'el inquilino',
+  nombre: 'el nombre del inquilino',
+  documento: 'el documento del inquilino',
+  correo: 'el correo del inquilino',
+  pdfFile: 'el PDF del contrato',
+  contratoArmado: 'armar el contrato',
+  startDate: 'la fecha de inicio',
+  endDate: 'la fecha de fin',
+  monthlyRent: 'el canon',
+  paymentDay: 'el día de pago',
+} as const;
+/** Los del bloque «partes»: sus errores salen cuando se toca el bloque (como siempre). */
+const DE_LAS_PARTES: ReadonlySet<string> = new Set(['propertyId', 'tenantId', 'nombre', 'documento', 'correo']);
+
+/** «a», «a y b», «a, b y c». */
+function enLista(cosas: readonly string[]): string {
+  if (cosas.length <= 1) return cosas[0] ?? '';
+  return `${cosas.slice(0, -1).join(', ')} y ${cosas[cosas.length - 1]}`;
+}
+
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 function NuevoContratoContent() {
@@ -122,10 +189,38 @@ function NuevoContratoContent() {
    * eligen acá mismo; los términos y todo lo que sigue (envío, firma,
    * activación) son los mismos (Nico, 2026-09-03).
    */
-  const esManual = !applicationId && searchParams.get('modo') === 'manual';
+  /*
+   * 🔴 QA con avatares 04-10: `/contratos/nuevo` a secas (un marcador, un enlace
+   * guardado) mostraba «fue un problema nuestro… falta applicationId». Sin
+   * postulación es lo mismo que `?modo=manual`: se arma el contrato acá.
+   */
+  const esManual = !applicationId;
+  /*
+   * `?inquilino=<identidad>` (QA-INQ I-29): «Crear su contrato» desde
+   * Inquilinos llega con la persona ya elegida. `PartesDelContratoManual` la
+   * busca en su lista y, si no tiene cuenta del portal, pasa a «Nuevo» con sus
+   * datos ya escritos.
+   */
+  const inquilinoPedido = esManual ? searchParams.get('inquilino') : null;
+  /*
+   * `?inmueble=<propertyId>` (QA con avatares, 04-10): la vuelta desde el
+   * inventario de la ficha («Hacer el inventario» del bloqueo) llega con el
+   * inmueble ya elegido, para no empezar de cero.
+   */
+  const inmueblePedido = esManual ? searchParams.get('inmueble') : null;
   const actions = useContractActions();
-  const [partes, setPartes] = useState<PartesManuales>(PARTES_VACIAS);
+  const [partes, setPartes] = useState<PartesManuales>(() =>
+    inquilinoPedido
+      ? { ...PARTES_VACIAS, inquilino: { modo: 'existente', tenantId: inquilinoPedido } }
+      : PARTES_VACIAS,
+  );
   const [inmuebleElegido, setInmuebleElegido] = useState<string | null>(null);
+  /** El nombre del inquilino ya elegido de la lista, para el resumen (C-22). */
+  const [nombreDelInquilino, setNombreDelInquilino] = useState<string | null>(null);
+  // QA-CONT-95: la persona de «Ya es inquilino», para el contrato de la plantilla.
+  const [personaDelInquilino, setPersonaDelInquilino] = useState<PersonaDelInquilino | null>(null);
+  /** El tipo del inmueble elegido a mano (de su consignación): decide si hay depósito. */
+  const [tipoDelInmuebleElegido, setTipoDelInmuebleElegido] = useState<string | null>(null);
   /*
    * El mandato del inmueble elegido a mano. De ahí sale el PROPIETARIO, que es
    * quien firma como arrendador: con sólo el `propertyId` el backend lo busca
@@ -141,6 +236,20 @@ function NuevoContratoContent() {
   // Los «falta esto» del bloque manual recién después de tocarlo: una pantalla
   // que abre en rojo antes de que la persona haga nada regaña por adelantado.
   const [partesTocadas, setPartesTocadas] = useState(false);
+  /*
+   * T-0145 — lo que la agencia corrigió de la identificación del arrendatario
+   * en la sección de la plantilla. Sólo guarda lo EDITADO: lo que no se tocó
+   * sigue saliendo de la postulación, y si ésta cambia el nombre cambia con ella.
+   */
+  const [identificacionEditada, setIdentificacionEditada] = useState<
+    Partial<IdentificacionDelArrendatario>
+  >({});
+  /*
+   * QA-INQ I-30 (regla de ARREGLOS-4 Q2): un campo VACÍO no se pinta rojo
+   * antes de que la persona haga algo. Su error sale al dejar el campo; lo que
+   * ya tiene algo escrito se revisa en vivo, como siempre.
+   */
+  const [camposDejados, setCamposDejados] = useState<ReadonlySet<string>>(new Set());
 
   const [application, setApplication] = useState<LandlordApplicationDetail | null>(null);
   const [property, setProperty] = useState<Property | null>(null);
@@ -163,7 +272,9 @@ function NuevoContratoContent() {
       mode: 'upload',
       pdfFile: null,
       startDate: start,
-      endDate: oneYearAheadISO(start),
+      // C-13: inicio + 12 meses − 1 día (del 3-oct al 2-oct), no 12 meses y un día.
+      endDate: finPorDefectoISO(start),
+      fechaDeCartera: '',
       monthlyRent: '',
       deposit: '',
       paymentDay: '1',
@@ -174,9 +285,21 @@ function NuevoContratoContent() {
   });
 
   const [submitError, setSubmitError] = useState<string | null>(null);
+  /*
+   * 02-10-2026 · Lo que el back rechazó, en SU campo (400 `DATOS_INVALIDOS`
+   * con `campos`): el canon de once cifras bajo el canon, la fecha imposible
+   * bajo la fecha. El de un campo se borra apenas se lo toca.
+   */
+  const [erroresDelServidor, setErroresDelServidor] = useState<
+    Partial<Record<CampoDelContrato, string>>
+  >({});
   // El 409 del back cuando el inmueble ya tiene contrato: vive al lado del
   // selector y se borra apenas se elige otro inmueble.
   const [errorDeInmueble, setErrorDeInmueble] = useState<InmuebleOcupado | null>(null);
+  // T-0129 — el inmueble tiene el canon por confirmar: el 409 trae su id.
+  const [errorSinCanon, setErrorSinCanon] = useState<unknown>(null);
+  // El inmueble elegido a mano ya se sabe con canon por confirmar (flag de la consignación).
+  const [inmuebleManualSinCanon, setInmuebleManualSinCanon] = useState<string | null>(null);
   /**
    * 🔴 Nico y Juan Camilo, 2026-09-16: iniciar un contrato exige el inventario
    * del inmueble completo y actualizado. Se pregunta al elegir el inmueble
@@ -185,6 +308,13 @@ function NuevoContratoContent() {
    */
   const [bloqueoDeInventario, setBloqueoDeInventario] = useState<BloqueoPorInventarioDatos | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  /*
+   * QA-CONT-95 C-09 (ronda 3): el archivo rechazado (.docx, PDF de más de
+   * 10 MB) lo dice JUNTO al campo. Antes el mensaje iba al aviso del final de
+   * la página, lejos de donde la persona acababa de soltar el archivo, y
+   * parecía que el archivo «sólo no se tomaba».
+   */
+  const [errorDelPdf, setErrorDelPdf] = useState<string | null>(null);
   // Paso 11 del recorrido: qué aseguradora aprobó y con qué número. Antes no
   // se registraba en ningún lado, así que meses después nadie sabía a quién
   // reclamarle. Ver src/lib/inmobiliaria/respaldo.ts.
@@ -255,7 +385,7 @@ function NuevoContratoContent() {
       } catch (err) {
         if (cancelled) return;
         setLoadErrorCrudo(err);
-        setLoadError(err instanceof Error ? err.message : 'No se pudo cargar la aplicación');
+        setLoadError(mensajeParaLaPersona(err, { porDefecto: 'No se pudo cargar la postulación.', accion: 'cargar la postulación' }));
       } finally {
         if (!cancelled) setIsLoading(false);
       }
@@ -266,21 +396,120 @@ function NuevoContratoContent() {
   // esta carga: es el único disparador que tiene esa pantalla.
   }, [applicationId, esManual, intento]);
 
+  /*
+   * C-13 (Nico, 03-10-2026: «los de la inmobiliaria»): el día de pago y el
+   * prorrateo por defecto salen de la configuración de la inmobiliaria. Se
+   * aplican UNA vez, al llegar, y sólo sobre lo que la persona no tocó. Se
+   * leen de `GET /inmobiliaria/agency` (lo ven todos los roles; la
+   * configuración completa es sólo del administrador). Si falla, el formulario
+   * se queda con lo de siempre.
+   */
+  const [agenciaConTerminos, setAgenciaConTerminos] = useState<AgenciaConTerminos | null>(null);
+  useEffect(() => {
+    let vivo = true;
+    Promise.resolve()
+      .then(() => agencyApi.getMyAgency())
+      .then((a) => {
+        if (vivo && a) setAgenciaConTerminos(a as unknown as AgenciaConTerminos);
+      })
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, []);
+  /*
+   * SEGUIMIENTO-FRONT (C-13, back ff282197): el prorrateo, los días de plazo y
+   * el fin sugerido salen de `GET /contracts/valores-por-defecto` — los de la
+   * inmobiliaria resueltos por el back—. `GET /inmobiliaria/agency` no publica
+   * el prorrateo, así que el formulario abría «No» en una inmobiliaria que
+   * prorratea. Si la ruta falla (un back anterior), queda lo de la agencia.
+   */
+  const [valoresDelBack, setValoresDelBack] = useState<ValoresPorDefectoDelContrato | null>(null);
+  const inicioDeLosValores = useRef(form.startDate);
+  useEffect(() => {
+    let vivo = true;
+    // Dentro de una promesa (como la agencia): si el servicio no está —un doble
+    // de prueba, un back anterior—, el error queda en el `catch`.
+    Promise.resolve()
+      .then(() => contractsApi.valoresPorDefecto(inicioDeLosValores.current || undefined))
+      .then((v) => {
+        if (vivo && v) setValoresDelBack(v);
+      })
+      .catch(() => undefined);
+    return () => {
+      vivo = false;
+    };
+  }, []);
+  const porDefecto = useMemo(
+    () => terminosConLosValoresDelBack(terminosPorDefectoDeLaAgencia(agenciaConTerminos), valoresDelBack),
+    [agenciaConTerminos, valoresDelBack],
+  );
+  const tocados = useRef<Set<keyof FormState>>(new Set());
+  const porDefectoAplicado = useRef(false);
+  const valoresAplicados = useRef(false);
+  useEffect(() => {
+    if (!porDefecto || porDefectoAplicado.current) return;
+    porDefectoAplicado.current = true;
+    setForm((f) => ({
+      ...f,
+      paymentDay:
+        porDefecto.diaDePago !== null && !tocados.current.has('paymentDay')
+          ? String(porDefecto.diaDePago)
+          : f.paymentDay,
+      prorratearPrimerMes:
+        porDefecto.prorratear !== null && !tocados.current.has('prorratearPrimerMes') && !valoresAplicados.current
+          ? porDefecto.prorratear
+          : f.prorratearPrimerMes,
+    }));
+  }, [porDefecto]);
+  useEffect(() => {
+    if (!valoresDelBack || valoresAplicados.current) return;
+    valoresAplicados.current = true;
+    setForm((f) => ({
+      ...f,
+      prorratearPrimerMes: tocados.current.has('prorratearPrimerMes') ? f.prorratearPrimerMes : valoresDelBack.prorratear,
+      // El fin que sugiere el back para el inicio que se le preguntó, mientras
+      // nadie haya tocado ni el inicio ni el fin (C-13: inicio + 12 meses − 1 día).
+      endDate:
+        valoresDelBack.finSugerido &&
+        !tocados.current.has('endDate') &&
+        f.startDate === inicioDeLosValores.current &&
+        f.endDate === finPorDefectoISO(f.startDate)
+          ? valoresDelBack.finSugerido
+          : f.endDate,
+    }));
+  }, [valoresDelBack]);
+
   const updateForm = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
-    setForm((f) => ({ ...f, [key]: value }));
+    tocados.current.add(key);
+    setForm((f) => {
+      /*
+       * C-13: la fecha de fin sigue al inicio mientras nadie la haya cambiado
+       * a mano (inicio + 12 meses − 1 día). Una vez tocada, manda la persona.
+       */
+      if (key === 'startDate' && !tocados.current.has('endDate') && f.endDate === finPorDefectoISO(f.startDate)) {
+        const inicio = value as string;
+        return { ...f, startDate: inicio, endDate: inicio ? finPorDefectoISO(inicio) : f.endDate };
+      }
+      return { ...f, [key]: value };
+    });
+    setErroresDelServidor((e) => {
+      if (!(key in e)) return e;
+      const resto = { ...e };
+      delete resto[key as CampoDelContrato];
+      return resto;
+    });
   }, []);
 
   // PDF handlers
   const onPickFile = useCallback((file: File | null) => {
     if (!file) return;
-    if (file.type !== 'application/pdf') {
-      setSubmitError('Solo se permiten archivos PDF.');
+    const error = errorDelArchivoDelContrato(file);
+    if (error) {
+      setErrorDelPdf(error);
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      setSubmitError('El PDF no puede superar los 10 MB.');
-      return;
-    }
+    setErrorDelPdf(null);
     setSubmitError(null);
     updateForm('pdfFile', file);
   }, [updateForm]);
@@ -299,18 +528,86 @@ function NuevoContratoContent() {
    * crea tienen que decir lo mismo. El hook vuelve a preparar cuando esto
    * cambia, y marca como viejo cualquier PDF armado antes del cambio.
    */
+  const inquilinoNuevo = esManual && partes.inquilino.modo === 'nuevo' ? partes.inquilino : null;
+  const existente = esManual && partes.inquilino.modo === 'existente' ? partes.inquilino : null;
+  /*
+   * 🔴 `tenantId` sólo viaja si es un UUID: el back lo valida con `@IsUUID` y la
+   * lista de inquilinos puede traer llaves `doc:…`. Con una de esas el inquilino
+   * se describe con lo que la lista sabe de él (`datos`), como `arrendatario*`.
+   */
+  const tenantIdReal = existente && esUuid(existente.tenantId) ? existente.tenantId : null;
+  /*
+   * Lo que se sabe del inquilino existente: lo que trajo la selección (`datos`)
+   * o, si llegó por `?inquilino=` y no pasó por la lista, la persona que
+   * `PartesDelContratoManual` encontró (QA-CONT-95: sin su nombre y documento la
+   * plantilla nunca armaba).
+   */
+  const datosDelExistente = existente?.datos;
+  const datosDeLaLista = useMemo(
+    () =>
+      datosDelExistente ??
+      (existente && personaDelInquilino
+        ? {
+            nombre: personaDelInquilino.nombre,
+            documento: personaDelInquilino.documento ?? '',
+            correo: personaDelInquilino.correo ?? '',
+            telefono: personaDelInquilino.telefono ?? '',
+          }
+        : null),
+    // `existente` sólo decide si hay a quién describir.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [datosDelExistente, Boolean(existente), personaDelInquilino],
+  );
+  const mandarDatosDeLaLista = Boolean(existente && !tenantIdReal && datosDeLaLista);
+  const nombreConocido = esManual
+    ? datosDeLaLista?.nombre.trim() || null
+    : nombreDelCandidato(application);
+  const documentoConocido = datosDeLaLista?.documento.trim() ?? '';
+  // Con un inquilino nuevo tecleado arriba, esos datos mandan y el bloque de la
+  // plantilla no se pinta (sería pedir lo mismo dos veces).
+  const mostrarIdentificacion = !inquilinoNuevo;
+  const identificacion: IdentificacionDelArrendatario = {
+    nombre: identificacionEditada.nombre ?? nombreConocido ?? '',
+    tipoDocumento: identificacionEditada.tipoDocumento ?? 'CC',
+    documento: identificacionEditada.documento ?? documentoConocido,
+  };
+
   const borrador = useMemo<BorradorDeContrato>(() => {
     const canon = Number(form.monthlyRent);
     const dia = Number(form.paymentDay);
-    const inquilino = esManual && partes.inquilino.modo === 'nuevo' ? partes.inquilino : null;
+    // Lo que se ve en la identificación: lo editado, o lo conocido.
+    const documentoEscrito = (identificacionEditada.documento ?? documentoConocido).trim();
+    const nombreEscrito = (identificacionEditada.nombre ?? nombreConocido ?? '').trim();
+    // Con un `tenantId` real el back completa desde el perfil: sólo viaja lo que
+    // la agencia corrigió. Sin él (postulación con nombre conocido, llave
+    // sintética) viaja lo que se sabe.
+    const soloCorregido = Boolean(tenantIdReal);
     return {
       consignacionId: consignacionElegida ?? undefined,
       propertyId: (esManual ? partes.propertyId : property?.id) || undefined,
+      // T-0145: el backend resuelve al arrendatario desde la postulación o desde
+      // el inquilino existente; lo que se mande abajo sólo lo corrige.
+      applicationId: (!esManual && applicationId) || undefined,
+      tenantId: tenantIdReal ?? undefined,
       uso: uso || undefined,
-      arrendatarioNombre: inquilino?.nombre.trim() || application?.tenantName || undefined,
-      arrendatarioDocumento: inquilino?.documento.trim() || undefined,
-      arrendatarioEmail: inquilino?.correo.trim() || undefined,
-      arrendatarioTelefono: inquilino?.telefono.trim() || undefined,
+      arrendatarioNombre: inquilinoNuevo
+        ? inquilinoNuevo.nombre.trim() || undefined
+        : (soloCorregido ? identificacionEditada.nombre?.trim() : nombreEscrito) || undefined,
+      arrendatarioDocumento: inquilinoNuevo
+        ? inquilinoNuevo.documento.trim() || undefined
+        : (soloCorregido ? identificacionEditada.documento?.trim() : documentoEscrito) || undefined,
+      // Sin documento escrito no se manda el tipo: así el backend usa el del
+      // perfil del inquilino en vez de pisarlo con un «CC» por defecto.
+      arrendatarioTipoDocumento:
+        !inquilinoNuevo && (soloCorregido ? identificacionEditada.documento?.trim() : documentoEscrito)
+          ? (identificacionEditada.tipoDocumento ?? 'CC')
+          : undefined,
+      arrendatarioEmail:
+        (inquilinoNuevo?.correo.trim() || (mandarDatosDeLaLista ? datosDeLaLista?.correo.trim() : '')) ||
+        undefined,
+      arrendatarioTelefono:
+        (inquilinoNuevo?.telefono.trim() || (mandarDatosDeLaLista ? datosDeLaLista?.telefono.trim() : '')) ||
+        undefined,
       canonMensual: Number.isFinite(canon) && canon > 0 ? canon : undefined,
       diaDePago: Number.isFinite(dia) && dia >= 1 && dia <= 31 ? dia : undefined,
       fechaInicio: form.startDate || undefined,
@@ -324,15 +621,36 @@ function NuevoContratoContent() {
     esManual,
     partes,
     property?.id,
-    application?.tenantName,
+    applicationId,
+    nombreConocido,
+    documentoConocido,
+    tenantIdReal,
+    mandarDatosDeLaLista,
+    datosDeLaLista,
+    inquilinoNuevo,
+    identificacionEditada,
     consignacionElegida,
     uso,
+    personaDelInquilino,
   ]);
 
   const armadoPorElSistema = form.mode === 'template' || form.mode === 'generate';
+  /*
+   * Nico (03-10-2026): «Depósito: dejarlo sólo para comercial». En vivienda no
+   * hay depósito en dinero (Ley 820, art. 16); el campo sólo aparece cuando el
+   * contrato es comercial: por la respuesta de la persona (`uso`) o por el
+   * tipo del inmueble, con la misma lista del back. Sin saberlo, no se pide.
+   */
+  const usoDelContrato = uso || usoPorElTipo(esManual ? tipoDelInmuebleElegido : property?.type);
+  const pideDeposito = usoDelContrato === 'COMERCIAL';
+  // La marca de la forma elegida se desliza de una tarjeta a otra.
+  const marcaDelModo = `${useId()}-modo`;
   // Con el PDF propio se prepara UNA vez, para saber si la tarjeta de IA se
   // puede prender. Sólo dentro del panel se vuelve a preguntar en cada cambio.
   const plantilla = useContratoDesdePlantilla(borrador, { activo: armadoPorElSistema });
+
+  // «Centavos en todo» (C3-FRONT): ¿la deuda ya se escribe al centavo?
+  const deudaConCentavos = usePlataConCentavos(AREAS_DE_LA_DEUDA);
 
   // Validation
   const validation = useMemo(() => {
@@ -351,24 +669,32 @@ function NuevoContratoContent() {
     if (armadoPorElSistema && plantilla.generadoQuedoViejo) {
       errors.contratoArmado = 'Vuelve a armar el contrato: cambiaste datos después de generarlo.';
     }
+    /*
+     * 🔴 C22 (auditoría 2026-09-13) y 02-10-2026: había piso y no había techo,
+     * y un canon de once cifras llegaba a `monthly_rent` (`int4`) y volvía
+     * como un 500 ilegible. Los topes y las frases son ahora los MISMOS del
+     * DTO del back (`lib/contratos/limites-del-contrato`): se ataja acá con la
+     * frase que diría el back.
+     */
+    Object.assign(
+      errors,
+      revisarTerminosDelContrato(
+        {
+          startDate: form.startDate,
+          endDate: form.endDate,
+          monthlyRent: form.monthlyRent,
+          // Sin depósito en vivienda: un valor que no se ve no puede trabar el botón.
+          deposit: pideDeposito ? form.deposit : '',
+          paymentDay: form.paymentDay,
+        },
+        // «Centavos en todo»: canon y depósito con centavos sólo con las dos
+        // áreas de la deuda prendidas (`CreateContractDto`).
+        { canonConCentavos: deudaConCentavos, depositoConCentavos: deudaConCentavos },
+      ),
+    );
     if (!form.startDate) errors.startDate = 'Requerido';
     if (!form.endDate) errors.endDate = 'Requerido';
-    if (form.startDate && form.endDate && form.endDate <= form.startDate) {
-      errors.endDate = 'La fecha fin debe ser posterior a la de inicio';
-    }
-    /*
-     * 🔴 C22 (auditoría 2026-09-13): había piso y no había techo. Un canon de
-     * 1e15 pasaba la validación y llegaba al back, donde `monthly_rent` es un
-     * `int4` que topa en 2.147.483.647: reventaba como un 500 ilegible, o —
-     * peor— entraba truncado y facturaba ese número todos los meses. El tope
-     * está por debajo del límite de la columna a propósito: mil millones de
-     * canon mensual no existe en Colombia, y un número así siempre es un dedo.
-     */
-    const rent = Number(form.monthlyRent);
-    if (!rent || rent < 100_000) errors.monthlyRent = 'Mínimo 100.000 COP';
-    else if (rent > CANON_MAXIMO_COP) {
-      errors.monthlyRent = 'Ese canon es demasiado alto: revisa los ceros.';
-    }
+    if (!form.monthlyRent.trim()) errors.monthlyRent = MENSAJES_DEL_CONTRATO.canonMinimo;
 
     /*
      * Y no había ningún tope de AÑO. Un «2016» o un «2036» tecleados por error
@@ -377,17 +703,25 @@ function NuevoContratoContent() {
      * sigue siendo legítimo —un contrato que empezó el mes pasado se carga
      * hoy—: lo que se bloquea es el año equivocado, no el pasado.
      */
-    if (form.startDate) {
+    if (form.startDate && !errors.startDate) {
       if (form.startDate < hace(ANIOS_HACIA_ATRAS)) {
-        errors.startDate = `No puede empezar hace más de ${ANIOS_HACIA_ATRAS} año(s). Revisa el año.`;
+        errors.startDate = `No puede empezar hace más de ${anios(ANIOS_HACIA_ATRAS)}. Revisa el año.`;
       } else if (form.startDate > dentroDe(ANIOS_HACIA_ADELANTE)) {
-        errors.startDate = `No puede empezar dentro de más de ${ANIOS_HACIA_ADELANTE} año(s). Revisa el año.`;
+        errors.startDate = `No puede empezar dentro de más de ${anios(ANIOS_HACIA_ADELANTE)}. Revisa el año.`;
       }
     }
-    const dep = Number(form.deposit);
-    if (isNaN(dep) || dep < 0) errors.deposit = 'Ingresa un valor válido';
-    const day = Number(form.paymentDay);
-    if (!day || day < 1 || day > 28) errors.paymentDay = 'Entre 1 y 28';
+    /*
+     * QA-CONT-95 C-16 (`fecha-de-cartera.md`, regla 3): la fecha de cartera es
+     * ≥ inicio SIEMPRE, y no después del fin. Vacía = se cobra desde el inicio.
+     */
+    if (form.fechaDeCartera) {
+      if (form.startDate && form.fechaDeCartera < form.startDate) {
+        errors.fechaDeCartera = 'No puede ser antes de la fecha de inicio: se cobra desde que recibe el inmueble.';
+      } else if (form.endDate && form.fechaDeCartera > form.endDate) {
+        errors.fechaDeCartera = 'No puede ser después de la fecha de fin.';
+      }
+    }
+    if (!form.paymentDay.trim()) errors.paymentDay = MENSAJES_DEL_CONTRATO.diaDePago;
     const errorDePlazo = validarDiasDePlazo(form.diasDePlazo);
     if (errorDePlazo) errors.diasDePlazo = errorDePlazo;
     if (esManual) Object.assign(errors, validarPartes(partes));
@@ -396,9 +730,11 @@ function NuevoContratoContent() {
     form,
     esManual,
     partes,
+    pideDeposito,
     armadoPorElSistema,
     plantilla.generado,
     plantilla.generadoQuedoViejo,
+    deudaConCentavos,
   ]);
 
   // El respaldo es opcional —hay arriendos con codeudor y sin póliza— pero si
@@ -462,7 +798,7 @@ function NuevoContratoContent() {
         } else {
           const uploaded = await actions.uploadPdf(form.pdfFile);
           if (!uploaded) {
-            setSubmitError('No se pudo subir el PDF. Intenta de nuevo.');
+            setSubmitError('No pudimos guardar el PDF del contrato. Vuelve a crearlo en un momento.');
             return;
           }
           uploadedPdfPath = uploaded.uploadedPdfPath;
@@ -490,8 +826,10 @@ function NuevoContratoContent() {
       const terminos = {
         startDate: form.startDate,
         endDate: form.endDate,
+        // QA-CONT-95 C-16: sólo si la escribió; vacía = desde el inicio.
+        ...(form.fechaDeCartera ? { fechaDeCartera: form.fechaDeCartera } : {}),
         monthlyRent: Number(form.monthlyRent),
-        deposit: Number(form.deposit),
+        deposit: pideDeposito ? Number(form.deposit) : 0,
         paymentDay: Number(form.paymentDay),
         ...terminosDeCobro(form),
         insuranceTier: form.insuranceTier,
@@ -524,6 +862,12 @@ function NuevoContratoContent() {
         });
         if (creado.inquilino.invitado) {
           toast.success('Contrato creado. Le mandamos al inquilino la invitación para crear su cuenta.');
+        } else if (creado.inquilino.userId === null) {
+          // QA-CONT CR-14 (back 2a681c93): el borrador nace SIN la cuenta del
+          // inquilino; para enviarlo a firmar hay que invitarlo desde el contrato.
+          toast.success('Contrato creado como borrador.', {
+            description: 'El inquilino todavía no tiene cuenta en el portal: invítalo desde el contrato («Invitar al portal») antes de enviarlo a firmar.',
+          });
         } else {
           toast.success('Contrato creado.');
         }
@@ -542,6 +886,11 @@ function NuevoContratoContent() {
        *   - postulación que ya tiene contrato → se recupera y se redirige;
        *   - el resto → el motivo del back en palabras.
        */
+      if (esErrorInmuebleSinCanon(err)) {
+        setErrorSinCanon(err);
+        setSubmitError(null);
+        return;
+      }
       const bloqueo = bloqueoDelError(err);
       if (bloqueo) {
         setBloqueoDeInventario(bloqueo);
@@ -563,21 +912,126 @@ function NuevoContratoContent() {
           return;
         }
       }
+      if (isPermissionError(err)) {
+        setSubmitError('No tienes permiso para crear contratos.');
+        return;
+      }
+      /*
+       * 02-10-2026 · Un 400 con `campos` (el DTO topado, la fecha de fin antes
+       * del inicio) va a SU campo y ese campo recibe el foco; al pie queda
+       * sólo lo que no tiene dónde ir. Sin campos (un 409, un 5xx, la red),
+       * el motivo con la regla de oro: «conexión» sólo si no hubo respuesta.
+       */
+      const reparto = repartirErroresDelContrato(err, {
+        porDefecto: 'No se pudo crear el contrato.',
+        accion: 'crear el contrato',
+      });
+      if (reparto.orden.length > 0) {
+        setErroresDelServidor(reparto.porCampo);
+        setSubmitError(reparto.sueltos.length ? reparto.sueltos.join(' · ') : null);
+        enfocarCampoDelContrato(reparto.orden[0]);
+        return;
+      }
       setSubmitError(
-        isPermissionError(err)
-          ? 'No tienes permiso para crear contratos.'
-          : mensajeDelFallo(err, 'No se pudo crear el contrato. Verifica los datos e intenta de nuevo.')
+        motivoDelFalloDelContrato(err, {
+          porDefecto: 'No se pudo crear el contrato.',
+          accion: 'crear el contrato',
+        }),
       );
     }
   };
+
+  /** ¿El campo está vacío? (lo que decide si su error espera a que lo dejen). */
+  const vacio = (campo: CampoDelContrato): boolean => {
+    if (campo === 'pdfFile') return !form.pdfFile;
+    const valor = (form as unknown as Record<string, unknown>)[campo];
+    return typeof valor !== 'string' || valor.trim() === '';
+  };
+  /**
+   * El error de un campo: el del servidor gana sobre el del formulario. El del
+   * formulario, sólo si el campo tiene algo escrito o ya lo dejaron (I-30).
+   */
+  const errorDe = (campo: CampoDelContrato): string | undefined =>
+    erroresDelServidor[campo] ??
+    (!vacio(campo) || camposDejados.has(idDelCampoDelContrato(campo)) ? validation[campo] : undefined);
+  /** React avisa el `blur` de cualquier campo de adentro: se anota cuál dejaron. */
+  const alDejarUnCampo = (e: React.FocusEvent<HTMLElement>) => {
+    const id = e.target?.id;
+    if (!id) return;
+    setCamposDejados((antes) => (antes.has(id) ? antes : new Set(antes).add(id)));
+  };
+  /*
+   * El botón apagado dice por qué (R-29): lo que FALTA (vacío y todavía sin
+   * error a la vista), en palabras y sin rojo. Lo que está mal escrito ya lo
+   * dice su campo.
+   */
+  const loQueFalta = (Object.keys(FALTA) as Array<keyof typeof FALTA>).filter((clave) => {
+    if (!validation[clave]) return false;
+    if (clave === 'contratoArmado') return true;
+    if (DE_LAS_PARTES.has(clave)) return !partesTocadas;
+    return vacio(clave as CampoDelContrato) && !camposDejados.has(idDelCampoDelContrato(clave as CampoDelContrato));
+  });
+
+  /*
+   * C-22: lo que dice el resumen de la derecha. Nada de negocio nuevo: el
+   * primer canon es el espejo de la regla del back (sólo el canon), la frase
+   * de cómo se cobra es la de la ficha y los bloqueos son los mismos avisos de
+   * la izquierda, en una línea.
+   */
+  const canonDelResumen = Number(form.monthlyRent) > 0 ? Number(form.monthlyRent) : null;
+  const primerCanonDelResumen = canonDelResumen
+    ? primerCanon({ inicio: form.fechaDeCartera || form.startDate, canon: canonDelResumen, prorratear: form.prorratearPrimerMes })
+    : null;
+  const mesesDelResumen = avanceDelContrato({ inicio: form.startDate, fin: form.endDate, hoy: form.startDate || todayISO() }).meses;
+  const comoSeCobra =
+    form.startDate && !validation.diasDePlazo
+      ? ritmoDePago(
+          {
+            prorratearPrimerMes: form.prorratearPrimerMes,
+            startDate: form.startDate,
+            paymentDueDay: Number(form.paymentDay) || null,
+            diasDePlazo: form.diasDePlazo.trim() === '' ? null : Number(form.diasDePlazo),
+          },
+          porDefecto
+            ? {
+                diasDePlazo: porDefecto.diasDePlazo,
+                diaDePago: porDefecto.diaDePago,
+                // CR-31: sin plazo fijado no corre mora (lo dice el back).
+                plazoSinFijar: valoresDelBack?.reglaDeCobro?.plazoSinFijar === true,
+              }
+            : null,
+        )
+      : null;
+  const inquilinoDelResumen = esManual
+    ? partes.inquilino.modo === 'nuevo'
+      ? partes.inquilino.nombre.trim() || null
+      : nombreDelInquilino
+    : application?.tenantName ?? null;
+  const documentoDelResumen =
+    form.mode === 'upload'
+      ? form.pdfFile
+        ? `PDF propio · ${form.pdfFile.name}`
+        : null
+      : plantilla.generado && !plantilla.generadoQuedoViejo
+        ? form.mode === 'generate'
+          ? 'Generado con IA · listo'
+          : 'Plantilla de ley · lista'
+        : null;
+  const bloqueosDelResumen: string[] = [
+    // El motivo completo, con su enlace, está en el aviso debajo del inmueble.
+    ...(bloqueoDeInventario ? ['El inventario del inmueble no está completo y al día.'] : []),
+    ...(errorDeInmueble ? [errorDeInmueble.mensaje] : []),
+    ...(errorSinCanon !== null || inmuebleManualSinCanon || (!esManual && property?.canonPorConfirmar)
+      ? ['El inmueble tiene el canon por confirmar.']
+      : []),
+  ];
 
   // ─── UI ────────────────────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
-      <div className="min-h-[60vh] flex items-center justify-center">
-        <Spinner size="md" variant="muted" />
-      </div>
+      // Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»).
+      <EsqueletoDePagina variante="wizard" className="mx-auto max-w-3xl" />
     );
   }
 
@@ -601,8 +1055,21 @@ function NuevoContratoContent() {
     );
   }
 
+  /*
+   * 🔴 C-22 (Nico, 03-10-2026, captura de `?modo=manual`): «¿por qué no
+   * utilizas mejor el ancho de la página? mira todo el espacio que tiene a los
+   * lados... y mucha información en scroll». Era una columna de 768 px
+   * centrada, con 2.142 px de alto a 1440. Ahora, desde `xl`, dos columnas:
+   *   · a la IZQUIERDA lo que se elige —el inmueble y el inquilino (con sus
+   *     avisos justo debajo, C-12), el tipo de contrato, el PDF o la plantilla
+   *     y el respaldo—;
+   *   · a la DERECHA los términos y un RESUMEN que se queda fijo al hacer
+   *     scroll, con el canon, las fechas, el primer canon, lo que falta para
+   *     poder crear y el botón.
+   * Por debajo de `xl` (y a 390 px) es una sola columna, en el mismo orden.
+   */
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
+    <div className="mx-auto w-full max-w-3xl space-y-6 p-6 xl:max-w-[1600px] xl:px-8">
       {/* Header */}
       <div>
         <Button
@@ -623,7 +1090,10 @@ function NuevoContratoContent() {
           </p>
         ) : (
           <p className="text-sm text-muted-foreground mt-1">
-            Candidato: <span className="font-medium text-foreground">{application?.tenantName}</span>
+            Candidato:{' '}
+            <span className="font-medium text-foreground">
+              {nombreConocido ?? NOMBRE_DEL_CANDIDATO_SIN_REGISTRAR}
+            </span>
             {property && (
               <> · Propiedad: <span className="font-medium text-foreground">{property.title}</span></>
             )}
@@ -635,38 +1105,117 @@ function NuevoContratoContent() {
           Un contrato manual no viene de ese recorrido: no se dibuja. */}
       {!esManual && <RecorridoHilo paso="contrato" className="mb-6" />}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Las columnas se estiran a la misma altura (sin `items-start`): así el
+          resumen de la derecha tiene por dónde quedarse fijo mientras la
+          izquierda —que con la plantilla es la larga— se recorre. */}
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 xl:grid-cols-2" data-testid="nuevo-contrato-columnas">
+        {/* ── Izquierda: lo que se elige ── */}
+        <div className="min-w-0 space-y-6" data-testid="nuevo-contrato-elegir">
         {esManual && (
           <PartesDelContratoManual
+            inquilinoPedido={inquilinoPedido}
+            inmueblePedido={inmueblePedido}
             valor={partes}
-            onCambio={(v) => {
-              setPartesTocadas(true);
-              if (v.propertyId !== partes.propertyId) setErrorDeInmueble(null);
+            onCambio={(v, opciones) => {
+              if (!opciones?.automatico) setPartesTocadas(true);
+              if (v.propertyId !== partes.propertyId) {
+                setErrorDeInmueble(null);
+                setErrorSinCanon(null);
+              }
+              // Otro inquilino: lo corregido a mano era de la persona anterior.
+              const antes = partes.inquilino.modo === 'existente' ? partes.inquilino.tenantId : '';
+              const ahora = v.inquilino.modo === 'existente' ? v.inquilino.tenantId : '';
+              if (antes !== ahora) setIdentificacionEditada({});
               setPartes(v);
             }}
             errores={{
               ...(partesTocadas ? validation : {}),
+              ...erroresDelServidor,
               ...(errorDeInmueble ? { propertyId: errorDeInmueble.mensaje } : {}),
             }}
             onInmuebleElegido={(c) => {
               setInmuebleElegido(c.propertyTitle);
+              setTipoDelInmuebleElegido(c.propertyType ?? null);
               // El mandato, para que el arrendador del contrato salga del
               // propietario que lo firmó y no haya que buscarlo otra vez.
               setConsignacionElegida(c.id);
+              setInmuebleManualSinCanon(c.canonPorConfirmar ? c.propertyId : null);
               // El canon del mandato, si lo hay: una tecla menos y un número
               // que no se contradice con el de la consignación.
-              if (c.monthlyRent != null && c.monthlyRent > 0) {
+              if (!c.canonPorConfirmar && c.monthlyRent != null && c.monthlyRent > 0) {
                 setForm((f) => ({ ...f, monthlyRent: String(c.monthlyRent) }));
               }
             }}
+            onNombreDelInquilino={setNombreDelInquilino}
+            onPersonaDelInquilino={setPersonaDelInquilino}
           />
         )}
+
+        {/*
+          🔴 C-12: lo que no deja crear por culpa del INMUEBLE sale apenas se
+          elige, justo debajo del selector, y no al final del formulario
+          después de llenarlo todo. El inventario se pregunta al elegir el
+          inmueble (`para-iniciar`); el 409 del back al crear cae acá mismo.
+          Entran y salen (no saltan).
+        */}
+        <Presence show={bloqueoDeInventario !== null} initial={false} distance="xs">
+          {bloqueoDeInventario && (
+            <BloqueoPorInventario
+              bloqueo={bloqueoDeInventario}
+              // Para volver acá con lo elegido cuando el inventario quede listo.
+              volverA={
+                esManual
+                  ? inmuebleParaIniciar
+                    ? `/panel/inmobiliaria/contratos/nuevo?inmueble=${encodeURIComponent(inmuebleParaIniciar)}`
+                    : '/panel/inmobiliaria/contratos/nuevo'
+                  : `/panel/inmobiliaria/contratos/nuevo?applicationId=${encodeURIComponent(applicationId ?? '')}`
+              }
+            />
+          )}
+        </Presence>
+        <Presence
+          show={Boolean(errorDeInmueble)}
+          initial={false}
+          role="alert"
+          className="rounded-lg border border-warning/30 bg-warning-soft/40 p-4 flex items-start gap-2"
+        >
+          {errorDeInmueble && (
+            <>
+              <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="text-fg">{errorDeInmueble.mensaje}</p>
+                {errorDeInmueble.contratoId && (
+                  <Link
+                    href={`/panel/inmobiliaria/contratos/${errorDeInmueble.contratoId}`}
+                    className="mt-1 inline-block font-medium text-primary underline underline-offset-2"
+                  >
+                    Ver el contrato{errorDeInmueble.contratoNumero ? ` ${errorDeInmueble.contratoNumero}` : ''} que estorba
+                  </Link>
+                )}
+              </div>
+            </>
+          )}
+        </Presence>
+        <Presence
+          show={errorSinCanon !== null || Boolean(inmuebleManualSinCanon) || (!esManual && Boolean(property?.canonPorConfirmar))}
+          initial={false}
+          className="rounded-lg border border-warning/40 bg-warning/5 p-4"
+        >
+          <AvisoInmuebleSinCanon
+            error={errorSinCanon}
+            inmuebleId={!esManual ? property?.id : inmuebleManualSinCanon}
+          />
+        </Presence>
 
         {/* 1) Contract origin */}
         <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Tipo de contrato</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* C-14: «Generar con IA» sólo se ofrece cuando el backend dice que
+              está configurada (`iaDisponible`). Apagada con «No disponible» era
+              una promesa muerta en medio de las dos formas que sí sirven. */}
+          <div className={cn('grid grid-cols-1 gap-3', plantilla.iaDisponible === true ? 'sm:grid-cols-3' : 'sm:grid-cols-2')}>
             <ModeOption
+              marca={marcaDelModo}
               active={form.mode === 'upload'}
               onClick={() => updateForm('mode', 'upload')}
               title="Subir PDF propio"
@@ -674,37 +1223,32 @@ function NuevoContratoContent() {
               icon={UploadSimple}
             />
             <ModeOption
+              marca={marcaDelModo}
               active={form.mode === 'template'}
               onClick={() => updateForm('mode', 'template')}
               title="Usar plantilla"
               desc="El contrato de ley, con las cláusulas opcionales que elijas."
               icon={Scales}
             />
-            {/* 🔴 «Generar con IA» sólo se prende cuando el backend dice que
-                está configurada (`iaDisponible`). Mientras no lo sepamos, o
-                cuando dice que no, la tarjeta explica por qué — no promete un
-                «próximamente» que nadie va a cumplir. */}
-            <ModeOption
-              active={form.mode === 'generate'}
-              disabled={plantilla.iaDisponible !== true}
-              onClick={() => updateForm('mode', 'generate')}
-              title="Generar con IA"
-              desc={
-                plantilla.iaDisponible === true
-                  ? 'Cuentas qué quieres pactar y el asistente propone las cláusulas.'
-                  : plantilla.iaDisponible === false
-                    ? 'No está configurada en tu cuenta. Ármalo con la plantilla.'
-                    : 'Comprobando si está disponible en tu cuenta…'
-              }
-              icon={Sparkle}
-              badge={plantilla.iaDisponible === false ? 'No disponible' : undefined}
-            />
+            {plantilla.iaDisponible === true && (
+              <ModeOption
+                marca={marcaDelModo}
+                active={form.mode === 'generate'}
+                onClick={() => updateForm('mode', 'generate')}
+                title="Generar con IA"
+                desc="Cuentas qué quieres pactar y el asistente propone las cláusulas."
+                icon={Sparkle}
+              />
+            )}
           </div>
 
           {/* Vivienda o comercial. Sólo aparece cuando el backend dice que no lo
               puede deducir del inmueble: de esa respuesta depende qué LEY rige
               el contrato, así que no se elige por defecto. */}
-          {plantilla.usoIndeterminado && armadoPorElSistema && (
+          {/* QA-CONT-95 C-12: después de elegir sigue a la vista, para poder
+              cambiar de ley si se eligió mal (antes desaparecía al responder
+              `preparar` y sólo se corregía recargando). */}
+          {(plantilla.usoIndeterminado || uso) && armadoPorElSistema && (
             <div className="space-y-1.5" data-testid="nuevo-contrato-uso">
               <label className="block text-xs font-medium text-fg" htmlFor="contrato-uso">
                 Uso del inmueble
@@ -723,118 +1267,192 @@ function NuevoContratoContent() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-caption text-fg-muted">{plantilla.usoIndeterminado}</p>
+              {plantilla.usoIndeterminado ? (
+                <p className="text-caption text-fg-muted">{plantilla.usoIndeterminado}</p>
+              ) : null}
             </div>
           )}
         </section>
 
-        {armadoPorElSistema && (
-          <ArmarContratoDesdePlantilla
-            modo={form.mode === 'generate' ? 'generate' : 'template'}
-            estado={plantilla}
-          />
-        )}
+        {/* Cambiar de forma cruza lo de una con lo de la otra. `popLayout`:
+            lo nuevo entra YA en su lugar y lo viejo se va por encima. */}
+        <CrossFade
+          swapKey={armadoPorElSistema ? 'armar' : form.mode === 'upload' ? 'subir' : 'ninguno'}
+          mode="popLayout"
+          className="empty:hidden"
+        >
+          {armadoPorElSistema && (
+            <ArmarContratoDesdePlantilla
+              modo={form.mode === 'generate' ? 'generate' : 'template'}
+              estado={plantilla}
+              arrendatario={
+                mostrarIdentificacion
+                  ? {
+                      ...identificacion,
+                      onCambio: (cambio) =>
+                        setIdentificacionEditada((previa) => ({ ...previa, ...cambio })),
+                    }
+                  : undefined
+              }
+            />
+          )}
 
-        {/* 2) PDF upload */}
-        {form.mode === 'upload' && (
-          <section className="rounded-lg border border-border bg-card p-5 space-y-3">
-            <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
-            {form.pdfFile ? (
-              <div className="flex items-center gap-3 p-3 rounded-lg border border-success/30 bg-success-soft">
-                <FileText className="w-5 h-5 text-primary flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {(form.pdfFile.size / 1024).toFixed(0)} KB
-                  </p>
+          {/* 2) PDF upload */}
+          {form.mode === 'upload' && (
+            <section className="rounded-lg border border-border bg-card p-5 space-y-3">
+              <h2 className="text-base font-semibold text-foreground">PDF del contrato</h2>
+              {form.pdfFile ? (
+                <div className="flex items-center gap-3 p-3 rounded-lg border border-success/30 bg-success-soft">
+                  <FileText className="w-5 h-5 text-primary flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{form.pdfFile.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {(form.pdfFile.size / 1024).toFixed(0)} KB
+                    </p>
+                  </div>
+                  <IconButton
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => updateForm('pdfFile', null)}
+                    aria-label="Quitar"
+                    title="Quitar"
+                    className="text-muted-foreground hover:text-danger"
+                    icon={<X className="w-4 h-4" />}
+                  />
                 </div>
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => updateForm('pdfFile', null)}
-                  aria-label="Quitar"
-                  title="Quitar"
-                  className="text-muted-foreground hover:text-danger"
-                  icon={<X className="w-4 h-4" />}
-                />
-              </div>
-            ) : (
-              <label
-                htmlFor="pdf-upload"
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={onDrop}
-                className={cn(
-                  'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors',
-                  isDragging
-                    ? 'border-primary/40 bg-primary-soft/40'
-                    : 'border-border hover:border-primary/40 hover:bg-muted/50'
-                )}
-              >
-                <UploadSimple className="w-8 h-8 text-muted-foreground" />
-                <p className="text-sm text-foreground">
-                  <span className="font-medium">Haz click para subir</span> o arrastra un PDF aquí
+              ) : (
+                <label
+                  htmlFor="pdf-upload"
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={onDrop}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-2 p-8 border-2 border-dashed rounded-lg cursor-pointer transition-colors',
+                    isDragging
+                      ? 'border-primary/40 bg-primary-soft/40'
+                      : 'border-border hover:border-primary/40 hover:bg-muted/50'
+                  )}
+                >
+                  <UploadSimple className="w-8 h-8 text-muted-foreground" />
+                  <p className="text-sm text-foreground">
+                    <span className="font-medium">Haz clic para subir</span> o arrastra un PDF aquí
+                  </p>
+                  <p className="text-xs text-muted-foreground">Máx 10 MB</p>
+                  <input
+                    id="pdf-upload"
+                    type="file"
+                    accept="application/pdf"
+                    aria-invalid={errorDelPdf ? true : undefined}
+                    aria-describedby={`${idDelCampoDelContrato('pdfFile')}-error`}
+                    onChange={(e) => {
+                      onPickFile(e.target.files?.[0] ?? null);
+                      // Volver a elegir el MISMO archivo (corregido afuera) dispara otra vez.
+                      e.target.value = '';
+                    }}
+                    className="sr-only"
+                  />
+                </label>
+              )}
+              <ErrorDelCampo
+                id={`${idDelCampoDelContrato('pdfFile')}-error`}
+                mensaje={errorDelPdf ?? errorDe('pdfFile')}
+                className="mt-0"
+              />
+
+              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted rounded-md p-3">
+                <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <p>
+                  El propietario va a firmar digitalmente el contrato en Leasefy, independientemente
+                  de si el PDF ya trae firma manuscrita. Esto garantiza la trazabilidad legal.
                 </p>
-                <p className="text-xs text-muted-foreground">Máx 10 MB</p>
-                <input
-                  id="pdf-upload"
-                  type="file"
-                  accept="application/pdf"
-                  onChange={(e) => onPickFile(e.target.files?.[0] ?? null)}
-                  className="sr-only"
-                />
-              </label>
-            )}
-            {validation.pdfFile && (
-              <p className="text-xs text-danger">{validation.pdfFile}</p>
-            )}
+              </div>
+            </section>
+          )}
+        </CrossFade>
 
-            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted rounded-md p-3">
-              <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-              <p>
-                El propietario va a firmar digitalmente el contrato en Leasefy, independientemente
-                de si el PDF ya trae firma manuscrita. Esto garantiza la trazabilidad legal.
-              </p>
-            </div>
-          </section>
-        )}
+        {/* Paso 11 del recorrido: el respaldo (aseguradora y póliza). Vivía al
+            pie de «Términos»; con dos columnas va con lo que se elige, y la
+            derecha queda corta para que el resumen se vea entero. */}
+        <section className="rounded-lg border border-border bg-card p-5" data-testid="nuevo-contrato-respaldo">
+          <RespaldoDelArriendo
+            valor={respaldo}
+            onCambio={setRespaldo}
+            opciones={evaluacion?.protection_options}
+            errores={erroresRespaldo}
+            conAnalisis={!esManual}
+          />
+        </section>
+        </div>
 
+        {/* ── Derecha: los términos y el resumen fijo ── */}
+        <div className="min-w-0 space-y-6" data-testid="nuevo-contrato-terminos">
         {/* 3) Dates + amounts */}
         <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <h2 className="text-base font-semibold text-foreground">Términos</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Fecha de inicio" error={validation.startDate}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" onBlur={alDejarUnCampo}>
+            <Field id={idDelCampoDelContrato('startDate')} label="Fecha de inicio" error={errorDe('startDate')}>
               <Input
                 type="date"
+                {...ariaDelCampoDelContrato('startDate', errorDe('startDate'))}
                 value={form.startDate}
                 onChange={(e) => updateForm('startDate', e.target.value)}
               />
             </Field>
-            <Field label="Fecha de fin" error={validation.endDate}>
+            <Field id={idDelCampoDelContrato('endDate')} label="Fecha de fin" error={errorDe('endDate')}>
               <Input
                 type="date"
+                {...ariaDelCampoDelContrato('endDate', errorDe('endDate'))}
                 value={form.endDate}
                 onChange={(e) => updateForm('endDate', e.target.value)}
+              />
+            </Field>
+            {/* QA-CONT-95 C-16 (`fecha-de-cartera.md`): dos fechas, la de inicio y
+                la de cartera; el primer mes se cobra desde la de cartera. */}
+            <Field
+              id={idDelCampoDelContrato('fechaDeCartera')}
+              label="Desde cuándo se cobra (opcional)"
+              error={errorDe('fechaDeCartera')}
+              hint="El día en que recibe el inmueble. Vacío = desde la fecha de inicio."
+            >
+              <Input
+                type="date"
+                {...ariaDelCampoDelContrato('fechaDeCartera', errorDe('fechaDeCartera'))}
+                value={form.fechaDeCartera}
+                min={form.startDate || undefined}
+                max={form.endDate || undefined}
+                onChange={(e) => updateForm('fechaDeCartera', e.target.value)}
+                data-testid="fecha-de-cartera"
               />
             </Field>
             {/* El monto se agrupa DENTRO del campo. La ayudita de abajo repetía
                 la misma cifra formateada, que es donde nadie mira mientras
                 escribe; ahora sólo queda el mínimo, que sí dice algo. */}
             <Field
+              id={idDelCampoDelContrato('monthlyRent')}
               label="Canon mensual (COP)"
-              error={validation.monthlyRent}
+              error={errorDe('monthlyRent')}
               hint="Mínimo $ 100.000"
             >
               <MoneyInput
+                {...ariaDelCampoDelContrato('monthlyRent', errorDe('monthlyRent'))}
+                areas={AREAS_DE_LA_DEUDA}
                 value={form.monthlyRent}
                 onChange={(crudo) => updateForm('monthlyRent', crudo)}
               />
             </Field>
-            <Field label="Depósito (COP)" error={validation.deposit}>
-              <MoneyInput value={form.deposit} onChange={(crudo) => updateForm('deposit', crudo)} />
-            </Field>
-            <Field label="Día de pago" error={validation.paymentDay} hint={form.prorratearPrimerMes ? "Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1." : "Referencia del contrato (1 a 28). Fecha a fecha, vence el día en que empieza el período."}>
+            {pideDeposito && (
+              <Field id={idDelCampoDelContrato('deposit')} label="Depósito (COP)" error={errorDe('deposit')} hint="Sólo en comercial: en vivienda la ley no lo permite.">
+                <MoneyInput
+                  {...ariaDelCampoDelContrato('deposit', errorDe('deposit'))}
+                  areas={AREAS_DE_LA_DEUDA}
+                  value={form.deposit}
+                  onChange={(crudo) => updateForm('deposit', crudo)}
+                />
+              </Field>
+            )}
+            <Field id={idDelCampoDelContrato('paymentDay')} label="Día de pago" error={errorDe('paymentDay')} hint={form.prorratearPrimerMes ? "Referencia del contrato (1 a 28). Prorrateado, el arriendo se genera el 1." : "Referencia del contrato (1 a 28). Fecha a fecha, vence el día en que empieza el período."}>
               <Input
+                {...ariaDelCampoDelContrato('paymentDay', errorDe('paymentDay'))}
                 type="number"
                 inputMode="numeric"
                 min={1}
@@ -845,11 +1463,19 @@ function NuevoContratoContent() {
               />
             </Field>
             <Field
+              id={idDelCampoDelContrato('diasDePlazo')}
               label="Días de plazo antes de la mora"
-              error={validation.diasDePlazo}
-              hint="Vacío = los de la inmobiliaria. Días después del vencimiento en los que todavía no corre mora."
+              error={errorDe('diasDePlazo')}
+              hint={
+                valoresDelBack?.reglaDeCobro?.plazoSinFijar === true
+                  ? 'Vacío = los de la inmobiliaria, que todavía no los fijó: hasta que los fije no corre mora. Días después del vencimiento en los que todavía no corre mora.'
+                  : porDefecto?.diasDePlazo != null
+                  ? `Vacío = los de la inmobiliaria (${porDefecto.diasDePlazo === 1 ? '1 día' : `${porDefecto.diasDePlazo} días`}). Días después del vencimiento en los que todavía no corre mora.`
+                  : 'Vacío = los de la inmobiliaria. Días después del vencimiento en los que todavía no corre mora.'
+              }
             >
               <Input
+                {...ariaDelCampoDelContrato('diasDePlazo', errorDe('diasDePlazo'))}
                 type="number"
                 inputMode="numeric"
                 min={0}
@@ -862,12 +1488,12 @@ function NuevoContratoContent() {
                 data-testid="dias-de-plazo"
               />
             </Field>
-            <Field label="Seguro" hint="Opcional">
+            <Field id="contrato-seguro" label="Seguro" hint="Opcional">
               <Select
                 value={form.insuranceTier}
                 onValueChange={(v) => updateForm('insuranceTier', v as InsuranceTier)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="contrato-seguro">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -888,6 +1514,12 @@ function NuevoContratoContent() {
               <p className="text-xs text-muted-foreground" data-testid="explicacion-del-prorrateo">
                 {form.prorratearPrimerMes ? SI_SE_PRORRATEA : NO_SE_PRORRATEA}
               </p>
+              {/* C-13: de dónde sale lo que se propone (mientras nadie lo cambie). */}
+              {valoresDelBack && form.prorratearPrimerMes === valoresDelBack.prorratear ? (
+                <p className="text-caption text-fg-subtle" data-testid="origen-del-prorrateo">
+                  {porQueSeProponeElProrrateo(valoresDelBack)}
+                </p>
+              ) : null}
             </div>
             <Switch
               id="prorratear-primer-mes"
@@ -896,69 +1528,73 @@ function NuevoContratoContent() {
               onCheckedChange={(v) => updateForm('prorratearPrimerMes', v)}
             />
           </div>
-
-          {/* Paso 11 del recorrido */}
-          <div className="mt-6 border-t border-border pt-6">
-            <RespaldoDelArriendo
-              valor={respaldo}
-              onCambio={setRespaldo}
-              opciones={evaluacion?.protection_options}
-              errores={erroresRespaldo}
-            />
-          </div>
         </section>
 
-        {/* Errors + submit */}
-        {errorDeInmueble && (
-          <div
-            role="alert"
-            className="rounded-lg border border-warning/30 bg-warning-soft/40 p-4 flex items-start gap-2"
+        {/* El resumen: fijo bajo el encabezado del panel mientras la columna
+            de la izquierda se recorre. Errors + submit van adentro: el botón
+            queda al lado de lo que falta para poder apretarlo. */}
+        <ResumenDelContratoNuevo
+          className="xl:sticky xl:top-20"
+          inmueble={esManual ? inmuebleElegido : property?.title ?? null}
+          inquilino={inquilinoDelResumen}
+          documento={documentoDelResumen}
+          canon={canonDelResumen}
+          deposito={pideDeposito && Number(form.deposit) > 0 ? Number(form.deposit) : null}
+          inicio={form.startDate}
+          fin={form.endDate}
+          meses={mesesDelResumen}
+          primerCanon={primerCanonDelResumen}
+          comoSeCobra={comoSeCobra}
+          bloqueos={bloqueosDelResumen}
+        >
+          <Presence
+            show={loQueFalta.length > 0}
+            initial={false}
+            distance="xs"
+            as="p"
+            className="text-sm text-fg-muted"
+            data-testid="lo-que-falta"
           >
-            <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="text-fg">{errorDeInmueble.mensaje}</p>
-              {errorDeInmueble.contratoId && (
-                <Link
-                  href={`/panel/inmobiliaria/contratos/${errorDeInmueble.contratoId}`}
-                  className="mt-1 inline-block font-medium text-primary underline underline-offset-2"
-                >
-                  Ver el contrato{errorDeInmueble.contratoNumero ? ` ${errorDeInmueble.contratoNumero}` : ''} que estorba
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
-        {submitError && (
-          <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
+            Para crearlo falta {enLista(loQueFalta.map((clave) => FALTA[clave]))}.
+          </Presence>
+          <Presence
+            show={Boolean(submitError)}
+            initial={false}
+            className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2"
+          >
             <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
             <p className="text-sm text-danger">{submitError}</p>
+          </Presence>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              hideArrow
+              onClick={() => router.back()}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              hideArrow
+              disabled={
+                !isValid ||
+                actions.isSubmitting ||
+                bloqueoDeInventario !== null ||
+                (!esManual && property?.canonPorConfirmar === true) ||
+                (esManual && inmuebleManualSinCanon !== null)
+              }
+              className="gap-2"
+            >
+              {actions.isSubmitting ? (
+                <Spinner size="sm" variant="current" />
+              ) : (
+                <CheckCircle className="w-4 h-4" />
+              )}
+              Crear contrato
+            </Button>
           </div>
-        )}
-
-        {bloqueoDeInventario && <BloqueoPorInventario bloqueo={bloqueoDeInventario} />}
-
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            hideArrow
-            onClick={() => router.back()}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            hideArrow
-            disabled={!isValid || actions.isSubmitting || bloqueoDeInventario !== null}
-            className="gap-2"
-          >
-            {actions.isSubmitting ? (
-              <Spinner size="sm" variant="current" />
-            ) : (
-              <CheckCircle className="w-4 h-4" />
-            )}
-            Crear contrato
-          </Button>
+        </ResumenDelContratoNuevo>
         </div>
       </form>
     </div>
@@ -968,6 +1604,7 @@ function NuevoContratoContent() {
 // ─── Subcomponents ───────────────────────────────────────────────────────────
 
 function ModeOption({
+  marca,
   active,
   disabled,
   onClick,
@@ -976,6 +1613,8 @@ function ModeOption({
   icon: Icon,
   badge,
 }: {
+  /** `layoutId` de la marca de la elegida: la misma en las tres tarjetas. */
+  marca: string;
   active: boolean;
   disabled?: boolean;
   onClick?: () => void;
@@ -991,12 +1630,20 @@ function ModeOption({
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       className={cn(
-        'relative text-left p-4 rounded-lg border transition-colors',
-        active && 'border-primary/40 bg-primary-soft/40',
+        'relative isolate text-left p-4 rounded-lg border transition-colors',
+        active && 'border-transparent',
         !active && !disabled && 'border-border hover:border-primary/40 hover:bg-muted/50',
         disabled && 'border-border opacity-50 cursor-not-allowed'
       )}
     >
+      {/* El borde y el fondo de la elegida son UNA marca que se desliza a la
+          nueva (`MotionIndicator`), no un color que se prende y se apaga. */}
+      {active && (
+        <MotionIndicator
+          layoutId={marca}
+          className="-inset-px -z-10 rounded-lg border border-primary/40 bg-primary-soft/40"
+        />
+      )}
       <div className="flex items-center gap-2 mb-1.5">
         <Icon className={cn('w-4 h-4', active ? 'text-primary' : 'text-muted-foreground')} />
         <p className="text-sm font-semibold text-foreground">{title}</p>
@@ -1011,28 +1658,9 @@ function ModeOption({
   );
 }
 
-function Field({
-  label,
-  error,
-  hint,
-  children,
-}: {
-  label: string;
-  error?: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1">
-      <label className="block text-xs font-medium text-foreground">{label}</label>
-      {children}
-      {error ? (
-        <p className="text-xs text-danger">{error}</p>
-      ) : hint ? (
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      ) : null}
-    </div>
-  );
+/** «5 años», «1 año»: sin el «año(s)» de antes. */
+function anios(n: number): string {
+  return `${n} ${n === 1 ? 'año' : 'años'}`;
 }
 
 // ─── Export ──────────────────────────────────────────────────────────────────

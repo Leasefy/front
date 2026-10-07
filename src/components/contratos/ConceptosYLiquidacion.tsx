@@ -36,6 +36,8 @@ import {
   type TipoPersona,
   type UsoDelInmueble,
 } from '@/lib/contratos/escenarios-tributarios'
+import { AREAS_DE_LA_DEUDA } from '@/lib/plata/con-centavos'
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos'
 
 const ETIQUETA_RENGLON: Record<string, string> = {
   IVA: 'IVA',
@@ -53,9 +55,12 @@ export function ConceptosYLiquidacion() {
 
   const concepto = conceptoPorId(conceptoId) ?? CONCEPTOS[0]
 
+  // «Centavos en todo»: el simulador liquida igual que el back (al centavo con
+  // las dos llaves de la deuda; al peso sin ellas).
+  const conCentavos = usePlataConCentavos(AREAS_DE_LA_DEUDA)
   const cuenta = useMemo(
-    () => liquidar({ base: concepto.base, baseCop: valor, uso, paga, recibe }),
-    [concepto.base, valor, uso, paga, recibe],
+    () => liquidar({ base: concepto.base, baseCop: valor, uso, paga, recibe, conCentavos }),
+    [concepto.base, valor, uso, paga, recibe, conCentavos],
   )
 
   return (

@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { EnvelopeSimple } from '@phosphor-icons/react';
+import { CrossFade } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
 import { ApiError } from '@/lib/api/client';
 import { segundoFactorApi } from '@/lib/api/segundo-factor.service';
 import { mensajeDelRestablecimiento } from '@/lib/auth/errores-del-segundo-factor';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import {
   leerRestablecimientoPendiente,
   marcarRestablecimientoPendiente,
@@ -134,8 +136,8 @@ export function RestablecerSegundoFactorPorCorreo({
     'el correo de tu cuenta'
   );
 
-  if (paso === 'ofrecer') {
-    return (
+  const contenido =
+    paso === 'ofrecer' ? (
       <div className="space-y-5" data-testid="restablecer-por-correo">
         <p className="text-pretty text-body-sm text-fg-muted">
           Sin la app no hay código, y el segundo factor no se puede quitar sólo con la
@@ -143,11 +145,7 @@ export function RestablecerSegundoFactorPorCorreo({
           activas de nuevo aquí mismo.
         </p>
 
-        {error ? (
-          <p role="alert" className="text-pretty text-body-sm text-danger">
-            {error}
-          </p>
-        ) : null}
+        <ErrorDelCampo id="restablecer-por-correo-error" mensaje={error} className="mt-0 text-pretty" />
 
         <Button
           onClick={() => void pedirCodigo()}
@@ -166,10 +164,7 @@ export function RestablecerSegundoFactorPorCorreo({
           </Button>
         </div>
       </div>
-    );
-  }
-
-  return (
+    ) : (
     <div className="space-y-5" data-testid="codigo-del-correo" aria-busy={confirmando}>
       <div className="space-y-1 text-center">
         <p className="text-body font-medium text-fg">Te mandamos un código a tu correo</p>
@@ -187,15 +182,12 @@ export function RestablecerSegundoFactorPorCorreo({
         }}
         onCompleto={(v) => void confirmar(v)}
         hayError={Boolean(error)}
+        aria-describedby={error ? 'codigo-del-correo-error' : undefined}
         disabled={confirmando}
         autoFocus
       />
 
-      {error ? (
-        <p role="alert" className="text-pretty text-center text-body-sm text-danger">
-          {error}
-        </p>
-      ) : null}
+      <ErrorDelCampo id="codigo-del-correo-error" mensaje={error} className="mt-0 text-pretty text-center" />
 
       <Button
         onClick={() => void confirmar()}
@@ -220,6 +212,19 @@ export function RestablecerSegundoFactorPorCorreo({
           Volver a escribir el código de la app
         </Button>
       </div>
+    </div>
+    );
+
+  /*
+   * «Te mandamos un código» entra por la derecha (`CrossFade` de pasos).
+   * `popLayout`: las casillas montan YA y toman el foco (`autoFocus`); lo de
+   * antes se va por encima, acelerando, dentro de este contenedor `relative`.
+   */
+  return (
+    <div className="relative">
+      <CrossFade swapKey={paso} direction="forward" mode="popLayout">
+        {contenido}
+      </CrossFade>
     </div>
   );
 }

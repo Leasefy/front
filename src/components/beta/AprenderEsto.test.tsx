@@ -235,3 +235,70 @@ describe('lo que aprende, dentro del chat', () => {
     expect(container.textContent).toContain('Juan Camilo López Ruiz');
   });
 });
+
+/**
+ * 02-10-2026 · Cuando la decisión no se guarda, el toast dice POR QUÉ, por el
+ * traductor. Antes `decidirAprendizaje` se tragaba el fallo (`null`) y todo
+ * era «No pude guardarlo. Intenta de nuevo.», también el 403
+ * `SOLO_ADMINISTRADOR`, donde reintentar no sirve de nada.
+ */
+describe('cuando la decisión no se guarda', () => {
+  const CRUDO = /\b[1-5]\d\d\b|SOLO_ADMINISTRADOR|Forbidden|ai-hub|Internal Server Error/;
+
+  async function decidirCon(falla: () => Response | Promise<Response>) {
+    respuestas.push(jsonOk(LECTURA));
+    respuestas.push(falla as () => Response);
+    montar(mensaje());
+    await clic(boton());
+    const aprender = [...container.querySelectorAll('button')].find((b) => b.textContent?.includes('beta.cerebro.aprender'));
+    await clic(aprender);
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(toastMock.success).not.toHaveBeenCalled();
+    expect(toastMock.error).toHaveBeenCalledTimes(1);
+    const texto = toastMock.error.mock.calls[0]![0] as string;
+    expect(texto).not.toMatch(CRUDO);
+    return texto;
+  }
+
+  it('el 403 `SOLO_ADMINISTRADOR` dice quién decide, no «intenta de nuevo»', async () => {
+    const texto = await decidirCon(
+      () => new Response(JSON.stringify({ error: 'SOLO_ADMINISTRADOR', code: 'SOLO_ADMINISTRADOR' }), { status: 403 }),
+    );
+    expect(texto).toBe('Sólo el administrador de la inmobiliaria decide qué aprende el chat.');
+  });
+
+  it('un 5xx dice «de nuestro lado» con la referencia', async () => {
+    const texto = await decidirCon(
+      () =>
+        new Response(
+          JSON.stringify({ statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor', referencia: 'ab12cd34' }),
+          { status: 500 },
+        ),
+    );
+    expect(texto).toContain('No pudimos guardar tu decisión: algo falló de nuestro lado');
+    expect(texto).toContain('ab12cd34');
+  });
+
+  it('sin cuerpo: lo de siempre, sin el status', async () => {
+    const texto = await decidirCon(() => new Response(null, { status: 404 }));
+    expect(texto).toBe('beta.cerebro.errorGuardar');
+  });
+
+  it('sin internet en el navegador, la red caída es «la conexión»', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      const texto = await decidirCon(() => Promise.reject(new TypeError('Failed to fetch')));
+      expect(texto).toMatch(/conexi[oó]n/);
+    } finally {
+      enLinea.mockRestore();
+    }
+  });
+
+  it('🔴 ARREGLOS-4 · el micro caído con el back sano dice que el asistente no está disponible', async () => {
+    const texto = await decidirCon(() => Promise.reject(new TypeError('Failed to fetch')));
+    expect(texto).toMatch(/asistente de Leasefy/);
+    expect(texto).not.toMatch(CRUDO);
+  });
+});

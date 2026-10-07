@@ -11,6 +11,7 @@ import * as React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
+import { ApiError } from '@/lib/api/client';
 
 import type { FacturaDelMes, FacturasPorGenerar } from '@/lib/api/facturacion-por-mes.service';
 
@@ -98,6 +99,16 @@ vi.mock('@/components/ui/toast', () => ({
   },
 }));
 
+/*
+ * 🔴 FA-09 (QA-FACT, 03-10-2026): emitir pide confirmación con a quién, cuánto
+ * y con qué número. Por defecto la persona dice que sí; las pruebas de la
+ * confirmación miran lo que se le preguntó.
+ */
+const confirmarMock = vi.fn();
+vi.mock('@/components/ui/confirmar', () => ({
+  confirmar: (...a: unknown[]) => confirmarMock(...a),
+}));
+
 import { NuevaFactura } from './NuevaFactura';
 import { alEventoDelCentro, type EventoDelCentro } from '@/lib/api/procesos.service';
 import { detenerEnElNavegador } from '@/components/procesos/detener-en-el-navegador';
@@ -121,16 +132,17 @@ function factura(over: Partial<FacturaDelMes> = {}): FacturaDelMes {
     subtotalCop: 1_800_000,
     descuentoCop: 0,
     baseCop: 1_800_000,
-    // Por defecto, el contrato del que NADIE confirmó el escenario: sin
-    // impuestos y marcado. Es como sale hoy la inmensa mayoría de los
-    // contratos migrados de Nico.
+    // Por defecto, un contrato con el escenario CONFIRMADO y sin IVA (E1).
+    // 🔴 Hasta el 03-10 el defecto era «sin confirmar»; desde la decisión de
+    // Nico de ese día una factura así NO se emite, así que las pruebas de
+    // emitir parten de una que sí se puede, y las de «sin confirmar» lo dicen.
     ivaCop: 0,
     retencionesCop: 0,
     totalCop: 1_800_000,
     netoCop: 1_800_000,
     impuestos: [],
-    impuestosSinConfirmar: true,
-    notasTributarias: ['Falta saber si el propietario es responsable de IVA.'],
+    impuestosSinConfirmar: false,
+    notasTributarias: [],
     escenario: null,
     estado: 'POR_EMITIR',
     numero: null,
@@ -272,7 +284,19 @@ async function clic(sel: string) {
   });
 }
 
+/*
+ * 🔴 El reloj de estas pruebas está parado en septiembre de 2026 (02-10-2026).
+ *
+ * La pantalla abre en `mesActual()` y la tabla muestra SÓLO las filas de ese
+ * mes; todos los datos de abajo son de septiembre («Septiembre es el mes en
+ * curso de estas pruebas»). El 1 de octubre el mes en curso pasó a ser octubre
+ * y las 62 pruebas se quedaron mirando una tabla vacía. Se para el reloj en
+ * vez de cambiar las fechas: otra fecha fija se vuelve a romper el mes que
+ * viene. Sólo `Date`: los `setTimeout` de las esperas siguen siendo reales.
+ */
 beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 8, 15, 10, 0, 0));
   porGenerarMock.mockReset().mockResolvedValue(respuesta());
   generarMock.mockReset();
   pdfMock.mockReset().mockResolvedValue(new Blob(['%PDF']));
@@ -281,6 +305,7 @@ beforeEach(() => {
   irAResolucion.mockReset();
   toastOk.mockReset();
   toastErr.mockReset();
+  confirmarMock.mockReset().mockResolvedValue(true);
 });
 
 afterEach(() => {
@@ -288,6 +313,7 @@ afterEach(() => {
     root.unmount();
   });
   host.remove();
+  vi.useRealTimers();
 });
 
 const q = (s: string) => host.querySelector(s);
@@ -326,14 +352,27 @@ describe('NuevaFactura', () => {
     expect(host.textContent).toContain('Jorge Restrepo');
   });
 
-  it('🔴 todo lo que está por emitir arranca seleccionado: no se marcan 800 casillas a mano', async () => {
+  it('🔴 lo de inquilinos arranca seleccionado: no se marcan 800 casillas a mano', async () => {
     await montar();
     const boton = q('[data-testid="facturacion-generar"]')!;
     // Es la tanda de ESTA tabla: la de propietarios se emite en su pestaña.
-    expect(boton.textContent).toContain('Generar 1 factura de inquilinos');
+    expect(boton.textContent).toContain('Emitir 1 factura de inquilinos');
+  });
+
+  it('🔴 FA-R13: las comisiones de propietarios NO vienen marcadas; se marcan a mano', async () => {
+    // Nico (03-10): la comisión se factura cuando se le gira al propietario.
+    await montar();
     await verA('Propietarios');
+    const boton = q('[data-testid="facturacion-generar"]') as HTMLButtonElement;
+    expect(boton.disabled).toBe(true);
+    expect(boton.textContent).toContain('Emitir facturas');
+    const casilla = qa('[data-testid^="factura-"] button[role="checkbox"]')[0] as HTMLButtonElement;
+    expect(casilla.disabled).toBe(false);
+    await act(async () => {
+      casilla.click();
+    });
     expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain(
-      'Generar 1 factura de propietarios',
+      'Emitir 1 factura de propietarios',
     );
   });
 
@@ -350,8 +389,19 @@ describe('NuevaFactura', () => {
       const resumen = q('[data-testid="facturacion-acciones-resumen"]')!;
       expect(resumen.textContent).toContain('Preseleccionamos');
       expect(resumen.textContent).toContain('1 factura de inquilinos');
-      expect(q('[data-testid="facturacion-acciones-es-sugerencia"]')).not.toBeNull();
       expect(q('[data-testid="facturacion-acciones-quitar"]')).not.toBeNull();
+      // FA-04 (03-10): la explicación va en «Ver más», no en cinco renglones.
+      expect(q('[data-testid="facturacion-acciones-es-sugerencia"]')).toBeNull();
+      await clic('[data-testid="facturacion-acciones-ver-mas"]');
+      expect(q('[data-testid="facturacion-acciones-es-sugerencia"]')).not.toBeNull();
+    });
+
+    it('🔴 FA-04: el pie es compacto: una línea y la acción; el detalle, plegado', async () => {
+      await montar();
+      const barra = q('[data-testid="facturacion-acciones"]')!;
+      expect(barra.className).toContain('py-2.5');
+      expect(q('[data-testid="facturacion-acciones-ver-mas"]')!.getAttribute('aria-expanded')).toBe('false');
+      expect(barra.querySelectorAll('p').length).toBeLessThanOrEqual(2);
     });
 
     it('en cuanto la persona toca una casilla, la selección es SUYA', async () => {
@@ -449,12 +499,19 @@ describe('NuevaFactura', () => {
      * Sin este renglón alguien emite los de inquilinos y cree que terminó.
      */
     await montar();
-    const aviso = q('[data-testid="facturacion-marcadas-en-la-otra"]')!;
-    expect(aviso.textContent).toContain('propietarios');
+    // Las comisiones no vienen marcadas (FA-R13): se marca una a mano.
     await verA('Propietarios');
+    await act(async () => {
+      (qa('[data-testid^="factura-"] button[role="checkbox"]')[0] as HTMLButtonElement).click();
+    });
+    // FA-04 (03-10): el aviso vive en el «Ver más» del pie.
+    await clic('[data-testid="facturacion-acciones-ver-mas"]');
     expect(q('[data-testid="facturacion-marcadas-en-la-otra"]')!.textContent).toContain(
       'inquilinos',
     );
+    await verA('Inquilinos');
+    const aviso = q('[data-testid="facturacion-marcadas-en-la-otra"]')!;
+    expect(aviso.textContent).toContain('propietarios');
   });
 
   it('lo ya emitido se ve con su número y sin casilla, en vez de esconderse', async () => {
@@ -469,15 +526,15 @@ describe('NuevaFactura', () => {
     expect(host.textContent).toContain('FE-41');
     // La única de inquilinos ya está emitida: no queda ninguna por emitir acá.
     expect((q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled).toBe(true);
-    // 🔴 Y se dice POR QUÉ la tanda es más chica que la tabla.
+    // 🔴 Y se dice POR QUÉ la tanda es más chica que la tabla (en «Ver más»).
+    await clic('[data-testid="facturacion-acciones-ver-mas"]');
     expect(q('[data-testid="facturacion-fuera-de-la-tanda"]')!.textContent).toContain(
       'ya está emitida',
     );
-    // La del propietario sigue viva, en su pestaña.
+    // La del propietario sigue viva, en su pestaña (sin marcar: FA-R13).
     await verA('Propietarios');
-    expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain(
-      'Generar 1 factura de propietarios',
-    );
+    const casilla = qa('[data-testid^="factura-"] button[role="checkbox"]')[0] as HTMLButtonElement;
+    expect(casilla.disabled).toBe(false);
   });
 
   it('destildar una fila baja la cuenta del botón', async () => {
@@ -488,7 +545,7 @@ describe('NuevaFactura', () => {
     });
     // Sin nada marcado el botón queda A LA VISTA y apagado, sin decir «0».
     const boton = q('[data-testid="facturacion-generar"]') as HTMLButtonElement;
-    expect(boton.textContent).toContain('Generar facturas');
+    expect(boton.textContent).toContain('Emitir facturas');
     expect(boton.disabled).toBe(true);
   });
 
@@ -540,6 +597,41 @@ describe('NuevaFactura', () => {
       'Sólo el administrador o el contador pueden facturar.',
     );
     expect(toastOk).not.toHaveBeenCalled();
+  });
+
+  /*
+   * 02-10-2026 · Emitir con la regla de oro: un 5xx dice «de nuestro lado» con
+   * la referencia de soporte (antes salía «Error interno del servidor»); un
+   * 4xx, lo que escribió el back; «conexión», sólo sin respuesta. El reloj
+   * falso de este archivo sigue puesto (septiembre de 2026).
+   */
+  it('🔴 un 5xx al generar dice «de nuestro lado» con la referencia', async () => {
+    generarMock.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    await montar();
+    await act(async () => {
+      (q('[data-testid="facturacion-generar"]') as HTMLButtonElement).click();
+    });
+    const textos = toastErr.mock.calls.map((c) => String(c[0]));
+    expect(textos.some((t) => t.includes('No pudimos emitir las facturas: algo falló de nuestro lado'))).toBe(true);
+    expect(textos.some((t) => t.includes('ab12cd34'))).toBe(true);
+    expect(textos).not.toContain('Error interno del servidor');
+    expect(toastOk).not.toHaveBeenCalled();
+  });
+
+  it('sin respuesta al generar: ahí sí habla de la conexión', async () => {
+    generarMock.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await montar();
+    await act(async () => {
+      (q('[data-testid="facturacion-generar"]') as HTMLButtonElement).click();
+    });
+    expect(toastErr.mock.calls.some((c) => /conexi[oó]n/.test(String(c[0])))).toBe(true);
   });
 
   it('un mes sin contratos muestra el vacío, no una tabla en blanco', async () => {
@@ -655,16 +747,19 @@ describe('NuevaFactura', () => {
       await montar();
       const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')!;
       const texto = fila.textContent ?? '';
-      expect(texto).toContain('$ 1.800.000');
-      expect(texto).toContain('$ 342.000');
+      expect(texto).toContain('$\u00a01.800.000');
+      expect(texto).toContain('$\u00a0342.000');
       // 🔴 La retención resta del NETO, no del total: se ve con signo menos y
       // el total sigue siendo base + IVA.
-      expect(texto).toContain('−$ 63.000');
-      expect(texto).toContain('$ 2.142.000');
-      expect(texto).toContain('Neto $ 2.079.000');
+      expect(texto).toContain('−$\u00a063.000');
+      expect(texto).toContain('$\u00a02.142.000');
+      expect(texto).toContain('Neto $\u00a02.079.000');
     });
 
     it('🔴 una factura con el escenario sin confirmar se marca, no dice «$0»', async () => {
+      porGenerarMock.mockResolvedValue(
+        respuesta({ inquilinos: [factura({ impuestosSinConfirmar: true })], propietarios: [] }),
+      );
       await montar();
       expect(q('[data-testid="sin-confirmar-ct-1|2026-09|INQUILINO"]')).not.toBeNull();
     });
@@ -688,7 +783,8 @@ describe('NuevaFactura', () => {
       const pie = q('[data-testid="facturacion-siguiente-numero"]')!;
       expect(pie.textContent).toContain('FE-1');
       expect(pie.textContent).toContain('18764003394379');
-      expect(pie.textContent).toContain('15/01/2028');
+      // FA-R29: la fecha de la casa, no `15/01/2028`.
+      expect(pie.textContent).toContain('15 ene 2028');
     });
 
     it('🔴 sin resolución vigente el botón se apaga y la pantalla dice por qué', async () => {
@@ -734,10 +830,17 @@ describe('NuevaFactura', () => {
      * Una columna vacía en TODAS sus filas es ancho gastado en nada: ahora
      * sólo aparecen si alguna fila tiene algo que poner.
      */
-    it('🔴 sin IVA ni retenciones en ninguna fila, esas columnas no se dibujan', async () => {
+    /*
+     * 🔴 FA-04 (QA-FACT, 03-10-2026): la tabla tenía once columnas y no cabía a
+     * 1.440 px (Retenciones y Total quedaban fuera de vista). Ahora son cinco:
+     * el contrato va debajo del cliente, el inmueble debajo del concepto, y
+     * base, IVA y retención debajo del total. Lo que no se pierde: el IVA y la
+     * retención de cada fila se siguen leyendo, y «sin confirmar» también.
+     */
+    it('🔴 FA-04: cinco columnas; base, IVA y retención van debajo del total', async () => {
       porGenerarMock.mockResolvedValue(
         respuesta({
-          inquilinos: [factura({ ivaCop: 0, retencionesCop: 0, impuestosSinConfirmar: false })],
+          inquilinos: [factura({ ivaCop: 342_000, retencionesCop: 63_000, totalCop: 2_142_000, netoCop: 2_079_000 })],
           propietarios: [],
         }),
       );
@@ -745,34 +848,24 @@ describe('NuevaFactura', () => {
       const cab = Array.from(q('table')!.querySelectorAll('thead th')).map((th) =>
         th.textContent!.trim(),
       );
-      expect(cab).not.toContain('IVA');
-      expect(cab).not.toContain('Retenciones');
-      // Lo que NO se puede perder: base, total y estado siguen ahí.
-      expect(cab).toContain('Base');
-      expect(cab).toContain('Total');
-      expect(cab).toContain('Estado');
+      expect(cab).toEqual(['', 'Cliente', 'Concepto', 'Valor', 'Estado']);
+      const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')!;
+      expect(fila.textContent).toContain('Base $\u00a01.800.000');
+      expect(fila.textContent).toContain('IVA $\u00a0342.000');
+      expect(fila.textContent).toContain('Contrato 1686 · Leasefy #1839');
     });
 
-    it('con IVA en alguna fila, la columna vuelve', async () => {
+    it('sin IVA ni retenciones, la fila no dibuja renglones de «$ 0»', async () => {
       porGenerarMock.mockResolvedValue(
-        respuesta({
-          inquilinos: [
-            factura({ ivaCop: 0, retencionesCop: 0, impuestosSinConfirmar: false }),
-            factura({ clave: 'otra', ivaCop: 342_000, retencionesCop: 0 }),
-          ],
-          propietarios: [],
-        }),
+        respuesta({ inquilinos: [factura({ ivaCop: 0, retencionesCop: 0 })], propietarios: [] }),
       );
       await montar();
-      const cab = Array.from(q('table')!.querySelectorAll('thead th')).map((th) =>
-        th.textContent!.trim(),
-      );
-      expect(cab).toContain('IVA');
-      expect(cab).not.toContain('Retenciones');
+      const fila = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')!;
+      expect(fila.textContent).not.toContain('IVA $ 0');
+      expect(fila.textContent).not.toContain('Retiene');
     });
 
-    it('🔴 y la marca «sin confirmar» no se pierde: se muda al lado de la base', async () => {
-      // Es por fila y decide si esa factura sale con o sin impuestos.
+    it('🔴 y la marca «sin confirmar» no se pierde', async () => {
       porGenerarMock.mockResolvedValue(
         respuesta({
           inquilinos: [factura({ ivaCop: 0, retencionesCop: 0, impuestosSinConfirmar: true })],
@@ -780,17 +873,14 @@ describe('NuevaFactura', () => {
         }),
       );
       await montar();
-      const cab = Array.from(q('table')!.querySelectorAll('thead th')).map((th) =>
-        th.textContent!.trim(),
-      );
-      // `impuestosSinConfirmar` cuenta como «hay algo que poner» en IVA.
-      expect(cab).toContain('IVA');
       expect(q('table')!.textContent).toMatch(/sin confirmar/i);
     });
 
+    const dosInquilinos = () => [factura(), factura({ clave: 'ct-2|2026-09|INQUILINO', contractId: 'ct-2' })];
+
     it('🔴 avisa ANTES si la selección no cabe en el rango de la resolución', async () => {
       porGenerarMock.mockResolvedValue(
-        respuesta({ resolucion: resolucionVigente({ disponibles: 1 }) }),
+        respuesta({ inquilinos: dosInquilinos(), resolucion: resolucionVigente({ disponibles: 1 }) }),
       );
       await montar();
       const aviso = q('[data-testid="facturacion-rango-corto"]')!;
@@ -802,7 +892,7 @@ describe('NuevaFactura', () => {
     it('🔴 avisar NO es apagar: emitir las que caben es trabajo legítimo', async () => {
       // Apagar el botón obligaría a deseleccionar a mano las que no caben.
       porGenerarMock.mockResolvedValue(
-        respuesta({ resolucion: resolucionVigente({ disponibles: 1 }) }),
+        respuesta({ inquilinos: dosInquilinos(), resolucion: resolucionVigente({ disponibles: 1 }) }),
       );
       await montar();
       expect(
@@ -1086,7 +1176,7 @@ describe('NuevaFactura', () => {
       // Diciembre existe en la respuesta y NO suma al botón: siguen siendo las
       // de septiembre de esta tabla.
       const boton = q('[data-testid="facturacion-generar"]')!;
-      expect(boton.textContent).toContain('Generar 1 factura de inquilinos');
+      expect(boton.textContent).toContain('Emitir 1 factura de inquilinos');
     });
 
     it('🔴 y el mes dice POR QUÉ todavía no se emite, con las palabras del back', async () => {
@@ -1122,21 +1212,48 @@ describe('NuevaFactura', () => {
    * manda un `aviso` en vez de inventar el número — y la pantalla lo muestra.
    */
   describe('los avisos de la fila', () => {
-    it('una cuota en mora que nadie pudo liquidar lo reclama en la fila', async () => {
+    /*
+     * 🔴 FA-03 (QA-FACT, 03-10-2026): el mismo párrafo «Esta cuota está en mora
+     * hace N días y la factura NO lleva intereses. La inmobiliaria no tiene
+     * reglas de mora activas…» salía en CADA fila (30 veces). Va UNA vez
+     * arriba de la tabla, con la regla de Nico: la factura del mes no lleva
+     * intereses, se facturan aparte cuando se pagan.
+     */
+    it('🔴 FA-03: la mora sin intereses se dice UNA vez arriba, no en cada fila', async () => {
+      const enMora = (clave: string, dias: number) =>
+        factura({
+          clave,
+          contractId: clave.split('|')[0],
+          mora: { esCartera: true, diasDeMora: dias, recargosCop: 0, origen: null, motivo: 'Sin reglas.' },
+          avisos: [
+            `Esta cuota está en mora hace ${dias} días y la factura NO lleva intereses. La inmobiliaria no tiene reglas de mora activas.`,
+          ],
+        });
+      porGenerarMock.mockResolvedValue(
+        respuesta({ inquilinos: [enMora('ct-1|2026-09|INQUILINO', 42), enMora('ct-2|2026-09|INQUILINO', 3)] }),
+      );
+      await montar();
+      const arriba = q('[data-testid="facturacion-inquilinos-mora-del-mes"]')!;
+      expect(arriba.textContent).toContain('2 cuotas de este mes están en mora');
+      expect(arriba.textContent).toContain('se facturan aparte, cuando se pagan');
+      // El motivo, UNA vez aunque lo traigan las dos filas.
+      expect(arriba.textContent!.split('no tiene reglas de mora activas').length - 1).toBe(1);
+      expect(q('[data-testid="aviso-ct-1|2026-09|INQUILINO"]')).toBeNull();
+      expect(host.textContent!.split('NO lleva intereses').length - 1).toBe(0);
+      // La fila dice sólo que está en mora, sin el párrafo.
+      expect(q('[data-testid="en-mora-ct-1|2026-09|INQUILINO"]')!.textContent).toContain('42 días');
+    });
+
+    it('un aviso que es de ESA fila sí se queda en la fila', async () => {
       porGenerarMock.mockResolvedValue(
         respuesta({
-          inquilinos: [
-            factura({
-              avisos: [
-                'Esta cuota está en mora hace 42 días y la factura NO lleva intereses. La inmobiliaria no tiene reglas de mora activas.',
-              ],
-            }),
-          ],
+          inquilinos: [factura({ avisos: ['El desglose se cuadró contra el estado de cuenta.'] })],
         }),
       );
       await montar();
-      const aviso = q('[data-testid="aviso-ct-1|2026-09|INQUILINO"]');
-      expect(aviso?.textContent).toContain('NO lleva intereses');
+      expect(q('[data-testid="aviso-ct-1|2026-09|INQUILINO"]')?.textContent).toContain(
+        'se cuadró contra el estado de cuenta',
+      );
     });
 
     it('sin avisos no se pinta ninguna advertencia', async () => {
@@ -1154,9 +1271,18 @@ describe('NuevaFactura', () => {
    * hace que la persona decida con información falsa.
    */
   describe('el interés de mora', () => {
+    /*
+     * 🔴 Desde el 03-10 (Nico) la factura del mes no lleva intereses; estas
+     * pruebas son de un back ANTERIOR que todavía los mete en sus renglones:
+     * si van en el total, se dicen con su origen.
+     */
     const conMora = (over: Partial<FacturaDelMes['mora'] & object> = {}) =>
       factura({
         totalCop: 1_841_000,
+        lineas: [
+          { tipo: 'CANON', nombre: 'Canon de arrendamiento', valorCop: 1_800_000, resta: false },
+          { tipo: 'INTERES_DE_MORA', nombre: 'Interés de mora', valorCop: 41_000, resta: false, origen: 'CUOTA' },
+        ],
         mora: {
           esCartera: true,
           diasDeMora: 41,
@@ -1294,7 +1420,7 @@ describe('una sola factura, y cómo llegar a ella (Nico, 18-09-2026)', () => {
     // un campo sería mucho peor que no tener buscador. Las dos de inquilinos
     // siguen marcadas aunque sólo se vea una.
     expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain(
-      'Generar 2 facturas de inquilinos',
+      'Emitir 2 facturas de inquilinos',
     );
   });
 
@@ -1345,7 +1471,7 @@ describe('una sola factura, y cómo llegar a ella (Nico, 18-09-2026)', () => {
     expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('1 factura');
     await clic('[data-testid="facturacion-inquilinos-todas"]');
     // Se fueron las dos de inquilinos. La del propietario vive en su pestaña.
-    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('Generar facturas');
+    expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('Emitir facturas');
     // Y volver a apretarla las marca de nuevo.
     await clic('[data-testid="facturacion-inquilinos-todas"]');
     expect(q('[data-testid="facturacion-generar"]')?.textContent).toContain('2 facturas');
@@ -1474,6 +1600,7 @@ describe('🔴 las facturas que saldrían sin impuestos por el escenario (QA 22-
     numeroExterno: '3',
     codigo: 151,
     terceroNombre: 'J y C Papas S.A.S',
+    impuestosSinConfirmar: true,
     escenario: { codigo: 'SIN_DEFINIR', nombre: 'Escenario sin definir', certeza: 'SIN_DEFINIR' },
     notasTributarias: [
       'La cuota de 2026-09 se generó SIN impuestos porque el escenario tributario del contrato estaba deducido o sin definir. Confírmalo en la ficha del contrato y vuelve a generar la tabla de amortización.',
@@ -1488,15 +1615,33 @@ describe('🔴 las facturas que saldrían sin impuestos por el escenario (QA 22-
     numero: 7,
   });
 
-  it('dice cuántas saldrían sin impuestos, sin contar las ya emitidas', async () => {
+  it('dice cuántas no se pueden emitir por el escenario, sin contar las ya emitidas', async () => {
     porGenerarMock.mockResolvedValue(
       respuesta({ inquilinos: [confirmada, papas, yaEmitida], propietarios: [] }),
     );
     await montar();
     const aviso = q('[data-testid="facturacion-inquilinos-sin-escenario"]');
+    // 🔴 Nico (03-10): sin escenario confirmado NO se emite (antes «saldría
+    // sin impuestos» y se dejaba emitir).
     expect(aviso?.textContent).toContain(
-      '1 factura del mes saldría sin impuestos porque su contrato no tiene el escenario tributario confirmado.',
+      '1 factura del mes no se puede emitir: su contrato no tiene el escenario tributario confirmado',
     );
+  });
+
+  it('🔴 Q5: la fila sin escenario no se marca, no tiene «Generar esta» y lleva al contrato', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({ inquilinos: [confirmada, papas], propietarios: [] }),
+    );
+    await montar();
+    const fila = q('[data-testid="factura-ct-151|2026-09|INQUILINO"]')!;
+    const casilla = fila.querySelector('button[role="checkbox"]') as HTMLButtonElement;
+    expect(casilla.disabled).toBe(true);
+    expect(fila.querySelector('[data-testid="generar-una-ct-151|2026-09|INQUILINO"]')).toBeNull();
+    expect(
+      fila.querySelector('[data-testid="confirmar-escenario-ct-151|2026-09|INQUILINO"]')?.getAttribute('href'),
+    ).toBe('/panel/inmobiliaria/contratos/ct-151#escenario-tributario');
+    // Sólo la confirmada viene marcada.
+    expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain('Emitir 1 factura de inquilinos');
   });
 
   it('«Ver sólo esas» deja en la tabla únicamente las que salen sin impuestos', async () => {
@@ -1637,7 +1782,43 @@ describe('🔴 el documento de la factura emitida (22-09)', () => {
     expect(cajon.querySelector('[data-testid="cajon-documento"]')).toBeNull();
   });
 
-  it('🔴 emitir ABRE el centro de procesos, y el toast del resultado lleva «Ver en el centro»', async () => {
+  it('🔴 emitir VARIAS abre el centro de procesos, y el toast del resultado lleva «Ver en el centro»', async () => {
+    const eventos: EventoDelCentro[] = [];
+    const dejar = alEventoDelCentro((e) => eventos.push(e));
+    try {
+      porGenerarMock.mockResolvedValue(
+        respuesta({
+          inquilinos: [factura(), factura({ clave: 'ct-2|2026-09|INQUILINO', contractId: 'ct-2' })],
+        }),
+      );
+      generarMock.mockResolvedValue({
+        mes: '2026-09',
+        emitidas: 2,
+        yaEstaban: 0,
+        sinNumero: 0,
+        motivo: null,
+        totalCop: 3_600_000,
+        facturas: [],
+        procesoId: 'proc-9',
+        zipEnElCentro: true,
+      });
+      await montar();
+      await clic('[data-testid="facturacion-generar"]');
+      await soltarTareas();
+
+      expect(eventos[0]).toMatchObject({ tipo: 'anuncio', titulo: 'Emitiendo 2 facturas' });
+      // El resultado no se queda pegado en la página.
+      expect(q('[data-testid="facturacion-informe"]')).toBeNull();
+      const [texto, opciones] = toastOk.mock.calls[0] as [string, { action: { onClick: () => void } }];
+      expect(texto).toContain('2 facturas emitidas');
+      opciones.action.onClick();
+      expect(eventos.at(-1)).toEqual({ tipo: 'abrir', procesoId: 'proc-9' });
+    } finally {
+      dejar();
+    }
+  });
+
+  it('🔴 FA-10: emitir UNA no abre el centro encima de la pantalla; basta el aviso con «Ver en el centro»', async () => {
     const eventos: EventoDelCentro[] = [];
     const dejar = alEventoDelCentro((e) => eventos.push(e));
     try {
@@ -1652,19 +1833,15 @@ describe('🔴 el documento de la factura emitida (22-09)', () => {
           { clave: 'ct-1|2026-09|INQUILINO', numero: 4, numeroDian: 'PRU-3', totalCop: 1_879_608, facturaId: 'fac-3' },
         ],
         procesoId: 'proc-9',
-        zipEnElCentro: true,
       });
       await montar();
-      await clic('[data-testid="facturacion-generar"]');
+      await clic('[data-testid="generar-una-ct-1|2026-09|INQUILINO"]');
       await soltarTareas();
 
-      expect(eventos[0]).toMatchObject({ tipo: 'anuncio', titulo: 'Emitiendo 1 factura' });
-      // El resultado no se queda pegado en la página.
-      expect(q('[data-testid="facturacion-informe"]')).toBeNull();
-      const [texto, opciones] = toastOk.mock.calls[0] as [string, { action: { onClick: () => void } }];
+      expect(eventos.filter((e) => e.tipo === 'anuncio')).toEqual([]);
+      const [texto, opciones] = toastOk.mock.calls[0] as [string, { action: { label: string } }];
       expect(texto).toContain('1 factura emitida');
-      opciones.action.onClick();
-      expect(eventos.at(-1)).toEqual({ tipo: 'abrir', procesoId: 'proc-9' });
+      expect(opciones.action.label).toBe('Ver en el centro');
     } finally {
       dejar();
     }
@@ -1691,5 +1868,315 @@ describe('🔴 EL MOLDE en «Por facturar» (Nico, 23-09: «tarjeta dentro de ta
     expect(frase).toMatch(/contratos? con cuotas de/);
     // Los filtros dicen que son filtros.
     expect(document.body.textContent).toContain('Filtrar por mes');
+  });
+});
+
+/**
+ * 🔴 QA de Facturación (QA-FACT, 03-10-2026) y las decisiones de Nico de ese día.
+ */
+describe('QA-FACT: emitir confirma, y cada fila dice lo que de verdad puede pasar', () => {
+  const soltarTareas = () =>
+    act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+  it('🔴 FA-09: «Generar esta» pregunta a quién, cuánto y con qué número va a salir', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        inquilinos: [factura({ terceroNombre: 'Juliana Sin Correo Patiño', totalCop: 4_100_000 })],
+        resolucion: resolucionVigente({ siguiente: 'LABQA-2', prefijo: 'LABQA' }),
+      }),
+    );
+    generarMock.mockResolvedValue({ mes: '2026-09', emitidas: 1, yaEstaban: 0, totalCop: 4_100_000, facturas: [] });
+    await montar();
+    await clic('[data-testid="generar-una-ct-1|2026-09|INQUILINO"]');
+    await soltarTareas();
+    expect(confirmarMock).toHaveBeenCalledTimes(1);
+    const pregunta = confirmarMock.mock.calls[0][0] as { titulo: string; descripcion: React.ReactNode; accion: string };
+    expect(pregunta.titulo).toBe('¿Emitir la factura LABQA-2?');
+    expect(pregunta.accion).toBe('Emitir la LABQA-2');
+    const cuerpo = document.createElement('div');
+    const raiz = createRoot(cuerpo);
+    await act(async () => {
+      raiz.render(<>{pregunta.descripcion}</>);
+    });
+    expect(cuerpo.textContent).toContain('Juliana Sin Correo Patiño');
+    expect(cuerpo.textContent).toContain('$\u00a04.100.000');
+    expect(cuerpo.textContent).toContain('nota crédito');
+    act(() => raiz.unmount());
+    expect(generarMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('🔴 FA-09: si la persona no confirma, no se emite nada', async () => {
+    confirmarMock.mockResolvedValue(false);
+    await montar();
+    await clic('[data-testid="generar-una-ct-1|2026-09|INQUILINO"]');
+    await soltarTareas();
+    expect(generarMock).not.toHaveBeenCalled();
+  });
+
+  it('el botón del pie también confirma, con los números que van a salir', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        inquilinos: [factura(), factura({ clave: 'ct-2|2026-09|INQUILINO', contractId: 'ct-2' })],
+        resolucion: resolucionVigente({ siguiente: 'FE-7' }),
+      }),
+    );
+    generarMock.mockResolvedValue({ mes: '2026-09', emitidas: 2, yaEstaban: 0, totalCop: 3_600_000, facturas: [] });
+    await montar();
+    await clic('[data-testid="facturacion-generar"]');
+    await soltarTareas();
+    const pregunta = confirmarMock.mock.calls[0][0] as { titulo: string; descripcion: React.ReactNode };
+    expect(pregunta.titulo).toBe('¿Emitir 2 facturas de inquilinos de septiembre de 2026?');
+    const cuerpo = document.createElement('div');
+    const raiz = createRoot(cuerpo);
+    await act(async () => {
+      raiz.render(<>{pregunta.descripcion}</>);
+    });
+    expect(cuerpo.textContent).toContain('de la FE-7 a la FE-8');
+    act(() => raiz.unmount());
+  });
+
+  it('🔴 FA-R24: Propietarios mira la resolución de las COMISIONES, no la del canon', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        resolucion: resolucionVigente({ puedeNumerar: false, motivo: 'SIN_RESOLUCION', explicacion: 'Sin resolución del canon.', siguiente: null, numero: null }),
+        resolucionDeLaComision: resolucionVigente({ numero: 'PRUEBA-COM', prefijo: 'LABC', siguiente: 'LABC-1' }),
+      }),
+    );
+    await montar();
+    // Inquilinos: apagado por la del canon.
+    expect((q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled).toBe(true);
+    await verA('Propietarios');
+    await act(async () => {
+      (qa('[data-testid^="factura-"] button[role="checkbox"]')[0] as HTMLButtonElement).click();
+    });
+    // Propietarios: tiene su propia resolución, se puede.
+    expect(q('[data-testid="facturacion-motivo-apagado"]')).toBeNull();
+    expect((q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled).toBe(false);
+    expect((q('[data-testid="generar-una-ct-1|2026-09|PROPIETARIO"]') as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('🔴 FA-08: el aviso sin resolución no manda a «Facturación → Resolución» estando ahí', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        resolucion: resolucionVigente({
+          puedeNumerar: false,
+          motivo: 'SIN_RESOLUCION',
+          explicacion:
+            'La inmobiliaria no tiene ninguna resolución de facturación que numere «Canon del inquilino». Cárgala en Facturación → Resolución, eligiendo ese tipo de documento (o una resolución sin tipo, que numera todo).',
+          siguiente: null,
+          numero: null,
+        }),
+      }),
+    );
+    await montar();
+    expect(host.textContent).not.toContain('Cárgala en Facturación');
+    expect(q('[data-testid="facturacion-sin-resolucion"]')!.textContent).toContain('Cargar la resolución');
+  });
+
+  it('🔴 la comisión que espera su giro dice «Se factura cuando se le gire» y no se emite', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        propietarios: [
+          factura({
+            clave: 'ct-1|2026-09|PROPIETARIO',
+            destinatario: 'PROPIETARIO',
+            terceroNombre: 'Jorge Restrepo',
+            emitible: false,
+            codigoNoEmitible: 'GIRO_SIN_PAGAR',
+            motivoNoEmitible: 'Se factura cuando se le gire: la comisión de septiembre de Jorge Restrepo se emite al marcar pagado su giro.',
+          }),
+        ],
+      }),
+    );
+    await montar();
+    await verA('Propietarios');
+    const fila = q('[data-testid="factura-ct-1|2026-09|PROPIETARIO"]')!;
+    expect(fila.querySelector('[data-testid="espera-el-giro-ct-1|2026-09|PROPIETARIO"]')!.textContent).toBe(
+      'Se factura cuando se le gire',
+    );
+    expect((fila.querySelector('button[role="checkbox"]') as HTMLButtonElement).disabled).toBe(true);
+    expect(fila.querySelector('[data-testid="generar-una-ct-1|2026-09|PROPIETARIO"]')).toBeNull();
+  });
+
+  it('🔴 copropiedad: la comisión dice de quién es y su parte («Jorge Restrepo · 70 %»)', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        propietarios: [
+          factura({ clave: 'ct-26|2026-09|PROPIETARIO|jorge', destinatario: 'PROPIETARIO', terceroNombre: 'Jorge Restrepo', participacionBps: 7000 }),
+          factura({ clave: 'ct-26|2026-09|PROPIETARIO|hernan', destinatario: 'PROPIETARIO', terceroNombre: 'Hernán Gil', participacionBps: 3000 }),
+        ],
+      }),
+    );
+    await montar();
+    await verA('Propietarios');
+    expect(host.textContent).toContain('Jorge Restrepo · 70 %');
+    expect(host.textContent).toContain('Hernán Gil · 30 %');
+  });
+
+  it('🔴 FA-R16: la GENERADA que una nota crédito dejó sin efecto dice «Anulada» y no se emite', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        inquilinos: [
+          factura({
+            estado: 'GENERADA',
+            emitible: false,
+            codigoNoEmitible: 'ANULADA_POR_NOTA_CREDITO',
+            motivoNoEmitible: 'Esta factura quedó sin efecto antes de emitirse.',
+          }),
+        ],
+      }),
+    );
+    await montar();
+    expect(q('[data-testid="emitida-ct-1|2026-09|INQUILINO"]')).toBeNull();
+    expect(q('[data-testid="generar-una-ct-1|2026-09|INQUILINO"]')).toBeNull();
+    expect(q('[data-testid="anulada-ct-1|2026-09|INQUILINO"]')!.textContent).toBe('Anulada con nota crédito');
+    // Y no entra a la selección del pie.
+    expect((q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('el back dice por qué no y la celda lo resume (la primera cuota, antes de su fecha de cartera)', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        inquilinos: [
+          factura({
+            emitible: false,
+            codigoNoEmitible: 'ANTES_DE_LA_FECHA_DE_CARTERA',
+            motivoNoEmitible: 'Es la primera cuota del contrato y empieza el 15 de octubre de 2026.',
+          }),
+        ],
+      }),
+    );
+    await montar();
+    const celda = q('[data-testid="todavia-no-ct-1|2026-09|INQUILINO"]')!;
+    expect(celda.textContent).toBe('Desde su fecha de cartera');
+    expect(celda.getAttribute('title')).toContain('15 de octubre de 2026');
+  });
+
+  it('las que el back no emitió por un bloqueo se dicen con su frase (y «1 factura»)', async () => {
+    generarMock.mockResolvedValue({
+      mes: '2026-09',
+      emitidas: 0,
+      yaEstaban: 0,
+      sinNumero: 0,
+      motivo: null,
+      totalCop: 0,
+      facturas: [],
+      cuantasBloqueadas: 1,
+      bloqueadas: [
+        {
+          clave: 'ct-1|2026-09|INQUILINO',
+          contractId: 'ct-1',
+          destinatario: 'INQUILINO',
+          terceroNombre: 'Nubia Amparo David',
+          codigo: 'ESCENARIO_SIN_CONFIRMAR',
+          motivo: 'El escenario tributario del contrato no está confirmado.',
+        },
+      ],
+      transmision: { encoladas: 0, entregadas: 0, porCanalAlterno: 0, sinCola: false, noEntregadasPorPrueba: 0 },
+    });
+    await montar();
+    await clic('[data-testid="generar-una-ct-1|2026-09|INQUILINO"]');
+    await soltarTareas();
+    expect(toastErr).toHaveBeenCalledWith(
+      '1 factura no se emitió. El escenario tributario del contrato no está confirmado.',
+    );
+  });
+
+  it('🔴 FA-15: en el celular cada factura es una tarjeta con cliente, concepto y total', async () => {
+    const original = window.matchMedia;
+    window.matchMedia = ((q: string) => ({
+      matches: q.includes('max-width'),
+      media: q,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    })) as unknown as typeof window.matchMedia;
+    try {
+      await montar();
+      expect(q('table')).toBeNull();
+      const tarjeta = q('[data-testid="factura-ct-1|2026-09|INQUILINO"]')!;
+      expect(tarjeta.tagName).toBe('LI');
+      expect(tarjeta.textContent).toContain('Nubia Amparo David');
+      expect(tarjeta.textContent).toContain('Canon de arrendamiento');
+      expect(tarjeta.textContent).toContain('$\u00a01.800.000');
+      expect(tarjeta.querySelector('[data-testid="generar-una-ct-1|2026-09|INQUILINO"]')).not.toBeNull();
+    } finally {
+      window.matchMedia = original;
+    }
+  });
+});
+
+/*
+ * 🔴 QA-FACT-CONTA-95 · B-08 (decisión de Nico n.º 15, 05-10-2026): la factura
+ * por mandato también se frena cuando la ficha del propietario dice «CC» con un
+ * número que parece un NIT. La fila lleva el MISMO aviso y el mismo camino a la
+ * ficha que la del propietario sin tipo de documento (QA-FACT-PROF).
+ */
+describe('QA-FACT-CONTA-95 · mandante con el tipo de documento por revisar', () => {
+  it('🔴 la fila dice qué revisar y lleva a la ficha del propietario, sin botón de emitir', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        inquilinos: [
+          factura({
+            emitible: false,
+            codigoNoEmitible: 'MANDANTE_TIPO_DE_DOCUMENTO_POR_REVISAR',
+            motivoNoEmitible:
+              'Inversiones Lab S.A.S. tiene «CC» en su ficha con un número que parece un NIT (901222333), y esta factura sale a su nombre (por mandato): la DIAN rechaza un tipo de documento equivocado. Revisa el tipo en Propietarios y se emite.',
+            mandato: { porMandato: true, mandanteId: 'p-4', mandanteNombre: 'Inversiones Lab S.A.S.' },
+          }),
+        ],
+      }),
+    );
+    await montar();
+    const celda = q('[data-testid="mandante-sin-tipo-ct-1|2026-09|INQUILINO"]');
+    expect(celda?.textContent).toContain('Revisa el tipo de documento del propietario');
+    const enlace = q('[data-testid="completar-mandante-ct-1|2026-09|INQUILINO"]') as HTMLAnchorElement | null;
+    expect(enlace?.getAttribute('href')).toBe('/panel/inmobiliaria/propietarios/p-4');
+    expect(celda?.querySelector('[title]')?.getAttribute('title')).toContain('parece un NIT');
+  });
+  it('🔴 sin ningún documento del propietario: «Falta el documento del propietario» y el mismo enlace', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        inquilinos: [
+          factura({
+            emitible: false,
+            codigoNoEmitible: 'MANDANTE_SIN_DOCUMENTO',
+            motivoNoEmitible: 'Sin Doc no tiene el documento en su ficha, y esta factura sale a su nombre (por mandato): la DIAN exige el tipo y el número. Complétalos en Propietarios y se emite.',
+            mandato: { porMandato: true, mandanteId: 'p-7', mandanteNombre: 'Sin Doc' },
+          }),
+        ],
+      }),
+    );
+    await montar();
+    const celda = q('[data-testid="mandante-sin-tipo-ct-1|2026-09|INQUILINO"]');
+    expect(celda?.textContent).toContain('Falta el documento del propietario');
+    expect(q('[data-testid="completar-mandante-ct-1|2026-09|INQUILINO"]')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/propietarios/p-7',
+    );
+  });
+});
+
+/*
+ * 🔴 FA-04 (QA-FACT-CONTA-95, 05-10-2026): medido en el navegador a 1.440 px, la
+ * columna «Valor» medía 329 px con «Base … · IVA …» y «Retiene … · Neto …» en
+ * dos renglones sin partir, y la tabla (1.231 px) no cabía en su tarjeta
+ * (1.102 px): el valor quedaba debajo de la columna fija del estado.
+ */
+describe('QA-FACT-CONTA-95 · FA-04 · la plata de la fila en renglones cortos', () => {
+  it('base, IVA, retención y neto van cada uno en su renglón', async () => {
+    porGenerarMock.mockResolvedValue(
+      respuesta({
+        inquilinos: [
+          factura({ baseCop: 8_900_000, ivaCop: 1_691_000, retencionesCop: 565_150, totalCop: 10_591_000, netoCop: 10_025_850 }),
+        ],
+      }),
+    );
+    await montar();
+    const c = 'ct-1|2026-09|INQUILINO';
+    expect(q(`[data-testid="base-${c}"]`)?.textContent).toBe('Base $ 8.900.000');
+    expect(q(`[data-testid="iva-${c}"]`)?.textContent).toBe('IVA $ 1.691.000');
+    expect(q(`[data-testid="retiene-${c}"]`)?.textContent).toBe('Retiene −$ 565.150');
+    expect(q(`[data-testid="neto-${c}"]`)?.textContent).toBe('Neto $ 10.025.850');
   });
 });

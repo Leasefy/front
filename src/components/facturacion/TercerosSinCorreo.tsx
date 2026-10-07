@@ -119,9 +119,13 @@ export function TercerosSinCorreo() {
           />
           <div className="space-y-1">
             <p className="text-caption text-fg">
+              {/* 🔴 Nico (03-10-2026): sin correo la factura queda «Sin entregar ·
+                  falta el correo». Antes decía «A N les llega por WhatsApp» y
+                  «queda esperando en un enlace»: el WhatsApp no sale y el
+                  enlace no existe (FA-R19). */}
               {datos.sinCorreo === 0
-                ? `Todos tus ${datos.total} terceros tienen correo: sus facturas salen con el XML y el PDF.`
-                : `${datos.sinCorreo} de ${datos.total} terceros no tienen correo. A ${datos.sinCorreoConWhatsapp} les llega por WhatsApp; a ${datos.sinNingunCanal} no les llega nada y su factura queda esperando en un enlace.`}
+                ? `${datos.total === 1 ? 'Tu tercero tiene' : `Todos tus ${datos.total.toLocaleString('es-CO')} terceros tienen`} correo: sus facturas se les mandan por correo.`
+                : `${datos.sinCorreo.toLocaleString('es-CO')} de ${datos.total.toLocaleString('es-CO')} terceros no ${datos.sinCorreo === 1 ? 'tiene' : 'tienen'} correo: sus facturas quedan sin entregar, y la aceptación tácita no corre, hasta que lo completes.`}
             </p>
             <p className="text-caption text-fg-muted">
               {datos.exigido
@@ -142,8 +146,8 @@ export function TercerosSinCorreo() {
           <div>
             <h3 className="text-body font-semibold text-fg">A quién le falta el correo</h3>
             <p className="text-caption text-fg-muted">
-              Primero los que más cuestan: el que tiene más contratos, y entre
-              iguales el que no tiene ni WhatsApp. Se completa desde su ficha.
+              Primero los que más cuestan: el que tiene más contratos. Se completa
+              desde su ficha (Inquilinos o Propietarios).
             </p>
           </div>
           <Select
@@ -205,7 +209,7 @@ export function TercerosSinCorreo() {
                 <TableHead className="whitespace-nowrap text-right">
                   Contratos
                 </TableHead>
-                <TableHead className="whitespace-nowrap">Mientras tanto</TableHead>
+                <TableHead className="whitespace-nowrap">Sus facturas</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -247,12 +251,8 @@ export function TercerosSinCorreo() {
                     <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
                       {t.contratos}
                     </TableCell>
-                    <TableCell
-                      className={`whitespace-nowrap ${t.tieneWhatsapp ? 'text-fg-muted' : 'text-danger'}`}
-                    >
-                      {t.tieneWhatsapp
-                        ? 'Se le entrega por WhatsApp'
-                        : 'No le llega nada: queda en un enlace'}
+                    <TableCell className="whitespace-nowrap text-warning">
+                      Sin entregar · falta el correo
                     </TableCell>
                   </TableRow>
                 ))

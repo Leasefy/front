@@ -40,6 +40,7 @@
  * no está incompleto: está mal, y nadie lo sabe.
  */
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -54,8 +55,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DescargarElInforme } from '@/components/contabilidad/reportes/DescargarElInforme';
+import { tablasDelBalanceGeneral, tablasDelPyg } from '@/lib/contabilidad/tablas-de-los-informes';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Avisos, Cifra, CifraDeTexto, TituloDeBloque } from '@/components/finanzas/piezas';
+// CB-17 (QA de Contabilidad, 03-10-2026): la plata de Contabilidad con UN formato.
+import { plata, textoDelBack } from '@/lib/contabilidad/plata';
 import { SelectorDeMes } from '@/components/finanzas/SelectorDeMes';
 import {
   estadosFinancierosApi,
@@ -77,6 +82,8 @@ import {
   leyendaDelCanon,
   margenLegible,
   motivoSinComparacionPorRubro,
+  notaSinGastosDelMes,
+  RUTA_DE_GASTOS,
   totalDelOtroLado,
 } from '@/lib/contabilidad/estados-financieros';
 import { mesActual } from '@/lib/recaudo/meses';
@@ -225,6 +232,21 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                 ))}
               </select>
             </label>
+            {/* CB-C-13 (QA-FACT-CONTA-95 r2): el P&G y el balance general se bajan. */}
+            <DescargarElInforme
+              informe={informe === 'pyg' ? 'Estado de resultados (P&G)' : 'Balance general'}
+              periodo={informe === 'pyg' ? { desde: `${mes}-01`, hasta } : { hasta }}
+              tablas={() =>
+                informe === 'pyg'
+                  ? pyg
+                    ? tablasDelPyg(pyg, comparar.includes('anioAnterior'))
+                    : []
+                  : balance
+                    ? tablasDelBalanceGeneral(balance)
+                    : []
+              }
+              disabled={!informeActual || cargando}
+            />
           </div>
         </div>
 
@@ -247,7 +269,8 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
               <Avisos
                 avisos={[
                   ...(avisoDeLoQueFalta(pyg.sinAsentar) ? [avisoDeLoQueFalta(pyg.sinAsentar)!] : []),
-                  ...pyg.avisos,
+                  // CB-17: las frases del back sin emojis y con la plata de la casa.
+                  ...pyg.avisos.map(textoDelBack),
                 ]}
                 testId="avisos-del-pyg"
                 titulo="Lo que este informe no cuenta"
@@ -255,18 +278,21 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
 
               <dl className="grid gap-4 sm:grid-cols-4">
                 <Cifra
+                  formato={plata}
                   id="ingresos"
                   etiqueta="Ingresos del mes"
                   valor={pyg.resultado.ingresosMesCop}
                   definicion="Las cuentas de la clase 4 asentadas en el mes. No incluye el canon: ése es del propietario."
                 />
                 <Cifra
+                  formato={plata}
                   id="gastos"
                   etiqueta="Gastos del mes"
                   valor={pyg.resultado.gastosMesCop}
                   definicion="Las cuentas de las clases 5, 6 y 7 asentadas en el mes."
                 />
                 <Cifra
+                  formato={plata}
                   id="utilidad"
                   etiqueta="Utilidad del mes"
                   valor={pyg.resultado.utilidadMesCop}
@@ -280,6 +306,23 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                   definicion="Utilidad sobre ingresos. Con «—» no hubo ingresos: «vendiste y no ganaste» y «no vendiste» no son lo mismo."
                 />
               </dl>
+
+              {/* CB-C-09 (QA-FACT-CONTA-95 r2): sin gastos en el mes, lo dice y
+                  lleva a Gastos, que es donde nacen. */}
+              {notaSinGastosDelMes(pyg.resultado.gastosMesCop) ? (
+                <Nota testId="pyg-sin-gastos">
+                  <p>
+                    {notaSinGastosDelMes(pyg.resultado.gastosMesCop)}{' '}
+                    <Link
+                      href={RUTA_DE_GASTOS}
+                      className="font-medium text-primary underline underline-offset-2"
+                      data-testid="pyg-ir-a-gastos"
+                    >
+                      Ir a Gastos
+                    </Link>
+                  </p>
+                </Nota>
+              ) : null}
 
               {/* ── El árbol ──────────────────────────────────────────── */}
               <section
@@ -477,8 +520,8 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
                   de esto: leerlo primero es leerlo en el orden correcto. */}
               <Bloqueos
                 bloqueos={
-                  descripcionDelDescuadre(balance, (n) => `$${n.toLocaleString('es-CO')}`)
-                    ? [descripcionDelDescuadre(balance, (n) => `$${n.toLocaleString('es-CO')}`)!]
+                  descripcionDelDescuadre(balance, plata)
+                    ? [descripcionDelDescuadre(balance, plata)!]
                     : []
                 }
                 titulo="El balance no cuadra"
@@ -496,42 +539,65 @@ export function EstadosFinancieros({ inicial = 'pyg' }: { inicial?: Informe } = 
               </Nota>
 
               <Avisos
-                avisos={balance.avisos}
+                avisos={balance.avisos.map(textoDelBack)}
                 testId="avisos-del-balance"
                 titulo="Lo que este balance no cuenta"
               />
 
-              <dl className="grid gap-4 sm:grid-cols-4">
+              <dl
+                className={cn(
+                  'grid gap-4 sm:grid-cols-4',
+                  // Cinco cifras no caben en una fila sin partir los montos: 3 + 2.
+                  (balance.resultadoDeEjerciciosAnterioresCop ?? 0) !== 0 && 'sm:grid-cols-3',
+                )}
+              >
                 <Cifra
+                  formato={plata}
                   id="activo"
                   etiqueta="Activo"
                   valor={balance.activo.totalCop}
                   definicion="Lo que la inmobiliaria tiene y le deben, al último día del mes."
                 />
                 <Cifra
+                  formato={plata}
                   id="pasivo"
                   etiqueta="Pasivo"
                   valor={balance.pasivo.totalCop}
                   definicion="Lo que debe, incluida la plata de los propietarios que todavía no se giró (2815)."
                 />
                 <Cifra
+                  formato={plata}
                   id="patrimonio"
                   etiqueta="Patrimonio"
                   valor={balance.patrimonio.totalCop}
                   definicion="El capital y las reservas. Lo crea el contador: el plan de cuentas que trae Leasefy no incluye la clase 3."
                 />
                 <Cifra
+                  formato={plata}
                   id="resultado-del-ejercicio"
                   etiqueta="Resultado del ejercicio"
                   valor={balance.resultadoDelEjercicioCop}
                   definicion={POR_QUE_EL_RESULTADO_VA_APARTE}
                   tono={balance.resultadoDelEjercicioCop < 0 ? 'danger' : 'success'}
                 />
+                {/* 🔴 CB-R14 (Nico): el resultado de años anteriores sin asiento
+                    de cierre se calcula y se dice, aparte. */}
+                {(balance.resultadoDeEjerciciosAnterioresCop ?? 0) !== 0 ? (
+                  <Cifra
+                    formato={plata}
+                    id="resultado-de-ejercicios-anteriores"
+                    etiqueta="Resultado de años anteriores"
+                    valor={balance.resultadoDeEjerciciosAnterioresCop ?? 0}
+                    definicion="Lo que dejaron los años anteriores y todavía no se lleva al patrimonio: falta el asiento de cierre de esos años, que hace tu contador. Va aparte para que el balance cuadre."
+                    tono={(balance.resultadoDeEjerciciosAnterioresCop ?? 0) < 0 ? 'danger' : 'success'}
+                  />
+                ) : null}
               </dl>
 
               <p className="text-caption text-fg-muted" data-testid="ecuacion-del-balance">
                 Activo <Monto valor={balance.activo.totalCop} className="text-caption" /> = pasivo +
-                patrimonio + resultado{' '}
+                patrimonio + resultado
+                {(balance.resultadoDeEjerciciosAnterioresCop ?? 0) !== 0 ? ' (con el de años anteriores)' : ''}{' '}
                 <Monto valor={totalDelOtroLado(balance)} className="text-caption" />
                 {balance.cuadra ? ' · cuadra.' : ' · NO cuadra.'}
               </p>

@@ -24,6 +24,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toast';
 import { fotosDesdeEnlace } from '@/lib/inmuebles/fotos-desde-enlace';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 export interface FotosDesdeEnlaceProps {
   /** Cuántas fotos más caben en el inmueble. */
@@ -97,6 +99,12 @@ export function FotosDesdeEnlace({
           : `${r.archivos.length} fotos traídas del aviso`,
         notas.length > 0 ? { description: notas.join(' · ') } : undefined,
       );
+    } catch (e) {
+      // `fotosDesdeEnlace` responde `{ ok: false }` cuando sabe qué pasó; si
+      // igual lanza, antes quedaba un rechazo sin atrapar y nada en pantalla.
+      if (!cancelado.current) {
+        setError(mensajeParaLaPersona(e, { accion: 'traer las fotos del aviso' }));
+      }
     } finally {
       if (!cancelado.current) {
         setTrayendo(false);
@@ -130,6 +138,8 @@ export function FotosDesdeEnlace({
             disabled={bloqueado}
             placeholder="https://www.fincaraiz.com.co/…"
             aria-label="Enlace del aviso donde está publicado el inmueble"
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? 'error-fotos-enlace' : 'ayuda-fotos-enlace'}
             className="pl-9"
             data-testid="enlace-del-aviso"
           />
@@ -161,15 +171,21 @@ export function FotosDesdeEnlace({
         >
           {avance.listas} de {avance.total}
         </p>
-      ) : error ? (
-        <p className="text-sm text-danger" role="alert" data-testid="error-fotos-enlace">
-          {error}
-        </p>
       ) : (
-        <p className="text-xs text-fg-subtle">
-          Pega el enlace de Fincaraíz, Metrocuadrado o el portal donde ya
-          publicaste este inmueble y traemos sus fotos.
-        </p>
+        // El error del enlace reemplaza la ayuda con un cruce (ErrorDelCampo).
+        <div data-testid={error ? 'error-fotos-enlace' : undefined}>
+          <ErrorDelCampo
+            id="error-fotos-enlace"
+            className="mt-0"
+            mensaje={error}
+            pista={
+              <span id="ayuda-fotos-enlace">
+                Pega el enlace de Fincaraíz, Metrocuadrado o el portal donde ya
+                publicaste este inmueble y traemos sus fotos.
+              </span>
+            }
+          />
+        </div>
       )}
     </div>
   );

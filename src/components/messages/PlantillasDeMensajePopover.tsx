@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { usePanelFlotante } from '@/components/messages/usePanelFlotante';
 import { endpointNoDisponible } from '@/components/messages/endpoint-no-disponible';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   plantillasDeMensajeApi,
   resolverPlantilla,
@@ -39,7 +40,8 @@ type Estado =
   | { fase: 'cargando' }
   | { fase: 'lista'; plantillas: PlantillaDeMensaje[] }
   | { fase: 'noDisponible' }
-  | { fase: 'error' };
+  /** `motivo`: el porqué, por el traductor (un 5xx con su referencia, la red…). */
+  | { fase: 'error'; motivo: string };
 
 interface Props {
   locale: string;
@@ -62,7 +64,11 @@ export function PlantillasDeMensajePopover({ locale, datos, onElegir, className 
       const { plantillas } = await plantillasDeMensajeApi.listar();
       setEstado({ fase: 'lista', plantillas: plantillas ?? [] });
     } catch (err) {
-      setEstado({ fase: endpointNoDisponible(err) ? 'noDisponible' : 'error' });
+      setEstado(
+        endpointNoDisponible(err)
+          ? { fase: 'noDisponible' }
+          : { fase: 'error', motivo: mensajeParaLaPersona(err, { accion: 'traer las plantillas' }) },
+      );
     }
   }, []);
 
@@ -79,7 +85,14 @@ export function PlantillasDeMensajePopover({ locale, datos, onElegir, className 
       await plantillasDeMensajeApi.instalarSugeridas();
       await traer();
     } catch (err) {
-      setEstado({ fase: endpointNoDisponible(err) ? 'noDisponible' : 'error' });
+      setEstado(
+        endpointNoDisponible(err)
+          ? { fase: 'noDisponible' }
+          : {
+              fase: 'error',
+              motivo: mensajeParaLaPersona(err, { accion: 'instalar las plantillas sugeridas' }),
+            },
+      );
     } finally {
       setInstalando(false);
     }
@@ -154,6 +167,11 @@ export function PlantillasDeMensajePopover({ locale, datos, onElegir, className 
                   ? 'No pudimos traer las plantillas.'
                   : "We couldn't load the templates."}
               </p>
+              {es && (
+                <p className="mt-1 text-caption text-fg-muted" data-testid="plantillas-motivo">
+                  {estado.motivo}
+                </p>
+              )}
               <button
                 type="button"
                 onClick={() => void traer()}

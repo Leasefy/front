@@ -10,13 +10,15 @@
  */
 
 import { PageGuard } from '@/components/auth/PageGuard';
+import { ROLES_QUE_VEN_LOS_BANCOS } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos';
 import { SectionLabel } from '@/components/ui/section-label';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { RecaudoBancarioPanel } from '@/components/tesoreria/RecaudoBancario';
 
 export default function RecaudoBancarioPage() {
   return (
-    <PageGuard module="cobros" action="view">
+    // COBRANZA-MANUAL: el auxiliar de cartera no entra a los bancos.
+    <PageGuard module="cobros" action="view" roles={[...ROLES_QUE_VEN_LOS_BANCOS]}>
       <div className="space-y-6 p-6 lg:p-8">
         {/* 🔴 La explicación va detrás de un botón que abre un modal, no puesta
             sobre la pantalla: sobre la pantalla empuja hacia abajo lo que la

@@ -9,6 +9,7 @@ import { useI18n } from '@/lib/i18n';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Card, Spinner } from '@/components/ui';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { toast } from '@/components/ui/toast';
 import { Eyebrow, StatusBadge, MonoLabel } from '@leasefy/cadence';
 import { ContractPreview } from '@/components/contract/ContractPreview';
@@ -22,6 +23,7 @@ import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 import { useLandlordProperty, useCandidate } from '@/lib/hooks/useLandlord';
 import { CONTRACT_TYPE_LABELS, CONTRACT_TYPE_DESCRIPTIONS, getContractTypeLabel } from '@/lib/types/contract';
 import type { Contract, ContractType } from '@/lib/types/contract';
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 
 // ============================================================================
 // TextTs
@@ -100,7 +102,7 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
                   aria-pressed={isSelected}
                   onClick={() => { onSelect(template.type); onFileChange(null); }}
                   className={cn(
-                    'w-full rounded-lg border p-4 text-left transition-all group',
+                    'w-full rounded-lg border p-4 text-left transition-[background-color,border-color,box-shadow] group',
                     isSelected
                       ? 'border-primary bg-primary-soft ring-2 ring-primary'
                       : 'border-border hover:border-border-strong hover:bg-surface-hover'
@@ -162,7 +164,7 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
             {!uploadedFile ? (
               <label
                 className={cn(
-                  'flex flex-col items-center justify-center gap-3 w-full rounded-lg border-2 border-dashed p-8 cursor-pointer transition-all',
+                  'flex flex-col items-center justify-center gap-3 w-full rounded-lg border-2 border-dashed p-8 cursor-pointer transition-colors',
                   selectedType === 'custom'
                     ? 'border-primary bg-primary-soft'
                     : 'border-border-strong hover:border-border-strong bg-surface-muted'
@@ -188,7 +190,7 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
               </label>
             ) : (
               <div className={cn(
-                'flex items-center gap-3 w-full rounded-lg border p-4 transition-all',
+                'flex items-center gap-3 w-full rounded-lg border p-4 transition-colors',
                 'border-primary bg-primary-soft'
               )}>
                 <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
@@ -228,11 +230,8 @@ function ContractTypeSelector({ selectedType, onSelect, uploadedFile, onFileChan
 function ContractPageLoading() {
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <div className="flex items-center justify-center py-24">
-          <Spinner size="lg" variant="muted" />
-        </div>
-      </div>
+      {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+      <EsqueletoDePagina variante="wizard" className="mx-auto max-w-7xl" />
     </div>
   );
 }
@@ -358,15 +357,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 
   // Loading state
   if (propertyLoading || candidateLoading) {
-    return (
-      <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-          <div className="flex items-center justify-center py-24">
-            <Spinner size="lg" variant="muted" />
-          </div>
-        </div>
-      </div>
-    );
+    return <ContractPageLoading />;
   }
 
   // Not found state
@@ -414,7 +405,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
 
   // Format currency
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(locale === 'es' ? 'es-CL' : 'en-US', {
+    return plataEnPantalla(locale === 'es' ? 'es-CL' : 'en-US', {
       style: 'currency',
       currency: 'COP',
       minimumFractionDigits: 0,
@@ -535,7 +526,7 @@ function ContractPageContent({ propertyId, candidateId }: { propertyId: string; 
                     <div key={i} className="flex items-center flex-1 last:flex-none">
                       <div className="flex items-center gap-3">
                         <div className={cn(
-                          'flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold transition-all',
+                          'flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold transition-colors',
                           isCompleted && 'bg-primary text-primary-fg font-mono tabular-nums',
                           isCurrent && 'bg-primary text-primary-fg font-mono tabular-nums',
                           !isCompleted && !isCurrent && 'bg-surface-muted text-fg-subtle',

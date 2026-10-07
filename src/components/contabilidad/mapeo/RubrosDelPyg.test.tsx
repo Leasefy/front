@@ -90,6 +90,17 @@ let container: HTMLDivElement;
 let root: Root | null = null;
 const q = (t: string) => document.querySelector(`[data-testid="${t}"]`) as HTMLElement | null;
 
+/** CB-A-19: confirma el diálogo «¿Quitar … de «rubro»?». */
+async function confirmarQuitar() {
+  const boton = document.querySelector('[data-testid="confirmar-quitar-cuenta"]') as HTMLButtonElement | null;
+  expect(boton).not.toBeNull();
+  await act(async () => {
+    boton!.click();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
 beforeEach(() => {
   api.mapeo.rubros.mockReset();
   api.mapeo.guardarRubro.mockReset();
@@ -257,6 +268,8 @@ describe('<RubrosDelPyg>', () => {
       await Promise.resolve();
       await Promise.resolve();
     });
+    // CB-A-19 (QA-FACT-CONTA-95 r2): quitar pide confirmación antes de guardar.
+    await confirmarQuitar();
 
     expect(api.mapeo.guardarRubro).toHaveBeenCalledWith({
       rubro: 'servicios',
@@ -276,8 +289,32 @@ describe('<RubrosDelPyg>', () => {
       await Promise.resolve();
       await Promise.resolve();
     });
+    // CB-A-19 (QA-FACT-CONTA-95 r2): quitar pide confirmación antes de guardar.
+    await confirmarQuitar();
 
     expect(api.mapeo.guardarRubro).toHaveBeenCalledWith({ rubro: 'servicios', cuentaIds: [] });
+  });
+
+  it('CB-A-19 (QA-FACT-CONTA-95 r2): quitar una cuenta pide confirmación; sin confirmar no se guarda nada', async () => {
+    api.mapeo.rubros.mockResolvedValue(mapeo([rubro()]));
+    await pintar();
+
+    await act(async () => {
+      (q('quitar-servicios-c-5135') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    const dialogo = document.querySelector('[data-testid="confirmar-quitar-cuenta-del-rubro"]');
+    expect(dialogo).not.toBeNull();
+    expect(dialogo!.textContent).toContain('¿Quitar 5135');
+    expect(dialogo!.textContent).toContain('única cuenta del rubro');
+    expect(api.mapeo.guardarRubro).not.toHaveBeenCalled();
+
+    const dejarla = [...document.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Dejarla');
+    await act(async () => {
+      dejarla!.click();
+      await Promise.resolve();
+    });
+    expect(api.mapeo.guardarRubro).not.toHaveBeenCalled();
   });
 
   it('ofrece sembrar el preset sólo cuando hay rubros que se pueden sembrar', async () => {

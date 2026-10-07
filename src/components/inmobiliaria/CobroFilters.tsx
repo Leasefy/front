@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   MagnifyingGlass,
   Funnel,
@@ -20,8 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { IconButton, Chip } from '@leasefy/cadence';
+import { IconButton, Chip, Collapse, Presence } from '@leasefy/cadence';
 import type { Consignacion, Propietario, CobroStatus } from '@/lib/types/inmobiliaria';
+import { mesEnTitulo } from '@/lib/utils/mes';
 
 export interface CobroFiltersState {
   month: string; // '2026-02'
@@ -61,7 +61,7 @@ export function CobroFilters({
   onFilterChange,
   cobroCountByStatus,
 }: CobroFiltersProps) {
-  const { t, formatDate } = useI18n();
+  const { t } = useI18n();
   const [showFilters, setShowFilters] = useState(false);
   const [searchInput, setSearchInput] = useState(filters.search || '');
 
@@ -85,12 +85,13 @@ export function CobroFilters({
     for (let i = 0; i < 6; i++) {
       const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
       const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      const label = formatDate(date, { month: 'long', year: 'numeric' });
+      // N-14 (QA-PAGOS-95): «Octubre de 2026», no «Octubre De 2026» (`capitalize`).
+      const label = mesEnTitulo(value);
       months.push({ value, label });
     }
 
     return months;
-  }, [formatDate]);
+  }, []);
 
   // Count active filters (excluding month and 'all' status since those are always set)
   const activeFiltersCount = useMemo(() => {
@@ -134,7 +135,13 @@ export function CobroFilters({
             onChange={(e) => setSearchInput(e.target.value)}
             className="w-full pl-10 pr-4"
           />
-          {searchInput && (
+          {/* La equis aparece y se va con un fundido (sin moverse: el
+              `-translate-y-1/2` la centra). */}
+          <Presence
+            show={Boolean(searchInput)}
+            direction="none"
+            className="absolute right-2 top-1/2 -translate-y-1/2"
+          >
             <IconButton
               variant="ghost"
               size="sm"
@@ -143,10 +150,9 @@ export function CobroFilters({
                 updateFilter('search', undefined);
               }}
               aria-label="Limpiar búsqueda"
-              className="absolute right-2 top-1/2 -translate-y-1/2"
               icon={<X className="w-4 h-4 text-muted-foreground" />}
             />
-          )}
+          </Presence>
         </div>
 
         {/* Filters Toggle */}
@@ -157,24 +163,21 @@ export function CobroFilters({
           aria-expanded={showFilters}
         >
           {t('inmobiliaria.cobros.filters.filtersLabel')}
-          {activeFiltersCount > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold min-w-[20px] text-center tabular-nums">
+          <Presence
+            as="span"
+            show={activeFiltersCount > 0}
+            initial={false}
+            direction="none"
+            className="px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-xs font-semibold min-w-[20px] text-center tabular-nums"
+          >
               {activeFiltersCount}
-            </span>
-          )}
+          </Presence>
         </Chip>
       </div>
 
-      {/* Filters Panel (collapsible) */}
-      <AnimatePresence>
-        {showFilters && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="border-b border-border"
-          >
+      {/* Filters Panel (collapsible) — `Collapse` de Cadence: la altura y el
+          fundido con los tokens (antes `height` con una duración inventada). */}
+      <Collapse open={showFilters} className="border-b border-border">
             <div className="p-4 bg-muted/20 space-y-4">
               {/* Row 1: Month Selector + Status Tabs */}
               <div className="flex flex-col lg:flex-row gap-4 lg:items-center">
@@ -187,13 +190,13 @@ export function CobroFilters({
                     value={filters.month}
                     onValueChange={(value) => updateFilter('month', value)}
                   >
-                    <SelectTrigger className="gap-2 capitalize">
+                    <SelectTrigger className="gap-2">
                       <CalendarBlank className="w-4 h-4 text-muted-foreground shrink-0" />
                       <SelectValue placeholder={t('inmobiliaria.cobros.filters.selectMonth')} />
                     </SelectTrigger>
                     <SelectContent>
                       {recentMonths.map((month) => (
-                        <SelectItem key={month.value} value={month.value} className="capitalize">
+                        <SelectItem key={month.value} value={month.value}>
                           {month.label}
                         </SelectItem>
                       ))}
@@ -294,19 +297,15 @@ export function CobroFilters({
                   </Select>
                 </div>
 
-                {/* Clear Filters */}
-                {activeFiltersCount > 0 && (
-                  <div className="flex items-end">
+            {/* Clear Filters — entra con el primer filtro y se va al limpiar. */}
+            <Presence show={activeFiltersCount > 0} initial={false} direction="none" className="flex items-end">
                     <Button variant="link" hideArrow onClick={clearAllFilters}>
                       {t('inmobiliaria.cobros.filters.clearFilters')}
                     </Button>
-                  </div>
-                )}
+            </Presence>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </Collapse>
     </div>
   );
 }

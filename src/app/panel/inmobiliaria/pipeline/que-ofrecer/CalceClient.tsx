@@ -34,6 +34,10 @@
  *   · «cómo se decide» baja al pie, que es donde se consulta una vez y no
  *     cada vez.
  *
+ * 🔴 04-10-2026 (Nico: «el estudio es opcional»): sin estudio ya NO se cierra la
+ * puerta —se ofrece por el presupuesto, cada opción sale marcada «Sin estudio…»
+ * y el estudio se le sugiere—. La única puerta que queda es el presupuesto.
+ *
  * Lo que NO cambió, porque era lo bueno que ya tenía: un requisito que falta se
  * muestra como una puerta cerrada con su llave y no como «sin resultados»; los
  * pesos se ven y no se editan acá; y se elige por nombre, nunca por UUID.
@@ -46,6 +50,7 @@ import { ArrowRight, Copy, MagicWand, Users, House } from '@phosphor-icons/react
 import { SegmentedControl } from '@leasefy/cadence'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { Stagger, StaggerItem } from '@leasefy/cadence'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { usePipelineItems } from '@/lib/hooks/useInmobiliaria'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
@@ -96,6 +101,33 @@ function Razones({ porQue }: { porQue: readonly string[] }) {
       ))}
     </div>
   )
+}
+
+/**
+ * La marca de una opción sin estudio (back: `calce.ts`, `marcaDelEstudioEnElCalce`).
+ * 🔴 El estudio es opcional (Nico, 04-10-2026): sin estudio se ofrece por el
+ * presupuesto y la opción sale marcada. Es para el asesor: NUNCA va en el
+ * mensaje al interesado. Un back anterior no la manda: no se pinta nada.
+ */
+function marcaDe(x: unknown): string | null {
+  const m = (x as { marca?: unknown } | null)?.marca
+  return typeof m === 'string' && m.trim() ? m : null
+}
+
+function MarcaDelEstudio({ texto, testId }: { texto: string | null; testId: string }) {
+  if (!texto) return null
+  return (
+    <p className="mt-1.5">
+      <Badge variant="outline" className="border-warning/40 bg-warning-soft/40 font-normal" data-testid={testId}>
+        {texto}
+      </Badge>
+    </p>
+  )
+}
+
+/** ¿Hay un tope que haya filtrado? (estudio con respaldo) */
+function sinTope(tope: number | null | undefined): boolean {
+  return tope === null || tope === undefined || tope <= 0
 }
 
 async function copiar(texto: string) {
@@ -264,9 +296,29 @@ export function CalceClient() {
                         ) : (
                           <Badge variant="outline">deducido del inmueble</Badge>
                         )}{' '}
-                        · tope asegurable {pesos(delLead.datos.busca.topeAsegurableCop)}
+                        ·{' '}
+                        {sinTope(delLead.datos.busca.topeAsegurableCop) ? (
+                          <Badge variant="outline">
+                            {delLead.datos.busca.topeAsegurableCop === 0 ? 'sin respaldo' : 'sin estudio'}
+                          </Badge>
+                        ) : (
+                          <>tope asegurable {pesos(delLead.datos.busca.topeAsegurableCop)}</>
+                        )}
                       </p>
                     </div>
+
+                    {/* 🔴 El estudio se SUGIERE, no se exige (Nico, 04-10-2026):
+                        sin estudio se le ofrece por el presupuesto. */}
+                    {!delLead.datos.falta && delLead.datos.busca.topeAsegurableCop == null ? (
+                      <p
+                        className="border-border-faint bg-surface-muted/40 rounded-lg border px-4 py-3 text-sm"
+                        data-testid="sugerencia-del-estudio"
+                      >
+                        No tiene estudio de arrendamiento: le ofrecemos por su presupuesto. Sugiérele
+                        hacerlo: con su estudio la inmobiliaria sabe hasta cuánto lo respaldan y
+                        responde más rápido.
+                      </p>
+                    ) : null}
 
                     {/* 🔴 Un requisito que falta NO es «sin resultados». */}
                     {delLead.datos.falta ? (
@@ -280,12 +332,17 @@ export function CalceClient() {
                       <EmptyState
                         icon={MagicWand}
                         title="Ningún inmueble le calza hoy"
-                        description="Con su presupuesto y su tope, nada del portafolio pasa los requisitos. Cuando se libere uno que sí, aparece acá."
+                        description={
+                          sinTope(delLead.datos.busca.topeAsegurableCop)
+                            ? 'Con su presupuesto, nada del portafolio le entra hoy. Cuando se libere uno que sí, aparece acá.'
+                            : 'Con su presupuesto y su tope, nada del portafolio pasa los requisitos. Cuando se libere uno que sí, aparece acá.'
+                        }
                       />
                     ) : (
-                      <ul className="divide-border-faint divide-y" data-testid="opciones">
+                      /* Otro interesado: los inmuebles que le calzan entran escalonados. */
+                      <Stagger as="ul" className="divide-border-faint divide-y" data-testid="opciones">
                         {opciones.map((o) => (
-                          <li
+                          <StaggerItem as="li"
                             key={o.propertyId}
                             className="flex flex-wrap items-start justify-between gap-3 py-3"
                             data-testid={`opcion-${o.propertyId}`}
@@ -306,6 +363,7 @@ export function CalceClient() {
                                   : ''}
                               </p>
                               <Razones porQue={o.porQue} />
+                              <MarcaDelEstudio texto={marcaDe(o)} testId={`marca-${o.propertyId}`} />
                             </div>
                             <div className="flex shrink-0 flex-col items-end gap-2">
                               <Puntaje valor={o.puntaje} />
@@ -333,9 +391,9 @@ export function CalceClient() {
                                 Copiar el mensaje
                               </Button>
                             </div>
-                          </li>
+                          </StaggerItem>
                         ))}
-                      </ul>
+                      </Stagger>
                     )}
                   </div>
                 ) : null}
@@ -404,9 +462,10 @@ export function CalceClient() {
                       description="Ninguno de los interesados abiertos pasa los requisitos para este inmueble."
                     />
                   ) : (
-                    <ul className="divide-border-faint divide-y" data-testid="leads-que-calzan">
+                    /* Otro inmueble: los leads que le calzan entran escalonados. */
+                    <Stagger as="ul" className="divide-border-faint divide-y" data-testid="leads-que-calzan">
                       {leads.map((l) => (
-                        <li
+                        <StaggerItem as="li"
                           key={l.pipelineItemId}
                           className="flex flex-wrap items-start justify-between gap-3 py-3"
                           data-testid={`lead-${l.pipelineItemId}`}
@@ -421,6 +480,7 @@ export function CalceClient() {
                               ) : null}
                             </p>
                             <Razones porQue={l.porQue} />
+                            <MarcaDelEstudio texto={marcaDe(l)} testId={`marca-lead-${l.pipelineItemId}`} />
                           </div>
                           <div className="flex shrink-0 items-center gap-3">
                             <Puntaje valor={l.puntaje} />
@@ -440,9 +500,9 @@ export function CalceClient() {
                               <ArrowRight className="h-4 w-4" />
                             </Button>
                           </div>
-                        </li>
+                        </StaggerItem>
                       ))}
-                    </ul>
+                    </Stagger>
                   )
                 ) : null}
               </EstadoDeDatos>

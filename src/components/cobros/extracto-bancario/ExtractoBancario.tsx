@@ -29,7 +29,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Bank } from '@phosphor-icons/react';
+import { Bank, EyeSlash } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -61,14 +61,28 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { conciliacionBancariaApi } from '@/lib/api/conciliacion-bancaria.service';
 import type {
   CandidatoDeConciliacion,
+  CuentasDeLaConciliacion,
   EstadoDelMovimientoBancario,
+  FiltroDeCuenta,
   MovimientoBancario,
   ResumenDeConciliacion,
 } from '@/lib/api/conciliacion-bancaria.types';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { CargarExtracto } from './CargarExtracto';
 import { LoteDeLoQueCalzaExacto } from './LoteDeLoQueCalzaExacto';
+// D-CONCILIACION (ola 3, Nico P9/P10/P12/P6): cierre del mes, alerta, planilla de caja y aseguradoras.
+import { AlertaDePartidas } from './AlertaDePartidas';
+import { CierreDelMes } from './CierreDelMes';
+import { PlanillaDeCaja } from './PlanillaDeCaja';
+import { RelacionDeAseguradora } from './RelacionDeAseguradora';
+import { LiquidacionesDeLeasefy } from './LiquidacionesDeLeasefy';
+// C2-SALIDAS (Nico, P5): las salidas del extracto se concilian y se avisan.
+import { AvisosDeLasSalidas, SalidasDeLaPagina } from './SalidasDelExtracto';
 import { MovimientoFila } from './MovimientoFila';
-import { diaLegible, mensajeDe, plata } from './formato';
+import { PorCuenta } from './PorCuenta';
+import { diaLegible, plata } from './formato';
 
 /**
  * Cuántas líneas se traen por página.
@@ -141,33 +155,55 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
   const [conCliente, setConCliente] = useState<MovimientoBancario | null>(null);
   const [clienteElegido, setClienteElegido] = useState<string | null>(null);
   const [motivo, setMotivo] = useState('');
+  /** El error del motivo de ignorar que mandó el back (`campos[].motivo`). */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
   /*
    * 🔴 (17-09-2026) Sube cuando cambia el extracto: el lote de lo que calza
    * exacto se vuelve a leer (al cargar, el back lo arma solo).
    */
   const [versionDelLote, setVersionDelLote] = useState(0);
+  /*
+   * 🔴 (02-10-2026) Muchos a uno: si el back dice que falta la tabla de
+   * vínculos (503 `FALTA_UNA_MIGRACION` o `sePuedeAplicar: false`), lo sabe
+   * la tabla entera: ninguna fila ofrece «Aprobar» hasta que se aplique.
+   */
+  const [sinTablaDeVinculos, setSinTablaDeVinculos] = useState(false);
+  const marcarSinTabla = useCallback(() => setSinTablaDeVinculos(true), []);
+  /*
+   * 🔴 (02-10-2026, Nico P3) La conciliación va por cuenta: las cuentas de la
+   * inmobiliaria con sus indicadores, y cuál se está mirando (`null` = todas).
+   * Si el back no las puede dar (un back viejo), la pantalla sigue como antes.
+   */
+  const [porCuenta, setPorCuenta] = useState<CuentasDeLaConciliacion | null>(null);
+  const [filtroDeCuenta, setFiltroDeCuenta] = useState<FiltroDeCuenta | null>(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
     setErrorDeCarga(null);
+    const cuenta = porCuenta?.disponible ? (filtroDeCuenta ?? undefined) : undefined;
     try {
-      const [r, pag] = await Promise.all([
-        conciliacionBancariaApi.resumen(),
+      const [r, pag, cuentas] = await Promise.all([
+        conciliacionBancariaApi.resumen(cuenta),
         conciliacionBancariaApi.listar({
           estado: pestana,
+          cuenta,
           limite: porPagina,
           desplazamiento: (pagina - 1) * porPagina,
         }),
+        leerLasCuentas(),
       ]);
       setResumen(r);
       setMovimientos(pag.data);
       setTotal(pag.total);
+      if (cuentas) setPorCuenta(cuentas);
     } catch (error) {
       setErrorDeCarga(error);
     } finally {
       setCargando(false);
     }
-  }, [pestana, pagina, porPagina]);
+    // `porCuenta` sólo decide si se puede filtrar: no vuelve a leer al llegar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pestana, pagina, porPagina, filtroDeCuenta]);
 
   useEffect(() => {
     void cargar();
@@ -206,7 +242,12 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
       );
       await cargar();
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo conciliar el movimiento.'));
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo conciliar el movimiento.',
+          accion: 'conciliar el movimiento',
+        }),
+      );
     } finally {
       marcar(m.id, false);
     }
@@ -238,7 +279,12 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
       setClienteElegido(null);
       await cargar();
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo conciliar contra el cliente.'));
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo conciliar contra el cliente.',
+          accion: 'conciliar el movimiento contra el cliente',
+        }),
+      );
     } finally {
       marcar(m.id, false);
     }
@@ -248,6 +294,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
     if (!ignorando) return;
     const m = ignorando;
     marcar(m.id, true);
+    setErrorDelMotivo(null);
     try {
       await conciliacionBancariaApi.ignorar(m.id, motivo.trim());
       toast.success('Movimiento ignorado.');
@@ -255,7 +302,17 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
       setMotivo('');
       await cargar();
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo ignorar el movimiento.'));
+      // Un 400 del motivo va debajo del motivo; lo demás, al aviso.
+      const { porCampo, sueltos } = repartirErroresDelServidor(error, {
+        campos: ['motivo'] as const,
+        porDefecto: 'No se pudo ignorar el movimiento.',
+        accion: 'ignorar el movimiento',
+      });
+      if (porCampo.motivo) {
+        setErrorDelMotivo(porCampo.motivo);
+        document.getElementById('motivo-ignorar')?.focus();
+      }
+      if (sueltos.length > 0) toast.error(sueltos.join(' · '));
     } finally {
       marcar(m.id, false);
     }
@@ -268,7 +325,12 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
       toast.success('El movimiento volvió a pendientes.');
       await cargar();
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo reabrir el movimiento.'));
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo reabrir el movimiento.',
+          accion: 'volver el movimiento a pendiente',
+        }),
+      );
     } finally {
       marcar(m.id, false);
     }
@@ -284,6 +346,26 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
 
   return (
     <div className="space-y-6">
+      {/* D-CONCILIACION (Nico, P10): partidas que pasan de los días de la alerta (30 por defecto). */}
+      <AlertaDePartidas version={versionDelLote} />
+
+      {/* 🔴 (02-10-2026) Por cuenta: filtra la tabla y los números de abajo. */}
+      {porCuenta && (
+        <PorCuenta
+          datos={porCuenta}
+          filtro={filtroDeCuenta}
+          onFiltro={(f) => {
+            setFiltroDeCuenta(f);
+            setPagina(1);
+          }}
+        />
+      )}
+
+      {/* D-CONCILIACION (Nico, P9): el cierre del mes de la cuenta elegida. */}
+      {porCuenta?.disponible && filtroDeCuenta && porCuenta.cuentas.some((c) => c.id === filtroDeCuenta) && (
+        <CierreDelMes key={filtroDeCuenta} cuentaId={filtroDeCuenta} onCambio={() => void cargar()} />
+      )}
+
       {/* Los cuatro números, en la tarjeta KPI del panel. */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4" data-testid="resumen">
         <Cifra etiqueta="Pendientes de conciliar" valor={resumen ? String(resumen.pendientes) : '—'} />
@@ -314,6 +396,23 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
         onCambio={() => void cargar()}
       />
 
+      {/* C2-AGREGADOR: los giros de Leasefy por los pagos en línea (sólo si hay). */}
+      <LiquidacionesDeLeasefy version={versionDelLote} />
+
+      {/* D-CONCILIACION (Nico, P12): sólo si la inmobiliaria recibe efectivo (apagado por defecto). */}
+      <PlanillaDeCaja puedeConciliar={puedeConciliar} version={versionDelLote} onCambio={() => void cargar()} />
+
+      {/* D-CONCILIACION (Nico, P6): la relación de pagos de una aseguradora. */}
+      <RelacionDeAseguradora puedeConciliar={puedeConciliar} onCambio={() => void cargar()} />
+
+      {/* C2-SALIDAS: el giro que no salió o salió dos veces, y lo seguro de un golpe. */}
+      <AvisosDeLasSalidas
+        version={versionDelLote}
+        puedeConciliar={puedeConciliar}
+        onCambio={() => void cargar()}
+      />
+
+      <SalidasDeLaPagina movimientos={movimientos}>
       <section className="rounded-lg border border-border bg-surface overflow-hidden">
         {/* Pestañas y lote, dentro de la tarjeta y encima de la tabla. */}
         <div className="flex flex-col gap-3 border-b border-border p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -386,8 +485,13 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
                     onIgnorar={(mov) => {
                       setIgnorando(mov);
                       setMotivo('');
+                      setErrorDelMotivo(null);
                     }}
                     onReabrir={(mov) => void reabrir(mov)}
+                    sinTablaDeVinculos={sinTablaDeVinculos}
+                    onSinTablaDeVinculos={marcarSinTabla}
+                    // Como al conciliar una fila: vuelve a leer la lista y los números.
+                    onCambio={() => void cargar()}
                   />
                 ))
               )}
@@ -411,6 +515,7 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
           )}
         </EstadoDeDatos>
       </section>
+      </SalidasDeLaPagina>
 
       <Dialog
         open={conCliente !== null}
@@ -433,13 +538,15 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
               que vengan.
             </DialogDescription>
           </DialogHeader>
-          <div className="px-6 py-4" data-testid="conciliar-con-cliente">
+          {/* El aire lo da el cuerpo del modal: sin `px-6 py-4` propios. */}
+          <div data-testid="conciliar-con-cliente">
             <ElegirCliente value={clienteElegido} onChange={setClienteElegido} />
           </div>
           <DialogFooter>
             <Button
               variant="outline"
               hideArrow
+              disabled={conCliente ? ocupados.has(conCliente.id) : false}
               onClick={() => {
                 setConCliente(null);
                 setClienteElegido(null);
@@ -449,7 +556,8 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
             </Button>
             <Button
               hideArrow
-              disabled={!clienteElegido || (conCliente ? ocupados.has(conCliente.id) : true)}
+              disabled={!clienteElegido || !conCliente}
+              isLoading={conCliente ? ocupados.has(conCliente.id) : false}
               onClick={() => void conciliarConCliente()}
               data-testid="confirmar-conciliar-cliente"
             >
@@ -459,8 +567,9 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
         </DialogContent>
       </Dialog>
 
+      {/* Confirmación: ignorar se puede deshacer (vuelve a pendientes). */}
       <Dialog open={ignorando !== null} onOpenChange={(abierto) => !abierto && setIgnorando(null)}>
-        <DialogContent>
+        <DialogContent variant="confirm" icon={<EyeSlash weight="bold" />}>
           <DialogHeader>
             <DialogTitle>Ignorar este movimiento</DialogTitle>
             <DialogDescription>
@@ -468,25 +577,40 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
               qué no es un pago de canon; se puede volver a pendiente después.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2 px-6 py-4">
+          <div className="space-y-2">
             <Label htmlFor="motivo-ignorar">Motivo</Label>
             <Textarea
               id="motivo-ignorar"
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
+              onChange={(e) => {
+                setMotivo(e.target.value);
+                setErrorDelMotivo(null);
+              }}
               placeholder="Es la nómina de la oficina, no un pago de canon."
               rows={3}
               maxLength={300}
+              aria-invalid={errorDelMotivo ? true : undefined}
+              aria-describedby={errorDelMotivo ? 'motivo-ignorar-error' : undefined}
             />
-            <p className="text-caption text-fg-muted">Entre 5 y 300 caracteres.</p>
+            <ErrorDelCampo
+              id="motivo-ignorar-error"
+              mensaje={errorDelMotivo}
+              pista="Entre 5 y 300 caracteres."
+            />
           </div>
           <DialogFooter>
-            <Button variant="outline" hideArrow onClick={() => setIgnorando(null)}>
+            <Button
+              variant="outline"
+              hideArrow
+              disabled={ignorando ? ocupados.has(ignorando.id) : false}
+              onClick={() => setIgnorando(null)}
+            >
               Cancelar
             </Button>
             <Button
               hideArrow
-              disabled={motivo.trim().length < 5 || (ignorando ? ocupados.has(ignorando.id) : true)}
+              disabled={motivo.trim().length < 5 || !ignorando}
+              isLoading={ignorando ? ocupados.has(ignorando.id) : false}
               onClick={() => void ignorar()}
               data-testid="confirmar-ignorar"
             >
@@ -498,6 +622,18 @@ export function ExtractoBancario({ idDeCarga }: Props = {}) {
 
     </div>
   );
+}
+
+/**
+ * Las cuentas de la inmobiliaria, o `null` si el back no las puede dar (uno de
+ * antes de la Fase 1, o una falla): la pantalla sigue como antes, sin filtro.
+ */
+async function leerLasCuentas(): Promise<CuentasDeLaConciliacion | null> {
+  try {
+    return await conciliacionBancariaApi.cuentas();
+  } catch {
+    return null;
+  }
 }
 
 /** La tarjeta KPI del panel: etiqueta chica arriba, número grande abajo. */

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { usePermissionsContext } from '@/lib/context/PermissionsContext';
@@ -108,17 +108,41 @@ export function SeccionesDelModulo() {
     if (caraDeEstaRuta) setCaraRecordada(caraDeEstaRuta);
   }, [caraDeEstaRuta]);
 
+  /*
+   * Movimiento: las cards entran escalonadas cada vez que aparece un juego
+   * NUEVO (otro módulo, otra cara, o la franja que vuelve después de una
+   * ficha), pero no en la primera pintada del panel —esa la trae el template
+   * de afuera o el HTML—. Se anota qué juego había al montarse; desde que
+   * cambia una vez, cada juego nuevo entra escalonado.
+   */
+  const juegoDelMontaje = useRef<string | null | undefined>(undefined);
+  const yaCambioElJuego = useRef(false);
+  const anotarJuego = (juego: string | null): string | undefined => {
+    if (juegoDelMontaje.current === undefined) juegoDelMontaje.current = juego;
+    else if (juego !== juegoDelMontaje.current) yaCambioElJuego.current = true;
+    return yaCambioElJuego.current && juego !== null ? juego : undefined;
+  };
+
   const modulo = moduloDeLaRuta(pathname);
-  if (!modulo) return null;
+  if (!modulo) {
+    anotarJuego(null);
+    return null;
+  }
 
   const ctx = { canAccess, isAdmin, agencyRole, agentUnverified: agentAccessStatus === 'sin-verificar' };
   const visibles = pestanasDelModulo(modulo).filter(
     (p) => pasaGateDeFila(p, ctx) && canSeeBusinessModule(p.scope, { isAdmin, agencyRole }),
   );
-  if (visibles.length < 2) return null;
+  if (visibles.length < 2) {
+    anotarJuego(null);
+    return null;
+  }
 
   const activa = pestanaActiva(visibles, pathname);
-  if (!activa) return null;
+  if (!activa) {
+    anotarJuego(null);
+    return null;
+  }
 
   const ruta = pathname.split('?')[0] ?? pathname;
   const etiqueta = (p: PantallaDelPanel) => (p.hintKey ? `${t(p.labelKey)} · ${t(p.hintKey)}` : t(p.labelKey));
@@ -198,6 +222,7 @@ export function SeccionesDelModulo() {
       pathname={pathname}
       caras={caras}
       carasAriaLabel={`Caras de ${t(modulo.labelKey)}`}
+      escalonar={anotarJuego(`${modulo.key}|${caraActiva ?? ''}`)}
     />
   );
 }

@@ -28,7 +28,7 @@
  * asterisco es la diferencia entre presentar bien y una sanción.
  */
 
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { Info, Prohibit, SealCheck, WarningOctagon } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -52,6 +52,16 @@ export interface AccionConMotivoProps {
   testId?: string;
   /** Alinea el motivo con el botón en una fila en vez de debajo. */
   enLinea?: boolean;
+  /**
+   * `false`: el motivo NO se pinta debajo — va en el `title` (sobre una caja
+   * que envuelve al botón: un botón apagado no muestra su `title` en todos los
+   * navegadores) y, para el lector de pantalla, en un texto oculto que el
+   * botón nombra con `aria-describedby`. Para una FILA de tabla con varias
+   * acciones (CB-07, Egresos): tres motivos de tres renglones cada uno volvían
+   * la fila altísima; la fila dice UNA ayuda corta y cada botón guarda el
+   * suyo. Por defecto (`true`), como siempre: el motivo visible debajo.
+   */
+  motivoVisible?: boolean;
 }
 
 export function AccionConMotivo({
@@ -65,7 +75,36 @@ export function AccionConMotivo({
   size = 'sm',
   testId,
   enLinea = false,
+  motivoVisible = true,
 }: AccionConMotivoProps) {
+  const idDelMotivo = useId();
+  if (!motivoVisible) {
+    const apagado = !puede && Boolean(motivo);
+    return (
+      <span className="inline-flex" title={apagado ? (motivo ?? undefined) : undefined}>
+        <Button
+          variant={variant}
+          size={size}
+          hideArrow
+          onClick={onClick}
+          disabled={!puede || ocupado}
+          aria-describedby={apagado ? idDelMotivo : undefined}
+          data-testid={testId}
+        >
+          {ocupado ? (textoOcupado ?? 'Un momento…') : children}
+        </Button>
+        {apagado ? (
+          <span
+            id={idDelMotivo}
+            className="sr-only"
+            data-testid={testId ? `${testId}-motivo` : undefined}
+          >
+            {motivo}
+          </span>
+        ) : null}
+      </span>
+    );
+  }
   return (
     <div className={cn(enLinea ? 'flex flex-wrap items-center gap-2' : 'space-y-1')}>
       <Button

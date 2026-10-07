@@ -18,6 +18,17 @@ import {
   type TenantPreferences,
   type PreferencesFormData,
 } from '@/lib/api/tenant-preferences.service';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import {
+  CAMPOS_DE_PREFERENCIAS,
+  revisarPreferenciasDelPerfil,
+  type CampoDePreferencia,
+  type ErroresDePreferencia,
+} from './preferencias-del-perfil';
+import { MENSAJES_DEL_PERFIL } from '@/lib/onboarding/preferencias-del-inquilino';
+
+const idDelCampo = (campo: CampoDePreferencia) => `preferencias-${campo}`;
 
 /**
  * Housing preferences card for /inquilino/perfil.
@@ -43,6 +54,11 @@ export function PreferencesSection() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [form, setForm] = useState<PreferencesFormData>(formFromPreferences(null));
+  /**
+   * El error de cada campo: el del cliente (los topes y frases del back, ver
+   * `./preferencias-del-perfil`) o el que el back mandó en `campos[]`.
+   */
+  const [errores, setErrores] = useState<ErroresDePreferencia>({});
 
   const load = useCallback(() => {
     let cancelled = false;
@@ -85,7 +101,14 @@ export function PreferencesSection() {
 
   const startEdit = () => {
     setForm(formFromPreferences(prefs ?? display));
+    setErrores({});
     setIsEditing(true);
+  };
+
+  /** Pone los errores en sus campos y le da el foco al primero. */
+  const mostrarErrores = (porCampo: ErroresDePreferencia, primero?: CampoDePreferencia) => {
+    setErrores(porCampo);
+    if (primero && typeof document !== 'undefined') document.getElementById(idDelCampo(primero))?.focus();
   };
 
   const handleSave = async () => {
@@ -93,24 +116,72 @@ export function PreferencesSection() {
     // with an unknown `prefs`, the full-replacement PATCH would wipe the
     // non-edited fields. The Edit button is already gated on 'ready'.
     if (loadState !== 'ready') return;
+
+    // Nico, 02-10-2026: el mismo tope ($100.000.000 al mes) y la misma frase
+    // que el onboarding y el back, ANTES de mandar. Un negativo o un decimal
+    // ya no se pierden en silencio (el PATCH de reemplazo borraba el valor).
+    const delCliente = revisarPreferenciasDelPerfil(form);
+    const primero = CAMPOS_DE_PREFERENCIAS.find((c) => delCliente[c] !== undefined);
+    if (primero) {
+      mostrarErrores(delCliente, primero);
+      return;
+    }
+
     setIsSaving(true);
     try {
       // Full-replacement PATCH: complete payload, untouched fields round-tripped.
       const saved = await updateTenantPreferences(payloadFromForm(form, prefs));
       setPrefs(saved);
+      setErrores({});
       setIsEditing(false);
       toast.success(locale === 'es' ? 'Preferencias guardadas' : 'Preferences saved');
     } catch (err) {
-      const message = err instanceof Error && err.message
-        ? err.message
-        : (locale === 'es' ? 'No se pudieron guardar las preferencias' : 'Could not save preferences');
-      toast.error(message);
+      // Antes: `err.message` crudo. Ahora, por el traductor: lo del back por
+      // campo va a SU campo; al toast, sólo lo suelto (un 5xx con su
+      // referencia; «conexión», sólo si no hubo respuesta).
+      const reparto = repartirErroresDelServidor<CampoDePreferencia>(err, {
+        campos: CAMPOS_DE_PREFERENCIAS,
+        accion: 'guardar tus preferencias',
+        porDefecto:
+          locale === 'es'
+            ? 'No pudimos guardar tus preferencias. Prueba de nuevo en un momento.'
+            : 'Could not save preferences',
+      });
+      mostrarErrores(reparto.porCampo, reparto.orden[0]);
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setIsSaving(false);
     }
   };
 
-  const set = (patch: Partial<PreferencesFormData>) => setForm((prev) => ({ ...prev, ...patch }));
+  const set = (patch: Partial<PreferencesFormData>) => {
+    setForm((prev) => ({ ...prev, ...patch }));
+    // Lo que estaba mal deja de valer en cuanto la persona toca ese campo.
+    setErrores((prev) => {
+      const tocados = (Object.keys(patch) as string[]).flatMap((k) =>
+        k === 'petFriendly' ? ['petDetails'] : [k],
+      ) as CampoDePreferencia[];
+      // «El máximo no puede ser menor que el mínimo» se corrige tocando
+      // cualquiera de los dos presupuestos.
+      if (tocados.includes('minBudget') && prev.maxBudget === MENSAJES_DEL_PERFIL.maximoMenorQueMinimo) {
+        tocados.push('maxBudget');
+      }
+      if (!tocados.some((c) => prev[c] !== undefined)) return prev;
+      const next = { ...prev };
+      for (const c of tocados) delete next[c];
+      return next;
+    });
+  };
+
+  /** Las props de accesibilidad de un campo con su error debajo. */
+  const propsDelCampo = (campo: CampoDePreferencia) => ({
+    id: idDelCampo(campo),
+    'aria-invalid': errores[campo] ? true : undefined,
+    'aria-describedby': errores[campo] ? `${idDelCampo(campo)}-error` : undefined,
+  });
+  const errorDelCampo = (campo: CampoDePreferencia, pista?: React.ReactNode) => (
+    <ErrorDelCampo id={`${idDelCampo(campo)}-error`} mensaje={errores[campo]} pista={pista} />
+  );
 
   const readonlyBox = (icon: React.ReactNode, value: string) => (
     <div className="flex items-center gap-3 px-4 py-3 bg-surface-muted rounded-xl">
@@ -143,7 +214,10 @@ export function PreferencesSection() {
               variant="ghost"
               size="sm"
               hideArrow
-              onClick={() => setIsEditing(false)}
+              onClick={() => {
+                setIsEditing(false);
+                setErrores({});
+              }}
               className="rounded-md"
             >
               {t('common.cancel')}
@@ -184,14 +258,18 @@ export function PreferencesSection() {
             {locale === 'es' ? 'Presupuesto mínimo' : 'Minimum budget'}
           </label>
           {isEditing ? (
-            <Input
-              type="number"
-              min={0}
-              value={form.minBudget}
-              onChange={(e) => set({ minBudget: e.target.value })}
-              placeholder="800000"
-              className="w-full rounded-xl bg-surface-muted"
-            />
+            <>
+              <Input
+                type="number"
+                min={0}
+                {...propsDelCampo('minBudget')}
+                value={form.minBudget}
+                onChange={(e) => set({ minBudget: e.target.value })}
+                placeholder="800000"
+                className="w-full rounded-xl bg-surface-muted"
+              />
+              {errorDelCampo('minBudget')}
+            </>
           ) : (
             readonlyBox(
               <CurrencyCircleDollar className="w-4 h-4 text-fg-subtle" />,
@@ -206,14 +284,18 @@ export function PreferencesSection() {
             {locale === 'es' ? 'Presupuesto máximo' : 'Maximum budget'}
           </label>
           {isEditing ? (
-            <Input
-              type="number"
-              min={0}
-              value={form.maxBudget}
-              onChange={(e) => set({ maxBudget: e.target.value })}
-              placeholder="1500000"
-              className="w-full rounded-xl bg-surface-muted"
-            />
+            <>
+              <Input
+                type="number"
+                min={0}
+                {...propsDelCampo('maxBudget')}
+                value={form.maxBudget}
+                onChange={(e) => set({ maxBudget: e.target.value })}
+                placeholder="1500000"
+                className="w-full rounded-xl bg-surface-muted"
+              />
+              {errorDelCampo('maxBudget')}
+            </>
           ) : (
             readonlyBox(
               <CurrencyCircleDollar className="w-4 h-4 text-fg-subtle" />,
@@ -231,14 +313,14 @@ export function PreferencesSection() {
             <>
               <Input
                 type="text"
+                {...propsDelCampo('preferredCities')}
                 value={form.preferredCities}
                 onChange={(e) => set({ preferredCities: e.target.value })}
                 placeholder={locale === 'es' ? 'Chapinero, Usaquén' : 'Chapinero, Usaquén'}
                 className="w-full rounded-xl bg-surface-muted"
               />
-              <p className="mt-2 text-xs text-fg-subtle">
-                {locale === 'es' ? 'Separadas por comas' : 'Comma-separated'}
-              </p>
+              {/* La ayuda y el error se cruzan (decisión 1): nunca los dos a la vez. */}
+              {errorDelCampo('preferredCities', locale === 'es' ? 'Separadas por comas' : 'Comma-separated')}
             </>
           ) : (
             readonlyBox(
@@ -257,14 +339,13 @@ export function PreferencesSection() {
             <>
               <Input
                 type="text"
+                {...propsDelCampo('preferredAmenities')}
                 value={form.preferredAmenities}
                 onChange={(e) => set({ preferredAmenities: e.target.value })}
                 placeholder={locale === 'es' ? 'parqueadero, gimnasio' : 'parking, gym'}
                 className="w-full rounded-xl bg-surface-muted"
               />
-              <p className="mt-2 text-xs text-fg-subtle">
-                {locale === 'es' ? 'Separadas por comas' : 'Comma-separated'}
-              </p>
+              {errorDelCampo('preferredAmenities', locale === 'es' ? 'Separadas por comas' : 'Comma-separated')}
             </>
           ) : (
             readonlyBox(
@@ -281,12 +362,15 @@ export function PreferencesSection() {
           </label>
           {isEditing ? (
             // El calendario de cadence, igual que en el onboarding (Nico, 2026-09-15).
-            <DatePicker
-              value={fechaLocal(form.moveInDate)}
-              onChange={(d) => set({ moveInDate: aFechaIso(d) })}
-              placeholder={locale === 'es' ? 'Elige una fecha' : 'Pick a date'}
-              className="h-10 w-full min-w-0 rounded-xl bg-surface-muted"
-            />
+            <>
+              <DatePicker
+                value={fechaLocal(form.moveInDate)}
+                onChange={(d) => set({ moveInDate: aFechaIso(d) })}
+                placeholder={locale === 'es' ? 'Elige una fecha' : 'Pick a date'}
+                className="h-10 w-full min-w-0 rounded-xl bg-surface-muted"
+              />
+              {errorDelCampo('moveInDate')}
+            </>
           ) : (
             readonlyBox(
               <Calendar className="w-4 h-4 text-fg-subtle" />,
@@ -301,7 +385,9 @@ export function PreferencesSection() {
             {locale === 'es' ? 'Contacto preferido' : 'Preferred contact'}
           </label>
           {isEditing ? (
+            <>
             <select
+              {...propsDelCampo('preferredContact')}
               value={form.preferredContact}
               onChange={(e) => set({ preferredContact: e.target.value })}
               aria-label={locale === 'es' ? 'Contacto preferido' : 'Preferred contact'}
@@ -312,6 +398,8 @@ export function PreferencesSection() {
               <option value="email">{locale === 'es' ? 'Correo' : 'Email'}</option>
               <option value="phone">{locale === 'es' ? 'Llamada' : 'Phone call'}</option>
             </select>
+            {errorDelCampo('preferredContact')}
+            </>
           ) : (
             readonlyBox(
               <ChatCircle className="w-4 h-4 text-fg-subtle" />,
@@ -339,13 +427,17 @@ export function PreferencesSection() {
                 </span>
               </label>
               {form.petFriendly && (
-                <Input
-                  type="text"
-                  value={form.petDetails}
-                  onChange={(e) => set({ petDetails: e.target.value })}
-                  placeholder={locale === 'es' ? 'Ej: un gato' : 'E.g. one cat'}
-                  className="w-full rounded-xl bg-surface-muted"
-                />
+                <div>
+                  <Input
+                    type="text"
+                    {...propsDelCampo('petDetails')}
+                    value={form.petDetails}
+                    onChange={(e) => set({ petDetails: e.target.value })}
+                    placeholder={locale === 'es' ? 'Ej: un gato' : 'E.g. one cat'}
+                    className="w-full rounded-xl bg-surface-muted"
+                  />
+                  {errorDelCampo('petDetails')}
+                </div>
               )}
             </div>
           ) : (

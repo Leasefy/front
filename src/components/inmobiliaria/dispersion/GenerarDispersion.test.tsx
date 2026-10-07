@@ -319,6 +319,37 @@ describe('la pregunta del flujo está al abrir', () => {
     expect(host.textContent).toContain('Sin cuenta registrada');
     expect(host.textContent).not.toContain('****0000');
   });
+
+  it('🔴 quiénes de los marcados no tienen cuenta se dice ANTES de generar, y se pueden dejar afuera (CONSISTENCIA 04-10)', async () => {
+    const sinCuenta = (id: string, nombre: string) =>
+      propietario({
+        id,
+        nombre,
+        cuenta: null,
+        banco: null,
+        inmuebles: [{ propertyId: `inm-${id}`, titulo: 'Casa', canon: 1_000_000, comision: 100_000 }],
+      });
+    preview.mockResolvedValue(previaCon([JORGE, sinCuenta('p-ana', 'Ana Gómez'), sinCuenta('p-luis', 'Luis Mora')]));
+    await montar();
+
+    const aviso = q('marcados-sin-cuenta');
+    expect(aviso?.textContent).toContain('2 de los marcados no tienen cuenta bancaria registrada');
+    expect(aviso?.textContent).toContain('Ana Gómez y Luis Mora');
+
+    await act(async () => {
+      (q('dejar-afuera-sin-cuenta') as HTMLButtonElement).click();
+    });
+    await asentar();
+    expect(q('marcados-sin-cuenta')).toBeNull();
+    expect(q('cuantos-seleccionados')?.textContent).toContain('de 3');
+  });
+
+  it('con todos los marcados con cuenta no sale el aviso', async () => {
+    preview.mockResolvedValue(previaCon([JORGE, MARCELA]));
+    await montar();
+    expect(q('a-quien')).not.toBeNull();
+    expect(q('marcados-sin-cuenta')).toBeNull();
+  });
 });
 
 describe('los inmuebles de un propietario', () => {
@@ -616,6 +647,51 @@ describe('D7 — el motivo del back cuando no liquida', () => {
   });
 });
 
+describe('02-10 — confirmar con la regla de oro', () => {
+  async function confirmarCon(error: unknown) {
+    preview.mockResolvedValue(previaCon([MARCELA]));
+    generate.mockRejectedValue(error);
+    await montar();
+    await clic(q('confirmar')!);
+    const [titulo, opciones] = toastError.mock.calls[0] as [string, { description?: string }];
+    return { titulo, descripcion: opciones?.description ?? '' };
+  }
+
+  it('🔴 un 5xx: el toast dice «de nuestro lado» con la referencia, no se queda mudo', async () => {
+    const { titulo, descripcion } = await confirmarCon(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    expect(titulo).toBe('No se generaron las dispersiones');
+    expect(descripcion).toContain('No pudimos generar las dispersiones: algo falló de nuestro lado');
+    expect(descripcion).toContain('ab12cd34');
+    expect(descripcion).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('🔴 sin respuesta: ahí sí habla de la conexión', async () => {
+    const { descripcion } = await confirmarCon(new ApiError(0, 'Failed to fetch'));
+    expect(descripcion).toMatch(/conexi[oó]n/);
+  });
+
+  it('un 400 con campos (la selección se pasó del tope) dice el mensaje del back', async () => {
+    const mensaje = 'Puedes mandar hasta 50.000 propietarios a la vez.';
+    const { descripcion } = await confirmarCon(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'propietarioIds', regla: 'lista_maxima', mensaje }],
+      }),
+    );
+    expect(descripcion).toBe(mensaje);
+    expect(q('asistente-motivo')?.textContent).toContain(mensaje);
+  });
+});
+
 describe('un mes sin nada que girar dice la razón que contó el back', () => {
   it('agosto con sus cuotas del sistema anterior: lo dice, y ni una palabra de cobros pagados', async () => {
     preview.mockResolvedValue(
@@ -751,5 +827,105 @@ describe('las cuotas que llegaron tarde', () => {
 
     expect(host.textContent).toContain('sus cuotas entran el mes que viene');
     expect(generate).toHaveBeenCalledWith('2026-08', undefined, undefined);
+  });
+
+  /*
+   * 🔴 PG-R03 (QA de Pagos, decisión de Nico 03-10-2026): lo que llegó tarde a
+   * un mes YA GIRADO va en una liquidación complementaria. El back la arma
+   * sólo si su dueño viaja en la lista, como las que se suman.
+   */
+  it('🔴 PG-R03: las de un mes ya girado dicen que van en una complementaria y viajan en el generate', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const complementaria = { ...tardia, seSuman: false, motivo: 'Ya se giró.', complementaria: true };
+    preview.mockResolvedValue(
+      previaCon([JORGE, MARCELA, propietario({
+        id: 'p-ya',
+        nombre: 'Luis Ya',
+        yaExiste: true,
+        inmuebles: [{ propertyId: 'inm-ya', titulo: 'Casa Ya', canon: 900_000, comision: 0 }],
+      })], { tardias: [complementaria] }),
+    );
+    previewDeLaSeleccion.mockResolvedValue(previaCon([MARCELA], { tardias: [complementaria] }));
+    await montar();
+    expect(q('cuotas-que-llegaron-tarde')?.textContent).toContain('liquidación complementaria');
+    await clic(casilla('Girarle a Jorge Restrepo'));
+    await esperarElRecalculo();
+    await clic(q('confirmar')!);
+
+    expect(generate).toHaveBeenCalledWith('2026-08', ['p-marcela', 'p-ya'], undefined);
+  });
+});
+
+/*
+ * ARREGLOS-7 (MOV-A1): un mes en el que todos ya tienen su liquidación y sólo
+ * hay cuotas tardías que se suman abría la lista vacía diciendo «Ningún
+ * propietario ni inmueble coincide con «»» — sin que nadie hubiera buscado.
+ */
+describe('sin nadie por liquidar, sólo cuotas tardías', () => {
+  const YA = propietario({
+    id: 'p-ya',
+    nombre: 'Jorge Ya Liquidado',
+    yaExiste: true,
+    inmuebles: [{ propertyId: 'inm-ya', titulo: 'Calle 10', canon: 2_000_000, comision: 200_000 }],
+  });
+  const TARDIA = {
+    propietarioId: 'p-ya',
+    propietarioName: 'Jorge Ya Liquidado',
+    dispersionId: 'disp-1',
+    cuotas: 1,
+    netoCop: 1_800_000,
+    seSuman: true,
+    motivo: null,
+  };
+
+  it('no dice que una búsqueda vacía no coincide: dice que sólo se suman las tardías', async () => {
+    preview.mockResolvedValue(previaCon([YA], { tardias: [TARDIA] }));
+    await montar();
+
+    const vacio = q('sin-resultados')?.textContent ?? '';
+    expect(vacio).not.toContain('coincide con «»');
+    expect(vacio).toContain('no queda ningún propietario por liquidar');
+    // Lo de las tardías sigue al pie, como antes.
+    expect(q('confirmacion-tardias')).not.toBeNull();
+  });
+});
+
+/*
+ * ARREGLOS-8 (visto por ARREGLOS-7): con 0 propietarios por liquidar y sólo
+ * cuotas tardías que se suman, la tarjeta decía «0 de 0 propietarios», ofrecía
+ * «Destildar todos» (¿a quién?) y el botón decía «Generar 0 dispersiones»
+ * aunque lo que hacía era sumar las tardías a las liquidaciones que ya existen.
+ */
+describe('sin nadie por liquidar: ni «0 de 0», ni «Destildar todos», ni «Generar 0»', () => {
+  const YA = propietario({
+    id: 'p-ya',
+    nombre: 'Jorge Ya Liquidado',
+    yaExiste: true,
+    inmuebles: [{ propertyId: 'inm-ya', titulo: 'Calle 10', canon: 2_000_000, comision: 200_000 }],
+  });
+  const TARDIA = {
+    propietarioId: 'p-ya',
+    propietarioName: 'Jorge Ya Liquidado',
+    dispersionId: 'disp-1',
+    cuotas: 1,
+    netoCop: 1_800_000,
+    seSuman: true,
+    motivo: null,
+  };
+
+  it('🔴 no cuenta «0 de 0», no ofrece «Destildar todos» y el botón dice lo que hace', async () => {
+    preview.mockResolvedValue(previaCon([YA], { tardias: [TARDIA] }));
+    await montar();
+
+    expect(q('cuantos-seleccionados')).toBeNull();
+    expect(host.textContent).not.toContain('0 de 0');
+    expect(q('marcar-todos')).toBeNull();
+    expect(host.textContent).not.toContain('Destildar todos');
+
+    const boton = q('confirmar') as HTMLButtonElement;
+    expect(boton.textContent).not.toContain('Generar 0');
+    expect(boton.textContent).toContain('Sumar a 1 liquidación');
+    // Sigue pudiendo sumar las tardías, como antes.
+    expect(boton.disabled).toBe(false);
   });
 });

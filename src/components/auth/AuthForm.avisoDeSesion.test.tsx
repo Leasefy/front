@@ -50,7 +50,7 @@ vi.mock('@/lib/firebase/messaging', () => ({
 }))
 
 import { AuthForm } from './AuthForm'
-import { terminarSesion, resetSessionTerminal } from '@/lib/auth/session-terminal'
+import { terminarSesion, resetSessionTerminal, anunciarCierre } from '@/lib/auth/session-terminal'
 
 const CARTEL = 'Tu sesión expiró'
 
@@ -126,3 +126,22 @@ describe('AuthForm — el aviso de sesión cerrada', () => {
     expect(container.textContent).not.toContain(CARTEL)
   })
 })
+
+describe('AuthForm — la contraseña nueva quedó guardada (QA 01-10-2026)', () => {
+  it('después de la recuperación muestra la confirmación, en verde y no como advertencia', async () => {
+    params.reason = 'contrasena-actualizada'
+    anunciarCierre('contrasena-actualizada')
+    await render()
+    expect(container.textContent).toContain('Tu contraseña quedó actualizada. Inicia sesión con la nueva.')
+    const aviso = container.querySelector('[data-testid="aviso-de-sesion"]') as HTMLElement
+    expect(aviso.className).toContain('bg-success-soft')
+    expect(aviso.className).not.toContain('warning')
+  })
+
+  it('un `?reason=contrasena-actualizada` viejo en la URL, sin el cierre detrás, no muestra nada', async () => {
+    params.reason = 'contrasena-actualizada'
+    await render()
+    expect(container.textContent).not.toContain('Tu contraseña quedó actualizada')
+  })
+})
+

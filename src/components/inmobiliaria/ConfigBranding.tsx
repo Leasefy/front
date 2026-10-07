@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { CrossFade } from '@leasefy/cadence';
 import {
   Image,
   Upload,
@@ -17,6 +17,9 @@ import {
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/toast';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { Button, Input } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
@@ -137,10 +140,20 @@ export function ConfigBranding({
       toast.success(t('inmobiliaria.config.brandingSection.colorsSaved'));
       await onBrandingUpdated?.();
     } catch (err) {
-      const message = err instanceof Error ? err.message : undefined;
-      toast.error(t('inmobiliaria.config.brandingSection.saveError'), {
-        description: message,
+      // Un 400 con `campos` (`branding.primaryColor`) va a su color; lo demás,
+      // al toast por el traductor (un 5xx con su referencia, la red).
+      const reparto = repartirErroresDelServidor(err, {
+        mapa: { primaryColor: 'primary', secondaryColor: 'secondary' },
+        campos: ['primary', 'secondary'] as const,
+        porDefecto: 'Prueba de nuevo en un momento.',
+        accion: 'guardar los colores',
       });
+      setColorErrors(reparto.porCampo);
+      if (reparto.sueltos.length > 0) {
+        toast.error(t('inmobiliaria.config.brandingSection.saveError'), {
+          description: reparto.sueltos.join(' · '),
+        });
+      }
     } finally {
       setIsSavingColors(false);
     }
@@ -205,10 +218,18 @@ export function ConfigBranding({
       toast.success(t('inmobiliaria.config.brandingSection.socialsSaved'));
       await onBrandingUpdated?.();
     } catch (err) {
-      const message = err instanceof Error ? err.message : undefined;
-      toast.error(t('inmobiliaria.config.brandingSection.saveError'), {
-        description: message,
+      // `branding.socials.instagram` → el campo de Instagram.
+      const reparto = repartirErroresDelServidor(err, {
+        campos: SOCIAL_NETWORKS.map((n) => n.key),
+        porDefecto: 'Prueba de nuevo en un momento.',
+        accion: 'guardar las redes',
       });
+      setSocialErrors(reparto.porCampo);
+      if (reparto.sueltos.length > 0) {
+        toast.error(t('inmobiliaria.config.brandingSection.saveError'), {
+          description: reparto.sueltos.join(' · '),
+        });
+      }
     } finally {
       setIsSavingSocials(false);
     }
@@ -239,10 +260,14 @@ export function ConfigBranding({
         });
         await onLogoUpdated?.(uploadedUrl);
       } catch (err) {
-        // Surface the backend message (400 bad file, 403 non-admin, 404 no
-        // membership) — never a silent failure.
-        const message = err instanceof Error ? err.message : undefined;
-        setUploadError(message ?? t('inmobiliaria.config.brandingSection.logoUploadError'));
+        // Lo que dijo el back (400 archivo malo, 403 no admin, 404 sin
+        // membresía) por el traductor: un 5xx dice «de nuestro lado» con la
+        // referencia y «conexión» sólo si no hubo respuesta. Nunca en silencio.
+        const message = mensajeParaLaPersona(err, {
+          porDefecto: t('inmobiliaria.config.brandingSection.logoUploadError'),
+          accion: 'subir el logo',
+        });
+        setUploadError(message);
         toast.error(t('inmobiliaria.config.brandingSection.logoUploadError'), {
           description: message,
         });
@@ -296,20 +321,20 @@ export function ConfigBranding({
 
   if (isLoading) {
     return (
-      <div className="animate-pulse space-y-6">
+      <CrossFade swapKey="cargando" className="animate-pulse space-y-6">
         <div className="h-8 bg-muted rounded-md w-1/3" />
         <div className="h-48 bg-muted rounded-lg" />
         <div className="h-32 bg-muted rounded-lg" />
-      </div>
+      </CrossFade>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-8"
-    >
+    // Esqueleto → contenido con fundido cruzado: es el MISMO `CrossFade` que
+    // devuelve la rama de carga (React lo reconcilia como uno solo), así que
+    // sólo se anima la llegada después de cargar; con los datos ya en mano
+    // no hay entrada propia (la pone la transición de la página/sección).
+    <CrossFade swapKey="listo" className="space-y-8">
       {/* Logo Section */}
       <div className="space-y-4 p-5 rounded-lg bg-card border border-border">
         <div className="flex items-center gap-2 text-foreground">
@@ -356,7 +381,7 @@ export function ConfigBranding({
               }}
               aria-disabled={!canUpload}
               className={cn(
-                'h-32 rounded-lg border-2 border-dashed flex flex-col items-center justify-center transition-all',
+                'h-32 rounded-lg border-2 border-dashed flex flex-col items-center justify-center transition-colors',
                 canUpload ? 'cursor-pointer' : 'cursor-not-allowed opacity-60',
                 isDragging
                   ? 'border-primary/40 bg-primary-soft'
@@ -488,13 +513,15 @@ export function ConfigBranding({
                 placeholder={network.placeholder}
                 data-testid={`branding-social-${network.key}`}
                 className={cn('w-full', socialErrors[network.key] && 'border-danger/30')}
+                id={`branding-social-${network.key}`}
+                aria-invalid={Boolean(socialErrors[network.key]) || undefined}
+                aria-describedby={`branding-social-${network.key}-error`}
               />
-              {socialErrors[network.key] && (
-                <p className="text-xs text-danger flex items-center gap-1">
-                  <Warning className="w-3 h-3" />
-                  {socialErrors[network.key]}
-                </p>
-              )}
+              <ErrorDelCampo
+                id={`branding-social-${network.key}-error`}
+                mensaje={socialErrors[network.key]}
+                className="mt-0"
+              />
             </div>
           ))}
         </div>
@@ -614,7 +641,7 @@ export function ConfigBranding({
           </div>
         </div>
       </div>
-    </motion.div>
+    </CrossFade>
   );
 }
 
@@ -665,16 +692,13 @@ function ColorPickerField({
           maxLength={7}
           data-testid={`branding-${name}-hex`}
           className={cn('w-full font-mono', error && 'border-danger/30')}
+          id={`branding-${name}-hex`}
+          aria-invalid={Boolean(error) || undefined}
+          aria-describedby={`branding-${name}-error`}
         />
       </div>
-      {error ? (
-        <p className="text-xs text-danger flex items-center gap-1">
-          <Warning className="w-3 h-3" />
-          {error}
-        </p>
-      ) : description ? (
-        <p className="text-xs text-muted-foreground">{description}</p>
-      ) : null}
+      {/* El error de la casa: entra suave y se cruza con la ayuda. */}
+      <ErrorDelCampo id={`branding-${name}-error`} mensaje={error} pista={description} className="mt-0" />
     </div>
   );
 }

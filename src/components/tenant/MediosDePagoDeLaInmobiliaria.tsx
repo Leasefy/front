@@ -9,6 +9,7 @@
 
 import { useState } from 'react';
 import { ArrowSquareOut, Bank, Check, Copy, DeviceMobile, DotsThree, Link as LinkIcon, Money, Wallet } from '@phosphor-icons/react';
+import { Collapse } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { useMediosDePagoParaInquilino } from '@/lib/hooks/use-medios-de-pago';
 import type { MedioDePagoParaInquilino, TipoDeMedioDePago } from '@/lib/api/medios-de-pago.types';
@@ -33,9 +34,11 @@ function tipoDeCuentaLegible(t: string | null): string | null {
 export function MediosDePagoDeLaInmobiliaria() {
   const { bloques, cargando } = useMediosDePagoParaInquilino();
   const conMedios = bloques.filter((b) => b.medios.length > 0);
-  if (cargando || conMedios.length === 0) return null;
 
+  // Llega después que el resto de «Pagos» (su propia consulta): se abre con su
+  // altura en vez de empujar de golpe lo de abajo. Si ya estaba, se pinta quieto.
   return (
+    <Collapse open={!cargando && conMedios.length > 0}>
     <section aria-labelledby="como-pagar" className="mb-8 space-y-4" data-testid="como-pagar">
       <div>
         <h2 id="como-pagar" className="text-xl font-semibold text-fg">
@@ -50,25 +53,46 @@ export function MediosDePagoDeLaInmobiliaria() {
           {conMedios.length > 1 && (
             <p className="font-mono text-xs uppercase tracking-wide text-fg-muted">{bloque.agencyName}</p>
           )}
+          {(bloque.referencias ?? []).length > 0 && (
+            <dl className="flex flex-wrap gap-x-6 gap-y-2" data-testid="referencias-de-recaudo">
+              {(bloque.referencias ?? []).map((r) => (
+                <div key={r.contractId} className="flex items-baseline gap-2">
+                  <dt className="text-sm text-fg-muted">
+                    Tu referencia de recaudo{(bloque.referencias ?? []).length > 1 && r.inmueble ? ` · ${r.inmueble}` : ''}
+                  </dt>
+                  <dd className="font-mono text-base font-semibold tabular-nums text-fg">{r.referencia}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
           <ul className="grid gap-3 sm:grid-cols-2">
             {bloque.medios.map((medio) => (
-              <TarjetaDeMedio key={medio.id} medio={medio} />
+              <TarjetaDeMedio key={medio.id} medio={medio} referencias={bloque.referencias ?? []} />
             ))}
           </ul>
         </div>
       ))}
     </section>
+    </Collapse>
   );
 }
 
-function TarjetaDeMedio({ medio }: { medio: MedioDePagoParaInquilino }) {
+function TarjetaDeMedio({
+  medio,
+  referencias = [],
+}: {
+  medio: MedioDePagoParaInquilino;
+  referencias?: { referencia: string }[];
+}) {
   const Icono = ICONO[medio.tipo] ?? DotsThree;
   const [copiado, setCopiado] = useState(false);
   const numero = medio.numeroDeCuentaEnmascarado;
 
   const copiar = async () => {
     // Se copia el resumen legible; el número completo no está en el cliente.
-    const texto = [medio.nombre, medio.banco, tipoDeCuentaLegible(medio.tipoDeCuenta), numero, medio.titular]
+    // QA-INQ-95 (PI-11): con la referencia de recaudo, que es con lo que el banco reconoce el pago.
+    const conReferencia = referencias.length ? `Referencia: ${referencias.map((r) => r.referencia).join(' / ')}` : null;
+    const texto = [medio.nombre, medio.banco, tipoDeCuentaLegible(medio.tipoDeCuenta), numero, medio.titular, conReferencia]
       .filter(Boolean)
       .join(' · ');
     try {

@@ -4,7 +4,7 @@
  *
  * Cubre: el interruptor escribe `{ renovacionAutomatica }` por el mismo
  * `onSave` del perfil y vuelve atrás si el PUT falla; el IPC se guarda al
- * confirmar y se valida como el back (0 a 30, dos decimales, coma o punto);
+ * confirmar y se valida como el back (0 a 100, dos decimales, coma o punto);
  * el campo vacío manda `null` (= la tabla del DANE); sin permiso de ADMIN nada
  * se puede tocar; y el pronóstico («si corriera ahora») sale de `?simular=true`
  * y no se pinta cuando no hay nada que mover ni cuando la llamada falla.
@@ -19,13 +19,18 @@ void React // jsx-preserve
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { simularMock } = vi.hoisted(() => ({ simularMock: vi.fn() }))
+const { simularMock, toastError } = vi.hoisted(() => ({ simularMock: vi.fn(), toastError: vi.fn() }))
 vi.mock('@/lib/api/renovacion-automatica.service', () => ({
   renovacionAutomaticaApi: { simular: simularMock },
+}))
+vi.mock('@/components/ui/toast', () => ({
+  toast: { error: toastError, success: vi.fn(), info: vi.fn(), warning: vi.fn() },
 }))
 
 import { ConfigRenovacionAutomatica, leerIpc, escribirIpc } from './ConfigRenovacionAutomatica'
 import type { AgencyProfile } from '@/lib/types/inmobiliaria'
+import { ApiError } from '@/lib/api/client'
+import { MENSAJES_DEL_IPC } from '@/lib/configuracion/limites-del-ipc'
 
 const AGENCY: AgencyProfile = {
   id: 'ag-1',
@@ -101,6 +106,9 @@ describe('leerIpc / escribirIpc', () => {
     expect(leerIpc(' 13,12 ')).toBe(13.12)
     expect(leerIpc('0')).toBe(0)
     expect(leerIpc('30')).toBe(30)
+    // El tope es 100 % (Nico, 02-10-2026).
+    expect(leerIpc('30,01')).toBe(30.01)
+    expect(leerIpc('100')).toBe(100)
   })
 
   it('el campo vacío es null: se usa la tabla del DANE que trae Leasefy', () => {
@@ -108,8 +116,9 @@ describe('leerIpc / escribirIpc', () => {
     expect(leerIpc('   ')).toBeNull()
   })
 
-  it('🔴 rechaza lo que el back rechaza: fuera de 0-30, tres decimales y texto', () => {
-    expect(leerIpc('30,01')).toBeUndefined()
+  it('🔴 rechaza lo que el back rechaza: fuera de 0-100, tres decimales y texto', () => {
+    expect(leerIpc('100,01')).toBeUndefined()
+    expect(leerIpc('101')).toBeUndefined()
     expect(leerIpc('-1')).toBeUndefined()
     expect(leerIpc('5,123')).toBeUndefined()
     expect(leerIpc('cinco')).toBeUndefined()
@@ -174,17 +183,43 @@ describe('ConfigRenovacionAutomatica — el IPC vigente', () => {
     expect(props.onSave).toHaveBeenCalledWith({ ipcVigente: 5.2 })
   })
 
-  it('🔴 un IPC inválido no llega al back: se avisa y el campo vuelve al guardado', async () => {
+  it('🔴 un IPC inválido no llega al back: lo escrito SE QUEDA, con el error debajo y el borde rojo (ARREGLOS-4)', async () => {
     const props = await render({ agency: { ...AGENCY, ipcVigente: 5.2 } })
     const input = q<HTMLInputElement>('renovacion-ipc-vigente')!
     await act(async () => {
-      setInputValue(input, '99')
+      setInputValue(input, '101')
       // React mapea `onBlur` al `focusout` nativo (que sí burbujea).
       input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     })
     expect(props.onSave).not.toHaveBeenCalled()
-    expect(q('renovacion-ipc-ayuda')!.textContent).toContain('entre 0 y 30')
-    expect(input.value).toBe('5,2')
+    expect(q('renovacion-ipc-ayuda')!.textContent).toContain('entre 0 y 100')
+    // La MISMA frase que el back (`limites-del-ipc.ts`).
+    expect(q('renovacion-ipc-ayuda')!.textContent).toContain(MENSAJES_DEL_IPC.ipcVigente)
+    // Como en «Incrementos del canon»: la persona ve lo que escribió y por qué no va.
+    expect(input.value).toBe('101')
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(input.hasAttribute('data-invalid')).toBe(true)
+  })
+
+  it('🔴 escribir otra cosa borra el error; un valor bueno se guarda (ARREGLOS-4)', async () => {
+    const props = await render({ agency: { ...AGENCY, ipcVigente: 5.2 } })
+    const input = q<HTMLInputElement>('renovacion-ipc-vigente')!
+    await act(async () => {
+      setInputValue(input, '101')
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+    expect(q('renovacion-ipc-ayuda')!.textContent).toContain(MENSAJES_DEL_IPC.ipcVigente)
+
+    await act(async () => {
+      setInputValue(input, '9,3')
+    })
+    expect(q('renovacion-ipc-ayuda')!.textContent).not.toContain(MENSAJES_DEL_IPC.ipcVigente)
+    expect(input.hasAttribute('data-invalid')).toBe(false)
+
+    await act(async () => {
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+    expect(props.onSave).toHaveBeenCalledWith({ ipcVigente: 9.3 })
   })
 
   it('vaciarlo manda null: vuelve al IPC de diciembre de la tabla de Leasefy', async () => {
@@ -214,6 +249,71 @@ describe('ConfigRenovacionAutomatica — el IPC vigente', () => {
     expect(q('renovacion-ipc-ayuda')!.textContent).toContain(
       'IPC de diciembre del año anterior de la tabla de Leasefy',
     )
+  })
+})
+
+/** Un 400 del back con sus `campos`, como lo arma `apiClient`. */
+function cuatrocientos(campos: Array<{ campo: string; mensaje: string }>) {
+  return new ApiError(
+    400,
+    campos.map((c) => c.mensaje),
+    'DATOS_INVALIDOS',
+    {
+      statusCode: 400,
+      code: 'DATOS_INVALIDOS',
+      message: campos.map((c) => c.mensaje),
+      campos: campos.map((c) => ({ ...c, regla: 'maximo' })),
+    },
+  )
+}
+
+describe('ConfigRenovacionAutomatica — lo que dice el back (02-10-2026)', () => {
+  it('🔴 un 400 del back sobre ipcVigente se dice BAJO el campo, con su frase, sin toast', async () => {
+    const onSave = vi.fn().mockRejectedValue(cuatrocientos([{ campo: 'ipcVigente', mensaje: MENSAJES_DEL_IPC.ipcVigente }]))
+    await render({ agency: { ...AGENCY, ipcVigente: 5.2 }, onSave })
+    const input = q<HTMLInputElement>('renovacion-ipc-vigente')!
+    await act(async () => {
+      setInputValue(input, '12,5')
+      // React mapea `onBlur` al `focusout` nativo (que sí burbujea).
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+    await flush()
+
+    expect(onSave).toHaveBeenCalledWith({ ipcVigente: 12.5 })
+    expect(q('renovacion-ipc-ayuda')!.textContent).toContain(MENSAJES_DEL_IPC.ipcVigente)
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    // 🔴 ARREGLOS-4: lo que el back rechazó se queda escrito bajo su frase.
+    expect(input.value).toBe('12,5')
+    expect(toastError).not.toHaveBeenCalled()
+  })
+
+  it('lo que el back dice de otro campo (el interruptor) va a un toast, no bajo el IPC', async () => {
+    const frase = 'La renovación automática debe ser sí o no.'
+    const onSave = vi.fn().mockRejectedValue(cuatrocientos([{ campo: 'renovacionAutomatica', mensaje: frase }]))
+    await render({ onSave })
+    await act(async () => {
+      q('renovacion-automatica-switch')!.click()
+    })
+    await flush()
+
+    expect(toastError).toHaveBeenCalledWith(frase)
+    expect(q('renovacion-ipc-ayuda')!.textContent).not.toContain(frase)
+    expect(q('renovacion-automatica-switch')!.getAttribute('data-state')).toBe('unchecked')
+  })
+
+  it('🔴 sin campos (un 403) no repite el aviso: ya lo dio el padre', async () => {
+    const onSave = vi.fn().mockRejectedValue(new Error('403'))
+    await render({ onSave })
+    const input = q<HTMLInputElement>('renovacion-ipc-vigente')!
+    await act(async () => {
+      setInputValue(input, '5,2')
+      input.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+    })
+    await flush()
+
+    expect(onSave).toHaveBeenCalled()
+    expect(toastError).not.toHaveBeenCalled()
+    expect(input.getAttribute('aria-invalid')).toBe('false')
   })
 })
 

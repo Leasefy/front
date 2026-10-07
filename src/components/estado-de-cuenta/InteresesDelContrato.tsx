@@ -34,6 +34,10 @@ import {
 import { fechaLegible } from './filas';
 import type { FilaDeInteres, InteresesDelContrato } from '@/lib/types/estado-de-cuenta';
 import { useTextoDelEstado } from './textos';
+import { BotonCondonarIntereses } from './CondonarInteresesDeLaFila';
+
+/** Donde la inmobiliaria fija sus días de plazo (la misma ruta del aviso de la ficha del contrato). */
+export const RUTA_DEL_PLAZO = '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo';
 
 export interface InteresesDelContratoProps {
   intereses: InteresesDelContrato;
@@ -53,6 +57,7 @@ export function InteresesDelContratoSeccion({
 }: InteresesDelContratoProps) {
   const t = useTextoDelEstado();
   const sinInteres = reglasDeMoraHref ? intereses.sinInteres : null;
+  const plazoSinFijar = Boolean(sinInteres && (sinInteres.plazoSinFijar || intereses.plazoSinFijar));
   if (intereses.filas.length === 0 && !sinInteres) return null;
 
   const dias = (n: number) =>
@@ -180,16 +185,29 @@ export function InteresesDelContratoSeccion({
           className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-md bg-warning-soft px-3 py-2 text-caption text-warning"
         >
           <span>
-            {sinInteres.sinReglas
-              ? t('estadoDeCuenta.sinReglasDeMora', {
-                  cuotas: cuotas(sinInteres.cuotas),
-                })
-              : t('estadoDeCuenta.sinInteresPorOtroMotivo', {
-                  cuotas: cuotas(sinInteres.cuotas),
-                  motivo: sinInteres.motivo,
-                })}
+            {/* QA-CONT CR-31 (J-13): sin los días de plazo fijados no corre
+                interés; se dice eso —y dónde fijarlos—, sin cifra de interés. */}
+            {plazoSinFijar
+              ? t('estadoDeCuenta.sinPlazoFijado', { cuotas: cuotas(sinInteres.cuotas) })
+              : sinInteres.sinReglas
+                ? t('estadoDeCuenta.sinReglasDeMora', {
+                    cuotas: cuotas(sinInteres.cuotas),
+                  })
+                : t('estadoDeCuenta.sinInteresPorOtroMotivo', {
+                    cuotas: cuotas(sinInteres.cuotas),
+                    motivo: sinInteres.motivo,
+                  })}
           </span>
-          {sinInteres.sinReglas && reglasDeMoraHref && (
+          {plazoSinFijar && (
+            <Link
+              href={RUTA_DEL_PLAZO}
+              className="font-medium underline underline-offset-4 print:hidden"
+              data-testid="fijar-dias-de-plazo"
+            >
+              {t('estadoDeCuenta.fijarPlazo')}
+            </Link>
+          )}
+          {!plazoSinFijar && sinInteres.sinReglas && reglasDeMoraHref && (
             <Link
               href={reglasDeMoraHref}
               className="font-medium underline underline-offset-4 print:hidden"
@@ -214,6 +232,14 @@ function Concepto({ fila }: { fila: FilaDeInteres }) {
           {t('estadoDeCuenta.pagadaEnMora')}
         </p>
       )}
+      {/* B-13 (QA-PAGOS-95 r2): lo condonado ya salió de «Liquidado» y de «Falta». */}
+      {fila.condonado && fila.condonado > 0 ? (
+        <p className="mt-0.5 text-caption text-fg-muted" data-testid="interes-condonado">
+          Condonado: {formatCurrency(fila.condonado)}
+        </p>
+      ) : null}
+      {/* Sólo en el panel y para un administrador (sin proveedor no pinta nada). */}
+      <BotonCondonarIntereses fila={fila} />
     </>
   );
 }

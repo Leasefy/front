@@ -125,7 +125,8 @@ describe('mensajeDelFallo — el motivo en palabras', () => {
     expect(mensajeDelFallo(new ApiError(409, 'Ya está firmado.'), 'genérico')).toBe('Ya está firmado.')
   })
   it('cae al texto por defecto sólo cuando no hay nada legible', () => {
-    expect(mensajeDelFallo(new ApiError(500, ''), 'genérico')).toBe('genérico')
+    // 02-10-2026 · Regla de oro: un 5xx no se queda en el genérico; dice que fue nuestro.
+    expect(mensajeDelFallo(new ApiError(500, ''), 'genérico')).toMatch(/de nuestro lado/)
     expect(mensajeDelFallo(undefined, 'genérico')).toBe('genérico')
     expect(mensajeDelFallo('texto suelto', 'genérico')).toBe('genérico')
   })

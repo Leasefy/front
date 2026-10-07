@@ -10,7 +10,8 @@
  * hace el flujo manual existente (TERC-04 sin cambios).
  */
 
-import { getAccessToken, ApiError } from './client';
+import { agentFetch } from './agent-fetch';
+import { errorDeLaExtraccion } from './error-de-la-extraccion';
 import {
   TERCERO_DOC_MEDIA_TYPE,
   TERCERO_DOCX_MEDIA_TYPE,
@@ -123,20 +124,18 @@ export async function extractTerceroFromFiles(
   );
 
   // Bearer-only auth (no cookies) — credentials:'include' would force the agent
-  // CORS allowlist to drop the wildcard for no reason.
-  const res = await globalThis.fetch(`${agentUrl}/terceros/extract`, {
+  // CORS allowlist to drop the wildcard for no reason. `agentFetch` pone el
+  // bearer y reintenta una vez ante un 401 (token vencido).
+  const res = await agentFetch(`${agentUrl}/terceros/extract`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${getAccessToken() ?? ''}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ documentos, ...(pista ? { pista } : {}) }),
   });
 
   if (!res.ok) {
     if (res.status === 401) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
-    const body = (await res.json().catch(() => ({}))) as { error?: string };
-    throw new ApiError(res.status, body?.error ?? `Error ${res.status}`);
+    // El sobre entero (code, campos, referencia) para el traductor de errores.
+    throw await errorDeLaExtraccion(res);
   }
 
   const json = (await res.json()) as TerceroExtractResponse;

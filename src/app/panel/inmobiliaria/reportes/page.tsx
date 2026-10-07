@@ -4,29 +4,24 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
-import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/components/ui/toast';
 import {
-  ChartBar,
   ChartLine,
-  ChartLineUp,
   Lightning,
   Star,
   Clock,
-  CaretRight,
   MagnifyingGlass,
   SquaresFour,
   Table,
   FileText,
-  Buildings,
-  CurrencyDollar,
-  Users,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui';
-import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { SegmentedControl } from '@leasefy/cadence';
+import { AnimatedNumber, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
+
+/** El número tal cual se escribía antes (`{n}`): sin separador de miles. */
+const enteroTalCual = (n: number) => String(Math.round(n));
 import type { ReportDefinition, ReportId, ReportCategory } from '@/lib/types/inmobiliaria';
 import { REPORT_DEFINITIONS } from '@/lib/constants/inmobiliaria-data';
 import {
@@ -38,32 +33,15 @@ import {
   descargarBlob,
 } from '@/lib/reportes/exportables';
 import {
-  useCarteraReport,
-  useOcupacionReport,
-  useComisionesReport,
-  useFlujoCajaReport,
-  useRendimientoAgentesReport,
-} from '@/lib/hooks/useInmobiliaria';
-import {
   ReporteCard,
   ReporteFilters,
   ReporteViewer,
   type ReporteFiltersState,
 } from '@/components/inmobiliaria';
 import { apiClient, ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { abrirCentroDeProcesos, procesosApi, type PedidoDeReporte } from '@/lib/api/procesos.service';
 import { useAgencyPlan } from '@/lib/hooks/useAgencyPlan';
-import { FeatureGate } from '@/components/inmobiliaria/UpgradePrompt';
-import { OccupancyReport } from '@/components/inmobiliaria/reports/OccupancyReport';
-import { CollectionsReport } from '@/components/inmobiliaria/reports/CollectionsReport';
-import { AgentPerformanceReport } from '@/components/inmobiliaria/reports/AgentPerformanceReport';
-import { ExecutiveSummary } from '@/components/inmobiliaria/reports/ExecutiveSummary';
-import { ReportPDFExport } from '@/components/inmobiliaria/reports/ReportPDFExport';
-import {
-  adaptOccupancy,
-  adaptCollections,
-  adaptAgentPerformance,
-  adaptExecutive,
-} from '@/lib/utils/report-adapters';
 // Local storage key for favorites
 const FAVORITES_STORAGE_KEY = 'arriendo-facil-report-favorites';
 
@@ -131,34 +109,6 @@ function saveFavorites(favorites: Set<ReportId>): boolean {
 }
 
 /**
- * El vacío de una pestaña avanzada: la respuesta llegó y no trae nada que
- * dibujar (agencia recién creada, mes sin movimiento). Dice qué pasó, no sólo
- * «no hay datos».
- *
- * ⚠️ Vive acá arriba, en el módulo, y NO dentro de `ReportesContent`. Un
- * componente declarado dentro de otro es un TIPO nuevo en cada render del
- * padre: React no lo reconcilia, lo DESMONTA y lo vuelve a montar entero cada
- * vez que cambia un filtro, una pestaña o llega una respuesta. Es el mismo
- * mecanismo que hacía cerrar de golpe a los cajones del panel.
- */
-function SinDatosDelReporte() {
-  return (
-    <div className="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface px-6 py-14 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-muted">
-        <ChartBar className="h-5 w-5 text-fg-muted" weight="duotone" />
-      </div>
-      <div className="space-y-1">
-        <p className="text-base font-semibold text-fg">Todavía no hay nada que mostrar</p>
-        <p className="mx-auto max-w-sm text-sm text-fg-muted">
-          Este reporte se arma con la actividad del portafolio. Cuando haya inmuebles con contrato y
-          cobros del período, aparece acá.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-/**
  * ReportesPage - Reports center for the inmobiliaria module
  * Route: /panel/inmobiliaria/reportes
  */
@@ -166,39 +116,6 @@ function ReportesContent() {
   const { t, locale } = useI18n();
   const router = useRouter();
   const { hasAdvancedReports } = useAgencyPlan();
-
-  // Advanced report tabs
-  type AdvancedTab = 'ocupacion' | 'cobros' | 'agentes' | 'ejecutivo';
-  const [activeAdvancedTab, setActiveAdvancedTab] = useState<AdvancedTab>('ocupacion');
-
-  const advancedTabs: { key: AdvancedTab; label: string; icon: typeof Buildings }[] = [
-    { key: 'ocupacion', label: locale === 'es' ? 'Ocupación' : 'Occupancy', icon: Buildings },
-    { key: 'cobros', label: locale === 'es' ? 'Cobros' : 'Collections', icon: CurrencyDollar },
-    { key: 'agentes', label: locale === 'es' ? 'Agentes' : 'Agents', icon: Users },
-    { key: 'ejecutivo', label: locale === 'es' ? 'Ejecutivo' : 'Executive', icon: ChartLineUp },
-  ];
-
-  // API Hooks for report data
-  const carteraReport = useCarteraReport();
-  const ocupacionReport = useOcupacionReport();
-  const currentMonth = new Date().toISOString().slice(0, 7);
-  const comisionesReport = useComisionesReport(currentMonth);
-  // Acá había un `useVencimientosReport()` cuyo resultado no se leía en
-  // ninguna línea del archivo: un `GET /reports/vencimientos` por montaje que
-  // no pintaba nada. El CSV de vencimientos se baja por `/reports/export`.
-  const flujoCajaReport = useFlujoCajaReport('semester');
-  const rendimientoReport = useRendimientoAgentesReport(currentMonth);
-
-  const occupancyData = useMemo(() => adaptOccupancy(ocupacionReport.report), [ocupacionReport.report]);
-  const collectionsData = useMemo(() => adaptCollections(carteraReport.report), [carteraReport.report]);
-  const agentPerformanceData = useMemo(
-    () => adaptAgentPerformance(rendimientoReport.report, comisionesReport.report),
-    [rendimientoReport.report, comisionesReport.report],
-  );
-  const executiveData = useMemo(
-    () => adaptExecutive(flujoCajaReport.report, ocupacionReport.report),
-    [flujoCajaReport.report, ocupacionReport.report],
-  );
 
   // State for reports (local copy with last generated timestamps)
   const [reports, setReports] = useState<ReportDefinition[]>(() => {
@@ -226,6 +143,8 @@ function ReportesContent() {
 
   // State for generating reports
   const [generatingReports, setGeneratingReports] = useState<Set<string>>(new Set());
+  /** «Generar todos» mandándose al centro de procesos. */
+  const [enviandoTodos, setEnviandoTodos] = useState(false);
 
   // Load favorites from localStorage on mount
   useEffect(() => {
@@ -406,11 +325,17 @@ function ReportesContent() {
       toast.success('Descargado', { description: `${report.title} · CSV · ${nota}` });
       return true;
     } catch (error) {
+      // El 403 con su texto propio; lo demás con la regla de oro (02-10-2026):
+      // un 5xx «de nuestro lado» con la referencia, un 4xx con su motivo y
+      // «conexión» sólo sin respuesta. Antes todo era «Prueba de nuevo».
       toast.error('No pudimos generar el reporte', {
         description:
           error instanceof ApiError && error.status === 403
             ? 'Tu rol no incluye descargar reportes.'
-            : 'Prueba de nuevo en un momento.',
+            : mensajeParaLaPersona(error, {
+                porDefecto: 'Prueba de nuevo en un momento.',
+                accion: 'generar el reporte',
+              }),
       });
       return false;
     } finally {
@@ -423,16 +348,13 @@ function ReportesContent() {
   }, [router, filters.period]);
 
   // Handle preview report
+  // 🔴 Todos abren su vista en el cajón, también la rentabilidad: antes
+  // «Vista previa» de esa tarjeta navegaba a su pantalla y no mostraba nada
+  // (Nico, 01-10). Desde el cajón se sigue llegando a la pantalla completa.
   const handlePreviewReport = useCallback((report: ReportDefinition) => {
-    // La rentabilidad tiene pantalla propia, con periodo, gráfico y tabla
-    // ordenable: «ver» es ir allá, no abrir el cajón de vista previa.
-    if (report.id === 'rentabilidad-inmueble') {
-      router.push('/panel/inmobiliaria/reportes/rentabilidad');
-      return;
-    }
     setSelectedReport(report);
     setIsViewerOpen(true);
-  }, [router]);
+  }, []);
 
   /**
    * Descargar es lo mismo que generar: el back arma el CSV a pedido, no hay un
@@ -470,54 +392,56 @@ function ReportesContent() {
   }, []);
 
   /**
-   * Bajar todos los que se pueden bajar.
+   * Bajar todos los que se pueden bajar: UN zip, armado en el CENTRO DE
+   * PROCESOS.
    *
-   * También era una simulación: 2 s de espera, `lastGenerated` a TODOS los
-   * filtrados —incluidos los que ni siquiera tienen export— y «N reportes
-   * generados». Ahora se bajan de a uno y el cartel del final dice cuántos
-   * salieron y cuántos no, con nombre y apellido.
+   * 🔴 Nico, 01-10: «esas cargas ¿por qué no las metes al centro de
+   * procesos?». Se bajaban de a uno y cada uno dejaba su aviso en la esquina
+   * («Descargando 6 reportes…», «Descargado», «Descargado»…). Ahora la
+   * pantalla manda la lista —cada reporte con los parámetros del período que
+   * acepta, igual que su botón— y el centro se abre en ese proceso, con su
+   * avance y el archivo al final.
    */
   const handleGenerateAll = useCallback(async () => {
-    const bajables = filteredReports.filter(
-      (r) => !generatingReports.has(r.id) && sePuedeBajar(r.id as ReportId),
-    );
-    const noBajables = filteredReports.filter((r) => !sePuedeBajar(r.id as ReportId));
+    const pedidos: PedidoDeReporte[] = [];
+    let noBajables = 0;
+    for (const r of filteredReports) {
+      const como = comoSeBaja(r.id as ReportId);
+      if (!como.disponible) {
+        noBajables += 1;
+        continue;
+      }
+      pedidos.push({ tipo: como.tipo, ...parametrosDelPeriodo(como.tipo, filters.period).params });
+    }
 
-    if (bajables.length === 0) {
+    if (pedidos.length === 0) {
       toast.info('No hay reportes para descargar', {
         description:
-          noBajables.length > 0
-            ? `${noBajables.length} de los que ves todavía no se generan.`
+          noBajables > 0
+            ? `${noBajables} de los que ves todavía no se generan.`
             : 'Ajusta los filtros para ver otros reportes.',
       });
       return;
     }
 
-    toast.loading(`Descargando ${bajables.length} reportes…`, { id: 'generate-all' });
-
-    // Secuencial a propósito: cada descarga dispara un click en un <a>, y el
-    // navegador bloquea la ráfaga si salen todas juntas.
-    let listos = 0;
-    for (const report of bajables) {
-      // eslint-disable-next-line no-await-in-loop
-      if (await bajarReporte(report)) listos += 1;
-    }
-
-    const fallaron = bajables.length - listos;
-    if (listos === 0) {
-      toast.error('No pudimos descargar ninguno', { id: 'generate-all' });
-    } else {
-      toast.success(`${listos} ${listos === 1 ? 'reporte descargado' : 'reportes descargados'}`, {
-        id: 'generate-all',
-        description: [
-          fallaron > 0 ? `${fallaron} falló${fallaron === 1 ? '' : 'ron'}` : null,
-          noBajables.length > 0 ? `${noBajables.length} todavía no se generan` : null,
-        ]
-          .filter(Boolean)
-          .join(' · ') || undefined,
+    setEnviandoTodos(true);
+    try {
+      const { procesoId } = await procesosApi.exportarReportes(pedidos);
+      abrirCentroDeProcesos({ procesoId });
+    } catch (error) {
+      toast.error('No pudimos armar el archivo', {
+        description:
+          error instanceof ApiError && error.status === 403
+            ? 'Tu rol no incluye descargar reportes.'
+            : mensajeParaLaPersona(error, {
+                porDefecto: 'Prueba de nuevo en un momento.',
+                accion: 'armar el archivo de los reportes',
+              }),
       });
+    } finally {
+      setEnviandoTodos(false);
     }
-  }, [filteredReports, generatingReports, bajarReporte]);
+  }, [filteredReports, filters.period]);
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -535,22 +459,20 @@ function ReportesContent() {
         <div className="flex items-center gap-2 shrink-0">
           <Button
             hideArrow
-            onClick={handleGenerateAll}
-            disabled={generatingReports.size > 0}
+            onClick={() => void handleGenerateAll()}
+            disabled={generatingReports.size > 0 || enviandoTodos}
+            isLoading={enviandoTodos}
             className="gap-2"
           >
-            <Lightning className="w-5 h-5" weight="fill" />
+            {!enviandoTodos && <Lightning className="w-5 h-5" weight="fill" />}
             {t('inmobiliaria.reportes.generateAll')}
           </Button>
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-2 md:grid-cols-4 gap-4"
-      >
+      {/* Quick Stats — sin entrada propia (la página entra con su template);
+          las cifras cuentan cuando cambian (marcar o quitar un favorito). */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-4 rounded-lg border border-border bg-card">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-md bg-primary-soft flex items-center justify-center">
@@ -558,7 +480,7 @@ function ReportesContent() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
-                {stats.totalReports}
+                <AnimatedNumber value={stats.totalReports} format={enteroTalCual} />
               </p>
               <p className="text-xs text-muted-foreground">{t('inmobiliaria.reportes.stats.reports')}</p>
             </div>
@@ -572,7 +494,7 @@ function ReportesContent() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">
-                {stats.favoritesCount}
+                <AnimatedNumber value={stats.favoritesCount} format={enteroTalCual} />
               </p>
               <p className="text-xs text-muted-foreground">{t('inmobiliaria.reportes.stats.favorites')}</p>
             </div>
@@ -594,15 +516,10 @@ function ReportesContent() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Main Content Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="rounded-lg border border-border bg-card overflow-hidden"
-      >
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         {/* Header: View Toggle & Count */}
         <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
           <SegmentedControl<ViewMode>
@@ -658,22 +575,17 @@ function ReportesContent() {
                 ({favoriteReports.length})
               </span>
             </div>
-            <div
+            {/* Marcar o quitar un favorito: el reporte sale de una lista y
+                entra en la otra; los demás se corren a su lugar. */}
+            <Stagger
               className={cn(
                 viewMode === 'grid'
                   ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
                   : 'space-y-3'
               )}
             >
-              <AnimatePresence mode="popLayout">
                 {favoriteReports.map((report) => (
-                  <motion.div
-                    key={report.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                  >
+                  <StaggerItem key={report.id} className="flex [&>*]:w-full">
                     <ReporteCard
                       report={{ ...report, isFavorite: true }}
                       variant={viewMode === 'list' ? 'compact' : 'default'}
@@ -686,10 +598,9 @@ function ReportesContent() {
                       isLocked={!!report.premium && !hasAdvancedReports}
                       onUpgrade={() => toast.info(locale === 'es' ? 'Mejora tu plan a Pro para acceder a reportes avanzados.' : 'Upgrade to Pro plan to access advanced reports.')}
                     />
-                  </motion.div>
+                  </StaggerItem>
                 ))}
-              </AnimatePresence>
-            </div>
+            </Stagger>
           </div>
         )}
 
@@ -707,22 +618,17 @@ function ReportesContent() {
                 </span>
               </div>
             )}
-            <div
+            {/* Marcar o quitar un favorito: el reporte sale de una lista y
+                entra en la otra; los demás se corren a su lugar. */}
+            <Stagger
               className={cn(
                 viewMode === 'grid'
                   ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'
                   : 'space-y-3'
               )}
             >
-              <AnimatePresence mode="popLayout">
                 {otherReports.map((report) => (
-                  <motion.div
-                    key={report.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                  >
+                  <StaggerItem key={report.id} className="flex [&>*]:w-full">
                     <ReporteCard
                       report={{ ...report, isFavorite: false }}
                       variant={viewMode === 'list' ? 'compact' : 'default'}
@@ -735,10 +641,9 @@ function ReportesContent() {
                       isLocked={!!report.premium && !hasAdvancedReports}
                       onUpgrade={() => toast.info(locale === 'es' ? 'Mejora tu plan a Pro para acceder a reportes avanzados.' : 'Upgrade to Pro plan to access advanced reports.')}
                     />
-                  </motion.div>
+                  </StaggerItem>
                 ))}
-              </AnimatePresence>
-            </div>
+            </Stagger>
           </div>
         )}
 
@@ -763,137 +668,7 @@ function ReportesContent() {
           </div>
         )}
         </div>
-      </motion.div>
-
-      {/* Advanced Reports Section — gated to Pro+ */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="rounded-lg border border-border bg-card overflow-hidden print:border-none print:shadow-none"
-      >
-        {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border-b border-border bg-muted/30 print:hidden">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-md bg-primary-soft flex items-center justify-center">
-              <ChartLine className="w-4 h-4 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-fg">
-                {locale === 'es' ? 'Reportes Avanzados' : 'Advanced Reports'}
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                {locale === 'es'
-                  ? 'Análisis detallado de ocupación, cobros y rendimiento'
-                  : 'Detailed occupancy, collections and performance analysis'}
-              </p>
-            </div>
-          </div>
-          <ReportPDFExport
-            title={
-              activeAdvancedTab === 'ocupacion'
-                ? (locale === 'es' ? 'Reporte de Ocupación' : 'Occupancy Report')
-                : activeAdvancedTab === 'cobros'
-                ? (locale === 'es' ? 'Reporte de Cobros' : 'Collections Report')
-                : activeAdvancedTab === 'ejecutivo'
-                ? (locale === 'es' ? 'Resumen Ejecutivo' : 'Executive Summary')
-                : (locale === 'es' ? 'Rendimiento de Agentes' : 'Agent Performance')
-            }
-          />
-        </div>
-
-        {/* Tab Bar */}
-        <div className="p-4 border-b border-border print:hidden">
-          <SegmentedControl<AdvancedTab>
-            value={activeAdvancedTab}
-            onChange={setActiveAdvancedTab}
-            options={advancedTabs.map((tab) => {
-              const Icon = tab.icon;
-              return {
-                value: tab.key,
-                ariaLabel: tab.label,
-                label: (
-                  <span className="flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
-                    {tab.label}
-                  </span>
-                ),
-              };
-            })}
-          />
-        </div>
-
-        {/*
-          Tab Content.
-
-          Cada pestaña envuelta en `EstadoDeDatos`: antes se pintaba
-          `{datos && <Componente/>}` a secas, así que un 403 o un 500 dejaban
-          la tarjeta con su encabezado, su barra de pestañas y NADA debajo —
-          sin decir que había fallado ni ofrecer reintentar. Los hooks ya traían
-          `isLoading` y `errorCrudo`; la página sólo leía `.report`.
-        */}
-        <div className="p-4">
-          {activeAdvancedTab === 'ejecutivo' ? (
-            <FeatureGate feature="executive-reports">
-              <EstadoDeDatos
-                cargando={flujoCajaReport.isLoading || ocupacionReport.isLoading}
-                error={flujoCajaReport.errorCrudo ?? ocupacionReport.errorCrudo}
-                vacio={!executiveData}
-                queEs="el resumen ejecutivo"
-                onReintentar={() => {
-                  void flujoCajaReport.refetch();
-                  void ocupacionReport.refetch();
-                }}
-                cuandoVacio={<SinDatosDelReporte />}
-              >
-                {executiveData && <ExecutiveSummary data={executiveData} />}
-              </EstadoDeDatos>
-            </FeatureGate>
-          ) : (
-            <FeatureGate feature="advanced-reports">
-              {activeAdvancedTab === 'ocupacion' && (
-                <EstadoDeDatos
-                  cargando={ocupacionReport.isLoading}
-                  error={ocupacionReport.errorCrudo}
-                  vacio={!occupancyData}
-                  queEs="el reporte de ocupación"
-                  onReintentar={ocupacionReport.refetch}
-                  cuandoVacio={<SinDatosDelReporte />}
-                >
-                  {occupancyData && <OccupancyReport data={occupancyData} />}
-                </EstadoDeDatos>
-              )}
-              {activeAdvancedTab === 'cobros' && (
-                <EstadoDeDatos
-                  cargando={carteraReport.isLoading}
-                  error={carteraReport.errorCrudo}
-                  vacio={!collectionsData}
-                  queEs="el reporte de cobros"
-                  onReintentar={carteraReport.refetch}
-                  cuandoVacio={<SinDatosDelReporte />}
-                >
-                  {collectionsData && <CollectionsReport data={collectionsData} />}
-                </EstadoDeDatos>
-              )}
-              {activeAdvancedTab === 'agentes' && (
-                <EstadoDeDatos
-                  cargando={rendimientoReport.isLoading || comisionesReport.isLoading}
-                  error={rendimientoReport.errorCrudo ?? comisionesReport.errorCrudo}
-                  vacio={!agentPerformanceData}
-                  queEs="el desempeño de los agentes"
-                  onReintentar={() => {
-                    void rendimientoReport.refetch();
-                    void comisionesReport.refetch();
-                  }}
-                  cuandoVacio={<SinDatosDelReporte />}
-                >
-                  {agentPerformanceData && <AgentPerformanceReport data={agentPerformanceData} />}
-                </EstadoDeDatos>
-              )}
-            </FeatureGate>
-          )}
-        </div>
-      </motion.div>
+      </div>
 
       {/* Report Viewer Modal */}
       <ReporteViewer

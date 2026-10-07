@@ -156,3 +156,14 @@ describe('esCuentaDeTerceros', () => {
     expect(esCuentaDeTerceros('3105')).toBe(false);
   });
 });
+
+describe('fraseDelDescuadre (MIG-C 04-10): por qué no cuadra, con el número exacto', () => {
+  it('🔴 los saldos del archivo 31 sin el patrimonio: faltan $911.000 en créditos', async () => {
+    const { fraseDelDescuadre } = await import('./asiento-de-apertura');
+    expect(fraseDelDescuadre({ debitos: 1_606_000, creditos: 695_000, diferencia: 911_000 })).toBe(
+      'No cuadra: faltan $911.000 en créditos para que los dos totales sean iguales (débitos $1.606.000, créditos $695.000).',
+    );
+    expect(fraseDelDescuadre({ debitos: 10, creditos: 25, diferencia: -15 })).toContain('faltan $15 en débitos');
+    expect(fraseDelDescuadre({ debitos: 5, creditos: 5, diferencia: 0 })).toBeNull();
+  });
+});

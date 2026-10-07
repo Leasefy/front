@@ -37,6 +37,8 @@ import {
   type ReparacionDelPropietario,
 } from '@/lib/api/informes-del-propietario.service';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { anioQueAbreElCertificado } from '@/lib/propietarios/anio-del-certificado';
 
 /**
  * 🔴 QA 22-09: el back ofrecía «2027 · 2026» y la pantalla abría 2027 —un
@@ -69,7 +71,8 @@ export default function MisInformesPage() {
       setDisponibles({ ...d, anios });
       setReparaciones(r.reparaciones);
       setMotivoDeReparaciones(r.motivo);
-      const elegido = anios.length > 0 ? Math.max(...anios) : null;
+      // QA-PROP-95 C-35: el año anterior (el que se declara) si está; si no, el más nuevo.
+      const elegido = anioQueAbreElCertificado(anios);
       setAnio(elegido);
       if (elegido !== null) {
         setCertificado(
@@ -92,8 +95,12 @@ export default function MisInformesPage() {
     try {
       setCertificado(await informesDelPropietarioApi.certificadoDeIngresos(nuevo));
     } catch (e) {
+      // 02-10-2026: con la regla de oro del traductor (antes, `e.message` crudo).
       toast.error(
-        e instanceof Error ? e.message : 'No pudimos traer ese certificado.',
+        mensajeParaLaPersona(e, {
+          accion: 'traer ese certificado',
+          porDefecto: 'No pudimos traer ese certificado. Prueba de nuevo en un momento.',
+        }),
       );
     }
   }, []);
@@ -104,7 +111,10 @@ export default function MisInformesPage() {
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch (e) {
       toast.error(
-        e instanceof Error ? e.message : 'No pudimos abrir el comprobante.',
+        mensajeParaLaPersona(e, {
+          accion: 'abrir el comprobante',
+          porDefecto: 'No pudimos abrir el comprobante. Prueba de nuevo en un momento.',
+        }),
       );
     }
   }, []);

@@ -22,7 +22,29 @@ import type { components } from './generated/agent';
  * se muestran, nunca se editan — el agente los computa y aprueba. Saldo y montos se leen
  * verbatim de `totalDueCop` + `installments[]`, sin aritmética del cliente.
  */
-export type AcuerdoDetail = components['schemas']['CarteraPaymentPlanDetailResponse'];
+export type AcuerdoDetail = components['schemas']['CarteraPaymentPlanDetailResponse'] & {
+  /**
+   * Cuándo la inmobiliaria APROBÓ el acuerdo (03-10-2026, Nico: «exigir la
+   * aprobación de la inmobiliaria antes de que el inquilino acepte»). `null` o
+   * ausente = todavía no: el portal NO ofrece firmar ni dice «ya fue aprobado».
+   * Lo agrega el puente del back (`/cartera/payment-plans/*`); el contrato
+   * generado del micro (la vista de la inmobiliaria) no lo trae.
+   */
+  operatorApprovedAt?: string | null;
+  /**
+   * 🔴 ARREGLOS-6 (Nico, ARREGLOS-3 Q2 a): un pago del acuerdo COMPLETO espera a
+   * que una persona de la inmobiliaria lo revise. Mientras sea `true` el portal
+   * no ofrece «Pagar» en este acuerdo. Ausente (un micro anterior) = `false`.
+   */
+  pagoPendienteDeRevision?: boolean;
+  /**
+   * 🔴 QA-INQ-95 (04-10-2026): el acuerdo sigue vivo en el micro, pero la
+   * persona ya no debe NADA vencido en esa inmobiliaria (lo pagó por fuera).
+   * Lo calcula el puente del back con las cuotas del contrato. `true` = el
+   * portal no cobra sus cuotas ni ofrece firmarlo. Ausente = como antes.
+   */
+  deudaSaldada?: boolean;
+};
 
 /**
  * Resultado que devuelve el agente al aceptar un acuerdo (`planId`, `status`, `acceptedAt`).
@@ -56,4 +78,11 @@ export interface AcuerdoAcceptInput {
  */
 export interface PremoraPlanRequestInput {
   leaseId: string;
+  /**
+   * «¿Algo que quieras contarle a tu inmobiliaria?» (opcional, hasta 500 letras).
+   * Desde el 03-10-2026 viaja con la solicitud y se ve en la tarjeta del Piloto.
+   * Es una preferencia de contacto o un contexto libre, NUNCA una causa de atraso
+   * pedida por el formulario (Ley 2300/2023 art. 7).
+   */
+  nota?: string;
 }

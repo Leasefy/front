@@ -306,3 +306,74 @@ describe('MediosDePago — el editor', () => {
     expect($('[data-testid="medio-m1"]').textContent).toContain('Cuenta principal');
   });
 });
+
+/**
+ * 02-10-2026 · tanda 2 del sistema de errores (A6): los topes del back
+ * atajados antes de mandar, los `campos` de un 400 en su campo, y la regla de
+ * oro en los toasts.
+ */
+describe('MediosDePago — errores en su sitio', () => {
+  const ApiErrorDe = async () => (await import('@/lib/api/client')).ApiError;
+
+  it('🔴 un 400 con campos pinta el error en su campo, le da el foco y el modal sigue abierto', async () => {
+    const ApiError = await ApiErrorDe();
+    listarMock.mockResolvedValueOnce([]);
+    crearMock.mockRejectedValueOnce(
+      new ApiError(400, ['El número de cuenta puede tener hasta 40 caracteres.'], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        campos: [
+          { campo: 'numeroDeCuenta', regla: 'longitud_maxima', mensaje: 'El número de cuenta puede tener hasta 40 caracteres.' },
+        ],
+      }),
+    );
+    await montar();
+    await clic(botonConTexto('Crear un medio'));
+    escribir('#medio-nombre', 'Transferencia a Bancolombia');
+    escribir('#medio-banco', 'Bancolombia');
+    await clic($('[data-testid="tipo-de-cuenta-AHORROS"]'));
+    escribir('#medio-numeroDeCuenta', '12345678901');
+    escribir('#medio-titular', 'Portofino S.A.S.');
+    await clic(botonConTexto('Crear medio'));
+    await esperar();
+
+    expect($('#medio-numeroDeCuenta-error').textContent).toBe('El número de cuenta puede tener hasta 40 caracteres.');
+    expect($('#medio-numeroDeCuenta').getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe($('#medio-numeroDeCuenta'));
+    expect(document.body.querySelector('[data-testid="error-del-back"]')).toBeNull();
+    expect(document.body.querySelector('#form-medio-de-pago')).not.toBeNull();
+  });
+
+  it('cada campo de texto lleva el tope de su columna (el mismo del back)', async () => {
+    listarMock.mockResolvedValueOnce([]);
+    await montar();
+    await clic(botonConTexto('Crear un medio'));
+    expect($('#medio-nombre').getAttribute('maxlength')).toBe('80');
+    expect($('#medio-banco').getAttribute('maxlength')).toBe('80');
+    expect($('#medio-numeroDeCuenta').getAttribute('maxlength')).toBe('40');
+    expect($('#medio-titular').getAttribute('maxlength')).toBe('120');
+    expect($('#medio-documentoTitular').getAttribute('maxlength')).toBe('30');
+    expect($('#medio-instrucciones').getAttribute('maxlength')).toBe('500');
+  });
+
+  it('un 5xx en el switch dice «de nuestro lado» con la referencia', async () => {
+    const ApiError = await ApiErrorDe();
+    listarMock.mockResolvedValueOnce([medio()]);
+    actualizarMock.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', { statusCode: 500, referencia: '0badc0de' }),
+    );
+    await montar();
+    await clic($('[data-testid="activo-m1"]'));
+    const texto = String(toastMock.error.mock.calls[0][0]);
+    expect(texto).toContain('No pudimos guardar el cambio: algo falló de nuestro lado');
+    expect(texto).toContain('0badc0de');
+  });
+
+  it('sin respuesta (status 0) al reordenar habla de la conexión', async () => {
+    listarMock.mockResolvedValueOnce([medio(), medio({ id: 'm2', nombre: 'Nequi', tipo: 'NEQUI', orden: 1 })]);
+    reordenarMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await montar();
+    await clic(document.body.querySelector('[aria-label="Bajar «Transferencia a Bancolombia»"]')!);
+    expect(String(toastMock.error.mock.calls[0][0])).toMatch(/conexi/i);
+  });
+});

@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { Bell, CaretRight, CheckCircle } from '@phosphor-icons/react';
 import { PageHeader } from '@leasefy/cadence';
-import { Card, Spinner } from '@/components/ui';
+import { Card } from '@/components/ui';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { useI18n } from '@/lib/i18n';
 import { useOwnerNovedades } from '@/lib/hooks/useOwnerPortal';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
@@ -19,8 +20,9 @@ export default function NovedadesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+      <div className="min-h-screen bg-bg">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="list" className="mx-auto max-w-4xl" />
       </div>
     );
   }

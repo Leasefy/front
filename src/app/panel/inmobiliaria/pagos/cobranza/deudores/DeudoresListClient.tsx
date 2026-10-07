@@ -23,20 +23,23 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Users } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
-import { CARTERA_STAGES, type CarteraStage } from '@/lib/cartera'
+import { CARTERA_STAGES, STAGE_LABELS_ES, stageDisplayName, type CarteraStage } from '@/lib/cartera'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
 import { hashCedulaPrefix } from '@/lib/cobranza/hash-cedula-prefix'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { CobranzaImportCard } from '@/components/inmobiliaria/cobranza/CobranzaImportCard'
+import { TraerLaCartera } from '@/components/cobranza-manual/TraerLaCartera'
+import { AvisoPlazoSinFijarEnCobranza } from '@/components/inmobiliaria/cobranza/AvisoPlazoSinFijarEnCobranza'
+import { usePlazoSinFijar } from '@/lib/hooks/use-plazo-sin-fijar'
 import { CobranzaDeudoresListSkeleton } from '@/components/skeleton/panel/CobranzaDeudoresListSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 // `Badge` sale del ADAPTADOR local, no de Cadence crudo: el crudo es h-5/11px
 // y su variante `info` es hex fijo que no sigue el modo oscuro. Es el mismo
 // Badge que usan las otras tablas del panel.
 import { Button, Input, Badge } from '@/components/ui'
 import { Card } from '@leasefy/cadence'
 import { Chip, RangeSlider } from '@leasefy/cadence'
-import { ETAPAS_ES } from '@/lib/cobranza/acuerdo-general-vocab'
 import { TablePagination } from '@/components/ui/pagination'
 import {
   PAGE_SIZE_OPTIONS,
@@ -45,8 +48,9 @@ import {
 import {
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableRow,
+  TableRowAnimada,
   TableHead,
   TableCell,
 } from '@/components/ui/table'
@@ -156,6 +160,9 @@ export default function DeudoresListClient() {
 
   const { pages, isLoading, isLoadingMore, error, hasMore, loadMore, refetch } =
     useDebtorList(filters)
+  // CONSISTENCIA (04-10-2026, CR-31): sin plazo fijado, que la lista esté vacía
+  // es lo correcto; el vacío dice por qué y no manda a importar un CSV.
+  const plazoSinFijar = usePlazoSinFijar()
 
   // ── Skeleton + EmptyState guards (Phase 38 plan 38-04a / D-38-04) ─────────
   // hasActiveFilters distinguishes "filtered empty" (Sin deudores con estos filtros)
@@ -198,7 +205,15 @@ export default function DeudoresListClient() {
   // página siguiente ahora es el propio paginador, al llegar al final de lo
   // cargado. Dejarlo habría disparado `loadMore()` dos veces por la misma fila.
 
-  if (isLoading && pages.length === 0) return <CobranzaDeudoresListSkeleton />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // lista, → «aún no hay cartera»); lo que ya estaba al montarse no se anima.
+  if (isLoading && pages.length === 0) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <CobranzaDeudoresListSkeleton />
+      </CrossFade>
+    )
+  }
 
   if (
     !isLoading &&
@@ -207,18 +222,46 @@ export default function DeudoresListClient() {
     !error
   ) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-4">
-        <EmptyState
-          icon={Users}
-          title={t('inmobiliaria.ai.cobranza.deudores.empty.title')}
-          description={t('inmobiliaria.ai.cobranza.deudores.empty.description')}
-        />
-        {/* Importar cartera — cableada al endpoint POST /cartera/import.
-            FAIL-SOFT: si el backend no está desplegado (404/red), el card
-            degrada a "Próximamente — requiere despliegue" sin romper. Tras un
-            import exitoso refrescamos la lista para salir del empty state. */}
-        <CobranzaImportCard onImported={() => void refetch()} />
+        {/* QA-IA-B (04-10-2026): sin días de plazo fijados la lista queda
+            vacía aunque haya cuotas vencidas: se dice por qué. */}
+        <AvisoPlazoSinFijarEnCobranza />
+        {plazoSinFijar ? (
+          <div data-testid="casos-vacio-sin-plazo">
+            <EmptyState
+              icon={Users}
+              title="Todavía no hay casos de cobranza"
+              description="Es lo esperado: sin días de plazo fijados, las cuotas vencidas no entran a la cobranza. Cuando los fije, quienes sigan debiendo pasado el plazo aparecen aquí solos."
+            />
+          </div>
+        ) : (
+          <>
+            {/* COBRANZA-MANUAL (04-10-2026; Nico: «Cobranza se llena con la
+                cartera de los contratos»): la puerta principal es la cartera de
+                los contratos; el CSV queda como opción extra, abajo. */}
+            <div data-testid="casos-vacio-de-la-cartera">
+              <EmptyState
+                icon={Users}
+                title="Todavía no hay deudores en Cobranza"
+                description="Aquí aparecen solos los inquilinos que pasan sus días de plazo sin pagar. Si acabas de fijar el plazo o de cargar contratos, tráelos ahora."
+              />
+            </div>
+            <TraerLaCartera onTraida={() => void refetch()} />
+            <section className="space-y-2" aria-labelledby="importar-otros-deudores">
+              <h2 id="importar-otros-deudores" className="text-sm font-medium text-fg-muted">
+                Otra opción: deudores que no están en Leasefy
+              </h2>
+              {/* Importar cartera — cableada al endpoint POST /cartera/import.
+                  FAIL-SOFT: si el backend no está desplegado (404/red), el card
+                  degrada a "Próximamente — requiere despliegue" sin romper. Tras un
+                  import exitoso refrescamos la lista para salir del empty state. */}
+              <CobranzaImportCard onImported={() => void refetch()} />
+            </section>
+          </>
+        )}
       </div>
+      </CrossFade>
     )
   }
 
@@ -257,15 +300,23 @@ export default function DeudoresListClient() {
   const contador = `${total}${hasMore ? '+' : ''} ${total === 1 ? 'caso' : 'casos'}`
 
   return (
+    <CrossFade swapKey="lista">
     <div className="p-6 lg:p-8 space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-h2 text-fg">
-          {t('inmobiliaria.ai.cobranza.deudores.title')}
-        </h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
-          {t('inmobiliaria.ai.cobranza.deudores.subtitle')}
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="text-h2 text-fg">
+            {t('inmobiliaria.ai.cobranza.deudores.title')}
+          </h1>
+          <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">
+            {t('inmobiliaria.ai.cobranza.deudores.subtitle')}
+          </p>
+        </div>
+        {/* COBRANZA-MANUAL: la cartera de los contratos llega cada noche; este
+            botón la trae ya. No contacta a nadie. */}
+        <TraerLaCartera compacto onTraida={() => void refetch()} />
       </header>
+
+      <AvisoPlazoSinFijarEnCobranza />
 
       <Card>
         {/* ── Barra de filtros ──────────────────────────────────────────── */}
@@ -315,9 +366,10 @@ export default function DeudoresListClient() {
                   data-testid={`stage-chip-${s}`}
                   // El código no dice nada solo: el nombre va en el título para
                   // quien no se sabe la taxonomía de memoria.
-                  title={ETAPAS_ES[s]}
+                  title={STAGE_LABELS_ES[s]}
                 >
-                  {s}
+                  {/* QA-IA-95 (IA-B-09): el nombre de la etapa, no su código («S1»). */}
+                  {stageDisplayName(s, 'es')}
                 </Chip>
               ))}
             </fieldset>
@@ -368,7 +420,7 @@ export default function DeudoresListClient() {
 
             {/* Sólo aparece cuando hay algo que limpiar: un botón que no hace
                 nada enseña a ignorar los botones. */}
-            {hasActiveFilters && (
+            <Presence show={hasActiveFilters} direction="none" initial={false}>
               <Button
                 variant="link"
                 size="sm"
@@ -378,13 +430,13 @@ export default function DeudoresListClient() {
               >
                 {t('inmobiliaria.ai.cobranza.deudores.filters.clear')}
               </Button>
-            )}
+            </Presence>
           </div>
         </div>
 
         {/* ── Error ─────────────────────────────────────────────────────── */}
-        {error && (
-          <div
+        <Presence
+            show={Boolean(error)}
             role="alert"
             className="flex items-center justify-between gap-3 flex-wrap border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger"
           >
@@ -400,10 +452,11 @@ export default function DeudoresListClient() {
             >
               {t('inmobiliaria.ai.cobranza.deudores.errorRetry')}
             </Button>
-          </div>
-        )}
+        </Presence>
 
         {/* ── Vacío filtrado — DENTRO de la tarjeta, no flotando ────────── */}
+        {/* Filtrar a cero ⇄ volver a ver casos: el uno sale y el otro entra. */}
+        <CrossFade swapKey={!isLoading && pages.length === 0 && !error ? 'vacio-filtrado' : 'tabla'}>
         {!isLoading && pages.length === 0 && !error ? (
           <div className="flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
             <Users className="w-7 h-7 text-fg-muted" weight="duotone" aria-hidden="true" />
@@ -436,9 +489,11 @@ export default function DeudoresListClient() {
                     <TableHead>{t('inmobiliaria.ai.cobranza.deudores.columns.channel')}</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                {/* Filtrar, buscar o paginar: las filas entran escalonadas
+                    (techo 320 ms) y las que sobran salen. */}
+                <TableBodyAnimado>
                   {pageItems.map((d) => (
-                    <TableRow
+                    <TableRowAnimada
                       key={d.id}
                       data-testid={`caso-${d.id}`}
                       onClick={() => navigateToDebtor(d.id)}
@@ -454,8 +509,8 @@ export default function DeudoresListClient() {
                         {d.fullName}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" title={ETAPAS_ES[d.currentStage]}>
-                          {d.currentStage}
+                        <Badge variant="outline" title={STAGE_LABELS_ES[d.currentStage]}>
+                          {stageDisplayName(d.currentStage, 'es')}
                         </Badge>
                       </TableCell>
                       {/* Números a la derecha y tabulares: es la columna por la
@@ -475,16 +530,16 @@ export default function DeudoresListClient() {
                       <TableCell className="text-xs text-fg-muted">
                         {etiquetaDeCanal(d.channel, t)}
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   ))}
-                </TableBody>
+                </TableBodyAnimado>
               </Table>
             </div>
 
             {/* ── Tarjetas (sm) ─────────────────────────────────────────── */}
-            <ul className="md:hidden divide-y divide-border">
+            <Stagger as="ul" layout={false} className="md:hidden divide-y divide-border">
               {pageItems.map((d) => (
-                <li key={d.id}>
+                <StaggerItem as="li" key={d.id}>
                   <button
                     type="button"
                     onClick={() => navigateToDebtor(d.id)}
@@ -492,8 +547,8 @@ export default function DeudoresListClient() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-sm font-medium text-fg truncate">{d.fullName}</p>
-                      <Badge variant="outline" title={ETAPAS_ES[d.currentStage]}>
-                        {d.currentStage}
+                      <Badge variant="outline" title={STAGE_LABELS_ES[d.currentStage]}>
+                        {stageDisplayName(d.currentStage, 'es')}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2 mt-1.5">
@@ -509,11 +564,12 @@ export default function DeudoresListClient() {
                         : ''}
                     </p>
                   </button>
-                </li>
+                </StaggerItem>
               ))}
-            </ul>
+            </Stagger>
           </>
         )}
+        </CrossFade>
 
         {/* ── Pie: el paginador del design system, igual que las demás ──── */}
         {shouldPaginate && (
@@ -531,12 +587,15 @@ export default function DeudoresListClient() {
 
         {/* Trayendo la página siguiente del cursor. No es un estado vacío ni un
             error: son filas que todavía no llegaron. */}
-        {isLoadingMore && (
-          <div className="border-t border-border px-4 py-2 text-center text-xs text-fg-muted">
+        <Presence
+          show={isLoadingMore}
+          direction="none"
+          className="border-t border-border px-4 py-2 text-center text-xs text-fg-muted"
+        >
             {t('inmobiliaria.ai.cobranza.deudores.loadingMore')}
-          </div>
-        )}
+        </Presence>
       </Card>
     </div>
+    </CrossFade>
   )
 }

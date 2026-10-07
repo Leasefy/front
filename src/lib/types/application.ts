@@ -8,8 +8,8 @@
 // ============================================================================
 
 export const DOCUMENT_TYPES = [
-  { value: 'cc', label: 'Cedula de Ciudadania' },
-  { value: 'ce', label: 'Cedula de Extranjeria' },
+  { value: 'cc', label: 'Cédula de ciudadanía' },
+  { value: 'ce', label: 'Cédula de extranjería' },
   { value: 'passport', label: 'Pasaporte' },
 ] as const;
 
@@ -29,21 +29,21 @@ export const EMPLOYMENT_STATUS_OPTIONS = [
 ] as const;
 
 export const CONTRACT_TYPE_OPTIONS = [
-  { value: 'indefinite', label: 'Termino indefinido' },
-  { value: 'fixed-term', label: 'Termino fijo' },
-  { value: 'contractor', label: 'Prestacion de servicios' },
+  { value: 'indefinite', label: 'Término indefinido' },
+  { value: 'fixed-term', label: 'Término fijo' },
+  { value: 'contractor', label: 'Prestación de servicios' },
   { value: 'freelance', label: 'Freelance' },
 ] as const;
 
 export const INDUSTRY_OPTIONS = [
-  { value: 'technology', label: 'Tecnologia' },
+  { value: 'technology', label: 'Tecnología' },
   { value: 'finance', label: 'Finanzas y Banca' },
   { value: 'healthcare', label: 'Salud' },
-  { value: 'education', label: 'Educacion' },
+  { value: 'education', label: 'Educación' },
   { value: 'retail', label: 'Comercio' },
   { value: 'manufacturing', label: 'Manufactura' },
-  { value: 'construction', label: 'Construccion' },
-  { value: 'hospitality', label: 'Hoteleria y Turismo' },
+  { value: 'construction', label: 'Construcción' },
+  { value: 'hospitality', label: 'Hotelería y turismo' },
   { value: 'government', label: 'Gobierno' },
   { value: 'legal', label: 'Legal' },
   { value: 'other', label: 'Otro' },

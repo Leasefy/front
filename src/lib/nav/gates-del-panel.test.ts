@@ -75,10 +75,11 @@ const MODULOS_DEL_BACK = [
  *
  *   · `ap`        — `/pagos/cxp/*`. Cuentas por pagar; la carpeta `pagos` es de
  *                   otro paquete de arreglos. Hoy expulsa a todo no-admin.
- *   · `retencion` — `/contratos/(retencion)/*`. Fuera del catálogo a propósito
- *                   (no va a producción, Nico 2026-09-03) y sólo alcanzable
- *                   escribiendo la URL, así que ningún rol ve una fila que no
- *                   se le abra. Se resuelve cuando Retención salga del limbo.
+ *   · `retencion` — `/retencion/*` (vivía en `/contratos/(retencion)/*`). En
+ *                   «Agentes IA» desde QA-CONT C-19 (03-10-2026) con la fila
+ *                   y la sala sólo para ADMIN (`module: null`), que es quien la
+ *                   abre (`isAdmin`): ningún rol ve una fila que no se le abra.
+ *                   Se resuelve cuando el agente exista y tenga su módulo.
  */
 const MODULOS_ROTOS_CONOCIDOS = ['ap', 'retencion'];
 

@@ -27,6 +27,7 @@ import type {
   CobroConDesglose,
   ConciliacionDePagoAnterior,
   FiltrosDeRecibos,
+  MediosDelRecibo,
   NuevoReciboDeCaja,
   NuevoReciboPorCliente,
   ReciboDeCaja,
@@ -195,6 +196,38 @@ export const recibosDeCajaApi = {
     return apiClient.get<CarteraDelCliente>(
       `${BASE}/cartera-por-cobro/${encodeURIComponent(cobroId)}${conFecha(fecha)}`,
     );
+  },
+
+  /**
+   * 🔴 PG-01 (QA de Pagos, 03-10-2026): con qué puede registrar el pago quien
+   * hace el recibo — los medios del catálogo con `habilitado` y `porQueNo`, y
+   * las cuentas de Medios de pago con su tipo. Pide `cobros:create`, no
+   * `configuracion:view` (que el auxiliar de cartera no tiene).
+   */
+  async medios(): Promise<MediosDelRecibo> {
+    return apiClient.get<MediosDelRecibo>(`${BASE}/medios`);
+  },
+
+  /**
+   * 🔴 PG-R12 (QA de Pagos, 03-10-2026): la cuenta de cobro de una CUOTA del
+   * contrato (`GET …/cuotas/:cuotaId/cuenta-de-cobro`). Un mes migrado sin
+   * cobro también la tiene, y el total es el del estado de cuenta. Misma forma
+   * que el cobro con desglose; el estado del documento se deduce de lo pagado
+   * (la cuota no trae `status` de cobro).
+   */
+  async cuentaDeCobroDeLaCuota(cuotaId: string): Promise<CobroConDesglose> {
+    const r = await apiClient.get<CobroConDesglose & { status?: string }>(
+      `${BASE}/cuotas/${encodeURIComponent(cuotaId)}/cuenta-de-cobro`,
+    );
+    const status: CobroConDesglose['status'] =
+      (r.pendingAmount ?? 0) <= 0
+        ? 'paid'
+        : (r.daysLate ?? 0) > 0
+          ? 'late'
+          : (r.paidAmount ?? 0) > 0
+            ? 'partial'
+            : 'pending';
+    return { ...r, status: r.status ? normalizeCobro(r).status : status };
   },
 
   /** Los recibos de la inmobiliaria, filtrables. Por defecto, sólo los vivos. */

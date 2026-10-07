@@ -15,7 +15,8 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select';
-import { Chip, IconButton } from '@leasefy/cadence';
+import { Chip, DatePicker, IconButton, Presence } from '@leasefy/cadence';
+import { aFechaIso, fechaLocal } from '@/lib/fechas-locales';
 import type { Agente, Consignacion } from '@/lib/types/inmobiliaria';
 
 export interface PipelineFiltersState {
@@ -166,16 +167,16 @@ export function PipelineFilters({
           onChange={(e) => updateFilter('search', e.target.value || undefined)}
           className="w-full pl-10 pr-4"
         />
-        {filters.search && (
+        <Presence show={Boolean(filters.search)} direction="none" className="absolute right-2 top-1/2 -translate-y-1/2">
           <IconButton
             variant="ghost"
             size="sm"
             onClick={() => updateFilter('search', undefined)}
             aria-label="Limpiar búsqueda"
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+            className="text-muted-foreground"
             icon={<X className="w-4 h-4" />}
           />
-        )}
+        </Presence>
       </div>
 
       {/* Row 2: Dropdowns + Date Presets */}
@@ -273,24 +274,28 @@ export function PipelineFilters({
 
         {/* Custom Date Range */}
         <div className="flex items-center gap-2">
-          <Input
-            type="date"
-            value={filters.dateFrom || ''}
-            onChange={(e) => updateFilter('dateFrom', e.target.value || undefined)}
-            className="w-auto"
+          {/* PL-03: el calendario de la casa (días en español), no el
+              `type="date"` del navegador («dd/mm/yyyy» en inglés). */}
+          <DatePicker
+            id="pipeline-desde"
+            value={fechaLocal(filters.dateFrom ?? null)}
+            onChange={(d) => updateFilter('dateFrom', d ? aFechaIso(d) : undefined)}
+            placeholder="Desde"
+            className="w-40"
           />
           <span className="text-muted-foreground text-sm">{t('inmobiliaria.pipeline.to')}</span>
-          <Input
-            type="date"
-            value={filters.dateTo || ''}
-            onChange={(e) => updateFilter('dateTo', e.target.value || undefined)}
-            className="w-auto"
+          <DatePicker
+            id="pipeline-hasta"
+            value={fechaLocal(filters.dateTo ?? null)}
+            onChange={(d) => updateFilter('dateTo', d ? aFechaIso(d) : undefined)}
+            placeholder="Hasta"
+            className="w-40"
           />
         </div>
 
         {/* Clear Filters */}
-        {hasAnyFilter && (
-          <>
+        {/* «Limpiar» aparece con el primer filtro y se va al limpiarlos. */}
+        <Presence show={Boolean(hasAnyFilter)} direction="none" className="flex items-center gap-3">
             <div className="hidden sm:block w-px h-6 bg-border" />
             <Button
               variant="ghost"
@@ -302,8 +307,7 @@ export function PipelineFilters({
               <X className="w-4 h-4" />
               {t('inmobiliaria.pipeline.clear')}
             </Button>
-          </>
-        )}
+        </Presence>
       </div>
     </div>
   );

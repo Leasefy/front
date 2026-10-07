@@ -37,14 +37,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import type { EventoContable, MapeoDeEvento, CuentaPuc } from '@/lib/api/contabilidad.service';
 import { SelectorDeCuenta } from '../SelectorDeCuenta';
+import { ExplicacionDelEvento } from './ExplicacionDelEvento';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { FaltaLaMigracion, Nota } from '../piezas';
 import { NOMBRE_DEL_LADO } from './mapeo';
 import { TituloDeBloque } from '@/components/finanzas/piezas';
@@ -65,6 +68,8 @@ export interface EventosDeGastoProps {
   /** `false` = el rol no escribe; `motivoSinEscritura` dice por qué. */
   puedeEscribir: boolean;
   motivoSinEscritura: string | null;
+  /** CB-28: el rechazo del back por evento, bajo su fila. Opcional. */
+  errores?: Partial<Record<EventoContable, string>>;
 }
 
 /**
@@ -104,6 +109,7 @@ export function EventosDeGasto({
   guardando,
   puedeEscribir,
   motivoSinEscritura,
+  errores,
 }: EventosDeGastoProps) {
   const lista = eventos ?? [];
   const faltantes = useMemo(
@@ -178,14 +184,13 @@ export function EventosDeGasto({
                     <TableHead>Propuesta</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBodyAnimado>
                   {lista.map((e) => (
-                    <TableRow key={e.evento} data-testid={`evento-de-gasto-${e.evento}`}>
+                    <TableRowAnimada key={e.evento} data-testid={`evento-de-gasto-${e.evento}`}>
                       <TableCell className="max-w-[320px]">
                         <p className="font-medium text-fg">{e.nombre}</p>
-                        <p className="truncate text-caption text-fg-muted" title={e.explicacion}>
-                          {e.explicacion}
-                        </p>
+                        {/* CB-05: una línea, y «Leer completo» la abre en su lugar. */}
+                        <ExplicacionDelEvento texto={e.explicacion} testId={`explicacion-gasto-${e.evento}`} />
                       </TableCell>
                       <TableCell className="whitespace-nowrap">
                         <Badge variant={e.lado === 'DEBE' ? 'secondary' : 'outline'}>
@@ -219,9 +224,24 @@ export function EventosDeGasto({
                         {!puedeEscribir && motivoSinEscritura ? (
                           <p className="mt-1 text-caption text-fg-muted">{motivoSinEscritura}</p>
                         ) : null}
+                        <ErrorDelCampo
+                          id={`mapeo-gasto-${e.evento}-error`}
+                          mensaje={errores?.[e.evento]}
+                        />
                       </TableCell>
                       <TableCell>
-                        {e.propuesta ? (
+                        {/* 🔴 CB-05: la propuesta repetía, fila por fila, la cuenta que ya
+                            estaba elegida. Sólo se dice cuando DIFIERE (o no hay cuenta). */}
+                        {e.propuesta && e.cuenta?.id === e.propuesta.id ? (
+                          <span
+                            className="text-caption text-fg-subtle"
+                            title="La cuenta elegida es la propuesta"
+                            aria-label="La cuenta elegida es la propuesta"
+                            data-testid={`propuesta-igual-gasto-${e.evento}`}
+                          >
+                            —
+                          </span>
+                        ) : e.propuesta ? (
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-caption text-fg-muted">
                               {e.propuesta.codigo} · {e.propuesta.nombre}
@@ -252,9 +272,9 @@ export function EventosDeGasto({
                           </span>
                         )}
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   ))}
-                </TableBody>
+                </TableBodyAnimado>
               </Table>
             </div>
           </div>

@@ -113,7 +113,7 @@ export function EscalationAssignDropdown({
                       type="button"
                       onClick={() => void handleSelect(m.id, m.email)}
                       disabled={isSubmitting || submitting !== null}
-                      className="w-full text-left px-5 py-3 flex items-center justify-between hover:bg-muted transition disabled:opacity-50"
+                      className="w-full text-left px-5 py-3 flex items-center justify-between hover:bg-muted transition-colors disabled:opacity-50"
                     >
                       <div>
                         <p className="text-sm font-medium text-foreground">{m.name}</p>

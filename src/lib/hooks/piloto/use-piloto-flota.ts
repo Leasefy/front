@@ -30,11 +30,18 @@ const POLL_MS = 60_000
 export interface UsePilotoFlotaResult {
   data: PilotoFlotaResponse | null
   isLoading: boolean
-  error: string | null
+  /**
+   * El error ENTERO, no su texto (ARREGLOS-4, 03-10-2026): el `ApiError` del
+   * micro, el 503 «el asistente de Leasefy no está disponible» de
+   * `agentFetch`, el de red o el de «no contestó a tiempo». La pantalla lo dice
+   * con `FalloDeCarga` / `mensajeParaLaPersona`. `null` si no falló.
+   */
+  error: unknown
   notAvailable: boolean
   /** PUT en vuelo. */
   busy: boolean
-  setModo: (modo: AutonomiaModo) => Promise<{ ok: boolean; error?: string; fallidos?: string[] }>
+  /** `fallo` es el error entero para el traductor; `error`, el código viejo (no es para la persona). */
+  setModo: (modo: AutonomiaModo) => Promise<{ ok: boolean; error?: string; fallo?: unknown; fallidos?: string[] }>
   refetch: () => Promise<void>
 }
 
@@ -44,7 +51,7 @@ export function usePilotoFlota(): UsePilotoFlotaResult {
 
   const [data, setData] = useState<PilotoFlotaResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const [notAvailable, setNotAvailable] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -74,7 +81,7 @@ export function usePilotoFlota(): UsePilotoFlotaResult {
       loadedOnceRef.current = true
     } catch (err) {
       if (controller.signal.aborted) return
-      setError(err instanceof Error ? err.message : 'fetch_failed')
+      setError(err ?? new Error('fetch_failed'))
     } finally {
       if (!controller.signal.aborted) setIsLoading(false)
     }
@@ -116,7 +123,7 @@ export function usePilotoFlota(): UsePilotoFlotaResult {
       setBusy(false)
       if (!res.ok) {
         setData(previa)
-        return { ok: false, error: res.error }
+        return { ok: false, error: res.error, fallo: res.fallo }
       }
       if (res.data) {
         const { cambiados, fallidos, ...estado } = res.data

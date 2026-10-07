@@ -43,10 +43,12 @@ import {
 } from '@/lib/cartera/conceptos'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { mesEnTitulo } from '@/lib/utils/mes'
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 import { useI18n } from '@/lib/i18n'
 import type { InquilinoEnCartera, TipoDeConcepto } from '@/lib/api/cartera.types'
 import { cn } from '@/lib/utils'
 import { CLAVE_DE_MORA, interesDe, sumarIntereses } from './interes-de-mora'
+import { documentoDelCliente } from '@/components/estado-de-cuenta/filas';
 
 /** En qué cajón está el mes, con sus palabras y su matiz. */
 function ElCajonDelMes({
@@ -69,6 +71,14 @@ function ElCajonDelMes({
     return (
       <span className="text-danger">
         Cartera · {fila.diasDeMora} {fila.diasDeMora === 1 ? 'día' : 'días'} de mora
+      </span>
+    )
+  }
+  // 🔴 CR-31: sin plazo fijado no hay plazo que la sostenga: «Vencida», sin mora.
+  if (fila.esVencida && fila.plazoSinFijar) {
+    return (
+      <span className="text-warning" data-testid="vencida-sin-plazo">
+        Vencida · venció el {fechaLarga(fila.vence)} · sin plazo fijado, no corre mora
       </span>
     )
   }
@@ -114,9 +124,8 @@ export function InquilinoEnCarteraCajon({
       <CajonCabecera
         titulo={inquilino.nombre ?? 'Sin nombre en el contrato'}
         descripcion={
-          inquilino.documento
-            ? `CC ${inquilino.documento}`
-            : 'El contrato no trae su documento.'
+          // N-01 (QA-PAGOS-95): nunca un «CC» inventado (una empresa con NIT salía «CC 900555666»).
+          documentoDelCliente(inquilino) ?? 'El contrato no trae su documento.'
         }
       >
         <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -148,7 +157,12 @@ export function InquilinoEnCarteraCajon({
           {(
             [
               ['Por vencer', inquilino.totales.porVencerCop, 'muted'],
-              ['Vencido, en plazo', inquilino.totales.vencidaEnPlazoCop ?? 0, 'warning'],
+              [
+                // CR-31: sin plazo fijado lo vencido no está «en plazo».
+                inquilino.filas.some((f) => f.plazoSinFijar) ? 'Vencido' : 'Vencido, en plazo',
+                inquilino.totales.vencidaEnPlazoCop ?? 0,
+                'warning',
+              ],
               ['Cartera', inquilino.totales.enMoraCop, 'danger'],
             ] as const
           ).map(([rotulo, valor, tono]) => (

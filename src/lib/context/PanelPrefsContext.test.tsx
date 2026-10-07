@@ -472,3 +472,48 @@ describe('las presentaciones de los agentes usan el mismo mecanismo', () => {
     expect(actual!.tourDismissed).toBe(false)
   })
 })
+
+/*
+ * Tanda 2 de errores (02-10-2026): si el PUT del «ya lo vio» falla, no se le
+ * avisa a la persona —es una preferencia que no se pierde: la caché la
+ * sostiene y se reintenta en la próxima carga— pero tampoco se deja un
+ * rechazo sin atrapar ni se vuelca el error crudo al log.
+ */
+describe('si el servidor no guarda el «ya lo vio»', () => {
+  it('el recorrido queda cerrado en este navegador, nadie es culpado y el log dice qué pasó', async () => {
+    const delBack = back.fetch
+    vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+      if ((init?.method ?? 'GET').toUpperCase() === 'PUT') {
+        return {
+          status: 500,
+          ok: false,
+          json: async () => ({ statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor', referencia: 'REF-7788' }),
+          text: async () => '',
+        } as unknown as Response
+      }
+      return delBack(url, init)
+    })
+    const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    await abrirElPanel()
+    expect(actual!.tourDismissed).toBe(false)
+
+    await act(async () => {
+      await expect(actual!.cerrarRecorrido('omitido')).resolves.toBeUndefined()
+    })
+    expect(actual!.tourDismissed).toBe(true)
+    expect(window.localStorage.getItem(`${PREFIJO_DE_LA_CACHE}agencia-a:${RECORRIDO}`)).toBe('omitido')
+
+    const delContexto = aviso.mock.calls.find((c) => String(c[0]).includes('[PanelPrefsContext]'))
+    expect(delContexto).toBeDefined()
+    // Lo que pasó, legible: no el `ApiError` entero.
+    expect(delContexto![1]).toEqual({
+      clave: RECORRIDO,
+      tipo: 'nuestro',
+      status: 500,
+      code: 'ERROR_INTERNO',
+      referencia: 'REF-7788',
+    })
+    aviso.mockRestore()
+  })
+})
+

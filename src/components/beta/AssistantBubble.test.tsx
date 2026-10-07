@@ -25,9 +25,7 @@ const { contexto } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('@/lib/i18n', () => ({
-  useI18n: () => ({ t: (k: string) => k }),
-}));
+vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
 vi.mock('@/components/ui', () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));

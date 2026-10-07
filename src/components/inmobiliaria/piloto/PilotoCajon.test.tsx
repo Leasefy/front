@@ -30,6 +30,8 @@ const { estado } = vi.hoisted(() => ({
     notAvailable: false,
     rol: 'OWNER' as string | null,
     accionesCorridas: [] as unknown[],
+    respuesta: { ok: true } as { ok: boolean; error?: string; fallo?: unknown },
+    toasts: [] as string[],
   },
 }))
 
@@ -54,13 +56,15 @@ vi.mock('@/lib/hooks/piloto/use-piloto-detalle', () => ({
 }))
 
 vi.mock('@/lib/api/piloto', () => ({
-  runInboxAccion: async (accion: unknown) => {
-    estado.accionesCorridas.push(accion)
-    return { ok: true }
+  runInboxAccion: async (accion: unknown, valores?: unknown) => {
+    estado.accionesCorridas.push(valores === undefined ? accion : { ...(accion as object), valores })
+    return estado.respuesta
   },
 }))
 
-vi.mock('sonner', () => ({ toast: { success: () => {}, error: () => {} } }))
+vi.mock('sonner', () => ({
+  toast: { success: () => {}, error: (m: string) => estado.toasts.push(m) },
+}))
 
 vi.mock('@/components/inmobiliaria/ai/ColaHumana', () => ({
   relativeTime: () => 'hace 2 h',
@@ -69,6 +73,7 @@ vi.mock('@/components/inmobiliaria/ai/ColaHumana', () => ({
 vi.mock('@/lib/format', () => ({ formatCurrency: (n: number) => `$${n}` }))
 
 import { PilotoCajon, type PilotoApertura } from './PilotoCajon'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 
 const DETALLE = {
   id: 'esc:e-1',
@@ -94,13 +99,14 @@ let root: Root
 function render(
   apertura: PilotoApertura | null,
   onAbrirItem: (id: string) => void = () => {},
+  extra: Partial<React.ComponentProps<typeof PilotoCajon>> = {},
 ) {
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
   act(() => {
     root.render(
-      <PilotoCajon apertura={apertura} onClose={() => {}} onAbrirItem={onAbrirItem} />,
+      <PilotoCajon apertura={apertura} onClose={() => {}} onAbrirItem={onAbrirItem} {...extra} />,
     )
   })
 }
@@ -123,6 +129,8 @@ beforeEach(() => {
   estado.notAvailable = false
   estado.rol = 'OWNER'
   estado.accionesCorridas = []
+  estado.respuesta = { ok: true }
+  estado.toasts = []
   usePilotoDetalleMock.mockClear()
 })
 
@@ -317,5 +325,159 @@ describe('PilotoCajon — una carta se lee acá mismo', () => {
     render({ tipo: 'item', id: 'esc:e-1' })
     expect(texto()).toContain('Ver la llamada')
     expect(document.body.querySelector('[data-testid="piloto-cajon-leer-pdf"]')).toBeNull()
+  })
+})
+
+/*
+ * Tanda 2 de errores (02-10-2026): una acción del cajón que no salía decía
+ * «No se pudo: 400» en un toast, y lo que el micro decía de un dato del
+ * formulario (un 400 con `campos`) nunca llegaba al campo.
+ */
+describe('PilotoCajon — una acción que no sale', () => {
+  const CON_MOTIVO = {
+    ...DETALLE,
+    acciones: [
+      {
+        label: 'Rechazar la carta',
+        method: 'POST' as const,
+        path: '/api/agency/a/cobranza/cartas/c-1/rechazar',
+        campos: [{ id: 'motivo', label: 'Motivo', tipo: 'texto' as const, requerido: true, maxLargo: 500 }],
+      },
+    ],
+  }
+
+  async function escribirYEnviar(texto: string) {
+    const area = document.querySelector('#accion-motivo') as HTMLTextAreaElement
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!
+    await act(async () => {
+      setter.call(area, texto)
+      area.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    const form = document.querySelector('[data-testid="piloto-cajon-formulario"]') as HTMLFormElement
+    await act(async () => {
+      form.requestSubmit()
+    })
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    return area
+  }
+
+  it('🔴 un 400 con `campos` pinta el error debajo de SU campo, le da el foco y no lo manda al toast', async () => {
+    estado.detalle = CON_MOTIVO
+    estado.respuesta = {
+      ok: false,
+      error: '400',
+      fallo: await falloDelMicro({
+        status: 400,
+        json: async () => ({
+          statusCode: 400,
+          code: 'DATOS_INVALIDOS',
+          message: ['El motivo debe explicar por qué se rechaza: escribe al menos 10 caracteres.'],
+          campos: [
+            {
+              campo: 'motivo',
+              regla: 'longitud_minima',
+              mensaje: 'El motivo debe explicar por qué se rechaza: escribe al menos 10 caracteres.',
+            },
+          ],
+        }),
+      }),
+    }
+    render({ tipo: 'item', id: 'carta:c-1', accion: 'Rechazar la carta' })
+    const area = await escribirYEnviar('No va')
+
+    expect(estado.accionesCorridas).toHaveLength(1)
+    const error = document.getElementById('accion-motivo-error')
+    expect(error?.textContent).toContain('escribe al menos 10 caracteres')
+    expect(area.getAttribute('aria-invalid')).toBe('true')
+    expect(area.getAttribute('aria-describedby')).toBe('accion-motivo-error')
+    expect(document.activeElement).toBe(area)
+    expect(estado.toasts).toEqual([])
+    // El formulario sigue abierto con lo escrito.
+    expect(area.value).toBe('No va')
+  })
+
+  it('un 5xx dice «de nuestro lado» con la referencia, en el toast', async () => {
+    estado.detalle = CON_MOTIVO
+    estado.respuesta = {
+      ok: false,
+      error: 'Internal Server Error',
+      fallo: await falloDelMicro({
+        status: 500,
+        json: async () => ({ error: 'Internal Server Error', requestId: '9f8e7d6c-1111' }),
+      }),
+    }
+    render({ tipo: 'item', id: 'carta:c-1', accion: 'Rechazar la carta' })
+    await escribirYEnviar('No corresponde a este contrato.')
+
+    expect(estado.toasts).toHaveLength(1)
+    expect(estado.toasts[0]).toContain('No pudimos rechazar la carta: algo falló de nuestro lado')
+    expect(estado.toasts[0]).toContain('9f8e7d6c')
+    expect(estado.toasts[0]).not.toMatch(/conexi|500/i)
+    expect(document.getElementById('accion-motivo-error')).toBeNull()
+  })
+
+  it('si el pedido ni salió (status 0) habla de la conexión', async () => {
+    estado.detalle = DETALLE
+    const red = new TypeError('Failed to fetch')
+    estado.respuesta = { ok: false, error: red.message, fallo: red }
+    render({ tipo: 'item', id: 'esc:e-1' })
+    await act(async () => {
+      ;(document.querySelector('[data-testid="piloto-cajon-accion-0"]') as HTMLButtonElement).click()
+    })
+    expect(estado.toasts[0]).toMatch(/conexión/)
+  })
+})
+
+/*
+ * Fase 1 del director (28-09-2026): el cajón muestra el por qué, la evidencia,
+ * la meta y lo descartado cuando la fila es del director, y SIEMPRE el motivo
+ * de la perilla.
+ */
+describe('PilotoCajon — el por qué del director', () => {
+  const DIRECTOR = {
+    prioridad: 80,
+    porQue: 'Vence en 88 días y Vinci lo marca con riesgo alto.',
+    evidencia: [
+      { tipo: 'deteccion', ref: 'renovaciones:contrato:c-1', texto: 'Renovación P-7: faltan 88 días', enlace: '/panel/inmobiliaria/contratos/c-1' },
+      { tipo: 'metrica', ref: 'recaudo', texto: 'Recaudo 84 %', enlace: null },
+    ],
+    meta: { id: 'm-1', metrica: 'renovacion', nombre: 'Renovación' },
+    alternativaDescartada: 'Esperar a la carta de incremento.',
+  }
+  const MOTIVO = 'Fase 1 del director: toda orden del director espera tu clic.'
+
+  it('con lo que manda el micro en el detalle: por qué, evidencia enlazada, meta, lo descartado y el motivo', () => {
+    estado.detalle = { ...DETALLE, id: 'acc:a-1', director: DIRECTOR, motivo: MOTIVO }
+    render({ tipo: 'item', id: 'acc:a-1' })
+    const seccion = document.body.querySelector('[data-testid="piloto-cajon-director"]')
+    expect(seccion?.textContent).toContain('Vence en 88 días y Vinci lo marca con riesgo alto.')
+    expect(seccion?.textContent).toContain('inmobiliaria.piloto.director.porQue.meta')
+    expect(seccion?.textContent).toContain('inmobiliaria.piloto.director.porQue.descarto')
+    const enlace = document.body.querySelector('[data-testid="piloto-cajon-evidencia"] a')
+    expect(enlace?.getAttribute('href')).toBe('/panel/inmobiliaria/contratos/c-1')
+    expect(document.body.querySelector('[data-testid="piloto-cajon-evidencia"]')?.textContent).toContain('Recaudo 84 %')
+    expect(document.body.querySelector('[data-testid="piloto-cajon-motivo"]')?.textContent).toContain(MOTIVO)
+  })
+
+  it('si el detalle no lo trae, usa el respaldo de la fila (la Bandeja o la tarjeta «Hoy»)', () => {
+    estado.detalle = { ...DETALLE, id: 'acc:a-1' }
+    render({ tipo: 'item', id: 'acc:a-1' }, () => {}, { porQueDeRespaldo: { director: DIRECTOR, motivo: MOTIVO } })
+    expect(document.body.querySelector('[data-testid="piloto-cajon-director"]')?.textContent).toContain('riesgo alto')
+    expect(document.body.querySelector('[data-testid="piloto-cajon-motivo"]')?.textContent).toContain(MOTIVO)
+  })
+
+  it('🔴 el motivo va SIEMPRE que venga, aunque la fila no sea del director', () => {
+    estado.detalle = { ...DETALLE, id: 'acc:a-2', motivo: 'Copiloto: espera tu clic.' }
+    render({ tipo: 'item', id: 'acc:a-2' })
+    expect(document.body.querySelector('[data-testid="piloto-cajon-director"]')).toBeNull()
+    expect(document.body.querySelector('[data-testid="piloto-cajon-motivo"]')?.textContent).toContain('Copiloto: espera tu clic.')
+  })
+
+  it('sin director ni motivo no pinta la sección', () => {
+    estado.detalle = DETALLE
+    render({ tipo: 'item', id: 'esc:e-1' })
+    expect(document.body.querySelector('[data-testid^="piloto-cajon-porque-"]')).toBeNull()
   })
 })

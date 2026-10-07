@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useId } from 'react';
+import Link from 'next/link';
 import {
   User,
   Buildings,
@@ -12,14 +12,15 @@ import {
   Bank,
   Wallet,
   Check,
-  Warning,
   Info,
+  ArrowRight,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Spinner } from '@/components/ui/spinner';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { Chip } from '@leasefy/cadence';
 import {
   Select,
@@ -39,12 +40,14 @@ import {
 } from '@/lib/types/payment-accounts';
 import { revisarDocumentoDelTitular, titularInicial } from '@/lib/propietarios/titular-de-la-cuenta';
 import { sinLaCuenta } from '@/lib/propietarios/sin-la-cuenta';
+import { leerCorreoObligatorio } from '@/lib/terceros/correo-obligatorio';
 import {
   TitularDeLaCuentaCampos,
   erroresDelTitular,
   type ErroresDelTitular,
   type ValorDelTitular,
 } from './TitularDeLaCuentaCampos';
+import { errorDelDigitoDeVerificacion } from '@/lib/inquilinos/documento-con-dv';
 
 /** Un `SelectItem` no puede valer '' (Radix lo rechaza): esta es la opción que vacía el departamento. */
 const SIN_DEPARTAMENTO = '__sin_departamento__';
@@ -71,6 +74,94 @@ interface PropietarioFormProps {
    * through the existing error UI instead of a second error path.
    */
   serverError?: { field: keyof PropietarioFormData; message: string } | null;
+  /**
+   * TODOS los errores por campo del último guardado (02-10-2026, sistema de
+   * errores): un 400 del back trae `campos[]` y cada uno va bajo SU campo
+   * (`errorAlGuardarPropietario(e).porCampo`). El primero recibe el foco.
+   */
+  serverErrors?: Partial<Record<keyof PropietarioFormData, string>> | null;
+  /**
+   * Dentro de un CAJÓN (Nico, 03-10: «la experiencia de nuevo propietario
+   * debería ser en un drawer»): el formulario no pinta su fila de botones; los
+   * pone el pie fijo del cajón con `form={idDelFormulario}`, así «Cancelar /
+   * Crear propietario» se ven siempre enteros mientras el cuerpo se desplaza
+   * (P-12). Sin esto, el formulario de siempre con sus botones al final.
+   */
+  accionesAfuera?: boolean;
+  /** El `id` del `<form>`, para el botón del pie que vive afuera. */
+  idDelFormulario?: string;
+  /**
+   * P-14: «Cambiar cuenta» en «Editar». La cuenta que ya existe no se edita
+   * acá: el cambio pasa por el flujo controlado de la ficha (certificación,
+   * confirmación del propietario, aprobación). Quien monta el formulario DENTRO
+   * de la ficha lo abre ahí mismo; sin esto, el enlace lleva a la ficha con
+   * `?cambiarCuenta=1`.
+   */
+  onCambiarCuenta?: () => void;
+}
+
+/**
+ * PR-02 (QA de Propietarios, 03-10): la política «correo obligatorio» de la
+ * inmobiliaria (`exige_correo_del_tercero`), leída de donde la lee el resto
+ * del front (`terceros-sin-correo`, con `cobros:view`), igual que en «Nuevo
+ * inquilino». `null` = no se sabe (sin permiso para leerla, o falló): el
+ * correo queda opcional y decide el back (su `FALTA_CORREO_DEL_TERCERO` va
+ * bajo Correo).
+ */
+function useCorreoObligatorio(activo: boolean): boolean | null {
+  const permisos = usePermissionsContextSafe();
+  const puedeLeer = permisos ? permisos.canAccess('cobros', 'view') : false;
+  const [exigido, setExigido] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!activo) return;
+    let vivo = true;
+    // SEGUIMIENTO-FRONT: con `cobros:view`, `terceros-sin-correo` como siempre;
+    // sin él (el asesor), `exigeCorreoDelTercero` de la agencia.
+    void leerCorreoObligatorio('PROPIETARIO', puedeLeer).then((r) => {
+      if (vivo) setExigido(r);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [activo, puedeLeer]);
+  return activo ? exigido : null;
+}
+
+/**
+ * P-11: el orden en que se VEN los campos, para llevar el foco al primero que
+ * tiene error. El titular de la cuenta va antes que el banco (Nico, 22-09).
+ */
+const CAMPOS_DE_ARRIBA: (keyof PropietarioFormData)[] = [
+  'documentType',
+  'documentNumber',
+  'name',
+  'email',
+  'phone',
+  'address',
+  'city',
+  'department',
+];
+const CAMPOS_DE_LA_CUENTA: (keyof PropietarioFormData)[] = ['bankCode', 'accountType', 'accountNumber'];
+const CAMPOS_DEL_TITULAR: { campo: 'tipo' | 'numero' | 'nombre'; id: string }[] = [
+  { campo: 'tipo', id: 'titular-tipo' },
+  { campo: 'numero', id: 'titular-numero' },
+  { campo: 'nombre', id: 'titular-nombre' },
+];
+
+/**
+ * Lleva a la persona al campo: foco y, con el cuerpo del cajón o la página
+ * desplazados, lo trae a la vista (al centro, para que se lea su error). Con
+ * movimiento reducido, sin animar el desplazamiento.
+ */
+function llevarAlCampo(id: string) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  const reducido =
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView?.({ block: 'center', behavior: reducido ? 'auto' : 'smooth' });
 }
 
 const DOCUMENT_TYPE_VALUES: { value: DocumentType; hint: string }[] = [
@@ -101,14 +192,21 @@ const ACCOUNT_TYPE_LABEL_KEYS: Record<AccountType, string> = {
 /**
  * InputWrapper - Reusable wrapper for form fields
  * Defined outside of PropietarioForm to prevent re-creation on each render
+ *
+ * El error va con `ErrorDelCampo` (02-10-2026): entra suave y, si el campo
+ * tiene ayuda, la reemplaza con un cruce sin que salte el alto. `id` es el del
+ * control: la etiqueta lo nombra y el error es `${id}-error`, el mismo que el
+ * control declara en `aria-describedby`.
  */
 function InputWrapper({
+  id,
   label,
   required,
   error,
   hint,
   children,
 }: {
+  id?: string;
   label: string;
   required?: boolean;
   error?: string;
@@ -117,16 +215,13 @@ function InputWrapper({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-fg dark:text-fg-subtle">
+      <label htmlFor={id} className="block text-sm font-medium text-fg dark:text-fg-subtle">
         {label}
         {required && <span className="text-danger ml-0.5">*</span>}
       </label>
       {children}
-      {error ? (
-        <p className="text-xs text-danger flex items-center gap-1">
-          <Warning className="w-3 h-3" />
-          {error}
-        </p>
+      {id ? (
+        <ErrorDelCampo id={`${id}-error`} mensaje={error} pista={hint} className="mt-0" />
       ) : hint ? (
         <p className="text-xs text-fg-subtle">{hint}</p>
       ) : null}
@@ -145,8 +240,15 @@ export function PropietarioForm({
   onCancel,
   mode,
   serverError,
+  serverErrors,
+  accionesAfuera = false,
+  idDelFormulario,
+  onCambiarCuenta,
 }: PropietarioFormProps) {
   const { t } = useI18n();
+  /** Prefijo de los ids de los controles: único aunque haya dos formularios. */
+  const uid = useId();
+  const idDe = (campo: keyof PropietarioFormData) => `propietario${uid}${campo}`;
   /*
    * 🔴 23-09 (auditoría de seguridad): el correo de un propietario es por
    * donde confirma los cambios de su cuenta bancaria y con el que entra a su
@@ -183,7 +285,9 @@ export function PropietarioForm({
       name: initialData?.name ?? '',
       email: initialData?.email ?? '',
       phone: initialData?.phone ?? '',
-      documentType: initialData?.documentType ?? 'CC',
+      // T-0128: una ficha creada por la migración puede no tener tipo. No se
+      // le inventa uno («CC» por defecto) — se elige al completarla.
+      documentType: initialData?.documentType ?? (mode === 'create' ? 'CC' : ''),
       documentNumber: initialData?.documentNumber ?? '',
       address: initialData?.address ?? '',
       city: initialData?.city ?? '',
@@ -209,12 +313,32 @@ export function PropietarioForm({
       : [...COLOMBIAN_DEPARTMENTS];
 
   // Surface a persist error that happened outside this form (the wizard's
-  // "Siguiente" 409) through the same error UI as a local validation error.
+  // "Siguiente" 409, el 400 con `campos` del back) through the same error UI
+  // as a local validation error. El primero recibe el foco.
   useEffect(() => {
-    if (!serverError) return;
-    setErrors((prev) => ({ ...prev, [serverError.field]: serverError.message }));
-    setTouched((prev) => ({ ...prev, [serverError.field]: true }));
-  }, [serverError]);
+    const todos: Partial<Record<keyof PropietarioFormData, string>> = {
+      ...(serverError ? { [serverError.field]: serverError.message } : {}),
+      ...(serverErrors ?? {}),
+    };
+    const campos = Object.keys(todos) as (keyof PropietarioFormData)[];
+    if (campos.length === 0) return;
+    setErrors((prev) => ({ ...prev, ...(todos as Record<string, string>) }));
+    setTouched((prev) => ({ ...prev, ...Object.fromEntries(campos.map((c) => [c, true])) }));
+    const primero = serverError?.field ?? campos[0];
+    llevarAlCampo(idDe(primero));
+    // `idDe` depende sólo de `uid`, que no cambia.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverError, serverErrors]);
+
+  /** `id`, `aria-invalid` y `aria-describedby` de un control con su error. */
+  const controlDe = (campo: keyof PropietarioFormData) => {
+    const conError = Boolean(touched[campo] && errors[campo]);
+    return {
+      id: idDe(campo),
+      'aria-invalid': conError || undefined,
+      'aria-describedby': `${idDe(campo)}-error`,
+    } as const;
+  };
 
   /*
    * 🔴 «¿A quién pertenece la cuenta?» (22-09). La respuesta arranca en lo que
@@ -248,6 +372,41 @@ export function PropietarioForm({
    */
   const exigeTitular = mode === 'create' || titularTocado || !initialData?.bankAccount.accountNumber;
 
+  /*
+   * 🔴 P-14 / PR-03 (QA de Propietarios, 03-10): en «Editar», la cuenta que YA
+   * existe es de sólo lectura y enmascarada. Antes se podía cambiar banco, tipo
+   * y número, y sólo al guardar el back respondía 409
+   * `CAMBIO_DE_CUENTA_CONTROLADO`: la pantalla prometía algo que no deja hacer.
+   * Peor: guardar SIN tocarla también mandaba la cuenta, con el banco y el tipo
+   * que `normalizePropietario` completa (un banco fuera del catálogo queda en
+   * blanco, un tipo ausente en «Ahorros»), y un migrado recibía el 409 por
+   * cambiar un teléfono. Ahora no viaja: el cambio va por «Cambiar cuenta»
+   * (certificación + confirmación del propietario). Sin cuenta todavía, la
+   * PRIMERA sí se registra aquí (así lo dice la ficha).
+   */
+  const cuentaRegistrada =
+    mode === 'edit' &&
+    !sinDatosBancarios &&
+    !initialFormData &&
+    Boolean(initialData?.bankAccount.accountNumber?.trim() || initialData?.bankAccount.ultimos4);
+  /*
+   * P-13 (Nico, 03-10: la cuenta es OPCIONAL al crear): el back no la exige y
+   * la migración crea propietarios sin ella. Sin cuenta, el propietario queda
+   * con «Datos pendientes: cuenta bancaria». Pero apenas se llena UNO de sus
+   * datos se piden los tres. El tipo cuenta sólo si la persona lo eligió: al
+   * editar una ficha sin cuenta llega «Ahorros» por defecto, y eso no es
+   * empezar una cuenta.
+   */
+  const cuentaEmpezada =
+    !sinDatosBancarios &&
+    !cuentaRegistrada &&
+    (Boolean(formData.bankCode) ||
+      Boolean(formData.accountNumber.trim()) ||
+      Boolean(touched.accountType && formData.accountType) ||
+      titular.titular === 'TERCERO');
+  /** PR-02: con la política de la inmobiliaria prendida, el correo es obligatorio al crear. */
+  const correoObligatorio = useCorreoObligatorio(mode === 'create') === true;
+
   const isCompany = formData.documentType === 'NIT';
   const selectedBank = COLOMBIAN_BANKS.find((b) => b.code === formData.bankCode);
 
@@ -265,6 +424,28 @@ export function PropietarioForm({
     }
   };
 
+  /**
+   * P-11: el primer campo con error, en el orden en que se ven, recibe el foco
+   * y se trae a la vista. Antes el foco se quedaba en «Crear propietario» y la
+   * vista abajo: sólo se veían los errores del banco y el primero («El
+   * documento es requerido») quedaba fuera.
+   */
+  const llevarAlPrimerError = (
+    errores: Record<string, string>,
+    deTitular: ErroresDelTitular,
+  ) => {
+    for (const campo of CAMPOS_DE_ARRIBA) {
+      if (errores[campo]) return llevarAlCampo(idDe(campo));
+    }
+    for (const { campo, id } of CAMPOS_DEL_TITULAR) {
+      if (deTitular[campo]) return llevarAlCampo(id);
+    }
+    for (const campo of CAMPOS_DE_LA_CUENTA) {
+      if (errores[campo]) return llevarAlCampo(idDe(campo));
+    }
+    if (errores.notes) llevarAlCampo(idDe('notes'));
+  };
+
   // Validation
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -276,34 +457,51 @@ export function PropietarioForm({
       newErrors.name = t('inmobiliaria.propietario.form.errNameMin');
     }
 
+    /*
+     * PR-02 (QA de Propietarios, 03-10): las mismas reglas que el DTO del back
+     * (`create-propietario.dto.ts`: correo y teléfono opcionales; el correo,
+     * si viene, con forma de correo). El correo es obligatorio sólo con la
+     * política «correo obligatorio» de la inmobiliaria prendida. El teléfono
+     * es texto libre, como lo guarda el back (la cartera real trae «3103640479
+     * / NELSON HERRERA - ESPOSO 3217834480»).
+     */
     if (!formData.email.trim()) {
-      newErrors.email = t('inmobiliaria.propietario.form.errEmailRequired');
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      if (correoObligatorio) newErrors.email = t('inmobiliaria.propietario.form.errEmailRequired');
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
       newErrors.email = t('inmobiliaria.propietario.form.errEmailInvalid');
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = t('inmobiliaria.propietario.form.errPhoneRequired');
-    } else if (!/^\+?[0-9\s-]{10,}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = t('inmobiliaria.propietario.form.errPhoneInvalid');
+    if (!formData.documentType) {
+      newErrors.documentType = 'Elige el tipo de documento';
     }
-
     if (!formData.documentNumber.trim()) {
       newErrors.documentNumber = t('inmobiliaria.propietario.form.errDocRequired');
     } else {
       // Document-specific validation
-      if (formData.documentType === 'CC' && !/^[0-9.]{6,12}$/.test(formData.documentNumber.replace(/\./g, ''))) {
+      // QA-PROP-95 (A-38): una CC tiene de 3 a 10 dígitos (documentos-colombia…;
+      // la misma regla del back, `reglaDelDocumento`). Antes se exigían 6-12.
+      if (formData.documentType === 'CC' && !/^[0-9]{3,10}$/.test(formData.documentNumber.replace(/\./g, '').trim())) {
         newErrors.documentNumber = t('inmobiliaria.propietario.form.errCCInvalid');
       }
       if (formData.documentType === 'NIT' && !/^[0-9.-]{9,15}$/.test(formData.documentNumber)) {
         newErrors.documentNumber = t('inmobiliaria.propietario.form.errNITInvalid');
       }
+      // P-06 (QA-PROP): un NIT con un dígito de verificación que no cuadra se
+      // dice aquí, bajo el campo (el back también lo rechaza: 400
+      // `DIGITO_DE_VERIFICACION_NO_CUADRA`). Antes se guardaba en silencio.
+      if (formData.documentType === 'NIT' && !newErrors.documentNumber) {
+        const dvQueNoCuadra = errorDelDigitoDeVerificacion(formData.documentNumber, 'NIT');
+        if (dvQueNoCuadra) newErrors.documentNumber = dvQueNoCuadra;
+      }
     }
 
-    // Bank account validation (sólo si quien llena el formulario ve la cuenta)
-    if (sinDatosBancarios) {
+    // Bank account validation: sólo si quien llena el formulario ve la cuenta,
+    // la cuenta no está ya registrada (P-14: sólo lectura) y se empezó a llenar
+    // (P-13: es opcional, pero a medias no se guarda).
+    if (sinDatosBancarios || cuentaRegistrada || !cuentaEmpezada) {
       setErroresTitular({});
       setErrors(newErrors);
+      if (Object.keys(newErrors).length > 0) llevarAlPrimerError(newErrors, {});
       return Object.keys(newErrors).length === 0;
     }
     if (!formData.bankCode) {
@@ -312,10 +510,10 @@ export function PropietarioForm({
     if (!formData.accountType) {
       newErrors.accountType = t('inmobiliaria.propietario.form.errAccountTypeRequired');
     }
+    // PR-02: el back no le pone largo a la cuenta (hay bancos con 9 dígitos y
+    // billeteras con 10); el campo ya sólo deja escribir dígitos.
     if (!formData.accountNumber.trim()) {
       newErrors.accountNumber = t('inmobiliaria.propietario.form.errAccountNumRequired');
-    } else if (!/^[0-9]{10,20}$/.test(formData.accountNumber.replace(/[.\s-]/g, ''))) {
-      newErrors.accountNumber = t('inmobiliaria.propietario.form.errAccountNumInvalid');
     }
     const deTitular = exigeTitular
       ? erroresDelTitular(t, titular, (tipo, numero) =>
@@ -325,7 +523,9 @@ export function PropietarioForm({
     setErroresTitular(deTitular);
 
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0 && Object.keys(deTitular).length === 0;
+    const valido = Object.keys(newErrors).length === 0 && Object.keys(deTitular).length === 0;
+    if (!valido) llevarAlPrimerError(newErrors, deTitular);
+    return valido;
   };
 
   /**
@@ -334,7 +534,10 @@ export function PropietarioForm({
    * exigirla (editar sin tocarla), el titular tal como se cargó.
    */
   const conElTitular = (): PropietarioFormData => {
-    if (sinDatosBancarios) return sinLaCuenta(formData);
+    // P-14 / PR-03: la cuenta que ya existe no viaja (no se cambia acá), y una
+    // que nadie empezó tampoco: guardar sin cuenta no manda «Ahorros» ni un
+    // número vacío (P-13).
+    if (sinDatosBancarios || cuentaRegistrada || !cuentaEmpezada) return sinLaCuenta(formData);
     if (!exigeTitular) return formData;
     const tercero = titular.titular === 'TERCERO';
     return {
@@ -370,7 +573,14 @@ export function PropietarioForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form
+      id={idDelFormulario}
+      onSubmit={handleSubmit}
+      // QA-PROP-95 (A-38): la validación es la de la casa (frase bajo su campo y
+      // foco al primero), no la burbuja del navegador en inglés.
+      noValidate
+      className="space-y-6"
+    >
       {/* Personal Information */}
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-fg">
@@ -386,13 +596,18 @@ export function PropietarioForm({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Document Type */}
-          <InputWrapper label={t('inmobiliaria.propietario.form.documentType')} required>
+          <InputWrapper
+            id={idDe('documentType')}
+            label={t('inmobiliaria.propietario.form.documentType')}
+            required
+            error={touched.documentType ? errors.documentType : undefined}
+          >
             <Select
               value={formData.documentType}
               onValueChange={(value) => updateField('documentType', value as DocumentType)}
             >
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger {...controlDe('documentType')} aria-required="true">
+                <SelectValue placeholder="Elige el tipo" />
               </SelectTrigger>
               <SelectContent>
                 {DOCUMENT_TYPE_VALUES.map((type) => (
@@ -406,6 +621,7 @@ export function PropietarioForm({
 
           {/* Document Number */}
           <InputWrapper
+            id={idDe('documentNumber')}
             label={formData.documentType === 'NIT' ? 'NIT' : t('inmobiliaria.propietario.form.documentNumber')}
             required
             error={touched.documentNumber ? errors.documentNumber : undefined}
@@ -414,6 +630,8 @@ export function PropietarioForm({
             <div className="relative">
               <IdentificationCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
               <Input
+                {...controlDe('documentNumber')}
+                aria-required="true"
                 type="text"
                 value={formData.documentNumber}
                 onChange={(e) => updateField('documentNumber', e.target.value)}
@@ -430,6 +648,7 @@ export function PropietarioForm({
 
         {/* Name */}
         <InputWrapper
+          id={idDe('name')}
           label={isCompany ? t('inmobiliaria.propietario.form.businessName') : t('inmobiliaria.propietario.form.fullName')}
           required
           error={touched.name ? errors.name : undefined}
@@ -441,6 +660,8 @@ export function PropietarioForm({
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle" />
             )}
             <Input
+              {...controlDe('name')}
+              aria-required="true"
               type="text"
               value={formData.name}
               onChange={(e) => updateField('name', e.target.value)}
@@ -454,14 +675,24 @@ export function PropietarioForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Email */}
           <InputWrapper
-            label="Email"
-            required
+            id={idDe('email')}
+            label="Correo"
+            // PR-02: obligatorio sólo con la política de la inmobiliaria, y entonces se dice.
+            required={correoObligatorio}
             error={touched.email ? errors.email : undefined}
-            hint={correoBloqueado ? t('inmobiliaria.propietario.form.emailSoloAdministrador') : undefined}
+            hint={
+              correoBloqueado
+                ? t('inmobiliaria.propietario.form.emailSoloAdministrador')
+                : correoObligatorio
+                  ? 'Tu inmobiliaria pide el correo de cada propietario.'
+                  : t('inmobiliaria.propietario.form.optional')
+            }
           >
             <div className="relative">
               <Envelope className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
               <Input
+                {...controlDe('email')}
+                aria-required={correoObligatorio || undefined}
                 type="email"
                 disabled={correoBloqueado}
                 data-testid="correo-del-propietario"
@@ -475,14 +706,17 @@ export function PropietarioForm({
           </InputWrapper>
 
           {/* Phone */}
+          {/* PR-02 / P-13: opcional, como en el back. */}
           <InputWrapper
+            id={idDe('phone')}
             label={t('inmobiliaria.propietario.form.phone')}
-            required
+            hint={t('inmobiliaria.propietario.form.optional')}
             error={touched.phone ? errors.phone : undefined}
           >
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
               <Input
+                {...controlDe('phone')}
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => updateField('phone', e.target.value)}
@@ -495,10 +729,16 @@ export function PropietarioForm({
         </div>
 
         {/* Address */}
-        <InputWrapper label={t('inmobiliaria.propietario.form.address')} hint={t('inmobiliaria.propietario.form.optional')}>
+        <InputWrapper
+          id={idDe('address')}
+          label={t('inmobiliaria.propietario.form.address')}
+          hint={t('inmobiliaria.propietario.form.optional')}
+          error={touched.address ? errors.address : undefined}
+        >
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-fg-subtle z-10" />
             <Input
+              {...controlDe('address')}
               type="text"
               value={formData.address}
               onChange={(e) => updateField('address', e.target.value)}
@@ -510,8 +750,14 @@ export function PropietarioForm({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* City */}
-          <InputWrapper label={t('inmobiliaria.propietario.form.city')} hint={t('inmobiliaria.propietario.form.optional')}>
+          <InputWrapper
+            id={idDe('city')}
+            label={t('inmobiliaria.propietario.form.city')}
+            hint={t('inmobiliaria.propietario.form.optional')}
+            error={touched.city ? errors.city : undefined}
+          >
             <Input
+              {...controlDe('city')}
               type="text"
               value={formData.city}
               onChange={(e) => updateField('city', e.target.value)}
@@ -520,12 +766,17 @@ export function PropietarioForm({
           </InputWrapper>
 
           {/* Department — la misma lista que el wizard de consignación (COLOMBIAN_DEPARTMENTS). */}
-          <InputWrapper label={t('inmobiliaria.propietario.form.department')} hint={t('inmobiliaria.propietario.form.optional')}>
+          <InputWrapper
+            id={idDe('department')}
+            label={t('inmobiliaria.propietario.form.department')}
+            hint={t('inmobiliaria.propietario.form.optional')}
+            error={touched.department ? errors.department : undefined}
+          >
             <Select
               value={formData.department || undefined}
               onValueChange={(value) => updateField('department', value === SIN_DEPARTAMENTO ? '' : value)}
             >
-              <SelectTrigger data-testid="propietario-departamento">
+              <SelectTrigger {...controlDe('department')} data-testid="propietario-departamento">
                 <SelectValue placeholder={t('inmobiliaria.propietario.form.selectDepartment')} />
               </SelectTrigger>
               <SelectContent>
@@ -553,6 +804,8 @@ export function PropietarioForm({
           </div>
           <p className="text-sm text-fg-muted">{t('inmobiliaria.propietario.form.bankDataHidden')}</p>
         </div>
+      ) : cuentaRegistrada && initialData ? (
+        <CuentaRegistrada propietario={initialData} onCambiarCuenta={onCambiarCuenta} />
       ) : (
       <div className="space-y-4 pt-4 border-t border-border-faint dark:border-border-strong">
         <div className="flex items-center gap-2 text-fg">
@@ -569,6 +822,13 @@ export function PropietarioForm({
           </div>
         </div>
 
+        {/* P-13: la cuenta es opcional para crearlo; la primera también se registra al editar. */}
+        <p className="text-sm text-fg-muted" data-testid="cuenta-opcional">
+          {mode === 'create'
+            ? t('inmobiliaria.propietario.form.bankOptional')
+            : t('inmobiliaria.propietario.form.bankFirstTime')}
+        </p>
+
         {/* Primero de quién es la cuenta; después, la cuenta (Nico, 22-09). */}
         <TitularDeLaCuentaCampos
           valor={titular}
@@ -584,8 +844,9 @@ export function PropietarioForm({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Bank */}
           <InputWrapper
+            id={idDe('bankCode')}
             label={t('inmobiliaria.propietario.form.bank')}
-            required
+            required={cuentaEmpezada}
             error={touched.bankCode ? errors.bankCode : undefined}
           >
             <Select
@@ -593,6 +854,8 @@ export function PropietarioForm({
               onValueChange={(value) => updateField('bankCode', value as BankCode)}
             >
               <SelectTrigger
+                {...controlDe('bankCode')}
+                aria-required={cuentaEmpezada || undefined}
                 className={cn(
                   'gap-2',
                   touched.bankCode && errors.bankCode && 'border-danger/30'
@@ -613,11 +876,19 @@ export function PropietarioForm({
 
           {/* Account Type */}
           <InputWrapper
+            id={idDe('accountType')}
             label={t('inmobiliaria.propietario.form.accountType')}
-            required
+            required={cuentaEmpezada}
             error={touched.accountType ? errors.accountType : undefined}
           >
-            <div className="flex gap-3">
+            <div
+              id={idDe('accountType')}
+              tabIndex={-1}
+              role="group"
+              aria-label={t('inmobiliaria.propietario.form.accountType')}
+              aria-describedby={`${idDe('accountType')}-error`}
+              className="flex gap-3 outline-none"
+            >
               {ACCOUNT_TYPE_VALUES.map((accType) => (
                 <Chip
                   key={accType}
@@ -634,12 +905,15 @@ export function PropietarioForm({
 
         {/* Account Number */}
         <InputWrapper
+          id={idDe('accountNumber')}
           label={t('inmobiliaria.propietario.form.accountNumber')}
-          required
+          required={cuentaEmpezada}
           error={touched.accountNumber ? errors.accountNumber : undefined}
           hint={t('inmobiliaria.propietario.form.hintDigitsOnly')}
         >
           <Input
+            {...controlDe('accountNumber')}
+            aria-required={cuentaEmpezada || undefined}
             type="text"
             value={formData.accountNumber}
             onChange={(e) => updateField('accountNumber', e.target.value.replace(/[^0-9]/g, ''))}
@@ -656,8 +930,14 @@ export function PropietarioForm({
 
       {/* Notes */}
       <div className="space-y-4 pt-4 border-t border-border-faint dark:border-border-strong">
-        <InputWrapper label={t('inmobiliaria.propietario.form.internalNotes')} hint={t('inmobiliaria.propietario.form.hintTeamOnly')}>
+        <InputWrapper
+          id={idDe('notes')}
+          label={t('inmobiliaria.propietario.form.internalNotes')}
+          hint={t('inmobiliaria.propietario.form.hintTeamOnly')}
+          error={touched.notes ? errors.notes : undefined}
+        >
           <Textarea
+            {...controlDe('notes')}
             value={formData.notes}
             onChange={(e) => updateField('notes', e.target.value)}
             placeholder="Agregar notas sobre este propietario..."
@@ -667,7 +947,8 @@ export function PropietarioForm({
         </InputWrapper>
       </div>
 
-      {/* Actions */}
+      {/* Actions — en un cajón las pone su pie fijo (`accionesAfuera`). */}
+      {!accionesAfuera && (
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-border-faint dark:border-border-strong">
         <Button
           type="button"
@@ -697,7 +978,69 @@ export function PropietarioForm({
           )}
         </Button>
       </div>
+      )}
     </form>
+  );
+}
+
+/**
+ * P-14: la cuenta que ya está registrada, de SÓLO LECTURA y enmascarada
+ * (••••8912, como en la ficha), con el camino al cambio controlado.
+ */
+function CuentaRegistrada({
+  propietario,
+  onCambiarCuenta,
+}: {
+  propietario: Propietario;
+  onCambiarCuenta?: () => void;
+}) {
+  const { t } = useI18n();
+  const cuenta = propietario.bankAccount;
+  const ultimos4 = cuenta.ultimos4 || cuenta.accountNumber.replace(/\D/g, '').slice(-4);
+  const banco = COLOMBIAN_BANKS.find((b) => b.code === cuenta.bank)?.name ?? cuenta.bankName ?? null;
+  const titular = cuenta.accountHolder?.trim();
+  // Un tipo que no está en el catálogo (un dato viejo, «SAVINGS») no se nombra: no se inventa.
+  const claveDelTipo = ACCOUNT_TYPE_LABEL_KEYS[cuenta.accountType as AccountType] as string | undefined;
+  const tipo = claveDelTipo ? t(claveDelTipo) : null;
+  const href = `/panel/inmobiliaria/propietarios/${propietario.id}?cambiarCuenta=1`;
+  return (
+    <div
+      className="space-y-3 pt-4 border-t border-border-faint dark:border-border-strong"
+      data-testid="cuenta-de-solo-lectura"
+    >
+      <div className="flex items-center gap-2 text-fg">
+        <Bank className="w-5 h-5 text-success" />
+        <h3 className="font-semibold">{t('inmobiliaria.propietario.form.bankDataTitle')}</h3>
+      </div>
+      <div className="rounded-lg border border-border bg-surface-muted p-4 space-y-1.5">
+        <p className="text-xs font-medium uppercase tracking-wide text-fg-muted">
+          {t('inmobiliaria.propietario.form.cuentaRegistrada')}
+        </p>
+        <p className="text-sm font-medium text-fg">{[banco, tipo].filter(Boolean).join(' · ') || '—'}</p>
+        <p className="font-mono text-sm tabular-nums text-fg" data-testid="cuenta-enmascarada">
+          {ultimos4 ? `•••• ${ultimos4}` : '••••'}
+        </p>
+        <p className="text-sm text-fg-muted">
+          {titular
+            ? t('inmobiliaria.propietario.form.aNombreDe', { nombre: titular })
+            : t('inmobiliaria.propietario.form.aNombreDelPropietario')}
+        </p>
+      </div>
+      <p className="text-sm text-fg-muted">{t('inmobiliaria.propietario.form.cuentaSoloLectura')}</p>
+      {onCambiarCuenta ? (
+        <Button type="button" variant="secondary" size="sm" hideArrow onClick={onCambiarCuenta} data-testid="cambiar-cuenta">
+          {t('inmobiliaria.propietario.form.cambiarCuenta')}
+          <ArrowRight className="w-4 h-4" aria-hidden="true" />
+        </Button>
+      ) : (
+        <Button asChild variant="secondary" size="sm" hideArrow>
+          <Link href={href} data-testid="cambiar-cuenta">
+            {t('inmobiliaria.propietario.form.cambiarCuenta')}
+            <ArrowRight className="w-4 h-4" aria-hidden="true" />
+          </Link>
+        </Button>
+      )}
+    </div>
   );
 }
 

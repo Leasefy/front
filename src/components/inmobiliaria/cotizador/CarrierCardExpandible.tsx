@@ -36,6 +36,7 @@ import { Spinner as DSSpinner } from '@/components/ui/spinner'
 import type { CarrierState } from '@/lib/hooks/cotizador/use-quote-stream'
 import { formatPrimaCop, formatLatency } from '@/lib/cotizador/verdict-derive'
 import { BadgeFuente } from './BadgeFuente'
+import { Collapse } from '@leasefy/cadence'
 
 // ---------------------------------------------------------------------------
 // Status visual tokens (mirrors CarrierCard palette for consistency)
@@ -342,21 +343,18 @@ export function CarrierCardExpandible({
           <CaretDown
             weight="bold"
             className={cn(
-              'w-4 h-4 text-fg-muted transition-transform duration-200',
+              'w-4 h-4 text-fg-muted transition-transform duration-base ease-standard',
               open && 'rotate-180',
             )}
           />
         </div>
       </button>
 
-      {open && (
-        <div
-          id={panelId}
-          className="border-t border-border px-4 py-4"
-        >
-          {detail}
-        </div>
-      )}
+      {/* El detalle se abre y se cierra con su altura (`Collapse`), con la
+          misma duración que el chevron. */}
+      <Collapse open={open} id={panelId} className="border-t border-border px-4 py-4">
+        {detail}
+      </Collapse>
     </div>
   )
 }

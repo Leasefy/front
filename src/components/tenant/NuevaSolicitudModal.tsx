@@ -5,9 +5,14 @@
  *
  * ONE shared entity for two honest flows: a maintenance request (`tipo:'reparacion'`
  * with a description + real photos) AND a formal PQRS (petición / queja / reclamo /
- * sugerencia / solicitud). The shell is copied from `PayRentModal` (AnimatePresence
- * backdrop, `useLenis().stop()/start()` per DESIGN §8, `data-lenis-prevent` scroll
- * body, header/body/footer, `Button isLoading`, `toast`).
+ * sugerencia / solicitud). The shell is the canonical `Dialog` (DESIGN.md §17:
+ * header/body/footer, `Button isLoading`, `toast`); Lenis lo frena `SmoothScroll`
+ * al ver el diálogo abierto. Mientras envía no se sale (ni Esc, ni el velo, ni la ✕).
+ *
+ * 03-10-2026 (ARREGLOS-2, Nico Q4 a): `POST /pqrs` ya existe — la solicitud se
+ * radica de verdad sobre el contrato vigente del inquilino y la inmobiliaria la
+ * ve en su bandeja de PQRS. Con más de un contrato vigente, se pregunta sobre
+ * cuál (`contratos`, de `GET /pqrs/mine`).
  *
  * Honest-degrade contract (T-v7-06-08):
  *   - Submit calls `pqrsApi.create(input)`. On success it uploads each photo via
@@ -29,15 +34,32 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/components/ui/toast';
 import { X, Lifebuoy, Paperclip, ImageSquare, FileText } from '@phosphor-icons/react';
+import { AnimatePresence } from 'framer-motion';
+import { StaggerItem } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useI18n } from '@/lib/i18n';
-import { useLenis } from '@/components/providers/SmoothScroll';
-import { pqrsApi, PqrsUnavailableError, type NuevaSolicitudInput } from '@/lib/api/pqrs.service';
+import {
+  pqrsApi,
+  PqrsUnavailableError,
+  type ContratoParaRadicar,
+  type NuevaSolicitudInput,
+} from '@/lib/api/pqrs.service';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { ACCEPT_DE_ADJUNTOS, problemaDelAdjunto } from '@/lib/api/pqrs-adjuntos';
 import type { PqrsTipo } from '@/lib/api/pqrs.types';
 
 interface NuevaSolicitudModalProps {
@@ -50,10 +72,24 @@ interface NuevaSolicitudModalProps {
     contratoId?: string;
     propiedadId?: string;
   };
+  /**
+   * Sus contratos vigentes (de `GET /pqrs/mine`). Con más de uno, la persona
+   * elige sobre cuál; con uno, va ése.
+   */
+  contratos?: ContratoParaRadicar[];
 }
 
 /** 10 MB per-file cap (mirrors the MessagesWidget photo picker). */
 const MAX_BYTES = 10 * 1024 * 1024;
+
+type CampoDeLaSolicitud = 'contratoId' | 'tipo' | 'asunto' | 'descripcion';
+const CAMPOS_DE_LA_SOLICITUD: readonly CampoDeLaSolicitud[] = ['contratoId', 'tipo', 'asunto', 'descripcion'];
+const ID_DEL_CAMPO: Record<CampoDeLaSolicitud, string> = {
+  contratoId: 'solicitud-contrato',
+  tipo: 'solicitud-tipo',
+  asunto: 'solicitud-asunto',
+  descripcion: 'solicitud-descripcion',
+};
 const ASUNTO_MAX = 120;
 const DESCRIPCION_MAX = 1000;
 
@@ -67,32 +103,50 @@ const TIPO_OPTIONS: { value: PqrsTipo; es: string; en: string }[] = [
   { value: 'solicitud', es: 'Solicitud', en: 'Request' },
 ];
 
-export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: NuevaSolicitudModalProps) {
+export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contratos = [] }: NuevaSolicitudModalProps) {
+  /** SO-27: en el portal del propietario las opciones son sus inmuebles (mandatos). */
+  const contratoDelPropietario = (id: string) =>
+    contratos.some((c) => c.contratoId === id && c.consignacionId === id);
+  const esDelPropietario = contratos.length > 0 && contratos.every((c) => !!c.consignacionId);
   const { locale } = useI18n();
-  const lenis = useLenis();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const variosContratos = contratos.length > 1;
+  /** Sobre cuál contrato. Con uno solo, ése; con varios, lo elige la persona. */
+  const [contratoId, setContratoId] = useState('');
   const [tipo, setTipo] = useState<PqrsTipo>('reparacion');
   const [asunto, setAsunto] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [files, setFiles] = useState<File[]>([]);
+  /*
+   * Una clave estable por archivo (no el índice): con el índice, quitar la
+   * foto 2 animaba la salida de la última. Un `WeakMap` por objeto `File`: el
+   * mismo archivo conserva su clave mientras esté en la lista.
+   */
+  const clavesDeArchivo = useRef(new WeakMap<File, string>());
+  const siguienteClave = useRef(0);
+  const claveDe = (file: File) => {
+    let clave = clavesDeArchivo.current.get(file);
+    if (!clave) {
+      clave = `adjunto-${siguienteClave.current++}`;
+      clavesDeArchivo.current.set(file, clave);
+    }
+    return clave;
+  };
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Pause Lenis smooth scroll while the modal is open (DESIGN §8).
-  useEffect(() => {
-    if (open) lenis.stop();
-    else lenis.start();
-    return () => lenis.start();
-  }, [open, lenis]);
+  /** Lo que falta o el back rechazó, bajo su campo (02-10-2026). */
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaSolicitud, string>>>({});
 
   // Reset the form when the modal closes so a re-open starts clean.
   useEffect(() => {
     if (!open) {
+      setContratoId('');
       setTipo('reparacion');
       setAsunto('');
       setDescripcion('');
       setFiles([]);
       setIsSubmitting(false);
+      setErrores({});
     }
   }, [open]);
 
@@ -107,11 +161,16 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
       e.target.value = '';
       const accepted: File[] = [];
       for (const f of picked) {
-        if (f.size > MAX_BYTES) {
+        // SO-18: el mismo aviso que el back (tipo y 10 MB) ANTES de subir; un
+        // `.exe` ya no entra a la lista. La regla la pone el back por los bytes.
+        const problema = f.size > MAX_BYTES || problemaDelAdjunto(f);
+        if (problema) {
           toast.error(
             locale === 'es'
-              ? `"${f.name}" supera el límite de 10 MB.`
-              : `"${f.name}" exceeds the 10 MB limit.`,
+              ? typeof problema === 'string'
+                ? problema
+                : `"${f.name}" supera el límite de 10 MB.`
+              : `"${f.name}" is not a photo or PDF under 10 MB.`,
           );
           continue;
         }
@@ -129,14 +188,31 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
   const handleSubmit = useCallback(async () => {
     const asuntoTrim = asunto.trim();
     const descripcionTrim = descripcion.trim();
-    if (!asuntoTrim || !descripcionTrim) {
-      toast.error(
-        locale === 'es'
-          ? 'Completa el asunto y la descripción.'
-          : 'Please fill in the subject and description.',
-      );
+    const contratoElegido =
+      prefill?.contratoId ?? (variosContratos ? contratoId : contratos[0]?.contratoId ?? '');
+    const faltaElContrato = variosContratos && !contratoElegido;
+    if (!asuntoTrim || !descripcionTrim || faltaElContrato) {
+      // Lo que falta se dice bajo SU campo (antes, un toast para los dos).
+      const faltan: Partial<Record<CampoDeLaSolicitud, string>> = {};
+      if (faltaElContrato) {
+        faltan.contratoId =
+          locale === 'es'
+            ? esDelPropietario
+              ? 'Elige sobre cuál inmueble es tu solicitud.'
+              : 'Elige sobre cuál contrato es tu solicitud.'
+            : 'Choose which lease this is about.';
+      }
+      if (!asuntoTrim) faltan.asunto = locale === 'es' ? 'Escribe el asunto.' : 'Write a subject.';
+      if (!descripcionTrim) {
+        faltan.descripcion =
+          locale === 'es' ? 'Describe lo que necesitas.' : 'Describe what you need.';
+      }
+      setErrores(faltan);
+      const primero = CAMPOS_DE_LA_SOLICITUD.find((c) => faltan[c]);
+      if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus();
       return;
     }
+    setErrores({});
 
     setIsSubmitting(true);
     try {
@@ -145,30 +221,50 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
         tipo,
         asunto: asuntoTrim,
         descripcion: descripcionTrim,
-        ...(prefill?.contratoId ? { contratoId: prefill.contratoId } : {}),
+        ...(contratoElegido
+          ? contratoDelPropietario(contratoElegido)
+            ? { consignacionId: contratoElegido }
+            : { contratoId: contratoElegido }
+          : {}),
         ...(prefill?.propiedadId ? { propiedadId: prefill.propiedadId } : {}),
       };
 
-      await pqrsApi.create(input);
+      const creada = await pqrsApi.create(input);
 
-      // Adjuntos: el upload genérico POST /documents se retiró del front (las
-      // mutaciones de documentos vigentes son application-scoped) y todavía no
-      // existe una ruta pqrs-scoped para evidencia. Honesto: la solicitud SÍ se
-      // creó; las fotos avisan "próximamente" — nunca un upload huérfano ni un
-      // "adjuntado" fabricado.
-      if (files.length > 0) {
-        toast.info(
-          locale === 'es'
-            ? 'Tu solicitud se envió sin las fotos: los adjuntos estarán disponibles próximamente.'
-            : 'Your request was sent without the photos: attachments will be available soon.',
-        );
+      /*
+       * SO-18 (PQRS-FIX, 04-10-2026): las fotos y PDF se suben DE VERDAD, una por
+       * una, a la solicitud ya radicada (`POST /pqrs/:id/adjuntos`; el back mira
+       * los bytes y el tamaño). La solicitud ya existe: si un archivo no sube, se
+       * dice cuál y por qué, y se puede volver a mandar desde el caso.
+       */
+      const fallidos: string[] = [];
+      for (const archivo of files) {
+        try {
+          await pqrsApi.subirAdjunto(creada.id, archivo);
+        } catch (e) {
+          fallidos.push(
+            mensajeParaLaPersona(e, {
+              porDefecto: `No se pudo subir «${archivo.name}».`,
+              accion: 'subir el archivo',
+            }),
+          );
+        }
       }
 
+      const radicado = creada.radicado ? ` con el número ${creada.radicado}` : '';
       toast.success(
         locale === 'es'
-          ? 'Solicitud enviada. Te avisamos cuando avance.'
-          : 'Request submitted. We will let you know as it progresses.',
+          ? `Solicitud radicada${radicado}. Te avisamos en tu portal cuando avance.`
+          : `Request filed${radicado}. We will let you know as it progresses.`,
       );
+      if (fallidos.length > 0) {
+        toast.error(
+          locale === 'es'
+            ? `${fallidos.length === 1 ? 'Un archivo no se adjuntó' : `${fallidos.length} archivos no se adjuntaron`}: puedes volver a subirlo desde tu caso.`
+            : 'Some files were not attached: you can upload them again from your case.',
+          { description: fallidos.join(' · ') },
+        );
+      }
       onCreated?.();
       onClose();
     } catch (err) {
@@ -180,211 +276,233 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill }: Nueva
             : 'We are enabling requests. Please try again soon.',
         );
       } else {
-        toast.error(
-          locale === 'es'
-            ? 'No pudimos enviar tu solicitud. Intenta de nuevo.'
-            : 'We could not submit your request. Please try again.',
-        );
+        // 02-10-2026 · Lo que el back rechazó va bajo su campo (con el foco);
+        // al toast sólo lo demás, con la regla de oro. Antes: un genérico fijo.
+        const reparto = repartirErroresDelServidor<CampoDeLaSolicitud>(err, {
+          campos: CAMPOS_DE_LA_SOLICITUD,
+          accion: 'enviar tu solicitud',
+          porDefecto:
+            locale === 'es'
+              ? 'No pudimos enviar tu solicitud. Intenta de nuevo.'
+              : 'We could not submit your request. Please try again.',
+        });
+        setErrores(reparto.porCampo);
+        const primero = reparto.orden[0];
+        if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus();
+        if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
       }
     } finally {
       setIsSubmitting(false);
     }
-  }, [asunto, descripcion, tipo, files, prefill, locale, onCreated, onClose]);
+  }, [asunto, descripcion, tipo, files, prefill, locale, onCreated, onClose, contratoId, contratos, variosContratos]);
 
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={isSubmitting ? undefined : onClose}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-surface rounded-[22px] w-full max-w-lg border border-border shadow-lg"
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-4 p-5 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-[14px] bg-primary-soft flex items-center justify-center">
-                  <Lifebuoy className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold text-fg">
-                    {locale === 'es' ? 'Nueva solicitud' : 'New request'}
-                  </h2>
-                  <p className="text-xs text-fg-muted mt-0.5">
-                    {locale === 'es'
-                      ? 'Cuéntanos qué necesitas; la inmobiliaria le hará seguimiento.'
-                      : 'Tell us what you need; your agency will follow up.'}
-                  </p>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                disabled={isSubmitting}
-                aria-label={locale === 'es' ? 'Cerrar' : 'Close'}
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
+    <Dialog
+      open={open}
+      onOpenChange={(abierto) => {
+        // Mientras envía no se sale (ni con Esc, ni con el velo, ni con la ✕).
+        if (!abierto && !isSubmitting) onClose();
+      }}
+    >
+      <DialogContent size="md" icon={<Lifebuoy weight="bold" />}>
+        <DialogHeader>
+          <DialogTitle>{locale === 'es' ? 'Nueva solicitud' : 'New request'}</DialogTitle>
+          <DialogDescription>
+            {locale === 'es'
+              ? 'Cuéntanos qué necesitas; la inmobiliaria le hará seguimiento.'
+              : 'Tell us what you need; your agency will follow up.'}
+          </DialogDescription>
+        </DialogHeader>
 
-            {/* Body */}
-            <div
-              className="p-5 max-h-[70vh] overflow-y-auto space-y-4"
-              data-lenis-prevent
-              style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
+        {/* Contrato: sólo con más de uno vigente (con uno, va ése). */}
+        {variosContratos && !prefill?.contratoId && (
+          <div>
+            <label htmlFor="solicitud-contrato" className="block text-sm font-medium text-fg mb-1.5">
+              {locale === 'es' ? (esDelPropietario ? '¿Sobre cuál inmueble?' : '¿Sobre cuál contrato?') : 'Which lease?'}
+            </label>
+            <select
+              id="solicitud-contrato"
+              value={contratoId}
+              onChange={(e) => {
+                setContratoId(e.target.value);
+                setErrores((prev) => ({ ...prev, contratoId: undefined }));
+              }}
+              disabled={isSubmitting}
+              aria-invalid={errores.contratoId ? true : undefined}
+              aria-describedby={errores.contratoId ? 'solicitud-contrato-error' : undefined}
+              className="w-full h-11 px-4 text-base md:text-sm rounded-lg border border-border bg-surface text-fg focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
             >
-              {/* Tipo */}
-              <div>
-                <label htmlFor="solicitud-tipo" className="block text-sm font-medium text-fg mb-1.5">
-                  {locale === 'es' ? 'Tipo de solicitud' : 'Request type'}
-                </label>
-                <select
-                  id="solicitud-tipo"
-                  value={tipo}
-                  onChange={(e) => setTipo(e.target.value as PqrsTipo)}
-                  disabled={isSubmitting}
-                  className="w-full h-11 px-4 text-base md:text-sm rounded-lg border border-border bg-surface text-fg focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
-                >
-                  {TIPO_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {locale === 'es' ? opt.es : opt.en}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <option value="">{locale === 'es' ? 'Elige el inmueble' : 'Choose the property'}</option>
+              {contratos.map((c) => (
+                <option key={c.contratoId} value={c.contratoId}>
+                  {c.inmueble}
+                </option>
+              ))}
+            </select>
+            <ErrorDelCampo id="solicitud-contrato-error" mensaje={errores.contratoId} />
+          </div>
+        )}
 
-              {/* Asunto */}
-              <div>
-                <label htmlFor="solicitud-asunto" className="block text-sm font-medium text-fg mb-1.5">
-                  {locale === 'es' ? 'Asunto' : 'Subject'}
-                </label>
-                <Input
-                  id="solicitud-asunto"
-                  value={asunto}
-                  onChange={(e) => setAsunto(e.target.value)}
-                  maxLength={ASUNTO_MAX}
-                  disabled={isSubmitting}
-                  placeholder={
-                    locale === 'es'
-                      ? 'Ej.: Fuga en el baño principal'
-                      : 'e.g. Leak in the main bathroom'
-                  }
-                  aria-label={locale === 'es' ? 'Asunto' : 'Subject'}
-                />
-              </div>
+        {/* Tipo */}
+        <div>
+          <label htmlFor="solicitud-tipo" className="block text-sm font-medium text-fg mb-1.5">
+            {locale === 'es' ? 'Tipo de solicitud' : 'Request type'}
+          </label>
+          <select
+            id="solicitud-tipo"
+            value={tipo}
+            onChange={(e) => {
+              setTipo(e.target.value as PqrsTipo);
+              setErrores((prev) => ({ ...prev, tipo: undefined }));
+            }}
+            disabled={isSubmitting}
+            aria-invalid={errores.tipo ? true : undefined}
+            aria-describedby={errores.tipo ? 'solicitud-tipo-error' : undefined}
+            className="w-full h-11 px-4 text-base md:text-sm rounded-lg border border-border bg-surface text-fg focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
+          >
+            {TIPO_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {locale === 'es' ? opt.es : opt.en}
+              </option>
+            ))}
+          </select>
+          <ErrorDelCampo id="solicitud-tipo-error" mensaje={errores.tipo} />
+        </div>
 
-              {/* Descripción */}
-              <div>
-                <label
-                  htmlFor="solicitud-descripcion"
-                  className="block text-sm font-medium text-fg mb-1.5"
-                >
-                  {locale === 'es' ? 'Descripción' : 'Description'}
-                </label>
-                <Textarea
-                  id="solicitud-descripcion"
-                  value={descripcion}
-                  onChange={(e) => setDescripcion(e.target.value)}
-                  maxLength={DESCRIPCION_MAX}
-                  rows={4}
-                  disabled={isSubmitting}
-                  placeholder={
-                    locale === 'es'
-                      ? 'Describe con detalle lo que sucede.'
-                      : 'Describe in detail what is happening.'
-                  }
-                  aria-label={locale === 'es' ? 'Descripción' : 'Description'}
-                />
-              </div>
+        {/* Asunto */}
+        <div>
+          <label htmlFor="solicitud-asunto" className="block text-sm font-medium text-fg mb-1.5">
+            {locale === 'es' ? 'Asunto' : 'Subject'}
+          </label>
+          <Input
+            id="solicitud-asunto"
+            value={asunto}
+            onChange={(e) => {
+              setAsunto(e.target.value);
+              setErrores((prev) => ({ ...prev, asunto: undefined }));
+            }}
+            maxLength={ASUNTO_MAX}
+            aria-invalid={errores.asunto ? true : undefined}
+            aria-describedby={errores.asunto ? 'solicitud-asunto-error' : undefined}
+            disabled={isSubmitting}
+            placeholder={
+              locale === 'es'
+                ? 'Ej.: Fuga en el baño principal'
+                : 'e.g. Leak in the main bathroom'
+            }
+            aria-label={locale === 'es' ? 'Asunto' : 'Subject'}
+          />
+          <ErrorDelCampo id="solicitud-asunto-error" mensaje={errores.asunto} />
+        </div>
 
-              {/* Fotos / evidencia */}
-              <div>
-                <span className="block text-sm font-medium text-fg mb-1.5">
-                  {locale === 'es' ? 'Fotos o documentos (opcional)' : 'Photos or documents (optional)'}
-                </span>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/*,application/pdf"
-                  className="hidden"
-                  onChange={handleFilesSelected}
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={openPicker}
-                  disabled={isSubmitting}
-                  hideArrow
-                  className="inline-flex items-center gap-2"
-                >
-                  <Paperclip className="w-4 h-4" />
-                  {locale === 'es' ? 'Agregar fotos' : 'Add photos'}
-                </Button>
-                <p className="text-xs text-fg-muted mt-1.5">
-                  {locale === 'es'
-                    ? 'Imágenes o PDF, hasta 10 MB cada uno.'
-                    : 'Images or PDF, up to 10 MB each.'}
-                </p>
+        {/* Descripción */}
+        <div>
+          <label
+            htmlFor="solicitud-descripcion"
+            className="block text-sm font-medium text-fg mb-1.5"
+          >
+            {locale === 'es' ? 'Descripción' : 'Description'}
+          </label>
+          <Textarea
+            id="solicitud-descripcion"
+            value={descripcion}
+            onChange={(e) => {
+              setDescripcion(e.target.value);
+              setErrores((prev) => ({ ...prev, descripcion: undefined }));
+            }}
+            maxLength={DESCRIPCION_MAX}
+            aria-invalid={errores.descripcion ? true : undefined}
+            aria-describedby={errores.descripcion ? 'solicitud-descripcion-error' : undefined}
+            rows={4}
+            disabled={isSubmitting}
+            placeholder={
+              locale === 'es'
+                ? 'Describe con detalle lo que sucede.'
+                : 'Describe in detail what is happening.'
+            }
+            aria-label={locale === 'es' ? 'Descripción' : 'Description'}
+          />
+          <ErrorDelCampo id="solicitud-descripcion-error" mensaje={errores.descripcion} />
+        </div>
 
-                {files.length > 0 && (
-                  <ul className="mt-3 space-y-2">
-                    {files.map((file, index) => {
-                      const isImage = file.type.startsWith('image/');
-                      const ChipIcon = isImage ? ImageSquare : FileText;
-                      return (
-                        <li
-                          key={`${file.name}-${index}`}
-                          className="flex items-center gap-2 rounded-lg border border-border bg-surface-muted px-3 py-2"
-                        >
-                          <ChipIcon className="w-4 h-4 text-fg-muted flex-shrink-0" aria-hidden="true" />
-                          <span className="text-sm text-fg truncate flex-1 min-w-0">{file.name}</span>
-                          <button
-                            type="button"
-                            onClick={() => removeFile(index)}
-                            disabled={isSubmitting}
-                            className="text-fg-subtle hover:text-fg transition-colors flex-shrink-0"
-                            aria-label={locale === 'es' ? `Quitar ${file.name}` : `Remove ${file.name}`}
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            </div>
+        {/* Fotos / evidencia */}
+        <div>
+          <span className="block text-sm font-medium text-fg mb-1.5">
+            {locale === 'es' ? 'Fotos o documentos (opcional)' : 'Photos or documents (optional)'}
+          </span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept={ACCEPT_DE_ADJUNTOS}
+            className="hidden"
+            onChange={handleFilesSelected}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={openPicker}
+            disabled={isSubmitting}
+            hideArrow
+            className="inline-flex items-center gap-2"
+          >
+            <Paperclip className="w-4 h-4" />
+            {locale === 'es' ? 'Agregar fotos' : 'Add photos'}
+          </Button>
+          <p className="text-xs text-fg-muted mt-1.5">
+            {locale === 'es'
+              ? 'Imágenes o PDF, hasta 10 MB cada uno.'
+              : 'Images or PDF, up to 10 MB each.'}
+          </p>
 
-            {/* Footer */}
-            <div className="p-5 border-t border-border flex items-center justify-between gap-2">
-              <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>
-                {locale === 'es' ? 'Cancelar' : 'Cancel'}
-              </Button>
-              <Button
-                type="button"
-                onClick={handleSubmit}
-                isLoading={isSubmitting}
-                disabled={isSubmitting}
-                hideArrow
-              >
-                {locale === 'es' ? 'Enviar solicitud' : 'Submit request'}
-              </Button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+          {/* Cada adjunto entra (8 px) y, al quitarlo, sale y los demás se corren. */}
+          {files.length > 0 && (
+            <ul className="relative mt-3 space-y-2">
+              <AnimatePresence initial={false} mode="popLayout">
+              {files.map((file, index) => {
+                const isImage = file.type.startsWith('image/');
+                const ChipIcon = isImage ? ImageSquare : FileText;
+                return (
+                  <StaggerItem
+                    as="li"
+                    key={claveDe(file)}
+                    className="flex items-center gap-2 rounded-lg border border-border bg-surface-hover px-3 py-2"
+                  >
+                    <ChipIcon className="w-4 h-4 text-fg-muted flex-shrink-0" aria-hidden="true" />
+                    <span className="text-sm text-fg truncate flex-1 min-w-0">{file.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(index)}
+                      disabled={isSubmitting}
+                      className="text-fg-subtle hover:text-fg transition-colors flex-shrink-0"
+                      aria-label={locale === 'es' ? `Quitar ${file.name}` : `Remove ${file.name}`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </StaggerItem>
+                );
+              })}
+              </AnimatePresence>
+            </ul>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+            {locale === 'es' ? 'Cancelar' : 'Cancel'}
+          </Button>
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            isLoading={isSubmitting}
+            disabled={isSubmitting}
+            hideArrow
+          >
+            {locale === 'es' ? 'Enviar solicitud' : 'Submit request'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

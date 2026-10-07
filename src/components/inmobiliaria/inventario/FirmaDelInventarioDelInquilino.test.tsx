@@ -8,6 +8,7 @@ void React;
 
 const inventarioParaFirmar = vi.fn();
 const firmarInventario = vi.fn();
+const toastError = vi.fn();
 vi.mock('@/lib/api/inventario-del-inmueble.service', () => ({
   inventarioDelInmuebleApi: {
     inventarioParaFirmar: (id: string) => inventarioParaFirmar(id),
@@ -15,7 +16,9 @@ vi.mock('@/lib/api/inventario-del-inmueble.service', () => ({
   },
 }));
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
-vi.mock('@/components/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('@/components/ui/toast', () => ({
+  toast: { success: vi.fn(), error: (...a: unknown[]) => toastError(...a) },
+}));
 vi.mock('@/components/inmobiliaria/ActaEntregaView', () => ({
   ActaEntregaView: (p: { inventoryItems: unknown[] }) => <div data-testid="acta" data-items={p.inventoryItems.length} />,
 }));
@@ -85,6 +88,33 @@ describe('FirmaDelInventarioDelInquilino', () => {
     });
     expect(q('inventario-firmado')?.textContent).toBe('Firmado por Ana Ríos el 5 de septiembre de 2026.');
     expect(q('firmar')).toBeNull();
+  });
+
+  /**
+   * Sistema de errores, tanda 2 (02-10-2026): la descripción era `err.message`
+   * crudo — un 500 se leía «Internal server error».
+   */
+  it('🔴 un 5xx al firmar dice «de nuestro lado» con la referencia; sin respuesta, la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    inventarioParaFirmar.mockResolvedValue({ disponible: true, copia, firma: { estado: 'PENDIENTE', firmadoPor: null, correo: null, firmadoEn: null, integra: null } });
+    firmarInventario.mockRejectedValueOnce(
+      new ApiError(500, 'Internal server error', 'ERROR_INTERNO', {
+        code: 'ERROR_INTERNO', message: 'Internal server error', referencia: '1234abcd',
+      }),
+    );
+    await montar();
+    await act(async () => {
+      (q('firmar') as HTMLButtonElement).click();
+    });
+    const { description } = toastError.mock.calls[0][1] as { description: string };
+    expect(description).toMatch(/^No pudimos firmar el inventario: algo falló de nuestro lado/);
+    expect(description).toContain('1234abcd');
+
+    firmarInventario.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await act(async () => {
+      (q('firmar') as HTMLButtonElement).click();
+    });
+    expect((toastError.mock.calls[1][1] as { description: string }).description).toMatch(/conexión/);
   });
 
   it('no pinta nada si no hay copia o si el back no tiene la migración', async () => {

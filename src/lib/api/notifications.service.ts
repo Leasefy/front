@@ -34,7 +34,7 @@ export const TENANT_FILTER_OPTIONS: { value: string; label: string }[] = [
   { value: 'all', label: 'Todas' },
   { value: 'unread', label: 'No leídas' },
   { value: 'payment', label: 'Pagos' },
-  { value: 'application', label: 'Aplicaciones' },
+  { value: 'application', label: 'Postulaciones' },
   { value: 'message', label: 'Mensajes' },
   { value: 'document', label: 'Documentos' },
 ];

@@ -12,6 +12,7 @@ import {
 import {
   FormField,
   LightInput,
+  useCampoRequerido,
 } from '../WizardFormField';
 
 // ============================================================================
@@ -23,7 +24,16 @@ import {
  * Collects income and obligations with Luxterra-style inputs
  */
 export function StepIncome() {
-  const { application, updateIncome, attemptedAdvance } = useApplication();
+  const { application, updateIncome, attemptedAdvance, erroresDelServidor } = useApplication();
+  // QA-IA-A (04-10-2026): a un independiente o a un pensionado no se le
+  // pregunta «salario».
+  const situacion = application.employment?.employmentStatus;
+  const rotuloDelIngreso =
+    situacion === 'self-employed'
+      ? { label: 'Ingresos mensuales', hint: 'Lo que te entra en promedio cada mes por tu actividad' }
+      : situacion === 'retired'
+        ? { label: 'Mesada pensional', hint: 'Lo que recibes cada mes de tu pensión' }
+        : { label: 'Salario mensual', hint: 'Tu salario base mensual antes de deducciones' };
   const income = application.income;
 
   // Track which fields have been touched for error display
@@ -45,11 +55,15 @@ export function StepIncome() {
   }, []);
 
   // Get error message for a field (show if touched OR if user attempted to advance)
+  // Lo que el back rechazó al enviar (02-10-2026) va primero: se ve aunque
+  // el campo no se haya tocado, y se borra en cuanto la persona lo corrige.
   const getError = useCallback(
     (fieldName: string): string | undefined => {
+      const delServidor = (erroresDelServidor as Record<string, string | undefined> | undefined)?.[fieldName];
+      if (delServidor) return delServidor;
       return (touched[fieldName] || attemptedAdvance) ? validation.errors[fieldName] : undefined;
     },
-    [touched, validation.errors, attemptedAdvance]
+    [touched, validation.errors, attemptedAdvance, erroresDelServidor]
   );
 
   // Handle currency input changes
@@ -99,10 +113,10 @@ export function StepIncome() {
     <div className="space-y-6">
       {/* Monthly Salary */}
       <FormField
-        label="Salario mensual"
+        label={rotuloDelIngreso.label}
         htmlFor="monthlySalary"
         error={getError('monthlySalary')}
-        hint="Tu salario base mensual antes de deducciones"
+        hint={rotuloDelIngreso.hint}
         required
       >
         <CurrencyInput
@@ -198,6 +212,8 @@ function CurrencyInput({
   hasError,
   icon,
 }: CurrencyInputProps) {
+  // El asterisco del `FormField` también para un lector de pantalla (ARREGLOS-8).
+  const requerido = useCampoRequerido();
   return (
     <div className="relative">
       {icon && (
@@ -213,6 +229,7 @@ function CurrencyInput({
       </span>
       <Input
         id={id}
+        aria-required={requerido || undefined}
         type="text"
         inputMode="numeric"
         placeholder={placeholder}

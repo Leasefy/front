@@ -38,6 +38,7 @@
  */
 
 import { apiClient } from './client'
+import { ESPACIO_DE_LA_PLATA, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata'
 
 const BASE = '/inmobiliaria/facturacion'
 
@@ -129,6 +130,49 @@ export const ESTADOS_DE_TRANSMISION: readonly EstadoDeTransmision[] = [
   'SIN_PROVEEDOR',
 ]
 
+/**
+ * 🔴 FA-16 / FA-R27 (QA-FACT, 03-10-2026): el filtro de la cola mostraba los
+ * códigos crudos (`POR_TRANSMITIR`, `SIN_PROVEEDOR`…). Los mismos nombres del
+ * back (`cola-de-transmision.ts::NOMBRE_DEL_ESTADO`).
+ */
+export const NOMBRE_DEL_ESTADO_DE_TRANSMISION: Record<EstadoDeTransmision, string> = {
+  // DIAN-FEEL (04-10-2026): los nombres del encargo («En cola», «Validada»…),
+  // los mismos del back (`cola-de-transmision.ts::NOMBRE_DEL_ESTADO`).
+  POR_TRANSMITIR: 'En cola',
+  TRANSMITIDA: 'Esperando confirmación',
+  ACEPTADA_DIAN: 'Validada por la DIAN',
+  RECHAZADA_DIAN: 'Rechazada por la DIAN',
+  SIN_PROVEEDOR: 'Sin transmitir todavía',
+}
+
+/**
+ * DIAN-FEEL (04-10-2026): el estado de UNA fila en palabras, como lo calcula
+ * el back (`estadoParaLaPersona`): «En cola» la primera vez, «Reintentando»
+ * después de un fallo, «Esperando confirmación» si el envío se cortó sin
+ * respuesta. Ausente con un back anterior.
+ */
+export type EstadoVisibleDeTransmision =
+  | 'EN_COLA'
+  | 'REINTENTANDO'
+  | 'TRANSMITIENDO'
+  | 'ESPERANDO_CONFIRMACION'
+  | 'VALIDADA'
+  | 'RECHAZADA'
+  | 'SIN_TRANSMITIR'
+
+/** El documento en palabras, cuando no hay número que mostrar (FA-R27). */
+export const NOMBRE_DEL_DOCUMENTO: Record<DocumentoQueSeTransmite, string> = {
+  FACTURA: 'Factura',
+  NOTA_CREDITO: 'Nota crédito',
+  NOTA_DEBITO: 'Nota débito',
+  DOCUMENTO_SOPORTE: 'Documento soporte',
+}
+
+/** «Factura», o el tipo tal cual si el back manda uno que esta pantalla no conoce. */
+export function nombreDelDocumento(tipo: string): string {
+  return (NOMBRE_DEL_DOCUMENTO as Record<string, string>)[tipo] ?? 'Documento'
+}
+
 export interface DocumentoEnLaCola {
   id: string
   documentoTipo: DocumentoQueSeTransmite
@@ -141,17 +185,85 @@ export interface DocumentoEnLaCola {
   proximoIntentoAt: string | null
   ultimoIntentoAt: string | null
   ultimoError: string | null
+  /** DIAN-FEEL: el motivo en palabras (el rechazo de la DIAN, qué está pasando). Ausente con un back anterior. */
+  motivo?: string | null
+  /** DIAN-FEEL: «En cola», «Reintentando», «Validada»… Ausente con un back anterior. */
+  estadoVisible?: EstadoVisibleDeTransmision
   cufe: string | null
   cude: string | null
-  xmlUrl: string | null
+  /** DIAN-FEEL: el número que FEEL le puso («SETP993500100»). */
+  documentoGenerado?: string | null
+  /** El XML firmado ya no viaja en la lista (era el documento entero en base64). */
+  tieneXml?: boolean
   pdfUrl: string | null
+  /** DIAN-FEEL: el enlace del QR a la consulta de la DIAN, tal como lo manda FEEL. */
+  qrDatos?: string | null
   encoladaAt: string
   transmitidaAt: string | null
   aceptadaAt: string | null
   rechazadaAt: string | null
   proveedor: string | null
-  /** `true` cuando se puede volver a intentar a mano (rechazada, sin proveedor). */
+  /** `true` cuando se puede volver a intentar a mano (rechazada, sin proveedor, esperando confirmación). */
   reintentable: boolean
+  /**
+   * DIAN-FEEL: el envío se cortó sin respuesta y no sabemos si FEEL lo recibió.
+   * Volver a enviarlo pide confirmar que en FEEL no está (`confirmoQueNoLlego`).
+   */
+  esperandoConfirmacion?: boolean
+}
+
+// ══ DIAN-FEEL (04-10-2026): ¿Leasefy ya transmite por esta inmobiliaria? ═════
+
+/**
+ * `GET /inmobiliaria/facturacion/electronica` — Nico (04-10): «una sola cuenta
+ * FEEL de Leasefy que transmite por todas las inmobiliarias». La inmobiliaria
+ * no escribe credenciales: ve los pasos y en qué va.
+ */
+export type EstadoAnteLaDianCodigo =
+  | 'LISTA'
+  | 'FALTAN_DATOS'
+  | 'FALTA_RESOLUCION'
+  | 'FALTA_HABILITAR'
+  | 'NO_COINCIDE'
+  | 'APAGADA'
+
+export interface PasoParaTransmitir {
+  id: 'datos' | 'habilitacion' | 'resolucion' | 'registro' | 'coincide'
+  titulo: string
+  detalle: string
+  quien: 'INMOBILIARIA' | 'LEASEFY'
+  hecho: boolean
+  accion: { texto: string; href: string } | null
+}
+
+export interface EstadoAnteLaDian {
+  estado: EstadoAnteLaDianCodigo
+  titulo: string
+  descripcion: string
+  /** ¿Leasefy transmite HOY lo de esta inmobiliaria? */
+  transmite: boolean
+  ambiente: 'PRUEBAS' | 'PRODUCCION' | null
+  pasos: PasoParaTransmitir[]
+  avisos: string[]
+}
+
+/**
+ * DIAN-FEEL: un número de la resolución de facturas que no tiene factura, con
+ * su explicación (`GET …/electronica/saltos`). La DIAN ve la 5 y la 7: el 6 se
+ * explica, no se esconde.
+ */
+export interface SaltoDeLaNumeracion {
+  resolucionId: string
+  resolucion: string
+  numero: string
+  numeroDian: number
+  usadoPor: { tipo: 'NOTA_DEBITO' | 'DOCUMENTO_SOPORTE'; nombre: string } | null
+  explicacion: string
+}
+
+/** ¿El banner de «todavía no se transmiten» se va? Sólo transmitiendo de verdad (no en pruebas). */
+export function seTransmiteDeVerdad(estado: EstadoAnteLaDian | null | undefined): boolean {
+  return !!estado && estado.transmite && estado.ambiente === 'PRODUCCION'
 }
 
 export interface AvisoDeTransmision {
@@ -161,6 +273,8 @@ export interface AvisoDeTransmision {
   horas: number
   intentos: number
   ultimoError: string | null
+  /** DIAN-FEEL: el último error en palabras. Ausente con un back anterior. */
+  motivo?: string | null
 }
 
 export interface ColaDeTransmision {
@@ -198,6 +312,11 @@ export interface EntregaDeDocumento {
   destinatario: string | null
   estado: EstadoDeEntrega
   estadoNombre: string
+  /**
+   * 🔴 QA-FACT (03-10-2026): `true` = no le llegó porque falta el correo (el
+   * back lo dice: «Sin entregar · falta el correo»). Ausente con un back anterior.
+   */
+  sinEntregar?: boolean
   constancia: string | null
   motivo: string | null
   enviadaAt: string | null
@@ -317,6 +436,15 @@ export interface NotaDebito {
   } | null
 }
 
+/**
+ * Lo que responde emitir una nota débito: la nota y, con el back de QA-FACT,
+ * qué hizo en la deuda («Los intereses y los gastos de cobranza no suben la
+ * cuota…»). Ausente con un back anterior.
+ */
+export type NotaDebitoEmitida = NotaDebito & {
+  deuda?: { explicacion?: string | null } | null
+}
+
 export interface NotasDebitoDeLaAgencia {
   disponible: boolean
   migracion: string | null
@@ -331,6 +459,8 @@ export type BloqueoDeCorreccion =
   | 'YA_ANULADA'
   | 'SIN_SALDO'
   | 'MIGRACION_PENDIENTE'
+  /** QA-FACT-CONTA-95 (FA3-09): la DIAN la rechazó; se corrige y se retransmite. */
+  | 'RECHAZADA_POR_LA_DIAN'
 
 export interface EstadoDeLaCorreccion {
   saldoCop: number
@@ -360,6 +490,17 @@ export interface ProveedorNoObligado {
   activo: boolean
   /** `true` cuando falta el dato que decide su retención. */
   faltaPerfilTributario: boolean
+}
+
+/** Lo que se le puede cambiar a un proveedor (`ActualizarProveedorNoObligadoDto`). */
+export interface CambiosDelProveedor {
+  nombre?: string
+  tipoDocumento?: string | null
+  documento?: string | null
+  email?: string | null
+  telefono?: string | null
+  responsableIva?: boolean | null
+  retefuentePct?: number | null
 }
 
 export interface ProveedoresNoObligados {
@@ -468,12 +609,22 @@ export const facturacionElectronicaService = {
       `${BASE}/transmision${estado ? `?estado=${encodeURIComponent(estado)}` : ''}`,
     ),
 
-  /** Vuelve a encolar UN documento. Es el único camino para uno rechazado. */
-  reintentarTransmision: (id: string) =>
+  /**
+   * Vuelve a encolar UN documento. Es el único camino para uno rechazado.
+   * DIAN-FEEL: uno «Esperando confirmación» sólo con `confirmoQueNoLlego`.
+   */
+  reintentarTransmision: (id: string, opciones: { confirmoQueNoLlego?: boolean } = {}) =>
     apiClient.post<{ id: string; estado: string }>(
-      `${BASE}/transmision/${id}/reintentar`,
-      {},
+      `${BASE}/transmision/${encodeURIComponent(id)}/reintentar`,
+      opciones.confirmoQueNoLlego ? { confirmoQueNoLlego: true } : {},
     ),
+
+  /** DIAN-FEEL: ¿Leasefy ya transmite por esta inmobiliaria? Los pasos y qué falta. */
+  estadoAnteLaDian: () => apiClient.get<EstadoAnteLaDian>(`${BASE}/electronica`),
+
+  /** DIAN-FEEL: los saltos en la numeración de las facturas, con su explicación. */
+  saltosDeLaNumeracion: () =>
+    apiClient.get<{ saltos: SaltoDeLaNumeracion[] }>(`${BASE}/electronica/saltos`),
 
   /** Vuelve a encolar TODO lo que quedó sin proveedor. */
   reintentarLosSinProveedor: () =>
@@ -514,6 +665,13 @@ export const facturacionElectronicaService = {
       `${BASE}/certificaciones/${propietarioId}`,
       { desde: periodo.desde, hasta: periodo.hasta },
     ),
+
+  /**
+   * 🔴 QA-FACT-CONTA-95 r2 (FA-E-05): el PDF de una certificación ya generada
+   * (`GET /certificaciones/:id/pdf`), lo que el propietario necesita para declarar.
+   */
+  pdfDeLaCertificacion: (id: string) =>
+    apiClient.getBlob(`${BASE}/certificaciones/${encodeURIComponent(id)}/pdf`),
 
   /** Las notas débito emitidas. */
   notasDebito: () =>
@@ -556,7 +714,7 @@ export const facturacionElectronicaService = {
       ivaCop?: number
     },
   ) =>
-    apiClient.post<NotaDebito>(`${BASE}/${facturaId}/nota-debito`, {
+    apiClient.post<NotaDebitoEmitida>(`${BASE}/${facturaId}/nota-debito`, {
       concepto: datos.concepto,
       motivo: datos.motivo,
       valorCop: datos.valorCop,
@@ -571,6 +729,17 @@ export const facturacionElectronicaService = {
   proveedores: () =>
     apiClient.get<ProveedoresNoObligados>(
       `${BASE}/documento-soporte/proveedores`,
+    ),
+
+  /**
+   * 🔴 QA-FACT FA-24: `PATCH documento-soporte/proveedores/:id` — editar un
+   * proveedor ya registrado (sobre todo completar su perfil tributario). Sólo
+   * viaja lo que cambió; `null` borra el dato («no lo sabemos»).
+   */
+  actualizarProveedor: (id: string, cambios: CambiosDelProveedor) =>
+    apiClient.patch<ProveedorNoObligado>(
+      `${BASE}/documento-soporte/proveedores/${encodeURIComponent(id)}`,
+      cambios,
     ),
 
   crearProveedor: (datos: {
@@ -635,7 +804,9 @@ export const facturacionElectronicaService = {
     ),
 }
 
-/** `$1.234.567`, como todo el resto del panel. */
+/** `$1.234.567`, como todo el resto del panel (P8 a: `$1.234.567,29` si trae centavos). */
 export function pesos(valor: number): string {
-  return `$${Math.round(valor).toLocaleString('es-CO')}`
+  return seMuestranLosCentavos(valor)
+    ? `$${ESPACIO_DE_LA_PLATA}${valor.toLocaleString('es-CO', decimalesEnPantalla(valor))}`
+    : `$${ESPACIO_DE_LA_PLATA}${Math.round(valor).toLocaleString('es-CO')}`
 }

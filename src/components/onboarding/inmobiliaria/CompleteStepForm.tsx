@@ -3,12 +3,14 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/lib/auth/use-auth'
-import { ArrowRight, CheckCircle, WarningCircle } from '@phosphor-icons/react'
+import { ArrowRight, WarningCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { CrossFade, Presence } from '@leasefy/cadence'
 import type { OnboardingSessionCompleteResponse, OnboardingSessionStepConflict } from '@/lib/api/generated/agency'
 import type { OnboardingSessionError } from '@/lib/api/onboarding-session.service'
 import type { OnboardingWizardStep } from '@/lib/hooks/use-onboarding-session'
+import { InmobiliariaCreada } from './InmobiliariaCreada'
 
 /** El destino del asistente al terminar. Ruta propia, siempre relativa. */
 export const RUTA_DEL_PANEL = '/panel/inmobiliaria'
@@ -17,7 +19,9 @@ export interface CompleteStepFormProps {
   isSubmitting: boolean
   onSubmit: () => Promise<OnboardingSessionCompleteResponse | null>
   /** Session-level error from the hook — passed as the full object (not just `.message`,
-   * like the other step forms) because this step branches on `.kind` and `.conflict`. */
+   * like the other step forms) because this step branches on `.kind` and `.conflict`.
+   * Un 400 (`validation`) se dice acá mismo, bajo el botón (02-10-2026): antes
+   * no llegaba y «Crear mi inmobiliaria» se volvía a prender sin decir nada. */
   error: OnboardingSessionError | null
   /** Navigates the wizard to a step other than `complete` — used by the missing-steps CTA. */
   onNavigateToStep: (step: OnboardingWizardStep) => void
@@ -82,6 +86,8 @@ function textoDelDraft(draft: Record<string, unknown> | null | undefined, ...rut
 export interface LineaDelResumen {
   etiqueta: string
   valor: string
+  /** El valor es un número (NIT, teléfono): se pinta en `font-mono`. */
+  mono?: boolean
 }
 
 /**
@@ -92,8 +98,15 @@ export interface LineaDelResumen {
  * la frase no significa nada.
  */
 export function resumenDelRegistro(
-  draft: Record<string, unknown> | null | undefined,
+  borrador: Record<string, unknown> | null | undefined,
 ): LineaDelResumen[] {
+  // El micro guarda el paso Agencia en `draft.agency.{…}`; las claves planas
+  // son del flujo viejo del enlace mágico. Se leen las dos.
+  const agencia = borrador?.agency
+  const draft =
+    agencia && typeof agencia === 'object'
+      ? { ...borrador, ...(agencia as Record<string, unknown>) }
+      : borrador
   const calle = textoDelDraft(draft, 'address', 'calle')
   const ciudad = textoDelDraft(draft, 'address', 'ciudad')
   const departamento = textoDelDraft(draft, 'address', 'departamento')
@@ -107,18 +120,19 @@ export function resumenDelRegistro(
       valor:
         textoDelDraft(draft, 'legalName') ?? textoDelDraft(draft, 'proposedAgencyName') ?? '',
     },
-    { etiqueta: 'NIT', valor: textoDelDraft(draft, 'nit') ?? '' },
+    { etiqueta: 'NIT', valor: textoDelDraft(draft, 'nit') ?? '', mono: true },
     { etiqueta: 'Dirección', valor: calle ?? '' },
     { etiqueta: 'Ciudad', valor: ubicacion },
     {
-      etiqueta: 'Correo de contacto',
+      etiqueta: 'Correo de la cuenta',
       valor:
         textoDelDraft(draft, 'primaryContactEmail') ?? textoDelDraft(draft, 'contactEmail') ?? '',
     },
     {
-      etiqueta: 'Teléfono',
+      etiqueta: 'Teléfono de la cuenta',
       valor:
         textoDelDraft(draft, 'primaryContactPhone') ?? textoDelDraft(draft, 'contactPhone') ?? '',
+      mono: true,
     },
     miembros.length > 0
       ? {
@@ -135,8 +149,9 @@ export function resumenDelRegistro(
  * Form for the wizard's terminal `complete` step — no fields, just a confirm CTA
  * that calls `completeOnboarding()`.
  *
- *  - Success → redirects with `window.location.href` (the response's `dashboardUrl`
- *    is potentially cross-domain, so the Next.js router is deliberately not used here).
+ *  - Success → celebración (`InmobiliariaCreada`, con confeti) y, cuando la persona
+ *    aprieta «Ir a mi panel», refresca la sesión y navega a una ruta PROPIA
+ *    (nunca al `dashboardUrl` absoluto: ver `irAlPanel`).
  *  - 409 conflict → NOT a hard error: the session isn't actually done yet. See
  *    `extractMissingSteps` above for how the two possible 409 shapes are discriminated.
  *  - Any other error kind is NOT handled here — the parent renders the generic
@@ -151,8 +166,15 @@ export function CompleteStepForm({
 }: CompleteStepFormProps) {
   const router = useRouter()
   const { refreshUser } = useAuth()
+  /** `/complete` salió bien: se celebra antes de ir al panel (Nico, 30-09). */
+  const [creada, setCreada] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
+  // El último error del micro, para que el aviso no se vacíe mientras sale.
+  const mensajeDelError = error?.kind === 'validation' ? error.message : null
+  const [ultimoError, setUltimoError] = useState(mensajeDelError)
+  if (mensajeDelError && mensajeDelError !== ultimoError) setUltimoError(mensajeDelError)
   const resumen = resumenDelRegistro(draft)
+  const nombre = textoDelDraft(draft, 'legalName') ?? textoDelDraft(draft, 'proposedAgencyName')
 
   /**
    * 🔴 NO se navega a `result.dashboardUrl`.
@@ -170,29 +192,51 @@ export function CompleteStepForm({
    */
   const handleFinish = async () => {
     const result = await onSubmit()
-    if (result) {
-      setRedirecting(true)
-      /*
-       * 🔴 Refrescar la sesión ANTES de navegar (Nico, 2026-09-07: «me dejó en
-       * un bucle, no me deja crear cuenta»).
-       *
-       * `/complete` creaba la inmobiliaria bien, pero el contexto de auth
-       * seguía con el `/users/me` de antes —sin membresía— y `ProtectedRoute`,
-       * al ver `needsOnboarding`, devolvía al selector de rol. De ahí el rol
-       * de nuevo, el «Ya casi está» de golpe (la sesión del back ya estaba en
-       * el paso 4) y el selector otra vez. El flujo de inquilino ya hace este
-       * refresco; éste no lo hacía.
-       *
-       * Si el refresco falla igual se navega: el guardián vuelve a sondear la
-       * membresía por su cuenta, y quedarse acá sería otro callejón.
-       */
-      try {
-        await refreshUser()
-      } catch {
-        // ver arriba
-      }
-      router.replace(RUTA_DEL_PANEL)
+    // Primero se celebra; la sesión se refresca y se navega cuando la persona
+    // aprieta «Ir a mi panel» (`irAlPanel`). Refrescar antes haría que los
+    // guardianes vieran la membresía nueva y se la llevaran a mitad de la
+    // celebración.
+    if (result) setCreada(true)
+  }
+
+  const irAlPanel = async () => {
+    if (redirecting) return
+    setRedirecting(true)
+    /*
+     * 🔴 Refrescar la sesión ANTES de navegar (Nico, 2026-09-07: «me dejó en
+     * un bucle, no me deja crear cuenta»).
+     *
+     * `/complete` creaba la inmobiliaria bien, pero el contexto de auth
+     * seguía con el `/users/me` de antes —sin membresía— y `ProtectedRoute`,
+     * al ver `needsOnboarding`, devolvía al selector de rol. De ahí el rol
+     * de nuevo, el «Ya casi está» de golpe (la sesión del back ya estaba en
+     * el paso 4) y el selector otra vez. El flujo de inquilino ya hace este
+     * refresco; éste no lo hacía.
+     *
+     * Si el refresco falla igual se navega: el guardián vuelve a sondear la
+     * membresía por su cuenta, y quedarse acá sería otro callejón.
+     */
+    let destinoMfa: 'enroll' | 'verify' | 'none' | void = 'none'
+    try {
+      destinoMfa = await refreshUser()
+    } catch {
+      // ver arriba
     }
+    /*
+     * T-0123: el segundo factor es el ÚLTIMO paso del registro. Quien acaba
+     * de crear su inmobiliaria pasa a ser ADMIN activo y el back le exige
+     * aal2; si entrara al panel con la sesión aal1, sus primeras llamadas
+     * responderían 403 SEGUNDO_FACTOR_REQUERIDO. `refreshUser` ya volvió a
+     * evaluar el requisito con el veredicto fresco: acá se decide la ruta
+     * de forma explícita, sin depender de que un guardián alcance a
+     * redirigir antes de que el panel pida datos.
+     */
+    if (destinoMfa === 'enroll' || destinoMfa === 'verify') {
+      const pantalla = destinoMfa === 'enroll' ? '/auth/mfa-enroll' : '/auth/mfa-verify'
+      router.replace(`${pantalla}?returnUrl=${encodeURIComponent(RUTA_DEL_PANEL)}`)
+      return
+    }
+    router.replace(RUTA_DEL_PANEL)
   }
 
   if (error?.kind === 'conflict') {
@@ -202,13 +246,13 @@ export function CompleteStepForm({
     const missingStepKeys = missingSteps ?? (requiredStep ? [requiredStep] : [])
     const targetStep = missingSteps ? firstMissingStep(missingSteps) : requiredStep
 
+    // «Te faltan estos pasos» reemplaza al resumen cruzándose (el mismo
+    // `CrossFade` del otro `return`: cambia su `swapKey`).
     return (
-      <div
-        data-testid="complete-step-missing"
-        className="rounded-lg border border-border bg-surface p-6 space-y-4 shadow-sm"
-      >
-        <div className="flex items-start gap-2">
-          <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
+      <CrossFade swapKey="faltan">
+      <div data-testid="complete-step-missing" className="space-y-4">
+        <div className="flex items-start gap-2.5 rounded-md border border-warning/30 bg-warning-soft p-4">
+          <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" aria-hidden />
           <div>
             <p className="text-sm font-medium text-fg">Te faltan estos pasos antes de finalizar</p>
             {missingStepKeys.length > 0 && (
@@ -225,45 +269,49 @@ export function CompleteStepForm({
           <Button
             type="button"
             hideArrow
-            size="lg"
+           
             className="w-full"
             onClick={() => onNavigateToStep(targetStep)}
             data-testid="complete-step-go-to-missing"
           >
             Ir a {labelFor(targetStep)}
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </Button>
         )}
       </div>
+      </CrossFade>
     )
   }
 
   return (
-    <div
-      data-testid="complete-step-form"
-      className="rounded-lg border border-border bg-surface p-6 text-center space-y-4 shadow-sm"
-    >
-      <div className="w-12 h-12 mx-auto rounded-md bg-primary-soft flex items-center justify-center">
-        <CheckCircle className="w-6 h-6 text-primary" />
-      </div>
-      <div>
-        <h2 className="text-h2">Ya casi está</h2>
-        <p className="text-body-sm text-fg-muted mt-1">
-          {resumen.length > 0
-            ? 'Revisa que todo esté en orden y confirma para finalizar tu registro.'
-            : 'Confirma para finalizar tu registro.'}
-        </p>
-      </div>
+    // Sin marco propio, ícono ni «Ya casi está» en negrita: el paso ya vive en
+    // la tarjeta del asistente, con su título («Revisa y crea tu
+    // inmobiliaria»). Acá queda lo que se revisa y el botón. La frase de
+    // apertura sólo cuando no hay resumen: con resumen repetía el título
+    // palabra por palabra (la misma frase no se dice dos veces).
+    <CrossFade swapKey="resumen">
+    <div data-testid="complete-step-form" className="space-y-5">
+      {resumen.length === 0 && (
+        <p className="text-body-sm text-fg-muted">Confirma para crear tu inmobiliaria.</p>
+      )}
 
       {resumen.length > 0 && (
         <dl
           data-testid="complete-step-resumen"
-          className="text-left rounded-md border border-border-faint bg-surface-muted divide-y divide-border-faint"
+          className="divide-y divide-border-faint rounded-md border border-border bg-bg"
         >
           {resumen.map((linea) => (
-            <div key={linea.etiqueta} className="flex items-start justify-between gap-4 px-3 py-2">
-              <dt className="text-body-sm text-fg-muted shrink-0">{linea.etiqueta}</dt>
-              <dd className="text-body-sm text-fg text-right min-w-0 break-words">{linea.valor}</dd>
+            <div key={linea.etiqueta} className="flex items-start justify-between gap-4 px-4 py-2.5">
+              <dt className="shrink-0 text-body-sm text-fg-muted">{linea.etiqueta}</dt>
+              <dd
+                className={
+                  linea.mono
+                    ? 'min-w-0 break-words text-right font-mono text-body-sm tabular-nums text-fg'
+                    : 'min-w-0 break-words text-right text-body-sm text-fg'
+                }
+              >
+                {linea.valor}
+              </dd>
             </div>
           ))}
         </dl>
@@ -272,29 +320,43 @@ export function CompleteStepForm({
       <Button
         type="button"
         hideArrow
-        size="lg"
+       
         className="w-full"
-        disabled={isSubmitting || redirecting}
+        disabled={isSubmitting || creada}
         onClick={handleFinish}
         data-testid="complete-step-finish"
       >
-        {redirecting ? (
+        {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />
-            Redirigiendo a tu panel...
-          </>
-        ) : isSubmitting ? (
-          <>
-            <Spinner size="xs" variant="current" />
-            Finalizando...
+            Creando tu inmobiliaria…
           </>
         ) : (
           <>
-            Finalizar onboarding
-            <ArrowRight className="w-4 h-4" />
+            Crear mi inmobiliaria
+            <ArrowRight className="w-4 h-4" weight="bold" aria-hidden />
           </>
         )}
       </Button>
+
+      {/* Lo que el micro rechazó al crearla (un 400): con sus palabras, ya
+          pasadas por el traductor en el servicio. */}
+      {/* Entra y sale con `Presence` (al reintentar, se va antes de la respuesta). */}
+      <Presence show={error?.kind === 'validation' && Boolean(error.message)}>
+        <div
+          role="alert"
+          data-testid="complete-step-error"
+          className="flex items-start gap-2.5 rounded-md border border-danger/20 bg-danger-soft p-3"
+        >
+          <WarningCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" weight="fill" aria-hidden />
+          <p className="text-body-sm text-danger">{error?.kind === 'validation' ? error.message : ultimoError}</p>
+        </div>
+      </Presence>
+
+      {creada ? (
+        <InmobiliariaCreada nombre={nombre} onIrAlPanel={() => void irAlPanel()} yendo={redirecting} />
+      ) : null}
     </div>
+    </CrossFade>
   )
 }

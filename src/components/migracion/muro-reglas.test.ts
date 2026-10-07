@@ -131,6 +131,39 @@ describe('pasoHabilitado — el paso N+1 espera al N', () => {
   });
 });
 
+describe('🔴 el Plan de cuentas no espera a nadie (Nico, 04-10: «soltar sólo el Plan de cuentas»)', () => {
+  it('recién llegada: el contador puede subir el plan de cuentas sin terminar Contratos', () => {
+    const indicePuc = RECIEN_LLEGADA.findIndex((p) => p.id === 'puc');
+    expect(pasoHabilitado(RECIEN_LLEGADA, indicePuc)).toBe(true);
+    expect(pasoQueFrena(RECIEN_LLEGADA, indicePuc)).toBeNull();
+  });
+
+  it('los saldos y los movimientos SIGUEN esperando a terceros y contratos, aunque el plan esté listo', () => {
+    const pasos = [
+      paso('propietarios', 'listo'),
+      paso('inquilinos', 'listo'),
+      paso('propiedades', 'listo'),
+      paso('contratos', 'pendiente'),
+      paso('puc', 'listo', 75),
+      paso('contables', 'pendiente'),
+    ];
+    expect(pasoHabilitado(pasos, 5)).toBe(false);
+    expect(pasoQueFrena(pasos, 5)?.id).toBe('contratos');
+  });
+
+  it('sólo se suelta el plan: inquilinos, inmuebles y contratos siguen en orden', () => {
+    expect(pasoHabilitado(RECIEN_LLEGADA, 1)).toBe(false);
+    expect(pasoHabilitado(RECIEN_LLEGADA, 2)).toBe(false);
+    expect(pasoHabilitado(RECIEN_LLEGADA, 3)).toBe(false);
+    expect(pasoHabilitado(RECIEN_LLEGADA, 5)).toBe(false);
+  });
+
+  it('un plan de cuentas `no_disponible` sigue sin botón', () => {
+    const pasos = [paso('propietarios', 'pendiente'), paso('puc', 'no_disponible')];
+    expect(pasoHabilitado(pasos, 1)).toBe(false);
+  });
+});
+
 describe('pasoQueFrena — el porqué que se muestra bajo el candado', () => {
   it('nombra el paso inmediatamente anterior que falta, no el primero de la lista', () => {
     const pasos = [
@@ -281,6 +314,8 @@ describe('leerDeuda', () => {
   it('lee el resumen real de la agencia de Nico', () => {
     expect(leerDeuda(RESUMEN_DE_NICO)).toEqual({
       contratos: 91,
+      // QA-CONT-95: también las que SÍ son contrato (el veredicto las nombra).
+      activados: 91,
       pendientes: 0,
       sinInmueble: 89,
       sinPropietario: 89,
@@ -315,6 +350,8 @@ describe('leerDeuda', () => {
     const r = leerDeuda({ lote: null, total: 10, pendientes: 2 });
     expect(r).toEqual({
       contratos: 10,
+      // QA-CONT-95: sin el conteo, `null` (el veredicto cae a `contratos`).
+      activados: null,
       pendientes: 2,
       sinInmueble: 0,
       sinPropietario: 0,
@@ -469,3 +506,88 @@ describe('recordatorioDescartado (por cuenta, 2026-09-07)', () => {
     expect('recordatorioDescartado' in (leerEstado({ bloquea: false, resuelta: null, pasos, recordatorioDescartado: 'sí' }) ?? {})).toBe(false);
   });
 });
+
+/*
+ * T-0125 · el muro ya no llama «listo» a un paso a medias: `propietarios` e
+ * `inquilinos` quedan pendientes mientras haya filas LISTO sin aplicar y
+ * `contables` mientras haya una carga de asientos abierta. Un paso que se
+ * puede quedar «pendiente» por algo que quedó a medias SOLO es seguro si la
+ * persona siempre puede LLEGAR a ese paso — si no, ve «pendiente» sin acción.
+ */
+describe('un paso que quedó a medias siempre se puede alcanzar (T-0125)', () => {
+  const ESTADOS: PasoDeMigracion['estado'][] = ['listo', 'pendiente', 'no_disponible'];
+  const IDS: PasoDeMigracion['id'][] = ['propietarios', 'inquilinos', 'propiedades', 'contratos', 'puc', 'contables'];
+
+  /** Las 3^6 = 729 combinaciones posibles de estados de los seis pasos. */
+  function* combinaciones(): Generator<PasoDeMigracion[]> {
+    for (let n = 0; n < ESTADOS.length ** IDS.length; n++) {
+      let resto = n;
+      yield IDS.map((id) => {
+        const estado = ESTADOS[resto % ESTADOS.length];
+        resto = Math.floor(resto / ESTADOS.length);
+        return paso(id, estado);
+      });
+    }
+  }
+
+  it('🔴 en TODA combinación, el primer paso exigible sin terminar está habilitado', () => {
+    let revisadas = 0;
+    for (const pasos of combinaciones()) {
+      const i = pasos.findIndex((p) => p.estado === 'pendiente');
+      if (i === -1) continue;
+      revisadas += 1;
+      expect(pasoHabilitado(pasos, i), JSON.stringify(pasos.map((p) => p.estado))).toBe(true);
+      // Y es justo el que `pasoActual` señala: no hay un «ahora» inalcanzable.
+      expect(pasoActual(pasos)).toBe(i);
+    }
+    expect(revisadas).toBeGreaterThan(500);
+  });
+
+  it('propietarios con filas LISTO sin aplicar frena a los de abajo, pero se alcanza a sí mismo', () => {
+    const pasos = [
+      paso('propietarios', 'pendiente', 12),
+      paso('inquilinos', 'listo', 30),
+      paso('propiedades', 'listo', 30),
+      paso('contratos', 'listo', 28),
+      paso('puc', 'listo', 75),
+      paso('contables', 'listo', 1),
+    ];
+    expect(pasoHabilitado(pasos, 0)).toBe(true);
+    expect(pasoActual(pasos)).toBe(0);
+    // Y desde cualquier otro paso hay a dónde ir: al que quedó a medias.
+    expect(siguientePaso(pasos, 5)).toBe(0);
+    expect(todoListo(pasos)).toBe(false);
+  });
+
+  it('contables con una carga abierta sigue alcanzable cuando todo lo anterior está listo', () => {
+    const pasos = [
+      paso('propietarios', 'listo', 12),
+      paso('inquilinos', 'listo', 30),
+      paso('propiedades', 'listo', 30),
+      paso('contratos', 'listo', 28),
+      paso('puc', 'listo', 75),
+      paso('contables', 'pendiente', 200),
+    ];
+    expect(pasoHabilitado(pasos, 5)).toBe(true);
+    expect(pasoActual(pasos)).toBe(5);
+    expect(todoListo(pasos)).toBe(false);
+  });
+
+  it('acepta el `detalle` que el back arma para un paso a medias (trabajo primero, logro al final)', () => {
+    const e = normalizarEstado({
+      bloquea: true,
+      resuelta: null,
+      pasos: [
+        { id: 'propietarios', estado: 'pendiente', conteo: 12, detalle: '4999 sin aplicar · 6 con datos por corregir · 12 ya cargados' },
+        { id: 'inquilinos', estado: 'pendiente', conteo: 0, detalle: null },
+        { id: 'propiedades', estado: 'pendiente', conteo: 0, detalle: null },
+        { id: 'contratos', estado: 'pendiente', conteo: 0, detalle: null },
+        { id: 'puc', estado: 'pendiente', conteo: 0, detalle: null },
+        { id: 'contables', estado: 'pendiente', conteo: 200, detalle: '1 carga sin terminar · faltan 116.062 asientos · 200 asientos ya cargados' },
+      ],
+    });
+    expect(e?.pasos[0].detalle).toContain('4999 sin aplicar');
+    expect(e?.pasos[5].detalle).toContain('1 carga sin terminar');
+  });
+});
+

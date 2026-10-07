@@ -154,3 +154,33 @@ describe('CasillasDeCodigo', () => {
     }
   });
 });
+
+/**
+ * 02-10-2026 (Nico, accesibilidad): las casillas aceptan `aria-describedby`,
+ * para que el lector diga el error del código (su `<ErrorDelCampo>`) en la
+ * casilla que tiene el foco.
+ */
+describe('CasillasDeCodigo — aria-describedby', () => {
+  async function pintarCon(props: { 'aria-describedby'?: string }) {
+    host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    await act(async () => {
+      root.render(
+        <CasillasDeCodigo aria-label="Código" value="" onChange={() => undefined} {...props} />,
+      );
+    });
+  }
+
+  it('🔴 cada casilla nombra el error que se le pasa', async () => {
+    await pintarCon({ 'aria-describedby': 'codigo-del-correo-error' });
+    for (let i = 0; i < 6; i++) {
+      expect(casilla(i).getAttribute('aria-describedby')).toBe('codigo-del-correo-error');
+    }
+  });
+
+  it('sin él, no inventa ninguno', async () => {
+    await pintarCon({});
+    expect(casilla(0).hasAttribute('aria-describedby')).toBe(false);
+  });
+});

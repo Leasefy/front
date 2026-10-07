@@ -33,6 +33,13 @@ vi.mock('framer-motion', () => ({
 
 vi.mock('@leasefy/cadence', () => ({
   IconButton: (props: Record<string, unknown>) => React.createElement('button', { 'aria-label': props['aria-label'] }),
+  // La tarjeta sube al pasar el puntero con `Pressable`: acá, la etiqueta tal cual.
+  Pressable: (props: Record<string, unknown> & { children?: React.ReactNode }) => {
+    const { as = 'div', hover, press, children, ...rest } = props;
+    void hover; void press;
+    return React.createElement(as as string, rest, children);
+  },
+  motionSpring: { bouncy: {}, snappy: {}, soft: {} },
 }));
 
 import { ConsignacionCard } from './ConsignacionCard';
@@ -116,6 +123,47 @@ describe('<ConsignacionCard> — guarded map lookups (confirmed crash-on-missing
 
   it('a SALE listing renders its commission pill with saleCommissionPercent, not commissionPercent (§A.3)', () => {
     render(makeConsignacion({ listingType: 'sale', saleCommissionPercent: 3, commissionPercent: 0 }));
-    expect(container.textContent).toContain('3%');
+    expect(container.textContent).toContain('3 %');
+  });
+
+  /* IN-03 (QA 04-10): la pastilla decía «% 10%» (ícono + «%»). */
+  it('la comisión se lee «10 %» una sola vez, sin el ícono de porcentaje al lado', () => {
+    render(makeConsignacion({ commissionPercent: 10 }));
+    expect(container.textContent).toContain('10 %');
+    expect(container.textContent).not.toContain('10%');
+    expect((container.textContent ?? '').match(/%/g)?.length).toBe(1);
+  });
+
+  /* QA con avatares (04-10): «Dejar en borrador» y la tarjeta decía «Disponible». */
+  it('🔴 un inmueble en borrador dice «Borrador», no «Disponible»', () => {
+    render(makeConsignacion({ availability: 'available', arrendado: false, propertyStatus: 'DRAFT' }));
+    expect(container.textContent).toContain('inmobiliaria.portafolio.card.availability.draft');
+    expect(container.textContent).not.toContain('inmobiliaria.portafolio.card.availability.available');
+  });
+
+  /* COMERCIAL (QA 04-10, 390 px): con administración en $ 0 la tarjeta pintaba un «0» suelto al lado de «/mes». */
+  it('sin administración no queda un «0» suelto junto al canon', () => {
+    render(makeConsignacion({ adminFee: 0 }));
+    const canon = container.querySelector('.text-xl')?.parentElement?.textContent ?? '';
+    expect(canon).not.toMatch(/0$/);
+  });
+
+  /* COMERCIAL (Nico, 04-10): «Vacante hace 42 días» y el mandato que se vence, en la tarjeta. */
+  it('muestra los días de vacancia y el mandato que se vence', () => {
+    act(() => {
+      root.render(
+        <ConsignacionCard
+          consignacion={makeConsignacion()}
+          comercial={{
+            consignacionId: 'x',
+            agenteUserId: null,
+            vacancia: { vacante: true, desde: '2026-08-23', dias: 42, fuente: 'FIN_DEL_CONTRATO' },
+            mandato: { estado: 'POR_VENCER', vence: '2026-10-25', dias: 21 },
+          }}
+        />,
+      );
+    });
+    expect(container.querySelector('[data-testid="dias-vacante"]')?.textContent).toBe('Vacante hace 42 días');
+    expect(container.querySelector('[data-testid="mandato-se-vence"]')?.textContent).toBe('Mandato vence en 21 días');
   });
 });

@@ -66,17 +66,19 @@ import {
   SortAscending,
   SortDescending,
   WhatsappLogo,
+  NotePencil,
 } from '@phosphor-icons/react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import { useI18n } from '@/lib/i18n'
 import { nombreDelMes } from '@/lib/utils/mes'
@@ -84,6 +86,7 @@ import { GRAVEDAD, gravedadDe } from '@/lib/cartera/edades'
 import { refDelInquilino } from '@/lib/estado-de-cuenta/con-quien-se-abre'
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service'
 import type { CarteraItem } from '@/lib/types/inmobiliaria'
+import { CajonDeGestiones } from '@/components/cobranza-manual/CajonDeGestiones'
 import {
   RUTA_DE_REGLAS_DE_MORA,
   CLAVE_DE_MORA,
@@ -193,9 +196,15 @@ export interface CarteraTableProps {
    */
   orden?: OrdenDeCartera
   onOrdenar?: (orden: OrdenDeCartera) => void
+  /**
+   * Qué se está mirando (filtros, orden, página). Al cambiar, el cuerpo se
+   * monta de nuevo y las filas entran escalonadas; buscar, en cambio, saca en
+   * su lugar las que ya no coinciden (`key` = la cuota).
+   */
+  clave?: string
 }
 
-export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar }: CarteraTableProps) {
+export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave }: CarteraTableProps) {
   const { t } = useI18n()
   /*
    * Por defecto, lo más vencido arriba. Una pantalla de cartera se abre para
@@ -203,6 +212,9 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar }: Car
    * filas no contesta eso.
    */
   const [ordenPropio, setOrdenPropio] = useState<OrdenDeCartera>(ORDEN_POR_DEFECTO)
+  // COBRANZA-MANUAL (04-10-2026): «Registrar gestión» en cada fila abre el
+  // cajón con el historial de la persona (lo del equipo y lo del agente).
+  const [gestionesDe, setGestionesDe] = useState<CarteraItem | null>(null)
   const { campo, sentido } = orden ?? ordenPropio
 
   // Con el orden controlado las filas ya vienen ordenadas; reordenarlas con el
@@ -247,6 +259,7 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar }: Car
   }
 
   return (
+    <>
     <Table className="min-w-[1220px]" data-testid="cartera-tabla">
       <TableHeader>
         <TableRow>
@@ -264,36 +277,53 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar }: Car
           <Ordenable campo="total" alineado="right">
             {t(CLAVE_DE_MORA.columnaTotal)}
           </Ordenable>
-          <TableHead className="w-16" />
+          <TableHead className="w-24" />
         </TableRow>
       </TableHeader>
-      <TableBody>
+      {/* Movimiento (ola 2, 03-10-2026): filas escalonadas con techo. */}
+      <TableBodyAnimado key={clave}>
         {ordenados.length === 0 && vacio ? (
-          <TableRow>
+          <TableRowAnimada key="vacio">
             <TableCell colSpan={COLUMNAS_DE_CARTERA} className="p-0">
               {vacio}
             </TableCell>
-          </TableRow>
+          </TableRowAnimada>
         ) : (
           ordenados.map((item) => (
             <FilaDeCartera
               key={item.cuotaId}
               item={item}
               onVerCobro={onVerCobro ? () => onVerCobro(item) : undefined}
+              onGestiones={() => setGestionesDe(item)}
             />
           ))
         )}
-      </TableBody>
+      </TableBodyAnimado>
     </Table>
+      {gestionesDe ? (
+        <CajonDeGestiones
+          abierto
+          onCerrar={() => setGestionesDe(null)}
+          quien={{ contractId: gestionesDe.contractId, cuotaId: gestionesDe.cuotaId }}
+          nombre={gestionesDe.tenantName}
+          detalle={[gestionesDe.propertyAddress ?? gestionesDe.propertyTitle, gestionesDe.contrato ? `Contrato ${gestionesDe.contrato}` : null]
+            .filter(Boolean)
+            .join(' · ')}
+        />
+      ) : null}
+    </>
   )
 }
 
 function FilaDeCartera({
   item,
   onVerCobro,
+  onGestiones,
 }: {
   item: CarteraItem
   onVerCobro?: () => void
+  /** Abrir las gestiones de cobro de la persona (COBRANZA-MANUAL). */
+  onGestiones?: () => void
 }) {
   const { t, locale, formatCurrency, formatDate } = useI18n()
 
@@ -303,7 +333,7 @@ function FilaDeCartera({
     : null
 
   return (
-    <TableRow
+    <TableRowAnimada
       className="cursor-pointer"
       onClick={onVerCobro}
       data-testid="cartera-fila"
@@ -425,9 +455,17 @@ function FilaDeCartera({
                   { n: item.diasDeMora },
                 )
               : item.cajon === 'VENCIDA_EN_PLAZO'
-                ? t('cartera.tabla.vencidoEnPlazo')
+                ? // 🔴 CR-31: sin plazo fijado es «Vencida», no «en plazo».
+                  item.plazoSinFijar
+                  ? t('cartera.tabla.vencidaSinPlazo')
+                  : t('cartera.tabla.vencidoEnPlazo')
                 : t('cartera.tabla.porVencer')}
           </Badge>
+          {item.cajon === 'VENCIDA_EN_PLAZO' && item.plazoSinFijar ? (
+            <div className="whitespace-nowrap text-caption text-fg-subtle" data-testid="sin-plazo-fijado">
+              {t('cartera.tabla.sinPlazoFijado')}
+            </div>
+          ) : null}
           {/* El plazo se dice sólo donde explica algo: es la razón por la que
               una cuota vencida todavía no es cartera. */}
           {item.cajon === 'VENCIDA_EN_PLAZO' && item.diasDePlazo > 0 ? (
@@ -488,6 +526,23 @@ function FilaDeCartera({
       </TableCell>
 
       <TableCell className="align-middle text-right">
+        <div className="flex items-center justify-end gap-1">
+        {onGestiones ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            hideArrow
+            title="Registrar gestión"
+            onClick={(e) => {
+              e.stopPropagation()
+              onGestiones()
+            }}
+            data-testid="cartera-registrar-gestion"
+          >
+            <NotePencil className="h-4 w-4" aria-hidden="true" />
+            <span className="sr-only">Registrar gestión con {item.tenantName ?? 'esta persona'}</span>
+          </Button>
+        ) : null}
         {/* Enlace de verdad, no un onClick: se puede abrir en otra pestaña.
 
             🔴 Sin cobro emitido no hay cobro que abrir: el enlace va al
@@ -505,8 +560,9 @@ function FilaDeCartera({
             </span>
           </Link>
         </Button>
+        </div>
       </TableCell>
-    </TableRow>
+    </TableRowAnimada>
   )
 }
 

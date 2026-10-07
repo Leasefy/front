@@ -169,11 +169,16 @@ describe('«Cómo funciona» de la cobranza', () => {
     expect(container.querySelector('[data-testid="para-entender-mas"]')).toBeTruthy();
   });
 
-  it('sin cartera todavía, los cuatro pasos están puestos: es lo único que la pantalla ofrece', async () => {
+  // 05-10-2026 (Nico: «eso no debe de estar ahí siempre […] llévalas al botón
+  // que al dar clic abre drawer»): sin mora los cuatro pasos YA NO se quedan
+  // puestos. En los dos casos viven detrás del botón del encabezado.
+  it('sin cartera en mora, los cuatro pasos tampoco están puestos: el botón va arriba, en el encabezado', async () => {
     estado.valor = { data: sinMora, isLoading: false, error: null, refetch: () => Promise.resolve() };
     await act(async () => root.render(<CobranzaOverviewPage />));
 
-    expect(container.querySelector('[data-testid="cobranza-como-funciona"]')).toBeTruthy();
-    expect(container.querySelector('[data-testid="para-entender-mas"]')).toBeNull();
+    expect(container.querySelector('[data-testid="cobranza-como-funciona"]')).toBeNull();
+    const boton = container.querySelector('[data-testid="para-entender-mas"]');
+    expect(boton).toBeTruthy();
+    expect(boton!.closest('header')).toBeTruthy();
   });
 });

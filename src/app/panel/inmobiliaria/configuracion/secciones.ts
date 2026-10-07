@@ -1,4 +1,5 @@
 import type { Icon } from '@phosphor-icons/react';
+import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
 import {
   Bell,
   Brain,
@@ -20,6 +21,7 @@ import {
   Clock,
   ClockCounterClockwise,
   IdentificationBadge,
+  Handshake,
 } from '@phosphor-icons/react';
 
 /**
@@ -60,6 +62,7 @@ export type SeccionId =
   | 'facturacion'
   | 'equipo'
   | 'permisos'
+  | 'comercial'
   | 'medios-de-pago'
   | 'medios-de-recibo'
   | 'costos-de-la-plata'
@@ -91,7 +94,12 @@ export type GateDeSeccion =
   | { tipo: 'modulo'; module: string }
   /** Por ROL de la agencia (el ADMIN siempre pasa): lo que el back cuida con un guard por rol. */
   | { tipo: 'roles'; roles: readonly string[] }
-  | { tipo: 'todos' };
+  /**
+   * Todo miembro. `menos`: los roles que NO la ven (QA-IA-95, CF-01: el
+   * auxiliar de cartera sólo ve cartera; las lecciones del chat traen preguntas
+   * de todas las áreas).
+   */
+  | { tipo: 'todos'; menos?: readonly string[] };
 
 export interface SeccionDeConfiguracion {
   id: SeccionId;
@@ -154,6 +162,18 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     labelKey: 'inmobiliaria.config.tabs.permisos',
     descKey: 'inmobiliaria.config.tabs.permisosDesc',
     icon: ShieldCheck,
+    gate: { tipo: 'admin' },
+  },
+  {
+    // COMERCIAL (Nico, 04-10-2026): la regla de comisión de los asesores. Sólo
+    // el ADMIN (el gerente), igual que el back (`SOLO_EL_ADMINISTRADOR`): lo que
+    // se le paga a un asesor no lo decide el asesor.
+    id: 'comercial',
+    grupo: 'equipo',
+    slug: 'comercial',
+    labelKey: 'inmobiliaria.config.tabs.comercial',
+    descKey: 'inmobiliaria.config.tabs.comercialDesc',
+    icon: Handshake,
     gate: { tipo: 'admin' },
   },
   {
@@ -235,7 +255,10 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     labelKey: 'inmobiliaria.config.tabs.notificaciones',
     descKey: 'inmobiliaria.config.tabs.notificacionesDesc',
     icon: Bell,
-    gate: { tipo: 'admin' },
+    // QA 04-10 (CF-11): son las de CADA persona (qué le llega a ella por
+    // correo) y ahora el back las respeta: todo miembro las maneja. Antes la
+    // asesora veía «No tienes acceso» y no podía apagar sus correos.
+    gate: { tipo: 'todos' },
   },
   {
     id: 'preferencias',
@@ -344,14 +367,16 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
   },
   {
     // Sin gate, como la pantalla que absorbe (`/configuracion/ia` no tenía
-    // guard: la veía todo miembro).
+    // guard: la veía todo miembro). Menos el auxiliar de cartera (QA-IA-95,
+    // CF-01, decisión 12): sólo ve cartera, y las lecciones del chat traen
+    // preguntas de contratos, PQRS y demás áreas.
     id: 'ia',
     grupo: 'sistema',
     slug: 'ia',
     labelKey: 'inmobiliaria.config.tabs.automatizacionIa',
     descKey: 'inmobiliaria.config.tabs.automatizacionIaDesc',
     icon: Brain,
-    gate: { tipo: 'todos' },
+    gate: { tipo: 'todos', menos: [AGENCY_ROLES.AUXILIAR_CARTERA] },
   },
 ];
 
@@ -421,7 +446,9 @@ export interface ContextoDePermisos {
 }
 
 export function puedeVerSeccion(seccion: SeccionDeConfiguracion, ctx: ContextoDePermisos): boolean {
-  if (seccion.gate.tipo === 'todos') return true;
+  if (seccion.gate.tipo === 'todos') {
+    return !(seccion.gate.menos && ctx.agencyRole && seccion.gate.menos.includes(ctx.agencyRole));
+  }
   if (ctx.isAdmin) return true;
   if (seccion.gate.tipo === 'admin') return false;
   if (seccion.gate.tipo === 'roles') {

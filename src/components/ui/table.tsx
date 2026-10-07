@@ -30,7 +30,14 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 import { useDesbordeHorizontal } from "@/components/ui/use-desborde-horizontal"
-import { THead, TFoot } from "@leasefy/cadence"
+import {
+  THead,
+  TFoot,
+  Stagger,
+  StaggerItem,
+  type StaggerProps,
+  type StaggerItemProps,
+} from "@leasefy/cadence"
 
 export interface TableProps
   extends React.TableHTMLAttributes<HTMLTableElement> {
@@ -45,10 +52,22 @@ export interface TableProps
    * libro mayor dice cuántos meses hay— donde el aviso genérico sobra.
    */
   avisoDeDesborde?: boolean
+  /**
+   * Apagar las sombras de los bordes (`sigue-a-la-izquierda` /
+   * `sigue-a-la-derecha`); el scroll y el aviso escrito quedan igual. Para
+   * las tablas que marcan por su cuenta dónde sigue la tabla: el extracto del
+   * propietario fija Propiedad y Neto y pinta su filete en el borde INTERIOR
+   * de esas columnas; la sombra de afuera caería encima de la columna fija,
+   * donde ya no hay nada escondido.
+   */
+  sombrasDeBorde?: boolean
 }
 
 const Table = React.forwardRef<HTMLTableElement, TableProps>(
-  ({ className, stickyHeader = false, avisoDeDesborde = true, ...props }, ref) => {
+  (
+    { className, stickyHeader = false, avisoDeDesborde = true, sombrasDeBorde = true, ...props },
+    ref,
+  ) => {
     const { ref: caja, desborda, haciaLaIzquierda, haciaLaDerecha } =
       useDesbordeHorizontal<HTMLDivElement>()
     return (
@@ -91,15 +110,17 @@ const Table = React.forwardRef<HTMLTableElement, TableProps>(
           `bg-surface` como sobre `bg-bg`, y un degradado «hacia blanco» se ve
           como una mancha en la mitad de los casos. La sombra funciona sobre
           cualquier fondo y no tapa el dato: `pointer-events-none` y 12 px.
+          Con `sombrasDeBorde={false}` no se pintan: la tabla marca sus bordes
+          por su cuenta.
         */}
-        {haciaLaIzquierda ? (
+        {sombrasDeBorde && haciaLaIzquierda ? (
           <div
             aria-hidden="true"
             data-testid="sigue-a-la-izquierda"
             className="pointer-events-none absolute inset-y-0 left-0 w-3 shadow-[inset_10px_0_8px_-8px_rgba(0,0,0,0.18)] dark:shadow-[inset_10px_0_8px_-8px_rgba(0,0,0,0.65)]"
           />
         ) : null}
-        {haciaLaDerecha ? (
+        {sombrasDeBorde && haciaLaDerecha ? (
           <div
             aria-hidden="true"
             data-testid="sigue-a-la-derecha"
@@ -146,6 +167,63 @@ const TableFooter = React.forwardRef<
 ))
 TableFooter.displayName = "TableFooter"
 
+/**
+ * Movimiento, opt-in (sistema de Cadence): un cuerpo de tabla cuyas filas
+ * entran escalonadas la primera vez (techo de 320 ms aunque sean 200 filas) y
+ * que deja entrar y salir filas con su animación cuando la lista cambia
+ * (marcar, aprobar, borrar, filtrar).
+ *
+ * ```tsx
+ * <TableBodyAnimado>
+ *   {filas.map((f) => <TableRowAnimada key={f.id}>…</TableRowAnimada>)}
+ * </TableBodyAnimado>
+ * ```
+ *
+ * - Cada fila es una `TableRowAnimada` con `key` = el id del dato, NUNCA el
+ *   índice (con el índice, borrar la fila 2 anima la salida de la última).
+ * - Sin `layout`: en una tabla, medir cada fila en cada cambio cuesta y una
+ *   fila no puede quedar en `position: absolute`; por eso la salida es «sync»
+ *   (la fila se va en su lugar, 150 ms, y las de abajo suben al terminar).
+ * - Con movimiento reducido, sólo fundidos.
+ * - Una pantalla que ya usa `EstadoDeDatos` NO necesita esto para la carga:
+ *   esto es para los CAMBIOS de la lista ya cargada.
+ * - Funciona en el modo estricto de React (`next dev`): cada fila se anima
+ *   sola con su retraso por turno (Cadence, 03-10-2026). Antes el cuerpo
+ *   orquestaba a las filas con variantes y el doble montaje las dejaba en
+ *   `opacity: 0` (tablas vacías). Lo fija `table.movimiento.test.tsx`.
+ * - Dentro de algo que no anima su primer contenido (un `CrossFade`, un
+ *   `Collapse` abierto), las filas de ese primer pintado se ven quietas.
+ */
+const TableBodyAnimado = React.forwardRef<
+  HTMLDivElement,
+  Omit<StaggerProps, "as" | "layout" | "presenceMode">
+>((props, ref) => <Stagger ref={ref} as="tbody" layout={false} presenceMode="sync" {...props} />)
+TableBodyAnimado.displayName = "TableBodyAnimado"
+
+export interface TableRowAnimadaProps extends Omit<StaggerItemProps, "as" | "layout"> {
+  /** Fila seleccionada (mismo dibujo que `TableRow selected`). */
+  selected?: boolean
+}
+
+/** La fila de un `TableBodyAnimado`: las mismas clases que `TableRow`. */
+const TableRowAnimada = React.forwardRef<HTMLDivElement, TableRowAnimadaProps>(
+  ({ className, selected = false, ...props }, ref) => (
+    <StaggerItem
+      ref={ref}
+      as="tr"
+      layout={false}
+      data-selected={selected || undefined}
+      className={cn(
+        "border-b border-border-faint last:border-b-0 transition-colors",
+        selected ? "bg-primary-soft" : "hover:bg-surface-muted",
+        className
+      )}
+      {...props}
+    />
+  )
+)
+TableRowAnimada.displayName = "TableRowAnimada"
+
 export {
   TBody as TableBody,
   TH as TableHead,
@@ -155,4 +233,4 @@ export {
 
 export type { THProps as TableHeadProps, TDProps as TableCellProps } from "@leasefy/cadence"
 
-export { Table, TableHeader, TableFooter }
+export { Table, TableHeader, TableFooter, TableBodyAnimado, TableRowAnimada }

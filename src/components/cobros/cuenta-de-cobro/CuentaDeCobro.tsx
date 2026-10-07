@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { AgencyProfile, CobroStatus } from '@/lib/types/inmobiliaria';
 import type { CobroConDesglose } from '@/lib/api/recibos-de-caja.types';
+import { conceptoSinElRango } from '@/lib/fechas/fecha-de-la-casa';
 import {
   fechaEnPalabras,
   lineasDeLaCuenta,
@@ -200,7 +201,9 @@ export function CuentaDeCobro({ cobro, agencia, hoy, className }: CuentaDeCobroP
 
   const nombreDeLinea = React.useCallback(
     (l: LineaDeLaCuenta): string => {
-      if (l.nombre) return l.nombre;
+      // PG-13 (03-10-2026): sin la cola cruda «De 01-Oct-2026 hasta
+      // 31-Oct-2026»; el documento ya dice el mes en el encabezado.
+      if (l.nombre) return conceptoSinElRango(l.nombre);
       const delCatalogo = tDelPanel(`recibos.desglose.tipos.${l.tipo}`);
       return delCatalogo === `recibos.desglose.tipos.${l.tipo}` ? l.tipo : delCatalogo;
     },

@@ -7,14 +7,20 @@ import { cn } from '@/lib/utils';
 
 /**
  * ADAPTER fino sobre el Spinner de @leasefy/cadence que preserva la API local:
- * - size: xs/sm/default/md/lg/xl/2xl → sm/md/lg del DS + override exacto de
- *   tamaño del icono ([&_svg]:size-N) por fidelidad con la escala legacy.
- * - variant: default (azul primary legacy), muted (= gris del DS), white,
- *   current, success/warning/error/info (colores legacy preservados).
- *   El icono del DS trae text-fg-muted propio, por eso el override de color
- *   va como [&_svg]:text-* (gana en especificidad).
+ * - size: xs/sm/default/md/lg/xl/2xl → sm/md/lg del DS + override exacto del
+ *   tamaño del anillo ([&>span]:size-N) por fidelidad con la escala legacy.
+ * - variant: default (azul primary), muted (gris), white, current,
+ *   success/warning/error/info. El Spinner del DS es un ANILLO (un <span> con
+ *   borde en currentColor dentro de un <span role="status"> que trae
+ *   `text-primary`), así que el color va en el envoltorio como `text-*` y
+ *   tailwind-merge reemplaza el `text-primary` del DS. Antes apuntaba a un
+ *   <svg> que el DS ya no pinta: ningún variant ni tamaño se aplicaba, y un
+ *   `variant="current"` dentro de un botón primario salía azul sobre azul.
  * - Los spinners secundarios sin call sites (DotsSpinner, PulseSpinner,
  *   BarSpinner, FullPageSpinner, InlineSpinner) se eliminan.
+ * - Es la carga de todo uso en línea o chico (botones, filas, al lado de un
+ *   texto, tarjetas, secciones). El logo de Leasefy en carga (`CargaDeMarca`)
+ *   queda sólo para pantalla completa y transiciones (Nico, 01-10).
  */
 
 type SpinnerSize = 'xs' | 'sm' | 'default' | 'md' | 'lg' | 'xl' | '2xl';
@@ -40,24 +46,24 @@ const SIZE_MAP: Record<SpinnerSize, NonNullable<DSSpinnerProps['size']>> = {
   '2xl': 'lg',
 };
 
-// Tamaños exactos de la escala legacy (DS solo trae size-4/5/7).
+// Tamaños exactos de la escala legacy (el DS sólo trae size-4/5/7).
 const SIZE_FIDELITY: Partial<Record<SpinnerSize, string>> = {
-  xs: '[&_svg]:size-3',
-  md: '[&_svg]:size-6',
-  lg: '[&_svg]:size-8',
-  xl: '[&_svg]:size-10',
-  '2xl': '[&_svg]:size-12',
+  xs: '[&>span]:size-3',
+  md: '[&>span]:size-6',
+  lg: '[&>span]:size-8',
+  xl: '[&>span]:size-10',
+  '2xl': '[&>span]:size-12',
 };
 
 const VARIANT_CLASSES: Record<SpinnerVariant, string> = {
-  default: '[&_svg]:text-primary',
-  muted: '', // el Spinner del DS ya es gris (text-fg-muted)
-  white: '[&_svg]:text-white',
-  current: '[&_svg]:text-current',
-  success: '[&_svg]:text-success',
-  warning: '[&_svg]:text-warning',
-  error: '[&_svg]:text-danger',
-  info: '[&_svg]:text-primary',
+  default: 'text-primary',
+  muted: 'text-fg-muted',
+  white: 'text-white',
+  current: 'text-current',
+  success: 'text-success',
+  warning: 'text-warning',
+  error: 'text-danger',
+  info: 'text-primary',
 };
 
 export interface SpinnerProps extends React.HTMLAttributes<HTMLSpanElement> {

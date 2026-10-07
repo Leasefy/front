@@ -78,6 +78,55 @@ const COLA_DE_PERIODO = /\.?\s*De\s+(\S+)\s+hasta\s+(\S+)\s*$/i;
 const FECHA_DE_NUI = /^(\d{1,2})-([A-Za-zñ]{3,4})-(\d{4})$/;
 const FECHA_ISO = /^(\d{4})-(\d{2})-(\d{2})$/;
 
+/**
+ * 🔴 QA-CONT C-10 (back, SEGUIMIENTO-BACK 03-10-2026): el back ahora cierra el
+ * concepto con el rango EN PALABRAS de la casa (`rangoParaLaPersona`):
+ * «Canon. Del 1 al 31 de octubre de 2026», «… Del 21 de agosto al 20 de
+ * septiembre de 2026», «… Del 15 de diciembre de 2026 al 14 de enero de 2027»
+ * y «… El 31 de octubre de 2026» (un solo día). Se leen ADEMÁS de la cola de
+ * Nui («De 01-Oct-2026 hasta 31-Oct-2026»), que siguen trayendo los migrados.
+ */
+const COLA_EN_PALABRAS_RANGO =
+  /\.?\s*Del\s+(\d{1,2})(?:\s+de\s+([a-záéíóúñ]+)(?:\s+de\s+(\d{4}))?)?\s+al\s+(\d{1,2})\s+de\s+([a-záéíóúñ]+)\s+de\s+(\d{4})\s*$/i;
+const COLA_EN_PALABRAS_DIA = /\.?\s*El\s+(\d{1,2})\s+de\s+([a-záéíóúñ]+)\s+de\s+(\d{4})\s*$/i;
+const MES_EN_PALABRAS: Record<string, string> = {
+  enero: '01',
+  febrero: '02',
+  marzo: '03',
+  abril: '04',
+  mayo: '05',
+  junio: '06',
+  julio: '07',
+  agosto: '08',
+  septiembre: '09',
+  setiembre: '09',
+  octubre: '10',
+  noviembre: '11',
+  diciembre: '12',
+};
+
+function diaEnPalabras(dia: string, mes: string, anio: string): string | null {
+  const mm = MES_EN_PALABRAS[mes.toLowerCase()];
+  return mm ? `${anio}-${mm}-${dia.padStart(2, '0')}` : null;
+}
+
+/** La cola en palabras del concepto, con dónde empieza; `null` si no la trae. */
+function colaEnPalabras(concepto: string): { desde: string; hasta: string; en: number } | null {
+  const r = COLA_EN_PALABRAS_RANGO.exec(concepto);
+  if (r) {
+    const [, d1, m1, a1, d2, m2, a2] = r;
+    const desde = diaEnPalabras(d1!, m1 ?? m2!, a1 ?? a2!);
+    const hasta = diaEnPalabras(d2!, m2!, a2!);
+    return desde && hasta ? { desde, hasta, en: r.index } : null;
+  }
+  const d = COLA_EN_PALABRAS_DIA.exec(concepto);
+  if (d) {
+    const dia = diaEnPalabras(d[1]!, d[2]!, d[3]!);
+    return dia ? { desde: dia, hasta: dia, en: d.index } : null;
+  }
+  return null;
+}
+
 /** «05-Ago-2024» o «2024-08-05» → `2024-08-05`; `null` si no es una fecha. */
 function fechaDeLaCola(texto: string): string | null {
   if (FECHA_ISO.test(texto)) return texto;
@@ -102,7 +151,11 @@ export function periodoDeLaFila(
     return { desde: fila.periodoDesde, hasta: fila.periodoHasta };
   }
   const m = COLA_DE_PERIODO.exec(fila.concepto);
-  if (!m) return null;
+  if (!m) {
+    // C-10: el rango en palabras del back nuevo.
+    const enPalabras = colaEnPalabras(fila.concepto);
+    return enPalabras ? { desde: enPalabras.desde, hasta: enPalabras.hasta } : null;
+  }
   const desde = fechaDeLaCola(m[1]!);
   const hasta = fechaDeLaCola(m[2]!);
   return desde && hasta ? { desde, hasta } : null;
@@ -127,7 +180,12 @@ export function periodoLegible(fila: FilaDelEstadoDeCuenta): string | null {
  */
 export function conceptoLimpio(fila: FilaDelEstadoDeCuenta): string {
   if (!periodoDeLaFila(fila)) return fila.concepto;
-  const sinCola = fila.concepto.replace(/\.?\s*De\s+\S+\s+hasta\s+\S+\s*$/i, '');
+  // C-10: «Canon. Del 1 al 31 de octubre de 2026» → «Canon» (sólo si la cola
+  // en palabras se deja leer: si no, el concepto queda entero).
+  const enPalabras = colaEnPalabras(fila.concepto);
+  const sinCola = enPalabras
+    ? fila.concepto.slice(0, enPalabras.en)
+    : fila.concepto.replace(/\.?\s*De\s+\S+\s+hasta\s+\S+\s*$/i, '');
   const limpio = sinCola.trim().replace(/\.$/, '');
   return limpio.length > 0 ? limpio : fila.concepto;
 }
@@ -365,7 +423,8 @@ const PINTA: Record<EstadoDeFila, PintaDelEstado> = {
   CANCELADA: { texto: 'Cancelada', clase: 'bg-success-soft text-success' },
   PENDIENTE: { texto: 'Pendiente', clase: 'bg-surface-muted text-fg' },
   ANULADA: { texto: 'Anulada', clase: 'bg-surface-muted text-fg-subtle line-through' },
-  ANTERIOR: { texto: 'Sistema anterior', clase: 'bg-surface-muted text-fg-subtle' },
+  // PG-08 (Nico, 03-10-2026): «Del sistema anterior», tal cual.
+  ANTERIOR: { texto: 'Del sistema anterior', clase: 'bg-surface-muted text-fg-subtle' },
 };
 
 export function pintaDelEstado(
@@ -379,9 +438,36 @@ export function pintaDelEstado(
   return base;
 }
 
+/**
+ * El documento del cliente con su TIPO: «CC 52123456», «NIT 901222333».
+ *
+ * 🔴 P-19 (QA-PROP, 03-10): decía «NIT/CC 52123456» siempre. Con el tipo
+ * (`cliente.tipoDocumento`) se dice el real; sin él —un back que todavía no lo
+ * manda— queda como antes.
+ */
+export function documentoDelCliente(cliente: {
+  documento: string | null;
+  tipoDocumento?: string | null;
+}): string | null {
+  if (!cliente.documento) return null;
+  const tipo = cliente.tipoDocumento?.trim();
+  return `${tipo || 'NIT/CC'} ${cliente.documento}`;
+}
+
 /** Con qué sombrero entra el cliente al documento. */
 export function comoSeLlamaElRol(rol: RolEnElContrato): string {
   return rol === 'PROPIETARIO' ? 'Propietario' : 'Inquilino';
+}
+
+/**
+ * 🔴 PG-08 (QA de Pagos, decisión de Nico 03-10-2026): el estado de cuenta del
+ * migrado va mes a mes desde el INICIO del contrato; los meses anteriores a la
+ * fecha de cartera son «Del sistema anterior». Con el comprobante migrado se
+ * leen como pagos; SIN él, la fila dice «Sin comprobantes cargados» y no suma
+ * ni en la deuda ni en lo pagado.
+ */
+export function sinComprobantesDelSistemaAnterior(fila: FilaDelEstadoDeCuenta): boolean {
+  return fila.estado === 'ANTERIOR' && !fila.documentoDePago;
 }
 
 /**
@@ -390,12 +476,19 @@ export function comoSeLlamaElRol(rol: RolEnElContrato): string {
  * No cambia el estado —ese lo manda el back— pero sí se dice en la columna
  * «Vence», con la palabra y no sólo con el color: dos filas «Pendiente» de
  * distinto color y con el mismo texto no se distinguen sin ver bien.
+ *
+ * 🔴 PG-R10 (QA de Pagos, 03-10-2026): el MISMO criterio del back
+ * (`armar-el-estado-de-cuenta.ts`, que pasó a `vencimiento < hoy`): la cuota
+ * que vence hoy todavía no está vencida ese día. Antes el resumen la contaba
+ * en «Vencido» (`<=`) y ninguna fila lo decía; ahora los dos dicen lo mismo.
  */
 export function estaVencida(
   fila: FilaDelEstadoDeCuenta,
   hoy: string,
 ): boolean {
   if (fila.estado !== 'PENDIENTE') return false;
+  // CA-06: una parte sin definir (falta el % de cada dueño) no está atrasada.
+  if (fila.sinPorcentaje) return false;
   return fila.fechaVencimiento.slice(0, 10) < hoy;
 }
 

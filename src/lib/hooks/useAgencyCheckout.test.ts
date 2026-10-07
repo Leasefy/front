@@ -1418,3 +1418,77 @@ describe('useAgencyCheckout — reset() abandons the tracked charge server-side 
     expect(onSuccess).toHaveBeenCalledTimes(1);
   });
 });
+
+/*
+ * 02-10-2026 · Elegir/pagar el plan con la regla de oro. El 409
+ * `PENDING_CHARGE_ALREADY_PAID` y el 503 de la pasarela siguen con su texto
+ * propio (arriba); lo demás: un 5xx dice «de nuestro lado» con la referencia
+ * de soporte, un 402 con `code` y sin texto legible dice la frase del código,
+ * y «conexión» sale sólo cuando no hubo respuesta. Nada de cobros reales:
+ * `agencySubscriptionApi` es un doble.
+ */
+describe('useAgencyCheckout — los errores con la regla de oro (02-10)', () => {
+  async function pagarCon(error: unknown) {
+    await mount();
+    vi.spyOn(window, 'open').mockReturnValue(fakeTab() as unknown as Window);
+    mockSelectPlan.mockRejectedValue(error);
+    await act(async () => {
+      await hook.pay('pro');
+    });
+    await flush();
+  }
+
+  it('🔴 un 5xx al pagar: «de nuestro lado» con la referencia, no «Error interno del servidor»', async () => {
+    await pagarCon(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    expect(hook.state).toBe('error');
+    expect(hook.error).toContain('No pudimos iniciar el pago: algo falló de nuestro lado');
+    expect(hook.error).toContain('ab12cd34');
+    expect(hook.error).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('🔴 un 402 con `code` y sin texto legible dice la frase del código', async () => {
+    await pagarCon(new ApiError(402, '', 'PLAN_REQUERIDO', { statusCode: 402, code: 'PLAN_REQUERIDO' }));
+    expect(hook.error).toContain('no tiene un plan activo');
+  });
+
+  it('un 400 con campos dice el mensaje del back', async () => {
+    const mensaje = 'Ese plan no existe o ya no está disponible.';
+    await pagarCon(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        campos: [{ campo: 'planId', regla: 'opcion', mensaje }],
+      }),
+    );
+    expect(hook.error).toBe(mensaje);
+  });
+
+  it('sin respuesta al pagar: ahí sí habla de la conexión', async () => {
+    await pagarCon(new ApiError(0, 'Failed to fetch'));
+    expect(hook.error).toMatch(/conexi[oó]n/);
+  });
+
+  it('🔴 activar un plan gratuito con un 5xx: «de nuestro lado» con la referencia', async () => {
+    await mount();
+    mockSelectPlan.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        referencia: 'ab12cd34',
+      }),
+    );
+    await act(async () => {
+      await hook.activate('starter');
+    });
+    expect(hook.state).toBe('error');
+    expect(hook.error).toContain('No pudimos activar el plan: algo falló de nuestro lado');
+    expect(hook.error).toContain('ab12cd34');
+  });
+});

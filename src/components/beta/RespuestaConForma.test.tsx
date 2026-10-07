@@ -160,6 +160,20 @@ describe('RespuestaConForma', () => {
       expect([...container.querySelectorAll('button')].some((b) => /filas que faltan/.test(b.textContent ?? ''))).toBe(false);
     });
 
+    // 🔴 Nico, 05-10-2026: «no deja bien el stroke». Sin pie, la tabla llega al
+    // borde de abajo de la caja y sus esquinas de abajo siguen la curva de
+    // adentro de la caja (13 px); con pie, las separa el filete del pie.
+    it('sin pie, las esquinas de abajo de la tabla siguen la curva de la caja; con pie, no', () => {
+      pintar(<RespuestaConForma bloques={[filas(9)]} />);
+      const sinPie = container.querySelector('[data-desplazamiento-de-la-tabla]')!;
+      expect(sinPie.className).toContain('-mb-4');
+      expect(sinPie.className).toContain('[&>div]:rounded-b-[13px]');
+      pintar(<RespuestaConForma bloques={[filas(20)]} />);
+      const conPie = container.querySelector('[data-desplazamiento-de-la-tabla]')!;
+      expect(conPie.className).not.toContain('rounded-b-[13px]');
+      expect(conPie.className).not.toContain('-mb-4');
+    });
+
     it('con 20 se esconden 12, el botón lo dice y vive en el PIE de la caja de la tabla', () => {
       pintar(<RespuestaConForma bloques={[filas(20)]} />);
       const caja = container.querySelector('[data-testid="bloque-tabla"]')!;

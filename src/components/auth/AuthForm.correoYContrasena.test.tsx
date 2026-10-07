@@ -88,6 +88,15 @@ vi.mock('framer-motion', async () => {
   }
 })
 
+/*
+ * Tras «Invalid login credentials» el login pregunta si el correo tiene
+ * cuenta (01-10); acá la tiene, así que queda el mensaje de siempre. Lo del
+ * correo sin cuenta se prueba en `AuthForm.correoSinCuenta.test.tsx`.
+ */
+vi.mock('@/lib/api/correo-tiene-cuenta.service', () => ({
+  correoTieneCuentaApi: { consultar: vi.fn().mockResolvedValue(true) },
+}))
+
 vi.mock('@/lib/supabase/client', () => ({ getSupabase: () => null }))
 vi.mock('@/lib/firebase/messaging', () => ({
   requestNotificationPermission: vi.fn().mockResolvedValue(undefined),
@@ -95,6 +104,10 @@ vi.mock('@/lib/firebase/messaging', () => ({
 }))
 
 import { AuthForm } from './AuthForm'
+
+/** Un `AuthApiError` de Supabase como lo arma el SDK: `code` + `status` (el texto en inglés no decide). */
+const errorDeSupabase = (mensaje: string, status: number, code?: string) =>
+  Object.assign(new Error(mensaje), { name: 'AuthApiError', status, code })
 
 let container: HTMLDivElement
 let root: Root
@@ -312,7 +325,7 @@ describe('AuthForm — login: el correo', () => {
   })
 
   it('con el correo sin confirmar (enlace vencido) ofrece reenviar el enlace desde el login', async () => {
-    signInWithEmailMock.mockRejectedValue(new Error('Email not confirmed'))
+    signInWithEmailMock.mockRejectedValue(errorDeSupabase('Email not confirmed', 400, 'email_not_confirmed'))
     resendMock.mockResolvedValue(undefined)
     await renderLogin()
     await act(async () => {
@@ -332,7 +345,7 @@ describe('AuthForm — login: el correo', () => {
   })
 
   it('con la contraseña mal no ofrece reenviar nada', async () => {
-    signInWithEmailMock.mockRejectedValue(new Error('Invalid login credentials'))
+    signInWithEmailMock.mockRejectedValue(errorDeSupabase('Invalid login credentials', 400, 'invalid_credentials'))
     await renderLogin()
     await act(async () => {
       setInputValue(input('email'), 'nico@gmail.com')
@@ -355,4 +368,20 @@ describe('AuthForm — login: el correo', () => {
     await submit()
     expect(signInWithEmailMock).toHaveBeenCalledTimes(1)
   })
+
+  it('🔴 el correo escrito pasa a «Recupera tu contraseña» y vuelve al regresar (Nico, 01-10)', async () => {
+    await renderLogin()
+    await act(async () => {
+      setInputValue(input('email'), 'hola@leasefy.co')
+    })
+    const olvide = [...container.querySelectorAll('button')].find((b) => /Olvidaste tu contraseña/.test(b.textContent ?? ''))
+    await click(olvide ?? null)
+    expect(container.textContent).toContain('Recupera tu contraseña')
+    expect(input('email').value).toBe('hola@leasefy.co')
+
+    const volver = [...container.querySelectorAll('button')].find((b) => /Volver al inicio de sesión/.test(b.textContent ?? ''))
+    await click(volver ?? null)
+    expect(input('email').value).toBe('hola@leasefy.co')
+  })
 })
+

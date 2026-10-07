@@ -28,6 +28,7 @@ import { act } from 'react';
 
 import { ApiError } from '@/lib/api/client';
 import type { Convenio, ListaDeConvenios } from '@/lib/api/tesoreria.types';
+import { MENSAJES_DE_TESORERIA } from '@/lib/tesoreria/limites-de-tesoreria';
 
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -379,5 +380,105 @@ describe('un convenio guardado se puede cambiar', () => {
 
     expect(q('sin-convenio-activo')?.textContent).toContain('Actívalo');
     expect(q('sin-convenio')).toBeNull();
+  });
+});
+
+/*
+ * Tanda 2 del sistema de errores (02-10-2026). El cajón decía TODO en el aviso
+ * del pie —y un 5xx salía como «Revisa los datos», culpando a quien estaba
+ * copiando el papel del banco—. Ahora: el texto más largo que su columna se
+ * ataja debajo de su campo con la frase del back; un 400 con `campos` va a su
+ * campo con el foco; el 409 de la cuenta va a la cuenta; un 5xx dice que fue
+ * nuestro con la referencia; sólo sin respuesta se habla de la conexión.
+ */
+describe('los errores del convenio, en su campo', () => {
+  const escribirLoMinimo = async () => {
+    await escribir('convenio-banco', 'Davivienda');
+    await escribir('convenio-codigo', '77123');
+    await escribir('convenio-nombre', 'Recaudo');
+  };
+
+  it('🔴 un banco más largo que su columna se ataja debajo del campo y no viaja', async () => {
+    h.listarConvenios.mockResolvedValue(SIN_CONVENIOS);
+    await abrirElFormulario();
+    await escribirLoMinimo();
+    await escribir('convenio-banco', 'B'.repeat(81));
+    await clic(enElCajon('guardar-convenio'));
+
+    expect(h.crearConvenio).not.toHaveBeenCalled();
+    expect(document.getElementById('convenio-banco-error')?.textContent).toBe(
+      MENSAJES_DE_TESORERIA.bancoLargo,
+    );
+    expect(document.activeElement?.id).toBe('convenio-banco');
+  });
+
+  it('🔴 un 400 con campos va a SU campo y le da el foco, no al aviso', async () => {
+    h.listarConvenios.mockResolvedValue(SIN_CONVENIOS);
+    h.crearConvenio.mockRejectedValue(
+      new ApiError(400, [MENSAJES_DE_TESORERIA.codigoLargo], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [MENSAJES_DE_TESORERIA.codigoLargo],
+        campos: [{ campo: 'codigo', regla: 'longitud_maxima', mensaje: MENSAJES_DE_TESORERIA.codigoLargo }],
+      }),
+    );
+    await abrirElFormulario();
+    await escribirLoMinimo();
+    await clic(enElCajon('guardar-convenio'));
+
+    expect(document.getElementById('convenio-codigo-error')?.textContent).toBe(
+      MENSAJES_DE_TESORERIA.codigoLargo,
+    );
+    expect(document.activeElement?.id).toBe('convenio-codigo');
+    expect(enElCajon('convenio-error')).toBeNull();
+  });
+
+  it('el 409 de una cuenta que ya recauda otro convenio va a la cuenta', async () => {
+    const motivo = 'La cuenta 00123 ya la recauda el convenio «Arriendos» (Bancolombia).';
+    h.listarConvenios.mockResolvedValue(SIN_CONVENIOS);
+    h.crearConvenio.mockRejectedValue(
+      new ApiError(409, motivo, 'CUENTA_YA_TIENE_CONVENIO', {
+        statusCode: 409,
+        code: 'CUENTA_YA_TIENE_CONVENIO',
+        message: motivo,
+      }),
+    );
+    await abrirElFormulario();
+    await escribirLoMinimo();
+    await escribir('convenio-cuenta', '00123');
+    await clic(enElCajon('guardar-convenio'));
+
+    expect(document.getElementById('convenio-cuenta-error')?.textContent).toBe(motivo);
+    expect(enElCajon('convenio-error')).toBeNull();
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia, no «revisa los datos»', async () => {
+    h.listarConvenios.mockResolvedValue(SIN_CONVENIOS);
+    h.crearConvenio.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    await abrirElFormulario();
+    await escribirLoMinimo();
+    await clic(enElCajon('guardar-convenio'));
+
+    const aviso = enElCajon('convenio-error')?.textContent ?? '';
+    expect(aviso).toContain('No pudimos guardar el convenio: algo falló de nuestro lado');
+    expect(aviso).toContain('ab12cd34');
+    expect(aviso).not.toContain('Revisa los datos');
+  });
+
+  it('sin respuesta (la red): ahí sí se habla de la conexión', async () => {
+    h.listarConvenios.mockResolvedValue(SIN_CONVENIOS);
+    h.crearConvenio.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await abrirElFormulario();
+    await escribirLoMinimo();
+    await clic(enElCajon('guardar-convenio'));
+
+    expect(enElCajon('convenio-error')?.textContent).toMatch(/conexión/);
   });
 });

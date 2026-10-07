@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { mesEnTitulo } from '@/lib/utils/mes';
-import { motion } from 'framer-motion';
+import { Pressable } from '@leasefy/cadence';
 import {
   HouseLine,
   User,
@@ -85,12 +85,12 @@ export function CobroCard({
   // Compact variant - single row for list views
   if (compact) {
     return (
-      <motion.div
-        whileHover={{ scale: 1.005 }}
-        whileTap={{ scale: 0.995 }}
+      <Pressable
+        hover="scale"
+        press="sm"
         onClick={() => onClick?.(cobro)}
         className={cn(
-          'w-full flex items-center gap-4 p-4 rounded-lg border-l-4 border bg-card border-border cursor-pointer transition-all duration-200 hover:shadow-sm',
+          'w-full flex items-center gap-4 p-4 rounded-lg border-l-4 border bg-card border-border cursor-pointer transition-shadow duration-base hover:shadow-sm',
           borderColor
         )}
       >
@@ -128,16 +128,17 @@ export function CobroCard({
             <span className="text-xs font-medium">{cobro.daysLate}d</span>
           </div>
         )}
-      </motion.div>
+      </Pressable>
     );
   }
 
   // Full card variant
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
+    <Pressable
+      hover="lift"
+      press="none"
       className={cn(
-        'w-full rounded-lg border-l-4 border bg-card overflow-hidden transition-all duration-200 group',
+        'w-full rounded-lg border-l-4 border bg-card overflow-hidden transition-colors duration-base group',
         borderColor,
         'border-border',
         onClick && 'cursor-pointer'
@@ -255,7 +256,12 @@ export function CobroCard({
         {cobro.daysLate > 0 && (
           <div className="flex items-center gap-2 text-sm text-warning">
             <Warning className="w-4 h-4" weight="fill" />
-            <span className="font-medium">{t('inmobiliaria.cobros.card.daysLate', { count: cobro.daysLate })}</span>
+            {/* PG-R16: «1 día de mora», no «1 días». */}
+            <span className="font-medium">
+              {t(cobro.daysLate === 1 ? 'inmobiliaria.cobros.card.daysLateUno' : 'inmobiliaria.cobros.card.daysLate', {
+                count: cobro.daysLate,
+              })}
+            </span>
           </div>
         )}
 
@@ -349,7 +355,7 @@ export function CobroCard({
           onAnulado={onCobroAnulado}
         />
       )}
-    </motion.div>
+    </Pressable>
   );
 }
 

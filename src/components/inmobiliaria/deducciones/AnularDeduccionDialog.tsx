@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { Prohibit } from '@phosphor-icons/react';
 
 import {
   Dialog,
@@ -18,6 +19,8 @@ import {
 } from '@/components/ui/dialog';
 import { Button, Input } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { camposDelError } from '@/lib/errores/traductor-de-errores';
 
 export interface AnularDeduccionDialogProps {
   abierto: boolean;
@@ -57,21 +60,34 @@ export function AnularDeduccionDialog({
     try {
       await onAnular(motivo.trim());
       onOpenChange(false);
-    } catch {
+    } catch (e) {
+      // Si el back rechazó el motivo (400 con `campos`), va bajo el motivo y
+      // con el foco ahí; lo demás lo dice quien anuló, en un toast.
+      const delMotivo = camposDelError(e).find((c) => c.campo === 'motivo');
+      if (delMotivo) {
+        setError(delMotivo.mensaje);
+        document.getElementById('anular-motivo')?.focus();
+      }
       setAnulando(false);
     }
   };
 
   return (
     <Dialog open={abierto} onOpenChange={onOpenChange}>
-      <DialogContent data-testid="anular-deduccion">
+      {/* Anular: el medallón rojo con el ícono de anular (no es borrar: el
+          descuento queda en la lista, anulado). */}
+      <DialogContent
+        variant="destructive"
+        icon={<Prohibit weight="bold" />}
+        data-testid="anular-deduccion"
+      >
         <DialogHeader>
           <DialogTitle>{t(k('titulo'))}</DialogTitle>
           <DialogDescription>{t(k('descripcion'))}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           {concepto && (
-            <p className="rounded-md bg-surface-muted px-3 py-2 text-sm text-fg-muted">{concepto}</p>
+            <p className="rounded-md border border-border px-3 py-2 text-sm text-fg-muted">{concepto}</p>
           )}
           <div className="space-y-2">
             <label htmlFor="anular-motivo" className="block text-sm font-medium text-fg">
@@ -79,19 +95,30 @@ export function AnularDeduccionDialog({
             </label>
             <Input
               id="anular-motivo"
+              aria-required="true"
               value={motivo}
               maxLength={500}
-              onChange={(e) => setMotivo(e.target.value)}
-              aria-invalid={Boolean(error)}
+              onChange={(e) => {
+                setMotivo(e.target.value);
+                setError(null);
+              }}
+              aria-invalid={Boolean(error) || undefined}
+              aria-describedby="anular-motivo-error"
             />
-            {error && <p className="text-xs text-danger">{error}</p>}
+            <ErrorDelCampo id="anular-motivo-error" mensaje={error} className="mt-0" />
           </div>
         </div>
         <DialogFooter>
           <Button variant="outline" hideArrow onClick={() => onOpenChange(false)} disabled={anulando}>
             {t(k('cancelar'))}
           </Button>
-          <Button variant="destructive" hideArrow onClick={() => void anular()} disabled={anulando}>
+          <Button
+            variant="destructive"
+            hideArrow
+            onClick={() => void anular()}
+            isLoading={anulando}
+            disabled={anulando}
+          >
             {anulando ? t(k('anulando')) : t(k('confirmar'))}
           </Button>
         </DialogFooter>

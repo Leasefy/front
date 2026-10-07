@@ -40,6 +40,7 @@ import { estaApagado } from '@/lib/finanzas/medios';
 import type { MedioDePago, NuevoMedioDePago } from '@/lib/api/medios-de-pago.types';
 import { cn } from '@/lib/utils';
 import { EditorDeMedio } from './EditorDeMedio';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   ICONO_DEL_TIPO,
   NOMBRE_DEL_TIPO,
@@ -53,8 +54,13 @@ export interface MediosDePagoProps {
   agencia?: { name?: string | null; razonSocial?: string | null; nit?: string | null } | null;
 }
 
-function mensajeDe(error: unknown, siNo: string): string {
-  return error instanceof Error && error.message ? error.message : siNo;
+/**
+ * El texto de un fallo, por el traductor (02-10-2026): un 4xx dice qué está
+ * mal, un 5xx «de nuestro lado» con la referencia y «conexión» sólo sin
+ * respuesta. Antes era el `message` crudo del error, viniera de donde viniera.
+ */
+function mensajeDe(error: unknown, porDefecto: string, accion: string): string {
+  return mensajeParaLaPersona(error, { porDefecto, accion });
 }
 
 export function MediosDePago({ agencia }: MediosDePagoProps) {
@@ -144,7 +150,7 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
       setMedios((previos) => ordenarMedios([...(previos ?? []), creado]));
       toast.success(`«${creado.nombre}» quedó creado.`);
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo crear el medio de pago.'));
+      toast.error(mensajeDe(error, 'No se pudo crear el medio de pago.', 'crear el medio de pago'));
     } finally {
       setSugerenciaEnCurso(null);
     }
@@ -159,7 +165,7 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
     try {
       reemplazar(await mediosDePagoApi.actualizar(medio.id, { [clave]: valor }));
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo guardar el cambio.'));
+      toast.error(mensajeDe(error, 'No se pudo guardar el cambio.', 'guardar el cambio'));
     } finally {
       marcarOcupada(medio.id, false);
     }
@@ -176,7 +182,7 @@ export function MediosDePago({ agencia }: MediosDePagoProps) {
     try {
       setMedios(await mediosDePagoApi.reordenar(items));
     } catch (error) {
-      toast.error(mensajeDe(error, 'No se pudo reordenar.'));
+      toast.error(mensajeDe(error, 'No se pudo reordenar.', 'reordenar los medios'));
       setMedios(medios);
     }
   };

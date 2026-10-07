@@ -524,3 +524,20 @@ describe('totalesQueNoCuadran', () => {
     expect(totalesQueNoCuadran(error)).toBeNull();
   });
 });
+
+describe('🔴 CB-R21 · pagar una factura de Gastos', () => {
+  it('manda sólo la factura y la cuenta escrita (lo demás lo hereda el back)', async () => {
+    await gastosApi.facturas.pagar('fac-1', { banco: ' Bancolombia ', tipoDeCuenta: '', numeroDeCuenta: '123' });
+    expect(clienteMock.post).toHaveBeenCalledWith(`${BASE}/egresos`, {
+      facturaId: 'fac-1',
+      banco: 'Bancolombia',
+      numeroDeCuenta: '123',
+    });
+  });
+
+  it('`vencidas` viaja en la consulta', async () => {
+    await gastosApi.facturas.listar({ vencidas: true });
+    const url = new URL(String(clienteMock.get.mock.calls.at(-1)![0]), 'http://x');
+    expect(url.searchParams.get('vencidas')).toBe('true');
+  });
+});

@@ -55,6 +55,16 @@ vi.mock('@/components/facturacion/FacturasEmitidas', () => ({
 vi.mock('@/components/facturacion/ColaDeTransmision', () => ({
   ColaDeTransmision: () => <div data-testid="cola-simulada" />,
 }));
+/*
+ * DIAN-FEEL (04-10-2026): el aviso de la DIAN pide el estado de la
+ * inmobiliaria al back y tiene su propia prueba (`EstadoAnteLaDian.test.tsx`).
+ * Acá sólo importa DÓNDE se pinta.
+ */
+vi.mock('@/components/facturacion/EstadoAnteLaDian', () => ({
+  BannerDeLaDian: ({ textoDeAntes }: { textoDeAntes: { titulo: string } }) => (
+    <div data-testid="banner-dian-simulado">{textoDeAntes.titulo}</div>
+  ),
+}));
 vi.mock('@/components/facturacion/EntregasYAcuse', () => ({
   EntregasYAcuse: () => <div data-testid="entregas-simulada" />,
 }));
@@ -66,6 +76,13 @@ vi.mock('@/components/facturacion/CertificacionDelMandatario', () => ({
 }));
 vi.mock('@/components/facturacion/TercerosSinCorreo', () => ({
   TercerosSinCorreo: () => <div data-testid="sin-correo-simulado" />,
+}));
+vi.mock('@/components/contabilidad/gastos/CuentasPorPagar', () => ({
+  CuentasPorPagar: ({ conRegistrar }: { conRegistrar?: boolean }) => (
+    <div data-testid="cxp-simulada" data-con-registrar={String(conRegistrar)}>
+      <table />
+    </div>
+  ),
 }));
 
 import FacturacionPage from './page';
@@ -113,8 +130,8 @@ describe('/panel/inmobiliaria/facturacion', () => {
     const activa = qa('[role="tab"]').find((t) => t.getAttribute('aria-selected') === 'true');
     expect(activa!.textContent).toBe(`${K}tab_nueva`);
     expect(q('[data-testid="nueva-factura-simulada"]')).not.toBeNull();
-    // El banner del M2 no se pinta encima de una pestaña que sí tiene motor.
-    expect(host.textContent ?? '').not.toContain(`${K}m2BannerTitle`);
+    // El aviso de la DIAN no se pinta encima de «Nueva factura».
+    expect(q('[data-testid="banner-dian-simulado"]')).toBeNull();
   });
 
   /*
@@ -148,8 +165,15 @@ describe('/panel/inmobiliaria/facturacion', () => {
     await act(async () => {
       boton.click();
     });
-    expect(document.body.textContent).toContain('se factura SIN impuestos');
-    expect(document.body.textContent).toContain('todavía no se transmite');
+    // 🔴 QA-FACT (03-10, Nico): sin escenario confirmado NO se emite (antes
+    // decía que «se factura SIN impuestos»), y los intereses van aparte.
+    expect(document.body.textContent).toContain('no se factura hasta confirmarlo');
+    expect(document.body.textContent).toContain('se facturan aparte, cuando se pagan');
+    expect(document.body.textContent).not.toContain('se factura SIN impuestos');
+    // QA-FACT-CONTA-95: Leasefy ya transmite con FEEL; el texto no dice que
+    // «todavía no se transmite», manda a «Electrónica (DIAN)» a ver en qué va.
+    expect(document.body.textContent).not.toContain('todavía no se transmite');
+    expect(document.body.textContent).toContain('ves si ya está validada');
   });
 
   it('las pestañas viven dentro de la tarjeta de la tabla, antes de la tabla', async () => {
@@ -210,22 +234,20 @@ describe('/panel/inmobiliaria/facturacion', () => {
     expect(q('[data-testid="sin-correo-simulado"]')).not.toBeNull();
   });
 
-  it('los encabezados se ven y el vacío va en el cuerpo, en una celda que los abarca', async () => {
-    // Se mira en «Compras»: desde el 17-09 es la única sin listado propio.
+  it('🔴 CB-R21 · «Compras» muestra las facturas de proveedor de Gastos (una sola fuente)', async () => {
     const compras = qa('[role="tab"]').find(
       (t) => t.textContent === `${K}tab_compras`,
     )!;
     await activarPestana(compras);
-    expect(qa('thead th')).toHaveLength(7);
-
-    const celda = q('tbody td');
-    expect(celda).not.toBeNull();
-    expect(celda!.getAttribute('colspan')).toBe('7');
-
-    const vacio = celda!.querySelector('[data-testid="sin-datos"]');
-    expect(vacio).not.toBeNull();
-    // La descripción de la pestaña vive en el vacío, no en una franja aparte.
-    expect(vacio!.textContent).toContain(`${K}desc_compras`);
+    const cxp = q('[data-testid="cxp-simulada"]');
+    expect(cxp).not.toBeNull();
+    // El «Registrar» de la pestaña ya está arriba: la lista no repite el suyo.
+    expect(cxp!.getAttribute('data-con-registrar')).toBe('false');
+    expect(q('[data-testid="sin-datos"]')).toBeNull();
+    // Registrar una compra lleva a Contabilidad → Gastos, no al formulario del agente.
+    expect(q('[data-testid="facturacion-registrar-compra"]')!.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/contabilidad/gastos',
+    );
   });
 
   it('🔴 «Ventas» y «Notas» listan lo emitido, con su selector de mes', async () => {
@@ -238,14 +260,12 @@ describe('/panel/inmobiliaria/facturacion', () => {
     expect(q('[data-testid="emitidas-simulada-notas"]')).not.toBeNull();
   });
 
-  it('cambiar de pestaña cambia las columnas y el vacío', async () => {
+  it('cambiar de pestaña a «Compras» la marca y pinta su lista', async () => {
     const compras = qa('[role="tab"]').find((t) => t.textContent === `${K}tab_compras`)!;
     await activarPestana(compras);
 
     expect(compras.getAttribute('aria-selected')).toBe('true');
-    expect(qa('thead th')).toHaveLength(7);
-    expect(q('tbody td')!.getAttribute('colspan')).toBe('7');
-    expect(q('[data-testid="sin-datos"]')!.textContent).toContain(`${K}desc_compras`);
+    expect(q('[data-testid="cxp-simulada"]')).not.toBeNull();
   });
 
   it('no queda ningún control sin comportamiento; el banner del M2 sigue', async () => {
@@ -277,7 +297,8 @@ describe('/panel/inmobiliaria/facturacion', () => {
       'combobox',
     );
 
-    expect(texto).toContain(`${K}m2BannerTitle`);
+    // DIAN-FEEL: en Ventas va el aviso de la DIAN (con el texto de antes de respaldo).
+    expect(q('[data-testid="banner-dian-simulado"]')!.textContent).toBe(`${K}m2BannerTitle`);
   });
 
   /**
@@ -292,11 +313,10 @@ describe('/panel/inmobiliaria/facturacion', () => {
       await activarPestana(pestana);
     }
 
-    it('Compras tampoco dice «no tienes»: manda a cuentas por pagar, que es donde viven', async () => {
+    it('🔴 CB-R21 · Compras ya no es un vacío: lista las facturas de Gastos', async () => {
       await ir('compras');
-      const vacio = q('[data-testid="sin-datos"]')!;
-      expect((vacio.textContent ?? '').toLowerCase()).not.toContain('no tienes');
-      expect(vacio.querySelector('a[href="/panel/inmobiliaria/pagos/cxp"]')).not.toBeNull();
+      expect(q('[data-testid="sin-datos"]')).toBeNull();
+      expect(q('[data-testid="cxp-simulada"]')).not.toBeNull();
     });
   });
 });

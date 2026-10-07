@@ -14,16 +14,25 @@ import { useState } from 'react';
 import { toast } from '@/components/ui/toast';
 import { ArrowSquareOut, Envelope, Phone, VideoCamera, MapPin } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { CrossFade } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Cajon, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
-import { SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { agendaApi } from '@/lib/api/agenda.service';
 import { rotuloDeLaPersona } from '@/lib/agenda/rotulo-de-la-persona';
 import { tareaIdOf, type EventoAgenda, type EventoEstado } from '@/lib/api/agenda.types';
 import { fechaLocal } from '@/lib/fechas-locales';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
-import { MotivoDialog } from '@/components/inmobiliaria/agenda/MotivoDialog';
+import {
+  MotivoDialog,
+  mensajeDelRechazoDelMotivo,
+} from '@/components/inmobiliaria/agenda/MotivoDialog';
+import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { useEquipo, useMiUserId } from '@/lib/agenda/use-equipo';
+import { origenDelEvento } from '@/lib/agenda/origen-del-evento';
+import { AsesorDeLaVisita, MasAccionesDeLaVisita } from '@/components/inmobiliaria/agenda/AccionesDeLaVisita';
 
 const ESTADO_BADGE: Record<EventoEstado, string> = {
   pendiente: 'bg-primary/10 text-primary',
@@ -64,8 +73,17 @@ interface Props {
   onOpenChange: (abierto: boolean) => void;
   /** Después de cualquier acción: la agenda se relee. */
   onCambio: () => void;
-  /** Las acciones de visita viven en la página (confirmar/rechazar/cancelar). */
-  onAccionVisita: (visitId: string, accion: () => Promise<void>) => Promise<void>;
+  /**
+   * Las acciones de visita viven en la página (confirmar/rechazar/cancelar).
+   * Devuelve si salió: con `false` el cajón y el motivo tipeado se quedan.
+   * `avisar: false` = el error lo dice quien llama (el diálogo del motivo,
+   * bajo su campo), así que la página no lo repite en un toast.
+   */
+  onAccionVisita: (
+    visitId: string,
+    accion: () => Promise<void>,
+    opciones?: { avisar?: boolean },
+  ) => Promise<boolean | void>;
   /**
    * Sin `operaciones:edit` el back responde 403 a toda acción sobre visitas y
    * tareas: el cajón queda de sólo lectura y lo dice, igual que la tabla (A3).
@@ -94,6 +112,16 @@ export function EventoAgendaDrawer({
    * es el texto y a qué endpoint va.
    */
   const [pidiendoMotivo, setPidiendoMotivo] = useState<'cancelar' | 'rechazar' | null>(null);
+  /** AG-06: el asesor elegido para confirmar una visita que todavía no tiene. */
+  const [asesorElegido, setAsesorElegido] = useState<string | null>(null);
+  const miUserId = useMiUserId();
+  const { asesores } = useEquipo(!entrante || entrante.tipo !== 'visita');
+  /** El rechazo del back al cancelar o rechazar: va bajo el campo del motivo. */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
+  const pedirMotivo = (cual: 'cancelar' | 'rechazar') => {
+    setErrorDelMotivo(null);
+    setPidiendoMotivo(cual);
+  };
 
   const accionTarea = async (estado: 'COMPLETADA' | 'CANCELADA' | 'PENDIENTE') => {
     if (!evento) return;
@@ -105,35 +133,76 @@ export function EventoAgendaDrawer({
       );
       onCambio();
       onOpenChange(false);
-    } catch {
-      toast.error('No se pudo actualizar la tarea');
+    } catch (err) {
+      // Sesión vencida: el cliente ya está cerrando sesión.
+      if (err instanceof ApiError && err.status === 401) return;
+      // El motivo del back por el traductor (02-10-2026): antes era siempre
+      // «No se pudo actualizar la tarea», también ante un 409 que explicaba.
+      toast.error('No se pudo actualizar la tarea', {
+        description: mensajeParaLaPersona(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'actualizar la tarea',
+        }),
+      });
     } finally {
       setActuando(false);
     }
   };
 
-  const visita = async (accion: () => Promise<void>) => {
+  const visita = async (accion: () => Promise<void>, opciones?: { avisar?: boolean }) => {
     if (!evento) return;
     setActuando(true);
     try {
-      await onAccionVisita(evento.id.replace(/^visit-/, ''), accion);
+      const salio = await onAccionVisita(evento.id.replace(/^visit-/, ''), accion, opciones);
+      if (salio === false) return false;
       onOpenChange(false);
+      return true;
     } finally {
       setActuando(false);
     }
   };
 
-  /** Cancelar y rechazar: las dos escriben el motivo que se acaba de tipear. */
+  /**
+   * Cancelar y rechazar: las dos escriben el motivo que se acaba de tipear.
+   *
+   * Si el back no la acepta, el diálogo sigue abierto con el motivo escrito y
+   * el porqué va BAJO el campo (02-10-2026), no en un toast de la página.
+   */
   const conMotivo = async (motivo: string) => {
     if (!evento || !pidiendoMotivo) return;
     const visitId = evento.id.replace(/^visit-/, '');
     const cual = pidiendoMotivo;
-    await visita(() =>
-      cual === 'cancelar'
-        ? agendaApi.cancelarCita(visitId, motivo)
-        : agendaApi.rechazarCita(visitId, motivo),
+    let rechazo: unknown;
+    setErrorDelMotivo(null);
+    const salio = await visita(
+      async () => {
+        try {
+          await (cual === 'cancelar'
+            ? agendaApi.cancelarCita(visitId, motivo)
+            : agendaApi.rechazarCita(visitId, motivo));
+        } catch (err) {
+          rechazo = err;
+          throw err;
+        }
+      },
+      { avisar: false },
     );
-    setPidiendoMotivo(null);
+    if (salio !== false) {
+      setPidiendoMotivo(null);
+      return;
+    }
+    if (rechazo !== undefined) {
+      setErrorDelMotivo(
+        mensajeDelRechazoDelMotivo(rechazo, {
+          campo: 'reason',
+          porDefecto:
+            cual === 'cancelar'
+              ? 'No se pudo cancelar la visita. Prueba de nuevo en un momento.'
+              : 'No se pudo rechazar la visita. Prueba de nuevo en un momento.',
+          accion: cual === 'cancelar' ? 'cancelar la visita' : 'rechazar la visita',
+        }),
+      );
+    }
   };
 
   const dia = evento ? fechaLocal(evento.fecha) : null;
@@ -146,29 +215,34 @@ export function EventoAgendaDrawer({
         {evento && (
           <>
             {/* Cabecera fija. El estado y el tipo van ENCIMA del título, por
-                eso no usa `CajonCabecera` (que pinta el título primero). */}
-            <div className="flex-none space-y-1 border-b border-border px-6 py-5 pr-14">
-              <div className="flex items-center gap-2">
-                <span
-                  className={cn(
-                    'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
-                    ESTADO_BADGE[evento.estado],
-                  )}
-                >
-                  {t(k(`estado_${evento.estado}`))}
-                </span>
+                eso el título va como hijo y no como `title`. */}
+            <SheetHeader>
+              <div className="mb-1 flex items-center gap-2">
+                {/* Al marcar, aceptar o cancelar, el estado cambia con un fundido. */}
+                <CrossFade as="span" swapKey={evento.estado} mode="popLayout" className="inline-flex">
+                  <span
+                    className={cn(
+                      'inline-flex items-center rounded-full px-2 py-0.5 text-caption font-medium',
+                      ESTADO_BADGE[evento.estado],
+                    )}
+                  >
+                    {t(k(`estado_${evento.estado}`))}
+                  </span>
+                </CrossFade>
                 <span className="text-caption text-fg-muted">{t(k(`rowTipo_${evento.tipo}`))}</span>
               </div>
-              <SheetTitle className="text-lg font-semibold text-fg">{evento.titulo}</SheetTitle>
-              <SheetDescription className="text-sm text-fg-muted">
+              <SheetTitle>{evento.titulo}</SheetTitle>
+              <SheetDescription>
                 {dia ? formatDate(dia, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : evento.fecha}
                 {evento.hora ? ` · ${evento.hora}` : ''}
               </SheetDescription>
-            </div>
+            </SheetHeader>
 
             <CajonCuerpo>
               <dl className="space-y-3 text-sm" data-testid="evento-detalle">
-                <Fila etiqueta={t(k('colOrigen'))}>{t(k(`origen_${evento.origen}`))}</Fila>
+                <Fila etiqueta={evento.tipo === 'tarea' ? 'Creada por' : t(k('colOrigen'))}>
+                  {origenDelEvento(evento, miUserId, (o) => t(k(`origen_${o}`)))}
+                </Fila>
                 <Fila etiqueta={t(k('colVinculo'))}>
                   {evento.vinculoLabel ? (
                     href ? (
@@ -190,6 +264,30 @@ export function EventoAgendaDrawer({
                   {evento.responsableNombre ?? '—'}
                 </Fila>
 
+                {esVisita && (
+                  <Fila etiqueta="Asesor">
+                    <AsesorDeLaVisita
+                      evento={evento}
+                      asesores={asesores}
+                      elegido={asesorElegido}
+                      onElegir={setAsesorElegido}
+                      puedeEditar={puedeEditar}
+                      onCambio={onCambio}
+                    />
+                  </Fila>
+                )}
+                {esVisita && evento.pipelineItemId && (
+                  <Fila etiqueta="Interesado">
+                    <Link
+                      href={`/panel/inmobiliaria/pipeline?lead=${evento.pipelineItemId}`}
+                      className="inline-flex items-center gap-1 text-primary hover:underline"
+                      data-testid="visita-interesado"
+                    >
+                      Ver en el embudo
+                      <ArrowSquareOut className="h-3.5 w-3.5" aria-hidden="true" />
+                    </Link>
+                  </Fila>
+                )}
                 {esVisita && evento.modalidad && (
                   <Fila etiqueta="Modalidad">
                     <span className="inline-flex items-center gap-1.5">
@@ -236,6 +334,15 @@ export function EventoAgendaDrawer({
                   </Fila>
                 )}
               </dl>
+              {esVisita && puedeEditar && (
+                <div className="mt-6 border-t border-border pt-4">
+                  <MasAccionesDeLaVisita
+                    evento={evento}
+                    onCambio={onCambio}
+                    onCerrar={() => onOpenChange(false)}
+                  />
+                </div>
+              )}
             </CajonCuerpo>
 
             {/* Las acciones, con su nombre arriba: antes eran dos botones
@@ -249,8 +356,10 @@ export function EventoAgendaDrawer({
                 ficha. Así que el pie dice eso y ofrece el camino. */}
             {!tieneAcciones(evento) ? (
               <CajonPie>
-                <div className="space-y-2" data-testid="evento-sin-acciones">
-                  <p className="text-sm text-fg-muted">
+                {/* La acción termina en el padding derecho, como en todo pie
+                    (DESIGN.md §Drawers); el texto ocupa el ancho entero. */}
+                <div className="flex flex-col items-end gap-2" data-testid="evento-sin-acciones">
+                  <p className="self-stretch text-sm text-fg-muted">
                     Esto lo pone el sistema solo, a partir{' '}
                     {evento.vinculoTipo === 'contrato' ? 'del contrato' : 'del inmueble'}:
                     no se marca ni se cancela desde la agenda. Desaparece cuando
@@ -301,7 +410,7 @@ export function EventoAgendaDrawer({
                       size="sm"
                       hideArrow
                       disabled={actuando}
-                      onClick={() => setPidiendoMotivo('rechazar')}
+                      onClick={() => pedirMotivo('rechazar')}
                       data-testid="cita-rechazar"
                     >
                       {t(k('citaRechazar'))}
@@ -310,7 +419,13 @@ export function EventoAgendaDrawer({
                       size="sm"
                       hideArrow
                       disabled={actuando}
-                      onClick={() => void visita(() => agendaApi.aceptarCita(evento.id.replace(/^visit-/, '')))}
+                      onClick={() =>
+                        void visita(() =>
+                          asesorElegido
+                            ? agendaApi.aceptarCita(evento.id.replace(/^visit-/, ''), asesorElegido)
+                            : agendaApi.aceptarCita(evento.id.replace(/^visit-/, '')),
+                        )
+                      }
                       data-testid="cita-confirmar"
                     >
                       {t(k('citaConfirmar'))}
@@ -323,7 +438,7 @@ export function EventoAgendaDrawer({
                     size="sm"
                     hideArrow
                     disabled={actuando}
-                    onClick={() => setPidiendoMotivo('cancelar')}
+                    onClick={() => pedirMotivo('cancelar')}
                     data-testid="cita-cancelar"
                   >
                     {t(k('citaCancelar'))}
@@ -351,7 +466,24 @@ export function EventoAgendaDrawer({
             : 'La visita se cancela y le avisamos a quien la tenía agendada.'
         }
         etiquetaConfirmar={pidiendoMotivo === 'rechazar' ? 'Rechazar la visita' : 'Cancelar la visita'}
-        onCerrar={() => setPidiendoMotivo(null)}
+        // Dónde queda el motivo de verdad: el back lo guarda en la visita
+        // (`rejectionReason` al rechazar, `cancellationReason` al cancelar). El
+        // aviso que le llega a quien la pidió NO lo lleva (`visit.listener.ts`).
+        ayuda={
+          pidiendoMotivo === 'rechazar'
+            ? 'Se guarda en la visita como el motivo del rechazo.'
+            : 'Se guarda en la visita como el motivo de la cancelación.'
+        }
+        ejemplo={
+          pidiendoMotivo === 'rechazar'
+            ? 'Cuenta por qué no se puede hacer esta visita.'
+            : 'Cuenta qué pasó y por qué se cancela la visita.'
+        }
+        error={errorDelMotivo}
+        onCerrar={() => {
+          setPidiendoMotivo(null);
+          setErrorDelMotivo(null);
+        }}
         onConfirmar={(motivo) => void conMotivo(motivo)}
       />
     </>

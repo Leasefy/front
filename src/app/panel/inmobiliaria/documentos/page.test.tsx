@@ -170,12 +170,15 @@ vi.mock('@/components/ui/select', () => {
  * montado un ciclo tras `open: false` — para que el test pueda ver si el cuerpo
  * del cajón se vació de golpe.
  */
-vi.mock('@/components/ui/sheet', () => {
+vi.mock('@/components/ui/sheet', async () => {
+  // Las piezas del cajón (cabecera con título, cuerpo, pie) como DOM plano.
+  const piezas = await import('@/components/ui/sheet-test-stub')
   const passthrough = (tag: string) =>
     function MockSheetPart({ children }: { children?: React.ReactNode }) {
       return React.createElement(tag, null, children)
     }
   return {
+    ...piezas,
     Sheet: ({
       children,
       open,
@@ -203,7 +206,6 @@ vi.mock('@/components/ui/sheet', () => {
     },
     SheetContent: ({ children, ...resto }: { children?: React.ReactNode; 'data-testid'?: string }) =>
       React.createElement('div', { 'data-testid': resto['data-testid'] }, children),
-    SheetHeader: passthrough('div'),
     SheetTitle: passthrough('h2'),
     SheetDescription: passthrough('p'),
   }
@@ -243,7 +245,10 @@ vi.mock('@/components/ui/table', () => {
     Table: el('table'),
     TableHeader: el('thead'),
     TableBody: el('tbody'),
+    // Las filas que entran y salen (movimiento ola 2): la etiqueta tal cual.
+    TableBodyAnimado: el('tbody'),
     TableRow: el('tr'),
+    TableRowAnimada: el('tr'),
     TableHead: el('th'),
     TableCell: el('td'),
   }
@@ -444,6 +449,52 @@ describe('Documentos — los botones del vacío piden el permiso que el backend 
 
     expect(container.querySelector('[data-testid="sin-datos-crear"]')).not.toBeNull()
   })
+
+  // 🔴 03-10 (pruebas en el navegador): «Nueva acta» vivía SÓLO en el vacío.
+  // Con un acta en la lista no había cómo levantar la segunda.
+  const UN_ACTA = {
+    ...SIN_ACTAS,
+    actas: [
+      {
+        id: 'a-1',
+        consignacionId: 'c-1',
+        propertyTitle: 'Calle 10 # 40-50',
+        type: 'devolucion',
+        status: 'pending_signature',
+        createdAt: '2026-10-03T15:00:00Z',
+        deliveryDate: '2026-10-03',
+        tenantName: 'Iván',
+      },
+    ],
+  }
+
+  it('🔴 con actas en la lista, la cabecera ofrece «Nueva acta» (a quien tiene portafolio:create) y abre el formulario', async () => {
+    canAccessMock.mockImplementation(permisosDe('AGENTE'))
+    useActasEntregaMock.mockReturnValue(UN_ACTA)
+    await renderPage()
+    abrirPestana('actas')
+
+    const cuerpoDelCajon = () =>
+      document.body.querySelector('[data-testid="acta-form-guardar"], [data-testid="acta-sin-arrendados"]')
+    expect(container.querySelector('[data-testid="sin-datos-crear"]')).toBeNull()
+    expect(cuerpoDelCajon()).toBeNull()
+    const nueva = container.querySelector<HTMLButtonElement>('[data-testid="acta-nueva"]')
+    expect(nueva).not.toBeNull()
+    await act(async () => {
+      nueva!.click()
+    })
+    // El cajón de «Nueva acta» quedó abierto (con el formulario o con su aviso).
+    expect(cuerpoDelCajon()).not.toBeNull()
+  })
+
+  it('un VIEWER tampoco la ve en la cabecera, y en la pestaña de documentos no sale', async () => {
+    canAccessMock.mockImplementation(permisosDe('VIEWER'))
+    useActasEntregaMock.mockReturnValue(UN_ACTA)
+    await renderPage()
+    expect(container.querySelector('[data-testid="acta-nueva"]')).toBeNull()
+    abrirPestana('actas')
+    expect(container.querySelector('[data-testid="acta-nueva"]')).toBeNull()
+  })
 })
 
 describe('Documentos — contadores, errores del acta y consignaciones caídas (D1 · D2 · D3)', () => {
@@ -560,10 +611,25 @@ describe('Documentos — contadores, errores del acta y consignaciones caídas (
     expect(container.querySelector('[data-testid="acta-form-guardar"]')).not.toBeNull()
   })
 
-  it('🔴 D3: sin ningún inmueble arrendado lo dice, en vez de abrir un selector vacío', async () => {
+  it('🔴 sin ningún inmueble arrendado SÍ se abre: la devolución se hace con el arriendo ya terminado (PRUEBAS-PAGOS, 03-10-2026)', async () => {
     canAccessMock.mockImplementation(permisosDe('AGENTE'))
     useConsignacionesMock.mockReturnValue({
       consignaciones: [inmueble('c-2', 'available')],
+      isLoading: false,
+      errorCrudo: null,
+    })
+    await renderPage()
+    await abrirNuevaActa()
+
+    expect(container.querySelector('[data-testid="acta-sin-arrendados"]')).toBeNull()
+    expect(container.querySelector('[data-testid="acta-form-guardar"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="acta-solo-arrendados"]')!.textContent).toContain('devolución')
+  })
+
+  it('🔴 D3: sin ningún inmueble con mandato lo dice, en vez de abrir un selector vacío', async () => {
+    canAccessMock.mockImplementation(permisosDe('AGENTE'))
+    useConsignacionesMock.mockReturnValue({
+      consignaciones: [],
       isLoading: false,
       errorCrudo: null,
     })

@@ -24,9 +24,10 @@ import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Checkbox } from '@/components/ui'
-import { BackButton } from '@leasefy/cadence'
+import { BackButton, Collapse, CrossFade, Presence } from '@leasefy/cadence'
 import {
   useSiniestroApproval,
   type SiniestroInsurer,
@@ -77,6 +78,8 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
     rejectResult,
     approveError,
     rejectError,
+    approveFallo,
+    rejectFallo,
     approvedInsurers,
     approve,
     reject,
@@ -149,15 +152,26 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
 
   // Phase 38-05a: skeleton during initial auth hydration (first loading state on
   // this page — useSiniestroApproval has no initial fetch, only mutation state).
-  if (authLoading && !agency) return <PageSkeleton variant="detail" />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // siniestro); los avisos de aprobar/rechazar entran y salen con `Presence`
+  // y el formulario de rechazo se despliega con su altura (`Collapse`).
+  if (authLoading && !agency) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="detail" />
+      </CrossFade>
+    )
+  }
 
   if (envMissing) {
     return (
+      <CrossFade swapKey="sin-agente">
       <div className="p-4 lg:p-8">
         <div className="rounded-md border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
           {t('inmobiliaria.ai.cobranza.siniestros.envMissing')}
         </div>
       </div>
+      </CrossFade>
     )
   }
 
@@ -193,6 +207,7 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
   }
 
   return (
+    <CrossFade swapKey="siniestro">
     <div className="p-4 lg:p-8 space-y-6">
       {/* Header + Back */}
       <div className="flex items-center justify-between">
@@ -240,11 +255,9 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
           loading="lazy"
           className="w-full h-96 rounded border border-border"
         />
-        {pdfError && (
-          <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
+        <Presence show={pdfError} className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.siniestros.pdfPreview.error')}
-          </div>
-        )}
+        </Presence>
       </section>
 
       {/* Insurer checkbox group */}
@@ -273,11 +286,9 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
             )
           })}
         </div>
-        {selectedInsurers.length === 0 && (
-          <div className="text-sm text-warning">
+        <Presence show={selectedInsurers.length === 0} initial={false} className="text-sm text-warning">
             {t('inmobiliaria.ai.cobranza.siniestros.insurers.atLeastOne')}
-          </div>
-        )}
+        </Presence>
       </section>
 
       {/* Action buttons */}
@@ -316,30 +327,38 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
         </Button>
       </div>
 
-      {approveError && (
-        <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-          {approveError}
-        </div>
-      )}
-      {rejectError && (
-        <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-          {rejectError}
-        </div>
-      )}
-      {rejectResult?.ok && (
-        <div className="rounded-md border border-success/30 bg-success-soft px-3 py-2 text-sm text-success">
+      {/* Antes se pintaba el cuerpo crudo de la respuesta o «approve 500». */}
+      <Presence show={Boolean(approveError) || approveFallo != null}
+          role="alert"
+          data-testid="approval-aprobar-error"
+          className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          {mensajeDeLaAccion(
+            { error: approveError, fallo: approveFallo },
+            { porDefecto: 'No pudimos aprobar el siniestro.', accion: 'aprobar el siniestro' },
+          )}
+      </Presence>
+      <Presence show={Boolean(rejectError) || rejectFallo != null}
+          role="alert"
+          data-testid="approval-rechazar-error"
+          className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          {mensajeDeLaAccion(
+            { error: rejectError, fallo: rejectFallo },
+            { porDefecto: 'No pudimos rechazar el siniestro.', accion: 'rechazar el siniestro' },
+          )}
+      </Presence>
+      <Presence show={Boolean(rejectResult?.ok)} className="rounded-md border border-success/30 bg-success-soft px-3 py-2 text-sm text-success">
           {t('inmobiliaria.ai.cobranza.siniestros.rechazar.success')}
-        </div>
-      )}
+      </Presence>
 
       {/* Per-insurer result overlay (post-approve) */}
-      {approveResult && (
-        <section
+      <Presence as="section" show={Boolean(approveResult)}
           data-testid="siniestro-results"
           className="space-y-2 rounded-md border border-success/30 bg-success-soft p-4"
         >
           <h2 className="text-sm font-semibold text-success">
-            {approveResult.insurerResults.some((r) => !r.sent)
+            {approveResult?.insurerResults.some((r) => !r.sent)
               ? t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.partial')
               : t('inmobiliaria.ai.cobranza.siniestros.aprobar.success.title')}
           </h2>
@@ -367,23 +386,23 @@ export default function SiniestroApprovalClient({ claimId }: Props) {
               )
             })}
           </ul>
-        </section>
-      )}
+      </Presence>
 
       {/* Inline Rechazar form */}
-      {rechazarOpen && !rejectResult?.ok && (
+      <Collapse open={rechazarOpen && !rejectResult?.ok}>
         <RechazarForm
           decisionType="siniestro"
           onSubmit={(data) => void handleRechazarSubmit(data)}
           onCancel={() => setRechazarOpen(false)}
           isSubmitting={isRejecting}
         />
-      )}
+      </Collapse>
 
       {/*
         DEFERRED: Modificar button (single-button placeholder → note) deferred
         per 32-CONTEXT Deferred Ideas.
       */}
     </div>
+    </CrossFade>
   )
 }

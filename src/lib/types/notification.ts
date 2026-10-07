@@ -168,7 +168,7 @@ export const LANDLORD_CATEGORIES: Record<LandlordNotificationCategory, CategoryC
   },
   application: {
     id: 'application',
-    label: 'Aplicaciones',
+    label: 'Postulaciones',
     color: 'text-neutral-600 dark:text-neutral-300',
     bgColor: 'bg-neutral-100',
     darkBgColor: 'dark:bg-neutral-500/10',
@@ -196,7 +196,7 @@ export const LANDLORD_CATEGORIES: Record<LandlordNotificationCategory, CategoryC
   },
   property: {
     id: 'property',
-    label: 'Propiedades',
+    label: 'Inmuebles',
     color: 'text-[#2C7A53] dark:text-[#3EAE70]',
     bgColor: 'bg-[#E8F3EC]',
     darkBgColor: 'dark:bg-[#2C7A53]/10',
@@ -255,7 +255,7 @@ export const TENANT_CATEGORIES: Record<TenantNotificationCategory, CategoryConfi
   },
   application: {
     id: 'application',
-    label: 'Aplicaciones',
+    label: 'Postulaciones',
     color: 'text-[#2C7A53] dark:text-[#3EAE70]',
     bgColor: 'bg-[#E8F3EC]',
     darkBgColor: 'dark:bg-[#2C7A53]/10',
@@ -304,7 +304,7 @@ export const TENANT_CATEGORIES: Record<TenantNotificationCategory, CategoryConfi
   },
   property: {
     id: 'property',
-    label: 'Propiedades',
+    label: 'Inmuebles',
     color: 'text-[#2C7A53] dark:text-[#3EAE70]',
     bgColor: 'bg-[#E8F3EC]',
     darkBgColor: 'dark:bg-[#2C7A53]/10',

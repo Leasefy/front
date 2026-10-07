@@ -4,13 +4,16 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, Sparkle, PaperPlaneTilt, SealCheck, Eye, Confetti, PenNib, Warning, ArrowClockwise } from '@phosphor-icons/react';
+import { Collapse, CrossFade, Presence } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
+import { FileText, MapPin, Calendar, Clock, CheckCircle, XCircle, ChatCircle, Phone, Copy, Check, ArrowUpRight, Sparkle, PaperPlaneTilt, SealCheck, Eye, Confetti, PenNib, Warning, ArrowClockwise, SignOut } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
-import { Spinner } from '@/components/ui/spinner';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,104 +27,24 @@ import {
 import { useTenantApplication } from '@/lib/hooks/useApplications';
 import { useContractByApplication } from '@/lib/hooks/useContracts';
 import { applicationsApi } from '@/lib/api/applications.service';
+import { useAuth } from '@/lib/auth/use-auth';
+import { PedirDetalleDelRechazo } from '@/components/tenant/PedirDetalleDelRechazo';
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
+import {
+  historialDeLaPostulacion,
+  historialMinimo,
+  useHistorialDeLaPostulacion,
+} from '@/lib/tenant/historial-de-la-postulacion';
 import { ChatThread } from '@/components/messages/ChatThread';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
-/**
- * Generate a status-based timeline for display
+/*
+ * 🔴 Aquí vivía `generateTimelineFromStatus`, que INVENTABA el historial a
+ * partir del estado (envío −2 h, +1 día, +4, +5). Ahora se lee el de verdad:
+ * `lib/tenant/historial-de-la-postulacion.ts` (QA-IA-A, 04-10-2026).
  */
-function generateTimelineFromStatus(
-  status: string,
-  submittedAt: string,
-  locale: string
-) {
-  const events: Array<{ id: string; type: string; timestamp: string; description: string }> = [];
-  const baseDate = new Date(submittedAt);
-  let eventId = 1;
-
-  // Created event
-  const createdDate = new Date(baseDate);
-  createdDate.setHours(createdDate.getHours() - 2);
-  events.push({
-    id: `evt-${eventId++}`,
-    type: 'created',
-    timestamp: createdDate.toISOString(),
-    description: locale === 'es' ? 'Solicitud iniciada' : 'Application started',
-  });
-
-  // Submitted
-  events.push({
-    id: `evt-${eventId++}`,
-    type: 'submitted',
-    timestamp: baseDate.toISOString(),
-    description: locale === 'es' ? 'Solicitud enviada al propietario' : 'Application submitted to landlord',
-  });
-
-  if (status === 'submitted') return events;
-
-  if (status === 'needs_info') {
-    const d = new Date(baseDate);
-    d.setDate(d.getDate() + 1);
-    events.push({
-      id: `evt-${eventId++}`,
-      type: 'needs_info',
-      timestamp: d.toISOString(),
-      description: locale === 'es'
-        ? 'La inmobiliaria solicitó información adicional'
-        : 'The agency requested additional information',
-    });
-    return events;
-  }
-
-  if (status === 'withdrawn') {
-    const d = new Date(baseDate);
-    d.setDate(d.getDate() + 1);
-    events.push({
-      id: `evt-${eventId++}`,
-      type: 'withdrawn',
-      timestamp: d.toISOString(),
-      description: locale === 'es' ? 'Solicitud retirada por el inquilino' : 'Application withdrawn by tenant',
-    });
-    return events;
-  }
-
-  // Under review
-  const reviewDate = new Date(baseDate);
-  reviewDate.setDate(reviewDate.getDate() + 1);
-  events.push({
-    id: `evt-${eventId++}`,
-    type: 'under_review',
-    timestamp: reviewDate.toISOString(),
-    description: locale === 'es' ? 'El propietario está revisando tu solicitud' : 'Landlord is reviewing your application',
-  });
-  if (status === 'under_review') return events;
-
-  if (status === 'approved') {
-    const d = new Date(baseDate);
-    d.setDate(d.getDate() + 5);
-    events.push({
-      id: `evt-${eventId++}`,
-      type: 'approved',
-      timestamp: d.toISOString(),
-      description: locale === 'es' ? '¡Tu solicitud ha sido aprobada!' : 'Your application has been approved!',
-    });
-  }
-
-  if (status === 'rejected') {
-    const d = new Date(baseDate);
-    d.setDate(d.getDate() + 4);
-    events.push({
-      id: `evt-${eventId++}`,
-      type: 'rejected',
-      timestamp: d.toISOString(),
-      description: locale === 'es' ? 'Lo sentimos, tu solicitud no fue aprobada' : 'Sorry, your application was not approved',
-    });
-  }
-
-  return events;
-}
 
 /**
  * Application Detail Page - Premium Leasefy Style
@@ -141,6 +64,8 @@ export default function ApplicationDetailPage() {
   const { application, isLoading, error, errorCrudo, refetch } = useTenantApplication(applicationId);
   const responseSubmitted = false; // will be true after navigating to /completar and coming back
   const { contract: linkedContract } = useContractByApplication(applicationId);
+  const historial = useHistorialDeLaPostulacion(applicationId, application?.status);
+  const { user: usuario } = useAuth();
 
   const handleWithdraw = async () => {
     setIsWithdrawing(true);
@@ -150,23 +75,23 @@ export default function ApplicationDetailPage() {
       setConfirmWithdrawOpen(false);
       await refetch();
     } catch (e) {
-      toast.error(
-        e instanceof Error
-          ? e.message
-          : locale === 'es'
-            ? 'No se pudo retirar'
-            : 'Could not withdraw'
-      );
+      // 02-10-2026 · Regla de oro: el motivo por el traductor, no `e.message` crudo.
+      toast.error(locale === 'es' ? 'No se pudo retirar' : 'Could not withdraw', {
+        description: mensajeParaLaPersona(e, { accion: 'retirar tu postulación' }),
+      });
     } finally {
       setIsWithdrawing(false);
     }
   };
 
   // Loading state
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isLoading);
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" variant="current" className="text-primary" />
+      <div className="min-h-screen bg-bg">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="detail" className="mx-auto max-w-7xl" />
       </div>
     );
   }
@@ -193,11 +118,7 @@ export default function ApplicationDetailPage() {
   if (!application) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center px-6"
-        >
+        <motion.div {...entrada} className="text-center px-6">
           <div className="w-20 h-20 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-6">
             <FileText className="w-10 h-10 text-fg-subtle" />
           </div>
@@ -226,6 +147,9 @@ export default function ApplicationDetailPage() {
     approved: { label: locale === 'es' ? 'Aprobada' : 'Approved', color: 'text-success', bgColor: 'bg-success-soft', icon: Confetti },
     rejected: { label: locale === 'es' ? 'Rechazada' : 'Rejected', color: 'text-danger', bgColor: 'bg-danger-soft', icon: XCircle },
     withdrawn: { label: locale === 'es' ? 'Retirada' : 'Withdrawn', color: 'text-fg-muted', bgColor: 'bg-surface-muted', icon: XCircle },
+    contract_failed: { label: locale === 'es' ? 'Contrato fallido' : 'Contract failed', color: 'text-danger', bgColor: 'bg-danger-soft', icon: XCircle },
+    // QA-IA-A: sin esta fila el desplazado veía «Enviada».
+    no_adjudicado: { label: locale === 'es' ? 'Quedó para otra persona' : 'Went to someone else', color: 'text-fg-muted', bgColor: 'bg-surface-muted', icon: XCircle },
   };
 
   const progressSteps = [
@@ -282,6 +206,10 @@ export default function ApplicationDetailPage() {
         return XCircle;
       case 'withdrawn':
         return XCircle;
+      case 'no_adjudicado':
+        return XCircle;
+      case 'info_provided':
+        return PaperPlaneTilt;
       default:
         return Clock;
     }
@@ -293,7 +221,7 @@ export default function ApplicationDetailPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const isFinalStatus = ['approved', 'rejected', 'withdrawn'].includes(application.status);
+  const isFinalStatus = ['approved', 'rejected', 'withdrawn', 'contract_failed', 'no_adjudicado'].includes(application.status);
   const status = statusConfig[application.status] || statusConfig.submitted;
   const StatusIcon = status.icon;
 
@@ -301,28 +229,21 @@ export default function ApplicationDetailPage() {
   // Antes se buscaba por propertyId, lo que podía traer un contrato equivocado.
   const contract = application.status === 'approved' ? linkedContract : null;
 
-  // Generate timeline from status
-  const events = generateTimelineFromStatus(application.status, application.submittedAt, locale);
+  // El historial real; si no se pudo leer, sólo lo que consta (la fecha de envío).
+  const events = historial.eventos
+    ? historialDeLaPostulacion(historial.eventos, locale)
+    : historialMinimo(application.submittedAt, locale);
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Back Button */}
-        <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="mb-6"
-        >
+        <div className="mb-6">
           <BackButton label={locale === 'es' ? 'Volver a aplicaciones' : 'Back to applications'} />
-        </motion.div>
+        </div>
 
         {/* Hero Card - Property with Status */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="relative rounded-xl overflow-hidden bg-surface-muted border border-transparent mb-8"
-        >
+        <div className="relative rounded-xl overflow-hidden bg-surface-muted border border-transparent mb-8">
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
             <div className="relative w-full lg:w-[400px] h-64 lg:h-auto flex-shrink-0">
@@ -342,6 +263,8 @@ export default function ApplicationDetailPage() {
             <div className="flex-1 p-6 lg:p-8">
               {/* Status Badge */}
               <div className="flex items-center justify-between mb-4">
+                {/* Retirar cambia el estado: la insignia vieja sale y entra la nueva. */}
+                <CrossFade as="span" swapKey={application.status}>
                 <span className={cn(
                   'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium',
                   status.bgColor, status.color
@@ -349,12 +272,15 @@ export default function ApplicationDetailPage() {
                   <StatusIcon className="w-4 h-4" />
                   {status.label}
                 </span>
+                </CrossFade>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={copyTrackingCode}
                   className="rounded-full bg-surface/80 hover:bg-surface-muted text-fg-muted"
                 >
+                  {/* Copiar → «Copiado» → el código otra vez, cruzados. */}
+                  <CrossFade as="span" swapKey={copied ? 'copiado' : 'codigo'} className="inline-flex items-center gap-2">
                   {copied ? (
                     <>
                       <Check className="w-4 h-4 text-success" />
@@ -366,6 +292,7 @@ export default function ApplicationDetailPage() {
                       {application.trackingCode}
                     </>
                   )}
+                  </CrossFade>
                 </Button>
               </div>
 
@@ -377,7 +304,7 @@ export default function ApplicationDetailPage() {
                   </h1>
                   <p className="text-fg-muted flex items-center gap-1.5 mb-4">
                     <MapPin className="w-4 h-4" />
-                    {property.neighborhood}, {property.city}
+                    {barrioYCiudad(property.neighborhood, property.city)}
                   </p>
                 </Link>
               )}
@@ -404,9 +331,8 @@ export default function ApplicationDetailPage() {
                 </div>
               </div>
 
-              {/* Progress Steps */}
-              {!isFinalStatus && (
-                <div className="pt-6 border-t border-border">
+              {/* Progress Steps — al retirar la postulación se pliega. */}
+              <Collapse open={!isFinalStatus} className="pt-6 border-t border-border">
                   <div className="flex items-center justify-between">
                     {progressSteps.map((step, index) => {
                       const StepIcon = step.icon;
@@ -417,7 +343,7 @@ export default function ApplicationDetailPage() {
                         <div key={step.key} className="flex items-center">
                           <div className="flex flex-col items-center">
                             <div className={cn(
-                              'w-10 h-10 rounded-full flex items-center justify-center transition-all',
+                              'w-10 h-10 rounded-full flex items-center justify-center transition-colors',
                               isCompleted
                                 ? isCurrent
                                   ? 'bg-primary text-white'
@@ -447,11 +373,14 @@ export default function ApplicationDetailPage() {
                       );
                     })}
                   </div>
-                </div>
-              )}
+              </Collapse>
 
-              {/* Final Status Message — approved: depende del contrato */}
-              {application.status === 'approved' && (() => {
+              {/* Final Status Message — approved: depende del contrato.
+                  El contrato llega en su propia consulta: el aviso de «aprobada»
+                  se cruza con el del contrato cuando llega o cambia. */}
+              {application.status === 'approved' && (
+              <CrossFade swapKey={contract ? contract.status : 'sin-contrato'}>
+              {(() => {
                 const contractStatus = contract?.status;
 
                 // Sin contrato todavía: el landlord no lo creó.
@@ -672,6 +601,8 @@ export default function ApplicationDetailPage() {
 
                 return null;
               })()}
+              </CrossFade>
+              )}
 
               {(application.status === 'needs_info') && !responseSubmitted && (
                 <div className="mt-6 p-4 rounded-xl bg-warning-soft border border-warning/30">
@@ -722,7 +653,11 @@ export default function ApplicationDetailPage() {
                 </div>
               )}
 
-              {application.status === 'rejected' && (
+              {/* QA-IA-A (04-10-2026): a una postulación RECHAZADA le decía «no es
+                  un rechazo a tu perfil — vas a recibir alternativas en breve»
+                  (el texto del no adjudicado, más una promesa que nadie cumple).
+                  Ahora cada caso dice lo suyo. */}
+              {(application.status === 'rejected' || application.status === 'no_adjudicado') && (
                 <div className="mt-6 p-4 rounded-xl bg-danger-soft border border-danger/30">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-full bg-danger flex items-center justify-center flex-shrink-0">
@@ -730,12 +665,18 @@ export default function ApplicationDetailPage() {
                     </div>
                     <div className="flex-1">
                       <p className="font-semibold text-danger">
-                        {locale === 'es' ? 'Proceso cerrado' : 'Process closed'}
+                        {application.status === 'no_adjudicado'
+                          ? locale === 'es' ? 'El inmueble quedó para otra persona' : 'The property went to someone else'
+                          : locale === 'es' ? 'No aprobaron esta postulación' : 'This application was not approved'}
                       </p>
                       <p className="text-sm text-danger mt-1">
-                        {locale === 'es'
-                          ? 'Esta postulación se cerró. Puede ser porque la propiedad fue rentada a otro candidato o porque el propietario tomó otra decisión. No es un rechazo a tu perfil — vas a recibir alternativas en breve.'
-                          : 'This application was closed. The property may have been rented to another candidate or the landlord chose differently. It\'s not a rejection of your profile — you\'ll receive alternatives shortly.'}
+                        {application.status === 'no_adjudicado'
+                          ? locale === 'es'
+                            ? 'La inmobiliaria eligió a otro candidato para este inmueble. No es un rechazo a tu perfil: puedes postularte a otros inmuebles con los mismos datos.'
+                            : 'The agency chose another candidate for this property. It is not a rejection of your profile: you can apply to other properties with the same details.'
+                          : locale === 'es'
+                            ? 'En el historial ves el motivo que dejó la inmobiliaria. Si quieres saber más o un dato tuyo está mal, escríbele desde aquí abajo.'
+                            : 'The history shows the reason the agency left. If you want to know more or a detail is wrong, write to them below.'}
                       </p>
                       <Link
                         href="/inquilino/explorar"
@@ -750,18 +691,13 @@ export default function ApplicationDetailPage() {
               )}
             </div>
           </div>
-        </motion.div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             {/* Timeline */}
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="rounded-xl bg-surface-muted p-6"
-            >
+            <section className="rounded-xl bg-surface-muted p-6">
               <h2 className="text-lg font-semibold text-fg mb-6">
                 {locale === 'es' ? 'Historial de la postulación' : 'Application history'}
               </h2>
@@ -777,16 +713,10 @@ export default function ApplicationDetailPage() {
                     const isFirst = index === 0;
 
                     return (
-                      <motion.div
-                        key={event.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 + index * 0.05 }}
-                        className="relative flex gap-4"
-                      >
+                      <div key={event.id} className="relative flex gap-4">
                         {/* Icon */}
                         <div className={cn(
-                          'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 transition-all',
+                          'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 transition-colors',
                           isFirst
                             ? 'bg-primary text-white'
                             : 'bg-surface border-2 border-border text-fg-muted'
@@ -802,26 +732,36 @@ export default function ApplicationDetailPage() {
                           )}>
                             {event.description}
                           </p>
+                          {'nota' in event && event.nota ? (
+                            <p className="mt-1 text-sm text-fg-muted whitespace-pre-line">«{event.nota}»</p>
+                          ) : null}
                           <p className="text-xs text-fg-subtle mt-1 flex items-center gap-1.5">
                             <Clock className="w-3 h-3" />
                             {formatDate(event.timestamp)} · {formatTime(event.timestamp)}
                           </p>
                         </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
               </div>
-            </motion.section>
+            </section>
+
+            {/* F-07: quien no pasó tiene por dónde pedir el detalle o corregir un
+                dato (QA-IA-A, 04-10-2026). Sólo con inmobiliaria: es a ella a
+                quien le llega, en Postulaciones → Reclamos. */}
+            {application.status === 'rejected' && property?.agencyId ? (
+              <PedirDetalleDelRechazo
+                agencyId={property.agencyId}
+                applicationId={application.id}
+                nombre={usuario?.name ?? [usuario?.firstName, usuario?.lastName].filter(Boolean).join(' ')}
+                correo={usuario?.email ?? ''}
+              />
+            ) : null}
 
             {/* Property Info Card */}
             {property && (
-              <motion.section
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="rounded-xl border border-border bg-surface p-6"
-              >
+              <section className="rounded-xl border border-border bg-surface p-6">
                 <h2 className="text-lg font-semibold text-fg mb-4">
                   {locale === 'es' ? 'Propiedad' : 'Property'}
                 </h2>
@@ -840,7 +780,7 @@ export default function ApplicationDetailPage() {
                     <h3 className="font-semibold text-fg">{property.title}</h3>
                     <p className="text-sm text-fg-muted flex items-center gap-1 mt-1">
                       <MapPin className="w-3.5 h-3.5" />
-                      {property.neighborhood}, {property.city}
+                      {barrioYCiudad(property.neighborhood, property.city)}
                     </p>
                     <p className="text-lg font-bold text-fg mt-1">
                       {formatCurrency(property.monthlyRent)}
@@ -856,19 +796,14 @@ export default function ApplicationDetailPage() {
                   {locale === 'es' ? 'Ver propiedad completa' : 'View full property'}
                   <ArrowUpRight className="w-4 h-4" />
                 </Link>
-              </motion.section>
+              </section>
             )}
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="rounded-xl bg-primary-soft border border-primary/30 p-6"
-            >
+            <div className="rounded-xl bg-primary-soft border border-primary/30 p-6">
               <h3 className="font-semibold text-fg mb-4">
                 {locale === 'es' ? 'Acciones' : 'Actions'}
               </h3>
@@ -876,7 +811,7 @@ export default function ApplicationDetailPage() {
               <div className="space-y-3">
                 <button
                   onClick={() => setShowChat((prev) => !prev)}
-                  className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface hover: transition-all group"
+                  className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface hover: transition-colors group"
                 >
                   <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center group-hover:opacity-90 transition-colors">
                     <ChatCircle className="w-5 h-5 text-primary group-hover:text-white transition-colors" />
@@ -893,9 +828,12 @@ export default function ApplicationDetailPage() {
                   </div>
                 </button>
 
-                {showChat && <ChatThread applicationId={applicationId} />}
+                {/* La conversación se abre y se cierra con su altura. */}
+                <Collapse open={showChat}>
+                  <ChatThread applicationId={applicationId} />
+                </Collapse>
 
-                <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface hover: transition-all group">
+                <button className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface hover: transition-colors group">
                   <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center group-hover:bg-success transition-colors">
                     <Phone className="w-5 h-5 text-success group-hover:text-white transition-colors" />
                   </div>
@@ -912,7 +850,7 @@ export default function ApplicationDetailPage() {
                 {application.status === 'needs_info' && !responseSubmitted && (
                   <button
                     onClick={() => router.push(`/inquilino/aplicaciones/${applicationId}/completar`)}
-                    className="flex items-center gap-3 w-full p-3 rounded-xl bg-warning-soft transition-all group border border-warning/30"
+                    className="flex items-center gap-3 w-full p-3 rounded-xl bg-warning-soft transition-colors group border border-warning/30"
                   >
                     <div className="w-10 h-10 rounded-xl bg-warning-soft flex items-center justify-center group-hover:bg-warning transition-colors">
                       <ArrowClockwise className="w-5 h-5 text-warning group-hover:text-white transition-colors" />
@@ -928,12 +866,13 @@ export default function ApplicationDetailPage() {
                   </button>
                 )}
 
-                {!isFinalStatus && (
+                {/* Retirada la postulación, la acción sale (no desaparece de golpe). */}
+                <Presence show={!isFinalStatus} initial={false}>
                   <button
                     type="button"
                     onClick={() => setConfirmWithdrawOpen(true)}
                     disabled={isWithdrawing}
-                    className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface/50 hover:bg-danger-soft transition-all group border border-transparent hover:border-danger/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-3 w-full p-3 rounded-xl bg-surface/50 hover:bg-danger-soft transition-[color,background-color,border-color,opacity] group border border-transparent hover:border-danger/30 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center group-hover:bg-danger/20 transition-colors">
                       <XCircle className="w-5 h-5 text-danger" />
@@ -947,18 +886,16 @@ export default function ApplicationDetailPage() {
                       </p>
                     </div>
                   </button>
-                )}
+                </Presence>
               </div>
-            </motion.div>
+            </div>
 
-            {/* Status Tips */}
-            {application.status === 'needs_info' && !responseSubmitted && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 }}
-                className="rounded-xl bg-warning-soft border border-warning/30 p-6"
-              >
+            {/* Status Tips — entran y salen cuando cambia el estado. */}
+            <Presence
+              show={application.status === 'needs_info' && !responseSubmitted}
+              initial={false}
+              className="rounded-xl bg-warning-soft border border-warning/30 p-6"
+            >
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center flex-shrink-0">
                     <Warning className="w-5 h-5 text-warning" />
@@ -974,16 +911,13 @@ export default function ApplicationDetailPage() {
                     </p>
                   </div>
                 </div>
-              </motion.div>
-            )}
+            </Presence>
 
-            {application.status === 'under_review' && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 }}
-                className="rounded-xl bg-warning-soft border border-warning/30 p-6"
-              >
+            <Presence
+              show={application.status === 'under_review'}
+              initial={false}
+              className="rounded-xl bg-warning-soft border border-warning/30 p-6"
+            >
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center flex-shrink-0">
                     <Sparkle className="w-5 h-5 text-warning" />
@@ -994,21 +928,15 @@ export default function ApplicationDetailPage() {
                     </p>
                     <p className="text-sm text-warning">
                       {locale === 'es'
-                        ? 'El propietario está evaluando tu postulación. Normalmente toma entre 24-48 horas.'
-                        : 'The landlord is evaluating your application. This typically takes 24-48 hours.'}
+                        ? 'La inmobiliaria está revisando tu postulación. Te avisamos por correo apenas decida.'
+                        : 'The agency is reviewing your application. We will email you as soon as it decides.'}
                     </p>
                   </div>
                 </div>
-              </motion.div>
-            )}
+            </Presence>
 
             {/* Quick Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="rounded-xl bg-surface-muted p-6"
-            >
+            <div className="rounded-xl bg-surface-muted p-6">
               <h3 className="font-semibold text-fg mb-4">
                 {locale === 'es' ? 'Resumen' : 'Summary'}
               </h3>
@@ -1032,7 +960,9 @@ export default function ApplicationDetailPage() {
                   <span className="text-sm text-fg-muted">
                     {locale === 'es' ? 'Estado actual' : 'Current status'}
                   </span>
-                  <span className={cn('text-sm font-medium', status.color)}>{status.label}</span>
+                  <CrossFade as="span" swapKey={application.status} className={cn('text-sm font-medium', status.color)}>
+                    {status.label}
+                  </CrossFade>
                 </div>
                 <div className="h-px bg-surface-muted" />
                 <div className="flex items-center justify-between">
@@ -1042,14 +972,14 @@ export default function ApplicationDetailPage() {
                   <span className="text-sm font-medium text-fg">{property?.city || '-'}</span>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Withdraw confirmation */}
       <AlertDialog open={confirmWithdrawOpen} onOpenChange={setConfirmWithdrawOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive" icon={<SignOut weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               {locale === 'es' ? '¿Retirar tu aplicación?' : 'Withdraw your application?'}
@@ -1069,8 +999,7 @@ export default function ApplicationDetailPage() {
                 e.preventDefault();
                 void handleWithdraw();
               }}
-              disabled={isWithdrawing}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/85"
+              loading={isWithdrawing}
             >
               {isWithdrawing
                 ? locale === 'es'

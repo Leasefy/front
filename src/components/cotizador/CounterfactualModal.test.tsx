@@ -216,7 +216,7 @@ describe('<CounterfactualModal>', () => {
     renderModal()
     mockMutate.mockResolvedValueOnce({
       narrative_es: 'El canon más alto reduciría la probabilidad…',
-      cost_usd: 0.00087,
+      cost_cop: 3.65,
       hypothetical_carriers: ORIGINAL_CARRIERS,
     })
     const canonInput = $('[data-testid="cf-canon-input"]') as HTMLInputElement
@@ -236,7 +236,7 @@ describe('<CounterfactualModal>', () => {
     renderModal()
     mockMutate.mockResolvedValueOnce({
       narrative_es: 'x',
-      cost_usd: 0.001,
+      cost_cop: 4.2,
       hypothetical_carriers: ORIGINAL_CARRIERS,
     })
     const canonInput = $('[data-testid="cf-canon-input"]') as HTMLInputElement
@@ -317,6 +317,50 @@ describe('<CounterfactualModal>', () => {
     const retry = $('[data-testid="cf-retry"]')
     expect(retry).not.toBeNull()
     expect(retry?.getAttribute('aria-label')).toContain('Reintentar')
+  })
+})
+
+describe('<CounterfactualModal> — el error en español (02-10-2026)', () => {
+  async function preguntarYFallarCon(error: unknown) {
+    mockMutate.mockRejectedValueOnce(error)
+    renderModal()
+    const canonInput = $('[data-testid="cf-canon-input"]') as HTMLInputElement
+    act(() => {
+      fireInputChange(canonInput, "1600000")
+    })
+    const submit = $('[data-testid="cf-submit"]') as HTMLButtonElement
+    await act(async () => {
+      submit.click()
+      await new Promise(r => setTimeout(r, 0))
+      await new Promise(r => setTimeout(r, 0))
+    })
+    return Array.from(document.body.querySelectorAll('[role="alert"]')).map((n) => n.textContent ?? '').join(' ')
+  }
+
+  it('🔴 un 4xx pinta la frase del hook, sin «Error de validación:» ni el código en inglés', async () => {
+    const alerta = await preguntarYFallarCon({
+      code: 400,
+      status: 400,
+      message: 'El canon debe ser mayor que cero.',
+      mensaje: 'El canon debe ser mayor que cero.',
+      campos: [],
+    })
+    expect(alerta).toContain('El canon debe ser mayor que cero.')
+    // La frase del hook, sola: sin el prefijo «Error de validación:» delante.
+    const parrafo = Array.from(document.body.querySelectorAll('p[role="alert"]')).find((n) =>
+      (n.textContent ?? '').includes('El canon debe ser mayor que cero.'),
+    )
+    expect(parrafo?.textContent?.trim()).toBe('El canon debe ser mayor que cero.')
+    expect(alerta).not.toMatch(/invalid|Error de validación|error400Prefix/)
+  })
+
+  it('🔴 un 5xx pinta «de nuestro lado» con la referencia (no el error genérico)', async () => {
+    const alerta = await preguntarYFallarCon({
+      code: 500,
+      mensaje: 'No pudimos explicar ese cambio: algo falló de nuestro lado. Si sigue pasando, escríbenos con la referencia ab12cd34.',
+    })
+    expect(alerta).toContain('ab12cd34')
+    expect($('[data-testid="cf-retry"]')).not.toBeNull()
   })
 })
 

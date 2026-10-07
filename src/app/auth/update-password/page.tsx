@@ -1,11 +1,11 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Lock, Eye, EyeSlash, CheckCircle, ArrowRight } from '@phosphor-icons/react';
+import { Lock, Eye, EyeSlash, CheckCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
@@ -15,6 +15,35 @@ import { sanitizeReturnUrl } from '@/lib/utils';
 import { MedidorDeContrasena } from '@/components/auth/MedidorDeContrasena';
 import { fortalezaDeContrasena } from '@/lib/auth/fortaleza-de-contrasena';
 import { useHidratado } from '@/lib/hooks/use-hidratado';
+import { rutaAlSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
+import { borrarMarcaDeRecuperacion, rutaParaEntrarConLaNueva } from '@/lib/auth/sesion-de-recuperacion';
+import { anunciarCierre } from '@/lib/auth/session-terminal';
+import { codigoDeSupabase, mensajeDeSupabase } from '@/lib/auth/errores-de-supabase';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { motion } from 'framer-motion';
+import { CrossFade, Presence, motionScale, motionSpring } from '@leasefy/cadence';
+
+/**
+ * Supabase no deja cambiar la contraseña de una cuenta con segundo factor
+ * desde una sesión `aal1` (la que abre el enlace de recuperación): responde
+ * 403 `insufficient_aal` con «AAL2 session is required to update email or
+ * password when MFA is enabled.» (Nico, 30-09-2026, producción). Antes eso
+ * salía tal cual, en inglés, y no había forma de seguir.
+ */
+class FaltaElSegundoFactor extends Error {
+  constructor() {
+    super('Para cambiar la contraseña primero confirma el código de tu app de autenticación.');
+    this.name = 'FaltaElSegundoFactor';
+  }
+}
+
+/** Un aviso de esta pantalla, ya en español (sin sesión, sin configuración). */
+class AvisoDeLaPantalla extends Error {
+  constructor(mensaje: string) {
+    super(mensaje);
+    this.name = 'AvisoDeLaPantalla';
+  }
+}
 
 /**
  * Llama al endpoint REST de Supabase Auth directo con fetch nativo, sin pasar
@@ -28,8 +57,8 @@ async function updatePasswordDirect(newPassword: string): Promise<void> {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const token = getAccessToken();
 
-  if (!url || !anonKey) throw new Error('Supabase no está configurado.');
-  if (!token) throw new Error('No hay sesión activa. Pide un nuevo enlace de recuperación.');
+  if (!url || !anonKey) throw new AvisoDeLaPantalla('Supabase no está configurado.');
+  if (!token) throw new AvisoDeLaPantalla('No hay sesión activa. Pide un nuevo enlace de recuperación.');
 
   const res = await fetch(`${url}/auth/v1/user`, {
     method: 'PUT',
@@ -42,12 +71,18 @@ async function updatePasswordDirect(newPassword: string): Promise<void> {
   });
 
   if (!res.ok) {
-    let message = `Error ${res.status}`;
+    // El cuerpo de GoTrue (`{ code, error_code, msg, weak_password }`) se
+    // guarda tal cual: se decide por `error_code` y `status`, nunca por el
+    // texto en inglés (02-10-2026). Un `fetch` que no salió sube como
+    // `TypeError` y el traductor lo dice como «conexión».
+    let cuerpo: Record<string, unknown> = {};
     try {
-      const body = await res.json();
-      message = body.msg || body.error_description || body.error || message;
-    } catch { /* keep default */ }
-    throw new Error(enEspanol(message));
+      const leido: unknown = await res.json();
+      if (leido && typeof leido === 'object') cuerpo = leido as Record<string, unknown>;
+    } catch { /* sin cuerpo: queda el status */ }
+    const error = Object.assign(new Error(`Error ${res.status}`), { ...cuerpo, status: res.status });
+    if (codigoDeSupabase(error) === 'insufficient_aal') throw new FaltaElSegundoFactor();
+    throw error;
   }
 }
 
@@ -55,23 +90,22 @@ async function updatePasswordDirect(newPassword: string): Promise<void> {
  * Supabase responde en inglés. Esta pantalla la ve un inquilino cuya
  * inmobiliaria acaba de migrar su contrato: «New password should be different
  * from the old password» está mal dos veces —el idioma, y hablar de una
- * contraseña anterior que nunca tuvo—.
+ * contraseña anterior que nunca tuvo—. Las frases propias de esta pantalla,
+ * por código; lo demás, el traductor de Supabase.
  */
-function enEspanol(mensaje: string): string {
-  const m = mensaje.toLowerCase();
-  if (m.includes('different from the old')) {
-    return 'Esa contraseña ya la usaste antes. Elige otra.';
-  }
-  if (m.includes('at least') || m.includes('should be at least')) {
-    return 'La contraseña es muy corta: mínimo 8 caracteres.';
-  }
-  if (m.includes('weak') || m.includes('pwned')) {
-    return 'Esa contraseña es muy fácil de adivinar. Elige una menos común.';
-  }
-  if (m.includes('expired') || m.includes('invalid') || m.includes('jwt')) {
-    return 'El enlace ya no sirve. Pide que te lo reenvíen.';
-  }
-  return mensaje;
+const FRASES_DE_LA_CONTRASENA_NUEVA = {
+  same_password: 'Esa contraseña ya la usaste antes. Elige otra.',
+  bad_jwt: 'El enlace ya no sirve. Pide que te lo reenvíen.',
+  invalid_jwt: 'El enlace ya no sirve. Pide que te lo reenvíen.',
+  session_not_found: 'El enlace ya no sirve. Pide que te lo reenvíen.',
+  session_expired: 'El enlace ya no sirve. Pide que te lo reenvíen.',
+  no_authorization: 'El enlace ya no sirve. Pide que te lo reenvíen.',
+} as const;
+
+/** Lo que es de la contraseña nueva va debajo de ella, no al cartel. */
+function esDeLaContrasena(err: unknown): boolean {
+  const codigo = codigoDeSupabase(err);
+  return codigo === 'weak_password' || codigo === 'same_password';
 }
 
 /**
@@ -91,7 +125,7 @@ function enEspanol(mensaje: string): string {
 function UpdatePasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isLoading: authLoading, isAuthenticated } = useAuth();
+  const { isLoading: authLoading, isAuthenticated, mfaRequired, signOut } = useAuth();
 
   const esPrimeraVez = searchParams.get('nuevo') === '1';
   const destino = sanitizeReturnUrl(searchParams.get('next'), '/');
@@ -102,7 +136,15 @@ function UpdatePasswordContent() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // El último error, para que el aviso no se vacíe mientras sale.
+  const [errorVisible, setErrorVisible] = useState<string | null>(null);
+  if (error && error !== errorVisible) setErrorVisible(error);
+  /** El error de la contraseña nueva (débil, repetida): va debajo del campo. */
+  const [errorDeLaClave, setErrorDeLaClave] = useState<string | null>(null);
+  const claveRef = useRef<HTMLInputElement>(null);
   const [success, setSuccess] = useState(false);
+  /** Cerrando la sesión del enlace antes de mandar a entrar con la nueva. */
+  const [cerrandoSesion, setCerrandoSesion] = useState(false);
   /*
    * Los campos de acá no llevan `name`, así que un envío nativo antes de
    * hidratar no mandaría la contraseña a ningún lado. Igual va la misma guarda
@@ -111,6 +153,21 @@ function UpdatePasswordContent() {
    */
   const hidratado = useHidratado();
 
+  /*
+   * Cuenta con segundo factor: primero el código y después la contraseña. La
+   * pantalla del código ya resuelve todo (incluido «No tengo la app») y vuelve
+   * acá con la sesión en `aal2`. Mismo destino si Supabase lo exige al guardar
+   * y el contexto no lo había detectado.
+   */
+  const alSegundoFactor = () => {
+    const aqui = `/auth/update-password${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+    router.replace(rutaAlSegundoFactor(aqui));
+  };
+  useEffect(() => {
+    if (!authLoading && isAuthenticated && mfaRequired) alSegundoFactor();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sólo cuando cambia la sesión
+  }, [authLoading, isAuthenticated, mfaRequired]);
+
   const passwordsMatch = password === confirm;
   // El mismo mínimo que el registro (medidor de contraseña, 2026-09-07).
   const isStrong = fortalezaDeContrasena(password).cumpleMinimo;
@@ -118,7 +175,7 @@ function UpdatePasswordContent() {
   // el AuthProvider terminó su init (fetchUser + checkMfaLevel) y no
   // chocan los locks de @supabase/auth-js cuando llamamos updateUser.
   const canSubmit =
-    hidratado && password && confirm && passwordsMatch && isStrong && !authLoading && !isSubmitting;
+    hidratado && password && confirm && passwordsMatch && isStrong && !authLoading && !mfaRequired && !isSubmitting;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,15 +192,57 @@ function UpdatePasswordContent() {
 
     setIsSubmitting(true);
     setError(null);
+    setErrorDeLaClave(null);
 
     try {
       await updatePasswordDirect(password);
+      // Ya no es una sesión «sólo para cambiar la contraseña».
+      borrarMarcaDeRecuperacion();
       setSuccess(true);
-      setTimeout(() => router.push(destino), 2000);
+      if (esPrimeraVez) {
+        // La invitación: no tiene otra forma de entrar que esta sesión.
+        setTimeout(() => router.push(destino), 2000);
+        return;
+      }
+      /*
+       * 🔴 QA 01-10-2026: «luego de renovar una contraseña está dirigiendo
+       * directamente hacia la landing y no hacia el login», y en la landing los
+       * botones pasaban solos de «Ir al panel» a «Iniciar sesión». Antes se
+       * navegaba a `/` con la sesión del ENLACE todavía viva: la landing la
+       * mostraba como una sesión normal hasta que algo la cerraba.
+       *
+       * Ahora la sesión del enlace se cierra acá —revocada en el servidor y
+       * borrada de este navegador— y se ESPERA a que termine; recién después se
+       * va a entrar con la contraseña nueva. Navegación dura y `replace`: no
+       * queda nada de esta sesión en memoria, y «atrás» no vuelve a este
+       * formulario.
+       */
+      setCerrandoSesion(true);
+      // La contraseña YA quedó guardada: un fallo al cerrar (red caída) no se
+      // pinta como error de este formulario. `signOut` igual borra la sesión
+      // de este navegador aunque la revocación en el servidor no responda.
+      await signOut().catch(() => {});
+      anunciarCierre('contrasena-actualizada');
+      window.location.replace(rutaParaEntrarConLaNueva(destino));
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Ocurrió un error. Intenta de nuevo.';
+      if (err instanceof FaltaElSegundoFactor) {
+        alSegundoFactor();
+        return;
+      }
       console.error('[update-password] error:', err);
-      setError(msg);
+      const mensaje = mensajeDeSupabase(err, {
+        frases: FRASES_DE_LA_CONTRASENA_NUEVA,
+        porDefecto: 'No pudimos guardar tu contraseña. Intenta de nuevo.',
+        accion: 'guardar tu contraseña',
+      });
+      if (esDeLaContrasena(err)) {
+        setErrorDeLaClave(mensaje);
+        claveRef.current?.focus();
+      } else if (err instanceof AvisoDeLaPantalla) {
+        setError(err.message);
+      } else {
+        setError(mensaje);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -160,24 +259,38 @@ function UpdatePasswordContent() {
             </BrandHomeLink>
           </div>
 
+          {/* Formulario → «Contraseña actualizada»: se cruzan (`CrossFade`) y
+              el visto llega con el resorte de rebote leve. */}
+          <CrossFade swapKey={success ? 'lista' : 'formulario'}>
           {success ? (
             <div className="text-center">
-              <div className="mx-auto w-16 h-16 bg-success-soft rounded-full flex items-center justify-center mb-4">
+              <motion.div
+                initial={{ scale: motionScale.pop, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={motionSpring.bouncy}
+                className="mx-auto w-16 h-16 bg-success-soft rounded-full flex items-center justify-center mb-4"
+              >
                 <CheckCircle className="h-9 w-9 text-success" weight="fill" />
-              </div>
+              </motion.div>
               <h1 className="text-xl font-semibold text-fg mb-2">
                 {esPrimeraVez ? 'Tu cuenta quedó lista' : 'Contraseña actualizada'}
               </h1>
               <p className="text-sm text-fg-muted mb-6">
                 {esPrimeraVez
                   ? 'Ya puedes entrar con tu correo y esta contraseña. Te llevamos a tu arriendo…'
-                  : 'Tu contraseña fue cambiada exitosamente. Redirigiendo...'}
+                  : 'Ahora entra con la contraseña nueva. Te llevamos a iniciar sesión…'}
               </p>
-              <Link href={destino}>
-                <Button className="w-full">
-                  {esPrimeraVez ? 'Ver mi arriendo' : 'Ir al inicio'}
-                </Button>
-              </Link>
+              {/* En la recuperación no hay botón: navegar antes de que termine
+                  el cierre dejaría viva la sesión del enlace. */}
+              {esPrimeraVez ? (
+                <Link href={destino}>
+                  <Button className="w-full">Ver mi arriendo</Button>
+                </Link>
+              ) : (
+                <p className="text-xs text-fg-subtle" role="status" data-testid="cerrando-sesion-del-enlace">
+                  {cerrandoSesion ? 'Cerrando la sesión del enlace…' : 'Un momento…'}
+                </p>
+              )}
             </div>
           ) : (
             <>
@@ -203,12 +316,19 @@ function UpdatePasswordContent() {
                   </label>
                   <div className="relative">
                     <Input
+                      ref={claveRef}
+                      id="nueva-contrasena"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setErrorDeLaClave(null);
+                      }}
                       placeholder="Mínimo 8 caracteres"
                       className="h-12 pr-11"
                       autoComplete="new-password"
+                      aria-invalid={errorDeLaClave ? true : undefined}
+                      aria-describedby={errorDeLaClave ? 'nueva-contrasena-error' : undefined}
                     />
                     <button
                       type="button"
@@ -219,6 +339,7 @@ function UpdatePasswordContent() {
                       {showPassword ? <EyeSlash className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  <ErrorDelCampo id="nueva-contrasena-error" mensaje={errorDeLaClave} />
                   <MedidorDeContrasena contrasena={password} className="mt-2" />
                 </div>
 
@@ -235,6 +356,8 @@ function UpdatePasswordContent() {
                       placeholder="Repite tu contraseña"
                       className="h-12 pr-11"
                       autoComplete="new-password"
+                      aria-invalid={confirm && !passwordsMatch ? true : undefined}
+                      aria-describedby={confirm && !passwordsMatch ? 'confirmar-contrasena-error' : undefined}
                     />
                     <button
                       type="button"
@@ -245,28 +368,31 @@ function UpdatePasswordContent() {
                       {showConfirm ? <EyeSlash className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  {confirm && !passwordsMatch && (
-                    <p className="text-xs text-danger mt-1">Las contraseñas no coinciden</p>
-                  )}
+                  <ErrorDelCampo
+                    id="confirmar-contrasena-error"
+                    mensaje={confirm && !passwordsMatch ? 'Las contraseñas no coinciden' : null}
+                  />
                 </div>
 
-                {error && (
-                  <p className="text-sm text-danger bg-danger-soft px-4 py-3 rounded-[12px]">
-                    {error}
+                {/* Entra y sale con `Presence`; mientras sale, conserva el texto. */}
+                <Presence show={Boolean(error)}>
+                  <p role="alert" className="text-sm text-danger bg-danger-soft px-4 py-3 rounded-[12px]">
+                    {errorVisible}
                   </p>
-                )}
+                </Presence>
 
                 <Button
                   type="submit"
                   className="w-full h-12 text-[14px]"
                   disabled={!canSubmit}
                 >
-                  {authLoading
+                  {/* Una sola flecha: la ↗ que ya pone el botón (antes se sumaba
+                      otra → a mano y quedaban dos). */}
+                  {authLoading || mfaRequired
                     ? 'Cargando sesión...'
                     : isSubmitting
                       ? 'Guardando...'
                       : 'Guardar contraseña'}
-                  {!authLoading && !isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
                 </Button>
               </form>
 
@@ -282,6 +408,7 @@ function UpdatePasswordContent() {
               )}
             </>
           )}
+          </CrossFade>
         </div>
       </div>
     </ForceLightMode>

@@ -48,7 +48,7 @@ import { useAuth } from '@/lib/auth'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Spinner } from '@/components/ui'
-import { KpiCard } from '@leasefy/cadence'
+import { CrossFade, KpiCard, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useCarteraOverview } from '@/lib/hooks/cobranza/use-cartera-overview'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { useRecovery } from '@/lib/hooks/cobranza/use-recovery'
@@ -364,20 +364,25 @@ function ResultadosContent() {
   )
 
   // ── Primer load ────────────────────────────────────────────────────────────
+  // Movimiento: cada salida en un `CrossFade` con su clave (cargando →
+  // resultados, → vacío); lo que ya estaba al montarse no se anima.
   if (isLoading && !hasAnyData) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="p-6 lg:p-8 space-y-6">
         {header}
         <div className="flex items-center justify-center py-12">
           <Spinner size="md" />
         </div>
       </div>
+      </CrossFade>
     )
   }
 
   // ── Sin ninguna fuente con datos (ni error explícito) ──────────────────────
   if (!isLoading && !hasAnyData) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8 space-y-6">
         {header}
         <EmptyState
@@ -387,16 +392,17 @@ function ResultadosContent() {
         />
         {crossLinks}
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="resultados">
     <div className="p-6 lg:p-8 space-y-6">
       {header}
 
       {/* Error parcial — alguna fuente falló pero la otra rindió datos */}
-      {(recovery.error || overview.error || daily.error) && hasAnyData && (
-        <div
+      <Presence show={Boolean((recovery.error || overview.error || daily.error) && hasAnyData)}
           role="alert"
           className="rounded-lg bg-warning-soft border border-warning/30 p-3 text-sm text-warning flex items-center gap-2 max-w-2xl"
         >
@@ -404,8 +410,7 @@ function ResultadosContent() {
           <span>
             Algunas métricas no se pudieron cargar; mostramos lo disponible.
           </span>
-        </div>
-      )}
+      </Presence>
 
       {/* Narrativa resumen del agente */}
       {narrativa && (
@@ -415,27 +420,30 @@ function ResultadosContent() {
       )}
 
       {/* Fila de métricas — KpiCard del DS; "—" donde no hay dato real */}
-      <section
+      <Stagger
+        as="section"
         aria-label="Métricas de resultados"
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3"
       >
         {kpis.map((kpi) => {
           const KpiIcon = kpi.icon
           return (
-            <KpiCard
-              key={kpi.key}
-              label={kpi.label}
-              value={kpi.value ?? EM_DASH}
-              sublabel={kpi.sublabel}
-              icon={<KpiIcon weight="duotone" aria-hidden="true" />}
-              data-testid={`resultado-kpi-${kpi.key}`}
-            />
+            <StaggerItem key={kpi.key} className="min-w-0 [&>*]:h-full">
+              <KpiCard
+                label={kpi.label}
+                value={kpi.value ?? EM_DASH}
+                sublabel={kpi.sublabel}
+                icon={<KpiIcon weight="duotone" aria-hidden="true" />}
+                data-testid={`resultado-kpi-${kpi.key}`}
+              />
+            </StaggerItem>
           )
         })}
-      </section>
+      </Stagger>
 
       {crossLinks}
     </div>
+    </CrossFade>
   )
 }
 

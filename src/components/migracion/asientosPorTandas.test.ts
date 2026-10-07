@@ -118,11 +118,12 @@ describe('revisarPorTandas', () => {
     expect(r.revision.rechazadas).toBe(1_000);
     expect(r.revision.yaMigradas).toBe(500);
     // «240805 no está en el PUC» se dice UNA vez, con sus tres filas juntas.
+    // QA-MIG-B: las de la segunda tanda con su número en el ARCHIVO (5.000 + n).
     expect(r.revision.cuentasFaltantes).toEqual([
-      { codigo: '240805', filas: [3, 7, 9] },
-      { codigo: '415510', filas: [11] },
+      { codigo: '240805', filas: [3, 7, 5_009] },
+      { codigo: '415510', filas: [5_011] },
     ]);
-    expect(r.revision.motivos).toEqual([{ motivo: 'cuenta inexistente', filas: [3, 7, 9] }]);
+    expect(r.revision.motivos).toEqual([{ motivo: 'cuenta inexistente', filas: [3, 7, 5_009] }]);
   });
 
   /*
@@ -284,5 +285,126 @@ describe('aplicarPorTandas', () => {
     // 3.000 a mitad de la tanda, y 5.000 al cerrarla.
     expect(hechos).toContain(3_000);
     expect(hechos[hechos.length - 1]).toBe(5_000);
+  });
+});
+
+/*
+ * T-0125 · el avance de un archivo cortado. El back sabe cuánto del archivo
+ * lleva escrito SÓLO si cada llamada le dice de qué archivo es (`totalDelArchivo`)
+ * y en qué posición empieza (`desde`). Sin eso, cerrar el navegador a mitad
+ * dejaba una carga que nadie podía reconocer como incompleta.
+ */
+describe('aplicarPorTandas · declara el avance del archivo', () => {
+  type Cuerpo = { lote: string; asientos: AsientoMigrado[]; totalDelArchivo?: number; desde?: number };
+
+  it('🔴 manda totalDelArchivo = el archivo ENTERO y desde = posición de la tanda, en CADA llamada', async () => {
+    const aplicar = vi.fn(async ({ asientos: a }: Cuerpo) => informe({ total: a.length, aplicados: a.length }));
+
+    await aplicarPorTandas('L', asientos(12_000), aplicar);
+
+    expect(aplicar.mock.calls.map((c) => c[0].totalDelArchivo)).toEqual([12_000, 12_000, 12_000]);
+    expect(aplicar.mock.calls.map((c) => c[0].desde)).toEqual([0, 5_000, 10_000]);
+  });
+
+  it('el desde sigue el tamaño de tanda que se use, no un 5.000 fijo', async () => {
+    const aplicar = vi.fn(async ({ asientos: a }: Cuerpo) => informe({ total: a.length, aplicados: a.length }));
+
+    await aplicarPorTandas('L', asientos(25), aplicar, undefined, { tamano: 10 });
+
+    expect(aplicar.mock.calls.map((c) => c[0].desde)).toEqual([0, 10, 20]);
+    expect(aplicar.mock.calls.every((c) => c[0].totalDelArchivo === 25)).toBe(true);
+  });
+
+  it('un MISMO lote en todas las tandas: es lo que hace que el back las cuente como un solo archivo', async () => {
+    const aplicar = vi.fn(async ({ asientos: a }: Cuerpo) => informe({ total: a.length, aplicados: a.length }));
+
+    await aplicarPorTandas('mi-lote', asientos(12_000), aplicar);
+
+    expect(new Set(aplicar.mock.calls.map((c) => c[0].lote))).toEqual(new Set(['mi-lote']));
+  });
+
+  it('las vueltas por reloj DENTRO de una tanda reenvían el mismo desde (no avanzan el prefijo)', async () => {
+    const aplicar = vi
+      .fn()
+      .mockResolvedValueOnce(informe({ total: 10, aplicados: 4, restantes: 6 }))
+      .mockResolvedValueOnce(informe({ total: 10, aplicados: 6, restantes: 0, yaMigrados: 4 }));
+
+    await aplicarPorTandas('L', asientos(10), aplicar);
+
+    expect(aplicar).toHaveBeenCalledTimes(2);
+    expect(aplicar.mock.calls.map((c) => c[0].desde)).toEqual([0, 0]);
+    expect(aplicar.mock.calls.map((c) => c[0].totalDelArchivo)).toEqual([10, 10]);
+  });
+
+  it('un archivo vacío no llama al back: no hay nada que declarar', async () => {
+    const aplicar = vi.fn();
+    await aplicarPorTandas('L', [], aplicar);
+    expect(aplicar).not.toHaveBeenCalled();
+  });
+
+  it('el informe lleva la `carga` de la ÚLTIMA respuesta (la más reciente del back)', async () => {
+    const aplicar = vi
+      .fn()
+      .mockResolvedValueOnce(
+        informe({ total: 5_000, aplicados: 5_000, carga: { lote: 'L', esperados: 6_000, procesados: 5_000, estado: 'ABIERTA' } }),
+      )
+      .mockResolvedValueOnce(
+        informe({ total: 1_000, aplicados: 1_000, carga: { lote: 'L', esperados: 6_000, procesados: 6_000, estado: 'COMPLETA' } }),
+      );
+
+    const r = await aplicarPorTandas('L', asientos(6_000), aplicar);
+
+    expect(r.informe.carga).toEqual({ lote: 'L', esperados: 6_000, procesados: 6_000, estado: 'COMPLETA' });
+  });
+
+  it('🔴 sin `carga` en la respuesta, el informe no la inventa: ausente es «no sé», no «0» ni «terminó»', async () => {
+    const aplicar = vi.fn(async ({ asientos: a }: Cuerpo) => informe({ total: a.length, aplicados: a.length }));
+
+    const r = await aplicarPorTandas('L', asientos(6_000), aplicar);
+
+    expect(r.informe.carga).toBeUndefined();
+  });
+});
+
+describe('QA-MIG-B — números de asiento del archivo entero', () => {
+  it('🔴 una rechazada de la segunda tanda se muestra con su número en el archivo, y los avisos se unen', async () => {
+    const revisar = vi
+      .fn()
+      .mockResolvedValueOnce(revision({ total: 5_000, listas: 5_000, avisos: [{ motivo: 'nota', filas: [2] }] }))
+      .mockResolvedValueOnce(
+        revision({
+          total: 10,
+          rechazadas: 1,
+          avisos: [{ motivo: 'nota', filas: [4] }],
+          filas: [{ fila: 4, numeroOriginal: 'X', estado: 'RECHAZADA', errores: ['x'], advertencias: [], clave: 'c' }],
+        }),
+      );
+    const r = await revisarPorTandas('L', asientos(5_010), revisar);
+    expect(r.revision.filas[0].fila).toBe(5_004);
+    expect(r.revision.avisos).toEqual([{ motivo: 'nota', filas: [2, 5_004] }]);
+  });
+});
+
+describe('MC-27 (MIG-C 04-10): una tanda no separa dos piezas iguales', () => {
+  it('🔴 el corte se corre hacia atrás para que dos asientos sin número iguales vayan en el mismo envío', async () => {
+    const igual = (): AsientoMigrado => ({
+      fecha: '2026-08-20',
+      descripcion: 'Comisión transferencia',
+      movimientos: [{ codigoCuenta: '530505', debito: '3.500' }, { codigoCuenta: '1110', credito: '3.500' }],
+    });
+    const lista: AsientoMigrado[] = [...asientos(2), igual(), igual(), ...asientos(2)];
+    const envios: { asientos: AsientoMigrado[]; desde?: number }[] = [];
+    const aplicar = vi.fn(async (l: { asientos: AsientoMigrado[]; desde?: number }) => {
+      envios.push(l);
+      return {
+        lote: 'L', total: l.asientos.length, aplicados: l.asientos.length, restantes: 0, omitidos: 0, yaMigrados: 0,
+        primerNumero: null, ultimoNumero: null, cuentasFaltantes: [], motivos: [], fallasAlEscribir: [],
+      } as unknown as InformeDeMigracion;
+    });
+    await aplicarPorTandas('L', lista, aplicar as never, undefined, { tamano: 3 });
+    // Con tamaño 3 el corte caía entre las dos iguales (índices 2 y 3).
+    const dondeVan = envios.map((e) => e.asientos.filter((a) => a.descripcion === 'Comisión transferencia').length);
+    expect(dondeVan).toContain(2);
+    expect(envios.map((e) => e.desde)).toEqual([0, 2, 5]);
   });
 });

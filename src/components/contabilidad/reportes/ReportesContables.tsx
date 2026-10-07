@@ -24,11 +24,12 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AuxiliarPorTercero } from './AuxiliarPorTercero';
 import { BalanceDePrueba } from './BalanceDePrueba';
+import { CarteraLibroVsCuotas } from './CarteraLibroVsCuotas';
 import { EstadoDeCuenta } from './EstadoDeCuenta';
 import { LibroAuxiliar } from './LibroAuxiliar';
 import { LibroMayor } from './LibroMayor';
 
-export type Informe = 'balance' | 'mayor' | 'auxiliar' | 'terceros' | 'tercero';
+export type Informe = 'balance' | 'mayor' | 'auxiliar' | 'terceros' | 'tercero' | 'cartera';
 
 export const INFORMES: readonly Informe[] = [
   'balance',
@@ -36,6 +37,8 @@ export const INFORMES: readonly Informe[] = [
   'auxiliar',
   'terceros',
   'tercero',
+  // CB-39 (QA-CONTA-PROF, 04-10-2026): la cartera del libro contra las cuotas.
+  'cartera',
 ];
 
 /**
@@ -57,21 +60,26 @@ export function ReportesContables({ inicial = 'balance' }: { inicial?: Informe }
 
   return (
     <Tabs value={informe} onValueChange={(v) => setInforme(v as Informe)}>
-      <TabsList variant="underline" className="justify-start">
-        <TabsTrigger value="balance" data-testid="pestana-balance">
+      {/* CB-22: a 390 px las pestañas se partían en dos renglones («Balance
+          de / prueba»): van en una línea y el riel se corre de lado. */}
+      <TabsList variant="underline" className="max-w-full justify-start overflow-x-auto">
+        <TabsTrigger value="balance" data-testid="pestana-balance" className="whitespace-nowrap">
           Balance de prueba
         </TabsTrigger>
-        <TabsTrigger value="mayor" data-testid="pestana-mayor">
+        <TabsTrigger value="mayor" data-testid="pestana-mayor" className="whitespace-nowrap">
           Mayor
         </TabsTrigger>
-        <TabsTrigger value="auxiliar" data-testid="pestana-auxiliar">
+        <TabsTrigger value="auxiliar" data-testid="pestana-auxiliar" className="whitespace-nowrap">
           Libro auxiliar
         </TabsTrigger>
-        <TabsTrigger value="terceros" data-testid="pestana-terceros">
+        <TabsTrigger value="terceros" data-testid="pestana-terceros" className="whitespace-nowrap">
           Terceros
         </TabsTrigger>
-        <TabsTrigger value="tercero" data-testid="pestana-tercero">
+        <TabsTrigger value="tercero" data-testid="pestana-tercero" className="whitespace-nowrap">
           Estado de cuenta
+        </TabsTrigger>
+        <TabsTrigger value="cartera" data-testid="pestana-cartera" className="whitespace-nowrap">
+          Cartera vs. contratos
         </TabsTrigger>
       </TabsList>
       <TabsContent value="balance" className="pt-5">
@@ -88,6 +96,9 @@ export function ReportesContables({ inicial = 'balance' }: { inicial?: Informe }
       </TabsContent>
       <TabsContent value="tercero" className="pt-5">
         {informe === 'tercero' ? <EstadoDeCuenta /> : null}
+      </TabsContent>
+      <TabsContent value="cartera" className="pt-5">
+        {informe === 'cartera' ? <CarteraLibroVsCuotas /> : null}
       </TabsContent>
     </Tabs>
   );

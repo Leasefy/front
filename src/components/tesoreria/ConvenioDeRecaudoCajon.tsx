@@ -42,7 +42,7 @@
  * un archivo de verdad.
  */
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Warning } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -60,8 +60,14 @@ import {
 } from '@/components/ui/select';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
 import { toast } from '@/components/ui/toast';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { tesoreriaApi } from '@/lib/api/tesoreria.service';
-import { motivoLegible } from '@/lib/api/dispersiones-errores';
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import {
+  erroresDeLosTextosDelConvenio,
+  type TextoDelConvenio,
+} from '@/lib/tesoreria/limites-de-tesoreria';
 import type {
   Convenio,
   ListaDeConvenios,
@@ -81,6 +87,39 @@ const CAMPOS = [
 ];
 
 type ClaveDeCampo = (typeof CAMPOS)[number]['clave'];
+
+/**
+ * Los campos que pueden traer su propio error (del espejo del tope o de
+ * `campos[]` del back), con el id de su input: el error va DEBAJO del campo y
+ * el foco al primero. Lo que no es de un campo (el formato que se pisa, un
+ * 5xx) va al aviso del pie.
+ */
+type CampoConError =
+  | TextoDelConvenio
+  | 'lineasDeEncabezado'
+  | 'lineasDePie'
+  | 'marcaEn'
+  | 'referenciaLargo';
+
+const ID_DEL_CAMPO: Record<CampoConError, string> = {
+  banco: 'convenio-banco',
+  codigo: 'convenio-codigo',
+  nombre: 'convenio-nombre',
+  separador: 'convenio-separador',
+  marcaDeDetalle: 'convenio-marca',
+  referenciaPrefijo: 'convenio-prefijo',
+  cuentaBancaria: 'convenio-cuenta',
+  lineasDeEncabezado: 'convenio-encabezado',
+  lineasDePie: 'convenio-pie',
+  marcaEn: 'convenio-marca-en',
+  referenciaLargo: 'convenio-largo',
+};
+
+const CAMPOS_CON_ERROR = Object.keys(ID_DEL_CAMPO) as CampoConError[];
+
+function enfocar(campo: CampoConError | undefined) {
+  if (campo) document.getElementById(ID_DEL_CAMPO[campo])?.focus();
+}
 
 /** El estado del formulario. Los números viven como texto: un input vacío no es 0. */
 interface Borrador {
@@ -180,7 +219,10 @@ export function ConvenioDeRecaudoCajon({
   );
   const [preset, setPreset] = useState<string>('');
   const [guardando, setGuardando] = useState(false);
-  const [error, setError] = useState<unknown>(null);
+  /** El error de cada campo (el espejo del tope o `campos[]` del back). */
+  const [errores, setErrores] = useState<Partial<Record<CampoConError, string>>>({});
+  /** Lo que no es de un campo: va al aviso del pie. */
+  const [sueltos, setSueltos] = useState<string | null>(null);
   /** La clave del cajón: reinicia el borrador cuando se abre con otro convenio. */
   const clave = editando?.id ?? 'nuevo';
   const [claveVista, setClaveVista] = useState(clave);
@@ -188,11 +230,14 @@ export function ConvenioDeRecaudoCajon({
     setClaveVista(clave);
     setBorrador(editando ? deLaFila(editando) : enBlanco(catalogo.formatosDeFecha));
     setPreset('');
-    setError(null);
+    setErrores({});
+    setSueltos(null);
   }
 
   const cambiar = useCallback(<K extends keyof Borrador>(campo: K, valor: Borrador[K]) => {
     setBorrador((b) => ({ ...b, [campo]: valor }));
+    // Al corregir un campo, su error se va.
+    setErrores((previos) => (campo in previos ? { ...previos, [campo]: undefined } : previos));
   }, []);
 
   /** El preset pone un formato completo y típico; los datos del banco no los toca. */
@@ -245,29 +290,48 @@ export function ConvenioDeRecaudoCajon({
   }, []);
 
   const guardar = useCallback(async () => {
+    const dto = {
+      banco: borrador.banco.trim(),
+      codigo: borrador.codigo.trim(),
+      nombre: borrador.nombre.trim(),
+      tipo: borrador.tipo,
+      ...(borrador.tipo === 'DELIMITADO' ? { separador: borrador.separador } : {}),
+      columnas: borrador.columnas,
+      formatoDeFecha: borrador.formatoDeFecha,
+      decimales: borrador.decimales,
+      lineasDeEncabezado: numero(borrador.lineasDeEncabezado),
+      lineasDePie: numero(borrador.lineasDePie),
+      marcaDeDetalle: borrador.marcaDeDetalle.trim() || undefined,
+      marcaEn: numero(borrador.marcaEn),
+      referenciaLargo: numero(borrador.referenciaLargo),
+      referenciaPrefijo: borrador.referenciaPrefijo.trim() || undefined,
+      referenciaDv: borrador.referenciaDv,
+      cuentaBancaria: borrador.cuentaBancaria.trim() || undefined,
+      viaDeEntrada: borrador.viaDeEntrada,
+      activo: borrador.activo,
+    };
+    // 🔁 Espejo de los topes del back: un texto más largo que su columna se
+    // dice debajo de su campo y no viaja.
+    const delCliente = erroresDeLosTextosDelConvenio({
+      banco: dto.banco,
+      codigo: dto.codigo,
+      nombre: dto.nombre,
+      separador: dto.separador,
+      marcaDeDetalle: dto.marcaDeDetalle,
+      referenciaPrefijo: dto.referenciaPrefijo,
+      cuentaBancaria: dto.cuentaBancaria,
+    });
+    const primero = CAMPOS_CON_ERROR.find((c) => delCliente[c as TextoDelConvenio]);
+    if (primero) {
+      setErrores(delCliente);
+      setSueltos(null);
+      enfocar(primero);
+      return;
+    }
     setGuardando(true);
-    setError(null);
+    setErrores({});
+    setSueltos(null);
     try {
-      const dto = {
-        banco: borrador.banco.trim(),
-        codigo: borrador.codigo.trim(),
-        nombre: borrador.nombre.trim(),
-        tipo: borrador.tipo,
-        ...(borrador.tipo === 'DELIMITADO' ? { separador: borrador.separador } : {}),
-        columnas: borrador.columnas,
-        formatoDeFecha: borrador.formatoDeFecha,
-        decimales: borrador.decimales,
-        lineasDeEncabezado: numero(borrador.lineasDeEncabezado),
-        lineasDePie: numero(borrador.lineasDePie),
-        marcaDeDetalle: borrador.marcaDeDetalle.trim() || undefined,
-        marcaEn: numero(borrador.marcaEn),
-        referenciaLargo: numero(borrador.referenciaLargo),
-        referenciaPrefijo: borrador.referenciaPrefijo.trim() || undefined,
-        referenciaDv: borrador.referenciaDv,
-        cuentaBancaria: borrador.cuentaBancaria.trim() || undefined,
-        viaDeEntrada: borrador.viaDeEntrada,
-        activo: borrador.activo,
-      };
       const r = editando
         ? await tesoreriaApi.guardarConvenio(editando.id, dto)
         : await tesoreriaApi.crearConvenio(dto);
@@ -284,8 +348,24 @@ export function ConvenioDeRecaudoCajon({
       onGuardado();
       onCerrar();
     } catch (e) {
-      // El motivo del back, tal cual: dice qué campo se pisa con cuál.
-      setError(e);
+      // 🔴 La cuenta que ya recauda otro convenio es un problema DE LA CUENTA.
+      if (leerFallo(e).code === 'CUENTA_YA_TIENE_CONVENIO') {
+        setErrores({
+          cuentaBancaria: mensajeParaLaPersona(e, { porDefecto: 'Esa cuenta ya la recauda otro convenio.' }),
+        });
+        enfocar('cuentaBancaria');
+        return;
+      }
+      // Un 400 por campo va debajo de su campo. Lo demás —el formato que se
+      // pisa, dicho por el back en palabras; un 5xx con su referencia— al aviso.
+      const reparto = repartirErroresDelServidor<CampoConError>(e, {
+        campos: CAMPOS_CON_ERROR,
+        porDefecto: 'Revisa los datos e inténtalo otra vez.',
+        accion: 'guardar el convenio',
+      });
+      setErrores(reparto.porCampo);
+      enfocar(reparto.orden[0]);
+      setSueltos(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null);
     } finally {
       setGuardando(false);
     }
@@ -295,6 +375,15 @@ export function ConvenioDeRecaudoCajon({
 
   const faltaLoMinimo =
     !borrador.banco.trim() || !borrador.codigo.trim() || !borrador.nombre.trim();
+
+  /** `aria-invalid` y `aria-describedby` del campo, sólo con error. */
+  const aria = (campo: CampoConError) =>
+    errores[campo]
+      ? { 'aria-invalid': true as const, 'aria-describedby': `${ID_DEL_CAMPO[campo]}-error` }
+      : {};
+  const error = (campo: CampoConError, pista?: ReactNode) => (
+    <ErrorDelCampo id={`${ID_DEL_CAMPO[campo]}-error`} mensaje={errores[campo]} pista={pista} />
+  );
 
   return (
     <Cajon abierto onOpenChange={(a) => !a && onCerrar()} ancho="sm:max-w-2xl" data-testid="cajon-convenio">
@@ -316,7 +405,9 @@ export function ConvenioDeRecaudoCajon({
                 value={borrador.banco}
                 onChange={(e) => cambiar('banco', e.target.value)}
                 data-testid="convenio-banco"
+                {...aria('banco')}
               />
+              {error('banco')}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="convenio-codigo">Código del convenio</Label>
@@ -326,10 +417,9 @@ export function ConvenioDeRecaudoCajon({
                 value={borrador.codigo}
                 onChange={(e) => cambiar('codigo', e.target.value)}
                 data-testid="convenio-codigo"
+                {...aria('codigo')}
               />
-              <p className="text-caption text-fg-muted">
-                El número que el banco le asignó. Está en el contrato del convenio.
-              </p>
+              {error('codigo', 'El número que el banco le asignó. Está en el contrato del convenio.')}
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="convenio-nombre">Cómo lo vas a llamar acá</Label>
@@ -339,7 +429,9 @@ export function ConvenioDeRecaudoCajon({
                 value={borrador.nombre}
                 onChange={(e) => cambiar('nombre', e.target.value)}
                 data-testid="convenio-nombre"
+                {...aria('nombre')}
               />
+              {error('nombre')}
             </div>
           </div>
         </section>
@@ -413,10 +505,14 @@ export function ConvenioDeRecaudoCajon({
                   value={borrador.separador}
                   onChange={(e) => cambiar('separador', e.target.value)}
                   data-testid="convenio-separador"
+                  {...aria('separador')}
                 />
-                <p className="text-caption text-fg-muted">
-                  Escribe <span className="font-mono">\t</span> si es tabulador.
-                </p>
+                {error(
+                  'separador',
+                  <>
+                    Escribe <span className="font-mono">\t</span> si es tabulador.
+                  </>,
+                )}
               </div>
             ) : null}
             <div className="space-y-1.5">
@@ -522,7 +618,9 @@ export function ConvenioDeRecaudoCajon({
                 value={borrador.lineasDeEncabezado}
                 onChange={(e) => cambiar('lineasDeEncabezado', e.target.value)}
                 data-testid="convenio-encabezado"
+                {...aria('lineasDeEncabezado')}
               />
+              {error('lineasDeEncabezado')}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="convenio-pie">Líneas de pie</Label>
@@ -532,7 +630,9 @@ export function ConvenioDeRecaudoCajon({
                 value={borrador.lineasDePie}
                 onChange={(e) => cambiar('lineasDePie', e.target.value)}
                 data-testid="convenio-pie"
+                {...aria('lineasDePie')}
               />
+              {error('lineasDePie')}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="convenio-marca">Marca de los registros de detalle</Label>
@@ -542,10 +642,12 @@ export function ConvenioDeRecaudoCajon({
                 value={borrador.marcaDeDetalle}
                 onChange={(e) => cambiar('marcaDeDetalle', e.target.value)}
                 data-testid="convenio-marca"
+                {...aria('marcaDeDetalle')}
               />
-              <p className="text-caption text-fg-muted">
-                Si el archivo mezcla tipos de registro, con qué se reconoce el de un pago.
-              </p>
+              {error(
+                'marcaDeDetalle',
+                'Si el archivo mezcla tipos de registro, con qué se reconoce el de un pago.',
+              )}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="convenio-marca-en">Dónde está esa marca</Label>
@@ -555,7 +657,9 @@ export function ConvenioDeRecaudoCajon({
                 value={borrador.marcaEn}
                 onChange={(e) => cambiar('marcaEn', e.target.value)}
                 data-testid="convenio-marca-en"
+                {...aria('marcaEn')}
               />
+              {error('marcaEn')}
             </div>
           </div>
         </section>
@@ -578,7 +682,9 @@ export function ConvenioDeRecaudoCajon({
                 value={borrador.referenciaPrefijo}
                 onChange={(e) => cambiar('referenciaPrefijo', e.target.value)}
                 data-testid="convenio-prefijo"
+                {...aria('referenciaPrefijo')}
               />
+              {error('referenciaPrefijo')}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="convenio-largo">Largo total</Label>
@@ -589,8 +695,9 @@ export function ConvenioDeRecaudoCajon({
                 value={borrador.referenciaLargo}
                 onChange={(e) => cambiar('referenciaLargo', e.target.value)}
                 data-testid="convenio-largo"
+                {...aria('referenciaLargo')}
               />
-              <p className="text-caption text-fg-muted">Se rellena con ceros a la izquierda.</p>
+              {error('referenciaLargo', 'Se rellena con ceros a la izquierda.')}
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="convenio-dv">Dígito de verificación</Label>
@@ -631,7 +738,9 @@ export function ConvenioDeRecaudoCajon({
               value={borrador.cuentaBancaria}
               onChange={(e) => cambiar('cuentaBancaria', e.target.value)}
               data-testid="convenio-cuenta"
+              {...aria('cuentaBancaria')}
             />
+            {error('cuentaBancaria')}
           </div>
           <div className="space-y-2">
             <Label>Por dónde entra la plata de esa cuenta</Label>
@@ -676,14 +785,15 @@ export function ConvenioDeRecaudoCajon({
           </div>
         </section>
 
-        {/* El motivo del back, tal cual: dice qué campo se pisa con cuál. */}
-        {error != null ? (
+        {/* Lo que no es de un campo: el motivo del back tal cual (dice qué
+            campo se pisa con cuál) o, si fue nuestro, con la referencia. */}
+        {sueltos ? (
           <AlertaAccionable
             severidad="danger"
             titulo="No se guardó el convenio"
             data-testid="convenio-error"
           >
-            {motivoLegible(error) ?? 'Revisa los datos e inténtalo otra vez.'}
+            {sueltos}
           </AlertaAccionable>
         ) : null}
       </CajonCuerpo>

@@ -43,7 +43,9 @@ import {
 import { PageGuard } from '@/components/auth/PageGuard'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button, Card, CardContent, Spinner } from '@/components/ui'
-import { SegmentedControl, Eyebrow } from '@leasefy/cadence'
+import { confirmar } from '@/components/ui/confirmar'
+import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
+import { CrossFade, Eyebrow, MotionIndicator, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
 import {
   DebtorPicker,
   type PickedDebtor,
@@ -53,6 +55,7 @@ import {
   type OwnerReport,
   type OwnerReportStatus,
 } from '@/lib/hooks/cobranza/use-owner-reports'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 const BASE = '/panel/inmobiliaria/pagos/cobranza'
 const PROPIETARIOS_HREF = '/panel/inmobiliaria/propietarios'
@@ -103,7 +106,7 @@ const BACKEND_ESTADO: Record<OwnerReportStatus, ReporteEstado> = {
   sent: 'enviado',
 }
 
-const COP = new Intl.NumberFormat('es-CO', {
+const COP = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,
@@ -157,18 +160,26 @@ function ReporteRow({
   selected: boolean
   onSelect: () => void
 }) {
+  // Un `StaggerItem` de la lista; el marco del elegido (borde + anillo) se
+  // desliza al reporte nuevo (`MotionIndicator`, mismo `layoutId` en toda la
+  // lista: hay una sola por pantalla).
   return (
-    <li>
+    <StaggerItem as="li">
       <button
         type="button"
         onClick={onSelect}
         aria-pressed={selected}
         className={[
-          'w-full text-left rounded-lg border bg-card p-4 transition-colors',
+          'relative isolate w-full text-left rounded-lg border border-border bg-card p-4 transition-colors',
           'hover:border-primary/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
-          selected ? 'border-primary ring-1 ring-primary/30' : 'border-border',
         ].join(' ')}
       >
+        {selected && (
+          <MotionIndicator
+            layoutId="reportes-propietarios-elegido"
+            className="-inset-px -z-10 rounded-lg border border-primary ring-1 ring-primary/30"
+          />
+        )}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-2 min-w-0">
@@ -197,7 +208,7 @@ function ReporteRow({
           </span>
         </div>
       </button>
-    </li>
+    </StaggerItem>
   )
 }
 
@@ -325,9 +336,11 @@ function ReportesPropietariosContent() {
     generate,
     isGenerating,
     generateError,
+    generateFallo,
     approve,
     isApproving,
     approveError,
+    approveFallo,
     downloadPdf,
     isDownloading,
   } = useOwnerReports()
@@ -421,9 +434,14 @@ function ReportesPropietariosContent() {
   const onAprobarEnviar = async () => {
     if (!esReal || yaEnviado) return
     // Confirmación humana explícita antes de marcar como enviado al propietario.
-    const ok = globalThis.confirm(
-      `¿Confirmas que revisaste este reporte y quieres enviarlo a ${seleccionado.propietario}? Esta acción lo marca como enviado al propietario.`,
-    )
+    // Con el modal del sistema, no con el diálogo del navegador (02-10-2026).
+    const ok = await confirmar({
+      titulo: `¿Aprobar y enviar el reporte a ${seleccionado.propietario}?`,
+      descripcion:
+        'Confirmas que lo revisaste. El reporte queda aprobado y marcado como enviado al propietario.',
+      accion: 'Aprobar y enviar',
+      icono: <PaperPlaneTilt weight="bold" />,
+    })
     if (!ok) return
     setActionMsg(null)
     const updated = await approve(seleccionado.id, true)
@@ -458,11 +476,13 @@ function ReportesPropietariosContent() {
         <NuevoReporte isGenerating={isGenerating} onGenerar={onGenerarParaDeudor} />
       </header>
 
-      {generateError && (
-        <p className="text-sm text-danger" role="alert">
-          No pudimos generar el reporte. Intenta de nuevo.
-        </p>
-      )}
+      {/* Antes: «Intenta de nuevo» fijo ante cualquier fallo. */}
+      <Presence as="p" show={Boolean(generateError)} className="text-sm text-danger" role="alert" data-testid="reporte-generar-error">
+          {mensajeDeLaAccion(
+            { error: generateError, fallo: generateFallo },
+            { porDefecto: 'No pudimos generar el reporte.', accion: 'generar el reporte' },
+          )}
+      </Presence>
 
       {/*
         Sin reportes reales: SOLO el estado vacío.
@@ -479,6 +499,8 @@ function ReportesPropietariosContent() {
         lista vacía —el estado inicial de toda inmobiliaria— la pantalla no podía
         producir jamás su primer reporte. Ahora el camino de salida es generarlo.
       */}
+      {/* Cargando → vacío → maestro-detalle: cada estado entra con su fundido. */}
+      <CrossFade swapKey={isLoading && !hayReales ? 'cargando' : !seleccionado ? 'vacio' : 'reportes'}>
       {isLoading && !hayReales ? (
         <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-4 text-sm text-fg-muted">
           <Spinner size="sm" variant="muted" className="shrink-0" />
@@ -511,7 +533,7 @@ function ReportesPropietariosContent() {
               Cargando reportes…
             </div>
           ) : visibles.length > 0 ? (
-            <ul className="space-y-3">
+            <Stagger as="ul" className="space-y-3">
               {visibles.map((reporte) => (
                 <ReporteRow
                   key={reporte.id}
@@ -524,7 +546,7 @@ function ReportesPropietariosContent() {
                   }}
                 />
               ))}
-            </ul>
+            </Stagger>
           ) : (
             <EmptyState
               icon={CheckCircle}
@@ -536,7 +558,10 @@ function ReportesPropietariosContent() {
 
         {/* Columna derecha — reporte seleccionado + acciones */}
         <section className="space-y-4" aria-label="Vista del reporte">
-          <ReportePreviewCard reporte={seleccionado} />
+          {/* Elegir otro reporte cambia la vista con un fundido. */}
+          <CrossFade swapKey={seleccionado.id}>
+            <ReportePreviewCard reporte={seleccionado} />
+          </CrossFade>
 
           {/* Acciones. enviar/aprobar y PDF se cablean a endpoints reales cuando
               el reporte es real; el resto queda como placeholder honesto.
@@ -612,20 +637,23 @@ function ReportesPropietariosContent() {
               </div>
 
               {/* Feedback honesto de las acciones */}
-              {actionMsg && (
-                <p className="text-xs text-success">{actionMsg}</p>
-              )}
-              {pdfMsg && <p className="text-xs text-fg-muted">{pdfMsg}</p>}
-              {approveError && (
-                <p className="text-xs text-danger">
-                  No se pudo aprobar el reporte. Intenta de nuevo.
-                </p>
-              )}
-              {generateError && (
-                <p className="text-xs text-danger">
-                  No se pudo generar el borrador. Intenta de nuevo.
-                </p>
-              )}
+              <Presence as="p" show={Boolean(actionMsg)} className="text-xs text-success">{actionMsg}
+              </Presence>
+              <Presence as="p" show={Boolean(pdfMsg)} className="text-xs text-fg-muted">
+                {pdfMsg}
+              </Presence>
+              <Presence as="p" show={Boolean(approveError)} className="text-xs text-danger" role="alert" data-testid="reporte-aprobar-error">
+                  {mensajeDeLaAccion(
+                    { error: approveError, fallo: approveFallo },
+                    { porDefecto: 'No pudimos aprobar el reporte.', accion: 'aprobar el reporte' },
+                  )}
+              </Presence>
+              <Presence as="p" show={Boolean(generateError)} className="text-xs text-danger">
+                  {mensajeDeLaAccion(
+                    { error: generateError, fallo: generateFallo },
+                    { porDefecto: 'No pudimos generar el borrador.', accion: 'generar el borrador' },
+                  )}
+              </Presence>
 
               <p className="text-xs text-fg-muted">
                 El envío al propietario siempre requiere tu aprobación explícita.
@@ -635,6 +663,7 @@ function ReportesPropietariosContent() {
         </section>
       </div>
       )}
+      </CrossFade>
     </div>
   )
 }

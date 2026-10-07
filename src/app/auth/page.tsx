@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { X } from '@phosphor-icons/react';
 
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
-import { BrandHomeLink } from '@/components/brand/BrandHomeLink';
 import { AuthForm } from '@/components/auth/AuthForm';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { ASPA_DE_CIERRE } from '@/components/ui/aspa-de-cierre';
@@ -65,15 +64,18 @@ export default function AuthPage() {
           enlace sí. Mismo margen de 32 px que la tarjeta.
         */}
         <LogoDefs />
-        <div className="pointer-events-none fixed inset-0 z-[1] hidden lg:block">
-          <BrandHomeLink
+        {/* z-20: por encima del contenido (z-10), que ocupa toda la pantalla y se
+            tragaba el clic. La capa no recibe eventos; sólo el logo. */}
+        <div className="pointer-events-none fixed inset-0 z-20 hidden lg:block">
+          <Link
+            href="/"
             aria-label="Leasefy — inicio"
             className="pointer-events-auto absolute left-8 top-8 inline-flex text-white"
           >
             <svg viewBox="0 0 947 235" className="block h-8 w-auto" role="img" aria-label="Leasefy" data-testid="auth-logo">
               <use href="#lfLogo" />
             </svg>
-          </BrandHomeLink>
+          </Link>
           <TestimoniosFlotantes />
         </div>
 
@@ -115,9 +117,10 @@ export default function AuthPage() {
                 pantalla no dice de quién es. La fila mide lo que mide la ✕
                 (32px) para que las dos queden a la misma altura. */}
             <div className="mx-auto flex h-8 w-full max-w-[400px] items-center lg:hidden">
-              <BrandHomeLink className="inline-flex items-center">
+              <Link
+            href="/" className="inline-flex items-center">
                 <LeasefyLogotype size={20} className="text-fg" title="Leasefy" />
-              </BrandHomeLink>
+              </Link>
             </div>
 
             <div className="mx-auto flex w-full max-w-[400px] flex-1 flex-col justify-center py-12 lg:justify-start lg:py-0">

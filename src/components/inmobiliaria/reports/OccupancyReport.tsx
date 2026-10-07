@@ -10,6 +10,7 @@ import {
   CurrencyDollar,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { BarraQueCrece } from './barra-que-crece';
 import { useI18n } from '@/lib/i18n';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -169,7 +170,12 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
             Todavía no hay historial de cobros para reconstruir la ocupación mes a mes.
           </p>
         )}
-        <div className="flex items-end gap-1.5 h-36">
+        {/* 🔴 `items-stretch`, no `items-end` (Nico, 01-10: el gráfico salía
+            con los meses y sin una barra). Alineadas abajo, las columnas
+            medían lo que su contenido y la barra —un porcentaje de la
+            columna— quedaba en 0. Estiradas, la columna mide los 144 px y la
+            barra crece desde abajo dentro de ella. */}
+        <div className="flex items-stretch gap-1.5 h-36">
           {hayAlgoQueGraficar && monthlyTrend.map((m) => {
             const medido = m.occupancyRate;
             const height =
@@ -182,10 +188,10 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
                 <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity font-medium">
                   {medido === null ? SIN_MEDIR : `${medido}%`}
                 </span>
-                <div className="w-full flex-1 flex items-end">
-                  <div
+                <div className="w-full min-h-0 flex-1 flex items-end">
+                  <BarraQueCrece
                     className={cn(
-                      'w-full rounded-t transition-all duration-300 group-hover:opacity-80',
+                      'w-full rounded-t transition-opacity duration-base group-hover:opacity-80',
                       medido === null
                         ? 'bg-border dark:bg-border-strong'
                         : medido >= 90
@@ -232,7 +238,11 @@ export function OccupancyReport({ data }: OccupancyReportProps) {
                   key={prop.id}
                   className="border-b border-border-faint dark:border-border-strong/50 hover:bg-surface-muted dark:hover:bg-ink transition-colors"
                 >
-                  <TableCell className="py-2.5 px-4 font-medium text-foreground">{prop.title}</TableCell>
+                  <TableCell className="py-2.5 px-4 font-medium text-foreground">
+                    {/* Una fila sin nombre no se deja en blanco (la captura del
+                        01-10 tenía media tabla así): se dice que falta. */}
+                    {prop.title?.trim() ? prop.title : <span className="font-normal text-fg-subtle">Sin título</span>}
+                  </TableCell>
                   <TableCell className="py-2.5 px-4 text-muted-foreground">{prop.zone}</TableCell>
                   <TableCell className="py-2.5 px-4">
                     <Badge variant={prop.status === 'rented' ? 'success' : 'warning'}>

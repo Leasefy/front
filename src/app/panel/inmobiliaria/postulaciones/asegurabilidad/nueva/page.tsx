@@ -4,13 +4,13 @@
 // hashCedula() is called at submit time only.
 
 import * as React from 'react'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 
 void React  // ensures React is in scope for classic-JSX transform under vitest
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useWizardDraft } from '@/lib/hooks/cotizador/use-wizard-draft'
 import { useQuoteMetadata } from '@/lib/hooks/cotizador/use-quote-metadata'
@@ -25,12 +25,64 @@ import {
 } from '@/components/inmobiliaria/cotizador/WizardStep3Config'
 import { WizardStep3Review } from '@/components/inmobiliaria/cotizador/WizardStep3Review'
 import { WizardRestoreBanner } from '@/components/inmobiliaria/cotizador/WizardRestoreBanner'
+import { mostrarElAvisoDelBorrador } from '@/lib/cotizador/aviso-del-borrador'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { CotizadorWizardSkeleton } from '@/components/skeleton/panel/CotizadorWizardSkeleton'
 import { Button } from '@/components/ui/button'
 import { SectionLabel } from '@/components/ui/section-label'
+import { falloDeLaRespuesta } from '@/lib/hooks/cotizador/fallo-de-la-respuesta'
+import { leerFallo } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 const EMPTY_CANDIDATO = { cedula: '', nombre: '', ciudad: '' }
+
+// ── Los topes del micro y qué hacer con un 400 (02-10-2026) ──────────────────
+//
+// 🔁 Espejo de `BodySchema` en `agent/src/server/routes/agency-cotizador-quote.ts`
+// (nombre y ciudad hasta 200 caracteres, canon entero positivo hasta
+// 1.000.000.000.000): lo que el micro rechaza se ataja antes de enviar.
+const LARGO_MAXIMO_DEL_TEXTO = 200
+const CANON_MAXIMO_COP = 1_000_000_000_000
+const MENSAJES_DE_LA_COTIZACION = {
+  nombreLargo: 'El nombre puede tener hasta 200 caracteres.',
+  ciudadLarga: 'La ciudad puede tener hasta 200 caracteres.',
+  canonMaximo: 'El canon no puede pasar de $1.000.000.000.000. Revisa que no sobren ceros.',
+  sinConfigurar: 'El cotizador no está configurado en este entorno. Avísanos si lo ves.',
+  sinPermiso:
+    'No tienes permiso para crear consultas de asegurabilidad. Pídeselo a quien administra tu cuenta.',
+  originalNoExiste:
+    'No encontramos la cotización original. Empieza una consulta nueva con «Empezar de nuevo».',
+  porDefecto: 'No se pudo enviar la consulta. Prueba de nuevo en un momento.',
+} as const
+
+type CampoDelAsistente = 'cedula' | 'nombre' | 'ciudad' | 'canonCop' | 'tipoInmueble'
+
+/**
+ * Los `campos` del 400 del micro → el campo del asistente. La cédula viaja como
+ * `cedulaHash`: su error es el de la cédula que la persona escribió. Lo que el
+ * asistente no muestra (`codeudoresCount`, `re_quote_of`) queda suelto.
+ */
+const MAPA_DEL_SERVIDOR: Partial<Record<string, CampoDelAsistente | null>> = {
+  cedulaHash: 'cedula',
+  codeudoresCount: null,
+  re_quote_of: null,
+}
+const CAMPOS_DEL_ASISTENTE: readonly CampoDelAsistente[] = ['cedula', 'nombre', 'ciudad', 'canonCop', 'tipoInmueble']
+const PASO_DEL_CAMPO: Record<CampoDelAsistente, 1 | 2> = {
+  cedula: 1,
+  nombre: 1,
+  ciudad: 1,
+  canonCop: 2,
+  tipoInmueble: 2,
+}
+/** El `id` del control en `WizardStep1Candidato` / `WizardStep2Propiedad`, para darle el foco. */
+const ID_DEL_CAMPO: Partial<Record<CampoDelAsistente, string>> = {
+  cedula: 'cotizador-cedula',
+  nombre: 'cotizador-nombre',
+  ciudad: 'cotizador-ciudad',
+  canonCop: 'cotizador-canon',
+}
 const EMPTY_PROPIEDAD = { canonCop: '' as number | '', tipoInmueble: '', codeudoresCount: 0 }
 
 // Phase 33 D-33-10: re-quote mode detection & isolated draft key prefix
@@ -54,7 +106,18 @@ export default function NuevaCotizacionPage() {
 
   // Wizard state — steps: candidato(1) → propiedad(2) → config(3) → review(4)
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+  // ¿Se avanzó o se volvió? El paso nuevo entra por la derecha al avanzar y
+  // por la izquierda al volver (`CrossFade` con dirección).
+  const pasoAnterior = useRef(step)
+  const avanzando = step >= pasoAnterior.current
+  useEffect(() => {
+    pasoAnterior.current = step
+  }, [step])
   const [showRestoreBanner, setShowRestoreBanner] = useState(true)
+  // 🔴 QA-IA-95 (05-10-2026, IA-A-12): el aviso «Tienes una cotización en progreso» salía en los pasos
+  // 2-4: el borrador que el propio asistente acaba de guardar al avanzar. Sólo vale para un borrador que
+  // YA estaba al entrar, y sólo en el primer paso.
+  const [habiaBorradorAlEntrar] = useState(hasDraft)
   const [candidato, setCandidato] = useState(EMPTY_CANDIDATO)
   const [propiedad, setPropiedad] = useState<{
     canonCop: number | ''
@@ -68,6 +131,8 @@ export default function NuevaCotizacionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [arcoError, setArcoError] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  // El campo que el servidor rechazó: recibe el foco cuando su paso ya está en pantalla.
+  const [focoPendiente, setFocoPendiente] = useState<string | null>(null)
 
   // Phase 33 D-33-10 re-quote state
   const [prefillCedulaHash, setPrefillCedulaHash] = useState<string | null>(null)
@@ -123,6 +188,12 @@ export default function NuevaCotizacionPage() {
     setCandidato(prev => ({ ...prev, ciudad: data.ciudad }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [parentMetadata.isLoading, parentMetadata.error, parentMetadata.data, isReQuoteMode])
+
+  useEffect(() => {
+    if (!focoPendiente) return
+    document.getElementById(focoPendiente)?.focus()
+    setFocoPendiente(null)
+  }, [focoPendiente, step])
 
   // ---- Restore handlers ----
 
@@ -188,9 +259,13 @@ export default function NuevaCotizacionPage() {
     }
     if (!candidato.nombre.trim()) {
       errors.nombre = t('inmobiliaria.ai.cotizador.nueva.errors.requerido')
+    } else if (candidato.nombre.length > LARGO_MAXIMO_DEL_TEXTO) {
+      errors.nombre = MENSAJES_DE_LA_COTIZACION.nombreLargo
     }
     if (!candidato.ciudad.trim()) {
       errors.ciudad = t('inmobiliaria.ai.cotizador.nueva.errors.requerido')
+    } else if (candidato.ciudad.length > LARGO_MAXIMO_DEL_TEXTO) {
+      errors.ciudad = MENSAJES_DE_LA_COTIZACION.ciudadLarga
     }
     setStep1Errors(errors)
     return Object.keys(errors).length === 0
@@ -227,6 +302,8 @@ export default function NuevaCotizacionPage() {
     const errors: { canonCop?: string; tipoInmueble?: string } = {}
     if (propiedad.canonCop === '' || Number(propiedad.canonCop) <= 0) {
       errors.canonCop = t('inmobiliaria.ai.cotizador.nueva.errors.canonPositivo')
+    } else if (Number(propiedad.canonCop) > CANON_MAXIMO_COP) {
+      errors.canonCop = MENSAJES_DE_LA_COTIZACION.canonMaximo
     }
     if (!propiedad.tipoInmueble) {
       errors.tipoInmueble = t('inmobiliaria.ai.cotizador.nueva.errors.tipoRequerido')
@@ -301,14 +378,14 @@ export default function NuevaCotizacionPage() {
 
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       const agencyId = agency?.id
-      if (!agentUrl || !agencyId) throw new Error('Configuration error')
-      const res = await globalThis.fetch(
+      if (!agentUrl || !agencyId) throw new Error(MENSAJES_DE_LA_COTIZACION.sinConfigurar)
+      const res = await agentFetch(
         `${agentUrl}/api/agency/${agencyId}/cotizador/quote`,
         {
           method: 'POST',
-          headers: agentAuthHeaders({
+          headers: {
             'Content-Type': 'application/json',
-          }),
+          },
           body: JSON.stringify(submitBody),
         }
       )
@@ -321,10 +398,9 @@ export default function NuevaCotizacionPage() {
         setSessionCapError(true)
         return
       }
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error((body as { error?: string })?.error ?? `Error ${res.status}`)
-      }
+      // 02-10-2026 · Antes: `throw new Error(body.error ?? \`Error ${res.status}\`)`,
+      // y la pantalla pintaba el `error` del micro en inglés o «Error 500».
+      if (!res.ok) throw await falloDeLaRespuesta(res)
       const { quoteId } = (await res.json()) as { quoteId: string }
       clear()
       // Phase 33 D-33-10: also clear the per-parent re-quote draft on success
@@ -337,9 +413,48 @@ export default function NuevaCotizacionPage() {
         setStep1Errors({ cedula: t('inmobiliaria.ai.cotizador.nueva.errors.cedulaInvalida') })
         setStep(1)
       } else {
-        setSubmitError(
-          err instanceof Error ? err.message : 'No se pudo enviar la consulta. Intenta de nuevo.',
-        )
+        // Regla de oro: un 400 va a su campo (y a su paso), un 403 es el permiso,
+        // un 5xx «de nuestro lado» con la referencia, y SÓLO un pedido que no
+        // salió habla de la conexión.
+        const tipo = leerFallo(err).tipo
+        const reparto = repartirErroresDelServidor<CampoDelAsistente>(err, {
+          mapa: MAPA_DEL_SERVIDOR,
+          campos: CAMPOS_DEL_ASISTENTE,
+          porDefecto:
+            tipo === 'sinPermiso'
+              ? MENSAJES_DE_LA_COTIZACION.sinPermiso
+              : tipo === 'noExiste' && isReQuoteMode
+                ? MENSAJES_DE_LA_COTIZACION.originalNoExiste
+                : MENSAJES_DE_LA_COTIZACION.porDefecto,
+          accion: 'enviar la consulta de asegurabilidad',
+        })
+        const sueltos = [...reparto.sueltos]
+        const delPaso1: { cedula?: string; nombre?: string; ciudad?: string } = {}
+        const delPaso2: { canonCop?: string; tipoInmueble?: string } = {}
+        const enPantalla: CampoDelAsistente[] = []
+        for (const campo of reparto.orden) {
+          if (campo === 'cedula') {
+            // Con la cédula de la cotización original no hay campo que pintar.
+            if (prefillCedulaHash) {
+              sueltos.push(t('inmobiliaria.ai.cotizador.nueva.errors.cedulaInvalida'))
+              continue
+            }
+            delPaso1.cedula = t('inmobiliaria.ai.cotizador.nueva.errors.cedulaInvalida')
+          } else if (campo === 'nombre' || campo === 'ciudad') {
+            delPaso1[campo] = reparto.porCampo[campo]
+          } else {
+            delPaso2[campo] = reparto.porCampo[campo]
+          }
+          enPantalla.push(campo)
+        }
+        if (enPantalla.length > 0) {
+          setStep1Errors(delPaso1)
+          setStep2Errors(delPaso2)
+          const primero = enPantalla[0]
+          setStep(PASO_DEL_CAMPO[primero])
+          setFocoPendiente(ID_DEL_CAMPO[primero] ?? null)
+        }
+        if (sueltos.length > 0) setSubmitError(Array.from(new Set(sueltos)).join(' · '))
       }
     } finally {
       setIsSubmitting(false)
@@ -379,8 +494,7 @@ export default function NuevaCotizacionPage() {
         {/* Step indicator — candidato → propiedad → config → review */}
         <WizardStepIndicator totalSteps={4} currentStep={step} />
           {/* Phase 33 D-33-14: pre-fill GET failure banner — 404/network on parent quote */}
-          {isReQuoteMode && prefillFailed && !prefillDismissed && (
-            <div
+          <Presence show={isReQuoteMode && prefillFailed && !prefillDismissed}
               role="alert"
               className="mb-6 rounded-lg border border-warning/30 bg-warning-soft p-4"
             >
@@ -408,15 +522,17 @@ export default function NuevaCotizacionPage() {
                   {t('inmobiliaria.ai.cotizador.reQuote.prefillFailed.continuar')}
                 </Button>
               </div>
-            </div>
-          )}
+          </Presence>
 
-          {hasDraft && showRestoreBanner && (
+          <Presence
+            show={mostrarElAvisoDelBorrador({ habiaAlEntrar: habiaBorradorAlEntrar, hayBorrador: hasDraft, abierto: showRestoreBanner, paso: step })}
+            initial={false}
+          >
             <WizardRestoreBanner
               onContinue={handleContinue}
               onStartFresh={handleStartFresh}
             />
-          )}
+          </Presence>
 
           {/* Phase 33 D-33-10: re-using cédula notice (replaces cédula input semantically) */}
           {step === 1 && prefillCedulaHash && (
@@ -440,6 +556,14 @@ export default function NuevaCotizacionPage() {
             </div>
           )}
 
+          {/* Cada paso entra desde su lado y el anterior sale hacia el otro.
+              `popLayout`: el paso nuevo se monta YA (el foco que deja un error
+              del servidor tiene que encontrar su campo en el mismo cuadro). */}
+          <CrossFade
+            swapKey={step}
+            direction={avanzando ? 'forward' : 'backward'}
+            mode="popLayout"
+          >
           {step === 1 && (
             <WizardStep1Candidato
               value={candidato}
@@ -482,25 +606,22 @@ export default function NuevaCotizacionPage() {
               ctaLabel={tf('inmobiliaria.ai.cotizador.nueva.ctaConsultar', 'Consultar asegurabilidad')}
             />
           )}
+          </CrossFade>
 
           {/* Phase 33 D-33-14 error path 2: per-session re-quote cap (HTTP 429) */}
-          {sessionCapError && (
-            <div
+          <Presence show={Boolean(sessionCapError)}
               role="alert"
               className="mt-4 rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
             >
               {t('inmobiliaria.ai.cotizador.reQuote.sessionCapHit')}
-            </div>
-          )}
+          </Presence>
 
-          {submitError && (
-            <div
+          <Presence show={Boolean(submitError)}
               role="alert"
               className="mt-4 rounded-lg border border-danger/30 bg-danger-soft p-4 text-sm text-danger"
             >
               {submitError}
-            </div>
-          )}
+          </Presence>
         </div>
       </div>
     </PageGuard>

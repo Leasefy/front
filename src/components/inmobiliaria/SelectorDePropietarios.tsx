@@ -17,9 +17,8 @@
  */
 
 import { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { MagnifyingGlass, Plus, X, User, Check } from '@phosphor-icons/react';
-import { IconButton } from '@leasefy/cadence';
+import { IconButton, Collapse, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
@@ -65,7 +64,7 @@ export function SelectorDePropietarios({
           (p) =>
             p.name.toLowerCase().includes(q) ||
             (p.email?.toLowerCase().includes(q) ?? false) ||
-            p.documentNumber.includes(q),
+            (p.documentNumber ?? '').includes(q),
         )
       : propietarios;
     // Los elegidos van primero: si se llegó con uno ya marcado (desde su
@@ -119,128 +118,122 @@ export function SelectorDePropietarios({
             />
           )}
         </div>
-        {!formAbierto && (
+        <Presence show={!formAbierto} initial={false} direction="right" distance="xs" className="shrink-0">
           <Button variant="secondary" hideArrow onClick={() => setFormAbierto(true)} className="shrink-0">
             <Plus className="h-5 w-5" />
             <span className="hidden sm:inline">{t('inmobiliaria.propietario.selector.addNew')}</span>
           </Button>
-        )}
+        </Presence>
       </div>
 
-      <AnimatePresence>
-        {formAbierto && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="rounded-lg border border-border bg-card p-5">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-base font-semibold text-fg">{t('inmobiliaria.propietario.selector.newOwner')}</h3>
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setFormAbierto(false)}
-                  aria-label="Cerrar"
-                  icon={<X className="h-5 w-5" />}
-                />
-              </div>
-              <PropietarioForm
-                mode="create"
-                initialFormData={pendiente?.data}
-                onSubmit={guardarNuevo}
-                onCancel={() => setFormAbierto(false)}
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {!formAbierto && (
-        <>
-          {/* La grilla tiene SU scroll: el diálogo no crece con la agencia. */}
-          <div
-            className="max-h-[44vh] overflow-y-auto overscroll-contain pr-1"
-            data-lenis-prevent
-            data-testid="mandato-propietarios-grid"
-          >
-            {filtrados.length > 0 || pendiente ? (
-              <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {pendiente && (
-                  <li>
-                    <div
-                      className="flex w-full items-center gap-3 rounded-lg border border-primary/30 bg-primary-soft p-3 text-left"
-                      data-testid="propietario-pendiente"
-                    >
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card text-primary">
-                        <User className="h-5 w-5" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-fg">{pendiente.data.name}</span>
-                        <span className="block text-xs text-fg-muted">
-                          {t('inmobiliaria.propietario.selector.newOwner')} ·{' '}
-                          <button type="button" className="text-primary hover:underline" onClick={() => setFormAbierto(true)}>
-                            {t('inmobiliaria.propietario.selector.edit')}
-                          </button>
-                        </span>
-                      </span>
-                      <IconButton
-                        variant="ghost"
-                        size="sm"
-                        onClick={quitarPendiente}
-                        aria-label={`Quitar a ${pendiente.data.name}`}
-                        icon={<X className="h-4 w-4" />}
-                      />
-                    </div>
-                  </li>
-                )}
-                {filtrados.map((p) => (
-                  <li key={p.id}>
-                    <PropietarioCard
-                      propietario={p}
-                      variant="compact"
-                      selected={seleccion.includes(p.id)}
-                      onClick={() => alternar(p.id)}
-                    />
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="rounded-lg border border-border bg-surface-muted p-8 text-center">
-                <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface text-fg-muted">
-                  <User className="h-6 w-6" weight="duotone" aria-hidden="true" />
-                </span>
-                <p className="mb-3 text-sm text-fg-muted">
-                  {search
-                    ? t('inmobiliaria.propietario.selector.noResults')
-                    : t('inmobiliaria.propietario.selector.noRegistered')}
-                </p>
-                <Button hideArrow onClick={() => setFormAbierto(true)}>
-                  <Plus className="h-4 w-4" />
-                  {t('inmobiliaria.propietario.selector.addNewOwner')}
-                </Button>
-              </div>
-            )}
+      {/* El formulario del dueño nuevo se abre con su altura (`Collapse`, la
+          única primitiva que anima la altura) mientras la grilla se pliega. */}
+      <Collapse open={formAbierto}>
+        <div className="rounded-lg border border-border bg-card p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-base font-semibold text-fg">{t('inmobiliaria.propietario.selector.newOwner')}</h3>
+            <IconButton
+              variant="ghost"
+              size="sm"
+              onClick={() => setFormAbierto(false)}
+              aria-label="Cerrar"
+              icon={<X className="h-5 w-5" />}
+            />
           </div>
+          <PropietarioForm
+            mode="create"
+            initialFormData={pendiente?.data}
+            onSubmit={guardarNuevo}
+            onCancel={() => setFormAbierto(false)}
+          />
+        </div>
+      </Collapse>
 
-          <p
-            className={cn('flex items-center gap-2 text-sm', cuantos > 0 ? 'text-success' : 'text-fg-muted')}
-            data-testid="mandato-seleccionados"
-          >
-            {cuantos > 0 && (
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success-soft">
-                <Check weight="bold" className="h-3 w-3" />
+      <Collapse open={!formAbierto} className="space-y-3">
+        {/* La grilla tiene SU scroll: el diálogo no crece con la agencia. */}
+        <div
+          className="max-h-[44vh] overflow-y-auto overscroll-contain pr-1"
+          data-lenis-prevent
+          data-testid="mandato-propietarios-grid"
+        >
+          {filtrados.length > 0 || pendiente ? (
+            /* Al buscar, las tarjetas que no calzan salen y las que vuelven
+               entran (`key` = el id). Sin `layout`: la grilla vive en su
+               propio scroll y puede tener cientos de dueños. */
+            <Stagger as="ul" layout={false} className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {pendiente && (
+                <StaggerItem key="pendiente" as="li">
+                  <div
+                    className="flex w-full items-center gap-3 rounded-lg border border-primary/30 bg-primary-soft p-3 text-left"
+                    data-testid="propietario-pendiente"
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card text-primary">
+                      <User className="h-5 w-5" />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-fg">{pendiente.data.name}</span>
+                      <span className="block text-xs text-fg-muted">
+                        {t('inmobiliaria.propietario.selector.newOwner')} ·{' '}
+                        <button type="button" className="text-primary hover:underline" onClick={() => setFormAbierto(true)}>
+                          {t('inmobiliaria.propietario.selector.edit')}
+                        </button>
+                      </span>
+                    </span>
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      onClick={quitarPendiente}
+                      aria-label={`Quitar a ${pendiente.data.name}`}
+                      icon={<X className="h-4 w-4" />}
+                    />
+                  </div>
+                </StaggerItem>
+              )}
+              {filtrados.map((p) => (
+                <StaggerItem key={p.id} as="li">
+                  <PropietarioCard
+                    propietario={p}
+                    variant="compact"
+                    selected={seleccion.includes(p.id)}
+                    onClick={() => alternar(p.id)}
+                  />
+                </StaggerItem>
+              ))}
+            </Stagger>
+          ) : (
+            <div className="rounded-lg border border-border bg-surface-muted p-8 text-center">
+              <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-surface text-fg-muted">
+                <User className="h-6 w-6" weight="duotone" aria-hidden="true" />
               </span>
-            )}
-            {cuantos === 0
-              ? t('inmobiliaria.consignaciones.mandateDialog.propietarioHint')
-              : cuantos === 1
-                ? t('inmobiliaria.propietario.selector.ownerSelected')
-                : t('inmobiliaria.consignaciones.mandateDialog.seleccionados', { n: cuantos })}
-          </p>
-        </>
-      )}
+              <p className="mb-3 text-sm text-fg-muted">
+                {search
+                  ? t('inmobiliaria.propietario.selector.noResults')
+                  : t('inmobiliaria.propietario.selector.noRegistered')}
+              </p>
+              <Button hideArrow onClick={() => setFormAbierto(true)}>
+                <Plus className="h-4 w-4" />
+                {t('inmobiliaria.propietario.selector.addNewOwner')}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <p
+          className={cn('flex items-center gap-2 text-sm', cuantos > 0 ? 'text-success' : 'text-fg-muted')}
+          data-testid="mandato-seleccionados"
+        >
+          {cuantos > 0 && (
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-success-soft">
+              <Check weight="bold" className="h-3 w-3" />
+            </span>
+          )}
+          {cuantos === 0
+            ? t('inmobiliaria.consignaciones.mandateDialog.propietarioHint')
+            : cuantos === 1
+              ? t('inmobiliaria.propietario.selector.ownerSelected')
+              : t('inmobiliaria.consignaciones.mandateDialog.seleccionados', { n: cuantos })}
+        </p>
+      </Collapse>
     </div>
   );
 }

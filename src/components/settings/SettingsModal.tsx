@@ -1,93 +1,77 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { X } from '@phosphor-icons/react';
-import { IconButton } from '@leasefy/cadence';
-import { useLenis } from '@/components/providers/SmoothScroll';
+/**
+ * La cáscara de los modales de Configuración (MFA, cuentas de recaudo, equipo,
+ * contraseña, datos de la cuenta y baja).
+ *
+ * Desde el 02-10-2026 es el `Dialog` de la plataforma (DESIGN.md §17) y no un
+ * `createPortal` a mano: la ✕, el Esc, el velo, el bloqueo del scroll y Lenis
+ * los pone la primitiva. Cada uso dice su clase con `variant` (las bajas y los
+ * borrados van en `destructive`) y pone sus botones en `footer`, que es el pie
+ * fijo del modal: con los botones adentro del cuerpo se iban con el scroll.
+ */
+
+import type { ReactNode } from 'react';
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  type DialogSize,
+  type DialogVariant,
+} from '@/components/ui/dialog';
+
+export interface SettingsModalProps {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  /** Subtítulo apagado bajo el título (en una destructiva: qué se pierde). */
+  description?: ReactNode;
+  /** Clase de modal: pone el medallón (`destructive` en bajas y borrados). */
+  variant?: DialogVariant;
+  /** Ícono propio del medallón (Phosphor con `weight="bold"`). */
+  icon?: ReactNode;
+  /** Ancho. `sm` (420) por defecto, el del modal de siempre. */
+  size?: DialogSize;
+  /** Las acciones: van al pie fijo, a la derecha (a todo el ancho en el celular). */
+  footer?: ReactNode;
+  children?: ReactNode;
+}
 
 export function SettingsModal({
   open,
   onClose,
   title,
+  description,
+  variant,
+  icon,
+  size = 'sm',
+  footer,
   children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  title: string;
-  children: React.ReactNode;
-}) {
-  const [mounted, setMounted] = useState(false);
-  const lenis = useLenis();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Escape cierra. No lo hacía: este modal es un div a mano, no un primitivo
-  // de Radix, así que no traía nada de eso puesto — y quedaba atrapando el
-  // teclado hasta que alguien encontrara la X.
-  useEffect(() => {
-    if (!open) return;
-    const alTeclear = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', alTeclear);
-    return () => window.removeEventListener('keydown', alTeclear);
-  }, [open, onClose]);
-
-  // Stop Lenis smooth scroll when modal opens to allow native scroll inside
-  useEffect(() => {
-    if (open) {
-      lenis.stop();
-    } else {
-      lenis.start();
-    }
-    return () => {
-      lenis.start();
-    };
-  }, [open, lenis]);
-
-  if (!mounted || !open) return null;
-
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[300] flex items-center justify-center p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
+}: SettingsModalProps) {
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose();
+      }}
     >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      {/* Modal panel */}
-      <div
-        className="relative bg-surface w-full max-w-md rounded-[20px]"
-        data-lenis-prevent
+      <DialogContent
+        size={size}
+        variant={variant}
+        icon={icon}
+        {...(description ? {} : { 'aria-describedby': undefined })}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-neutral-100 dark:border-[#2a2a2c]">
-          <h3 className="text-base font-semibold text-fg">{title}</h3>
-          <IconButton
-            variant="ghost"
-            aria-label="Cerrar"
-            onClick={onClose}
-            icon={<X className="w-4 h-4" />}
-            className="w-8 h-8 rounded-full bg-neutral-100 dark:bg-[#1f1f21] text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 hover:bg-neutral-200 dark:hover:bg-neutral-600"
-          />
-        </div>
-        {/* Scrollable content */}
-        <div
-          className="p-6 overflow-y-auto overscroll-contain"
-          style={{ maxHeight: 'calc(80vh - 73px)' }}
-          data-lenis-prevent
-        >
-          {children}
-        </div>
-      </div>
-    </div>,
-    document.body
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          {description ? <DialogDescription>{description}</DialogDescription> : null}
+        </DialogHeader>
+        {children}
+        {footer ? <DialogFooter>{footer}</DialogFooter> : null}
+      </DialogContent>
+    </Dialog>
   );
 }

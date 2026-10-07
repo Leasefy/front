@@ -2,36 +2,21 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef, createContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { CrossFade, motionDuration, motionEase } from '@leasefy/cadence';
 import {
-  FileArrowUp,
   UploadSimple,
-  ArrowsLeftRight,
-  MagicWand,
+  MapPin,
+  ListChecks,
   CheckCircle,
   CaretLeft,
   CaretRight,
   Check,
   X,
-  LinkSimple,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
-import { StepChooseMethod } from './steps/StepChooseMethod';
-import { StepUploadFile } from './steps/StepUploadFile';
-import { StepColumnMapping } from './steps/StepColumnMapping';
-import { StepAIReview } from './steps/StepAIReview';
-import { StepConfirmImport } from './steps/StepConfirmImport';
-import { RanuraVivaContext } from '@/components/migracion/ranura-viva';
-import { StepSoftwareMigration } from './steps/StepSoftwareMigration';
-import { StepPortalImport } from './steps/StepPortalImport';
-import { StepPasteLinks } from './steps/StepPasteLinks';
-import { TARGET_FIELDS } from './lib/importTypes';
-import type { ImportWizardState } from './lib/importTypes';
-import { lotesParaRetomar } from './lib/lotesParaRetomar';
-import { destinosDe } from './lib/columnaCompuesta';
-import { ponerTitulosATodas, sinTitulo } from './lib/ponerTitulos';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,20 +27,46 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { toast } from '@/components/ui/toast';
-import { describirCargaAbierta } from './lib/describirCargaAbierta';
-import {
-  inmueblesImportacionApi,
-  type EstadoDeLoteInmuebles,
-} from '@/lib/api/inmuebles-importacion.service';
+import { StepChooseMethod } from './steps/StepChooseMethod';
+import { StepUploadFile } from './steps/StepUploadFile';
+import { StepColumnMapping } from './steps/StepColumnMapping';
+import { StepConfirmImport } from './steps/StepConfirmImport';
+import { RanuraVivaContext } from '@/components/migracion/ranura-viva';
+import { StepSoftwareMigration } from './steps/StepSoftwareMigration';
+import { StepPortalImport } from './steps/StepPortalImport';
+import { StepPasteLinks } from './steps/StepPasteLinks';
+import { TARGET_FIELDS } from './lib/importTypes';
+import type { ImportWizardState } from './lib/importTypes';
+import { destinosDe } from './lib/columnaCompuesta';
+import { ponerTitulosATodas } from './lib/ponerTitulos';
+import { analyzeProperties, mapRowsToProperties } from './lib/gapFiller';
+import { recalcularEstado } from './lib/requisitosDelBack';
+import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir';
+import { etapaDeLaCarga, type PasoVisible } from './lib/describirCargaAbierta';
+import { CargasAMedias } from './CargasAMedias';
+import { useCargasAbiertasDeInmuebles } from '@/lib/hooks/use-cargas-abiertas-de-inmuebles';
+import type { EstadoDeLoteInmuebles } from '@/lib/api/inmuebles-importacion.service';
 
-const STEPS = [
-  { id: 1, labelKey: 'inmobiliaria.import.steps.method', icon: FileArrowUp },
-  { id: 2, labelKey: 'inmobiliaria.import.steps.upload', icon: UploadSimple },
-  { id: 3, labelKey: 'inmobiliaria.import.steps.mapping', icon: ArrowsLeftRight },
-  { id: 4, labelKey: 'inmobiliaria.import.steps.review', icon: MagicWand },
-  { id: 5, labelKey: 'inmobiliaria.import.steps.confirm', icon: CheckCircle },
+/*
+ * T-0131 — lo que la persona ve: SIEMPRE cuatro pasos. Los tres primeros
+ * pasos internos (elegir cómo, subir el archivo, mapear columnas) son «Subir y
+ * mapear columnas»; los otros tres los gobierna el estado del lote en el
+ * servidor (`fase`): ubicar direcciones, revisar lo que falta y «Crear todas».
+ */
+const PASOS_VISIBLES: { id: PasoVisible; label: string; icon: typeof UploadSimple }[] = [
+  { id: 1, label: 'Subir y mapear columnas', icon: UploadSimple },
+  { id: 2, label: 'Ubicar direcciones', icon: MapPin },
+  { id: 3, label: 'Revisar lo que falta', icon: ListChecks },
+  { id: 4, label: 'Crear todas', icon: CheckCircle },
 ];
+
+/*
+ * Las pantallas internas del asistente. La revisión «con IA» (que sólo
+ * esperaba 2 s inventadas y dejaba aceptar sugerencias a mano) ya no existe: el
+ * análisis local corre al salir del mapeo, sin espera (`prepararFilas`).
+ * `id` 5 es el último: sube, ubica, revisa y crea (`StepConfirmImport`).
+ */
+const STEPS = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 5 }];
 
 
 const INITIAL_STATE: ImportWizardState = {
@@ -73,11 +84,21 @@ const INITIAL_STATE: ImportWizardState = {
   importProgress: 0,
   importedCount: 0,
   loteRetomado: null,
+  subidaRetomada: null,
 };
+
+/**
+ * Desde dónde se lanza la importación (decisión (b) de Nico, 06-10-2026): la
+ * Puesta en marcha es MIGRACIÓN y no va al centro de procesos (sus cargas se
+ * ven en el paso); desde Inmuebles sí va al centro. Sin decirlo = Puesta en marcha.
+ */
+export type OrigenDeLaImportacion = 'puesta-en-marcha' | 'inmuebles';
 
 export interface ImportStepProps {
   state: ImportWizardState;
   updateState: (partial: Partial<ImportWizardState>) => void;
+  /** Ver `OrigenDeLaImportacion`. */
+  origen?: OrigenDeLaImportacion;
   /** Adentro del muro de migración: qué hacer en vez de navegar al portafolio. */
   onSalir?: () => void;
   /**
@@ -97,6 +118,11 @@ export interface ImportStepProps {
    * «Seguir con Contratos» con el «Activando…» todavía girando.
    */
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
+  /**
+   * El último paso avisa en cuál de los 4 pasos visibles va el lote (sale de su
+   * `fase`): el indicador del asistente lo dibuja.
+   */
+  onPasoVisible?: (paso: PasoVisible) => void;
 }
 
 /**
@@ -131,7 +157,10 @@ export function ImportWizard({
   onContinuar,
   onOcupado,
   congelado = false,
+  origen = 'puesta-en-marcha',
 }: {
+  /** Ver `OrigenDeLaImportacion`: la página de Inmuebles pasa `inmuebles`. */
+  origen?: OrigenDeLaImportacion;
   onSalir?: () => void;
   onContinuar?: () => void;
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
@@ -147,6 +176,13 @@ export function ImportWizard({
   const router = useRouter();
   const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);
+  // ¿Se avanzó o se volvió? Lo lee el render en que `currentStep` cambió
+  // (la ref todavía tiene el paso anterior) y se actualiza después.
+  const pasoAnterior = useRef(currentStep);
+  const direccionDelPaso = currentStep >= pasoAnterior.current ? 'forward' : 'backward';
+  useEffect(() => {
+    pasoAnterior.current = currentStep;
+  }, [currentStep]);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [ranuraDelPie, setRanuraDelPie] = useState<HTMLDivElement | null>(null);
   const [ranuraSecundaria, setRanuraSecundaria] =
@@ -163,66 +199,32 @@ export function ImportWizard({
   }, []);
 
   /*
-   * La tarjeta de «tienes una importación sin terminar» — mismo patrón que
-   * MigrarTerceros. El lote vive en el servidor desde `preparar()`: una
-   * recarga o un «cancelar» a mitad no pierde nada, pero sin esta tarjeta la
-   * persona no tenía cómo VOLVER a él — re-subía el archivo y duplicaba el
-   * lote. No poder listarlos jamás frena empezar de cero: el catch es mudo.
+   * T-0125 · aviso nativo antes de cerrar la pestaña. T-0130 lo acota: sólo lo
+   * que vive ÚNICAMENTE en el navegador. Un archivo leído que todavía no se
+   * subió (`loteRetomado` se escribe con la primera tanda: desde ahí el lote vive
+   * en el servidor y se retoma) — y, mientras corre, la subida por tandas y la
+   * búsqueda de direcciones, de las que se ocupa `StepConfirmImport` (lo suyo es
+   * reanudable: crear los inmuebles ya no pide quedarse). El asistente sólo le
+   * sigue pasando al muro el «ocupado» tal cual.
    */
-  const [lotesAbiertos, setLotesAbiertos] = useState<EstadoDeLoteInmuebles[]>([]);
-  useEffect(() => {
-    let vigente = true;
-    inmueblesImportacionApi
-      .lotesAbiertos()
-      .then((lotes) => vigente && setLotesAbiertos(lotesParaRetomar(lotes)))
-      .catch(() => {
-        // Sin lista no hay tarjeta, y empezar de nuevo sigue abierto.
-      });
-    return () => {
-      vigente = false;
-    };
-  }, []);
+  const avisarOcupado = useCallback(
+    (ocupado: boolean, cancelar?: () => void) => {
+      onOcupado?.(ocupado, cancelar);
+    },
+    [onOcupado],
+  );
+  useAvisoAlSalir(wizardState.rawRows.length > 0 && !wizardState.loteRetomado);
 
   /*
-   * Descartar una carga desde la tarjeta, sin entrar.
-   *
-   * El back rechaza con 409 `LOTE_EN_PROCESO` si el job todavía corre; eso NO
-   * es un fallo de la persona, es «esperá», y se dice tal cual en vez de
-   * reintentar en silencio (mismo criterio que `handleDescartarLote`).
+   * La tarjeta de «tienes una carga a medias» — en CUALQUIER paso, con o sin
+   * archivo leído (T-0130). El lote vive en el servidor desde la primera tanda:
+   * una recarga o un corte no pierde nada, pero sin esta tarjeta la persona no
+   * tenía cómo VOLVER a él — re-subía el archivo y duplicaba el lote. Se vuelve
+   * a leer en cada cambio de paso. No poder listarlas jamás frena empezar de
+   * cero: el hook calla el error.
    */
-  const [descartando, setDescartando] = useState<string | null>(null);
-  const descartarLote = useCallback(async (lote: string) => {
-    setDescartando(lote);
-    try {
-      const r = await inmueblesImportacionApi.descartarLote(lote);
-      setLotesAbiertos((prev) => prev.filter((l) => l.lote !== lote));
-      toast.success('Carga descartada', {
-        description: `${r.descartadas} ${r.descartadas === 1 ? 'fila quedó fuera' : 'filas quedaron fuera'}. Los inmuebles que ya se habían creado no se tocan.`,
-      });
-    } catch (e) {
-      toast.error(
-        e instanceof Error ? e.message : 'No pudimos descartar esa carga.',
-      );
-    } finally {
-      setDescartando(null);
-    }
-  }, []);
-
-  const retomarLote = useCallback(
-    (l: EstadoDeLoteInmuebles) => {
-      updateState({ loteRetomado: l.lote });
-      // Directo al último paso (posición 5: con method null se ven los 5
-      // pasos). StepConfirmImport lee `loteRetomado` al montar.
-      setCurrentStep(5);
-    },
-    [updateState],
-  );
-
-  const mostrarRetomar =
-    lotesAbiertos.length > 0 &&
-    currentStep === 1 &&
-    wizardState.method === null &&
-    wizardState.rawRows.length === 0;
+  const { lotes: cargasAbiertas, recargar: recargarCargas, quitar: quitarCarga } =
+    useCargasAbiertasDeInmuebles(currentStep);
 
   // Cambiar de método vuelve al paso 1 — salvo cuando el cambio ES el atajo.
   //
@@ -255,18 +257,62 @@ export function ImportWizard({
   // pasa por `pasoActual`; lo que decide DÓNDE estamos usa la posición.
   const visibleSteps = useMemo(() => {
     if (wizardState.method === 'portal') return STEPS.slice(0, 2);
-    if (wizardState.method === 'enlaces') {
-      return [
-        STEPS[0],
-        { ...STEPS[1], labelKey: 'inmobiliaria.import.steps.enlaces', icon: LinkSimple },
-        STEPS[3],
-        STEPS[4],
-      ];
-    }
+    // «Desde enlaces» no tiene columnas que mapear: método, enlaces, y el último.
+    if (wizardState.method === 'enlaces') return [STEPS[0], STEPS[1], STEPS[3]];
     return STEPS;
   }, [wizardState.method]);
 
+  /* En cuál de los 4 pasos visibles va el lote, mientras el último paso lo gobierna. */
+  const [pasoVisibleDelLote, setPasoVisibleDelLote] = useState<PasoVisible>(1);
+
   const pasoActual = visibleSteps[currentStep - 1]?.id ?? 1;
+
+  const retomarLote = useCallback(
+    (l: EstadoDeLoteInmuebles) => {
+      const etapa = etapaDeLaCarga(l);
+      const aEnviar = wizardState.properties.filter((p) => p.hasErrors || p.selected).length;
+      if (etapa === 'subiendo') {
+        /*
+         * Seguir SUBIENDO necesita las filas: el servidor guarda lo que llegó,
+         * no el archivo. Con el mismo archivo ya leído (misma cuenta de filas)
+         * se va derecho al último paso, que retoma desde `siguienteDesde`; si
+         * no, se pide el archivo y se retoma cuando llegue al último paso.
+         */
+        const subida = { lote: l.lote, total: l.total, recibidas: l.recibidas ?? 0 };
+        const filasListas = aEnviar === l.total && wizardState.aiAnalyzed;
+        updateState({ subidaRetomada: subida, loteRetomado: l.lote });
+        setCurrentStep(filasListas ? visibleSteps.length : wizardState.method === null ? 1 : 2);
+        return;
+      }
+      // Ubicando o ya en revisión: el lote entero está en el servidor.
+      // El portal de enlaces sólo tiene 2 pasos: sin método no hay último paso.
+      updateState({
+        loteRetomado: l.lote,
+        subidaRetomada: null,
+        ...(wizardState.method === 'portal' ? { method: null } : {}),
+      });
+      setCurrentStep(wizardState.method === 'portal' ? STEPS.length : visibleSteps.length);
+    },
+    [updateState, wizardState.properties, wizardState.aiAnalyzed, wizardState.method, visibleSteps.length],
+  );
+
+  const alDescartarCarga = useCallback(
+    (lote: string) => {
+      quitarCarga(lote);
+      if (wizardState.loteRetomado === lote || wizardState.subidaRetomada?.lote === lote) {
+        updateState({
+          loteRetomado: wizardState.loteRetomado === lote ? null : wizardState.loteRetomado,
+          subidaRetomada: wizardState.subidaRetomada?.lote === lote ? null : wizardState.subidaRetomada,
+        });
+      }
+    },
+    [quitarCarga, updateState, wizardState.loteRetomado, wizardState.subidaRetomada],
+  );
+
+  // La carga que el último paso ya está mostrando no se repite en la tarjeta.
+  const cargasParaOfrecer = cargasAbiertas.filter(
+    (l) => !(currentStep === visibleSteps.length && l.lote === wizardState.loteRetomado),
+  );
 
   // Step validation
   const isStepValid = useMemo(() => {
@@ -295,15 +341,11 @@ export function ImportWizard({
         // Una columna partida en dos cuenta por sus dos partes.
         const isMapped = (key: string) => mappings.some((m) => destinosDe(m).includes(key));
         const requiredKeys = TARGET_FIELDS.filter((f) => f.required).map((f) => f.key);
-        const priceAlternativeOk = isMapped('monthlyRent') || isMapped('salePrice');
+        // T-0129 — sin columna de precio las filas entran con el canon por confirmar.
         return (
-          priceAlternativeOk &&
-          requiredKeys.filter((key) => key !== 'monthlyRent').every(isMapped)
+          requiredKeys.every(isMapped)
         );
       }
-      case 4:
-        // Valid when analysis is done and at least 1 property is selected
-        return wizardState.aiAnalyzed && wizardState.properties.some((p) => p.selected && !p.hasErrors);
       case 5:
         // Always valid — step manages its own submit
         return true;
@@ -313,68 +355,38 @@ export function ImportWizard({
   }, [pasoActual, wizardState]);
 
   /*
-   * Títulos que faltan al salir de la revisión. El título es obligatorio y es
-   * lo primero que se ve en el marketplace: sin él cada fila entra PENDIENTE.
-   * Mientras falte en alguna, «Ponerles título» es la acción primaria del pie
-   * y «Siguiente» pregunta antes de seguir (Nico, 2026-09-11: «debemos dejar
-   * claro que debería aceptar la sugerencia de los títulos»).
+   * Lo que antes hacía el paso «Revisión AI» al montarse, sin la espera de 2 s
+   * inventada: pasar las filas del archivo a inmuebles y correr la validación
+   * local (huecos, tipo, canon…). Al salir del mapeo; recalcularla cada vez que
+   * se vuelve a salir es lo que hace que un mapeo corregido llegue al lote.
+   *
+   * Los títulos se ponen solos: es obligatorio, es lo primero que se ve en el
+   * marketplace y ninguna inmobiliaria lo guarda en su sistema (Nico,
+   * 2026-09-10/11). Se pueden cambiar después en bloque o en cada inmueble.
+   * Lo que antes eran «sugerencias» por aceptar a mano ya no existe: un canon
+   * que falta entra con el canon por confirmar (T-0129), no inventado.
    */
-  const titulosPendientes = pasoActual === 4 ? sinTitulo(wizardState.properties) : 0;
-  const [preguntarPorTitulos, setPreguntarPorTitulos] = useState(false);
+  const prepararFilas = useCallback(() => {
+    const mapeadas = mapRowsToProperties(wizardState.rawRows, wizardState.columnMappings);
+    const analizadas = analyzeProperties(mapeadas).map(recalcularEstado);
+    updateState({ properties: ponerTitulosATodas(analizadas), aiAnalyzed: true });
+  }, [wizardState.rawRows, wizardState.columnMappings, updateState]);
 
   // Navigation handlers
   const avanzar = useCallback(() => {
     if (currentStep < visibleSteps.length && isStepValid) {
+      if (pasoActual === 3) prepararFilas();
       setCurrentStep((prev) => prev + 1);
     }
-  }, [currentStep, isStepValid, visibleSteps.length]);
+  }, [currentStep, isStepValid, visibleSteps.length, pasoActual, prepararFilas]);
 
-  const goToNextStep = useCallback(() => {
-    if (titulosPendientes > 0) {
-      setPreguntarPorTitulos(true);
-      return;
-    }
-    avanzar();
-  }, [titulosPendientes, avanzar]);
-
-  const seguirConTitulos = useCallback(() => {
-    updateState({ properties: ponerTitulosATodas(wizardState.properties) });
-    setPreguntarPorTitulos(false);
-    avanzar();
-  }, [wizardState.properties, updateState, avanzar]);
-
-  const seguirSinTitulos = useCallback(() => {
-    setPreguntarPorTitulos(false);
-    avanzar();
-  }, [avanzar]);
-
-  // Salir de la revisión hacia atrás descarta el análisis para que se rehaga
-  // con lo que la persona vaya a cambiar. Con «Desde enlaces» NO: ahí las
-  // propiedades no salen de filas de un archivo que sigue cargado, salen de
-  // haber leído las páginas. Borrarlas obligaría a leer los veinte enlaces de
-  // nuevo por haber tocado «Anterior».
-  const debeDescartarAnalisis = useCallback(
-    (desde: number) => visibleSteps[desde - 1]?.id === 4 && wizardState.method !== 'enlaces',
-    [visibleSteps, wizardState.method],
-  );
+  const goToNextStep = avanzar;
 
   const goToPreviousStep = useCallback(() => {
     if (currentStep > 1) {
-      if (debeDescartarAnalisis(currentStep)) {
-        updateState({ aiAnalyzed: false, properties: [] });
-      }
       setCurrentStep((prev) => prev - 1);
     }
-  }, [currentStep, debeDescartarAnalisis, updateState]);
-
-  const goToStep = useCallback((step: number) => {
-    if (step >= 1 && step <= currentStep) {
-      if (debeDescartarAnalisis(currentStep) && step < currentStep) {
-        updateState({ aiAnalyzed: false, properties: [] });
-      }
-      setCurrentStep(step);
-    }
-  }, [currentStep, debeDescartarAnalisis, updateState]);
+  }, [currentStep]);
 
   const handleCancel = useCallback(() => {
     setShowCancelDialog(true);
@@ -389,21 +401,25 @@ export function ImportWizard({
     router.push('/panel/inmobiliaria/inmuebles');
   }, [router, onSalir]);
 
-  // Step status helper — recibe la POSICIÓN, no el id (ver `visibleSteps`).
-  const getStepStatus = (posicion: number) => {
-    if (posicion < currentStep) return 'completed';
-    if (posicion === currentStep) return 'current';
-    return 'upcoming';
-  };
+  /*
+   * El paso visible (de 4). Mientras la persona está en las pantallas de armar
+   * el archivo es SIEMPRE el 1; en el último, lo dice el lote (`fase`).
+   */
+  const enElUltimo = pasoActual === 5;
+  const pasoMacro: PasoVisible = enElUltimo ? pasoVisibleDelLote : 1;
+  const estadoDelPaso = (id: PasoVisible) =>
+    id < pasoMacro ? 'completed' : id === pasoMacro ? 'current' : 'upcoming';
 
   // Render step content
   const renderStepContent = () => {
     const stepProps: ImportStepProps = {
       state: wizardState,
       updateState,
+      origen,
       onSalir,
       onContinuar,
-      onOcupado,
+      onOcupado: avisarOcupado,
+      onPasoVisible: setPasoVisibleDelLote,
     };
 
     switch (pasoActual) {
@@ -416,8 +432,6 @@ export function ImportWizard({
         return <StepUploadFile {...stepProps} />;
       case 3:
         return <StepColumnMapping {...stepProps} />;
-      case 4:
-        return <StepAIReview {...stepProps} />;
       case 5:
         return <StepConfirmImport {...stepProps} />;
       default:
@@ -427,143 +441,66 @@ export function ImportWizard({
 
   return (
     <div className="max-w-4xl mx-auto">
-      {mostrarRetomar && (
-        <section
-          className="mb-6 space-y-3 rounded-lg border border-primary/30 bg-surface p-5 shadow-sm"
-          data-testid="lotes-inmuebles-abiertos"
+      <CargasAMedias
+        lotes={cargasParaOfrecer}
+        onRetomar={retomarLote}
+        onDescartada={alDescartarCarga}
+        onCambio={recargarCargas}
+      />
+
+      {/*
+       * T-0130 — se retoma una subida cortada: el servidor guardó lo que llegó,
+       * pero no el archivo. Hay que volver a elegirlo y pasarlo por los pasos
+       * (las filas se arman igual); el último paso sigue desde donde quedó.
+       */}
+      {wizardState.subidaRetomada && currentStep < visibleSteps.length ? (
+        <div
+          className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface-muted p-4"
+          data-testid="subida-retomada"
         >
-          <p className="text-sm font-medium text-fg">
-            {lotesAbiertos.length === 1
-              ? 'Tienes una importación sin terminar'
-              : `Tienes ${lotesAbiertos.length} importaciones sin terminar`}
+          <p className="min-w-0 text-sm text-fg">
+            Seguimos la carga que dejaste a medias: llegaron{' '}
+            <span className="font-mono tabular-nums">
+              {wizardState.subidaRetomada.recibidas.toLocaleString('es-CO')}
+            </span>{' '}
+            de{' '}
+            <span className="font-mono tabular-nums">
+              {wizardState.subidaRetomada.total.toLocaleString('es-CO')}
+            </span>{' '}
+            filas. Selecciona el MISMO archivo y avanza hasta el último paso: retomamos desde
+            donde quedó.
           </p>
-          {/*
-           * 🔴 «¿Cuál de esos retomo?» (Nico, 2026-09-11, con cinco cargas en
-           * pantalla). No podía saberlo: las cinco eran del MISMO archivo, así
-           * que las cinco líneas empezaban con «2864 inmuebles» y se
-           * diferenciaban en dos conteos sin contexto.
-           *
-           * Ahora cada fila dice cuándo se subió, cuántos inmuebles entraron
-           * por ella, y —lo que de verdad decide— si frena el paso. Sólo las
-           * filas LISTO lo frenan: una carga con 2.864 «por revisar» y cero
-           * listas no frena nada, y hasta hoy se veía igual de alarmante que
-           * una que sí.
-           */}
-          {lotesAbiertos.map((l) => {
-            const d = describirCargaAbierta(l, new Date());
-            return (
-            <div
-              key={l.lote}
-              className="flex flex-wrap items-center justify-between gap-2"
-              data-testid={`carga-${l.lote}`}
-            >
-              <div className="min-w-0">
-                <p className="text-sm text-fg">
-                  {d.cuando ? <span className="font-medium">{d.cuando}</span> : null}
-                  {d.cuando && d.yaEntraron > 0 ? ' · ' : null}
-                  {d.yaEntraron > 0 ? (
-                    <>
-                      <span className="font-mono tabular-nums">{d.yaEntraron}</span> ya
-                      en tu portafolio
-                    </>
-                  ) : null}
-                </p>
-                <p className="text-sm text-fg-muted">
-                  {d.queHacer === 'procesando' ? (
-                    'Todavía procesándose'
-                  ) : d.queHacer === 'frena' ? (
-                    <>
-                      <span className="font-mono tabular-nums">{d.frena}</span> listos
-                      sin activar — <span className="text-warning">frenan este paso</span>
-                      {d.porRevisar > 0 ? (
-                        <>
-                          {' · '}
-                          <span className="font-mono tabular-nums">{d.porRevisar}</span>{' '}
-                          por revisar
-                        </>
-                      ) : null}
-                    </>
-                  ) : d.queHacer === 'terminada' ? (
-                    <>
-                      Sin nada que activar
-                      {d.porRevisar > 0 ? (
-                        <>
-                          {' · '}
-                          <span className="font-mono tabular-nums">{d.porRevisar}</span>{' '}
-                          por revisar, no frenan
-                        </>
-                      ) : null}
-                    </>
-                  ) : (
-                    <>
-                      <span className="font-mono tabular-nums">{d.porRevisar}</span> por
-                      revisar · no frenan este paso
-                    </>
-                  )}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {/*
-                 * 🔴 DESCARTAR SIN TENER QUE ENTRAR.
-                 *
-                 * Una carga abandonada frena el paso entero del muro
-                 * —cualquier fila LISTO lo deja «pendiente»— y hasta hoy la
-                 * única forma de sacarla del medio era retomarla, esperar a
-                 * que cargara la revisión y buscar «Descartar lote completo»
-                 * adentro. Con cuatro cargas viejas encima, eso son cuatro
-                 * viajes para tirar algo que ya se decidió tirar (Nico,
-                 * 2026-09-11).
-                 *
-                 * Va en `ghost` y a la izquierda del primario: descartar es
-                 * destructivo y no puede competir por el clic con «Retomar».
-                 */}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  hideArrow
-                  disabled={descartando === l.lote || l.estado !== 'LISTO'}
-                  isLoading={descartando === l.lote}
-                  data-testid={`descartar-${l.lote}`}
-                  onClick={() => void descartarLote(l.lote)}
-                >
-                  Descartar
-                </Button>
-                <Button size="sm" hideArrow onClick={() => retomarLote(l)}>
-                  Retomar
-                </Button>
-              </div>
-            </div>
-            );
-          })}
-          <p className="text-xs text-fg-subtle">
-            Si en cambio subes el mismo archivo de nuevo, los inmuebles se duplican.
-          </p>
-        </section>
-      )}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            hideArrow
+            onClick={() => updateState({ subidaRetomada: null })}
+          >
+            Dejar esta carga para después
+          </Button>
+        </div>
+      ) : null}
 
       {/* Step Indicator */}
       <div className="mb-8">
-        {/* Desktop Steps */}
-        <div className="hidden md:flex items-center justify-between">
-          {visibleSteps.map((step, index) => {
-            const posicion = index + 1;
-            const status = getStepStatus(posicion);
-            const StepIcon = step.icon;
+        {/* Desktop Steps — sólo informan: el lote avanza solo, no se navega por acá. */}
+        <ol className="hidden md:flex items-center justify-between" aria-label="Pasos de la importación">
+          {PASOS_VISIBLES.map((paso, index) => {
+            const status = estadoDelPaso(paso.id);
+            const StepIcon = paso.icon;
 
             return (
-              <div key={step.id} className="flex items-center flex-1">
-                {/* allowlist: clickable wizard step navigator (icon-per-step, label-below,
-                    done/active/upcoming) — Cadence Stepper is display-only; kept native */}
-                <button
-                  onClick={() => status !== 'upcoming' && goToStep(posicion)}
-                  disabled={status === 'upcoming'}
-                  className={cn(
-                    'flex flex-col items-center gap-2 transition-all shrink-0',
-                    status === 'upcoming' ? 'cursor-not-allowed' : 'cursor-pointer'
-                  )}
-                >
+              <li
+                key={paso.id}
+                className="flex items-center flex-1"
+                aria-current={status === 'current' ? 'step' : undefined}
+                data-testid={`paso-visible-${paso.id}`}
+                data-estado={status}
+              >
+                <div className="flex flex-col items-center gap-2 shrink-0">
                   <div className={cn(
-                    'w-12 h-12 rounded-full flex items-center justify-center transition-all',
+                    'w-12 h-12 rounded-full flex items-center justify-center transition-[color,background-color,box-shadow]',
                     status === 'completed'
                       ? 'bg-success text-white'
                       : status === 'current'
@@ -588,44 +525,45 @@ export function ImportWizard({
                         ? 'text-fg dark:text-white'
                         : 'text-fg-subtle'
                   )}>
-                    {t(step.labelKey)}
+                    {paso.label}
                   </span>
-                </button>
+                </div>
 
                 {/* Connector Line — es un divisor de 2px, así que necesita más
                     contraste que una superficie grande: va con `bg-border`. */}
-                {index < visibleSteps.length - 1 && (
+                {index < PASOS_VISIBLES.length - 1 && (
                   <div className={cn(
                     'flex-1 h-0.5 mx-2',
-                    posicion < currentStep
+                    paso.id < pasoMacro
                       ? 'bg-success'
                       : 'bg-border'
                   )} />
                 )}
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ol>
 
         {/* Mobile Progress */}
         <div className="md:hidden">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-fg dark:text-white">
               {t('inmobiliaria.import.wizard.mobileProgress', {
-                current: currentStep,
-                total: visibleSteps.length,
-                label: t(visibleSteps[currentStep - 1]?.labelKey ?? ''),
+                current: pasoMacro,
+                total: PASOS_VISIBLES.length,
+                label: PASOS_VISIBLES[pasoMacro - 1].label,
               })}
             </span>
-            <span className="text-sm text-fg-muted">{Math.round((currentStep / visibleSteps.length) * 100)}%</span>
+            <span className="text-sm text-fg-muted">{Math.round((pasoMacro / PASOS_VISIBLES.length) * 100)}%</span>
           </div>
           {/* Misma razón que los círculos: el riel se perdía contra el fondo. */}
           <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
+            {/* Avanza con `translateX` (sólo transform), no con el ancho. */}
             <motion.div
-              className="h-full bg-primary"
+              className="h-full w-full bg-primary"
               initial={false}
-              animate={{ width: `${(currentStep / visibleSteps.length) * 100}%` }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              animate={{ x: `${(pasoMacro / PASOS_VISIBLES.length) * 100 - 100}%` }}
+              transition={{ duration: motionDuration.slow, ease: motionEase.standard }}
             />
           </div>
         </div>
@@ -656,21 +594,15 @@ export function ImportWizard({
               inert={congelado}
               className={congelado ? "cursor-progress" : undefined}
             >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentStep}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                >
+              {/* El paso nuevo entra por la derecha al avanzar y por la
+                  izquierda al volver (`CrossFade` con dirección). */}
+              <CrossFade swapKey={currentStep} direction={direccionDelPaso}>
                   <RanuraDelPieSecundaria.Provider value={ranuraSecundaria}>
                   <RanuraDelPie.Provider value={ranuraDelPie}>
                     {renderStepContent()}
                   </RanuraDelPie.Provider>
                   </RanuraDelPieSecundaria.Provider>
-                </motion.div>
-              </AnimatePresence>
+              </CrossFade>
             </div>
 
             {/*
@@ -683,14 +615,17 @@ export function ImportWizard({
           </div>
         </RanuraVivaContext.Provider>
 
-        {/* Footer Navigation — hidden when import is complete */}
-        {!(pasoActual === 5 && wizardState.importedCount > 0) && (
+        {/* Footer Navigation — hidden when import is complete, y en el paso 4:
+            «Crear todas» y el avance tienen sus propios botones dentro. */}
+        {!(pasoActual === 5 && (wizardState.importedCount > 0 || pasoVisibleDelLote === 4)) && (
           // El pie tiene fondo propio, así que necesita el MISMO radio abajo
           // que la tarjeta (`rounded-lg`, línea 460). Estuvo en `rounded-b-xl`
           // —más redondo que la tarjeta— y en las dos esquinas de abajo asomaba
           // el fondo: dos medias lunas blancas. Si el radio de la tarjeta
           // cambia, éste cambia con ella.
-          <div className="px-6 py-4 rounded-b-lg border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex items-center justify-between">
+          // A 390 px los tres botones no caben en fila con `px-6`: el pie
+          // empujaba la página a 458 px (QA-MIG-A, MG-29). Se envuelve.
+          <div className="px-4 py-4 sm:px-6 rounded-b-lg border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex flex-wrap items-center justify-between gap-2" data-testid="pie-del-asistente">
             {/* Cancel Button */}
             <Button
               type="button"
@@ -702,10 +637,12 @@ export function ImportWizard({
             </Button>
 
             {/* Navigation Buttons */}
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
               {/* Acción que acompaña a «Siguiente» — la llena el paso. */}
               <div ref={setRanuraSecundaria} className="flex items-center" />
-              {currentStep > 1 && (
+              {/* Con el lote ya en el servidor pasada la subida, «Anterior» no
+                  tiene a dónde volver: lo que sigue lo gobierna el lote. */}
+              {currentStep > 1 && !(pasoActual === 5 && pasoVisibleDelLote > 1) && (
                 <Button
                   type="button"
                   variant="outline"
@@ -726,16 +663,16 @@ export function ImportWizard({
                   hideArrow
                   onClick={confirmCancel}
                 >
-                  {t('inmobiliaria.import.portal.backToPortfolio')}
+                  {/* QA-MIGRACION-95 (IN-01): dentro del muro no hay portafolio;
+                      `onSalir` reinicia el asistente y el rótulo lo dice. */}
+                  {onSalir
+                    ? t('inmobiliaria.import.portal.otroMetodo')
+                    : t('inmobiliaria.import.portal.backToPortfolio')}
                 </Button>
               ) : currentStep < visibleSteps.length ? (
                 <Button
                   type="button"
                   hideArrow
-                  // Con títulos pendientes la acción primaria es ponérselos
-                  // (el paso la pone en la ranura de al lado): «Siguiente»
-                  // cede el color.
-                  variant={titulosPendientes > 0 ? 'outline' : undefined}
                   onClick={goToNextStep}
                   disabled={!isStepValid}
                   className="gap-2"
@@ -756,90 +693,28 @@ export function ImportWizard({
         )}
       </div>
 
-      {/* Cancel Confirmation Dialog */}
-      <AnimatePresence>
-        {showCancelDialog && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-            onClick={() => setShowCancelDialog(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-lg bg-surface dark:bg-bg border border-border dark:border-border-strong"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">
-                  <X className="w-5 h-5 text-warning" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-fg dark:text-white">
-                    {t('inmobiliaria.import.wizard.cancelDialog.title')}
-                  </h3>
-                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
-                    {t('inmobiliaria.import.wizard.cancelDialog.description')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3">
-                <Button
-                  variant="outline"
-                  hideArrow
-                  onClick={() => setShowCancelDialog(false)}
-                >
-                  {t('inmobiliaria.import.wizard.cancelDialog.continueEditing')}
-                </Button>
-                <Button
-                  variant="destructive"
-                  hideArrow
-                  onClick={confirmCancel}
-                >
-                  {t('inmobiliaria.import.wizard.cancelDialog.yesCancel')}
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <AlertDialog open={preguntarPorTitulos} onOpenChange={setPreguntarPorTitulos}>
-        <AlertDialogContent data-testid="dialogo-titulos">
+      {/* Cancel Confirmation Dialog — lo que se pierde depende de si el lote
+          ya vive en el servidor (`loteRetomado` se escribe con la primera
+          tanda): desde ahí lo subido queda y se retoma desde «Tienes una carga
+          a medias»; antes, lo único que hay está en esta pantalla. */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent variant="destructive" icon={<X weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {titulosPendientes === 1
-                ? '1 inmueble sin título'
-                : `${titulosPendientes.toLocaleString('es-CO')} inmuebles sin título`}
+              {t('inmobiliaria.import.wizard.cancelDialog.title')}
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2 text-left">
-              <span className="block">
-                El título es obligatorio y es lo primero que se ve en el marketplace. Sin él,{' '}
-                {titulosPendientes === 1 ? 'esa fila entra pendiente' : 'esas filas entran pendientes'} y
-                hay que escribirlo una por una.
-              </span>
-              <span className="block">
-                El sugerido se arma con clase + barrio + municipio («Apartamento en Sierra Morena,
-                La Estrella») y lo puedes editar después, en cada inmueble.
-              </span>
+            <AlertDialogDescription>
+              {wizardState.loteRetomado
+                ? t('inmobiliaria.import.wizard.cancelDialog.descriptionLoteGuardado')
+                : t('inmobiliaria.import.wizard.cancelDialog.description')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Volver</AlertDialogCancel>
-            <Button type="button" variant="outline" hideArrow onClick={seguirSinTitulos} data-testid="seguir-sin-titulo">
-              Seguir sin título
-            </Button>
-            <AlertDialogAction
-              onClick={(e) => {
-                e.preventDefault();
-                seguirConTitulos();
-              }}
-              data-testid="poner-titulos-y-seguir"
-            >
-              Ponerles título y seguir
+            <AlertDialogCancel>
+              {t('inmobiliaria.import.wizard.cancelDialog.continueEditing')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancel}>
+              {t('inmobiliaria.import.wizard.cancelDialog.yesCancel')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

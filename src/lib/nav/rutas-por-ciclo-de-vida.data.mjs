@@ -54,11 +54,19 @@ export const RUTAS_POR_CICLO_DE_VIDA_DATA = [
   { source: `${P}/documentos/revision`, destination: `${P}/postulaciones/soportes`, permanent: false },
   { source: `${P}/ai/avaluos/:path*`, destination: `${P}/inmuebles/avaluos/:path*`, permanent: false },
   { source: `${P}/renovaciones`, destination: `${P}/contratos/renovaciones`, permanent: false },
-  // Retención: la Sala, la bandeja (Riesgo) y la cola de revisión (Por
-  // aprobar) son pantallas hermanas de Contratos, como las dibuja la propuesta.
-  { source: `${P}/ai/retencion/bandeja/:path*`, destination: `${P}/contratos/riesgo/:path*`, permanent: false },
-  { source: `${P}/ai/retencion/revisiones`, destination: `${P}/contratos/aprobar`, permanent: false },
-  { source: `${P}/ai/retencion`, destination: `${P}/contratos/retencion`, permanent: false },
+  // Retención: el tablero, la bandeja (Riesgo) y la cola de revisión (Por
+  // aprobar). Fueron pantallas hermanas de Contratos hasta el 03-10-2026; desde
+  // QA-CONT C-19 (Nico: «Moverlas a Agentes IA con navegación») son la sala de
+  // un agente en `/retencion`. Las de `/ai/retencion` se REPUNTAN (sin cadena
+  // de dos saltos) y las de `/contratos/…` redirigen a la nueva casa. Van antes
+  // que cualquier regla de `/contratos` y la de `riesgo` con `:path*` cubre la
+  // ficha de un caso.
+  { source: `${P}/ai/retencion/bandeja/:path*`, destination: `${P}/retencion/riesgo/:path*`, permanent: false },
+  { source: `${P}/ai/retencion/revisiones`, destination: `${P}/retencion/aprobar`, permanent: false },
+  { source: `${P}/ai/retencion`, destination: `${P}/retencion`, permanent: false },
+  { source: `${P}/contratos/retencion`, destination: `${P}/retencion`, permanent: false },
+  { source: `${P}/contratos/riesgo/:path*`, destination: `${P}/retencion/riesgo/:path*`, permanent: false },
+  { source: `${P}/contratos/aprobar`, destination: `${P}/retencion/aprobar`, permanent: false },
 
   // ── Operación ────────────────────────────────────────────────────────────
   { source: `${P}/ai/mantenimiento/tickets/:path*`, destination: `${P}/mantenimientos/tickets/:path*`, permanent: false },

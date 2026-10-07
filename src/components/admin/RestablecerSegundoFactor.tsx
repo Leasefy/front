@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react'
 import { adminApi, ApiError } from '@/lib/admin/api'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 
 /** GET /api/v1/admin/cuentas/buscar?email= (back: `admin/resources/cuentas`). */
 interface CuentaParaSoporte {
@@ -53,9 +54,7 @@ export function RestablecerSegundoFactor() {
       setError(
         err instanceof ApiError && err.status === 404
           ? 'No hay ninguna cuenta con ese correo.'
-          : err instanceof ApiError
-            ? err.message
-            : 'Error de red',
+          : mensajeDelAdmin(err, { accion: 'buscar la cuenta' }),
       )
     } finally {
       setBuscando(false)
@@ -74,7 +73,7 @@ export function RestablecerSegundoFactor() {
       setCuenta({ ...cuenta, segundoFactor: { total: 0, verificados: 0 } })
       setConfirmando(false)
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Error de red')
+      setError(mensajeDelAdmin(err, { accion: 'restablecer el segundo factor' }))
     } finally {
       setRestableciendo(false)
     }

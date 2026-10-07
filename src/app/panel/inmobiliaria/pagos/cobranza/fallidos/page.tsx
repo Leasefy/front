@@ -41,6 +41,7 @@ import {
   clasificarMotivo,
 } from '@/components/inmobiliaria/pagos/PagoFallidoTabla'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 // ── Acciones masivas (visión §7) ──────────────────────────────────────────────
 // No hay endpoint de operación en lote → todas son placeholders honestos
@@ -94,8 +95,7 @@ function PagosFallidos() {
       </header>
 
       {/* Banner del agente — resumen accionable del diagnóstico */}
-      {!isLoading && !error && total > 0 && (
-        <div className="rounded-lg border border-border bg-primary-soft p-4">
+      <Presence show={!isLoading && !error && total > 0} className="rounded-lg border border-border bg-primary-soft p-4">
           <div className="flex items-start gap-3">
             <span className="shrink-0 flex h-9 w-9 items-center justify-center rounded-lg bg-primary-soft text-primary">
               <Robot className="h-5 w-5" weight="duotone" aria-hidden="true" />
@@ -116,8 +116,7 @@ function PagosFallidos() {
               </p>
             </div>
           </div>
-        </div>
-      )}
+      </Presence>
 
       {/* Acciones masivas — placeholders honestos (sin endpoint de lote) */}
       <Card className="p-5 space-y-3">
@@ -144,7 +143,9 @@ function PagosFallidos() {
         </div>
       </Card>
 
-      {/* Tabla de fallidos / estados de carga, error y vacío */}
+      {/* Tabla de fallidos / estados de carga, error y vacío: cada estado
+          entra con su fundido (`CrossFade`). */}
+      <CrossFade swapKey={isLoading ? 'cargando' : error ? 'fallo' : total === 0 ? 'vacio' : 'tabla'}>
       {isLoading ? (
         <div className="space-y-2" aria-busy="true">
           {[0, 1, 2].map((i) => (
@@ -175,6 +176,7 @@ function PagosFallidos() {
           }
         />
       )}
+      </CrossFade>
 
       {/* Cross-link a la operación profunda — NUNCA duplicar esa tabla acá */}
       <div className="text-sm">

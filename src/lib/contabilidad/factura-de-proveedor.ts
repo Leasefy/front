@@ -39,6 +39,13 @@
  */
 
 import type { LineaNueva } from '@/lib/api/gastos.service';
+import {
+  IVA_MAXIMO_PCT,
+  MAX_LINEAS_POR_FACTURA,
+  MENSAJES_DE_GASTOS,
+  pasaDelTope,
+  VALOR_MAXIMO_DEL_GASTO_COP,
+} from './limites-de-contabilidad';
 
 /** Una línea mientras se digita: puede estar incompleta. */
 export interface LineaEnCurso {
@@ -234,4 +241,100 @@ export function lineasParaElBack(lineas: readonly LineaEnCurso[]): LineaNueva[] 
       // acepta los dos y el de pesos manda, pero acá no hay de dónde sacarlo.
       ivaPct: l.ivaPct,
     }));
+}
+
+/**
+ * Los campos de la factura que pueden llevar un error propio, con el MISMO
+ * nombre que la ruta que manda el back en `campos[].campo` (`lineas.0.baseCop`):
+ * así un 400 del servidor y el tope del cliente caen en el mismo lugar.
+ */
+export type CampoDeLaFactura =
+  | 'proveedorNombre'
+  | 'proveedorTipoDocumento'
+  | 'proveedorDocumento'
+  | 'proveedorCiudad'
+  | 'proveedorDireccion'
+  | 'prefijoDelProveedor'
+  | 'numeroDelProveedor'
+  | 'fecha'
+  | 'fechaDeVencimiento'
+  | 'concepto'
+  | 'totalCop'
+  | 'retefuenteCop'
+  | 'reteivaCop'
+  | 'reteicaCop'
+  | 'lineas'
+  | `lineas.${number}.descripcion`
+  | `lineas.${number}.baseCop`
+  | `lineas.${number}.ivaPct`;
+
+/** Todos los campos que el formulario muestra, para repartir un 400 del back. */
+export function camposDeLaFactura(cuantasLineas: number): CampoDeLaFactura[] {
+  const fijos: CampoDeLaFactura[] = [
+    'proveedorNombre',
+    'proveedorTipoDocumento',
+    'proveedorDocumento',
+    'proveedorCiudad',
+    'proveedorDireccion',
+    'prefijoDelProveedor',
+    'numeroDelProveedor',
+    'fecha',
+    'fechaDeVencimiento',
+    'concepto',
+    'totalCop',
+    'retefuenteCop',
+    'reteivaCop',
+    'reteicaCop',
+    'lineas',
+  ];
+  const deLasLineas = Array.from({ length: cuantasLineas }, (_, i) => [
+    `lineas.${i}.descripcion` as const,
+    `lineas.${i}.baseCop` as const,
+    `lineas.${i}.ivaPct` as const,
+  ]).flat();
+  return [...fijos, ...deLasLineas];
+}
+
+/**
+ * 🔁 Los topes del back (`limites-de-gastos.ts`), atajados antes de enviar y
+ * con la MISMA frase, en su campo. Vacío = se puede mandar.
+ *
+ * Los índices de las líneas son los del formulario; coinciden con los del
+ * cuerpo porque una línea sin base no deja enviar (`problemasDeLaFactura`).
+ */
+export function erroresDeLosTopes(
+  borrador: BorradorDeFactura,
+): Partial<Record<CampoDeLaFactura, string>> {
+  const errores: Partial<Record<CampoDeLaFactura, string>> = {};
+
+  if (borrador.lineas.length > MAX_LINEAS_POR_FACTURA) {
+    errores.lineas = MENSAJES_DE_GASTOS.demasiadasLineas;
+  }
+  borrador.lineas.forEach((l, i) => {
+    if (pasaDelTope(l.baseCop)) {
+      errores[`lineas.${i}.baseCop`] = MENSAJES_DE_GASTOS.baseMaxima;
+    } else if (Number.isFinite(l.ivaPct) && l.ivaPct > IVA_MAXIMO_PCT) {
+      errores[`lineas.${i}.ivaPct`] = MENSAJES_DE_GASTOS.ivaPctMaximo;
+    }
+  });
+
+  // La suma: cada renglón puede pasar y el total reventar su columna.
+  const hayRenglonFueraDeRango = Object.keys(errores).some((k) => k.startsWith('lineas.'));
+  if (!errores.lineas && !hayRenglonFueraDeRango) {
+    const t = totalesDeLasLineas(borrador.lineas);
+    if (
+      t.subtotalCop > VALOR_MAXIMO_DEL_GASTO_COP ||
+      t.ivaCop > VALOR_MAXIMO_DEL_GASTO_COP ||
+      t.totalCop > VALOR_MAXIMO_DEL_GASTO_COP
+    ) {
+      errores.lineas = MENSAJES_DE_GASTOS.sumaMaxima;
+    }
+  }
+
+  if (pasaDelTope(borrador.totalCop)) errores.totalCop = MENSAJES_DE_GASTOS.totalMaximo;
+  if (pasaDelTope(borrador.retefuenteCop)) errores.retefuenteCop = MENSAJES_DE_GASTOS.retefuenteMaxima;
+  if (pasaDelTope(borrador.reteivaCop)) errores.reteivaCop = MENSAJES_DE_GASTOS.reteivaMaxima;
+  if (pasaDelTope(borrador.reteicaCop)) errores.reteicaCop = MENSAJES_DE_GASTOS.reteicaMaxima;
+
+  return errores;
 }

@@ -6,7 +6,8 @@ import { House, CurrencyDollar, Clock, WarningCircle, TrendUp } from '@phosphor-
 import { LeaseExpandableItem } from '@/components/lease/LeaseExpandableItem';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Button, Spinner } from '@/components/ui';
+import { Button } from '@/components/ui';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PageHeader, KpiCard } from '@leasefy/cadence';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useLeases } from '@/lib/hooks/useLeases';
@@ -41,9 +42,10 @@ function ProgressBar({ value, variant }: ProgressBarProps) {
 
   return (
     <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+      {/* `transform` (translateX), no `width`: la barra entera corrida a su avance. */}
       <div
-        className={cn('h-full rounded-full transition-all duration-500', barColorClass)}
-        style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+        className={cn('h-full w-full rounded-full transition-transform duration-reveal ease-enter', barColorClass)}
+        style={{ transform: `translateX(${Math.min(100, Math.max(0, value)) - 100}%)` }}
       />
     </div>
   );
@@ -104,8 +106,9 @@ export default function LandlordLeasesPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+      <div className="min-h-screen bg-bg">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
     );
   }

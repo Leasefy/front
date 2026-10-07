@@ -101,6 +101,20 @@ function render(
 }
 
 describe('<CarrierRegistryTable>', () => {
+  // QA-IA-A (04-10-2026): nada de «stub», «sekure», «On/Off» ni «healthy» ante la inmobiliaria.
+  it('dice el modo, la ruta, si Leasefy la ofrece y el estado en español', () => {
+    const row = makeMergedRow({
+      global: { name: 'Sura', route: 'sekure', mode: 'stub', enabled: false, priority: 10, maxCanonCop: null, breachStatus: 'healthy' },
+    })
+    render([row])
+    const texto = container.textContent ?? ''
+    expect(texto).toContain('De prueba (simulada)')
+    expect(texto).toContain('Por Sekure')
+    expect(texto).toContain('Responde bien')
+    expect(texto).toContain('inheritsNo10') // «No» (Leasefy no la ofrece) pegado a la celda vecina en el texto plano
+    for (const crudo of ['stub', 'sekure', 'healthy', 'Off']) expect(texto).not.toContain(crudo)
+  })
+
   it('Test 1 — rows with hasOverride=true receive class "border-l-4" on the tr element', () => {
     const row = makeMergedRow({
       hasOverride: true,

@@ -30,8 +30,9 @@
  * del contrato: un solo lugar donde se edita el mismo dato.
  */
 
+import { FALTA_EL_PORCENTAJE } from '@/lib/inmuebles/participaciones-desconocidas';
 import { useEffect, useMemo, useState } from 'react';
-import { Warning } from '@phosphor-icons/react';
+import { Presence } from '@leasefy/cadence';
 
 import {
   Dialog,
@@ -44,12 +45,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
 import { consignacionesApi, propietariosApi } from '@/lib/api/inmobiliaria.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { BPS_TOTAL } from '@/lib/types/inmobiliaria';
 import type { Consignacion, Propietario } from '@/lib/types/inmobiliaria';
 import { SelectorDePropietarios, type PropietarioPendiente } from './SelectorDePropietarios';
 import { RepartoEntreDuenos, repartoEnPartesIguales } from './RepartoEntreDuenos';
 import { aListaDelCable, motivoInvalido, type FilaCopropietario } from './CopropietariosField';
 import { persistPropietarioIfNeeded } from './CompletarMandatoDialog';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 
 /** Un dueño con su tajada, tal como viaja al back. */
 interface DuenoConParticipacion {
@@ -114,7 +117,18 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
   useEffect(() => {
     if (!open) return;
     setSeleccion(actuales.map((d) => d.propietarioId));
-    setFilas(actuales.slice(1).map((d) => ({ propietarioId: d.propietarioId, participacionBps: d.participacionBps })));
+    /*
+     * 🔴 Copropiedad migrada sin porcentaje (Nico, 04-10-2026): las partes
+     * iguales guardadas son provisionales y no se ofrecen como si fueran un
+     * dato. Los campos arrancan VACÍOS: hay que escribir cuánto es de cada
+     * uno (que sumen 100 %) para guardar y desbloquear el giro.
+     */
+    setFilas(
+      actuales.slice(1).map((d) => ({
+        propietarioId: d.propietarioId,
+        participacionBps: consignacion.participacionesDesconocidas ? 0 : d.participacionBps,
+      })),
+    );
     setPendiente(undefined);
     setError(null);
     setCargando(true);
@@ -123,7 +137,7 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
       .then(setPropietarios)
       .catch(() => toast.error('No pudimos cargar los propietarios. Prueba de nuevo.'))
       .finally(() => setCargando(false));
-  }, [open, actuales]);
+  }, [open, actuales, consignacion.participacionesDesconocidas]);
 
   // Cambiar QUIÉNES son vuelve a repartir en partes iguales; los porcentajes
   // se afinan después en `RepartoEntreDuenos`.
@@ -139,7 +153,14 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
 
   const principalId = seleccion[0] ?? null;
   const problema = principalId ? motivoInvalido(filas, principalId) : 'Elige al menos un propietario.';
-  const sinCambio = !pendiente && principalId !== null && mismoReparto(listaParaGuardar(filas, principalId), actuales);
+  // Con «Falta el porcentaje» guardar siempre cambia algo (apaga la marca y
+  // desbloquea el giro), aunque lo escrito sea igual a lo provisional: un
+  // mitad y mitad de verdad también tiene que poder guardarse.
+  const sinCambio =
+    !consignacion.participacionesDesconocidas &&
+    !pendiente &&
+    principalId !== null &&
+    mismoReparto(listaParaGuardar(filas, principalId), actuales);
 
   const guardar = async () => {
     if (!principalId || problema || sinCambio || guardando) return;
@@ -160,9 +181,10 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
       onClose();
     } catch (e) {
       setError(
-        e instanceof Error && e.message
-          ? e.message
-          : 'No pudimos guardar los propietarios. Prueba de nuevo en un momento.',
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos guardar los propietarios. Prueba de nuevo en un momento.',
+          accion: 'guardar los propietarios',
+        }),
       );
     } finally {
       setGuardando(false);
@@ -171,7 +193,7 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
 
   return (
     <Dialog open={open} onOpenChange={(abierto) => !abierto && !guardando && onClose()}>
-      <DialogContent className="max-w-3xl" data-testid="editar-propietarios-dialog">
+      <DialogContent size="xl" data-testid="editar-propietarios-dialog">
         <DialogHeader>
           <DialogTitle>¿De quién es este inmueble?</DialogTitle>
           <DialogDescription>
@@ -185,6 +207,16 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
           <p className="py-6 text-center text-sm text-fg-muted">Cargando propietarios…</p>
         ) : (
           <div className="space-y-4">
+            {consignacion.participacionesDesconocidas && (
+              <p
+                className="rounded-md bg-warning-soft px-3 py-2 text-sm text-fg"
+                data-testid="editar-propietarios-sin-porcentaje"
+              >
+                {FALTA_EL_PORCENTAJE}: el archivo de la migración no decía cuánto es de cada
+                uno. Escríbelo abajo (el principal se queda con el resto) y el giro de este
+                inmueble se desbloquea al guardar.
+              </p>
+            )}
             <SelectorDePropietarios
               propietarios={propietarios}
               seleccion={seleccion}
@@ -193,22 +225,22 @@ export function EditarPropietariosDialog({ open, consignacion, onClose, onGuarda
               onPendiente={setPendiente}
             />
             <RepartoEntreDuenos seleccion={seleccion} nombreDe={nombreDe} filas={filas} onChange={setFilas} />
-            {seleccion.length === 0 ? (
-              <p role="alert" className="flex items-start gap-1.5 text-sm text-danger" data-testid="editar-propietarios-problema">
-                <Warning className="mt-0.5 h-4 w-4 shrink-0" />
-                {problema}
-              </p>
-            ) : null}
-            {error ? (
-              <p role="alert" className="text-sm text-danger" data-testid="editar-propietarios-error">
-                {error}
-              </p>
-            ) : null}
+            {/* El error de la selección (sin dueño elegido) entra suave bajo
+                el selector, como todo error de campo (sistema de errores). */}
+            <div data-testid={seleccion.length === 0 ? 'editar-propietarios-problema' : undefined}>
+              <ErrorDelCampo
+                id="editar-propietarios-problema"
+                mensaje={seleccion.length === 0 ? problema : null}
+              />
+            </div>
+            <Presence show={Boolean(error)} initial={false} distance="xs" as="p" role="alert" className="text-sm text-danger" data-testid="editar-propietarios-error">
+              {error}
+            </Presence>
           </div>
         )}
 
         <DialogFooter>
-          <Button variant="ghost" hideArrow onClick={onClose} disabled={guardando}>
+          <Button variant="outline" hideArrow onClick={onClose} disabled={guardando}>
             Cancelar
           </Button>
           <Button

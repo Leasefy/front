@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { Collapse, CrossFade, motionDuration, motionEase } from '@leasefy/cadence';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import {
   User,
   HouseLine,
@@ -30,10 +32,16 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
+import { itemsDelInventarioDelAsistente } from '@/lib/inmuebles/inventario-del-asistente';
 import { useAuth } from '@/lib/auth/use-auth';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { uploadPropertyPhotos } from '@/lib/api/property-photos';
+import {
+  newPropertyCreationSession,
+  createPropertyOnce,
+  resetPropertyCreationSession,
+} from '@/lib/api/property-creation-session';
 import { ubicarDireccion } from '@/lib/inmuebles/ubicar-direccion';
 import { ApiError } from '@/lib/api/client';
 import { TYPE_TO_BACKEND } from '@/lib/api/properties.mapper';
@@ -42,6 +50,12 @@ import { useBorradorDePublicacion } from '@/lib/hooks/use-borrador-de-publicacio
 import { conPropietariosVivos, sinRepetidas } from '@/lib/inmuebles/borrador-de-publicacion';
 import { AvisoDeBorradorDePublicacion } from './AvisoDeBorradorDePublicacion';
 import { aListaDelCable, motivoInvalido } from './CopropietariosField';
+import { errorAlGuardarPropietario } from '@/lib/propietarios/errores-del-propietario';
+import { esSinRespuesta, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import {
+  repartirErroresDelServidor,
+  type ErroresRepartidos,
+} from '@/lib/errores/errores-en-el-formulario';
 import type { PropertyType } from '@/lib/types/property';
 import type { Propietario, Agente, InventoryItem, PropietarioFormData } from '@/lib/types/inmobiliaria';
 import {
@@ -53,6 +67,16 @@ import {
   StepConfirmation,
   type WizardFormData,
 } from './ConsignacionWizardSteps';
+import {
+  CAMPOS_CON_LUGAR,
+  MAPA_DEL_INMUEBLE,
+  MAPA_DEL_MANDATO,
+  PASO_DEL_CAMPO,
+  idDelCampoDelAsistente,
+  topesDelPasoDelInmueble,
+  type CampoDelAsistente,
+} from '@/lib/inmuebles/errores-del-asistente';
+import { datosOpcionalesParaCrear, llevaHabitaciones, pasoDelInmuebleCompleto } from '@/lib/inmuebles/reglas-del-paso-del-inmueble';
 
 interface ConsignacionWizardProps {
   propietarios: Propietario[];
@@ -72,6 +96,11 @@ interface ConsignacionWizardProps {
 }
 
 const PORTAFOLIO = '/panel/inmobiliaria/inmuebles';
+
+
+/** Lo que se dice cuando el mandato falla con el inmueble ya creado y la persona se queda. */
+const REINTENTAR_SOLO_EL_MANDATO =
+  'El inmueble ya quedó creado. Corrige lo que se indica y vuelve a confirmar: sólo se crea la consignación, no otro inmueble.';
 
 const STEPS = [
   { id: 1, labelKey: 'inmobiliaria.consignaciones.wizard.steps.owner', icon: User },
@@ -107,6 +136,29 @@ export function ConsignacionWizard({
   /** W2: sin fotos se pregunta antes de publicar (ver `handleSubmit`). */
   const [preguntarSinFotos, setPreguntarSinFotos] = useState(false);
 
+  /**
+   * T-0141 — una sesión de creación por asistente. `key` viaja como
+   * `Idempotency-Key` en cada intento (un reintento tras una respuesta perdida
+   * no crea un segundo inmueble) y `property` recuerda el inmueble ya creado:
+   * un reintento NUNCA vuelve a llamar a `create`, retoma en el paso que falló.
+   * Se reinicia sólo al terminar bien o al empezar de nuevo.
+   */
+  const [sesionDeCreacion] = useState(() => newPropertyCreationSession());
+  const pasosHechos = useRef({ fotos: false, agente: false, consignacion: false, publicado: false });
+  /** Corta el doble clic: `isSubmitting` llega un render tarde. */
+  const enviandoRef = useRef(false);
+  /**
+   * Hay un mandato por reintentar: el mandato falló con el inmueble ya creado
+   * (el inmueble lo recuerda `sesionDeCreacion`) y la persona se queda. Volver
+   * a confirmar sólo completa lo que falta; `publicar` recuerda lo que eligió.
+   */
+  const inmuebleCreado = useRef<{ id: string; publicar: boolean } | null>(null);
+  const reiniciarCreacion = useCallback(() => {
+    resetPropertyCreationSession(sesionDeCreacion);
+    pasosHechos.current = { fotos: false, agente: false, consignacion: false, publicado: false };
+    inmuebleCreado.current = null;
+  }, [sesionDeCreacion]);
+
   // Form data state
   const [formData, setFormData] = useState<Partial<WizardFormData>>({
     propertyType: 'apartment',
@@ -127,10 +179,47 @@ export function ConsignacionWizard({
     ...(propietarioInicial ? { propietarioId: propietarioInicial } : {}),
   });
 
+  /**
+   * Lo que el back no aceptó, por campo del asistente. Editar el campo lo
+   * borra: el error era de lo que se mandó, no de lo que se está escribiendo.
+   */
+  const [erroresDelServidor, setErroresDelServidor] = useState<Partial<Record<string, string>>>({});
+  /** El campo que recibe el foco cuando su paso ya está en pantalla. */
+  const [enfocar, setEnfocar] = useState<CampoDelAsistente | null>(null);
+
   // Update form data helper
   const updateFormData = useCallback((data: Partial<WizardFormData>) => {
     setFormData((prev) => ({ ...prev, ...data }));
+    setErroresDelServidor((prev) => {
+      const tocados = Object.keys(data).filter((k) => prev[k] !== undefined);
+      if (tocados.length === 0) return prev;
+      const quedan = { ...prev };
+      for (const k of tocados) delete quedan[k];
+      return quedan;
+    });
   }, []);
+
+  /** Lleva a la persona al paso del primer campo con error, con el foco ahí. */
+  const mostrarErroresDelServidor = useCallback((reparto: ErroresRepartidos<CampoDelAsistente>) => {
+    setErroresDelServidor(reparto.porCampo);
+    const primero = reparto.orden[0];
+    if (!primero) return;
+    const paso = PASO_DEL_CAMPO[primero];
+    if (paso) setCurrentStep(paso);
+    setEnfocar(primero);
+  }, []);
+
+  useEffect(() => {
+    if (!enfocar) return;
+    if (PASO_DEL_CAMPO[enfocar] !== currentStep) return;
+    const el = document.getElementById(idDelCampoDelAsistente(enfocar));
+    const control =
+      el && el.matches('input, textarea, button, select, [tabindex]')
+        ? el
+        : el?.querySelector<HTMLElement>('input, textarea, button, select, [tabindex]');
+    control?.focus();
+    setEnfocar(null);
+  }, [enfocar, currentStep]);
 
   /**
    * W4 — el borrador reanudable. Las fotos viajan aparte del resto porque son
@@ -170,29 +259,21 @@ export function ConsignacionWizard({
           ) === null
         );
       case 2: {
-        // Must have property details — thresholds mirror CreatePropertyDto
-        // (contract.md §3.2): bedrooms 0-20, bathrooms 1-10, area 10-10000 m²,
-        // description 20-5000 chars. T-0038: department is required in this
-        // UI (§3.2.1), and the price field is conditional on listingType
-        // (§3.2.2/§3.2.4) — a sale listing validates salePrice, not monthlyRent.
-        const isSaleListing = formData.listingType === 'sale';
-        const priceValid = isSaleListing
-          ? Boolean(formData.salePrice && formData.salePrice > 0)
-          : Boolean(formData.monthlyRent && formData.monthlyRent > 0);
-        return Boolean(
-          formData.propertyTitle &&
-          formData.propertyAddress &&
-          formData.propertyCity &&
-          formData.propertyZone &&
-          formData.department &&
-          formData.propertyType &&
-          priceValid &&
-          formData.bedrooms != null && formData.bedrooms >= 0 && formData.bedrooms <= 20 &&
-          formData.bathrooms != null && formData.bathrooms >= 1 && formData.bathrooms <= 10 &&
-          formData.area != null && formData.area >= 10 && formData.area <= 10000 &&
-          formData.propertyDescription &&
-          formData.propertyDescription.length >= 20 &&
-          formData.propertyDescription.length <= 5000
+        // 🔴 IN-16 (QA 04-10): sólo tipo, título, dirección, ciudad y canon (o
+        // precio de venta) son obligatorios; habitaciones y baños según el tipo,
+        // barrio, departamento, área y descripción opcionales (la descripción,
+        // si se escribe, entre 20 y 5.000 como en «Editar»). Los topes del back
+        // (`limites-del-inmueble.ts`) valen para lo que SÍ se escribió.
+        return (
+          pasoDelInmuebleCompleto(formData) &&
+          // Habitaciones y baños escondidos (el tipo no los tiene) no frenan.
+          Object.keys(
+            topesDelPasoDelInmueble(
+              llevaHabitaciones(formData.propertyType)
+                ? formData
+                : { ...formData, bedrooms: undefined, bathrooms: undefined },
+            ),
+          ).length === 0
         );
       }
       case 3:
@@ -298,16 +379,14 @@ export function ConsignacionWizard({
       }
       return true;
     } catch (error) {
-      // 409 — contract.md §3.3: duplicate documentNumber in this agency.
-      // Named on the field the user can actually fix; MUST NOT retry blindly.
-      if (error instanceof ApiError && error.status === 409) {
-        setOwnerServerError({ field: 'documentNumber', message: error.message });
-      } else {
-        const description =
-          error instanceof Error && error.message
-            ? error.message
-            : t('inmobiliaria.consignaciones.wizard.toasts.errorDesc');
-        toast.error(t('inmobiliaria.consignaciones.wizard.toasts.ownerErrorTitle'), { description });
+      // El mismo traductor que la lista de propietarios: el 409 del documento
+      // repetido, un 400 en su campo, y lo demás arriba. MUST NOT retry blindly.
+      const { campo, general } = errorAlGuardarPropietario(error);
+      if (campo) setOwnerServerError(campo);
+      // Sin respuesta, ahí sí se habla de la conexión (regla de oro).
+      const descripcion = esSinRespuesta(error) ? mensajeParaLaPersona(error) : general;
+      if (descripcion) {
+        toast.error(t('inmobiliaria.consignaciones.wizard.toasts.ownerErrorTitle'), { description: descripcion });
       }
       return false;
     } finally {
@@ -415,10 +494,29 @@ export function ConsignacionWizard({
    * mentira entera cuando aparece la factura.
    */
   const crearConsignacion = useCallback(async (publicar: boolean) => {
-    if (!isStepValid) return;
+    if (!isStepValid || enviandoRef.current) return;
+    enviandoRef.current = true;
     setIsSubmitting(true);
+    setErroresDelServidor({});
+    const hechos = pasosHechos.current;
+
+    // contract.md T-0038 §3.2.2/§3.2.4 — a SALE listing sends
+    // `monthlyRent: null` and `salePrice`; a RENT listing sends
+    // `monthlyRent` and no `salePrice`. Never `monthlyRent: 0` on a sale
+    // (C6) — this replaces the previous `formData.monthlyRent ?? 0`, which
+    // was a live C6 violation on this exact path.
+    const isSaleListing = formData.listingType === 'sale';
 
     try {
+      /*
+       * 1 · El inmueble. Si un intento anterior ya lo creó y lo que falló fue
+       * otro paso (el mandato, las fotos, publicar), NO se crea otro: se sigue
+       * con ese (T-0141: `createPropertyOnce` lo recuerda por sesión y manda la
+       * misma `Idempotency-Key`; sistema de errores 02-10-2026: la persona se
+       * queda en el asistente en vez de salir y volver a cargarlo).
+       */
+      const selectedAgente = agentes.find((a) => a.id === formData.agenteId);
+
       /**
        * Contract.md §3.2 (T-0011) — no silent coercion. The wizard's 6 UI
        * options (apartment/house/studio/commercial/office/warehouse) all
@@ -433,13 +531,6 @@ export function ConsignacionWizard({
           `Tipo de inmueble no soportado: "${wizardType ?? ''}". Vuelve al paso 2 y elige un tipo válido.`,
         );
       }
-
-      // contract.md T-0038 §3.2.2/§3.2.4 — a SALE listing sends
-      // `monthlyRent: null` and `salePrice`; a RENT listing sends
-      // `monthlyRent` and no `salePrice`. Never `monthlyRent: 0` on a sale
-      // (C6) — this replaces the previous `formData.monthlyRent ?? 0`, which
-      // was a live C6 violation on this exact path.
-      const isSaleListing = formData.listingType === 'sale';
 
       /*
        * 🔴 Nico, 2026-09-12: «que crear el inmueble resuelva su ubicación, en
@@ -456,37 +547,64 @@ export function ConsignacionWizard({
        * se acepta, y queda el centro del municipio. Nunca lanza y nunca
        * bloquea la creación.
        */
-      let latitud = formData.propertyLatitude;
-      let longitud = formData.propertyLongitude;
-      if (latitud == null || longitud == null) {
-        const u = await ubicarDireccion({
-          direccion: formData.propertyAddress,
-          ciudad: formData.propertyCity,
-          departamento: formData.department,
-        });
-        latitud = u.lat;
-        longitud = u.lng;
-      }
+      /*
+       * T-0141 — `createPropertyOnce`: si el inmueble ya existe (un intento
+       * anterior lo creó y falló DESPUÉS), no se vuelve a ubicar ni a crear.
+       */
+      let property: { id: string };
+      try {
+        property = await createPropertyOnce(sesionDeCreacion, async (idempotencyKey) => {
+          let latitud = formData.propertyLatitude;
+          let longitud = formData.propertyLongitude;
+          if (latitud == null || longitud == null) {
+            const u = await ubicarDireccion({
+              direccion: formData.propertyAddress,
+              ciudad: formData.propertyCity,
+              departamento: formData.department,
+            });
+            latitud = u.lat;
+            longitud = u.lng;
+          }
 
-      const property = await propertiesApi.create({
-        title:        formData.propertyTitle ?? '',
-        description:  formData.propertyDescription ?? '',
-        type:         wizardType,
-        city:         formData.propertyCity ?? '',
-        neighborhood: formData.propertyZone ?? '',
-        address:      formData.propertyAddress ?? '',
-        latitude:     latitud,
-        longitude:    longitud,
-        department:   formData.department,
-        listingType:  formData.listingType ?? 'rent',
-        monthlyRent:  isSaleListing ? null : (formData.monthlyRent ?? 0),
-        salePrice:    isSaleListing ? (formData.salePrice ?? null) : null,
-        consignedAt:  formData.consignedAt,
-        bedrooms:     formData.bedrooms ?? 0,
-        bathrooms:    formData.bathrooms ?? 1,
-        area:         formData.area ?? 10,
-        adminFee:     formData.adminFee,
-      });
+          return propertiesApi.create({
+            title:        formData.propertyTitle ?? '',
+            type:         wizardType,
+            city:         formData.propertyCity ?? '',
+            address:      formData.propertyAddress ?? '',
+            latitude:     latitud,
+            longitude:    longitud,
+            department:   formData.department,
+            listingType:  formData.listingType ?? 'rent',
+            monthlyRent:  isSaleListing ? null : (formData.monthlyRent ?? 0),
+            salePrice:    isSaleListing ? (formData.salePrice ?? null) : null,
+            consignedAt:  formData.consignedAt,
+            // IN-16: barrio, descripción, habitaciones, baños y área sólo si se
+            // escribieron (y habitaciones/baños sólo si el tipo los tiene).
+            // Antes viajaban 0 / 1 / 10 de relleno: datos inventados.
+            ...datosOpcionalesParaCrear(formData),
+            adminFee:     formData.adminFee,
+          }, { idempotencyKey });
+        });
+      } catch (error) {
+        // Nada quedó creado: el error va a su campo (con el foco) y al toast
+        // SÓLO lo que no tiene dónde ir. Un 5xx dice «de nuestro lado» con la
+        // referencia; sin respuesta, la conexión.
+        console.error('Error creating property:', error);
+        const reparto = repartirErroresDelServidor<CampoDelAsistente>(error, {
+          mapa: MAPA_DEL_INMUEBLE,
+          campos: CAMPOS_CON_LUGAR,
+          porDefecto: t('inmobiliaria.consignaciones.wizard.toasts.errorDesc'),
+          accion: 'crear el inmueble',
+        });
+        mostrarErroresDelServidor(reparto);
+        if (reparto.sueltos.length > 0) {
+          toast.error(t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'), {
+            description: reparto.sueltos.join(' · '),
+          });
+        }
+        return;
+      }
+      const propertyId = property.id;
 
       /**
        * W4 — el borrador muere acá, apenas el inmueble EXISTE, y no al final.
@@ -509,10 +627,12 @@ export function ConsignacionWizard({
       // would otherwise bury, and "some photos didn't upload" must not
       // read as "the consignment failed".
       const photosToUpload = formData.photos ?? [];
-      if (photosToUpload.length > 0) {
+      if (photosToUpload.length > 0 && !hechos.fotos) {
         setIsUploadingPhotos(true);
         try {
-          const { uploaded, failed } = await uploadPropertyPhotos(property.id, photosToUpload);
+          const { uploaded, failed } = await uploadPropertyPhotos(propertyId, photosToUpload);
+          // Las que subieron no se vuelven a subir en un reintento.
+          hechos.fotos = true;
           if (failed.length > 0) {
             toast.warning(t('inmobiliaria.consignaciones.wizard.toasts.photosPartialTitle'), {
               description: t('inmobiliaria.consignaciones.wizard.toasts.photosPartialDesc', {
@@ -527,7 +647,6 @@ export function ConsignacionWizard({
       }
 
       // Assign agent
-      const selectedAgente = agentes.find((a) => a.id === formData.agenteId);
       /*
        * W1 — el inmueble YA existe. Si asignar el agente falla y el error cae en
        * el catch general, la pantalla decía «No pudimos crear el inmueble. No se
@@ -535,21 +654,28 @@ export function ConsignacionWizard({
        * un paso más, no el que decide si hay inmueble: se avisa y se sigue con
        * la consignación, que igual lleva `agenteUserId`.
        */
-      try {
-        if (isAgentRole && user?.email) {
-          // Agent creating → auto-assign to themselves
-          await propertiesApi.assignAgent(property.id, user.email);
-        } else if (!isAgentRole && selectedAgente?.email) {
-          // Admin → assign the selected agent by email
-          await propertiesApi.assignAgent(property.id, selectedAgente.email);
+      if (!hechos.agente) {
+        // Intentado una vez: su fallo ya se avisó y no frena la consignación.
+        hechos.agente = true;
+        try {
+          if (isAgentRole && user?.email) {
+            // Agent creating → auto-assign to themselves
+            await propertiesApi.assignAgent(propertyId, user.email);
+          } else if (!isAgentRole && selectedAgente?.email) {
+            // Admin → assign the selected agent by email
+            await propertiesApi.assignAgent(propertyId, selectedAgente.email);
+          }
+        } catch (error) {
+          console.error('Error assigning agent:', error);
+          // El motivo (por el traductor) antes del «qué hacer»: antes era un
+          // texto fijo que no decía por qué.
+          toast.warning(t('inmobiliaria.consignaciones.wizard.toasts.agentErrorTitle'), {
+            description: `${mensajeParaLaPersona(error, { accion: 'asignar el agente' })} ${t(
+              'inmobiliaria.consignaciones.wizard.toasts.agentErrorDesc',
+            )}`,
+          });
         }
-      } catch (error) {
-        console.error('Error assigning agent:', error);
-        toast.warning(t('inmobiliaria.consignaciones.wizard.toasts.agentErrorTitle'), {
-          description: t('inmobiliaria.consignaciones.wizard.toasts.agentErrorDesc'),
-        });
       }
-
       /**
        * contract-addendum-2.md §A — the owner's ruling on W3-a reversed
        * WU-3's shipped behaviour: a sale listing DOES carry a mandate, in
@@ -574,71 +700,110 @@ export function ConsignacionWizard({
       // properties.service.ts (back) ya le da PropertyAccess al creador
       // dentro de la misma transacción del create() de la propiedad.
       const agenteUserId = selectedAgente?.userId ?? user?.id;
-      try {
-        // La lista sólo viaja si hay copropietarios de verdad. `null` = un solo
-        // dueño y se manda la forma vieja (`propietarioId` suelto), que es lo
-        // que el back espera: mandar los dos a la vez es un 400.
-        const listaDeDuenos = aListaDelCable(
-          (formData.copropietarios ?? []).map((c) => ({
-            propietarioId: c.propietarioId,
-            participacionBps: c.participacionBps,
-          })),
-          formData.propietarioId ?? '',
-        );
-
-        await consignacionesApi.create({
-          propietarioId: formData.propietarioId ?? '',
-          ...(listaDeDuenos ? { copropietarios: listaDeDuenos } : {}),
-          propertyId: property.id,
-          ...(agenteUserId ? { agenteUserId } : {}),
-          propertyTitle: formData.propertyTitle ?? '',
-          propertyAddress: formData.propertyAddress ?? '',
-          propertyCity: formData.propertyCity ?? '',
-          propertyZone: formData.propertyZone ?? '',
-          propertyType: formData.propertyType ?? 'apartment',
-          // §A.7/§A.8 — monthlyRent/adminFee/minimumTerm are OMITTED on a
-          // sale mandate (never null-with-a-value, never 0, R2/C6). A rent
-          // mandate is unaffected — `isStepValid` already blocks step 2 from
-          // advancing without a positive `monthlyRent`, so no `?? 0`
-          // sentinel is needed here any more (the twin of the one WU-3
-          // already removed from the property-create path).
-          ...(isSaleListing
-            ? { saleCommissionPercent: formData.saleCommissionPercent ?? 0 }
-            : {
-                monthlyRent: formData.monthlyRent as number,
-                ...(formData.adminFee != null ? { adminFee: formData.adminFee } : {}),
-                ...(formData.minimumTerm != null ? { minimumTerm: formData.minimumTerm } : {}),
-              }),
-          commissionPercent: isSaleListing ? 0 : (formData.commissionPercent ?? 0),
-          // §A.2 — the sale mandate's contractDate is the SAME value sent as
-          // Property.consignedAt above; the rent mandate keeps its own date.
-          contractDate: isSaleListing
-            ? (formData.consignedAt ?? new Date().toISOString().split('T')[0])
-            : (formData.contractStartDate ?? new Date().toISOString().split('T')[0]),
-          agenteId: formData.agenteId ?? '',
-        });
-      } catch (error) {
-        // El inmueble YA existe. Decirlo es la diferencia entre que alguien lo
-        // busque en la lista y lo complete, o que lo dé por perdido y lo cargue
-        // de nuevo — y termine con dos.
-        console.error('Error creating consignacion:', error);
-        if (error instanceof ApiError && error.status === 409) {
-          // W3 — el back dice que ya hay una consignación para este inmueble
-          // (P2002, consignaciones.service.ts). «Ábrelo y completa la
-          // consignación» era falso: ya está completa. Se dice lo que el back
-          // dijo y que no se creó otra.
-          toast.error(t('inmobiliaria.consignaciones.wizard.toasts.mandateDuplicateTitle'), {
-            description: t('inmobiliaria.consignaciones.wizard.toasts.mandateDuplicateDesc', {
-              reason: error.message,
-            }),
+      let consignacionCreada: { id: string } | null = null;
+      if (!hechos.consignacion) {
+        try {
+          // La lista sólo viaja si hay copropietarios de verdad. `null` = un solo
+          // dueño y se manda la forma vieja (`propietarioId` suelto), que es lo
+          // que el back espera: mandar los dos a la vez es un 400.
+          const listaDeDuenos = aListaDelCable(
+            (formData.copropietarios ?? []).map((c) => ({
+              propietarioId: c.propietarioId,
+              participacionBps: c.participacionBps,
+            })),
+            formData.propietarioId ?? '',
+          );
+  
+          consignacionCreada = await consignacionesApi.create({
+            propietarioId: formData.propietarioId ?? '',
+            ...(listaDeDuenos ? { copropietarios: listaDeDuenos } : {}),
+            propertyId,
+            ...(agenteUserId ? { agenteUserId } : {}),
+            propertyTitle: formData.propertyTitle ?? '',
+            propertyAddress: formData.propertyAddress ?? '',
+            propertyCity: formData.propertyCity ?? '',
+            propertyZone: formData.propertyZone ?? '',
+            propertyType: formData.propertyType ?? 'apartment',
+            // §A.7/§A.8 — monthlyRent/adminFee/minimumTerm are OMITTED on a
+            // sale mandate (never null-with-a-value, never 0, R2/C6). A rent
+            // mandate is unaffected — `isStepValid` already blocks step 2 from
+            // advancing without a positive `monthlyRent`, so no `?? 0`
+            // sentinel is needed here any more (the twin of the one WU-3
+            // already removed from the property-create path).
+            ...(isSaleListing
+              ? { saleCommissionPercent: formData.saleCommissionPercent ?? 0 }
+              : {
+                  monthlyRent: formData.monthlyRent as number,
+                  ...(formData.adminFee != null ? { adminFee: formData.adminFee } : {}),
+                  ...(formData.minimumTerm != null ? { minimumTerm: formData.minimumTerm } : {}),
+                }),
+            commissionPercent: isSaleListing ? 0 : (formData.commissionPercent ?? 0),
+            // §A.2 — the sale mandate's contractDate is the SAME value sent as
+            // Property.consignedAt above; the rent mandate keeps its own date.
+            contractDate: isSaleListing
+              ? (formData.consignedAt ?? new Date().toISOString().split('T')[0])
+              : (formData.contractStartDate ?? new Date().toISOString().split('T')[0]),
+            agenteId: formData.agenteId ?? '',
           });
-        } else {
+          hechos.consignacion = true;
+        } catch (error) {
+          console.error('Error creating consignacion:', error);
+          if (error instanceof ApiError && error.status === 409) {
+            // W3 — el back dice que ya hay una consignación para este inmueble
+            // (P2002, consignaciones.service.ts). «Ábrelo y completa la
+            // consignación» era falso: ya está completa. Se dice lo que el back
+            // dijo y que no se creó otra.
+            hechos.consignacion = true;
+            inmuebleCreado.current = null;
+            toast.error(t('inmobiliaria.consignaciones.wizard.toasts.mandateDuplicateTitle'), {
+              description: t('inmobiliaria.consignaciones.wizard.toasts.mandateDuplicateDesc', {
+                reason: mensajeParaLaPersona(error, {
+                  porDefecto: 'Este inmueble ya tiene una consignación',
+                }).replace(/\.\s*$/, ''),
+              }),
+            });
+            router.push(destinoAlSalir);
+            return;
+          }
+          /*
+           * El inmueble YA existe y el mandato no. Antes se salía de la pantalla
+           * con un texto genérico; ahora la persona se queda: el error del back
+           * va a su campo (o al toast), y volver a confirmar sólo crea la
+           * consignación sobre el MISMO inmueble.
+           */
+          inmuebleCreado.current = { id: propertyId, publicar };
+          const reparto = repartirErroresDelServidor<CampoDelAsistente>(error, {
+            mapa: isSaleListing ? { ...MAPA_DEL_MANDATO, contractDate: 'consignedAt' } : MAPA_DEL_MANDATO,
+            campos: CAMPOS_CON_LUGAR,
+            porDefecto: 'No pudimos crear la consignación.',
+            accion: 'crear la consignación',
+          });
+          mostrarErroresDelServidor(reparto);
           toast.error(t('inmobiliaria.consignaciones.wizard.toasts.mandateErrorTitle'), {
-            description: t('inmobiliaria.consignaciones.wizard.toasts.mandateErrorDesc'),
+            description: [...reparto.sueltos, REINTENTAR_SOLO_EL_MANDATO].join(' '),
+          });
+          return;
+        }
+        inmuebleCreado.current = null;
+      }
+
+      /*
+       * 🔴 QA con avatares (04-10): el inventario del paso «Acta de entrega» no
+       * se mandaba a ningún lado —se perdía al crear— y después el contrato
+       * no se podía crear. Va ahora a la consignación recién creada (el back
+       * lo deja también como borrador del inventario de la ficha). Si falla,
+       * la consignación ya existe: se dice y se sigue.
+       */
+      const inventario = isSaleListing ? [] : itemsDelInventarioDelAsistente(formData.inventoryItems);
+      if (inventario.length > 0 && consignacionCreada?.id) {
+        try {
+          await consignacionesApi.actualizarInventario(consignacionCreada.id, inventario);
+        } catch (error) {
+          console.error('Error saving the inventory:', error);
+          toast.warning(t('inmobiliaria.consignaciones.wizard.toasts.inventoryErrorTitle'), {
+            description: t('inmobiliaria.consignaciones.wizard.toasts.inventoryErrorDesc'),
           });
         }
-        router.push(destinoAlSalir);
-        return;
       }
 
       if (!publicar) {
@@ -652,6 +817,7 @@ export function ConsignacionWizard({
           }),
         });
         router.push(destinoAlSalir);
+        reiniciarCreacion();
         return;
       }
 
@@ -664,21 +830,22 @@ export function ConsignacionWizard({
        * earlier would show a property to tenants with no mandate behind it.
        */
       try {
-        await propertiesApi.update(property.id, { status: 'AVAILABLE' });
+        if (!hechos.publicado) {
+          await propertiesApi.update(propertyId, { status: 'AVAILABLE' });
+          hechos.publicado = true;
+        }
       } catch (error) {
         // The property AND the mandate already exist — only the publish
         // step failed (most commonly a 402 plan-cap). Never claim success
         // here, and never fall back to DRAFT silently (contract.md §3.3
-        // prohibits exactly that): say what happened and how to finish it,
-        // the same reasoning the mandate-failure catch above already
-        // applies.
+        // prohibits exactly that): say what happened and how to finish it.
+        // El motivo pasa por el traductor: un 402 dice el límite del plan, un
+        // 5xx «de nuestro lado» con la referencia, la red, la conexión.
         console.error('Error publishing property:', error);
-        const reason =
-          error instanceof ApiError && error.messages
-            ? error.messages.join(' · ')
-            : error instanceof Error && error.message
-              ? error.message
-              : t('inmobiliaria.consignaciones.wizard.toasts.publishErrorFallbackReason');
+        const reason = mensajeParaLaPersona(error, {
+          porDefecto: t('inmobiliaria.consignaciones.wizard.toasts.publishErrorFallbackReason'),
+          accion: 'publicarlo',
+        });
         toast.error(t('inmobiliaria.consignaciones.wizard.toasts.publishErrorTitle'), {
           description: t('inmobiliaria.consignaciones.wizard.toasts.publishErrorDesc', { reason }),
         });
@@ -693,28 +860,35 @@ export function ConsignacionWizard({
       });
 
       router.push(destinoAlSalir);
+      // Terminó bien: la próxima creación (otro inmueble) lleva clave nueva.
+      reiniciarCreacion();
     } catch (error) {
+      // Lo inesperado (un tipo de inmueble que no existe, una excepción no
+      // prevista): nunca el texto crudo de un 5xx ni «conexión» si la hubo.
       console.error('Error creating property:', error);
-      /**
-       * Contract.md §3.3 — a 400 from the global ValidationPipe carries
-       * `message` as a string[]. Before this, the fixed generic toast below
-       * ran unconditionally and the real reason only ever showed up in
-       * `console.error`, which is why the user had to open the network tab
-       * to find out what was wrong. `ApiError.messages` (see client.ts)
-       * preserves the array instead of losing it to `String(err.message)`
-       * (which would render `"a,b,c"`).
-       */
-      const description =
-        error instanceof ApiError && error.messages
-          ? error.messages.join(' · ')
-          : error instanceof Error && error.message
-            ? error.message
-            : t('inmobiliaria.consignaciones.wizard.toasts.errorDesc');
-      toast.error(t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'), { description });
+      const description = mensajeParaLaPersona(error, {
+        porDefecto: t('inmobiliaria.consignaciones.wizard.toasts.errorDesc'),
+        accion: 'crear el inmueble',
+      });
+      if (sesionDeCreacion.property) {
+        /*
+         * T-0141 — el inmueble YA existe. «No pudimos crear el inmueble» sería
+         * falso y empujaría a cargarlo otra vez. Se dice qué quedó y que
+         * reintentar sólo completa lo que falta.
+         */
+        toast.error(t('inmobiliaria.consignaciones.wizard.toasts.createdPendingTitle'), {
+          description: t('inmobiliaria.consignaciones.wizard.toasts.createdPendingDesc', {
+            reason: description,
+          }),
+        });
+      } else {
+        toast.error(t('inmobiliaria.consignaciones.wizard.toasts.errorTitle'), { description });
+      }
     } finally {
+      enviandoRef.current = false;
       setIsSubmitting(false);
     }
-  }, [formData, isStepValid, isAgentRole, user, agentes, router, destinoAlSalir, t, borrador]);
+  }, [formData, isStepValid, isAgentRole, user, agentes, router, destinoAlSalir, t, borrador, sesionDeCreacion, reiniciarCreacion, mostrarErroresDelServidor]);
 
   /**
    * W2 — publicar sin fotos deja un recuadro gris en el portal
@@ -725,6 +899,12 @@ export function ConsignacionWizard({
   const sinFotos = (formData.photos ?? []).length === 0;
   const handleSubmit = useCallback(() => {
     if (!isStepValid || isSubmitting) return;
+    // Reintento tras un mandato fallido: el inmueble (y sus fotos) ya existen;
+    // no se vuelve a preguntar por las fotos, se sigue con lo que se eligió.
+    if (inmuebleCreado.current) {
+      void crearConsignacion(inmuebleCreado.current.publicar);
+      return;
+    }
     if (sinFotos) {
       setPreguntarSinFotos(true);
       return;
@@ -744,9 +924,10 @@ export function ConsignacionWizard({
    * después simplemente cierra la pestaña — eso sí lo conserva.
    */
   const confirmCancel = useCallback(() => {
+    reiniciarCreacion();
     void borrador.limpiar();
     router.push(destinoAlSalir);
-  }, [router, destinoAlSalir, borrador]);
+  }, [router, destinoAlSalir, borrador, reiniciarCreacion]);
 
   // Render step content
   const renderStepContent = () => {
@@ -755,6 +936,7 @@ export function ConsignacionWizard({
       updateFormData,
       propietarios,
       agentes,
+      erroresDelServidor,
     };
 
     switch (currentStep) {
@@ -798,20 +980,37 @@ export function ConsignacionWizard({
   // Position of current step among visible steps (1-based)
   const currentVisibleIndex = visibleSteps.findIndex((s) => s.id === currentStep);
 
+  // Hacia dónde va el paso: adelante entra por la derecha; atrás, por la
+  // izquierda. Se compara con el último paso pintado.
+  const pasoPintado = useRef(currentStep);
+  const direccionDelPaso = currentStep >= pasoPintado.current ? 'forward' : 'backward';
+  useEffect(() => {
+    pasoPintado.current = currentStep;
+  }, [currentStep]);
+
+  // El aviso del borrador sale con su altura (no de golpe) al continuar o
+  // descartar: mientras se va, sigue pintando el borrador que había.
+  const borradorEncontrado = useUltimoPresente(borrador.encontrado);
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* W4 — lo que quedó de la última vez. Se OFRECE, no se aplica solo. */}
-      {borrador.decisionPendiente && borrador.encontrado && (
-        <AvisoDeBorradorDePublicacion
-          actualizadoEn={borrador.encontrado.actualizadoEn}
-          paso={Math.min(Math.max(borrador.encontrado.paso, 1), 6)}
-          totalDePasos={6}
-          fotos={borrador.encontrado.fotos.length}
-          fotosNoGuardadas={borrador.encontrado.fotosNoGuardadas}
-          onContinuar={continuarBorrador}
-          onDescartar={() => void borrador.descartar()}
-        />
-      )}
+      <Collapse open={Boolean(borrador.decisionPendiente && borrador.encontrado)}>
+        {borradorEncontrado && (
+          <AvisoDeBorradorDePublicacion
+            actualizadoEn={borradorEncontrado.actualizadoEn}
+            paso={Math.min(Math.max(borradorEncontrado.paso, 1), 6)}
+            totalDePasos={6}
+            fotos={borradorEncontrado.fotos.length}
+            fotosNoGuardadas={borradorEncontrado.fotosNoGuardadas}
+            onContinuar={continuarBorrador}
+            onDescartar={() => {
+              reiniciarCreacion();
+              void borrador.descartar();
+            }}
+          />
+        )}
+      </Collapse>
 
       {/* Step Indicator */}
       <div className="mb-8">
@@ -829,12 +1028,12 @@ export function ConsignacionWizard({
                   onClick={() => status !== 'upcoming' && goToStep(step.id)}
                   disabled={status === 'upcoming'}
                   className={cn(
-                    'flex flex-col items-center gap-2 transition-all',
+                    'flex flex-col items-center gap-2 transition-colors',
                     status === 'upcoming' ? 'cursor-not-allowed' : 'cursor-pointer'
                   )}
                 >
                   <div className={cn(
-                    'w-12 h-12 rounded-full flex items-center justify-center transition-all',
+                    'w-12 h-12 rounded-full flex items-center justify-center transition-[background-color,color,box-shadow] duration-base',
                     status === 'completed'
                       ? 'bg-success text-white'
                       : status === 'current'
@@ -888,11 +1087,12 @@ export function ConsignacionWizard({
             </span>
           </div>
           <div className="h-2 bg-surface-muted dark:bg-ink rounded-full overflow-hidden">
+            {/* La barra crece con `scaleX` (transform), no con `width`. */}
             <motion.div
-              className="h-full bg-primary"
+              className="h-full w-full origin-left bg-primary"
               initial={false}
-              animate={{ width: `${((currentVisibleIndex + 1) / totalVisible) * 100}%` }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              animate={{ scaleX: (currentVisibleIndex + 1) / totalVisible }}
+              transition={{ duration: motionDuration.slow, ease: motionEase.enter }}
             />
           </div>
         </div>
@@ -900,18 +1100,14 @@ export function ConsignacionWizard({
 
       {/* Step Content */}
       <div className="bg-surface dark:bg-bg rounded-lg border border-border dark:border-border-strong overflow-hidden">
-        <div className="p-6">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              {renderStepContent()}
-            </motion.div>
-          </AnimatePresence>
+        <div className="relative p-6">
+          {/* Pasos: el nuevo entra YA por el lado al que se avanza y el viejo
+              se va rápido, encima, por el contrario (`popLayout`). Que el
+              nuevo esté montado de una es lo que deja enfocar el campo con
+              error al volver a un paso (ver `enfocar`). */}
+          <CrossFade swapKey={currentStep} direction={direccionDelPaso} mode="popLayout">
+            {renderStepContent()}
+          </CrossFade>
         </div>
 
         {/* Footer Navigation */}
@@ -991,8 +1187,9 @@ export function ConsignacionWizard({
         </div>
       </div>
 
+      {/* Advertencia: se puede publicar sin fotos, pero con riesgo. */}
       <AlertDialog open={preguntarSinFotos} onOpenChange={setPreguntarSinFotos}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="warning">
           <AlertDialogHeader>
             <AlertDialogTitle>{t('inmobiliaria.consignaciones.wizard.sinFotosDialog.title')}</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1023,61 +1220,26 @@ export function ConsignacionWizard({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Cancel Confirmation Dialog */}
-      <AnimatePresence>
-        {showCancelDialog && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-            onClick={() => setShowCancelDialog(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-lg bg-surface dark:bg-bg border border-border dark:border-border-strong"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">
-                  <X className="w-5 h-5 text-warning" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-fg dark:text-white">
-                    {t('inmobiliaria.consignaciones.wizard.cancelDialog.title')}
-                  </h3>
-                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
-                    {t('inmobiliaria.consignaciones.wizard.cancelDialog.description')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  hideArrow
-                  size="sm"
-                  onClick={() => setShowCancelDialog(false)}
-                >
-                  {t('inmobiliaria.consignaciones.wizard.cancelDialog.continueEditing')}
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  hideArrow
-                  size="sm"
-                  onClick={confirmCancel}
-                >
-                  {t('inmobiliaria.consignaciones.wizard.cancelDialog.yesCancel')}
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Cancelar el asistente: abandonar, no pausar (ver `confirmCancel`).
+          Antes era una cáscara a mano (`fixed inset-0`, sin foco ni Esc). */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent variant="destructive" icon={<X weight="bold" />}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('inmobiliaria.consignaciones.wizard.cancelDialog.title')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('inmobiliaria.consignaciones.wizard.cancelDialog.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {t('inmobiliaria.consignaciones.wizard.cancelDialog.continueEditing')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancel}>
+              {t('inmobiliaria.consignaciones.wizard.cancelDialog.yesCancel')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -26,10 +26,15 @@ import { useState } from 'react'
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { useDebtorMemos } from '@/lib/hooks/cobranza/use-debtor-memos'
 import { Button, Textarea } from '@/components/ui'
 import { LlamadaDetalleSheet } from '@/components/inmobiliaria/cobranza/LlamadaDetalleSheet'
 import { summaryOutcomeLabel } from '@/lib/cobranza/call-vocab'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 void React
 
@@ -59,7 +64,7 @@ const EMOCION: Record<string, string> = {
   distressed: 'Angustiado',
 }
 
-const COP = new Intl.NumberFormat('es-CO', {
+const COP = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,
@@ -105,18 +110,30 @@ export function MemosTab({ debtorId }: MemosTabProps) {
         setErrorNota('Tu rol no puede escribir notas.')
         return
       }
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      if (!res.ok) throw await falloDelMicro(res)
       setTexto('')
       await refetch()
     } catch (err) {
-      setErrorNota(err instanceof Error ? err.message : 'No pudimos guardar la nota.')
+      // Un 400 con `campos` (la nota) y lo suelto (un 5xx con la referencia, la
+      // red) van debajo de la nota: es el único campo. Antes: «HTTP 500».
+      const reparto = repartirErroresDelServidor<'body'>(err, {
+        campos: ['body'],
+        porDefecto: 'No pudimos guardar la nota.',
+        accion: 'guardar la nota',
+      })
+      const mensajes = [reparto.porCampo.body, ...reparto.sueltos].filter(Boolean)
+      setErrorNota(mensajes.join(' · '))
+      if (reparto.porCampo.body) document.getElementById('memo-nota')?.focus()
     } finally {
       setGuardando(false)
     }
   }
 
+  // Movimiento: cada salida en un `CrossFade` con su clave (cargando →
+  // notas, → fallo).
   if (isLoading && !data) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="space-y-2">
         {Array.from({ length: 3 }, (_, i) => (
           <div
@@ -125,14 +142,17 @@ export function MemosTab({ debtorId }: MemosTabProps) {
           />
         ))}
       </div>
+      </CrossFade>
     )
   }
 
   if (error) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="rounded-md border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
-        <p className="text-sm text-danger">
-          {t('inmobiliaria.ai.cobranza.detail.memos.error')}: {error}
+        {/* `error` ya es la frase entera del traductor (el hook la arma). */}
+        <p role="alert" className="text-sm text-danger">
+          {error}
         </p>
         <Button
           type="button"
@@ -144,12 +164,14 @@ export function MemosTab({ debtorId }: MemosTabProps) {
           {t('inmobiliaria.ai.cobranza.detail.memos.errorRetry')}
         </Button>
       </div>
+      </CrossFade>
     )
   }
 
   const memos = data?.memos ?? []
 
   return (
+    <CrossFade swapKey="notas">
     <div className="space-y-3">
       {/* La nota del equipo se escribe acá mismo — sin salir del caso. */}
       <form
@@ -166,23 +188,23 @@ export function MemosTab({ debtorId }: MemosTabProps) {
         <Textarea
           id="memo-nota"
           value={texto}
-          onChange={(e) => setTexto(e.target.value)}
+          onChange={(e) => {
+            setTexto(e.target.value)
+            if (errorNota) setErrorNota(null)
+          }}
           maxLength={4000}
           rows={2}
           placeholder="Contexto que el agente no ve: una llamada tuya, un acuerdo de pasillo, lo que toque recordar…"
+          aria-invalid={errorNota ? true : undefined}
+          aria-describedby={errorNota ? 'memo-nota-error' : undefined}
         />
-        <div className="flex items-center justify-between gap-3">
-          {errorNota ? (
-            <p role="alert" className="text-xs text-danger">
-              {errorNota}
-            </p>
-          ) : (
-            <span />
-          )}
+        <div className="flex items-start justify-between gap-3">
+          <ErrorDelCampo id="memo-nota-error" mensaje={errorNota} className="mt-0" />
           <Button
             type="submit"
             variant="secondary"
             size="sm"
+            className="ml-auto shrink-0"
             hideArrow
             disabled={!texto.trim() || guardando}
             isLoading={guardando}
@@ -192,6 +214,9 @@ export function MemosTab({ debtorId }: MemosTabProps) {
         </div>
       </form>
 
+      {/* Sin notas ⇄ con notas: el vacío sale y la primera entra. La nota
+          que se guarda entra ARRIBA bajando a su lugar. */}
+      <CrossFade swapKey={memos.length === 0 ? 'vacio' : 'lista'}>
       {memos.length === 0 ? (
         <div className="rounded-md border border-dashed border-border p-8 text-center space-y-1">
           <p className="text-sm text-fg-muted">
@@ -205,7 +230,7 @@ export function MemosTab({ debtorId }: MemosTabProps) {
           </p>
         </div>
       ) : (
-        <ul className="space-y-2">
+        <Stagger as="ul" direction="down" className="space-y-2">
           {memos.map((m) => {
             const esManual = m.last_outcome === NOTA_MANUAL || m.call_id == null
             const desenlace = esManual
@@ -217,7 +242,8 @@ export function MemosTab({ debtorId }: MemosTabProps) {
               ? (EMOCION[m.last_emotional_state] ?? m.last_emotional_state)
               : null
             return (
-              <li
+              <StaggerItem
+                as="li"
                 key={m.id}
                 className="rounded-sm border border-border bg-surface p-3"
               >
@@ -279,16 +305,18 @@ export function MemosTab({ debtorId }: MemosTabProps) {
                     </Button>
                   )}
                 </div>
-              </li>
+              </StaggerItem>
             )
           })}
-        </ul>
+        </Stagger>
       )}
+      </CrossFade>
 
       <LlamadaDetalleSheet
         callId={llamadaAbierta}
         onClose={() => setLlamadaAbierta(null)}
       />
     </div>
+    </CrossFade>
   )
 }

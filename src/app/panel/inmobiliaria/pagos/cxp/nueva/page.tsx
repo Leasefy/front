@@ -1,72 +1,14 @@
-'use client';
+import { redirect } from 'next/navigation';
 
 /**
- * Registrar una factura de proveedor desde una foto/PDF (IA) o a mano.
- * Ruta: /panel/inmobiliaria/pagos/cxp/nueva
+ * /panel/inmobiliaria/pagos/cxp/nueva — 🔴 CB-R21 (04-10-2026).
  *
- * Permiso: ap:create-bill (el mismo gate del POST /ap/bills del micro).
- * Al registrar, redirige al detalle de la factura en tesorería/ap/[id].
+ * Nico, tal cual: «Proveedores: Una sola, en Gastos». Acá vivía un segundo
+ * formulario de factura de proveedor (lectura de la foto con IA, `POST
+ * /ap/bills` del agente de pagos) que guardaba la factura APARTE: no llegaba
+ * al libro, ni al P&G, ni a la exógena. La factura se registra en
+ * Contabilidad → Gastos; la URL vieja (marcadores, enlaces viejos) lleva ahí.
  */
-
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { CaretLeft } from '@phosphor-icons/react';
-
-import { PageGuard } from '@/components/auth/PageGuard';
-import { SectionLabel } from '@/components/ui/section-label';
-import { Spinner } from '@/components/ui/spinner';
-import { FacturaProveedorIACapture } from '@/components/inmobiliaria/tesoreria/FacturaProveedorIACapture';
-import { useAuth } from '@/lib/auth';
-import { useI18n } from '@/lib/i18n';
-
-function NuevaFacturaContent() {
-  const { t } = useI18n();
-  const { agency } = useAuth();
-  const router = useRouter();
-  const k = (s: string) => `inmobiliaria.tesoreria.facturas.${s}`;
-
-  return (
-    <div className="p-6 lg:p-8 space-y-6">
-      <nav>
-        {/* Se vuelve a donde se entró: Facturación → Compras, la sección
-            dedicada a facturas (Nico, 2026-09-08). Antes volvía a
-            Liquidaciones, que es donde vivía el botón que ya no está. */}
-        <Link
-          href="/panel/inmobiliaria/facturacion"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <CaretLeft className="w-4 h-4" />
-          {t(k('back'))}
-        </Link>
-      </nav>
-
-      <header className="space-y-1.5">
-        <SectionLabel>{t(k('label'))}</SectionLabel>
-        <h1 className="text-h2 text-fg">{t(k('title'))}</h1>
-        <p className="text-sm text-fg-muted max-w-2xl line-clamp-2">{t(k('subtitle'))}</p>
-      </header>
-
-      <section className="rounded-lg border border-border bg-card p-5 lg:p-6 max-w-5xl">
-        {agency?.id ? (
-          <FacturaProveedorIACapture
-            agencyId={agency.id}
-            onRegistrada={(bill) => router.push(`/panel/inmobiliaria/pagos/cxp/${bill.id}`)}
-            onCancel={() => router.push('/panel/inmobiliaria/pagos/liquidaciones')}
-          />
-        ) : (
-          <div className="flex items-center justify-center py-14">
-            <Spinner size="md" variant="muted" />
-          </div>
-        )}
-      </section>
-    </div>
-  );
-}
-
-export default function NuevaFacturaPage() {
-  return (
-    <PageGuard module="ap" action="create-bill">
-      <NuevaFacturaContent />
-    </PageGuard>
-  );
+export default function NuevaFacturaDeProveedor() {
+  redirect('/panel/inmobiliaria/contabilidad/gastos');
 }

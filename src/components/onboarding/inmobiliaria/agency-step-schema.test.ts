@@ -112,3 +112,41 @@ describe('toAgencyRequest', () => {
     expect(req.address.codigoPostal).toBe('050001')
   })
 })
+
+describe('dirección y código postal (QA 01-10: «!@#$%^&*()(*&^%$» se aceptaba)', () => {
+  it('rechaza la dirección del reporte con el mensaje en el campo', () => {
+    const r = agencyStepSchema.safeParse({ ...VALID, address: { ...VALID.address, calle: '!@#$%^&*()(*&^%$' } })
+    expect(r.success).toBe(false)
+    if (r.success) return
+    const issue = r.error.issues.find((i) => i.path.join('.') === 'address.calle')
+    expect(issue?.message).toMatch(/no van en una dirección/)
+  })
+
+  it('la dirección vacía sigue siendo obligatoria', () => {
+    const r = agencyStepSchema.safeParse({ ...VALID, address: { ...VALID.address, calle: '   ' } })
+    expect(r.success).toBe(false)
+    if (r.success) return
+    expect(r.error.issues.find((i) => i.path.join('.') === 'address.calle')?.message).toBe(
+      'La dirección es obligatoria.',
+    )
+  })
+
+  it('manda la dirección limpia (un espacio, sin bordes)', () => {
+    const r = agencyStepSchema.safeParse({ ...VALID, address: { ...VALID.address, calle: ' Calle 10   # 43-20 ' } })
+    expect(r.success && r.data.address.calle).toBe('Calle 10 # 43-20')
+  })
+
+  it.each([
+    ['050021', true],
+    ['', true],
+    ['12345', false],
+    ['110111', false], // Bogotá, con Antioquia elegido
+    ['120000', false], // ningún departamento empieza por 12
+  ])('código postal «%s» con Antioquia → %s', (codigoPostal, ok) => {
+    const r = agencyStepSchema.safeParse({ ...VALID, address: { ...VALID.address, codigoPostal } })
+    expect(r.success).toBe(ok)
+    if (!r.success) {
+      expect(r.error.issues.some((i) => i.path.join('.') === 'address.codigoPostal')).toBe(true)
+    }
+  })
+})

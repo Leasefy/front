@@ -39,13 +39,14 @@
  * both locales.
  */
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
+import { MotionIndicator, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { toast } from '@/components/ui/toast'
 import {
   Check,
   Copy,
-  ChartLineUp,
-  DownloadSimple,
+  CreditCard,
+  EnvelopeSimple,
   FileMagnifyingGlass,
   SealCheck,
   ShareNetwork,
@@ -55,6 +56,8 @@ import type { Icon } from '@phosphor-icons/react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { PasosExplicados, type QuienLoHace } from '@/components/ui/pasos-explicados'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -62,12 +65,24 @@ import { TablePagination } from '@/components/ui/pagination'
 import { useAgencyAvaluos } from '@/lib/hooks/useInmobiliaria'
 import { avaluosApi } from '@/lib/api/inmobiliaria.service'
 import { ApiError } from '@/lib/api/client'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { AVALUO_WIZARD_ORIGIN } from '@/lib/avaluo/wizard-url'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { useI18n } from '@/lib/i18n'
+import { DescargarCertificado, tieneCertificado } from './DescargarCertificado'
 
 /** Raíz del diccionario de esta pantalla. */
 const NS = 'inmobiliaria.ai.workspace.pages.avaluos'
+
+/**
+ * Las columnas de la lista: estado · propietario · valor · creado · certificado.
+ * A 390 px «Creado» se esconde y el botón del certificado baja a su propio
+ * renglón, a lo ancho (con él en la misma línea, el nombre del propietario se
+ * quedaba en una letra): la plantilla es de tres columnas y la celda del
+ * certificado ocupa las tres.
+ */
+const COLUMNAS_DE_LA_LISTA =
+  'grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto_auto]'
 
 // ---------------------------------------------------------------------------
 // State metadata — the real certificate lifecycle states, the SAME closed set
@@ -123,13 +138,26 @@ function stateTabs(t: (key: string) => string): { value: string; label: string }
 
 // ---------------------------------------------------------------------------
 // "¿Cómo funciona?" — the real, truthful journey (no site visit).
+//
+// Nico (05-10-2026): «eso no debe de estar ahí siempre […] llévalas al botón
+// que al dar clic abre drawer y explica mejor cada cosa». Vive detrás del
+// botón del encabezado, en el cajón de `ParaEntenderMas`, y cada paso dice
+// quién lo hace. Lo que la pantalla TIENE que decir sigue a la vista: el aviso
+// de «desconectadas» y, en el subtítulo, que no hay visita y que firma un
+// revisor de Leasefy.
+//
+// Verificado contra el código (05-10): el pago va en el asistente, antes de la
+// estimación; la firma es del backoffice de Leasefy; el certificado llega al
+// correo de la inmobiliaria con el PDF. Desde el 05-10 (PROMESAS-Y-DIRECTOR)
+// la lista también lo baja: «Descargar certificado» en las filas firmadas
+// (`GET /inmobiliaria/avaluos/:id/certificate`), y el paso 4 lo dice.
 // ---------------------------------------------------------------------------
 
-const COMO_FUNCIONA_STEPS: { icon: Icon; clave: string }[] = [
-  { icon: ShareNetwork, clave: 'step1' },
-  { icon: ChartLineUp, clave: 'step2' },
-  { icon: SealCheck, clave: 'step3' },
-  { icon: DownloadSimple, clave: 'step4' },
+const COMO_FUNCIONA_STEPS: { icon: Icon; clave: string; quien?: QuienLoHace; tuParte?: true }[] = [
+  { icon: ShareNetwork, clave: 'step1', quien: 'tu', tuParte: true },
+  { icon: CreditCard, clave: 'step2' },
+  { icon: SealCheck, clave: 'step3', quien: 'leasefy' },
+  { icon: EnvelopeSimple, clave: 'step4', quien: 'leasefy', tuParte: true },
 ]
 
 // ---------------------------------------------------------------------------
@@ -140,6 +168,8 @@ function AvaluosSala() {
   const { t } = useI18n()
   const [activeState, setActiveState] = useState('')
   const [page, setPage] = useState(0)
+  // El filtro de estado elegido lleva su píldora, que se DESLIZA al nuevo.
+  const indicadorDelEstado = `${useId()}-estado`
 
   // Both CTAs end at the avalúo MICRO's wizard, whose origin comes from
   // `NEXT_PUBLIC_AVALUO_API_URL`. When that is unset there is no URL to compose:
@@ -206,11 +236,19 @@ function AvaluosSala() {
       const { wizardUrl } = await avaluosApi.solicitar()
       return wizardUrl
     } catch (err) {
-      // El mensaje del back se muestra tal cual (incl. el 422 de agencia sin
-      // correo/nombre): lo escribe él en español y es más específico que
-      // cualquier texto nuestro. La clave sólo cubre lo que no es ApiError.
-      const message = err instanceof ApiError ? err.message : t(`${NS}.errorSolicitar`)
-      toast.error(message)
+      // El mensaje del back gana cuando se puede leer (el 422 de agencia sin
+      // correo/nombre lo escribe él en español y es más específico que
+      // cualquier texto nuestro). Pero no siempre: un 5xx traía «Internal
+      // server error» o un volcado, y el 502 del micro caído, «Avaluo service
+      // unreachable». El traductor aplica la regla de oro: conexión sólo sin
+      // respuesta, un 5xx dice que fue nuestro con la referencia, una caída
+      // dice qué se cayó.
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: t(`${NS}.errorSolicitar`),
+          accion: 'solicitar el avalúo',
+        }),
+      )
       return null
     }
   }
@@ -274,12 +312,37 @@ function AvaluosSala() {
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
-      {/* ── Header ─────────────────────────────────────────────────── */}
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">
-          {t(`${NS}.salaTitulo`)}
-        </h1>
-        <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">{t(`${NS}.salaDesc`)}</p>
+      {/* ── Header ─────────────────────────────────────────────────────
+          «¿Cómo funciona?» va acá, donde iría el botón de acción (Nico,
+          05-10-2026): abre el cajón con los cuatro pasos y la nota del
+          revisor. Antes era una tarjeta de cuatro columnas siempre a la vista. */}
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-h2 text-fg">
+            {t(`${NS}.salaTitulo`)}
+          </h1>
+          <p className="text-sm text-muted-foreground max-w-2xl line-clamp-2">{t(`${NS}.salaDesc`)}</p>
+        </div>
+        <ParaEntenderMas
+          etiqueta={t(`${NS}.comoFunciona.title`)}
+          titulo={t(`${NS}.comoFunciona.titulo`)}
+          descripcion={t(`${NS}.comoFunciona.descripcion`)}
+          variante="secundario"
+          className="self-start sm:shrink-0"
+        >
+          <PasosExplicados
+            data-testid="avaluos-como-funciona"
+            pasos={COMO_FUNCIONA_STEPS.map((step) => ({
+              id: step.clave,
+              icono: step.icon,
+              titulo: t(`${NS}.comoFunciona.${step.clave}.title`),
+              explicacion: t(`${NS}.comoFunciona.${step.clave}.desc`),
+              quien: step.quien,
+              tuParte: step.tuParte ? t(`${NS}.comoFunciona.${step.clave}.tuParte`) : undefined,
+            }))}
+            nota={t(`${NS}.firmaNota`)}
+          />
+        </ParaEntenderMas>
       </header>
 
       {/* ── Solicitar un avalúo ────────────────────────────────────────
@@ -370,17 +433,18 @@ function AvaluosSala() {
           Output of the "Generar link para compartir" action: the minted wizard
           link carries the agency token so the avalúo is issued in the agency's
           name. The agency copies it and sends it to their client. */}
-      {shareUrl && (
-        <div
-          className="rounded-lg border border-border bg-card p-4 space-y-3"
-          data-testid="avaluos-share-link"
-        >
+      {/* El link recién generado aparece con su entrada (sube 8 px). */}
+      <Presence
+        show={Boolean(shareUrl)}
+        className="rounded-lg border border-border bg-card p-4 space-y-3"
+        data-testid="avaluos-share-link"
+      >
           <p className="text-sm text-muted-foreground">{t(`${NS}.linkListoDetalle`)}</p>
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               readOnly
-              value={shareUrl}
+              value={shareUrl ?? ''}
               aria-label={t(`${NS}.linkAria`)}
               onFocus={(e) => e.currentTarget.select()}
               className="flex-1 min-w-0 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm font-mono text-foreground truncate"
@@ -400,48 +464,13 @@ function AvaluosSala() {
                 )}
               </Button>
               <Button asChild variant="outline" hideArrow>
-                <a href={shareUrl} target="_blank" rel="noopener noreferrer">
+                <a href={shareUrl ?? undefined} target="_blank" rel="noopener noreferrer">
                   {t(`${NS}.abrirAhora`)}
                 </a>
               </Button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* ── ¿Cómo funciona? ────────────────────────────────────────── */}
-      <div
-        className="rounded-lg border border-border bg-card p-5 space-y-4"
-        data-testid="avaluos-como-funciona"
-      >
-        <h2 className="text-base font-semibold text-foreground">
-          {t(`${NS}.comoFunciona.title`)}
-        </h2>
-        <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {COMO_FUNCIONA_STEPS.map((step, i) => {
-            const StepIcon = step.icon
-            return (
-              <li key={step.clave} className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                    <StepIcon className="w-4 h-4 text-foreground" weight="duotone" aria-hidden="true" />
-                  </span>
-                  <span className="text-xs tabular-nums text-muted-foreground">{i + 1}</span>
-                </div>
-                <p className="text-sm font-semibold text-foreground leading-tight">
-                  {t(`${NS}.comoFunciona.${step.clave}.title`)}
-                </p>
-                <p className="text-xs text-muted-foreground leading-snug">
-                  {t(`${NS}.comoFunciona.${step.clave}.desc`)}
-                </p>
-              </li>
-            )
-          })}
-        </ol>
-        <p className="text-xs text-muted-foreground border-t border-border pt-3">
-          {t(`${NS}.firmaNota`)}
-        </p>
-      </div>
+      </Presence>
 
       {/* ── Los avalúos de la agencia ───────────────────────────────────
           NO se llama «Mis solicitudes»: ése es el nombre de la pestaña de al
@@ -464,12 +493,19 @@ function AvaluosSala() {
                 type="button"
                 aria-pressed={active}
                 onClick={() => onStateChange(tab.value)}
-                className={`rounded-full px-3.5 py-1.5 text-sm font-medium border transition-colors ${
+                className={`relative isolate rounded-full px-3.5 py-1.5 text-sm font-medium border transition-colors ${
                   active
-                    ? 'bg-primary text-primary-foreground border-primary'
+                    ? 'text-primary-foreground border-transparent'
                     : 'bg-card text-muted-foreground border-border hover:bg-muted/40'
                 }`}
               >
+                {/* La píldora cobalto del activo (la misma de antes), que viaja. */}
+                {active && (
+                  <MotionIndicator
+                    layoutId={indicadorDelEstado}
+                    className="-inset-px -z-10 rounded-full border border-primary bg-primary"
+                  />
+                )}
                 {tab.label}
               </button>
             )
@@ -486,11 +522,19 @@ function AvaluosSala() {
         <div className="rounded-lg border border-border bg-card overflow-hidden">
           <EstadoDeDatos
             cargando={isLoading}
-            error={errorCrudo}
-            vacio={avaluos.length === 0}
+            // IA-C-03 (QA 04-10): con el servicio desconectado (502) el aviso de
+            // arriba ya lo explica; la lista no dice «vuelve a intentar en unos
+            // minutos» como si fuera una caída pasajera.
+            error={servicioCaido ? null : errorCrudo}
+            vacio={servicioCaido || avaluos.length === 0}
             queEs={t(`${NS}.queEs`)}
             onReintentar={refetch}
             cuandoVacio={
+              servicioCaido ? (
+                <p className="px-4 py-8 text-center text-sm text-muted-foreground" data-testid="avaluos-lista-sin-servicio">
+                  Los avalúos aparecen aquí cuando el servicio de avalúos esté conectado.
+                </p>
+              ) :
               // El vacío son DOS: nunca pediste uno, o el filtro de estado no
               // deja pasar ninguno. Decir «todavía no hay avalúos» cuando hay
               // tres firmados y estás mirando «Rechazado» es afirmar algo falso,
@@ -505,8 +549,10 @@ function AvaluosSala() {
               />
             }
           >
-            {/* Table header */}
-            <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 px-4 py-2.5 bg-muted/40 border-b border-border">
+            {/* Table header — la quinta columna es «Certificado» (05-10-2026):
+                el botón de descarga de las filas firmadas. A 390 px «Creado» y
+                «Certificado» no van en el encabezado (el botón baja de renglón). */}
+            <div className={`${COLUMNAS_DE_LA_LISTA} gap-4 px-4 py-2.5 bg-muted/40 border-b border-border`}>
               <span className="text-xs font-medium text-muted-foreground">
                 {t(`${NS}.col.estado`)}
               </span>
@@ -519,16 +565,20 @@ function AvaluosSala() {
               <span className="text-xs font-medium text-muted-foreground hidden sm:block text-right">
                 {t(`${NS}.col.creado`)}
               </span>
+              <span className="text-xs font-medium text-muted-foreground hidden sm:block text-right">
+                {t(`${NS}.col.certificado`)}
+              </span>
             </div>
 
             {/* Rows */}
-            <ul role="list" className="divide-y divide-neutral-100 dark:divide-neutral-800">
+            {/* Filtrar o paginar: las filas entran escalonadas (paginada: sin `layout`). */}
+            <Stagger as="ul" layout={false} role="list" className="divide-y divide-neutral-100 dark:divide-neutral-800">
               {avaluos.map((item) => {
                 const meta = stateMeta(item.state, t)
                 return (
-                  <li
+                  <StaggerItem as="li"
                     key={item.id}
-                    className="grid grid-cols-[auto_1fr_auto_auto] gap-4 items-center px-4 py-3"
+                    className={`${COLUMNAS_DE_LA_LISTA} gap-4 items-center px-4 py-3`}
                   >
                     <Badge variant={meta.variant}>{meta.label}</Badge>
 
@@ -548,10 +598,24 @@ function AvaluosSala() {
                     <span className="text-xs text-muted-foreground hidden sm:block text-right whitespace-nowrap tabular-nums">
                       {formatDate(item.createdAt)}
                     </span>
-                  </li>
+
+                    {/* El certificado firmado, sólo donde ya existe (firmado y
+                        entregado). A 390 px va en su propio renglón; en las
+                        demás filas la celda sólo existe desde `sm` (alinea). */}
+                    {tieneCertificado(item.state) ? (
+                      <div className="col-span-3 flex sm:col-span-1 sm:justify-end">
+                        <DescargarCertificado
+                          id={item.id}
+                          propietario={item.ownerName?.trim() || t(`${NS}.sinNombre`)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="hidden sm:block" aria-hidden="true" />
+                    )}
+                  </StaggerItem>
                 )
               })}
-            </ul>
+            </Stagger>
 
             {/* Pie de tabla del design system, el mismo del resto del panel:
                 «Mostrando 1–100 de N». Antes eran dos botones Anterior/

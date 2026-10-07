@@ -10,9 +10,20 @@ describe('descripcionDelError', () => {
     expect(descripcionDelError(new ApiError(400, '  Elige al menos un día.  '))).toBe('Elige al menos un día.')
   })
 
-  it('un 5xx no explica nada: no se muestra', () => {
-    expect(descripcionDelError(new ApiError(500, 'Internal server error'))).toBeUndefined()
-    expect(descripcionDelError(new ApiError(502, 'Bad Gateway'))).toBeUndefined()
+  // 02-10-2026 · Regla de oro: un 5xx no se calla ni culpa a nadie; dice que
+  // fue nuestro y da la referencia para soporte.
+  it('un 5xx dice que fue de nuestro lado, con la referencia si el back la mandó', () => {
+    expect(descripcionDelError(new ApiError(500, 'Internal server error'))).toMatch(/de nuestro lado/)
+    expect(descripcionDelError(new ApiError(502, 'Bad Gateway'))).toMatch(/de nuestro lado/)
+    const conRef = new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' })
+    expect(descripcionDelError(conRef)).toContain('ab12cd34')
+    expect(descripcionDelError(conRef)).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta (status 0) habla de la red, sin el texto crudo del navegador', () => {
+    const red = new ApiError(0, 'No pudimos conectarnos al servidor. (Failed to fetch)')
+    expect(descripcionDelError(red)).toMatch(/conexión/)
+    expect(descripcionDelError(red)).not.toContain('Failed to fetch')
   })
 
   it('un volcado de Prisma, un texto largo o de varias líneas no caben en un toast', () => {
@@ -50,8 +61,10 @@ describe('motivosDelError', () => {
     expect(motivosDelError(e)).toEqual(['El inmueble tiene un contrato vigente.']);
   });
 
-  it('un 5xx no explica nada: lista vacía para que quien llama ponga su texto', () => {
-    expect(motivosDelError(new ApiError(500, 'Internal server error'))).toEqual([]);
+  it('un 5xx: un solo motivo que dice que fue nuestro (02-10-2026)', () => {
+    const motivos = motivosDelError(new ApiError(500, 'Internal server error'));
+    expect(motivos).toHaveLength(1);
+    expect(motivos[0]).toMatch(/de nuestro lado/);
   });
 
   it('descarta el volcado de Prisma y los mensajes que no caben', () => {

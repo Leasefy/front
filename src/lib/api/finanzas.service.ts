@@ -148,6 +148,16 @@ export const finanzasApi = {
       `${BASE}/retenciones/certificado${query({ anio, criterio })}`,
     ),
 
+  /**
+   * QA-CONTA CB-R17 (back 26beefbc): el certificado de UN propietario en PDF
+   * (las mismas cifras de `certificado`), para entregárselo. Permiso
+   * `reportes:view`.
+   */
+  pdfDelCertificado: (anio: number, propietarioId: string, criterio: CriterioDeRetencion) =>
+    apiClient.getBlob(
+      `${BASE}/retenciones/certificado/pdf${query({ anio, propietarioId, criterio })}`,
+    ),
+
   /** Permiso `reportes:edit`. Fija número y fecha: es el ACTO de emitir. */
   emitirCertificado: (anio: number, propietarioId: string, criterio?: CriterioDeRetencion) =>
     apiClient.post<Emision>(`${BASE}/retenciones/certificado/emitir`, {
@@ -204,6 +214,10 @@ export const finanzasApi = {
     if (devolucion.motivoDetalle) f.append('motivoDetalle', devolucion.motivoDetalle);
     if (devolucion.codigoDelBanco) f.append('codigoDelBanco', devolucion.codigoDelBanco);
     f.append('fechaDeLaDevolucion', devolucion.fechaDeLaDevolucion);
+    // 🔴 Ola E: la entrada del extracto con la que volvió la plata (opcional).
+    if (devolucion.movimientoBancarioId) {
+      f.append('movimientoBancarioId', devolucion.movimientoBancarioId);
+    }
     f.append('soporte', devolucion.soporte);
     const token = getAccessToken();
     let respuesta: Response;

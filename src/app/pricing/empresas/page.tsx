@@ -1,13 +1,21 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Calculator, Check, Buildings, TrendDown, Envelope, Phone, Shield, Lightning, Infinity as InfinityIcon, CheckCircle } from '@phosphor-icons/react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  AnimatedNumber,
+  CrossFade,
+  Presence,
+  motionScale,
+  motionSpring,
+  motionTransition,
+} from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 
 // Plan-based evaluation pricing
@@ -17,6 +25,29 @@ const PLAN_PRICING = {
   flex: { name: 'Flex', monthlyFee: null, evalCost: 0, evalLimit: 'Ilimitadas', color: 'bg-gradient-to-r from-warning to-warning' },
 };
 
+/**
+ * «Mejor opción» junto al plan más barato: al mover el control llega con el
+ * resorte de rebote leve y se va acelerando del que deja de serlo.
+ */
+function MejorOpcion({ visible }: { visible: boolean }) {
+  return (
+    <AnimatePresence initial={false}>
+      {visible ? (
+        <motion.span
+          key="mejor"
+          initial={{ opacity: 0, scale: motionScale.pop }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, transition: motionTransition.exit }}
+          transition={motionSpring.bouncy}
+          className="text-[8px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full uppercase"
+        >
+          Mejor opción
+        </motion.span>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
 function formatCOP(amount: number): string {
   return new Intl.NumberFormat('es-CO', {
     style: 'currency',
@@ -24,36 +55,6 @@ function formatCOP(amount: number): string {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount).replace('COP', '$').trim();
-}
-
-// Animated number component
-function AnimatedNumber({ value, prefix = '' }: { value: number; prefix?: string }) {
-  const [displayValue, setDisplayValue] = useState(value);
-  const prevValueRef = useRef(value);
-
-  useEffect(() => {
-    const duration = 300;
-    const startValue = prevValueRef.current;
-    const startTime = Date.now();
-
-    const animate = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easeOut = 1 - Math.pow(1 - progress, 3);
-      const current = Math.round(startValue + (value - startValue) * easeOut);
-      setDisplayValue(current);
-
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      } else {
-        prevValueRef.current = value;
-      }
-    };
-
-    requestAnimationFrame(animate);
-  }, [value]);
-
-  return <>{prefix}{displayValue.toLocaleString('es-CO')}</>;
 }
 
 export default function EmpresasCalculadoraPage() {
@@ -89,21 +90,15 @@ export default function EmpresasCalculadoraPage() {
           </div>
 
           <div className="relative container-platform py-20 pt-32">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+            <div
               className="max-w-2xl"
             >
               <div className="flex items-center gap-3 mb-6">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                <div
                   className="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center"
                 >
                   <Calculator className="w-5 h-5" />
-                </motion.div>
+                </div>
                 <span className="text-[11px] uppercase tracking-[0.2em] text-white/40 font-mono font-medium">
                   Comparador de planes
                 </span>
@@ -117,7 +112,7 @@ export default function EmpresasCalculadoraPage() {
               <p className="text-[17px] text-white/50 mt-4 leading-relaxed">
                 Compara cuánto pagas por evaluaciones AI según tu plan. Encuentra el plan ideal para tu volumen de operación.
               </p>
-            </motion.div>
+            </div>
           </div>
         </section>
 
@@ -127,12 +122,7 @@ export default function EmpresasCalculadoraPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
               {/* Left - Calculator Config */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="lg:col-span-5"
-              >
+              <div className="lg:col-span-5">
                 <div className="bg-surface rounded-[20px] overflow-hidden border border-border">
                   <div className="px-6 py-4 border-b border-border">
                     <h2 className="text-[16px] font-heading font-medium text-foreground">
@@ -157,14 +147,17 @@ export default function EmpresasCalculadoraPage() {
                         />
                       </div>
 
+                      {/* Relleno con `scaleX` y perilla con `translateX` (no `width`/`left`):
+                          la franja de la perilla mide lo que el riel y se corre ese
+                          porcentaje de SU ancho; los clics los toma el `range`. */}
                       <div className="relative h-12 flex items-center">
                         <div className="absolute inset-x-0 h-1.5 bg-muted rounded-full overflow-hidden">
                           <motion.div
-                            className="h-full bg-foreground rounded-full"
-                            style={{ width: `${sliderPercentage}%` }}
+                            className="h-full w-full origin-left bg-foreground rounded-full"
+                            style={{ scaleX: sliderPercentage / 100 }}
                             initial={false}
-                            animate={{ width: `${sliderPercentage}%` }}
-                            transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+                            animate={{ scaleX: sliderPercentage / 100 }}
+                            transition={motionSpring.snappy}
                           />
                         </div>
                         <input
@@ -176,13 +169,16 @@ export default function EmpresasCalculadoraPage() {
                           className="absolute inset-x-0 w-full h-12 opacity-0 cursor-pointer"
                         />
                         <motion.div
-                          className="absolute w-5 h-5 bg-foreground rounded-full cursor-pointer flex items-center justify-center"
-                          style={{ left: `calc(${sliderPercentage}% - 10px)` }}
+                          aria-hidden
+                          className="pointer-events-none absolute inset-x-0 flex items-center"
+                          style={{ x: `${sliderPercentage}%` }}
                           initial={false}
-                          animate={{ left: `calc(${sliderPercentage}% - 10px)` }}
-                          transition={{ type: "spring", bounce: 0, duration: 0.3 }}
+                          animate={{ x: `${sliderPercentage}%` }}
+                          transition={motionSpring.snappy}
                         >
+                          <span className="-ml-2.5 flex w-5 h-5 bg-foreground rounded-full items-center justify-center">
                           <div className="w-1.5 h-1.5 bg-white rounded-full" />
+                        </span>
                         </motion.div>
                       </div>
 
@@ -202,38 +198,34 @@ export default function EmpresasCalculadoraPage() {
                       <div className="rounded-[14px] overflow-hidden border border-border">
                         {/* Starter */}
                         <div className={cn(
-                          'flex items-center justify-between px-4 py-3 transition-all duration-200',
+                          'flex items-center justify-between px-4 py-3 transition-colors duration-base ease-standard',
                           bestPlan === 'starter' ? 'bg-foreground text-background' : 'bg-surface'
                         )}>
                           <div className="flex items-center gap-2">
                             <span className={cn("text-[13px] font-medium", bestPlan === 'starter' ? 'text-background' : 'text-foreground')}>
                               Starter (Gratis)
                             </span>
-                            {bestPlan === 'starter' && (
-                              <motion.span initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-[8px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full uppercase">Mejor opción</motion.span>
-                            )}
+                            <MejorOpcion visible={bestPlan === 'starter'} />
                           </div>
                           <span className={cn("text-[13px] font-semibold font-mono tabular-nums", bestPlan === 'starter' ? 'text-background' : 'text-foreground')}>
-                            {formatCOP(starterTotal)}
+                            <AnimatedNumber value={starterTotal} format={formatCOP} />
                           </span>
                         </div>
 
                         {/* Pro */}
                         <div className={cn(
-                          'flex items-center justify-between px-4 py-3 transition-all duration-200',
+                          'flex items-center justify-between px-4 py-3 transition-colors duration-base ease-standard',
                           bestPlan === 'pro' ? 'bg-foreground text-background' : 'bg-muted/20'
                         )}>
                           <div className="flex items-center gap-2">
                             <span className={cn("text-[13px] font-medium", bestPlan === 'pro' ? 'text-background' : 'text-foreground')}>
                               Pro ($149.000/mes)
                             </span>
-                            {bestPlan === 'pro' && (
-                              <motion.span initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-[8px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full uppercase">Mejor opción</motion.span>
-                            )}
+                            <MejorOpcion visible={bestPlan === 'pro'} />
                           </div>
                           <div className="flex items-center gap-2">
                             <span className={cn("text-[13px] font-semibold font-mono tabular-nums", bestPlan === 'pro' ? 'text-background' : 'text-foreground')}>
-                              {formatCOP(proTotalWithExcess)}
+                              <AnimatedNumber value={proTotalWithExcess} format={formatCOP} />
                             </span>
                             {starterSavingsVsPro > 0 && (
                               <span className={cn("text-[10px] font-bold font-mono tabular-nums px-1.5 py-0.5 rounded-full", bestPlan === 'pro' ? 'bg-success/20 text-success' : 'bg-success-soft text-success')}>
@@ -245,16 +237,14 @@ export default function EmpresasCalculadoraPage() {
 
                         {/* Flex */}
                         <div className={cn(
-                          'flex items-center justify-between px-4 py-3 transition-all duration-200',
+                          'flex items-center justify-between px-4 py-3 transition-colors duration-base ease-standard',
                           bestPlan === 'flex' ? 'bg-foreground text-background' : 'bg-surface'
                         )}>
                           <div className="flex items-center gap-2">
                             <span className={cn("text-[13px] font-medium", bestPlan === 'flex' ? 'text-background' : 'text-foreground')}>
                               Flex (1% canon)
                             </span>
-                            {bestPlan === 'flex' && (
-                              <motion.span initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} className="text-[8px] font-bold bg-white/20 px-1.5 py-0.5 rounded-full uppercase">Mejor opción</motion.span>
-                            )}
+                            <MejorOpcion visible={bestPlan === 'flex'} />
                           </div>
                           <span className={cn("text-[13px] font-semibold", bestPlan === 'flex' ? 'text-success' : 'text-success')}>
                             $0 por eval
@@ -264,15 +254,10 @@ export default function EmpresasCalculadoraPage() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
               {/* Right - Results */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="lg:col-span-7 space-y-6"
-              >
+              <div className="lg:col-span-7 space-y-6">
                 {/* Recommendation Card */}
                 <div className="relative bg-foreground text-background rounded-[20px] overflow-hidden">
                   <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-white/[0.05] to-transparent rounded-full -translate-y-1/2 translate-x-1/2" />
@@ -281,20 +266,21 @@ export default function EmpresasCalculadoraPage() {
                     <div className="flex items-start justify-between mb-8">
                       <div>
                         <p className="text-[10px] uppercase tracking-[0.2em] text-white/40 mb-1">Recomendación</p>
-                        <h2 className="text-[20px] font-heading font-medium">
-                          {bestPlan === 'starter' && 'Plan Starter'}
-                          {bestPlan === 'pro' && 'Plan Pro'}
-                          {bestPlan === 'flex' && 'Plan Flex'}
-                        </h2>
+                        {/* El plan recomendado cambia cruzándose en el lugar (`popLayout`). */}
+                        <div className="relative">
+                          <CrossFade swapKey={bestPlan} mode="popLayout">
+                            <h2 className="text-[20px] font-heading font-medium">
+                              {bestPlan === 'starter' && 'Plan Starter'}
+                              {bestPlan === 'pro' && 'Plan Pro'}
+                              {bestPlan === 'flex' && 'Plan Flex'}
+                            </h2>
+                          </CrossFade>
+                        </div>
                       </div>
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex items-center gap-1.5 bg-success text-white text-[11px] font-bold px-3 py-1.5 rounded-full"
-                      >
+                      <div className="flex items-center gap-1.5 bg-success text-white text-[11px] font-bold px-3 py-1.5 rounded-full">
                         <CheckCircle className="w-3 h-3" />
                         Mejor para ti
-                      </motion.div>
+                      </div>
                     </div>
 
                     {/* Details Grid */}
@@ -338,7 +324,7 @@ export default function EmpresasCalculadoraPage() {
                             {bestPlan === 'flex' ? (
                               <span className="text-success">$0</span>
                             ) : (
-                              <>$<AnimatedNumber value={bestPlan === 'starter' ? starterTotal : proTotalWithExcess} /></>
+                              <AnimatedNumber value={bestPlan === 'starter' ? starterTotal : proTotalWithExcess} format={formatCOP} />
                             )}
                           </p>
                         </div>
@@ -377,31 +363,20 @@ export default function EmpresasCalculadoraPage() {
                       { feature: 'Referencias laborales verificadas', starter: false, pro: true },
                       { feature: 'Verificación de ingresos', starter: false, pro: true },
                       { feature: 'Matching inteligente', starter: false, pro: true },
-                    ].map((item, i) => (
-                      <motion.div
-                        key={item.feature}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        className="flex items-center gap-2 p-2 rounded-md bg-muted/30"
-                      >
+                    ].map((item) => (
+                      <div key={item.feature} className="flex items-center gap-2 p-2 rounded-md bg-muted/30">
                         <Check className={cn(
                           "w-3.5 h-3.5 flex-shrink-0",
                           item.pro ? 'text-success' : 'text-muted-foreground/40'
                         )} />
                         <span className="text-[12px] text-foreground/80">{item.feature}</span>
-                      </motion.div>
+                      </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Enterprise Banner */}
-                {quantity >= 50 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="relative bg-muted/50 rounded-[20px] p-6 overflow-hidden border border-border"
-                  >
+                {/* Enterprise Banner: aparece y se va con `Presence` al cruzar las 50 evaluaciones */}
+                  <Presence show={quantity >= 50} className="relative bg-muted/50 rounded-[20px] p-6 overflow-hidden border border-border">
                     <div className="flex items-start gap-4">
                       <div className="w-10 h-10 rounded-md bg-foreground/5 flex items-center justify-center flex-shrink-0">
                         <Buildings className="w-5 h-5 text-foreground/60" />
@@ -432,9 +407,8 @@ export default function EmpresasCalculadoraPage() {
                         </div>
                       </div>
                     </div>
-                  </motion.div>
-                )}
-              </motion.div>
+                  </Presence>
+              </div>
             </div>
           </div>
         </section>

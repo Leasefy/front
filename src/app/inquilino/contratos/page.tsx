@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { Handshake, MapPin, Calendar, CurrencyDollar, PenNib, Clock, CheckCircle, XCircle, WarningCircle } from '@phosphor-icons/react';
 
 import { useContracts } from '@/lib/hooks/useContracts';
@@ -10,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { formatCanon, formatDate } from './format';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Spinner } from '@/components/ui/spinner';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 
@@ -33,19 +34,16 @@ const STATUS_CONFIG: Record<ContractStatus, { color: string; icon: typeof CheckC
 // Contract Card
 // ============================================================================
 
-function ContractCard({ contract, index }: { contract: Contract; index: number }) {
+function ContractCard({ contract }: { contract: Contract }) {
   const { locale } = useI18n();
   const statusCfg = STATUS_CONFIG[contract.status];
   const StatusIcon = statusCfg.icon;
   const isPendingTenant = contract.status === 'pending_tenant';
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.1 + index * 0.05 }}
+    <div
       className={cn(
-        'rounded-xl border bg-surface p-6 transition-all',
+        'rounded-xl border bg-surface p-6 transition-[border-color,box-shadow]',
         isPendingTenant
           ? 'border-primary/30 ring-2 ring-primary/10'
           : 'border-border'
@@ -132,7 +130,7 @@ function ContractCard({ contract, index }: { contract: Contract; index: number }
           {locale === 'es' ? 'Ver contrato' : 'View contract'}
         </Link>
       )}
-    </motion.div>
+    </div>
   );
 }
 
@@ -144,11 +142,15 @@ export default function ContratosPage() {
   const { locale } = useI18n();
   const { contracts, isLoading, error, errorCrudo, refetch: recargarContratos } = useContracts();
 
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isLoading);
+
   // Loading
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" variant="muted" />
+      <div className="min-h-screen bg-bg">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
     );
   }
@@ -179,13 +181,9 @@ export default function ContratosPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <h1 className="text-3xl font-medium text-fg tracking-tight">
             {/* Sentence case, como el resto del panel. */}
             {locale === 'es' ? 'Mis contratos' : 'My contracts'}
@@ -195,15 +193,11 @@ export default function ContratosPage() {
               ? 'Revisa y firma tus contratos de arrendamiento'
               : 'Review and sign your rental contracts'}
           </p>
-        </motion.header>
+        </header>
 
         {/* Empty state */}
         {sorted.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
+          <div>
             <EmptyState
               icon={Handshake}
               title={locale === 'es' ? 'Sin contratos aún' : 'No contracts yet'}
@@ -218,15 +212,15 @@ export default function ContratosPage() {
                 href: '/inquilino/para-ti',
               }}
             />
-          </motion.div>
+          </div>
         ) : (
           <div className="space-y-4">
-            {sorted.map((contract, index) => (
-              <ContractCard key={contract.id} contract={contract} index={index} />
+            {sorted.map((contract) => (
+              <ContractCard key={contract.id} contract={contract} />
             ))}
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

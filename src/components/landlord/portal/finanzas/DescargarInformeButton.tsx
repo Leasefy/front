@@ -5,6 +5,7 @@ import { DownloadSimple } from '@phosphor-icons/react';
 import { Button } from '@/components/ui';
 import { toast } from '@/components/ui/toast';
 import { ownerFinanzasApi } from '@/lib/api/owner-finanzas.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 interface DescargarInformeButtonProps {
   agencyId: string | null;
@@ -30,11 +31,14 @@ export function DescargarInformeButton({ agencyId }: DescargarInformeButtonProps
         return;
       }
       if (resultado.estado === 'fallo') {
+        // 02-10-2026 · Por el traductor: «conexión» sólo si el pedido no salió;
+        // un 4xx dice qué está mal y un 5xx, «de nuestro lado» con la referencia.
+        // Antes todo lo que no era status 0 decía «El portal no respondió», y sí respondió.
         toast.error('No pudimos generar el informe', {
-          description:
-            resultado.status === 0
-              ? 'Revisa tu conexión e inténtalo de nuevo.'
-              : 'El portal no respondió. Inténtalo de nuevo en un momento.',
+          description: mensajeParaLaPersona(resultado.error, {
+            accion: 'generar el informe',
+            porDefecto: 'Inténtalo de nuevo en un momento.',
+          }),
         });
         return;
       }

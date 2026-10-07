@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
-import { motion } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import { Button } from '@/components/ui';
 import {
   CaretLeft,
@@ -27,6 +27,31 @@ import { AgentePipeline } from '@/components/inmobiliaria/AgentePipeline';
 import { AgenteHorarioVisitas } from '@/components/inmobiliaria/AgenteHorarioVisitas';
 import { EditarPerfilDelAsesor } from '@/components/inmobiliaria/EditarPerfilDelAsesor';
 import { AsignarInmuebleAlAsesor } from '@/components/inmobiliaria/AsignarInmuebleAlAsesor';
+import { Skeleton } from '@/components/ui/skeleton';
+import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { esNoExiste } from '@/lib/errores/clasificar';
+
+const RUTA_DEL_EQUIPO = '/panel/inmobiliaria/configuracion/equipo';
+
+/** La forma de la ficha del asesor, sin datos: la miga y las dos columnas. */
+function EsqueletoDelAsesor() {
+  return (
+    <div className="p-4 md:p-6 space-y-6" data-testid="agente-cargando" aria-busy="true">
+      <Skeleton className="h-5 w-64" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Skeleton className="h-40 rounded-lg" />
+          <Skeleton className="h-32 rounded-lg" />
+          <Skeleton className="h-56 rounded-lg" />
+        </div>
+        <div className="space-y-6">
+          <Skeleton className="h-56 rounded-lg" />
+          <Skeleton className="h-40 rounded-lg" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Agente Detail Page
@@ -38,7 +63,15 @@ function AgenteDetailContent() {
   const agenteId = params.id as string;
 
   // Fetch data
-  const { agente, refetch: recargarAgente } = useAgente(agenteId);
+  const {
+    agente,
+    // ARREGLOS-8 (MOV-A6): sin el estado de carga, la ficha decía «Agente no
+    // encontrado» mientras el dato venía en camino, y con un 500 o la red
+    // caída afirmaba que el asesor no existía.
+    isLoading: cargandoAgente,
+    errorCrudo: errorDelAgente,
+    refetch: recargarAgente,
+  } = useAgente(agenteId);
   const { consignaciones, refetch: recargarConsignaciones } =
     useAgenteConsignaciones(agenteId);
   const { pipelineItems } = useAgentePipeline(agenteId);
@@ -49,6 +82,33 @@ function AgenteDetailContent() {
      front ya escrito para las dos. Lo que faltaba eran los diálogos. */
   const [editando, setEditando] = useState(false);
   const [asignando, setAsignando] = useState(false);
+
+  // Mientras carga no es «no encontrado»: el esqueleto de la ficha, nunca el vacío.
+  if (!agente && cargandoAgente) {
+    return <EsqueletoDelAsesor />;
+  }
+
+  // Falló la carga ≠ el asesor no existe: `FalloDeCarga` dice lo que pasó y
+  // ofrece reintentar. Un 404 sigue con su «no encontrado» de abajo.
+  if (!agente && errorDelAgente && !esNoExiste(errorDelAgente)) {
+    return (
+      <div className="p-4 md:p-6 space-y-6" data-testid="agente-fallo">
+        <Link
+          href={RUTA_DEL_EQUIPO}
+          className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-primary transition-colors"
+        >
+          <CaretLeft className="w-4 h-4" />
+          {t('inmobiliaria.config.tabs.equipo')}
+        </Link>
+        <FalloDeCarga
+          error={errorDelAgente}
+          queEs="el asesor"
+          onReintentar={recargarAgente}
+          volverA={{ label: t('inmobiliaria.agentes.backToList'), href: RUTA_DEL_EQUIPO }}
+        />
+      </div>
+    );
+  }
 
   // 404 if not found
   if (!agente) {
@@ -105,71 +165,49 @@ function AgenteDetailContent() {
       {/* Main Content - Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Main Content (2/3) */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* La ficha llega desde la lista de Equipo dentro del mismo módulo (el
+            template del panel no se vuelve a montar): sus bloques entran
+            escalonados con el techo del sistema, no con retrasos a mano. */}
+        <Stagger className="lg:col-span-2 space-y-6">
           {/* Profile Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
+          <StaggerItem key="perfil">
             <AgenteProfile agente={agente} onEdit={() => setEditando(true)} />
-          </motion.div>
+          </StaggerItem>
 
           {/* Metrics Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="rounded-lg border border-border bg-card p-5"
-          >
+          <StaggerItem key="metricas" className="rounded-lg border border-border bg-card p-5">
             <AgenteMetrics metrics={agente.metrics} />
-          </motion.div>
+          </StaggerItem>
 
           {/* Properties Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
+          <StaggerItem key="inmuebles">
             <AgentePropertyList
               consignaciones={consignaciones}
               onAssignProperty={() => setAsignando(true)}
             />
-          </motion.div>
+          </StaggerItem>
 
           {/* Visit working-hours — one schedule for all the agent's properties */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-          >
+          <StaggerItem key="horario">
             <AgenteHorarioVisitas agenteId={agenteId} />
-          </motion.div>
-        </div>
+          </StaggerItem>
+        </Stagger>
 
         {/* Right Column - Sidebar (1/3) */}
-        <div className="space-y-6">
+        <Stagger className="space-y-6" delay={0.08}>
           {/* Pipeline Section */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.25 }}
-          >
+          <StaggerItem key="pipeline">
             <AgentePipeline pipelineItems={pipelineItems} />
-          </motion.div>
+          </StaggerItem>
 
           {/* 🔴 17-09: acá había un «Historial de comisiones — próximamente».
               La comisión del asesor se liquida por fuera de Leasefy, así que
               esa pantalla no va a existir; lo que sí es un hecho —qué captó y
               qué arrendó— es esto. */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="rounded-lg border border-border bg-card p-5"
-          >
+          <StaggerItem key="captaciones" className="rounded-lg border border-border bg-card p-5">
             <CaptacionesYArriendos userId={agente.userId} />
-          </motion.div>
-        </div>
+          </StaggerItem>
+        </Stagger>
       </div>
 
       <EditarPerfilDelAsesor

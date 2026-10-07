@@ -13,18 +13,21 @@ import {
   Vault,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
-import { KpiCard } from '@leasefy/cadence'
+import { KpiCard, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
+import { formatCurrency } from '@/lib/format'
 import type { CotizadorOverviewResponse } from '@/lib/hooks/cotizador/use-cotizador-overview'
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
+/**
+ * QA-IA-95 (05-10-2026): la plata como en la casa («$ 54.600», «$ 1.400.000»),
+ * no «$55K» ni «$1.4M» (abreviaturas y punto decimal en inglés).
+ */
 function formatCOP(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
-  if (value >= 1_000) return `${(value / 1_000).toFixed(0)}K`
-  return String(value)
+  return formatCurrency(value)
 }
 
 /** t() with raw-key fallback so a missing key never renders the path. */
@@ -86,12 +89,12 @@ export function CotizadorKpiStrip({ kpis, isLoading = false }: CotizadorKpiStrip
     },
     {
       label: tf('inmobiliaria.ai.cotizador.overview.kpis.primaPromedio', 'Prima promedio/mes'),
-      value: kpis ? `$${formatCOP(kpis.primaPromedioMonthlyCop)}` : '—',
+      value: kpis ? `${formatCOP(kpis.primaPromedioMonthlyCop)}` : '—',
       Icon: ShieldStar,
     },
     {
       label: tf('inmobiliaria.ai.cotizador.overview.kpis.costPerQuote', 'Costo por consulta'),
-      value: kpis ? `$${formatCOP(kpis.costPerQuoteCop)}` : '—',
+      value: kpis ? `${formatCOP(kpis.costPerQuoteCop)}` : '—',
       Icon: CurrencyDollar,
     },
   ]
@@ -145,21 +148,25 @@ export function CotizadorKpiStrip({ kpis, isLoading = false }: CotizadorKpiStrip
   if (k && typeof k.valorAseguradoCop === 'number') {
     cards.push({
       label: tf('inmobiliaria.ai.cotizador.overview.kpis.valorAsegurado', 'Valor asegurado'),
-      value: `$${formatCOP(k.valorAseguradoCop)}`,
+      value: `${formatCOP(k.valorAseguradoCop)}`,
       Icon: Vault,
     })
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    // Las tarjetas entran escalonadas (techo 320 ms); las opcionales que llegan
+    // después se suman con su animación y las demás se corren.
+    // QA-IA-95: a 390 px, en dos columnas los rótulos se cortaban («TASA DE …»): una columna hasta 480 px.
+    <Stagger className="grid grid-cols-1 min-[480px]:grid-cols-2 md:grid-cols-4 gap-4">
       {cards.map(({ label, value, Icon }) => (
-        <KpiCard
-          key={label}
-          label={label}
-          value={isLoading ? '—' : value}
-          icon={<Icon weight="duotone" aria-hidden="true" />}
-        />
+        <StaggerItem key={label} className="min-w-0 [&>*]:h-full">
+          <KpiCard
+            label={label}
+            value={isLoading ? '—' : value}
+            icon={<Icon weight="duotone" aria-hidden="true" />}
+          />
+        </StaggerItem>
       ))}
-    </div>
+    </Stagger>
   )
 }

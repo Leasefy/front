@@ -1,18 +1,28 @@
 'use client';
 
 import { useState } from 'react';
-import { CalendarBlank, Clock, CheckCircle, XCircle, Buildings, Chat, CalendarPlus, X, CalendarCheck, CalendarX } from '@phosphor-icons/react';
+import { CalendarBlank, Clock, CheckCircle, XCircle, Buildings, Chat, CalendarPlus, CalendarCheck, CalendarX } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { useVisits, useVisitActions } from '@/lib/hooks/useVisits';
-import { useLandlordProperties } from '@/lib/hooks/useLandlord';
 import type { Visit, VisitStatus } from '@/lib/types/visit';
 import { PlanTable, PlanTableColumn } from '@/components/ui/plan/PlanTable';
 import { PlanDetailSheet, QuickAction, DetailSection } from '@/components/ui/plan/PlanDetailSheet';
 import { PlanStatusBadge, PlanStatusType } from '@/components/ui/plan/PlanStatusBadge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Button, Input, Textarea, Select, SelectTrigger, SelectValue, SelectContent, SelectItem, Spinner, Card, Badge } from '@/components/ui';
-import { PageHeader, KpiCard, IconButton, SegmentedControl, RadioCard, RadioCardGroup } from '@leasefy/cadence';
+import { Button, Textarea, Card, Badge } from '@/components/ui';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
+import { PageHeader, KpiCard, SegmentedControl, RadioCard, RadioCardGroup } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { RescheduleModal, formatTime } from '@/components/landlord/visitas/ModalesDeVisita';
 
 type TabFunnel = 'all' | VisitStatus;
 
@@ -25,12 +35,6 @@ const STATUS_TO_PLAN: Record<VisitStatus, PlanStatusType> = {
   rejected:    'rejected',
   rescheduled: 'pending',
 };
-
-function formatTime(time: string): string {
-  const [h, m] = time.split(':');
-  const hour = parseInt(h, 10);
-  return `${hour > 12 ? hour - 12 : hour}:${m} ${hour >= 12 ? 'PM' : 'AM'}`;
-}
 
 // ============================================================================
 // Cancel Modal
@@ -62,61 +66,55 @@ function CancelModal({
   const canSubmit = finalReason.trim().length > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface w-full max-w-md rounded-[20px] border border-border">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint">
-          <h3 className="font-semibold text-fg">{t('landlord.visits.cancelModalTitle')}</h3>
-          <IconButton
-            variant="ghost"
-            onClick={onClose}
-            icon={<X className="w-5 h-5" />}
-            aria-label="Cerrar"
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose();
+      }}
+    >
+      {/* Destructiva con formulario: se elige el motivo antes de cancelar. */}
+      <DialogContent size="sm" variant="destructive" icon={<CalendarX weight="bold" />}>
+        <DialogHeader>
+          <DialogTitle>{t('landlord.visits.cancelModalTitle')}</DialogTitle>
+          <DialogDescription>
+            {t('landlord.visits.cancelModalVisitWith')} <span className="font-medium text-fg">{visit.candidateName}</span> {t('landlord.visits.cancelModalDateAt', { date: formatDate(visit.requestedDate + 'T12:00:00'), time: formatTime(visit.requestedTime) })}.{' '}
+            {t('landlord.visits.cancelModalWhatHappens', { name: visit.candidateName })}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div>
+          <label className="text-sm font-medium text-fg block mb-3">
+            {t('landlord.visits.cancelReasonLabel')}
+          </label>
+          <RadioCardGroup
+            orientation="vertical"
+            value={selectedReason}
+            onValueChange={setSelectedReason}
+            aria-label={t('landlord.visits.cancelReasonLabel')}
+          >
+            {CANCEL_REASONS.map((reason) => (
+              <RadioCard
+                key={reason.key}
+                value={reason.value}
+                className="w-full"
+                label={reason.value}
+              />
+            ))}
+          </RadioCardGroup>
+        </div>
+
+        {isOtherReason && (
+          <Textarea
+            value={customReason}
+            onChange={(e) => setCustomReason(e.target.value)}
+            placeholder={t('landlord.visits.cancelReasonPlaceholder')}
+            rows={3}
+            className="rounded-lg resize-none"
           />
-        </div>
+        )}
 
-        {/* Body */}
-        <div className="px-6 py-5 space-y-5">
-          <p className="text-sm text-fg-muted">
-            {t('landlord.visits.cancelModalVisitWith')} <span className="font-medium text-fg">{visit.candidateName}</span> {t('landlord.visits.cancelModalDateAt', { date: formatDate(visit.requestedDate + 'T12:00:00'), time: formatTime(visit.requestedTime) })}
-          </p>
-
-          <div>
-            <label className="text-sm font-medium text-fg block mb-3">
-              {t('landlord.visits.cancelReasonLabel')}
-            </label>
-            <RadioCardGroup
-              orientation="vertical"
-              value={selectedReason}
-              onValueChange={setSelectedReason}
-              aria-label={t('landlord.visits.cancelReasonLabel')}
-            >
-              {CANCEL_REASONS.map((reason) => (
-                <RadioCard
-                  key={reason.key}
-                  value={reason.value}
-                  className="w-full"
-                  label={reason.value}
-                />
-              ))}
-            </RadioCardGroup>
-          </div>
-
-          {isOtherReason && (
-            <Textarea
-              value={customReason}
-              onChange={(e) => setCustomReason(e.target.value)}
-              placeholder={t('landlord.visits.cancelReasonPlaceholder')}
-              rows={3}
-              className="rounded-lg resize-none"
-            />
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-faint bg-surface-muted rounded-b-xl">
-          <Button variant="ghost" onClick={onClose}>
+        <DialogFooter>
+          <Button variant="outline" hideArrow onClick={onClose}>
             {t('landlord.visits.cancelBack')}
           </Button>
           <Button
@@ -127,244 +125,9 @@ function CancelModal({
           >
             {t('landlord.visits.cancelConfirm')}
           </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// Reschedule Modal
-// ============================================================================
-
-function RescheduleModal({
-  visit,
-  onConfirm,
-  onClose,
-}: {
-  visit: Visit;
-  onConfirm: (date: string, time: string) => void;
-  onClose: () => void;
-}) {
-  const [newDate, setNewDate] = useState('');
-  const [newTime, setNewTime] = useState('');
-  const { t, formatDate } = useI18n();
-
-  const canSubmit = newDate.length > 0 && newTime.length > 0;
-
-  // Min date: tomorrow
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDate = tomorrow.toISOString().split('T')[0];
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface w-full max-w-md rounded-[20px] border border-border">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint">
-          <h3 className="font-semibold text-fg">{t('landlord.visits.rescheduleModalTitle')}</h3>
-          <IconButton
-            variant="ghost"
-            onClick={onClose}
-            icon={<X className="w-5 h-5" />}
-            aria-label="Cerrar"
-          />
-        </div>
-
-        {/* Body */}
-        <div className="px-6 py-5 space-y-5">
-          <div className="p-4 bg-surface-muted rounded-lg">
-            <p className="text-sm text-fg-muted">
-              {t('landlord.visits.rescheduleOriginal')} <span className="font-medium text-fg">{visit.candidateName}</span>
-            </p>
-            <p className="text-sm text-fg-subtle mt-0.5">
-              {t('landlord.visits.rescheduleOriginalDate', { date: formatDate(visit.requestedDate + 'T12:00:00'), time: formatTime(visit.requestedTime) })}
-            </p>
-          </div>
-
-          <p className="text-sm text-fg-muted">
-            {t('landlord.visits.rescheduleExplanation')}
-          </p>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-fg block mb-2">
-                {t('landlord.visits.rescheduleNewDate')}
-              </label>
-              <Input
-                type="date"
-                value={newDate}
-                min={minDate}
-                onChange={(e) => setNewDate(e.target.value)}
-                className="rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-fg block mb-2">
-                {t('landlord.visits.rescheduleNewTime')}
-              </label>
-              <Input
-                type="time"
-                value={newTime}
-                onChange={(e) => setNewTime(e.target.value)}
-                className="rounded-lg"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-faint bg-surface-muted rounded-b-xl">
-          <Button variant="ghost" onClick={onClose}>
-            {t('landlord.visits.rescheduleBack')}
-          </Button>
-          <Button
-            variant="default"
-            hideArrow
-            onClick={() => canSubmit && onConfirm(newDate, newTime)}
-            disabled={!canSubmit}
-          >
-            {t('landlord.visits.rescheduleConfirm')}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// Schedule Modal
-// ============================================================================
-
-const SCHEDULE_HOURS = [
-  '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-  '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
-  '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00',
-];
-
-function ScheduleModal({
-  onClose,
-  properties,
-  onCreate,
-}: {
-  onClose: () => void;
-  properties: { id: string; title: string }[];
-  onCreate: (propertyId: string, date: string, time: string, notes?: string) => Promise<boolean>;
-}) {
-  const [fecha, setFecha] = useState('');
-  const [hora, setHora] = useState('');
-  const [propiedad, setPropiedad] = useState('');
-  const [notas, setNotas] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const { t } = useI18n();
-
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const minDate = tomorrow.toISOString().split('T')[0];
-
-  const canSubmit = fecha.length > 0 && hora.length > 0 && propiedad.length > 0 && !submitting;
-
-  const handleConfirm = async () => {
-    if (!canSubmit) return;
-    setSubmitting(true);
-    const ok = await onCreate(propiedad, fecha, hora, notas || undefined);
-    setSubmitting(false);
-    if (ok) {
-      toast.success(t('landlord.visits.scheduleSuccessToast'), {
-        description: t('landlord.visits.scheduleSuccessDesc'),
-      });
-      onClose();
-    } else {
-      toast.error('Error al agendar visita');
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-surface w-full max-w-md rounded-[20px] border border-border">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint">
-          <h3 className="font-semibold text-fg">{t('landlord.visits.scheduleModalTitle')}</h3>
-          <IconButton
-            variant="ghost"
-            onClick={onClose}
-            icon={<X className="w-5 h-5" />}
-            aria-label="Cerrar"
-          />
-        </div>
-
-        {/* Body */}
-        <div className="px-6 py-5 space-y-5">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-fg block mb-2">{t('landlord.visits.scheduleDateLabel')}</label>
-              <Input
-                type="date"
-                value={fecha}
-                min={minDate}
-                onChange={(e) => setFecha(e.target.value)}
-                className="rounded-lg"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-fg block mb-2">{t('landlord.visits.scheduleTimeLabel')}</label>
-              <Select value={hora} onValueChange={setHora}>
-                <SelectTrigger className="h-11 rounded-lg">
-                  <SelectValue placeholder={t('landlord.visits.scheduleTimeSelect')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {SCHEDULE_HOURS.map((h) => (
-                    <SelectItem key={h} value={h}>{h}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-fg block mb-2">{t('landlord.visits.schedulePropertyLabel')}</label>
-            <Select value={propiedad} onValueChange={setPropiedad}>
-              <SelectTrigger className="h-11 rounded-lg">
-                <SelectValue placeholder={t('landlord.visits.schedulePropertySelect')} />
-              </SelectTrigger>
-              <SelectContent>
-                {properties.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-fg block mb-2">{t('landlord.visits.scheduleNotesLabel')}</label>
-            <Textarea
-              value={notas}
-              onChange={(e) => setNotas(e.target.value)}
-              placeholder={t('landlord.visits.scheduleNotesPlaceholder')}
-              rows={3}
-              className="rounded-lg resize-none"
-            />
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border-faint bg-surface-muted rounded-b-xl">
-          <Button variant="ghost" onClick={onClose}>
-            {t('landlord.visits.scheduleCancel')}
-          </Button>
-          <Button
-            variant="default"
-            hideArrow
-            onClick={handleConfirm}
-            disabled={!canSubmit}
-          >
-            {t('landlord.visits.scheduleConfirm')}
-          </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -376,7 +139,6 @@ export default function VisitasPage() {
   const [tabFunnel, setTabFunnel] = useState<TabFunnel>('all');
   const { visits, stats, isLoading, error, refetch } = useVisits();
   const actions = useVisitActions();
-  const { properties: landlordProperties } = useLandlordProperties();
   const [selectedVisit, setSelectedVisit] = useState<Visit | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const { t, formatDate } = useI18n();
@@ -384,7 +146,6 @@ export default function VisitasPage() {
   // Modal state
   const [cancelTarget, setCancelTarget] = useState<Visit | null>(null);
   const [rescheduleTarget, setRescheduleTarget] = useState<Visit | null>(null);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   // Visit status labels using i18n
   const visitStatusLabels: Record<VisitStatus, string> = {
@@ -477,17 +238,25 @@ export default function VisitasPage() {
 
   // ---- Actions ----
 
+  // 02-10-2026: las acciones relanzan el error (antes devolvían `false` y se
+  // decía «Error al …» sin motivo); acá se dice con la regla de oro.
   const handleConfirm = async (visit: Visit) => {
-    const ok = await actions.confirm(visit.id);
-    setSheetOpen(false);
-    if (ok) {
-      toast.success(t('landlord.visits.confirmedToast'), {
-        description: t('landlord.visits.confirmedToastDesc', { name: visit.candidateName, date: formatDate(visit.requestedDate + 'T12:00:00'), time: formatTime(visit.requestedTime) }),
-      });
-      refetch();
-    } else {
-      toast.error('Error al confirmar visita');
+    try {
+      await actions.confirm(visit.id);
+    } catch (e) {
+      toast.error(
+        mensajeParaLaPersona(e, {
+          accion: 'confirmar la visita',
+          porDefecto: 'No pudimos confirmar la visita. Prueba de nuevo en un momento.',
+        }),
+      );
+      return;
     }
+    setSheetOpen(false);
+    toast.success(t('landlord.visits.confirmedToast'), {
+      description: t('landlord.visits.confirmedToastDesc', { name: visit.candidateName, date: formatDate(visit.requestedDate + 'T12:00:00'), time: formatTime(visit.requestedTime) }),
+    });
+    refetch();
   };
 
   const openCancelModal = (visit: Visit) => {
@@ -497,18 +266,25 @@ export default function VisitasPage() {
 
   const confirmCancel = async (reason: string) => {
     if (!cancelTarget) return;
-    const ok = await actions.cancel(cancelTarget.id, { reason });
     const name = cancelTarget.candidateName;
-    setCancelTarget(null);
-    if (ok) {
-      toast(t('landlord.visits.cancelledToast'), {
-        description: t('landlord.visits.cancelledToastDesc', { name }),
-        icon: '❌',
-      });
-      refetch();
-    } else {
-      toast.error('Error al cancelar visita');
+    try {
+      await actions.cancel(cancelTarget.id, { reason });
+    } catch (e) {
+      // El modal queda abierto con el motivo elegido para reintentar.
+      toast.error(
+        mensajeParaLaPersona(e, {
+          accion: 'cancelar la visita',
+          porDefecto: 'No pudimos cancelar la visita. Prueba de nuevo en un momento.',
+        }),
+      );
+      return;
     }
+    setCancelTarget(null);
+    toast(t('landlord.visits.cancelledToast'), {
+      description: t('landlord.visits.cancelledToastDesc', { name }),
+      icon: '❌',
+    });
+    refetch();
   };
 
   const openRescheduleModal = (visit: Visit) => {
@@ -516,25 +292,15 @@ export default function VisitasPage() {
     setTimeout(() => setRescheduleTarget(visit), 150);
   };
 
+  // Si falla, lanza: `RescheduleModal` reparte el error en sus campos y queda abierto.
   const confirmReschedule = async (newDate: string, newTime: string) => {
     if (!rescheduleTarget) return;
-    const ok = await actions.reschedule(rescheduleTarget.id, { newDate, newStartTime: newTime });
     const name = rescheduleTarget.candidateName;
-    setRescheduleTarget(null);
-    if (ok) {
-      toast.success(t('landlord.visits.rescheduledToast'), {
-        description: t('landlord.visits.rescheduledToastDesc', { name, date: formatDate(newDate + 'T12:00:00'), time: formatTime(newTime) }),
-      });
-      refetch();
-    } else {
-      toast.error('Error al reagendar visita');
-    }
-  };
-
-  const handleCreateVisit = async (propertyId: string, date: string, time: string, notes?: string): Promise<boolean> => {
-    const ok = await actions.create({ propertyId, date, startTime: time, visitType: 'IN_PERSON', notes });
-    if (ok) refetch();
-    return ok;
+    await actions.reschedule(rescheduleTarget.id, { newDate, newStartTime: newTime });
+    toast.success(t('landlord.visits.rescheduledToast'), {
+      description: t('landlord.visits.rescheduledToastDesc', { name, date: formatDate(newDate + 'T12:00:00'), time: formatTime(newTime) }),
+    });
+    refetch();
   };
 
   // ---- Quick actions ----
@@ -659,8 +425,9 @@ export default function VisitasPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+      <div className="min-h-screen bg-bg">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
     );
   }
@@ -679,17 +446,15 @@ export default function VisitasPage() {
   return (
     <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
+        {/* Header. «Agendar visita» no está (Nico, 02-10-2026): `POST /visits`
+            es sólo para inquilinos y al propietario SIEMPRE le respondía 403.
+            Las visitas las pide el inquilino desde el inmueble; acá se
+            confirman, se reprograman o se cancelan. `ScheduleModal` sigue en
+            `ModalesDeVisita` para cuando el back lo permita. */}
         <PageHeader
           className="mb-8"
           title={t('landlord.visits.title')}
           subtitle={t('landlord.visits.subtitle')}
-          actions={
-            <Button onClick={() => setShowScheduleModal(true)} hideArrow>
-              <CalendarPlus className="w-4 h-4" />
-              {t('landlord.visits.scheduleButton')}
-            </Button>
-          }
         />
 
         {/* Stats Cards */}
@@ -814,15 +579,6 @@ export default function VisitasPage() {
           visit={rescheduleTarget}
           onConfirm={confirmReschedule}
           onClose={() => setRescheduleTarget(null)}
-        />
-      )}
-
-      {/* Schedule Modal */}
-      {showScheduleModal && (
-        <ScheduleModal
-          onClose={() => setShowScheduleModal(false)}
-          properties={landlordProperties.map(p => ({ id: p.id, title: p.title }))}
-          onCreate={handleCreateVisit}
         />
       )}
     </div>

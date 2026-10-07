@@ -39,6 +39,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { contractsApi } from '@/lib/api/contracts.service';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
+import { ApiError } from '@/lib/api/client';
 import { inquilinosApi, type Inquilino } from '@/lib/api/inquilinos.service';
 import type { CobroConDesglose } from '@/lib/api/recibos-de-caja.types';
 import type { ResumenDelEstadoDeCuenta } from '@/lib/types/estado-de-cuenta';
@@ -67,6 +68,12 @@ export interface DetalleDeInquilino {
   cargandoCuenta: boolean;
   errorCuenta: boolean;
   /**
+   * QA-INQ-95 (F-17): el error fue un 403 — la persona NO tiene permiso de ver
+   * la deuda (coordinador sin `cobros:view`). No se ofrece «Reintentar»: no
+   * cambia nada. Ausente o `false` = cualquier otro fallo.
+   */
+  cuentaSinPermiso?: boolean;
+  /**
    * Con qué se abre su estado de cuenta: la cuenta del portal o, si con ella no
    * aparece ningún contrato, su documento. `null` = no hay estado de cuenta que
    * abrir, y el cajón no ofrece un enlace a un 404.
@@ -90,8 +97,13 @@ function porMesDescendente(a: CobroConDesglose, b: CobroConDesglose): number {
 /**
  * @param semilla La persona que trajo la fila, o `null` con el cajón cerrado.
  *                Con `null` el hook no pide nada.
+ * @param version Sube cuando sus datos cambiaron afuera (E-16, «Editar datos»):
+ *                se vuelve a pedir todo, como con «Reintentar».
  */
-export function useInquilinoDetalle(semilla: Inquilino | null): DetalleDeInquilino | null {
+export function useInquilinoDetalle(
+  semilla: Inquilino | null,
+  version = 0,
+): DetalleDeInquilino | null {
   const tenantId = semilla?.tenantId ?? null;
 
   const [persona, setPersona] = useState<Inquilino | null>(semilla);
@@ -106,6 +118,7 @@ export function useInquilinoDetalle(semilla: Inquilino | null): DetalleDeInquili
   const [cuenta, setCuenta] = useState<ResumenDelEstadoDeCuenta | null>(null);
   const [cargandoCuenta, setCargandoCuenta] = useState(false);
   const [errorCuenta, setErrorCuenta] = useState(false);
+  const [cuentaSinPermiso, setCuentaSinPermiso] = useState(false);
   const [refDeCuenta, setRefDeCuenta] = useState<string | null>(null);
 
   const [recarga, setRecarga] = useState(0);
@@ -160,7 +173,7 @@ export function useInquilinoDetalle(semilla: Inquilino | null): DetalleDeInquili
     return () => {
       vigente = false;
     };
-  }, [tenantId, recarga]);
+  }, [tenantId, recarga, version]);
 
   const contratos = efectiva ? contratosDe(efectiva) : [];
   // Una llave estable: el efecto de pagos no puede correr por cada render sólo
@@ -191,12 +204,18 @@ export function useInquilinoDetalle(semilla: Inquilino | null): DetalleDeInquili
         );
         // Todos fallaron = error. Algunos = lo que se ve es cierto pero
         // incompleto, y decirlo importa: un saldo a medias parece un saldo.
-        if (buenos.length === 0) {
+        /*
+         * QA-INQ-95 ronda 2 (F-26): si uno falló y los que respondieron no traen
+         * ningún cobro, decir «Todavía no se le ha emitido ningún cobro» es
+         * afirmar algo que no sabemos: es un fallo, con «Reintentar».
+         */
+        const algunoFallo = buenos.length < resultados.length;
+        if (buenos.length === 0 || (algunoFallo && buenos.every((r) => r.value.length === 0))) {
           setErrorPagos(true);
           setCobros([]);
           return;
         }
-        setPagosIncompletos(buenos.length < resultados.length);
+        setPagosIncompletos(algunoFallo);
         setCobros(buenos.flatMap((r) => r.value).sort(porMesDescendente));
       })
       .finally(() => {
@@ -206,7 +225,7 @@ export function useInquilinoDetalle(semilla: Inquilino | null): DetalleDeInquili
     return () => {
       vigente = false;
     };
-  }, [tenantId, llaveDeContratos, recarga]);
+  }, [tenantId, llaveDeContratos, recarga, version]);
 
   /*
    * Lo que debe: el resumen de su estado de cuenta.
@@ -223,12 +242,19 @@ export function useInquilinoDetalle(semilla: Inquilino | null): DetalleDeInquili
     let vigente = true;
     setCargandoCuenta(true);
     setErrorCuenta(false);
+    setCuentaSinPermiso(false);
 
     void (async () => {
       try {
-        let ref = tenantId;
-        let resumen = await estadoDeCuentaApi.resumen('inquilino', tenantId);
-        if (resumen.contratos === 0 && documento && documento !== tenantId) {
+        /*
+         * I-12: una identidad sintética (`doc:<n>`, `correo:<c>`) no es una
+         * referencia del estado de cuenta; el documento sí. Con ella se
+         * pregunta directo por el documento.
+         */
+        const primera = tenantId.includes(':') && documento ? documento : tenantId;
+        let ref = primera;
+        let resumen = await estadoDeCuentaApi.resumen('inquilino', primera);
+        if (resumen.contratos === 0 && documento && documento !== primera) {
           const porDocumento = await estadoDeCuentaApi.resumen('inquilino', documento);
           if (porDocumento.contratos > 0) {
             resumen = porDocumento;
@@ -238,11 +264,12 @@ export function useInquilinoDetalle(semilla: Inquilino | null): DetalleDeInquili
         if (!vigente) return;
         setCuenta(resumen);
         setRefDeCuenta(resumen.contratos > 0 ? ref : null);
-      } catch {
+      } catch (e) {
         if (!vigente) return;
         setCuenta(null);
         setRefDeCuenta(null);
         setErrorCuenta(true);
+        setCuentaSinPermiso(e instanceof ApiError && e.status === 403);
       } finally {
         if (vigente) setCargandoCuenta(false);
       }
@@ -251,7 +278,7 @@ export function useInquilinoDetalle(semilla: Inquilino | null): DetalleDeInquili
     return () => {
       vigente = false;
     };
-  }, [tenantId, documento, recarga]);
+  }, [tenantId, documento, recarga, version]);
 
   if (!efectiva) return null;
 
@@ -266,6 +293,7 @@ export function useInquilinoDetalle(semilla: Inquilino | null): DetalleDeInquili
     cuenta,
     cargandoCuenta,
     errorCuenta,
+    cuentaSinPermiso,
     refDeCuenta,
     reintentar,
   };

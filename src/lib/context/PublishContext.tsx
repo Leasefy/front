@@ -3,8 +3,54 @@
 import { createContext, useContext, useState, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { PropertyDraft, PUBLISH_STEPS, initialPropertyDraft } from '@/lib/types/publish';
 import { propertiesApi } from '@/lib/api/properties.service';
+import {
+  newPropertyCreationSession,
+  createPropertyOnce,
+  resetPropertyCreationSession,
+} from '@/lib/api/property-creation-session';
 import { resolvePropertyCoordinates } from '@/lib/constants/map';
 import { ubicarDireccion } from '@/lib/inmuebles/ubicar-direccion';
+import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { erroresDelInmueble } from '@/lib/inmuebles/limites-del-inmueble';
+
+/** Un campo del borrador que el back puede rechazar (`CreatePropertyDto`). */
+type CampoDelBorrador = keyof PropertyDraft;
+
+/**
+ * En qué paso se corrige cada campo, y en qué orden los ve la persona: paso por
+ * paso y, dentro de cada paso, como salen en la pantalla (de arriba abajo, de
+ * izquierda a derecha). Sistema de errores, 02-10-2026: un 400 con `campos`
+ * lleva a la persona al paso del PRIMER campo en este orden —no al primero que
+ * mandó el servidor— y el foco va a ese campo. Los nombres del DTO coinciden
+ * con los del borrador. `steps/index.errores.test.tsx` vigila que este orden
+ * sea el de la pantalla.
+ */
+const CAMPOS_DE_CADA_PASO: ReadonlyArray<readonly [paso: number, campos: readonly CampoDelBorrador[]]> = [
+  [1, ['type']],
+  [2, ['city', 'neighborhood', 'address']],
+  [3, ['bedrooms', 'bathrooms', 'area', 'parkingSpaces', 'floor', 'stratum', 'yearBuilt']],
+  [4, ['amenities']],
+  [6, ['monthlyRent', 'adminFee', 'deposit']],
+  [7, ['title', 'description']],
+];
+
+/** Los campos que pinta el asistente, en el orden de la pantalla. */
+export const ORDEN_DE_LOS_CAMPOS: readonly CampoDelBorrador[] = CAMPOS_DE_CADA_PASO.flatMap(
+  ([, campos]) => campos,
+);
+
+/** El paso donde se corrige cada campo. Un campo que no está acá no se pinta. */
+export const PASO_DEL_CAMPO: Readonly<Partial<Record<CampoDelBorrador, number>>> = Object.fromEntries(
+  CAMPOS_DE_CADA_PASO.flatMap(([paso, campos]) => campos.map((campo) => [campo, paso])),
+);
+
+/** Una foto que no subió y por qué (para decirlo, no sólo a la consola). */
+export interface FotoQueNoSubio {
+  nombre: string;
+  motivo: string;
+}
 
 interface PublishContextTextT {
   // State
@@ -14,8 +60,31 @@ interface PublishContextTextT {
   completedSteps: number[];
   isSubmitting: boolean;
   isComplete: boolean;
+  /**
+   * El aviso del pie: SÓLO lo que no tiene campo en el asistente (un 5xx con
+   * su referencia, la red, un 409 sin `campos`, un campo del sobre que ningún
+   * paso pinta). Lo que tiene campo se pinta bajo ese campo y no se repite acá.
+   * `null` = no hay nada sin campo.
+   */
   submissionError: string | null;
   createdPropertyId: string | null;
+  /**
+   * Lo que el back (o el tope del cliente, espejo del DTO) rechazó, por campo
+   * del borrador. Se vacía al editar ese campo.
+   */
+  erroresDelServidor: Partial<Record<CampoDelBorrador, string>>;
+  /**
+   * Los campos con error en el orden de la pantalla (`ORDEN_DE_LOS_CAMPOS`):
+   * el primero es al que va el foco tras un fallo al publicar.
+   */
+  ordenDeLosErrores: readonly CampoDelBorrador[];
+  /**
+   * Los pasos con al menos un campo con error, de menor a mayor: la barra de
+   * pasos los marca. Un paso sale de acá cuando se corrige su último error.
+   */
+  pasosConErrores: readonly number[];
+  /** Las fotos que no subieron al publicar, con su motivo. Vacío = todas subieron. */
+  fotosQueNoSubieron: FotoQueNoSubio[];
 
   // Photo files (File objects for upload)
   photoFiles: File[];
@@ -46,7 +115,12 @@ export function PublishProvider({ children }: { children: ReactNode }) {
   const [isComplete, setIsComplete] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
+  const [erroresDelServidor, setErroresDelServidor] = useState<Partial<Record<CampoDelBorrador, string>>>({});
+  const [fotosQueNoSubieron, setFotosQueNoSubieron] = useState<FotoQueNoSubio[]>([]);
   const photoFilesRef = useRef<File[]>([]);
+  // T-0141: one Idempotency-Key per publish session; the created property id is kept for retries.
+  const [sesionDeCreacion] = useState(() => newPropertyCreationSession());
+  const fotosSubidasRef = useRef(false);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
 
   const totalSteps = PUBLISH_STEPS.length;
@@ -74,6 +148,13 @@ export function PublishProvider({ children }: { children: ReactNode }) {
 
   const updateDraft = useCallback((updates: Partial<PropertyDraft>) => {
     setDraft(prev => ({ ...prev, ...updates }));
+    setErroresDelServidor((prev) => {
+      const tocados = (Object.keys(updates) as CampoDelBorrador[]).filter((k) => prev[k] !== undefined);
+      if (tocados.length === 0) return prev;
+      const quedan = { ...prev };
+      for (const k of tocados) delete quedan[k];
+      return quedan;
+    });
   }, []);
 
   const isStepValid = useCallback((step: number): boolean => {
@@ -105,6 +186,17 @@ export function PublishProvider({ children }: { children: ReactNode }) {
 
   const canProceed = useMemo(() => isStepValid(currentStep), [isStepValid, currentStep]);
 
+  const ordenDeLosErrores = useMemo(
+    () => ORDEN_DE_LOS_CAMPOS.filter((campo) => !!erroresDelServidor[campo]),
+    [erroresDelServidor],
+  );
+
+  // `ORDEN_DE_LOS_CAMPOS` va paso por paso: los pasos salen ya de menor a mayor.
+  const pasosConErrores = useMemo(
+    () => Array.from(new Set(ordenDeLosErrores.map((campo) => PASO_DEL_CAMPO[campo]!))),
+    [ordenDeLosErrores],
+  );
+
   const nextStep = useCallback(() => {
     if (currentStep < totalSteps && isStepValid(currentStep)) {
       if (!completedSteps.includes(currentStep)) {
@@ -128,9 +220,56 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     }
   }, [currentStep, totalSteps, completedSteps]);
 
+  /**
+   * Cada error a su campo, la persona al paso del primero (en el orden de la
+   * pantalla) y al aviso del pie SÓLO lo que no tiene campo (02-10-2026, Nico:
+   * el pie repetía lo que ya se lee bajo cada campo). Un campo que ningún paso
+   * pinta también va al pie: no se pierde nada.
+   */
+  const mostrarErrores = useCallback((porCampo: Partial<Record<CampoDelBorrador, string>>, sueltos: string[]) => {
+    const conCampo: Partial<Record<CampoDelBorrador, string>> = {};
+    const sinCampo = [...sueltos];
+    for (const campo of Object.keys(porCampo) as CampoDelBorrador[]) {
+      const mensaje = porCampo[campo];
+      if (!mensaje) continue;
+      if (PASO_DEL_CAMPO[campo] === undefined) sinCampo.push(mensaje);
+      else conCampo[campo] = mensaje;
+    }
+    setErroresDelServidor(conCampo);
+    const primero = ORDEN_DE_LOS_CAMPOS.find((c) => conCampo[c] !== undefined);
+    if (primero) setCurrentStep(PASO_DEL_CAMPO[primero]!);
+    const texto = Array.from(new Set(sinCampo)).join(' · ');
+    setSubmissionError(texto || null);
+  }, []);
+
   const submitProperty = useCallback(async () => {
     setIsSubmitting(true);
     setSubmissionError(null);
+    setErroresDelServidor({});
+    setFotosQueNoSubieron([]);
+
+    // Los topes del back (`limites-del-inmueble.ts`, espejo del DTO): lo que el
+    // servidor rechazaría no se manda, y se dice con la misma frase.
+    const topes = erroresDelInmueble({
+      title: draft.title,
+      address: draft.address,
+      city: draft.city,
+      neighborhood: draft.neighborhood,
+      monthlyRent: draft.monthlyRent || undefined,
+      adminFee: draft.adminFee || undefined,
+      deposit: draft.deposit || undefined,
+      bedrooms: draft.bedrooms,
+      bathrooms: draft.bathrooms,
+      area: draft.area || undefined,
+      floor: draft.floor || undefined,
+      parkingSpaces: draft.parkingSpaces || undefined,
+    }) as Partial<Record<CampoDelBorrador, string>>;
+    if (Object.keys(topes).length > 0) {
+      mostrarErrores(topes, []);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       /*
        * 1. Create property via API.
@@ -155,7 +294,8 @@ export function PublishProvider({ children }: { children: ReactNode }) {
               lng: u.lng,
             }));
 
-      const created = await propertiesApi.create({
+      const created = await createPropertyOnce(sesionDeCreacion, (idempotencyKey) =>
+        propertiesApi.create({
         title: draft.title,
         description: draft.description,
         type: draft.type,
@@ -176,28 +316,68 @@ export function PublishProvider({ children }: { children: ReactNode }) {
         stratum: draft.stratum || undefined,
         yearBuilt: draft.yearBuilt || undefined,
         amenities: draft.amenities.length > 0 ? draft.amenities : undefined,
-      });
+        }, { idempotencyKey }),
+      );
 
-      // 2. Upload photos sequentially
-      const files = photoFilesRef.current;
-      for (const file of files) {
-        try {
-          await propertiesApi.uploadImage(created.id, file);
-        } catch {
-          // Continue uploading remaining photos even if one fails
-          console.error(`Failed to upload image: ${file.name}`);
+      // 2. Upload photos sequentially (once: a retry never re-uploads them)
+      //
+      // 🔴 Antes una foto que fallaba sólo iba a la consola: el inmueble salía
+      // publicado con menos fotos y nadie se enteraba. Ahora cada fallo queda
+      // con su motivo (por el traductor) y se avisa; el inmueble ya existe, así
+      // que no se aborta nada.
+      const fallidas: FotoQueNoSubio[] = [];
+      if (!fotosSubidasRef.current) {
+        fotosSubidasRef.current = true;
+        const files = photoFilesRef.current;
+        for (const file of files) {
+          try {
+            await propertiesApi.uploadImage(created.id, file);
+          } catch (e) {
+            // Continue uploading remaining photos even if one fails
+            fallidas.push({
+              nombre: file.name,
+              motivo: mensajeParaLaPersona(e, {
+                porDefecto: `No pudimos subir «${file.name}».`,
+                accion: `subir «${file.name}»`,
+              }),
+            });
+          }
         }
+      }
+      if (fallidas.length > 0) {
+        setFotosQueNoSubieron(fallidas);
+        toast.warning(
+          fallidas.length === 1
+            ? 'El inmueble quedó publicado, pero una foto no se subió'
+            : `El inmueble quedó publicado, pero ${fallidas.length} fotos no se subieron`,
+          { description: `${fallidas[0].motivo} Puedes agregarlas desde el inmueble.` },
+        );
       }
 
       setCreatedPropertyId(created.id);
       setIsComplete(true);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al publicar la propiedad';
-      setSubmissionError(message);
+      // Un 400 con `campos` lleva al paso del campo; un 5xx dice «de nuestro
+      // lado» con la referencia; «conexión», sólo sin respuesta.
+      // Un campo del sobre que ningún paso pinta queda en `sueltos` (al pie).
+      const reparto = repartirErroresDelServidor<CampoDelBorrador>(err, {
+        campos: ORDEN_DE_LOS_CAMPOS,
+        porDefecto: 'No pudimos publicar el inmueble. Prueba de nuevo en un momento.',
+        accion: 'publicar el inmueble',
+      });
+      // The property exists: say so instead of "nothing was created" (T-0141).
+      const sueltos = sesionDeCreacion.property
+        ? [
+            `La propiedad ya quedó guardada y no se creará otra. Vuelve a enviar para completar lo que falta.${
+              reparto.sueltos.length > 0 ? ` Detalle: ${reparto.sueltos.join(' · ')}` : ''
+            }`,
+          ]
+        : reparto.sueltos;
+      mostrarErrores(reparto.porCampo, sueltos);
     } finally {
       setIsSubmitting(false);
     }
-  }, [draft]);
+  }, [draft, mostrarErrores, sesionDeCreacion]);
 
   const resetDraft = useCallback(() => {
     setDraft(initialPropertyDraft);
@@ -206,10 +386,15 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     setSubmissionError(null);
     setCreatedPropertyId(null);
     setIsComplete(false);
+    // Explicit "start over": the next publication gets a new key.
+    resetPropertyCreationSession(sesionDeCreacion);
+    fotosSubidasRef.current = false;
+    setErroresDelServidor({});
+    setFotosQueNoSubieron([]);
     // Clean up blob URLs
     photoFilesRef.current = [];
     setPhotoFiles([]);
-  }, []);
+  }, [sesionDeCreacion]);
 
   const value: PublishContextTextT = {
     draft,
@@ -220,6 +405,10 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     isComplete,
     submissionError,
     createdPropertyId,
+    erroresDelServidor,
+    ordenDeLosErrores,
+    pasosConErrores,
+    fotosQueNoSubieron,
     photoFiles,
     addPhotoFiles,
     removePhotoFile,

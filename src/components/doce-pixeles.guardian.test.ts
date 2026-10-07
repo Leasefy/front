@@ -86,7 +86,20 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // 23-09 noche: 2753 al unir la tercera ronda de seguridad.
 // 24-09: 2746 al retirar `ActionProposalCard` (la tarjeta F5 que ninguna
 // pantalla montaba; las tarjetas del ejecutor del chat no usan 12 px).
-const CUANTOS_HABIA = 2746;
+// 30-09: 2740 al cambiar los spinners por el logo en carga: los textos que
+// acompañaban la carga los pinta `CargaDeMarca` en 13 (`text-caption`).
+// 01-10: 2739 al devolver el spinner a los botones y a las cargas en línea
+// (el logo queda sólo en pantalla completa y transiciones): los textos que
+// volvieron de `CargaDeMarca` van en `text-caption`, y la etiqueta «Completado»
+// del panel de ejecución subió a 13 para igualar a «En ejecución».
+// 01-10 tarde: 2733 al pasar los reportes a un cajón por reporte (salieron el
+// bloque «Filtros aplicados» y dos vistas de 12 px). Develop había subido uno
+// (2740) con la migración de terceros; queda contado acá.
+// 02-10: 2731 con los rediseños de modales, cajones y chat del día.
+// 02-10 tarde: 2606 con la tanda 2 de errores (los errores de campo hechos a
+// mano pasaron a `ErrorDelCampo`).
+// 03-10 (ola E, E1): 2524 — los dos avisos de 12 px de «Giros devueltos» pasaron a `text-caption`.
+const CUANTOS_HABIA = 2533;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

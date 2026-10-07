@@ -18,7 +18,8 @@
 
 import { useMemo } from 'react'
 import Link from 'next/link'
-import { motion } from 'framer-motion'
+import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
+import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece'
 import { Warning, ShieldCheck, ClipboardText, FileText } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
@@ -57,8 +58,16 @@ function ComplianceOverviewContent() {
     return locale.startsWith('es') ? `hace ${min}m` : `${min}m ago`
   }, [data?.generated_at, locale])
 
-  // Phase 38-05a: page-level skeleton during first load
-  if (isLoading && !data) return <PageSkeleton variant="dashboard" />
+  // Phase 38-05a: page-level skeleton during first load. Movimiento: cada
+  // salida en un `CrossFade` con su clave (esqueleto → panel, → «todo en
+  // regla»); lo que ya estaba al montarse no se anima.
+  if (isLoading && !data) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="dashboard" />
+      </CrossFade>
+    )
+  }
 
   // Phase 38-05a: page-level EmptyState when no compliance issues at all
   // ("truly empty" = no open Habeas Data + no outside-hours violations)
@@ -68,11 +77,13 @@ function ComplianceOverviewContent() {
       data.ley_2300.weekly_outside_hours_count > 0)
   if (!isLoading && data && !error && !hasAnyIssues) {
     return (
+      <CrossFade swapKey="vacio">
       <EmptyState
         icon={ShieldCheck}
         title={t('inmobiliaria.ai.cobranza.compliance.empty.title')}
         description={t('inmobiliaria.ai.cobranza.compliance.empty.description')}
       />
+      </CrossFade>
     )
   }
 
@@ -95,6 +106,7 @@ function ComplianceOverviewContent() {
   ]
 
   return (
+    <CrossFade swapKey="panel">
     <div className="p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
@@ -110,11 +122,11 @@ function ComplianceOverviewContent() {
         </div>
       </div>
 
-      {/* Page-level red banner — D-34-RES-A1 trigger remaining_days <= 15 */}
-      {showBanner && (
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
+      {/* Page-level red banner — D-34-RES-A1 trigger remaining_days <= 15.
+          Entra y sale con `Presence` (baja 8px desde arriba, como antes). */}
+      <Presence
+          show={showBanner}
+          direction="down"
           className="rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-start gap-3"
           role="alert"
         >
@@ -126,19 +138,17 @@ function ComplianceOverviewContent() {
           <p className="text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.compliance.habeasData.banner')}
           </p>
-        </motion.div>
-      )}
+      </Presence>
 
       {/* Error state — color+icon+text (a11y: not color-only per XR-06) */}
-      {error && !data && (
-        <div
-          role="alert"
-          className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
-        >
+      <Presence
+        show={Boolean(error && !data)}
+        role="alert"
+        className="rounded-lg bg-danger-soft border border-danger/30 p-3 text-sm text-danger flex items-center gap-2"
+      >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
-        </div>
-      )}
+      </Presence>
 
       {data && (
         <>
@@ -156,7 +166,10 @@ function ComplianceOverviewContent() {
                     : 'text-danger font-bold',
                 ].join(' ')}
               >
-                {data.ley_2300.weekly_outside_hours_count}
+                <AnimatedNumber
+                  value={data.ley_2300.weekly_outside_hours_count}
+                  format={(n) => String(Math.round(n))}
+                />
               </span>
               {/*
                 Decía «4 / 0», que se lee como una fracción rota — «cuatro de
@@ -193,11 +206,13 @@ function ComplianceOverviewContent() {
                   : 'No open Habeas Data requests'}
               </p>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {data.habeas_data.open_requests.map((req) => (
-                  <HabeasDataSlaCard key={req.id} request={req} />
+                  <StaggerItem key={req.id}>
+                    <HabeasDataSlaCard request={req} />
+                  </StaggerItem>
                 ))}
-              </div>
+              </Stagger>
             )}
           </section>
 
@@ -238,9 +253,12 @@ function ComplianceOverviewContent() {
                   aria-valuemax={100}
                   aria-valuenow={data.retention.compliance_pct}
                 >
-                  <div
+                  {/* Crece desde la izquierda (sólo `scaleX`); el ancho es el
+                      dato y ya no se anima (era `transition-all`). */}
+                  <BarraQueCrece
+                    eje="x"
                     className={[
-                      'h-full transition-all',
+                      'h-full',
                       data.retention.compliance_pct >= data.retention.target
                         ? 'bg-success'
                         : 'bg-warning',
@@ -277,7 +295,7 @@ function ComplianceOverviewContent() {
               <Link
                 key={href}
                 href={href}
-                className="rounded-lg border border-border bg-card p-4 hover:border-primary hover:bg-accent/30 transition flex items-center gap-3"
+                className="rounded-lg border border-border bg-card p-4 hover:border-primary hover:bg-accent/30 transition-colors flex items-center gap-3"
               >
                 <Icon className="w-5 h-5 text-primary" aria-hidden="true" />
                 <span className="text-sm font-medium text-foreground">{title}</span>
@@ -287,6 +305,7 @@ function ComplianceOverviewContent() {
         </>
       )}
     </div>
+    </CrossFade>
   )
 }
 

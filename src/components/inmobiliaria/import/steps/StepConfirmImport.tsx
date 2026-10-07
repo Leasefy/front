@@ -5,11 +5,11 @@ import {
   useContext,
   useEffect,
   useCallback,
-  useMemo,
   useRef,
 } from "react";
 import { createPortal } from "react-dom";
 import { useRanuraViva } from "@/components/migracion/ranura-viva";
+import { useMigracion } from "@/components/migracion/migracion-context";
 import { BarraDeTrabajo } from "@/components/migracion/BarraDeTrabajo";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -26,21 +26,35 @@ import { Progress } from "@/components/ui/progress";
 import { TablePagination } from "@/components/ui/pagination";
 import { MonoLabel } from "@leasefy/cadence";
 import { toast } from "@/components/ui/toast";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, asegurarSesionVigente } from "@/lib/api/client";
+import { useAvisoAlSalir } from "@/lib/hooks/use-aviso-al-salir";
+import { ubicarDireccion, ESPERA_ENTRE_BUSQUEDAS_MS } from "@/lib/inmuebles/ubicar-direccion";
 import { faltantesParaElBack, tipoEfectivo } from "../lib/requisitosDelBack";
 import { toImportarInmuebleDto } from "../lib/toImportarInmuebleDto";
 import { resumenDeLecturaDeInmuebles } from "../lib/resumenDeLectura";
 import type { ImportProperty } from "../lib/importTypes";
+import { subirPorTandas, SubidaInterrumpida } from "../lib/subirPorTandas";
+import { ubicarPorTandas, UbicacionInterrumpida } from "../lib/ubicarPorTandas";
 import {
-  geocodeImportRow,
-  GEOCODE_ROW_DELAY_MS,
-} from "../lib/geocodeImportRow";
+  etapaDeLaCarga,
+  pasoVisibleDeLaCarga,
+  ubicacionCompleta,
+  type PasoVisible,
+} from "../lib/describirCargaAbierta";
+import {
+  guardarClaveDeCarga,
+  guardarClaveEnCurso,
+  guardarHuellaDeCarga,
+  leerClaveDeCarga,
+  leerClaveEnCurso,
+  leerHuellaDeCarga,
+  olvidarClaveDeCarga,
+  olvidarClaveEnCurso,
+} from "../lib/claveDeCarga";
+import { huellaDelArchivo } from "../lib/huellaDelArchivo";
+import { mensajeDeCarga, MENSAJE_SESION_TERMINADA, esSesionMuerta } from "../lib/mensajeDeCarga";
+import { traeErroresPorCampo } from "@/lib/errores/errores-en-el-formulario";
 import { generarIdempotencyKey } from "../lib/idempotencia";
-import {
-  activarLoteCompleto,
-  ActivacionInterrumpida,
-  type ProgresoDeActivacion,
-} from "../lib/activarLoteCompleto";
 import { revisarLoteCompleto, type ProgresoDeRevision } from "../lib/revisarLoteCompleto";
 import { emparejarFilasConFotos, subirFotosDelLote } from "../lib/subirFotosDelLote";
 import { traerFotoComoArchivo } from "@/lib/inmuebles/enlaces.service";
@@ -58,6 +72,7 @@ import type {
 } from "@/lib/types/inmobiliaria";
 import { RanuraDelPie, type ImportStepProps } from "../ImportWizard";
 import { FilaImportacionRow } from "../FilaImportacionRow";
+import { LoteInmueblesMasivo } from "../LoteInmueblesMasivo";
 import { ProgresoDeLoteInmuebles } from "../ProgresoDeLoteInmuebles";
 import { useEstadoDeLoteInmuebles } from "@/lib/hooks/use-estado-de-lote-inmuebles";
 import {
@@ -65,8 +80,6 @@ import {
   type FilaDeImportacion,
   type ResolverInmuebleDto,
   type ResumenLoteInmuebles,
-  type FilaOmitida,
-  type ImportarInmuebleDto,
   type EstadoDeLoteInmuebles,
 } from "@/lib/api/inmuebles-importacion.service";
 
@@ -94,6 +107,10 @@ import {
  */
 
 const POR_PAGINA = 25;
+const MENSAJE_CREANDO_NO_SE_EDITA =
+  "Se están creando las propiedades; espera a que termine para editar.";
+/** T-0131 — cada cuánto se pregunta cómo va la creación en el servidor. */
+const INTERVALO_DE_CREACION_MS = 4_000;
 
 /**
  * Lo que la pantalla de cierre puede afirmar de la comisión: sólo lo que el
@@ -117,9 +134,11 @@ export function fraseDeLaComision(
 export function StepConfirmImport({
   state,
   updateState,
+  origen = 'puesta-en-marcha',
   onSalir,
   onContinuar,
   onOcupado,
+  onPasoVisible,
 }: ImportStepProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -143,13 +162,6 @@ export function StepConfirmImport({
   const selectedProperties = properties.filter(
     (p) => p.hasErrors || p.selected,
   );
-  const excludedCount = properties.filter(
-    (p) => !p.selected && !p.hasErrors,
-  ).length;
-  const acceptedSuggestionsCount = properties.reduce(
-    (sum, p) => sum + p.suggestions.filter((s) => s.accepted === true).length,
-    0,
-  );
   // Las que entran PENDIENTES: van al back con lo que les falta a la vista.
   const remainingErrorsCount = properties.filter((p) => p.hasErrors).length;
 
@@ -165,7 +177,6 @@ export function StepConfirmImport({
       bloqueadas.flatMap((x) => x.faltan.map((f) => f.etiqueta.toLowerCase())),
     ),
   ];
-  const importCount = importables.length;
   /*
    * TODO lo seleccionado viaja al back, también lo que le falta algo. Antes
    * las «bloqueadas» se separaban acá y no se mandaban: 31 filas del archivo
@@ -182,32 +193,49 @@ export function StepConfirmImport({
    * `/inmuebles/importar`, donde no hay muro y nada se congela.
    */
   const ranuraViva = useRanuraViva();
+  // IN-18: el muro (si la carga corre dentro de él), para avisarle del final.
+  const migracion = useMigracion();
 
-  // ── Phase 1: geocode (client-side, unchanged from before) + preparar() ──
-  const [geocodificando, setGeocodificando] = useState(false);
   /*
-   * 🔴 PARAR LA BÚSQUEDA DE DIRECCIONES.
+   * ── Fase 1: subir el archivo por tandas, y ubicar las direcciones ─────────
    *
-   * Son 2.883 filas a 550 ms cada una: media hora larga con el pie del muro
-   * inerte (Nico, 2026-09-09: «le di cancelar o anterior y no deja»). Una
-   * espera así SIEMPRE tiene que poder abandonarse.
+   * T-0130. Antes todo esto era UN bucle del navegador —buscar cada dirección
+   * en el mapa (media hora para 2.864 filas) y recién después mandar el lote
+   * entero—, así que un corte a mitad tiraba todo. Ahora:
    *
-   * `useRef` y no `useState` a propósito: el bucle ya está corriendo y lee la
-   * bandera en cada vuelta. Un `state` le quedaría congelado en el valor que
-   * tenía cuando arrancó —el clásico stale closure— y el botón no haría nada,
-   * que es justo el síntoma que venimos a arreglar.
+   *  1. SUBIR: el archivo viaja en tandas de 500 con la misma clave; el servidor
+   *     guarda lo que llega y, si se corta, se sigue desde `siguienteDesde`.
+   *  2. UBICAR: el navegador busca las direcciones (mismo proveedor, misma
+   *     pausa que siempre), pero las que faltan salen del SERVIDOR de a 50 y
+   *     cada tanda se guarda apenas termina. Un corte pierde a lo sumo 50.
+   *
+   * Los dos pasos paran con «Detener» y se retoman solos, sin el archivo.
    */
-  const cancelarRef = useRef(false);
-  /* Cuándo arrancó la búsqueda: la estimación sale de lo que de verdad está
-   * tardando, no de multiplicar por la pausa entre filas —que ignora lo que
-   * demora cada consulta y da un número que no se cumple. */
-  const inicioGeoRef = useRef<number | null>(null);
-  const [cancelandoGeo, setCancelandoGeo] = useState(false);
-  const [geoCancelada, setGeoCancelada] = useState(false);
-  const [geoProgress, setGeoProgress] = useState(0);
-  const [geoCurrent, setGeoCurrent] = useState(0);
-  const [preparando, setPreparando] = useState(false);
+  const [subiendo, setSubiendo] = useState(false);
+  const [subida, setSubida] = useState<{ enviadas: number; total: number } | null>(null);
+  const [deteniendoSubida, setDeteniendoSubida] = useState(false);
+  /*
+   * `useRef` y no `useState` a propósito: los bucles ya están corriendo y leen
+   * la bandera en cada vuelta. Un `state` les quedaría congelado en el valor que
+   * tenía cuando arrancaron —el clásico stale closure— y el botón no haría nada.
+   */
+  const detenerSubidaRef = useRef(false);
+  const [ubicando, setUbicando] = useState(false);
+  const ubicandoRef = useRef(false);
+  const detenerUbicacionRef = useRef(false);
+  const [deteniendoUbicacion, setDeteniendoUbicacion] = useState(false);
+  const [progresoUbicacion, setProgresoUbicacion] = useState<{
+    ubicadas: number;
+    total: number;
+  } | null>(null);
+  /* La persona paró (o se cortó): no se reanuda sola hasta que lo pida. */
+  const [ubicacionEnPausa, setUbicacionEnPausa] = useState(false);
+  /* Reinicia el sondeo del lote al terminar de ubicar: el back encola la revisión. */
+  const [reinicioDelSondeo, setReinicioDelSondeo] = useState(0);
+  const [reintentando, setReintentando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /* El aviso nativo de cerrar la pestaña, SÓLO mientras algo vive en el navegador. */
+  const hayFotosPorEnlace = properties.some((p) => (p.imagenes?.length ?? 0) > 0);
   const [lote, setLote] = useState<string | null>(
     // El ?lote= (la notificación) gana; sin él, el lote que el wizard guardó
     // en su estado — sobrevive a «Anterior»/«Siguiente» y a la tarjeta de
@@ -223,7 +251,7 @@ export function StepConfirmImport({
    */
   const [idempotencyKey, setIdempotencyKey] = useState(() => generarIdempotencyKey());
 
-  const { estado: estadoSondeado, agotado } = useEstadoDeLoteInmuebles(lote);
+  const { estado: estadoSondeado, agotado } = useEstadoDeLoteInmuebles(lote, reinicioDelSondeo);
 
   /*
    * La re-consulta manual de cuando el sondeo se agotó (10 min). El sondeo
@@ -238,6 +266,10 @@ export function StepConfirmImport({
   useEffect(() => {
     setEstadoManual(null);
   }, [lote]);
+  /* Lo que el sondeo trae es más nuevo que una consulta puntual anterior. */
+  useEffect(() => {
+    if (estadoSondeado) setEstadoManual(null);
+  }, [estadoSondeado]);
   const estadoLote = estadoManual ?? estadoSondeado;
 
   const handleConsultarDeNuevo = async () => {
@@ -253,7 +285,7 @@ export function StepConfirmImport({
       }
     } catch (e) {
       toast.error(
-        e instanceof Error ? e.message : "No pudimos consultar el estado del lote.",
+        mensajeDeCarga(e, "No pudimos consultar el estado del lote.", "consultar el estado de la carga"),
       );
     } finally {
       setConsultando(false);
@@ -264,6 +296,8 @@ export function StepConfirmImport({
   const [resumenLote, setResumenLote] = useState<ResumenLoteInmuebles | null>(
     null,
   );
+  /* T-0129 — cuántas de las listas se crean con el canon por confirmar. */
+  const [sinCanon, setSinCanon] = useState(0);
   const [pendientes, setPendientes] = useState<FilaDeImportacion[]>([]);
   const [totalPendientes, setTotalPendientes] = useState(0);
   const [pagina, setPagina] = useState(1);
@@ -286,8 +320,12 @@ export function StepConfirmImport({
    */
   const [otrasCargas, setOtrasCargas] = useState<EstadoDeLoteInmuebles[] | null>(null);
 
-  // ── Phase 3: activation ──────────────────────────────────────────────
-  const [activando, setActivando] = useState(false);
+  // ── Phase 3: «Crear todas» (T-0131) ─────────────────────────────────
+  const [iniciandoCreacion, setIniciandoCreacion] = useState(false);
+  /* El paso 4 antes de tocar «Crear todas»: se llega con «Continuar» desde la revisión. */
+  const [irACrear, setIrACrear] = useState(false);
+  /* Con una carga TERMINADA que aún tiene filas por revisar: volver a la lista. */
+  const [verRevisionDeNuevo, setVerRevisionDeNuevo] = useState(false);
   const [revisando, setRevisando] = useState(false);
   /* Lo que va mirando «Volver a revisar»: con 1.654 pendientes son varios
      minutos, y un botón que sólo gira no dice si avanza. */
@@ -296,40 +334,12 @@ export function StepConfirmImport({
      llamadas, y en estado sólo para que el botón diga «Deteniendo…». */
   const detenerRevisionRef = useRef(false);
   const [deteniendoRevision, setDeteniendoRevision] = useState(false);
-  const [resultadoActivacion, setResultadoActivacion] = useState<{
-    activados: number;
-    /* Los que ya existían por «Código» y se re-apuntaron. La pantalla final
-       los cuenta: ver el mensaje de «Importación completada». */
-    reusados: number;
-    /* Mandatos que quedaron con varios dueños y su reparto (Nico, 2026-09-13). */
-    mandatosConVariosDuenos?: number;
-    omitidas: FilaOmitida[];
-  } | null>(null);
-  const [isComplete, setIsComplete] = useState(false);
-  /*
-   * 🔴 Lo que va pasando mientras se activa. El 2026-09-11 Nico miró
-   * «Activando…» girando cinco minutos y preguntó si se había dañado: iban
-   * 1.809 de 2.824 a 40 por minuto, y un lote de inmuebles nuevos tarda
-   * ~1,5 s por fila contra la base remota. Sin un número, 40 minutos de
-   * espera son idénticos a un cuelgue. Con el número, la persona sabe que
-   * avanza, cuánto falta, y que puede parar.
-   */
-  const [progresoDeActivacion, setProgresoDeActivacion] =
-    useState<ProgresoDeActivacion | null>(null);
-  /* Cuántas filas LISTO había al tocar «Activar»: el «de N» de la barra. */
-  /* La salida. En un ref porque el bucle la lee entre llamadas; en estado
-     sólo para que el botón diga «Deteniendo…». */
-  const detenerActivacionRef = useRef(false);
-  const [deteniendoActivacion, setDeteniendoActivacion] = useState(false);
 
   /**
    * Las fotos de los inmuebles traídos por ENLACE se suben después de que el
    * lote los creó (ver `subirFotosDelLote`). `fotosSubidas` guarda a qué
    * inmuebles ya se les subió, para no repetir en una segunda tanda.
    */
-  /* Cuántas filas LISTO había al tocar «Activar»: el «de N» de la barra
-     mientras la primera llamada todavía no volvió. */
-  const totalAActivarRef = useRef(0);
   const [fotosProgreso, setFotosProgreso] = useState<{ hechos: number; total: number } | null>(null);
   const [fotosSubidas] = useState(() => new Set<string>());
   const subirFotosDeLosActivados = useCallback(
@@ -338,10 +348,20 @@ export function StepConfirmImport({
       // dónde sacar las URLs de las fotos: se salta sin ruido.
       if (importables.length === 0) return;
       const filas: FilaDeImportacion[] = [];
-      for (let pagina = 1; pagina <= 25; pagina++) {
-        const p = await inmueblesImportacionApi.filas(elLote, { pagina, porPagina: 200, estado: 'ACTIVADO' });
-        filas.push(...p.filas);
-        if (p.filas.length < 200) break;
+      try {
+        for (let pagina = 1; pagina <= 25; pagina++) {
+          const p = await inmueblesImportacionApi.filas(elLote, { pagina, porPagina: 200, estado: 'ACTIVADO' });
+          filas.push(...p.filas);
+          if (p.filas.length < 200) break;
+        }
+      } catch (e) {
+        // Antes esto quedaba como un rechazo sin atrapar (`void` en el efecto) y
+        // las fotos no se subían sin que nadie lo supiera. Los inmuebles ya están
+        // creados: se avisa y se dice dónde subirlas.
+        toast.warning("Las fotos no se subieron", {
+          description: `${mensajeDeCarga(e, "No pudimos leer los inmuebles creados.", "preparar las fotos")} Puedes subirlas desde cada inmueble.`,
+        });
+        return;
       }
       const pares = emparejarFilasConFotos(filas, importables).filter((x) => !fotosSubidas.has(x.propertyId));
       if (pares.length === 0) return;
@@ -436,80 +456,33 @@ export function StepConfirmImport({
    * «ocupado» para siempre.
    */
   /**
-   * Cuántos minutos faltan, medidos.
-   *
-   * Sale del ritmo REAL de esta corrida (tiempo transcurrido ÷ filas hechas),
-   * no de la pausa entre filas: la pausa ignora lo que demora cada consulta y
-   * daría un número que no se cumple. Se calla hasta la quinta fila —con dos
-   * o tres el promedio es ruido— y se calla también si da cero.
-   *
-   * Media hora de espera sin decir cuánto falta es la mitad de la razón por la
-   * que alguien busca el botón de cancelar.
+   * Pide parar la subida. No corta a mitad de una tanda: la que está en vuelo
+   * llega y el bucle sale en la siguiente vuelta. Lo que llegó queda guardado y
+   * «Continuar subiendo» sigue donde quedó.
    */
-  const minutosQueFaltan = useMemo(() => {
-    if (!geocodificando || inicioGeoRef.current == null || geoCurrent < 5) {
-      return null;
-    }
-    const porFila = (Date.now() - inicioGeoRef.current) / geoCurrent;
-    const minutos = Math.ceil(
-      (Math.max(0, totalAEnviar - geoCurrent) * porFila) / 60_000,
-    );
-    return minutos > 0 ? minutos : null;
-  }, [geocodificando, geoCurrent, totalAEnviar]);
+  const detenerSubida = useCallback(() => {
+    detenerSubidaRef.current = true;
+    setDeteniendoSubida(true);
+  }, []);
+
+  /**
+   * Pide parar la búsqueda de direcciones. Deja terminar la fila en vuelo,
+   * GUARDA lo que ya se buscó de la tanda y sale: no se pierde nada.
+   */
+  const detenerUbicacion = useCallback(() => {
+    detenerUbicacionRef.current = true;
+    setDeteniendoUbicacion(true);
+  }, []);
 
   /*
-   * ── Cuánto va y cuánto falta de la activación ──────────────────────────
-   *
-   * Mismo criterio que la geocodificación: el ritmo REAL de esta corrida, no
-   * una constante. Y acá importa más, porque el ritmo cambia solo: las filas
-   * cuyo inmueble YA existe se re-apuntan a ~170/min, y las que crean uno
-   * nuevo van a ~40/min (13 idas y vueltas a la base por fila). Una
-   * estimación hecha con los primeros segundos prometería diez minutos para
-   * una espera de cuarenta.
+   * T-0130 — el job del servidor (la revisión) ya NO cuenta como «ocupado»: no
+   * hay nada del navegador que proteger ni que parar, y congelar el paso entero
+   * mientras corre le quitaba a la persona «Anterior», «Cancelar» y la tarjeta
+   * de cargas — justo cuando puede irse tranquila. Sólo congela lo que vive acá.
    */
-  const hechasEnActivacion = progresoDeActivacion
-    ? progresoDeActivacion.activados +
-      progresoDeActivacion.reusados +
-      progresoDeActivacion.omitidas
-    : 0;
-  /* El total es lo que HAY que hacer: lo hecho más lo que el back dice que
-     queda. Sale del propio servidor en cada vuelta, así que una fila que
-     aparece o se va no desincroniza la barra. El `listos` del arranque es el
-     respaldo para la primera llamada, cuando todavía no hay respuesta. */
-  const totalDeActivacion = progresoDeActivacion
-    ? hechasEnActivacion + progresoDeActivacion.restantes
-    : totalAActivarRef.current;
-
-  /**
-   * Pide parar la activación. No corta a mitad de una tanda: la que está en
-   * vuelo termina y el bucle sale en la siguiente vuelta. Lo que esa tanda
-   * activó queda activado — el back no deshace filas— y volver a tocar
-   * «Activar» sigue exactamente donde quedó.
-   */
-  const detenerActivacion = useCallback(() => {
-    detenerActivacionRef.current = true;
-    setDeteniendoActivacion(true);
-  }, []);
-
-  /**
-   * Pide parar. No corta a mitad de una fila: deja terminar la que está en
-   * vuelo y sale en la siguiente vuelta, así no queda una dirección a medias.
-   */
-  const cancelarGeocodificacion = useCallback(() => {
-    cancelarRef.current = true;
-    setCancelandoGeo(true);
-  }, []);
-
-  const jobCorriendo =
-    !agotado &&
-    (estadoLote?.estado === 'ENCOLADO' || estadoLote?.estado === 'PROCESANDO');
   const hayOperacionEnVuelo =
-    geocodificando ||
-    preparando ||
-    activando ||
-    revisando ||
-    descartandoLote ||
-    jobCorriendo;
+    subiendo || ubicando || iniciandoCreacion || revisando || descartandoLote || reintentando;
+  const detenerLoQueCorre = ubicando ? detenerUbicacion : detenerSubida;
   useEffect(() => {
     /*
      * Se manda también CÓMO parar — pero SÓLO como respaldo.
@@ -518,57 +491,81 @@ export function StepConfirmImport({
      * botón al lado y fuera del `inert`, así que el del pie sobra y tener dos
      * botones para lo mismo a dos secciones de distancia es peor que tener
      * uno. El respaldo cubre el primer render —cuando la ranura todavía no
-     * existe— y cualquier caso en que el muro no la ofrezca: una espera de
-     * 53 minutos no se puede quedar sin salida por un detalle de montaje.
+     * existe— y cualquier caso en que el muro no la ofrezca.
      */
     onOcupado?.(
       hayOperacionEnVuelo,
-      geocodificando && !ranuraViva ? cancelarGeocodificacion : undefined,
+      (subiendo || ubicando) && !ranuraViva ? detenerLoQueCorre : undefined,
     );
-  }, [
-    hayOperacionEnVuelo,
-    geocodificando,
-    ranuraViva,
-    cancelarGeocodificacion,
-    onOcupado,
-  ]);
+  }, [hayOperacionEnVuelo, subiendo, ubicando, ranuraViva, detenerLoQueCorre, onOcupado]);
   // Al desmontar (cambio de paso, «cancelar») el muro recupera sus botones.
   useEffect(() => () => onOcupado?.(false), [onOcupado]);
   /*
    * 🔴 Irse del paso PARA los bucles.
    *
-   * El 2026-09-11 quedó un lote fantasma de 2.864 filas sin título: la
-   * persona tocó «Preparar», se fue del paso («Anterior», puso los títulos,
-   * volvió) y tocó «Preparar» otra vez. El primer bucle de geocodificación
-   * siguió corriendo detrás, en un componente que ya no existía, y 26
-   * minutos después llamó a `preparar()` con los datos viejos: dos lotes con
-   * 0,2 s de diferencia, uno de ellos entero por corregir. Un bucle que
-   * nadie ve no puede seguir mandando cosas al servidor. Lo mismo para
-   * activar y revisar: se cortan en la siguiente vuelta, sin deshacer nada.
+   * El 2026-09-11 quedó un lote fantasma de 2.864 filas sin título: el primer
+   * bucle siguió corriendo detrás, en un componente que ya no existía, y 26
+   * minutos después mandó datos viejos. Un bucle que nadie ve no puede seguir
+   * mandando cosas al servidor. Subir y ubicar se cortan en la siguiente vuelta
+   * (guardando lo hecho: es reanudable); la revisión también.
    */
   useEffect(
     () => () => {
-      cancelarRef.current = true;
+      detenerSubidaRef.current = true;
+      detenerUbicacionRef.current = true;
       detenerRevisionRef.current = true;
-      detenerActivacionRef.current = true;
     },
     [],
   );
 
+  /*
+   * T-0130 — las filas que no se pudieron CREAR al activar, con su motivo. Salen
+   * de `GET filas` (cada una trae `errorDeActivacion`); una fila fallida sigue
+   * LISTO pero el back la aparta del conteo de «por crear», así que se buscan
+   * entre las LISTO. Sólo se piden cuando el lote dice que hay.
+   */
+  const [filasFallidas, setFilasFallidas] = useState<FilaDeImportacion[]>([]);
+  const cargarFallidas = useCallback(async (elLote: string) => {
+    try {
+      const encontradas: FilaDeImportacion[] = [];
+      for (let pag = 1; pag <= 25; pag += 1) {
+        const p = await inmueblesImportacionApi.filas(elLote, {
+          pagina: pag,
+          porPagina: 200,
+          estado: "LISTO",
+        });
+        encontradas.push(...p.filas.filter((f) => f.errorDeActivacion));
+        if (p.filas.length < 200) break;
+      }
+      setFilasFallidas(encontradas);
+    } catch {
+      // La lista es un detalle: el conteo y «Reintentar» siguen ahí.
+    }
+  }, []);
+
   const refrescarRevision = useCallback(async (elLote: string, pag = 1) => {
     try {
-      const [r, p] = await Promise.all([
+      const [r, p, e, m] = await Promise.all([
         inmueblesImportacionApi.resumen(elLote),
         inmueblesImportacionApi.filas(elLote, {
           pagina: pag,
           porPagina: POR_PAGINA,
           estado: "PENDIENTE",
         }),
+        // T-0130: «X de Y creadas» y las fallidas salen del lote, no de las filas.
+        // Si esta lectura falla no tumba la revisión.
+        inmueblesImportacionApi.estadoDeLote(elLote).catch(() => null),
+        // El aviso del canon por confirmar es informativo: si no llega, no se afirma nada.
+        inmueblesImportacionApi.motivos(elLote).catch(() => null),
       ]);
+      if (e) setEstadoManual(e);
+      setSinCanon(m?.sinCanon ?? 0);
       setResumenLote(r);
       setPendientes(p.filas);
       setTotalPendientes(p.total);
       setPagina(p.pagina);
+      if ((e?.fallidas ?? 0) > 0) void cargarFallidas(elLote);
+      else setFilasFallidas([]);
       /*
        * 🔴 Borrar el aviso viejo. Nico, 2026-09-11: «le doy ahí a actualizar
        * lista y no funciona». Sí funcionaba —la consulta salía y volvía— pero
@@ -581,9 +578,9 @@ export function StepConfirmImport({
        */
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No pudimos abrir ese lote.");
+      setError(mensajeDeCarga(e, "No pudimos abrir ese lote.", "abrir esta carga"));
     }
-  }, []);
+  }, [cargarFallidas]);
 
   /*
    * Las otras cargas: se preguntan cuando ESTE lote ya no tiene nada que
@@ -621,144 +618,402 @@ export function StepConfirmImport({
   /** Filas LISTO que viven en OTRO lote: son las que frenan el paso del muro. */
   const listosEnOtrasCargas = (otrasCargas ?? [])
     .filter((l) => l.lote !== lote)
-    .reduce((suma, l) => suma + l.listos, 0);
+    .reduce((suma, l) => suma + (l.listas ?? l.listos), 0);
   const cuantasOtrasCargas = (otrasCargas ?? []).filter(
-    (l) => l.lote !== lote && l.listos > 0,
+    (l) => l.lote !== lote && (l.listas ?? l.listos) > 0,
   ).length;
 
   // El lote pasó a LISTO (por el sondeo, o porque llegamos por el ?lote= de
   // la notificación con el batch ya terminado): recién ahí tiene sentido
-  // cargar la lista de trabajo real.
+  // cargar la lista de trabajo real. T-0131: también al llegar a un lote
+  // TERMINADA, y al terminar de crear (para contar lo que quedó por revisar).
+  const faseDelLote = estadoLote?.fase;
   useEffect(() => {
     if (!lote) return;
-    if (estadoLote?.estado === "LISTO") {
+    if (faseDelLote === "CREANDO") return;
+    if (
+      estadoLote?.estado === "LISTO" ||
+      faseDelLote === "LISTA" ||
+      faseDelLote === "TERMINADA"
+    ) {
       refrescarRevision(lote);
     }
-  }, [lote, estadoLote?.estado, refrescarRevision]);
+  }, [lote, estadoLote?.estado, faseDelLote, refrescarRevision]);
+
+  /*
+   * ── T-0131 · mientras el servidor CREA ───────────────────────────────────
+   *
+   * La creación es UN proceso del servidor: la página no hace nada salvo mirar
+   * cómo va. El sondeo del lote (`useEstadoDeLoteInmuebles`) se detiene en
+   * LISTO, que puede ser el estado de este job, así que acá hay uno propio que
+   * corre sólo mientras `fase === CREANDO` y entrega el estado completo.
+   */
+  const creandoEnElServidor = faseDelLote === "CREANDO";
+  /* El proceso se rindió tras sus reintentos (`FALLIDO` + `error`): nadie lo está creando. */
+  const creacionFallida = creandoEnElServidor && estadoLote?.estado === "FALLIDO";
+  const creandoActivo = creandoEnElServidor && !creacionFallida;
+  /*
+   * Las fotos por ENLACE se suben desde ESTA pestaña cuando termina la creación
+   * (el back no ve archivos): con ellas pendientes —esperando o subiendo—,
+   * cerrar la pestaña las pierde. El aviso nativo sigue activo hasta que acaban.
+   */
+  useAvisoAlSalir(
+    subiendo ||
+      ubicando ||
+      fotosProgreso !== null ||
+      (hayFotosPorEnlace && (iniciandoCreacion || creandoActivo)),
+  );
+  useEffect(() => {
+    if (!lote || !creandoActivo) return;
+    let vigente = true;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const vuelta = async () => {
+      try {
+        await asegurarSesionVigente();
+        const e = await inmueblesImportacionApi.estadoDeLote(lote);
+        if (!vigente) return;
+        setEstadoManual(e);
+        if (e.fase !== "CREANDO" || e.estado === "FALLIDO") {
+          /*
+           * IN-18 (QA-MIGRACION-95, 06-10): crear corre en el SERVIDOR y no
+           * cuenta como «ocupado», así que el muro no se enteraba del final:
+           * tras «¡Importación completada!» seguía con el paso sin marcar
+           * («2 de 6 listos», «Cuando termines este paso vas a poder seguir»)
+           * hasta su refresco de 60 s. Se le pide que vuelva a preguntar.
+           */
+          void migracion?.recargar();
+          return;
+        }
+      } catch (err) {
+        // Sin sesión no hay a quién preguntarle; el resto es un corte pasajero.
+        if (esSesionMuerta(err)) return;
+        // El lote ya no existe (se descartó en otra pestaña): se vuelve al inicio.
+        if (err instanceof ApiError && err.status === 404) {
+          toast.error("Esta carga ya no existe", {
+            description: "Se descartó o se cerró. Empieza de nuevo cuando quieras.",
+          });
+          updateState({ loteRetomado: null, subidaRetomada: null });
+          if (onSalir) onSalir();
+          else router.push("/panel/inmobiliaria/inmuebles/importar");
+          return;
+        }
+      }
+      if (vigente) timeoutId = setTimeout(() => void vuelta(), INTERVALO_DE_CREACION_MS);
+    };
+    timeoutId = setTimeout(() => void vuelta(), INTERVALO_DE_CREACION_MS);
+    return () => {
+      vigente = false;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [lote, creandoActivo, updateState, onSalir, router, migracion]);
+
+  /* Lo que ya se creó o falló, según el lote (nunca según lo que hay en pantalla). */
+  const creacion = estadoLote?.creacion ?? null;
+  const nFallidas = creacion?.fallidas ?? estadoLote?.fallidas ?? 0;
+  const nCreadas = creacion?.creadas ?? estadoLote?.activadas ?? 0;
+  const terminadaSinFallas =
+    faseDelLote === "TERMINADA" && nFallidas === 0 && !verRevisionDeNuevo;
+  const terminadaConFallas =
+    faseDelLote === "TERMINADA" && nFallidas > 0 && !verRevisionDeNuevo;
+  /*
+   * Las que de verdad se pueden crear: `listas` ya descuenta las fallidas (que
+   * siguen LISTO pero sólo se retoman con «Reintentar», nunca con `crear`).
+   */
+  const listasParaCrear = estadoLote?.listas ?? resumenLote?.listos ?? 0;
+  /* Ya se crearon algunas (el lote volvió a LISTA porque se corrigió una fila). */
+  const yaSeCrearonAlgunas = (creacion?.creadas ?? 0) > 0;
+
+  /*
+   * Volver a una carga que ya creó algunas y tiene más listas (una fila corregida
+   * después de TERMINADA): se cae directo en el paso 4 con «Crear las N que
+   * faltan». Sólo la PRIMERA vez que se lee el lote: quien está corrigiendo no
+   * puede ser arrastrado fuera de la lista a mitad.
+   */
+  const entradaResuelta = useRef(false);
+  useEffect(() => {
+    if (entradaResuelta.current || !estadoLote) return;
+    entradaResuelta.current = true;
+    if (
+      estadoLote.fase === "LISTA" &&
+      (estadoLote.creacion?.creadas ?? 0) > 0 &&
+      (estadoLote.listas ?? 0) > 0
+    ) {
+      setIrACrear(true);
+    }
+  }, [estadoLote]);
+  const cierreAplicado = useRef<string | null>(null);
+
+  /* En cuál de los 4 pasos visibles va la carga: el asistente lo dibuja en su indicador. */
+  const pasoVisible: PasoVisible = subiendo
+    ? 1
+    : ubicando
+      ? 2
+      : irACrear
+        ? 4
+        : verRevisionDeNuevo
+          ? 3
+          : pasoVisibleDeLaCarga(lote ? estadoLote : null);
+  useEffect(() => {
+    onPasoVisible?.(pasoVisible);
+  }, [pasoVisible, onPasoVisible]);
+
+  /*
+   * ── Subir el archivo ─────────────────────────────────────────────────────
+   *
+   * El lote que se está subiendo, si ya existe: o uno que se retomó desde la
+   * tarjeta de cargas, o uno que quedó a medias en esta misma pantalla. En los
+   * dos casos se sigue con SU clave (guardada al llegar la primera tanda) y
+   * desde `siguienteDesde`; nunca se abre otro lote con el mismo archivo.
+   */
+  const loteEnSubida =
+    state.subidaRetomada?.lote ??
+    (lote && estadoLote?.fase === "RECIBIENDO" ? lote : null);
 
   const handlePreparar = async () => {
-    if (totalAEnviar === 0) return;
+    if (totalAEnviar === 0 || subiendo) return;
     setError(null);
-    setGeocodificando(true);
-    setGeoProgress(0);
-    setGeoCurrent(0);
-    // Cada intento arranca limpio: una cancelación vieja no puede matar la
-    // siguiente antes de la primera fila.
-    cancelarRef.current = false;
-    inicioGeoRef.current = Date.now();
-    setCancelandoGeo(false);
-    setGeoCancelada(false);
-
-    // Geocodificación secuencial — respeta el límite de LocationIQ. Va antes
-    // de `preparar()` porque el back de importación (WU-4) no geocodifica;
-    // sin esto, todo inmueble importado caería al centro de la ciudad.
-    //
-    // `geocodeImportRow` ya degrada sola (centro de la ciudad) cuando la
-    // dirección no aparece o LocationIQ falla; acá sólo se CUENTA cuántas
-    // cayeron ahí para decirlo — sin el aviso, un LocationIQ caído dejaba
-    // todo el lote apilado en el centro del mapa y nadie se enteraba. El
-    // try/finally de afuera es la red de seguridad: un throw inesperado en
-    // esta fase dejaba «Preparando…» girando para siempre, sin error y sin
-    // botón.
-    const dtos: ImportarInmuebleDto[] = [];
-    // Las tres suertes de una dirección, contadas por separado porque no son
-    // lo mismo y antes se decían iguales: «quedan en el centro de su ciudad»
-    // era falso para las que no quedaban en ningún lado.
-    let enElMunicipio = 0;
-    let sinUbicar = 0;
-    let cancelada = false;
+    setSubiendo(true);
+    setSubida({ enviadas: 0, total: totalAEnviar });
+    setDeteniendoSubida(false);
+    detenerSubidaRef.current = false;
+    let loteConocido: string | null = loteEnSubida;
     try {
-      for (let i = 0; i < aEnviar.length; i++) {
-        // La salida. Se mira ANTES de pedir la fila siguiente: lo que ya se
-        // buscó se descarta entero, así que no queda medio lote geocodificado
-        // esperando a que alguien adivine qué pasó con él.
-        if (cancelarRef.current) {
-          cancelada = true;
-          break;
-        }
-        const p = aEnviar[i];
-        setGeoCurrent(i + 1);
-        const coords = await geocodeImportRow(p);
-        if (coords.source === "city") enElMunicipio += 1;
-        else if (coords.source === "none") sinUbicar += 1;
-        dtos.push({
-          ...toImportarInmuebleDto(p),
-          ...(coords.lat != null && coords.lng != null
-            ? { latitude: coords.lat, longitude: coords.lng }
-            : {}),
-        });
-        setGeoProgress(Math.round(((i + 1) / aEnviar.length) * 100));
-        if (i < aEnviar.length - 1) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, GEOCODE_ROW_DELAY_MS),
+      const dtos = aEnviar.map((p) => toImportarInmuebleDto(p));
+      const huella = await huellaDelArchivo(dtos);
+      let clave = idempotencyKey;
+      let desdeInicial = 0;
+
+      if (loteEnSubida) {
+        const guardada = leerClaveDeCarga(loteEnSubida);
+        if (!guardada) {
+          setError(
+            "No podemos seguir subiendo esta carga desde este navegador. Descártala y sube el archivo otra vez.",
           );
+          return;
+        }
+        // Mismo conteo de filas NO basta: otro archivo se mezclaría con el
+        // primero. Si se guardó la huella de la carga, tiene que coincidir.
+        const huellaGuardada = leerHuellaDeCarga(loteEnSubida);
+        if (huella && huellaGuardada && huella !== huellaGuardada) {
+          setError(mensajeDeCarga(new ApiError(409, "", "ARCHIVO_DISTINTO"), ""));
+          return;
+        }
+        clave = guardada;
+        const e = await inmueblesImportacionApi.estadoDeLote(loteEnSubida);
+        if (e.total !== dtos.length) {
+          setError(
+            `El archivo tiene ${dtos.length.toLocaleString("es-CO")} filas y la carga que dejaste a medias tenía ${e.total.toLocaleString("es-CO")}. Sube el mismo archivo para continuar.`,
+          );
+          return;
+        }
+        setEstadoManual(e);
+        if (e.fase !== "RECIBIENDO" || e.siguienteDesde === null) {
+          // Ya llegó todo mientras tanto: no hay nada que subir.
+          updateState({ subidaRetomada: null });
+          olvidarClaveDeCarga(loteEnSubida);
+          return;
+        }
+        desdeInicial = e.siguienteDesde ?? 0;
+      } else {
+        // Un intento cortado antes de la primera respuesta pudo crear el lote:
+        // con el MISMO archivo se reusa su clave y el back devuelve ese lote.
+        clave = leerClaveEnCurso(huella) ?? idempotencyKey;
+      }
+      // Antes de la primera petición: si la respuesta no llega, la clave sigue.
+      if (!loteEnSubida) guardarClaveEnCurso(clave, huella);
+
+      const r = await subirPorTandas({
+        filas: dtos,
+        claveDeIdempotencia: clave,
+        desdeInicial,
+        huella,
+        enviar: (tanda, k, opciones) =>
+          inmueblesImportacionApi.preparar(tanda, k, opciones, origen),
+        antesDeCada: asegurarSesionVigente,
+        debeParar: () => detenerSubidaRef.current,
+        alAvanzar: (p) => {
+          setSubida({ enviadas: p.enviadas, total: p.total });
+          setEstadoManual(p.estado);
+          // El lote es SIEMPRE del servidor — nunca uno generado acá. Se guarda
+          // desde la primera respuesta: en el estado del asistente (sobrevive a
+          // «Anterior» y a un remount) y, con su clave, en el navegador (sobrevive
+          // a una recarga: sin la clave no se puede seguir subiendo).
+          if (loteConocido !== p.lote) {
+            loteConocido = p.lote;
+            setLote(p.lote);
+            updateState({ loteRetomado: p.lote });
+            guardarClaveDeCarga(p.lote, clave);
+            if (huella) guardarHuellaDeCarga(p.lote, huella);
+            olvidarClaveEnCurso();
+          }
+        },
+      });
+
+      if (r.detenidaPorPersona) {
+        toast.info("Subida detenida", {
+          description: `Llegaron ${(r.estado?.recibidas ?? 0).toLocaleString("es-CO")} de ${totalAEnviar.toLocaleString("es-CO")} filas. Nada se pierde: toca «Continuar subiendo» cuando quieras.`,
+        });
+        return;
+      }
+      if (r.estado) {
+        // Todo llegó: la clave ya no hace falta y lo que sigue es ubicar.
+        olvidarClaveDeCarga(r.estado.lote);
+        updateState({ subidaRetomada: null, loteRetomado: r.estado.lote });
+        setUbicacionEnPausa(false);
+        setEstadoManual(r.estado);
+      }
+    } catch (e) {
+      const causa = e instanceof SubidaInterrumpida ? (e.causa ?? e) : e;
+      const cortada = e instanceof SubidaInterrumpida;
+      if (cortada && e.lote) {
+        // Llegó parte: el lote existe y se retoma. Se refresca para decir cuánto.
+        try {
+          setEstadoManual(await inmueblesImportacionApi.estadoDeLote(e.lote));
+        } catch {
+          // Sin el estado la pantalla igual ofrece seguir.
         }
       }
-    } catch (e) {
       setError(
-        e instanceof Error && e.message
-          ? e.message
-          : "No pudimos preparar los datos del archivo. Intenta de nuevo.",
+        esSesionMuerta(causa)
+          ? MENSAJE_SESION_TERMINADA
+          : `${mensajeDeCarga(causa, "No pudimos subir el archivo.", "subir el archivo")}${cortada && e.lote ? " Lo que ya llegó está guardado: toca «Continuar subiendo» para seguir donde quedó." : ""}`,
       );
-      return;
     } finally {
-      setGeocodificando(false);
-      setCancelandoGeo(false);
+      setSubiendo(false);
+      setDeteniendoSubida(false);
     }
+  };
 
-    if (cancelada) {
-      /*
-       * Cortar acá, antes de `preparar()`: nada viajó al servidor todavía, así
-       * que no hay lote a medias ni fila que limpiar. La persona vuelve a
-       * tener sus botones y el paso queda exactamente como estaba.
-       */
-      setGeoProgress(0);
-      setGeoCurrent(0);
-      setGeoCancelada(true);
-      return;
-    }
-
-    setPreparando(true);
+  /*
+   * ── Ubicar las direcciones ────────────────────────────────────────────────
+   *
+   * Corre en el navegador pero sale del servidor y se guarda en el servidor, de
+   * a 50. Arranca sola cuando el lote está en esa etapa (recién subido, o
+   * retomado desde la tarjeta) salvo que la persona la haya parado.
+   */
+  const handleUbicar = useCallback(async () => {
+    if (!lote || ubicandoRef.current) return;
+    ubicandoRef.current = true;
+    setUbicando(true);
+    setUbicacionEnPausa(false);
+    setDeteniendoUbicacion(false);
+    detenerUbicacionRef.current = false;
+    setError(null);
+    const e0 = estadoLote;
     try {
-      const r = await inmueblesImportacionApi.preparar(dtos, idempotencyKey);
-      // El lote es SIEMPRE del servidor — nunca uno generado acá.
-      setLote(r.lote);
-      // Persistido en el estado del wizard: sobrevive a «Anterior» y a un
-      // remount del paso. Sin esto, volver un paso perdía el lote.
-      updateState({ loteRetomado: r.lote });
-      /*
-       * 🔴 Lo que NO se encontró se dice, y se dice distinto según en qué
-       * quedó. Antes esto decía «quedan en el centro de su ciudad» para
-       * todas, y era falso: las de municipios que no estaban en la tabla de
-       * 32 ciudades —1.442 en el portafolio de Nico— quedaban sin punto
-       * ninguno, y nadie se enteraba hasta abrir la ficha.
-       */
-      const notas = [
-        enElMunicipio > 0
-          ? `${enElMunicipio} quedan en el centro de su municipio, porque la dirección es una referencia («detrás de la escuela») o no apareció`
-          : null,
-        sinUbicar > 0
-          ? `${sinUbicar} quedan sin punto en el mapa: no pudimos ubicar ni su municipio`
-          : null,
-      ].filter(Boolean);
-      if (notas.length > 0) {
-        toast.info(
-          `${enElMunicipio + sinUbicar} de ${dtos.length} sin dirección exacta`,
-          {
+      const r = await ubicarPorTandas({
+        lote,
+        desdeInicial: e0?.ubicacion?.siguienteDesde ?? 0,
+        ubicadasAlEmpezar: e0?.ubicacion?.ubicadas ?? 0,
+        totalAlEmpezar: e0?.ubicacion?.total ?? e0?.total ?? 0,
+        traer: (l, d) => inmueblesImportacionApi.porUbicar(l, d),
+        // La MISMA búsqueda de siempre: proveedor, regla y pausa no cambian.
+        ubicar: (f) =>
+          ubicarDireccion({
+            direccion: f.direccion,
+            ciudad: f.ciudad,
+            departamento: f.departamento,
+          }),
+        guardar: (l, filas) => inmueblesImportacionApi.guardarUbicaciones(l, filas),
+        alAvanzar: setProgresoUbicacion,
+        debeParar: () => detenerUbicacionRef.current,
+        antesDeCada: asegurarSesionVigente,
+        pausaMs: ESPERA_ENTRE_BUSQUEDAS_MS,
+      });
+      if (r.detenidaPorPersona) {
+        setUbicacionEnPausa(true);
+        toast.info("Búsqueda detenida", {
+          description: `Van ${r.ubicadas.toLocaleString("es-CO")} de ${r.total.toLocaleString("es-CO")} direcciones, ya guardadas. Toca «Continuar ubicando» cuando quieras.`,
+        });
+      } else if (r.terminada) {
+        /*
+         * 🔴 Lo que NO se encontró se dice, y se dice distinto según en qué
+         * quedó: «en el centro de su ciudad» era falso para las que no
+         * quedaban en ningún lado (1.442 en el portafolio de Nico).
+         */
+        const notas = [
+          r.enElMunicipio > 0
+            ? `${r.enElMunicipio} ${r.enElMunicipio === 1 ? "queda" : "quedan"} en el centro de su municipio, porque la dirección es una referencia («detrás de la escuela») o no apareció`
+            : null,
+          r.sinUbicar > 0
+            ? `${r.sinUbicar} ${r.sinUbicar === 1 ? "queda" : "quedan"} sin punto en el mapa: no pudimos ubicar ni su municipio`
+            : null,
+        ].filter(Boolean);
+        if (notas.length > 0) {
+          toast.info(`${r.enElMunicipio + r.sinUbicar} de ${r.total} sin dirección exacta`, {
             description: `${notas.join(" · ")}. El pin se ajusta después en cada ficha.`,
-          },
-        );
+          });
+        }
+        // El servidor encola solo la revisión: hay que volver a mirarlo. Y no se
+        // reanuda sola otra vez aunque la lectura del estado falle.
+        setUbicacionEnPausa(true);
+        setReinicioDelSondeo((n) => n + 1);
       }
     } catch (e) {
+      const causa = e instanceof UbicacionInterrumpida ? (e.causa ?? e) : e;
+      setUbicacionEnPausa(true);
       setError(
-        e instanceof ApiError && e.messages
-          ? e.messages.join(" · ")
-          : e instanceof Error
-            ? e.message
-            : "No pudimos preparar la importación.",
+        esSesionMuerta(causa)
+          ? MENSAJE_SESION_TERMINADA
+          : `${mensajeDeCarga(causa, "Se cortó la búsqueda de direcciones.", "guardar las direcciones")} Lo que ya se ubicó está guardado: toca «Continuar ubicando» para seguir.`,
       );
     } finally {
-      setPreparando(false);
+      ubicandoRef.current = false;
+      setUbicando(false);
+      setDeteniendoUbicacion(false);
+      setProgresoUbicacion(null);
+      // Lo que dice el servidor es la verdad: de ahí salen el «X de Y» y la etapa.
+      try {
+        setEstadoManual(await inmueblesImportacionApi.estadoDeLote(lote));
+      } catch {
+        // Con el sondeo basta.
+      }
+    }
+  }, [lote, estadoLote]);
+
+  const etapaDelLote = estadoLote ? etapaDeLaCarga(estadoLote) : null;
+  useEffect(() => {
+    if (
+      lote &&
+      etapaDelLote === "ubicando" &&
+      !ubicando &&
+      !subiendo &&
+      !ubicacionEnPausa &&
+      !ubicandoRef.current &&
+      // Con todas ubicadas no hay nada que buscar: la persona da el paso.
+      !(estadoLote && ubicacionCompleta(estadoLote))
+    ) {
+      void handleUbicar();
+    }
+  }, [lote, etapaDelLote, ubicando, subiendo, ubicacionEnPausa, handleUbicar, estadoLote]);
+
+  /** «Continuar sin ubicar en el mapa» y «Reintentar» (job muerto / filas fallidas). */
+  const handleReintentar = async (omitirUbicacion = false) => {
+    if (!lote) return;
+    setReintentando(true);
+    setError(null);
+    try {
+      await asegurarSesionVigente();
+      const r = await inmueblesImportacionApi.reintentar(lote, { omitirUbicacion });
+      setEstadoManual(r.lote);
+      setUbicacionEnPausa(false);
+      setReinicioDelSondeo((n) => n + 1);
+      if (!omitirUbicacion && r.lote.fase === "CREANDO") {
+        // T-0131: reintentar las fallidas re-encola la creación en el servidor.
+        toast.success("Seguimos creando las que fallaron", {
+          description: "Puedes cerrar esta página: las seguimos creando.",
+        });
+      } else if (r.accion === "FILAS_LIBERADAS") {
+        toast.success(
+          `${r.filasLiberadas} ${r.filasLiberadas === 1 ? "fila liberada" : "filas liberadas"}`,
+          { description: "Quedaron listas: toca «Continuar» y «Crear todas» para intentarlas de nuevo." },
+        );
+        await refrescarRevision(lote, pagina);
+      }
+    } catch (e) {
+      setError(mensajeDeCarga(e, "No pudimos reintentar esta carga.", "reintentar esta carga"));
+    } finally {
+      setReintentando(false);
     }
   };
 
@@ -769,17 +1024,23 @@ export function StepConfirmImport({
       await inmueblesImportacionApi.resolver(id, cambios);
       await refrescarRevision(lote, pagina);
     } catch (e) {
-      if (e instanceof ApiError && e.code === "FILA_YA_ACTIVADA") {
+      if (e instanceof ApiError && e.code === "LOTE_EN_PROCESO") {
+        toast.error(MENSAJE_CREANDO_NO_SE_EDITA);
+        await refrescarRevision(lote, pagina);
+      } else if (e instanceof ApiError && e.code === "FILA_YA_ACTIVADA") {
         toast.error(
           "Esta fila ya se activó — no se puede editar. La lista se actualizó.",
         );
         // La fila que se ve es vieja: refrescar la saca de la lista en vez
         // de dejar a la persona editando un fantasma que siempre da 409.
         await refrescarRevision(lote, pagina);
+      } else if (traeErroresPorCampo(e)) {
+        // Un 400 con `campos` (un canon de once cifras, una fecha mal
+        // escrita): lo pinta la FILA debajo de su campo, con el foco ahí.
+        // Un toast suelto la dejaría adivinando cuál de los diez inputs era.
+        throw e;
       } else {
-        toast.error(
-          e instanceof Error ? e.message : "No pudimos guardar los cambios.",
-        );
+        toast.error(mensajeDeCarga(e, "No pudimos guardar los cambios.", "guardar la fila"));
       }
     } finally {
       setFilaBusy(null);
@@ -794,7 +1055,9 @@ export function StepConfirmImport({
       await refrescarRevision(lote, pagina);
     } catch (e) {
       toast.error(
-        e instanceof Error ? e.message : "No pudimos descartar la fila.",
+        e instanceof ApiError && e.code === "LOTE_EN_PROCESO"
+          ? MENSAJE_CREANDO_NO_SE_EDITA
+          : mensajeDeCarga(e, "No pudimos descartar la fila.", "descartar la fila"),
       );
     } finally {
       setFilaBusy(null);
@@ -816,15 +1079,8 @@ export function StepConfirmImport({
       if (onSalir) onSalir();
       else router.push("/panel/inmobiliaria/inmuebles");
     } catch (e) {
-      if (e instanceof ApiError && e.code === "LOTE_EN_PROCESO") {
-        setError(
-          "El lote todavía se está procesando — espera a que termine antes de descartarlo.",
-        );
-      } else {
-        setError(
-          e instanceof Error ? e.message : "No pudimos descartar el lote.",
-        );
-      }
+      // `LOTE_EN_PROCESO` es «espera a que termine», no un fallo de la persona.
+      setError(mensajeDeCarga(e, "No pudimos descartar el lote.", "descartar la carga"));
     } finally {
       setDescartandoLote(false);
     }
@@ -876,7 +1132,7 @@ export function StepConfirmImport({
       }
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "No pudimos volver a revisar el lote.",
+        mensajeDeCarga(e, "No pudimos volver a revisar el lote.", "volver a revisar la carga"),
       );
     } finally {
       setRevisando(false);
@@ -919,30 +1175,6 @@ export function StepConfirmImport({
     </div>
   );
 
-  /*
-   * ── La barra de la activación ───────────────────────────────────────────
-   *
-   * 🔴 Nico, 2026-09-11: «¿es normal que lleve activando más de 5 min?».
-   * Sí lo era —2.824 filas, ~40 por minuto cuando el inmueble es nuevo— pero
-   * la pantalla no tenía forma de decirlo: un botón con «Activando…» y un
-   * spinner. La cara visible de una espera larga son tres cosas, las mismas
-   * que ya tiene la geocodificación: en qué va, cuánto falta, y cómo salir.
-   *
-   * Sale por la ranura viva igual que las otras dos: mientras se activa, el
-   * muro pone `inert` sobre el paso entero y un «Detener» adentro se vería
-   * vivo y estaría muerto (costó media hora el 2026-09-10).
-   */
-  const barraDeActivacion = (
-    <BarraDeTrabajo
-      testid="activacion"
-      titulo="Creando los inmuebles"
-      hechas={hechasEnActivacion}
-      total={totalDeActivacion}
-      onDetener={detenerActivacion}
-      deteniendo={deteniendoActivacion}
-    />
-  );
-
   const avisoDeCargaTerminada = (
     <div
       className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4 dark:border-border-strong dark:bg-white/[0.02]"
@@ -950,7 +1182,7 @@ export function StepConfirmImport({
     >
       <div className="min-w-0 flex-1 space-y-1">
         <p className="text-sm font-medium text-fg dark:text-white">
-          Esta carga ya está activada — {resumenLote?.activados}{" "}
+          Los inmuebles de esta carga ya se crearon — {resumenLote?.activados}{" "}
           {resumenLote?.activados === 1 ? "inmueble" : "inmuebles"} en tu
           portafolio.
         </p>
@@ -1013,114 +1245,186 @@ export function StepConfirmImport({
       </Button>
     ) : null;
 
-  const handleActivar = async () => {
+  /**
+   * T-0131 — «Crear todas»: UN `POST` que encola el proceso del servidor. No hay
+   * bucle acá: la persona puede cerrar la página. Es idempotente, así que un
+   * doble clic o un reintento tras un corte devuelve el mismo lote CREANDO.
+   */
+  const handleCrearTodas = async () => {
     if (!lote) return;
-    setActivando(true);
+    setIniciandoCreacion(true);
     setError(null);
-    setProgresoDeActivacion(null);
-    totalAActivarRef.current = resumenLote?.listos ?? 0;
-    detenerActivacionRef.current = false;
-    setDeteniendoActivacion(false);
     try {
-      const resultado = await activarLoteCompleto(
-        lote,
-        inmueblesImportacionApi.activar,
-        setProgresoDeActivacion,
-        { debeParar: () => detenerActivacionRef.current },
-      );
-      /*
-       * «Detener» a mitad: lo que pasó, pasó — el back no deshace tandas— y
-       * la lista se refresca para que las tarjetas cuenten lo activado.
-       * Tocar «Activar» de nuevo sigue donde quedó, sin repetir nada.
-       */
-      if (resultado.detenidoPorPersona) {
-        await refrescarRevision(lote, pagina);
-        toast.info("Activación detenida", {
-          description: `Se activaron ${resultado.activados} inmuebles y quedaron otros por activar. Nada se pierde ni se duplica: toca «Activar» para seguir donde quedó.`,
-        });
-        return;
-      }
-      /*
-       * El techo de llamadas NO es éxito: quedan filas sin activar. Decir
-       * «¡Importación completada!» acá le mentiría a la persona con filas
-       * vivas en el lote. Se refresca el resumen (las tandas que sí pasaron
-       * cuentan) y se ofrece seguir — reintentar continúa donde quedó.
-       */
-      if (resultado.detenidoPorLimite || resultado.detenidoSinAvance) {
-        await refrescarRevision(lote, pagina);
-        setError(
-          resultado.detenidoSinAvance
-            ? `Se activaron ${resultado.activados} inmuebles y el lote dejó de avanzar: ` +
-              `la última tanda no movió ninguna fila. Nada se repite ni se duplica — ` +
-              `revisa lo que quedó pendiente abajo y vuelve a tocar «Activar».`
-            : `Se activaron ${resultado.activados} inmuebles y quedaron más por activar. ` +
-              `Nada se repite ni se duplica: toca «Activar» de nuevo para seguir donde quedó.`,
-        );
-        return;
-      }
-      setResultadoActivacion(resultado);
-      updateState({ importedCount: resultado.activados, importProgress: 100 });
-      setIsComplete(true);
-      // Adentro del muro NO se ofrece el diálogo de «mandato»: el dueño y la
-      // comisión salen del propio archivo, fila por fila, y lo que quede sin
-      // dueño se resuelve con el selector por fila. El diálogo pone UN
-      // propietario a todos los inmuebles del lote — para una migración de
-      // dueños distintos es la asociación equivocada, y «mandato» es una
-      // palabra que la inmobiliaria no usa (Nico, 2026-09-01).
-      if (resultado.activados > 0 && !onSalir) void buscarSinMandato(lote);
-      // Las fotos van después de crear: el back no ve archivos.
-      if (resultado.activados > 0) void subirFotosDeLosActivados(lote);
-      if (resultado.omitidas.length > 0) {
-        toast.warning("Importación parcial", {
-          description: `${resultado.activados} activadas, ${resultado.omitidas.length} todavía con datos pendientes.`,
-        });
-      } else {
-        toast.success("Importación exitosa", {
-          description: `${resultado.activados} propiedades importadas correctamente`,
-        });
-      }
+      await asegurarSesionVigente();
+      const r = await inmueblesImportacionApi.crear(lote);
+      setEstadoManual((previo) => {
+        const base = previo ?? estadoLote;
+        return base ? { ...base, fase: r.fase, creacion: r.creacion } : previo;
+      });
+      setIrACrear(false);
+      setVerRevisionDeNuevo(false);
+      cierreAplicado.current = null;
+      updateState({ importedCount: 0 });
+      setReinicioDelSondeo((n) => n + 1);
     } catch (e) {
-      /*
-       * Un corte a mitad de las tandas trae su progreso: sin esto, la
-       * pantalla decía «no pudimos activar» habiendo activado 1.000, y la
-       * persona no sabía si reintentar duplicaba. No duplica — el back no
-       * repite filas — y hay que decirlo.
-       */
-      if (e instanceof ActivacionInterrumpida) {
+      if (e instanceof ApiError && e.code === "NADA_PARA_CREAR") {
+        // La lista que se veía estaba vieja: se vuelve a la revisión con lo de hoy.
+        setIrACrear(false);
         await refrescarRevision(lote, pagina);
-        setError(
-          e.progreso.activados > 0
-            ? `Se activaron ${e.progreso.activados} inmuebles antes del corte (${e.message}). ` +
-              `Nada se pierde ni se duplica: toca «Activar» de nuevo y sigue donde quedó.`
-            : `${e.message} No se activó ninguno todavía — toca «Activar» de nuevo para reintentar.`,
-        );
-      } else {
-        setError(e instanceof Error ? e.message : "No pudimos activar el lote.");
       }
+      setError(
+        esSesionMuerta(e)
+          ? MENSAJE_SESION_TERMINADA
+          : mensajeDeCarga(e, "No pudimos empezar a crear los inmuebles.", "empezar a crear los inmuebles"),
+      );
     } finally {
-      setActivando(false);
-      setProgresoDeActivacion(null);
-      setDeteniendoActivacion(false);
-      }
+      setIniciandoCreacion(false);
+    }
   };
+
+  /* Al llegar a TERMINADA sin fallas: lo que se hace una sola vez por lote. */
+  useEffect(() => {
+    if (!lote || !terminadaSinFallas || cierreAplicado.current === lote) return;
+    cierreAplicado.current = lote;
+    updateState({ importedCount: nCreadas, importProgress: 100 });
+    // Adentro del muro NO se ofrece el diálogo de «mandato»: el dueño y la
+    // comisión salen del propio archivo, fila por fila (Nico, 2026-09-01).
+    if (nCreadas > 0 && !onSalir) void buscarSinMandato(lote);
+    // Las fotos van después de crear: el back no ve archivos. Sólo si esta
+    // pestaña conserva los inmuebles leídos (enlaces); al volver a una carga
+    // TERMINADA no hay de dónde sacar las URLs y se salta sin ruido.
+    if (nCreadas > 0) void subirFotosDeLosActivados(lote);
+  }, [lote, terminadaSinFallas, nCreadas, updateState, onSalir, buscarSinMandato, subirFotosDeLosActivados]);
+
+  /*
+   * ── Las barras de lo que corre en el navegador ───────────────────────────
+   *
+   * Subir el archivo y ubicar las direcciones son esperas largas (la segunda,
+   * media hora para 2.864 filas) y las dos necesitan un «Detener» VIVO. Salen por
+   * la ranura viva del muro —fuera del `inert`, pegadas al contenido— y, sin
+   * muro, se dibujan donde caen. Ver `migracion/ranura-viva.ts`.
+   */
+  const ub = progresoUbicacion ?? estadoLote?.ubicacion ?? null;
+  const barraEnVuelo = subiendo ? (
+    <BarraDeTrabajo
+      testid="subida"
+      titulo="Subiendo tu archivo"
+      hechas={subida?.enviadas ?? 0}
+      total={subida?.total ?? totalAEnviar}
+      onDetener={detenerSubida}
+      deteniendo={deteniendoSubida}
+      nota="Deja esta página abierta mientras sube. Si se corta, sigues desde donde quedó."
+    />
+  ) : ubicando ? (
+    <BarraDeTrabajo
+      testid="ubicacion"
+      titulo="Ubicando direcciones"
+      hechas={ub?.ubicadas ?? 0}
+      total={ub?.total ?? estadoLote?.total ?? 0}
+      onDetener={detenerUbicacion}
+      deteniendo={deteniendoUbicacion}
+      nota="Se guardan de a 50. Mantén esta página abierta mientras se buscan: si la cierras, sigues desde donde quedó."
+    />
+  ) : null;
+  const portalDeBarra = barraEnVuelo
+    ? ranuraViva
+      ? createPortal(barraEnVuelo, ranuraViva)
+      : barraEnVuelo
+    : null;
 
   const botonImportar = (
     <Button
       type="button"
       hideArrow
       onClick={handlePreparar}
-      disabled={totalAEnviar === 0 || geocodificando || preparando}
+      disabled={totalAEnviar === 0 || subiendo}
       className="gap-2"
     >
       <FileArrowUp className="w-4 h-4" />
-      {geocodificando || preparando
-        ? "Preparando..."
-        : t("inmobiliaria.import.confirm.importButton", { count: totalAEnviar })}
+      {subiendo
+        ? "Subiendo..."
+        : `Subir ${totalAEnviar.toLocaleString("es-CO")} ${totalAEnviar === 1 ? "inmueble" : "inmuebles"} y ubicar direcciones`}
     </Button>
   );
 
-  // ── Success state ────────────────────────────────────────────────────
-  if (isComplete) {
+  /*
+   * T-0131 — las filas que no se pudieron crear, con su motivo, y la salida.
+   * Se usa en la vista de creación y, para una carga vieja con fallidas, en la
+   * revisión. El back re-encola TODAS a la vez: no hay reintento fila por fila.
+   */
+  const panelDeFallidas =
+    nFallidas > 0 ? (
+      <div
+        className="space-y-3 rounded-lg border border-border bg-danger-soft p-4"
+        data-testid="filas-fallidas"
+        role="region"
+        aria-label="Inmuebles que no se pudieron crear"
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm font-medium text-danger">
+            {nFallidas === 1
+              ? "1 inmueble no se pudo crear"
+              : `${nFallidas.toLocaleString("es-CO")} inmuebles no se pudieron crear`}
+          </p>
+          {!creandoActivo ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              hideArrow
+              disabled={reintentando || revisando || descartandoLote}
+              isLoading={reintentando}
+              onClick={() => void handleReintentar()}
+              data-testid="reintentar-fallidas"
+            >
+              Reintentar las fallidas
+            </Button>
+          ) : null}
+        </div>
+        {creandoActivo ? (
+          <p className="text-xs text-fg-muted">
+            Cuando termine ves el motivo de cada una y puedes reintentarlas.
+          </p>
+        ) : (
+          <>
+            <ul className="max-h-64 space-y-2 overflow-y-auto" data-lenis-prevent>
+              {filasFallidas.map((f) => (
+                <li
+                  key={f.id}
+                  className="flex flex-wrap items-start justify-between gap-2 text-sm"
+                  data-testid={`fila-fallida-${f.fila}`}
+                >
+                  <span className="min-w-0 text-fg">
+                    <span className="font-mono tabular-nums">Fila {f.fila}</span>
+                    {" · "}
+                    {f.datos?.title ?? f.datos?.address ?? "Sin dirección"}
+                    <span className="block text-xs text-danger">{f.errorDeActivacion}</span>
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    hideArrow
+                    disabled={filaBusy === f.id}
+                    onClick={() => void handleDescartarFila(f.id)}
+                  >
+                    Descartar
+                  </Button>
+                </li>
+              ))}
+            </ul>
+            {filasFallidas.length > 0 && filasFallidas.length < nFallidas ? (
+              <p className="text-xs text-fg-muted">
+                Mostramos {filasFallidas.length} de {nFallidas.toLocaleString("es-CO")}.
+              </p>
+            ) : null}
+          </>
+        )}
+      </div>
+    ) : null;
+
+  // ── Success state: el lote TERMINÓ sin fallidas ──────────────────────
+  if (lote && terminadaSinFallas) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center space-y-6">
         <div className="animate-scale-in">
@@ -1144,52 +1448,39 @@ export function StepConfirmImport({
            * entraron; decir sólo las nuevas hacía ver una importación
            * completa como un fracaso de 679.
            */}
-          {resultadoActivacion && resultadoActivacion.reusados > 0 ? (
-            <>
-              <p className="text-fg-muted dark:text-fg-subtle">
-                <span className="font-semibold text-fg dark:text-white">
-                  {resultadoActivacion.activados + resultadoActivacion.reusados}{" "}
-                  inmuebles
-                </span>{" "}
-                de este archivo están en tu portafolio
-              </p>
-              <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="detalle-reusados">
-                {resultadoActivacion.activados}{" "}
-                {resultadoActivacion.activados === 1 ? "nuevo" : "nuevos"} ·{" "}
-                {resultadoActivacion.reusados} ya
-                {resultadoActivacion.reusados === 1 ? " estaba" : " estaban"} cargados de
-                antes, así que se reusaron en vez de duplicarse.
-              </p>
-            </>
-          ) : (
-            <p className="text-fg-muted dark:text-fg-subtle">
-              Se importaron{" "}
-              <span className="font-semibold text-fg dark:text-white">
-                {state.importedCount} propiedades
-              </span>{" "}
-              a tu portafolio
+          <p className="text-fg-muted dark:text-fg-subtle" data-testid="resumen-creadas">
+            {lineaDeCreados(creacion, nCreadas)}
+          </p>
+          {detalleDeReusados(creacion) ? (
+            <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="resumen-reusados">
+              {detalleDeReusados(creacion)}
             </p>
-          )}
-          {/* Varios dueños con su % (Nico, 2026-09-13): cuántos mandatos
-              quedaron repartidos según el archivo, para no tener que abrir
-              cada ficha a comprobarlo. */}
-          {resultadoActivacion && (resultadoActivacion.mandatosConVariosDuenos ?? 0) > 0 && (
-            <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="mandatos-varios-duenos">
-              {resultadoActivacion.mandatosConVariosDuenos === 1
-                ? '1 mandato quedó con varios dueños y el reparto que traía el archivo.'
-                : `${resultadoActivacion.mandatosConVariosDuenos} mandatos quedaron con varios dueños y el reparto que traía el archivo.`}
-            </p>
+          ) : null}
+          {(resumenLote?.pendientes ?? 0) > 0 && (
+            <div className="space-y-2" data-testid="quedan-por-revisar">
+              <p className="text-sm text-warning">
+                Quedan {(resumenLote?.pendientes ?? 0).toLocaleString("es-CO")}{" "}
+                {resumenLote?.pendientes === 1 ? "fila" : "filas"} con datos por
+                corregir. No frenan nada: puedes arreglarlas ahora o dejarlas fuera.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                hideArrow
+                data-testid="revisar-las-que-faltan"
+                onClick={() => {
+                  setVerRevisionDeNuevo(true);
+                  updateState({ importedCount: 0 });
+                }}
+              >
+                Revisar las que faltan
+              </Button>
+            </div>
           )}
           {fotosProgreso && (
             <p className="text-sm text-fg-muted" data-testid="fotos-progreso" aria-live="polite">
               Subiendo las fotos de las fichas… {fotosProgreso.hechos} de {fotosProgreso.total}{" "}
               {fotosProgreso.total === 1 ? "inmueble" : "inmuebles"}. No cierres esta pestaña.
-            </p>
-          )}
-          {resultadoActivacion && resultadoActivacion.omitidas.length > 0 && (
-            <p className="text-sm text-warning">
-              {resultadoActivacion.omitidas.length} filas quedaron pendientes de
-              datos — vuelve a «Revisión» para completarlas.
             </p>
           )}
           {/*
@@ -1227,7 +1518,7 @@ export function StepConfirmImport({
             no venía queda VACÍA («no venía en el archivo») y la llena el
             contrato vigente al activarlo, o una persona en la ficha.
           */}
-          {onSalir && (state.importedCount ?? 0) > 0 && (
+          {onSalir && aEnviar.length > 0 && nCreadas > 0 && (
             <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="aviso-propietario-en-contratos">
               {fraseDeLaComision(aEnviar)} Los puedes cambiar cuando quieras
               desde la ficha de cada inmueble.
@@ -1311,21 +1602,252 @@ export function StepConfirmImport({
     );
   }
 
-  // ── Batch staged, still ENCOLADO/PROCESANDO ─────────────────────────
+  // ── Paso 4: el servidor está creando (o terminó con fallidas) ─────────
+  if (lote && estadoLote && (creandoEnElServidor || terminadaConFallas)) {
+    const total = creacion?.total ?? estadoLote.total;
+    const hechas = nCreadas;
+    const pct = total > 0 ? Math.min(100, Math.round((hechas / total) * 100)) : 0;
+    return (
+      <div className="space-y-6" data-testid="creacion-progreso">
+        <div>
+          <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+            {creacionFallida
+              ? "La creación se detuvo"
+              : creandoEnElServidor
+                ? "Creando tus inmuebles"
+                : "Terminamos, pero algunos no se pudieron crear"}
+          </h2>
+          {creacionFallida ? (
+            <p className="text-sm text-danger" data-testid="creacion-detenida">
+              {estadoLote.error ?? "El proceso se detuvo por un error."} Lo que ya se creó está en tu
+              portafolio y no se repite: toca «Reintentar» para que siga donde quedó.
+            </p>
+          ) : creandoEnElServidor ? (
+            <p className="text-sm text-fg-muted dark:text-fg-subtle" data-testid="creacion-puedes-cerrar">
+              Puedes cerrar esta página: las seguimos creando.
+            </p>
+          ) : (
+            <p className="text-sm text-fg-muted dark:text-fg-subtle">
+              Los que se crearon ya están en tu portafolio. Abajo ves el motivo de cada fallida.
+            </p>
+          )}
+        </div>
+
+        <div
+          className="space-y-3 rounded-lg border border-border bg-surface-muted p-4"
+          aria-live="polite"
+          data-testid="creacion-avance"
+        >
+          <p className="text-sm text-fg">
+            <span className="font-mono text-2xl font-semibold tabular-nums">
+              {hechas.toLocaleString("es-CO")}
+            </span>{" "}
+            de{" "}
+            <span className="font-mono tabular-nums">{total.toLocaleString("es-CO")}</span>{" "}
+            creadas
+            {/* Nico, 2026-09-11: «debemos mostrar acá el % en que va de avance».
+                La vista de T-0131 lo había perdido: el «N de M» solo no dice
+                cuánto falta de un vistazo. */}
+            <span
+              className="ml-2 font-mono text-sm tabular-nums text-fg-muted"
+              data-testid="creacion-porcentaje"
+            >
+              {pct}%
+            </span>
+          </p>
+          <Progress value={pct} size="xs" />
+          {(creacion?.pendientes ?? 0) > 0 && creandoActivo ? (
+            <p className="text-xs text-fg-muted">
+              Faltan {(creacion?.pendientes ?? 0).toLocaleString("es-CO")}.
+            </p>
+          ) : null}
+        </div>
+
+        {hayFotosPorEnlace ? (
+          <p className="text-sm text-warning" data-testid="fotos-por-enlace-aviso">
+            Las fotos por enlace se suben mientras esta página esté abierta: si la cierras, los
+            inmuebles se crean igual pero las fotos las subes después desde cada ficha.
+          </p>
+        ) : null}
+
+        {creacionFallida && estadoLote.puedeReintentar ? (
+          <Button
+            type="button"
+            hideArrow
+            disabled={reintentando}
+            isLoading={reintentando}
+            onClick={() => void handleReintentar()}
+            data-testid="reintentar-lote"
+          >
+            Reintentar
+          </Button>
+        ) : null}
+
+        {panelDeFallidas}
+
+        {(resumenLote?.pendientes ?? 0) > 0 && !creandoEnElServidor ? (
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-fg-muted">
+              Además quedan {(resumenLote?.pendientes ?? 0).toLocaleString("es-CO")} filas con datos por
+              corregir.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              hideArrow
+              data-testid="revisar-las-que-faltan"
+              onClick={() => setVerRevisionDeNuevo(true)}
+            >
+              Revisar las que faltan
+            </Button>
+          </div>
+        ) : null}
+
+        {error && (
+          <div className="rounded-md bg-danger-soft border border-border p-3" role="alert" data-testid="import-error">
+            <p className="text-sm text-danger">{error}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Lote subiéndose, ubicándose o en revisión del servidor ────────────
   if (
     lote &&
     estadoLote?.estado !== "LISTO" &&
     estadoLote?.estado !== "FALLIDO"
   ) {
+    const recibidas = subida?.enviadas ?? estadoLote?.recibidas ?? 0;
+    const totalDelLote = estadoLote?.total ?? totalAEnviar;
     return (
       <div className="space-y-6">
-        <ProgresoDeLoteInmuebles
-          estado={estadoLote}
-          // Con la consulta manual el sondeo «revive» a ojos de la persona:
-          // el cartel de agotado sólo tiene sentido si además no hay botón.
-          agotado={agotado && estadoManual === null}
-        />
-        {agotado && (
+        {portalDeBarra}
+
+        {etapaDelLote === "subiendo" || subiendo ? (
+          <div
+            className="rounded-lg border border-border p-6 space-y-3"
+            data-testid="carga-subiendo"
+          >
+            <p className="text-sm font-medium text-fg">
+              {subiendo ? "Subiendo tu archivo" : "La subida quedó a medias"}
+            </p>
+            <p className="text-sm text-fg-muted">
+              Llegaron{" "}
+              <span className="font-mono tabular-nums">{recibidas.toLocaleString("es-CO")}</span>{" "}
+              de{" "}
+              <span className="font-mono tabular-nums">{totalDelLote.toLocaleString("es-CO")}</span>{" "}
+              filas.{" "}
+              {subiendo
+                ? "Deja esta página abierta hasta que termine."
+                : "Lo que llegó está guardado: no se vuelve a subir."}
+            </p>
+            {!subiendo ? (
+              <div className="flex flex-wrap items-center gap-3">
+                {totalAEnviar === totalDelLote ? (
+                  <Button
+                    type="button"
+                    hideArrow
+                    onClick={handlePreparar}
+                    data-testid="continuar-subiendo"
+                  >
+                    Continuar subiendo
+                  </Button>
+                ) : (
+                  <p className="text-sm text-fg-muted" data-testid="subida-pide-el-archivo">
+                    Para seguir, vuelve con «Anterior» al paso de subir el archivo, selecciona el
+                    MISMO archivo (tiene que tener {totalDelLote.toLocaleString("es-CO")} filas) y
+                    avanza hasta acá: retomamos desde donde quedó.
+                  </p>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  hideArrow
+                  disabled={descartandoLote}
+                  isLoading={descartandoLote}
+                  onClick={handleDescartarLote}
+                >
+                  Descartar esta carga
+                </Button>
+              </div>
+            ) : null}
+          </div>
+        ) : etapaDelLote === "ubicando" ? (
+          <div
+            className="rounded-lg border border-border p-6 space-y-3"
+            data-testid="carga-ubicando"
+          >
+            <p className="text-sm font-medium text-fg">
+              {ubicando
+                ? "Ubicando las direcciones en el mapa"
+                : estadoLote && ubicacionCompleta(estadoLote)
+                  ? "Todas las direcciones están ubicadas"
+                  : "Faltan direcciones por ubicar"}
+            </p>
+            <p className="text-sm text-fg-muted">
+              <span className="font-mono tabular-nums">
+                {(ub?.ubicadas ?? 0).toLocaleString("es-CO")}
+              </span>{" "}
+              de{" "}
+              <span className="font-mono tabular-nums">
+                {(ub?.total ?? totalDelLote).toLocaleString("es-CO")}
+              </span>{" "}
+              ubicadas, y se guardan de a 50. Las busca esta página: mantenla abierta mientras
+              tanto. Si la cierras, la carga queda guardada y sigues desde donde quedó.
+            </p>
+            {!ubicando ? (
+              <div className="flex flex-wrap items-center gap-3">
+                {estadoLote && ubicacionCompleta(estadoLote) ? (
+                  // Todo ubicado: «Continuar» da el paso a la revisión.
+                  <Button
+                    type="button"
+                    hideArrow
+                    disabled={reintentando}
+                    isLoading={reintentando}
+                    onClick={() => void handleReintentar(true)}
+                    data-testid="continuar-ubicando"
+                  >
+                    Continuar
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    hideArrow
+                    onClick={() => void handleUbicar()}
+                    data-testid="continuar-ubicando"
+                  >
+                    Continuar ubicando
+                  </Button>
+                )}
+                {estadoLote?.puedeOmitirUbicacion !== false &&
+                !(estadoLote && ubicacionCompleta(estadoLote)) ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    hideArrow
+                    disabled={reintentando}
+                    isLoading={reintentando}
+                    onClick={() => void handleReintentar(true)}
+                    data-testid="continuar-sin-ubicar"
+                  >
+                    Continuar sin ubicar en el mapa
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <ProgresoDeLoteInmuebles
+            estado={estadoLote}
+            // Con la consulta manual el sondeo «revive» a ojos de la persona:
+            // el cartel de agotado sólo tiene sentido si además no hay botón.
+            agotado={agotado && estadoManual === null}
+          />
+        )}
+
+        {agotado && etapaDelLote === "revision" && (
           <div className="flex items-center gap-3">
             <Button
               type="button"
@@ -1343,10 +1865,11 @@ export function StepConfirmImport({
             </p>
           </div>
         )}
-        {error && (
+        {error && !subiendo && (
           <div
             className="rounded-md bg-danger-soft border border-border p-3"
             role="alert"
+            data-testid="import-error"
           >
             <p className="text-sm text-danger">{error}</p>
           </div>
@@ -1355,55 +1878,188 @@ export function StepConfirmImport({
     );
   }
 
-  // ── Batch FALLIDO ─────────────────────────────────────────────────────
+  // ── Lote FALLIDO ──────────────────────────────────────────────────────
   if (lote && estadoLote?.estado === "FALLIDO") {
     return (
       <div className="space-y-6">
+        {portalDeBarra}
         <ProgresoDeLoteInmuebles estado={estadoLote} agotado={agotado} />
+        {error && !subiendo && (
+          <div className="rounded-md bg-danger-soft border border-border p-3" role="alert">
+            <p className="text-sm text-danger">{error}</p>
+          </div>
+        )}
         {/*
-         * La salida que faltaba: sin este botón, el FALLIDO era un callejón
-         * — «Anterior» volvía a un paso cuyo «Siguiente» aterrizaba otra vez
-         * acá, con el mismo lote muerto. Los datos del archivo siguen en el
-         * wizard: preparar de nuevo arranca un lote NUEVO (clave de
-         * idempotencia nueva — la vieja identifica al intento fallido) sin
-         * re-subir nada.
+         * T-0130 — un lote FALLIDO ya no es un callejón: el back guarda las
+         * filas, así que «Reintentar» lo retoma donde quedó. Sólo cuando NO se
+         * puede (un lote viejo que nunca guardó sus filas) queda «Preparar de
+         * nuevo», que abre un lote NUEVO con otra clave sin re-subir el archivo.
          */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          {estadoLote.puedeReintentar ? (
+            <Button
+              type="button"
+              hideArrow
+              disabled={reintentando}
+              isLoading={reintentando}
+              data-testid="reintentar-lote"
+              onClick={() => void handleReintentar()}
+            >
+              Reintentar
+            </Button>
+          ) : totalAEnviar > 0 ? (
+            <Button
+              type="button"
+              hideArrow
+              data-testid="preparar-de-nuevo"
+              onClick={() => {
+                setIdempotencyKey(generarIdempotencyKey());
+                setError(null);
+                setEstadoManual(null);
+                updateState({ loteRetomado: null, subidaRetomada: null });
+                setLote(null);
+              }}
+            >
+              Preparar de nuevo
+            </Button>
+          ) : null}
+          {estadoLote.puedeOmitirUbicacion === true ? (
+            <Button
+              type="button"
+              variant="outline"
+              hideArrow
+              disabled={reintentando}
+              onClick={() => void handleReintentar(true)}
+              data-testid="continuar-sin-ubicar"
+            >
+              Continuar sin ubicar en el mapa
+            </Button>
+          ) : null}
           <Button
             type="button"
+            variant="ghost"
             hideArrow
-            data-testid="preparar-de-nuevo"
-            onClick={() => {
-              setIdempotencyKey(generarIdempotencyKey());
-              setError(null);
-              setEstadoManual(null);
-              updateState({ loteRetomado: null });
-              setLote(null);
-            }}
+            disabled={descartandoLote}
+            isLoading={descartandoLote}
+            onClick={handleDescartarLote}
           >
-            Preparar de nuevo
+            Descartar esta carga
           </Button>
+        </div>
+        {!estadoLote.puedeReintentar && totalAEnviar > 0 ? (
           <p className="text-xs text-fg-subtle">
             Tus datos siguen acá — no hace falta volver a subir el archivo.
           </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  // ── Paso 4 antes del clic: «Crear todas» ──────────────────────────────
+  if (lote && irACrear && listasParaCrear > 0) {
+    const listas = listasParaCrear;
+    const porRevisar = resumenLote?.pendientes ?? 0;
+    return (
+      <div className="space-y-6" data-testid="crear-todas-paso">
+        <div>
+          <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
+            {yaSeCrearonAlgunas
+              ? `Faltan ${listas.toLocaleString("es-CO")} por crear`
+              : "Todo listo para crear"}
+          </h2>
+          <p className="text-sm text-fg-muted dark:text-fg-subtle">
+            {listas === 1 ? "Se crea" : "Se crean"}{" "}
+            <span className="font-mono tabular-nums font-medium text-fg">
+              {listas.toLocaleString("es-CO")}
+            </span>{" "}
+            {listas === 1 ? "inmueble" : "inmuebles"} en un solo proceso del servidor. Puedes cerrar
+            esta página: {listas === 1 ? "lo creamos aunque te vayas." : "las seguimos creando."}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="rounded-md bg-success-soft p-4">
+            <MonoLabel className="block text-xs text-success mb-1">Listas para crear</MonoLabel>
+            <p className="text-2xl font-bold text-success">{listas.toLocaleString("es-CO")}</p>
+          </div>
+          <div className="rounded-md bg-surface-muted dark:bg-ink p-4">
+            <MonoLabel className="block text-xs text-fg-muted mb-1">Por revisar (no se tocan)</MonoLabel>
+            <p className="text-2xl font-bold text-fg-muted">{porRevisar.toLocaleString("es-CO")}</p>
+          </div>
+        </div>
+
+        {hayFotosPorEnlace ? (
+          <p className="text-sm text-warning" data-testid="fotos-por-enlace-aviso">
+            Las fotos por enlace se suben mientras esta página esté abierta: si la cierras, los
+            inmuebles se crean igual pero las fotos las subes después desde cada ficha.
+          </p>
+        ) : null}
+
+        {sinCanon > 0 ? (
+          <p className="text-sm text-fg-muted" data-testid="listas-sin-canon">
+            {sinCanon === 1
+              ? "1 inmueble se crea con el canon por confirmar"
+              : `${sinCanon.toLocaleString("es-CO")} inmuebles se crean con el canon por confirmar`}
+            : no se usa para contratos, cobros ni facturas hasta que lo pongas a mano en el inmueble.
+          </p>
+        ) : null}
+        {porRevisar > 0 ? (
+          <p className="text-sm text-fg-muted">
+            Las filas por revisar no se crean ahora: se quedan en la carga y las completas cuando
+            quieras.
+          </p>
+        ) : null}
+
+        {error && (
+          <div className="rounded-md bg-danger-soft border border-border p-3" role="alert" data-testid="import-error">
+            <p className="text-sm text-danger">{error}</p>
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            hideArrow
+            disabled={iniciandoCreacion}
+            onClick={() => {
+              setIrACrear(false);
+              setError(null);
+            }}
+          >
+            Volver a la revisión
+          </Button>
+          <Button
+            type="button"
+            hideArrow
+            disabled={iniciandoCreacion}
+            isLoading={iniciandoCreacion}
+            onClick={handleCrearTodas}
+            data-testid="crear-todas"
+          >
+            {yaSeCrearonAlgunas
+              ? `Crear las ${listas.toLocaleString("es-CO")} que faltan`
+              : "Crear todas"}
+          </Button>
         </div>
       </div>
     );
   }
 
-  // ── Batch LISTO — review + activate ─────────────────────────────────
+  // ── Paso 3: revisar lo que falta ─────────────────────────────────────
   if (lote) {
-    const puedeActivar = (resumenLote?.listos ?? 0) > 0;
+    const listas = listasParaCrear;
+    const puedeContinuar = listas > 0 && estadoLote?.fase !== "REVISANDO";
 
     return (
       <div className="space-y-6">
         <div>
           <h2 className="text-xl font-semibold text-fg dark:text-white mb-1">
-            Revisa lo que falta antes de activar
+            Revisa lo que falta
           </h2>
           <p className="text-sm text-fg-muted dark:text-fg-subtle">
-            Las filas listas se activan cuando quieras — cerrar esta pestaña no
-            pierde nada.
+            Una sola lista con todo lo que necesita una decisión. Lo que ya está completo no aparece:
+            se crea al final, todo junto. Cerrar esta pestaña no pierde nada.
           </p>
         </div>
 
@@ -1417,7 +2073,7 @@ export function StepConfirmImport({
             </div>
             <div className="rounded-md bg-warning-soft p-4">
               <MonoLabel className="block text-xs text-warning mb-1">
-                Pendientes
+                Por revisar
               </MonoLabel>
               <p className="text-2xl font-bold text-warning">
                 {resumenLote.pendientes}
@@ -1425,15 +2081,15 @@ export function StepConfirmImport({
             </div>
             <div className="rounded-md bg-success-soft p-4">
               <MonoLabel className="block text-xs text-success mb-1">
-                Listas
+                Listas para crear
               </MonoLabel>
               <p className="text-2xl font-bold text-success">
-                {resumenLote.listos}
+                {listasParaCrear}
               </p>
             </div>
             <div className="rounded-md bg-primary-soft p-4">
               <MonoLabel className="block text-xs text-primary mb-1">
-                Activadas
+                Ya creadas
               </MonoLabel>
               <p className="text-2xl font-bold text-primary">
                 {resumenLote.activados}
@@ -1441,6 +2097,28 @@ export function StepConfirmImport({
             </div>
           </div>
         )}
+
+        {sinCanon > 0 ? (
+          <p
+            className="rounded-lg border border-border bg-surface-muted p-3 text-sm text-fg-muted"
+            data-testid="aviso-canon-por-confirmar"
+          >
+            {sinCanon === 1
+              ? "1 inmueble no trae canon: se crea con el canon por confirmar."
+              : `${sinCanon.toLocaleString("es-CO")} inmuebles no traen canon: se crean con el canon por confirmar.`}{" "}
+            No bloquea nada; el canon se completa después, en bloque o en cada inmueble.
+          </p>
+        ) : null}
+
+        {/* Una carga vieja pudo dejar fallidas: se ven y se reintentan acá también. */}
+        {panelDeFallidas}
+
+        <LoteInmueblesMasivo
+          lote={lote}
+          deshabilitado={revisando || descartandoLote || iniciandoCreacion}
+          onCambio={() => void refrescarRevision(lote, 1)}
+          firmaDelLote={resumenLote ? `${resumenLote.pendientes}|${resumenLote.listos}|${resumenLote.descartados}` : undefined}
+        />
 
         {pendientes.length > 0 && (
           <div className="space-y-3">
@@ -1450,7 +2128,7 @@ export function StepConfirmImport({
                 fila={fila}
                 onResolver={handleResolver}
                 onDescartar={handleDescartarFila}
-                isBusy={filaBusy === fila.id}
+                isBusy={filaBusy === fila.id || creandoEnElServidor}
               />
             ))}
             {/* Pie del design system: dice cuántas filas quedan por revisar
@@ -1484,7 +2162,7 @@ export function StepConfirmImport({
               variant="outline"
               hideArrow
               disabled={
-                filaBusy !== null || activando || descartandoLote || refrescando
+                filaBusy !== null || descartandoLote || refrescando
               }
               /* Gira mientras consulta: sin esto, un back que tarda dos
                  segundos se ve igual que un botón muerto. */
@@ -1505,7 +2183,7 @@ export function StepConfirmImport({
         )}
 
         {/*
-         * ── ESTE LOTE YA NO TIENE NADA QUE ACTIVAR ──────────────────────
+         * ── ESTE LOTE YA NO TIENE NADA QUE CREAR ────────────────────────
          *
          * 🔴 Nico, 2026-09-11, mirando 2.864 total · 40 pendientes · 0 listas
          * · 2.824 activadas: «no hay nada de cómo continuar, cómo pasar de
@@ -1522,15 +2200,6 @@ export function StepConfirmImport({
          * ofrece Contratos.
          */}
 
-        {/*
-          La barra de la activación. Con muro sale por la ranura viva (fuera
-          del `inert`, con su «Detener» vivo); sin muro vive acá mismo, pegada
-          a los botones que controla.
-        */}
-        {activando && !ranuraViva ? barraDeActivacion : null}
-        {activando && ranuraViva
-          ? createPortal(barraDeActivacion, ranuraViva)
-          : null}
         {revisando && !ranuraViva ? barraDeRevision : null}
         {revisando && ranuraViva
           ? createPortal(barraDeRevision, ranuraViva)
@@ -1545,7 +2214,7 @@ export function StepConfirmImport({
               // Congelado se ve congelado: mientras se revisa o se activa el
               // paso entero está `inert`, y un botón que se ve vivo y está
               // muerto cuesta media hora de clics.
-              disabled={descartandoLote || revisando || activando}
+              disabled={descartandoLote || revisando || reintentando || iniciandoCreacion}
               isLoading={descartandoLote}
               onClick={handleDescartarLote}
             >
@@ -1564,7 +2233,7 @@ export function StepConfirmImport({
                 type="button"
                 variant="ghost"
                 hideArrow
-                disabled={revisando || activando || descartandoLote}
+                disabled={revisando || descartandoLote}
                 isLoading={revisando}
                 onClick={handleRevisarDeNuevo}
                 data-testid="revisar-de-nuevo"
@@ -1577,22 +2246,26 @@ export function StepConfirmImport({
               </Button>
             ) : null}
           </div>
-          <Button
-            type="button"
-            hideArrow
-            disabled={!puedeActivar || activando || revisando}
-            isLoading={activando}
-            onClick={handleActivar}
-          >
-            {activando
-              ? /* El botón también cuenta: es lo que la persona mira mientras
-                   espera, y «Activando...» a secas fue exactamente lo que la
-                   dejó sin saber si seguía vivo (Nico, 2026-09-11). */
-                totalDeActivacion > 0
-                ? `Activando… ${hechasEnActivacion} de ${totalDeActivacion}`
-                : "Activando…"
-              : `Activar ${resumenLote?.listos ?? 0} ${resumenLote?.listos === 1 ? "inmueble" : "inmuebles"}`}
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            <p className="text-sm text-fg-muted" data-testid="listas-para-crear">
+              <span className="font-mono font-medium tabular-nums text-fg">
+                {listas.toLocaleString("es-CO")}
+              </span>{" "}
+              {listas === 1 ? "lista para crear" : "listas para crear"}
+            </p>
+            <Button
+              type="button"
+              hideArrow
+              disabled={!puedeContinuar || revisando || descartandoLote}
+              onClick={() => {
+                setError(null);
+                setIrACrear(true);
+              }}
+              data-testid="continuar-a-crear"
+            >
+              Continuar
+            </Button>
+          </div>
         </div>
 
         {/* El aviso, último del cuerpo: queda pegado al pie gris, que es donde
@@ -1613,53 +2286,6 @@ export function StepConfirmImport({
     );
   }
 
-  /*
-   * ── La barra de la geocodificación, y por qué se define acá ──────────────
-   *
-   * Buscar 2.864 direcciones en el mapa toma ~53 minutos, así que la barra
-   * necesita un botón para parar. Dentro del muro ese botón nacía MUERTO: el
-   * muro pone `inert` sobre todo el paso mientras hay algo en vuelo, y `inert`
-   * no se puede desactivar en un descendiente. Por eso la salida vivía en el
-   * pie del muro — el único sitio fuera del `inert`— a dos secciones de la
-   * barra que controlaba. Nico, 2026-09-10: «ese detener carga está súper mal
-   * ubicado, debería estar mucho más cerca de la progress bar y quizás hacer
-   * parte de la progress bar».
-   *
-   * La ranura viva invierte la solución: en vez de mandar el botón lejos, se
-   * manda el BLOQUE ENTERO a un nodo que el muro dibuja fuera del `inert`,
-   * pegado al contenido. Barra, conteo, minutos y botón viajan juntos y los
-   * dos quedan vivos. Ver `migracion/ranura-viva.ts`.
-   */
-  const barraDeGeocodificacion = (
-    <div className="space-y-2" data-testid="geo-progreso">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <p className="text-sm text-fg-muted dark:text-fg-subtle">
-          Buscando las direcciones en el mapa — {geoCurrent} de {totalAEnviar}
-          {minutosQueFaltan != null && !cancelandoGeo ? (
-            <span className="text-fg-subtle">
-              {" "}
-              · faltan unos {minutosQueFaltan} min
-            </span>
-          ) : null}
-        </p>
-        <Button
-          type="button"
-          variant="ghost"
-          hideArrow
-          onClick={cancelarGeocodificacion}
-          disabled={cancelandoGeo}
-          data-testid="geo-cancelar"
-        >
-          {cancelandoGeo ? "Deteniendo…" : "Detener la carga"}
-        </Button>
-      </div>
-      <Progress value={geoProgress} size="xs" />
-      <p className="text-xs text-right font-mono text-fg-subtle dark:text-fg-muted">
-        {geoProgress}%
-      </p>
-    </div>
-  );
-
   // ── Pre-import summary (no lote yet) ─────────────────────────────────
   return (
     <div className="space-y-6">
@@ -1668,7 +2294,8 @@ export function StepConfirmImport({
           Resumen de importación
         </h2>
         <p className="text-sm text-fg-muted dark:text-fg-subtle">
-          Revisa el resumen antes de ejecutar la importación.
+          Subimos tu archivo, ubicamos las direcciones en el mapa y te mostramos lo que falta.
+          Los inmuebles se crean al final, todos juntos.
         </p>
       </div>
 
@@ -1690,47 +2317,29 @@ export function StepConfirmImport({
         <div className="grid grid-cols-2 gap-4 pt-2">
           <div className="rounded-md bg-primary-soft p-4">
             <MonoLabel className="block text-xs text-primary mb-1">
-              {t("inmobiliaria.import.confirm.propertiesToImport")}
+              Inmuebles del archivo
             </MonoLabel>
-            <p className="text-3xl font-bold text-primary">{importCount}</p>
-          </div>
-
-          <div className="rounded-md bg-surface-muted dark:bg-ink p-4">
-            <MonoLabel className="block text-xs text-fg-muted dark:text-fg-subtle mb-1">
-              {t("inmobiliaria.import.confirm.propertiesExcluded")}
-            </MonoLabel>
-            <p className="text-3xl font-bold text-fg-muted dark:text-fg-subtle">
-              {excludedCount}
-            </p>
-          </div>
-
-          <div className="rounded-md bg-success-soft p-4">
-            <MonoLabel className="block text-xs text-success mb-1">
-              {t("inmobiliaria.import.confirm.suggestionsAccepted")}
-            </MonoLabel>
-            <p className="text-3xl font-bold text-success">
-              {acceptedSuggestionsCount}
-            </p>
+            <p className="text-3xl font-bold text-primary">{totalAEnviar}</p>
           </div>
 
           <div
             className={cn(
               "rounded-md p-4",
-              remainingErrorsCount > 0 ? "bg-danger-soft" : "bg-success-soft",
+              remainingErrorsCount > 0 ? "bg-warning-soft" : "bg-success-soft",
             )}
           >
             <MonoLabel
               className={cn(
                 "block text-xs mb-1",
-                remainingErrorsCount > 0 ? "text-danger" : "text-success",
+                remainingErrorsCount > 0 ? "text-warning" : "text-success",
               )}
             >
-              {t("inmobiliaria.import.confirm.remainingErrors")}
+              Con datos por completar
             </MonoLabel>
             <p
               className={cn(
                 "text-3xl font-bold",
-                remainingErrorsCount > 0 ? "text-danger" : "text-success",
+                remainingErrorsCount > 0 ? "text-warning" : "text-success",
               )}
             >
               {remainingErrorsCount}
@@ -1763,40 +2372,17 @@ export function StepConfirmImport({
       </div>
 
       {/*
-        La barra vive acá sólo cuando NO hay muro. Dentro del muro sale por la
-        ranura viva — ver `barraDeGeocodificacion` arriba.
-      */}
-      {geocodificando && !ranuraViva ? barraDeGeocodificacion : null}
-      {/*
-        Con muro, la barra sale por la ranura viva: fuera del `inert`, pegada
-        al contenido y con su botón de parar VIVO.
+        La barra de la subida: con muro sale por la ranura viva (fuera del
+        `inert`, con su «Detener» vivo) y sin muro, acá mismo.
 
         🔴 Acá NO va la barra de la re-revisión, aunque vivió acá hasta el
-        2026-09-11. Este `return` es el resumen PREVIO a preparar: sólo se
-        llega con `lote === null`, y revisar exige un lote (`handleRevisarDeNuevo`
-        sale si no hay). Era código muerto: mientras Nico miraba «Revisando…»
-        en el botón, la barra con su conteo y su «Detener» no se dibujaba en
-        ninguna parte. Vive con la de activación, dentro del `if (lote)`.
+        2026-09-11. Este `return` es el resumen PREVIO a subir: sólo se llega
+        con `lote === null`, y revisar exige un lote. Vive con la de activación,
+        dentro del `if (lote)`.
       */}
-      {geocodificando && ranuraViva
-        ? createPortal(barraDeGeocodificacion, ranuraViva)
-        : null}
+      {portalDeBarra}
 
-      {geoCancelada && (
-        <div
-          className="rounded-md bg-surface-muted border border-border p-3"
-          data-testid="geo-cancelada"
-        >
-          <p className="text-sm font-medium text-fg">Se detuvo la búsqueda</p>
-          <p className="text-body-sm text-fg-muted mt-0.5">
-            No se importó nada y no quedó nada a medias en el servidor. Puedes
-            volver atrás, cambiar lo que necesites, y arrancar de nuevo cuando
-            quieras.
-          </p>
-        </div>
-      )}
-
-      {bloqueadas.length > 0 && !geocodificando && (
+      {bloqueadas.length > 0 && !subiendo && (
         <div
           className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2"
           data-testid="import-bloqueadas"
@@ -1813,16 +2399,15 @@ export function StepConfirmImport({
             </p>
             <p className="text-body-sm text-fg-muted mt-0.5">
               Les falta {motivosBloqueo.join(", ")}. Entran igual, marcados con
-              lo que les falta, y los completas en el paso siguiente fila por
-              fila — o antes, en{" "}
-              <span className="font-medium text-fg">Revisión</span> con
-              «Anterior». Nada del archivo se queda por fuera.
+              lo que les falta, y los completas en{" "}
+              <span className="font-medium text-fg">Revisar lo que falta</span>.
+              Nada del archivo se queda por fuera.
             </p>
           </div>
         </div>
       )}
 
-      {error && !geocodificando && (
+      {error && !subiendo && (
         <div
           className="rounded-md bg-danger-soft border border-border p-3 flex items-start gap-2"
           role="alert"
@@ -1834,10 +2419,10 @@ export function StepConfirmImport({
           />
           <div className="min-w-0">
             <p className="text-sm font-medium text-danger">
-              No se pudo preparar la importación
+              No se pudo subir el archivo
             </p>
             <p className="text-body-sm text-fg-muted mt-0.5 break-words">
-              El servidor respondió: {error}
+              {error}
             </p>
           </div>
         </div>
@@ -1870,8 +2455,10 @@ function ResumenDeLoQueSeLeyo({ inmuebles }: { inmuebles: ImportProperty[] }) {
       data-testid="resumen-de-lectura-inmuebles"
     >
       <h3 className="text-sm font-semibold text-fg">
-        Qué trae el archivo, de sus {resumen.total}{" "}
-        {resumen.total === 1 ? "fila" : "filas"}
+        {/* MP-07 (QA-MIGRACION-95): «de sus 1 fila» con un solo inmueble. */}
+        {resumen.total === 1
+          ? "Qué trae el archivo, de su única fila"
+          : `Qué trae el archivo, de sus ${resumen.total} filas`}
       </h3>
       <p className="mt-0.5 text-xs text-fg-muted">
         Esto es lo que se pudo LEER. A qué propietario y a qué contrato queda
@@ -1892,4 +2479,47 @@ function ResumenDeLoQueSeLeyo({ inmuebles }: { inmuebles: ImportProperty[] }) {
       </ul>
     </section>
   );
+}
+
+/**
+ * «Se crearon N inmuebles» contaba FILAS: una reimportación de 4 inmuebles que
+ * ya estaban decía «4 creados» con 0 nuevos, y dos filas con el mismo código
+ * decían 2 donde quedó 1 (QA-MIG-A, MG-36). Con un back que manda `nuevos`,
+ * la frase dice los nuevos y el detalle dice el resto; con uno anterior, lo de
+ * siempre.
+ */
+export function lineaDeCreados(
+  creacion: { creadas: number; nuevos?: number } | null | undefined,
+  nCreadas: number,
+): string {
+  const n = typeof creacion?.nuevos === 'number' ? creacion.nuevos : nCreadas
+  const cifra = n.toLocaleString('es-CO')
+  if (typeof creacion?.nuevos === 'number') {
+    return n === 1 ? 'Se creó 1 inmueble nuevo en tu portafolio' : `Se crearon ${cifra} inmuebles nuevos en tu portafolio`
+  }
+  return `Se crearon ${cifra} ${n === 1 ? 'inmueble' : 'inmuebles'} en tu portafolio`
+}
+
+export function detalleDeReusados(
+  creacion: { creadas: number; inmuebles?: number; nuevos?: number } | null | undefined,
+): string | null {
+  if (typeof creacion?.nuevos !== 'number' || typeof creacion.inmuebles !== 'number') return null
+  const yaEstaban = Math.max(0, creacion.inmuebles - creacion.nuevos)
+  const repetidas = Math.max(0, creacion.creadas - creacion.inmuebles)
+  const partes: string[] = []
+  if (yaEstaban > 0) {
+    partes.push(
+      yaEstaban === 1
+        ? '1 ya estaba en tu portafolio con el mismo código: no se duplicó.'
+        : `${yaEstaban.toLocaleString('es-CO')} ya estaban en tu portafolio con el mismo código: no se duplicaron.`,
+    )
+  }
+  if (repetidas > 0) {
+    partes.push(
+      repetidas === 1
+        ? '1 fila repetía el código de otra fila del archivo: quedaron en el mismo inmueble.'
+        : `${repetidas.toLocaleString('es-CO')} filas repetían el código de otra fila del archivo: quedaron en el mismo inmueble.`,
+    )
+  }
+  return partes.length > 0 ? partes.join(' ') : null
 }

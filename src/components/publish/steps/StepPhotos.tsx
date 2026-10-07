@@ -212,7 +212,7 @@ export function StepPhotos() {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="aspect-[4/3] rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center gap-1 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors bg-white dark:bg-[#2a2a2c]"
+              className="aspect-[4/3] rounded-xl border-2 border-dashed border-neutral-300 dark:border-neutral-600 flex flex-col items-center justify-center gap-1 hover:border-neutral-400 dark:hover:border-neutral-500 transition-colors bg-white dark:bg-border"
             >
               <ImageSquare className="w-6 h-6 text-fg-muted" />
               <span className="text-xs text-neutral-500 dark:text-neutral-400">Agregar</span>

@@ -20,8 +20,12 @@ const CLAVES = [
   'contratosQueLaUsan', 'origenConsignacion', 'completadaEl', 'editadaEl', 'verVersion',
   'versionTitulo', 'cerrar', 'contratoTitulo', 'contratoVersion', 'contratoSinCopia',
   'contratoVerInmueble', 'tareaEsteContrato', 'irAlInventario', 'bloqueoTitulo',
-  'bloqueoSinInventario', 'bloqueoSoloBorrador', 'bloqueoAnterior', 'bloqueoEnlace',
+  'bloqueoSinInventario', 'bloqueoSoloBorrador', 'bloqueoAnterior',
+  // QA con avatares (04-10): el botón del bloqueo dice qué hay que hacer.
+  'bloqueoHacer', 'bloqueoCompletar', 'bloqueoActualizar',
   'bloqueoSinEnlace', 'espacio', 'espacioPlaceholder',
+  // IN-07 (QA 04-10): UN solo estado vacío; y el regreso al contrato.
+  'vacioTitulo', 'vacioTexto', 'empezar', 'volverAlContrato', 'volverListo', 'volverPendiente',
   'estadoFirmado', 'estadoPendiente',
   'firmaTitulo', 'firmaPendiente', 'firmadoPor', 'firmaNoIntegra', 'firmaInquilinoTitulo', 'firmaInquilinoAyuda', 'firmaAceptacion', 'firmaBoton', 'firmaHecha', 'firmaExito', 'firmaError',
 ].map((k) => `${B}.${k}`);

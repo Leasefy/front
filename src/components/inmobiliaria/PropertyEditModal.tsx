@@ -1,12 +1,24 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { propertiesApi } from '@/lib/api/properties.service';
 import { uploadPropertyPhotos, PROPERTY_PHOTO_MAX_COUNT } from '@/lib/api/property-photos';
 import { PropertyPhotoPicker } from '@/components/inmobiliaria/PropertyPhotoPicker';
 import { Button, Input, Textarea, Spinner } from '@/components/ui';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { erroresDelInmueble } from '@/lib/inmuebles/limites-del-inmueble';
 import {
   Select,
   SelectContent,
@@ -31,6 +43,24 @@ interface PropertyEditModalProps {
   onSuccess: () => void;
 }
 
+/** Los campos del formulario: los mismos nombres que `PATCH /properties/:id`. */
+type CampoDelModal =
+  | 'title'
+  | 'description'
+  | 'type'
+  | 'city'
+  | 'neighborhood'
+  | 'address'
+  | 'monthlyRent'
+  | 'bedrooms'
+  | 'bathrooms'
+  | 'area';
+const CAMPOS_DEL_MODAL: readonly CampoDelModal[] = [
+  'title', 'description', 'type', 'city', 'neighborhood', 'address', 'monthlyRent', 'bedrooms', 'bathrooms', 'area',
+];
+const idDelCampo = (campo: CampoDelModal) => `edit-campo-${campo}`;
+const numeroOVacio = (v: string): number | undefined => (v.trim() === '' ? undefined : Number(v));
+
 interface PropertyImageRow {
   id: string;
   url: string;
@@ -43,7 +73,11 @@ interface PropertyImageRow {
  * or assigned agent). Photos: existing images (with ids) are fetched on open,
  * removable via DELETE /properties/:id/images/:imageId, and new ones can be
  * added (uploaded on save, respecting the backend max of 10 total).
- * Same overlay pattern as ChangeAgentModal.
+ *
+ * Es el `Dialog` canónico (DESIGN.md §17): el `<form>` va en el cuerpo y el
+ * botón de guardar en el pie fijo, apuntándolo con `form=`. El clic en el velo
+ * NO cierra (así era la cáscara a mano): un formulario largo con fotos no se
+ * pierde por un clic de más; se sale por Cancelar, la ✕ o Esc.
  */
 export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEditModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,8 +106,36 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
     area: property.area == null ? '' : String(property.area),
   });
 
-  const update = (field: string, value: string) =>
+  /** Lo que el back no aceptó, por campo; se va al editar ese campo. */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDelModal, string>>>({});
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const update = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    setDelServidor((prev) => (prev[field as CampoDelModal] ? { ...prev, [field]: undefined } : prev));
+  };
+
+  /*
+   * Los topes del back (`limites-del-inmueble.ts`, espejo del DTO) sobre lo
+   * escrito: se ven en el momento y no dejan guardar (sistema de errores,
+   * 02-10-2026). Lo del servidor va debajo, si el tope no dice nada.
+   */
+  const topes = erroresDelInmueble({
+    title: form.title,
+    address: form.address,
+    city: form.city,
+    neighborhood: form.neighborhood,
+    monthlyRent: numeroOVacio(form.monthlyRent),
+    bedrooms: numeroOVacio(form.bedrooms),
+    bathrooms: numeroOVacio(form.bathrooms),
+    area: numeroOVacio(form.area),
+  }) as Partial<Record<CampoDelModal, string>>;
+  const errorDe = (campo: CampoDelModal) => topes[campo] ?? delServidor[campo];
+  const a11y = (campo: CampoDelModal) => ({
+    id: idDelCampo(campo),
+    'aria-invalid': errorDe(campo) ? true : undefined,
+    'aria-describedby': errorDe(campo) ? `${idDelCampo(campo)}-error` : undefined,
+  });
 
   useEffect(() => {
     let alive = true;
@@ -101,7 +163,7 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
       setImages((prev) => prev.filter((img) => img.id !== imageId));
     } catch (err) {
       toast.error('No se pudo eliminar la foto', {
-        description: err instanceof Error ? err.message : undefined,
+        description: mensajeParaLaPersona(err, { accion: 'eliminar la foto' }),
       });
     } finally {
       setDeletingImageId(null);
@@ -122,7 +184,8 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
     // absurdo escrito a mano — vacío pasa, «-3» no.
     (form.bedrooms === '' || Number(form.bedrooms) >= 0) &&
     (form.bathrooms === '' || Number(form.bathrooms) >= 0) &&
-    (form.area === '' || Number(form.area) > 0);
+    (form.area === '' || Number(form.area) > 0) &&
+    Object.keys(topes).length === 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,48 +224,69 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
       }
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar la propiedad');
+      // Un 400 con `campos`: cada error bajo su campo y el foco al primero; el
+      // aviso de abajo, SÓLO con lo que no tiene campo (o un 5xx con la
+      // referencia, o la conexión si no hubo respuesta).
+      const reparto = repartirErroresDelServidor<CampoDelModal>(err, {
+        campos: CAMPOS_DEL_MODAL,
+        porDefecto: 'Error al actualizar la propiedad',
+        accion: 'actualizar la propiedad',
+      });
+      setDelServidor(reparto.porCampo);
+      setError(reparto.sueltos.length ? reparto.sueltos.join(' · ') : null);
+      const primero = reparto.orden[0];
+      if (primero) {
+        const el = formRef.current?.querySelector<HTMLElement>(`#${idDelCampo(primero)}`);
+        el?.focus();
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-      <div className="w-full max-w-lg bg-card rounded-[20px] border border-border max-h-[85vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border shrink-0">
-          <div>
-            <h2 className="text-base font-semibold text-fg">Editar propiedad</h2>
-            <p className="text-sm text-fg-muted mt-0.5 truncate max-w-[320px]">
-              {property.title}
-            </p>
-          </div>
-          <Button variant="ghost" size="icon" hideArrow onClick={onClose} aria-label="Cerrar">
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        if (!abierto) onClose();
+      }}
+    >
+      <DialogContent
+        size="md"
+        // El velo no cierra (como antes): un clic de más no bota lo escrito.
+        onInteractOutside={(e) => e.preventDefault()}
+      >
+        <DialogHeader>
+          <DialogTitle>Editar propiedad</DialogTitle>
+          <DialogDescription className="truncate">{property.title}</DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
+        {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
+            el botón de guardar lo apunta con `form=`. */}
+        <form ref={formRef} id={ID_DEL_FORMULARIO} onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-fg">Título *</label>
+            <label htmlFor={idDelCampo('title')} className="text-sm font-medium text-fg">Título *</label>
             <Input
+              {...a11y('title')}
               type="text"
               value={form.title}
               onChange={(e) => update('title', e.target.value)}
               data-testid="edit-title"
             />
+            <ErrorDelCampo id={`${idDelCampo('title')}-error`} mensaje={errorDe('title')} />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-fg">Descripción *</label>
+            <label htmlFor={idDelCampo('description')} className="text-sm font-medium text-fg">Descripción *</label>
             <Textarea
+              {...a11y('description')}
               value={form.description}
               onChange={(e) => update('description', e.target.value)}
               rows={3}
               className="resize-none"
               data-testid="edit-description"
             />
+            <ErrorDelCampo id={`${idDelCampo('description')}-error`} mensaje={errorDe('description')} />
           </div>
 
           <div className="space-y-1.5">
@@ -218,9 +302,9 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-fg">Ciudad *</label>
+              <label htmlFor={idDelCampo('city')} className="text-sm font-medium text-fg">Ciudad *</label>
               <Select value={form.city || undefined} onValueChange={(v) => update('city', v)}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger {...a11y('city')} className="w-full">
                   <SelectValue placeholder="Selecciona una ciudad" />
                 </SelectTrigger>
                 <SelectContent>
@@ -229,69 +313,82 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
                   ))}
                 </SelectContent>
               </Select>
+              <ErrorDelCampo id={`${idDelCampo('city')}-error`} mensaje={errorDe('city')} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-fg">Barrio / Zona</label>
+              <label htmlFor={idDelCampo('neighborhood')} className="text-sm font-medium text-fg">Barrio / Zona</label>
               <Input
+                {...a11y('neighborhood')}
                 type="text"
                 value={form.neighborhood}
                 onChange={(e) => update('neighborhood', e.target.value)}
                 data-testid="edit-neighborhood"
               />
+              <ErrorDelCampo id={`${idDelCampo('neighborhood')}-error`} mensaje={errorDe('neighborhood')} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium text-fg">Dirección *</label>
+            <label htmlFor={idDelCampo('address')} className="text-sm font-medium text-fg">Dirección *</label>
             <Input
+              {...a11y('address')}
               type="text"
               value={form.address}
               onChange={(e) => update('address', e.target.value)}
               data-testid="edit-address"
             />
+            <ErrorDelCampo id={`${idDelCampo('address')}-error`} mensaje={errorDe('address')} />
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-fg">Habitaciones *</label>
+              <label htmlFor={idDelCampo('bedrooms')} className="text-sm font-medium text-fg">Habitaciones *</label>
               <Input
+                {...a11y('bedrooms')}
                 type="number"
                 min="0"
                 value={form.bedrooms}
                 onChange={(e) => update('bedrooms', e.target.value)}
                 data-testid="edit-bedrooms"
               />
+              <ErrorDelCampo id={`${idDelCampo('bedrooms')}-error`} mensaje={errorDe('bedrooms')} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-fg">Baños *</label>
+              <label htmlFor={idDelCampo('bathrooms')} className="text-sm font-medium text-fg">Baños *</label>
               <Input
+                {...a11y('bathrooms')}
                 type="number"
                 min="0"
-                step="0.5"
+                step="1"
                 value={form.bathrooms}
                 onChange={(e) => update('bathrooms', e.target.value)}
                 data-testid="edit-bathrooms"
               />
+              <ErrorDelCampo id={`${idDelCampo('bathrooms')}-error`} mensaje={errorDe('bathrooms')} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-fg">Área (m²) *</label>
+              <label htmlFor={idDelCampo('area')} className="text-sm font-medium text-fg">Área (m²) *</label>
               <Input
+                {...a11y('area')}
                 type="number"
                 min="1"
                 value={form.area}
                 onChange={(e) => update('area', e.target.value)}
                 data-testid="edit-area"
               />
+              <ErrorDelCampo id={`${idDelCampo('area')}-error`} mensaje={errorDe('area')} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-fg">Canon (COP) *</label>
+              <label htmlFor={idDelCampo('monthlyRent')} className="text-sm font-medium text-fg">Canon (COP) *</label>
               <Input
+                {...a11y('monthlyRent')}
                 type="number"
                 min="1"
                 value={form.monthlyRent}
                 onChange={(e) => update('monthlyRent', e.target.value)}
                 data-testid="edit-rent"
               />
+              <ErrorDelCampo id={`${idDelCampo('monthlyRent')}-error`} mensaje={errorDe('monthlyRent')} />
             </div>
           </div>
 
@@ -348,33 +445,31 @@ export function PropertyEditModal({ property, onClose, onSuccess }: PropertyEdit
             )}
           </div>
 
+          {/* El aviso del formulario (lo que no tiene campo): un bloque, no un
+              error de campo. */}
           {error && (
-            <p className="text-sm text-danger" data-testid="edit-error">{error}</p>
+            <p role="alert" className="text-sm text-danger" data-testid="edit-error">{error}</p>
           )}
-
-          <div className="flex items-center gap-3 pt-1">
-            <Button
-              type="button"
-              variant="secondary"
-              hideArrow
-              onClick={onClose}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              hideArrow
-              isLoading={isSubmitting}
-              disabled={!isValid || isSubmitting}
-              className="flex-1"
-              data-testid="edit-submit"
-            >
-              {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
-            </Button>
-          </div>
         </form>
-      </div>
-    </div>
+
+        <DialogFooter>
+          <Button type="button" variant="secondary" hideArrow onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={ID_DEL_FORMULARIO}
+            hideArrow
+            isLoading={isSubmitting}
+            disabled={!isValid || isSubmitting}
+            data-testid="edit-submit"
+          >
+            {isSubmitting ? 'Guardando...' : 'Guardar cambios'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
+
+const ID_DEL_FORMULARIO = 'form-editar-propiedad';

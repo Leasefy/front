@@ -15,7 +15,6 @@ const hook = vi.hoisted(() => ({
   valor: {} as Record<string, unknown>,
 }));
 vi.mock('@/lib/hooks/useOwnerPortal', () => ({ useOwnerFinanzas: () => hook.valor }));
-vi.mock('@/components/ui', () => ({ Spinner: () => React.createElement('div', { 'data-testid': 'spinner' }) }));
 vi.mock('@/components/landlord/portal/PortalPlaceholder', () => ({
   PortalPlaceholder: () => React.createElement('div', { 'data-testid': 'proximamente' }),
 }));
@@ -81,9 +80,15 @@ describe('Mi plata — cuatro estados (O1)', () => {
     expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull();
   });
 
-  it('cargando muestra el spinner y con datos la vista', () => {
+  // Mi plata vive dentro del panel del propietario (menú + cabecera): su carga
+  // es el esqueleto de la página, no el logo (Nico, 01-10: «el logo sólo en
+  // cargas de pantalla completa»).
+  it('cargando muestra el esqueleto de la página (no el logo) y con datos la vista', () => {
     pintar({ isLoading: true });
-    expect(container.querySelector('[data-testid="spinner"]')).toBeTruthy();
+    const carga = container.querySelector('[role="status"][aria-busy="true"]');
+    expect(carga).toBeTruthy();
+    expect(carga?.querySelector('[data-slot="skeleton"]')).toBeTruthy();
+    expect(carga?.querySelector('picture')).toBeNull();
     pintar({ portafolio: { totalCop: 1 } });
     expect(container.querySelector('[data-testid="mi-plata"]')).toBeTruthy();
   });

@@ -73,19 +73,41 @@ afterEach(async () => {
   usarAlmacenDeBorradores(null);
 });
 
-async function render() {
+async function render({ abrir = true } = {}) {
   await act(async () => {
     root.render(<DisponiblesSinSenal />);
   });
   await act(async () => {
     await Promise.resolve();
   });
+  // IN-01 (QA 04-10): el bloque abre PLEGADO; para ver la lista hay que abrirlo.
+  if (abrir) await abrirLaLista();
+}
+async function abrirLaLista() {
+  const ver = container.querySelector<HTMLElement>('[data-testid="disponibles-sin-senal-ver"]');
+  if (ver && ver.getAttribute('aria-expanded') !== 'true') {
+    await act(async () => {
+      ver.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+  }
 }
 
 describe('<DisponiblesSinSenal>', () => {
   it('sin nada preparado no ocupa lugar en la pantalla', async () => {
     await render();
     expect(container.querySelector('[data-testid="disponibles-sin-senal"]')).toBeNull();
+  });
+
+  it('🔴 IN-01: abre plegado, en UNA línea que dice cuántos hay, y la lista se abre a pedido', async () => {
+    await guardarCopia(consignacion('c-1', 'Apto viejo'), 1_000);
+    await guardarCopia(consignacion('c-2', 'Apto nuevo'), 5_000);
+    await render({ abrir: false });
+    const ver = container.querySelector('[data-testid="disponibles-sin-senal-ver"]')!;
+    expect(ver.textContent).toContain('2 inmuebles guardados para trabajar sin señal');
+    expect(ver.getAttribute('aria-expanded')).toBe('false');
+    await abrirLaLista();
+    expect(ver.getAttribute('aria-expanded')).toBe('true');
+    expect(container.querySelectorAll('[data-testid="disponible-sin-senal"]')).toHaveLength(2);
   });
 
   it('lista lo que hay guardado, de lo más reciente a lo más viejo', async () => {
@@ -109,6 +131,7 @@ describe('<DisponiblesSinSenal>', () => {
     await act(async () => {
       await Promise.resolve();
     });
+    await abrirLaLista();
 
     expect(container.textContent).toContain('Apto recién preparado');
   });
@@ -150,10 +173,10 @@ describe('<DisponiblesSinSenal>', () => {
     await guardarCopia(consignacion('c-1', 'Apto de antes'), 1_000);
     await render();
 
-    const enlaces = [...container.querySelectorAll('[data-testid="se-abre-desde"] a')].map((a) =>
-      a.getAttribute('href'),
-    );
-    expect(enlaces).toEqual(['/panel/inmobiliaria/inmuebles/c-1']);
+    // El renglón lleva a la ficha; con la ficha sola no se repite «Se abre desde: el inmueble».
+    const fila = container.querySelector('[data-testid="disponible-sin-senal"]')!;
+    expect(fila.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/c-1');
+    expect(container.querySelector('[data-testid="se-abre-desde"]')).toBeNull();
   });
 
   it('quitar uno lo saca de la lista', async () => {

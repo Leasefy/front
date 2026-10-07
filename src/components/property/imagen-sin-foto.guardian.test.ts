@@ -62,14 +62,20 @@ function esSeguro(src: string, antes: string): boolean {
   const sinBang = src.replace(/!$/, '').replace(/^\((.*)\)$/, '$1');
   const escapado = sinBang.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   if (new RegExp(`${escapado}\\)?\\s*(\\?|&&)`).test(antes)) return true;
-  // Una constante de módulo en MAYÚSCULAS (imports estáticos, `POSTER`).
-  if (/^[A-Z][A-Z0-9_]*$/.test(src)) return true;
+  // Una constante de módulo en MAYÚSCULAS (imports estáticos, `POSTER`), o un
+  // campo suyo (`PERFIL_INMOBILIARIA.imagen`): datos escritos en el código.
+  if (/^[A-Z][A-Z0-9_]*(?:\.[A-Za-z_$][\w$]*)*$/.test(src)) return true;
   return false;
 }
 
 /**
  * Los que ya estaban el 22-09 y por qué no se caen. Si uno se arregla, sale de
  * acá (lo exige la segunda prueba).
+ *
+ * 02-10-2026: más dos del 30-09 (la elección de perfil y el recorrido) que la
+ * aguja no puede seguir: el `src` es un `string` obligatorio que sale de datos
+ * escritos en el código, no de una respuesta del back. Igual que los de la
+ * landing, se declaran con su motivo; uno que lea fotos del back no entra acá.
  */
 const DECLARADOS: ReadonlyArray<Uso & { motivo: string }> = [
   {
@@ -107,6 +113,16 @@ const DECLARADOS: ReadonlyArray<Uso & { motivo: string }> = [
     motivo: 'Dos usos, los dos dentro de `property.images.length === 0 ? «Sin fotos» : …`.',
   },
   { archivo: 'src/components/tenant/PropertyDetailSheet.tsx', src: 'image', motivo: 'Elemento de la lista de fotos.' },
+  {
+    archivo: 'src/components/onboarding/perfil/EleccionDePerfil.tsx',
+    src: 'opcion.imagen',
+    motivo: 'Recorre `PERFILES` (perfiles.ts): fotos de `public/` escritas en el código; `imagen` es `string` obligatorio.',
+  },
+  {
+    archivo: 'src/components/tour/TourDelPanel.tsx',
+    src: 'src',
+    motivo: '`FotoDeMarca` sólo recibe `FOTO_DE_LA_BIENVENIDA` o `FOTO_DEL_CIERRE`, constantes del mismo archivo.',
+  },
 ];
 
 const clave = (u: Uso) => `${u.archivo} :: ${u.src}`;

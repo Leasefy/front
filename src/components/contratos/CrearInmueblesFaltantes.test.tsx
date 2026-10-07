@@ -123,9 +123,12 @@ describe('CrearInmueblesFaltantes', () => {
       await new Promise((r) => setTimeout(r, 0))
     })
 
+    // QA-MIG-A MG-34: sin elegir tipo NO viaja ninguno (el back usa el de la
+    // dirección o deja la fila sin crear, diciéndolo — nunca un apartamento).
     expect(contractsApi.migracion.crearInmueblesFaltantes).toHaveBeenCalledWith(
       { lote: 'lote-1' },
       'Bello',
+      undefined,
     )
     const resultado = document.querySelector('[data-testid="crear-inmuebles-faltantes-resultado"]')
     expect(resultado?.textContent).toContain('2 inmuebles creados')
@@ -138,6 +141,20 @@ describe('CrearInmueblesFaltantes', () => {
     // Se volvió a contar: quedó 1.
     expect(boton('crear-inmuebles-faltantes-abrir')?.textContent).toContain('1')
     expect(document.querySelector('[role="alertdialog"]')).toBeNull()
+  })
+
+  it('QA-MIG-A MG-34: el diálogo ofrece elegir el tipo para las que la dirección no lo dice, sin uno por defecto', async () => {
+    vi.mocked(contractsApi.migracion.inmueblesFaltantes).mockResolvedValue({
+      candidatas: 2, activadas: 0, ambiguas: 0, sinDireccion: 0,
+    })
+    await render()
+    await act(async () => {
+      boton('crear-inmuebles-faltantes-abrir')?.click()
+    })
+    const tipo = document.querySelector('[data-testid="crear-inmuebles-faltantes-tipo"]')
+    expect(tipo).not.toBeNull()
+    expect(tipo?.textContent).toContain('Ninguno')
+    expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain('No se pone un tipo que nadie dijo')
   })
 
   it('un fallo del back se queda en el diálogo y no refresca', async () => {
@@ -164,5 +181,69 @@ describe('CrearInmueblesFaltantes', () => {
       'Hay que decir el lote o las filas.',
     )
     expect(onListo).not.toHaveBeenCalled()
+  })
+})
+
+/*
+ * Sistema de errores (02-10-2026): un 400 de la ciudad va debajo de la
+ * ciudad, con el foco; un 5xx al aviso del diálogo, con la referencia.
+ */
+describe('<CrearInmueblesFaltantes> — el error en su lugar', () => {
+  async function abrirYConfirmar(error: unknown) {
+    vi.mocked(contractsApi.migracion.inmueblesFaltantes).mockResolvedValue({
+      candidatas: 5,
+      activadas: 0,
+      ambiguas: 0,
+      sinDireccion: 0,
+    })
+    vi.mocked(contractsApi.migracion.crearInmueblesFaltantes).mockRejectedValue(error)
+    await render()
+    await act(async () => {
+      boton('crear-inmuebles-faltantes-abrir')?.click()
+    })
+    await act(async () => {
+      boton('crear-inmuebles-faltantes-confirmar')?.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    await act(async () => {})
+  }
+
+  it('🔴 un 400 en `ciudad` va debajo de la ciudad, con aria y foco', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    await abrirYConfirmar(
+      new ApiError(400, ['La ciudad no puede estar vacía.'], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['La ciudad no puede estar vacía.'],
+        campos: [{ campo: 'ciudad', regla: 'requerido', mensaje: 'La ciudad no puede estar vacía.' }],
+      }),
+    )
+    const input = document.getElementById('ciudad-inmuebles-faltantes') as HTMLInputElement
+    expect(document.getElementById('ciudad-inmuebles-faltantes-error')?.textContent).toBe(
+      'La ciudad no puede estar vacía.',
+    )
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(input)
+  })
+
+  it('🔴 un 5xx: de nuestro lado, con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    await abrirYConfirmar(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'ab12cd34',
+      }),
+    )
+    const t = document.querySelector('[role="alertdialog"]')?.textContent ?? ''
+    expect(t).toContain('No pudimos crear los inmuebles: algo falló de nuestro lado')
+    expect(t).toContain('ab12cd34')
+    expect(t).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta: la conexión', async () => {
+    await abrirYConfirmar(new TypeError('Failed to fetch'))
+    expect(document.querySelector('[role="alertdialog"]')?.textContent).toMatch(/conexión/)
   })
 })

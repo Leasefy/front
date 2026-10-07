@@ -124,3 +124,21 @@ describe('<StepColumnMapping> — dos datos en una celda', () => {
     expect(container.querySelector('[data-testid="partes-Dirección"]')).toBeNull();
   });
 });
+
+describe('<StepColumnMapping> — QA-MIG-A MG-29: a 390 px se apila', () => {
+  it('cada fila del mapeo es columna en el celular y fila desde sm, y la flecha sólo se ve en fila', () => {
+    render(estado());
+    const fila = container.querySelector('[data-testid="partes-Propiedad"]')?.parentElement;
+    expect(fila?.className).toContain('flex-col');
+    expect(fila?.className).toContain('sm:flex-row');
+    const flecha = fila?.querySelector('svg');
+    expect(flecha?.getAttribute('class') ?? '').toContain('hidden');
+  });
+
+  it('el encabezado (título, resumen y «Restablecer») baja en el celular en vez de empujar el ancho', () => {
+    render(estado());
+    const encabezado = container.querySelector('h2')?.parentElement?.parentElement;
+    expect(encabezado?.className).toContain('flex-col');
+    expect(encabezado?.className).toContain('sm:flex-row');
+  });
+});

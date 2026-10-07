@@ -28,8 +28,10 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui'
-import { Card, Chip } from '@leasefy/cadence'
+import { Card, Chip, CrossFade, Presence } from '@leasefy/cadence'
 import { TablePagination } from '@/components/ui/pagination'
 import {
   useTablePagination,
@@ -114,8 +116,11 @@ function SiniestrosContent() {
   const hasFilters = statusFilter !== undefined
 
   // ── Skeleton ──────────────────────────────────────────────────────────────
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // lista, → vacío); lo que ya estaba al montarse no se anima.
   if (isLoading && !data) {
     return (
+      <CrossFade swapKey="esqueleto">
       <div className="p-4 lg:p-8" aria-busy="true">
         <header className="mb-5">
           <div className="h-7 w-40 bg-surface-muted rounded animate-pulse" />
@@ -137,12 +142,14 @@ function SiniestrosContent() {
           </Table>
         </Card>
       </div>
+      </CrossFade>
     )
   }
 
   // ── Global empty state (no filters, no data) ──────────────────────────────
   if (!isLoading && !hasFilters && claims.length === 0 && !error) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8">
         <EmptyState
           icon={Siren}
@@ -150,10 +157,12 @@ function SiniestrosContent() {
           description={t('inmobiliaria.ai.cobranza.siniestros.list.empty.description')}
         />
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="lista">
     <div className="p-4 lg:p-8">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-5">
@@ -191,7 +200,7 @@ function SiniestrosContent() {
           </div>
         </fieldset>
 
-        {hasFilters && (
+        <Presence show={hasFilters} direction="none" initial={false} className="self-center">
           <Button
             variant="link"
             size="sm"
@@ -201,19 +210,17 @@ function SiniestrosContent() {
           >
             {isEs ? 'Limpiar filtro' : 'Clear filter'}
           </Button>
-        )}
+        </Presence>
       </div>
 
       {/* Error */}
-      {error && (
-        <div
+      <Presence show={Boolean(error)}
           role="alert"
           className="border-b border-border bg-danger-soft px-4 py-3 text-sm text-danger flex items-center gap-2"
         >
           <Warning className="w-4 h-4 shrink-0" weight="fill" aria-hidden="true" />
           <span>Error: {error}</span>
-        </div>
-      )}
+      </Presence>
 
       {/* Table */}
         <div className="overflow-x-auto">
@@ -244,7 +251,8 @@ function SiniestrosContent() {
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
+          {/* Filtrar o paginar: las filas entran escalonadas (techo 320 ms) y las que sobran salen. */}
+          <TableBodyAnimado>
             {/*
               Con error NO se puede decir «sin siniestros»: eso es una
               afirmación sobre los datos, y con la carga fallida no sabemos
@@ -253,7 +261,7 @@ function SiniestrosContent() {
               justo cuando no debía.
             */}
             {claims.length === 0 && !isLoading && (
-              <TableRow>
+              <TableRowAnimada key="vacio">
                 <TableCell colSpan={7} className="px-3 py-12 text-center">
                   <p className="text-sm text-fg-muted">
                     {error
@@ -276,10 +284,10 @@ function SiniestrosContent() {
                     </Button>
                   )}
                 </TableCell>
-              </TableRow>
+              </TableRowAnimada>
             )}
             {pageItems.map((c) => (
-              <TableRow
+              <TableRowAnimada
                 key={c.id}
                 onClick={() => navigateToSiniestro(c.id)}
                 role="link"
@@ -353,9 +361,9 @@ function SiniestrosContent() {
                       ? c.approvedByHumanUserId.slice(0, 8) + '…'
                       : '—')}
                 </TableCell>
-              </TableRow>
+              </TableRowAnimada>
             ))}
-          </TableBody>
+          </TableBodyAnimado>
         </Table>
         </div>
 
@@ -374,6 +382,7 @@ function SiniestrosContent() {
         )}
       </Card>
     </div>
+    </CrossFade>
   )
 }
 

@@ -14,6 +14,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { ComponentType, FC } from 'react';
+import type { NavFilterContext } from '@/lib/nav/agency-nav-filter';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Public types
@@ -40,6 +41,12 @@ export interface SearchSourceContext {
   /** Per-item permission gate — sources with per-result permissions use this
    *  (a SearchSource-level `permission` gates the whole source instead). */
   canAccess?: (module: string, action: string) => boolean;
+  /**
+   * COBRANZA-MANUAL (04-10-2026): lo que el menú sabe de quien busca (rol,
+   * administrador, módulos de pago). Con esto la navegación del buscador usa
+   * el MISMO gate que las filas del menú (`seVeEnElBuscador`).
+   */
+  nav?: NavFilterContext;
 }
 
 export interface SearchSource {

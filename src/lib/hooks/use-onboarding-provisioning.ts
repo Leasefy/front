@@ -15,8 +15,9 @@
  *  - si hay agencia pero no sesión, el paso previo aparece PRELLENADO con la
  *    razón social y el NIT que ya había escrito, y reenviarlo vuelve a pedirle
  *    la sesión al agente;
- *  - si la agencia quedó FAILED, no se ofrece reintento: es terminal y lo
- *    destraba soporte. Un botón que no puede funcionar es peor que no tenerlo.
+ *  - si la agencia quedó FAILED (el micro rechazó los datos), vuelve el paso
+ *    previo prellenado con un aviso arriba para corregir y reenviar. Nada en
+ *    este flujo es terminal (01-10-2026): «irreversible» era ilógico.
  *
  * Los fallos ya no se tragan. El mensaje del back —que viene en español y es
  * específico— se guarda y se muestra, junto con si tiene sentido reintentar.
@@ -28,6 +29,15 @@ import {
   getOnboardingResumePoint,
 } from '@/lib/api/onboarding-provisioning.service'
 import { ApiError } from '@/lib/api/client'
+import { esErrorDeConexion } from '@/lib/conexion/estado-de-conexion'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import {
+  esServicioNoDisponible,
+  servicioDelError,
+  textoDeServicioNoDisponible,
+  type ServicioId,
+} from '@/lib/conexion/servicio-no-disponible'
 
 /**
  * userType for the OWNER who creates the agency through this wizard.
@@ -63,6 +73,49 @@ export interface AgencyPrefill {
   nit: string
 }
 
+/** Lo que la persona ya escribió en el paso previo, de esta visita o de una anterior. */
+export interface ValoresGuardados {
+  razonSocial: string
+  nit: string
+  nombreCompleto?: string
+  representanteLegal?: string
+}
+
+/**
+ * ¿El fallo fue una caída y no algo de los datos? (01-10-2026)
+ *
+ *  - `servicio`: el back contestó 503 `SERVICIO_NO_DISPONIBLE` —se cayó una
+ *    parte, casi siempre el asistente (el micro de agentes)—. `servicio` es
+ *    `null` si el back no dijo cuál.
+ *  - `conexion`: no hubo red, o Leasefy entero no respondió.
+ *
+ * En los dos casos lo escrito no se pierde y reintentar sí puede servir: el
+ * banner lo dice sin «Código 503».
+ */
+/** Los campos de «Antes de comenzar» (`OwnerNameStepForm`) que el back puede rechazar. */
+export type CampoDelRegistro = 'nombre' | 'representante' | 'razonSocial' | 'nit'
+
+/** Un mensaje por campo de «Antes de comenzar». */
+export type ErroresDelRegistro = Partial<Record<CampoDelRegistro, string>>
+
+/**
+ * La ruta de cada dato en el cuerpo de `POST /users/me/onboarding` → su campo
+ * en el formulario. El nombre completo se parte en `firstName`/`lastName`.
+ */
+const CAMPO_DEL_SERVIDOR: Record<string, CampoDelRegistro> = {
+  firstName: 'nombre',
+  lastName: 'nombre',
+  'agency.name': 'razonSocial',
+  'agency.nit': 'nit',
+  'agency.legalRepresentative': 'representante',
+}
+
+const CAMPOS_DEL_REGISTRO: readonly CampoDelRegistro[] = ['nombre', 'representante', 'razonSocial', 'nit']
+
+export type CaidaDelRegistro =
+  | { tipo: 'servicio'; servicio: ServicioId | null }
+  | { tipo: 'conexion' }
+
 export interface FalloDeAprovisionamiento {
   /** Lo que dijo el back, tal cual. Ya viene en español y es específico. */
   mensaje: string
@@ -70,7 +123,30 @@ export interface FalloDeAprovisionamiento {
   reintentable: boolean
   /** Código HTTP, o 0 si nunca salió de la máquina. Para el reporte a soporte. */
   status: number | null
+  /** Sólo cuando lo que falló fue una caída. Ver `CaidaDelRegistro`. */
+  caida?: CaidaDelRegistro
+  /**
+   * true ⇒ lo que falló fueron los DATOS: se vuelve al formulario prellenado
+   * con este mensaje arriba, para corregir y reenviar. Nunca es un callejón.
+   */
+  paraCorregir?: boolean
+  /**
+   * 02-10-2026 · Lo que el back rechazó por campo (el 400 `DATOS_INVALIDOS`
+   * con `campos`): cada mensaje va a SU campo de `OwnerNameStepForm`, no
+   * arriba. Lo que no tiene campo queda en `mensaje`.
+   */
+  campos?: ErroresDelRegistro
 }
+
+/** Lo que se dice arriba del formulario cuando la última vez el micro rechazó los datos. */
+export const REVISA_LOS_DATOS =
+  'La última vez no pudimos crear tu inmobiliaria con estos datos. Revísalos —sobre todo el NIT— y vuelve a intentar.'
+
+/** Arriba del formulario, cuando todo lo que el back rechazó quedó marcado en su campo. */
+export const REVISA_LOS_CAMPOS = 'Corrige lo que está marcado abajo y vuelve a intentar.'
+
+/** Lo que tranquiliza en el registro: lo escrito se queda (ver `valoresGuardados`). */
+export const LO_ESCRITO_NO_SE_PIERDE = 'Lo que escribiste no se pierde.'
 
 export interface UseOnboardingProvisioningResult {
   status: OnboardingProvisioningStatus
@@ -82,13 +158,24 @@ export interface UseOnboardingProvisioningResult {
    */
   agencyPrefill: AgencyPrefill | null
   /** Lo que ya había escrito en una visita anterior, para no volver a pedirlo. */
-  valoresGuardados: { razonSocial: string; nit: string } | null
+  valoresGuardados: ValoresGuardados | null
   /** Sólo cuando `status === 'error'`. */
   fallo: FalloDeAprovisionamiento | null
   /** Re-posts the last `provision()` payload. Wired to the "Reintentar" CTA. */
   retry: () => void
   /** Provisions with the explicitly captured owner + agency data. */
   provision: (input: ProvisioningInput) => void
+  /**
+   * La persona volvió desde el asistente a corregir los datos de la
+   * inmobiliaria (Nico, 01-10-2026). La inmobiliaria y la sesión ya existen:
+   * el formulario vuelve lleno, el NIT queda fijo y al guardar sigue en el
+   * asistente con la misma sesión.
+   */
+  corrigiendo: boolean
+  /** Del asistente al formulario de la inmobiliaria. Sólo con la sesión lista. */
+  corregirDatos: () => void
+  /** Del formulario de vuelta al asistente, sin guardar nada. */
+  volverAlAsistente: () => void
 }
 
 /** El código del 409 del back (`AgencyService.createAgency`). */
@@ -105,11 +192,37 @@ const FALLO_GENERICO =
  * Traduce lo que salió mal a algo que se le pueda decir a una persona, y a si
  * tiene sentido ofrecerle el botón de reintentar.
  *
- * Un 400 del back en este flujo es siempre terminal: o la agencia quedó FAILED
- * (que no se auto-reintenta nunca) o los datos no pasaron validación, y en los
- * dos casos volver a mandar lo mismo da lo mismo.
+ * Un 400/422 son los datos: `paraCorregir` lleva de vuelta al formulario
+ * prellenado. Lo único que no se ofrece reintentar es lo que el formulario no
+ * puede arreglar (el 409 del correo de otra inmobiliaria, un 403).
  */
 export function interpretarFallo(error: unknown): FalloDeAprovisionamiento {
+  /*
+   * 🔴 01-10-2026: con el micro de agentes caído, esto mostraba el `message`
+   * del back con «Código 503» abajo, y la persona no sabía si era ella ni si
+   * había perdido lo escrito. Una caída se dice como caída: qué se cayó, que
+   * no es su culpa, que lo escrito se queda y que reintentar sirve.
+   */
+  // Primero la conexión: incluye la base caída, que también trae `servicio`
+  // pero no es «una parte» — sin ella no funciona nada.
+  if (esErrorDeConexion(error)) {
+    return {
+      mensaje: `${LO_ESCRITO_NO_SE_PIERDE} Apenas Leasefy responda, vuelve a intentar.`,
+      reintentable: true,
+      status: error instanceof ApiError ? error.status : null,
+      caida: { tipo: 'conexion' },
+    }
+  }
+  if (esServicioNoDisponible(error)) {
+    const servicio = servicioDelError(error)
+    return {
+      mensaje: textoDeServicioNoDisponible(servicio, { tranquilidad: LO_ESCRITO_NO_SE_PIERDE })
+        .detalle,
+      reintentable: true,
+      status: error instanceof ApiError ? error.status : 503,
+      caida: { tipo: 'servicio', servicio },
+    }
+  }
   if (error instanceof ApiError) {
     /*
      * 🔴 Auditoría de seguridad 23-09-2026 (back): el correo de la agencia es
@@ -121,32 +234,71 @@ export function interpretarFallo(error: unknown): FalloDeAprovisionamiento {
      */
     if (error.code === CORREO_DE_OTRA_INMOBILIARIA) {
       return {
-        mensaje: error.message || MOTIVO_CORREO_DE_OTRA_INMOBILIARIA,
+        mensaje: mensajeParaLaPersona(error, { porDefecto: MOTIVO_CORREO_DE_OTRA_INMOBILIARIA }),
         reintentable: false,
         status: error.status,
       }
     }
     if (error.status === 0) {
-      return { mensaje: error.message, reintentable: true, status: 0 }
+      // Sin respuesta: «conexión» sólo acá (la regla de oro del traductor).
+      return { mensaje: mensajeParaLaPersona(error), reintentable: true, status: 0 }
     }
+    // Un 400/422 son los DATOS (el micro los rechazó, falta el NIT, no pasó
+    // la validación): se corrigen en el formulario y se reenvían. Antes esto
+    // era «terminal» y la persona quedaba trancada para siempre (Nico,
+    // 01-10-2026: «le dice que es irreversible, ¿cómo así? es ilógico»).
+    // Desde el 02-10 lo que trae `campos` va a SU campo; arriba, sólo lo suelto.
+    if (error.status === 400 || error.status === 422) {
+      const reparto = repartirErroresDelServidor<CampoDelRegistro>(error, {
+        mapa: CAMPO_DEL_SERVIDOR,
+        campos: CAMPOS_DEL_REGISTRO,
+        porDefecto: REVISA_LOS_DATOS,
+      })
+      const hayCampos = reparto.orden.length > 0
+      return {
+        mensaje: reparto.sueltos.join(' · ') || (hayCampos ? REVISA_LOS_CAMPOS : REVISA_LOS_DATOS),
+        reintentable: true,
+        status: error.status,
+        paraCorregir: true,
+        ...(hayCampos ? { campos: reparto.porCampo } : {}),
+      }
+    }
+    // Lo demás, con la regla de oro: un 4xx dice lo que mandó el back; un
+    // 5xx, que falló de nuestro lado, con la referencia.
     return {
-      mensaje: error.message || FALLO_GENERICO,
-      reintentable: error.status !== 400 && error.status !== 403,
+      mensaje: mensajeParaLaPersona(error, { accion: 'crear tu inmobiliaria', porDefecto: FALLO_GENERICO }),
+      reintentable: error.status !== 403,
       status: error.status,
     }
   }
+  // Algo que no vino de una respuesta del back (un error de JavaScript): no
+  // se le muestra su texto a nadie.
   return { mensaje: FALLO_GENERICO, reintentable: true, status: null }
+}
+
+function valoresDelEnvio(input: ProvisioningInput): ValoresGuardados {
+  const nombreCompleto = [input.firstName, input.lastName].filter(Boolean).join(' ')
+  return {
+    razonSocial: input.agencyName,
+    nit: input.nit,
+    ...(nombreCompleto ? { nombreCompleto } : {}),
+    ...(input.legalRepresentative ? { representanteLegal: input.legalRepresentative } : {}),
+  }
 }
 
 export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
   const [status, setStatus] = useState<OnboardingProvisioningStatus>('resuming')
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [agencyPrefill, setAgencyPrefill] = useState<AgencyPrefill | null>(null)
-  const [valoresGuardados, setValoresGuardados] = useState<{
-    razonSocial: string
-    nit: string
-  } | null>(null)
+  const [valoresGuardados, setValoresGuardados] = useState<ValoresGuardados | null>(null)
   const [fallo, setFallo] = useState<FalloDeAprovisionamiento | null>(null)
+  const [corrigiendo, setCorrigiendo] = useState(false)
+  // La sesión del asistente mientras se corrige: un fallo al guardar la
+  // corrección no puede dejar a nadie sin el asistente que ya tenía.
+  const sessionIdRef = useRef<string | null>(null)
+  sessionIdRef.current = sessionId
+  const corrigiendoRef = useRef(false)
+  corrigiendoRef.current = corrigiendo
 
   const mountedRef = useRef(true)
   // Guards against a stale response overwriting state after a later retry.
@@ -176,9 +328,17 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
         if (!vigente || !mountedRef.current) return
 
         if (punto.legalName || punto.nit) {
+          const nombreCompleto = [punto.ownerFirstName, punto.ownerLastName]
+            .map((parte) => parte?.trim())
+            .filter(Boolean)
+            .join(' ')
           setValoresGuardados({
             razonSocial: punto.legalName ?? '',
             nit: punto.nit ?? '',
+            ...(nombreCompleto ? { nombreCompleto } : {}),
+            ...(punto.legalRepresentative?.trim()
+              ? { representanteLegal: punto.legalRepresentative.trim() }
+              : {}),
           })
         }
 
@@ -191,15 +351,10 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
           return
         }
 
+        // FAILED = la última vez el micro rechazó los datos. No es un
+        // callejón: vuelve el formulario prellenado, con el aviso arriba.
         if (punto.provisioningStatus === 'FAILED') {
-          setFallo({
-            mensaje:
-              'El registro de esta inmobiliaria quedó bloqueado y no se puede reintentar solo. Escríbenos y lo destrabamos.',
-            reintentable: false,
-            status: null,
-          })
-          setStatus('error')
-          return
+          setFallo({ mensaje: REVISA_LOS_DATOS, reintentable: true, status: null, paraCorregir: true })
         }
 
         setStatus('needs-info')
@@ -242,13 +397,16 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
         if (res.agentSessionId) {
           setSessionId(res.agentSessionId)
           setAgencyPrefill({ legalName: input.agencyName, nit: input.nit })
+          // Para poder volver a corregirlos sin recargar la página.
+          setValoresGuardados(valoresDelEnvio(input))
+          setCorrigiendo(false)
           setStatus('ready')
         } else {
           // El back creó las filas pero el traspaso al agente no minteó la
           // sesión. Reintentar SÍ sirve: el back vuelve a intentar sólo ese
           // traspaso (`startAgentOnboarding`), no el aprovisionamiento entero.
           setSessionId(null)
-          setValoresGuardados({ razonSocial: input.agencyName, nit: input.nit })
+          setValoresGuardados(valoresDelEnvio(input))
           setFallo({
             mensaje:
               'Tu inmobiliaria quedó creada, pero no alcanzamos a abrir el asistente. Vuelve a intentarlo.',
@@ -261,10 +419,18 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
       .catch((error: unknown) => {
         inFlightRef.current = false
         if (!mountedRef.current || requestIdRef.current !== requestId) return
-        setSessionId(null)
-        setValoresGuardados({ razonSocial: input.agencyName, nit: input.nit })
-        setFallo(interpretarFallo(error))
-        setStatus('error')
+        // Corrigiendo, la sesión del asistente sigue siendo válida: se
+        // conserva para que «Volver al asistente» funcione después del fallo.
+        if (!corrigiendoRef.current) setSessionId(null)
+        setValoresGuardados(valoresDelEnvio(input))
+        const fallo = interpretarFallo(error)
+        setFallo(fallo)
+        // Si lo que falló fueron los datos, se vuelve al formulario para
+        // corregirlos; lo demás (una caída, un 409) va al cartel. Corrigiendo,
+        // siempre al formulario: el aviso va arriba y el asistente sigue a un
+        // clic (`volverAlAsistente`).
+        setStatus(fallo.paraCorregir || corrigiendoRef.current ? 'needs-info' : 'error')
+        if (corrigiendoRef.current && !fallo.paraCorregir) setFallo({ ...fallo, paraCorregir: true })
       })
   }, [])
 
@@ -276,6 +442,20 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
     [runProvision],
   )
 
+  const corregirDatos = useCallback(() => {
+    if (!sessionIdRef.current || inFlightRef.current) return
+    setFallo(null)
+    setCorrigiendo(true)
+    setStatus('needs-info')
+  }, [])
+
+  const volverAlAsistente = useCallback(() => {
+    if (!sessionIdRef.current || inFlightRef.current) return
+    setFallo(null)
+    setCorrigiendo(false)
+    setStatus('ready')
+  }, [])
+
   return {
     status,
     sessionId,
@@ -284,5 +464,8 @@ export function useOnboardingProvisioning(): UseOnboardingProvisioningResult {
     fallo,
     retry: runProvision,
     provision,
+    corrigiendo,
+    corregirDatos,
+    volverAlAsistente,
   }
 }

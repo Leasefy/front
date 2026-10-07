@@ -83,7 +83,7 @@ export function VeredictoDeMigracion({
   return (
     <section
       className={cn(
-        "rounded-lg border border-warning/40 bg-warning-soft p-5 sm:p-6",
+        "rounded-lg bg-warning-soft p-5 sm:p-6",
         className,
       )}
       data-testid="muro-veredicto"
@@ -99,7 +99,7 @@ export function VeredictoDeMigracion({
           </p>
           <h2
             id="muro-veredicto-titulo"
-            className="mt-1 text-lg font-semibold tracking-tight text-fg"
+            className="mt-1 text-lg font-medium tracking-tight text-fg"
           >
             {t(`${RAIZ}.titulo`)}
           </h2>
@@ -112,7 +112,7 @@ export function VeredictoDeMigracion({
             className="mt-4 font-mono text-sm tabular-nums text-fg"
             data-testid="veredicto-contratos"
           >
-            {t(`${RAIZ}.contratos`, { n: deuda.contratos })}
+            {t(`${RAIZ}.contratos`, { n: deuda.activados ?? deuda.contratos })}
           </p>
 
           <ul className="mt-3 space-y-2">
@@ -145,7 +145,7 @@ function LineaDelVeredicto({
 
   return (
     <li
-      className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+      className="flex flex-col gap-2 rounded-md bg-surface p-3 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4"
       data-testid="veredicto-linea"
       data-motivo={motivo}
     >
@@ -229,6 +229,17 @@ export function FilasFrenadas({
    */
   const hayQueMirar = lentes.length > 0;
   const hayAccion = Boolean(resolver.href || resolver.onIr);
+  /*
+   * MG-26 (MIG-C, 04-10): cuando la deuda cambia —se activó o se corrigió una
+   * fila allá abajo y la página la volvió a pedir— la tabla se vuelve a
+   * pedir. Antes se pedía una sola vez y seguía listando como frenada una
+   * fila que ya era contrato. Y si el lente elegido se quedó sin filas
+   * (ya no hay pendientes), se pasa al que queda.
+   */
+  const firmaDeLaDeuda = `${deuda.contratos}|${deuda.pendientes}|${deuda.sinInmueble}|${deuda.sinPropietario}`;
+  useEffect(() => {
+    if (lentes.length > 0 && !lentes.includes(lente)) setLente(lentes[0]);
+  }, [firmaDeLaDeuda]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const cargar = useCallback(async () => {
     if (!hayQueMirar) return;
@@ -256,14 +267,14 @@ export function FilasFrenadas({
 
   useEffect(() => {
     void cargar();
-  }, [cargar]);
+  }, [cargar, firmaDeLaDeuda]);
 
   if (!hayQueMirar) return null;
 
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-lg border border-border bg-surface",
+        "overflow-hidden rounded-lg border border-border-faint bg-surface shadow-sm",
         className,
       )}
       data-testid="veredicto-filas"
@@ -374,7 +385,8 @@ function FilaFrenada({
   return (
     <TableRow data-testid="veredicto-fila" data-faltas={faltas.join(",")}>
       <TableCell className="whitespace-nowrap font-mono tabular-nums text-fg-muted">
-        {fila.fila}
+        {/* QA-CONT-95: la fila como la ve la persona en su archivo (encabezado = 1), igual que las tarjetas («Fila 2 · …»); antes salía «0». */}
+        {fila.fila + 2}
       </TableCell>
       <TableCell className="max-w-[260px]">
         <span className="block truncate text-fg">
@@ -451,7 +463,15 @@ export function useCopyDeMigracionEnLista(): (deuda: DeudaDeMigracion) => {
   const frase = useFraseDeDeuda();
   return useCallback(
     (deuda: DeudaDeMigracion) => ({
-      titulo: t("migracion.enLaLista.titulo", { n: deuda.contratos }),
+      /*
+       * 🔴 QA-PROP-95 A-62 (04-10-2026): el número es lo que de verdad falta
+       * (filas sin activar + contratos activos sin inmueble o sin propietario),
+       * no el total de filas del archivo: el lab decía «103 contratos migrados
+       * todavía no están completos» con 63 activados, 39 descartados y 1 a medias.
+       */
+      titulo: ((n) => (n === 1 ? t("migracion.enLaLista.tituloUno") : t("migracion.enLaLista.titulo", { n })))(
+        deuda.pendientes + deuda.sinInmueble + deuda.sinPropietario,
+      ),
       detalle: t("migracion.enLaLista.detalle", { deuda: frase(deuda) }),
       accion: t("migracion.enLaLista.accion"),
     }),

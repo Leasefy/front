@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export default function InmobiliariaBetaRouteLayout({ children }: { children: React.ReactNode }) {
   return (
     <BetaErrorBoundary>
-      <BetaLayout basePath="/panel/inmobiliaria">
+      <BetaLayout basePath="/panel/inmobiliaria" dentroDelPanel>
         {children}
       </BetaLayout>
     </BetaErrorBoundary>

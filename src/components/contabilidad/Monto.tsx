@@ -19,6 +19,7 @@
  * Un monto no se parte nunca; si no cabe, la columna es la que tiene que ceder.
  */
 
+import { AnimatedNumber } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 
@@ -26,9 +27,15 @@ export interface MontoProps {
   valor: number;
   vacioSiCero?: boolean;
   className?: string;
+  /**
+   * Para los TOTALES que cambian en pantalla (un asiento que se arma, una
+   * factura que suma líneas): la cifra cuenta desde la anterior. Las celdas de
+   * una tabla no lo llevan: llegan con la fila y no cambian.
+   */
+  animado?: boolean;
 }
 
-export function Monto({ valor, vacioSiCero = false, className }: MontoProps) {
+export function Monto({ valor, vacioSiCero = false, className, animado = false }: MontoProps) {
   const { formatCurrency } = useI18n();
   if (vacioSiCero && valor === 0) {
     return (
@@ -41,6 +48,19 @@ export function Monto({ valor, vacioSiCero = false, className }: MontoProps) {
     );
   }
   const negativo = valor < 0;
+  if (animado) {
+    return (
+      <AnimatedNumber
+        value={valor}
+        format={(n) => (n < 0 ? `−${formatCurrency(Math.abs(n))}` : formatCurrency(n))}
+        className={cn(
+          'whitespace-nowrap font-mono tabular-nums',
+          negativo && 'text-danger',
+          className,
+        )}
+      />
+    );
+  }
   return (
     <span
       className={cn(

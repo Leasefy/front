@@ -92,8 +92,8 @@ export function EquipoPagosPersona({ persona, className }: EquipoPagosPersonaPro
       <div className="space-y-2">
         <p className="text-xs font-semibold text-fg">Qué hace</p>
         <ul role="list" className="space-y-1.5">
-          {persona.queHace.map((linea, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-fg-muted leading-snug">
+          {persona.queHace.map((linea) => (
+            <li key={linea} className="flex items-start gap-2 text-sm text-fg-muted leading-snug">
               <span aria-hidden="true" className={cn('mt-1.5 w-1.5 h-1.5 rounded-full shrink-0', accent.dot)} />
               <span className="min-w-0">{linea}</span>
             </li>
@@ -105,8 +105,8 @@ export function EquipoPagosPersona({ persona, className }: EquipoPagosPersonaPro
       <div className="space-y-2 mt-auto">
         <p className="text-xs font-semibold text-fg">Resultados que muestra</p>
         <ul role="list" className="space-y-1.5">
-          {persona.resultados.map((linea, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm text-fg-muted leading-snug">
+          {persona.resultados.map((linea) => (
+            <li key={linea} className="flex items-start gap-2 text-sm text-fg-muted leading-snug">
               <span
                 aria-hidden="true"
                 className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 bg-border"

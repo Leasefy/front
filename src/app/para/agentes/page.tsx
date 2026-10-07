@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { Appear } from '@leasefy/cadence';
+import { Bucle, ZonaDeBucles } from '@/components/landing/motion/bucles';
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
 import { Button } from '@/components/ui/button';
@@ -47,9 +48,9 @@ const testimonials = [
 // 1. Link Generator Visual - Premium phone mockup with WhatsApp share
 function LinkGeneratorVisual() {
   return (
-    <div className="relative w-full h-full overflow-hidden px-6 py-4">
+    <ZonaDeBucles className="relative w-full h-full overflow-hidden px-6 py-4">
       {/* Animated glow effects */}
-      <motion.div
+      <Bucle.div
         className="absolute top-[20%] right-[10%] w-[140px] h-[140px] bg-[#2C7A53]/[0.08] rounded-full blur-[60px] pointer-events-none"
         animate={{
           scale: [1, 1.3, 1],
@@ -57,7 +58,7 @@ function LinkGeneratorVisual() {
         }}
         transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
       />
-      <motion.div
+      <Bucle.div
         className="absolute bottom-[20%] left-[15%] w-[100px] h-[100px] bg-neutral-500/[0.06] rounded-full blur-[50px] pointer-events-none"
         animate={{
           scale: [1, 1.4, 1],
@@ -77,7 +78,7 @@ function LinkGeneratorVisual() {
         >
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <motion.div
+              <Bucle.div
                 className="w-8 h-8 rounded-full bg-gradient-to-br from-[#2C7A53]/20 to-[#6B6B6B]/20 border border-[#2C7A53]/30 flex items-center justify-center"
                 whileHover={{ scale: 1.1, rotate: 5 }}
                 animate={{
@@ -85,13 +86,13 @@ function LinkGeneratorVisual() {
                 }}
                 transition={{ boxShadow: { duration: 2, repeat: Infinity } }}
               >
-                <motion.div
+                <Bucle.div
                   animate={{ rotate: [0, 10, -10, 0] }}
                   transition={{ duration: 3, repeat: Infinity }}
                 >
                   <LinkIcon className="w-3.5 h-3.5 text-[#2C7A53]" />
-                </motion.div>
-              </motion.div>
+                </Bucle.div>
+              </Bucle.div>
               <div>
                 <span className="text-[11px] font-medium text-white">Apto 302 · Chapinero</span>
                 <span className="text-[8px] text-white/40 block">$2.800.000/mes</span>
@@ -103,12 +104,12 @@ function LinkGeneratorVisual() {
               transition={{ delay: 0.5, type: "spring", stiffness: 400, damping: 12 }}
               className="flex items-center gap-1 bg-[#2C7A53]/15 text-[#2C7A53] text-[8px] font-bold px-2 py-1 rounded-full border border-[#2C7A53]/30"
             >
-              <motion.div
+              <Bucle.div
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
               >
                 <Check className="w-2.5 h-2.5" />
-              </motion.div>
+              </Bucle.div>
               Activo
             </motion.span>
           </div>
@@ -117,7 +118,7 @@ function LinkGeneratorVisual() {
             whileHover={{ backgroundColor: "rgba(255,255,255,0.06)" }}
           >
             {/* Shimmer effect */}
-            <motion.div
+            <Bucle.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
               animate={{ x: ["-100%", "200%"] }}
               transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
@@ -184,16 +185,16 @@ function LinkGeneratorVisual() {
             >
               <span className="text-[9px] text-white/40 font-medium w-[80px] flex-shrink-0">{stat.label}</span>
               <div className="flex-1 h-[5px] bg-white/[0.04] rounded-full overflow-hidden relative">
-                <motion.div
-                  className={`h-full rounded-full ${stat.color}`}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${stat.bar}%` }}
+                <motion.div style={{ width: `${stat.bar}%` }}
+                  className={`h-full rounded-full ${stat.color} origin-left`}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
                   transition={{ delay: 0.7 + i * 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 />
-                <motion.div
-                  className={`absolute top-0 h-full rounded-full blur-[4px] ${stat.glow}`}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${stat.bar}%` }}
+                <motion.div style={{ width: `${stat.bar}%` }}
+                  className={`absolute top-0 h-full rounded-full blur-[4px] ${stat.glow} origin-left`}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
                   transition={{ delay: 0.7 + i * 0.15, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 />
               </div>
@@ -209,14 +210,14 @@ function LinkGeneratorVisual() {
           ))}
         </div>
       </div>
-    </div>
+    </ZonaDeBucles>
   );
 }
 
 // 2. Evaluation Report Visual - Score gauge + metrics (light card)
 function EvaluationReportVisual() {
   return (
-    <div className="relative w-full h-full overflow-hidden px-5 py-4">
+    <ZonaDeBucles className="relative w-full h-full overflow-hidden px-5 py-4">
       {/* Score display with enhanced animations */}
       <motion.div
         initial={{ scale: 0.8, opacity: 0, y: 10 }}
@@ -263,7 +264,7 @@ function EvaluationReportVisual() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 1, type: "spring", stiffness: 200 }}
           >
-            <motion.span
+            <Bucle.span
               className="text-[22px] font-bold text-foreground"
               animate={{
                 textShadow: ["0 0 0 transparent", "0 0 10px rgba(16,185,129,0.3)", "0 0 0 transparent"]
@@ -271,7 +272,7 @@ function EvaluationReportVisual() {
               transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
             >
               91
-            </motion.span>
+            </Bucle.span>
           </motion.div>
         </motion.div>
         <div>
@@ -290,12 +291,12 @@ function EvaluationReportVisual() {
               transition={{ delay: 0.8, type: "spring", stiffness: 400, damping: 12 }}
               className="flex items-center gap-0.5 bg-[#E8F3EC] text-[#2C7A53] dark:bg-[#2C7A53]/15 dark:text-[#3EAE70] text-[7px] font-bold px-1.5 py-0.5 rounded-full"
             >
-              <motion.div
+              <Bucle.div
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ duration: 1.5, repeat: Infinity }}
               >
                 <Check className="w-2 h-2" />
-              </motion.div>
+              </Bucle.div>
               Verificado
             </motion.span>
           </div>
@@ -328,16 +329,16 @@ function EvaluationReportVisual() {
           >
             <span className="text-[9px] text-muted-foreground font-medium w-[100px] flex-shrink-0">{m.label}</span>
             <div className="flex-1 h-[5px] bg-black/[0.04] rounded-full overflow-hidden relative">
-              <motion.div
-                className={`h-full rounded-full ${m.colorClass}`}
-                initial={{ width: 0 }}
-                animate={{ width: `${m.score}%` }}
+              <motion.div style={{ width: `${m.score}%` }}
+                className={`h-full rounded-full ${m.colorClass} origin-left`}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
                 transition={{ delay: 0.6 + i * 0.1, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               />
-              <motion.div
-                className={`absolute top-0 h-full rounded-full blur-[3px] ${m.glowClass}`}
-                initial={{ width: 0 }}
-                animate={{ width: `${m.score}%` }}
+              <motion.div style={{ width: `${m.score}%` }}
+                className={`absolute top-0 h-full rounded-full blur-[3px] ${m.glowClass} origin-left`}
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
                 transition={{ delay: 0.6 + i * 0.1, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               />
             </div>
@@ -361,20 +362,20 @@ function EvaluationReportVisual() {
         className="flex items-center justify-between mt-4 pt-3 border-t border-black/5"
       >
         <div className="flex items-center gap-1.5">
-          <motion.div
+          <Bucle.div
             className="w-5 h-5 rounded-full bg-[#E8F3EC] flex items-center justify-center"
             animate={{
               boxShadow: ["0 0 0 0 rgba(16,185,129,0)", "0 0 10px 3px rgba(16,185,129,0.2)", "0 0 0 0 rgba(16,185,129,0)"]
             }}
             transition={{ duration: 2, repeat: Infinity }}
           >
-            <motion.div
+            <Bucle.div
               animate={{ scale: [1, 1.15, 1] }}
               transition={{ duration: 1.5, repeat: Infinity }}
             >
               <Shield className="w-2.5 h-2.5 text-[#2C7A53]" />
-            </motion.div>
-          </motion.div>
+            </Bucle.div>
+          </Bucle.div>
           <span className="text-[9px] text-[#2C7A53] font-medium">Bajo riesgo · Recomendado</span>
         </div>
         <motion.span
@@ -384,14 +385,14 @@ function EvaluationReportVisual() {
           PDF disponible
         </motion.span>
       </motion.div>
-    </div>
+    </ZonaDeBucles>
   );
 }
 
 // 3. Mobile App Visual - Notification feed (light card)
 function MobileAppVisual() {
   return (
-    <div className="relative w-full h-full overflow-hidden px-4 pt-3">
+    <ZonaDeBucles className="relative w-full h-full overflow-hidden px-4 pt-3">
       {/* Header with enhanced animations */}
       <motion.div
         initial={{ y: -12, opacity: 0 }}
@@ -400,7 +401,7 @@ function MobileAppVisual() {
         className="flex items-center justify-between mb-3"
       >
         <div className="flex items-center gap-2">
-          <motion.div
+          <Bucle.div
             className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center"
             whileHover={{ scale: 1.1 }}
             animate={{
@@ -408,13 +409,13 @@ function MobileAppVisual() {
             }}
             transition={{ boxShadow: { duration: 2, repeat: Infinity } }}
           >
-            <motion.div
+            <Bucle.div
               animate={{ rotate: [0, 15, -15, 0] }}
               transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
             >
               <Bell className="w-3.5 h-3.5 text-primary" />
-            </motion.div>
-          </motion.div>
+            </Bucle.div>
+          </Bucle.div>
           <div>
             <span className="text-[11px] font-medium text-foreground">Notificaciones</span>
             <motion.span
@@ -433,7 +434,7 @@ function MobileAppVisual() {
           transition={{ delay: 0.4, type: "spring", stiffness: 300 }}
           className="flex items-center gap-1 bg-primary/10 text-primary text-[8px] font-bold px-2 py-1 rounded-full"
         >
-          <motion.div
+          <Bucle.div
             className="w-1.5 h-1.5 rounded-full bg-primary"
             animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
             transition={{ duration: 1, repeat: Infinity }}
@@ -458,18 +459,18 @@ function MobileAppVisual() {
             whileHover={{ x: 4, backgroundColor: notif.isNew ? "rgba(var(--primary),0.06)" : "rgba(0,0,0,0.03)" }}
             className={`flex items-start gap-3 p-2.5 rounded-md cursor-pointer transition-colors ${notif.isNew ? 'bg-primary/[0.04] border-l-2 border-primary' : 'bg-muted/50'}`}
           >
-            <motion.span
+            <Bucle.span
               className="text-base flex-shrink-0"
               animate={notif.isNew ? { y: [0, -2, 0] } : {}}
               transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 1 }}
             >
               {notif.icon}
-            </motion.span>
+            </Bucle.span>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-medium text-foreground">{notif.title}</span>
                 {notif.isNew && (
-                  <motion.div
+                  <Bucle.div
                     className="w-1.5 h-1.5 rounded-full bg-primary"
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 1, repeat: Infinity }}
@@ -497,22 +498,22 @@ function MobileAppVisual() {
         transition={{ delay: 0.9, type: "spring" }}
         className="flex items-center justify-center gap-1.5 mt-3"
       >
-        <motion.div
+        <Bucle.div
           animate={{ y: [0, -2, 0] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
           <DeviceMobile className="w-2.5 h-2.5 text-muted-foreground" />
-        </motion.div>
+        </Bucle.div>
         <span className="text-[8px] text-muted-foreground">Disponible en iOS y Android</span>
       </motion.div>
-    </div>
+    </ZonaDeBucles>
   );
 }
 
 // 4. Commission Tracking Visual - Earnings dashboard (inside white container)
 function CommissionVisual() {
   return (
-    <div className="relative w-full h-full flex flex-col overflow-hidden px-4 py-3">
+    <ZonaDeBucles className="relative w-full h-full flex flex-col overflow-hidden px-4 py-3">
       {/* Header stats with enhanced animations */}
       <motion.div
         initial={{ y: -12, opacity: 0 }}
@@ -521,7 +522,7 @@ function CommissionVisual() {
         className="mb-3"
       >
         <div className="flex items-baseline gap-2">
-          <motion.span
+          <Bucle.span
             className="text-[26px] font-bold text-foreground tracking-tight"
             animate={{
               textShadow: ["0 0 0 transparent", "0 0 15px rgba(16,185,129,0.2)", "0 0 0 transparent"]
@@ -529,7 +530,7 @@ function CommissionVisual() {
             transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
           >
             $8.9M
-          </motion.span>
+          </Bucle.span>
           <motion.span
             initial={{ opacity: 0, x: -10, scale: 0.8 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
@@ -537,12 +538,12 @@ function CommissionVisual() {
             whileHover={{ scale: 1.1 }}
             className="text-[9px] font-bold text-[#2C7A53] bg-[#E8F3EC] px-1.5 py-0.5 rounded flex items-center gap-0.5 cursor-pointer"
           >
-            <motion.div
+            <Bucle.div
               animate={{ y: [0, -2, 0] }}
               transition={{ duration: 1, repeat: Infinity }}
             >
               <TrendUp className="w-2.5 h-2.5" />
-            </motion.div>
+            </Bucle.div>
             +23%
           </motion.span>
         </div>
@@ -575,23 +576,23 @@ function CommissionVisual() {
           </motion.span>
         </div>
         <div className="h-[6px] bg-black/[0.04] rounded-full overflow-hidden relative">
-          <motion.div
-            className="h-full rounded-full bg-primary relative overflow-hidden"
-            initial={{ width: 0 }}
-            animate={{ width: '89%' }}
+          <motion.div style={{ width: '89%' }}
+            className="h-full rounded-full bg-primary relative overflow-hidden origin-left"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
             transition={{ delay: 0.5, duration: 1, ease: [0.16, 1, 0.3, 1] }}
           >
             {/* Shimmer effect */}
-            <motion.div
+            <Bucle.div
               className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
               animate={{ x: ["-100%", "200%"] }}
               transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
             />
           </motion.div>
-          <motion.div
-            className="absolute top-0 h-full rounded-full blur-[4px] bg-primary/40"
-            initial={{ width: 0 }}
-            animate={{ width: '89%' }}
+          <motion.div style={{ width: '89%' }}
+            className="absolute top-0 h-full rounded-full blur-[4px] bg-primary/40 origin-left"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
             transition={{ delay: 0.5, duration: 1, ease: [0.16, 1, 0.3, 1] }}
           />
         </div>
@@ -648,13 +649,11 @@ function CommissionVisual() {
           ))}
         </div>
       </div>
-    </div>
+    </ZonaDeBucles>
   );
 }
 
 export default function AgentesPage() {
-  const bentoRef = useRef(null);
-  const bentoInView = useInView(bentoRef, { once: true, margin: '-50px' });
 
   return (
     <LandingChrome>
@@ -678,7 +677,7 @@ export default function AgentesPage() {
               {/* Left Content */}
               <div className="space-y-4">
                 <motion.span
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
                   className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
@@ -687,9 +686,8 @@ export default function AgentesPage() {
                 </motion.span>
 
                 <motion.h1
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
                   className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white tracking-[-0.03em] leading-[1.1]"
                 >
                   Cierra más arriendos
@@ -699,9 +697,8 @@ export default function AgentesPage() {
                 </motion.h1>
 
                 <motion.p
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
                   className="!mt-2 text-lg text-white/70 max-w-lg"
                 >
                   Genera tu link, compártelo por WhatsApp, recibe evaluaciones profesionales.
@@ -709,9 +706,8 @@ export default function AgentesPage() {
                 </motion.p>
 
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth?role=agent">
@@ -732,9 +728,8 @@ export default function AgentesPage() {
 
                 {/* Hero Stats - No separator line */}
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
                   className="flex items-center gap-8 pt-6"
                 >
                   {[
@@ -752,22 +747,19 @@ export default function AgentesPage() {
 
               {/* Right - Hero Card with glass styling */}
               <motion.div
-                initial={{ opacity: 0, x: 50, scale: 0.95 }}
+                initial={false}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
-                transition={{ delay: 0.3, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                 className="hidden lg:flex lg:justify-end"
               >
                 <div className="relative">
                   <motion.div
-                    initial={{ opacity: 0 }}
+                    initial={false}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4, duration: 0.5 }}
                     className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-6"
                   >
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={false}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5, duration: 0.4 }}
                       className="flex items-center gap-4 mb-6"
                     >
                       <Image
@@ -782,9 +774,8 @@ export default function AgentesPage() {
                         <p className="text-white/60 text-sm">Agente verificada</p>
                       </div>
                       <motion.div
-                        initial={{ scale: 0 }}
+                        initial={false}
                         animate={{ scale: 1 }}
-                        transition={{ delay: 0.8, type: "spring", stiffness: 400 }}
                       >
                         <SealCheck className="w-5 h-5 text-[#2C7A53] ml-auto" />
                       </motion.div>
@@ -792,9 +783,8 @@ export default function AgentesPage() {
 
                     <div className="space-y-4">
                       <motion.div
-                        initial={{ opacity: 0, y: 15 }}
+                        initial={false}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6, duration: 0.4 }}
                         className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10"
                       >
                         <div className="flex items-center justify-between mb-2">
@@ -806,27 +796,24 @@ export default function AgentesPage() {
 
                       <div className="grid grid-cols-3 gap-3">
                         <motion.div
-                          initial={{ opacity: 0, y: 15 }}
+                          initial={false}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.7, duration: 0.4 }}
                           className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center border border-white/10"
                         >
                           <p className="text-xl font-bold text-white">12</p>
                           <p className="text-[9px] text-white/60">Cierres</p>
                         </motion.div>
                         <motion.div
-                          initial={{ opacity: 0, y: 15 }}
+                          initial={false}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.75, duration: 0.4 }}
                           className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center border border-white/10"
                         >
                           <p className="text-xl font-bold text-white">28</p>
                           <p className="text-[9px] text-white/60">Candidatos</p>
                         </motion.div>
                         <motion.div
-                          initial={{ opacity: 0, y: 15 }}
+                          initial={false}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.8, duration: 0.4 }}
                           className="bg-white/10 backdrop-blur-sm rounded-xl p-3 text-center border border-white/10"
                         >
                           <p className="text-xl font-bold text-white">43%</p>
@@ -838,9 +825,8 @@ export default function AgentesPage() {
 
                   {/* Floating notification */}
                   <motion.div
-                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                     className="absolute -bottom-6 -left-6 bg-white rounded-xl p-4 border border-border"
                   >
                     <div className="flex items-center gap-3">
@@ -880,11 +866,7 @@ export default function AgentesPage() {
             {/* Problems Bento Grid */}
             <div className="grid md:grid-cols-12 gap-5">
               {/* Card 1: Verification chaos - Image with glass */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
+              <Appear inView distance="md" duration="slow"
                 className="md:col-span-7 relative rounded-xl overflow-hidden h-[320px]"
               >
                 <Image
@@ -903,14 +885,10 @@ export default function AgentesPage() {
                   <h3 className="text-white text-2xl font-mono uppercase font-normal mb-2">Horas en verificaciones manuales</h3>
                   <p className="text-white/60 text-sm max-w-md">Llamar referencias, verificar empleo, revisar historial crediticio... Por cada candidato.</p>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Card 2: No data - Illustration */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.1 }}
+              <Appear inView distance="md" duration="slow" delay={0.1}
                 className="md:col-span-5 bg-muted rounded-xl p-6 h-[320px] flex flex-col"
               >
                 <div className="flex items-center gap-2 mb-4">
@@ -939,14 +917,10 @@ export default function AgentesPage() {
                     </div>
                   ))}
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Card 3: Lost candidates - Illustration */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.2 }}
+              <Appear inView distance="md" duration="slow" delay={0.2}
                 className="md:col-span-5 bg-muted rounded-xl p-6 h-[320px] flex flex-col overflow-hidden"
               >
                 <div className="flex items-center gap-2 mb-3">
@@ -983,14 +957,10 @@ export default function AgentesPage() {
                     </div>
                   ))}
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Card 4: Unprofessional look - Image with glass */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6, delay: 0.3 }}
+              <Appear inView distance="md" duration="slow" delay={0.3}
                 className="md:col-span-7 relative rounded-xl overflow-hidden h-[320px]"
               >
                 <Image
@@ -1009,7 +979,7 @@ export default function AgentesPage() {
                   <h3 className="text-white text-2xl font-mono uppercase font-normal mb-2">Te ves poco profesional</h3>
                   <p className="text-white/60 text-sm max-w-md">Los propietarios esperan reportes formales, no &quot;yo creo que este candidato está bien&quot;.</p>
                 </div>
-              </motion.div>
+              </Appear>
             </div>
           </div>
         </section>
@@ -1033,12 +1003,9 @@ export default function AgentesPage() {
             </div>
 
             {/* Solutions Bento Grid */}
-            <div ref={bentoRef} className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
               {/* Card 1: Link de evaluación - Dark */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={bentoInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5 }}
+              <Appear inView distance="md" duration="slow"
                 className="md:col-span-7 bg-foreground rounded-xl p-6"
               >
                 <div className="flex gap-6">
@@ -1088,13 +1055,10 @@ export default function AgentesPage() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Card 2: Evaluación completa */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={bentoInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, delay: 0.1 }}
+              <Appear inView distance="md" duration="slow" delay={0.1}
                 className="md:col-span-5 bg-white rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
@@ -1125,13 +1089,10 @@ export default function AgentesPage() {
                     <span className="text-[10px] text-[#2C7A53] font-medium mt-1">Bajo riesgo</span>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Card 3: App móvil */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={bentoInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, delay: 0.2 }}
+              <Appear inView distance="md" duration="slow" delay={0.2}
                 className="md:col-span-5 bg-white rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
@@ -1161,13 +1122,10 @@ export default function AgentesPage() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Card 4: Dashboard comisiones - Dark */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={bentoInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, delay: 0.3 }}
+              <Appear inView distance="md" duration="slow" delay={0.3}
                 className="md:col-span-7 bg-foreground rounded-xl p-6"
               >
                 <div className="flex gap-6">
@@ -1211,13 +1169,10 @@ export default function AgentesPage() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Card 5: Contratos digitales */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={bentoInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, delay: 0.4 }}
+              <Appear inView distance="md" duration="slow" delay={0.32}
                 className="md:col-span-6 bg-white rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
@@ -1246,13 +1201,10 @@ export default function AgentesPage() {
                     <span className="text-[9px] text-muted-foreground mt-1.5">Firmado</span>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Card 6: Reportes profesionales */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={bentoInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5, delay: 0.5 }}
+              <Appear inView distance="md" duration="slow" delay={0.32}
                 className="md:col-span-6 bg-white rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
@@ -1279,7 +1231,7 @@ export default function AgentesPage() {
                     <span className="text-[9px] text-[#2C7A53] font-medium mt-1">Aprobado</span>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
             </div>
 
           </div>

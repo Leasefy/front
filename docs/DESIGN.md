@@ -158,10 +158,11 @@ modal: 50       popover: 60   tooltip: 70  toast: 80   max: 100
 **Drawers, modals → `z-50`.** Toaster sits above everything.
 
 ### Motion
-- **Durations**: `150ms` (micro), `200ms` (default), `300ms` (panels), `500ms` (slow reveals)
-- **Easing**: `ease-out` (default), `cubic-bezier(0.32, 0.72, 0, 1)` (spring for panels)
-- **Press feedback**: interactive controls use a subtle `active:scale-[0.98]`
-- **Hover lift**: `-translate-y-0.5` + upgrade to `shadow-md`
+Resumen — el sistema completo (tokens, primitivas, cuándo usar cuál) está en **§8b Movimiento**.
+- **Durations**: `duration-instant` 100ms · `duration-fast` 150ms (presión, salidas) · `duration-base` 200ms (por defecto) · `duration-slow` 300ms (paneles, página, colapsables) · `duration-reveal` 500ms (revelados, cifras)
+- **Easing**: `ease-enter` (lo que entra, desacelera) · `ease-exit` (lo que sale, acelera) · `ease-emphasis` `cubic-bezier(0.32,0.72,0,1)` (paneles) · `ease-spring` (rebote leve: presión, toggles)
+- **Press feedback**: controles interactivos `active:scale-[0.97]` con `ease-spring` (el `Button` ya lo trae)
+- **Hover lift**: `-translate-y-0.5` + upgrade to `shadow-md` (`motionClasses.hoverLift`)
 
 ---
 
@@ -206,7 +207,7 @@ modal: 50       popover: 60   tooltip: 70  toast: 80   max: 100
 
 ### Buttons (`src/components/ui/button.tsx`)
 
-**Anatomy**: `rounded-full` (pill), `font-sans` (Schibsted Grotesk) **medium**, **sentence case**, `active:scale-[0.98]`.
+**Anatomy**: `rounded-full` (pill), `font-sans` (Schibsted Grotesk) **medium**, **sentence case**, `active:scale-[0.97]` con resorte leve (CSS, viene del DS; el spinner de `isLoading` entra con pop).
 
 ```tsx
 <Button>Iniciar sesión</Button>                          // default = bg-primary, white text
@@ -264,56 +265,161 @@ A restrained accent moment — **cobalt by default**, supporting hues only for t
 Default to `bg-primary-soft` + `text-primary` (cobalt). For categorical/chart contexts only, the
 supporting hues (cyan, green, amber, coral, violet, peach) may tile — but never as a rainbow of UI chrome.
 
-### Drawers / Side Panels
+### Drawers / Side Panels — el cajón flotante (02-10-2026)
 
-**Canonical pattern** (see `src/components/inmobiliaria/CandidateDrawer.tsx`, `src/components/ui/plan/PlanDetailSheet.tsx`):
+> Nico: «que los drawers todos sean así, que se vean así de hermosos, que se separen de las
+> esquinas». Todo cajón del producto es el `Sheet` **flotante** de Cadence, a través del
+> adaptador `src/components/ui/sheet.tsx`. **Nadie arma un cajón a mano** (`createPortal` +
+> `fixed inset-y-0 right-0`): ese patrón quedó retirado.
 
-```tsx
-// 1. Pause Lenis smooth scroll while open
-const lenis = useLenis();
-useEffect(() => {
-  if (open) lenis.stop(); else lenis.start();
-  return () => lenis.start();
-}, [open, lenis]);
+**Forma** (la pone la primitiva, no el call site):
 
-// 2. Close on Escape
-useEffect(() => { ... }, [open, onClose]);
+| Qué | Valor |
+|---|---|
+| Margen a la ventana | 12 px arriba, abajo y al costado (16 px desde `lg`) |
+| Esquinas | las CUATRO en 24 px (`rounded-[24px]`) |
+| Sombra | amplia y suave `0 24px 80px -12px rgba(20,19,15,.28)`; en oscuro la separa un borde blanco al 10 % (`ink-border`), nunca el gris café de `border` |
+| Velo | ink al 18 % + `backdrop-blur-[6px]`; en oscuro negro al 55 % |
+| Animación | con los tokens de §8b: entra en `duration-slow` (300 ms) con `ease-emphasis`, deslizándose `--motion-distance-lg` (24 px) desde su lado con escala `--motion-pop-scale` (0,96) y opacidad; sale igual en `duration-fast` (150 ms) con `ease-exit`. En el celular la hoja sube desde el borde de abajo (100 %). Con `prefers-reduced-motion` sólo el fundido, con las duraciones reducidas de `--motion-*` |
+| ✕ | la de todo el producto: círculo con borde fino de 36 px (`ASPA_DE_CIERRE` = `dialogCloseClassName` de Cadence), centrada en la línea del título y con su borde derecho EN el padding del cajón, a 24 px (`right-6` en el adaptador; Cadence la deja en `right-4`). `SheetHeader` le reserva 72 px (24 + 36 + 12 de aire): un título largo no se mete debajo. Los modales no cambian. `closeLabel` cambia su nombre accesible cuando hay dos cajones a la vista («Cerrar el documento») |
+| Capa | `z-[300]` (§17) |
+| Celular (< 640 px) | el cajón derecho **sube como hoja desde abajo**: radios arriba, asa, hasta el 92 % del alto, pie al alcance del pulgar. Los izquierdos (navegación) siguen laterales y flotantes. `mobile="sheet" \| "side"` lo cambia |
+| Tamaños (`size`) | `sm` 400 · `md` 560 (default) · `lg` 680 · `xl` 880 · `full` |
 
-// 3. Wait for mount before portal
-const [mounted, setMounted] = useState(false);
-useEffect(() => setMounted(true), []);
-if (!open || !mounted) return null;
+**Anatomía**:
 
-// 4. Render via portal — escapes any parent stacking context
-return createPortal(
-  <>
-    <div
-      className="fixed inset-0 z-50 bg-[#14130F]/40 backdrop-blur-sm animate-in fade-in duration-200"
-      onClick={onClose}
-      aria-hidden="true"
-    />
-    <div
-      className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl bg-surface shadow-lg flex flex-col animate-in slide-in-from-right duration-300"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="flex-none ...">{/* header */}</div>
-      <div
-        className="flex-1 overflow-y-auto p-6 space-y-6"
-        data-lenis-prevent
-        style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
-      >
-        {/* body */}
-      </div>
-    </div>
-  </>,
-  document.body
-);
+```
+┌───────────────────────────────────────┐
+│ [ícono] Título                     (✕) │  SheetHeader — título, subtítulo apagado, acciones
+│         Subtítulo                      │                junto a la ✕; filete abajo
+├───────────────────────────────────────┤
+│ ‹ Anterior   1 de 9 del tablero  Sig. › │  SheetNav — opcional, entre registros
+├───────────────────────────────────────┤
+│  cuerpo (lo ÚNICO que scrollea)        │  SheetBody — data-lenis-prevent + overscroll contain
+│  ┌ SheetSection ────────────────────┐  │  tarjetas: borde suave, fondo apenas distinto,
+│  │ subtarjetas en bg-surface        │  │  subtarjetas blancas adentro
+│  └──────────────────────────────────┘  │
+├───────────────────────────────────────┤
+│ [✕ Rechazar]          [Mover] [Avanzar]│  SheetFooter — fijo, filete arriba;
+└───────────────────────────────────────┘  `start` a la izquierda, acciones a la derecha
 ```
 
-**Critical**: `createPortal` to `document.body` + `data-lenis-prevent` on the scrollable body +
-`lenis.stop()` on open. Skipping any of these breaks the drawer in subtle ways (overlay not at top,
-scroll dead). Overlay scrim uses warm ink (`#14130F`) at 40%, not pure black.
+```tsx
+import {
+  Sheet, SheetContent, SheetHeader, SheetNav, SheetBody, SheetSection, SheetFooter,
+} from '@/components/ui/sheet';
+
+<Sheet open={abierto} onOpenChange={(o) => !o && onCerrar()}>
+  <SheetContent size="lg" aria-describedby={undefined}>
+    <SheetHeader
+      leading={<Avatar … />}            /* opcional */
+      title="Candidatura"
+      description="Apartamento 402 · Laureles"
+      actions={<Badge>En estudio</Badge>} /* opcional, junto a la ✕ */
+    />
+    <SheetNav position={1} total={9} context="del tablero" onPrevious={…} onNext={…} />
+    <SheetBody className="space-y-5">
+      <SheetSection title="Progreso de la postulación">…</SheetSection>
+    </SheetBody>
+    <SheetFooter
+      note="Una línea de ayuda encima de los botones (opcional)"
+      start={<Button variant="secondary"><X /> Rechazar</Button>}
+    >
+      <Button variant="secondary">Mover</Button>
+      <Button>Avanzar a visita</Button>
+    </SheetFooter>
+  </SheetContent>
+</Sheet>
+```
+
+Un **formulario** va con el `<form>` adentro y `className="contents"` (o con `id` y el botón
+del pie con `form="…"`), para que `SheetBody` y `SheetFooter` sigan siendo hijos de la columna
+y el botón del pie pueda ser `submit`.
+
+**Reglas que no se negocian:**
+
+| Regla | Por qué |
+|---|---|
+| No pongas `p-0`, `flex flex-col`, `w-full sm:max-w-*` ni `overflow-y-auto` en `SheetContent` | Ya los trae. El ancho es `size`. Un `p-0` además apaga el reparto (ver abajo) |
+| La ✕ la pone `SheetContent` (`ASPA_DE_CIERRE`, la misma de los modales) | Nadie dibuja la suya. `hideCloseButton` la apaga, sólo para un cajón que no se debe abandonar |
+| Sin `useLenis().stop()`, sin `keydown` de Esc, sin `createPortal` | Radix pone el portal, el foco, Esc y el bloqueo del scroll; `SmoothScroll` frena Lenis mientras haya un `[role=dialog][data-state=open]` |
+| El cuerpo es `SheetBody` | Es lo que lleva `data-lenis-prevent` + `overscroll-behavior: contain`; sin eso la rueda mueve la página de atrás |
+| Para animar la salida, el contenido sigue montado | `open` manda; si el dato se va al cerrar, `useUltimoPresente`. Un cajón que el padre monta y desmonta guarda su `abierto` y avisa en `onCloseAutoFocus` (ver `AIActivityDetailPanel`) |
+
+**Contenido alineado al padding** (03-10-2026). Nico, sobre «Invitaciones al portal»: «mira este
+drawer por dentro, cómo está de feo, y no respeta pegando bien el contenido a los paddings». El
+cajón tiene UN padding lateral, 24 px, el mismo en `SheetHeader`, `SheetBody` y `SheetFooter`:
+
+1. **El texto del contenido arranca EXACTAMENTE donde arranca el título** del cajón y termina en su
+   padding derecho. Nada de rellenos laterales extra que corran el contenido: ni `px-*`/`p-*` en
+   `SheetBody`/`CajonCuerpo`/`SheetFooter`, ni envoltorios con `px-*` alrededor de todo el cuerpo.
+   Un cuerpo `p-0` (algo va a sangre: una foto, una lista) devuelve el padding en cada fila con
+   `RELLENO_DEL_CAJON` (`px-6`), nunca con un `px-5` o `p-5` a ojo.
+2. **Una tabla o una lista con cabecera va A SANGRE**: `<SheetTable>` (de `ui/sheet`) alrededor del
+   `<Table>`. La banda de la cabecera, el filete y el hover de las filas tocan los bordes del cajón,
+   y la primera y la última celda llevan exactamente el padding del cajón (las del medio conservan el
+   suyo). Nunca un `rounded border` alrededor de la tabla: esa «caja metida» se lee como otra tarjeta
+   y corre el primer texto 16 px. Referencia: `DetalleDeAsiento`.
+3. **Las tarjetas internas** (`SheetSection`, o una caja con borde) sí tienen su propio relleno
+   (`p-4 sm:p-5`), pero su BORDE exterior queda en el padding del cajón, nunca con otro sangrado. Un
+   «papel» (la vista previa de una plantilla) también lleva ese relleno: el texto no toca el borde.
+4. **El pie siempre se ve entero**, con sus acciones terminando en el padding derecho (los hijos de
+   `SheetFooter`/`CajonPie`); a la izquierda sólo va `start`/`izquierda` (rechazar, volver). Una
+   acción sola debajo de un texto del pie también se alinea a la derecha.
+
+Una fila de la **cabecera debajo del título** (buscador, pestañas) llega hasta el padding derecho con
+`FILA_ANCHA_DE_LA_CABECERA` (`-mr-12`): `SheetHeader` reserva el hueco de la ✕ (72 px) en toda su altura,
+pero la ✕ sólo ocupa la línea del título (sólo en una cabecera sin `actions`; ver `NuevoMensajeDrawer`).
+Un **menú o lista de selección** con resaltado redondeado (`MobileNavSheet`, `ElegirInmuebleDrawer`) puede
+meter el resaltado 12 px (`px-3` en el cuerpo) siempre que el contenido de cada fila quede en la línea
+del título (12 + 12).
+
+Lo cuida `src/components/ui/cajones-alineados.test.ts` (estático: tablas sin `SheetTable`, padding de las
+bandas, excepciones con su motivo). La medición en el navegador de todos los cajones y sus capturas
+quedaron en `memory/archivos/pruebas/cajones/medicion.md`.
+
+**El reparto.** Como `DialogContent`, el `SheetContent` del adaptador **reparte** a sus hijos
+directos leyendo `bandaDeModal`: cabecera y navegación arriba, pie abajo y todo lo demás a un
+`SheetBody` automático. Así un cajón escrito «a la antigua» no queda pegado a los bordes. Se
+apaga solo cuando el call site ya arma su layout: si trae un `SheetBody`/`CajonCuerpo` en su
+JSX, si pasa `layout="manual"` (obligatorio cuando las bandas viven en un subcomponente, p. ej.
+`CuerpoDelCandidato`) o, por compatibilidad con cajones viejos, si pasa `p-0` en `className`.
+
+**`Cajon`** (`src/components/ui/cajon.tsx`) es la capa en español sobre lo mismo:
+`Cajon` (`tamano`, o el `ancho` viejo traducido) · `CajonCabecera` = `SheetHeader` ·
+`CajonCuerpo` = `SheetBody` · `CajonPie` (`izquierda`, `ayuda`) = `SheetFooter`.
+
+**Sub-cajón** (un panel junto a otro): un segundo `Sheet` DENTRO del primero, con
+`overlayClassName="bg-transparent"` (el adaptador también le quita el desenfoque) y un
+`right-[calc(margen + ancho del principal …)]` que lo deja a su izquierda SÓLO desde el
+ancho en que caben los dos; debajo se para encima del principal. Dos formas:
+- **separado** (dos tarjetas con 12 px de aire): el panel secundario de `PlanDetailSheet`,
+  desde `xl`;
+- **pegado** (una sola pieza con la costura a ras): `PilotoDocumento` junto a `PilotoCajon`,
+  desde `lg` — el principal pierde el radio izquierdo (`lg:!rounded-l-none`) y el secundario
+  el derecho y su borde (`lg:!rounded-r-none lg:border-r-0`). Su ✕ lleva
+  `closeLabel="Cerrar el documento"`.
+
+Referencias: `CandidateDrawer.tsx` (cabecera con avatar + pie con decidir),
+`PipelineDetail.tsx` (pie «perder» a la izquierda / «avanzar» a la derecha),
+`PlanDetailSheet.tsx` (sub-cajón), `InquilinoDrawer.tsx` (encabezado de persona con chips de
+contacto). En Cadence: historia `Overlays/Sheet › Referencia · Candidatura`.
+
+**«¿Cómo funciona?» — la explicación va en un cajón, no en la pantalla** (05-10-2026). Nico, mirando
+Avalúos: «eso no debe de estar ahí siempre […] llévalas al botón que al dar clic abre drawer y explica
+mejor cada cosa y más bonito». Toda explicación de cómo funciona algo (pasos, «qué es esta bandeja»,
+«por qué hay dos marcas») vive detrás de `ParaEntenderMas` (`ui/para-entender-mas.tsx`):
+
+- el botón va en el **encabezado**, con `variante="secundario"`, donde iría el botón de acción;
+- abre el `Cajon` (`md` 560 px; `ancho="ancho"` → `xl` 880 px); en el celular sube como hoja;
+- el contenido no se monta hasta abrir, y al cerrar (Esc, clic afuera, ✕) el foco vuelve al botón;
+- los pasos van con `PasosExplicados` (`ui/pasos-explicados.tsx`): número + ícono en un riel vertical,
+  **quién lo hace** (`quien`: tú · el agente · Leasefy · tu cliente · el candidato), una explicación
+  concreta y «Lo que haces tú» resaltado (`tuParte`) sólo donde hay algo que hacer; entran escalonados
+  (`Stagger`). Lo que digan tiene que ser verdad en el código.
+- 🔴 Lo que la pantalla TIENE que decir se queda a la vista: un aviso de que algo falló o está
+  desconectado, un requisito que falta, el motivo de un botón apagado, una advertencia de lo que la
+  herramienta NO hace («hoy el aviso lo subes tú», «armar el lote no gira plata»).
 
 ### Sidebar / Layout
 The `PlanSidebar` + `PlanHeader` pattern (`src/components/ui/plan/`) is the canonical layout. Use as-is.
@@ -325,6 +431,78 @@ The `PlanSidebar` + `PlanHeader` pattern (`src/components/ui/plan/`) is the cano
 - Sidebar: `lg:fixed lg:inset-y-0`, 240px wide, collapsible to 64px via `SidebarContext`
 - Header: `sticky top-0 z-30 bg-bg border-b border-border`
 - Main content offset: `lg:pl-[240px]` (or `lg:pl-16` when collapsed)
+- **Botón de plegar** (`BotonDeLaBarra`, 02-10-2026): cuadrado de 36 px, `rounded-[12px]`,
+  `bg-surface` + `border-border`, ícono `SidebarSimple` de Phosphor (el mismo en los dos estados).
+  Abierta, a la derecha del logo; plegada, debajo del símbolo. Tooltip neutro (`bg-fg text-bg`)
+  «Ocultar barra» / «Mostrar barra» seguido de la tecla en el `Kbd` de Cadence (`size="sm"`, el
+  mismo del ⌘K): «⌘B» en macOS, «Ctrl B» en el resto; el botón lleva `aria-keyshortcuts`. En el
+  cajón del celular no aparece. Se hunde al apretarlo (`whileTap` 0,94, framer).
+- **Atajo ⌘B / Ctrl+B** (02-10-2026): pliega y despliega la barra de escritorio (⌘ en macOS, Ctrl en
+  el resto; nunca con Mayúscula ni Alt: ⌘⇧B es la barra de favoritos del navegador). No actúa con
+  el foco en un `input`, `textarea`, `select` o `contenteditable`; con un modal abierto (diálogo de
+  Radix con `data-state="open"` o cualquiera con `aria-modal="true"`); bajo `lg`, donde está el
+  cajón; si otro ya atendió la tecla (`defaultPrevented`), ni al dejarla apretada. El movimiento es
+  el mismo de plegar con el botón. Si el foco estaba en la barra y quien plegó iba con el teclado,
+  pasa al botón de plegar (la cabecera se monta de nuevo y el foco caía al `<body>`). Reglas en
+  `src/lib/nav/atajo-de-la-barra.ts`. Ningún otro atajo usa B (⌘K es el buscador).
+- **Cajón del celular — el foco**: al abrir cae en el logo (`onOpenAutoFocus`). Radix enfoca el
+  primer control que no sea enlace, que era el campo «Buscar», y el `SidebarSearch` de Cadence
+  pinta el anillo con `focus:`: salía azul apenas se abría. El logo y no la ✕ porque es lo primero
+  en el orden de lectura y del Tab (la ✕ va última en el DOM); su anillo es `focus-visible`, se ve
+  sólo yendo con el teclado. Queda atrapado y al cerrar vuelve al botón que lo abrió
+  (`openPlanMobileSidebar(evento)`; sin `SheetTrigger` Radix no sabe cuál es), salvo que otro ya
+  tenga el foco (el ⌘K que abre «Buscar»). El diálogo se llama «Menú de navegación».
+- **Al plegar/desplegar**: la cabecera y la navegación nuevas entran con un fundido de 200 ms
+  (sólo `opacity`) mientras la barra cambia de ancho; lo que ya estaba al cargar la página NO se
+  anima ni sale con `opacity: 0` en el HTML del servidor (`useDespuesDelPrimerPintado`). El ancho
+  sigue con `transition-all` de CSS (cambia el layout del panel; no es `transform`).
+- **Elemento activo del menú** (03-10-2026, Nico: «en light debería de verse con el azul como
+  estaba, quiero que cuando esté seleccionada se vea algo hermoso»): la píldora AZUL del menú,
+  `bg-[color:var(--menu-activa)]` + `text-[color:var(--menu-activa-tinta)]` (tokens en
+  `globals.css`): en claro, el azul de la marca tal como estaba (`#edf1ff` + `#1A40FF`, 5,8:1); en
+  oscuro, un azul APAGADO y translúcido (`rgba(110,135,255,.2)` ≈ `#1e233b` sobre el negro) con la
+  tinta `#b9c6ff` (9,3:1). Etiqueta `font-medium`, ícono relleno en la misma tinta, `rounded-[12px]`,
+  sin borde, sin sombra, sin halo y SIN tramo sobre la guía de la sección (la raya que brillaba —
+  23-09— y la gris —02-10— fueron justo lo que no gustó). La píldora se desliza entre filas del
+  mismo bloque con `layoutId` (framer-motion, `MotionConfig reducedMotion="user"`); en el riel
+  plegado, por todo el riel (`ResalteDelRiel`). La cabecera de una sección plegada con la página
+  actual adentro va en la tinta de la activa; la «IA» de la fila activa, en `bg-surface`. Al pasar:
+  `hover:bg-surface-hover` (neutro, más tenue que la activa; también la cabecera de sección); sobre
+  la activa no se suma. La barra de abajo del celular y su «Más» usan los mismos tokens. Nunca
+  `bg-primary-soft` para la activa del menú (en oscuro es el índigo saturado `#0d1331`). Resorte de
+  250 ms sin rebote (`motionSpring.snappy`), a opacidad plena; sólo cuando la activa salta a OTRO
+  bloque (sin resaltado previo desde donde deslizarse) entra con un fundido. Ver
+  `ResalteDeLaFilaActiva` en `PlanSidebar.tsx`.
+- **El logo de la barra** (03-10-2026, Nico: «pon el logo de la sidebar en todas las plataformas
+  negro así como el de la landing»): `text-fg` (tinta del tema: `#14130f` en claro, blanco hueso
+  en oscuro), abierta y plegada, en el cajón del celular, en los tres paneles y en la vista beta.
+  El /admin lleva su «nest» en negro (`Wordmark variant="ink"`). Del 22-09 al 03-10 fue `text-primary`.
+- **Secciones al entrar**: una sola abierta, «Operación» (`#sec-operacion`; en un panel sin ella,
+  la primera), más la de la página actual. Lo que se abre o cierra vale mientras se navega y NO se
+  guarda (`secciones-del-menu.ts`).
+
+### Command palette (⌘K, `src/components/inmobiliaria/CommandPalette.tsx`)
+Guía: el menú flotante y el modal del sistema de diseño de referencia (`SaleADS-projects/chat`,
+`chat-v2/live/Menu.tsx` / `Modal.tsx`) hablado con tokens de Leasefy.
+- Caja de 680 px a 12 vh del borde, `rounded-[20px]`, con la sombra de los modales de Cadence,
+  centrada con `mx-auto` (NO con `-translate-x-1/2`: la animación usa `transform`); en `<md`,
+  pantalla completa con la ✕ del producto (`AspaDeCierre`, sólo ahí).
+- Velo §41: tinta al 32 % + `backdrop-blur-[6px]` (en oscuro, negro al 62 %). Un clic en él cierra.
+- **Movimiento con framer-motion** (no con las clases `animate-dialog-*` de Cadence): el
+  `DialogContent` de Radix queda como MARCO invisible a pantalla completa (`hideClose`, velo de
+  Radix transparente, `!animate-none`) y adentro `AnimatePresence` anima el velo y la caja. El
+  diálogo sigue abierto (`montada`) hasta que termina la salida; lo escrito se borra recién ahí.
+  Caja: entra en 220 ms (sube 8 px, 0,98 → 1), sale en 150 ms; velo: entra en 200 ms, sale en 150.
+  Filas, grupos, novedades, vacío y cargando: 180 ms, 4 px de subida, escalera de 20 ms (tope en la
+  fila 8); la fila que ya estaba no se vuelve a animar al seguir escribiendo. Lupa ↔ cargando, la ✕
+  de limpiar y el ↵: fundidos de 150 ms. Resaltado de la activa: resorte de 200 ms sin rebote.
+  Curva: ease-out `[0.22, 1, 0.36, 1]`. Valores PROVISIONALES (`MOVIMIENTO` en el archivo) hasta que
+  exista el sistema de movimiento de Cadence.
+- Fila: ícono en su cuadrito (32 px, `rounded-[10px]`, `bg-surface-muted`), título + línea de apoyo;
+  la activa lleva el mismo tinte neutro deslizante que el menú y un `kbd` ↵. Lo escrito se resalta
+  (`tramos-de-coincidencia.ts`, sin tildes ni mayúsculas). Foco en el campo + `aria-activedescendant`.
+- Novedades del audit log: `novedades-del-buscador.ts` las dice en español y junta las repetidas
+  («3 veces»).
 
 ### Banners (state-colored info blocks)
 ```tsx
@@ -404,7 +582,7 @@ onboarding), así que `toast()` desde el resto del árbol — `/auth/mfa-verify`
 
 - **Focus**: global `*:focus-visible { outline: 2px solid #1A40FF; outline-offset: 2px }` (cobalt, border.focus) — don't override per-component
 - **Skip link**: `.skip-link` utility
-- **Modals**: `role="dialog" aria-modal="true"`, focus trap optional but Escape-to-close mandatory
+- **Modals**: usá `Dialog` / `AlertDialog` (Radix): foco atrapado, Esc, `aria-labelledby`/`describedby` desde `DialogTitle`/`DialogDescription` y foco devuelto al disparador. Sin descripción visible, `aria-describedby={undefined}` en el Content.
 - **Backdrop**: `aria-hidden="true"`
 - **Icon-only buttons**: must have `aria-label` or `title`
 - **Color**: never communicate state with color alone — pair with icon + text
@@ -419,8 +597,174 @@ The site uses **Lenis** smooth scroll, configured in `src/components/providers/S
 1. **For any modal / drawer / overlay**: call `lenis.stop()` on open, `lenis.start()` on close + cleanup
 2. **For any scrollable nested container** inside the modal/drawer: add `data-lenis-prevent` + `overscrollBehavior: 'contain'`
 
-Failure mode: wheel events get hijacked, drawer body appears frozen. Both `PlanDetailSheet` and
-`CandidateDrawer` follow this pattern — copy it.
+Failure mode: wheel events get hijacked, drawer body appears frozen. En los cajones ya no se
+hace a mano: `SheetBody` trae `data-lenis-prevent` + `overscroll-behavior: contain`, y
+`SmoothScroll` frena Lenis mientras haya un diálogo o cajón abierto (§4 Drawers).
+
+---
+
+## 8b. Movimiento — cada interacción con su animación
+
+Nico (02-10-2026): «que cada interacción tenga su animación top: cosas suaves, entradas,
+salidas, cambios». El sistema vive en **`@leasefy/cadence`** (`cadence/src/motion/`): tokens,
+primitivas sobre **framer-motion** (peer de Cadence: UNA sola copia, la del front) y recetas de
+clases para lo que se anima en CSS. Las historias de Storybook «Foundations/Motion» y la
+«Animación» de cada componente muestran todo funcionando.
+
+### Las reglas (lo que hace que todo se sienta de la misma familia)
+
+| Regla | Por qué |
+|---|---|
+| Lo que **entra** desacelera (`enter`, 200ms); lo que **sale** acelera y dura menos (`exit`, 150ms) | Nadie espera a que algo termine de irse |
+| Sólo se anima **`transform` y `opacity`** | Lo demás (width, height, top, margin) recalcula el layout en cada cuadro. Única excepción: la altura de un colapsable (`Collapse`, acordeón) |
+| **Distancias chicas**: 4 · 8 · 16 · 24 px | Algo que viaja 40px parece un error; 8px parece que llegó |
+| **Movimiento reducido** (`prefers-reduced-motion`): sin desplazamientos, quedan fundidos cortos | Accesibilidad. Las primitivas lo hacen solas; `MotionProvider` (layout raíz) lo aplica a todo framer. En CSS, `globals.css` pone los `--motion-*` reducidos (distancia 0, escala 1, 150 ms) y su regla global deja quieto todo lo demás, salvo las animaciones del sistema (modales, cajones, flotantes, `animate-in` sin desplazamiento) y las transiciones de sólo opacidad, que quedan como fundidos. Una animación nueva del preset que se quiera salvar se agrega a esa lista: `movimiento-reducido.test.ts` comprueba que no se mueva |
+| Nada arranca invisible en HTML del servidor arriba del pliegue | Un `initial={{ opacity: 0 }}` sin hidratar es una página en blanco (y castiga el LCP) |
+| Los estados que ya vienen al cargar **no se animan**; se anima el CAMBIO | Una tabla con 40 casillas marcadas no «late» entera al abrir |
+
+### Tokens
+
+| Token | JS (`@leasefy/cadence`) | Tailwind | CSS |
+|---|---|---|---|
+| Duraciones | `motionDuration.instant/fast/base/slow/reveal` (s) | `duration-instant` 100 · `duration-fast` 150 · `duration-base` 200 · `duration-slow` 300 · `duration-reveal` 500 | `--motion-duration-*` |
+| Bucles decorativos | `motionDuration.ambient` (2,4 s): el período de un halo que respira, un orbe que late, un brillo que barre (`repeat: Infinity`). Nunca para entradas ni salidas; pausado fuera de pantalla y quieto con movimiento reducido | `duration-ambient` (transición) · en CSS `[animation-duration:var(--motion-duration-ambient)]` | `--motion-duration-ambient` |
+| Curvas | `motionEase.enter/exit/emphasis/standard/spring` | `ease-enter` · `ease-exit` · `ease-emphasis` · `ease-standard` · `ease-spring` | `--motion-ease-*` |
+| Resortes | `motionSpring.soft` (sin rebote, superficies) · `.snappy` (indicadores, layout) · `.bouncy` (rebote leve, algo que «llega») | — | — |
+| Distancias | `motionDistance.xs` 4 · `sm` 8 · `md` 16 · `lg` 24 | — | `--motion-distance-*` |
+| Escalas | `motionScale.pop` 0.96 (flotantes) · `.press` 0.97 | `active:scale-[0.97]` | `--motion-pop-scale` |
+| Escalonado | `motionStagger.step` 40ms, techo `max` 320ms | — | — |
+
+Las clases de Tailwind leen las variables con el mismo valor de respaldo, así que funcionan aunque
+la app no las defina. Animaciones CSS del preset: `animate-pop-in` / `animate-pop-out`
+(flotantes), `animate-tip-in` (tooltip), `animate-rise-in` (avisos), `animate-collapse-open` /
+`animate-collapse-close` (acordeón y colapsable), `animate-spinner-in`.
+
+### Primitivas — cuál usar
+
+| Quiero… | Usa | Ejemplo |
+|---|---|---|
+| Que algo **aparezca** (una tarjeta, una sección) | `Appear` | `<Appear>…</Appear>` · `<Appear direction="left" delay={0.1}>` · `<Appear inView>` (al hacer scroll) |
+| **Mostrar y ocultar** con salida (lo que `{x && …}` no puede) | `Presence` | `<Presence show={hayError}><Banner …/></Presence>` |
+| Una **lista** que entra escalonada; **filas que se agregan o quitan** | `Stagger` + `StaggerItem` | `<Stagger as="ul">{filas.map(f => <StaggerItem key={f.id} as="li">…)}</Stagger>` |
+| **Cambiar un contenido por otro**: cargando → contenido, vacío → lleno, **pasos** de un asistente | `CrossFade` | `<CrossFade swapKey={cargando ? 'cargando' : 'listo'}>…` · `<CrossFade swapKey={paso} direction={adelante ? 'forward' : 'backward'}>` |
+| Una sección que **se abre y se cierra** (altura automática) | `Collapse` | `<Collapse open={abierto} className="pt-3">…</Collapse>` |
+| Una **cifra que cambia** (saldo, total, KPI) | `AnimatedNumber` | `<AnimatedNumber value={saldo} format={formatCurrency} className="font-mono" />` |
+| La marca de **«estás acá» que se desliza** (pestañas propias, filtros, navegación) | `MotionIndicator` | dentro del ítem activo: `<MotionIndicator layoutId={\`${id}-filtro\`} className="inset-0 -z-10 rounded-full bg-surface" />` (ítem con `relative isolate`) |
+| **Presión y hover** físicos en una tarjeta o loseta armada a mano | `Pressable` (o `motionClasses.press` / `hoverLift` en CSS) | `<Pressable as="button" onClick={abrir}>…</Pressable>` |
+| La **entrada de una página** | `PageTransition` | ya está en los `template.tsx` (ver abajo) |
+
+Todas aceptan `as` (`div`, `li`, `ul`, `section`, `tr`…), respetan el movimiento reducido solas y
+no cambian el marcado entre servidor y cliente. Para un flotante de Radix hecho a mano:
+`motionClasses.floating` (popover/menú) y `motionClasses.tooltip`.
+
+### Los componentes base ya traen su movimiento
+
+Quien usa estos componentes (o sus adaptadores de `src/components/ui/`) lo hereda sin hacer nada:
+`Button` (presión con resorte; el spinner entra con pop) · `Tabs` (la barra o la píldora del
+activo **se desliza**, `layoutId`; el panel entra con fundido) · `SegmentedControl` (la píldora se
+desliza y se ajusta al ancho) · `Accordion` y `Collapsible` (altura + fundido, chevron con la misma
+curva) · `Popover`, `DropdownMenu` (y submenú), `Select`, `Combobox`, `HoverCard` y `Tooltip`
+(**entran desde su ancla y salen acelerando**; antes cerraban de golpe) · `Toast` (sonner con la
+curva de entrada del sistema) · `Switch` (thumb con resorte que se estira al presionar) ·
+`Checkbox` (el visto **se dibuja** al marcar y se borra al desmarcar) · `Radio` (el punto crece) ·
+`Badge` (cruza el color al cambiar de estado) · `Chip` (presión) · `Card interactive` (hover sutil:
+sube 1px) · `Banner`, `Alert`, `Callout` (entran subiendo 8px) · `FormError` (el error bajo el
+campo **baja 4px con un fundido** y sale acelerando; con `hint`, la ayuda gris y el error se cruzan
+sin verse juntos — Cadence v1.1.1; `ErrorDelCampo` de `components/estado/` es su adaptador en
+español) · `Skeleton` (deja de brillar con movimiento reducido). `Dialog`, `AlertDialog`, `Sheet`
+y `Drawer` tienen su propia coreografía (§17) con los mismos tokens.
+
+**La base del panel (03-10-2026)** — también se hereda sin hacer nada:
+
+- `EstadoDeDatos`: cuando el estado CAMBIA después de montarse (cargando → contenido, → falló,
+  → vacío), lo nuevo entra con fundido y 4 px (`motionDistance.xs`). Lo que ya estaba al montarse
+  no se anima (la página ya entra con su `template.tsx`). Casi no agrega nodos: un hijo que es
+  etiqueta se pinta como `motion.<etiqueta>` con sus mismas props; un componente que es TODO el
+  contenido va en una `motion.div` (`empty:hidden` si no pinta nada); un componente entre varios
+  hijos queda quieto (una caja le cambiaría el padre). **Una pantalla que
+  usa `EstadoDeDatos` NO lo envuelve en otro `CrossFade`.** (`components/estado/entrada-del-estado.tsx`)
+- `KpiCard` (Cadence, 03-10-2026): `value` acepta un NÚMERO (con `format`) además del texto de siempre o un nodo; el número cuenta con `AnimatedNumber` al cambiar, y desde 0 si llega después de montarse la tarjeta sin cifra. Un texto se pinta igual que antes.
+- `KpiValor`: la cifra que llega después de cargar entra con fundido y, si es un número, cuenta
+  desde 0 (`AnimatedNumber`, `reveal`); si después cambia, cuenta desde la anterior.
+- `BarraDePestanas` y `RielDePestanas`: la marca de la activa (card o subrayado) es un
+  `MotionIndicator` que **se desliza** a la nueva.
+- `BarraDeAccionesMasivas`: sube 8 px al aparecer con algo marcado y el «N marcadas» cuenta. Para
+  que también SALGA animada, la pantalla la monta dentro de un `Presence` (o `AnimatePresence`).
+- `EmptyState` (`ui/empty-state`, y `data-display/EmptyState` que delega) y `SinDatos`: entran
+  con `Appear` (8 px), salvo dentro de un `EstadoDeDatos` que ya los anima.
+- Tablas cuyas filas entran y salen (marcar, aprobar, borrar, filtrar): `TableBodyAnimado` +
+  `TableRowAnimada` de `ui/table` (escalonado con techo de 320 ms, salida «sync», sin `layout`),
+  con `key` = el id del dato.
+
+### Páginas
+
+- `MotionProvider` (Cadence) envuelve toda la app en `src/app/layout.tsx`: `reducedMotion="user"`.
+  No toca el scroll; Lenis sigue igual y `inView` funciona con él.
+- `template.tsx` con `PageTransition` en: la raíz (cambio de sección de primer nivel),
+  `panel/inmobiliaria`, `panel/(landlord)` e `inquilino`. Los de los paneles van **dentro** del layout:
+  al cambiar de módulo entra sólo el contenido (fundido + 8px, 300ms); sidebar, header, muro de
+  migración y guards de sesión quedan montados y no parpadean.
+- La **primera pantalla** de la sesión no se anima: llega visible desde el HTML del servidor.
+- **Nunca dos a la vez:** al llegar al panel desde fuera se montan juntos el template raíz y el del
+  panel; anima sólo el de afuera. Y la página **no anima su propia entrada** (`initial={{ opacity: 0, y: 20 }}`
+  en el contenedor de la página): se suma a la del template. Lo que se anima adentro son los cambios.
+- Navegar dentro de un módulo (lista → ficha) no remonta el template: ese movimiento lo pone cada
+  pantalla con las primitivas.
+- ⚠️ Durante los 300ms de la entrada el contenedor tiene `transform`: un `position: fixed` de
+  adentro se ubica relativo a él. Lo flotante de una página va en portal o `sticky` (§19).
+
+### Errores que no hay que repetir
+
+| ❌ | ✅ |
+|---|---|
+| `transition-all` en un contenedor grande | Nombrar las propiedades: `transition-[transform,opacity]` |
+| Animar `width`/`height`/`top` (barras de progreso, indicadores) | `transform` (`scaleX`, `translateX`) o `MotionIndicator` |
+| `key={index}` en una lista animada | `key={dato.id}`: con el índice, borrar la fila 2 anima la salida de la última |
+| `layout` en una lista de 300 filas o virtualizada | `<Stagger layout={false}>`: cada cambio mediría todas las filas |
+| `AnimatePresence mode="wait"` con salidas largas | Salidas en `fast`; `CrossFade` ya lo hace |
+| Curvas y duraciones inventadas (`duration: 0.6, ease: 'easeInOut'`) | Los tokens. Si falta uno, se agrega al sistema |
+| `{abierto && <Panel/>}` y quejarse de que «cierra de golpe» | `Presence` (o `open={…}` en los primitivos de Radix) |
+
+### En las pruebas
+
+`vitest.setup.ts` pone `MotionGlobalConfig.skipAnimations = true`: toda animación de framer salta a
+su valor final, así que ya no hace falta mockear `framer-motion` para que un `AnimatePresence`
+monte el contenido nuevo.
+
+- `AnimatedNumber` (Cadence, 03-10-2026): con las animaciones apagadas (`skipAnimations` o movimiento
+  reducido) escribe la cifra final DE UNA, antes de pintar. No hace falta esperar un cuadro para leerla.
+- Lo que SALE (un `Presence`, una fila de `Stagger`, un `Collapse`) se desmonta después de su salida,
+  también con `skipAnimations`: para ver que ya no está, espera un momento
+  (`await act(async () => { await new Promise((r) => setTimeout(r, 50)) })`). Para ver que SALE animado
+  (sigue montado mientras se va), apaga el atajo en esa prueba: `MotionGlobalConfig.skipAnimations = false`.
+- Un `CrossFade` en modo `wait` monta lo nuevo DESPUÉS de la salida (150 ms): si la pantalla enfoca un
+  campo del contenido nuevo apenas cambia (un asistente que vuelve al paso con error), usa
+  `mode="popLayout"`, que lo monta ya.
+- `Stagger`/`StaggerItem` (y `TableBodyAnimado`/`TableRowAnimada`) en el modo estricto de React (`next dev`):
+  cada ítem se anima SOLO, con su retraso por turno; no hay orquestación del contenedor que el doble montaje
+  pueda perder (03-10-2026: así se veían vacías las tablas de Contratos y Propietarios). Dentro de algo que no
+  anima su primer contenido (`CrossFade`, `Collapse` abierto) la lista de ese primer pintado se ve quieta.
+  Lo fija `components/ui/table.movimiento.test.tsx`, con animaciones reales y `<StrictMode>`.
+
+### El pensamiento en vivo del chat (02-10-2026)
+
+`src/components/beta/PensamientoDelTurno.tsx`, con los pasos que manda el micro (evento SSE
+`pensamiento`, `src/lib/chat/pensamiento.ts`). Es la receta para «algo que trabaja y se ve
+trabajar» sin cajas:
+
+- **Cada paso entra con su altura** (`<Collapse open initial>`) y un fundido que sube
+  `motionDistance.xs`: la lista crece suave y nada salta.
+- **El paso que corre lleva un brillo** (`.chat-brillo` en `globals.css`): dos capas del mismo
+  texto; la clara se ve por una ventana que viaja a la derecha mientras su texto viaja a la
+  izquierda con la misma curva — sólo `transform`, las letras quietas, se mueve la luz. Con
+  movimiento reducido la capa no existe.
+- **Al terminar, se asienta**: un visto chico en `fg-subtle`, el texto pasa a `fg-muted` y el
+  resultado entra a la derecha en `fg`, con su cifra contando (`AnimatedNumber`, `from={0}`).
+- **El especialista con su orbe** (`OrbeDeAgente` con `estado`) y su nombre de `equipo.ts`.
+- **El tiempo, discreto**: `font-mono` 11,5 px en `fg-subtle`, a la derecha de la cabecera.
+- **Al llegar la respuesta se pliega** (`Collapse`) en «Cómo lo pensó · 7 pasos · 9,0 s».
+- **Lector de pantalla**: la lista va `aria-hidden`; una sola línea `aria-live="polite"` dice
+  el paso que corre o el resultado del último. Nunca cada brillo ni cada cifra que cuenta.
 
 ---
 
@@ -597,6 +941,15 @@ Centered card with an **error-tinted** icon circle:
 Skeleton class: `animate-pulse rounded-md bg-surface-muted` (use the `<Skeleton />` primitive at
 `src/components/ui/skeleton.tsx`).
 
+**Esqueleto → contenido** (§8b): nunca un corte seco. `CrossFade` saca el esqueleto en 150ms y
+hace entrar el contenido; si el contenido es una lista, sus filas llegan con `Stagger`:
+```tsx
+<CrossFade swapKey={isLoading ? 'cargando' : 'listo'}>
+  {isLoading ? <SkeletonTableRows rows={6} /> : <TablaDeContratos filas={filas} />}
+</CrossFade>
+```
+Lo mismo para vacío → lleno y error → reintento.
+
 ### 404 (Next.js default — KEEP IT DARK)
 The 404 page is warm-ink (`surface.inverse`) with **JetBrains Mono** "404 | This page could not be
 found." — leave it as-is; it's intentional brand minimalism.
@@ -724,6 +1077,11 @@ import { SegmentedControl } from '@leasefy/cadence';
 - Los segmentos son `<button role="radio">` dentro de un `role="radiogroup"`;
   el activo es la píldora blanca con `shadow-sm`. **No re-pintes el estado
   activo** desde el call site.
+- **En oscuro** (Cadence v1.1.1, 02-10): el riel es un velo neutro de blanco al
+  5 % (el de la bandeja del chat) y la píldora blanco al 7 % encima, con un
+  filete interior de blanco al 8 %. Antes la píldora era el mismo #0a0a0a del
+  fondo y no se veía. Igual en las `Tabs` `segmented` y `text`. En claro no
+  cambió nada.
 - `label` acepta un nodo (icono + texto, o texto + píldora de conteo). El DS no
   pasa props sueltas a cada segmento: un `data-testid` va **dentro** del
   `label`, y para clickearlo en un test se sube al botón con `.closest('button')`.
@@ -752,7 +1110,7 @@ Two overlay patterns plus the floating-content layer that must sit above them:
 | Pattern | Component | z-index | When |
 |---|---|---|---|
 | **Drawer / Sheet (side panel)** | `<Sheet>` / `<Drawer>` primitives (`sheet.tsx`, `drawer.tsx`) | `z-[300]` | Detail views, settings, long sectioned content |
-| **Dialog (centered modal)** | `<Dialog>` / `<AlertDialog>` (`dialog.tsx`, Radix-based) | `z-[300]` | Confirmations, short forms, alerts |
+| **Dialog (centered modal)** | `<Dialog>` / `<AlertDialog>` (`dialog.tsx`, Radix-based) + `confirmar()` / `avisar()` | `z-[300]` | Confirmations, short forms, status messages (info / éxito / error / advertencia) |
 | **Floating-in-modal** | `Select` / `DropdownMenu` / `Popover` / `Tooltip` / `HoverCard` content | `z-[400]` | Any Radix popover opened *inside* a modal/drawer |
 
 ⚠️ **Overlay stack: modal/drawer `z-[300]` < floating content `z-[400]` < toasts (sonner, ~1e9).**
@@ -763,81 +1121,201 @@ override the design-system default `z-50` to `z-[400]`. Add new floating primiti
 that list, don't invent a new number.
 
 Dialog and Sheet share `z-[300]`; a confirmation Dialog spawned *from* a Sheet lands on
-top by DOM order (it mounts later). The legacy `PlanDetailSheet` still uses `z-50` — new
-side panels should use the shared `<Sheet>` primitive, not roll their own.
+top by DOM order (it mounts later). Desde el 02-10-2026 no queda ningún cajón armado a mano
+(`PlanDetailSheet` incluido): todos son el `<Sheet>` flotante (§4 Drawers).
 
-### Dialog Pattern
+### Dialog Pattern — el modal canónico (02-10-2026)
 
-**Todo modal del producto tiene la misma anatomía, y la impone la primitiva.**
+> Nico: «quiero algo hermoso, que cada modal se sienta bello, sea informativo,
+> de éxito, de error». Desde ese día **todo modal del producto sale de la misma
+> primitiva** (`Dialog` / `AlertDialog` de Cadence, a través de
+> `src/components/ui/dialog.tsx` y `alert-dialog.tsx`) y **nadie arma una
+> cáscara a mano** (`fixed inset-0` + caja centrada). Las historias de Storybook
+> de Cadence (`Overlays/Dialog`, `Overlays/AlertDialog`,
+> `Overlays/MessageDialog`, `Overlays/Imperativo`) son la referencia visual.
 
 ```
-┌──────────────────────────────────────┐
-│  Título                         (✕)  │  cabecera FIJA, filete abajo
-├──────────────────────────────────────┤
-│  cuerpo (lo único que scrollea)      │
-├──────────────────────────────────────┤
-│                  Cancelar  Confirmar │  pie FIJO, filete arriba
-└──────────────────────────────────────┘
+┌────────────────────────────────────────────┐
+│  (◎)                                  (✕)  │  medallón opcional (variant / icon)
+│  Título grande 20/28                       │  + subtítulo 14px apagado
+│  Subtítulo                                 │
+├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┤  filete SÓLO cuando el cuerpo scrollea
+│  cuerpo — lo único que scrollea            │  data-lenis-prevent + overscroll contain
+│  ┌──────────────────────────────────────┐  │
+│  │ bloque con borde fino (DialogSection)│  │
+│  └──────────────────────────────────────┘  │
+├────────────────────────────────────────────┤
+│  pie, fondo suave         Cancelar  [Sí]   │  pie fijo, acciones a la derecha
+└────────────────────────────────────────────┘
 ```
+
+- **Panel:** esquinas de **24px**, borde fino, sombra profunda y suave, centrado
+  con `inset-0 m-auto` (no con translate). Entra con escala + opacidad en
+  `duration-slow` (300 ms) + `ease-enter`, subiendo `--motion-distance-sm`; sale
+  en `duration-fast` (150 ms) + `ease-exit` (§8b). La hoja del celular entra con
+  `ease-emphasis`. Con `prefers-reduced-motion` los tokens valen 0 y 1 y queda
+  un fundido corto, sin ninguna clase `motion-reduce:` en el panel (salvo la
+  hoja, que viaja el 100% de su alto y pasa a fundido).
+- **Velo:** tinta translúcida + **desenfoque** del fondo (negro 60% en oscuro).
+- **✕:** un círculo con borde fino arriba a la derecha. La pone el Content
+  (nunca la cabecera) y no scrollea nunca.
+- **Pie:** fondo `surface-hover` (blanco/negro translúcido: neutro en los dos
+  temas), filete arriba, acciones a la derecha. Salida = botón blanco con borde
+  (`variant="outline"` o `secondary`: el pie pinta de superficie el `outline`),
+  acción = cobalto, destructiva = rojo sobrio (también en oscuro: el pie fuerza
+  `#c0392b` en vez del salmón, que con texto blanco no llega a 4.5:1).
+- **Celular (<640px):** sube como **hoja desde abajo**, a todo el ancho, con las
+  esquinas de arriba redondeadas, los botones a todo el ancho (el principal
+  arriba) y la zona segura del iPhone respetada. `mobile="center"` lo deja como
+  tarjeta centrada.
+- **Oscuro:** Onyx `#0a0a0a`. Nada de `surface-muted` adentro del modal (es un
+  gris cálido, amarillento sobre el negro).
+
+#### Tamaños — `size` en el Content
+
+| `size` | Ancho | Para |
+|---|---|---|
+| `sm` | 420 | Confirmaciones, mensajes de estado (default de `AlertDialog`) |
+| `md` | 520 | Formularios cortos (default de `Dialog`) |
+| `lg` | 680 | Formularios con secciones |
+| `xl` | 880 | Tablas, comparaciones, extractos |
+
+Un `className="max-w-…"` en el Content sigue ganando (tailwind-merge), pero
+preferí `size`.
+
+#### Las variantes — `variant` en el Content
+
+| Tipo | Componente | `variant` | Medallón | Botón principal |
+|---|---|---|---|---|
+| Contenido / formulario | `Dialog` | — | ninguno (o `icon`) | cobalto |
+| Confirmación | `AlertDialog` / `confirmar()` | `confirm` | cobalto, «?» (o el ícono de la acción) | cobalto |
+| **Destructiva** | `AlertDialog` / `confirmar({ destructivo })` | `destructive` | rojo, papelera (o `Prohibit`…) | **rojo sobrio, solo** |
+| Advertencia | `AlertDialog` / `avisar` | `warning` | ámbar, «!» | cobalto |
+| Informativa | `Dialog` / `avisar({ tipo: "info" })` | `info` | azul, «i» | «Entendido» blanco |
+| Éxito | `Dialog` / `avisar({ tipo: "exito" })` | `success` | verde, **el ✓ se dibuja** | «Listo» blanco |
+| Error | `Dialog` / `avisar({ tipo: "error" })` | `error` | rojo, «×» | «Reintentar» si aplica |
+
+El medallón es un círculo de 48px con el **tinte suave** del estado (nunca
+saturado) y un halo del mismo tinte; entra con escala + opacidad (desde
+`--motion-pop-scale`: con movimiento reducido, sólo el fundido).
 
 ```tsx
+// Formulario / contenido
 <Dialog open={open} onOpenChange={setOpen}>
-  <DialogContent /* rounded-[20px], max-w-lg, flex-col, centrado por translate */>
+  <DialogContent size="md">
     <DialogHeader>
-      <DialogTitle>...</DialogTitle>
-      <DialogDescription>...</DialogDescription>
+      <DialogTitle>Nuevo propietario</DialogTitle>
+      <DialogDescription>Con el documento basta; el resto se completa después.</DialogDescription>
     </DialogHeader>
-    {/* cuerpo: hijos sueltos, con su padding y su scroll */}
+    {/* hijos sueltos: van al cuerpo con scroll (grid gap-4) */}
+    <DialogSection title="Datos">…</DialogSection>
     <DialogFooter>
-      <Button variant="outline">Cancelar</Button>
-      <Button>Confirmar</Button>
+      <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+      <Button isLoading={guardando}>Crear propietario</Button>
     </DialogFooter>
   </DialogContent>
 </Dialog>
+
+// Destructiva: el título nombra QUÉ, la descripción dice EXACTAMENTE qué se pierde
+<AlertDialog open={open} onOpenChange={setOpen}>
+  <AlertDialogContent variant="destructive">
+    <AlertDialogHeader>
+      <AlertDialogTitle>¿Anular el recibo RC-1042?</AlertDialogTitle>
+      <AlertDialogDescription>
+        La cuota de octubre vuelve a quedar pendiente por $ 2.450.000. El recibo queda
+        marcado como anulado; no se borra.
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter>
+      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+      <AlertDialogAction loading={anulando} onClick={(e) => { e.preventDefault(); anular() }}>
+        Anular recibo
+      </AlertDialogAction>          {/* sale rojo solo: lo decide la variante */}
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
+
+// Un estado que cambia adentro del mismo modal: la variante sigue al estado
+<DialogContent variant={resultado ? "success" : undefined}>…</DialogContent>
 ```
 
-`DialogContent` **reparte** a sus hijos: `DialogHeader` arriba, `DialogFooter`
-abajo, y todo lo demás a un cuerpo con `overflow-y-auto` propio. No le pongas
-`p-0`, `overflow-y-auto` ni `flex flex-col` — ya los tiene, y pelean.
+#### Preguntar o avisar desde un manejador — `confirmar()` / `avisar()`
 
-Reglas que NO se negocian, porque son lo que hace que 29 modales se vean igual:
+`src/components/ui/confirmar.tsx`. Devuelven una promesa; **reemplazan a
+`window.confirm` / `alert`** (prohibidos: `sin-dialogos-del-navegador.test.ts`,
+que también mira `globalThis.` y `self.`). No hay que montar nada: el primer
+pedido monta un único anfitrión en `document.body` con el z del panel.
+
+```ts
+const ok = await confirmar({
+  destructivo: true,
+  titulo: '¿Eliminar a Laura Gómez del equipo?',
+  descripcion: 'Pierde el acceso al panel ya mismo. Sus gestiones y notas se conservan.',
+  accion: 'Eliminar del equipo',
+})
+if (!ok) return
+
+// Con el trabajo adentro: el botón carga; si falla, el modal sigue abierto.
+await confirmar({ titulo: '¿Enviar los 42 recordatorios?', accion: 'Enviar', alConfirmar: enviar })
+
+await avisar({ tipo: 'error', titulo: 'No pudimos enviar el lote a Wompi',
+  descripcion: 'Wompi no respondió. Lo enviado quedó guardado; reintenta en unos minutos.',
+  referencia: 'WOMPI_NO_RESPONDIO · 7f3a-29c1', accion: 'Reintentar', alAccionar: reintentar })
+```
+
+Una confirmación lleva siempre `descripcion` (qué pasa si se acepta) o, por lo
+menos, `detalle`: sin descripción, el detalle es lo que lee el lector de
+pantalla; sin ninguno de los dos, Radix avisa en la consola de desarrollo.
+
+Un error en un modal dice **qué pasó** (título) y **qué hacer** (descripción),
+con la **referencia** opcional para soporte (se copia con un clic) — las mismas
+piezas que `FalloDeCarga` (`titulo`, `descripcion`, `sePuedeReintentar`).
+
+#### Reglas que NO se negocian
 
 | Regla | Por qué |
 |---|---|
-| **Siempre `<DialogHeader>`** | Es lo único que da el título de 16px, el filete y la ✕ en su sitio. Sin él el modal se ve de otra familia. |
-| **La ✕ vive en la cabecera** | La del DS va `absolute` dentro del contenedor que scrollea: en un modal alto desaparece. |
-| **No toques el tamaño del título** | El del DS es `text-h2` (22px), tamaño de encabezado de PÁGINA. La primitiva lo baja con `[&_h2]:text-base`, por especificidad — un `className="text-base"` NO gana (tailwind-merge no reconoce `text-h2` como tamaño y sobreviven las dos). El color sí se puede cambiar. |
-| **Cabecera `sr-only` ⇒ `hideClose`** | Si no, la ✕ nace `sr-only` también. Con `hideClose` en la cabecera, el `DialogContent` la pinta flotando arriba a la derecha. |
+| **Siempre `<DialogHeader>`** | Da el título 20/28, el subtítulo, el medallón y el lugar de la ✕. Sin él el modal se ve de otra familia. |
+| **No toques el tamaño del título** | Lo fija Cadence (20/28). El color tampoco: el estado lo dice el medallón, no un título rojo o ámbar. |
+| **Nada de cabeceras con ícono hechas a mano** | Un `WarningCircle` en un recuadro `bg-danger-soft` al lado del título es lo que hace `variant` / `icon`, mejor y igual en todos lados. |
+| **El pie es `<DialogFooter>`** | Un `div` a mano no queda fijo, no tiene el fondo suave ni apila bien en el celular. |
+| **No le pongas `p-0`, `overflow-y-auto`, `max-h-*` ni `flex flex-col` al Content** | Ya los tiene, y pelean: con `overflow-y-auto` scrollea el panel entero y la cabecera se va. |
+| **Destructiva = `variant="destructive"`** | Medallón rojo + botón rojo sobrio + el texto dice exactamente qué se pierde (y qué no). |
+| **Cargando ≠ deshabilitado** | `loading` / `isLoading` en el botón principal: spinner y bloqueado, pero conserva su color. Cancelar se deshabilita mientras tanto. |
+
+`DialogContent` **reparte** a sus hijos directos: `DialogHeader` arriba,
+`DialogFooter` abajo y lo demás a un cuerpo con scroll (`grid gap-4`). Si
+escribís `<DialogBody>` a mano, se respeta tal cual (para darle otro layout).
 
 ### La ✕: una sola, y la pone la primitiva
 
-**Ningún call site dibuja una ✕.** Hay UN aspa en todo el producto —chip
-redondo gris, `size-8 rounded-full bg-surface-muted`— y vive en
-`AspaDeCierre` (`src/components/ui/dialog.tsx`). Diálogos y cajones la
-heredan; la ✕ pelada del DS (`rounded-[9px]`, sin fondo) va apagada **siempre**
-en los dos adaptadores.
+**Ningún call site dibuja una ✕.** Hay UN aspa en todo el producto —un
+**círculo con borde fino**, `size-9 rounded-full border border-border
+bg-surface`— y vive en `AspaDeCierre` (`src/components/ui/dialog.tsx`, dibujo en
+`aspa-de-cierre.ts`, el mismo que `DialogCloseButton` de Cadence). Diálogos y
+cajones la heredan.
 
 | Dónde | Quién la pone |
 |---|---|
-| `DialogContent` con `<DialogHeader>` | La cabecera, a la derecha del título |
-| `DialogContent` sin cabecera (o con `hideClose` en ella) | El Content, flotando en `absolute right-4 top-4` |
-| `SheetContent` | El Content, en `right-4 top-4` y `z-20` — por encima de las cabeceras `sticky` |
-| `AlertDialog` | Nadie: se sale por `Cancelar`/`Confirmar`, a propósito |
+| `DialogContent` (con o sin cabecera) | El Content, como `closeButton` de Cadence: arriba a la derecha, fuera del cuerpo que scrollea; la cabecera le reserva lugar |
+| `SheetContent` | El Content, en `right-6 top-[18px] sm:top-3.5` y `z-20` (`sheetCloseClassName` de Cadence, con `right-6` encima: centrada en la línea del título y con el borde en el padding), después de los hijos; `SheetHeader` le reserva el hueco. `closeLabel` le cambia el nombre («Cerrar el documento») |
+| `AlertDialog` / `confirmar()` | Nadie: se sale por `Cancelar` o por la acción (y Esc), a propósito |
 
-Para apagarla entera: `hideClose` en `DialogContent`, `hideCloseButton` en
-`SheetContent`. Sólo para un modal que no se debe abandonar a medias.
+Para apagarla entera: `hideClose` en `DialogContent` (`hideCloseButton` en
+`SheetContent`). Sólo para un modal que no se debe abandonar a medias. El
+`hideClose` de `DialogHeader` quedó por compatibilidad y no hace nada.
 
 ⚠️ **Un envoltorio de `DialogHeader`/`DialogFooter` tiene que declarar
 `bandaDeModal`.** `DialogContent` reparte a sus hijos leyendo esa marca; antes
-comparaba identidad de componente y `ResponsiveDialogHeader` —que renderiza un
-`DialogHeader` adentro pero *es* otro componente— no calificaba: la cabecera se
-iba al cuerpo con scroll, el pie dejaba de estar fijo y el Content encendía la ✕
-del DS encima de la del chip. Así vivió «Agendar una cita» con dos aspas.
-Ver `responsive-dialog.tsx`.
+comparaba identidad de componente y `ResponsiveDialogHeader` no calificaba: la
+cabecera se iba al cuerpo con scroll. Así vivió «Agendar una cita» con dos aspas.
+`ResponsiveDialog` hoy es el mismo `Dialog` (que ya es hoja de abajo en el
+celular).
 
-Una cáscara escrita a mano (`createPortal`) usa **`rounded-[20px]`**, el mismo
-radio que la primitiva. `src/components/ui/modales-alineados.test.ts` verifica
-todo esto.
+Una cáscara escrita a mano que todavía exista (`createPortal`) usa
+**`rounded-[24px]`**, el mismo radio que la primitiva — pero lo correcto es
+pasarla a `Dialog`. `src/components/ui/modales-alineados.test.ts` y
+`una-sola-aspa.test.tsx` verifican todo esto.
 
 ---
 
@@ -849,7 +1327,7 @@ Available at `src/components/ui/` — **check first before creating new componen
 |---|---|
 | `accordion` | Collapsible sections (Radix) |
 | `alert` / `alert-dialog` | Banners / confirm dialogs |
-| `animated-counter` | Counts up on view (mono tabular) |
+| `animated-counter` | Counts up on view (mono tabular). Sin consumidores: para cifras nuevas usa `AnimatedNumber` (§8b) |
 | `avatar` | User avatars with size/ring variants |
 | `back-button` | Standard back button |
 | `badge` | Status pills (incl. risk-a/b/c/d) |
@@ -858,7 +1336,8 @@ Available at `src/components/ui/` — **check first before creating new componen
 | `card` | Card containers (`rounded-lg`, hairline border) |
 | `checkbox` | Checkbox input |
 | `collapsible` | Expand/collapse |
-| `dialog` | Centered modal (z-[300]) |
+| `dialog` | Centered modal (z-[300]) — variantes `confirm`/`destructive`/`info`/`success`/`warning`/`error`, `DialogSection`, `DialogBody` |
+| `confirmar` | `confirmar()` / `avisar()`: modales imperativos (reemplazan `window.confirm`/`alert`) |
 | `divider` / `separator` | Horizontal/vertical rules |
 | `dropdown-menu` | Menu popover |
 | `empty-state` | Empty list/page state |
@@ -875,7 +1354,9 @@ Available at `src/components/ui/` — **check first before creating new componen
 | `scroll-area` | Custom scrollbar |
 | `section-label` | Dot + mono uppercase eyebrow |
 | `select` | Select dropdown |
-| `sheet` | Side sheet (alternative to custom drawer) |
+| `sheet` | El cajón flotante: `Sheet` + `SheetHeader`/`SheetNav`/`SheetBody`/`SheetSection`/`SheetFooter` (§4 Drawers) |
+| `cajon` | La misma anatomía en español: `Cajon`/`CajonCabecera`/`CajonCuerpo`/`CajonPie` |
+| `drawer` | Hoja desde abajo con arrastre (vaul), mismo dibujo. Para un cajón lateral, `sheet` |
 | `skeleton` | Loading skeleton |
 | `slider` | Range input |
 | `spinner` | Loading spinner (sizes + variants) |
@@ -967,6 +1448,41 @@ falla:
 Más `data-sample="true"` en el `<article>` y `robots: { index: false, follow: false }`.
 El DS tiene además `SampleDataWatermark` para cuando haga falta la marca de agua diagonal.
 
+## 21b. El orbe de los agentes (Cadence v1.2.1, 02-10-2026)
+
+Cada agente se pinta con **`<OrbeDeAgente agente="cobranza" estado="pensando" tamano={28} />`**
+(`src/components/agentes/OrbeDeAgente.tsx`): paleta, semilla y variante salen del registro
+(`src/lib/agentes/equipo.ts`). Nunca un `AgentOrb` suelto con una paleta a mano.
+
+- **Qué es**: un fluido de color que EMITE luz (núcleo, filo de luz, halo que respira), pintado
+  por un shader. **Un solo contexto WebGL para toda la página**, sin importar cuántos orbes
+  (el motor de Cadence pinta cada orbe en un atlas y lo copia a su `<canvas>`). Sin WebGL, cae
+  solo al orbe SVG.
+- **Estados** (`EstadoDelOrbe`): `quieto` respira · `pensando` gira y brilla · `trabajando` /
+  `hablando` late con una onda · `listo` se asienta · `fallo` sin color y tenue · `apagado` sin
+  color, menos tenue. Cambiar de estado se funde; no hay que animar nada por fuera.
+- **Look**: `nebula` (Nebulosa, **el de por defecto desde v1.2.1**: Nico, 02-10), `silk` (Seda),
+  `mist` (Bruma). El de por defecto es `AGENT_ORB_DEFAULT_LOOK` en Cadence; una zona se cambia
+  con `<AgentOrbLookProvider look="…">`. Vista previa: `/agentes-preview` (sólo en desarrollo).
+  Nebulosa se adapta al lado: de 16 a ~32 px (lista de «El equipo», chips, la cabecera del
+  chat) baja el detalle —sin polvo, velos ni motas— y sube núcleo y halo; desde 44 px es
+  completa (nubes de color suaves, hondura, pocas motas; sin filamentos «de plasma»). No hay
+  que pasarle nada: el motor le da el tamaño al shader.
+- **Tamaño**: la caja mide `tamano`; el halo sale de ella sin mover el layout (deja ~½ lado de
+  aire si el padre recorta con `overflow`).
+- **`quieto`** (still) = un cuadro fijo: para chips de 16–18 px y listas de decenas. Una lista
+  como «El equipo» (≈20) puede ir viva. `prefers-reduced-motion` ya deja todo en cuadro fijo.
+- En pruebas (happy-dom no tiene WebGL) se pinta el SVG con `data-renderer="svg"`; no hay que
+  mockear nada.
+- **Presentación de un agente** (la primera vez en su espacio, y la del Piloto con Ori): el héroe
+  de la tarjeta §Novedades es el **orbe grande** del agente, no la aurora. Se arma con
+  **`<PresentacionConOrbe agente="cobranza" title description ctaLabel onCta />`**
+  (`src/components/agentes/PresentacionConOrbe.tsx`, sobre `FeatureAnnouncement` sin tocarlo):
+  orbe de 120 px centrado sobre el fondo de la tarjeta, que entra (fundido + escala, `reveal` /
+  `enter`) y despierta quieto → trabajando → listo mientras el texto sube escalonado (`sm`,
+  `motionStagger.step`). Movimiento reducido: sólo fundidos y el orbe `listo` de una. Lo usan
+  `AgentIntroModal` (vista: `PresentacionDelAgente`) y `PilotoNovedad`.
+
 ---
 
 ## 22. When in Doubt
@@ -975,7 +1491,7 @@ El DS tiene además `SampleDataWatermark` para cuando haga falta la marca de agu
 2. Canonical references for common needs:
    - **Cadence foundation**: [`cadence/reference/Cadence Design System.dc.html`](../../cadence/reference/Cadence%20Design%20System.dc.html) + the `@leasefy/cadence` preset
    - **Color**: [`COLOR_SYSTEM.md`](./COLOR_SYSTEM.md)
-   - **Drawer**: `src/components/inmobiliaria/CandidateDrawer.tsx`, `src/components/ui/plan/PlanDetailSheet.tsx`
+   - **Drawer**: §4 Drawers + `src/components/inmobiliaria/CandidateDrawer.tsx`, `src/components/inmobiliaria/PipelineDetail.tsx`
    - **Form**: `src/components/auth/AuthForm.tsx`
    - **Layout**: `src/app/panel/inmobiliaria/layout.tsx` + `src/components/ui/plan/PlanSidebar.tsx` + `PlanHeader.tsx`
    - **Button**: `src/components/ui/button.tsx`

@@ -17,12 +17,26 @@ function lote(over: Partial<EstadoDeLoteInmuebles>): EstadoDeLoteInmuebles {
 }
 
 describe('lotesParaRetomar', () => {
-  it('un FALLIDO no se ofrece: no hay nada que retomar en un job muerto', () => {
+  /**
+   * 🔴 T-0130 (`5409c377`, 01-10-2026) cambió esta regla a propósito: el back
+   * guarda las filas, así que un lote FALLIDO ya no es «un job muerto sin nada
+   * que retomar» sino una carga que se retoma con «Reintentar». Esconderlo era
+   * justo lo que obligaba a empezar de cero. La prueba seguía con la regla vieja.
+   */
+  it('🔴 un FALLIDO también se ofrece: se retoma con «Reintentar», no se empieza de cero', () => {
     const r = lotesParaRetomar([
-      lote({ lote: 'vivo' }),
-      lote({ lote: 'muerto', estado: 'FALLIDO' }),
+      lote({ lote: 'vivo', creadoEn: '2026-09-01T10:00:00.000Z' }),
+      lote({ lote: 'fallido', estado: 'FALLIDO', creadoEn: '2026-09-01T09:00:00.000Z' }),
     ]);
-    expect(r.map((l) => l.lote)).toEqual(['vivo']);
+    expect(r.map((l) => l.lote)).toEqual(['vivo', 'fallido']);
+  });
+
+  it('no filtra nada de lo que el back lista: el back ya sólo manda lo no terminado', () => {
+    const estados = ['ENCOLADO', 'PROCESANDO', 'LISTO', 'FALLIDO'] as const;
+    const r = lotesParaRetomar(
+      estados.map((estado, i) => lote({ lote: estado, estado, creadoEn: `2026-09-0${i + 1}T00:00:00.000Z` })),
+    );
+    expect(r).toHaveLength(estados.length);
   });
 
   it('ordena del más reciente al más viejo: el que se dejó recién va primero', () => {

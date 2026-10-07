@@ -52,7 +52,11 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui';
 import { SectionLabel } from '@/components/ui/section-label';
+import { AlertaAccionable } from '@/components/ui/alerta-accionable';
+import { usePlazoSinFijar } from '@/lib/hooks/use-plazo-sin-fijar';
+import { cicloDeVidaApi } from '@/lib/api/ciclo-de-vida.service';
 import { fechaLegible, hoyLocal } from '@/components/estado-de-cuenta/filas';
+import { interesesDelContrato } from '@/components/estado-de-cuenta/intereses';
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service';
 import {
   avanceDelContrato,
@@ -65,6 +69,7 @@ import {
   type DeudaDelContrato,
 } from '@/lib/contratos/deuda-del-contrato';
 import { diasDePlazoQueRigen, ritmoDePago } from '@/lib/contratos/ritmo-de-pago';
+import { depositoAplica, depositoParaMostrar } from '@/lib/contratos/deposito-del-contrato';
 import type { Vigencia } from '@/lib/contratos/vigencia';
 import {
   useCuentaDelContrato,
@@ -73,6 +78,7 @@ import {
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { cn } from '@/lib/utils';
+import { motionStagger } from '@leasefy/cadence';
 
 const POR_FIRMAR: ContractStatus[] = [
   'draft',
@@ -93,6 +99,48 @@ function meses(n: number): string {
 }
 
 /** «hoy», «mañana», «en 5 días». */
+/**
+ * QA-CONT C-08: la cuota de la PRÓRROGA. «No queda ninguna cuota por vencer»
+ * en un contrato que se prorroga solo era falso: la tarjeta de la prórroga ya
+ * dice hasta cuándo y el incremento del aniversario ya está calculado. Mientras
+ * la cuota no se genere, se dice «Se prorroga el 1 nov: $ 2.469.850» con el
+ * canon que rige desde ese día. Sin plan (o con aviso de no renovación), nada.
+ */
+function useCuotaDeLaProrroga(contractId: string, activo: boolean): { fecha: string; canon: number | null } | null {
+  const [cuota, setCuota] = React.useState<{ fecha: string; canon: number | null } | null>(null);
+  React.useEffect(() => {
+    if (!activo) {
+      setCuota(null);
+      return;
+    }
+    let vivo = true;
+    Promise.all([
+      Promise.resolve().then(() => cicloDeVidaApi.prorroga(contractId)),
+      Promise.resolve()
+        .then(() => cicloDeVidaApi.incrementos(contractId))
+        .catch(() => null),
+    ])
+      .then(([plan, incrementos]) => {
+        if (!vivo) return;
+        if (!plan || plan.noSeProrroga || plan.aviso || !plan.ultimoDia) {
+          setCuota(null);
+          return;
+        }
+        const [a, m, d] = plan.ultimoDia.slice(0, 10).split('-').map(Number);
+        const siguiente = new Date(Date.UTC(a!, m! - 1, d! + 1)).toISOString().slice(0, 10);
+        const aniversario = incrementos?.aniversarios.find((x) => x.desde.slice(0, 10) === siguiente);
+        setCuota({ fecha: siguiente, canon: aniversario?.canonNuevoCop ?? null });
+      })
+      .catch(() => {
+        if (vivo) setCuota(null);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [contractId, activo]);
+  return cuota;
+}
+
 function enCuanto(n: number): string {
   if (n <= 0) return 'hoy';
   if (n === 1) return 'mañana';
@@ -162,8 +210,17 @@ export function ArriendoDelContrato({
     fin: terminadoEn ? contract.finPactadoOriginal ?? contract.endDate : contract.endDate,
     hoy: terminadoEn && terminadoEn < hoy ? terminadoEn : hoy,
   });
+  /*
+   * QA-CONT C-01 (Nico: «con fecha futura el contrato sigue activo hasta esa
+   * fecha»): una terminación PROGRAMADA todavía no pasó. La línea decía
+   * «Terminó en el mes 10 de 12» sobre un arriendo que corre hasta el 15 dic;
+   * ahora va como en curso y dice «Termina el 15 dic 2026».
+   */
+  const terminaEl = terminadoEn && terminadoEn > hoy ? terminadoEn : null;
   const etapa = etapaDelArriendo(contract.status, vigencia, avance);
   const plazo = diasDePlazoQueRigen(contract, agencia);
+  // Sólo donde hay plata en juego: un contrato que corre o que corrió.
+  const plazoSinFijar = usePlazoSinFijar(contract.status === 'active' || contract.status === 'expired');
 
   return (
     <section
@@ -183,7 +240,9 @@ export function ArriendoDelContrato({
         <LineaDelContrato
           avance={avance}
           vigencia={vigencia}
-          terminadoEn={terminadoEn}
+          terminadoEn={terminaEl ? null : terminadoEn}
+          terminaEl={terminaEl}
+          cancelado={contract.status === 'cancelled'}
           className="lg:pr-8"
         />
 
@@ -203,14 +262,61 @@ export function ArriendoDelContrato({
               )}
             </dd>
           </div>
+          {/* Nico (03-10-2026, TAL CUAL): el depósito sólo existe en comercial, y
+              ahí se ve —también cuando no se pactó—; en vivienda, nada. Si
+              aplica lo dice el back (`depositoDelContrato`, por el tipo del
+              inmueble); un back anterior, el uso del contrato. */}
+          {depositoAplica(contract) ? (
+            <div>
+              <dt className="text-label uppercase tracking-wide text-fg-subtle">Depósito</dt>
+              {/* NI-05 (Nico, 06-10): un migrado cuyo archivo SÍ traía el
+                  depósito en 0 dice «$ 0»; el que no lo traía, «Sin depósito
+                  pactado» (la base guarda 0 en los dos). */}
+              {depositoParaMostrar(contract) === null &&
+              contract.loQueTraiaElArchivo?.traiaDeposito === true ? (
+                <dd className="mt-1.5 font-mono text-body tabular-nums text-fg" data-testid="deposito-del-arriendo">
+                  {formatCurrency(0)}
+                </dd>
+              ) : depositoParaMostrar(contract) !== null ? (
+                <dd className="mt-1.5 font-mono text-body tabular-nums text-fg" data-testid="deposito-del-arriendo">
+                  {formatCurrency(depositoParaMostrar(contract) ?? 0)}
+                </dd>
+              ) : (
+                <dd className="mt-1.5 text-body-sm text-fg-muted" data-testid="deposito-del-arriendo">
+                  Sin depósito pactado
+                </dd>
+              )}
+            </div>
+          ) : null}
           <div>
             <dt className="text-label uppercase tracking-wide text-fg-subtle">Cuándo paga</dt>
+            {/* C-07: UNA regla, la del back (`reglaDeCobro.frase`); un back
+                anterior, la que se armaba aquí. */}
             <dd className="mt-1.5 text-body-sm text-fg" data-testid="ritmo-de-pago">
-              {ritmoDePago(contract, agencia)}
+              {fraseDeCuandoPaga(contract.reglaDeCobro?.frase ?? ritmoDePago(contract, agencia), plazoSinFijar)}
             </dd>
           </div>
         </dl>
       </div>
+
+      {/*
+        QA-CONT (Nico, 03-10-2026, CR-31 / J-13): con la inmobiliaria sin sus
+        días de plazo fijados, un arriendo del día 1 es «cartera» ese mismo
+        día. Mientras no los fije no se cobra interés, y la ficha lo dice
+        fuerte, con el camino para fijarlos.
+      */}
+      {plazoSinFijar ? (
+        <div className="px-6 pb-4">
+          <AlertaAccionable
+            severidad="warning"
+            titulo="Tu inmobiliaria no ha fijado los días de plazo (sugerido 5): no se cobra interés hasta que los fijes."
+            accion={{ label: 'Fijar los días de plazo', href: '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo' }}
+            data-testid="plazo-sin-fijar"
+          >
+            Son los días después del vencimiento en los que todavía no corre la mora.
+          </AlertaAccionable>
+        </div>
+      ) : null}
 
       <CuentaDelArriendo
         contract={contract}
@@ -221,6 +327,7 @@ export function ArriendoDelContrato({
         // espera: no se afirma «en plazo» ni «en cartera» sobre un supuesto.
         esperandoPlazo={contract.diasDePlazo == null && esperandoAgencia}
         reintentar={reintentar}
+        plazoSinFijar={plazoSinFijar}
       />
 
       {acciones ? (
@@ -241,11 +348,17 @@ function LineaDelContrato({
   avance,
   vigencia,
   terminadoEn,
+  terminaEl = null,
+  cancelado = false,
   className,
 }: {
   avance: AvanceDelContrato;
   vigencia: Vigencia;
   terminadoEn: string | null;
+  /** QA-CONT-95 (B-16): cancelado antes de regir: ni «Mes 1 de 12» ni «Quedan 11 meses». */
+  cancelado?: boolean;
+  /** C-01: el último día de una terminación programada (futura). */
+  terminaEl?: string | null;
   className?: string;
 }) {
   const reducirMovimiento = usePrefiereMenosMovimiento();
@@ -271,6 +384,17 @@ function LineaDelContrato({
           {avance.inicio || avance.fin
             ? 'Le falta la fecha de inicio o la de fin: sin las dos no se puede decir cuánto va.'
             : 'Este contrato no tiene cargadas sus fechas de inicio y fin.'}
+        </p>
+      </div>
+    );
+  }
+
+  if (cancelado) {
+    return (
+      <div className={className} data-testid="linea-del-contrato">
+        <p className="text-label uppercase tracking-wide text-fg-subtle">Avance</p>
+        <p className="mt-1.5 text-body-sm text-fg-muted" data-testid="linea-cancelado">
+          Se canceló: no corre ningún mes ni se cobra nada.
         </p>
       </div>
     );
@@ -338,6 +462,8 @@ function LineaDelContrato({
           ? 'Último mes'
           : `${avance.mesesRestantes === 1 ? 'Queda' : 'Quedan'} ${meses(avance.mesesRestantes)}`;
   }
+  // C-01: con la terminación programada, lo que importa es cuándo termina.
+  if (terminaEl) aLaDerecha = `Termina el ${fechaLegible(terminaEl)}`;
 
   const enCurso = avance.tramo === 'EN_CURSO' && !terminadoEn;
   const valorTexto =
@@ -376,7 +502,7 @@ function LineaDelContrato({
         </span>
         <span className="text-right">
           <span className="block text-[11px] uppercase tracking-wide text-fg-subtle">
-            {terminadoEn ? 'Fin pactado' : 'Fin'}
+            {terminadoEn || terminaEl ? 'Fin pactado' : 'Fin'}
           </span>
           <span className="text-fg" data-testid="fecha-de-fin">
             {fechaLegible(avance.fin)}
@@ -420,6 +546,9 @@ function Barra({
   crecida: boolean;
 }) {
   const tramos = totalDeMeses <= MESES_CON_TRAMOS ? totalDeMeses : 1;
+  // El paso de la ola (18 ms) se achica con muchos tramos: el último nunca
+  // espera más que el techo del escalonado de Cadence (320 ms).
+  const pasoDeLaOla = tramos > 1 ? Math.min(18, (motionStagger.max * 1000) / (tramos - 1)) : 0;
   const porcentaje = Math.round(fraccion * 1000) / 10;
   // La etiqueta no se sale del bloque en los bordes. Con la fecha al lado es
   // más ancha que antes, así que el margen para centrarla se abre.
@@ -431,8 +560,12 @@ function Barra({
       {marcarHoy ? (
         <span
           aria-hidden="true"
+          data-testid="etiqueta-de-hoy"
+          // 🔴 03-10 (pruebas a 390 px): sin `whitespace-nowrap`, cerca del fin
+          // de la línea el ancho que le queda a la etiqueta es poco y «2026»
+          // bajaba al renglón de abajo, encima de la barra.
           className={cn(
-            'absolute top-0 font-mono text-[11px] font-medium uppercase tracking-wide text-primary',
+            'absolute top-0 whitespace-nowrap font-mono text-[11px] font-medium uppercase tracking-wide text-primary',
             alinearHoy,
           )}
           style={{ left: `${porcentaje}%` }}
@@ -462,14 +595,16 @@ function Barra({
               key={i}
               className="h-full flex-1 overflow-hidden bg-surface-muted first:rounded-l-full last:rounded-r-full"
             >
+              {/* Cada tramo se llena con `scaleX` (transform), no con `width`,
+                  y la ola de tramos nunca pasa del techo del escalonado. */}
               <div
                 className={cn(
-                  'h-full motion-safe:transition-[width] motion-safe:duration-700 motion-safe:ease-out',
+                  'h-full w-full origin-left motion-safe:transition-transform motion-safe:duration-reveal motion-safe:ease-enter',
                   relleno,
                 )}
                 style={{
-                  width: `${(crecida ? lleno : 0) * 100}%`,
-                  transitionDelay: crecida ? `${Math.min(i, 24) * 18}ms` : undefined,
+                  transform: `scaleX(${crecida ? lleno : 0})`,
+                  transitionDelay: crecida ? `${Math.round(i * pasoDeLaOla)}ms` : undefined,
                 }}
               />
             </div>
@@ -508,6 +643,7 @@ function CuentaDelArriendo({
   diasDePlazo,
   esperandoPlazo,
   reintentar,
+  plazoSinFijar = false,
 }: {
   contract: Contract;
   cuenta: CuentaDelContrato;
@@ -515,6 +651,8 @@ function CuentaDelArriendo({
   diasDePlazo: number | null;
   esperandoPlazo: boolean;
   reintentar: () => void;
+  /** QA-CONT-95 (UC-12): el aviso del plazo ya salió arriba; no se repite acá. */
+  plazoSinFijar?: boolean;
 }) {
   const deuda = React.useMemo<DeudaDelContrato | null>(
     () =>
@@ -524,13 +662,30 @@ function CuentaDelArriendo({
     [cuenta, hoy, diasDePlazo],
   );
 
+  // CR-31 (COLA-FRONT, 04-10): sin el interés de las cuotas sin plazo fijado
+  // (no corre), aunque el back todavía lo mande (`interesesDelContrato`).
+  const intereses = cuenta.estado === 'listo' ? interesesDelContrato(cuenta.contrato) : null;
+  const cuotaDeLaProrroga = useCuotaDeLaProrroga(
+    contract.id,
+    contract.status === 'active' && cuenta.estado === 'listo' && deuda !== null && deuda.proxima === null,
+  );
+  const interesPendiente = intereses?.pendiente ?? 0;
+
   const volverAca = `/panel/inmobiliaria/contratos/${contract.id}`;
   // 🔴 QA 22-09: desde el contrato se abre SÓLO este contrato (regla del CEO,
   // 16-09); el consolidado del inquilino va en su ficha de tercero.
   const soloEste =
     cuenta.estado === 'listo' ? `&contrato=${encodeURIComponent(cuenta.contrato.numero)}` : '';
+  /*
+   * CO-28 (QA-MIGRACION-95, 06-10): un contrato sin tabla de cuotas porque
+   * nadie sabe la comisión decía «Resta por pagar $ 0 · Al día · Nada
+   * vencido» en su mes 6. No es que esté al día: no tiene cuotas. Se dice el
+   * motivo del back y qué hacer, en lugar de los tres números (y sin el
+   * enlace a un estado de cuenta vacío).
+   */
+  const sinTabla = contract.sinTablaDeCuotas ?? null;
   const enlace =
-    cuenta.estado === 'listo' || cuenta.estado === 'sin-cuotas'
+    !sinTabla && (cuenta.estado === 'listo' || cuenta.estado === 'sin-cuotas')
       ? `${rutaDelEstadoDeCuenta('inquilino', cuenta.tenantRef)}?volver=${encodeURIComponent(volverAca)}${soloEste}`
       : null;
 
@@ -556,7 +711,17 @@ function CuentaDelArriendo({
         ) : null}
       </div>
 
-      {cuenta.estado === 'listo' && deuda ? (
+      {sinTabla ? (
+        <div className="px-5 pb-5 pt-3">
+          <AlertaAccionable
+            severidad="warning"
+            titulo="Este contrato no tiene tabla de cuotas"
+            data-testid="sin-tabla-de-cuotas"
+          >
+            {sinTabla}
+          </AlertaAccionable>
+        </div>
+      ) : cuenta.estado === 'listo' && deuda ? (
         /* La primera celda es más ancha: «$ 190.214.516» a 26 px no entra en
            un tercio del bloque con la barra lateral abierta (DESIGN.md §19: un
            número no se parte). Por debajo de `md` las tres se apilan. */
@@ -569,6 +734,17 @@ function CuentaDelArriendo({
             >
               {formatCurrency(deuda.restaPorPagar)}
             </p>
+            {/*
+              QA-CONT CR-12 (= INQ E-09): los intereses de mora van APARTE del
+              capital, pero se ven. El back los manda liquidados con la misma
+              regla de la prefactura y la Cartera.
+            */}
+            {interesPendiente > 0 && intereses ? (
+              <p className="mt-1.5 text-caption text-fg-muted" data-testid="intereses-de-mora">
+                + <Monto>{formatCurrency(interesPendiente)}</Monto> de intereses de mora ·{' '}
+                <Monto>{formatCurrency(intereses.restaPorPagarConIntereses)}</Monto> con intereses
+              </p>
+            ) : null}
             <p className="mt-2 text-caption text-fg-muted" data-testid="cuotas-pagadas">
               {deuda.cuotas.total === 0 ? (
                 'De todo el contrato'
@@ -605,6 +781,18 @@ function CuentaDelArriendo({
                   {enCuanto(deuda.proxima.enDias)}
                 </p>
               </>
+            ) : cuotaDeLaProrroga ? (
+              <>
+                <p className="mt-1 text-body-sm text-fg" data-testid="proxima-de-la-prorroga">
+                  Se prorroga el {fechaLegible(cuotaDeLaProrroga.fecha)}
+                  {cuotaDeLaProrroga.canon ?? contract.monthlyRent ? (
+                    <>
+                      : <Monto>{formatCurrency((cuotaDeLaProrroga.canon ?? contract.monthlyRent)!)}</Monto>
+                    </>
+                  ) : null}
+                </p>
+                <p className="mt-1 text-caption text-fg-muted">La cuota sale cuando corra la prórroga.</p>
+              </>
             ) : (
               <p className="mt-1 text-body-sm text-fg-muted">No queda ninguna cuota por vencer</p>
             )}
@@ -615,9 +803,49 @@ function CuentaDelArriendo({
             {esperandoPlazo && deuda.vencido > 0 ? (
               <Skeleton className="mt-2 h-6 w-32" />
             ) : (
-              <EstadoDeLaDeuda deuda={deuda} />
+              <EstadoDeLaDeuda deuda={deuda} interesPendiente={interesPendiente} />
             )}
           </div>
+          {/* QA-CONT-95 (UC-12): sin plazo fijado no corre interés de todos
+              modos, y el aviso del plazo ya está arriba; éste se repetía. */}
+          {intereses?.sinInteres?.sinReglas && !plazoSinFijar ? (
+            <div className="md:col-span-3 md:pt-4">
+              <AlertaAccionable
+                severidad="warning"
+                titulo="Tu inmobiliaria no tiene reglas de mora: lo vencido de este contrato no causa interés."
+                accion={{ label: 'Poner las reglas de mora', href: '/panel/inmobiliaria/pagos/cartera/reglas-de-mora' }}
+                data-testid="sin-reglas-de-mora"
+              >
+                {intereses.sinInteres.motivo}
+              </AlertaAccionable>
+            </div>
+          ) : null}
+          {/* QA-CONT-95 r3 (D-25): la deuda subrogada a la aseguradora también
+              se dice en la ficha, aparte: esas cuotas ya quedaron pagadas para
+              la inmobiliaria y no suman a «Resta por pagar». */}
+          {cuenta.contrato.subrogacion && cuenta.contrato.subrogacion.totalCop > 0 ? (
+            <div className="md:col-span-3 md:pt-4">
+              <div
+                className="space-y-1 rounded-md border border-border bg-surface-muted px-4 py-3"
+                data-testid="subrogacion-del-contrato"
+              >
+                <p className="text-label uppercase tracking-wide text-fg-subtle">
+                  Deuda subrogada a la aseguradora
+                </p>
+                {cuenta.contrato.subrogacion.aseguradoras.map((a) => (
+                  <p key={a.nit} className="text-body-sm text-fg">
+                    {a.nombre} · NIT {a.nit}
+                    {a.siniestros.length > 0 ? ` · ${a.siniestros.join(', ')}` : ''}:{' '}
+                    <Monto>{formatCurrency(a.valorCop)}</Monto>
+                  </p>
+                ))}
+                <p className="text-caption text-fg-muted">
+                  La aseguradora le pagó esas cuotas a la inmobiliaria: no entran en «Resta por
+                  pagar». El inquilino le debe ese valor a ella, no a la inmobiliaria.
+                </p>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : (
         <MensajeDeLaCuenta cuenta={cuenta} status={contract.status} reintentar={reintentar} />
@@ -636,17 +864,33 @@ const INDICADOR: Record<
   EN_CARTERA: { icono: WarningCircle, circulo: 'bg-danger-soft text-danger' },
 };
 
-function EstadoDeLaDeuda({ deuda }: { deuda: DeudaDelContrato }) {
-  const { icono: Icono, circulo } = INDICADOR[deuda.estado];
+function EstadoDeLaDeuda({ deuda, interesPendiente = 0 }: { deuda: DeudaDelContrato; interesPendiente?: number }) {
+  /*
+   * CR-12: con el capital al día y los intereses de mora sin pagar, NO dice
+   * «Al día»: dice cuánto falta de intereses.
+   */
+  const conIntereses = deuda.estado === 'AL_DIA' && interesPendiente > 0;
+  const { icono: Icono, circulo } = conIntereses ? INDICADOR.VENCIDO_EN_PLAZO : INDICADOR[deuda.estado];
 
   let detalle: React.ReactNode;
   switch (deuda.estado) {
     case 'AL_DIA':
-      detalle = 'Nada vencido';
+      detalle = conIntereses ? (
+        <>
+          <Monto>{formatCurrency(interesPendiente)}</Monto> de intereses de mora sin pagar
+        </>
+      ) : (
+        'Nada vencido'
+      );
       break;
     case 'VENCIDO_EN_PLAZO': {
       const q = deuda.diasDePlazoQueQuedan ?? 0;
-      detalle = (
+      detalle = deuda.plazoSinFijar ? (
+        // CR-31: sin plazo fijado no hay «último día de plazo».
+        <>
+          <Monto>{formatCurrency(deuda.vencido)}</Monto> vencido · sin plazo fijado, no corre mora
+        </>
+      ) : (
         <>
           <Monto>{formatCurrency(deuda.vencido)}</Monto> vencido ·{' '}
           {q === 0
@@ -682,7 +926,7 @@ function EstadoDeLaDeuda({ deuda }: { deuda: DeudaDelContrato }) {
   }
 
   return (
-    <div data-testid="estado-de-la-deuda" data-estado={deuda.estado}>
+    <div data-testid="estado-de-la-deuda" data-estado={conIntereses ? 'INTERESES_PENDIENTES' : deuda.estado}>
       <p className="mt-1 flex items-center gap-2">
         <span
           aria-hidden="true"
@@ -691,7 +935,11 @@ function EstadoDeLaDeuda({ deuda }: { deuda: DeudaDelContrato }) {
           <Icono className="size-3.5" weight="bold" />
         </span>
         <span className="text-body font-medium text-fg" data-testid="estado-nombre">
-          {NOMBRE_DEL_ESTADO[deuda.estado]}
+          {conIntereses
+            ? 'Debe intereses'
+            : deuda.estado === 'VENCIDO_EN_PLAZO' && deuda.plazoSinFijar
+              ? 'Vencida'
+              : NOMBRE_DEL_ESTADO[deuda.estado]}
         </span>
       </p>
       <p className="mt-1.5 text-caption text-fg-muted" data-testid="estado-detalle">
@@ -848,4 +1096,15 @@ export function AvisoDelContrato({
       ) : null}
     </div>
   );
+}
+
+/**
+ * QA-CONT-95 (UC-12): con la inmobiliaria sin días de plazo, el aviso fuerte
+ * (con «Fijar los días de plazo») sale justo debajo; la frase de «Cuándo paga»
+ * no lo repite. Se queda con la regla («Se genera y vence el 1 de cada mes…»).
+ */
+export function fraseDeCuandoPaga(frase: string, plazoSinFijar: boolean): string {
+  if (!plazoSinFijar) return frase;
+  const corte = frase.search(/\s*(La inmobiliaria|Tu inmobiliaria) todavía no fijó sus días de plazo/);
+  return corte > 0 ? frase.slice(0, corte).trim() : frase;
 }

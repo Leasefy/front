@@ -36,9 +36,9 @@ import {
   Clock,
   EnvelopeSimple,
   Hourglass,
+  Info,
   SealCheck,
   WarningOctagon,
-  XCircle,
 } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -308,8 +308,15 @@ function RechazadoView({
   return (
     <div className="space-y-6">
       <section className="rounded-xl border border-border bg-surface p-8 shadow-sm space-y-3">
-        <div className="w-12 h-12 rounded-full bg-danger-soft flex items-center justify-center">
-          <XCircle className="w-6 h-6 text-danger" aria-hidden="true" />
+        {/* Informativo, no error (Nico, 02-10): es un «no», pero el texto dice
+            que no es definitivo y que hay salidas; un medallón rojo con una ✕
+            lo contradecía. El mismo tono que el modal de `PostularButton`. */}
+        <div
+          className="w-12 h-12 rounded-full bg-info-soft flex items-center justify-center"
+          data-testid="rechazado-medallon"
+          data-tono="info"
+        >
+          <Info className="w-6 h-6 text-info" weight="bold" aria-hidden="true" />
         </div>
         <h1 className="text-2xl font-semibold text-fg">
           {tf(`${NS}.rechazado.title`, 'Por ahora no podemos aprobarte')}

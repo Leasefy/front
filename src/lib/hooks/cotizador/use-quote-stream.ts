@@ -4,7 +4,7 @@
  * Phase 30 plan 30-06 | COTI-UI-03 | XR-02 | XR-03
  *
  * Connects to: ${NEXT_PUBLIC_AGENT_URL}/api/agency/:agencyId/cotizador/quote/:quoteId/stream
- * Authenticated with the user's Supabase JWT via agentAuthHeaders()
+ * Authenticated with the user's Supabase JWT via agentFetch
  * (Authorization: Bearer). The agent service is Bearer-only and reads no
  * cookies, so a native EventSource(withCredentials) cookie handshake 401'd in
  * prod — we read the stream with fetch()+ReadableStream and parse SSE frames.
@@ -29,7 +29,7 @@ import type {
   SSEPartialRankingSchema,
 } from '@/lib/cotizador/sse-schemas'
 import type { z } from 'zod'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -55,7 +55,7 @@ export type PartialRanking = z.infer<typeof SSEPartialRankingSchema>
 export interface UseQuoteStreamResult {
   events: ParsedSSEEvent[]
   carriers: CarrierState[]     // ordered per current sort rule
-  totalCostUsd: number         // running total from agent.cost_recorded events
+  totalCostCop: number         // running total from agent.cost_recorded events
   finalVerdict: FinalVerdict | null    // agent.final_verdict (natural-language conclusion + best option)
   partialRanking: PartialRanking | null  // agent.partial_ranking (carrier ordering + accepting_count)
   isConnected: boolean
@@ -83,6 +83,18 @@ const CARRIER_EVENT_TYPES = [
   'agent.final_verdict',
   'agent.session_expired',
 ] as const
+
+/**
+ * 🔴 QA-IA-95 (05-10-2026, IA-A-11): la latencia se mide al llegar el veredicto (`Date.now() − inicio`).
+ * Al abrir una cotización VIEJA los eventos se reproducen y eso daba «129.665,4 s» (36 horas). Una
+ * aseguradora no tarda más de 10 minutos: más que eso es una reproducción y no se sabe; queda «—».
+ */
+export const LATENCIA_MAXIMA_EN_VIVO_MS = 10 * 60_000
+export function latenciaEnVivo(inicioMs: number | null | undefined, ahora: number = Date.now()): number | null {
+  if (!inicioMs) return null
+  const ms = ahora - inicioMs
+  return ms >= 0 && ms <= LATENCIA_MAXIMA_EN_VIVO_MS ? ms : null
+}
 
 // ---------------------------------------------------------------------------
 // Sorting helpers
@@ -124,7 +136,7 @@ export function useQuoteStream(
 ): UseQuoteStreamResult {
   const [events, setEvents] = useState<ParsedSSEEvent[]>([])
   const [carriersMap, setCarriersMap] = useState<Map<string, CarrierState>>(new Map())
-  const [totalCostUsd, setTotalCostUsd] = useState(0)
+  const [totalCostCop, setTotalCostCop] = useState(0)
   const [finalVerdict, setFinalVerdict] = useState<FinalVerdict | null>(null)
   const [partialRanking, setPartialRanking] = useState<PartialRanking | null>(null)
   const [isConnected, setIsConnected] = useState(false)
@@ -199,9 +211,7 @@ export function useQuoteStream(
       setCarriersMap(prev => {
         const next = new Map(prev)
         const existing = next.get(carrier)
-        const latencyMs = existing?.startedAtMs
-          ? Date.now() - existing.startedAtMs
-          : null
+        const latencyMs = latenciaEnVivo(existing?.startedAtMs)
         next.set(carrier, {
           ...(existing ?? {
             carrier,
@@ -235,14 +245,14 @@ export function useQuoteStream(
           primaMensualCop: null,
           condiciones: [],
           motivoRechazo: message,
-          latencyMs: existing?.startedAtMs ? Date.now() - existing.startedAtMs : null,
+          latencyMs: latenciaEnVivo(existing?.startedAtMs),
         } as CarrierState)
         return next
       })
     }
 
     if (parsed.type === 'agent.cost_recorded') {
-      setTotalCostUsd(parsed.data.running_total_usd)
+      setTotalCostCop(parsed.data.running_total_cop)
     }
 
     // agent.partial_ranking can arrive multiple times as carriers settle —
@@ -254,6 +264,14 @@ export function useQuoteStream(
 
     if (parsed.type === 'agent.final_verdict') {
       setFinalVerdict(parsed.data)
+      // QA-IA-95: si el micro dice que las aseguradoras fueron simuladas, cada una es «estimado».
+      if (parsed.data.stub_mode === true) {
+        setCarriersMap(prev => {
+          const next = new Map(prev)
+          for (const [k, c] of next) next.set(k, { ...c, isStub: true })
+          return next
+        })
+      }
       setAllFinal(true)
       setIsConnected(false)
       abortRef.current?.abort()
@@ -296,11 +314,16 @@ export function useQuoteStream(
 
     void (async () => {
       try {
-        const headers = agentAuthHeaders({ Accept: 'text/event-stream' })
-        // Manual reconnect resume: the relay also reads the Last-Event-ID header.
-        if (cursor && cursor !== '0') headers.set('Last-Event-ID', cursor)
+        // 🔴 QA-IA-A (04-10-2026): NO se manda la cabecera `Last-Event-ID`. El
+        // micro no la permite en CORS (sólo Content-Type y Authorization), así
+        // que la reconexión —que siempre la llevaba— moría en el preflight y la
+        // ficha decía «Conexión interrumpida» con los tres veredictos ya en
+        // pantalla. El cursor viaja en `?lastEventId=` (lo arma `buildUrl`), que
+        // el micro lee como respaldo de la cabecera.
+        const headers = new Headers({ Accept: 'text/event-stream' })
 
-        const res = await fetch(url, { headers, signal: ac.signal })
+        // `agentFetch` pone el bearer y reintenta una vez ante un 401.
+        const res = await agentFetch(url, { headers, signal: ac.signal })
         if (!res.ok || !res.body) {
           onDrop()
           return
@@ -390,5 +413,5 @@ export function useQuoteStream(
   // Derive sorted carriers array
   const carriers = sortCarriers(Array.from(carriersMap.values()), allFinal)
 
-  return { events, carriers, totalCostUsd, finalVerdict, partialRanking, isConnected, error, reconnect }
+  return { events, carriers, totalCostCop, finalVerdict, partialRanking, isConnected, error, reconnect }
 }

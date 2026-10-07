@@ -81,6 +81,7 @@ import { descargarArchivoDelProceso } from '@/components/procesos/descargar-arch
 import { procesosApi } from '@/lib/api/procesos.service';
 import type { Proceso } from '@/lib/api/procesos.types';
 import { DetalleDelLote } from './DetalleDelLote';
+import { ApiError } from '@/lib/api/client';
 
 const ID = '6b0f2e2c-1d4a-4a2b-9c3e-0f1a2b3c4d5e';
 
@@ -458,12 +459,13 @@ describe('<DetalleDelLote> — P-4: el administrador no se confirma a sí mismo'
     );
 
     const nota = container.querySelector('[data-testid="aprobado-por-la-misma-persona"]');
-    expect(nota?.textContent).toContain('Aprobado por ti como administrador (P-4)');
+    expect(nota?.textContent).toContain('Aprobado por ti como administrador');
+    expect(nota?.textContent).not.toContain('(P-4)');
     expect(nota?.textContent).toContain('sin código');
     expect(container.querySelector('[data-testid="estado-del-lote"]')?.textContent).toBe('Aprobado');
     expect(acciones()).toEqual(['Generar archivo', 'Anular']);
     expect(container.textContent).not.toContain('Tú armaste este lote');
-    expect(container.textContent).toContain('Como administrador, en el mismo paso (P-4)');
+    expect(container.textContent).toContain('Como administrador, en el mismo paso');
   });
 
   it('otra persona que lo mira lo lee sin «ti»', async () => {
@@ -471,7 +473,7 @@ describe('<DetalleDelLote> — P-4: el administrador no se confirma a sí mismo'
       vista(lote({ estado: 'APROBADO', aprobadoPorUserId: 'u-creador', aprobadoAt: '2026-09-01T15:05:00.000Z' })),
     );
     expect(container.querySelector('[data-testid="aprobado-por-la-misma-persona"]')?.textContent).toContain(
-      'Lo armó y lo aprobó la misma persona (P-4)',
+      'Lo armó y lo aprobó la misma persona',
     );
   });
 
@@ -540,6 +542,39 @@ describe('<DetalleDelLote> — P-4: el administrador no se confirma a sí mismo'
     expect(boton('Aprobar').disabled).toBe(true);
     expect(container.textContent).toContain('Tú armaste este lote');
     expect(container.querySelector('[data-testid="lo-apruebas-tu"]')).toBeNull();
+  });
+});
+
+describe('<DetalleDelLote> — QA-PAGOS-95: desde el monto, una segunda persona (Nico, 05-10-2026)', () => {
+  const NOTA =
+    'El lote suma $7.011.000 y desde $5.000.000 lo aprueba una segunda persona (el monto que escogió tu inmobiliaria). Quien lo armó no lo puede aprobar, aunque sea administrador.';
+  const sobreElMonto = { montoCop: 5_000_000, porDefecto: false, exige: true, hayOtra: true, nota: NOTA };
+
+  it('🔴 el administrador que armó un borrador sobre el monto: «Pedir aprobación», no «Aprobar», y el porqué', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = true;
+    await render(vista(lote(), { segundaPersona: sobreElMonto }));
+    expect(acciones()).toEqual(['Pedir aprobación', 'Anular']);
+    expect(container.querySelector('[data-testid="lo-apruebas-tu"]')).toBeNull();
+    expect(container.querySelector('[data-testid="segunda-persona-por-monto"]')?.textContent).toContain(NOTA);
+    expect(container.textContent).toContain('Armado por ti');
+  });
+
+  it('🔴 esperando aprobación: a él «Aprobar» se le apaga con la frase; a otra persona no', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = true;
+    await render(vista(lote({ estado: 'ESPERANDO_APROBACION', codigoHash: 'hash', codigoExpiraAt: '2026-09-01T15:10:00.000Z' }), { segundaPersona: sobreElMonto }));
+    expect(boton('Aprobar').disabled).toBe(true);
+    expect(boton('Aprobar').title).toBe(NOTA);
+    expect(container.textContent).not.toContain('Tú armaste este lote');
+  });
+
+  it('bajo el monto (o back anterior sin el campo) P-4 sigue: «Aprobar» en un paso', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = true;
+    await render(vista(lote(), { segundaPersona: { ...sobreElMonto, exige: false, nota: null } }));
+    expect(acciones()).toEqual(['Aprobar', 'Anular']);
+    expect(container.querySelector('[data-testid="segunda-persona-por-monto"]')).toBeNull();
   });
 });
 
@@ -958,7 +993,7 @@ describe('<DetalleDelLote> — cierre', () => {
     ).toContain('3 prefacturas quedan');
   });
 
-  it('🔴 a los que quedaron en $0 les sale su extracto, y si a uno no, se dice a quién y por qué', async () => {
+  it('🔴 a los que quedaron en $ 0 les sale su extracto, y si a uno no, se dice a quién y por qué', async () => {
     await render(listoParaPagar());
     vi.mocked(lotesDeDispersionApi.marcarPagado).mockResolvedValue({
       ...pagadoCon(undefined),
@@ -1043,9 +1078,9 @@ describe('<DetalleDelLote> — cierre', () => {
   });
 });
 
-describe('<DetalleDelLote> — liquidaciones que se cierran en $0', () => {
+describe('<DetalleDelLote> — liquidaciones que se cierran en $ 0', () => {
   const MOTIVO =
-    'No se gira: sus deducciones cubren el neto de este mes. Se liquida en $0 al pagar el lote y lo que falte pasa a su siguiente liquidación.';
+    'No se gira: sus deducciones cubren el neto de este mes. Se liquida en $ 0 al pagar el lote y lo que falte pasa a su siguiente liquidación.';
 
   function conCompensada(): VistaDelLote {
     const base = lote();
@@ -1078,13 +1113,13 @@ describe('<DetalleDelLote> — liquidaciones que se cierran en $0', () => {
     });
   }
 
-  it('🔴 se ve aparte de los excluidos: $0 girado y cuánto pasa al mes siguiente', async () => {
+  it('🔴 se ve aparte de los excluidos: $ 0 girado y cuánto pasa al mes siguiente', async () => {
     await render(conCompensada());
 
     const seccion = container.querySelector('[data-testid="compensados-del-lote"]');
     expect(seccion?.textContent).toContain('1 propietario se cierra en $0');
     expect(seccion?.textContent).toContain('Elena Mora');
-    expect(seccion?.textContent).toContain('$250.000');
+    expect(seccion?.textContent).toContain('$\u00a0250.000');
     expect(container.querySelector('[data-testid="excluidos-del-lote"]')?.textContent).not.toContain('Elena Mora');
     expect(container.textContent).toContain('Se cierra en $0');
   });
@@ -1176,5 +1211,178 @@ describe('<DetalleDelLote> — quien registró una devolución no aprueba (Nico,
       vista(lote({ estado: 'ESPERANDO_APROBACION' }), { devolucionesRegistradasPor: ['u-tercero'] }),
     );
     expect(boton('Aprobar').disabled).toBe(false);
+  });
+});
+
+/*
+ * 02-10-2026 · Las acciones del lote con el sistema de errores. Lo que es de un
+ * campo (el código, la referencia del banco, el motivo) va DEBAJO de su campo
+ * con el foco ahí; lo demás, al aviso del diálogo con la regla de oro: un 5xx
+ * dice «de nuestro lado» con la referencia de soporte y «conexión» sólo sin
+ * respuesta. Antes iba `e.message` crudo (la copia local de `mensajeDe`).
+ */
+describe('<DetalleDelLote> — los errores de cada acción (02-10)', () => {
+  const fallo500 = () =>
+    new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      message: 'Error interno del servidor',
+      referencia: 'ab12cd34',
+    });
+
+  const errorDe = (id: string) => document.body.querySelector(`#${id}`)?.textContent ?? '';
+  const dialogo = (testId: string) =>
+    document.body.querySelector(`[data-testid="${testId}"]`)?.textContent ?? '';
+
+  async function clicDelDialogo(testId: string, texto: string) {
+    const b = botones(texto).find((x) => x.closest(`[data-testid="${testId}"]`));
+    await act(async () => {
+      b?.click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+  }
+
+  const conCodigo = () =>
+    vista(lote({ estado: 'ESPERANDO_APROBACION', codigoHash: 'hash', codigoExpiraAt: '2026-09-01T15:10:00.000Z' }));
+
+  it('🔴 un código incompleto se dice DEBAJO del campo, con el foco ahí, sin pegarle al back', async () => {
+    await render(conCodigo());
+    await clic('Aprobar');
+    await escribir('codigo-de-aprobacion', '123');
+    await clicDelDialogo('dialogo-aprobar', 'Aprobar');
+
+    expect(lotesDeDispersionApi.aprobar).not.toHaveBeenCalled();
+    expect(errorDe('codigo-de-aprobacion-error')).toBe('El código son 6 dígitos, tal como llegó en el correo.');
+    expect(document.activeElement?.id).toBe('codigo-de-aprobacion');
+    expect(
+      document.body.querySelector('#codigo-de-aprobacion')?.getAttribute('aria-describedby'),
+    ).toBe('codigo-de-aprobacion-error');
+  });
+
+  it('🔴 un 400 del back sobre el código va debajo del campo', async () => {
+    await render(conCodigo());
+    vi.mocked(lotesDeDispersionApi.aprobar).mockRejectedValue(
+      new ApiError(400, ['el código son 6 dígitos'], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        campos: [{ campo: 'codigo', regla: 'formato', mensaje: 'el código son 6 dígitos' }],
+      }),
+    );
+    await clic('Aprobar');
+    await escribir('codigo-de-aprobacion', '123456');
+    await clicDelDialogo('dialogo-aprobar', 'Aprobar');
+
+    expect(errorDe('codigo-de-aprobacion-error')).toBe('el código son 6 dígitos');
+    expect(document.activeElement?.id).toBe('codigo-de-aprobacion');
+  });
+
+  it('🔴 aprobar con un 5xx: «de nuestro lado» con la referencia, no «Error interno del servidor»', async () => {
+    await render(conCodigo());
+    vi.mocked(lotesDeDispersionApi.aprobar).mockRejectedValue(fallo500());
+    await clic('Aprobar');
+    await escribir('codigo-de-aprobacion', '123456');
+    await clicDelDialogo('dialogo-aprobar', 'Aprobar');
+
+    expect(dialogo('dialogo-aprobar')).toContain('No pudimos aprobar el lote: algo falló de nuestro lado');
+    expect(dialogo('dialogo-aprobar')).toContain('ab12cd34');
+  });
+
+  it('aprobar sin respuesta: ahí sí habla de la conexión', async () => {
+    await render(conCodigo());
+    vi.mocked(lotesDeDispersionApi.aprobar).mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await clic('Aprobar');
+    await escribir('codigo-de-aprobacion', '123456');
+    await clicDelDialogo('dialogo-aprobar', 'Aprobar');
+
+    expect(dialogo('dialogo-aprobar')).toMatch(/conexi[oó]n/);
+  });
+
+  it('🔴 mandar a aprobación con un 5xx: «de nuestro lado» con la referencia', async () => {
+    await render(vista(lote()));
+    vi.mocked(lotesDeDispersionApi.solicitarAprobacion).mockRejectedValue(fallo500());
+    await clic('Pedir aprobación');
+    await clic('Mandar a aprobación');
+
+    expect(dialogo('dialogo-pedir-aprobacion')).toContain(
+      'No pudimos mandar el lote a aprobación: algo falló de nuestro lado',
+    );
+    expect(dialogo('dialogo-pedir-aprobacion')).toContain('ab12cd34');
+  });
+
+  it('🔴 generar el archivo con un 5xx: «de nuestro lado» con la referencia', async () => {
+    await render(vista(lote({ estado: 'APROBADO' })));
+    vi.mocked(lotesDeDispersionApi.generarArchivo).mockRejectedValue(fallo500());
+    await clic('Generar archivo');
+    await clicEnDialogo('dialogo-archivo', 'Generar');
+
+    expect(cuerpo()).toContain('No pudimos generar el archivo del lote: algo falló de nuestro lado');
+    expect(cuerpo()).toContain('ab12cd34');
+  });
+
+  const conArchivo = () =>
+    vista(lote({ estado: 'ARCHIVO_GENERADO', formatoArchivo: 'BANCOLOMBIA_PAB', archivoHash: 'x' }));
+
+  it('🔴 marcar pagado sin referencia: el error va DEBAJO del campo y no se le pega al back', async () => {
+    await render(conArchivo());
+    await clic('Marcar pagado');
+    await clicDelDialogo('dialogo-pagado', 'Marcar pagado');
+
+    expect(lotesDeDispersionApi.marcarPagado).not.toHaveBeenCalled();
+    expect(errorDe('referencia-del-banco-error')).toBe(
+      'Hace falta la referencia con la que el banco confirmó el pago.',
+    );
+    expect(document.activeElement?.id).toBe('referencia-del-banco');
+  });
+
+  it('🔴 un 400 del back sobre la referencia (`referenciaBanco`) va debajo del campo', async () => {
+    await render(conArchivo());
+    const mensaje = 'La referencia del banco puede tener hasta 120 caracteres.';
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockRejectedValue(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        campos: [{ campo: 'referenciaBanco', regla: 'longitud_maxima', mensaje }],
+      }),
+    );
+    await clic('Marcar pagado');
+    await escribir('referencia-del-banco', 'BC-1');
+    await clicDelDialogo('dialogo-pagado', 'Marcar pagado');
+
+    expect(errorDe('referencia-del-banco-error')).toBe(mensaje);
+    expect(document.activeElement?.id).toBe('referencia-del-banco');
+  });
+
+  it('🔴 marcar pagado con un 5xx: «de nuestro lado» con la referencia, en el aviso', async () => {
+    await render(conArchivo());
+    vi.mocked(lotesDeDispersionApi.marcarPagado).mockRejectedValue(fallo500());
+    await clic('Marcar pagado');
+    await escribir('referencia-del-banco', 'BC-1');
+    await clicDelDialogo('dialogo-pagado', 'Marcar pagado');
+
+    expect(dialogo('dialogo-pagado')).toContain('No pudimos marcar el lote como pagado: algo falló de nuestro lado');
+    expect(dialogo('dialogo-pagado')).toContain('ab12cd34');
+    expect(errorDe('referencia-del-banco-error')).toBe('');
+  });
+
+  it('🔴 anular sin motivo: el error va DEBAJO del motivo, con el foco ahí', async () => {
+    await render(vista(lote()));
+    await clic('Anular');
+    await escribir('motivo-de-anulacion', 'abc');
+    await clic('Anular lote');
+
+    expect(lotesDeDispersionApi.anular).not.toHaveBeenCalled();
+    expect(errorDe('motivo-de-anulacion-error')).toContain('en 5 a 300 caracteres');
+    expect(document.activeElement?.id).toBe('motivo-de-anulacion');
+  });
+
+  it('🔴 anular con un 5xx: «de nuestro lado» con la referencia', async () => {
+    await render(vista(lote()));
+    vi.mocked(lotesDeDispersionApi.anular).mockRejectedValue(fallo500());
+    await clic('Anular');
+    await escribir('motivo-de-anulacion', 'Cambió una cuenta');
+    await clic('Anular lote');
+
+    expect(dialogo('dialogo-anular')).toContain('No pudimos anular el lote: algo falló de nuestro lado');
+    expect(dialogo('dialogo-anular')).toContain('ab12cd34');
   });
 });

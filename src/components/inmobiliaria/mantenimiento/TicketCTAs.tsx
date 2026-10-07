@@ -173,8 +173,10 @@ export function TicketCTAs({
         {t(`${ROOT}.cerrar.label`)}
       </Button>
 
+      {/* Confirmación, no destructiva: cerrar el ticket no borra nada. Medallón
+          cobalto y botón principal cobalto. */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent data-testid="cta-cerrar-dialog">
+        <DialogContent size="sm" variant="confirm" data-testid="cta-cerrar-dialog">
           <DialogHeader>
             <DialogTitle>{t(`${ROOT}.cerrar.confirmTitle`)}</DialogTitle>
             <DialogDescription>{t(`${ROOT}.cerrar.confirmDesc`)}</DialogDescription>
@@ -183,15 +185,14 @@ export function TicketCTAs({
             <Button
               data-testid="cta-cerrar-cancel"
               variant="outline"
-              size="sm"
+              hideArrow
               onClick={() => setConfirmOpen(false)}
             >
               {t(`${ROOT}.cerrar.cancel`)}
             </Button>
             <Button
               data-testid="cta-cerrar-confirm"
-              variant="destructive"
-              size="sm"
+              hideArrow
               onClick={() => {
                 setConfirmOpen(false)
                 onCerrar()

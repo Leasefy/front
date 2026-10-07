@@ -78,6 +78,12 @@ const mockAutonomyState = {
 const patchPolicy = vi.fn().mockResolvedValue(undefined)
 const refetchPolicy = vi.fn().mockResolvedValue(undefined)
 const saveAutonomy = vi.fn().mockResolvedValue(undefined)
+// N-13 (QA-PAGOS-95 r2): la autonomía se guarda como modo del Piloto.
+const { putPiloto } = vi.hoisted(() => ({ putPiloto: vi.fn() }))
+vi.mock('@/lib/api/piloto', async (orig) => ({
+  ...(await orig<typeof import('@/lib/api/piloto')>()),
+  putPilotoAutonomia: (...a: unknown[]) => putPiloto(...a),
+}))
 const refetchAutonomy = vi.fn().mockResolvedValue(undefined)
 
 // ---------------------------------------------------------------------------
@@ -157,6 +163,7 @@ beforeEach(() => {
   patchPolicy.mockClear().mockResolvedValue(undefined)
   refetchPolicy.mockClear()
   saveAutonomy.mockClear().mockResolvedValue(undefined)
+  putPiloto.mockReset().mockResolvedValue({ ok: true, data: {} })
   refetchAutonomy.mockClear()
 })
 
@@ -171,6 +178,19 @@ afterEach(() => {
 function render() {
   act(() => {
     root.render(<CobranzaConfiguracionPage />)
+  })
+}
+
+/** Con la sesión de una inmobiliaria (los modos del Piloto se guardan por agencia). */
+async function renderConAgencia() {
+  const { AuthContext } = await import('@/lib/auth/auth-context')
+  const auth = { agency: { id: 'ag-1', name: 'Inmobiliaria' } } as unknown as React.ContextType<typeof AuthContext>
+  act(() => {
+    root.render(
+      <AuthContext.Provider value={auth}>
+        <CobranzaConfiguracionPage />
+      </AuthContext.Provider>,
+    )
   })
 }
 
@@ -265,43 +285,26 @@ describe('<CobranzaConfiguracionPage> — onboarding incompleto (404)', () => {
 // (d) Save wiring per section
 // ---------------------------------------------------------------------------
 
-describe('<CobranzaConfiguracionPage> — facturación (PATCH /policy, partial)', () => {
-  it('manda SÓLO lo que cambió', async () => {
+// 🔴 El modelo de cobro con Leasefy lo cambia SÓLO Leasefy (Nico, 04-10-2026):
+// la inmobiliaria lo ve en sólo lectura, con «Para cambiarlo, escríbenos».
+describe('<CobranzaConfiguracionPage> — el modelo de cobro es de sólo lectura', () => {
+  it('muestra el modelo y la comisión en %, sin campos para cambiarlos', () => {
     render()
-
-    // El campo que se toca es la comisión (un <input>): CRM/ERP/facturación
-    // pasaron a ser <Select> del sistema de diseño —un <button> con la lista en
-    // un portal de Radix— y no se manejan desde jsdom. Lo que este test fija
-    // sigue siendo lo mismo: el PATCH lleva ÚNICAMENTE la clave que cambió.
-    const fee = byTestId('field-successFeePct') as HTMLInputElement
-    await act(async () => {
-      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
-      setter?.call(fee, '9')
-      fee.dispatchEvent(new Event('input', { bubbles: true }))
-      fee.dispatchEvent(new Event('change', { bubbles: true }))
-      await Promise.resolve()
-    })
-
-    const saveBtn = byTestId('save-comercial') as HTMLButtonElement
-    expect(saveBtn.disabled).toBe(false)
-    await act(async () => {
-      saveBtn.click()
-      await new Promise((r) => setTimeout(r, 0))
-    })
-
-    expect(patchPolicy).toHaveBeenCalledTimes(1)
-    expect(patchPolicy).toHaveBeenCalledWith({ successFeePct: 0.09 })
+    expect(byTestId('valor-billingModel')?.textContent).toBe('Por resultado')
+    expect(byTestId('valor-successFeePct')?.textContent).toBe('8 %')
+    expect(byTestId('field-billingModel')).toBeFalsy()
+    expect(byTestId('field-successFeePct')).toBeFalsy()
+    expect(byTestId('modelo-de-cobro-solo-leasefy')?.textContent).toContain('Para cambiarlo, escríbenos')
   })
 
-  it('la comisión se escribe en %, no en fracción', () => {
+  it('también el administrador de la inmobiliaria lo ve sólo para leer', () => {
+    canConfigure = true
     render()
-    // La política del mock trae 0.08; el campo tiene que decir 8, no 0,08 —
-    // que se leería como 0,08 %, cien veces menos.
-    const fee = byTestId('field-successFeePct') as HTMLInputElement
-    expect(fee.value).toBe('8')
+    expect(byTestId('field-successFeePct')).toBeFalsy()
+    expect(byTestId('modelo-de-cobro')).toBeTruthy()
   })
 
-  it('disables the save button when there is nothing dirty', () => {
+  it('el guardado de integraciones arranca apagado (no hay nada que guardar)', () => {
     render()
     const saveBtn = byTestId('save-comercial') as HTMLButtonElement
     expect(saveBtn.disabled).toBe(true)
@@ -309,17 +312,83 @@ describe('<CobranzaConfiguracionPage> — facturación (PATCH /policy, partial)'
 })
 
 describe('<CobranzaConfiguracionPage> — autonomy save (PUT /cobranza/autonomy)', () => {
-  it('calls saveAutonomy with the selected level', async () => {
-    render()
+  // N-13 (QA-PAGOS-95 r2; decisión de Nico 17-09): los TRES modos del Piloto;
+  // elegir uno lo guarda en el Piloto, no en el nivel de cuatro peldaños.
+  it('elegir «Copiloto» lo guarda en el Piloto (PUT …/agentes/cobranza/autonomia)', async () => {
+    await renderConAgencia()
     const radios = Array.from(
       document.querySelectorAll('input[type="radio"], [role="radio"]'),
     ) as HTMLElement[]
-    const target = radios.find((r) => r.getAttribute('value') === 'aprobar')
+    expect(radios.some((r) => r.getAttribute('value') === 'aprobar')).toBe(false)
+    const target = radios.find((r) => r.getAttribute('value') === 'copiloto')
     expect(target).toBeTruthy()
     await act(async () => {
       target!.click()
       await new Promise((r) => setTimeout(r, 0))
     })
-    expect(saveAutonomy).toHaveBeenCalledWith('aprobar')
+    expect(putPiloto).toHaveBeenCalledWith('ag-1', 'cobranza', 'copiloto')
+    expect(saveAutonomy).not.toHaveBeenCalled()
+  })
+})
+
+// ── Errores: la regla de oro (02-10-2026) ────────────────────────────────────
+// Antes los dos guardados decían «…Intenta de nuevo.» ante cualquier fallo, y
+// el de la política ni se pintaba (se guardaba en un estado que nadie leía).
+
+describe('<CobranzaConfiguracionPage> — errores al guardar', () => {
+  // El modelo de cobro ya no se edita acá (04-10-2026): el PATCH de la
+  // política se dispara con el aviso diario por WhatsApp.
+  async function guardarComision() {
+    const interruptor = byTestId('field-dailyReportWhatsappEnabled') as HTMLButtonElement
+    await act(async () => {
+      interruptor.click()
+      await Promise.resolve()
+    })
+    await act(async () => {
+      ;(byTestId('save-aviso') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  it('la política: un 400 del micro muestra su `message` junto al botón, no «Intenta de nuevo»', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    patchPolicy.mockRejectedValue(
+      new ApiError(400, 'La comisión no puede pasar del 50 %.', 'DATOS_INVALIDOS', {
+        code: 'DATOS_INVALIDOS',
+        message: 'La comisión no puede pasar del 50 %.',
+      }),
+    )
+    render()
+    await guardarComision()
+    const error = byTestId('aviso-save-error')
+    expect(error?.textContent).toBe('La comisión no puede pasar del 50 %.')
+    expect(error?.getAttribute('role')).toBe('alert')
+  })
+
+  it('la política: un PATCH que no sale (status 0) habla de la conexión', async () => {
+    patchPolicy.mockRejectedValue(new TypeError('Failed to fetch'))
+    render()
+    await guardarComision()
+    expect(byTestId('aviso-save-error')?.textContent).toMatch(/conexi[oó]n/i)
+  })
+
+  it('la autonomía: un 5xx dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    putPiloto.mockResolvedValue({
+      ok: false,
+      fallo: new ApiError(500, '', 'internal_error', { error: 'internal_error', requestId: '9f8e7d6c-0000-4000-8000-000000000000' }),
+    })
+    await renderConAgencia()
+    const radios = Array.from(
+      document.querySelectorAll('input[type="radio"], [role="radio"]'),
+    ) as HTMLElement[]
+    await act(async () => {
+      radios.find((r) => r.getAttribute('value') === 'copiloto')!.click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    const texto = byTestId('autonomia-save-error')?.textContent ?? ''
+    expect(texto).toContain('No pudimos guardar el modo de la cobranza: algo falló de nuestro lado')
+    expect(texto).toContain('9f8e7d6c')
+    expect(texto).not.toMatch(/conexi[oó]n|Intenta de nuevo/i)
   })
 })

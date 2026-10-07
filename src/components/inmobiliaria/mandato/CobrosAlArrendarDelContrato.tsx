@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/toast';
 import { mandatoApi, type CobrosAlArrendarDelContrato as Datos } from '@/lib/api/mandato.service';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { PESOS } from '@/lib/mandato/textos';
 
 export function CobrosAlArrendarDelContrato({
@@ -66,7 +66,14 @@ export function CobrosAlArrendarDelContrato({
       );
       await cargar();
     } catch (e) {
-      toast.error('No se pudieron aplicar.', { description: mensajeDelFallo(e, '') });
+      // Un 409 (ya aplicados) o un 400 traen su frase; un 5xx dice que es
+      // nuestro (con la referencia) y sólo la red habla de conexión.
+      toast.error('No se pudieron aplicar.', {
+        description: mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos aplicar los cobros al arrendar.',
+          accion: 'aplicar los cobros al arrendar',
+        }),
+      });
     } finally {
       setAplicando(false);
     }

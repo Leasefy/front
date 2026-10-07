@@ -76,6 +76,20 @@ const boton = (texto: string) =>
     b.textContent?.trim().includes(texto),
   )
 
+/**
+ * El descarte es el `Dialog` del producto (Radix): se pinta en un portal sobre
+ * `document.body`, no dentro de `contenedor`.
+ */
+const dialogo = () => {
+  const d = document.querySelector<HTMLElement>('[role="dialog"]')
+  if (!d) throw new Error('El diálogo de descarte no está abierto')
+  return d
+}
+const botonDelDialogo = (texto: string) =>
+  Array.from(dialogo().querySelectorAll('button')).find((b) =>
+    b.textContent?.trim().includes(texto),
+  )
+
 beforeEach(() => {
   vi.clearAllMocks()
   h.canAccess.mockReturnValue(true)
@@ -100,6 +114,31 @@ describe('Bandeja de propuestas del agente', () => {
     })
     // Sin correcciones: la propuesta se radica tal como la dejó el agente.
     expect(h.api.confirmar).toHaveBeenCalledWith('pr-1')
+  })
+
+  it('🔴 02-10 · radicar con un 5xx: falló de nuestro lado, con la referencia; sin respuesta, la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    h.api.confirmar.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    )
+    await montar()
+    await act(async () => {
+      boton('Radicar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    const de5xx = h.toast.error.mock.calls[0]?.[1]?.description as string
+    expect(de5xx).toContain('de nuestro lado')
+    expect(de5xx).toContain('ab12cd34')
+
+    h.api.confirmar.mockRejectedValueOnce(new ApiError(0, 'Failed to fetch'))
+    await act(async () => {
+      boton('Radicar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(h.toast.error.mock.calls[1]?.[1]?.description).toMatch(/conexi[oó]n/i)
   })
 
   it('B2 — dice que el plazo corre desde el mensaje original, no desde hoy', async () => {
@@ -127,11 +166,11 @@ describe('Bandeja de propuestas del agente', () => {
     await act(async () => {
       boton('No era')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
-    const descartar = boton('Descartar')!
+    const descartar = botonDelDialogo('Descartar')!
     expect(descartar.hasAttribute('disabled')).toBe(true)
     expect(h.api.descartar).not.toHaveBeenCalled()
 
-    const campo = contenedor.querySelector<HTMLInputElement>('input')!
+    const campo = dialogo().querySelector<HTMLInputElement>('input')!
     const setter = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
       'value',
@@ -140,9 +179,9 @@ describe('Bandeja de propuestas del agente', () => {
       setter.call(campo, 'Era una consulta de horarios')
       campo.dispatchEvent(new Event('input', { bubbles: true }))
     })
-    expect(boton('Descartar')!.hasAttribute('disabled')).toBe(false)
+    expect(botonDelDialogo('Descartar')!.hasAttribute('disabled')).toBe(false)
     await act(async () => {
-      boton('Descartar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      botonDelDialogo('Descartar')!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
     expect(h.api.descartar).toHaveBeenCalledWith('pr-1', 'Era una consulta de horarios')
   })

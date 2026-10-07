@@ -93,60 +93,70 @@ export function resumenDeSeccion(filas: readonly FilaAgrupable[]): ResumenDeSecc
   return { pendientes, conIa };
 }
 
-// ─── Qué secciones están abiertas, recordado por persona ────────────────────
+// ─── Qué secciones están abiertas ────────────────────────────────────────────
 
-const PREFIJO = 'leasefy-sidebar-secciones';
+/**
+ * La regla de Nico (02-10-2026): al ENTRAR al panel, todo el mundo ve UNA
+ * sola sección abierta, «Operación», y las demás plegadas; si la página
+ * actual vive en otra sección, ésa también se abre (la fila activa siempre se
+ * ve). Lo que la persona abra o cierre después se respeta mientras navega —el
+ * menú vive en el layout y no se vuelve a montar—, pero NO se guarda: la
+ * próxima vez que entre (otra pestaña, recargar, otro día) vuelve la regla.
+ *
+ * Antes era al revés: todo abierto por defecto y lo plegado se recordaba por
+ * persona en `localStorage` (`leasefy-sidebar-secciones:<usuario>`). Esa llave
+ * se borra al entrar (`olvidarSeccionesGuardadas`) para no dejar basura.
+ *
+ * En el panel de la inmobiliaria la sección es `#sec-operacion` («Operación»,
+ * `arquitectura-del-panel.ts`). Un panel que no la tiene —el del propietario,
+ * con su única sección «Mi arriendo»— abre su PRIMERA sección.
+ */
+export const SECCION_ABIERTA_AL_ENTRAR = 'sec-operacion';
 
-/** Una llave por usuario: dos personas en el mismo equipo no se pisan el menú. */
-export function llaveDeAlmacenamiento(usuarioId: string | null | undefined): string {
-  return usuarioId ? `${PREFIJO}:${usuarioId}` : PREFIJO;
+/** La sección que arranca abierta entre las que hay, o `null` si no hay ninguna. */
+export function seccionAbiertaAlEntrar(claves: readonly string[]): string | null {
+  if (claves.includes(SECCION_ABIERTA_AL_ENTRAR)) return SECCION_ABIERTA_AL_ENTRAR;
+  return claves[0] ?? null;
 }
 
-/** `true` = abierta, `false` = cerrada; una sección que no figura usa el valor por defecto. */
+/**
+ * `true` = abierta, `false` = cerrada, por decisión de la persona en esta
+ * visita. Una sección que no figura usa la regla de entrada.
+ */
 export type EstadoDeSecciones = Record<string, boolean>;
 
 /**
- * Lee lo guardado. Cualquier cosa que falle —almacenamiento bloqueado en una
- * ventana privada, cuota, JSON roto, un valor que no es un objeto— devuelve
- * `{}`: todas las secciones en su valor por defecto. Plegar el menú es una
- * comodidad; nunca puede tumbar el panel.
+ * ¿Está abierta? Lo que la persona decidió manda; si no decidió nada, sólo
+ * están abiertas la de entrada y la que contiene la página actual.
  */
-export function leerSecciones(llave: string, almacen: Pick<Storage, 'getItem'> | null | undefined): EstadoDeSecciones {
-  try {
-    const crudo = almacen?.getItem(llave);
-    if (!crudo) return {};
-    const valor: unknown = JSON.parse(crudo);
-    if (!valor || typeof valor !== 'object' || Array.isArray(valor)) return {};
-    const limpio: EstadoDeSecciones = {};
-    for (const [k, v] of Object.entries(valor as Record<string, unknown>)) {
-      if (typeof v === 'boolean') limpio[k] = v;
-    }
-    return limpio;
-  } catch {
-    return {};
-  }
+export function estaAbierta(
+  estado: EstadoDeSecciones,
+  clave: string,
+  { deEntrada, activa }: { deEntrada: string | null; activa: string | null },
+): boolean {
+  return estado[clave] ?? (clave === deEntrada || clave === activa);
 }
 
-/** Guarda sin quejarse: si no se puede, el estado vive sólo en esta sesión. */
-export function guardarSecciones(
-  llave: string,
-  estado: EstadoDeSecciones,
-  almacen: Pick<Storage, 'setItem'> | null | undefined,
-): void {
-  try {
-    almacen?.setItem(llave, JSON.stringify(estado));
-  } catch {
-    // Almacenamiento lleno o bloqueado: no es crítico.
-  }
+const PREFIJO_VIEJO = 'leasefy-sidebar-secciones';
+
+/** La llave con la que se guardaba lo plegado hasta el 02-10-2026 (por usuario). */
+export function llaveDeAlmacenamiento(usuarioId: string | null | undefined): string {
+  return usuarioId ? `${PREFIJO_VIEJO}:${usuarioId}` : PREFIJO_VIEJO;
 }
 
 /**
- * Valor por defecto: ABIERTA. Quien entra por primera vez ve todo el menú —
- * esconder módulos a quien todavía no sabe que existen es perderle puertas—,
- * y cierra lo que no usa; el panel se lo recuerda.
+ * Borra lo que quedó guardado de antes. Sin quejarse: un almacenamiento
+ * bloqueado (ventana privada, iframe con sandbox) no puede tumbar el menú.
  */
-export function estaAbierta(estado: EstadoDeSecciones, clave: string): boolean {
-  return estado[clave] ?? true;
+export function olvidarSeccionesGuardadas(
+  usuarioId: string | null | undefined,
+  almacen: Pick<Storage, 'removeItem'> | null | undefined,
+): void {
+  try {
+    almacen?.removeItem(llaveDeAlmacenamiento(usuarioId));
+  } catch {
+    // No es crítico.
+  }
 }
 
 /**

@@ -30,6 +30,13 @@
  * 2. «No se pudo consultar» NO es «no hay información». Un 404 o un error
  *    se dicen con esas palabras; jamás con un cajón vacío que parezca que el
  *    caso no tiene nada adentro.
+ *
+ * ── El director (fase 1, 28-09-2026) ──────────────────────────────────────
+ * Arriba de todo, el por qué: si la fila la pidió el director, su `porQue`,
+ * la evidencia enlazada, la meta y lo que descartó; y SIEMPRE el `motivo` de
+ * la perilla. Lo manda el detalle del micro; si un micro todavía no lo manda,
+ * se usa lo que ya traía la fila (`porQueDeRespaldo`: la Bandeja o la
+ * tarjeta «Hoy»).
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -43,7 +50,6 @@ import {
   Clock,
   Info,
   Warning,
-  X,
 } from '@phosphor-icons/react'
 import {
   IconButton,
@@ -57,19 +63,30 @@ import {
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { PilotoAccionForm } from './PilotoAccionForm'
+import { textosDelFallo } from './fallo-de-la-accion'
 import { PilotoDocumento } from './PilotoDocumento'
 import {
   Sheet,
+  SheetBody,
   SheetContent,
-  SheetDescription,
+  SheetFooter,
   SheetHeader,
-  SheetTitle,
 } from '@/components/ui/sheet'
 import { useI18n } from '@/lib/i18n'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { usePilotoDetalle } from '@/lib/hooks/piloto/use-piloto-detalle'
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
 import { formatCurrency } from '@/lib/format'
-import { runInboxAccion, type InboxAccion, type PulsoAlerta } from '@/lib/api/piloto'
+import {
+  runInboxAccion,
+  type DirectorDeLaAccion,
+  type InboxAccion,
+  type PulsoAlerta,
+} from '@/lib/api/piloto'
+import { normalizarDirectorDeLaAccion } from '@/lib/api/piloto-director'
+import { PorQueEnElCajon } from './PilotoDirectorPorQue'
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada'
 
 /** Qué está abierto en el cajón. `null` = cerrado. */
 export type PilotoApertura =
@@ -78,7 +95,16 @@ export type PilotoApertura =
    * bandeja. El cajón la deja lista para confirmar (auditoría del Piloto,
    * hallazgo 9: el botón de la lista no se salta lo que el cajón pregunta).
    */
-  | { tipo: 'item'; id: string; accion?: string }
+  | {
+      tipo: 'item'
+      id: string
+      accion?: string
+      /**
+       * El por qué que ya traía la fila con que se abrió (una orden de la
+       * tarjeta del director). Lo usa la página como respaldo del cajón.
+       */
+      porQue?: { director?: DirectorDeLaAccion | null; motivo?: string | null }
+    }
   | { tipo: 'alerta'; alerta: PulsoAlerta }
 
 export interface PilotoCajonProps {
@@ -94,6 +120,11 @@ export interface PilotoCajonProps {
   onAbrirItem: (id: string) => void
   /** Se llama tras ejecutar una acción, para refrescar las listas de atrás. */
   onAccionEjecutada?: () => Promise<void> | void
+  /**
+   * El por qué que ya traía la fila con que se abrió (Bandeja o tarjeta
+   * «Hoy»). Se usa sólo si el detalle del micro no lo trae.
+   */
+  porQueDeRespaldo?: { director?: DirectorDeLaAccion | null; motivo?: string | null } | null
 }
 
 /** Un enlace externo (http…) sale del panel; uno relativo navega adentro. */
@@ -151,7 +182,9 @@ function fechaCorta(iso: string): string {
   })
 }
 
-function aItemDS(fila: { label: string; valor: string; enfasis?: boolean }): KeyValueItem {
+function aItemDS(filaCruda: { label: string; valor: string; enfasis?: boolean }): KeyValueItem {
+  // QA-IA-95 (PI-16): la plata que escribe el micro («$5.750.000») con el espacio duro de la casa.
+  const fila = { ...filaCruda, valor: conLaPlataPegada(filaCruda.valor) }
   const prosa = fila.valor.length > LARGO_QUE_YA_ES_PROSA
   if (prosa) {
     return {
@@ -195,6 +228,7 @@ export function PilotoCajon({
   onVolver,
   onAbrirItem,
   onAccionEjecutada,
+  porQueDeRespaldo,
 }: PilotoCajonProps) {
   const { t } = useI18n()
 
@@ -209,6 +243,12 @@ export function PilotoCajon({
    * cajón es angosto y dos formularios abiertos se pisan.
    */
   const [abierta, setAbierta] = useState<InboxAccion | null>(null)
+  /**
+   * Lo que el micro dijo de cada dato del formulario (un 400 con `campos`):
+   * va debajo de SU campo, no a un toast. Se limpia al cambiar de acción.
+   */
+  const [erroresDelFormulario, setErroresDelFormulario] = useState<Partial<Record<string, string>>>({})
+  useEffect(() => setErroresDelFormulario({}), [abierta])
   /**
    * El documento abierto ENCIMA del caso. Leer la carta no puede costar salir
    * del Piloto: es lo que se hace justo antes de autorizar que salga.
@@ -242,13 +282,20 @@ export function PilotoCajon({
         if (res.ok) {
           // Lo que PASÓ, dicho por el micro (p. ej. «la programé para mañana
           // a las 8:00»); «listo» sólo si el micro no dijo nada.
-          toast.success(res.mensaje ?? t('inmobiliaria.piloto.bandeja.toastOk', { label: accion.label }))
+          toast.success(res.mensaje ?? t('inmobiliaria.piloto.bandeja.toastOk', { label: conLaPlataPegada(accion.label) }))
           setAbierta(null)
           await Promise.allSettled([refetch(), onAccionEjecutada?.() ?? Promise.resolve()])
         } else {
-          toast.error(
-            t('inmobiliaria.piloto.bandeja.toastFail', { error: res.error ?? 'error' }),
-          )
+          // Con la regla de oro: lo que el micro dijo de un dato del
+          // formulario va a SU campo; al toast sólo lo que no tiene dónde ir
+          // (un 5xx con su referencia, un 409, la conexión si no salió).
+          // Antes: «No se pudo: 403».
+          const reparto = repartirErroresDelServidor(res.fallo, {
+            campos: (accion.campos ?? []).map((c) => c.id),
+            ...textosDelFallo(accion.label),
+          })
+          setErroresDelFormulario(reparto.porCampo)
+          if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '))
         }
       } finally {
         setEnVuelo(null)
@@ -256,6 +303,11 @@ export function PilotoCajon({
     },
     [onAccionEjecutada, refetch, t],
   )
+
+  /** El por qué del director y el motivo de la perilla: del detalle, o de la fila. */
+  const directorDelCaso =
+    normalizarDirectorDeLaAccion(data?.director) ?? normalizarDirectorDeLaAccion(porQueDeRespaldo?.director)
+  const motivoDelCaso = data?.motivo || porQueDeRespaldo?.motivo || null
 
   const titulo = alerta
     ? alerta.titulo
@@ -268,82 +320,70 @@ export function PilotoCajon({
     <Sheet open={apertura !== null} onOpenChange={(abierto) => !abierto && onClose()}>
       <SheetContent
         side="right"
-        hideCloseButton
-        /*
-         * Con el sub-cajón abierto, el borde izquierdo se endereza: dos
-         * paneles pegados con las esquinas redondeadas dejan una muesca en la
-         * costura y se leen como dos ventanas sueltas (Nico, 2026-09-06). Al
-         * cerrarlo vuelve a su radio.
-         */
+        // 576 px: el documento se pega a su izquierda con este mismo ancho.
         className={cn(
-          'flex w-full flex-col gap-0 overflow-hidden p-0 sm:max-w-xl',
-          documento && 'sm:!rounded-l-none',
+          'sm:max-w-xl',
+          /*
+           * Con el sub-cajón abierto al lado (desde `lg`, donde caben los dos),
+           * el borde izquierdo se endereza: dos paneles pegados con las
+           * esquinas redondeadas dejan una muesca en la costura y se leen como
+           * dos ventanas sueltas (Nico, 2026-09-06). Al cerrarlo vuelve a su
+           * radio.
+           */
+          documento && 'lg:!rounded-l-none',
         )}
+        // Cabecera, cuerpo y pie se arman acá abajo.
+        layout="manual"
         data-testid="piloto-cajon"
       >
-        {/* Encabezado fijo — el título del caso siempre visible al scrollear */}
-        <SheetHeader className="shrink-0 space-y-0 border-b border-border px-6 pt-6 pb-4">
-          <div className="flex items-start gap-3">
-            {onVolver && (
+        {/* Encabezado fijo — el título del caso siempre visible al scrollear.
+            La ✕ la pone `SheetContent`: la misma de todo el producto. */}
+        <SheetHeader
+          leading={
+            onVolver ? (
               <IconButton
                 variant="ghost"
                 onClick={onVolver}
                 aria-label={t('inmobiliaria.piloto.cajon.volver')}
-                className="-ml-2 mt-0.5 h-8 w-8 shrink-0 rounded-md hover:bg-surface-muted"
+                className="-ml-2 h-8 w-8 shrink-0 rounded-full hover:bg-surface-hover"
                 icon={<CaretLeft weight="bold" className="h-4 w-4" aria-hidden="true" />}
               />
-            )}
-            <div className="min-w-0 flex-1">
-              <SheetTitle
-                className={`text-lg font-semibold ${alerta ? (TONO_SEVERIDAD[alerta.severidad] ?? 'text-fg') : 'text-fg'}`}
-              >
-                {titulo}
-              </SheetTitle>
-              <SheetDescription className="mt-1 text-caption text-fg-muted">
-                {subtitulo}
-              </SheetDescription>
-              {data && !alerta && (
-                <div className="mt-2.5 flex flex-wrap items-center gap-3 text-caption text-fg-subtle">
-                  {/* «esperando» sólo si hay algo que decidir (una acción, o
-                      un enlace que dice por qué se decide en otra pantalla):
-                      un hecho ya ocurrido (una llamada, los cobros de un día)
-                      no espera a nadie — decía «esperando hace 1d» (24-09). */}
-                  {data.desde && (
-                    <span className="flex items-center gap-1 font-mono tabular-nums" data-testid="piloto-cajon-desde">
-                      <Clock weight="duotone" className="h-3 w-3" aria-hidden="true" />
-                      {data.acciones.length > 0 || data.enlaces.some((e) => Boolean(e.razon))
-                        ? t('inmobiliaria.piloto.cajon.esperando', { tiempo: relativeTime(data.desde, t) })
-                        : relativeTime(data.desde, t)}
-                    </span>
-                  )}
-                  {typeof data.montoCop === 'number' && (
-                    <span className="font-mono tabular-nums text-fg">
-                      {formatCurrency(data.montoCop)}
-                    </span>
-                  )}
-                </div>
+            ) : undefined
+          }
+          title={
+            <span className={alerta ? (TONO_SEVERIDAD[alerta.severidad] ?? 'text-fg') : 'text-fg'}>
+              {titulo}
+            </span>
+          }
+          description={subtitulo}
+        >
+          {data && !alerta && (
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-caption text-fg-subtle">
+              {/* «esperando» sólo si hay algo que decidir (una acción, o
+                  un enlace que dice por qué se decide en otra pantalla):
+                  un hecho ya ocurrido (una llamada, los cobros de un día)
+                  no espera a nadie — decía «esperando hace 1d» (24-09). */}
+              {data.desde && (
+                <span className="flex items-center gap-1 font-mono tabular-nums" data-testid="piloto-cajon-desde">
+                  <Clock weight="duotone" className="h-3 w-3" aria-hidden="true" />
+                  {data.acciones.length > 0 || data.enlaces.some((e) => Boolean(e.razon))
+                    ? t('inmobiliaria.piloto.cajon.esperando', { tiempo: relativeTime(data.desde, t) })
+                    : relativeTime(data.desde, t)}
+                </span>
+              )}
+              {typeof data.montoCop === 'number' && (
+                <span className="font-mono tabular-nums text-fg">
+                  {formatCurrency(data.montoCop)}
+                </span>
               )}
             </div>
-            <IconButton
-              variant="ghost"
-              onClick={onClose}
-              aria-label={t('inmobiliaria.piloto.cajon.cerrar')}
-              className="-mr-1 -mt-1 h-8 w-8 shrink-0 rounded-md hover:bg-surface-muted"
-              icon={<X weight="bold" className="h-4 w-4" aria-hidden="true" />}
-            />
-          </div>
+          )}
         </SheetHeader>
 
-        {/* Cuerpo — el único que scrollea */}
-        {/* Cuerpo — el único que scrollea. `data-lenis-prevent` +
-            `overscrollBehavior:'contain'` son OBLIGATORIOS: el panel corre con
-            Lenis (scroll suave) y sin esto la rueda dentro del cajón la
-            intercepta la página de atrás. Mismo patrón que ScoreDetailSheet. */}
-        <div
-          className="min-h-0 flex-1 overflow-y-auto px-6 pb-10 pt-5"
-          data-lenis-prevent
-          style={{ overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch' }}
-        >
+        {/* Cuerpo — el único que scrollea. `SheetBody` trae `data-lenis-prevent`
+            y `overscroll-behavior: contain`: sin eso la rueda dentro del cajón
+            la intercepta Lenis en la página de atrás. */}
+        <SheetBody className="pb-10">
           {/* ── Modo alerta: sin red, con los casos que sostienen el número ── */}
           {alerta && (
             <div className="space-y-5" data-testid="piloto-cajon-alerta">
@@ -406,11 +446,16 @@ export function PilotoCajon({
             </div>
           )}
 
-          {!alerta && !isLoading && error && (
+          {!alerta && !isLoading && Boolean(error) && (
             <Aviso
               tono="danger"
               titulo={t('inmobiliaria.piloto.cajon.errorTitulo')}
-              texto={t('inmobiliaria.piloto.cajon.errorTexto', { error })}
+              // El error entero por el traductor (con el micro caído: «El
+              // asistente de Leasefy no está disponible…»), sin su punto final:
+              // la frase de la clave ya pone el suyo.
+              texto={t('inmobiliaria.piloto.cajon.errorTexto', {
+                error: mensajeParaLaPersona(error).replace(/\.\s*$/, ''),
+              })}
               accion={
                 <Button size="sm" variant="secondary" hideArrow onClick={() => void refetch()}>
                   {t('inmobiliaria.piloto.cajon.reintentar')}
@@ -429,6 +474,7 @@ export function PilotoCajon({
 
           {!alerta && data && (
             <div className="space-y-5">
+              <PorQueEnElCajon director={directorDelCaso} motivo={motivoDelCaso} id={data.id} />
               {data.nota && <Aviso tono="info" texto={data.nota} />}
 
               {data.contexto.map((grupo) => (
@@ -529,16 +575,19 @@ export function PilotoCajon({
               )}
             </div>
           )}
-        </div>
+        </SheetBody>
 
-        {/* Pie fijo con las acciones — solo si el micro declaró alguna */}
+        {/* Pie fijo con las acciones — solo si el micro declaró alguna. Su
+            contenido ocupa el ancho entero: el formulario de una acción toma
+            el pie y la fila de botones se ordena sola (ver abajo). */}
         {!alerta && data && data.acciones.length > 0 && (
-          <footer className="shrink-0 border-t border-border bg-surface px-6 py-4">
+          <SheetFooter className="[&>div>*]:w-full [&>div]:w-full">
             {abierta ? (
               /* Una acción que pide datos toma el pie entero: el formulario
                  vive acá y no en otro diálogo encima del cajón. */
               <PilotoAccionForm
                 accion={abierta}
+                errores={erroresDelFormulario}
                 enVuelo={enVuelo === abierta.label}
                 onCancelar={() => setAbierta(null)}
                 onEnviar={(valores: Record<string, unknown>) => void ejecutar(abierta, valores)}
@@ -582,7 +631,7 @@ export function PilotoCajon({
                     }}
                     data-testid={`piloto-cajon-accion-${i}`}
                   >
-                    {accion.label}
+                    {conLaPlataPegada(accion.label)}
                   </Button>
                 ))}
                 {data.acciones.some((a) => a.permitida === false && a.porQueNo) && (
@@ -592,7 +641,7 @@ export function PilotoCajon({
                 )}
               </div>
             )}
-          </footer>
+          </SheetFooter>
         )}
       </SheetContent>
 

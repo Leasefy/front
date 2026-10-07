@@ -11,8 +11,13 @@ import { RouteAnnouncer } from "@/components/layout/RouteAnnouncer";
 import { PushNotificationHandler } from "@/components/notifications/PushNotificationHandler";
 import { SessionRevocationHandler } from "@/components/auth/SessionRevocationHandler";
 import { IdleSessionGuard } from "@/components/auth/IdleSessionGuard";
+import { SesionDeRecuperacionGuard } from "@/components/auth/SesionDeRecuperacionGuard";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/seo/JsonLd";
 import { Toaster } from "@/components/ui/toast";
+import { AvisoDeConexion } from "@/components/estado/AvisoDeConexion";
+import { AceptarLegalesAlEntrar } from "@/components/legal/AceptarLegalesAlEntrar";
+import { LlavesDeLaPlata } from "@/components/plata/LlavesDeLaPlata";
+import { MotionProvider } from "@leasefy/cadence";
 
 // Cadence: Schibsted Grotesk — Regular (cuerpo) + Semibold (títulos).
 // Una sola familia para sans + heading; se mapea en globals.css.
@@ -131,6 +136,11 @@ export default async function RootLayout({
         <a href="#main-content" className="skip-link">
           Saltar al contenido principal
         </a>
+        {/* Movimiento (Cadence, docs/DESIGN.md «Movimiento»): UNA configuración
+            para todo framer-motion de la app. `reducedMotion="user"` respeta
+            `prefers-reduced-motion`: sin desplazamientos ni layout, quedan los
+            fundidos. No toca el scroll: Lenis y framer no comparten nada. */}
+        <MotionProvider>
         <ThemeProvider nonce={nonce}>
           <AuthProvider>
             <WishlistProvider>
@@ -138,6 +148,9 @@ export default async function RootLayout({
               <PushNotificationHandler />
               <SessionRevocationHandler />
               <IdleSessionGuard />
+              <SesionDeRecuperacionGuard />
+              {/* FALTANTES (05-10-2026, decisión 1): la política v4.0 y los términos v2.1 se aceptan una vez al próximo ingreso. */}
+              <AceptarLegalesAlEntrar />
               <SmoothScroll>{children}</SmoothScroll>
             </WishlistProvider>
           </AuthProvider>
@@ -153,7 +166,17 @@ export default async function RootLayout({
               Sonner pinta cada toast en TODOS los <Toaster> montados: debe haber uno solo.
               Si agregas otro en un layout, los toasts se duplican. */}
           <Toaster position="top-right" />
+          {/* La franja de «Leasefy no está respondiendo» / «Estás sin internet»
+              (01-10-2026). Va acá, junto al Toaster y fuera de todo guard, por
+              la misma razón: tiene que verse aunque un guard esté resolviendo
+              o no deje pasar. Una sola en toda la app; no la montes en un
+              layout. Ver src/lib/conexion/estado-de-conexion.ts. */}
+          <AvisoDeConexion />
+          {/* «Centavos en todo»: qué áreas ya escriben centavos, para los
+              formatos de pantalla (no pinta nada). */}
+          <LlavesDeLaPlata />
         </ThemeProvider>
+        </MotionProvider>
       </body>
     </html>
   );

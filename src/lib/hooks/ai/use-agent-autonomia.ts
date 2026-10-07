@@ -33,7 +33,8 @@ export interface UseAgentAutonomiaResult {
   /** Hay un PUT en vuelo: el control se deshabilita mientras tanto. */
   busy: boolean
   /** Cambia el modo (optimista; ante error hace rollback y devuelve el error). */
-  setModo: (modo: AutonomiaModo) => Promise<{ ok: boolean; error?: string }>
+  /** `fallo` es el error entero para el traductor; `error`, el código viejo (no es para la persona). */
+  setModo: (modo: AutonomiaModo) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   refetch: () => Promise<void>
 }
 
@@ -87,7 +88,7 @@ export function useAgentAutonomia(agente: AgenteId): UseAgentAutonomiaResult {
   }, [fetchData, agencyId])
 
   const setModo = useCallback(
-    async (modo: AutonomiaModo): Promise<{ ok: boolean; error?: string }> => {
+    async (modo: AutonomiaModo): Promise<{ ok: boolean; error?: string; fallo?: unknown }> => {
       if (!agencyId) return { ok: false, error: 'not_configured' }
       const previa = data?.modo
       if (previa === undefined || previa === modo) return { ok: true }
@@ -99,7 +100,7 @@ export function useAgentAutonomia(agente: AgenteId): UseAgentAutonomiaResult {
       setBusy(false)
       if (!res.ok) {
         setData((cur) => (cur ? { ...cur, modo: previa } : cur))
-        return { ok: false, error: res.error }
+        return { ok: false, error: res.error, fallo: res.fallo }
       }
       // El backend es la autoridad: si respondió un modo distinto, gana él.
       if (res.data && res.data.modo !== modo) {

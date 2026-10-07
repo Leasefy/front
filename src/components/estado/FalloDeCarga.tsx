@@ -22,11 +22,21 @@ import {
   ArrowLeft,
   Timer,
   ShieldCheck,
+  Plugs,
+  CloudSlash,
+  HourglassMedium,
+  WarningCircle,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { clasificarFallo, type Contexto, type TipoDeFallo } from '@/lib/errores/clasificar'
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
+import { useEstadoDeConexion } from '@/lib/conexion/estado-de-conexion'
+import {
+  servicioDelError,
+  textoDeServicioNoDisponible,
+  useEstadoDelServicio,
+} from '@/lib/conexion/servicio-no-disponible'
 import { cn } from '@/lib/utils'
 
 const ICONO: Record<TipoDeFallo, Icon> = {
@@ -51,6 +61,13 @@ const ICONO: Record<TipoDeFallo, Icon> = {
   // Una base atrasada es un despliegue a medias, no una falla: el mismo reloj
   // de «esperá a que pase algo», no la octógono de alarma.
   baseAtrasada: Timer,
+  // Una parte desenchufada: lo demás sigue andando.
+  servicioNoDisponible: Plugs,
+  // Leasefy entero no contestó.
+  leasefyNoResponde: CloudSlash,
+  // Un 4xx de una acción (`clasificarFallo` con `accion`): algo por corregir,
+  // no una alarma.
+  rechazado: WarningCircle,
 }
 
 export interface FalloDeCargaProps {
@@ -111,7 +128,53 @@ export function FalloDeCarga({
     queEs,
     creoQueTengoAcceso: permisos?.isAdmin === true,
   })
-  const Icono = ICONO[fallo.tipo]
+
+  /*
+   * ── Las caídas (01-10-2026) ────────────────────────────────────────────
+   *
+   * Se cayó UNA parte (503 `SERVICIO_NO_DISPONIBLE`): se nombra, se dice que
+   * no es culpa de la persona y —sólo si el back lo confirma— que el equipo ya
+   * está avisado. Sin referencia: no hay nada que escribirnos, ya lo sabemos.
+   *
+   * Leasefy entero no responde o no hay internet: eso ya lo dice la franja de
+   * arriba (`<AvisoDeConexion>`). Repetirlo en rojo en cada tarjeta es gritar
+   * lo mismo diez veces, así que acá va algo calmado mientras la franja esté.
+   * Cuando la franja se va, vuelve el cartel de siempre: la falla quedó de
+   * antes y reintentar es lo que sigue.
+   */
+  const conexion = useEstadoDeConexion()
+  const servicioCaido = fallo.tipo === 'servicioNoDisponible'
+  const servicio = servicioCaido ? servicioDelError(error) : null
+  const estadoDelServicio = useEstadoDelServicio(servicio)
+  const esperandoConexion =
+    (fallo.tipo === 'red' || fallo.tipo === 'leasefyNoResponde') && conexion !== 'bien'
+
+  let titulo = fallo.titulo
+  let descripcion = fallo.descripcion
+  let Icono: Icon = ICONO[fallo.tipo]
+  if (servicioCaido) {
+    const texto = textoDeServicioNoDisponible(servicio, {
+      equipoAvisado: estadoDelServicio?.equipoAvisado === true,
+    })
+    titulo = texto.titulo
+    descripcion = texto.detalle
+  } else if (esperandoConexion) {
+    titulo = conexion === 'sin-internet' ? 'Esperando la conexión…' : 'Esperando a Leasefy…'
+    descripcion =
+      conexion === 'sin-internet'
+        ? 'Apenas vuelva la conexión, prueba de nuevo.'
+        : 'Apenas responda, prueba de nuevo.'
+    Icono = HourglassMedium
+  }
+  /*
+   * 02-10-2026 · Sin respuesta no hay referencia. La «referencia» de un fallo
+   * de red era «0-1432» (status 0 + la hora): un número que no está en ningún
+   * log, porque el pedido nunca llegó. Y la descripción de la red no pide
+   * escribirnos con nada. Lo mismo un corte por tiempo («TAR-1432»): tampoco
+   * hubo respuesta.
+   */
+  const sinRespuesta = fallo.tipo === 'red' || fallo.tipo === 'tardo' || fallo.status === 0
+  const conReferencia = !servicioCaido && !esperandoConexion && !sinRespuesta
   // Para volver a donde estaba después de entrar de nuevo.
   const rutaActual =
     typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/'
@@ -138,6 +201,8 @@ export function FalloDeCarga({
   // si se recomputara en cada render, la referencia cambiaria mientras la
   // persona la esta copiando.
   const [referencia] = useState(() => {
+    // La del back (02-10-2026) es la que está en su log: si vino, va ésa.
+    if (fallo.referencia) return fallo.referencia
     const ahora = new Date()
     const hhmm =
       String(ahora.getHours()).padStart(2, '0') +
@@ -173,9 +238,13 @@ export function FalloDeCarga({
         enmarcado && 'rounded-lg border border-border bg-card',
         className,
       )}
-      role="alert"
+      // Mientras la franja global avisa, este cartel no es una alarma nueva:
+      // `status` (cortés) en vez de `alert`, para no interrumpir el lector de
+      // pantalla con lo que la franja ya anunció.
+      role={esperandoConexion ? 'status' : 'alert'}
       data-testid="fallo-de-carga"
       data-tipo={fallo.tipo}
+      data-conexion={esperandoConexion ? 'esperando' : undefined}
       data-enmarcado={enmarcado ? 'si' : 'no'}
     >
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-surface-muted">
@@ -183,13 +252,15 @@ export function FalloDeCarga({
       </div>
 
       <div className="mt-4 space-y-1.5">
-        <p className="text-[15px] font-semibold text-fg">{fallo.titulo}</p>
+        <p className="text-[15px] font-semibold text-fg">{titulo}</p>
         <p className="mx-auto max-w-sm text-sm leading-relaxed text-fg-muted">
-          {fallo.descripcion}
+          {descripcion}
         </p>
-        <p className="text-xs text-fg-subtle">
-          Referencia: <span className="font-mono tabular-nums">{referencia}</span>
-        </p>
+        {conReferencia && (
+          <p className="text-xs text-fg-subtle">
+            Referencia: <span className="font-mono tabular-nums">{referencia}</span>
+          </p>
+        )}
       </div>
 
       {(mostrarReintentar ||

@@ -4,6 +4,7 @@
  */
 
 import type { ReportDefinition } from '@/lib/types/inmobiliaria';
+import { alCentavo } from '@/lib/plata/plata';
 
 // ============================================================================
 // IPC Historical Data (DANE Colombia)
@@ -80,8 +81,21 @@ export function getIPCForDate(year: number, month: number): IPCRecord | undefine
   return IPC_HISTORICAL.find((r) => r.year === year && r.month === month);
 }
 
-export function calculateNewRent(currentRent: number, ipcRate: number): number {
-  return Math.round(currentRent * (1 + ipcRate / 100));
+/**
+ * El canon con el IPC. 🔁 Espejo de `canonConIncremento` del back
+ * (`contracts/renovacion/renovacion-automatica.ts`): la MISMA cuenta, o la
+ * propuesta que ve la inmobiliaria y lo que se cobra serían dos números.
+ *
+ * «Centavos en todo» (C4, Q2 a): con `conCentavos` —la llave de la deuda— al
+ * centavo (la mitad lejos del cero); sin ella, al peso EXACTAMENTE como hoy.
+ */
+export function calculateNewRent(
+  currentRent: number,
+  ipcRate: number,
+  opciones: { conCentavos?: boolean } = {},
+): number {
+  const nuevo = currentRent * (1 + ipcRate / 100);
+  return opciones.conCentavos === true ? alCentavo(nuevo) : Math.round(nuevo);
 }
 
 /** «5,10 %» en español, «5.10 %» en inglés. Un solo formato para el KPI y la calculadora. */

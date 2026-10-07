@@ -95,6 +95,8 @@ export interface Property {
   // Pricing (COP as integers)
   /** `null` on a `listingType === 'sale'` listing. Never `0` (C6). */
   monthlyRent: number | null;
+  /** T-0129 — el canon está por confirmar: se muestra «Por confirmar», nunca «$0». */
+  canonPorConfirmar?: boolean;
   adminFee: number;
   deposit: number;
   /**

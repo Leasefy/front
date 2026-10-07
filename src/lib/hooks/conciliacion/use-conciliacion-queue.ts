@@ -20,7 +20,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { accionQueNoSalio, accionQueNoSalioConCuerpo, accionSinRespuesta } from '@/lib/hooks/ai/accion-del-micro'
 
 // ── API shapes (matched to conciliacion-queue.ts backend) ─────────────────
 
@@ -150,7 +152,10 @@ export interface ConciliacionQueueFilters {
 
 export interface ActionResult {
   ok: boolean
+  /** El código viejo (`not_configured`, el `error` del cuerpo o el status). NO es para la persona. */
   error?: string
+  /** El error entero para el traductor (`mensajeParaLaPersona`): el `ApiError` del micro o el de red tal cual. */
+  fallo?: unknown
 }
 
 /** Bank statement CSV formats accepted by POST .../conciliacion/ingest. */
@@ -159,7 +164,10 @@ export type IngestBank = 'bancolombia' | 'davivienda'
 /** Result of a statement ingest (POST .../conciliacion/ingest → 202). */
 export interface IngestResult {
   ok: boolean
+  /** El código viejo (`not_configured`, el `error` del cuerpo o el status). NO es para la persona. */
   error?: string
+  /** El error entero para el traductor (`mensajeParaLaPersona`): el `ApiError` del micro o el de red tal cual. */
+  fallo?: unknown
   created?: number
   skipped?: number
   processed?: number
@@ -174,6 +182,13 @@ export interface UseConciliacionQueueResult {
   total: number
   isLoading: boolean
   error: string | null
+  /**
+   * El error ENTERO de la última lectura (ARREGLOS-7, ARREGLOS-4 Q1 A): el
+   * `ApiError` del micro (status, `code`, referencia) o el de `agentFetch` con
+   * el micro caído. Es lo que va a `FalloDeCarga`/`EstadoDeDatos`: con el texto
+   * de `error` la pantalla sólo podía decir «Fue un problema nuestro».
+   */
+  errorCrudo: unknown
   refetch: () => Promise<void>
   confirmMatch: (matchId: string) => Promise<ActionResult>
   rejectMatch: (matchId: string, reason: string) => Promise<ActionResult>
@@ -191,6 +206,7 @@ export function useConciliacionQueue(
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null)
 
   const fetchData = useCallback(async () => {
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
@@ -209,19 +225,24 @@ export function useConciliacionQueue(
     if (filters?.caseType) url.searchParams.set('caseType', filters.caseType)
     if (filters?.page) url.searchParams.set('page', String(filters.page))
     if (filters?.pageSize) url.searchParams.set('pageSize', String(filters.pageSize))
+    /** El `ApiError` del micro cuando respondió que no; el texto de `error` sigue igual. */
+    let fallo: unknown = null
 
     try {
       setIsLoading(true)
-      const res = await globalThis.fetch(url.toString(), {
-        headers: agentAuthHeaders(),
-      })
-      if (!res.ok) throw new Error(`${res.status}`)
+      const res = await agentFetch(url.toString())
+      if (!res.ok) {
+        fallo = await falloDelMicro(res)
+        throw new Error(`${res.status}`)
+      }
       const json = (await res.json()) as ConciliacionQueueResponse
       setItems(json.items)
       setTotal(json.total)
       setError(null)
+      setErrorCrudo(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch reconciliation queue')
+      setErrorCrudo(fallo ?? err)
     } finally {
       setIsLoading(false)
     }
@@ -239,22 +260,19 @@ export function useConciliacionQueue(
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) return { ok: false, error: 'not_configured' }
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/conciliacion/queue/${matchId}/confirm`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify({}),
           },
         )
-        if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: body.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         await fetchData()
         return { ok: true }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'confirm_failed' }
+        return accionSinRespuesta(err, 'confirm_failed')
       }
     },
     [agencyId, fetchData],
@@ -265,22 +283,19 @@ export function useConciliacionQueue(
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) return { ok: false, error: 'not_configured' }
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/conciliacion/queue/${matchId}/reject`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ reason }),
           },
         )
-        if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: body.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         await fetchData()
         return { ok: true }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'reject_failed' }
+        return accionSinRespuesta(err, 'reject_failed')
       }
     },
     [agencyId, fetchData],
@@ -291,22 +306,19 @@ export function useConciliacionQueue(
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) return { ok: false, error: 'not_configured' }
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/conciliacion/queue/${matchId}/reverse`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify({}),
           },
         )
-        if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: body.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         await fetchData()
         return { ok: true }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'reverse_failed' }
+        return accionSinRespuesta(err, 'reverse_failed')
       }
     },
     [agencyId, fetchData],
@@ -317,11 +329,11 @@ export function useConciliacionQueue(
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) return { ok: false, error: 'not_configured' }
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/conciliacion/ingest`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ bank, csvContent }),
           },
         )
@@ -332,9 +344,7 @@ export function useConciliacionQueue(
           processed?: number
           runEnqueued?: boolean
         }
-        if (!res.ok) {
-          return { ok: false, error: body.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalioConCuerpo(res.status, body)
         // The reconciliation run is enqueued asynchronously (Inngest), so new
         // suggestions surface on a later poll. Refetch to reflect already-persisted
         // rows; the operator can refresh again once matching completes.
@@ -347,7 +357,7 @@ export function useConciliacionQueue(
           runEnqueued: body.runEnqueued,
         }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'ingest_failed' }
+        return accionSinRespuesta(err, 'ingest_failed')
       }
     },
     [agencyId, fetchData],
@@ -361,6 +371,7 @@ export function useConciliacionQueue(
     total,
     isLoading,
     error,
+    errorCrudo,
     refetch: fetchData,
     confirmMatch,
     rejectMatch,

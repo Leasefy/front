@@ -44,7 +44,8 @@ describe('resumenDeLecturaDeInmuebles', () => {
       inmueble({ propertyAddress: 'CALLE 1', ownerName: 'ALGUIEN SIN CEDULA' }),
     ]);
     const propietario = r.renglones.find((x) => x.que === 'Propietario con documento');
-    expect(propietario?.porque).toContain('1 filas quedan sin cédula');
+    // QA-MIGRACION-95 (MP-07): una fila se dice en singular.
+    expect(propietario?.porque).toContain('1 fila queda sin cédula');
     expect(propietario?.porque).toContain('sólo el nombre');
   });
 

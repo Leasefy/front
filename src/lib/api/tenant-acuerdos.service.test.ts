@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach , beforeEach } from 'vitest';
 import { setAccessToken } from './client';
-import { acuerdosApi, AcuerdoUnavailableError } from './tenant-acuerdos.service';
+import { acuerdosApi, AcuerdoUnavailableError, estadoDeLaFirma } from './tenant-acuerdos.service';
 import type {
   AcuerdoDetail,
   AcuerdoAcceptResult,
@@ -148,47 +148,6 @@ describe('acuerdosApi.getMine (resolve-from-list, anti-IDOR)', () => {
   });
 });
 
-describe('acuerdosApi.getCuotaPaymentUrl (server-provided URL only)', () => {
-  const realFetch = globalThis.fetch;
-  afterEach(() => {
-    globalThis.fetch = realFetch;
-  });
-
-  it('returns the server paymentUrl string on 200', async () => {
-    globalThis.fetch = mockFetch(200, { paymentUrl: 'https://checkout.wompi.co/l/cuota-1' });
-    expect(await acuerdosApi.getCuotaPaymentUrl('plan-1', 1)).toBe(
-      'https://checkout.wompi.co/l/cuota-1',
-    );
-  });
-
-  it('returns null on 404 (never a fabricated checkout URL)', async () => {
-    globalThis.fetch = mockFetch(404, { message: 'not found' });
-    expect(await acuerdosApi.getCuotaPaymentUrl('plan-1', 1)).toBeNull();
-  });
-
-  it('returns null on 403', async () => {
-    globalThis.fetch = mockFetch(403, { message: 'forbidden' });
-    expect(await acuerdosApi.getCuotaPaymentUrl('plan-1', 1)).toBeNull();
-  });
-
-  it('returns null on network failure (status 0)', async () => {
-    globalThis.fetch = mockNetworkFailure();
-    expect(await acuerdosApi.getCuotaPaymentUrl('plan-1', 1)).toBeNull();
-  });
-
-  it('rethrows any other status (e.g. 500)', async () => {
-    globalThis.fetch = mockFetch(500, { message: 'boom' });
-    await expect(acuerdosApi.getCuotaPaymentUrl('plan-1', 1)).rejects.toThrow();
-  });
-
-  it('routes through the BFF, never the agency /api/agency path (A6)', async () => {
-    const f = mockFetch(200, { paymentUrl: 'https://x' });
-    globalThis.fetch = f;
-    await acuerdosApi.getCuotaPaymentUrl('plan-1', 1);
-    for (const call of f.mock.calls) expectBffOnly(String(call[0]));
-  });
-});
-
 describe('acuerdosApi.accept', () => {
   const realFetch = globalThis.fetch;
   afterEach(() => {
@@ -214,25 +173,33 @@ describe('acuerdosApi.accept', () => {
     expect(init?.method).toBe('POST');
   });
 
-  it('throws AcuerdoUnavailableError on 404 (no fake "aceptado")', async () => {
-    globalThis.fetch = mockFetch(404, { message: 'not found' });
+  // «Todavía no» es SÓLO lo que el back dice con su `code` (seguimiento 4).
+  it.each([
+    [503, 'ACEPTAR_ACUERDO_NO_DISPONIBLE'],
+    [404, 'ACEPTAR_ACUERDO_NO_DISPONIBLE'],
+  ])('throws AcuerdoUnavailableError on %s %s (no fake "aceptado")', async (status, code) => {
+    globalThis.fetch = mockFetch(status, { statusCode: status, code, message: 'Todavía no.' });
     await expect(acuerdosApi.accept('plan-1', ACCEPT_INPUT)).rejects.toBeInstanceOf(
       AcuerdoUnavailableError,
     );
   });
 
-  it('throws AcuerdoUnavailableError on 403', async () => {
-    globalThis.fetch = mockFetch(403, { message: 'forbidden' });
-    await expect(acuerdosApi.accept('plan-1', ACCEPT_INPUT)).rejects.toBeInstanceOf(
-      AcuerdoUnavailableError,
-    );
+  it('un 404 ACUERDO_NO_ENCONTRADO NO es «pronto»: sube con su frase', async () => {
+    globalThis.fetch = mockFetch(404, {
+      statusCode: 404,
+      code: 'ACUERDO_NO_ENCONTRADO',
+      message: 'No encontramos este acuerdo de pago a tu nombre.',
+    });
+    const err = await acuerdosApi.accept('plan-1', ACCEPT_INPUT).catch((e: unknown) => e);
+    expect(err).not.toBeInstanceOf(AcuerdoUnavailableError);
+    expect((err as Error).message).toBe('No encontramos este acuerdo de pago a tu nombre.');
   });
 
-  it('throws AcuerdoUnavailableError on network failure (status 0)', async () => {
+  it('la red caída NO es «pronto»: sube para que se diga «conexión»', async () => {
     globalThis.fetch = mockNetworkFailure();
-    await expect(acuerdosApi.accept('plan-1', ACCEPT_INPUT)).rejects.toBeInstanceOf(
-      AcuerdoUnavailableError,
-    );
+    const err = await acuerdosApi.accept('plan-1', ACCEPT_INPUT).catch((e: unknown) => e);
+    expect(err).not.toBeInstanceOf(AcuerdoUnavailableError);
+    expect((err as { status?: number }).status).toBe(0);
   });
 
   it('rethrows the raw ApiError on any other status (e.g. 500)', async () => {
@@ -267,25 +234,55 @@ describe('acuerdosApi.requestPremoraPlan', () => {
     expect(JSON.parse(String(init?.body))).toEqual({ leaseId: 'lease-1' });
   });
 
-  it('throws AcuerdoUnavailableError on 404 (no fabricated plan)', async () => {
-    globalThis.fetch = mockFetch(404, { message: 'not found' });
+  it('🔴 la nota del inquilino viaja con la solicitud, sin espacios a los lados (03-10-2026)', async () => {
+    const f = mockFetch(200, { requestId: 'req-1' });
+    globalThis.fetch = f;
+    await acuerdosApi.requestPremoraPlan({ leaseId: 'lease-1', nota: '  Prefiero WhatsApp en la tarde.  ' });
+    expect(JSON.parse(String(f.mock.calls[0][1]?.body))).toEqual({
+      leaseId: 'lease-1',
+      nota: 'Prefiero WhatsApp en la tarde.',
+    });
+  });
+
+  it('una nota vacía o de puros espacios no viaja', async () => {
+    const f = mockFetch(200, { requestId: 'req-1' });
+    globalThis.fetch = f;
+    await acuerdosApi.requestPremoraPlan({ leaseId: 'lease-1', nota: '   ' });
+    expect(JSON.parse(String(f.mock.calls[0][1]?.body))).toEqual({ leaseId: 'lease-1' });
+  });
+
+  it.each([
+    [503, 'SOLICITAR_ACUERDO_NO_DISPONIBLE'],
+    [404, 'SOLICITAR_ACUERDO_NO_DISPONIBLE'],
+  ])('throws AcuerdoUnavailableError on %s %s (no fabricated plan)', async (status, code) => {
+    globalThis.fetch = mockFetch(status, { statusCode: status, code, message: 'Todavía no.' });
     await expect(
       acuerdosApi.requestPremoraPlan({ leaseId: 'lease-1' }),
     ).rejects.toBeInstanceOf(AcuerdoUnavailableError);
   });
 
-  it('throws AcuerdoUnavailableError on 403', async () => {
-    globalThis.fetch = mockFetch(403, { message: 'forbidden' });
-    await expect(
-      acuerdosApi.requestPremoraPlan({ leaseId: 'lease-1' }),
-    ).rejects.toBeInstanceOf(AcuerdoUnavailableError);
+  it('un 409 FALTA_TU_DOCUMENTO sube con su frase (dice qué hacer)', async () => {
+    globalThis.fetch = mockFetch(409, {
+      statusCode: 409,
+      code: 'FALTA_TU_DOCUMENTO',
+      message: 'Para pedir un acuerdo necesitamos tu número de documento. Complétalo en tu perfil e intenta de nuevo.',
+    });
+    const err = await acuerdosApi
+      .requestPremoraPlan({ leaseId: 'lease-1' })
+      .catch((e: unknown) => e);
+    expect(err).not.toBeInstanceOf(AcuerdoUnavailableError);
+    expect((err as { code?: string }).code).toBe('FALTA_TU_DOCUMENTO');
   });
 
-  it('throws AcuerdoUnavailableError on network failure (status 0)', async () => {
+  it('un 404 ARRIENDO_NO_ENCONTRADO o la red caída NO son «pronto»', async () => {
+    globalThis.fetch = mockFetch(404, { statusCode: 404, code: 'ARRIENDO_NO_ENCONTRADO', message: 'No encontramos ese arriendo a tu nombre.' });
+    await expect(
+      acuerdosApi.requestPremoraPlan({ leaseId: 'lease-1' }),
+    ).rejects.not.toBeInstanceOf(AcuerdoUnavailableError);
     globalThis.fetch = mockNetworkFailure();
     await expect(
       acuerdosApi.requestPremoraPlan({ leaseId: 'lease-1' }),
-    ).rejects.toBeInstanceOf(AcuerdoUnavailableError);
+    ).rejects.not.toBeInstanceOf(AcuerdoUnavailableError);
   });
 
   it('rethrows the raw ApiError on any other status (e.g. 500)', async () => {
@@ -293,5 +290,30 @@ describe('acuerdosApi.requestPremoraPlan', () => {
     await expect(
       acuerdosApi.requestPremoraPlan({ leaseId: 'lease-1' }),
     ).rejects.toThrow();
+  });
+});
+
+describe('🔴 estadoDeLaFirma — sólo se firma lo que la inmobiliaria ya aprobó (03-10-2026)', () => {
+  const APROBADO = '2026-07-02T15:00:00.000Z';
+
+  it('ofrecido y aprobado: se firma', () => {
+    expect(estadoDeLaFirma({ ...PLAN, operatorApprovedAt: APROBADO })).toBe('firmar');
+  });
+
+  it('ofrecido SIN aprobar (o un back que no lo manda): por aprobar, nunca «firmar»', () => {
+    expect(estadoDeLaFirma({ ...PLAN, operatorApprovedAt: null })).toBe('por-aprobar');
+    expect(estadoDeLaFirma(PLAN)).toBe('por-aprobar');
+    expect(estadoDeLaFirma({ ...PLAN, operatorApprovedAt: '  ' })).toBe('por-aprobar');
+  });
+
+  it('ya aceptado: aceptado (aunque falte el dato de la aprobación)', () => {
+    expect(estadoDeLaFirma({ ...PLAN, status: 'active', acceptedAt: '2026-07-03T10:00:00.000Z' })).toBe(
+      'aceptado',
+    );
+  });
+
+  it('cancelado o roto sin aceptar: no se acepta', () => {
+    expect(estadoDeLaFirma({ ...PLAN, status: 'cancelled', operatorApprovedAt: APROBADO })).toBe('no-aceptable');
+    expect(estadoDeLaFirma({ ...PLAN, status: 'defaulted' })).toBe('no-aceptable');
   });
 });

@@ -22,6 +22,7 @@ import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Input } from '@/components/ui'
 import {
@@ -39,6 +40,7 @@ import {
   RechazarForm,
   type RejectReasonSlug,
 } from '@/components/inmobiliaria/cobranza/approval/RechazarForm'
+import { Collapse, CrossFade, Presence } from '@leasefy/cadence'
 
 void React
 
@@ -86,6 +88,8 @@ export default function CartaApprovalClient({ artifactId }: Props) {
     rejectResult,
     approveError,
     rejectError,
+    approveFallo,
+    rejectFallo,
     pdfDownloadUrl,
     pdfApprovedAt,
     approve,
@@ -149,15 +153,26 @@ export default function CartaApprovalClient({ artifactId }: Props) {
   }, [rejectResult, router])
 
   // Phase 38-05a: skeleton during initial auth hydration (first loading state on this page)
-  if (authLoading && !agency) return <PageSkeleton variant="detail" />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // carta); los avisos de aprobar/rechazar entran y salen con `Presence` y el
+  // formulario de rechazo se despliega con su altura (`Collapse`).
+  if (authLoading && !agency) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="detail" />
+      </CrossFade>
+    )
+  }
 
   if (envMissing) {
     return (
+      <CrossFade swapKey="sin-agente">
       <div className="p-4 lg:p-8">
         <div className="rounded-md border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">
           {t('inmobiliaria.ai.cobranza.cartas.envMissing')}
         </div>
       </div>
+      </CrossFade>
     )
   }
 
@@ -185,6 +200,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
   const daysRemaining = computeDaysRemaining(pdfApprovedAt, now)
 
   return (
+    <CrossFade swapKey="carta">
     <div className="p-4 lg:p-8 space-y-6">
       {/* Back */}
       <div className="flex items-center justify-between">
@@ -220,11 +236,9 @@ export default function CartaApprovalClient({ artifactId }: Props) {
           loading="lazy"
           className="w-full h-96 rounded border border-border"
         />
-        {pdfError && (
-          <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
+        <Presence show={pdfError} className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
             {t('inmobiliaria.ai.cobranza.cartas.pdfPreview.error')}
-          </div>
-        )}
+        </Presence>
       </section>
 
       {/* Pre-approve form */}
@@ -290,15 +304,13 @@ export default function CartaApprovalClient({ artifactId }: Props) {
             cubría el caso de permisos, así que cuando faltaban estos dos
             campos —lo habitual al entrar— no había NINGUNA explicación.
             `aria-describedby` en el botón lo hace audible, no sólo visible. */}
-        {faltanCampos && (
-          <p
+        <Presence as="p" show={faltanCampos} initial={false}
             id={PISTA_CAMPOS_ID}
             data-testid="carta-required-hint"
             className="text-sm text-fg-muted"
           >
             {t('inmobiliaria.ai.cobranza.cartas.requiredHint')}
-          </p>
-        )}
+        </Presence>
       </section>
 
       {/* Action buttons */}
@@ -340,25 +352,33 @@ export default function CartaApprovalClient({ artifactId }: Props) {
         </Button>
       </div>
 
-      {approveError && (
-        <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-          {approveError}
-        </div>
-      )}
-      {rejectError && (
-        <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
-          {rejectError}
-        </div>
-      )}
-      {rejectResult?.ok && (
-        <div className="rounded-md border border-success/30 bg-success-soft px-3 py-2 text-sm text-success">
+      {/* Antes se pintaba el cuerpo crudo de la respuesta o «approve 500». */}
+      <Presence show={Boolean(approveError) || approveFallo != null}
+          role="alert"
+          data-testid="approval-aprobar-error"
+          className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          {mensajeDeLaAccion(
+            { error: approveError, fallo: approveFallo },
+            { porDefecto: 'No pudimos aprobar la carta.', accion: 'aprobar la carta' },
+          )}
+      </Presence>
+      <Presence show={Boolean(rejectError) || rejectFallo != null}
+          role="alert"
+          data-testid="approval-rechazar-error"
+          className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+        >
+          {mensajeDeLaAccion(
+            { error: rejectError, fallo: rejectFallo },
+            { porDefecto: 'No pudimos rechazar la carta.', accion: 'rechazar la carta' },
+          )}
+      </Presence>
+      <Presence show={Boolean(rejectResult?.ok)} className="rounded-md border border-success/30 bg-success-soft px-3 py-2 text-sm text-success">
           {t('inmobiliaria.ai.cobranza.cartas.rechazar.success')}
-        </div>
-      )}
+      </Presence>
 
       {/* Post-approve download card */}
-      {approveResult && pdfDownloadUrl && (
-        <section
+      <Presence as="section" show={Boolean(approveResult && pdfDownloadUrl)}
           data-testid="carta-download-card"
           className="space-y-3 rounded-md border-l-4 border-warning bg-warning-soft p-4"
         >
@@ -372,7 +392,7 @@ export default function CartaApprovalClient({ artifactId }: Props) {
             {t('inmobiliaria.ai.cobranza.cartas.aprobar.legalNotice')}
           </p>
           <a
-            href={pdfDownloadUrl}
+            href={pdfDownloadUrl ?? undefined}
             download
             target="_blank"
             rel="noopener noreferrer"
@@ -386,18 +406,18 @@ export default function CartaApprovalClient({ artifactId }: Props) {
               days: daysRemaining,
             })}
           </div>
-        </section>
-      )}
+      </Presence>
 
       {/* Inline Rechazar form */}
-      {rechazarOpen && !rejectResult?.ok && (
+      <Collapse open={rechazarOpen && !rejectResult?.ok}>
         <RechazarForm
           decisionType="carta"
           onSubmit={(data) => void handleRechazarSubmit(data)}
           onCancel={() => setRechazarOpen(false)}
           isSubmitting={isRejecting}
         />
-      )}
+      </Collapse>
     </div>
+    </CrossFade>
   )
 }

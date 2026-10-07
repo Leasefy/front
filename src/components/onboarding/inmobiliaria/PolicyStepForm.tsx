@@ -2,6 +2,7 @@
 
 import { Controller, useForm, type FieldPath } from 'react-hook-form'
 import { ArrowRight } from '@phosphor-icons/react'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
@@ -24,11 +25,6 @@ export interface PolicyStepFormProps {
    * and can reject a payload the client-side zod schema accepted).
    */
   submitError?: string | null
-}
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null
-  return <p className="mt-1.5 text-xs text-danger">{message}</p>
 }
 
 /**
@@ -97,7 +93,7 @@ export function PolicyStepForm({ isSubmitting, onSubmit, submitError }: PolicySt
             </div>
           )}
         />
-        <FieldError message={errors.allowedPaymentPlans?.message} />
+        <ErrorDelCampo id="allowedPaymentPlans-error" mensaje={errors.allowedPaymentPlans?.message} />
       </div>
 
       <div>
@@ -111,9 +107,11 @@ export function PolicyStepForm({ isSubmitting, onSubmit, submitError }: PolicySt
           step={1}
           inputMode="numeric"
           className="font-mono tabular-nums"
+          aria-invalid={Boolean(errors.negotiationMaxAttempts) || undefined}
+          aria-describedby={errors.negotiationMaxAttempts ? 'negotiationMaxAttempts-error' : undefined}
           {...register('negotiationMaxAttempts', { valueAsNumber: true })}
         />
-        <FieldError message={errors.negotiationMaxAttempts?.message} />
+        <ErrorDelCampo id="negotiationMaxAttempts-error" mensaje={errors.negotiationMaxAttempts?.message} />
       </div>
 
       {submitError && (
@@ -122,7 +120,7 @@ export function PolicyStepForm({ isSubmitting, onSubmit, submitError }: PolicySt
         </div>
       )}
 
-      <Button type="submit" disabled={isSubmitting} hideArrow size="lg" className="w-full">
+      <Button type="submit" disabled={isSubmitting} hideArrow className="w-full">
         {isSubmitting ? (
           <>
             <Spinner size="xs" variant="current" />

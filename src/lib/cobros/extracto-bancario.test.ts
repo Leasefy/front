@@ -7,6 +7,7 @@ import {
   parsearFechaDeExtracto,
   parsearValorCop,
 } from './extracto-bancario';
+import { MENSAJES_DEL_EXTRACTO } from './limites-del-extracto';
 
 describe('parsearValorCop — los formatos con los que llega la plata', () => {
   it.each([
@@ -121,6 +122,31 @@ describe('armarFilasDeExtracto', () => {
     ]);
   });
 
+  /*
+   * 🔴 02-10-2026 · espejo del tope del back: una celda con ceros de más
+   * tumbaba el extracto ENTERO con un 500. Esa línea se descarta al leer, con
+   * la misma frase del back, y el resto viaja. El tope exacto sí entra.
+   * Ola de seguimiento (Nico, 02-10, tarde: «columna más grande»): el tope es
+   * ±$1.000.000.000.000, y un movimiento de $3.000.000.000 VIAJA (lo decide el
+   * back según su columna).
+   */
+  it('🔴 una línea que no cabe (±$1.000.000.000.000) se descarta con la frase del back; una de $3.000.000.000 viaja', () => {
+    const r = armarFilasDeExtracto(
+      [
+        { Fecha: '03/09/2026', Detalle: 'PAGO PEREZ', Ref: '', Valor: '18.000.000.000.000' },
+        { Fecha: '03/09/2026', Detalle: 'TRASLADO', Ref: '', Valor: '-2.500.000.000.000' },
+        { Fecha: '03/09/2026', Detalle: 'TOPE', Ref: '', Valor: '1.000.000.000.000' },
+        { Fecha: '03/09/2026', Detalle: 'VENTA APTO 1201', Ref: '', Valor: '3.000.000.000' },
+      ],
+      mapeo,
+    );
+    expect(r.filas.map((f) => f.valorCop)).toEqual([1_000_000_000_000, 3_000_000_000]);
+    expect(r.descartadas).toEqual([
+      { fila: 2, motivo: MENSAJES_DEL_EXTRACTO.valorMaximo },
+      { fila: 3, motivo: MENSAJES_DEL_EXTRACTO.valorMinimo },
+    ]);
+  });
+
   it('con crédito y débito separados, el valor es crédito menos débito', () => {
     const r = armarFilasDeExtracto(
       [
@@ -192,5 +218,27 @@ describe('el archivo de Bancolombia tal como lo entrega el banco', () => {
     expect(detectarFilaDeEncabezado([['Cuenta', '123'], ['Saldo', '1.000']])).toBeNull();
     // Una fila con una sola celda no es un encabezado, aunque diga «fecha».
     expect(detectarFilaDeEncabezado([['fecha'], ['01/09/2026']])).toBeNull();
+  });
+});
+
+describe('🔴 la columna «Saldo» (Fase 1 de la conciliación, 02-10-2026)', () => {
+  it('se reconoce por su nombre y no se confunde con el valor', () => {
+    const mapeo = mapearColumnasDeExtracto(['Fecha', 'Descripción', 'Valor', 'Saldo disponible']);
+    expect(mapeo.saldo).toBe('Saldo disponible');
+    expect(mapeo.valor).toBe('Valor');
+  });
+
+  it('cada línea lleva su saldo; si no se lee (o tiene ceros de más), la línea entra igual sin él', () => {
+    const mapeo = mapearColumnasDeExtracto(['Fecha', 'Descripción', 'Valor', 'Saldo']);
+    const { filas, descartadas } = armarFilasDeExtracto(
+      [
+        { Fecha: '03/09/2026', Descripción: 'PAGO', Valor: '$ 1.800.000', Saldo: '$ 11.800.000' },
+        { Fecha: '04/09/2026', Descripción: 'CUOTA', Valor: '-45.000', Saldo: '' },
+        { Fecha: '05/09/2026', Descripción: 'OTRA', Valor: '1.000', Saldo: '18.000.000.000.000' },
+      ],
+      mapeo,
+    );
+    expect(descartadas).toEqual([]);
+    expect(filas.map((f) => f.saldoCop)).toEqual([11_800_000, undefined, undefined]);
   });
 });

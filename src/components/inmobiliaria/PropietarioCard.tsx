@@ -5,9 +5,15 @@ import { User, Buildings, CurrencyDollar, Warning, CaretRight, Phone, Envelope }
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Badge } from '@/components/ui/badge';
-import { IconButton } from '@leasefy/cadence';
+import { IconButton, Pressable, motionSpring } from '@leasefy/cadence';
 import type { Propietario } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { documentoParaMostrar } from '@/lib/propietarios/datos-por-completar';
+import { plataOculta, tipoDeDocumentoEnPalabras } from '@/lib/propietarios/lo-que-muestra-la-lista';
+import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
+import { SinPorcentajeDelPropietario } from '@/components/inmobiliaria/SinPorcentajeDelPropietario';
+// P-06: un NIT con su dígito de verificación.
+import { documentoDelPropietarioConDv } from '@/lib/propietarios/documento-con-dv';
 
 interface PropietarioCardProps {
   propietario: Propietario;
@@ -27,17 +33,20 @@ export function PropietarioCard({
   variant = 'default',
 }: PropietarioCardProps) {
   const { t } = useI18n();
-  const hasPendingBalance = propietario.pendingBalance > 0;
+  /* P-21: sin acceso a la plata, ni «$0» ni la marca de «Pendiente». */
+  const sinPlata = plataOculta(propietario);
+  const hasPendingBalance = !sinPlata && propietario.pendingBalance > 0;
   const isCompany = propietario.documentType === 'NIT';
 
   if (variant === 'compact') {
     return (
-      <motion.button
+      <Pressable
+        as="button"
+        hover="scale"
+        press="sm"
         onClick={onClick}
-        whileHover={{ scale: 1.01 }}
-        whileTap={{ scale: 0.99 }}
         className={cn(
-          'w-full flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 text-left',
+          'w-full flex items-center gap-3 p-3 rounded-lg border transition-colors duration-base text-left',
           selected
             ? 'border-primary/30 bg-primary-soft'
             : 'border-border bg-card hover:border-primary/30'
@@ -64,6 +73,7 @@ export function PropietarioCard({
             <motion.svg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
+              transition={motionSpring.bouncy}
               className="w-3 h-3 text-primary-fg"
               fill="none"
               viewBox="0 0 24 24"
@@ -73,16 +83,16 @@ export function PropietarioCard({
             </motion.svg>
           </div>
         )}
-      </motion.button>
+      </Pressable>
     );
   }
 
   return (
-    <motion.button
+    <Pressable
+      as="button"
       onClick={onClick}
-      whileHover={{ y: -2 }}
       className={cn(
-        'w-full p-5 rounded-lg border bg-card text-left transition-all duration-200 group',
+        'w-full p-5 rounded-lg border bg-card text-left transition-colors duration-base group',
         selected
           ? 'border-primary/30 ring-2 ring-primary/20'
           : 'border-border hover:border-primary/30'
@@ -104,8 +114,14 @@ export function PropietarioCard({
               {propietario.name}
             </h3>
             <p className="text-sm text-muted-foreground">
-              {propietario.documentType}: {propietario.documentNumber}
+              {/* P-08: «Pasaporte: AB998877», no «PASSPORT: AB998877». */}
+              {tipoDeDocumentoEnPalabras(t, propietario.documentType) ?? 'Documento'}: {documentoParaMostrar(documentoDelPropietarioConDv(propietario))}
             </p>
+            <DatosPorCompletar pendientes={propietario.datosPendientes} className="mt-1 flex" />
+            <SinPorcentajeDelPropietario
+              inmuebles={propietario.inmueblesSinPorcentaje}
+              className="mt-1 flex flex-wrap items-center gap-2"
+            />
           </div>
         </div>
         {hasPendingBalance && (
@@ -127,7 +143,10 @@ export function PropietarioCard({
             {propietario.propertyCount}
           </p>
           <p className="text-xs text-muted-foreground">
-            {propietario.activeLeases} {t('inmobiliaria.propietarios.card.rented')}
+            {propietario.activeLeases}{' '}
+            {propietario.activeLeases === 1
+              ? t('inmobiliaria.propietarios.card.rentedOne')
+              : t('inmobiliaria.propietarios.card.rented')}
           </p>
         </div>
         <div className="p-3 rounded-lg bg-muted/50">
@@ -135,9 +154,16 @@ export function PropietarioCard({
             <CurrencyDollar className="w-4 h-4 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">{t('inmobiliaria.propietarios.card.monthlyRent')}</span>
           </div>
-          <p className="text-lg font-semibold text-foreground">
-            {formatCurrency(propietario.totalMonthlyRent)}
-          </p>
+          {sinPlata ? (
+            <p className="text-lg font-semibold text-fg-subtle" title={t('inmobiliaria.propietario.table.sinAccesoALaPlata')}>
+              <span aria-hidden="true">—</span>
+              <span className="sr-only">{t('inmobiliaria.propietario.table.sinAccesoALaPlata')}</span>
+            </p>
+          ) : (
+            <p className="text-lg font-semibold text-foreground">
+              {formatCurrency(propietario.totalMonthlyRent)}
+            </p>
+          )}
           {hasPendingBalance && (
             <p className="text-xs text-warning">
               {formatCurrency(propietario.pendingBalance)} {t('inmobiliaria.propietarios.card.pendingAbbr')}
@@ -194,7 +220,7 @@ export function PropietarioCard({
           )}
         </div>
       )}
-    </motion.button>
+    </Pressable>
   );
 }
 

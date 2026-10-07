@@ -25,7 +25,8 @@ const QUEUE: ReviewQueueResponse = {
   items: [
     {
       applicationId: 'app-1',
-      tenant: { id: 'ten-1', title: 'Juan Pérez' },
+      tenant: { id: 'ten-1', fullName: 'Juan Pérez' },
+    property: { id: 'prop-1', title: 'Carrera 35 # 8A-60 Apto 402' },
       documents: [
         {
           id: 'doc-1',
@@ -65,7 +66,7 @@ describe('documentReviewApi.getReviewQueue', () => {
     expect(url).toBe(`${BASE}/documents/review-queue`);
     expect(init.method).toBe('GET');
     expect(result.counts.total).toBe(3);
-    expect(result.items[0].tenant.title).toBe('Juan Pérez');
+    expect(result.items[0].tenant.fullName).toBe('Juan Pérez');
     expect(result.items[0].documents[0].reviewStatus).toBe('PENDING');
   });
 

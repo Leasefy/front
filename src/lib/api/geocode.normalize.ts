@@ -16,6 +16,8 @@ export interface GeocodeSuggestion {
   lon: number;
   placeId: string;
   city?: string;
+  /** QA-MIGRACION-95 (IN-06): el departamento, para distinguir municipios homónimos. */
+  state?: string;
   neighborhood?: string;
   road?: string;
 }
@@ -28,6 +30,7 @@ interface LocationIqAddress {
   city?: unknown;
   town?: unknown;
   village?: unknown;
+  state?: unknown;
   [key: string]: unknown;
 }
 
@@ -88,6 +91,7 @@ export function normalizeAutocompleteResults(raw: unknown): GeocodeSuggestion[] 
       toNonEmptyString(address.suburb) ??
       toNonEmptyString(address.city_district);
     const road = toNonEmptyString(address.road);
+    const state = toNonEmptyString(address.state);
 
     suggestions.push({
       label,
@@ -95,6 +99,7 @@ export function normalizeAutocompleteResults(raw: unknown): GeocodeSuggestion[] 
       lon,
       placeId,
       ...(city ? { city } : {}),
+      ...(state ? { state } : {}),
       ...(neighborhood ? { neighborhood } : {}),
       ...(road ? { road } : {}),
     });

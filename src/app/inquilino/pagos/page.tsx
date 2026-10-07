@@ -1,9 +1,11 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatedNumber, Banner, CrossFade, Presence, StaggerItem } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 // I1 (auditoría 13-09): el toast sale del design system, no de `sonner` pelado.
 // Importarlo directo del paquete se salta el `<Toaster>` configurado de la casa
 // (posición, duración, estilos) y produce un aviso que no se parece a los demás
@@ -19,6 +21,7 @@ import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { Spinner } from '@/components/ui/spinner';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { Button } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
 import { Progress } from '@/components/ui/progress';
@@ -28,11 +31,17 @@ import { AutopagoSection } from '@/components/tenant/AutopagoSection';
 import { tenantPaymentRequestsApi } from '@/lib/api/tenant-payment-requests.service';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
 import { fechaLegible, hoyLocal } from '@/components/estado-de-cuenta/filas';
+import { fraseDeLoVencido } from '@/lib/estado-de-cuenta/estado-general-del-portal';
 import { diasHastaElDiaDePago, resumenDePagos, type ResumenDePagos } from '@/lib/estado-de-cuenta/resumen-de-pagos';
 import type {
   BackendTenantPaymentRequest,
   TenantPaymentRequestStatus,
 } from '@/lib/api/tenant-payment-requests.types';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { avisarDelPagoAlVolver, transaccionDelRetorno } from '@/lib/payments/verificar-pago-al-volver';
+import { PagarLoVencido } from '@/components/tenant/PagarLoVencido';
+import { pagoEnLineaApi, type LoQueSePuedePagar } from '@/lib/api/pago-en-linea.service';
+import { fechaDeLaSolicitud } from '@/lib/pagos/fecha-de-la-solicitud';
 
 interface RequestRow extends BackendTenantPaymentRequest {
   propertyTitle: string;
@@ -59,8 +68,9 @@ export default function PagosPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-bg flex items-center justify-center">
-          <Spinner size="lg" />
+        <div className="min-h-screen bg-bg">
+          {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+          <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
         </div>
       }
     >
@@ -119,9 +129,33 @@ function PagosPageContent() {
       .finally(() => setCargandoResumen(false));
   };
   const hayArriendo = Boolean(primaryLease);
+  /*
+   * 🔴 «Pagar lo vencido» (PAGO-ONLINE, Nico 04-10-2026): las cuotas que se
+   * pueden pagar en línea salen del back (la misma cartera del recibo de caja).
+   * Con estado de cuenta (`aplica`), esto reemplaza el «Pagar ahora» del canon
+   * del mes: la plata va siempre a la cuota más vieja. Sin él, lo de siempre.
+   */
+  const [pagoEnLinea, setPagoEnLinea] = useState<LoQueSePuedePagar | null>(null);
+  const leaseIdPrincipal = primaryLease?.id ?? null;
+  const cargarPagoEnLinea = () => {
+    if (!leaseIdPrincipal) return;
+    pagoEnLineaApi
+      .loQueSePuedePagar(leaseIdPrincipal)
+      .then(setPagoEnLinea)
+      // Sin respuesta (o un back anterior sin la ruta): lo de siempre, el canon del mes.
+      .catch(() => setPagoEnLinea({ aplica: false, cuotas: [], totalVencidoCop: 0, enVerificacion: null, ultimoRechazo: null }));
+  };
   useEffect(() => {
-    if (hayArriendo) cargarResumen();
-  }, [hayArriendo]); // eslint-disable-line react-hooks/exhaustive-deps
+    /*
+     * 🔴 N-21 (QA-PAGOS-95): el resumen sale del ESTADO DE CUENTA (el contrato),
+     * no del arriendo del portal. Un contrato migrado o invitado después no
+     * tiene arriendo y la pantalla decía «Sin pagos por ahora» a quien debía
+     * $6.300.000 vencidos. El resumen se pide siempre; el pago en línea, que sí
+     * va por el arriendo, sólo con arriendo.
+     */
+    cargarResumen();
+    if (hayArriendo) cargarPagoEnLinea();
+  }, [hayArriendo, leaseIdPrincipal]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Enriquecer requests con title de la propiedad (request.lease solo trae address+city)
   const leaseMap = new Map(activeLeases.map(l => [l.id, l]));
@@ -167,25 +201,39 @@ function PagosPageContent() {
   const handlePaid = () => {
     refetchRequests();
     refetchPaymentInfo();
+    cargarPagoEnLinea();
   };
 
-  // Retorno de Wompi (sin éxito prematuro). Wompi puede volver acá con ?id / ?status,
-  // parámetros controlados por el cliente: NUNCA son fuente de verdad ni ramifican la
-  // UI. Solo un toast neutral de "confirmando" + refetch de la fuente real; el estado
-  // pasa a pagado únicamente vía webhook del backend + validación del arrendador.
+  // Retorno de Wompi: verificar al volver (Nico, 02-10-2026, «seguimiento 4»).
+  // Wompi vuelve con `?id=<transacción>` (un parámetro del navegador: NUNCA es la
+  // fuente de verdad). El back consulta ESA transacción en Wompi y la pasa por el
+  // mismo camino que el webhook (idempotente): un pago cuyo webhook nunca llegó
+  // queda registrado igual. Lo que se dice es lo que respondió el back; después se
+  // recargan las solicitudes y el período (que queda «en verificación» mientras
+  // Wompi no termine) y se limpia la URL para que recargar no repita el aviso.
+  const verificacionHecha = useRef(false);
+  // QA-INQ-95: recargar con las funciones de AHORA. El efecto corre al montar,
+  // cuando el arriendo todavía no llegó: su `cargarPagoEnLinea` no tenía
+  // arriendo y no recargaba nada. Tras pagar, «Pagar lo vencido» seguía
+  // diciendo «en verificación» y ofrecía pagar otra vez la cuota ya pagada.
+  const recargarTrasVolver = useRef<() => void>(() => {});
+  recargarTrasVolver.current = () => {
+    refetchRequests();
+    refetchPaymentInfo();
+    cargarResumen();
+    cargarPagoEnLinea();
+  };
   useEffect(() => {
-    const wompiId = searchParams.get('id');
-    const wompiStatus = searchParams.get('status');
-    if (wompiId && wompiStatus) {
-      toast.info(
-        locale === 'es'
-          ? 'Estamos confirmando tu pago. Vas a ver la confirmación en tu historial cuando termine.'
-          : 'We are confirming your payment. You will see the confirmation in your history when it completes.',
-        { duration: 6000 },
-      );
-      refetchRequests();
-      refetchPaymentInfo();
-    }
+    const transaccion = transaccionDelRetorno(searchParams);
+    if (!transaccion || verificacionHecha.current) return;
+    verificacionHecha.current = true;
+    window.history.replaceState(null, '', window.location.pathname);
+    void avisarDelPagoAlVolver({
+      transaccion,
+      locale,
+      aviso: toast,
+      recargar: () => recargarTrasVolver.current(),
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Comprobante interno (PAGO-03). Pide una URL firmada por el backend y descarga como
@@ -204,7 +252,7 @@ function PagosPageContent() {
         return;
       }
       const response = await fetch(receipt.url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) throw { status: response.status };
       const blob = await response.blob();
       blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -213,12 +261,37 @@ function PagosPageContent() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-    } catch {
+    } catch (err) {
+      // 02-10-2026 · «conexión» sólo si no hubo respuesta; si no, por qué.
       toast.error(
-        locale === 'es'
-          ? 'No pudimos descargar el comprobante interno.'
-          : 'We could not download the internal receipt.',
+        mensajeParaLaPersona(err, {
+          accion: 'descargar el comprobante',
+          porDefecto:
+            locale === 'es'
+              ? 'No pudimos descargar el comprobante interno.'
+              : 'We could not download the internal receipt.',
+        }),
       );
+    } finally {
+      if (blobUrl) setTimeout(() => URL.revokeObjectURL(blobUrl!), 1000);
+    }
+  };
+
+  // El recibo en PDF de un pago confirmado (PAGO-ONLINE): sale de los recibos
+  // de caja que de verdad se emitieron con ese pago.
+  const descargarRecibo = async (request: RequestRow) => {
+    let blobUrl: string | null = null;
+    try {
+      const blob = await pagoEnLineaApi.recibo(request.id);
+      blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `recibo-${request.id.slice(0, 8)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      toast.error(mensajeParaLaPersona(err, { accion: 'descargar el recibo', porDefecto: 'No pudimos descargar el recibo.' }));
     } finally {
       if (blobUrl) setTimeout(() => URL.revokeObjectURL(blobUrl!), 1000);
     }
@@ -243,8 +316,9 @@ function PagosPageContent() {
           iconColor: 'text-warning',
         };
       case 'PROCESSING':
+        // PSE pendiente: «En verificación» hasta que Wompi confirme (PAGO-ONLINE).
         return {
-          label: locale === 'es' ? 'Procesando' : 'Processing',
+          label: locale === 'es' ? 'En verificación' : 'In verification',
           color: 'bg-warning-soft text-warning',
           icon: Clock,
           iconBg: 'bg-warning-soft',
@@ -279,11 +353,14 @@ function PagosPageContent() {
     }
   };
 
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isOnboardingLoading || leasesLoading || requestsLoading);
+
   // Loading state
   if (isOnboardingLoading || leasesLoading || requestsLoading) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+      <div className="min-h-screen bg-bg">
+        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
     );
   }
@@ -320,28 +397,22 @@ function PagosPageContent() {
   }
 
   // No active lease — show clean empty state (no fake stats, no mock Visa)
-  if (!primaryLease) {
+  /** Tiene un contrato con cuotas aunque no tenga arriendo del portal (N-21). */
+  const conContrato = resumen !== null && (resumen.restaPorPagar > 0 || resumen.proxima !== null);
+  if (!primaryLease && (errorResumen || !cargandoResumen) && !conContrato) {
     return (
       <div className="min-h-screen bg-bg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          <motion.header
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
+        <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+          <header className="mb-8">
             <h1 className="text-3xl font-medium text-fg tracking-tight">
               {t('payments.title')}
             </h1>
             <p className="mt-1 text-fg-muted">
               {t('payments.subtitle')}
             </p>
-          </motion.header>
+          </header>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
+          <div>
             <EmptyState
               icon={CurrencyCircleDollar}
               title={locale === 'es' ? 'Sin pagos por ahora' : 'No payments yet'}
@@ -352,35 +423,46 @@ function PagosPageContent() {
                  haría quien todavía no tiene un arriendo. */
               action={{ label: locale === 'es' ? 'Ver propiedades para mí' : 'View properties for me', href: '/inquilino/para-ti' }}
             />
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <h1 className="text-3xl font-medium text-fg tracking-tight">
             {t('payments.title')}
           </h1>
           <p className="mt-1 text-fg-muted">
             {t('payments.subtitle')}
           </p>
-        </motion.header>
+        </header>
 
-        {/* Resumen — del estado de cuenta, el mismo documento de «Mi estado de cuenta» */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+        {/* N-21 (QA-PAGOS-95): con contrato y sin arriendo del portal, la deuda se
+            ve igual, pero el pago en línea todavía no: se dice y se ofrece cómo pagar. */}
+        {!primaryLease && conContrato && (
+          <div className="mb-6 lg:max-w-2xl">
+            <Banner variant="info" title="El pago en línea todavía no está disponible para tu contrato" data-testid="sin-pago-en-linea">
+              Puedes pagar con los medios de tu inmobiliaria que ves en «Cómo pagar»: ella registra el recibo y
+              lo ves en tu{' '}
+              <Link href="/inquilino/estado-de-cuenta" className="underline">
+                estado de cuenta
+              </Link>
+              .
+            </Banner>
+          </div>
+        )}
+
+        {/* Resumen — del estado de cuenta, el mismo documento de «Mi estado de cuenta».
+            Llega en su propia consulta: el cargando se cruza con las cifras, que
+            cuentan desde 0 al llegar (como `KpiValor`) y desde la anterior si cambian. */}
+        <CrossFade
+          swapKey={errorResumen ? 'fallo' : cargandoResumen || !resumen ? 'cargando' : 'listo'}
           className="mb-8"
         >
           {errorResumen ? (
@@ -398,7 +480,13 @@ function PagosPageContent() {
                 </div>
                 <p className="text-sm text-primary mb-1">{locale === 'es' ? 'Próxima cuota' : 'Next installment'}</p>
                 <p className="text-3xl font-bold font-mono text-fg tracking-tight">
-                  {resumen.proxima ? formatCurrencyI18n(resumen.proxima.valor) : '—'}
+                  {resumen.proxima ? (
+                    <AnimatedNumber
+                      value={resumen.proxima.valor}
+                      from={0}
+                      format={(n) => formatCurrencyI18n(Math.round(n))}
+                    />
+                  ) : '—'}
                 </p>
                 <p className="text-sm text-fg-muted mt-2">
                   {resumen.proxima
@@ -418,7 +506,11 @@ function PagosPageContent() {
                 </div>
                 <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Vencido' : 'Overdue'}</p>
                 <p className="text-3xl font-bold font-mono text-fg tracking-tight">
-                  {formatCurrencyI18n(resumen.vencidoCop)}
+                  <AnimatedNumber
+                    value={resumen.vencidoCop}
+                    from={0}
+                    format={(n) => formatCurrencyI18n(Math.round(n))}
+                  />
                 </p>
                 <p className="text-sm text-fg-muted mt-2">
                   {resumen.cuotasVencidas === 0
@@ -436,7 +528,11 @@ function PagosPageContent() {
                 </div>
                 <p className="text-sm text-fg-muted mb-1">{locale === 'es' ? 'Resta por pagar' : 'Remaining'}</p>
                 <p className="text-3xl font-bold font-mono text-fg tracking-tight">
-                  {formatCurrencyI18n(resumen.restaPorPagar)}
+                  <AnimatedNumber
+                    value={resumen.restaPorPagar}
+                    from={0}
+                    format={(n) => formatCurrencyI18n(Math.round(n))}
+                  />
                 </p>
                 <Link href="/inquilino/estado-de-cuenta" className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline">
                   {locale === 'es' ? 'Ver mi estado de cuenta' : 'View my statement'}
@@ -445,45 +541,45 @@ function PagosPageContent() {
               </div>
             </div>
           )}
-        </motion.div>
+        </CrossFade>
+
+        {/* «Pagar lo vencido» (PAGO-ONLINE): justo debajo de lo que debe, antes de
+            «Cómo pagar» (a 390 px quedaba al final, después del historial). */}
+        {primaryLease && pagoEnLinea?.aplica && pagoEnLinea.cuotas.length > 0 && (
+          <div className="mb-8 lg:max-w-2xl">
+            <PagarLoVencido key={pagoEnLinea.cuotas.map((c) => c.id).join()} leaseId={primaryLease.id} datos={pagoEnLinea} />
+          </div>
+        )}
 
         {/* Cómo pagar: los medios que configuró la inmobiliaria (no se pinta si no hay) */}
         <MediosDePagoDeLaInmobiliaria />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content - Payment History */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="lg:col-span-2"
-          >
+          <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-fg">{t('payments.history')}</h2>
-              <span className="text-sm text-fg-muted">{allRequests.length} {t('nav.payments').toLowerCase()}</span>
+              <span className="text-sm text-fg-muted"><AnimatedNumber value={allRequests.length} /> {t('nav.payments').toLowerCase()}</span>
             </div>
 
+            {/* Vacío → primer pago y cambiar de página se cruzan; un pago nuevo
+                entra a la lista y los demás se corren (lo que ya estaba no se anima). */}
+            <CrossFade swapKey={allRequests.length > 0 ? `pagina-${currentPage}` : 'vacio'}>
             {allRequests.length > 0 ? (
               <>
-                <div className="space-y-3">
-                  {paginatedRequests.map((request, index) => {
+                <div className="relative space-y-3">
+                  <AnimatePresence initial={false} mode="popLayout">
+                  {paginatedRequests.map((request) => {
                     const statusConfig = getStatusConfig(request.status);
                     const StatusIcon = statusConfig.icon;
 
-                    const dateLabel =
-                      request.status === 'APPROVED' && request.validatedAt
-                        ? `${locale === 'es' ? 'Aprobado el' : 'Approved on'} ${formatShortDate(request.validatedAt)}`
-                        : request.status === 'PENDING_VALIDATION'
-                          ? `${locale === 'es' ? 'Enviado el' : 'Submitted on'} ${formatShortDate(request.createdAt)}`
-                          : `${locale === 'es' ? 'Vence' : 'Due'} ${formatShortDate(request.dueDate)}`;
+                    // QA-INQ-95: un rechazado dice cuándo lo rechazaron (antes, «Vence …»).
+                    const dateLabel = fechaDeLaSolicitud(request, locale, formatShortDate);
 
                     return (
-                      <motion.div
+                      <StaggerItem
                         key={request.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300 overflow-hidden"
+                        className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden"
                       >
                         <div className="flex items-center gap-4 p-4">
                           <div className={cn(
@@ -497,7 +593,9 @@ function PagosPageContent() {
                             <div className="flex items-start justify-between gap-4">
                               <div>
                                 <h3 className="font-semibold text-fg">
-                                  {locale === 'es' ? 'Arriendo' : 'Rent'} · <span className="capitalize">{formatPeriod(request.periodMonth, request.periodYear)}</span>
+                                  {request.referenceNumber?.startsWith('vencido-')
+                                    ? (locale === 'es' ? 'Pago de lo vencido' : 'Overdue payment')
+                                    : <>{locale === 'es' ? 'Arriendo' : 'Rent'} · <span className="capitalize">{formatPeriod(request.periodMonth, request.periodYear)}</span></>}
                                 </h3>
                                 <p className="text-sm text-fg-muted truncate">
                                   {request.propertyTitle}
@@ -534,7 +632,19 @@ function PagosPageContent() {
                                       {locale === 'es' ? 'Comprobante interno' : 'Internal receipt'}
                                     </Button>
                                   )}
-                                {(request.status === 'REJECTED' || request.status === 'DISPUTED') && (
+                                {request.status === 'APPROVED' && (
+                                  <Button
+                                    variant="link"
+                                    size="sm"
+                                    onClick={() => descargarRecibo(request)}
+                                    className="h-auto gap-1 p-0"
+                                    data-testid={`recibo-${request.id}`}
+                                  >
+                                    <Download className="w-4 h-4" />
+                                    {locale === 'es' ? 'Recibo PDF' : 'PDF receipt'}
+                                  </Button>
+                                )}
+                                {(request.status === 'REJECTED' || request.status === 'DISPUTED') && !pagoEnLinea?.aplica && (
                                   <Button
                                     variant="link"
                                     size="sm"
@@ -555,9 +665,10 @@ function PagosPageContent() {
                             )}
                           </div>
                         </div>
-                      </motion.div>
+                      </StaggerItem>
                     );
                   })}
+                  </AnimatePresence>
                 </div>
 
                 {/* Pagination */}
@@ -574,8 +685,8 @@ function PagosPageContent() {
                 {/* Comprobante interno vs. factura electrónica (DIAN) — disclosure honesto, una vez. */}
                 <p className="mt-4 text-xs text-fg-muted">
                   {locale === 'es'
-                    ? 'Los comprobantes son de uso interno; la factura electrónica (DIAN) estará disponible más adelante.'
-                    : 'Receipts are for internal use; the DIAN electronic invoice will be available later.'}
+                    ? 'El recibo de caja es el soporte de tu pago. Si tu inmobiliaria te emite factura electrónica, te llega a tu correo.'
+                    : 'The cash receipt is the proof of your payment. If your agency issues you an electronic invoice, it arrives by email.'}
                 </p>
               </>
             ) : (
@@ -588,17 +699,15 @@ function PagosPageContent() {
                 action={{ label: locale === 'es' ? 'Ver arriendo' : 'View rental', href: '/inquilino/arriendo' }}
               />
             )}
-          </motion.div>
+            </CrossFade>
+          </div>
 
           {/* Sidebar — only with active lease */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="space-y-6"
-          >
-            {/* Period Status Card — depende de currentPeriodStatus */}
-            {paymentInfo && (
+          <div className="space-y-6">
+            {/* Period Status Card — depende de currentPeriodStatus. Llega en su
+                propia consulta: si llega después, entra; si ya estaba, no. */}
+            <Presence show={Boolean(paymentInfo) && pagoEnLinea !== null && !pagoEnLinea.aplica} initial={false}>
+            {primaryLease && paymentInfo && pagoEnLinea !== null && !pagoEnLinea.aplica && (
               <PeriodStatusCard
                 status={paymentInfo.currentPeriodStatus}
                 rejectionReason={paymentInfo.currentPeriodRejectionReason}
@@ -609,11 +718,13 @@ function PagosPageContent() {
                 progress={getPaymentProgress()}
                 daysUntil={daysUntil}
                 onPay={handlePayNow}
+                vencido={fraseDeLoVencido(resumen)}
                 locale={locale}
                 t={t}
                 formatCurrency={formatCurrencyI18n}
               />
             )}
+            </Presence>
 
             {/* Quick Links */}
             <div className="rounded-xl bg-surface-muted p-5">
@@ -622,8 +733,8 @@ function PagosPageContent() {
                 {[
                   { href: '/inquilino/documentos', icon: Receipt, label: locale === 'es' ? 'Ver recibos' : 'View receipts', desc: locale === 'es' ? 'Historial de comprobantes' : 'Receipt history' },
                   { href: '/inquilino/arriendo', icon: Buildings, label: t('nav.myRental'), desc: locale === 'es' ? 'Ver contrato actual' : 'View current contract' },
-                ].map((action, i) => (
-                  <Link key={i} href={action.href}>
+                ].map((action) => (
+                  <Link key={action.href} href={action.href}>
                     <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface transition-colors group">
                       <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center transition-shadow">
                         <action.icon className="w-5 h-5 text-fg-muted" />
@@ -649,9 +760,9 @@ function PagosPageContent() {
               contractId={primaryLease?.contractId ?? null}
               canonCop={primaryLease?.monthlyRent ?? null}
             />
-          </motion.div>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
       {primaryLease && (
         <PayRentModal
@@ -679,6 +790,8 @@ interface PeriodStatusCardProps {
   progress: number | null;
   daysUntil: number | null;
   onPay: () => void;
+  /** «$6.050.000 vencidos en 3 cuotas», o null si no hay nada vencido. */
+  vencido?: string | null;
   locale: 'es' | 'en';
   t: (key: string, params?: Record<string, string | number>) => string;
   formatCurrency: (n: number) => string;
@@ -694,6 +807,7 @@ function PeriodStatusCard({
   progress,
   daysUntil,
   onPay,
+  vencido,
   locale,
   t,
   formatCurrency,
@@ -740,9 +854,13 @@ function PeriodStatusCard({
         </p>
         <p className="text-fg-muted text-sm capitalize mb-4">{periodLabel}</p>
         <p className="text-sm text-fg-muted">
-          {locale === 'es'
-            ? 'Tu pago de este mes ya está al día.'
-            : 'You\'re up to date for this month.'}
+          {vencido
+            ? (locale === 'es'
+                ? `Recibimos el pago de este mes, pero aún tienes ${vencido}.`
+                : `This month's payment was received, but you still have ${vencido}.`)
+            : (locale === 'es'
+                ? 'Tu pago de este mes ya está al día.'
+                : 'You\'re up to date for this month.')}
         </p>
       </div>
     );

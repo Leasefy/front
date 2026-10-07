@@ -26,14 +26,17 @@
  * + a confirm), never automatically.
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AlertaAccionable } from '@/components/ui/alerta-accionable'
 import { toast } from '@/components/ui/toast'
 import { PlugsConnected, Plus } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
+import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos'
 import { useI18n } from '@/lib/i18n'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 
 import { Button } from '@/components/ui/button'
@@ -42,11 +45,12 @@ import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
@@ -130,6 +134,15 @@ function fmtDateTime(iso: string | null): string {
  * resolución de la DIAN y en el documento soporte, **tienen la forma de los
  * filtros de esa tabla**.
  */
+/** Lo que se escribe al registrar una conexión (los nombres del cuerpo que va al micro). */
+type CampoDeLaConexion = 'provider' | 'displayName' | 'configRef'
+const CAMPOS_DE_LA_CONEXION: readonly CampoDeLaConexion[] = ['provider', 'displayName', 'configRef']
+const ID_DEL_CAMPO: Record<CampoDeLaConexion, string> = {
+  provider: 'conexion-provider',
+  displayName: 'conexion-nombre',
+  configRef: 'conexion-configref',
+}
+
 function RegistrarConexion({
   onCreate,
   disabled,
@@ -141,7 +154,7 @@ function RegistrarConexion({
     provider: string
     displayName: string
     configRef?: string
-  }) => Promise<{ ok: boolean; error?: string }>
+  }) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   disabled: boolean
   abierto: boolean
   onOpenChange: (abierto: boolean) => void
@@ -151,6 +164,25 @@ function RegistrarConexion({
   const [displayName, setDisplayName] = useState('')
   const [configRef, setConfigRef] = useState('')
   const [busy, setBusy] = useState(false)
+  /** Lo que el micro dijo de cada dato (un 400 con `campos`): va debajo de SU campo. */
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaConexion, string>>>({})
+  // Al cerrar el cajón, lo que dijo el micro ya no aplica.
+  useEffect(() => {
+    if (!abierto) setErrores({})
+  }, [abierto])
+  // El foco va al primer campo con error DESPUÉS del render: mientras la
+  // orden viaja los campos están apagados (`busy`) y no se pueden enfocar.
+  const [aEnfocar, setAEnfocar] = useState<CampoDeLaConexion | null>(null)
+  useEffect(() => {
+    if (!aEnfocar || busy) return
+    document.getElementById(ID_DEL_CAMPO[aEnfocar])?.focus()
+    setAEnfocar(null)
+  }, [aEnfocar, busy])
+  const limpiar = (campo: CampoDeLaConexion) =>
+    setErrores((e) => (e[campo] ? { ...e, [campo]: undefined } : e))
+  /** Lo que cada input le dice al lector de pantalla cuando tiene un error. */
+  const describe = (campo: CampoDeLaConexion) =>
+    errores[campo] ? { 'aria-invalid': true as const, 'aria-describedby': `${ID_DEL_CAMPO[campo]}-error` } : {}
 
   const canSubmit =
     !disabled && !busy && provider.trim() !== '' && displayName.trim() !== ''
@@ -167,14 +199,25 @@ function RegistrarConexion({
     setBusy(false)
 
     if (!res.ok) {
-      toast.error(
-        res.error === 'not_configured'
-          ? 'No se pudo registrar: el servicio no está configurado.'
-          : `No se pudo registrar la conexión (${res.error ?? 'error'}).`,
-      )
+      if (res.error === 'not_configured') {
+        toast.error('No se pudo registrar: el servicio no está configurado.')
+        return
+      }
+      // Con la regla de oro: lo que el micro dijo de un dato va a SU campo (y
+      // el foco al primero); al toast sólo lo que no tiene dónde ir. Antes:
+      // «No se pudo registrar la conexión (403).»
+      const reparto = repartirErroresDelServidor<CampoDeLaConexion>(res.fallo, {
+        campos: CAMPOS_DE_LA_CONEXION,
+        porDefecto: 'No se pudo registrar la conexión.',
+        accion: 'registrar la conexión',
+      })
+      setErrores(reparto.porCampo)
+      setAEnfocar(reparto.orden[0] ?? null)
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '))
       return
     }
     toast.success('Conexión registrada.')
+    setErrores({})
     // Limpiar el formulario para el siguiente registro.
     setProvider('')
     setDisplayName('')
@@ -223,9 +266,19 @@ function RegistrarConexion({
             maxLength={120}
             value={provider}
             disabled={disabled || busy}
-            onChange={(e) => setProvider(e.target.value)}
+            onChange={(e) => {
+              setProvider(e.target.value)
+              limpiar('provider')
+            }}
+            {...describe('provider')}
           />
-          <p className="text-xs text-fg-muted">Identificador del banco o pasarela.</p>
+          {/* La ayuda y el error del micro se cruzan (ver ErrorDelCampo). */}
+          <ErrorDelCampo
+            id="conexion-provider-error"
+            mensaje={errores.provider}
+            pista="Identificador del banco o pasarela."
+            className="mt-0 text-xs"
+          />
         </div>
 
         <div className="space-y-1.5">
@@ -238,9 +291,18 @@ function RegistrarConexion({
             maxLength={200}
             value={displayName}
             disabled={disabled || busy}
-            onChange={(e) => setDisplayName(e.target.value)}
+            onChange={(e) => {
+              setDisplayName(e.target.value)
+              limpiar('displayName')
+            }}
+            {...describe('displayName')}
           />
-          <p className="text-xs text-fg-muted">Cómo se mostrará en la conciliación.</p>
+          <ErrorDelCampo
+            id="conexion-nombre-error"
+            mensaje={errores.displayName}
+            pista="Cómo se mostrará en la conciliación."
+            className="mt-0 text-xs"
+          />
         </div>
       </div>
 
@@ -254,12 +316,18 @@ function RegistrarConexion({
           maxLength={500}
           value={configRef}
           disabled={disabled || busy}
-          onChange={(e) => setConfigRef(e.target.value)}
+          onChange={(e) => {
+            setConfigRef(e.target.value)
+            limpiar('configRef')
+          }}
+          {...describe('configRef')}
         />
-        <p className="text-xs text-fg-muted">
-          Referencia segura (p. ej. ruta de bóveda o llave del gestor de secretos). Nunca escribas
-          aquí la contraseña, el token ni la API key reales.
-        </p>
+        <ErrorDelCampo
+          id="conexion-configref-error"
+          mensaje={errores.configRef}
+          pista="Referencia segura (p. ej. ruta de bóveda o llave del gestor de secretos). Nunca escribas aquí la contraseña, el token ni la API key reales."
+          className="mt-0 text-xs"
+        />
       </div>
 
       </CajonCuerpo>
@@ -315,7 +383,7 @@ function ConexionRow({
   }
 
   return (
-    <TableRow data-testid={`conexion-row-${item.id}`}>
+    <TableRowAnimada data-testid={`conexion-row-${item.id}`}>
       <TableCell className="max-w-[260px]">
         <p className="truncate font-medium text-fg" title={item.displayName}>
           {item.displayName}
@@ -360,7 +428,7 @@ function ConexionRow({
           </SelectContent>
         </Select>
       </TableCell>
-    </TableRow>
+    </TableRowAnimada>
   )
 }
 
@@ -377,6 +445,7 @@ function ConciliacionConexiones() {
     items,
     isLoading,
     error,
+    errorCrudo,
     notAvailable,
     refetch,
     createConnection,
@@ -394,7 +463,11 @@ function ConciliacionConexiones() {
       toast.error(
         res.error === 'not_configured'
           ? 'No se pudo actualizar: el servicio no está configurado.'
-          : `No se pudo actualizar el estado (${res.error ?? 'error'}).`,
+          : // Con la regla de oro; antes: «No se pudo actualizar el estado (404).»
+            mensajeParaLaPersona(res.fallo, {
+              porDefecto: 'No se pudo actualizar el estado de la conexión.',
+              accion: 'cambiar el estado de la conexión',
+            }),
       )
       return
     }
@@ -432,8 +505,11 @@ function ConciliacionConexiones() {
         </div>
       </header>
 
-      {/* Aviso fail-soft: backend no disponible */}
-      {!isLoading && backendUnavailable && (
+      {/* Aviso fail-soft: la ruta todavía no existe en este micro (404/503 del
+          hook). Con el micro CAÍDO (`error`) no se dice «en tu cuenta
+          todavía»: eso lo dice `FalloDeCarga` en la lista, con lo que de verdad
+          pasó (ARREGLOS-8). El registro sigue apagado en los dos casos. */}
+      {!isLoading && notAvailable && (
         <AlertaAccionable
           severidad="warning"
           titulo="Las conexiones bancarias no están disponibles en tu cuenta todavía"
@@ -476,7 +552,9 @@ function ConciliacionConexiones() {
         </div>
         <EstadoDeDatos
           cargando={isLoading && items.length === 0}
-          error={error}
+          /* ARREGLOS-8 (ARREGLOS-4 Q1 A): el error ENTERO (con el micro caído
+             dice «El asistente de Leasefy no está disponible»). */
+          error={errorCrudo ?? error}
           queEs="las conexiones"
           onReintentar={refetch}
           esqueleto={
@@ -495,9 +573,11 @@ function ConciliacionConexiones() {
                 ))}
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* La conexión recién registrada entra; la tabla está paginada
+                (`TableBodyAnimado` ya va sin `layout`). */}
+            <TableBodyAnimado>
               {isEmpty ? (
-                <TableRow>
+                <TableRow key="vacio">
                   <TableCell colSpan={COLUMNAS.length} className="p-0">
                     <SinDatos
                       queSon="conexiones"
@@ -517,7 +597,7 @@ function ConciliacionConexiones() {
                   />
                 ))
               )}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
 
           {shouldPaginate && (
@@ -540,7 +620,7 @@ function ConciliacionConexiones() {
 
 export default function ConciliacionConexionesPage() {
   return (
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+    <PageGuard roles={[...ROLES_QUE_CONCILIAN]}>
       <ConciliacionConexiones />
     </PageGuard>
   )

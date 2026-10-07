@@ -1,5 +1,13 @@
-import { describe, it, expect } from 'vitest'
-import { agruparEnSecciones, leerSecciones, resumenDeSeccion, estaAbierta } from './secciones-del-menu'
+import { describe, it, expect, vi } from 'vitest'
+import {
+  agruparEnSecciones,
+  resumenDeSeccion,
+  estaAbierta,
+  seccionAbiertaAlEntrar,
+  olvidarSeccionesGuardadas,
+  SECCION_ABIERTA_AL_ENTRAR,
+} from './secciones-del-menu'
+import { ARQUITECTURA_DEL_PANEL } from './arquitectura-del-panel'
 import { filterAgencyNav } from './agency-nav-filter'
 
 const f = (href: string, extra: Record<string, unknown> = {}) => ({ href, label: href, ...extra })
@@ -24,17 +32,44 @@ describe('agruparEnSecciones', () => {
   })
 })
 
-describe('resumen y almacenamiento', () => {
+describe('resumen', () => {
   it('suma sólo contadores positivos; undefined no suma', () => {
     expect(resumenDeSeccion([f('/a', { badge: 3 }), f('/b'), f('/c', { badge: 0, ai: true })])).toEqual({ pendientes: 3, conIa: true })
   })
-  it('lee lo guardado y descarta basura', () => {
-    const almacen = (v: string | null) => ({ getItem: () => v })
-    expect(leerSecciones('k', almacen('{"a":false,"b":"x"}'))).toEqual({ a: false })
-    expect(leerSecciones('k', almacen('[1]'))).toEqual({})
-    expect(leerSecciones('k', almacen('roto'))).toEqual({})
-    expect(leerSecciones('k', { getItem: () => { throw new Error('x') } })).toEqual({})
-    expect(estaAbierta({}, 'nueva')).toBe(true)
+})
+
+describe('al entrar, una sola sección abierta: «Operación» (Nico, 02-10)', () => {
+  it('la sección de entrada existe en el panel de la inmobiliaria y se llama «Operación»', () => {
+    const grupo = ARQUITECTURA_DEL_PANEL.find((g) => `sec-${g.key}` === SECCION_ABIERTA_AL_ENTRAR)
+    expect(grupo?.labelKey).toBe('inmobiliaria.nav.secOperacionDelContrato')
+  })
+
+  it('elige «Operación» si está; si no, la primera sección del panel', () => {
+    expect(seccionAbiertaAlEntrar(['sec-agentes', 'sec-captacion', 'sec-operacion', 'sec-dinero'])).toBe('sec-operacion')
+    expect(seccionAbiertaAlEntrar(['sec-mi-arriendo'])).toBe('sec-mi-arriendo')
+    expect(seccionAbiertaAlEntrar([])).toBeNull()
+  })
+
+  it('sin decisiones de la persona: abiertas la de entrada y la de la página actual, nada más', () => {
+    const regla = { deEntrada: 'sec-operacion', activa: 'sec-dinero' }
+    expect(estaAbierta({}, 'sec-operacion', regla)).toBe(true)
+    expect(estaAbierta({}, 'sec-dinero', regla)).toBe(true)
+    expect(estaAbierta({}, 'sec-agentes', regla)).toBe(false)
+    expect(estaAbierta({}, 'sec-directorio', regla)).toBe(false)
+  })
+
+  it('lo que la persona decidió en esta visita manda sobre la regla', () => {
+    const regla = { deEntrada: 'sec-operacion', activa: null }
+    expect(estaAbierta({ 'sec-operacion': false }, 'sec-operacion', regla)).toBe(false)
+    expect(estaAbierta({ 'sec-agentes': true }, 'sec-agentes', regla)).toBe(true)
+  })
+
+  it('borra lo que se guardaba antes en el navegador, sin quejarse si no se puede', () => {
+    const removeItem = vi.fn()
+    olvidarSeccionesGuardadas('u-1', { removeItem })
+    expect(removeItem).toHaveBeenCalledWith('leasefy-sidebar-secciones:u-1')
+    expect(() => olvidarSeccionesGuardadas('u-1', { removeItem: () => { throw new Error('bloqueado') } })).not.toThrow()
+    expect(() => olvidarSeccionesGuardadas(null, null)).not.toThrow()
   })
 })
 

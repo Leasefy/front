@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { UsersThree, CaretRight, CheckCircle } from '@phosphor-icons/react';
 import { PageHeader } from '@leasefy/cadence';
-import { Card, Spinner } from '@/components/ui';
+import { Card } from '@/components/ui';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { useOwnerProcesos } from '@/lib/hooks/useOwnerPortal';
 import { PortalPlaceholder } from '@/components/landlord/portal/PortalPlaceholder';
 
@@ -16,8 +17,9 @@ export default function SeleccionPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" />
+      <div className="min-h-screen bg-bg">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="list" className="mx-auto max-w-4xl" />
       </div>
     );
   }

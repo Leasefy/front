@@ -46,7 +46,10 @@ const {
   authCallbacks: [] as AuthEventCallback[],
   // T-0099: controllable per test — the default (no aal data) matches "MFA
   // not required", most tests don't care about it.
-  getAalMock: vi.fn().mockResolvedValue({ data: null }),
+  // Por defecto la consulta RESPONDE: sesión sin segundo factor. (Antes era
+  // `{ data: null }`, que el contexto leía como «MFA no disponible, sigue»;
+  // desde el 02-10 eso es un fallo y no deja entrar.)
+  getAalMock: vi.fn().mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' }, error: null }),
   // T-0099: only consulted when segundoFactorExigidoRef is true AND
   // nextLevel isn't already 'aal2' — most tests never reach it.
   listFactorsMock: vi.fn().mockResolvedValue({ data: { totp: [] } }),
@@ -190,7 +193,7 @@ beforeEach(() => {
   postMock.mockReset().mockResolvedValue({ superseded: false })
   supabaseSignOutMock.mockClear()
   signInWithPasswordMock.mockReset()
-  getAalMock.mockReset().mockResolvedValue({ data: null })
+  getAalMock.mockReset().mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' }, error: null })
   listFactorsMock.mockReset().mockResolvedValue({ data: { totp: [] } })
   setAccessTokenMock.mockClear()
   setMfaPendingFlagMock.mockClear()
@@ -814,16 +817,33 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
   // `fetchBootstrap`'s mock resolution (V8/event-loop scheduling, not
   // anything this test controls) was enough to occasionally let the
   // setTimeout(0) fire before the assertion ran, flaking the test both ways.
+  //
+  // LOGIN-BUCLE r2 (06-10-2026): the network and the MFA check now run in a
+  // task the auth-js callback does NOT await (so the lock is released at
+  // once), and that task asks for the MFA verdict right after the profile —
+  // there is no setTimeout(0) window anymore. The tests below open the SAME
+  // window deterministically by holding the MFA answer itself
+  // (`retenerElMfa`): until it resolves, nothing may show the session as
+  // "inside" (isLoading stays true / the user is not set).
   beforeEach(() => {
     vi.useFakeTimers()
   })
+
+  /** Holds `getAuthenticatorAssuranceLevel` until `soltar(aal)` is called. */
+  function retenerElMfa() {
+    let soltar!: (aal: { currentLevel: string; nextLevel: string }) => void
+    getAalMock.mockImplementation(
+      () => new Promise((resolve) => { soltar = (aal) => resolve({ data: aal, error: null }) }),
+    )
+    return (aal: { currentLevel: string; nextLevel: string }) => soltar(aal)
+  }
 
   afterEach(() => {
     vi.useRealTimers()
   })
 
   it('TOKEN_REFRESHED as the very first event (documented page-load edge case) with a pending step-up: isLoading stays true until the deferred MFA check resolves', async () => {
-    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    const soltarElMfa = retenerElMfa()
     getMock.mockResolvedValue({
       id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', role: 'AGENT',
     })
@@ -843,13 +863,18 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
     await act(async () => {
       await authCallbacks[authCallbacks.length - 1]('TOKEN_REFRESHED', fakeSession)
     })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
 
-    // The callback already returned — auth-js's lock is free — but the
-    // deferred MFA check (next macrotask) has not run yet. This is EXACTLY
-    // the window ProtectedRoute reads via `isLoading`/`mfaRequired`.
+    // The callback already returned — auth-js's lock is free — and `/users/me`
+    // answered, but the MFA verdict has not. This is EXACTLY the window
+    // ProtectedRoute reads via `isLoading`/`mfaRequired`.
+    expect(getAalMock).toHaveBeenCalled()
     expect(captured!.isLoading).toBe(true)
 
     await act(async () => {
+      soltarElMfa({ currentLevel: 'aal1', nextLevel: 'aal2' })
       await vi.advanceTimersByTimeAsync(0)
     })
 
@@ -858,7 +883,7 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
   })
 
   it('SIGNED_IN as the very first event (e.g. /auth/enlace magic-link exchange) with a pending step-up: isLoading stays true until the deferred MFA check resolves', async () => {
-    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    const soltarElMfa = retenerElMfa()
     getMock.mockResolvedValue(bootstrapEnvelope(
       { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
       'agency',
@@ -878,15 +903,113 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
     await act(async () => {
       await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
     })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
 
+    // The bootstrap answered; the MFA verdict has not: still loading, and the
+    // user is not exposed yet.
+    expect(getAalMock).toHaveBeenCalled()
     expect(captured!.isLoading).toBe(true)
+    expect(captured!.isAuthenticated).toBe(false)
 
     await act(async () => {
+      soltarElMfa({ currentLevel: 'aal1', nextLevel: 'aal2' })
       await vi.advanceTimersByTimeAsync(0)
     })
 
     expect(captured!.isLoading).toBe(false)
     expect(captured!.mfaRequired).toBe(true)
+  })
+
+  /*
+   * QA 01-10-2026: «se ingresó sin haber pedido el token». Entrar desde el
+   * formulario es INITIAL_SESSION sin sesión (suelta `isLoading`) y DESPUÉS
+   * SIGNED_IN. Antes el usuario se ponía antes del chequeo de MFA: había un
+   * render con isAuthenticated=true, isLoading=false y mfaRequired=false, y
+   * AuthForm navegaba al destino sin pedir el código.
+   */
+  it('entrar desde el formulario con un factor pendiente: nunca hay un render «adentro» sin mfaRequired', async () => {
+    const soltarElMfa = retenerElMfa()
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: null },
+      'agency',
+      { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+    ))
+
+    // Cada render que se vea con la sesión «adentro» tiene que saber ya que
+    // falta el código.
+    const adentroSinCodigo: string[] = []
+    function Vigia() {
+      const a = React.useContext(AuthContext)!
+      if (!a.isLoading && a.isAuthenticated && !a.mfaRequired) adentroSinCodigo.push(a.user?.email ?? '?')
+      if (!a.isLoading && a.needsOnboarding && !a.mfaRequired) adentroSinCodigo.push('onboarding')
+      return null
+    }
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+          <Vigia />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', null)
+    })
+    expect(captured!.isLoading).toBe(false)
+    expect(captured!.isAuthenticated).toBe(false)
+
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    // El callback volvió y el bootstrap contestó; el chequeo de MFA todavía
+    // no: la sesión todavía no se muestra.
+    expect(getAalMock).toHaveBeenCalled()
+    expect(captured!.isAuthenticated).toBe(false)
+
+    await act(async () => {
+      soltarElMfa({ currentLevel: 'aal1', nextLevel: 'aal2' })
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(captured!.isAuthenticated).toBe(true)
+    expect(captured!.mfaRequired).toBe(true)
+    expect(adentroSinCodigo).toEqual([])
+  })
+
+  it('entrar desde el formulario SIN segundo factor: la sesión aparece igual, apenas termina el chequeo', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'tenant',
+      null,
+    ))
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', null)
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+    })
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
+
+    expect(captured!.isLoading).toBe(false)
+    expect(captured!.isAuthenticated).toBe(true)
+    expect(captured!.mfaRequired).toBe(false)
   })
 
   it('TOKEN_REFRESHED with no MFA requirement (aal1→aal1): releases isLoading normally, no regression for non-MFA users', async () => {
@@ -925,6 +1048,17 @@ describe('AuthProvider — T-0099: MFA-pending gate (isLoading must not release 
  * `setMfaVerified()`) but was still aal1 under the hood.
  */
 describe('AuthProvider — T-0099: MFA_CHALLENGE_VERIFIED releases the gate with the NEW aal2 token', () => {
+  // Timers falsos: con timers reales la prueba dependía de que `act` no
+  // dejara correr el `setTimeout(0)` diferido antes de la aserción «todavía no
+  // se recalculó», y bajo carga fallaba ~1 de 6 veces (también antes del
+  // 02-10).
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('updates the access token synchronously within the event, then clears mfaRequired once the deferred recheck confirms aal2', async () => {
     getAalMock.mockResolvedValueOnce({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
     getMock.mockResolvedValue(bootstrapEnvelope(
@@ -945,7 +1079,7 @@ describe('AuthProvider — T-0099: MFA_CHALLENGE_VERIFIED releases the gate with
     })
     await act(async () => {
       await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      await vi.advanceTimersByTimeAsync(0)
     })
     expect(captured!.mfaRequired).toBe(true)
 
@@ -965,7 +1099,7 @@ describe('AuthProvider — T-0099: MFA_CHALLENGE_VERIFIED releases the gate with
     expect(captured!.mfaRequired).toBe(true)
 
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0))
+      await vi.advanceTimersByTimeAsync(0)
     })
 
     expect(captured!.mfaRequired).toBe(false)
@@ -1052,6 +1186,49 @@ describe('AuthProvider — T-0099: mfaEnrollRequired (segundoFactor.exigido, no 
     expect(captured!.mfaEnrollRequired).toBe(true)
     expect(captured!.mfaRequired).toBe(false)
     expect(listFactorsMock).toHaveBeenCalled()
+
+    // T-0123: a verified step-up means enrollment can no longer be pending.
+    await act(async () => {
+      captured!.setMfaVerified()
+    })
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(captured!.mfaRequired).toBe(false)
+  })
+
+  /*
+   * 🔴 Primero la migración (Nico, 30-09-2026): con el muro puesto el back
+   * dice `exigido:false`; al resolver la migración el muro llama
+   * `refreshUser()` y el bootstrap trae `exigido:true`. Antes `refreshUser`
+   * guardaba el `exigido` nuevo pero NO recalculaba `mfaEnrollRequired`, así
+   * que la persona seguía en el panel sin segundo factor hasta recargar.
+   */
+  it('refreshUser() recalcula mfaEnrollRequired cuando el back pasa a exigirlo (migración resuelta)', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    listFactorsMock.mockResolvedValue({ data: { totp: [] } })
+    const usuario = { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' }
+    const agencia = { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null }
+    getMock.mockResolvedValue(bootstrapEnvelope(usuario, 'agency', agencia, [], { exigido: false }))
+
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    // Muro puesto: no se pide todavía.
+    expect(captured!.mfaEnrollRequired).toBe(false)
+
+    getMock.mockResolvedValue(bootstrapEnvelope(usuario, 'agency', agencia, [], { exigido: true }))
+    await act(async () => {
+      await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(true)
   })
 
   it('exigido:true + a verified TOTP factor exists + aal1 → verify-pending (mfaRequired), NOT enroll-pending — no listFactors needed', async () => {
@@ -1133,6 +1310,148 @@ describe('AuthProvider — T-0099: mfaEnrollRequired (segundoFactor.exigido, no 
     expect(captured!.mfaRequired).toBe(false)
     expect(captured!.mfaEnrollRequired).toBe(false)
     expect(listFactorsMock).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * T-0123 WU-3: a brand-new agency owner signs in with NO agency, so the
+ * requirement is `false` at login. Finishing registration flips it to `true`
+ * (they are now an ACTIVE ADMIN) but `refreshUser()` only refreshed the user
+ * and never re-ran the MFA level check: the panel loaded on aal1 and every
+ * back call answered 403 SEGUNDO_FACTOR_REQUERIDO.
+ */
+describe('AuthProvider — T-0123 WU-3: refreshUser re-evaluates the MFA requirement', () => {
+  const sinAgencia = bootstrapEnvelope(
+    { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+    'agency',
+    null,
+    [],
+    { exigido: false },
+  )
+  const conAgencia = (exigido: boolean) => bootstrapEnvelope(
+    { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+    'agency',
+    { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+    [],
+    { exigido },
+  )
+
+  async function iniciarSesion() {
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+  }
+
+  it('exigido flips false → true after the profile change, no factor: refreshUser sets enroll-pending and reports "enroll"', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    listFactorsMock.mockResolvedValue({ data: { totp: [] } })
+    getMock.mockResolvedValue(sinAgencia)
+    await iniciarSesion()
+    expect(captured!.mfaEnrollRequired).toBe(false)
+
+    getMock.mockResolvedValue(conAgencia(true))
+    let destino: unknown
+    await act(async () => {
+      destino = await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(true)
+    expect(destino).toBe('enroll')
+  })
+
+  it('exigido true and a verified factor but aal1: refreshUser sets verify-pending and reports "verify"', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    getMock.mockResolvedValue(sinAgencia)
+    await iniciarSesion()
+
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue(conAgencia(true))
+    let destino: unknown
+    await act(async () => {
+      destino = await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaRequired).toBe(true)
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(destino).toBe('verify')
+  })
+
+  it('requirement stays false: refreshUser changes nothing and reports "none"', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    getMock.mockResolvedValue(sinAgencia)
+    await iniciarSesion()
+
+    getMock.mockResolvedValue(conAgencia(false))
+    let destino: unknown
+    await act(async () => {
+      destino = await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(captured!.mfaRequired).toBe(false)
+    expect(destino).toBe('none')
+  })
+
+  it('tenant (no ACTIVE agency membership) is never gated: a stale exigido:true still yields "none" and mfaEnrollRequired=false', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' } })
+    listFactorsMock.mockResolvedValue({ data: { totp: [] } })
+    getMock.mockResolvedValue(sinAgencia)
+    await iniciarSesion()
+
+    // The back would never say exigido:true without an ACTIVE agency role;
+    // this proves the front does not depend on that to keep tenants out.
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'tenant',
+      null,
+      [],
+      { exigido: true },
+    ))
+    let destino: unknown
+    await act(async () => {
+      destino = await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(listFactorsMock).not.toHaveBeenCalled()
+    expect(destino).toBe('none')
+  })
+
+  it('tenant with an OPTIONAL factor at aal1 (exigido:false): refreshUser reports "none", not "verify"', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue(sinAgencia)
+    await iniciarSesion()
+
+    let destino: unknown
+    await act(async () => {
+      destino = await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(destino).toBe('none')
+  })
+
+  it('session already aal2: reports "none" even with exigido true', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal2', nextLevel: 'aal2' } })
+    getMock.mockResolvedValue(sinAgencia)
+    await iniciarSesion()
+
+    getMock.mockResolvedValue(conAgencia(true))
+    let destino: unknown
+    await act(async () => {
+      destino = await captured!.refreshUser()
+    })
+
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(destino).toBe('none')
   })
 })
 
@@ -1284,5 +1603,168 @@ describe('AuthProvider — T-0099 WU-4: contract §3 release row (gate opens onc
     const configCalls = getMock.mock.calls.filter((c) => c[0] === '/inmobiliaria/config')
     expect(configCalls).toHaveLength(1)
     expect(configCalls[0][1]).toBe('jwt-token-aal2')
+  })
+})
+
+/*
+ * 🔴 Nico, 02-10-2026: si la consulta del segundo factor falla, NO se entra sin
+ * verificar. Se reintenta sola; si sigue fallando, `mfaCheckStatus` = 'failed'
+ * (las pantallas protegidas muestran «No pudimos confirmar tu sesión»). No se
+ * cierra la sesión. Y nadie queda afuera cuando la consulta SÍ responde.
+ */
+describe('AuthProvider — la consulta del segundo factor falla: no se entra sin verificar', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'agency',
+      { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+    ))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  async function entrarDesdeElFormulario() {
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      )
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('INITIAL_SESSION', null)
+    })
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+    })
+  }
+
+  async function avanzar(ms: number) {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(ms)
+    })
+  }
+
+  it('falla una vez y luego responde → entra normal', async () => {
+    getAalMock
+      .mockRejectedValueOnce(new Error('No se pudo tomar el lock de auth a tiempo'))
+      .mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' }, error: null })
+    await entrarDesdeElFormulario()
+    await avanzar(0)
+    // Primer intento falló: todavía no se sabe, todavía no está «adentro».
+    expect(captured!.mfaCheckStatus).toBe('pending')
+    expect(captured!.isAuthenticated).toBe(false)
+    await avanzar(400)
+    expect(getAalMock).toHaveBeenCalledTimes(2)
+    expect(captured!.mfaCheckStatus).toBe('verified')
+    expect(captured!.isAuthenticated).toBe(true)
+    expect(captured!.mfaRequired).toBe(false)
+    expect(captured!.isLoading).toBe(false)
+  })
+
+  it('una respuesta con error (sin lanzar) también cuenta como fallo y se reintenta', async () => {
+    getAalMock
+      .mockResolvedValueOnce({ data: null, error: new Error('JWT not in base64url format') })
+      .mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' }, error: null })
+    await entrarDesdeElFormulario()
+    await avanzar(400)
+    expect(captured!.mfaCheckStatus).toBe('verified')
+    expect(captured!.mfaRequired).toBe(true)
+  })
+
+  it('falla siempre → «failed», sin acceso y SIN cerrar la sesión; «Reintentar» que responde la libera', async () => {
+    getAalMock.mockRejectedValue(new Error('sin respuesta'))
+    await entrarDesdeElFormulario()
+    await avanzar(5000)
+    expect(getAalMock).toHaveBeenCalledTimes(4)
+    expect(captured!.mfaCheckStatus).toBe('failed')
+    // No se cierra la sesión ni se manda al login: sólo se bloquea.
+    expect(supabaseSignOutMock).not.toHaveBeenCalled()
+    expect(captured!.isAuthenticated).toBe(true)
+    expect(captured!.isLoading).toBe(false)
+
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' }, error: null })
+    await act(async () => {
+      await captured!.retryMfaCheck!()
+    })
+    expect(captured!.mfaCheckStatus).toBe('verified')
+    expect(captured!.mfaRequired).toBe(false)
+  })
+
+  it('responde aal1 con factor inscrito → pide el código', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal2' }, error: null })
+    await entrarDesdeElFormulario()
+    await avanzar(0)
+    expect(captured!.mfaCheckStatus).toBe('verified')
+    expect(captured!.mfaRequired).toBe(true)
+  })
+
+  it('responde sin factor → entra', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' }, error: null })
+    await entrarDesdeElFormulario()
+    await avanzar(0)
+    expect(captured!.mfaCheckStatus).toBe('verified')
+    expect(captured!.mfaRequired).toBe(false)
+    expect(captured!.mfaEnrollRequired).toBe(false)
+    expect(captured!.isAuthenticated).toBe(true)
+  })
+
+  it('el rol lo exige y listFactors falla siempre → «failed» (no se manda a inscribir ni se deja pasar)', async () => {
+    getMock.mockResolvedValue(bootstrapEnvelope(
+      { id: 'u1', email: 'ana@example.com', firstName: 'Ana', lastName: 'Pérez', onboardingCompletedAt: '2026-01-01T00:00:00.000Z' },
+      'agency',
+      { id: 'ag-1', name: 'ABC', memberRole: 'ADMIN', memberStatus: 'ACTIVE', permissions: null },
+      [],
+      { exigido: true },
+    ))
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' }, error: null })
+    listFactorsMock.mockResolvedValue({ data: null, error: new Error('Failed to fetch') })
+    await entrarDesdeElFormulario()
+    await avanzar(5000)
+    expect(captured!.mfaCheckStatus).toBe('failed')
+    expect(captured!.mfaEnrollRequired).toBe(false)
+  })
+
+  it('volver a la pestaña (auth-js re-emite SIGNED_IN de la MISMA sesión) no vuelve a «pending», y un re-chequeo que falla no bloquea a quien ya se verificó', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' }, error: null })
+    await entrarDesdeElFormulario()
+    await avanzar(0)
+    expect(captured!.mfaCheckStatus).toBe('verified')
+
+    const estados: string[] = []
+    function Vigia() {
+      const a = React.useContext(AuthContext)!
+      estados.push(a.mfaCheckStatus ?? '?')
+      return null
+    }
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+          <Vigia />
+        </AuthProvider>,
+      )
+    })
+    getAalMock.mockRejectedValue(new Error('un instante'))
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_IN', fakeSession)
+    })
+    await avanzar(5000)
+    expect(estados).not.toContain('pending')
+    expect(captured!.mfaCheckStatus).toBe('verified')
+  })
+
+  it('una sesión NUEVA (otro session_id) vuelve a empezar en «pending»', async () => {
+    getAalMock.mockResolvedValue({ data: { currentLevel: 'aal1', nextLevel: 'aal1' }, error: null })
+    await entrarDesdeElFormulario()
+    await avanzar(0)
+    expect(captured!.mfaCheckStatus).toBe('verified')
+    await act(async () => {
+      await authCallbacks[authCallbacks.length - 1]('SIGNED_OUT', null)
+    })
+    expect(captured!.mfaCheckStatus).toBe('pending')
   })
 })

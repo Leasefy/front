@@ -135,3 +135,44 @@ describe('comprobantes: lo que viaja', () => {
     expect(doc.anulado).toBe('SI');
   });
 });
+
+/* QA-MIG-B (04-10) — comprobantes de SIIGO con el prefijo pegado al número. */
+describe('QA-MIG-B — prefijo y número en la misma celda', () => {
+  it('«Comprobante: FV-1-5521» sin columna de prefijo se parte en «FV-1» y 5521', () => {
+    const mapeo = mapearColumnas(COLUMNAS_DE_DOCUMENTO, ['Comprobante', 'Fecha', 'Detalle', 'Total débito', 'Total crédito']);
+    expect(mapeo.find((m) => m.columna === 'Comprobante')?.campo).toBe('consecutivo');
+    const [d] = armarDocumentos([{ Comprobante: 'FV-1-5521', Fecha: '2026-09-08', Detalle: 'Factura', 'Total débito': '608910', 'Total crédito': '608910' }], mapeo);
+    expect(d).toMatchObject({ prefijo: 'FV-1', consecutivo: '5521', fecha: '2026-09-08' });
+  });
+
+  it('con columna de prefijo no se toca el consecutivo', () => {
+    const mapeo = mapearColumnas(COLUMNAS_DE_DOCUMENTO, ['Prefijo', 'Consecutivo', 'Fecha']);
+    const [d] = armarDocumentos([{ Prefijo: 'CE', Consecutivo: '26,766', Fecha: '2026-09-08' }], mapeo);
+    expect(d).toMatchObject({ prefijo: 'CE', consecutivo: '26,766' });
+  });
+
+  it('un consecutivo sin prefijo pegado viaja tal cual (el back dice que falta el prefijo)', () => {
+    const mapeo = mapearColumnas(COLUMNAS_DE_DOCUMENTO, ['Consecutivo', 'Fecha']);
+    const [d] = armarDocumentos([{ Consecutivo: '5521', Fecha: '2026-09-08' }], mapeo);
+    expect(d).toMatchObject({ prefijo: '', consecutivo: '5521' });
+  });
+});
+
+describe('QA-MIG-B — el tercero y el estado de los comprobantes', () => {
+  it('🔴 «Tercero» y «Estado: Anulado» de SIIGO viajan (antes se ignoraban y el anulado entraba vigente)', () => {
+    const mapeo = mapearColumnas(COLUMNAS_DE_DOCUMENTO, ['Comprobante', 'Fecha', 'Tercero', 'Detalle', 'Total débito', 'Total crédito', 'Estado']);
+    const campo = (c: string) => mapeo.find((m) => m.columna === c)?.campo;
+    expect([campo('Tercero'), campo('Estado')]).toEqual(['terceroDocumento', 'anulado']);
+    const [d] = armarDocumentos(
+      [{ Comprobante: 'CE-1-1202', Fecha: '2026-09-09', Tercero: '43111222 Gloria Henao', Detalle: 'Egreso', 'Total débito': '500000', 'Total crédito': '500000', Estado: 'Anulado' }],
+      mapeo,
+    );
+    expect(d).toMatchObject({ prefijo: 'CE-1', consecutivo: '1202', terceroDocumento: '43111222 Gloria Henao', anulado: 'Anulado' });
+  });
+
+  it('el archivo de Portofino sigue mapeando igual (su «Nombre Tercero Anticipo» no es el tercero)', () => {
+    const mapeo = mapearColumnas(COLUMNAS_DE_DOCUMENTO, ['Prefijo', 'Consecutivo', 'Tipo Doc.', 'Fecha', 'Concepto', 'Débitos', 'Créditos', 'Balance', 'Descuadrado', 'Anulado', '¿Es anticipo?', 'Nombre Tercero Anticipo', '¿anticipo aplicado?', 'Valor Restante del Anticipo', 'Creado por', 'Fecha creación']);
+    expect(mapeo.find((m) => m.columna === 'Nombre Tercero Anticipo')?.campo).toBe('terceroAnticipo');
+    expect(mapeo.some((m) => m.campo === 'terceroDocumento' || m.campo === 'terceroNombre')).toBe(false);
+  });
+});

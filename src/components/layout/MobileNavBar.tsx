@@ -14,13 +14,34 @@ interface MobileNavBarProps {
   navItems: NavItem[];
 }
 
+/**
+ * AG-14 (QA del 04-10-2026): la barra de abajo del ASESOR comercial no traía
+ * Agenda ni Pipeline (Inicio, Chat, Avalúos, Matching, Asegurabilidad…), que
+ * es justo con lo que trabaja en la calle. Para quien no ve la operación (sin
+ * Contratos en su menú) se suben Pipeline y Agenda después de Inicio. Quien
+ * ve la operación conserva el orden de siempre.
+ */
+export function paraLaBarraDelCelular<T extends { href?: string }>(items: T[]): T[] {
+  const esDe = (sufijo: string) => (i: T) => (i.href ?? '').replace(/\/$/, '').endsWith(sufijo);
+  const veLaOperacion = items.some(esDe('/panel/inmobiliaria/contratos'));
+  if (veLaOperacion) return items;
+  const pipeline = items.find(esDe('/panel/inmobiliaria/pipeline'));
+  const agenda = items.find(esDe('/panel/inmobiliaria/agenda'));
+  if (!pipeline && !agenda) return items;
+  const resto = items.filter((i) => i !== pipeline && i !== agenda);
+  const [primero, ...demas] = resto;
+  return [primero, pipeline, agenda, ...demas].filter((i): i is T => Boolean(i));
+}
+
 export function MobileNavBar({ navItems }: MobileNavBarProps) {
   const [moreOpen, setMoreOpen] = useState(false);
   const pathname = usePathname();
   const { t } = useI18n();
 
   // Section markers are desktop-sidebar-only labels; disabled items aren't tappable.
-  const navigable = navItems.filter((item) => item.kind !== 'section' && !item.disabled);
+  const navigable = paraLaBarraDelCelular(
+    navItems.filter((item) => item.kind !== 'section' && !item.disabled),
+  );
   const topItems = navigable.slice(0, 5);
   const overflowItems = navigable.slice(5);
   const hasOverflow = navigable.length > 5;
@@ -54,8 +75,10 @@ export function MobileNavBar({ navItems }: MobileNavBarProps) {
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'min-h-[56px] min-w-[56px] flex flex-col items-center justify-center px-2 py-2 rounded-lg',
+                  // El azul de la fila activa del menú (globals.css): en oscuro,
+                  // apagado, no el índigo saturado de `primary-soft`.
                   active
-                    ? 'bg-primary-soft text-primary'
+                    ? 'bg-[color:var(--menu-activa)] text-[color:var(--menu-activa-tinta)]'
                     : 'text-fg-muted'
                 )}
               >

@@ -21,21 +21,42 @@
  * 🔴 Y como en el resto del panel: **el cajón no le pide nada al back**. Lee la
  * MISMA fila que la tabla, así que no puede decir algo distinto de lo que se
  * acaba de ver ni dejar a alguien esperando.
+ *
+ * 🔴 QA-FACT (03-10-2026), con las decisiones de Nico: lo que la tabla no deja
+ * emitir el cajón tampoco (escenario sin confirmar, la comisión que espera su
+ * giro, la anulada), la factura del mes no lleva intereses, el copropietario
+ * con su parte y los impuestos con su nombre y su %, nunca el código crudo.
  */
 
 import { BitacoraDelRecurso } from '@/components/movimientos/BitacoraDelRecurso';
 import Link from 'next/link'
+import { AnimatedNumber } from '@leasefy/cadence'
 import { DownloadSimple, Receipt, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon'
 import { formatCurrency } from '@/lib/format'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { cn } from '@/lib/utils'
 import {
   mesLegible,
   type FacturaDelMes,
 } from '@/lib/api/facturacion-por-mes.service'
+import {
+  aQuienSeFactura,
+  avisosDeLaFila,
+  estadoDeLaFila,
+  llevaIntereses,
+  porQueNoSeEmite,
+  rutaDelEscenario,
+  sePuedeEmitirHoy,
+} from '@/lib/facturacion/por-facturar'
+
+/** «19 %», «0,4 %». */
+function porcentaje(p: number): string {
+  return `${p.toLocaleString('es-CO', { maximumFractionDigits: 2 })} %`
+}
 
 /**
  * «Escenario 8» a partir de `E8`. `SIN_DEFINIR` no es un escenario: nunca se
@@ -43,6 +64,15 @@ import {
  */
 function etiquetaDelEscenario(codigo: string): string {
   return /^E\d$/.test(codigo) ? `Escenario ${codigo.slice(1)}` : 'Escenario sin definir'
+}
+
+/**
+ * Una cifra de «la plata» del cajón: cuenta desde 0 al abrirlo y desde la
+ * anterior si cambia (ARREGLOS-8, MOV-A6; `AnimatedNumber` de Cadence). Con
+ * movimiento reducido, la cifra final de una.
+ */
+function CifraQueCuenta({ valor }: { valor: number }) {
+  return <AnimatedNumber value={valor} from={0} format={formatCurrency} />
 }
 
 export interface CajonDeLaFacturaProps {
@@ -85,7 +115,7 @@ function Dato({
 }
 
 export function CajonDeLaFactura({
-  factura,
+  factura: facturaAbierta,
   onCerrar,
   onGenerarUna,
   motivoParaNoEmitir,
@@ -93,8 +123,16 @@ export function CajonDeLaFactura({
   onDescargarPdf,
   descargando = null,
 }: CajonDeLaFacturaProps) {
-  const emitida = factura?.estado === 'EMITIDA'
-  const bloqueada = factura ? !emitida && !factura.emitible : false
+  /*
+   * ARREGLOS-8: al cerrar, la tabla pasa `null` en el mismo render y el cajón se
+   * vaciaba y salía deslizándose EN BLANCO. Mientras sale, sigue mostrando la
+   * factura que mostraba (`useUltimoPresente`, el mismo de los otros cajones).
+   */
+  const factura = useUltimoPresente(facturaAbierta)
+  const estado = factura ? estadoDeLaFila(factura) : null
+  const emitida = estado === 'emitida'
+  const bloqueada = factura ? !emitida && !sePuedeEmitirHoy(factura) : false
+  const motivoDelBloqueo = factura ? porQueNoSeEmite(factura) : null
   /*
    * La nota «se generó SIN impuestos…» del back dice lo mismo que el aviso del
    * escenario sin confirmar, que ya va arriba con su botón: la misma frase no
@@ -106,7 +144,7 @@ export function CajonDeLaFactura({
 
   return (
     <Cajon
-      abierto={factura !== null}
+      abierto={facturaAbierta !== null}
       onOpenChange={(v) => {
         if (!v) onCerrar()
       }}
@@ -116,7 +154,7 @@ export function CajonDeLaFactura({
       {factura && (
         <>
           <CajonCabecera
-            titulo={factura.terceroNombre}
+            titulo={aQuienSeFactura(factura)}
             descripcion={`${factura.destinatario === 'PROPIETARIO' ? 'Comisión al propietario' : 'Canon del inquilino'} · ${mesLegible(factura.mes)}`}
           >
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -124,8 +162,16 @@ export function CajonDeLaFactura({
                 <Badge variant="success">
                   Emitida · {factura.numeroDian ?? `N° ${factura.numero}`}
                 </Badge>
+              ) : estado === 'anulada' ? (
+                <Badge variant="secondary">Anulada con nota crédito</Badge>
+              ) : estado === 'sin-escenario' ? (
+                <Badge variant="warning">No se emite: escenario sin confirmar</Badge>
+              ) : estado === 'espera-el-giro' ? (
+                <Badge variant="secondary">Se factura cuando se le gire</Badge>
               ) : bloqueada ? (
                 <Badge variant="secondary">Todavía no se puede emitir</Badge>
+              ) : factura.estado === 'GENERADA' ? (
+                <Badge variant="outline">Sin número todavía: falta emitirla</Badge>
               ) : (
                 <Badge variant="outline">Por emitir</Badge>
               )}
@@ -140,22 +186,24 @@ export function CajonDeLaFactura({
           <CajonCuerpo className="space-y-6">
             {/* 🔴 Lo que bloquea, arriba: es la respuesta a «¿por qué no puedo
                 generar ésta?», que es lo que trae a alguien a abrir la fila. */}
-            {bloqueada && factura.motivoNoEmitible && (
+            {/* El escenario sin confirmar tiene su propio bloque abajo, con la
+                salida; acá no se repite. */}
+            {bloqueada && estado !== 'sin-escenario' && motivoDelBloqueo && (
               <p
                 className="flex items-start gap-2 rounded-lg border border-border bg-surface-muted p-3 text-sm text-fg"
                 data-testid="cajon-motivo-no-emitible"
               >
                 <Warning className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" aria-hidden="true" />
-                {factura.motivoNoEmitible}
+                {motivoDelBloqueo}
               </p>
             )}
 
-            {factura.avisos.length > 0 && (
+            {avisosDeLaFila(factura).length > 0 && (
               <div
                 className="space-y-1.5 rounded-lg border border-warning/30 bg-warning-soft p-3"
                 data-testid="cajon-avisos"
               >
-                {factura.avisos.map((a) => (
+                {avisosDeLaFila(factura).map((a) => (
                   <p key={a} className="flex items-start gap-2 text-sm text-fg">
                     <Warning
                       className="mt-0.5 h-4 w-4 shrink-0 text-warning"
@@ -207,9 +255,12 @@ export function CajonDeLaFactura({
                     Actualiza la lista para poder descargar el PDF de esta factura.
                   </p>
                 )}
-                <p className="text-sm text-fg-muted">
-                  El XML firmado y el CUFE los entrega el proveedor de facturación
-                  electrónica, que todavía no está conectado: el PDF lo dice en su pie.
+                {/* QA-FACT-CONTA-95 (FA-A-22, FA-J-07): decía «el proveedor… todavía
+                    no está conectado» también con FEEL transmitiendo. */}
+                <p className="text-sm text-fg-muted" data-testid="cajon-xml-y-cufe">
+                  El XML firmado y el CUFE llegan cuando la DIAN valida la factura;
+                  mientras tanto el PDF lo dice en su pie. En «Electrónica (DIAN)»
+                  ves en qué va.
                 </p>
               </section>
             )}
@@ -281,10 +332,13 @@ export function CajonDeLaFactura({
                       className="flex items-baseline justify-between gap-4 px-3 py-2.5 text-sm"
                       data-testid="cajon-impuesto"
                     >
+                      {/* 🔴 FA-R27: decía «IVA sobre arrendamiento» con el código
+                          del back en minúscula; ahora el nombre, el % y su base. */}
                       <span className="min-w-0 text-fg">
-                        {imp.tipo}{' '}
+                        {imp.nombre}{' '}
                         <span className="text-fg-muted">
-                          sobre {imp.sobre.toLowerCase().replace(/_/g, ' ')}
+                          · {porcentaje(imp.porcentaje)} de{' '}
+                          <span className="font-mono tabular-nums">{formatCurrency(imp.baseCop)}</span>
                         </span>
                       </span>
                       <span className="shrink-0 font-mono tabular-nums text-fg">
@@ -299,13 +353,22 @@ export function CajonDeLaFactura({
             {/* La plata, con el mismo orden del documento: base, IVA,
                 retenciones, total, y lo que de verdad se paga. */}
             <dl className="space-y-2 rounded-lg border border-border bg-surface-muted p-4">
-              {[
-                ['Base', formatCurrency(factura.baseCop)],
-                ['IVA', factura.ivaCop > 0 ? formatCurrency(factura.ivaCop) : '—'],
-                ...(factura.retencionesCop > 0
-                  ? [['Retenciones', `−${formatCurrency(factura.retencionesCop)}`] as const]
-                  : []),
-              ].map(([rotulo, valor]) => (
+              {(
+                [
+                  ['Base', <CifraQueCuenta key="base" valor={factura.baseCop} />],
+                  ['IVA', factura.ivaCop > 0 ? <CifraQueCuenta key="iva" valor={factura.ivaCop} /> : '—'],
+                  ...(factura.retencionesCop > 0
+                    ? [
+                        [
+                          'Retenciones',
+                          <span key="retenciones">
+                            −<CifraQueCuenta valor={factura.retencionesCop} />
+                          </span>,
+                        ] as const,
+                      ]
+                    : []),
+                ] as ReadonlyArray<readonly [string, React.ReactNode]>
+              ).map(([rotulo, valor]) => (
                 <div key={rotulo} className="flex items-baseline justify-between gap-4">
                   <dt className="text-sm text-fg-muted">{rotulo}</dt>
                   <dd className="font-mono text-sm tabular-nums text-fg-muted">{valor}</dd>
@@ -317,21 +380,21 @@ export function CajonDeLaFactura({
                   className="font-mono text-lg font-semibold tabular-nums text-fg"
                   data-testid="cajon-total"
                 >
-                  {formatCurrency(factura.totalCop)}
+                  <CifraQueCuenta valor={factura.totalCop} />
                 </dd>
               </div>
               {factura.retencionesCop > 0 && (
                 <div className="flex items-baseline justify-between gap-4">
                   <dt className="text-sm text-fg-muted">Lo que se paga</dt>
                   <dd className="font-mono text-sm tabular-nums text-fg-muted">
-                    {formatCurrency(factura.netoCop)}
+                    <CifraQueCuenta valor={factura.netoCop} />
                   </dd>
                 </div>
               )}
               {factura.deduccionAlEgresoCop > 0 && (
                 <p className="border-t border-border pt-2 text-caption text-fg-muted">
-                  {formatCurrency(factura.deduccionAlEgresoCop)} van a deducción del
-                  egreso del propietario, no a esta factura.
+                  <span className="font-mono tabular-nums">{formatCurrency(factura.deduccionAlEgresoCop)}</span>{' '}
+                  van a deducción del egreso del propietario, no a esta factura.
                 </p>
               )}
             </dl>
@@ -363,17 +426,15 @@ export function CajonDeLaFactura({
                     ? `Escenario deducido, sin confirmar: ${etiquetaDelEscenario(factura.escenario.codigo)} · ${factura.escenario.nombre}`
                     : 'Escenario sin definir'}
                 </p>
+                {/* 🔴 Nico (03-10-2026): sin escenario confirmado NO se emite. */}
                 <p className="text-sm text-fg-muted">
-                  Esta factura sale sin IVA ni retenciones porque nadie confirmó el
-                  escenario tributario de su contrato. Confírmalo en la ficha del
-                  contrato y vuelve a generar su tabla de cuotas.
+                  Esta factura no se emite hasta que confirmes el escenario
+                  tributario de su contrato: saldría sin los impuestos que de verdad
+                  lleva. Confírmalo en la ficha del contrato y vuelve a esta pantalla.
                 </p>
                 <Button asChild variant="outline" size="sm">
-                  <Link
-                    href={`/panel/inmobiliaria/contratos/${factura.contractId}#escenario-tributario`}
-                    data-testid="cajon-confirmar-escenario"
-                  >
-                    Confirmar el escenario en el contrato
+                  <Link href={rutaDelEscenario(factura)} data-testid="cajon-confirmar-escenario">
+                    Confirmar en el contrato
                   </Link>
                 </Button>
               </section>
@@ -401,10 +462,12 @@ export function CajonDeLaFactura({
                   Mora de esta cuota
                 </h3>
                 <p className="text-sm text-fg">
-                  {factura.mora.diasDeMora} días.{' '}
-                  {factura.mora.recargosCop > 0
+                  {factura.mora.diasDeMora} {factura.mora.diasDeMora === 1 ? 'día' : 'días'}.{' '}
+                  {/* 🔴 Nico (03-10): la factura del mes nunca lleva intereses.
+                      Un back anterior todavía los mete: entonces se dice. */}
+                  {llevaIntereses(factura) && factura.mora.recargosCop > 0
                     ? `La factura lleva ${formatCurrency(factura.mora.recargosCop)} de recargos.`
-                    : (factura.mora.motivo ?? 'Sin recargos.')}
+                    : 'La factura del mes no lleva intereses: se facturan aparte, cuando se pagan.'}
                 </p>
               </section>
             )}
@@ -413,17 +476,19 @@ export function CajonDeLaFactura({
           <CajonPie
             ayuda={
               emitida
-                ? 'Una factura emitida no se borra: se netea con una nota crédito desde «Ventas».'
+                ? 'Una factura emitida no se borra: se anula con una nota crédito desde «Ventas».'
                 : bloqueada
-                  ? factura.motivoNoEmitible
+                  ? (estado === 'sin-escenario'
+                      ? 'Confirma el escenario en el contrato para poder emitirla.'
+                      : motivoDelBloqueo)
                   : (motivoParaNoEmitir ??
-                    'Se emite sólo ésta: no toca lo que tengas marcado en la tabla.')
+                    'Se emite sólo ésta, después de confirmar con qué número sale: no toca lo que tengas marcado en la tabla.')
             }
           >
             <Button variant="outline" hideArrow onClick={onCerrar} data-testid="cajon-cerrar">
               Cerrar
             </Button>
-            {!emitida && (
+            {!emitida && estado !== 'anulada' && (
               <Button
                 hideArrow
                 disabled={bloqueada || ocupado || motivoParaNoEmitir !== null}
@@ -434,7 +499,7 @@ export function CajonDeLaFactura({
                 data-testid="cajon-generar-esta"
               >
                 <Receipt className="h-4 w-4" weight="bold" />
-                Generar esta factura
+                {factura.estado === 'GENERADA' ? 'Emitir esta factura' : 'Generar esta factura'}
               </Button>
             )}
           </CajonPie>

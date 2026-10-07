@@ -26,7 +26,7 @@ import { useEscalations } from '@/lib/hooks/cobranza/use-escalations'
 import { EscalationResolveModal } from '@/components/inmobiliaria/cobranza/EscalationResolveModal'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button, Badge } from '@/components/ui'
-import { MonoLabel } from '@leasefy/cadence'
+import { CrossFade, MonoLabel, Presence } from '@leasefy/cadence'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { BackButton } from '@/components/ui/back-button';
 
@@ -61,8 +61,14 @@ function EscalationDetailContent() {
   )
 
   // Phase 38-05a: PageSkeleton primitive (detail variant) — dynamic route, no EmptyState.
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // escalación, → fallo, → no existe); lo que ya estaba al montarse no se anima.
   if (isLoading && !data) {
-    return <PageSkeleton variant="detail" />
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="detail" />
+      </CrossFade>
+    )
   }
 
     /*
@@ -73,6 +79,7 @@ function EscalationDetailContent() {
    */
   if (error) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="space-y-6 p-6 lg:p-8">
         {/* 🔴 20-09 · El camino de vuelta va ARRIBA, no sólo dentro de la
             tarjeta: un fallo a pantalla completa sin encabezado no dice en qué
@@ -90,11 +97,13 @@ function EscalationDetailContent() {
           volverA={{ label: 'Escalaciones', href: '/panel/inmobiliaria/pagos/cobranza/escalaciones' }}
         />
       </div>
+      </CrossFade>
     );
   }
 
   if (!data) {
     return (
+      <CrossFade swapKey="no-existe">
       <div className="p-4 md:p-6">
         <Button
           variant="link"
@@ -110,6 +119,7 @@ function EscalationDetailContent() {
           {error ?? t('inmobiliaria.ai.cobranza.escalaciones.errors.notFound')}
         </div>
       </div>
+      </CrossFade>
     )
   }
 
@@ -120,6 +130,7 @@ function EscalationDetailContent() {
     data.status !== 'resolved' && hasResolvePerm && (isAssignedToMe || hasAssignPerm)
 
   return (
+    <CrossFade swapKey="escalacion">
     <div className="p-4 md:p-6 space-y-6 max-w-4xl">
       {/* Breadcrumb */}
       <Link
@@ -247,7 +258,7 @@ function EscalationDetailContent() {
       </section>
 
       {/* Bottom action bar */}
-      {canResolveThis && (
+      <Presence show={canResolveThis} initial={false} className="sticky bottom-4 md:static">
         <div className="sticky bottom-4 md:static flex justify-end">
           <Button
             type="button"
@@ -257,7 +268,7 @@ function EscalationDetailContent() {
             {t('inmobiliaria.ai.cobranza.escalaciones.actions.resolve')}
           </Button>
         </div>
-      )}
+      </Presence>
 
       <EscalationResolveModal
         escalationId={resolveOpen ? escalationId : null}
@@ -266,6 +277,7 @@ function EscalationDetailContent() {
         onResolve={handleResolve}
       />
     </div>
+    </CrossFade>
   )
 }
 

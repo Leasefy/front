@@ -96,7 +96,7 @@ function TarjetaCarrier({
     <li
       className={cn(
         'group relative flex items-center gap-3.5 rounded-md border p-3.5',
-        'transition-[transform,box-shadow,border-color] duration-200 ease-out',
+        'transition-[transform,box-shadow,border-color] duration-base ease-enter',
         respalda
           ? 'border-border bg-surface hover:-translate-y-0.5 hover:shadow-md'
           : 'border-faint bg-surface-muted',

@@ -25,13 +25,14 @@
  * `GET /inmobiliaria/inquilinos/:tenantId`.
  */
 
-import { apiClient } from './client';
+import { ApiError, apiClient } from './client';
 import type {
   EnlaceCompartido,
   EstadoDeCuenta,
   EnvioDelEnlace,
   FiltrosDelEstadoDeCuenta,
   ResumenDelEstadoDeCuenta,
+  ContratoDelPortal,
 } from '@/lib/types/estado-de-cuenta';
 
 const BASE = '/inmobiliaria/estado-de-cuenta';
@@ -121,6 +122,21 @@ export const estadoDeCuentaApi = {
    */
   mio(): Promise<EstadoDeCuenta> {
     return apiClient.get<EstadoDeCuenta>('/portal/estado-de-cuenta');
+  },
+
+  /**
+   * QA-MIGRACION-95 — CA-04: MIS contratos vigentes sin arriendo (el migrado
+   * sin día de pago). Resuelto por la sesión, nunca por un id.
+   */
+  misContratos(): Promise<{ contratos: ContratoDelPortal[] }> {
+    return apiClient.get<{ contratos: ContratoDelPortal[] }>('/portal/estado-de-cuenta/contratos');
+  },
+
+  /** SO-09 (04-10): el soporte de un descuento MÍO (propietario), firmado una hora. */
+  soporteDeMiDeduccion(deduccionId: string): Promise<{ url: string; nombre: string | null }> {
+    return apiClient.get<{ url: string; nombre: string | null }>(
+      `/portal/estado-de-cuenta/deducciones/${encodeURIComponent(deduccionId)}/soporte`,
+    );
   },
 
   /**
@@ -223,8 +239,25 @@ export async function estadoDeCuentaPublico(
   if (!r.ok) {
     // El mensaje del back dice si venció o si el enlace no existe; la pantalla
     // lo muestra tal cual en vez de inventar un motivo.
-    const cuerpo = (await r.json().catch(() => null)) as { message?: string } | null;
-    throw new Error(cuerpo?.message ?? `ENLACE_${r.status}`);
+    // 🔴 PRUEBAS-PAGOS (03-10-2026): con el STATUS. Un `Error` pelado no lo
+    // lleva, y el traductor pintaba un enlace vencido o revocado (410/404)
+    // como «Fue un problema nuestro» con «Intentar de nuevo» y una referencia
+    // inventada; con el status es «No encontramos el estado de cuenta» + la
+    // frase del back, sin reintentar.
+    const cuerpo = (await r.json().catch(() => null)) as
+      | { message?: string | string[]; code?: string }
+      | null;
+    // El 410 (venció) se entrega como 404: `clasificarFallo` (congelado) no
+    // conoce el 410 y lo pintaría «problema nuestro»; para quien abre el
+    // enlace es lo mismo —no está— y la frase del back dice que venció. El
+    // status real queda en `detalle.statusOriginal`.
+    const vencido = r.status === 410;
+    throw new ApiError(
+      vencido ? 404 : r.status,
+      cuerpo?.message ?? `ENLACE_${r.status}`,
+      typeof cuerpo?.code === 'string' ? cuerpo.code : vencido ? 'ENLACE_VENCIDO' : undefined,
+      { ...(cuerpo ?? {}), statusOriginal: r.status },
+    );
   }
   return (await r.json()) as EstadoDeCuenta;
 }

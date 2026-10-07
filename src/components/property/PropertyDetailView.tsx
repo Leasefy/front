@@ -1,5 +1,6 @@
 'use client';
 
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -290,7 +291,7 @@ export function PropertyDetailView({
                   src={property.images[0]}
                   alt={property.title}
                   fill
-                  className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                   sizes="100vw"
                   priority
                 />
@@ -307,11 +308,11 @@ export function PropertyDetailView({
                   src={property.images[0]}
                   alt={property.title}
                   fill
-                  className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                   sizes="(max-width: 768px) 100vw, 66vw"
                   priority
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
               </button>
               {/* Side images stack */}
               <div className="hidden md:grid grid-rows-2 gap-2 md:gap-3">
@@ -325,10 +326,10 @@ export function PropertyDetailView({
                       src={property.images[1]}
                       alt={`${property.title} - 2`}
                       fill
-                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                      className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                       sizes="33vw"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
                   </button>
                 )}
                 {property.images[2] ? (
@@ -341,9 +342,9 @@ export function PropertyDetailView({
                       src={property.images[2]}
                       alt={`${property.title} - 3`}
                       fill
-                      className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                      className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
                     {/* Show all images button */}
                     {property.images.length > 3 && (
                       <span
@@ -376,7 +377,7 @@ export function PropertyDetailView({
                 {/* Location with primary color */}
                 <div className="flex items-center gap-2 mb-3">
                   <MapPin className="w-4 h-4 text-primary" strokeWidth={1.5} />
-                  <span className="text-[14px] text-muted-foreground">{property.neighborhood}, {property.city}</span>
+                  <span className="text-[14px] text-muted-foreground">{barrioYCiudad(property.neighborhood, property.city)}</span>
                 </div>
 
                 {/* Title - using font-heading */}
@@ -521,10 +522,10 @@ export function PropertyDetailView({
                           src={image}
                           alt={`${property.title} - ${index + 1}`}
                           fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                          className="object-cover group-hover:scale-105 transition-transform duration-reveal ease-enter"
                           sizes="(max-width: 768px) 50vw, 33vw"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
                       </button>
                     ))}
                   </div>
@@ -549,7 +550,7 @@ export function PropertyDetailView({
                     latitude={property.latitude as number}
                     longitude={property.longitude as number}
                     titulo={property.title}
-                    direccion={`${property.neighborhood}, ${property.city}, Colombia`}
+                    direccion={`${barrioYCiudad(property.neighborhood, property.city)}, Colombia`}
                   />
                 ) : (
                 <div className="border border-border rounded-xl bg-surface-muted p-8 flex flex-col items-center justify-center gap-5 text-center">
@@ -563,7 +564,7 @@ export function PropertyDetailView({
                     <p className="text-[14px] text-muted-foreground mt-1">{property.city}, Colombia</p>
                   </div>
                   <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(property.neighborhood + ', ' + property.city + ', Colombia')}`}
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(barrioYCiudad(property.neighborhood, property.city) + ', Colombia')}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-semibold text-primary bg-primary/10 rounded-xl hover:bg-primary/15 transition-colors"

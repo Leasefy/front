@@ -504,13 +504,22 @@
     --primary:             var(--indigo-300);
     --primary-foreground:  var(--indigo-950);
 
+    /* Grises NEUTROS en oscuro — la paleta del chat que eligió Nico (02-10),
+       para toda la plataforma. Antes: azulados (240 6% …) acá y cálidos
+       (#24221c, #b3aea5…) en el bloque de Cadence de más abajo; sobre el negro
+       se leían amarillentos. Cada token toma el valor de la paleta que cumple
+       su MISMO papel en claro: `secondary`/`muted` = `surface-muted` (en claro
+       los dos son neutral-100 = #f4f2ef); `border`/`input` = `--border`;
+       `muted-foreground` = `fg-subtle` (#8a8a8a: la misma luz que tenía,
+       55 %, sin el tinte; 5,73:1 sobre el fondo y 5,04:1 sobre surface-muted). */
+
     /* Secondary */
-    --secondary:           240 6% 14%;
+    --secondary:           0 0% 10%;         /* #1a1a1a = surface-muted */
     --secondary-foreground: 0 0% 80%;
 
     /* Muted */
-    --muted:               240 6% 14%;
-    --muted-foreground:    240 5% 55%;
+    --muted:               0 0% 10%;         /* #1a1a1a = surface-muted */
+    --muted-foreground:    0 0% 54%;         /* #8a8a8a = fg-subtle */
 
     /* Accent */
     --accent:              238 40% 20%;
@@ -525,9 +534,9 @@
     --destructive:         var(--error-500);
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders */
-    --border:              240 6% 20%;
-    --input:               240 6% 20%;
+    /* Borders — `border-border` es `hsl(var(--border))`: va en canales HSL. */
+    --border:              0 0% 15%;         /* #262626 */
+    --input:               0 0% 15%;         /* = border, como en claro */
     --ring:                var(--indigo-300);
 
     /* Focus ring */
@@ -542,10 +551,10 @@
     /* PLan CRM Namespace */
     --plan-page-bg: #0a0a0a;  /* dark: = sidebar bg (--bg) — shell unificado (body = sidebar = header) */
     --plan-card-bg: #0a0a0a;
-    --plan-border: #2E2E33;
+    --plan-border: #262626;          /* = border (era #2E2E33, azulado) */
     --plan-text-primary: #F2F2F2;
-    --plan-text-secondary: #A1A1AA;
-    --plan-text-muted: #71717A;
+    --plan-text-secondary: #a6a6a6;  /* = fg-muted (era zinc #A1A1AA) */
+    --plan-text-muted: #8a8a8a;      /* = fg-subtle (era zinc #71717A, 4,1:1) */
 
     /* PLan Status Colors (keep vibrant, darken backgrounds) */
     --plan-status-green-bg: #0F2A1A;
@@ -555,11 +564,24 @@
     --plan-status-blue-bg: #0F1A2A;
 
     /* Neutral overrides for dark — los dos que hacen de fondo van al mismo
-       onyx; 100/200 siguen siendo los grises de las superficies hundidas. */
+       onyx; 100/200 siguen siendo los grises de las superficies hundidas.
+       La escala `neutral-*` era CÁLIDA (tono 38–42) también en oscuro: los
+       `dark:bg-neutral-800`, `dark:text-neutral-400`… salían amarillentos.
+       En oscuro pierde el tinte: 100 y 200 toman el valor de la paleta de su
+       papel en claro (surface-muted y border); 400 y 800 caen a 2 puntos de
+       fg-muted y border y toman ese valor exacto; el resto conserva su luz,
+       sin tinte. En claro no cambia nada. */
     --neutral-0:   0 0% 4%;
     --neutral-50:  0 0% 4%;
-    --neutral-100: 40 8% 14%;
-    --neutral-200: 40 8% 18%;
+    --neutral-100: 0 0% 10%;   /* #1a1a1a = surface-muted */
+    --neutral-200: 0 0% 15%;   /* #262626 = border */
+    --neutral-300: 0 0% 81%;
+    --neutral-400: 0 0% 65%;   /* #a6a6a6 = fg-muted */
+    --neutral-500: 0 0% 42%;
+    --neutral-600: 0 0% 33%;
+    --neutral-700: 0 0% 27%;
+    --neutral-800: 0 0% 15%;   /* #262626 = border */
+    --neutral-900: 0 0% 7%;
   }
 
   /* Lenis smooth scroll - Luxterra style */
@@ -1220,15 +1242,74 @@
     @apply min-h-[44px] inline-flex items-center;
   }
 
-  /* Reduced motion preference */
+  /* Movimiento reducido (DESIGN.md §8b): SIN desplazamientos, pero CON los
+     fundidos del sistema.
+
+     Esto ponía TODA animación y transición en 0,01 ms, y así nunca se
+     aplicaban las duraciones reducidas de los tokens de Cadence: un modal o un
+     cajón aparecía de golpe en vez de con su fundido de 150 ms. Ahora:
+
+     1. Los tokens (`--motion-*`, en el puente de abajo) pasan a distancia 0,
+        escala 1 y 150 ms, como en Cadence. Las animaciones del sistema que
+        leen esos tokens quedan en un fundido corto, sin moverse.
+     2. `tailwindcss-animate` (`animate-in slide-in-from-* zoom-in-*`) pierde
+        el desplazamiento, la escala y el giro: queda el fundido.
+     3. Todo lo demás que se anima con CSS sigue quieto, como siempre:
+        keyframes propios (rebotes, giros, marquesinas, la barra
+        indeterminada, la hoja que sube el 100 %, el spinner que crece desde
+        0,5), y las transiciones de `transform` (hover lift, presión). Se
+        salvan SÓLO las animaciones de la lista —cada una se nombra con su
+        token entero: `animate-in` no debe atrapar a `animate-indeterminate`—
+        y las transiciones que sólo cambian la opacidad.
+
+     `movimiento-reducido.test.ts` comprueba que ninguna de las salvadas se
+     mueve con estos valores. framer-motion no pasa por acá: lo resuelve
+     `MotionProvider` (`reducedMotion="user"`). */
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
     *::after {
+      --tw-enter-translate-x: 0 !important;
+      --tw-enter-translate-y: 0 !important;
+      --tw-enter-scale: 1 !important;
+      --tw-enter-rotate: 0 !important;
+      --tw-exit-translate-x: 0 !important;
+      --tw-exit-translate-y: 0 !important;
+      --tw-exit-scale: 1 !important;
+      --tw-exit-rotate: 0 !important;
+      scroll-behavior: auto !important;
+    }
+
+    *:not(
+        [class*="animate-in "], [class$="animate-in"],
+        [class*="animate-out "], [class$="animate-out"],
+        [class*="animate-pop-in "], [class$="animate-pop-in"],
+        [class*="animate-pop-out "], [class$="animate-pop-out"],
+        [class*="animate-tip-in "], [class$="animate-tip-in"],
+        [class*="animate-rise-in "], [class$="animate-rise-in"],
+        [class*="animate-dialog-overlay-in "], [class$="animate-dialog-overlay-in"],
+        [class*="animate-dialog-overlay-out "], [class$="animate-dialog-overlay-out"],
+        [class*="animate-dialog-in "], [class$="animate-dialog-in"],
+        [class*="animate-dialog-out "], [class$="animate-dialog-out"],
+        [class*="animate-dialog-fade-in "], [class$="animate-dialog-fade-in"],
+        [class*="animate-dialog-fade-out "], [class$="animate-dialog-fade-out"],
+        [class*="animate-dialog-icon-in "], [class$="animate-dialog-icon-in"],
+        [class*="animate-sheet-fade-in "], [class$="animate-sheet-fade-in"],
+        [class*="animate-sheet-fade-out "], [class$="animate-sheet-fade-out"]
+      ),
+    *::before,
+    *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
+    }
+
+    *:not(
+        :is([class*="transition-opacity "], [class$="transition-opacity"]):not([class*="transition-transform"], [class*="transition-["]),
+        .chat-acciones
+      ),
+    *::before,
+    *::after {
       transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
     }
   }
 
@@ -1574,17 +1655,19 @@ select:-webkit-autofill:active {
   background: rgba(156, 163, 175, 0.7);
 }
 
-/* Dark mode scrollbar */
+/* Dark mode scrollbar — grises neutros de la paleta (antes gray-600 de
+   Tailwind, azulado): el pulgar es `border-strong` y, al pasar, el gris del
+   placeholder. */
 .dark .scrollbar-thin {
-  scrollbar-color: rgba(75, 85, 99, 0.6) transparent;
+  scrollbar-color: var(--border-strong) transparent;
 }
 
 .dark .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(75, 85, 99, 0.6);
+  background: var(--border-strong);
 }
 
 .dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(75, 85, 99, 0.8);
+  background: var(--fg-placeholder);
 }
 
 /* Hide scrollbar but keep functionality */
@@ -1605,6 +1688,29 @@ select:-webkit-autofill:active {
  * Fuente de verdad: design-system/src/styles/tokens.css
  * ═══════════════════════════════════════════════════════════════════════════ */
 :root {
+  /* Movimiento (Cadence, docs/DESIGN.md §8b) — los mismos valores que
+     `cadence/src/motion/tokens.ts` y que el respaldo de `duration-*`,
+     `ease-*` y `animate-pop-in/rise-in/collapse-*` del preset. Con
+     movimiento reducido pasan a distancia 0, escala 1 y 150 ms (el bloque
+     que sigue a éste, igual que `cadence/src/styles/tokens.css`), y la regla
+     global de «Movimiento reducido» deja quieto lo que no pasa por ellos;
+     framer lo resuelve `MotionProvider`. */
+  --motion-duration-instant: 100ms;
+  --motion-duration-fast: 150ms;
+  --motion-duration-base: 200ms;
+  --motion-duration-slow: 300ms;
+  --motion-duration-reveal: 500ms;
+  --motion-duration-ambient: 2400ms; /* el período de un bucle decorativo (halo, orbe, brillo) */
+  --motion-ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --motion-ease-emphasis: cubic-bezier(0.32, 0.72, 0, 1);
+  --motion-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-distance-xs: 4px;
+  --motion-distance-sm: 8px;
+  --motion-distance-md: 16px;
+  --motion-distance-lg: 24px;
+  --motion-pop-scale: 0.96;
   --bg: #fbfaf9;
   --surface: #ffffff;
   --surface-muted: #f4f2ef;
@@ -1616,12 +1722,27 @@ select:-webkit-autofill:active {
   --fg: #14130f;
   --fg-muted: #6e6a63;
   --fg-subtle: #726e68;
+  /* El placeholder: ver «El placeholder es un ejemplo» al final del archivo.
+     2.66:1 sobre blanco — a propósito por debajo de cualquier texto real. */
+  --fg-placeholder: #a39e96;
   --primary-hover: #1533d6;
   --primary-fg: #ffffff;
   --accent-soft: #edf1ff;
   --success-soft: #e8f4ea;
   --warning-soft: #fbf1dd;
+  /* QA-PROP-95 G-14 + QA-CONT-95 I-09 (04-10-2026): la TINTA para escribir en
+     advertencia y en éxito. `--warning` (#C07A2D) es el color de RELLENO: como
+     texto sobre su fondo suave da 3,23:1 y sobre --surface-muted 3,24:1 (AA
+     pide 4,5:1). Ver «La tinta de advertencia y de éxito» al final del archivo. */
+  --warning-ink: hsl(var(--warning-700)); /* #8A4F1D · 5,8:1 sobre #FBF1DD */
+  --success-ink: hsl(var(--success-700));
   --danger: #c0392b;
+  /* La alerta de peligro escribe su texto con opacidad 0,9 sobre --danger-soft:
+     con --danger daba 3,99:1. Esta tinta da 5,3:1 con esa opacidad. */
+  --danger-ink: #9f2a1f;
+  /* La alerta de información escribe su texto con `--info` (#4D8EF6 con
+     opacidad 0,9: 2,79:1 sobre --info-soft). El título del DS ya era #1B4F84. */
+  --info-ink: #1b4f84;
   --danger-soft: #fbe9e6;
   --info-soft: #e6f0fa;
   /* ink — Deep Navy brand surface */
@@ -1636,30 +1757,54 @@ select:-webkit-autofill:active {
   --font-body: var(--font-sans);
 }
 
+/* Movimiento reducido: sin desplazamientos ni escalas; quedan fundidos cortos.
+   Los mismos valores que `cadence/src/styles/tokens.css` (que este front no
+   importa): las clases `animate-*` y `duration-*` del preset leen estas
+   variables, así que no hace falta un `motion-reduce:` por componente. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-distance-xs: 0px;
+    --motion-distance-sm: 0px;
+    --motion-distance-md: 0px;
+    --motion-distance-lg: 0px;
+    --motion-pop-scale: 1;
+    --motion-duration-base: 150ms;
+    --motion-duration-slow: 150ms;
+    --motion-duration-reveal: 150ms;
+    --motion-ease-spring: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
 .dark {
   /* Onyx Black en los fondos (ver el bloque .dark de arriba). `--ink` va acá
      a propósito: en oscuro `dark:bg-ink` es un fondo más, y antes heredaba el
-     #14130f de :root — el mismo café. Los grises (surface-muted, bordes,
-     textos) no se tocan. */
+     #14130f de :root — el mismo café. `--ink-2` (el otro extremo del
+     degradado de tinta de KpiCard, Banner, las tarjetas de Cadence y los
+     héroes del panel) también: antes heredaba el #2a2824 cálido de :root;
+     ahora es el de Cadence en oscuro, sin tinte.
+     Los GRISES son la paleta NEUTRA del chat que eligió Nico (02-10) para
+     toda la plataforma: los cálidos de antes (#24221c, #26241e, #403c33,
+     #b3aea5, #8d8980, #66625a) sobre el negro se leían amarillentos.
+     Contraste medido (WCAG): fg-muted 8,13:1 sobre el fondo y 7,15:1 sobre
+     surface-muted; fg-subtle 5,73:1 y 5,04:1 — los dos pasan AA (4,5:1) en
+     texto chico, también en las cabeceras de tabla del DS (`TableHead` trae
+     horneado `text-label text-fg-subtle`, 11px). El placeholder queda a
+     propósito por debajo de cualquier texto real: 3,10:1 sobre el negro de
+     los campos y 2,73:1 sobre surface-muted; el valor escrito va a 19:1. */
   --bg: #0a0a0a;
   --surface: #0a0a0a;
   --ink: #0a0a0a;
-  --surface-muted: #24221c;
+  --ink-2: #1a1a1a;
+  --surface-muted: #1a1a1a;
   --surface-hover: rgba(255, 255, 255, 0.05);
   --surface-pressed: rgba(255, 255, 255, 0.08);
   --surface-selected: rgba(255, 255, 255, 0.07);
-  --border-faint: #26241e;
-  --border-strong: #403c33;
+  --border-faint: #1f1f1f;
+  --border-strong: #3a3a3a;
   --fg: #fbfaf9;
-  --fg-muted: #b3aea5;
-  /* Era #7e7a72 → 3.72:1 sobre la superficie de tabla (#24221c, medido).
-     WCAG AA pide 4.5:1 para texto de menos de 18px, y este token viste las
-     cabeceras de tabla del DS — `TableHead` de @leasefy/cadence trae horneado
-     `text-label text-fg-subtle`, o sea 74 archivos del panel a 11px con
-     contraste insuficiente. #8d8980 es el MISMO matiz aclarado hasta el
-     mínimo que cumple: 4.54:1. En claro el token ya cumplía; esto era un
-     defecto sólo del tema oscuro. */
-  --fg-subtle: #8d8980;
+  --fg-muted: #a6a6a6;
+  --fg-subtle: #8a8a8a;
+  --fg-placeholder: #5f5f5f;
   --primary-hover: #3b5bff;
   /* Dark primary = light periwinkle fill → text must be dark ink (not white).
      Was missing here, so it inherited :root's #fff → white text on periwinkle. */
@@ -1667,9 +1812,38 @@ select:-webkit-autofill:active {
   --accent-soft: rgba(26, 64, 255, 0.16);
   --success-soft: rgba(62, 174, 112, 0.16);
   --warning-soft: rgba(210, 153, 47, 0.16);
+  /* En oscuro, la tinta clara (sobre el fondo suave); el ámbar suelto se queda. */
+  --warning-ink: hsl(var(--warning-100));
+  --success-ink: hsl(var(--success-100));
   --danger: #e0664d;
+  --danger-ink: #f3a595;
+  /* En oscuro el título #1B4F84 del DS quedaba en 2,01:1 sobre el fondo. */
+  --info-ink: #a9cdf2;
   --danger-soft: rgba(224, 102, 77, 0.16);
   --info-soft: rgba(42, 111, 176, 0.2);
+}
+
+/* ── La fila activa del menú (Nico, 03-10-2026) ───────────────────────────────
+   «en light debería de verse con el azul como estaba, quiero que cuando esté
+   seleccionada se vea algo hermoso». Un solo par de tokens para la fila activa
+   de la barra (abierta, plegada y el cajón del celular) y de la barra de abajo
+   del celular con su «Más»:
+   · Claro: el azul de la marca tal como estaba — el fondo `#edf1ff`
+     (accent-soft) y la tinta `#1A40FF` (primary). Contraste 5,8:1.
+   · Oscuro: NO el accent-soft de oscuro (rgba(26,64,255,.16) sobre el negro da
+     #0d1331, saturación ≈60 %: el índigo saturado que no le gustó el 02-10)
+     sino un azul APAGADO y translúcido (sobre #0a0a0a da ≈ #1e233b,
+     saturación ≈33 %) con la tinta en un periwinkle claro (#b9c6ff).
+     Contraste 9,3:1. Se eligió mirando cuatro intensidades lado a lado: más
+     tenue se leía gris; más fuerte volvía al índigo.
+   Al pasar el mouse sigue `surface-hover` (neutro, más tenue que la activa). */
+:root {
+  --menu-activa: #edf1ff;
+  --menu-activa-tinta: hsl(var(--primary));
+}
+.dark {
+  --menu-activa: rgba(110, 135, 255, 0.2);
+  --menu-activa-tinta: #b9c6ff;
 }
 
 /* ── El sidebar NO pisa `--primary` (2026-08-16) ──────────────────────────────
@@ -1836,4 +2010,735 @@ button[role='radio'][data-state='checked'].group {
   /* `--primary` acá es un triplete HSL (230 100% 55%), no un color: va envuelto en hsl(). */
   border-color: hsl(var(--primary));
   box-shadow: 0 0 0 3px hsl(var(--primary) / 0.14);
+}
+
+/*
+ * El placeholder es un EJEMPLO, no un dato (Nico, 01-10: «esos inputs como el
+ * de código de tu sistema y dígito de verificación se ven como si estuvieran
+ * llenos; eso nos generó confusión a nosotros, y al usuario me imagino»).
+ *
+ * El placeholder vestía `fg-subtle`, el MISMO gris de las ayudas y de las
+ * cabeceras de tabla — subido a 4.5:1 en oscuro para que esos textos se lean.
+ * Con ese contraste un «050» en un campo vacío se leía como un valor escrito.
+ * Ahora tiene su token, `--fg-placeholder`, más claro que cualquier texto real.
+ *
+ * Por qué acá y no en cada campo: el Input, el Textarea, el buscador, el
+ * campo de fecha y el de teléfono de @leasefy/cadence traen horneado
+ * `placeholder:text-fg-subtle`, y cadence es otro repo. Estas reglas van
+ * DESPUÉS de `@tailwind utilities` y con la misma especificidad, así que
+ * ganan por orden. Lo nuevo se escribe `placeholder:text-fg-placeholder`.
+ * Los placeholders de superficies oscuras de marca (`placeholder:text-white/40`,
+ * `text-plan-muted`) no se tocan: son otra superficie.
+ */
+::placeholder {
+  color: var(--fg-placeholder);
+  opacity: 1; /* Firefox le baja la opacidad por su cuenta */
+}
+
+/* Dos reglas y no una lista: un navegador que no conoce `::-moz-placeholder`
+   tira la lista ENTERA, y la regla buena se iría con ella. */
+.placeholder\:text-fg-subtle::placeholder {
+  color: var(--fg-placeholder);
+}
+.placeholder\:text-fg-subtle::-moz-placeholder {
+  color: var(--fg-placeholder);
+}
+
+/* El «Selecciona…» de un Select sin valor (Radix marca el span con `data-placeholder`). */
+[role='combobox'] > span[data-placeholder] {
+  color: var(--fg-placeholder);
+}
+
+/* ── La llegada del chat: el brillo de la caja (02-10-2026) ──────────────────
+ *
+ * Nico: «quiero así de hermoso el chat», con la llegada del sistema de diseño
+ * de SaleAds como referencia de movimiento (su `<border-beam>`: un arco de luz
+ * que da la vuelta al borde en 3,6 s y un lavado de color que deriva por
+ * dentro entre 13 y 23 s, encendido con un fundido de 0,8 s).
+ *
+ * Es una EXCEPCIÓN decorativa al «sin gradientes en el chat» (DESIGN §1): vive
+ * en el borde y en un lavado muy tenue dentro de la caja de la llegada, nunca
+ * en burbujas, tarjetas ni datos. Los tonos son los de los degradados de marca
+ * de Cadence (cobalto, cian, violeta, durazno — Aurora/Dusk).
+ *
+ * El giro es `rotate` sobre un cuadrado con el cónico (no `@property`): corre
+ * en el compositor y no repinta. La caja lo tapa por dentro, así que del
+ * cuadrado sólo se ve el filo de 1,5 px que queda entre la caja y el marco.
+ * Con «reducir movimiento» nada gira ni deriva: el aro y el lavado quedan
+ * quietos (el aro sigue marcando el foco).
+ */
+.llegada-caja {
+  --llegada-cobalto: 26 64 255;
+  --llegada-cian: 43 181 232;
+  --llegada-violeta: 142 123 240;
+  --llegada-durazno: 240 146 90;
+  --llegada-fuerza: 1;
+}
+.dark .llegada-caja {
+  --llegada-fuerza: 1.35;
+}
+.llegada-aro,
+.llegada-halo {
+  position: absolute;
+  inset: -1.5px;
+  border-radius: 31.5px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+/* El aro: un filo completo en cobalto (es el indicador de foco: tiene que
+   verse con teclado, ≥ 3:1 contra el marco) y el arco de color que lo recorre. */
+.llegada-aro {
+  background: rgb(var(--llegada-cobalto) / 0.7);
+}
+.llegada-halo {
+  inset: -5px;
+  border-radius: 35px;
+  filter: blur(9px);
+}
+/* La caja de la conversación (más baja, radio 26). */
+.llegada-caja[data-compacta='true'] .llegada-aro {
+  border-radius: 27.5px;
+}
+.llegada-caja[data-compacta='true'] .llegada-halo {
+  border-radius: 31px;
+}
+.llegada-caja[data-enfocada='true'] .llegada-aro {
+  opacity: 1;
+}
+.llegada-caja[data-enfocada='true'] .llegada-halo {
+  opacity: 0.55;
+}
+.llegada-giro {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 170%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 196deg,
+    rgb(var(--llegada-violeta) / 0.95) 222deg,
+    rgb(var(--llegada-cobalto)) 246deg,
+    rgb(var(--llegada-cian)) 272deg,
+    rgb(255 255 255 / 0.95) 288deg,
+    rgb(var(--llegada-violeta)) 312deg,
+    rgb(var(--llegada-durazno) / 0.95) 338deg,
+    transparent 360deg
+  );
+  animation: llegada-giro 3.6s linear infinite;
+}
+@keyframes llegada-giro {
+  to {
+    rotate: 360deg;
+  }
+}
+/* El lavado: cuatro manchas sin borde que derivan despacio dentro de la caja.
+   Tenue a propósito: el texto que se escribe encima conserva su contraste. */
+.llegada-lavado {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+.llegada-caja[data-encendida='true'] .llegada-lavado {
+  opacity: 1;
+}
+.dark .llegada-lavado {
+  mix-blend-mode: screen;
+}
+.llegada-lavado i {
+  position: absolute;
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  filter: blur(44px);
+  will-change: transform;
+}
+.llegada-lavado i:nth-child(1) {
+  left: -12%;
+  top: -55%;
+  width: 52%;
+  background: radial-gradient(circle, rgb(var(--llegada-cobalto) / calc(0.13 * var(--llegada-fuerza))), transparent 68%);
+  animation: llegada-deriva-1 16s ease-in-out infinite alternate;
+}
+.llegada-lavado i:nth-child(2) {
+  right: -16%;
+  bottom: -70%;
+  width: 56%;
+  background: radial-gradient(circle, rgb(var(--llegada-durazno) / calc(0.16 * var(--llegada-fuerza))), transparent 68%);
+  animation: llegada-deriva-2 19s ease-in-out infinite alternate;
+}
+.llegada-lavado i:nth-child(3) {
+  left: 32%;
+  top: -30%;
+  width: 40%;
+  background: radial-gradient(circle, rgb(var(--llegada-violeta) / calc(0.15 * var(--llegada-fuerza))), transparent 68%);
+  animation: llegada-deriva-3 13s ease-in-out infinite alternate;
+}
+.llegada-lavado i:nth-child(4) {
+  right: 12%;
+  top: -60%;
+  width: 38%;
+  background: radial-gradient(circle, rgb(var(--llegada-cian) / calc(0.14 * var(--llegada-fuerza))), transparent 68%);
+  animation: llegada-deriva-2 21s ease-in-out infinite alternate-reverse;
+}
+@keyframes llegada-deriva-1 {
+  to {
+    transform: translate(22%, 26%) scale(1.15);
+  }
+}
+@keyframes llegada-deriva-2 {
+  to {
+    transform: translate(-20%, -22%) scale(1.1);
+  }
+}
+@keyframes llegada-deriva-3 {
+  to {
+    transform: translate(-26%, 30%) scale(0.92);
+  }
+}
+/* El cursor del ejemplo que se escribe solo. */
+.llegada-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 2px;
+  vertical-align: -0.18em;
+  border-radius: 1px;
+  background: currentColor;
+  animation: llegada-cursor 1s steps(2) infinite;
+}
+@keyframes llegada-cursor {
+  50% {
+    opacity: 0;
+  }
+}
+/* ── Ajustes del 02-10 (segunda vuelta de Nico) ──────────────────────────────
+ *
+ * El marco y la bandeja: en claro, el hueso de siempre; en oscuro, apenas más
+ * claros que el fondo (antes `--surface-muted` #24221c: «los grises son muy
+ * fuertes»). Velos de blanco y no un gris fijo: siguen al fondo que haya.
+ */
+.llegada-marco {
+  background: var(--surface-muted);
+}
+.llegada-bandeja {
+  background: linear-gradient(var(--surface-hover), var(--surface-hover)), var(--surface-muted);
+}
+.dark .llegada-marco {
+  background: rgb(255 255 255 / 0.03);
+}
+.dark .llegada-bandeja {
+  background: rgb(255 255 255 / 0.045);
+}
+
+/* Grises NEUTROS del chat en oscuro (Nico, 02-10: «unos grises como amarillos
+   súper feos»). Los de Cadence en oscuro son cálidos (#24221c, #26241e,
+   #403c33, #b3aea5…) y sobre el negro se leen amarillentos. Acá se redefinen
+   los mismos tokens, sólo dentro de la llegada del chat; la paleta sirve de
+   base para estandarizar el resto de la plataforma. En claro no cambia nada. */
+.dark .llegada-grises,
+.dark .chat-grises {
+  --surface-muted: #1a1a1a;
+  /* `border-border` es `hsl(var(--border))` en este front (tailwind.config):
+     va en canales HSL, no en hex. 0 0% 15% = #262626, neutro. */
+  --border: 0 0% 15%;
+  --border-faint: #1f1f1f;
+  --border-strong: #3a3a3a;
+  --fg-muted: #a6a6a6;
+  --fg-subtle: #8a8a8a;
+  --fg-placeholder: #5f5f5f;
+}
+
+/* La voz: un resplandor que sube desde el borde de abajo de la caja y respira
+   con el micrófono (`--nivel`, 0–1, lo pone `useNivelDelMicrofono` cuadro a
+   cuadro). Es el `<voice-beam>` de la referencia: siete manchas sin borde que
+   suben más cuanto más fuerte se habla, y una línea fina pegada al borde. */
+.llegada-voz {
+  --nivel: 0.15;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.llegada-caja[data-escuchando='true'] .llegada-voz {
+  opacity: 1;
+}
+.dark .llegada-voz {
+  mix-blend-mode: screen;
+}
+.llegada-voz i {
+  --alto: calc(22px + var(--nivel) * 64px);
+  position: absolute;
+  bottom: calc(var(--alto) * -0.55);
+  width: calc(var(--alto) * 3.4);
+  height: calc(var(--alto) * 1.8);
+  border-radius: 50%;
+  translate: -50% 0;
+  filter: blur(calc(14px + var(--nivel) * 10px));
+  opacity: calc(0.35 + var(--nivel) * 0.65);
+  animation: llegada-voz-mece 2.3s ease-in-out infinite alternate;
+}
+.llegada-voz i:nth-child(1) {
+  left: 24%;
+  background: radial-gradient(closest-side, rgb(var(--llegada-violeta) / 0.5), transparent);
+  animation-duration: 2.1s;
+}
+.llegada-voz i:nth-child(2) {
+  left: 37%;
+  background: radial-gradient(closest-side, rgb(var(--llegada-cobalto) / 0.42), transparent);
+  animation-duration: 2.6s;
+}
+.llegada-voz i:nth-child(3) {
+  left: 50%;
+  background: radial-gradient(closest-side, rgb(var(--llegada-cian) / 0.5), transparent);
+  animation-duration: 1.9s;
+}
+.llegada-voz i:nth-child(4) {
+  left: 63%;
+  background: radial-gradient(closest-side, rgb(var(--llegada-violeta) / 0.45), transparent);
+  animation-duration: 2.4s;
+}
+.llegada-voz i:nth-child(5) {
+  left: 76%;
+  background: radial-gradient(closest-side, rgb(var(--llegada-durazno) / 0.5), transparent);
+  animation-duration: 2.8s;
+}
+.llegada-voz b {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  height: 2px;
+  width: calc(36% + var(--nivel) * 48%);
+  translate: -50% 0;
+  border-radius: 2px;
+  opacity: calc(0.55 + var(--nivel) * 0.45);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--llegada-violeta)),
+    rgb(var(--llegada-cobalto)),
+    rgb(var(--llegada-cian)),
+    rgb(var(--llegada-durazno)),
+    transparent
+  );
+  box-shadow: 0 0 calc(10px + var(--nivel) * 14px) rgb(var(--llegada-cian) / 0.7);
+}
+@keyframes llegada-voz-mece {
+  from {
+    transform: translateX(-6px) scaleY(0.9);
+  }
+  to {
+    transform: translateX(6px) scaleY(1.06);
+  }
+}
+/* El micrófono que late mientras escucha (la referencia: `sa-pulse` 1,6 s) y
+   un aro que se abre desde él. */
+.llegada-mic {
+  position: relative;
+  animation: llegada-late 1.6s ease-in-out infinite;
+}
+.llegada-mic::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 2px solid rgb(var(--llegada-cobalto) / 0.5);
+  animation: llegada-aro-mic 1.6s ease-out infinite;
+}
+@keyframes llegada-late {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@keyframes llegada-aro-mic {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+/* Mientras escucha el cursor queda fijo junto a lo dictado. */
+.llegada-cursor-voz {
+  background: var(--fg);
+}
+/* La onda del botón «Voz»: cuatro barras que se mecen al pasar el mouse
+   (la referencia: `sa-wave`, de 0,7 a 1,09 s, desfasadas 0,1 s). */
+.llegada-onda {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 16px;
+}
+.llegada-onda i {
+  display: block;
+  width: 2.5px;
+  height: 14px;
+  border-radius: 2px;
+  background: currentColor;
+  transform-origin: center;
+  transform: scaleY(0.45);
+}
+.llegada-onda i:nth-child(2) {
+  transform: scaleY(0.85);
+}
+.llegada-onda i:nth-child(3) {
+  transform: scaleY(0.6);
+}
+.group:hover .llegada-onda i {
+  animation: llegada-onda 0.7s ease-in-out infinite;
+}
+.group:hover .llegada-onda i:nth-child(2) {
+  animation-duration: 0.83s;
+  animation-delay: 0.1s;
+}
+.group:hover .llegada-onda i:nth-child(3) {
+  animation-duration: 0.96s;
+  animation-delay: 0.2s;
+}
+.group:hover .llegada-onda i:nth-child(4) {
+  animation-duration: 1.09s;
+  animation-delay: 0.3s;
+}
+@keyframes llegada-onda {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+/* El aro de enviar: un anillo metálico de 3 px que gira despacio alrededor del
+   botón (el `<metal-ring>` de la referencia, sin WebGL). Tenue sin texto; con
+   texto, entero. El botón tapa el centro, así que sólo se ve el filo. */
+.llegada-anillo {
+  transition: transform 0.15s ease;
+}
+.llegada-anillo:hover {
+  transform: scale(1.05);
+}
+.llegada-anillo-luz {
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0.28;
+  transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.llegada-anillo[data-fuerza='llena'] .llegada-anillo-luz {
+  opacity: 1;
+}
+.llegada-metal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: conic-gradient(
+    from 0deg,
+    #d9dce3,
+    rgb(var(--llegada-violeta)),
+    #f4f4f6,
+    rgb(var(--llegada-cian)),
+    #b8bcc6,
+    rgb(var(--llegada-durazno)),
+    #f7f7f9,
+    rgb(var(--llegada-cobalto)),
+    #d9dce3
+  );
+  animation: llegada-giro 5s linear infinite;
+}
+.dark .llegada-metal {
+  filter: brightness(0.8);
+}
+/* La pregunta recién enviada sube a su sitio en el hilo (la referencia:
+   `sa-rise` .46 s — 9 px, desenfoque de 3 px a 0). */
+.chat-sube {
+  animation: chat-sube 0.46s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes chat-sube {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+    filter: blur(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: blur(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .llegada-giro,
+  .llegada-lavado i,
+  .llegada-cursor,
+  .llegada-voz i,
+  .llegada-mic,
+  .llegada-mic::after,
+  .llegada-metal,
+  .group:hover .llegada-onda i,
+  .chat-sube {
+    animation: none;
+  }
+  .llegada-anillo:hover {
+    transform: none;
+  }
+}
+
+/* ── La conversación (02-10, «¿por qué sigo viendo un chat viejo y feo?») ─────
+ * Los pasos del turno: el activo gira y respira, el listo aparece con un rebote
+ * corto, el especialista que trabaja lleva un aro que gira, y la barra del
+ * avance tiene un brillo que la recorre mientras hay trabajo. */
+.chat-paso-girando {
+  box-shadow: inset 0 0 0 1.5px rgb(26 64 255 / 0.16);
+}
+.chat-paso-girando::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 1.5px solid transparent;
+  border-top-color: rgb(26 64 255);
+  border-right-color: rgb(26 64 255 / 0.45);
+  animation: chat-gira 0.8s linear infinite;
+}
+.chat-paso-girando > span {
+  animation: chat-respira 1.4s ease-in-out infinite;
+}
+.chat-paso-listo {
+  animation: chat-pop 0.38s cubic-bezier(0.22, 1.4, 0.36, 1) both;
+}
+.chat-avatar-trabajando::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  padding: 2px;
+  background: conic-gradient(from 0deg, transparent 0 55%, rgb(142 123 240), rgb(26 64 255), rgb(43 181 232), transparent);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box exclude,
+    linear-gradient(#000 0 0);
+  animation: chat-gira 1.1s linear infinite;
+}
+.chat-barra-viva {
+  background-image: linear-gradient(90deg, transparent 0%, rgb(255 255 255 / 0.55) 50%, transparent 100%);
+  background-size: 50% 100%;
+  background-repeat: no-repeat;
+  animation: chat-brillo 1.4s ease-in-out infinite;
+}
+@keyframes chat-gira {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes chat-respira {
+  0%,
+  100% {
+    transform: scale(0.7);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes chat-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes chat-brillo {
+  from {
+    background-position: -100% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-paso-girando::before,
+  .chat-paso-girando > span,
+  .chat-paso-listo,
+  .chat-avatar-trabajando::before,
+  .chat-barra-viva {
+    animation: none;
+  }
+}
+
+/* ── El pensamiento en vivo (02-10, `PensamientoDelTurno.tsx`) ───────────────
+ * El paso que corre lleva un BRILLO que lo recorre: dos capas del mismo texto;
+ * la clara se ve por una ventana que viaja a la derecha mientras su texto viaja
+ * a la izquierda con la misma curva, así las letras quedan quietas y lo único
+ * que se mueve es la luz. Todo con `transform`. El punto del paso vivo late con
+ * un halo. Con movimiento reducido no hay brillo (la capa clara no existe) ni
+ * latido. */
+.chat-brillo {
+  position: relative;
+}
+.chat-brillo__capa {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.chat-brillo__ventana {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: linear-gradient(90deg, transparent 32%, #000 50%, transparent 68%);
+  mask-image: linear-gradient(90deg, transparent 32%, #000 50%, transparent 68%);
+  animation: chat-brillo-va 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+.chat-brillo__texto {
+  position: absolute;
+  inset: 0;
+  animation: chat-brillo-vuelve 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+@keyframes chat-brillo-va {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes chat-brillo-vuelve {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+.chat-pensando-punto::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 999px;
+  background: var(--fg-subtle);
+  opacity: 0;
+  animation: chat-pensando-late 1.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+@keyframes chat-pensando-late {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-brillo__capa {
+    display: none;
+  }
+  .chat-pensando-punto::before {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* La respuesta se lee como un texto (02-10, «tipografía y espaciado de
+   lectura»): aire entre párrafos y listas, que el `prose-p:my-0` del markdown
+   del chat dejaba pegados. */
+.chat-lectura p + p,
+.chat-lectura p + ul,
+.chat-lectura p + ol,
+.chat-lectura ul + p,
+.chat-lectura ol + p,
+.chat-lectura ul + ul,
+.chat-lectura ol + ol {
+  margin-top: 0.7em;
+}
+.chat-lectura li + li {
+  margin-top: 0.25em;
+}
+
+/* Copiar, rehacer y los pulgares de una respuesta (Nico, 02-10: «que
+   aparezcan al pasar el cursor o con el foco, y siempre en el celular»). Sólo
+   donde hay cursor: en una pantalla táctil quedan siempre a la vista. La
+   última respuesta, la que trae «Reintentar» o la que tiene abierto «¿Qué
+   esperabas?» las dejan fijas (`data-siempre`). */
+@media (hover: hover) and (pointer: fine) {
+  .chat-acciones[data-siempre='false'] {
+    opacity: 0;
+    transition: opacity var(--motion-duration-fast, 150ms) var(--motion-ease-exit, cubic-bezier(0.4, 0, 1, 1));
+  }
+  .chat-respuesta:hover .chat-acciones,
+  .chat-acciones:focus-within {
+    opacity: 1;
+    transition: opacity var(--motion-duration-base, 200ms) var(--motion-ease-enter, cubic-bezier(0.22, 1, 0.36, 1));
+  }
+}
+
+/* ── La tinta de advertencia y de éxito (QA-PROP-95 G-14, 04-10-2026) ────────
+   UN solo lugar para el tono del TEXTO de advertencia y de éxito (Nico, por el
+   coordinador: «oscurecer el texto de advertencia sobre su fondo suave en el
+   tema claro hasta 4,5:1»). `text-warning` del preset de Cadence es el color de
+   relleno (#C07A2D): axe lo marcaba en «Datos por completar», «Giro atrasado»,
+   el estado de la ficha y «Vencido» (3,23:1). Badge, AlertaAccionable, los
+   chips y cualquier `text-warning` leen `--warning-ink`; el relleno
+   (`bg-warning`, bordes) no cambia.
+   · Claro: todo texto de advertencia con la tinta (#8A4F1D, ≥ 5,8:1).
+   · Oscuro: el ámbar suelto se lee bien sobre el fondo oscuro y se queda; sobre
+     su fondo suave, la tinta clara.
+   · Éxito: sólo sobre su fondo suave (suelto ya pasa: #307E57 sobre blanco 5:1). */
+.text-warning {
+  color: var(--warning-ink);
+}
+.dark .text-warning {
+  color: var(--warning);
+}
+.dark .text-warning.bg-warning-soft,
+.dark .bg-warning-soft .text-warning {
+  color: var(--warning-ink);
+}
+.text-success.bg-success-soft,
+.bg-success-soft .text-success {
+  color: var(--success-ink);
+}
+/* Peligro: sólo sobre su fondo suave (la alerta roja de la ficha: «No tiene
+   cuenta bancaria», «El banco devolvió su último giro»). */
+.text-danger.bg-danger-soft,
+.bg-danger-soft .text-danger {
+  color: var(--danger-ink);
+}
+/* Información: el texto sobre su fondo suave, y en oscuro también su título
+   (el DS lo fija en #1B4F84, pensado para el fondo claro). */
+.text-info.bg-info-soft,
+.bg-info-soft .text-info {
+  color: var(--info-ink);
+}
+.dark .bg-info-soft .alert-title {
+  color: var(--info-ink);
 }

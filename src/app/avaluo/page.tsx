@@ -13,6 +13,19 @@ import { AVALUO_WIZARD_URL } from "@/lib/avaluo/wizard-url";
 
 // ---------------------------------------------------------------------------
 // Metadata for this specific page is inherited from avaluo/layout.tsx
+//
+// 🔴 Lo que dice esta página es lo que hace el servicio de avalúos (repo
+// `avaluo`, develop), no más (PROMESAS-Y-DIRECTOR, 05-10-2026). Antes prometía
+// «Pago solo si apruebas», «Entrega en 48 h», «valuadores certificados»,
+// «Lonja de Propiedad Raíz» y validez ante bancos, notarías y juzgados:
+//   · se paga AL ENVIAR la solicitud (`src/app/avaluo/payment-screen.tsx`,
+//     «pay-first») y si el avalúo firmado no sale, el pago se devuelve
+//     (`src/avaluo/payment/refund.ts`);
+//   · el código no tiene ningún plazo de entrega: depende de la firma;
+//   · es remoto y sin visita (sección `sin-visita` del certificado), lo revisa y
+//     firma una persona SIN inscripción en el RAA (`legal/cert-sections.ts`);
+//   · no sirve para crédito, procesos judiciales ni la DIAN (`usos-documento`).
+// Prueba: `no-promete-lo-que-no-hace.test.tsx`.
 // ---------------------------------------------------------------------------
 
 const HOW_IT_WORKS = [
@@ -20,22 +33,22 @@ const HOW_IT_WORKS = [
     step: "01",
     icon: FileText,
     title: "Solicitar",
-    tagline: "EN MINUTOS, NO SEMANAS",
-    body: "Ingresa los datos del inmueble, sube unas fotos y acepta las autorizaciones de datos. Sin papeleo físico.",
+    tagline: "DATOS Y FOTOS DEL INMUEBLE",
+    body: "Ingresa los datos del inmueble, sube unas fotos y acepta las autorizaciones de datos. Sin papeleo físico y sin visita al inmueble.",
   },
   {
     step: "02",
     icon: CreditCard,
     title: "Pagar",
-    tagline: "PAGO SEGURO EN LÍNEA",
-    body: "Una vez revisada tu solicitud, recibes el link de pago. Tarjeta, PSE o transferencia bancaria.",
+    tagline: "PAGO EN LÍNEA AL SOLICITAR",
+    body: "Pagas en línea al enviar la solicitud, y la estimación se prepara cuando el pago queda confirmado. Si al final no se puede emitir el avalúo, te devolvemos el pago.",
   },
   {
     step: "03",
     icon: Seal,
     title: "Recibir certificado",
-    tagline: "INFORME FIRMADO POR VALUADOR",
-    body: "Descarga tu avalúo comercial certificado en PDF. Válido ante entidades financieras, notarías y juzgados.",
+    tagline: "REVISADO Y FIRMADO POR UNA PERSONA",
+    body: "Un revisor revisa la estimación y firma el certificado. Te llega por correo el enlace al informe, con su PDF y un código para verificarlo.",
   },
 ] as const;
 
@@ -52,15 +65,16 @@ export default function AvaluoPage() {
         <h1 className="text-display max-w-3xl mx-auto leading-tight">
           Avalúo comercial{" "}
           <span className="inline-block px-4 py-1 rounded-[14px] bg-primary text-primary-fg">
-            certificado
+            en línea
           </span>
         </h1>
 
         {/* Description */}
         <p className="text-body-lg text-fg-muted max-w-xl mx-auto mt-6 leading-relaxed">
-          Valoración profesional de tu inmueble para compraventa, arrendamiento,
-          crédito hipotecario o procesos legales. Emitido por valuadores
-          certificados. Entrega en&nbsp;48&nbsp;h.
+          Una estimación del valor de referencia de tu inmueble, para venta o
+          arriendo, hecha de forma remota con los datos y las fotos que cargas y
+          con datos del mercado. Nadie visita el inmueble: un revisor la revisa
+          y la firma antes de entregártela.
         </p>
 
         {/* CTA — primary button, Satoshi sentence case (brand contract §4) */}
@@ -74,7 +88,7 @@ export default function AvaluoPage() {
 
         {/* Trust micro-copy */}
         <p className="mt-5 text-xs text-fg-subtle font-mono tracking-wide uppercase">
-          Sin compromiso · Pago solo si apruebas · 100% en línea
+          100% en línea · Sin visita al inmueble · Si no se emite, te devolvemos el pago
         </p>
       </section>
 
@@ -146,12 +160,11 @@ export default function AvaluoPage() {
             />
           </div>
           <p className="text-body-sm text-fg-muted max-w-md">
-            Avaluadores registrados en la{" "}
-            <span className="font-medium text-fg">
-              Lonja de Propiedad Raíz
-            </span>
-            . Informes aceptados por bancos, notarías y despachos judiciales en
-            todo el territorio nacional.
+            Sirve como{" "}
+            <span className="font-medium text-fg">referencia</span> para
+            negociar una compraventa o fijar un canon de arriendo. No es un
+            avalúo de un avaluador inscrito en el RAA: no sirve para crédito
+            hipotecario, procesos judiciales ni trámites ante la DIAN.
           </p>
         </div>
       </section>

@@ -64,7 +64,9 @@ function mapBackendLease(bl: BackendLease): Lease {
     deposit: bl.deposit,
     startDate: bl.startDate,
     endDate: bl.endDate,
-    paymentDay: bl.paymentDay,
+    // QA-INQ-95: el día que se le muestra al inquilino es el del vencimiento de la cuota
+    // (`venceElDia`); sin él (un back anterior u otra lectura), el día pactado.
+    paymentDay: bl.venceElDia !== undefined ? bl.venceElDia : (bl.paymentDay ?? bl.paymentDueDay ?? null),
     propertyTitle: bl.propertyTitle,
     propertyAddress: bl.propertyAddress,
     propertyCity: bl.propertyCity,
@@ -80,6 +82,7 @@ function mapBackendLease(bl: BackendLease): Lease {
     insuranceUrl: bl.insuranceUrl,
     inventoryUrl: bl.inventoryUrl,
     renovacion: bl.renovacion ?? null,
+    avisoNoRenovar: bl.avisoNoRenovar ?? bl.renovacion?.avisoNoRenovar ?? null,
     createdAt: bl.createdAt,
     updatedAt: bl.updatedAt,
     // Legacy: el backend NO devuelve estos campos. Los pasamos solo si vinieran (compat).
@@ -112,7 +115,8 @@ function mapBackendPayment(bp: BackendPayment): Payment {
 
 /** Lo que responde el back cuando el inquilino avisa que no renueva. */
 export interface AvisoDeNoRenovacion {
-  renovacionId: string;
+  /** `null` cuando el aviso quedó en el contrato (D-19), como lo registra la inmobiliaria. */
+  renovacionId: string | null;
   avisadoEl: string;
   por: string | null;
   motivo: string | null;

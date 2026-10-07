@@ -3,6 +3,8 @@
 import { useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import { Appear } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { WarningCircle, CheckCircle, Confetti, ArrowRight, Clock, XCircle, PencilSimple, ChatCircle } from '@phosphor-icons/react';
 import { MonoLabel } from '@leasefy/cadence';
 import { toast } from 'sonner';
@@ -10,6 +12,7 @@ import { toast } from 'sonner';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { ContractPreview } from '@/components/contract/ContractPreview';
 import { SignatureForm } from '@/components/contract/SignatureForm';
 import { FirmaDelInventarioDelInquilino } from '@/components/inmobiliaria/inventario/FirmaDelInventarioDelInquilino';
@@ -27,7 +30,8 @@ import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { CONTRACT_STATUS_LABELS, getContractTypeLabel } from '@/lib/types/contract';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
-import type { Contract, RejectionType, ContractRejection } from '@/lib/types/contract';
+import type { Contract, ContractStatus, RejectionType, ContractRejection } from '@/lib/types/contract';
+import { mensajeDeLaFirmaDelInquilino } from '@/lib/contratos/firma-del-inquilino';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 
 // ============================================================================
@@ -44,25 +48,23 @@ interface FirmarContractPageProps {
 // Success State Component
 // ============================================================================
 
-function SigningSuccess({ locale }: { locale: string }) {
+function SigningSuccess({ locale, estado }: { locale: string; estado: ContractStatus | null | undefined }) {
   const router = useRouter();
+  // 🔴 QA-CONT-95: lo que se dice sale del estado que devolvió la firma
+  // (antes «Ambas partes han firmado… está activo» con el propietario sin firmar).
+  const mensaje = mensajeDeLaFirmaDelInquilino(estado, locale);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="max-w-lg mx-auto text-center py-16"
-    >
+    // Firmar → «¡Contrato firmado!»: la confirmación llega (es un cambio).
+    <Appear className="max-w-lg mx-auto text-center py-16">
       <div className="w-20 h-20 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-6">
         <Confetti className="w-10 h-10 text-success" />
       </div>
-      <h2 className="text-2xl font-semibold text-fg mb-3">
-        {locale === 'es' ? '¡Contrato firmado exitosamente!' : 'Contract signed successfully!'}
+      <h2 className="text-2xl font-semibold text-fg mb-3" data-testid="firma-exitosa-titulo">
+        {mensaje.titulo}
       </h2>
-      <p className="text-fg-muted mb-8 max-w-sm mx-auto">
-        {locale === 'es'
-          ? 'Ambas partes han firmado. Tu contrato está activo y puedes descargarlo en cualquier momento.'
-          : 'Both parties have signed. Your contract is active and you can download it anytime.'}
+      <p className="text-fg-muted mb-8 max-w-sm mx-auto" data-testid="firma-exitosa-texto">
+        {mensaje.texto}
       </p>
       <Button
         size="lg"
@@ -72,7 +74,7 @@ function SigningSuccess({ locale }: { locale: string }) {
         {locale === 'es' ? 'Ver mis contratos' : 'View my contracts'}
         <ArrowRight className="w-4 h-4" />
       </Button>
-    </motion.div>
+    </Appear>
   );
 }
 
@@ -351,7 +353,7 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
       });
       setLocalContract(updated);
       setSignedSuccess(true);
-      toast.success(locale === 'es' ? 'Contrato firmado exitosamente' : 'Contract signed successfully');
+      toast.success(locale === 'es' ? 'Firmaste el contrato.' : 'You signed the contract.');
     } catch (err) {
       // Las acciones relanzan el fallo del back: acá se dice su motivo.
       toast.error(locale === 'es' ? 'Error al firmar el contrato' : 'Error signing contract', {
@@ -411,11 +413,15 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
     }
   };
 
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isLoading);
+
   // Loading
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Spinner size="lg" variant="muted" />
+      <div className="min-h-screen bg-bg">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="detail" className="mx-auto max-w-7xl" />
       </div>
     );
   }
@@ -467,7 +473,7 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
     return (
       <div className="min-h-screen bg-bg">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          <SigningSuccess locale={locale} />
+          <SigningSuccess locale={locale} estado={activeContract?.status} />
           {/* 🔴 Nico, 2026-09-17: al iniciar el contrato, el inquilino firma
               también el inventario con el que lo recibe. No bloquea nada. */}
           <div className="mt-8">
@@ -480,32 +486,23 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         {/* Back */}
-        <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="mb-6"
-        >
+        <div className="mb-6">
           <BackButton href="/inquilino/contratos" label={locale === 'es' ? 'Volver a contratos' : 'Back to contracts'} />
-        </motion.div>
+        </div>
 
         {/* Page Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
-        >
+        <div className="mb-8">
           <h1 className="text-2xl font-semibold text-fg">
             {isPendingTenant
-              ? (locale === 'es' ? 'Firmar Contrato' : 'Sign Contract')
-              : (locale === 'es' ? 'Contrato de Arrendamiento' : 'Rental Contract')}
+              ? (locale === 'es' ? 'Firmar el contrato' : 'Sign contract')
+              : (locale === 'es' ? 'Contrato de arrendamiento' : 'Rental contract')}
           </h1>
           <p className="mt-1 text-fg-muted">
             {activeContract.propertyAddress} — {activeContract.propertyCity}
           </p>
-        </motion.div>
+        </div>
 
         {/* Non-signing state — read only */}
         {!isPendingTenant && (
@@ -539,16 +536,14 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
           onConfirm={handleCancel}
           isSubmitting={isCancelling}
           actor="tenant"
+          conPostulacion={Boolean(activeContract?.applicationId)}
         />
 
         {/* Signing state — two column layout */}
         {isPendingTenant && (
           <>
             {/* Status Banner */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
+            <div
               className="mb-6 rounded-xl px-5 py-4 bg-primary-soft border border-primary/30 flex items-center justify-between gap-3 flex-wrap"
             >
               <div className="flex items-center gap-3">
@@ -570,27 +565,17 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
                   {locale === 'es' ? 'Abrir chat' : 'Open chat'}
                 </Link>
               )}
-            </motion.div>
+            </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
               {/* Main — Contract Preview */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="lg:col-span-2 space-y-6"
-              >
+              <div className="lg:col-span-2 space-y-6">
                 <ContractDocumentView contract={activeContract} preview={preview} signedPdfUrl={signedPdfUrl} />
                 <AuditTrail contract={activeContract} />
-              </motion.div>
+              </div>
 
               {/* Sidebar — Signature + info */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-                className="lg:col-span-1"
-              >
+              <div className="lg:col-span-1">
                 <div className="sticky top-6 space-y-4">
                   {/* Signing Form */}
                   <SignatureForm
@@ -661,11 +646,11 @@ export default function FirmarContractPage(props: FirmarContractPageProps) {
                     </div>
                   )}
                 </div>
-              </motion.div>
+              </div>
             </div>
           </>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 }

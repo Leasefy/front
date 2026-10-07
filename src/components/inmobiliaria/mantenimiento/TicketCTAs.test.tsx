@@ -28,6 +28,8 @@ vi.mock('@/lib/i18n', () => ({
 }))
 
 import { TicketCTAs } from './TicketCTAs'
+import es from '@/lib/i18n/locales/es.json'
+import en from '@/lib/i18n/locales/en.json'
 
 let container: HTMLDivElement
 let root: Root
@@ -167,5 +169,22 @@ describe('<TicketCTAs>', () => {
     // Ni un handler llamado, y el diálogo de cierre nunca se abre.
     for (const spy of Object.values(spies)) expect(spy).not.toHaveBeenCalled()
     expect(container.querySelector('[data-testid="cta-cerrar-dialog"]')).toBeNull()
+  })
+})
+
+/*
+ * «Confirmar cierre» decía «El cierre requiere evidencia y confirmación», y el
+ * diálogo no pide ninguna evidencia: sólo confirma. Nico, 02-10: que no
+ * prometa lo que no hace.
+ */
+describe('TicketCTAs — el texto del cierre no promete lo que no hace', () => {
+  type ConCerrar = {
+    inmobiliaria: { ai: { mantenimiento: { cta: { cerrar: { confirmDesc: string } } } } }
+  }
+  it.each([
+    ['es', es as unknown as ConCerrar, /evidencia/i],
+    ['en', en as unknown as ConCerrar, /evidence/i],
+  ] as const)('%s: no habla de evidencia', (_l, json, prohibido) => {
+    expect(json.inmobiliaria.ai.mantenimiento.cta.cerrar.confirmDesc).not.toMatch(prohibido)
   })
 })

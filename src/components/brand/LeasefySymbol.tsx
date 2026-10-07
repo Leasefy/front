@@ -17,8 +17,9 @@ import {
  *
  * No sustituye a `LeasefyMark`/`LeasefyLogo` de cadence (las firmas a color):
  * esas siguen valiendo en superficies de producto. Como heredan el color, el
- * contenedor decide: la sidebar de los tres paneles lo pone en `text-primary`
- * (decisión de Nico, 22-09); headers y auth lo dejan en `text-fg`.
+ * contenedor decide: la sidebar de los tres paneles, los headers y auth lo
+ * ponen en `text-fg` — negro, como el de la landing (Nico, 03-10-2026; del
+ * 22-09 al 03-10 la sidebar lo tuvo en `text-primary`).
  */
 
 const SYMBOL_ASPECT = 250 / 140;

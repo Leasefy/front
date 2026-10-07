@@ -1,6 +1,7 @@
 'use client';
 
 import { Check } from '@phosphor-icons/react';
+import { toast } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import type { PendingDecision, DecisionRecommendation } from '@/lib/types/beta-chat';
@@ -62,8 +63,14 @@ const CATEGORY_BG: Record<string, string> = {
 
 interface DecisionCardProps {
   decision: PendingDecision;
-  /** Called when user selects an option. Omit for read-only state. */
-  onSelect?: (optionId: string) => void;
+  /**
+   * Called when user selects an option. Omit for read-only state.
+   *
+   * Si resuelve un texto, la elección NO quedó (02-10-2026: el micro no
+   * registró la aprobación) y ése es el motivo, ya dicho por el traductor: la
+   * tarjeta lo avisa. Antes el fallo se tragaba y la tarjeta decía «Decidido».
+   */
+  onSelect?: (optionId: string) => void | Promise<string | null | void>;
   className?: string;
 }
 
@@ -80,6 +87,11 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
   const meta = AGENT_METADATA[decision.category];
   const borderColor = BORDER_LEFT_COLORS[meta.color] ?? BORDER_LEFT_COLORS.blue;
   const categoryBg = CATEGORY_BG[meta.color] ?? CATEGORY_BG.blue;
+
+  const elegir = async (optionId: string) => {
+    const motivo = await onSelect?.(optionId);
+    if (typeof motivo === 'string' && motivo) toast.error(motivo);
+  };
 
   return (
     <div
@@ -126,7 +138,7 @@ export function DecisionCard({ decision, onSelect, className }: DecisionCardProp
               key={option.id}
               type="button"
               disabled={isResolved}
-              onClick={() => onSelect?.(option.id)}
+              onClick={() => void elegir(option.id)}
               aria-label={`${t('beta.decisions.select')}: ${option.label}`}
               className={cn(
                 'w-full text-left rounded-sm border px-3 py-2',

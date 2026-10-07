@@ -12,6 +12,13 @@
  * Rejecting is always applied. VIEWER/CONTADOR can read but get no actions; a
  * stray 403 from certify is also handled with a toast.
  *
+ * 🔴 (02-10-2026) Un fallo de certificar llega ENTERO (`ApiError`, ver
+ * `certifyChatLesson`) y el toast lo dice por el traductor: un 403 dice quién
+ * puede, un 5xx «de nuestro lado» con la referencia, «la conexión» sólo si no
+ * hubo respuesta. Antes: «No se pudo procesar la acción: ai-hub chat lessons
+ * certify 403», y el 403 se detectaba buscando «403» en el texto. El motivo
+ * de la cerca (`reason`) viene en inglés del micro y tampoco se muestra crudo.
+ *
  * States mirror the AI hub conventions (use-ai-hub-landing / ai-hub-chat):
  *   - no backend wired      → honest "backend not configured" notice
  *   - loading               → skeletons
@@ -36,8 +43,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { EmptyState } from '@/components/ui/empty-state'
 import { isAgentConfigured, type CertifyDecision } from '@/lib/api/ai-hub-lessons'
+import { mensajeDelFalloDeLaAccion } from '@/lib/chat/fallo-de-la-accion'
 import { useChatLessons } from '@/lib/hooks/use-chat-lessons'
 import { ChatLessonCard } from './ChatLessonCard'
+import { AnimatedNumber, CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 const STATUS_ORDER = ['candidate', 'certified', 'rejected'] as const
 
@@ -45,6 +54,28 @@ const GROUP_TITLE: Record<(typeof STATUS_ORDER)[number], string> = {
   candidate: 'Por certificar',
   certified: 'Certificadas',
   rejected: 'Descartadas',
+}
+
+/**
+ * Por qué la cerca no dejó certificar, en español y en minúscula (va después
+ * de «No se pudo certificar: »). El micro lo manda en inglés
+ * (`chat-lessons.ts` → `certifyFence`: «insufficient evidence (support 2 <
+ * 3)», «empty recommendation», «lesson not found»): se traduce lo que se
+ * conoce y lo que no se conoce no se muestra.
+ */
+export function motivoDeLaCerca(reason: string | null | undefined): string {
+  const r = (reason ?? '').trim()
+  if (/insufficient evidence/i.test(r)) {
+    return 'todavía no hay evidencia suficiente; el asistente necesita verlo más veces.'
+  }
+  if (/empty recommendation/i.test(r)) return 'la lección no tiene una recomendación escrita.'
+  if (/not found/i.test(r)) return 'esa lección ya no existe. Recarga la lista.'
+  // La que el micro ya escribe en español («sólo el administrador certifica…»).
+  if (/^s[óo]lo el administrador/i.test(r)) return /[.!?]$/.test(r) ? r : `${r}.`
+  // Sin motivo: la cerca es la de la evidencia (lo de siempre).
+  if (!r) return 'todavía no hay evidencia suficiente.'
+  // Otro motivo («store error», «missing id»…): no se inventa uno.
+  return 'no se pudo aplicar en este momento. Prueba de nuevo.'
 }
 
 const GROUP_HINT: Record<(typeof STATUS_ORDER)[number], string> = {
@@ -88,22 +119,28 @@ export function ChatLessonsPanel() {
       if (result.applied) {
         toast.success('Lección certificada')
       } else {
-        // Fail-closed fence: surface the backend reason verbatim.
-        toast.error(`No se pudo certificar: ${result.reason || 'evidencia insuficiente'}`)
+        // Fail-closed fence: the backend reason, in Spanish.
+        toast.error(`No se pudo certificar: ${motivoDeLaCerca(result.reason)}`)
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'error desconocido'
-      if (message.includes('403')) {
-        toast.error('No tienes permiso para certificar lecciones.')
-      } else {
-        toast.error(`No se pudo procesar la acción: ${message}`)
-      }
+      toast.error(
+        mensajeDelFalloDeLaAccion(err, {
+          accion: decision === 'rejected' ? 'descartar la lección' : 'certificar la lección',
+          porDefecto:
+            decision === 'rejected'
+              ? 'No se pudo descartar la lección. Prueba de nuevo en un momento.'
+              : 'No se pudo certificar la lección. Prueba de nuevo en un momento.',
+          sinPermiso: 'No tienes permiso para certificar lecciones.',
+        }),
+      )
     } finally {
       setPendingId(null)
     }
   }
 
   // ── No backend wired (dev posture / fail-soft) ──────────────────────────────
+  // Movimiento: cada estado en un `CrossFade` con su clave (cargando →
+  // lecciones, → fallo, → vacío); lo que ya estaba al montarse no se anima.
   if (!isAgentConfigured()) {
     return (
       <div className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-white/[0.02] px-5 py-6">
@@ -125,45 +162,54 @@ export function ChatLessonsPanel() {
   // ── Loading ─────────────────────────────────────────────────────────────────
   if (isLoading && lessons.length === 0) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="space-y-3" aria-busy="true">
         {[0, 1, 2].map((i) => (
           <Skeleton key={i} className="h-32 w-full rounded-lg" />
         ))}
       </div>
+      </CrossFade>
     )
   }
 
   // ── Error ───────────────────────────────────────────────────────────────────
   if (error && lessons.length === 0) {
     return (
-      /* Reintentar recargaba la PÁGINA ENTERA (`window.location.reload()`)
-         para volver a pedir una lista: se perdía todo lo demás que hubiera en
-         pantalla. El hook ya expone `refresh`. */
+      <CrossFade swapKey="fallo">
+      {/* Reintentar recargaba la PÁGINA ENTERA (`window.location.reload()`)
+          para volver a pedir una lista: se perdía todo lo demás que hubiera en
+          pantalla. El hook ya expone `refresh`. */}
       <FalloDeCarga
         error={error}
         queEs="las lecciones del asistente"
         onReintentar={refresh}
       />
+      </CrossFade>
     )
   }
 
   // ── Empty ───────────────────────────────────────────────────────────────────
   if (lessons.length === 0) {
     return (
+      <CrossFade swapKey="vacio">
       <EmptyState
         icon={Brain}
         title="Aún no hay lecciones"
         description="El asistente aprende a medida que lo usas. Cuando detecte un patrón, lo verás aquí para certificarlo."
       />
+      </CrossFade>
     )
   }
 
   // ── List ────────────────────────────────────────────────────────────────────
   return (
+    <CrossFade swapKey="lecciones">
     <div className="space-y-6">
-      {/* Master-switch banner: certified lessons exist but aren't applied yet. */}
-      {!enabled && grouped.certified.length > 0 && (
-        <div
+      {/* Master-switch banner: certified lessons exist but aren't applied yet.
+          Entra y sale con `Presence` (certificar la primera lo hace aparecer). */}
+      <Presence
+          show={!enabled && grouped.certified.length > 0}
+          initial={false}
           role="status"
           className="flex items-start gap-3 rounded-lg border border-[#B7791F]/30 bg-[#F8F0E0]/60 dark:border-[#B7791F]/40 dark:bg-[#B7791F]/10 px-4 py-3"
         >
@@ -173,8 +219,7 @@ export function ChatLessonsPanel() {
             Tienes lecciones certificadas, pero todavía no influyen en el asistente.
             Se aplicarán cuando se active el aprendizaje para tu inmobiliaria.
           </p>
-        </div>
-      )}
+      </Presence>
 
       {/* Read-only notice for VIEWER / CONTADOR with candidates waiting. */}
       {!canCertify && candidateCount > 0 && (
@@ -199,24 +244,27 @@ export function ChatLessonsPanel() {
               >
                 {GROUP_TITLE[status]}
                 <span className="ml-1.5 text-xs font-normal text-fg-muted tabular-nums">
-                  {items.length}
+                  <AnimatedNumber value={items.length} format={(n) => String(Math.round(n))} />
                 </span>
               </h2>
               <p className="text-xs text-neutral-500 dark:text-neutral-400">
                 {GROUP_HINT[status]}
               </p>
             </div>
-            <div className="space-y-3">
+            {/* Certificar o descartar mueve la lección de grupo: sale de éste
+                y entra en el otro. */}
+            <Stagger className="space-y-3">
               {items.map((lesson) => (
-                <ChatLessonCard
-                  key={lesson.id}
-                  lesson={lesson}
-                  canCertify={canCertify}
-                  pendingId={pendingId}
-                  onDecide={handleDecide}
-                />
+                <StaggerItem key={lesson.id}>
+                  <ChatLessonCard
+                    lesson={lesson}
+                    canCertify={canCertify}
+                    pendingId={pendingId}
+                    onDecide={handleDecide}
+                  />
+                </StaggerItem>
               ))}
-            </div>
+            </Stagger>
           </section>
         )
       })}
@@ -229,5 +277,6 @@ export function ChatLessonsPanel() {
         </p>
       )}
     </div>
+    </CrossFade>
   )
 }

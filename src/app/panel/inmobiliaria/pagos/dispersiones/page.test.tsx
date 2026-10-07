@@ -26,7 +26,10 @@ const m = vi.hoisted(() => ({
     error: vi.fn(),
     loading: vi.fn(),
     info: vi.fn(),
+    dismiss: vi.fn(),
   },
+  /** Lo que devolvió el último `onProcess` del cajón (para ver si rechaza). */
+  ultimoGiro: null as Promise<unknown> | null,
   push: vi.fn(),
   approve: vi.fn(),
   process: vi.fn(),
@@ -158,6 +161,7 @@ vi.mock('@/components/inmobiliaria', async () => {
       apruebaPorLote?: boolean;
       usuarioActualId?: string | null;
       onApprove?: (d: Dispersion) => Promise<void> | void;
+      onProcess?: (d: Dispersion, ref: string, origen?: unknown) => Promise<void> | void;
       onViewExtracto?: (d: Dispersion) => void;
     }) =>
       React.createElement(
@@ -169,6 +173,20 @@ vi.mock('@/components/inmobiliaria', async () => {
         },
         React.createElement('button', { type: 'button', 'data-testid': 'detalle-aprobar', onClick: () => void props.onApprove?.(fila('d-1')) }, 'aprobar'),
         React.createElement('button', { type: 'button', 'data-testid': 'detalle-extracto', onClick: () => props.onViewExtracto?.(fila('d-1')) }, 'extracto'),
+        React.createElement(
+          'button',
+          {
+            type: 'button',
+            'data-testid': 'detalle-girar',
+            onClick: () => {
+              const r = props.onProcess?.(fila('d-1', { status: 'processing' }), 'TRF-1', null);
+              m.ultimoGiro = Promise.resolve(r);
+              // El cajón real lo atrapa; acá sólo se mira que rechace.
+              m.ultimoGiro.catch(() => undefined);
+            },
+          },
+          'girar',
+        ),
       ),
   };
 });
@@ -252,6 +270,7 @@ beforeEach(() => {
     f.mockReset(),
   );
   m.refetch.mockResolvedValue(null);
+  m.ultimoGiro = null;
   lista = { dispersiones: TRES, isLoading: false, error: null, errorCrudo: null, refetch: m.refetch };
   m.getSummary.mockResolvedValue(resumenDelBack());
   // Por defecto, una agencia que aprueba una por una.
@@ -522,5 +541,107 @@ describe('D6 — el extracto en el modal', () => {
     expect(q('extracto', cuerpo())).not.toBeNull();
     // El fallo ya no va como toast por detrás del modal.
     expect(m.toast.error).not.toHaveBeenCalled();
+  });
+});
+
+/*
+ * 02-10-2026 · Aprobar y registrar el giro con el sistema de errores: un 4xx
+ * dice lo que escribió el back; un 5xx, que falló de nuestro lado con la
+ * referencia de soporte; «conexión» sólo sin respuesta. Y un 400 con `campos`
+ * de la referencia es del formulario del cajón: se le devuelve para que lo
+ * ponga debajo del campo, no en un toast.
+ */
+describe('02-10 — aprobar y girar con la regla de oro', () => {
+  function fallo500() {
+    return new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      message: 'Error interno del servidor',
+      referencia: 'ab12cd34',
+    });
+  }
+
+  async function aprobarDesdeElCajon() {
+    await montar();
+    await act(async () => {
+      (q('detalle-aprobar') as HTMLButtonElement).click();
+    });
+    await asentar();
+    const [titulo, opciones] = m.toast.error.mock.calls[0] as [string, { description: string }];
+    return { titulo, descripcion: opciones.description };
+  }
+
+  it('🔴 aprobar con un 5xx: «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
+    m.approve.mockRejectedValue(fallo500());
+    const { titulo, descripcion } = await aprobarDesdeElCajon();
+    expect(titulo).toBe('No se pudo aprobar la dispersión');
+    expect(descripcion).toContain('No pudimos aprobar la dispersión: algo falló de nuestro lado');
+    expect(descripcion).toContain('ab12cd34');
+    expect(descripcion).not.toMatch(/conexi[oó]n/);
+  });
+
+  it('aprobar sin respuesta: ahí sí se habla de la conexión', async () => {
+    m.approve.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    const { descripcion } = await aprobarDesdeElCajon();
+    expect(descripcion).toMatch(/conexi[oó]n/);
+  });
+
+  it('aprobar con un 409 sin código propio: el motivo del back, tal cual', async () => {
+    m.approve.mockRejectedValue(new ApiError(409, 'Esta dispersión ya no está pendiente.'));
+    const { descripcion } = await aprobarDesdeElCajon();
+    expect(descripcion).toBe('Esta dispersión ya no está pendiente.');
+  });
+
+  it('🔴 «Aprobar todas» con un 5xx: el informe lleva la referencia de soporte', async () => {
+    m.approve.mockImplementation(async (id: string) => {
+      if (id === 'd-2') throw fallo500();
+      return fila(id, { status: 'processing' });
+    });
+    await montar();
+    await act(async () => {
+      (q('resumen-aprobar-todas') as HTMLButtonElement).click();
+    });
+    await act(async () => {
+      (q('confirmar-aprobar-todas', document.body) as HTMLButtonElement).click();
+    });
+    await asentar();
+    const informe = q('informe-aprobar-todas') as HTMLElement;
+    expect(informe.textContent).toContain('de nuestro lado');
+    expect(informe.textContent).toContain('ab12cd34');
+  });
+
+  it('🔴 registrar el giro con un 400 de la referencia: se lo devuelve al cajón y no hay toast rojo', async () => {
+    const mensaje = 'La referencia del giro puede tener hasta 100 caracteres.';
+    const error = new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+      statusCode: 400,
+      code: 'DATOS_INVALIDOS',
+      message: [mensaje],
+      campos: [{ campo: 'transferReference', regla: 'longitud_maxima', mensaje }],
+    });
+    m.process.mockRejectedValue(error);
+    await montar();
+    await act(async () => {
+      (q('detalle-girar') as HTMLButtonElement).click();
+    });
+    await asentar();
+
+    await expect(m.ultimoGiro).rejects.toBe(error);
+    expect(m.toast.error).not.toHaveBeenCalled();
+    expect(m.toast.dismiss).toHaveBeenCalledWith('process-d-1');
+  });
+
+  it('🔴 registrar el giro con un 5xx: el toast lo dice con la referencia y el cajón no recibe nada', async () => {
+    m.process.mockRejectedValue(fallo500());
+    await montar();
+    await act(async () => {
+      (q('detalle-girar') as HTMLButtonElement).click();
+    });
+    await asentar();
+
+    await expect(m.ultimoGiro).resolves.toBeUndefined();
+    const [titulo, opciones] = m.toast.error.mock.calls[0] as [string, { description: string }];
+    expect(titulo).toBe('No se pudo guardar la referencia del giro');
+    expect(opciones.description).toContain('No pudimos guardar la referencia del giro: algo falló de nuestro lado');
+    expect(opciones.description).toContain('ab12cd34');
   });
 });

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowClockwise } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 
 export interface PolicyAutoSkipStepProps {
   /** True while a wizard step submit (this one, or a lingering previous one) is in flight. */
@@ -15,6 +15,13 @@ export interface PolicyAutoSkipStepProps {
    * to the caller.
    */
   onSkip: () => Promise<unknown>
+  /**
+   * 02-10-2026 · Qué estuvo mal, si el micro lo dijo: el `message` del
+   * `OnboardingSessionError` de un 400 (ya en español, por el traductor del
+   * servicio). El `null` de `onSkip` no se traga el error: el hook lo deja en
+   * `error` y el asistente lo pasa acá. Sin él, la frase general.
+   */
+  mensajeDelFallo?: string | null
 }
 
 /**
@@ -31,7 +38,7 @@ export interface PolicyAutoSkipStepProps {
  * second automatic submit. A failed attempt only retries on explicit user
  * click — no infinite loop.
  */
-export function PolicyAutoSkipStep({ isSubmitting, onSkip }: PolicyAutoSkipStepProps) {
+export function PolicyAutoSkipStep({ isSubmitting, onSkip, mensajeDelFallo }: PolicyAutoSkipStepProps) {
   const firedRef = useRef(false)
   const [failed, setFailed] = useState(false)
 
@@ -59,7 +66,7 @@ export function PolicyAutoSkipStep({ isSubmitting, onSkip }: PolicyAutoSkipStepP
         className="rounded-md bg-danger-soft border border-border p-4 text-center space-y-3"
       >
         <p className="text-sm text-danger">
-          No pudimos aplicar la configuración inicial. Intenta de nuevo.
+          {mensajeDelFallo || 'No pudimos aplicar la configuración inicial. Intenta de nuevo.'}
         </p>
         <Button type="button" variant="outline" size="sm" hideArrow onClick={attempt}>
           <ArrowClockwise className="w-4 h-4" />
@@ -70,9 +77,13 @@ export function PolicyAutoSkipStep({ isSubmitting, onSkip }: PolicyAutoSkipStepP
   }
 
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-16" data-testid="policy-skip-loading">
-      <Spinner size="md" variant="muted" />
-      <p className="text-body-sm text-fg-muted">Configurando tu cuenta...</p>
-    </div>
+    <CargaDeMarca
+      tamano="md"
+      tono="negro"
+      disposicion="apilada"
+      texto="Configurando tu cuenta..."
+      className="flex py-16"
+      data-testid="policy-skip-loading"
+    />
   )
 }

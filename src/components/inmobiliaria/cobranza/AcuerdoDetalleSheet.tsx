@@ -23,7 +23,7 @@
 import Link from 'next/link'
 import { ArrowRight, PhoneCall } from '@phosphor-icons/react'
 
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
+import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet'
 import { Badge, Button } from '@/components/ui'
 import { useI18n } from '@/lib/i18n'
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
@@ -91,7 +91,10 @@ export function AcuerdoDetalleSheet({
     >
       <SheetContent
         side="right"
-        className="w-full sm:max-w-lg !p-0 flex flex-col gap-0"
+        size="md"
+        // Cabecera, cuerpo y pie viven en `CuerpoDelAcuerdo`.
+        layout="manual"
+        aria-describedby={undefined}
       >
         {ultimo && <CuerpoDelAcuerdo acuerdo={ultimo} />}
       </SheetContent>
@@ -113,32 +116,23 @@ function CuerpoDelAcuerdo({ acuerdo }: { acuerdo: AcuerdoRow }) {
 
   return (
     <>
-        <SheetTitle className="sr-only">
-          Acuerdo de pago de {acuerdo.deudor}
-        </SheetTitle>
-
-        {/* Cabecera fija.
-            `pr-12`: el botón de cerrar del Sheet va absoluto arriba a la
-            derecha, y sin este margen la insignia de estado queda debajo. */}
-        <div className="flex-none border-b border-border p-5 pr-12 space-y-2">
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="text-lg font-semibold text-fg">{acuerdo.deudor}</h2>
-            <Badge variant={estado.variant} className="shrink-0 mt-0.5">
+        <SheetHeader
+          title={acuerdo.deudor}
+          description={
+            <>
+              {ACUERDO_TIPO_LABEL[acuerdo.tipo]}
+              {acuerdo.cedulaMasked ? ` · ${acuerdo.cedulaMasked}` : ''}
+            </>
+          }
+          actions={
+            <Badge variant={estado.variant} className="shrink-0">
               {estado.label}
             </Badge>
-          </div>
-          <p className="text-xs text-fg-muted">
-            {ACUERDO_TIPO_LABEL[acuerdo.tipo]}
-            {acuerdo.cedulaMasked ? ` · ${acuerdo.cedulaMasked}` : ''}
-          </p>
-        </div>
+          }
+        />
 
-        {/* Cuerpo — `data-lenis-prevent` o el scroll queda muerto */}
-        <div
-          className="flex-1 overflow-y-auto p-5 space-y-6"
-          data-lenis-prevent
-          style={{ overscrollBehavior: 'contain' }}
-        >
+        {/* Cuerpo — lo único que scrollea (`SheetBody` trae data-lenis-prevent) */}
+        <SheetBody className="space-y-6">
           <Dato rotulo="Monto">
             <span className="font-mono tabular-nums text-base">
               {formatCurrency(acuerdo.montoCop)}
@@ -186,33 +180,37 @@ function CuerpoDelAcuerdo({ acuerdo }: { acuerdo: AcuerdoRow }) {
               </span>
             </Dato>
           )}
-        </div>
+        </SheetBody>
 
         {/* Pie — sólo caminos que existen */}
-        <div className="flex-none border-t border-border p-4 space-y-2">
-          {acuerdo.planId && (
-            <Button asChild hideArrow className="w-full">
-              <Link href={`${BASE}/pagos/planes/${acuerdo.planId}`}>
-                Revisar y aprobar
+        <SheetFooter
+          start={
+            <Button asChild variant="outline" hideArrow>
+              <Link href={`${BASE}/deudores/${acuerdo.debtorId}`}>
+                Ver deudor
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             </Button>
-          )}
+          }
+        >
           {acuerdo.callId && (
-            <Button asChild variant="outline" hideArrow className="w-full">
+            <Button asChild variant="outline" hideArrow>
               <Link href={`${BASE}/llamadas/${acuerdo.callId}`}>
                 <PhoneCall className="w-4 h-4" aria-hidden="true" />
                 Escuchar la llamada
               </Link>
             </Button>
           )}
-          <Button asChild variant="outline" hideArrow className="w-full">
-            <Link href={`${BASE}/deudores/${acuerdo.debtorId}`}>
-              Ver deudor
-              <ArrowRight className="w-4 h-4" aria-hidden="true" />
-            </Link>
-          </Button>
-        </div>
+          {acuerdo.planId && (
+            <Button asChild hideArrow>
+              <Link href={`${BASE}/pagos/planes/${acuerdo.planId}`}>
+                {/* QA-IA-95 (05-10-2026, IA-B-03): «aprobar» sólo si espera la aprobación; uno vigente o cerrado se ve. */}
+                {acuerdo.estado === 'por_aprobar' ? 'Revisar y aprobar' : 'Ver el plan'}
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </Link>
+            </Button>
+          )}
+        </SheetFooter>
     </>
   )
 }

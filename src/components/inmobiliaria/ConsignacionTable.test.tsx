@@ -241,12 +241,12 @@ describe('<ConsignacionTable> — T-0038 property code + SALE listing display', 
         adminFee: 0,
       }),
     ]);
-    expect(container.textContent).toContain('$350.000.000');
+    expect(container.textContent).toContain('$\u00a0350.000.000');
     expect(container.textContent).not.toContain('$ 0');
-    expect(container.textContent).not.toContain('$0');
+    expect(container.textContent).not.toContain('$ 0');
   });
 
-  it('a SALE sinMandato row never renders an "Administración: $0" row', () => {
+  it('a SALE sinMandato row never renders an "Administración: $ 0" row', () => {
     render([
       makeSinMandatoRow({
         listingType: 'sale',
@@ -258,12 +258,12 @@ describe('<ConsignacionTable> — T-0038 property code + SALE listing display', 
     expect(container.textContent).not.toContain('admin');
   });
 
-  it('a SALE sinMandato row with no salePrice recorded shows "—", never $0', () => {
+  it('a SALE sinMandato row with no salePrice recorded shows "—", never $ 0', () => {
     render([
       makeSinMandatoRow({ listingType: 'sale', monthlyRent: null, salePrice: null }),
     ]);
     expect(container.textContent).not.toContain('$ 0');
-    expect(container.textContent).not.toContain('$0');
+    expect(container.textContent).not.toContain('$ 0');
   });
 });
 
@@ -445,5 +445,40 @@ describe('<ConsignacionTable> — el menú de la fila respeta permisos y ocupaci
       (container.querySelector('tbody tr') as HTMLElement).click();
     });
     expect(onCompletarMandato).not.toHaveBeenCalled();
+  });
+});
+
+describe('<ConsignacionTable> — IN-02 (QA 04-10): la dirección no se repite', () => {
+  it('cuando el título ES la dirección, la segunda línea no la repite', () => {
+    render([{ kind: 'consignacion', ...makeConsignacion({ propertyTitle: 'Calle 12 # 42-12 Apto 102', propertyAddress: 'Calle 12 # 42-12 Apto 102' }) }]);
+    expect((container.textContent ?? '').split('Calle 12 # 42-12 Apto 102').length - 1).toBe(1);
+  });
+
+  it('cuando son distintos, se ven los dos', () => {
+    render([{ kind: 'consignacion', ...makeConsignacion() }]);
+    expect(container.textContent).toContain('Depto con mandato');
+    expect(container.textContent).toContain('Cra 1 #1-1');
+  });
+});
+
+describe('<ConsignacionTable> — IN-03 y borrador (QA 04-10)', () => {
+  it('IN-03: la comisión dice «10 %» una vez, no «% 10%»', () => {
+    render([{ kind: 'consignacion', ...makeConsignacion({ commissionPercent: 10 }) }]);
+    const celdas = Array.from(container.querySelectorAll('tbody td')).map((td) => td.textContent ?? '');
+    const comision = celdas.find((c) => c.includes('%'))!;
+    expect(comision.trim()).toBe('10 %');
+  });
+
+  it('una comisión que no venía en el archivo no se pinta como «0 %»: «Sin definir», con el porqué en el title', () => {
+    render([{ kind: 'consignacion', ...makeConsignacion({ commissionPercent: 0, comisionDesconocida: true }) }]);
+    expect(container.textContent).toContain('Sin definir');
+    expect(container.querySelector('[title="No venía en el archivo"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('0 %');
+  });
+
+  it('🔴 un inmueble en borrador dice «Borrador», no «Disponible» (QA con avatares)', () => {
+    render([{ kind: 'consignacion', ...makeConsignacion({ availability: 'available', arrendado: false, propertyStatus: 'DRAFT' }) }]);
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.availability.draft');
+    expect(container.textContent).not.toContain('inmobiliaria.consignaciones.availability.available');
   });
 });

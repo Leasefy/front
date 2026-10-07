@@ -206,7 +206,8 @@ describe('<Exogena>', () => {
     await pintar();
 
     const bloqueo = q('bloqueos-1001')!.textContent!;
-    expect(bloqueo).toContain('12 movimientos por $4.300.000');
+    // CB-17 (03-10-2026): la plata del texto del back con el formato de la casa.
+    expect(bloqueo).toContain('12 movimientos por $ 4.300.000');
     expect(bloqueo).toContain('impide presentar');
   });
 

@@ -17,8 +17,13 @@
 import { describe, it, expect } from 'vitest';
 
 import {
+  MENSAJES_DE_GASTOS,
+  VALOR_MAXIMO_DEL_GASTO_COP,
+} from './limites-de-contabilidad';
+import {
   avisoDeTotalQueNoCuadra,
   diferenciaDelTotal,
+  erroresDeLosTopes,
   ivaDeLaLinea,
   lineaVacia,
   lineasParaElBack,
@@ -239,5 +244,48 @@ describe('lineasParaElBack', () => {
     const [enviada] = lineasParaElBack([linea()]);
     expect(enviada.ivaPct).toBe(19);
     expect('ivaCop' in enviada).toBe(false);
+  });
+});
+
+/*
+ * 🔁 Los topes del back (`limites-de-gastos.ts`), con su frase y en su campo
+ * (sistema de errores, 02-10-2026).
+ */
+describe('erroresDeLosTopes', () => {
+  it('una factura normal no tiene errores', () => {
+    expect(erroresDeLosTopes(borrador())).toEqual({});
+  });
+
+  it('una base con ceros de más va en su renglón, con la frase del back', () => {
+    const b = borrador({ lineas: [linea(), linea({ baseCop: 40_000_000_000 })] });
+    expect(erroresDeLosTopes(b)).toEqual({ 'lineas.1.baseCop': MENSAJES_DE_GASTOS.baseMaxima });
+  });
+
+  it('un IVA de 190 % va en su renglón', () => {
+    const b = borrador({ lineas: [linea({ ivaPct: 190 })] });
+    expect(erroresDeLosTopes(b)).toEqual({ 'lineas.0.ivaPct': MENSAJES_DE_GASTOS.ivaPctMaximo });
+  });
+
+  it('🔴 dos renglones que caben pero suman más que la columna: error en `lineas`', () => {
+    const b = borrador({
+      lineas: [linea({ baseCop: 1_500_000_000, ivaPct: 0 }), linea({ baseCop: 1_500_000_000, ivaPct: 0 })],
+    });
+    expect(erroresDeLosTopes(b)).toEqual({ lineas: MENSAJES_DE_GASTOS.sumaMaxima });
+  });
+
+  it('el total y las retenciones, cada uno en su campo', () => {
+    const b = borrador({ totalCop: 5_000_000_000, retefuenteCop: 3_000_000_000 });
+    expect(erroresDeLosTopes(b)).toEqual({
+      totalCop: MENSAJES_DE_GASTOS.totalMaximo,
+      retefuenteCop: MENSAJES_DE_GASTOS.retefuenteMaxima,
+    });
+  });
+
+  it('el tope exacto pasa', () => {
+    const b = borrador({
+      lineas: [linea({ baseCop: VALOR_MAXIMO_DEL_GASTO_COP, ivaPct: 0 })],
+      totalCop: VALOR_MAXIMO_DEL_GASTO_COP,
+    });
+    expect(erroresDeLosTopes(b)).toEqual({});
   });
 });

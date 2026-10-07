@@ -36,6 +36,8 @@ describe('normalizeAutocompleteResults', () => {
         lon: -74.0482148,
         placeId: '134560401',
         city: 'Bogotá',
+        // QA-MIGRACION-95 (IN-06): el autocompletado conserva el departamento.
+        state: 'Cundinamarca',
         neighborhood: 'Chapinero',
         road: 'Calle 123',
       },
@@ -117,6 +119,7 @@ describe('normalizeAutocompleteResults', () => {
         lon: -74.0482148,
         placeId: '134560401',
         city: 'Bogotá',
+        state: 'Cundinamarca',
         neighborhood: 'Chapinero',
         road: 'Calle 123',
       },

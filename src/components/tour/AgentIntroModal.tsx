@@ -1,10 +1,14 @@
 'use client'
 
 /**
- * AgentIntroModal — per-agent presentation card, rendered with the cadence
- * §Novedades `<FeatureAnnouncement>` (grainy aurora hero + glass Leasefy pill +
- * intro copy + "Empezar" CTA). Brand-photo hero was retired in favour of the
- * cadence aurora (Nico's call).
+ * AgentIntroModal — la presentación de cada agente la primera vez que la
+ * inmobiliaria entra a su espacio. Desde el 05-10-2026 es la dirección A
+ * «Escenario» que eligió Nico (`components/agentes/presentacion/`): el orbe
+ * grande del agente despierta en el centro de la marca —SÓLO con sus dos
+ * anillos, sin las líneas grandes alrededor (Nico, 05-10 19:10)—, con lo que
+ * hace por ti, lo que necesita de ti y su modo, y «¿Cómo funciona?», que abre
+ * el cajón de explicaciones encima. Antes (02-10) era la tarjeta §Novedades
+ * con el orbe (`PresentacionConOrbe`).
  *
  * The FIRST time the user enters an agent's workspace
  * (el workspace del agente dentro de su módulo) a centered announcement presents that
@@ -15,18 +19,27 @@
  * localStorage (`leasefy.agent-intro.<id>`): otro navegador u otra persona
  * de la misma agencia la volvía a ver. Ahora es la clave `agente:<id>` del
  * mismo mecanismo que el recorrido del panel (`PanelPrefsContext` →
- * `/inmobiliaria/onboarding-visto`): el fondo o Esc la dejan `omitido`,
+ * `/inmobiliaria/onboarding-visto`): el fondo, Esc o la ✕ la dejan `omitido`,
  * «Entendido» `completo`, y mientras no se sabe si la agencia ya la vio no se
  * muestra.
  *
- * A11y: role=dialog + aria-label, Escape dismisses, focus lands on the dialog
- * on open and is restored on close.
+ * ── La cáscara ──────────────────────────────────────────────────────────────
+ * El `Dialog` del DS (`ui/dialog`): foco atrapado y devuelto, Esc, velo, capa
+ * `z-[300]`, la ✕ del producto y, bajo 640 px, la hoja que sube desde abajo.
+ * La vista es `PresentacionDelAgente` (abierta o no, y qué hacer al cerrar);
+ * `AgentIntroModal` sólo decide CUÁNDO sale. La vista previa
+ * `/agentes-preview` abre la vista sola, sin la marca de la agencia.
+ *
+ * A11y: título y descripción anunciados (sr-only: el escenario los pinta); el
+ * foco arranca en el llamado y vuelve a donde estaba al cerrar. El orbe es
+ * decorativo (el título ya nombra al agente).
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { createPortal } from 'react-dom'
-import { FeatureAnnouncement } from '@leasefy/cadence'
-import { useI18n } from '@/lib/i18n'
+import { PresentacionEscenario, fichaDelAgente } from '@/components/agentes/presentacion'
+import { agentePorId, type IdDeAgente } from '@/lib/agentes/equipo'
+import { MODOS_DEL_PILOTO, type AutonomiaModo } from '@/lib/api/piloto'
+import { usePilotoFlotaCompartida } from '@/lib/hooks/piloto/piloto-flota-context'
 import { findAgentWorkspace } from '@/lib/nav/agentWorkspaceNav'
 import { usePanelPrefs } from '@/lib/context/PanelPrefsContext'
 import {
@@ -35,17 +48,24 @@ import {
 } from '@/lib/api/onboarding-visto.service'
 
 export interface AgentIntroConfig {
-  /** Agent id — the `agente:<id>` key of the agency's «ya la vio» + i18n block name. */
-  id: string
+  /**
+   * Agent id — the `agente:<id>` key of the agency's «ya la vio» + i18n block
+   * name, y el agente del registro cuyo orbe se presenta.
+   */
+  id: IdDeAgente
   /** Route prefix under which this agent's workspace lives. */
   /** Slug del workspace en `agentWorkspaceNav.ts` (findAgentWorkspace decide cuál aplica). */
   slug: string
   titleKey: string
   descriptionKey: string
+  /**
+   * @deprecated Desde el 02-10-2026 el héroe es el orbe del agente; la foto de
+   * la marca ya no se pinta. Queda para no romper a quien la lea.
+   */
   image: string
 }
 
-// One DISTINCT brand image per agent (tour uses 02/09/15; free: 10-14, 16).
+// Una foto de la marca por agente (retirada del héroe el 02-10: ver `image`).
 export const AGENT_INTROS: AgentIntroConfig[] = [
   {
     id: 'cobranza',
@@ -114,13 +134,17 @@ export interface AgentIntroModalProps {
   suppressed?: boolean
 }
 
+/** El respiro antes de abrir: que la pantalla del agente pinte primero. */
+const ESPERA_AL_ENTRAR_MS = 600
+
 export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModalProps) {
-  const { t } = useI18n()
   const { estaVista, marcarVista } = usePanelPrefs()
-  const [mounted, setMounted] = useState(false)
   const [visibleId, setVisibleId] = useState<string | null>(null)
+  /**
+   * Radix devuelve el foco al disparador, y acá no hay disparador: se abre
+   * sola. Se recuerda qué tenía el foco al abrir para devolverlo al cerrar.
+   */
   const prevFocusRef = useRef<HTMLElement | null>(null)
-  const dialogRef = useRef<HTMLDivElement>(null)
 
   // El agente lo decide la MISMA función que las pestañas y el breadcrumb:
   // respeta el borde de segmento y el `excluir` (en /pagos/dispersiones no se
@@ -131,81 +155,100 @@ export function AgentIntroModal({ pathname, suppressed = false }: AgentIntroModa
   // null = no se sabe si la agencia ya la vio → no se muestra.
   const vista = clave ? estaVista(clave) : null
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   // Open with a small delay on the agency's first visit to the agent's workspace.
   useEffect(() => {
-    if (!mounted || suppressed || !agent || vista !== false) {
+    if (suppressed || !agent || vista !== false) {
       setVisibleId(null)
       return
     }
     const timer = window.setTimeout(() => {
       prevFocusRef.current = document.activeElement as HTMLElement | null
       setVisibleId(agent.id)
-    }, 600)
+    }, ESPERA_AL_ENTRAR_MS)
     return () => window.clearTimeout(timer)
-  }, [mounted, suppressed, agent, vista])
+  }, [suppressed, agent, vista])
 
   const cerrar = useCallback(
     (estado: EstadoDelOnboarding) => {
       if (visibleId) void marcarVista(claveDeLaPresentacionDelAgente(visibleId), estado)
       setVisibleId(null)
-      setTimeout(() => {
-        prevFocusRef.current?.focus?.()
-      }, 0)
     },
     [visibleId, marcarVista],
   )
-  // El fondo y Esc la dejan de lado; «Entendido» es haberla leído.
-  const dismiss = useCallback(() => cerrar('omitido'), [cerrar])
-  const entendido = useCallback(() => cerrar('completo'), [cerrar])
 
-  // Escape dismisses; focus lands on the dialog when it opens.
-  useEffect(() => {
-    if (!visibleId) return
-    const raf = requestAnimationFrame(() => dialogRef.current?.focus())
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        dismiss()
-      }
+  const devolverElFoco = useCallback((e: Event) => {
+    const previo = prevFocusRef.current
+    prevFocusRef.current = null
+    if (previo && previo.isConnected && previo !== document.body) {
+      e.preventDefault()
+      previo.focus()
     }
-    document.addEventListener('keydown', handler)
-    return () => {
-      cancelAnimationFrame(raf)
-      document.removeEventListener('keydown', handler)
-    }
-  }, [visibleId, dismiss])
+  }, [])
 
-  if (!mounted || !visibleId || !agent || visibleId !== agent.id) return null
+  const abierta = Boolean(agent && visibleId === agent.id)
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/55 p-4 motion-reduce:transition-none"
-      onClick={dismiss}
-    >
-      <div
-        ref={dialogRef}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-label={t(agent.titleKey)}
-        className="outline-none"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <FeatureAnnouncement
-          appName="Leasefy"
-          appInitial="L"
-          title={t(agent.titleKey)}
-          description={t(agent.descriptionKey)}
-          ctaLabel={t('inmobiliaria.ai.tour.finish')}
-          onCta={entendido}
-          className="max-w-[calc(100vw-2rem)]"
-        />
-      </div>
-    </div>,
-    document.body,
+  return (
+    <PresentacionDelAgente
+      agente={agent}
+      abierta={abierta}
+      onCerrar={cerrar}
+      onCloseAutoFocus={devolverElFoco}
+    />
   )
+}
+
+export interface PresentacionDelAgenteProps {
+  /** El agente que se presenta (sin agente no se pinta nada). */
+  agente: AgentIntroConfig | null
+  abierta: boolean
+  /** El fondo, Esc y la ✕: `omitido` · «Entendido»: `completo`. */
+  onCerrar: (estado: EstadoDelOnboarding) => void
+  /** Para devolver el foco a donde estaba (Radix lo devolvería al `body`). */
+  onCloseAutoFocus?: (e: Event) => void
+}
+
+/**
+ * La presentación de un agente, sin decidir cuándo sale. Desde el 05-10-2026
+ * es la dirección A «Escenario» que eligió Nico (`PresentacionEscenario`,
+ * `components/agentes/presentacion/`): el orbe del agente despierta en el
+ * centro de la marca, con lo que hace por ti, lo que necesita de ti y su
+ * modo. El modo y si el piloto automático está activo salen de la flota
+ * (`usePilotoFlotaCompartida`, la misma lectura que la píldora del header);
+ * sin flota, el modo con el que arranca todo agente: Copiloto. La usa
+ * `AgentIntroModal` y la vista previa `/agentes-preview`.
+ *
+ * Un agente sin presentación propia (Pagos, que hoy no tiene espacio) no
+ * pinta nada.
+ */
+export function PresentacionDelAgente({ agente, abierta, onCerrar, onCloseAutoFocus }: PresentacionDelAgenteProps) {
+  const ficha = agente ? fichaDelAgente(agente.id) : null
+  const { modo, pilotoActivo } = useModoDelAgente(agente?.id ?? null)
+  if (!ficha) return null
+  return (
+    <PresentacionEscenario
+      ficha={ficha}
+      abierta={abierta}
+      onCerrar={onCerrar}
+      onCloseAutoFocus={onCloseAutoFocus}
+      modo={modo}
+      pilotoActivo={pilotoActivo}
+      testid="presentacion-del-agente"
+      testidCerrar="presentacion-del-agente-cerrar"
+    />
+  )
+}
+
+/**
+ * El modo del agente para esta inmobiliaria y si el piloto automático está
+ * activo, de la flota (`GET /ai-hub/autonomia`). Sin flota o sin su fila,
+ * `undefined`: la presentación dice el modo con el que arranca (Copiloto).
+ */
+export function useModoDelAgente(id: IdDeAgente | null): { modo?: AutonomiaModo; pilotoActivo: boolean | null } {
+  const flota = usePilotoFlotaCompartida().data
+  if (!flota) return { pilotoActivo: null }
+  const pilotoActivo = flota.piloto?.activo ?? flota.activo
+  const clave = id ? agentePorId(id)?.autonomia : null
+  const fila = clave ? flota.agentes.find((a) => a.agente === clave) : undefined
+  const general = (MODOS_DEL_PILOTO as readonly string[]).includes(flota.modo) ? (flota.modo as AutonomiaModo) : undefined
+  return { modo: fila?.modo ?? general, pilotoActivo }
 }

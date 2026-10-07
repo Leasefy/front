@@ -383,7 +383,15 @@ async function enviarFormulario<T>(ruta: string, formulario: FormData, porDefect
       : typeof cuerpo.message === 'string'
         ? cuerpo.message
         : porDefecto;
-    throw new ApiError(respuesta.status, mensaje, typeof cuerpo.code === 'string' ? cuerpo.code : undefined);
+    // El cuerpo entero va como `detalle` (02-10-2026, F-B1): sin él se perdían
+    // `campos[]`, `cuenta`/`campo` y la `referencia`, y el error del reparto no
+    // podía llegar a su campo (`repartirErroresDelServidor` lo lee de ahí).
+    throw new ApiError(
+      respuesta.status,
+      mensaje,
+      typeof cuerpo.code === 'string' ? cuerpo.code : undefined,
+      cuerpo as Record<string, unknown>,
+    );
   }
   return respuesta.json() as Promise<T>;
 }

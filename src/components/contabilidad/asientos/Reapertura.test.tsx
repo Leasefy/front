@@ -51,6 +51,7 @@ vi.mock('../use-puede-escribir', async () => {
 });
 vi.mock('@/components/ui/toast', () => ({ toast: toastMock }));
 
+import { ApiError } from '@/lib/api/client';
 import { Reapertura } from './Reapertura';
 import { MOTIVO_SIN_REAPERTURA } from '../use-puede-escribir';
 import { diaLegible } from '@/lib/contabilidad/fechas';
@@ -234,7 +235,8 @@ describe('<Reapertura>', () => {
     await pintar('2025-11-30');
 
     const fila = todos('fila-de-reapertura')[0];
-    expect(fila.textContent).toContain(`de ${diaLegible('2025-12-31')} a ${diaLegible('2025-11-30')}`);
+    // QA-FACT-CONTA-95 (CB-J): en una frase, cómo estaba y cómo quedó.
+    expect(fila.textContent).toContain(`Estaba cerrada hasta el ${diaLegible('2025-12-31')}; quedó cerrada hasta el ${diaLegible('2025-11-30')}.`);
     expect(fila.textContent).toContain('proveedor de aseo');
   });
 
@@ -279,5 +281,70 @@ describe('<Reapertura>', () => {
     expect(q('reapertura-sin-migracion')!.textContent).not.toContain('Víctor');
     expect(q('reapertura-sin-migracion')!.textContent).toContain('todavía no está disponible');
     expect(q('abrir-reapertura')).toBeNull();
+  });
+});
+
+/*
+ * Sistema de errores (02-10-2026): lo que el back dice de UN campo va bajo ese
+ * campo; lo demás, al banner con la regla de oro.
+ */
+describe('<Reapertura> · errores en su campo', () => {
+  it('🔴 un 400 con `campos` en `motivo` va bajo el motivo', async () => {
+    const mensaje = 'El motivo puede tener hasta 500 caracteres.';
+    api.asientos.reabrir.mockRejectedValue(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'motivo', regla: 'longitud_maxima', mensaje }],
+      }),
+    );
+    await pintar('2025-12-31');
+    await abrirDialogo();
+    await escribir(q('reapertura-motivo') as HTMLTextAreaElement, 'Faltó causar la factura de aseo');
+    await clic(q('confirmar-reapertura')!);
+
+    const motivo = q('reapertura-motivo')!;
+    expect(motivo.getAttribute('aria-invalid')).toBe('true');
+    expect(document.getElementById(motivo.getAttribute('aria-describedby')!)?.textContent).toBe(mensaje);
+  });
+
+  it('🔴 `NO_ES_UNA_REAPERTURA` va bajo la fecha', async () => {
+    api.asientos.reabrir.mockRejectedValue(
+      new ApiError(409, 'no es reapertura', 'NO_ES_UNA_REAPERTURA', {
+        statusCode: 409,
+        code: 'NO_ES_UNA_REAPERTURA',
+        message: 'no es reapertura',
+      }),
+    );
+    await pintar('2025-12-31');
+    await abrirDialogo();
+    await escribir(q('reapertura-motivo') as HTMLTextAreaElement, 'Faltó causar la factura de aseo');
+    await clic(q('confirmar-reapertura')!);
+
+    const hasta = q('reapertura-hasta')!;
+    expect(hasta.getAttribute('aria-invalid')).toBe('true');
+    expect(document.getElementById(hasta.getAttribute('aria-describedby')!)?.textContent).toMatch(
+      /no mueve la frontera hacia atrás/,
+    );
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    api.asientos.reabrir.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'cafe1234',
+      }),
+    );
+    await pintar('2025-12-31');
+    await abrirDialogo();
+    await escribir(q('reapertura-motivo') as HTMLTextAreaElement, 'Faltó causar la factura de aseo');
+    await clic(q('confirmar-reapertura')!);
+
+    const texto = document.body.textContent ?? '';
+    expect(texto).toMatch(/No pudimos reabrir el período: algo falló de nuestro lado/);
+    expect(texto).toContain('cafe1234');
   });
 });

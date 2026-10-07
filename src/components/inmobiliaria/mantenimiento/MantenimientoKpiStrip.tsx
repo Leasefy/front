@@ -13,6 +13,7 @@ import {
   type Icon,
 } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
+import { CrossFade } from '@leasefy/cadence'
 import type { MaintenanceKpis } from '@/lib/types/mantenimiento'
 
 interface MantenimientoKpiStripProps {
@@ -61,11 +62,15 @@ function KpiCard({
         <Icon size={18} className={iconColor} weight="duotone" />
         <p className="text-xs text-fg-muted leading-tight">{label}</p>
       </div>
-      {isLoading ? (
-        <div className="h-6 w-16 rounded bg-surface-muted animate-pulse" />
-      ) : (
-        <p className="text-xl font-semibold text-fg mt-1">{value}</p>
-      )}
+      {/* Hueco → cifra con un fundido; si la cifra cambia (se releen los
+          indicadores), se cruza con la nueva. */}
+      <CrossFade swapKey={isLoading ? 'cargando' : value}>
+        {isLoading ? (
+          <div className="h-6 w-16 rounded bg-surface-muted animate-pulse" />
+        ) : (
+          <p className="text-xl font-semibold text-fg mt-1">{value}</p>
+        )}
+      </CrossFade>
     </div>
   )
 }

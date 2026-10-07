@@ -92,11 +92,99 @@ export interface TarjetaParaTokenizar {
 }
 
 /**
+ * Por qué la pasarela no aceptó la tarjeta, en español (Nico, 02-10-2026).
+ *
+ * Wompi responde `{ error: { type, reason?, messages?: { campo: [frases] } } }`,
+ * con textos que pueden venir en inglés («Insufficient funds», «Card expired»)
+ * y que el toast pintaba tal cual. Acá se reconocen los motivos conocidos y
+ * se dicen con nuestras frases; lo desconocido, con una frase clara. El texto
+ * de la pasarela NUNCA llega a la persona.
+ */
+export const MOTIVOS_DE_LA_TARJETA = {
+  fondos: 'La tarjeta no tiene fondos suficientes. Prueba con otra tarjeta o comunícate con tu banco.',
+  vencida: 'La tarjeta está vencida. Revisa la fecha de vencimiento o usa otra tarjeta.',
+  cvc: 'El código de seguridad (CVC) no es correcto. Es el número de 3 o 4 dígitos al respaldo de la tarjeta.',
+  numero: 'El número de la tarjeta no es válido. Revísalo e intenta de nuevo.',
+  fecha: 'La fecha de vencimiento no es válida. Revisa el mes y el año.',
+  nombre: 'Revisa el nombre: escríbelo como aparece en la tarjeta.',
+  rechazada: 'Tu banco rechazó la tarjeta. Prueba con otra o comunícate con tu banco.',
+  cupo: 'La tarjeta superó su cupo o su límite de compras. Prueba con otra o comunícate con tu banco.',
+  /** La llave pública mal puesta o vencida: es nuestro, no de la persona. */
+  nuestro:
+    'No pudimos validar la tarjeta: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo en un momento.',
+  /** Muchos intentos seguidos (429). */
+  intentos: 'Hiciste muchos intentos seguidos. Espera un momento e intenta de nuevo.',
+  /** La pasarela respondió 5xx. */
+  pasarela: 'La pasarela de pagos no respondió bien. Prueba de nuevo en un momento.',
+  desconocido:
+    'No pudimos validar la tarjeta. Revisa el número, la fecha de vencimiento, el CVC y el nombre, o prueba con otra tarjeta.',
+} as const;
+
+/** Motivo conocido → frase. El orden importa: lo más específico primero. */
+const MOTIVOS_RECONOCIBLES: ReadonlyArray<[RegExp, string]> = [
+  [/insufficient|fondos insuficientes|saldo insuficiente|sin fondos|not enough (funds|balance)/i, MOTIVOS_DE_LA_TARJETA.fondos],
+  [/expired|vencid|expirad|caducad/i, MOTIVOS_DE_LA_TARJETA.vencida],
+  [/\bcvc\b|\bcvv\b|security code|c[oó]digo de seguridad/i, MOTIVOS_DE_LA_TARJETA.cvc],
+  [/(exceeds?|over|above)( the)?( credit| card)? limit|limit exceeded|\bcupo\b|l[ií]mite de (compras?|cr[eé]dito)/i, MOTIVOS_DE_LA_TARJETA.cupo],
+  [/declined|rejected|denied|do not honou?r|not authori[sz]ed|rechazad|negad|no autorizad|stolen|lost card|robad|perdid|restricted|restringid|fraud/i, MOTIVOS_DE_LA_TARJETA.rechazada],
+  [/card number|n[uú]mero de (la )?tarjeta|invalid card|tarjeta inv[aá]lida|luhn/i, MOTIVOS_DE_LA_TARJETA.numero],
+  [/exp(iration)?[_ ]?(month|year|date)|fecha de (vencimiento|expiraci[oó]n)/i, MOTIVOS_DE_LA_TARJETA.fecha],
+  [/card[_ ]?holder|titular/i, MOTIVOS_DE_LA_TARJETA.nombre],
+  [/public key|llave p[uú]blica|access[_ ]token|invalid[_ ]?(access|key)|authentication/i, MOTIVOS_DE_LA_TARJETA.nuestro],
+];
+
+/** El campo de Wompi → la frase de ese campo (cuando el motivo no se reconoce). */
+const FRASE_DEL_CAMPO: Record<string, string> = {
+  number: MOTIVOS_DE_LA_TARJETA.numero,
+  cvc: MOTIVOS_DE_LA_TARJETA.cvc,
+  exp_month: MOTIVOS_DE_LA_TARJETA.fecha,
+  exp_year: MOTIVOS_DE_LA_TARJETA.fecha,
+  card_holder: MOTIVOS_DE_LA_TARJETA.nombre,
+};
+
+function reconocer(texto: string): string | undefined {
+  return MOTIVOS_RECONOCIBLES.find(([patron]) => patron.test(texto))?.[1];
+}
+
+/**
+ * La frase para la persona a partir del status y del cuerpo de Wompi. Pura:
+ * no lanza y nunca devuelve el texto de la pasarela.
+ */
+export function motivoDelRechazoDeLaTarjeta(status: number, cuerpo: unknown): string {
+  const error = (cuerpo as { error?: unknown } | null)?.error;
+  const e = error && typeof error === 'object' ? (error as Record<string, unknown>) : {};
+  const tipo = typeof e.type === 'string' ? e.type : '';
+  const razon = typeof e.reason === 'string' ? e.reason : typeof error === 'string' ? error : '';
+
+  // Por campo (`INPUT_VALIDATION_ERROR`): el motivo de cada campo, o la frase del campo.
+  const porCampo = e.messages && typeof e.messages === 'object' ? (e.messages as Record<string, unknown>) : {};
+  const frases: string[] = [];
+  for (const [campo, mensajes] of Object.entries(porCampo)) {
+    const texto = Array.isArray(mensajes) ? mensajes.filter((m) => typeof m === 'string').join(' ') : String(mensajes ?? '');
+    const frase = reconocer(texto) ?? FRASE_DEL_CAMPO[campo];
+    if (frase && !frases.includes(frase)) frases.push(frase);
+  }
+  if (frases.length > 0) return frases.join(' ');
+
+  if (status === 429) return MOTIVOS_DE_LA_TARJETA.intentos;
+  const reconocido = reconocer(`${razon} ${tipo}`);
+  if (reconocido) return reconocido;
+  if (status === 401 || status === 403) return MOTIVOS_DE_LA_TARJETA.nuestro;
+  if (status >= 500) return MOTIVOS_DE_LA_TARJETA.pasarela;
+  return MOTIVOS_DE_LA_TARJETA.desconocido;
+}
+
+/**
  * Tokeniza la tarjeta CONTRA WOMPI, desde el navegador.
  *
  * 🔴 Esta es la única función del front que ve un número de tarjeta, y lo manda
  * a Wompi y a nadie más. No lo guarda, no lo registra y no lo pasa por nuestro
  * back. Si alguna vez hay que auditar el alcance PCI, se audita ESTA función.
+ *
+ * Si la pasarela no la acepta, lanza un `Error` con la frase de
+ * `motivoDelRechazoDeLaTarjeta` (en español, nunca la de Wompi). Si el pedido
+ * ni salió, el `TypeError` del `fetch` sube tal cual: el traductor lo lee como
+ * «sin conexión».
  */
 export async function tokenizarTarjeta(
   llavePublica: string,
@@ -122,10 +210,7 @@ export async function tokenizarTarjeta(
   const json: unknown = await res.json().catch(() => null);
   const token = (json as { data?: { id?: string } } | null)?.data?.id;
   if (!res.ok || !token) {
-    const mensaje =
-      (json as { error?: { reason?: string } } | null)?.error?.reason ??
-      'No pudimos validar la tarjeta. Revisa los datos.';
-    throw new Error(mensaje);
+    throw new Error(motivoDelRechazoDeLaTarjeta(res.status, json));
   }
   return token;
 }

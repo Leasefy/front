@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   CaretDown,
   Buildings,
@@ -16,18 +15,21 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
   TableFooter,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import type { DispersionItem, Consignacion } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { baseDeLaDispersion, type BaseDelCanon } from '@/lib/propietarios/base-del-canon';
+import { Collapse, Presence } from '@leasefy/cadence';
 import { RotuloDelMandato } from './mandato/ElMandatoEnLaLiquidacion';
+import { BarraDeAvance } from './pagos/BarraDeAvance';
 
 interface ComisionDesgloseProps {
   items: DispersionItem[];
@@ -121,19 +123,12 @@ function CommissionRatioBar({
           {t('inmobiliaria.finance.commBreakdown.net')}: {formatCurrency(net)}
         </span>
       </div>
-      <div className="h-2 rounded-full bg-surface-muted overflow-hidden flex">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${commissionPercent}%` }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="h-full bg-primary"
-        />
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${100 - commissionPercent}%` }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="h-full bg-success"
-        />
+      {/* La barra se llena de izquierda a derecha con `transform` (antes
+          animaba el ancho de las dos partes): el neto ocupa el riel y la
+          comisión, encima, llega hasta su porcentaje. */}
+      <div className="relative h-2 rounded-full bg-surface-muted overflow-hidden">
+        <BarraDeAvance ancho={total > 0 ? 100 : 0} className="absolute inset-0 rounded-none bg-success" />
+        <BarraDeAvance ancho={commissionPercent} className="absolute inset-0 rounded-none bg-primary" />
       </div>
     </div>
   );
@@ -160,60 +155,14 @@ export function ComisionDesglose({
    */
   const base = baseDelCanon ?? baseDeLaDispersion({ items });
 
-  // Compact variant - just show summary with expand option
-  if (variant === 'compact' && !isExpanded) {
-    return (
-      // allowlist: disclosure toggle de fila entera (etiqueta + importe + caret)
-      // como UN solo objetivo de clic — Button no puede hospedar esa fila.
-      <button
-        type="button"
-        onClick={() => setIsExpanded(true)}
-        aria-expanded={false}
-        className={cn(
-          'w-full flex items-center justify-between p-4 text-left group hover:bg-surface-hover transition-colors',
-          className
-        )}
-      >
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-fg-muted">
-            {items.length} {items.length === 1 ? t('inmobiliaria.finance.commBreakdown.property') : t('inmobiliaria.finance.commBreakdown.properties')}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-fg tabular-nums">
-            {formatCurrency(totals.totalCommission)}
-          </span>
-          <CaretDown className="w-4 h-4 text-fg-muted group-hover:text-fg transition-colors" />
-        </div>
-      </button>
-    );
-  }
+  const cantidad = `${items.length} ${
+    items.length === 1
+      ? t('inmobiliaria.finance.commBreakdown.property')
+      : t('inmobiliaria.finance.commBreakdown.properties')
+  }`;
 
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className={cn(
-        variant === 'full' && 'rounded-lg border border-border bg-card overflow-hidden',
-        className
-      )}
-    >
-      {/* Header (only in compact expanded mode) */}
-      {variant === 'compact' && isExpanded && (
-        // allowlist: mismo disclosure toggle, en su estado abierto.
-        <button
-          type="button"
-          onClick={() => setIsExpanded(false)}
-          aria-expanded={true}
-          className="w-full px-4 py-3 flex items-center justify-between text-left border-b border-border hover:bg-surface-hover transition-colors"
-        >
-          <span className="text-sm text-fg-muted">
-            {items.length} {items.length === 1 ? t('inmobiliaria.finance.commBreakdown.property') : t('inmobiliaria.finance.commBreakdown.properties')}
-          </span>
-          <CaretDown className="w-4 h-4 text-fg-muted rotate-180" />
-        </button>
-      )}
-
+  const tabla = (
+    <>
       {/* Table */}
       <div className="overflow-x-auto">
         <Table>
@@ -232,17 +181,15 @@ export function ComisionDesglose({
               <TableHead className="text-right">{t('inmobiliaria.finance.commBreakdown.net')}</TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody>
-            <AnimatePresence>
-              {items.map((item, index) => {
+          {/* Las líneas entran escalonadas con techo (antes `index * 0.05` sin
+              tope: con 40 inmuebles la última esperaba 2 s). */}
+          <TableBodyAnimado>
+              {items.map((item) => {
                 const Icon = getPropertyTypeIcon(item.propertyTitle);
                 return (
-                  <motion.tr
+                  <TableRowAnimada
                     key={item.cuotaId ?? item.cobroId}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="hover:bg-surface-hover transition-colors"
+                    className="border-b-0 hover:bg-surface-hover transition-colors"
                   >
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
@@ -278,11 +225,10 @@ export function ComisionDesglose({
                     <TableCell className="text-right font-semibold text-success">
                       {formatCurrency(item.netAmount)}
                     </TableCell>
-                  </motion.tr>
+                  </TableRowAnimada>
                 );
               })}
-            </AnimatePresence>
-          </TableBody>
+          </TableBodyAnimado>
           <TableFooter>
             <TableRow className="bg-surface-muted font-semibold">
               <TableCell>
@@ -307,14 +253,60 @@ export function ComisionDesglose({
           </TableFooter>
         </Table>
       </div>
+    </>
+  );
+
+  /*
+   * Compacta (el cajón de la dispersión): arranca plegada y se abre con
+   * `Collapse` (altura + fundido) en vez de cambiar de golpe un botón por la
+   * tabla; el caret gira con la misma curva y el total de la comisión, que
+   * sólo se dice plegada, sale con un fundido.
+   */
+  if (variant === 'compact') {
+    return (
+      <div className={className}>
+        {/* allowlist: disclosure toggle de fila entera (etiqueta + importe + caret)
+            como UN solo objetivo de clic — Button no puede hospedar esa fila. */}
+        <button
+          type="button"
+          onClick={() => setIsExpanded((abierto) => !abierto)}
+          aria-expanded={isExpanded}
+          className={cn(
+            'w-full flex items-center justify-between text-left group hover:bg-surface-hover transition-colors',
+            isExpanded ? 'px-4 py-3 border-b border-border' : 'p-4'
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-fg-muted">{cantidad}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Presence as="span" show={!isExpanded} initial={false} direction="none" className="text-sm font-medium text-fg tabular-nums">
+              {formatCurrency(totals.totalCommission)}
+            </Presence>
+            <CaretDown
+              className={cn(
+                'w-4 h-4 text-fg-muted group-hover:text-fg transition-[transform,color] duration-slow ease-emphasis',
+                isExpanded && 'rotate-180'
+              )}
+            />
+          </div>
+        </button>
+        <Collapse open={isExpanded}>{tabla}</Collapse>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn('rounded-lg border border-border bg-card overflow-hidden', className)}
+    >
+      {tabla}
 
       {/* Commission Ratio Visualization - only for full variant */}
-      {variant === 'full' && (
         <div className="p-4 border-t border-border bg-surface-muted">
           <CommissionRatioBar commission={totals.totalCommission} net={totals.totalNet} t={t} />
         </div>
-      )}
-    </motion.div>
+    </div>
   );
 }
 

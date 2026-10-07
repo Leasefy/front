@@ -15,11 +15,11 @@
  * toca** — nunca se pisa un nombre que la inmobiliaria ya editó.
  */
 
+import { porQueDelMapeo } from "@/lib/migracion/por-que-del-mapeo";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import {
   CheckCircle,
-  FileArrowUp,
   Info,
   Warning,
   X,
@@ -27,6 +27,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { TarjetaDeArchivo } from "@/components/migracion/TarjetaDeArchivo";
+import { ZonaDeArchivo } from "@/components/migracion/ZonaDeArchivo";
 import {
   Select,
   SelectContent,
@@ -37,17 +38,18 @@ import {
 import {
   Table,
   TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from "@/components/ui/table";
 import { TablePagination } from "@/components/ui/pagination";
 import {
   PAGE_SIZE_OPTIONS,
   useTablePagination,
 } from "@/lib/hooks/use-table-pagination";
-import { parseSpreadsheetFile } from "@/components/inmobiliaria/import/lib/parseFile";
 import {
   contabilidadApi,
   MAX_CUENTAS_POR_IMPORTACION,
@@ -56,6 +58,8 @@ import {
   type ResultadoImportacionPuc,
   type RevisionDeImportacionPuc,
 } from "@/lib/api/contabilidad.service";
+import { useAvisoAlSalir } from "@/lib/hooks/use-aviso-al-salir";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   mapearColumnas,
   obligatoriasSinMapear,
@@ -68,6 +72,12 @@ import {
 } from "@/lib/migracion/columnas-de-cuenta";
 
 import { mensajeDeContabilidad } from "./contabilidad-errores";
+import {
+  fraseDelArchivoVacio,
+  leerTablaDelArchivo,
+  type HojaYEncabezado,
+} from "./encabezado-del-archivo";
+import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
 
 /** Sentinel: Radix `Select` no admite `value=""`. */
 const IGNORAR = "__ignorar__";
@@ -84,8 +94,12 @@ export function fraseDeLoQueNoSeAsigno(
     nombreEnTuPlan?: string;
   }>,
 ): string {
+  // QA-MIG-B: dos asientos automáticos pueden proponer el MISMO código
+  // («Tu plan no tiene 112005, …, 112005»): cada código se dice una vez.
   const de = (m: string) =>
-    sinCuenta.filter((c) => (c.motivo ?? "NO_EXISTE") === m);
+    sinCuenta
+      .filter((c) => (c.motivo ?? "NO_EXISTE") === m)
+      .filter((c, i, todas) => todas.findIndex((o) => o.codigo === c.codigo) === i);
   const partes: string[] = [];
   const noExisten = de("NO_EXISTE");
   if (noExisten.length > 0) {
@@ -141,42 +155,64 @@ export function ImportarCuentas({
   );
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * QA-MIG-B (04-10): en qué hoja y desde qué fila se leyó. Los exports de
+   * SIIGO o World Office traen títulos arriba; un libro puede traer la tabla
+   * en la segunda hoja. Se dice cuando no fue lo obvio.
+   */
+  const [donde, setDonde] = useState<HojaYEncabezado | null>(null);
+  const [fraseDonde, setFraseDonde] = useState<string | null>(null);
 
   useEffect(() => {
     onOcupado?.(cargando);
   }, [cargando, onOcupado]);
   useEffect(() => () => onOcupado?.(false), [onOcupado]);
 
-  const onDrop = useCallback(async (aceptados: File[]) => {
-    const archivo = aceptados[0];
-    if (!archivo) return;
+  // T-0125 · el archivo leído vive sólo en el navegador hasta que se importa
+  // (la importación en sí es atómica en el back): se avisa antes de perderlo.
+  useAvisoAlSalir(cargando || (filas.length > 0 && !resultado));
+
+  /** Lee el archivo (o otra hoja del mismo libro) desde su tabla de verdad. */
+  const leer = useCallback(async (elArchivo: File, hoja?: string) => {
     setError(null);
     setRevision(null);
     setResultado(null);
-    // 🔴 `cuentas` también. Sin esta línea, subir un segundo archivo dejaba el
-    // resumen del PRIMERO en pantalla — el mismo bug que en asientos.
     setCuentas([]);
-    setArchivo(archivo);
-    setNombreDeArchivo(archivo.name);
     setLeyendo(true);
     try {
-      const r = await parseSpreadsheetFile(archivo);
-      setFilas(r.rows as Record<string, unknown>[]);
+      const r = await leerTablaDelArchivo(elArchivo, COLUMNAS_DE_CUENTA, hoja);
+      setFilas(r.rows);
       setEncabezados(r.headers);
       setMapeo(mapearColumnas(COLUMNAS_DE_CUENTA, r.headers));
+      setDonde(r.donde);
+      setFraseDonde(r.frase);
+      if (r.vacio) setError(fraseDelArchivoVacio(elArchivo.name, r.vacio, "cuentas"));
     } catch (e) {
       setFilas([]);
       setEncabezados([]);
       setMapeo([]);
+      setDonde(null);
+      setFraseDonde(null);
+      // El archivo se lee en el navegador: su error es un texto propio (o un
+      // `TypeError` que no es para nadie, y entonces va la frase de respaldo).
       setError(
-        e instanceof Error && e.message
-          ? e.message
-          : "No pudimos leer el archivo. ¿Es Excel o CSV?",
+        mensajeParaLaPersona(e, { porDefecto: "No pudimos leer el archivo. ¿Es Excel o CSV?" }),
       );
     } finally {
       setLeyendo(false);
     }
   }, []);
+
+  const onDrop = useCallback(async (aceptados: File[]) => {
+    const archivo = aceptados[0];
+    if (!archivo) return;
+    // 🔴 `cuentas` también se limpia (en `leer`). Sin eso, subir un segundo
+    // archivo dejaba el resumen del PRIMERO en pantalla — el mismo bug que en
+    // asientos.
+    setArchivo(archivo);
+    setNombreDeArchivo(archivo.name);
+    await leer(archivo);
+  }, [leer]);
 
   /** Suelta el archivo y TODO lo que salió de él: lo que corre «Descartar». */
   const soltarArchivo = useCallback(() => {
@@ -190,6 +226,8 @@ export function ImportarCuentas({
     setRevision(null);
     setResultado(null);
     setError(null);
+    setDonde(null);
+    setFraseDonde(null);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive, open } = useDropzone({
@@ -262,7 +300,7 @@ export function ImportarCuentas({
   if (resultado) {
     return (
       <section
-        className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+        className="rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
         data-testid="puc-importacion-resultado"
       >
         <p className="flex items-center gap-2 font-medium text-fg">
@@ -293,8 +331,10 @@ export function ImportarCuentas({
               : `${fraseDeLoQueNoSeAsigno(resultado.mapeo.sinCuenta)} Asígnalas en «Cuentas de los asientos automáticos», más abajo.`}
           </p>
         ) : null}
+        <AvisosDelArchivo avisos={resultado.advertencias} />
         {resultado.invalidas > 0 ? (
           <TablaDeRevision
+            filaDeEncabezado={donde?.filaDeEncabezado ?? 0}
             filas={resultado.filas.filter((f) => f.veredicto === "INVALIDA")}
             titulo="Las que no entraron"
           />
@@ -311,7 +351,7 @@ export function ImportarCuentas({
   if (revision) {
     return (
       <section
-        className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+        className="rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
         data-testid="puc-importacion-revision"
       >
         <h2 className="font-medium text-fg">Así va a quedar</h2>
@@ -343,7 +383,9 @@ export function ImportarCuentas({
           .
         </p>
 
-        <TablaDeRevision filas={revision.filas} />
+        <AvisosDelArchivo avisos={revision.advertencias} />
+
+        <TablaDeRevision filas={revision.filas} filaDeEncabezado={donde?.filaDeEncabezado ?? 0} />
 
         {error ? <Aviso tono="danger">{error}</Aviso> : null}
 
@@ -374,7 +416,7 @@ export function ImportarCuentas({
 
   return (
     <section
-      className="space-y-5 rounded-lg border border-border bg-surface p-6 shadow-sm"
+      className="space-y-5 rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
       data-testid="puc-importacion"
     >
       <div className="flex items-start justify-between gap-3">
@@ -416,30 +458,27 @@ export function ImportarCuentas({
           testid="archivo-de-cuentas"
         />
       ) : (
-        <div
-          {...getRootProps()}
-          className={`flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
-            isDragActive
-              ? "border-primary bg-primary-soft"
-              : "border-border hover:bg-surface-muted"
-          }`}
-          data-testid="dropzone-cuentas"
-        >
-          {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
-          <input {...getInputProps()} data-testid="archivo-cuentas" />
-          <FileArrowUp className="h-8 w-8 text-fg-muted" />
-          <div>
-            <p className="text-sm font-medium text-fg">
-              Arrastra el archivo o haz clic para elegirlo
-            </p>
-            <p className="text-caption text-fg-subtle">
-              Excel o CSV. Nada se crea todavía.
-            </p>
-          </div>
-        </div>
+        <ZonaDeArchivo
+          rootProps={getRootProps()}
+          inputProps={getInputProps()}
+          activo={isDragActive}
+          testid="dropzone-cuentas"
+          inputTestid="archivo-cuentas"
+          titulo="Arrastra el archivo o haz clic para elegirlo"
+          detalle="Excel o CSV. Nada se crea todavía."
+        />
       )}
 
       {error ? <Aviso tono="danger">{error}</Aviso> : null}
+
+      {archivo && donde ? (
+        <HojaDelLibro
+          donde={donde}
+          frase={fraseDonde}
+          ocupado={leyendo || cargando}
+          onElegir={(hoja) => void leer(archivo, hoja)}
+        />
+      ) : null}
 
       {encabezados.length > 0 ? (
         <div data-testid="mapeo-cuentas">
@@ -510,7 +549,7 @@ export function ImportarCuentas({
                       </Select>
                     </TableCell>
                     <TableCell className="text-caption text-fg-muted">
-                      {m.isManual ? "elegido a mano" : m.porque}
+                      {porQueDelMapeo(m)}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -549,8 +588,9 @@ export function ImportarCuentas({
                 : `Las columnas ${banderasIgnoradas
                     .map((c) => `«${c}»`)
                     .join(" y ")} se leen pero no se guardan: `}
-              el plan de cuentas todavía no tiene dónde ponerlas. Nada más del
-              archivo se pierde.
+              el plan de cuentas todavía no tiene dónde{" "}
+              {banderasIgnoradas.length === 1 ? "ponerla" : "ponerlas"}. Nada
+              más del archivo se pierde.
             </Aviso>
           ) : null}
 
@@ -604,9 +644,12 @@ function Aviso({
 function TablaDeRevision({
   filas,
   titulo,
+  filaDeEncabezado = 0,
 }: {
   filas: CuentaRevisada[];
   titulo?: string;
+  /** QA-MIG-B: con títulos arriba, la fila 1 de datos no es la 2 del Excel. */
+  filaDeEncabezado?: number;
 }) {
   // Primero lo que necesita atención; lo que ya existe, al final.
   const orden: Record<CuentaRevisada["veredicto"], number> = {
@@ -625,10 +668,48 @@ function TablaDeRevision({
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(ordenadas, { resetKey: `${titulo ?? ""}|${filas.length}` });
 
+  /*
+   * QA-MIG-B (MC-28): a 390 px la tabla se corría de lado y «Qué pasa» —lo
+   * que más importa— quedaba fuera de la vista. Bajo 768 px, tarjetas.
+   */
+  const enCelular = useIsMobile();
+  const naturalezaDe = (f: CuentaRevisada) => (
+    <>
+      {f.naturaleza === "DEBITO" ? "Débito" : f.naturaleza === "CREDITO" ? "Crédito" : "—"}
+      {/* QA-MIG-B: lo que no venía en el archivo se dice. */}
+      {f.veredicto === "NUEVA" && f.naturalezaDe === "CLASE" ? (
+        <span className="block text-fg-subtle" data-testid={`naturaleza-deducida-${f.indice}`}>
+          por su clase
+        </span>
+      ) : f.veredicto === "NUEVA" && f.naturalezaDe === "PADRE" ? (
+        <span className="block text-fg-subtle" data-testid={`naturaleza-deducida-${f.indice}`}>
+          de su cuenta mayor
+        </span>
+      ) : null}
+    </>
+  );
+
   return (
     <div className="mt-4">
       {titulo ? <h3 className="text-sm font-medium text-fg">{titulo}</h3> : null}
       <div className="mt-2 overflow-hidden rounded-lg border border-border">
+        {enCelular ? (
+          <ul className="divide-y divide-border" data-testid="revision-cuentas-tarjetas">
+            {pageItems.map((f) => (
+              <li key={f.indice} className="space-y-1 p-3" data-testid={`revision-cuenta-${f.indice}`}>
+                <p className="flex flex-wrap items-baseline gap-x-2 text-caption text-fg-subtle">
+                  <span className="font-mono tabular-nums">Fila {f.indice + 2 + filaDeEncabezado}</span>
+                  <span className="font-mono tabular-nums text-fg">{f.codigo || f.codigoOriginal}</span>
+                </p>
+                {f.nombre ? <p className="text-sm text-fg">{f.nombre}</p> : null}
+                <div className="text-caption text-fg-muted">{naturalezaDe(f)}</div>
+                <div className="text-caption">
+                  <Veredicto fila={f} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -640,32 +721,32 @@ function TablaDeRevision({
                 <TableHead>Qué pasa</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* Las filas entran escalonadas; cada página es una lista nueva
+                (ARREGLOS-8, MOV-A6). */}
+            <TableBodyAnimado key={`${page}|${pageSize}`}>
               {pageItems.map((f) => (
-                <TableRow key={f.indice} data-testid={`revision-cuenta-${f.indice}`}>
-                  {/* +2: en el archivo la primera fila de datos es la 2. */}
+                <TableRowAnimada key={f.indice} data-testid={`revision-cuenta-${f.indice}`}>
+                  {/* +2: en el archivo la primera fila de datos es la 2 (más
+                      las filas de título que haya arriba del encabezado). */}
                   <TableCell className="font-mono text-caption tabular-nums text-fg-subtle">
-                    {f.indice + 2}
+                    {f.indice + 2 + filaDeEncabezado}
                   </TableCell>
                   <TableCell className="font-mono text-caption tabular-nums">
                     {f.codigo || f.codigoOriginal}
                   </TableCell>
                   <TableCell className="text-sm">{f.nombre}</TableCell>
                   <TableCell className="text-caption text-fg-muted">
-                    {f.naturaleza === "DEBITO"
-                      ? "Débito"
-                      : f.naturaleza === "CREDITO"
-                        ? "Crédito"
-                        : "—"}
+                    {naturalezaDe(f)}
                   </TableCell>
                   <TableCell className="text-caption">
                     <Veredicto fila={f} />
                   </TableCell>
-                </TableRow>
+                </TableRowAnimada>
               ))}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
         </div>
+        )}
         {shouldPaginate ? (
           <div className="border-t border-border px-4 py-3">
             <TablePagination
@@ -698,10 +779,19 @@ function Veredicto({ fila }: { fila: CuentaRevisada }) {
     );
   }
   if (fila.veredicto === "YA_EXISTE") {
+    // QA-MIG-B (MC-29): si el archivo trae OTRO estado, también se dice.
+    const otroMotivo = fila.motivo
+      ?.replace(/^Ya está como «[^»]*»; se conserva ese nombre\.\s*/, "")
+      .trim();
     return (
       <span className="text-fg-muted">
         Ya existe{fila.nombreActual ? ` como «${fila.nombreActual}»` : ""} — no
         se toca
+        {otroMotivo ? (
+          <span className="block text-warning" data-testid={`otro-estado-${fila.indice}`}>
+            {otroMotivo}
+          </span>
+        ) : null}
       </span>
     );
   }
@@ -710,8 +800,80 @@ function Veredicto({ fila }: { fila: CuentaRevisada }) {
       <CheckCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" weight="fill" />
       <span>
         Nueva{fila.imputable ? "" : " · mayor, sin movimientos"}
+        {fila.sinPadre ? " · sin su cuenta mayor" : ""}
         {fila.motivo ? ` — ${fila.motivo}` : ""}
       </span>
     </span>
+  );
+}
+
+/**
+ * QA-MIG-B (04-10): lo que el back completó con una regla fija o no guarda
+ * (naturaleza por la clase, todas activas porque el archivo no lo decía,
+ * columnas sin dónde vivir). Antes viajaba en `advertencias` y la pantalla no
+ * lo mostraba: un dato deducido parecía venir del archivo.
+ */
+function AvisosDelArchivo({ avisos }: { avisos?: readonly string[] }) {
+  if (!avisos || avisos.length === 0) return null;
+  return (
+    <div
+      className="mt-4 flex items-start gap-2 rounded-md border border-border bg-info-soft p-3"
+      data-testid="puc-avisos-del-archivo"
+    >
+      <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
+      <ul className="space-y-1 text-sm text-fg">
+        {avisos.map((a) => (
+          <li key={a}>{a}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * QA-MIG-B (04-10): de qué hoja y desde qué fila se leyó, y la salida para
+ * elegir otra hoja cuando el libro trae varias.
+ */
+export function HojaDelLibro({
+  donde,
+  frase,
+  ocupado,
+  onElegir,
+}: {
+  donde: HojaYEncabezado;
+  frase: string | null;
+  ocupado: boolean;
+  onElegir: (hoja: string) => void;
+}) {
+  if (!frase && donde.hojas.length <= 1) return null;
+  return (
+    <div
+      className="flex flex-wrap items-center gap-3 rounded-md bg-surface-muted p-3"
+      data-testid="hoja-del-libro"
+    >
+      {frase ? (
+        <p className="min-w-0 flex-1 text-sm text-fg-muted" data-testid="donde-se-leyo">
+          {frase}
+        </p>
+      ) : (
+        <p className="min-w-0 flex-1 text-sm text-fg-muted">
+          El libro trae {donde.hojas.length} hojas; leímos «{donde.hoja}».
+        </p>
+      )}
+      {donde.hojas.length > 1 ? (
+        <Select value={donde.hoja} onValueChange={onElegir} disabled={ocupado}>
+          <SelectTrigger className="w-56" aria-label="Hoja del libro" data-testid="elegir-hoja">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {donde.hojas.map((h) => (
+              <SelectItem key={h} value={h}>
+                {h}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : null}
+    </div>
   );
 }

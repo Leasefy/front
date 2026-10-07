@@ -1,5 +1,6 @@
 'use client';
 
+import { retrasoEscalonado } from '../lib/retraso-escalonado';
 import { FileXls, Desktop, Globe, DownloadSimple, LinkSimple } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -111,15 +112,20 @@ export function StepChooseMethod({ state, updateState }: ImportStepProps) {
               type="button"
               aria-pressed={isSelected}
               onClick={() => handleSelect(card.method, card.disabled)}
+              // IN-08 (QA 04-10): un <button> centra su contenido en vertical, así
+              // que en la tarjeta más alta («Desde portales», cuatro renglones) la
+              // etiqueta «Guiado» quedaba más arriba que las de al lado. Contenido
+              // arriba, como columna: las etiquetas quedan a la misma altura.
+              data-testid={`metodo-${card.method}`}
               className={cn(
-                'animate-stagger-in text-left rounded-lg border-2 p-6 transition-all duration-200',
+                'animate-stagger-in flex flex-col items-start justify-start text-left rounded-lg border-2 p-6 transition-[border-color,background-color,box-shadow] duration-base',
                 card.disabled
                   ? 'opacity-60 cursor-not-allowed border-border dark:border-border-strong'
                   : isSelected
                     ? 'border-primary/30 bg-primary-soft cursor-pointer'
                     : 'border-border dark:border-border-strong hover:border-primary/30 dark:hover:border-primary/30 cursor-pointer'
               )}
-              style={{ animationDelay: `${index * 80}ms` }}
+              style={{ animationDelay: retrasoEscalonado(index) }}
               disabled={card.disabled}
             >
               {/* Icon */}

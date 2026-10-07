@@ -26,14 +26,24 @@
  * `leerCsvEnTrozos` va por pedazos de 1 MB, arma lotes de 5.000 —el tope del
  * back— y entre lote y lote le devuelve el turno al navegador: la barra
  * avanza y «Cancelar» responde.
+ *
+ * ── Reanudable (T-0135) ────────────────────────────────────────────────────
+ *
+ * Cada lote de `migrar` lleva `lote` + `totalDelArchivo` + `desde`, y el back
+ * guarda cuántos comprobantes del PRINCIPIO del archivo ya procesó. Si la
+ * pestaña se cierra o se cae la red, `CargasDeComprobantesAbiertas` lista la
+ * carga con «Continuar» (pide el MISMO archivo) y «Descartar». Al continuar, el
+ * recorrido no vuelve a mandar el prefijo ya procesado. Subir el mismo archivo
+ * dos veces nunca duplica: cada comprobante se identifica por su contenido.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
-import { CheckCircle, FileArrowUp, Info, Warning } from "@phosphor-icons/react";
+import { CheckCircle, Info, Warning } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { TarjetaDeArchivo } from "@/components/migracion/TarjetaDeArchivo";
+import { ZonaDeArchivo } from "@/components/migracion/ZonaDeArchivo";
 import {
   Table,
   TableBody,
@@ -45,9 +55,11 @@ import {
 import {
   contabilidadApi,
   MAX_DOCUMENTOS_POR_LOTE,
+  type CargaAbierta,
   type DocumentoMigrado,
   type RevisionDeDocumentos,
 } from "@/lib/api/contabilidad.service";
+import { useAvisoAlSalir } from "@/lib/hooks/use-aviso-al-salir";
 import { leerCsvEnTrozos } from "@/lib/migracion/csv-en-trozos";
 import { armarDocumentos, COLUMNAS_DE_DOCUMENTO } from "@/lib/migracion/columnas-de-documento";
 import {
@@ -56,8 +68,21 @@ import {
   type MapeoDeColumna,
 } from "@/lib/migracion/columnas-de-tercero";
 
+import { CargasDeComprobantesAbiertas } from "./CargasDeComprobantesAbiertas";
 import { ComprobantesSinContrato } from "./ComprobantesSinContrato";
 import { mensajeDeContabilidad } from "./contabilidad-errores";
+import { fraseDelArchivoVacio, leerTablaDelArchivo } from "./encabezado-del-archivo";
+
+/**
+ * 🔴 QA-MIG-B (04-10): el lector por trozos es de TEXTO. Un Excel (.xlsx es
+ * un ZIP) se leía como si fuera un CSV y el encabezado salía «PK…»: el
+ * archivo entero frenado con un nombre de columna basura. Un Excel va por el
+ * lector de planillas de la casa (con la hoja y la fila de encabezados
+ * correctas) y después por los mismos lotes.
+ */
+function esPlanilla(nombre: string): boolean {
+  return /\.(xlsx|xlsm|xls|ods|fods)$/i.test(nombre);
+}
 
 /** El acumulado de todos los lotes: es lo que la persona lee al final. */
 interface Acumulado {
@@ -120,6 +145,28 @@ function sumar(
 
 type Fase = "elegir" | "leyendo" | "revisado" | "migrando" | "listo";
 
+/** El back acepta hasta 60 caracteres de lote. */
+const LARGO_DE_LOTE = 60;
+
+/**
+ * El nombre de la carga de ESTE archivo: el mismo archivo da el mismo lote, así
+ * que subirlo otra vez (tras un corte) continúa la carga en vez de abrir otra.
+ * Nombre + peso: dos archivos distintos con el mismo nombre rara vez pesan lo
+ * mismo, y si pesan igual los comprobantes igual no se duplican.
+ */
+function loteDelArchivo(archivo: File): string {
+  const base = archivo.name
+    .replace(/\.[^.]+$/, "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const cola = `-${archivo.size}`;
+  const cabeza = `comprobantes-${base || "archivo"}`;
+  return `${cabeza.slice(0, LARGO_DE_LOTE - cola.length)}${cola}`;
+}
+
 export function DocumentosContables({
   onOcupado,
 }: {
@@ -137,12 +184,22 @@ export function DocumentosContables({
   /** Sube cada vez que termina una migración: lo guardado cambió. */
   const [migraciones, setMigraciones] = useState(0);
   const cancelar = useRef(false);
+  /** Cuántos comprobantes armó la revisión del archivo entero: el `totalDelArchivo` de la carga. */
+  const totalDelArchivo = useRef(0);
+  /** T-0135 — la carga a medias que la persona eligió continuar: se pide el MISMO archivo. */
+  const [continuar, setContinuar] = useState<CargaAbierta | null>(null);
+  /** Cuántos comprobantes se saltó este recorrido porque el servidor ya los tenía. */
+  const [saltados, setSaltados] = useState(0);
 
   const ocupado = fase === "leyendo" || fase === "migrando";
   useEffect(() => {
     onOcupado?.(ocupado);
   }, [ocupado, onOcupado]);
   useEffect(() => () => onOcupado?.(false), [onOcupado]);
+
+  // T-0125 · leyendo o migrando, o con la revisión hecha y sin migrar: el
+  // archivo vive sólo en el navegador. Se avisa antes de perderlo.
+  useAvisoAlSalir(ocupado || fase === "revisado");
 
   const sinMapear = useMemo(
     () => obligatoriasSinMapear(COLUMNAS_DE_DOCUMENTO, mapeo),
@@ -167,8 +224,59 @@ export function DocumentosContables({
 
       let acc = acumuladoVacio();
       let mapeoDelArchivo: MapeoDeColumna[] = mapeo;
+      setSaltados(0);
+
+      /*
+       * T-0135 — el seguimiento de la carga sólo existe al migrar y sólo si la
+       * revisión ya contó el archivo entero. `inicio` es el prefijo que el
+       * servidor ya procesó con ESTE mismo total: lo anterior no se vuelve a
+       * mandar. Si el total cambió (otro archivo), se empieza de cero y la
+       * idempotencia por contenido evita duplicados igual.
+       */
+      const lote = continuar?.lote ?? loteDelArchivo(elArchivo);
+      const total = totalDelArchivo.current;
+      let inicio = 0;
+      if (modo === "migrar" && total > 0) {
+        try {
+          const abiertas = await contabilidadApi.migracion.documentos.cargas();
+          const previa = abiertas.find((c) => c.lote === lote);
+          if (previa && previa.esperados === total) inicio = previa.procesados;
+        } catch {
+          // Sin saber el avance se manda todo: es más lento, nunca incorrecto.
+        }
+      }
+      let enviados = 0;
+      let saltadosAcc = 0;
 
       try {
+        if (esPlanilla(elArchivo.name)) {
+          const tabla = await leerTablaDelArchivo(elArchivo, COLUMNAS_DE_DOCUMENTO);
+          setEncabezados(tabla.headers);
+          mapeoDelArchivo = mapearColumnas(COLUMNAS_DE_DOCUMENTO, tabla.headers);
+          setMapeo(mapeoDelArchivo);
+          if (tabla.vacio) {
+            setError(fraseDelArchivoVacio(elArchivo.name, tabla.vacio, "comprobantes"));
+            setFase("elegir");
+            return;
+          }
+          for (let i = 0; i < tabla.rows.length; i += MAX_DOCUMENTOS_POR_LOTE) {
+            if (cancelar.current) break;
+            const filas = tabla.rows.slice(i, i + MAX_DOCUMENTOS_POR_LOTE);
+            setLeidas(i + filas.length);
+            const documentos: DocumentoMigrado[] = armarDocumentos(filas, mapeoDelArchivo);
+            if (documentos.length === 0) continue;
+            const r =
+              modo === "revisar"
+                ? await contabilidadApi.migracion.documentos.revisar(documentos)
+                : await contabilidadApi.migracion.documentos.migrar(documentos);
+            acc = sumar(acc, r);
+            setAcumulado(acc);
+          }
+          setLeidas(tabla.rows.length);
+          setFase(modo === "revisar" ? "revisado" : "listo");
+          if (modo === "migrar") setMigraciones((v) => v + 1);
+          return;
+        }
         const resultado = await leerCsvEnTrozos(elArchivo, {
           tamanoDeLote: MAX_DOCUMENTOS_POR_LOTE,
           cancelado: () => cancelar.current,
@@ -184,23 +292,44 @@ export function DocumentosContables({
             setLeidas(hastaAhora);
             const documentos: DocumentoMigrado[] = armarDocumentos(filas, mapeoDelArchivo);
             if (documentos.length === 0) return;
-            const r =
-              modo === "revisar"
-                ? await contabilidadApi.migracion.documentos.revisar(documentos)
-                : await contabilidadApi.migracion.documentos.migrar(documentos);
+            const antes = enviados;
+            enviados += documentos.length;
+            if (modo === "revisar") {
+              const r = await contabilidadApi.migracion.documentos.revisar(documentos);
+              acc = sumar(acc, r);
+              setAcumulado(acc);
+              return;
+            }
+            const saltar = Math.max(0, Math.min(documentos.length, inicio - antes));
+            if (saltar > 0) {
+              saltadosAcc += saltar;
+              setSaltados(saltadosAcc);
+            }
+            const aMandar = documentos.slice(saltar);
+            if (aMandar.length === 0) return;
+            const r = await contabilidadApi.migracion.documentos.migrar(
+              aMandar,
+              total > 0 ? { lote, totalDelArchivo: total, desde: antes + saltar } : undefined,
+            );
             acc = sumar(acc, r);
             setAcumulado(acc);
           },
         });
+        if (modo === "revisar") totalDelArchivo.current = enviados;
         setLeidas(resultado.filas);
         setFase(modo === "revisar" ? "revisado" : "listo");
-        if (modo === "migrar") setMigraciones((v) => v + 1);
+        if (modo === "migrar") {
+          setMigraciones((v) => v + 1);
+          setContinuar(null);
+        }
       } catch (e) {
         setError(
           `${mensajeDeContabilidad(e, "No pudimos procesar el archivo.")} ` +
-            `Lo que ya entró NO se duplica al reintentar: cada comprobante se ` +
-            `identifica por su número, su fecha, su concepto y sus montos, así ` +
-            `que dos facturas distintas con el mismo número entran las dos.`,
+            `Tu avance quedó guardado: vuelve a elegir el mismo archivo (o pulsa «Continuar» ` +
+            `en la carga que aparece abajo) y seguimos desde donde quedó. Lo que ya entró NO ` +
+            `se duplica al reintentar: cada comprobante se identifica por su número, su ` +
+            `fecha, su concepto y sus montos, así que dos facturas distintas con el mismo ` +
+            `número entran las dos.`,
         );
         // Se conserva lo acumulado: cortar a la mitad y mostrar 0 escondería
         // los 40.000 que sí entraron.
@@ -208,7 +337,7 @@ export function DocumentosContables({
         if (modo === "migrar") setMigraciones((v) => v + 1);
       }
     },
-    [mapeo],
+    [mapeo, continuar],
   );
 
   const onDrop = useCallback(
@@ -222,6 +351,7 @@ export function DocumentosContables({
       setMapeo([]);
       setError(null);
       setFase("elegir");
+      totalDelArchivo.current = 0;
       void recorrer(elegido, "revisar");
     },
     [recorrer],
@@ -244,6 +374,7 @@ export function DocumentosContables({
     setAcumulado(null);
     setError(null);
     setFase("elegir");
+    totalDelArchivo.current = 0;
   }, []);
 
   return (
@@ -253,24 +384,62 @@ export function DocumentosContables({
         en qué se diferencia del libro diario. Confundirlos es cargar 116 mil
         asientos descuadrados.
       */}
-      <div className="flex items-start gap-2 rounded-md border border-border bg-info-soft p-3">
+      {/* Más corto que antes, pero SIEMPRE a la vista: es lo que evita cargar
+          116 mil asientos descuadrados por la puerta equivocada — no va
+          detrás de un «entender más». */}
+      <div className="flex items-start gap-2 rounded-md bg-info-soft p-3">
         <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
         <div className="text-sm text-fg">
           <p className="font-medium">
             Este archivo son los comprobantes, no los asientos
           </p>
           <p className="mt-0.5 text-fg-muted">
-            El export de comprobantes trae el encabezado de cada documento
-            —prefijo, consecutivo, tipo, fecha, concepto y los totales de
-            débitos y créditos— pero <strong>no las líneas por cuenta</strong>.
-            Por eso no entran al libro diario: se guardan como documentos
-            históricos y se cuelgan del contrato del tercero que nombra el
-            concepto. La ficha de cada contrato los lista. Si tu archivo SÍ
-            trae una cuenta y un débito/crédito por línea, ése va en «Subir el
-            libro diario».
+            El export trae el encabezado de cada documento —fecha, concepto y
+            totales—, <strong>no las líneas por cuenta</strong>. Se guardan
+            como histórico y se cuelgan del contrato que nombra el concepto.
+            Si tu archivo sí trae cuenta y débito/crédito por línea, va en
+            «Subir el libro diario».
           </p>
         </div>
       </div>
+
+      {/* T-0135 — las cargas que quedaron a medias, con «Continuar» y «Descartar».
+          Arriba del cargador: quien volvió tras un corte tiene que verlas sin buscarlas. */}
+      {!ocupado ? (
+        <CargasDeComprobantesAbiertas
+          version={migraciones}
+          ocupado={ocupado}
+          onContinuar={(c) => {
+            setContinuar(c);
+            setError(null);
+          }}
+        />
+      ) : null}
+
+      {continuar && !archivo ? (
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-info-soft p-3"
+          data-testid="documentos-continuar"
+        >
+          <div className="flex items-start gap-2">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
+            <p className="text-sm text-fg">
+              Para continuar «{continuar.lote}» ({continuar.procesados.toLocaleString("es-CO")} de{" "}
+              {continuar.esperados.toLocaleString("es-CO")} comprobantes ya cargados), elige{" "}
+              <strong>el mismo archivo</strong>. Seguimos desde donde quedó.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            hideArrow
+            onClick={() => setContinuar(null)}
+            data-testid="documentos-continuar-cancelar"
+          >
+            Cancelar
+          </Button>
+        </div>
+      ) : null}
 
       {archivo ? (
         <TarjetaDeArchivo
@@ -291,31 +460,20 @@ export function DocumentosContables({
           testid="archivo-de-documentos"
         />
       ) : (
-        <div
-          {...getRootProps()}
-          className={`flex cursor-pointer flex-col items-center gap-3 rounded-md border border-dashed p-8 text-center transition-colors ${
-            isDragActive ? "border-primary bg-primary-soft" : "border-border hover:bg-surface-muted"
-          }`}
-          data-testid="dropzone-documentos"
-        >
-          {/* allowlist: react-dropzone hidden file input (mecanismo canónico) */}
-          <input {...getInputProps()} data-testid="archivo-documentos" />
-          <FileArrowUp className="h-8 w-8 text-fg-muted" />
-          <div>
-            <p className="text-sm font-medium text-fg">
-              Arrastra el CSV de comprobantes o haz clic para elegirlo
-            </p>
-            <p className="text-caption text-fg-subtle">
-              Se lee por partes, así que un archivo de decenas de miles de filas
-              no congela la pantalla. Nada se escribe hasta que lo pidas.
-            </p>
-          </div>
-        </div>
+        <ZonaDeArchivo
+          rootProps={getRootProps()}
+          inputProps={getInputProps()}
+          activo={isDragActive}
+          testid="dropzone-documentos"
+          inputTestid="archivo-documentos"
+          titulo="Arrastra el CSV de comprobantes o haz clic para elegirlo"
+          detalle="Se lee por partes: decenas de miles de filas no congelan la pantalla. Nada se escribe hasta que lo pidas."
+        />
       )}
 
       {error ? (
         <div
-          className="flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+          className="flex items-start gap-2 rounded-md bg-danger-soft p-3"
           role="alert"
           data-testid="documentos-error"
         >
@@ -326,14 +484,20 @@ export function DocumentosContables({
 
       {ocupado ? (
         <div
-          className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-border bg-surface p-3"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-surface-muted p-3"
           aria-live="polite"
           data-testid="documentos-progreso"
         >
           <p className="text-sm text-fg">
             {fase === "leyendo" ? "Revisando" : "Migrando"}{" "}
-            <span className="font-mono tabular-nums">{leidas.toLocaleString("es-CO")}</span>{" "}
-            comprobantes…
+            <span className="font-mono tabular-nums">{leidas.toLocaleString("es-CO")}</span>
+            {fase === "migrando" && totalDelArchivo.current > 0
+              ? ` de ${totalDelArchivo.current.toLocaleString("es-CO")}`
+              : ""}{" "}
+            comprobantes… Tu avance se va guardando.
+            {saltados > 0
+              ? ` Los primeros ${saltados.toLocaleString("es-CO")} ya estaban cargados: seguimos desde ahí.`
+              : ""}
           </p>
           <Button
             size="sm"
@@ -351,7 +515,7 @@ export function DocumentosContables({
 
       {encabezados.length > 0 && sinMapear.length > 0 ? (
         <div
-          className="flex items-start gap-2 rounded-md border border-border bg-warning-soft p-3"
+          className="flex items-start gap-2 rounded-md bg-warning-soft p-3"
           data-testid="documentos-sin-mapear"
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
@@ -402,11 +566,11 @@ function ResumenDeDocumentos({
 
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-5"
+      className="rounded-lg border border-border-faint bg-surface p-5 shadow-sm"
       data-testid="documentos-resumen"
       aria-live="polite"
     >
-      <h3 className="flex items-center gap-2 font-medium text-fg">
+      <h3 className="flex items-center gap-2 text-sm font-medium text-fg">
         {yaSeEscribio ? (
           <CheckCircle className="h-4 w-4 text-success" weight="fill" />
         ) : null}
@@ -415,15 +579,28 @@ function ResumenDeDocumentos({
           : `Así quedarían tus ${acumulado.total.toLocaleString("es-CO")} comprobantes`}
       </h3>
       {!yaSeEscribio ? (
-        <p className="mt-0.5 text-sm text-fg-muted">Todavía no se escribió nada.</p>
+        <p className="mt-0.5 text-caption text-fg-subtle">Todavía no se escribió nada.</p>
       ) : null}
 
-      <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Dato titulo="Entran" valor={acumulado.listos} />
-        <Dato titulo="Ya estaban" valor={acumulado.yaMigrados} />
-        <Dato titulo="Rechazados" valor={acumulado.rechazados} tono="danger" />
-        <Dato titulo="Con contrato" valor={conContrato} tono="success" />
-      </dl>
+      {/* El resumen es una FRASE con los números en mono, no cuatro fichas
+          sueltas (el molde de la casa). */}
+      <p className="mt-3 max-w-prose text-body text-fg">
+        Entran{" "}
+        <span className="font-mono tabular-nums">{acumulado.listos.toLocaleString("es-CO")}</span>
+        {", "}
+        <span className="font-mono tabular-nums">{acumulado.yaMigrados.toLocaleString("es-CO")}</span>{" "}
+        ya estaban y{" "}
+        <span className={acumulado.rechazados > 0 ? "text-danger" : undefined}>
+          <span className="font-mono tabular-nums">{acumulado.rechazados.toLocaleString("es-CO")}</span>{" "}
+          se {acumulado.rechazados === 1 ? "rechaza" : "rechazan"}
+        </span>
+        {"; "}
+        <span className={conContrato > 0 ? "text-success" : undefined}>
+          <span className="font-mono tabular-nums">{conContrato.toLocaleString("es-CO")}</span>{" "}
+          {conContrato === 1 ? "queda" : "quedan"} con contrato
+        </span>
+        .
+      </p>
 
       <div className="mt-4 space-y-1 text-sm">
         <p className="text-fg">
@@ -431,8 +608,9 @@ function ResumenDeDocumentos({
             {acumulado.porDocumento.toLocaleString("es-CO")}
           </span>{" "}
           <span className="text-fg-muted">
-            quedaron colgados de un contrato por el documento del tercero (el
-            «REF» del concepto).
+            {/* QA-MIGRACION-95: con uno, en singular («1 quedó colgado…»). */}
+            {acumulado.porDocumento === 1 ? "quedó colgado" : "quedaron colgados"} de un
+            contrato por el documento del tercero (el «REF» del concepto).
           </span>
         </p>
         <p className="text-fg">
@@ -466,9 +644,9 @@ function ResumenDeDocumentos({
             {acumulado.soloInmueble.toLocaleString("es-CO")}
           </span>{" "}
           <span className="text-fg-muted">
-            quedaron colgados SÓLO de su inmueble: el concepto dice el código,
-            pero ese día el inmueble no tenía contrato vigente. No tienen
-            inquilino, pero salen en la ficha del inmueble.
+            {acumulado.soloInmueble === 1
+              ? "quedó colgado SÓLO de su inmueble: el concepto dice el código, pero ese día el inmueble no tenía contrato vigente. No tiene inquilino, pero sale en la ficha del inmueble."
+              : "quedaron colgados SÓLO de su inmueble: el concepto dice el código, pero ese día el inmueble no tenía contrato vigente. No tienen inquilino, pero salen en la ficha del inmueble."}
           </span>
         </p>
         <p className="text-fg">
@@ -476,10 +654,9 @@ function ResumenDeDocumentos({
             {acumulado.sinContrato.toLocaleString("es-CO")}
           </span>{" "}
           <span className="text-fg-muted">
-            quedaron SIN contrato: el concepto no nombra a ningún tercero,
-            contrato ni inmueble de tu agencia que se pueda resolver sin
-            adivinar. Se guardan igual, con su concepto, y se pueden buscar; lo
-            que no se hace es inventarles un contrato.
+            {acumulado.sinContrato === 1
+              ? "quedó SIN contrato: el concepto no nombra a ningún tercero, contrato ni inmueble de tu agencia que se pueda resolver sin adivinar. Se guarda igual, con su concepto, y se puede buscar; lo que no se hace es inventarle un contrato."
+              : "quedaron SIN contrato: el concepto no nombra a ningún tercero, contrato ni inmueble de tu agencia que se pueda resolver sin adivinar. Se guardan igual, con su concepto, y se pueden buscar; lo que no se hace es inventarles un contrato."}
           </span>
         </p>
       </div>
@@ -525,26 +702,5 @@ function ResumenDeDocumentos({
         </div>
       ) : null}
     </section>
-  );
-}
-
-function Dato({
-  titulo,
-  valor,
-  tono,
-}: {
-  titulo: string;
-  valor: number;
-  tono?: "danger" | "success";
-}) {
-  const color =
-    tono === "danger" ? "text-danger" : tono === "success" ? "text-success" : "text-fg";
-  return (
-    <div className="rounded-md border border-border bg-surface-muted p-3">
-      <dt className="text-caption text-fg-muted">{titulo}</dt>
-      <dd className={`mt-0.5 font-mono text-lg tabular-nums ${color}`}>
-        {valor.toLocaleString("es-CO")}
-      </dd>
-    </div>
   );
 }

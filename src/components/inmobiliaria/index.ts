@@ -45,12 +45,6 @@ export { ActaEntregaView } from './ActaEntregaView';
 export { ConsignacionTimeline } from './ConsignacionTimeline';
 export { ConsignacionEditForm } from './ConsignacionEditForm';
 
-// Agente (Real Estate Agent) Components
-export { AgenteCard } from './AgenteCard';
-export { AgenteTable } from './AgenteTable';
-export { AgenteFilters } from './AgenteFilters';
-export type { AgenteFiltersState } from './AgenteFilters';
-
 // Agente Detail Components
 export { AgenteProfile } from './AgenteProfile';
 export { AgenteMetrics } from './AgenteMetrics';
@@ -107,14 +101,6 @@ export { ReporteFilters } from './ReporteFilters';
 export type { ReporteFiltersState } from './ReporteFilters';
 export { ReporteViewer } from './ReporteViewer';
 
-// Report Visualization Components (Phase 8 - Plan 02)
-export { OcupacionChart } from './OcupacionChart';
-export { FlujoCajaChart } from './FlujoCajaChart';
-
-// Report Export Components (Phase 8 - Plan 03)
-export { ExportButton, ExportButtonCompact } from './ExportButton';
-export type { ExportButtonProps, ExportFormat } from './ExportButton';
-
 // Operaciones - Renovaciones (Phase 9)
 export { RenovacionesTable } from './RenovacionesTable';
 
@@ -159,29 +145,10 @@ export { ActaEntregaViewer } from './ActaEntregaViewer';
 
 // Analytics - Dashboard & KPIs (Phase 10 - Plan 06)
 export { AnalyticsDashboard } from './AnalyticsDashboard';
-export { AnalyticsKPICards } from './AnalyticsKPICards';
-
-// Analytics - Trends & Forecasting (Phase 10 - Plan 07)
-export { AnalyticsTrends } from './AnalyticsTrends';
-export { AnalyticsForecasting } from './AnalyticsForecasting';
-
-// Agency Setup Wizard (P1-01 - Inmobiliaria Registration)
-export { AgencySetupWizard } from './AgencySetupWizard';
-export { AgencyBasicForm } from './wizard/AgencyBasicForm';
-export type { AgencyBasicFormData } from './wizard/AgencyBasicForm';
-export { AgencyOperationsForm } from './wizard/AgencyOperationsForm';
-export type { AgencyOperationsFormData } from './wizard/AgencyOperationsForm';
-export { InviteFirstMemberForm } from './wizard/InviteFirstMemberForm';
-export type { InviteFirstMemberFormData, AgencyMemberRoleOption } from './wizard/InviteFirstMemberForm';
-
-// Pricing & Feature Gating
-export { AgencyPricingModal } from './AgencyPricingModal';
-export { UpgradePrompt, FeatureGate } from './UpgradePrompt';
 
 // AI Agent Components
 export { AIAgentCard } from './ai/AIAgentCard';
 export { AIAgentActivityFeed } from './ai/AIAgentActivityFeed';
-export { AIAgentDetailSidebar } from './ai/AIAgentDetailSidebar';
 export { AIAgentExecutionPanel } from './ai/AIAgentExecutionPanel';
 
 // Reminder Components

@@ -85,7 +85,8 @@ export function ElegirAQuienPagarle({
 }) {
   const [datos, setDatos] = useState<CandidatosDeDispersion | null>(null);
   const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  /** El fallo tal cual llegó: `FalloDeCarga` lo dice con el traductor. */
+  const [error, setError] = useState<unknown>(null);
   const [orden, setOrden] = useState<OrdenDeCandidatos>('MENOR_A_MAYOR');
   const [tope, setTope] = useState('');
   const [elegidos, setElegidos] = useState<Set<string>>(new Set());
@@ -101,7 +102,7 @@ export function ElegirAQuienPagarle({
         // están en la lista (otro lote se los llevó) y el total mentiría.
         setElegidos(new Set());
       })
-      .catch((e: unknown) => setError(e instanceof Error ? e : new Error('Error')))
+      .catch((e: unknown) => setError(e ?? new Error('No se pudo cargar a quién pagarle.')))
       .finally(() => setCargando(false));
   }, [mes, orden]);
 

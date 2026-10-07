@@ -21,6 +21,9 @@
  *     de la misma página (accesibilidad), no una salida.
  *   · `MarkdownRenderer.tsx` — un enlace a OTRO dominio que el texto trae, que
  *     se abre en otra pestaña con aviso (el chat no puede «traer» otro sitio).
+ *   · `AvisoDePreguntas.tsx` — «Más información» del aviso legal debajo de la
+ *     caja (Leasefy revisa las preguntas; cláusula del 04-10-2026, APAGADO
+ *     hasta su aprobación): abre la política en OTRA pestaña, no saca del chat.
  */
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -60,6 +63,7 @@ const PERMITIDOS: Record<string, string[]> = {
   'AppSwitcher.tsx': ['useRouter', 'router.push/replace'],
   'BetaLayout.tsx': ['<a href>'],
   'MarkdownRenderer.tsx': ['<a href>'],
+  'AvisoDePreguntas.tsx': ['<a href>'],
 };
 
 describe('guardián: el chat no tiene salidas', () => {

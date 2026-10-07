@@ -80,6 +80,9 @@ export function postUsersOnboarding(
  *  - `null` → todavía no hay agencia; se muestra el paso previo.
  *  - `'ACTIVE'` → la agencia existe y el traspaso al agente falló; reenviar el
  *    paso previo lo vuelve a intentar (el back ya no devuelve null para siempre).
+ *  - `'PENDING'` → la agencia existe pero el micro no respondió (caída nuestra);
+ *    reenviar el paso previo lo vuelve a intentar. Desde el 01-10-2026 el back
+ *    también informa así las que la regla vieja dejó FAILED por una caída.
  *  - `'FAILED'` → terminal, lo tiene que destrabar soporte; no ofrecer reintento.
  */
 export interface OnboardingResumePoint {
@@ -88,9 +91,36 @@ export interface OnboardingResumePoint {
   provisioningStatus: 'PENDING' | 'ACTIVE' | 'FAILED' | null
   legalName: string | null
   nit: string | null
+  /** Lo que ya escribió quien se registra. Opcionales: un back anterior no los manda. */
+  ownerFirstName?: string | null
+  ownerLastName?: string | null
+  legalRepresentative?: string | null
   onboardingCompleted: boolean
+  /**
+   * ¿Esta persona REGISTRÓ la inmobiliaria? El asistente del micro sólo le
+   * contesta a ella (403 a cualquier otro miembro). `null` sin inmobiliaria o
+   * en una agencia sin fundador conocido; ausente en un back anterior.
+   */
+  esQuienLaRegistro?: boolean | null
 }
 
 export function getOnboardingResumePoint(): Promise<OnboardingResumePoint> {
   return apiClient.get<OnboardingResumePoint>('/users/me/onboarding/session')
+}
+
+/** `DELETE /users/me/onboarding/agency`. */
+export interface DesistirDelRegistroResponse {
+  desistido: boolean
+  agencyId: string | null
+}
+
+/**
+ * Deja de lado el registro de inmobiliaria a medias de esta persona, para que
+ * pueda entrar con otro perfil (Nico, 01-10-2026). El back se niega con 409 si
+ * la inmobiliaria ya tiene información o el registro ya terminó, y con 503
+ * (`servicio: 'asistente'`) si el asistente no responde: en esos casos no se
+ * borró nada.
+ */
+export function desistirDelRegistroDeInmobiliaria(): Promise<DesistirDelRegistroResponse> {
+  return apiClient.delete<DesistirDelRegistroResponse>('/users/me/onboarding/agency')
 }

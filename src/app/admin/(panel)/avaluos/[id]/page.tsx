@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { ApiError } from '@/lib/admin/api'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { fmtCOP } from '@/lib/admin/format'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
@@ -141,7 +142,7 @@ export default function AvaluoDetailPage() {
         // The only 422 on signoff is an invalid signature image payload.
         setSubmitError('La firma dibujada no es válida. Limpiala y vuelve a dibujarla.')
       } else {
-        setSubmitError(err instanceof ApiError ? err.message : 'Error de red')
+        setSubmitError(mensajeDelAdmin(err, { accion: 'registrar la decisión del avalúo' }))
       }
     } finally {
       setSubmitting(false)

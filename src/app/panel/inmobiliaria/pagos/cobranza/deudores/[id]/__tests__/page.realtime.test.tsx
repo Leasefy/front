@@ -250,3 +250,17 @@ describe('DebtorDetailClient — realtime wiring (31-11 Task 3)', () => {
     container.remove()
   })
 })
+
+// QA-IA-95 (05-10-2026, IA-B-09): la cabecera decía «Etapa: S2» y «3 d»: el código de la etapa y una
+// abreviatura. En palabras: el nombre de la etapa y «3 días en la etapa».
+describe('DebtorDetailClient — la etapa en palabras (QA-IA-95)', () => {
+  it('«Etapa: Mora administrativa» y «3 días en la etapa», sin «S2» ni «3 d»', () => {
+    const { root, container } = mountPage('D-42')
+    const t = container.textContent ?? ''
+    expect(t).toContain('Mora administrativa')
+    expect(t).toContain('3 días en la etapa')
+    expect(t).not.toMatch(/\bS2\b/)
+    act(() => root.unmount())
+    container.remove()
+  })
+})

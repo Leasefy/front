@@ -21,10 +21,17 @@
  *    egreso dice QUÉ cambió (de qué fecha a cuál, con qué motivo); ésta dice
  *    QUIÉN tocó el recurso, con qué rol, y también lo que intentó sin permiso.
  *    Son dos preguntas: no se duplica, se complementa.
+ *
+ * Movimiento (Cadence): se abre y se cierra con `Collapse` (la altura, la
+ * única excepción del sistema) y la flecha gira con la misma curva; lo que
+ * llega después de leer (el error, «todavía no guarda», «nadie ha hecho
+ * nada») entra con fundido y 4 px, y la lista entra escalonada (`Stagger`,
+ * techo de 320 ms) con la `key` de cada movimiento.
  */
 
 import { useCallback, useEffect, useState } from 'react';
 import { CaretDown, ClockCounterClockwise } from '@phosphor-icons/react';
+import { Appear, Collapse, Stagger, StaggerItem } from '@leasefy/cadence';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -157,7 +164,10 @@ export function BitacoraDelRecurso({
           <span className="text-caption text-fg-muted">quién hizo qué, con su rol</span>
         </span>
         <CaretDown
-          className={cn('h-4 w-4 text-fg-muted transition-transform', abierta && 'rotate-180')}
+          className={cn(
+            'h-4 w-4 text-fg-muted transition-transform duration-slow ease-emphasis',
+            abierta && 'rotate-180',
+          )}
           aria-hidden="true"
         />
       </button>
@@ -168,14 +178,14 @@ export function BitacoraDelRecurso({
         </p>
       ) : null}
 
-      {abierta && puede ? (
+      <Collapse open={abierta && puede}>
         <div className="border-t border-border px-4 py-3" data-testid="movimientos-contenido">
           {cargando ? (
             <p className="flex items-center gap-2 text-sm text-fg-muted">
               <Spinner size="sm" /> Leyendo los movimientos…
             </p>
           ) : error ? (
-            <div className="space-y-2">
+            <Appear key="error" distance="xs" className="space-y-2">
               <p className="text-sm text-danger" data-testid="movimientos-error">
                 {error}
               </p>
@@ -184,22 +194,29 @@ export function BitacoraDelRecurso({
                   Reintentar
                 </Button>
               ) : null}
-            </div>
+            </Appear>
           ) : datos && !datos.disponible ? (
-            <p className="text-sm text-fg-muted" data-testid="movimientos-sin-migrar" title={datos.motivo ?? undefined}>
+            <Appear
+              key="sin-migrar"
+              as="p"
+              distance="xs"
+              className="text-sm text-fg-muted"
+              data-testid="movimientos-sin-migrar"
+              title={datos.motivo ?? undefined}
+            >
               La bitácora todavía no guarda movimientos: falta un paso de la base de datos que nuestro
               equipo está habilitando.
-            </p>
+            </Appear>
           ) : datos && datos.filas.length === 0 ? (
-            <p className="text-sm text-fg-muted" data-testid="movimientos-vacio">
+            <Appear key="vacio" as="p" distance="xs" className="text-sm text-fg-muted" data-testid="movimientos-vacio">
               Nadie ha hecho nada sobre esto desde que la bitácora empezó a registrar.
-            </p>
+            </Appear>
           ) : datos ? (
-            <ol className="space-y-3" data-testid="movimientos-lista">
+            <Stagger as="ol" layout={false} className="space-y-3" data-testid="movimientos-lista">
               {datos.filas.map((m) => {
                 const r = resultadoDe(m.resultado);
                 return (
-                  <li key={m.id} className="text-sm" data-testid={`movimiento-${m.id}`}>
+                  <StaggerItem as="li" key={m.id} className="text-sm" data-testid={`movimiento-${m.id}`}>
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium text-fg">{m.accion}</span>
                       {r !== 'exito' ? (
@@ -210,13 +227,13 @@ export function BitacoraDelRecurso({
                       {quienFue(m)} · {rolEnPalabras(m.actor.rol)} ·{' '}
                       <span className="font-mono">{cuandoEnBogota(m.fecha)}</span>
                     </p>
-                  </li>
+                  </StaggerItem>
                 );
               })}
-            </ol>
+            </Stagger>
           ) : null}
         </div>
-      ) : null}
+      </Collapse>
     </section>
   );
 }

@@ -18,6 +18,7 @@
  */
 
 import { useMemo } from 'react';
+import { Presence } from '@leasefy/cadence';
 import { Plus, Trash, Warning } from '@phosphor-icons/react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -227,16 +228,10 @@ export function CopropietariosField({
             Sumar otro propietario
           </button>
 
-          {problema && (
-            <p
-              role="alert"
-              className="flex items-start gap-1.5 text-sm text-danger"
-              data-testid="copropietarios-error"
-            >
-              <Warning className="mt-0.5 h-4 w-4 shrink-0" />
-              {problema}
-            </p>
-          )}
+          <Presence show={Boolean(problema)} initial={false} distance="xs" as="p" role="alert" className="flex items-start gap-1.5 text-sm text-danger" data-testid="copropietarios-error">
+            <Warning className="mt-0.5 h-4 w-4 shrink-0" />
+            {problema}
+          </Presence>
         </>
       )}
     </div>

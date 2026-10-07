@@ -4,7 +4,6 @@
  */
 
 import { apiClient, getAccessToken, ApiError } from './client';
-import { anunciarProceso } from './procesos.service';
 import type {
   BackendContract,
   CreateContractDto,
@@ -27,6 +26,7 @@ import type {
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 import type { Contract, ContractType, ContractStatus, ContractRejection, InquilinoDelContrato } from '@/lib/types/contract';
 import type { CobroConDesglose } from './recibos-de-caja.types';
+import type { ValoresPorDefectoDelContrato } from '@/lib/contratos/valores-por-defecto';
 import { normalizeCobro } from './inmobiliaria.service';
 import type { ContractAuditEvent, ContractAuditEventType, ContractAuditEventMetadata } from '@/lib/types/contract';
 
@@ -115,6 +115,8 @@ export function mapBackendContract(bc: BackendContract): Contract {
     landlordEmail: bc.landlordEmail ?? '',
     landlordDocument: bc.landlordDocument ?? '',
     monthlyRent: bc.monthlyRent,
+    // Passthrough: la ficha de un COMERCIAL lo muestra (Nico, 03-10-2026).
+    deposit: bc.deposit,
     adminFee: bc.propertyAdminFee ?? 0,              // backend: propertyAdminFee → front: adminFee
     startDate: bc.startDate,
     endDate: bc.endDate,
@@ -129,6 +131,11 @@ export function mapBackendContract(bc: BackendContract): Contract {
     motivoDeTerminacion: bc.motivoDeTerminacion ?? null,
     notaDeTerminacion: bc.notaDeTerminacion ?? null,
     finPactadoOriginal: bc.finPactadoOriginal ?? null,
+    // QA-CONT (back ff282197). Passthrough: `undefined` = un back anterior, y
+    // la pantalla cae a lo que ya calculaba.
+    estadoParaMostrar: bc.estadoParaMostrar,
+    reglaDeCobro: bc.reglaDeCobro,
+    depositoDelContrato: bc.depositoDelContrato,
     // `null` y ausente se tratan igual a propósito: los dos significan «no hay
     // referencia propia», y quien la muestra se cae al consecutivo.
     referenciaDeRecaudo: bc.referenciaDeRecaudo ?? null,
@@ -138,6 +145,20 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // compara textos y un 9% saldría mayor que un 10%.
     comisionPorcentaje: aNumero(bc.comisionPorcentaje),
     comisionDeConsignacion: aNumero(bc.comisionDeConsignacion),
+    // CO-28 (QA-MIGRACION-95): sin esto la ficha nunca se enteraba de que el
+    // contrato no tiene tabla de cuotas por la comisión (el mapeo es una lista
+    // cerrada). Ausente con un back anterior.
+    ...(bc.comisionSinDefinir !== undefined ? { comisionSinDefinir: bc.comisionSinDefinir === true } : {}),
+    ...(bc.sinTablaDeCuotas !== undefined ? { sinTablaDeCuotas: bc.sinTablaDeCuotas ?? null } : {}),
+    ...(bc.loQueTraiaElArchivo !== undefined ? { loQueTraiaElArchivo: bc.loQueTraiaElArchivo ?? null } : {}),
+    /*
+     * 🔴 QA-CONT-95 (B-30, CR-07): el back los manda en `GET /contracts/:id` y
+     * acá se perdían. Sin la penalidad propia, «Cómo se cobra» decía «La de la
+     * inmobiliaria» con 2 cánones guardados y «Corregir» la traía vacía; sin la
+     * fecha de cartera, «Cuándo paga» y la vigencia contaban desde el inicio.
+     */
+    penalidadTerminacionCanones: aNumero(bc.penalidadTerminacionCanones),
+    fechaDeCartera: typeof bc.fechaDeCartera === 'string' ? bc.fechaDeCartera.slice(0, 10) : null,
     propietarioDeLaConsignacion: bc.propietarioDeLaConsignacion,
     // Todos los dueños con su porcentaje y su parte del canon, y todos los
     // inquilinos. Passthrough: `undefined` = el back no lo mandó (lista,
@@ -342,8 +363,8 @@ export const contractsApi = {
      * parecidos (N2).
      */
     async preparar(contratos: FilaAMigrar[], idempotencyKey?: string): Promise<EstadoDeLote> {
-      // La carga aparece en el centro de procesos del header (22-09).
-      anunciarProceso();
+      // 🔴 La migración NO va al centro de procesos (Nico, 01-10 y 06-10): la
+      // carga se ve en las cargas del paso «Contratos», no se anuncia en el centro.
       return apiClient.post<EstadoDeLote>('/contracts/migrar/preparar', {
         contratos,
         lote: undefined,
@@ -406,10 +427,52 @@ export const contractsApi = {
      * traer el `datos` JSON completo de cada fila. `lote` es obligatorio: un
      * volcado de ids de toda la agencia no es un flujo de trabajo.
      */
-    async idsDeFilas(lote: string, estado?: EstadoMigracion): Promise<IdsDeFilas> {
+    async idsDeFilas(
+      lote: string,
+      estado?: EstadoMigracion,
+      /**
+       * T-0135 — sólo las filas a las que TODAVÍA les falta ese dato (código de
+       * `faltantes`: `uso`, `propietario`…), sin las ACTIVADO ni DESCARTADO.
+       * Es lo que hace reanudable una acción masiva: tras un corte, las ya
+       * resueltas dejan de coincidir.
+       */
+      faltante?: string,
+    ): Promise<IdsDeFilas> {
       const q = new URLSearchParams({ lote });
       if (estado) q.set('estado', estado);
+      if (faltante) q.set('faltante', faltante);
       return apiClient.get<IdsDeFilas>(`/contracts/migrar/filas/ids?${q.toString()}`);
+    },
+
+    /**
+     * T-0138 — qué problemas tienen de verdad las filas seleccionadas (sin las
+     * ACTIVADO ni DESCARTADO). Con `ids` cuenta esa selección; sin ellos, todo
+     * el lote. POST por el tamaño: una selección de todo el lote son miles de ids.
+     */
+    async faltantesDeLaSeleccion(
+      lote: string,
+      ids?: string[],
+    ): Promise<FaltantesDeLaSeleccion> {
+      return apiClient.post<FaltantesDeLaSeleccion>('/contracts/migrar/filas/faltantes', {
+        lote,
+        ...(ids ? { ids } : {}),
+      });
+    },
+
+    /**
+     * T-0138 — repartir el canon en partes iguales (el resto al primer dueño)
+     * en las filas que todavía tienen `reparto_del_canon`. Tandas de ≤ 200.
+     */
+    async repartirEnPartesIguales(ids: string[]): Promise<ResultadoMasivo> {
+      return apiClient.post<ResultadoMasivo>(
+        '/contracts/migrar/filas/repartir-en-partes-iguales',
+        { ids },
+      );
+    },
+
+    /** T-0138 — descartar varias filas sin borrar su rastro. Tandas de ≤ 200. */
+    async descartarFilas(ids: string[]): Promise<ResultadoMasivo> {
+      return apiClient.post<ResultadoMasivo>('/contracts/migrar/filas/descartar', { ids });
     },
 
     async resumen(lote?: string): Promise<ResumenLote> {
@@ -469,7 +532,7 @@ export const contractsApi = {
     /** Crear el inmueble que el contrato dice tener y no está cargado. */
     async crearInmueble(
       id: string,
-      datos: { address: string; city: string; neighborhood?: string },
+      datos: { address: string; city: string; neighborhood?: string; tipo?: string },
     ): Promise<FilaDeMigracion> {
       return apiClient.post<FilaDeMigracion>(
         `/contracts/migrar/filas/${id}/inmueble`,
@@ -498,10 +561,18 @@ export const contractsApi = {
     async crearInmueblesFaltantes(
       seleccion: { lote: string } | { ids: string[] },
       ciudad?: string,
+      /**
+       * T-0135 — por tandas: `limite` filas sin inmueble a partir de
+       * `despuesDeFila` (la `siguienteFila` de la tanda anterior). Sin esto,
+       * todo el lote de una vez, como siempre.
+       */
+      tanda?: { limite: number; despuesDeFila?: number },
+      /** Para las filas cuya dirección no dice el tipo (QA-MIG-A, MG-34). */
+      tipo?: string,
     ): Promise<ResultadoInmueblesFaltantes> {
       return apiClient.post<ResultadoInmueblesFaltantes>(
         '/contracts/migrar/inmuebles-faltantes',
-        { ...seleccion, ciudad: ciudad?.trim() || undefined },
+        { ...seleccion, ciudad: ciudad?.trim() || undefined, ...tanda, ...(tipo ? { tipo } : {}) },
       );
     },
 
@@ -538,6 +609,21 @@ export const contractsApi = {
       return apiClient.patch<FilaDeMigracion>(
         `/contracts/migrar/filas/${id}/propietario`,
         cambios,
+      );
+    },
+
+    /**
+     * Corregir cuánto del canon es de cada dueño, sin volver a subir el
+     * archivo. `canonPorDueno` va en el orden de `asociacion.propietario.reparto.duenos`
+     * y debe sumar exactamente el canon de la fila.
+     */
+    async corregirReparto(
+      id: string,
+      canonPorDueno: number[],
+    ): Promise<FilaDeMigracion> {
+      return apiClient.patch<FilaDeMigracion>(
+        `/contracts/migrar/filas/${id}/reparto`,
+        { canonPorDueno },
       );
     },
 
@@ -628,6 +714,15 @@ export const contractsApi = {
     },
   },
 
+  /**
+   * GET /contracts/valores-por-defecto?inicio= — con qué arranca «Nuevo
+   * contrato»: los de la inmobiliaria (QA-CONT C-13, back ff282197).
+   */
+  async valoresPorDefecto(inicio?: string): Promise<ValoresPorDefectoDelContrato> {
+    const consulta = inicio ? `?inicio=${encodeURIComponent(inicio)}` : '';
+    return apiClient.get<ValoresPorDefectoDelContrato>(`/contracts/valores-por-defecto${consulta}`);
+  },
+
   async create(dto: CreateContractDto): Promise<Contract> {
     const raw = await apiClient.post<BackendContract>('/contracts', dto);
     return mapBackendContract(raw);
@@ -705,6 +800,15 @@ export const contractsApi = {
    */
   async invitarInquilino(id: string): Promise<ResultadoInvitacion> {
     return apiClient.post<ResultadoInvitacion>(`/contracts/${id}/invitar-inquilino`, {});
+  },
+
+  /**
+   * 🔴 QA-CONT CR-08 — `GET /contracts/:id/invitacion-del-inquilino`: en qué
+   * está la invitación al portal del inquilino del contrato y qué botón le
+   * toca («Invitar al portal», «Reenviar invitación» o ninguno).
+   */
+  async invitacionDelInquilino(id: string): Promise<InvitacionDelInquilino> {
+    return apiClient.get<InvitacionDelInquilino>(`/contracts/${id}/invitacion-del-inquilino`);
   },
 
   /**
@@ -840,6 +944,19 @@ export const contractsApi = {
   },
 
   /**
+   * QA-CONT-95 B-32: confirma cuál escenario tributario rige un contrato
+   * migrado cuyo escenario del archivo choca con la ficha del propietario.
+   * El back reescribe la nota del escenario y rehace las cuotas desde hoy;
+   * quien llama vuelve a leer el contrato.
+   */
+  async confirmarEscenario(
+    id: string,
+    codigo: 'E1' | 'E2' | 'E3' | 'E4' | 'E5' | 'E6' | 'E7' | 'E8' | 'E9',
+  ): Promise<{ codigo: string; nombre: string; confirmadoEl: string; confirmadoPor: string | null }> {
+    return apiClient.put(`/contracts/${id}/escenario-tributario`, { codigo });
+  },
+
+  /**
    * POST /contracts/:id/reject — tenant rejects while in PENDING_TENANT_SIGNATURE.
    * type=DEFINITIVE → CANCELLED + application CONTRACT_FAILED.
    * type=MODIFICATIONS → REJECTED_PENDING_MODIFICATIONS, awaits landlord edit.
@@ -959,6 +1076,14 @@ export interface FilaAMigrar {
   referenciaDeRecaudo?: string;
   endDate?: string;
   monthlyRent?: number;
+  /**
+   * EN-38 (QA-MIGRACION-95): la celda del canon tal cual, cuando trae centavos
+   * y la llave de los contratos está apagada. El canon no viaja: el back frena
+   * la fila con `canon_con_centavos`. No se redondea.
+   */
+  canonConCentavosDelArchivo?: string;
+  /** C14 (QA-MIGRACION-95): la fila de la hoja de Excel (con encabezado y títulos contados). */
+  filaDelArchivo?: number;
   deposit?: number;
   paymentDay?: number;
   /** Sin esto no se puede liquidar: vivienda va sin IVA, comercial con IVA. */
@@ -1043,9 +1168,13 @@ export type Faltante =
   | 'inmueble_codigo'
   | 'inmueble_ambiguo'
   | 'inmueble_ocupado'
+  /** QA-MIGRACION-95: el inmueble está publicado en venta. */
+  | 'inmueble_en_venta'
   | 'propietario'
   | 'inquilino_correo'
   | 'inquilino_nombre'
+  /** QA-MIGRACION-95: la celda del correo no es un correo usable. */
+  | 'inquilino_correo_invalido'
   /**
    * El documento del inquilino es de una cuenta que NO es de inquilino (un
    * agente, un propietario con cuenta). No se enlaza: alguien tiene que
@@ -1059,6 +1188,8 @@ export type Faltante =
   | 'consecutivo_repetido'
   | 'fechas'
   | 'canon'
+  /** EN-38: el canon del archivo trae centavos y la llave está apagada: no se redondea. */
+  | 'canon_con_centavos'
   | 'uso'
   | 'dia_de_pago'
   /** La fecha de cartera es anterior a la de inicio (regla 3, 16-09). */
@@ -1196,7 +1327,8 @@ export interface FilaDeMigracion {
    * 1003. Lo arma el back en la misma consulta de la página (nunca una
    * petición por fila). `null` = todavía sin consignar.
    */
-  propietario?: { id: string; nombre: string; documento: string } | null;
+  /** `documento` es `null` si la ficha se creó incompleta por la migración (T-0128). */
+  propietario?: { id: string; nombre: string; documento: string | null } | null;
   /**
    * 🔴 QA 22-09: la fila es un contrato TERMINADO y el archivo nombra a otro
    * dueño que el del inmueble de hoy. El contrato queda a nombre de éste.
@@ -1296,6 +1428,11 @@ export interface LoteAbierto {
   estado?: EstadoLoteMigracion;
   total?: number;
   creadoEn?: string;
+  /** QA-MIGRACION-95 (aditivos; un back viejo no los manda): avance y quién. */
+  procesadas?: number;
+  actualizadoEn?: string;
+  error?: string | null;
+  subidoPor?: string | null;
 }
 
 export interface PaginaDeFilas {
@@ -1343,6 +1480,22 @@ export interface ResultadoInmueblesFaltantes {
   consignados: number;
   omitidas: Array<{ id: string; fila: number; motivo: string }>;
   fallidas: Array<{ id: string; fila: number; motivo: string }>;
+  /**
+   * T-0135 — sólo con `limite`: el cursor (`despuesDeFila`) de la próxima
+   * tanda, o `null` cuando ya no quedan filas por mirar. Ausente = llamada
+   * de una sola vez (o un back anterior).
+   */
+  siguienteFila?: number | null;
+}
+
+/** T-0138 — `POST migrar/filas/faltantes`: los problemas de la selección, con su conteo. */
+export interface FaltantesDeLaSeleccion {
+  /** Filas vivas de la selección (sin activadas ni descartadas): las que «Descartar» alcanza. */
+  descartables: number;
+  /** De ésas, cuántas tienen al menos un problema. */
+  conProblema: number;
+  /** Filas que frena cada código de `faltantes`; una llave ausente es cero. */
+  porMotivo: Partial<Record<string, number>>;
 }
 
 export interface ResultadoMasivo {
@@ -1376,6 +1529,13 @@ export interface ResumenLote {
    * acá ni inferirla del nombre del flag.
    */
   activables: number;
+  /**
+   * Cuántas filas PENDIENTES frena cada motivo (código de `faltantes`: `uso`,
+   * `propietario`, `inmueble`…). Sólo viajan los que frenan algo: una llave
+   * ausente es cero. T-0135 lo usa para decir, al retomar el lote, «a 84 les
+   * falta el uso» con el número del servidor. Un back viejo no lo manda.
+   */
+  porMotivo?: Record<string, number>;
   /**
    * Contratos migrados ACTIVOS sin inmueble (2026-09-02): se activaron con
    * el modo sparse del back prendido y no tienen consignación — no generan
@@ -1596,6 +1756,11 @@ export interface ResumenActivacion {
   /** El modo con el que corrió la activación — para leer `sinInmueble`. */
   sparse?: boolean;
   /**
+   * CO-28 (QA-MIGRACION-95): contratos activados vigentes que se quedan SIN
+   * tabla de cuotas porque nadie sabe la comisión. Ausente = ninguno.
+   */
+  sinComision?: { cuantos: number; motivo: string; contratos: string[] };
+  /**
    * Filas cuyo consecutivo YA existía como contrato: se enlazaron al que ya
    * estaba, sin duplicar el histórico.
    */
@@ -1647,4 +1812,46 @@ export interface ResultadoInvitacion {
    * un tercer shape.
    */
   contrato: BackendContract;
+  /**
+   * 🔴 CR-08: el contrato ya tenía la cuenta del inquilino y nunca entró, así
+   * que se REENVIÓ la invitación. Dice si salió y, si no, por qué (nunca se
+   * dice «enviada» si no salió). Ausente cuando fue la primera invitación.
+   */
+  reenvio?: ReenvioDeLaInvitacion;
+}
+
+/**
+ * - `SIN_CUENTA`: el contrato no tiene cuenta del portal vinculada.
+ * - `SIN_ENVIO`: tiene cuenta, nunca entró y no hay registro de envío.
+ * - `PENDIENTE`: le salió y todavía vale.
+ * - `VENCIDA`: le salió, venció y nunca entró.
+ * - `YA_ENTRO`: entró al portal alguna vez.
+ */
+export type EstadoDeLaInvitacion = 'SIN_CUENTA' | 'SIN_ENVIO' | 'PENDIENTE' | 'VENCIDA' | 'YA_ENTRO';
+
+/** `GET /contracts/:id/invitacion-del-inquilino` (back `invitacion-del-inquilino.ts`). */
+export interface InvitacionDelInquilino {
+  estado: EstadoDeLaInvitacion;
+  /** El botón que le toca. `null` = ninguno (ya entró, o sin correo para invitar). */
+  accion: 'INVITAR' | 'REENVIAR' | null;
+  /** ISO del último envío; `null` = sin registro. */
+  ultimoEnvio: string | null;
+  /** ISO de cuándo deja de valer: último envío + días de vigencia. */
+  vence: string | null;
+  diasDeVigencia: number;
+}
+
+/** Lo que pasó al reenviar (`POST :id/invitar-inquilino` → `reenvio`). */
+export interface ReenvioDeLaInvitacion {
+  enviada: boolean;
+  motivo:
+    | 'RECIEN_ENVIADA'
+    | 'DOMINIO_NO_ENTREGABLE'
+    | 'CORREO_NO_CONFIGURADO'
+    | 'ENVIO_FALLIDO'
+    | null;
+  /** Para el aviso, en palabras. Nunca dice «enviada» si no salió. */
+  mensaje: string;
+  /** La invitación DESPUÉS del intento. */
+  invitacion: InvitacionDelInquilino;
 }

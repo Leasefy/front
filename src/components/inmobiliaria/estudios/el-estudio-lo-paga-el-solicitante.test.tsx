@@ -17,9 +17,11 @@ vi.mock('@/lib/api/estudios.service', () => ({ estudiosApi: api }));
 vi.mock('@/lib/context/PermissionsContext', () => ({
   usePermissionsContextSafe: () => permisos.valor,
 }));
-vi.mock('@/components/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+const toasts = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
+vi.mock('@/components/ui/toast', () => ({ toast: toasts }));
 
 import { EstudioPagadoALaInmobiliaria } from './EstudioPagadoALaInmobiliaria';
+import { ApiError } from '@/lib/api/client';
 
 let contenedor: HTMLDivElement;
 let raiz: Root;
@@ -28,6 +30,8 @@ beforeEach(() => {
   document.body.appendChild(contenedor);
   raiz = createRoot(contenedor);
   Object.values(api).forEach((f) => f.mockReset());
+  toasts.success.mockReset();
+  toasts.error.mockReset();
 });
 afterEach(() => {
   act(() => raiz.unmount());
@@ -130,5 +134,87 @@ describe('<EstudioPagadoALaInmobiliaria>', () => {
       raiz.render(<EstudioPagadoALaInmobiliaria applicationId="app-1" />);
     });
     expect(q('estudio-sin-pago')?.textContent).toContain('90 días');
+  });
+});
+
+/**
+ * 02-10-2026 · Sistema de errores: el valor con el tope del back antes de
+ * mandar, lo rechazado bajo su campo, y lo demás por el traductor.
+ */
+describe('<EstudioPagadoALaInmobiliaria> — cuando algo no cabe o falla', () => {
+  async function abrirYEscribir(texto: string) {
+    permisos.valor = { canAccess: () => true };
+    api.vigente.mockResolvedValue({ vigente: false, numeroRecibo: null, pagadoEl: null, vigenteHasta: null });
+    await act(async () => {
+      raiz.render(<EstudioPagadoALaInmobiliaria applicationId="app-1" />);
+    });
+    await act(async () => {
+      (q('estudio-registrar') as HTMLButtonElement).click();
+    });
+    const valor = q('estudio-valor') as HTMLInputElement;
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+      setter.call(valor, texto);
+      valor.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    return valor;
+  }
+
+  async function confirmar() {
+    await act(async () => {
+      (q('estudio-confirmar') as HTMLButtonElement).click();
+    });
+  }
+
+  const TOPE = 'El valor del estudio no puede pasar de $2.000.000.000. Revisa que no sobren ceros.';
+
+  it('🔴 un valor con ceros de más se dice bajo el campo y no se manda', async () => {
+    const valor = await abrirYEscribir('30.000.000.000');
+    expect(document.getElementById('estudio-valor-error')?.textContent).toBe(TOPE);
+    expect(valor.getAttribute('aria-invalid')).toBe('true');
+    expect((q('estudio-confirmar') as HTMLButtonElement).disabled).toBe(true);
+    expect(api.registrarPago).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 400 con campos va bajo su campo y le da el foco', async () => {
+    api.registrarPago.mockRejectedValue(
+      new ApiError(400, [TOPE], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [TOPE],
+        campos: [{ campo: 'valorCop', regla: 'maximo', mensaje: TOPE }],
+      }),
+    );
+    const valor = await abrirYEscribir('120.000');
+    await confirmar();
+    expect(document.getElementById('estudio-valor-error')?.textContent).toBe(TOPE);
+    expect(document.activeElement).toBe(valor);
+    expect(toasts.error).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx dice que es nuestro, con la referencia', async () => {
+    api.registrarPago.mockRejectedValue(
+      new ApiError(500, 'Internal server error', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Internal server error',
+        referencia: 'feedc0de',
+      }),
+    );
+    await abrirYEscribir('120.000');
+    await confirmar();
+    const [titulo, opciones] = toasts.error.mock.calls[0] as [string, { description: string }];
+    expect(titulo).toBe('No se pudo registrar el pago del estudio');
+    expect(opciones.description).toContain('de nuestro lado');
+    expect(opciones.description).toContain('feedc0de');
+    expect(opciones.description).not.toContain('Internal server error');
+  });
+
+  it('🔴 sin respuesta (status 0), la conexión', async () => {
+    api.registrarPago.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await abrirYEscribir('120.000');
+    await confirmar();
+    const [, opciones] = toasts.error.mock.calls[0] as [string, { description: string }];
+    expect(opciones.description.toLowerCase()).toContain('conexión');
   });
 });

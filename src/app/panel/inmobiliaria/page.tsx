@@ -3,6 +3,7 @@
 import { BetaLayout } from '@/components/beta/BetaLayout';
 import { BetaErrorBoundary } from '@/components/beta/BetaErrorBoundary';
 import { ChatContainer } from '@/components/beta/ChatContainer';
+import { PageGuard } from '@/components/auth/PageGuard';
 
 /**
  * Agency INICIO — the Manus-style AI chat home (AI CHAT HOME F3).
@@ -20,10 +21,15 @@ import { ChatContainer } from '@/components/beta/ChatContainer';
  */
 export default function InmobiliariaInicioPage() {
   return (
-    <BetaErrorBoundary>
-      <BetaLayout basePath="/panel/inmobiliaria" variant="embedded">
-        <ChatContainer />
-      </BetaLayout>
-    </BetaErrorBoundary>
+    // CF-01 (decisión 12 de Nico, 05-10-2026): todo rol entra al chat. El del
+    // auxiliar de cartera contesta SÓLO de cartera; lo decide el micro
+    // (`ai-hub/en-el-chat/chat-del-auxiliar.ts`), no esta pantalla.
+    <PageGuard seccion="Chat">
+      <BetaErrorBoundary>
+        <BetaLayout basePath="/panel/inmobiliaria" variant="embedded" dentroDelPanel>
+          <ChatContainer />
+        </BetaLayout>
+      </BetaErrorBoundary>
+    </PageGuard>
   );
 }

@@ -23,6 +23,8 @@ const { replaceMock, authState, barra } = vi.hoisted(() => ({
     perfilElegido: null as string | null,
     mfaRequired: false,
     mfaEnrollRequired: false,
+    mfaCheckStatus: undefined as 'pending' | 'verified' | 'failed' | undefined,
+    retryMfaCheck: vi.fn().mockResolvedValue(undefined),
     agencyRole: null as string | null,
     agencyMembershipChecked: true,
     hasActiveAgencyMembership: false,
@@ -51,6 +53,7 @@ beforeEach(() => {
   authState.perfilElegido = null
   authState.mfaRequired = false
   authState.mfaEnrollRequired = false
+  authState.mfaCheckStatus = undefined
   barra.query = ''
   container = document.createElement('div')
   document.body.appendChild(container)
@@ -151,5 +154,58 @@ describe('post-login — el segundo factor conserva el destino (QA 23-09)', () =
     expect(replaceMock).toHaveBeenCalledWith(
       '/auth/mfa-verify?returnUrl=%2Fpanel%2Finmobiliaria%2Fdispersiones%2Flotes%2Fabc',
     )
+  })
+})
+
+describe('post-login — sin el veredicto del segundo factor no se navega (Nico, 02-10-2026)', () => {
+  it('«failed»: no va al panel ni al onboarding; muestra «No pudimos confirmar tu sesión»', async () => {
+    authState.user = { role: 'agency', onboardingCompleted: true }
+    authState.isAuthenticated = true
+    authState.mfaCheckStatus = 'failed'
+
+    await render()
+
+    expect(replaceMock).not.toHaveBeenCalled()
+    expect(container.textContent).toContain('No pudimos confirmar tu sesión')
+  })
+
+  it('«pending»: espera, sin navegar', async () => {
+    authState.user = { role: 'agency', onboardingCompleted: false }
+    authState.isAuthenticated = true
+    authState.mfaCheckStatus = 'pending'
+
+    await render()
+
+    expect(replaceMock).not.toHaveBeenCalled()
+  })
+})
+
+
+describe('post-login — BU-06 (04-10-2026): la asesora no pasa por el selector de perfil', () => {
+  afterEach(() => {
+    authState.hasActiveAgencyMembership = false
+    authState.agencyRole = null
+  })
+
+  it('miembro activo de una inmobiliaria sin onboarding personal → su panel, nunca /onboarding/seleccionar-rol', async () => {
+    authState.user = { role: 'agency', backendRole: 'AGENT', onboardingCompleted: false }
+    authState.isAuthenticated = true
+    authState.hasActiveAgencyMembership = true
+    authState.agencyRole = 'AGENTE'
+
+    await render()
+
+    expect(replaceMock).toHaveBeenCalledTimes(1)
+    expect(replaceMock.mock.calls[0][0]).toMatch(/^\/panel\/inmobiliaria/)
+  })
+
+  it('sin membresía activa sigue yendo al onboarding (nada cambia para los demás)', async () => {
+    authState.user = { role: 'agency', backendRole: 'AGENT', onboardingCompleted: false }
+    authState.isAuthenticated = true
+    authState.hasActiveAgencyMembership = false
+
+    await render()
+
+    expect(replaceMock).toHaveBeenCalledWith('/onboarding/seleccionar-rol')
   })
 })

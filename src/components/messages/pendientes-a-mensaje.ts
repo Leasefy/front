@@ -24,18 +24,30 @@ import type {
   DocumentoDelHilo,
   GiroPendienteDelHilo,
 } from '@/lib/api/messages.types';
+import { seMuestranLosCentavos } from '@/lib/plata/escribir-plata';
+import { aCentavos } from '@/lib/plata/plata';
 
 const MESES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ];
 
-/** `1234567` → `$1.234.567`. Enteros en pesos: el back no manda decimales. */
+/**
+ * `1234567` → `$1.234.567`; con centavos (voz a de «centavos en todo»: en el
+ * chat, el valor exacto), `1234567.29` → `$1.234.567,29`. Un entero sale como
+ * siempre.
+ */
 export function formatearPesos(monto: number): string {
-  const negativo = monto < 0;
-  const entero = Math.abs(Math.round(monto)).toString();
-  const conPuntos = entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  return `${negativo ? '-' : ''}$${conPuntos}`;
+  if (!seMuestranLosCentavos(monto)) {
+    const negativo = monto < 0;
+    const entero = Math.abs(Math.round(monto)).toString();
+    const conPuntos = entero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return `${negativo ? '-' : ''}$${conPuntos}`;
+  }
+  const c = aCentavos(monto);
+  const absoluto = Math.abs(c);
+  const conPuntos = Math.floor(absoluto / 100).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${c < 0 ? '-' : ''}$${conPuntos},${String(absoluto % 100).padStart(2, '0')}`;
 }
 
 /** `'2026-09-05'` → `'05/09/2026'`. Nunca pasa por `Date` (ver el encabezado). */
@@ -116,6 +128,33 @@ export function mensajeDeGiro(giro: GiroPendienteDelHilo, nombre: string): strin
     (giro.inmueble ? ` por ${giro.inmueble}` : '') +
     `: ${formatearPesos(giro.pendienteCop)} netos. ` +
     'Te aviso apenas salga.'
+  );
+}
+
+/**
+ * 🔴 Todos los giros que le debemos, en UN mensaje y con la MISMA cifra del
+ * titular (Nico, 04-10-2026: «Por girar» es una sola cifra, hasta el mes en
+ * curso, neta de deducciones). Lo de los meses siguientes no entra: todavía
+ * no se le debe.
+ */
+export function mensajeDeLosGiros(
+  totales: {
+    porGirarCop: number;
+    porGirarHastaMes?: string;
+    deduccionesCop?: number;
+  },
+  nombre: string,
+): string {
+  const hasta = totales.porGirarHastaMes
+    ? ` hasta ${mesEnPalabras(totales.porGirarHastaMes)}`
+    : '';
+  const deducciones =
+    totales.deduccionesCop && totales.deduccionesCop > 0
+      ? `, ya descontados ${formatearPesos(totales.deduccionesCop)} de deducciones`
+      : '';
+  return (
+    `Hola ${nombre}, te cuento cómo van tus giros: ${formatearPesos(totales.porGirarCop)} netos${hasta}${deducciones}. ` +
+    'Te aviso apenas salgan.'
   );
 }
 

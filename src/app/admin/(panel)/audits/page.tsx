@@ -10,6 +10,7 @@ import type { Paginated } from '@/lib/admin/types'
 import { PageHeader } from '@/components/admin/screen/PageHeader'
 import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pagination } from '@/components/admin/screen/Pagination'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 
 const PAGE_SIZE = 100
 
@@ -83,7 +84,7 @@ export default function AuditsPage() {
       a.remove()
       URL.revokeObjectURL(url)
     } catch (err) {
-      setExportError(err instanceof Error ? err.message : 'Error de red')
+      setExportError(mensajeDelAdmin(err, { accion: 'exportar la auditoría' }))
     } finally {
       setExporting(false)
     }

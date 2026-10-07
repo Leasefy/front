@@ -27,17 +27,17 @@ export function ScoreCard({ isPaid, level, onClick }: ScoreCardProps) {
     return (
       <button
         onClick={onClick}
-        className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-5 text-left w-full hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors group"
+        className="rounded-xl bg-surface-muted p-5 text-left w-full hover:bg-surface-muted dark:hover:bg-border transition-colors group"
       >
-        <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+        <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
           <Shield className="w-5 h-5 text-fg-subtle dark:text-fg-muted" />
         </div>
         <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">
           {locale === 'es' ? 'Tu score' : 'Your score'}
         </p>
         <div className="flex items-center gap-2">
-          <p className="text-2xl font-bold text-fg-subtle dark:text-fg-muted blur-[6px] select-none">
-            ??
+          <p className="text-base font-medium text-fg-subtle dark:text-fg-muted">
+            {locale === 'es' ? 'Sin evaluar' : 'Not evaluated'}
           </p>
           {/* Decía "Evaluar perfil", una acción que no existe: la evaluación
               la lanza la inmobiliaria sobre una postulación. Ahora la etiqueta
@@ -56,9 +56,9 @@ export function ScoreCard({ isPaid, level, onClick }: ScoreCardProps) {
   return (
     <button
       onClick={onClick}
-      className="rounded-xl bg-surface-muted dark:bg-[#1a1a1c] p-5 text-left w-full hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors group"
+      className="rounded-xl bg-surface-muted p-5 text-left w-full hover:bg-surface-muted dark:hover:bg-border transition-colors group"
     >
-      <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+      <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
         <Shield className={cn('w-5 h-5', LEVEL_ICON_COLORS[level])} />
       </div>
       <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">

@@ -7,6 +7,7 @@ import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pill } from '@/components/admin/Pill'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { ApiError } from '@/lib/admin/api'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import {
   listCarriers,
   createCarrier,
@@ -23,13 +24,14 @@ import {
   type CarrierFormValues,
 } from './carrier-form-schema'
 
-/** Extrae el mensaje real del micro (`{ success:false, error }`), no `.message`. */
-function carrierErrorMessage(err: unknown, fallback: string): string {
-  if (err instanceof ApiError) {
-    const body = err.body as { error?: string } | undefined
-    return body?.error ?? err.message
-  }
-  return fallback
+/**
+ * El mensaje real del micro (`{ success:false, error }`), con la regla de oro
+ * (02-10-2026): delega en `mensajeDelAdmin`. Antes, todo lo que no era un
+ * `ApiError` —también la red— caía en el texto fijo, y un `error` que era un
+ * objeto (el sobre nuevo del micro) llegaba tal cual a la pantalla.
+ */
+function carrierErrorMessage(err: unknown, fallback: string, accion: string): string {
+  return mensajeDelAdmin(err, { porDefecto: fallback, accion })
 }
 
 type FormMode =
@@ -86,7 +88,7 @@ export default function CotizadorPage() {
       refetch()
       closeForm()
     } catch (err) {
-      setFormError(carrierErrorMessage(err, 'No se pudo guardar el carrier.'))
+      setFormError(carrierErrorMessage(err, 'No se pudo guardar el carrier.', 'guardar el carrier'))
     } finally {
       setSubmitting(false)
     }
@@ -106,7 +108,7 @@ export default function CotizadorPage() {
       await deleteCarrier(carrier.name)
       refetch()
     } catch (err) {
-      setRowError(carrierErrorMessage(err, 'No se pudo eliminar el carrier.'))
+      setRowError(carrierErrorMessage(err, 'No se pudo eliminar el carrier.', 'eliminar el carrier'))
     } finally {
       setBusyName(null)
     }

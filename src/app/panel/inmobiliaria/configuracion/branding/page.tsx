@@ -10,5 +10,7 @@ import { redirect } from 'next/navigation';
  * enlace. Se manda a Configuración, que es donde está todo lo demás.
  */
 export default function BrandingOcultoPage() {
-  redirect('/panel/inmobiliaria/configuracion');
+  // CF-01 (QA 04-10): los datos con los que se presenta la inmobiliaria viven
+  // en Configuración → Perfil; se llega ahí, no a la raíz sin decir nada.
+  redirect('/panel/inmobiliaria/configuracion/perfil');
 }

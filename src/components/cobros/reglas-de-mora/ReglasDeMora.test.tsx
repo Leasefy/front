@@ -212,7 +212,7 @@ describe('ReglasDeMora — la tabla', () => {
       'Gasto administrativo de cobranzaGasto administrativo',
       'A los 15 días de moraDías de mora',
       '10 % del canonPorcentaje de la base',
-      'Hasta $ 500.000',
+      'Hasta $\u00a0500.000',
     ]);
 
     // La frase entera no se pierde: queda en el `title` de la fila.
@@ -220,7 +220,7 @@ describe('ReglasDeMora — la tabla', () => {
       'Se dispara desde el primer día de mora y cobra 0,0667 % diario sobre el canon, sin tope.',
     );
     expect(filas[1].getAttribute('title')).toBe(
-      'Se dispara a los 15 días de mora y cobra 10 % del canon, hasta $ 500.000.',
+      'Se dispara a los 15 días de mora y cobra 10 % del canon, hasta $\u00a0500.000.',
     );
     expect(document.querySelector('[data-testid="reglas-vacio"]')).toBeNull();
   });
@@ -300,13 +300,14 @@ describe('ReglasDeMora — la tabla', () => {
 describe('ReglasDeMora — el estado vacío y las plantillas', () => {
   it('ofrece las dos plantillas y «Usar esta regla» manda el cuerpo exacto de la plantilla', async () => {
     listarMock.mockResolvedValueOnce([]);
-    const interes = PLANTILLAS.find((p) => p.id === 'interes-diario')!;
+    // PPF-05 (QA-PAGOS-95 r2): la sugerida es el 2 % mensual.
+    const interes = PLANTILLAS.find((p) => p.id === 'interes-mensual')!;
     crearMock.mockResolvedValueOnce(regla({ id: 'r-nueva', nombre: interes.valores.nombre }));
     await montar();
 
     expect($('[data-testid="reglas-vacio"]').textContent).toContain('Todavía no hay reglas de mora');
-    expect($('[data-testid="plantilla-interes-diario"]').textContent).toContain(
-      'Interés diario después del plazo',
+    expect($('[data-testid="plantilla-interes-mensual"]').textContent).toContain(
+      'Interés del 2 % mensual después del plazo',
     );
     expect($('[data-testid="plantilla-gasto-administrativo"]').textContent).toContain(
       '10 % de gasto administrativo desde el 15',
@@ -322,11 +323,11 @@ describe('ReglasDeMora — el estado vacío y las plantillas', () => {
     expect(zona.textContent).toContain('Todavía no existen');
     // Las dos tarjetas cuelgan de la zona de sugerencias, no de la página.
     expect(zona.querySelectorAll('[data-testid^="plantilla-"]')).toHaveLength(2);
-    for (const id of ['interes-diario', 'gasto-administrativo']) {
+    for (const id of ['interes-mensual', 'gasto-administrativo']) {
       expect($(`[data-testid="plantilla-${id}"]`).textContent).toContain('Sugerencia');
     }
 
-    await clic(botonConTexto('Usar esta regla', $('[data-testid="plantilla-interes-diario"]')));
+    await clic(botonConTexto('Usar esta regla', $('[data-testid="plantilla-interes-mensual"]')));
 
     expect(crearMock).toHaveBeenCalledTimes(1);
     expect(crearMock).toHaveBeenCalledWith({
@@ -334,8 +335,8 @@ describe('ReglasDeMora — el estado vacío y las plantillas', () => {
       concepto: 'INTERES_DE_MORA',
       disparador: 'DIAS_DE_MORA',
       disparadorDia: 1,
-      formula: 'INTERES_DIARIO',
-      valor: 0.0667,
+      formula: 'INTERES_MENSUAL',
+      valor: 2,
       base: 'CANON',
       orden: 0,
     });
@@ -360,11 +361,27 @@ describe('ReglasDeMora — el estado vacío y las plantillas', () => {
     expect(document.querySelector('[data-testid="reglas-vacio"]')).not.toBeNull();
   });
 
+  it('🔴 un 5xx al usar la plantilla dice que fue nuestro, con la referencia', async () => {
+    listarMock.mockResolvedValueOnce([]);
+    crearMock.mockRejectedValueOnce(
+      new ApiError(500, 'Internal Server Error', 'ERROR_INTERNO', { referencia: 'beef1234' }),
+    );
+    await montar();
+
+    await clic(botonConTexto('Usar esta regla', $('[data-testid="plantilla-gasto-administrativo"]')));
+
+    const dicho = String(toastMock.error.mock.calls.at(-1)?.[0] ?? '');
+    expect(dicho).toContain('No pudimos crear la regla: algo falló de nuestro lado');
+    expect(dicho).toContain('beef1234');
+    expect(dicho).not.toContain('Internal Server Error');
+    expect(dicho).not.toMatch(/conexión/);
+  });
+
   it('sin permiso de creación no se ofrecen plantillas ni el botón de crear', async () => {
     permisos.canAccess.mockImplementation((_m: string, accion: string) => accion === 'view');
     listarMock.mockResolvedValueOnce([]);
     await montar();
-    expect(document.querySelector('[data-testid="plantilla-interes-diario"]')).toBeNull();
+    expect(document.querySelector('[data-testid="plantilla-interes-mensual"]')).toBeNull();
     expect(Array.from(document.querySelectorAll('button')).some((b) => b.textContent?.includes('Crear una regla'))).toBe(false);
   });
 });
@@ -431,6 +448,85 @@ describe('ReglasDeMora — el editor', () => {
     expect(document.querySelector('[data-testid="editor-de-regla"]')).not.toBeNull();
   });
 
+  /*
+   * 🔴 Tanda 2 del sistema de errores (02-10-2026): el 400 con `campos` va a
+   * SU campo con el foco; un 5xx dice que fue nuestro con la referencia; sólo
+   * sin respuesta se habla de la conexión. Y el tope de la columna se ataja
+   * antes de enviar, con la frase del back.
+   */
+  it('🔴 un 400 con `campos` pinta el error en su campo, le da el foco y no va al banner', async () => {
+    listarMock.mockResolvedValueOnce([regla()]);
+    const frase = 'El tope no puede pasar de $2.000.000.000. Revisa que no sobren ceros.';
+    crearMock.mockRejectedValueOnce(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'topeCop', regla: 'maximo', mensaje: frase }],
+      }),
+    );
+    await montar();
+    await abrirEditorNuevo();
+
+    escribir($('#regla-nombre') as HTMLInputElement, 'Interés extra');
+    escribir($('#regla-valor') as HTMLInputElement, '0.05');
+    await enviarFormulario();
+
+    expect(crearMock).toHaveBeenCalledTimes(1);
+    expect($('#regla-tope-error').textContent).toBe(frase);
+    expect(document.activeElement?.id).toBe('regla-tope');
+    expect(document.querySelector('[data-testid="error-del-back"]')).toBeNull();
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia, nunca «Error interno»', async () => {
+    listarMock.mockResolvedValueOnce([regla()]);
+    crearMock.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'f00dcafe' }),
+    );
+    await montar();
+    await abrirEditorNuevo();
+
+    escribir($('#regla-nombre') as HTMLInputElement, 'Interés extra');
+    escribir($('#regla-valor') as HTMLInputElement, '0.05');
+    await enviarFormulario();
+
+    const banner = $('[data-testid="error-del-back"]').textContent ?? '';
+    expect(banner).toContain('No pudimos guardar la regla: algo falló de nuestro lado');
+    expect(banner).toContain('f00dcafe');
+    expect(banner).not.toContain('Error interno del servidor');
+  });
+
+  it('sin respuesta (status 0) habla de la conexión', async () => {
+    listarMock.mockResolvedValueOnce([regla()]);
+    crearMock.mockRejectedValueOnce(new ApiError(0, 'Failed to fetch'));
+    await montar();
+    await abrirEditorNuevo();
+
+    escribir($('#regla-nombre') as HTMLInputElement, 'Interés extra');
+    escribir($('#regla-valor') as HTMLInputElement, '0.05');
+    await enviarFormulario();
+
+    const banner = $('[data-testid="error-del-back"]').textContent ?? '';
+    expect(banner).toMatch(/conexión/);
+    expect(banner).not.toContain('Failed to fetch');
+  });
+
+  it('🔴 un tope con ceros de más se ataja ANTES de enviar, con la frase del back', async () => {
+    listarMock.mockResolvedValueOnce([regla()]);
+    await montar();
+    await abrirEditorNuevo();
+
+    escribir($('#regla-nombre') as HTMLInputElement, 'Interés extra');
+    escribir($('#regla-valor') as HTMLInputElement, '0.05');
+    escribir($('#regla-tope') as HTMLInputElement, '50000000000');
+    await enviarFormulario();
+
+    expect(crearMock).not.toHaveBeenCalled();
+    expect($('#regla-tope-error').textContent).toBe(
+      'El tope no puede pasar de $\u00a02.000.000.000. Revisa que no sobren ceros.',
+    );
+  });
+
   it('las validaciones locales frenan el envío: sin nombre y sin valor no se llama al back', async () => {
     listarMock.mockResolvedValueOnce([regla()]);
     await montar();
@@ -439,8 +535,8 @@ describe('ReglasDeMora — el editor', () => {
     await enviarFormulario();
 
     expect(crearMock).not.toHaveBeenCalled();
-    expect($('[data-testid="error-regla-nombre"]').textContent).toContain('El nombre necesita al menos 3 letras.');
-    expect($('[data-testid="error-regla-valor"]').textContent).toContain('Pon el valor.');
+    expect($('#regla-nombre-error').textContent).toContain('El nombre necesita al menos 3 letras.');
+    expect($('#regla-valor-error').textContent).toContain('Pon el valor.');
   });
 
   it('una tasa diaria mayor que 1 % se frena localmente con el mensaje del back', async () => {
@@ -453,7 +549,7 @@ describe('ReglasDeMora — el editor', () => {
     await enviarFormulario();
 
     expect(crearMock).not.toHaveBeenCalled();
-    expect($('[data-testid="error-regla-valor"]').textContent).toContain('Una tasa DIARIA de 2% son 60.0% al mes.');
+    expect($('#regla-valor-error').textContent).toContain('Una tasa DIARIA de 2% son 60.0% al mes.');
   });
 
   it('editar abre el modal con la regla cargada y guarda por PUT', async () => {
@@ -466,7 +562,7 @@ describe('ReglasDeMora — el editor', () => {
     expect(nombre.value).toBe('Interés de mora');
     expect(($('#regla-valor') as HTMLInputElement).value).toBe('0.0667');
     expect($('[data-testid="vista-previa"]').textContent).toContain(
-      'Se dispara desde el primer día de mora y cobra 0,0667 % diario sobre el canon, hasta $ 500.000.',
+      'Se dispara desde el primer día de mora y cobra 0,0667 % diario sobre el canon, hasta $\u00a0500.000.',
     );
 
     escribir(nombre, 'Interés de mora (nuevo)');
@@ -499,7 +595,7 @@ describe('ReglasDeMora — sugerencias con reglas ya creadas y el aviso del moto
 
     expect(document.querySelector('[data-testid="reglas-vacio"]')).toBeNull();
     const sugerencias = $('[data-testid="reglas-sugerencias"]');
-    expect(document.querySelector('[data-testid="plantilla-interes-diario"]')).toBeNull();
+    expect(document.querySelector('[data-testid="plantilla-interes-mensual"]')).toBeNull();
     expect(sugerencias.querySelector('[data-testid="plantilla-gasto-administrativo"]')).not.toBeNull();
 
     // La plantilla que falta NO se cuenta como regla ni entra a la tabla: hay

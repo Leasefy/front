@@ -56,15 +56,21 @@
  * algo, con confirmación. 🔴 Sin la segunda, una inmobiliaria nueva —que no
  * tiene nada que migrar— no puede salir nunca.
  *
- * **No bloquea ante la duda.** Si el estado no llegó, tardó, falló o vino con
- * otra forma, el panel se ve normal. Está en `normalizarEstado()`.
+ * **No bloquea ante la duda.** Si el estado falló, tardó más de
+ * `ESPERA_MAXIMA_DEL_ESTADO_MS` o vino con otra forma, el panel se ve normal
+ * (con un aviso si estaba esperando). Está en `normalizarEstado()`.
+ * Lo que sí cambió el 01-10-2026: MIENTRAS se pregunta, a quien no se sabe que
+ * el muro no le va, el panel se ve difuminado y quieto (`espera`), para que
+ * nadie vea el panel nítido antes de decidir qué hace con su migración.
  */
 
 import { AuthContext } from "@/lib/auth/auth-context";
 import { ModalDecisionDeMigracion } from "./DecisionDeMigracion";
+import { olvidarRelevo } from "@/components/puesta-en-marcha/relevo";
 import {
   guardarDecisionDeMigracion,
   leerDecisionDeMigracion,
+  marcarQueEligioMigrar,
   type DecisionDeMigracion,
 } from "@/lib/migracion/decision-de-migracion";
 import {
@@ -92,8 +98,8 @@ import {
   type PasoDeMigracion,
 } from "@/lib/api/migracion-estado.service";
 import {
-  MODULO_DEL_PASO,
   esExigible,
+  puedeHacerElPaso,
   hayDeuda,
   leerEstado,
   normalizarEstado,
@@ -111,15 +117,44 @@ import { RegistrosContables } from "./RegistrosContables";
 import { ImportWizard } from "@/components/inmobiliaria/import/ImportWizard";
 import { MigrarContratos } from "@/components/contratos/MigrarContratos";
 import { BienvenidaALeasefy } from "./BienvenidaALeasefy";
+import { VeloDeEspera } from "./VeloDeEspera";
+import { toast } from "@/components/ui/toast";
+import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
+import {
+  muroAbajoRecordado,
+  olvidarMuroAbajo,
+  recordarMuroAbajo,
+} from "@/lib/migracion/muro-abajo-recordado";
+import {
+  muroBajadoPorElMiembro,
+  recordarMuroBajadoPorElMiembro,
+} from "@/lib/migracion/muro-bajado-por-el-miembro";
 import {
   leerBienvenidaPendiente,
   marcarBienvenidaPendiente,
   olvidarBienvenidaPendiente,
 } from "@/lib/migracion/bienvenida-pendiente";
 import {
+  AvisoDelMuroContext,
   MigracionContext,
   type ContextoDeMigracion,
 } from "./migracion-context";
+
+/**
+ * «En otro momento» / «No requiero migración» / la ✕ que no pudieron bajar el
+ * muro (omitir falló). El muro se queda —es lo correcto— y se dice por qué
+ * con el traductor (sistema de errores, 02-10-2026): la conexión sólo si no
+ * hubo respuesta. Antes el catch estaba vacío y el muro no se iba sin decir
+ * nada.
+ */
+function avisarQueNoSalio(e: unknown): void {
+  toast.error("No pudimos dejar la migración para después", {
+    description: mensajeParaLaPersona(e, {
+      porDefecto: "Prueba de nuevo en un momento.",
+      accion: "dejar la migración para después",
+    }),
+  });
+}
 
 export { MigracionContext, useMigracion } from "./migracion-context";
 export { useRanuraViva } from "./ranura-viva";
@@ -145,6 +180,36 @@ export type { ContextoDeMigracion } from "./migracion-context";
  * termina), y un minuto alcanza de sobra.
  */
 export const CADA_CUANTO_SE_REFRESCA_MS = 60_000;
+
+/** Cuándo se vuelve a pedir el estado si la primera consulta falló. Ver `consultar`. */
+export const ESPERAS_SI_LA_CONSULTA_FALLA_MS = [2_000, 8_000, 30_000] as const;
+
+/**
+ * Lo más que el panel queda difuminado esperando el estado. Pasado esto, la
+ * espera cae a «no sé» —nunca a «pendiente»—: el panel se ve, con un aviso, y
+ * si la respuesta llega después y toca decidir, la decisión sale encima.
+ */
+export const ESPERA_MAXIMA_DEL_ESTADO_MS = 8_000;
+
+/** El id del aviso de «no pudimos revisar tu migración», para no repetirlo y quitarlo. */
+const AVISO_SIN_ESTADO = "muro-sin-estado-de-migracion";
+
+/**
+ * Deja dicho en este navegador si el muro va o no para esta inmobiliaria, con
+ * una respuesta VÁLIDA y nada más (ver `muro-abajo-recordado.ts`).
+ */
+function anotarSiTapa(bruto: unknown, agencyId: string | null) {
+  if (normalizarEstado(bruto)) olvidarMuroAbajo(agencyId);
+  else if (leerEstado(bruto)?.bloquea === false) recordarMuroAbajo(agencyId);
+}
+
+function avisarQueNoSeSupo() {
+  toast.warning("No pudimos revisar tu migración", {
+    id: AVISO_SIN_ESTADO,
+    description:
+      "Te dejamos entrar al panel y lo seguimos intentando. Si hay algo que decidir, te lo preguntamos apenas responda.",
+  });
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // La compuerta: envuelve el panel entero y decide.
@@ -185,7 +250,32 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   // no requiero. Vive en localStorage por agencia (ver decision-de-migracion.ts).
   // Contexto crudo y no `useAuth()`: ese lanza sin AuthProvider, y el muro no
   // puede ser lo que tumba el panel (mismo criterio que SalirDelRegistro).
-  const agency = useContext(AuthContext)?.agency ?? null;
+  const sesion = useContext(AuthContext);
+  const agency = sesion?.agency ?? null;
+  /*
+   * 🔴 Primero la migración, después el segundo factor (Nico, 30-09-2026).
+   * Mientras el muro está puesto el back no exige el segundo factor; en
+   * cuanto la migración se resuelve —terminar, omitir, la ✕, o el muro que
+   * baja solo con el último paso— el bootstrap vuelve a decir `exigido`, y
+   * hay que pedírselo para que `ProtectedRoute` lleve a activarlo. Sin esto
+   * la persona seguía en el panel, sin segundo factor, hasta recargar.
+   * En ref porque `refrescar` tiene dependencias vacías a propósito.
+   */
+  const refrescarSesionRef = useRef(sesion?.refreshUser);
+  refrescarSesionRef.current = sesion?.refreshUser;
+  /**
+   * La sesión refrescándose tras bajar el muro: cuando vuelve se sabe si lo
+   * que sigue es el segundo factor. La espera la tarjeta de la decisión
+   * (`relevo`), para no destapar el panel medio segundo en el medio.
+   */
+  const sesionRefrescandose = useRef<Promise<unknown> | null>(null);
+  const pedirSegundoFactor = useCallback(() => {
+    const pedido = refrescarSesionRef.current?.() ?? null;
+    sesionRefrescandose.current = pedido;
+    void pedido?.catch(() => {
+      // Si no se pudo, lo pide la próxima carga: el back ya lo exige igual.
+    });
+  }, []);
   const agencyId = agency?.id ?? null;
   /*
    * Espejo en ref porque `refrescar` es un `useCallback` con dependencias
@@ -200,6 +290,27 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
     setDecision(leerDecisionDeMigracion(agencyId));
     setDecisionLeida(true);
   }, [agencyId]);
+  /*
+   * QA-MIGRACION-95 (MU-12, Nico 06-10, «(a)»): quien no puede resolver la
+   * migración (omitir pide `configuracion:edit`) no queda encerrado: su ✕ y su
+   * «En otro momento» bajan el muro SÓLO para esa persona, sin tocar la
+   * migración de la inmobiliaria, recordado por persona en este navegador.
+   * Mientras los permisos no contestan se asume que puede (el administrador
+   * no ve ningún cambio).
+   */
+  const { t } = useI18n();
+  const { canAccess: puedeHacer, isLoading: cargandoPermisos } = usePermissions();
+  const puedeResolver = cargandoPermisos || puedeHacer("configuracion", "edit");
+  const userId = (sesion as { user?: { id?: string } | null } | null)?.user?.id ?? null;
+  const [bajadoPorElMiembro, setBajadoPorElMiembro] = useState(false);
+  useEffect(() => {
+    setBajadoPorElMiembro(muroBajadoPorElMiembro(agencyId, userId));
+  }, [agencyId, userId]);
+  const bajarSoloParaMi = useCallback(() => {
+    recordarMuroBajadoPorElMiembro(agencyId, userId);
+    setBajadoPorElMiembro(true);
+    toast.info(t("migracion.muro.terminaUnAdministrador"));
+  }, [agencyId, userId, t]);
   // Al omitir por decisión no hay celebración: la persona eligió no migrar todavía.
   const saltarBienvenida = useRef(false);
   /*
@@ -218,16 +329,95 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   /** `false` hasta que la primera consulta vuelve. Ver `consultar`. */
   const [consultado, setConsultado] = useState(false);
 
+  /*
+   * 🔴 Mientras no se sabe, el panel va difuminado (Nico, 01-10-2026: «hay un
+   * momento que pueden ver todo el panel y luego sale el modal de migración»).
+   * Antes el panel se veía nítido hasta que volvía la consulta, y recién ahí
+   * salía la pregunta encima.
+   *
+   * No a todos: a quien ya se sabe que el muro no le va —la última respuesta
+   * en este navegador dijo `bloquea: false`, o decidió «en otro momento» o «no
+   * requiero»— se le muestra el panel de una, sin parpadeo. Si esa marca
+   * mintiera, la consulta igual corre y el muro sale encima, como antes.
+   *
+   * Y nunca para siempre: si la consulta falla o tarda más de
+   * `ESPERA_MAXIMA_DEL_ESTADO_MS`, cae a «no sé» —panel a la vista con un
+   * aviso— y no a «pendiente».
+   */
+  const yaSeSabiaQueNoTapa = useMemo(() => {
+    if (muroAbajoRecordado(agencyId)) return true;
+    if (!puedeResolver && muroBajadoPorElMiembro(agencyId, userId)) return true;
+    const previa = leerDecisionDeMigracion(agencyId);
+    return previa === "luego" || previa === "nunca";
+  }, [agencyId, userId, puedeResolver]);
+  const yaSeSabiaRef = useRef(yaSeSabiaQueNoTapa);
+  yaSeSabiaRef.current = yaSeSabiaQueNoTapa;
+  /** Se acabó la espera sin respuesta (falló o tardó): «no sé». */
+  const [seCansoDeEsperar, setSeCansoDeEsperar] = useState(false);
+  const espera = !consultado && !seCansoDeEsperar && !yaSeSabiaQueNoTapa;
+  useEffect(() => {
+    if (!espera) return;
+    const tope = setTimeout(() => {
+      setSeCansoDeEsperar(true);
+      avisarQueNoSeSupo();
+    }, ESPERA_MAXIMA_DEL_ESTADO_MS);
+    return () => clearTimeout(tope);
+  }, [espera]);
+
+  /*
+   * 🔴 Si la PRIMERA consulta falla, se vuelve a preguntar — pocas veces.
+   *
+   * Nico, 30-09-2026, con una inmobiliaria recién creada: «esto entró y no me
+   * preguntó si quería hacer la migración, no me está mostrando el estado de
+   * la migración en la sidebar». Ni la pregunta, ni el muro, ni la tarjeta:
+   * los tres cuelgan de ESTA consulta, y un fallo acá —el 403 de la ventana
+   * justo después de pasar el segundo factor, un back lento— dejaba `estado`
+   * en null para toda la sesión, porque el refresco de abajo sólo corre con
+   * el muro puesto. «Ante la duda no se bloquea» sigue en pie: mientras falla
+   * el panel se ve; lo que cambia es que la duda ya no es para siempre.
+   */
+  const reintentos = useRef(0);
+  const reintento = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (reintento.current) clearTimeout(reintento.current);
+    },
+    [],
+  );
   const consultar = useCallback(async () => {
     try {
       const bruto = await migracionEstadoApi.estado();
       // Ojo: `normalizarEstado` devuelve null ante CUALQUIER duda. Ese null
       // es «panel abierto», no «error» — no hay cartel que mostrar.
-      setConocido(leerEstado(bruto));
-      setEstado(normalizarEstado(bruto));
-    } catch {
+      const leido = leerEstado(bruto);
+      const bloquea = normalizarEstado(bruto);
+      setConocido(leido);
+      setEstado(bloquea);
+      anotarSiTapa(bruto, agencyIdRef.current);
+      toast.dismiss(AVISO_SIN_ESTADO);
+    } catch (error) {
       setConocido(null);
       setEstado(null);
+      /*
+       * Un 403 que no es la ventana del segundo factor dice «esta persona no
+       * ve la migración»: el muro nunca le va a salir, no hay nada que avisar
+       * y la próxima carga no se difumina. Lo demás es «no sé»: se avisa sólo
+       * si el panel estaba esperando difuminado (a quien ya lo tenía a la
+       * vista no se le interrumpe por un dato que no lo frena).
+       */
+      if (
+        error instanceof ApiError &&
+        error.status === 403 &&
+        error.code !== "SEGUNDO_FACTOR_REQUERIDO"
+      ) {
+        recordarMuroAbajo(agencyIdRef.current);
+      } else if (reintentos.current === 0 && !yaSeSabiaRef.current) {
+        avisarQueNoSeSupo();
+      }
+      const espera = ESPERAS_SI_LA_CONSULTA_FALLA_MS[reintentos.current++];
+      if (espera != null) {
+        reintento.current = setTimeout(() => void consultarRef.current(), espera);
+      }
     } finally {
       // Recién ahora se sabe si el muro va puesto. Antes de esto, `estado`
       // vale null por «todavía no sé», no por «no bloquea» — y la bienvenida
@@ -235,6 +425,8 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
       setConsultado(true);
     }
   }, []);
+  const consultarRef = useRef(consultar);
+  consultarRef.current = consultar;
 
   /*
    * El refresco es distinto de la consulta inicial en una sola cosa: un
@@ -243,12 +435,21 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
    * revisando. Con una respuesta válida sí se obedece — incluida una que
    * diga `bloquea: false`, que es como el muro baja al terminar.
    */
-  const refrescar = useCallback(async () => {
+  const refrescar = useCallback(async (respuesta?: EstadoDeMigracion) => {
     try {
-      const bruto = await migracionEstadoApi.estado();
+      /*
+       * 🔴 Con la respuesta de `terminar`/`omitir`, NO se vuelve a preguntar.
+       * Esas dos rutas ya devuelven el estado, y desde el 30-09 la pregunta
+       * siguiente pide el segundo factor (la migración ya se resolvió): el
+       * `GET estado` volvía 403, este `catch` dejaba el muro como estaba y la
+       * persona quedaba encerrada, sin bienvenida y sin salida.
+       */
+      const bruto =
+        respuesta !== undefined ? respuesta : await migracionEstadoApi.estado();
       const nuevo = normalizarEstado(bruto);
       const previo = estadoAnterior.current;
       setConocido(leerEstado(bruto));
+      anotarSiTapa(bruto, agencyIdRef.current);
       // Sin bienvenida cuando se salió por decisión («en otro momento», la
       // ✕): la persona no terminó nada, no hay qué celebrar.
       if (previo !== null && nuevo === null && !saltarBienvenida.current) {
@@ -271,13 +472,17 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
          * sobrevive a la navegación y la borra `onEntrar`.
          */
         marcarBienvenidaPendiente(agencyIdRef.current, recien);
+      } else if (previo !== null && nuevo === null) {
+        // Salió sin celebración («en otro momento», la ✕, «no requiero»):
+        // el segundo factor se pide ya. Con bienvenida, al tocar su botón.
+        pedirSegundoFactor();
       }
       saltarBienvenida.current = false;
       setEstado(nuevo);
     } catch {
       // Se queda como estaba.
     }
-  }, []);
+  }, [pedirSegundoFactor]);
 
   useEffect(() => {
     void consultar();
@@ -302,7 +507,7 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
     // equivocado.
   }, [consultado, estado, bienvenida, agencyId]);
 
-  const puesto = estado !== null;
+  const puesto = estado !== null && !(bajadoPorElMiembro && !puedeResolver);
 
   /*
    * El intervalo se APAGA con la pestaña, no se saltea un tick. Con
@@ -354,25 +559,113 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
    * Es lo que vuelve inerte al sidebar y a toda la navegación: sin esto, la
    * persona se pasea por el panel con el muro dibujado encima.
    */
+  /** Una salida («en otro momento», «no requiero») esperando al back. */
+  const saliendo = useRef(false);
+  /*
+   * 🔴 La tarjeta de la decisión se QUEDA un momento después de bajar el muro
+   * (Nico, 30-09-2026: «no se ve que es como un paso que continúa»). Antes se
+   * iba con el muro, el panel se destapaba mientras la sesión se refrescaba y
+   * el segundo factor caía encima como un pop-up nuevo. Ahora:
+   *  - `pasando`: el muro ya bajó y la sesión se está refrescando; la tarjeta,
+   *    sin contenido, sigue tapando el panel (sin avisarle al layout: el
+   *    segundo factor tiene que poder entrar y tomarla).
+   *  - si sigue el segundo factor, el layout cambia el panel por su escena y
+   *    ésta parte de la misma tarjeta (`anunciarRelevo`); esto se desmonta;
+   *  - si no sigue nada, `saliendo`: tarjeta y velo se van juntos.
+   * Sólo presentación: qué se omite, cuándo se refresca y quién decide el
+   * segundo factor no cambia.
+   */
+  const [relevo, setRelevo] = useState<"pasando" | "saliendo" | null>(null);
+  const montadoRef = useRef(true);
+  const temporizadorDelRelevo = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    montadoRef.current = true;
+    return () => {
+      montadoRef.current = false;
+      if (temporizadorDelRelevo.current) clearTimeout(temporizadorDelRelevo.current);
+    };
+  }, []);
+  const soltarElRelevo = useCallback(async (pedido: Promise<unknown>) => {
+    // Si la sesión no contesta, la tarjeta no se queda para siempre.
+    await Promise.race([
+      pedido.catch(() => undefined),
+      new Promise((listo) => setTimeout(listo, 8000)),
+    ]);
+    // Si seguía el segundo factor, el layout ya lo montó en lugar de esto.
+    if (!montadoRef.current) return;
+    setRelevo("saliendo");
+    temporizadorDelRelevo.current = setTimeout(() => {
+      if (!montadoRef.current) return;
+      setRelevo(null);
+      olvidarRelevo();
+    }, 320);
+  }, []);
   const decidir = useCallback(
     async (elegida: DecisionDeMigracion) => {
+      if (saliendo.current) return;
+      // MU-12: no puede omitir la de la inmobiliaria; sale sólo él, sin 403.
+      if (elegida !== "ahora" && !puedeResolver) {
+        bajarSoloParaMi();
+        return;
+      }
       guardarDecisionDeMigracion(agencyId, elegida);
-      setDecision(elegida);
-      if (elegida === "ahora") return;
+      if (elegida === "ahora") {
+        // Le dio «Migrar»: desde ya, la tarjeta del menú acompaña hasta el final.
+        marcarQueEligioMigrar(agencyId);
+        setDecision(elegida);
+        return;
+      }
+      /*
+       * 🔴 La decisión se marca DESPUÉS de omitir (Nico, 30-09-2026: «le di en
+       * otro momento… y me abrió el modal de migración gigante, y lo volvió a
+       * cerrar»). Con el muro todavía puesto, marcarla antes pintaba el muro
+       * entero mientras volvía `omitir`. Mientras tanto sigue la pregunta en
+       * pantalla; si omitir falla, recién ahí queda el muro.
+       */
+      saliendo.current = true;
       saltarBienvenida.current = true;
+      // «No requiero migración» también apaga el recordatorio EN LA CUENTA,
+      // para que no reaparezca en otro navegador (Nico, 2026-09-07). ANTES de
+      // omitir: omitida la migración, esta ruta ya pide el segundo factor.
+      if (elegida === "nunca") {
+        try {
+          await migracionEstadoApi.recordatorio(true);
+        } catch (e) {
+          // Sin esto el recordatorio sale en el menú: molesta, no encierra.
+          // Pero se DICE (sistema de errores, 02-10-2026): antes callaba.
+          toast.warning("No pudimos apagar el recordatorio de la migración", {
+            description: `${mensajeParaLaPersona(e, {
+              porDefecto: "Prueba de nuevo en un momento.",
+              accion: "apagar el recordatorio",
+            })} Puede seguir saliendo en el menú.`,
+          });
+        }
+      }
+      let respuesta: EstadoDeMigracion | undefined;
       try {
-        await migracionEstadoApi.omitir(
+        respuesta = await migracionEstadoApi.omitir(
           elegida === "luego" ? "en_otro_momento" : "no_requiere_migracion",
         );
-        // «No requiero migración» también apaga el recordatorio EN LA CUENTA,
-        // para que no reaparezca en otro navegador (Nico, 2026-09-07).
-        if (elegida === "nunca") await migracionEstadoApi.recordatorio(true);
-      } catch {
+      } catch (e) {
         // Si no se pudo omitir, el muro sigue: es mejor que un panel a medias.
+        // Y se dice por qué: un muro que no se va sin explicación parece roto.
+        avisarQueNoSalio(e);
       }
-      await refrescar();
+      sesionRefrescandose.current = null;
+      try {
+        await refrescar(respuesta);
+      } finally {
+        // El muro bajó y la sesión se está refrescando: la tarjeta se queda
+        // en el mismo render en que el muro se va (ver `relevo`).
+        const pedido = sesionRefrescandose.current;
+        if (pedido) setRelevo("pasando");
+        else olvidarRelevo();
+        setDecision(elegida);
+        saliendo.current = false;
+        if (pedido) void soltarElRelevo(pedido);
+      }
     },
-    [agencyId, refrescar],
+    [agencyId, refrescar, soltarElRelevo, puedeResolver, bajarSoloParaMi],
   );
   /*
    * La ✕ del muro (Nico, 2026-09-07: «que tenga la posibilidad de cerrar si
@@ -383,44 +676,78 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
   const cerrar = useCallback(async () => {
     setAbiertaAMano(false);
     if (!puesto) return;
+    if (!puedeResolver) {
+      bajarSoloParaMi();
+      return;
+    }
     guardarDecisionDeMigracion(agencyId, "luego");
     setDecision("luego");
     saltarBienvenida.current = true;
+    let respuesta: EstadoDeMigracion | undefined;
     try {
-      await migracionEstadoApi.omitir("en_otro_momento");
-    } catch {
+      respuesta = await migracionEstadoApi.omitir("en_otro_momento");
+    } catch (e) {
       // Si no se pudo omitir, el muro sigue: es mejor que un panel a medias.
+      avisarQueNoSalio(e);
     }
-    await refrescar();
-  }, [agencyId, puesto, refrescar]);
+    await refrescar(respuesta);
+  }, [agencyId, puesto, refrescar, puedeResolver, bajarSoloParaMi]);
 
   const abrir = useCallback(() => {
+    // Abrir la migración (Configuración, la tarjeta del menú) es darle «Migrar».
+    marcarQueEligioMigrar(agencyId);
     setAbiertaAMano(true);
     void refrescar();
-  }, [refrescar]);
-
-  const contexto = useMemo<ContextoDeMigracion>(
-    () => ({ estado: conocido, abrir, recargar: refrescar }),
-    [conocido, abrir, refrescar],
-  );
+  }, [agencyId, refrescar]);
 
   const aMano = !puesto && abiertaAMano && conocido !== null;
   const tapado = puesto || aMano || bienvenida !== null;
-  const inerte = { inert: tapado };
+  /**
+   * Lo que se ve: además, la tarjeta de la decisión esperando qué sigue, y la
+   * espera del estado (ver `espera`). La espera NO se le avisa al layout
+   * (`tapado`): no es el muro, y lo que venga después lo decide la respuesta.
+   */
+  const cubierto = tapado || relevo === "pasando" || espera;
+  const contexto = useMemo<ContextoDeMigracion>(
+    () => ({ estado: conocido, abrir, recargar: refrescar, panelTapado: cubierto }),
+    [conocido, abrir, refrescar, cubierto],
+  );
+
+  /*
+   * Hacia arriba, al layout: el segundo factor dentro del panel no entra
+   * mientras esto tape (ver `AvisoDelMuroContext`). Al desmontarse, deja de
+   * tapar.
+   */
+  const avisarAlLayout = useContext(AvisoDelMuroContext);
+  useEffect(() => {
+    avisarAlLayout?.(tapado);
+  }, [avisarAlLayout, tapado]);
+  useEffect(() => () => avisarAlLayout?.(false), [avisarAlLayout]);
+
+  const inerte = { inert: cubierto };
 
   return (
     <MigracionContext.Provider value={contexto}>
       <div
         {...inerte}
-        aria-hidden={tapado || undefined}
+        aria-hidden={cubierto || undefined}
         data-testid="panel-detras-del-muro"
         className={cn(
-          tapado &&
-            "min-h-screen select-none blur-[3px] saturate-[0.6] pointer-events-none",
+          cubierto &&
+            // 8 px: con 3 px todavía se leían el menú y «Piloto automático», y
+            // Nico pidió que no se pueda ver el panel hasta decidir (02-10).
+            "min-h-screen select-none blur-[8px] saturate-[0.6] pointer-events-none",
         )}
       >
         {children}
       </div>
+      {/* Mientras no se sabe (o se sabe pero la decisión guardada todavía no
+          se leyó): el velo. Si lo que sigue es la tarjeta o el muro, se va
+          sin fundido en el mismo cuadro en que ellos entran. */}
+      <VeloDeEspera
+        visible={espera || (puesto && !decisionLeida)}
+        loReemplazaUnModal={puesto}
+      />
       {puesto && decisionLeida ? (
         decision === null ? (
           <ModalDecisionDeMigracion onDecidir={decidir} />
@@ -431,6 +758,14 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
             onCerrar={cerrar}
           />
         )
+      ) : relevo !== null ? (
+        // La MISMA instancia de la decisión (mismo lugar, mismo tipo): la
+        // tarjeta no se desmonta ni vuelve a entrar.
+        <ModalDecisionDeMigracion
+          onDecidir={decidir}
+          pasando
+          saliendo={relevo === "saliendo"}
+        />
       ) : aMano ? (
         <PanelDeMigracion
           estado={conocido}
@@ -447,6 +782,8 @@ export function MuroDeMigracion({ children }: { children: React.ReactNode }) {
             // Vista una vez, no vuelve: entrar es lo que la cierra.
             olvidarBienvenidaPendiente(agencyId);
             setBienvenida(null);
+            // Terminó la migración: ahora sí, el segundo factor.
+            pedirSegundoFactor();
           }}
         />
       ) : null}
@@ -465,7 +802,8 @@ export function PanelDeMigracion({
   onTerminada,
 }: {
   estado: EstadoDeMigracion;
-  onResuelta: () => void | Promise<void>;
+  /** Con el estado que devolvió `terminar`/`omitir`, lo usa sin volver a preguntar. */
+  onResuelta: (respuesta?: EstadoDeMigracion) => void | Promise<void>;
   /** La ✕ de arriba a la derecha. Sin esto no hay ✕. */
   onCerrar?: () => void | Promise<void>;
   /** Abierta a mano: «Entrar al panel» la cierra en vez de dejarla puesta. */
@@ -547,7 +885,11 @@ export function PanelDeMigracion({
    * decir, el muro muestra el veredicto en vez de «tu operación ya está
    * adentro», y el pie ofrece completar antes que entrar.
    */
-  const { deuda, recargar: recargarDeuda } = useDeudaDeMigracion();
+  // QA-MIGRACION-95 (ER-05): sin `contratos:view` el back responde 403; no se pregunta.
+  const { canAccess: puedeVer, isLoading: cargandoPermisos } = usePermissions();
+  // MU-12: «arranco de cero» también omite; a quien no puede, la línea y su salida.
+  const puedeResolver = cargandoPermisos || puedeVer("configuracion", "edit");
+  const { deuda, recargar: recargarDeuda } = useDeudaDeMigracion(puedeVer("contratos", "view"));
   const conDeuda = hayDeuda(deuda);
   const indiceDeContratos = pasos.findIndex((p) => p.id === "contratos");
 
@@ -664,13 +1006,22 @@ export function PanelDeMigracion({
   }, []);
 
   async function resolver(via: "terminar" | "omitir") {
+    // QA-MIGRACION-95 (MU-12): terminar u omitir piden configuracion:edit. Al
+    // miembro que no lo tiene, «Entrar al panel» con todo listo le daba 403 y
+    // lo dejaba detrás del muro: le baja el muro sólo a él, como la ✕.
+    if (!puedeResolver && onCerrar) {
+      void onCerrar();
+      return;
+    }
     setEnviando(true);
     setFallo(false);
     setFalloDetalle(null);
     try {
-      if (via === "terminar") await migracionEstadoApi.terminar();
-      else await migracionEstadoApi.omitir();
-      await onResuelta();
+      const respuesta =
+        via === "terminar"
+          ? await migracionEstadoApi.terminar()
+          : await migracionEstadoApi.omitir();
+      await onResuelta(respuesta);
       if (via === "terminar") onTerminada?.();
       // Si el back todavía dice que bloquea, el muro sigue puesto y los
       // botones tienen que volver a funcionar.
@@ -683,7 +1034,14 @@ export function PanelDeMigracion({
       // Un error CON mensaje del back (el 409 de «todavía falta…») se
       // muestra tal cual; cualquier otra cosa (un bug, un throw raro) cae al
       // texto genérico — nunca un stack en inglés en la cara del usuario.
-      setFalloDetalle(e instanceof ApiError && e.message ? e.message : null);
+      // Sistema de errores (02-10-2026): por el traductor. Un 5xx dice que
+      // fue de nuestro lado con su referencia; «conexión» sólo sin respuesta.
+      setFalloDetalle(
+        mensajeParaLaPersona(e, {
+          porDefecto: t("migracion.muro.fallo"),
+          accion: via === "terminar" ? "terminar la migración" : "dejar la migración para después",
+        }),
+      );
       setEnviando(false);
     }
   }
@@ -694,8 +1052,13 @@ export function PanelDeMigracion({
        * Pantalla completa, no un modal (Nico, 2026-09-07): sin velo, sin
        * tarjeta flotante. Ocupa todo y el contenido se centra a 1200px
        * adentro. Lo que hay detrás queda inerte igual (ver la compuerta).
+       *
+       * `bg-bg` y no `bg-surface` (glow-up 30-09): el lienzo es el fondo
+       * cálido del panel y las tarjetas de cada paso van en `bg-surface`
+       * encima — blanco sobre blanco dejaba los bloques como islas que sólo
+       * un filete separaba («quedan como separadas, es rarísimo todo»).
        */
-      className="fixed inset-0 z-[120] flex flex-col bg-surface"
+      className="fixed inset-0 z-[120] flex flex-col bg-bg"
       data-testid="muro-migracion"
     >
       <div
@@ -704,7 +1067,7 @@ export function PanelDeMigracion({
         role="dialog"
         aria-modal="true"
         aria-labelledby="muro-migracion-titulo"
-        className="flex h-full w-full flex-col overflow-hidden outline-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-200"
+        className="flex h-full w-full flex-col overflow-hidden outline-none motion-safe:animate-in motion-safe:fade-in motion-safe:duration-base"
       >
         {/*
           ── Arriba, fijo: el mapa ──────────────────────────────────────────
@@ -752,7 +1115,7 @@ export function PanelDeMigracion({
           <div className="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
             <h1
               id="muro-migracion-titulo"
-              className="text-xl font-semibold tracking-tight text-fg"
+              className="text-xl font-medium tracking-tight text-fg"
             >
               {t("migracion.muro.titulo")}
             </h1>
@@ -776,6 +1139,7 @@ export function PanelDeMigracion({
           >
             <div className="w-full px-5 py-6 sm:px-8 lg:px-10">
               <ConfirmarArranqueDeCero
+                algoCargado={estado.pasos.some((p) => p.estado === "listo")}
                 enviando={enviando}
                 onCancelar={() => setConfirmando(false)}
                 onAceptar={() => resolver("omitir")}
@@ -839,6 +1203,7 @@ export function PanelDeMigracion({
                 <p
                   className="mt-6 flex items-start gap-2 rounded-md bg-danger-soft p-3 text-sm text-danger"
                   data-testid="muro-fallo"
+                  role="alert"
                 >
                   <Warning className="mt-0.5 h-4 w-4 shrink-0" />
                   {falloDetalle ?? t("migracion.muro.fallo")}
@@ -861,6 +1226,18 @@ export function PanelDeMigracion({
                 // Abierta a mano ya no hay muro del que salir: «arranco de
                 // cero» no significa nada acá.
                 <span />
+              ) : !puedeResolver ? (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1" data-testid="muro-termina-un-administrador">
+                  <p className="text-sm text-fg-muted">{t("migracion.muro.terminaUnAdministrador")}</p>
+                  <button
+                    type="button"
+                    onClick={() => void onCerrar?.()}
+                    data-testid="muro-entrar-sin-resolver"
+                    className="rounded-sm text-sm text-fg underline decoration-border-strong underline-offset-4 transition-colors hover:decoration-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {t("migracion.muro.entrarSinResolver")}
+                  </button>
+                </div>
               ) : (
                 <button
                   type="button"
@@ -964,6 +1341,27 @@ export function PanelDeMigracion({
 // ══════════════════════════════════════════════════════════════════════════
 
 /**
+ * 🔴 Por qué espera un paso (Nico, 04-10-2026: «soltar sólo el Plan de
+ * cuentas»). Los registros contables no esperan «al anterior» sin más: esperan
+ * a los terceros y a los contratos, porque cada saldo y cada movimiento se
+ * imputa a uno de ellos. El plan de cuentas no espera a nadie
+ * (`PASOS_QUE_NO_ESPERAN`), así que nunca llega acá.
+ */
+export function claveDelPorque(
+  pasoId: PasoDeMigracion["id"],
+  frenaId?: PasoDeMigracion["id"],
+): string {
+  if (pasoId !== "contables") return "migracion.muro.primero";
+  // QA-MIGRACION-95 (06-10): si lo que frena los registros es el PLAN DE
+  // CUENTAS (terceros y contratos ya listos), la frase de terceros y
+  // contratos se contradecía («esperan a Cuentas del PUC… El plan de cuentas
+  // no espera»). Cada saldo se imputa también a una cuenta del plan.
+  return frenaId === "puc"
+    ? "migracion.muro.esperanElPlanDeCuentas"
+    : "migracion.muro.esperanTercerosYContratos";
+}
+
+/**
  * La barra numerada del onboarding de creación de cuenta
  * (`OnboardingWizardStepper`), con el mismo lenguaje visual: círculo, número,
  * check al terminar, conector. En columnas iguales, con la etiqueta DEBAJO
@@ -992,7 +1390,7 @@ function BarraDePasos({
   return (
     <ol
       aria-label={t("migracion.muro.progreso")}
-      className="mt-5 grid gap-x-2"
+      className="mt-4 grid gap-x-1"
       style={{ gridTemplateColumns: `repeat(${pasos.length}, minmax(0, 1fr))` }}
       data-testid="muro-barra"
     >
@@ -1005,6 +1403,21 @@ function BarraDePasos({
         const elegido = idx === seleccionado;
         const ultimo = idx === pasos.length - 1;
         const titulo = t(`migracion.pasos.${paso.id}.titulo`);
+        /*
+         * Cada paso es una LOSETA, no un círculo flotando sobre aire (glow-up
+         * 30-09: «el stepper flota desconectado del contenido»). La elegida se
+         * levanta en `bg-surface` sobre el lienzo `bg-bg` — la misma relación
+         * que tienen las tarjetas del cuerpo — y así la barra y el contenido
+         * se leen como una sola pieza.
+         */
+        const loseta = cn(
+          "block w-full rounded-md px-2.5 pb-2 pt-2.5 text-left transition-colors sm:pb-2.5",
+          elegido
+            ? "bg-surface shadow-sm"
+            : habilitado
+              ? "hover:bg-surface-muted/70"
+              : undefined,
+        );
 
         // Lo que se lee debajo del nombre. Un hecho muestra lo que cargó
         // («12 propietarios · 30 inquilinos»); nunca un cero inventado.
@@ -1031,7 +1444,8 @@ function BarraDePasos({
                       ? "border-2 border-primary bg-surface text-primary"
                       : "border border-border bg-surface text-fg-subtle",
                   apagado && "border-dashed",
-                  // «Acá estás mirando»: un anillo, sea el paso que sea.
+                  // «Acá estás mirando» también en el círculo: en el móvil la
+                  // loseta es angosta y el anillo es lo que más se ve.
                   elegido &&
                     "ring-2 ring-primary ring-offset-2 ring-offset-surface",
                 )}
@@ -1055,7 +1469,7 @@ function BarraDePasos({
               ) : null}
             </div>
 
-            <div className="mt-2.5 hidden min-w-0 pr-3 text-left sm:block">
+            <div className="mt-2 hidden min-w-0 pr-1 text-left sm:block">
               <p
                 className={cn(
                   "truncate text-caption font-medium",
@@ -1096,7 +1510,7 @@ function BarraDePasos({
                 «Primero termina “Propiedades”». En pantalla lo dice el orden. */}
             {!hecho && !apagado && !habilitado && frena ? (
               <span className="sr-only" data-testid={`muro-porque-${paso.id}`}>
-                {t("migracion.muro.primero", {
+                {t(claveDelPorque(paso.id, frena.id), {
                   paso: t(`migracion.pasos.${frena.id}.titulo`),
                 })}
               </span>
@@ -1120,12 +1534,15 @@ function BarraDePasos({
                 disabled={bloqueada}
                 data-testid={`muro-ir-${paso.id}`}
                 aria-label={t("migracion.muro.irAlPaso", { paso: titulo })}
-                className="group block w-full rounded-sm text-left outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-progress"
+                className={cn(
+                  "group outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-progress",
+                  loseta,
+                )}
               >
                 {cuerpo}
               </button>
             ) : (
-              <div>{cuerpo}</div>
+              <div className={loseta}>{cuerpo}</div>
             )}
           </li>
         );
@@ -1165,7 +1582,7 @@ function PasoEnFoco({
   ocupado: boolean;
 }) {
   const { t } = useI18n();
-  const { canAccess, isLoading } = usePermissions();
+  const { canAccess, isLoading, agencyRole } = usePermissions();
   /*
    * El nodo donde el paso portaliza lo que tiene que seguir VIVO mientras el
    * resto está `inert`. Va en estado y no en un ref: el paso sólo puede
@@ -1184,7 +1601,8 @@ function PasoEnFoco({
   const frena = pasoQueFrena(pasos, indice);
   // Mientras los permisos no contestaron no se afirma nada: se muestra.
   // Quien no puede, lo va a saber en cuanto el servicio conteste.
-  const permitido = isLoading || canAccess(MODULO_DEL_PASO[paso.id], "view");
+  // QA-MIGRACION-95: el plan de cuentas y los registros contables, por rol (también el contador).
+  const permitido = isLoading || puedeHacerElPaso(paso.id, { canAccess, agencyRole });
 
   return (
     <section
@@ -1207,7 +1625,7 @@ function PasoEnFoco({
         </p>
         <h2
           id="muro-en-foco-titulo"
-          className="mt-1 text-balance text-2xl font-semibold tracking-tight text-fg"
+          className="mt-1 text-balance text-2xl font-medium tracking-tight text-fg"
         >
           {t(`migracion.pasos.${paso.id}.titulo`)}
         </h2>
@@ -1216,11 +1634,11 @@ function PasoEnFoco({
         </p>
         {hecho ? (
           <p
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1.5 font-mono text-caption tabular-nums text-success"
+            className="mt-4 inline-flex items-start gap-2 rounded-md bg-success-soft px-3 py-2 font-mono text-caption tabular-nums text-success"
             data-testid="muro-paso-listo"
           >
-            <Check className="h-3.5 w-3.5" weight="bold" />
-            {paso.detalle ?? t("migracion.muro.hecho")}
+            <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" weight="bold" />
+            <span className="min-w-0">{paso.detalle ?? t("migracion.muro.hecho")}</span>
           </p>
         ) : paso.estado === "pendiente" &&
           paso.detalle &&
@@ -1240,8 +1658,13 @@ function PasoEnFoco({
            * va al final, «2145 ya cargados»), y este rótulo dejó de afirmar
            * que todo lo que sigue es un faltante.
            */
+          /*
+           * Bloque y no píldora: el pendiente del back puede ser largo
+           * («faltan cuentas para 2 asientos automáticos · 112 cuentas…») y
+           * una píldora partida en tres renglones se lee como un parche.
+           */
           <p
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-warning-soft px-3 py-1.5 font-mono text-caption tabular-nums text-warning"
+            className="mt-4 inline-block rounded-md bg-warning-soft px-3 py-2 font-mono text-caption tabular-nums text-warning"
             data-testid="muro-paso-falta"
           >
             {t("migracion.muro.falta", { detalle: paso.detalle })}
@@ -1256,7 +1679,7 @@ function PasoEnFoco({
           </Aviso>
         ) : !habilitado && frena ? (
           <Aviso testid="muro-aviso-frenado">
-            {t("migracion.muro.primero", {
+            {t(claveDelPorque(paso.id, frena.id), {
               paso: t(`migracion.pasos.${frena.id}.titulo`),
             })}
             <Button
@@ -1392,7 +1815,7 @@ function Aviso({
 }) {
   return (
     <div
-      className="rounded-lg border border-border bg-surface-muted p-5 text-sm text-fg-muted"
+      className="rounded-lg border border-border-faint bg-surface p-6 text-sm text-fg-muted shadow-sm"
       data-testid={testid}
     >
       {children}
@@ -1413,7 +1836,7 @@ function TodoListo({ pasos }: { pasos: PasoDeMigracion[] }) {
 
   return (
     <section
-      className="mb-6 flex items-start gap-4 rounded-lg bg-surface-muted p-5 sm:gap-5 sm:p-6"
+      className="mb-6 flex items-start gap-4 rounded-lg bg-primary-soft p-5 sm:gap-5 sm:p-6"
       data-testid="muro-todo-listo"
     >
       <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-fg">
@@ -1423,7 +1846,7 @@ function TodoListo({ pasos }: { pasos: PasoDeMigracion[] }) {
         <p className="font-mono text-[11px] uppercase tracking-wider text-fg-subtle">
           {t("migracion.muro.todoListo.eyebrow")}
         </p>
-        <h2 className="mt-1 text-lg font-semibold tracking-tight text-fg">
+        <h2 className="mt-1 text-lg font-medium tracking-tight text-fg">
           {t("migracion.muro.todoListo.titulo")}
         </h2>
         <p className="mt-1 max-w-prose text-sm leading-relaxed text-fg-muted">
@@ -1437,7 +1860,7 @@ function TodoListo({ pasos }: { pasos: PasoDeMigracion[] }) {
             {conteos.map((c) => (
               <li
                 key={c}
-                className="rounded-full border border-border bg-surface px-2.5 py-1 font-mono text-caption tabular-nums text-fg-muted"
+                className="rounded-full bg-surface px-2.5 py-1 font-mono text-caption tabular-nums text-fg-muted shadow-sm"
               >
                 {c}
               </li>
@@ -1458,10 +1881,13 @@ function TodoListo({ pasos }: { pasos: PasoDeMigracion[] }) {
  */
 function ConfirmarArranqueDeCero({
   enviando,
+  algoCargado = false,
   onCancelar,
   onAceptar,
 }: {
   enviando: boolean;
+  /** QA-MIGRACION-95 (MU-07): hay pasos ya cargados; no se dice «sin nada cargado». */
+  algoCargado?: boolean;
   onCancelar: () => void;
   onAceptar: () => void;
 }) {
@@ -1469,21 +1895,26 @@ function ConfirmarArranqueDeCero({
 
   return (
     <section
-      className="rounded-lg bg-warning-soft p-6 sm:p-7"
+      /* Centrada y con tope de ancho: una pregunta de dos frases estirada a
+         1.900 px sobre un cuerpo vacío se leía como una pantalla rota. */
+      className="mx-auto mt-6 max-w-2xl rounded-lg bg-warning-soft p-6 sm:mt-14 sm:p-7"
       data-testid="muro-confirmar-cero"
     >
-      <div className="flex items-start gap-5 sm:gap-7">
-        <div className="flex w-14 shrink-0 pt-0.5">
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface text-warning">
-            <Warning className="h-5 w-5" />
-          </span>
-        </div>
+      <div className="flex items-start gap-5">
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface text-warning">
+          <Warning className="h-5 w-5" />
+        </span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-xl font-semibold tracking-tight text-fg">
+          <h2 className="text-xl font-medium tracking-tight text-fg">
             {t("migracion.muro.confirmar.titulo")}
           </h2>
           <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">
-            {t("migracion.muro.confirmar.detalle")}
+            {/* QA-MIGRACION-95 (MU-07): con algo ya cargado no se dice «sin nada cargado». */}
+            {t(
+              algoCargado
+                ? "migracion.muro.confirmar.detalleConAlgoCargado"
+                : "migracion.muro.confirmar.detalle",
+            )}
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Button

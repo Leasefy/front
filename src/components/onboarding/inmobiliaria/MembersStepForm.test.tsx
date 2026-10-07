@@ -2,6 +2,7 @@ import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
+import { MotionGlobalConfig } from 'framer-motion'
 
 void React
 
@@ -54,6 +55,13 @@ function setInputValue(input: HTMLInputElement, value: string) {
   })
 }
 
+/** Lo que sale (una fila de `Stagger`) se desmonta después de su salida. */
+async function esperarLaSalida() {
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 50))
+  })
+}
+
 function clickButton(testId: string) {
   const btn = container.querySelector(`[data-testid="${testId}"]`) as HTMLButtonElement
   if (!btn) throw new Error(`Button with data-testid="${testId}" not found`)
@@ -73,9 +81,11 @@ async function clickSubmit() {
 }
 
 describe('<MembersStepForm>', () => {
-  it('starts with one empty row', () => {
+  it('🔴 arranca SIN filas: el paso es opcional y «Continuar» continúa de verdad (Nico, 30-09)', () => {
     render()
-    expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(1)
+    expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(0)
+    // Sin el «Omitir por ahora» aparte: con cero filas, Continuar ES la salida.
+    expect(container.querySelector('[data-testid="members-skip-step"]')).toBeFalsy()
   })
 
   it('shows a notice clarifying the step is optional — the agent contract now accepts an empty members list (minItems: 0)', () => {
@@ -86,61 +96,67 @@ describe('<MembersStepForm>', () => {
     expect(container.querySelector('[data-testid="members-step-required-notice"]')).toBeFalsy()
   })
 
-  it('renders a secondary "Omitir por ahora" action', () => {
-    render()
-    const skipBtn = container.querySelector('[data-testid="members-skip-step"]')
-    expect(skipBtn).toBeTruthy()
-    expect(skipBtn?.textContent).toContain('Omitir por ahora')
-  })
-
-  it('clicking "Omitir por ahora" submits an empty members list, bypassing row validation', async () => {
+  it('🔴 «Continuar» sin filas manda la lista vacía, sin pedirle nada a nadie', async () => {
     const onSubmit = vi.fn().mockResolvedValue(null)
     render({ onSubmit })
 
-    // Leave the default row empty (would normally block the regular submit).
-    await act(async () => {
-      clickButton('members-skip-step')
-      await new Promise((r) => setTimeout(r, 0))
-    })
+    await clickSubmit()
 
     expect(onSubmit).toHaveBeenCalledTimes(1)
     expect(onSubmit).toHaveBeenCalledWith({ members: [] })
   })
 
-  it('disables "Omitir por ahora" while submitting', () => {
-    render({ isSubmitting: true })
-    const skipBtn = container.querySelector('[data-testid="members-skip-step"]') as HTMLButtonElement
-    expect(skipBtn.disabled).toBe(true)
-  })
-
-  it('adds and removes member rows', () => {
+  it('adds and removes member rows', async () => {
     render()
 
     clickButton('members-add-row')
     clickButton('members-add-row')
-    expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(3)
-
-    clickButton('members-remove-row-0')
     expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(2)
-  })
-
-  it('does not allow removing the last remaining row', () => {
-    render()
-
-    expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(1)
-    const removeBtn = container.querySelector(
-      '[data-testid="members-remove-row-0"]',
-    ) as HTMLButtonElement
-    expect(removeBtn.disabled).toBe(true)
 
     clickButton('members-remove-row-0')
+    await esperarLaSalida()
     expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(1)
+  })
+
+  it('la última fila también se puede quitar: se vuelve al paso vacío', async () => {
+    render()
+
+    clickButton('members-add-row')
+    expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(1)
+
+    clickButton('members-remove-row-0')
+    await esperarLaSalida()
+    expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(0)
+  })
+
+  /**
+   * La fila que se quita SALE animada (`Stagger`): sigue montada mientras se
+   * va y después ya no está. Con animaciones de verdad (sin el atajo de las
+   * pruebas) para ver que no se corta de golpe.
+   */
+  it('la fila quitada sale con su animación: sigue mientras se va y después se desmonta', async () => {
+    render()
+    clickButton('members-add-row')
+    clickButton('members-add-row')
+    MotionGlobalConfig.skipAnimations = false
+    try {
+      clickButton('members-remove-row-0')
+      // Recién tocado «Quitar»: la persona sigue viendo cómo se va.
+      expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(2)
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 400))
+      })
+      expect(container.querySelectorAll('[data-testid^="member-row-"]').length).toBe(1)
+    } finally {
+      MotionGlobalConfig.skipAnimations = true
+    }
   })
 
   it('shows a validation error for an invalid email and blocks submit', async () => {
     const onSubmit = vi.fn().mockResolvedValue(null)
     render({ onSubmit })
 
+    clickButton('members-add-row')
     setInputValue(byId('members.0.email'), 'not-an-email')
 
     await clickSubmit()
@@ -153,6 +169,7 @@ describe('<MembersStepForm>', () => {
     const onSubmit = vi.fn().mockResolvedValue(null)
     render({ onSubmit })
 
+    clickButton('members-add-row')
     clickButton('members-add-row')
     setInputValue(byId('members.0.email'), 'dup@inmobiliaria.test')
     setInputValue(byId('members.1.email'), 'dup@inmobiliaria.test')
@@ -198,10 +215,11 @@ describe('<MembersStepForm>', () => {
     expect(parsed.success).toBe(false)
   })
 
-  it('blocks submit when the single default row is left with an empty email', async () => {
+  it('una fila agregada y dejada vacía SÍ bloquea el envío: se llena o se quita', async () => {
     const onSubmit = vi.fn().mockResolvedValue(null)
     render({ onSubmit })
 
+    clickButton('members-add-row')
     await clickSubmit()
 
     expect(onSubmit).not.toHaveBeenCalled()
@@ -212,6 +230,7 @@ describe('<MembersStepForm>', () => {
     const onSubmit = vi.fn().mockResolvedValue(null)
     render({ onSubmit })
 
+    clickButton('members-add-row')
     clickButton('members-add-row')
     setInputValue(byId('members.0.email'), 'admin@inmobiliaria.test')
     setInputValue(byId('members.1.email'), 'viewer@inmobiliaria.test')
@@ -233,6 +252,7 @@ describe('<MembersStepForm>', () => {
     const onSubmit = vi.fn().mockResolvedValue({ sessionId: 'sess-1' })
     render({ onSubmit })
 
+    clickButton('members-add-row')
     setInputValue(byId('members.0.email'), 'admin@inmobiliaria.test')
 
     await clickSubmit()
@@ -245,6 +265,7 @@ describe('<MembersStepForm>', () => {
     const onSubmit = vi.fn().mockResolvedValue(null)
     render({ onSubmit })
 
+    clickButton('members-add-row')
     setInputValue(byId('members.0.email'), 'ana@inmobiliaria.test')
     setInputValue(byId('members.0.nombre'), '  Ana Restrepo  ')
 
@@ -253,6 +274,31 @@ describe('<MembersStepForm>', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       members: [{ email: 'ana@inmobiliaria.test', nombre: 'Ana Restrepo', role: 'AGENTE' }],
     })
+  })
+
+  it('🔴 «Continuar» queda apagado mientras corren las invitaciones del back, aunque el micro ya haya respondido (02-10)', async () => {
+    // El padre resuelve `onSubmit` DESPUÉS de invitar a cada persona en el
+    // back; `isSubmitting` (el del micro) ya volvió a `false` para entonces.
+    let terminar: (v: unknown) => void = () => {}
+    const onSubmit = vi.fn().mockImplementation(() => new Promise((r) => (terminar = r)))
+    render({ onSubmit, isSubmitting: false })
+
+    clickButton('members-add-row')
+    setInputValue(byId('members.0.email'), 'alex.dev+9@leasefy.co')
+    await clickSubmit()
+
+    const boton = container.querySelector(
+      '[data-testid="members-step-form"] button[type="submit"]',
+    ) as HTMLButtonElement
+    expect(boton.disabled).toBe(true)
+    await clickSubmit()
+    expect(onSubmit).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      terminar(null)
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(boton.disabled).toBe(false)
   })
 })
 
@@ -381,5 +427,147 @@ describe('<MembersStepForm> — resultado de las invitaciones (`pendingInvites`)
     clickButton('members-invite-continue')
 
     expect(onContinueAfterInvites).toHaveBeenCalledTimes(1)
+  })
+})
+
+/**
+ * 01-10-2026 (Alexis): una invitación rechazada sólo se podía reintentar desde
+ * el panel, después del registro; y en su máquina, donde el entorno de pruebas
+ * retiene los correos, la pantalla decía que el correo no salió como si fuera
+ * una falla.
+ */
+describe('<MembersStepForm> — reintentar y entorno de pruebas', () => {
+  const conUnaFallida: React.ComponentProps<typeof MembersStepForm>['pendingInvites'] = {
+    invitaciones: [
+      {
+        email: 'alex.dev+8@leasefy.co',
+        role: 'AGENTE',
+        nombre: '',
+        enlace: 'https://app.leasefy.co/invitacion/tok-8',
+        correoEnviado: false,
+        estadoDelCorreo: 'suppressed',
+        error: null,
+      },
+      {
+        email: 'alex.dev+9@leasefy.co',
+        role: 'ADMIN',
+        nombre: '',
+        enlace: null,
+        correoEnviado: false,
+        error: 'Alcanzaste el límite de agentes de tu plan. Sube de plan para agregar más.',
+      },
+    ],
+  }
+
+  it('«Reintentar» vuelve a pedir las fallidas', async () => {
+    const onReintentarInvitaciones = vi.fn().mockResolvedValue(undefined)
+    render({ pendingInvites: conUnaFallida, onReintentarInvitaciones })
+
+    clickButton('members-invite-retry')
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    expect(onReintentarInvitaciones).toHaveBeenCalledTimes(1)
+  })
+
+  it('sin quién reintente, no hay botón (y se dice dónde hacerlo después)', () => {
+    render({ pendingInvites: conUnaFallida })
+
+    expect(container.querySelector('[data-testid="members-invite-retry"]')).toBeFalsy()
+    expect(container.querySelector('[data-testid="members-invite-errors"]')?.textContent).toContain(
+      'Configuración',
+    )
+  })
+
+  it('🔴 sin el segundo factor de quien invita no se ofrece «Reintentar»: el back contestaría lo mismo (02-10)', () => {
+    const onReintentarInvitaciones = vi.fn()
+    render({
+      onReintentarInvitaciones,
+      pendingInvites: {
+        invitaciones: [
+          {
+            email: 'alex.dev+9@leasefy.co',
+            role: 'VIEWER',
+            nombre: '',
+            enlace: null,
+            correoEnviado: false,
+            error: 'Para invitar a tu equipo, Leasefy te pide el segundo factor y todavía no lo tienes activo.',
+            reintentable: false,
+          },
+        ],
+      },
+    })
+
+    expect(container.querySelector('[data-testid="members-invite-retry"]')).toBeFalsy()
+    const errores = container.querySelector('[data-testid="members-invite-errors"]')?.textContent ?? ''
+    expect(errores).not.toContain('Inténtalo de nuevo ahora')
+    // No se creó ninguna: la pantalla no dice «enviadas» ni «quedaron creadas».
+    const pantalla = container.querySelector('[data-testid="members-invite-links"]')?.textContent ?? ''
+    expect(pantalla).not.toContain('Invitaciones enviadas')
+    expect(pantalla).not.toContain('quedaron creadas')
+    expect(
+      container.querySelector('[data-testid="invite-error-alex.dev+9@leasefy.co"]')?.textContent,
+    ).toContain('segundo factor')
+  })
+
+  it('un correo retenido por el entorno de pruebas se dice como tal, con el enlace a la mano', () => {
+    render({ pendingInvites: conUnaFallida })
+
+    const aviso = container.querySelector('[data-testid="members-invite-warning"]')
+    expect(aviso?.textContent).toContain('entorno es de pruebas')
+    expect(container.querySelector('[data-testid="invite-copy-alex.dev+8@leasefy.co"]')).toBeTruthy()
+  })
+})
+
+/**
+ * 02-10-2026 · El 400 del micro trae `campos` con la ruta de la fila
+ * (`members.1.email`): el error va al correo de ESA persona, con foco, y no a
+ * un aviso con todo junto.
+ */
+describe('<MembersStepForm> — los errores del servidor en su fila', () => {
+  function errorDelMicro(campos: { campo: string; regla: string; mensaje: string }[]) {
+    return Object.assign(new Error(campos.map((c) => c.mensaje).join('; ')), {
+      name: 'OnboardingSessionError',
+      kind: 'validation',
+      status: 400,
+      campos,
+      detalle: { statusCode: 400, code: 'DATOS_INVALIDOS', campos },
+    })
+  }
+
+  const DOS_FILAS = [
+    { email: 'ana@acme.co', nombre: '', role: 'AGENTE' as const },
+    { email: 'luis@acme', nombre: '', role: 'CONTADOR' as const },
+  ]
+
+  it('🔴 `members.1.email` va al correo de la fila 2, con foco y sin aviso', async () => {
+    const MENSAJE = 'Revisa el correo: debe tener la forma nombre@dominio.com.'
+    render({
+      guardados: DOS_FILAS,
+      errorDelServidor: errorDelMicro([{ campo: 'members.1.email', regla: 'correo', mensaje: MENSAJE }]),
+    })
+    // `setFocus` de react-hook-form enfoca en el siguiente turno.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    const correo = byId('members.1.email')
+    expect(container.querySelector('[id="members.1.email-error"]')?.textContent).toBe(MENSAJE)
+    expect(correo.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(correo)
+    expect(container.querySelector('[id="members.0.email-error"]')).toBeNull()
+    expect(container.querySelector('[data-testid="members-step-form-error"]')).toBeNull()
+  })
+
+  it('lo que no es de una fila (la lista entera) va al aviso', () => {
+    render({
+      guardados: DOS_FILAS,
+      errorDelServidor: errorDelMicro([
+        { campo: 'members', regla: 'lista_maxima', mensaje: 'Puedes elegir como máximo 50 en los miembros.' },
+      ]),
+    })
+    expect(container.querySelector('[data-testid="members-step-form-error"]')?.textContent).toBe(
+      'Puedes elegir como máximo 50 en los miembros.',
+    )
   })
 })

@@ -51,6 +51,7 @@ import {
   mensajeDeCuota,
   mensajeDeDocumento,
   mensajeDeGiro,
+  mensajeDeLosGiros,
   mesEnPalabras,
 } from '@/components/messages/pendientes-a-mensaje';
 
@@ -258,11 +259,34 @@ export function PendientesDelHiloPopover({
                           : ` · ${formatearPesos(estado.datos.totales.enCarteraCop)} in collections`)}
                     </p>
                   )}
+                  {/* 🔴 «Por girar» → UNA sola cifra: hasta el mes en curso,
+                      neta de sus deducciones; los meses siguientes aparte
+                      (Nico, 04-10-2026). Es la de las pantallas de la
+                      inmobiliaria y la de su estado de cuenta. */}
                   {estado.datos.totales.porGirarCop > 0 && (
-                    <p>
+                    <p data-testid="pendientes-por-girar">
                       {es
                         ? `Le debemos ${formatearPesos(estado.datos.totales.porGirarCop)} en giros`
                         : `We owe them ${formatearPesos(estado.datos.totales.porGirarCop)} in payouts`}
+                      {estado.datos.totales.porGirarHastaMes &&
+                        (es
+                          ? ` hasta ${mesEnPalabras(estado.datos.totales.porGirarHastaMes)}`
+                          : ` up to ${mesEnPalabras(estado.datos.totales.porGirarHastaMes)}`)}
+                      {(estado.datos.totales.deduccionesCop ?? 0) > 0 &&
+                        (es
+                          ? ` · ya descontados ${formatearPesos(estado.datos.totales.deduccionesCop ?? 0)} de deducciones`
+                          : ` · ${formatearPesos(estado.datos.totales.deduccionesCop ?? 0)} in deductions already taken off`)}
+                    </p>
+                  )}
+                  {(estado.datos.totales.proximosGirosCop ?? 0) > 0 && (
+                    <p data-testid="pendientes-proximos-giros">
+                      {es
+                        ? `Próximos giros: ${formatearPesos(estado.datos.totales.proximosGirosCop ?? 0)}`
+                        : `Upcoming payouts: ${formatearPesos(estado.datos.totales.proximosGirosCop ?? 0)}`}
+                      {estado.datos.totales.proximosGirosHastaMes &&
+                        (es
+                          ? ` (hasta ${mesEnPalabras(estado.datos.totales.proximosGirosHastaMes)})`
+                          : ` (up to ${mesEnPalabras(estado.datos.totales.proximosGirosHastaMes)})`)}
                     </p>
                   )}
                 </div>
@@ -289,6 +313,26 @@ export function PendientesDelHiloPopover({
 
               {estado.datos.giros.length > 0 && (
                 <Grupo titulo={es ? 'Giros que le debemos' : 'Payouts we owe'}>
+                  {/* El total en UN mensaje, con la misma cifra del titular. */}
+                  {estado.datos.totales.porGirarCop > 0 && (
+                    <Fila
+                      testid="pendiente-giros-total"
+                      icono={
+                        <CurrencyCircleDollar className="h-4 w-4 text-primary" aria-hidden="true" />
+                      }
+                      titulo={
+                        es
+                          ? `Todos · ${formatearPesos(estado.datos.totales.porGirarCop)}`
+                          : `All · ${formatearPesos(estado.datos.totales.porGirarCop)}`
+                      }
+                      detalle={
+                        es
+                          ? 'Mandarle el total de lo que le debemos'
+                          : 'Send them the total we owe'
+                      }
+                      onClick={() => elegir(mensajeDeLosGiros(estado.datos.totales, nombre))}
+                    />
+                  )}
                   {estado.datos.giros.map((giro) => (
                     <Fila
                       key={giro.id}
@@ -306,6 +350,17 @@ export function PendientesDelHiloPopover({
                       onClick={() => elegir(mensajeDeGiro(giro, nombre))}
                     />
                   ))}
+                  {/* La lista se corta en 20; el titular no. Se dice cuántos faltan. */}
+                  {(estado.datos.totales.girosPorGirar ?? 0) > estado.datos.giros.length && (
+                    <li
+                      className="px-2 py-1 text-caption text-fg-muted"
+                      data-testid="pendientes-giros-mas"
+                    >
+                      {es
+                        ? `y ${(estado.datos.totales.girosPorGirar ?? 0) - estado.datos.giros.length} giros más en el total`
+                        : `and ${(estado.datos.totales.girosPorGirar ?? 0) - estado.datos.giros.length} more payouts in the total`}
+                    </li>
+                  )}
                 </Grupo>
               )}
 

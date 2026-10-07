@@ -38,6 +38,7 @@ import { ConversacionesTab } from './tabs/ConversacionesTab'
 import { CodeudoresTab } from './tabs/CodeudoresTab'
 import { ReporteTab } from './tabs/ReporteTab'
 import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 const NS = 'inmobiliaria.ai.estudio'
 
@@ -119,13 +120,21 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
   )
 
   // ── Skeleton (primera carga, sin respuesta aún) ──────────────────────────
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // estudio, → no disponible); adentro, «en proceso» → el expediente y cada
+  // pestaña se cruzan con su fundido.
   if (isLoading && status === null && !notAvailable && !error) {
-    return <EstudioDetailSkeleton />
+    return (
+      <CrossFade swapKey="esqueleto">
+        <EstudioDetailSkeleton />
+      </CrossFade>
+    )
   }
 
   // ── 404 — run inexistente o ajeno ────────────────────────────────────────
   if (notAvailable) {
     return (
+      <CrossFade swapKey="no-disponible">
       <div className="p-4 lg:p-8">
         <EmptyState
           icon={FileMagnifyingGlass}
@@ -140,12 +149,14 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
           }}
         />
       </div>
+      </CrossFade>
     )
   }
 
   const inProgress = status === 'pending' || status === 'processing'
 
   return (
+    <CrossFade swapKey="estudio">
     <div className="p-4 lg:p-8 pb-8">
       {/* Header */}
       <header className="mb-5">
@@ -161,8 +172,7 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
       </header>
 
       {/* Error banner (no bloqueante) */}
-      {error && (
-        <div
+      <Presence show={Boolean(error)}
           role="alert"
           className="mb-5 rounded-lg border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-3"
         >
@@ -173,8 +183,7 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
             <ArrowClockwise className="w-3.5 h-3.5" weight="bold" aria-hidden="true" />
             {tf(`${NS}.detalle.reintentar`, 'Reintentar')}
           </Button>
-        </div>
-      )}
+      </Presence>
 
       {/* 3-zonas: contexto | expediente | recomendación */}
       <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[280px_minmax(0,1fr)_280px] xl:grid-cols-[320px_minmax(0,1fr)_320px] lg:items-start">
@@ -192,6 +201,7 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
             </span>
           </h2>
 
+          <CrossFade swapKey={inProgress ? 'en-proceso' : !decision || !result ? 'sin-datos' : 'expediente'}>
           {inProgress || !decision || !result ? (
             <div className="rounded-lg border border-border bg-card p-8 text-center">
               {inProgress ? (
@@ -226,6 +236,9 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
               </TabsList>
 
               <TabsContent value={activeTab}>
+                {/* Otra pestaña, otro panel: el viejo sale y el nuevo entra (el
+                    `TabsContent` es el mismo nodo para todas). */}
+                <CrossFade swapKey={activeTab}>
                 {activeTab === 'decision' && <DecisionTab decision={decision} onAction={onAction} />}
                 {activeTab === 'indicadores' && <IndicadoresTab decision={decision} />}
                 {activeTab === 'documentos' && <DocumentosTab result={result} />}
@@ -237,9 +250,11 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
                 )}
                 {activeTab === 'codeudores' && <CodeudoresTab decision={decision} result={result} />}
                 {activeTab === 'reporte' && <ReporteTab decision={decision} result={result} />}
+                </CrossFade>
               </TabsContent>
             </Tabs>
           )}
+          </CrossFade>
         </section>
 
         {/* DERECHA — recomendación IA */}
@@ -248,5 +263,6 @@ export default function EstudioDetailClient({ runId }: { runId: string }) {
         </div>
       </div>
     </div>
+    </CrossFade>
   )
 }

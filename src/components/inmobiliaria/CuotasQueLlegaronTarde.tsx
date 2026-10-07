@@ -49,7 +49,12 @@ export function CuotasQueLlegaronTarde({ tardias }: { tardias: CuotasTardias[] }
               <p className="font-medium text-fg">{t.propietarioName || '—'}</p>
               <p className="text-xs text-fg-muted">
                 {t.cuotas} {t.cuotas === 1 ? 'cuota' : 'cuotas'} ·{' '}
-                {t.seSuman ? 'se suman al confirmar' : (t.motivo ?? 'no se pueden sumar')}
+                {t.seSuman
+                  ? 'se suman al confirmar'
+                  : t.complementaria
+                    ? /* PG-R03 (Nico): su mes ya se giró; van aparte y se giran en el próximo lote. */
+                      'van en una liquidación complementaria de ese mes, que se gira en el próximo lote'
+                    : (t.motivo ?? 'no se pueden sumar')}
               </p>
             </div>
             <span className="shrink-0 font-mono tabular-nums text-fg">

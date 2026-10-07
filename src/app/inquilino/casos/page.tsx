@@ -29,6 +29,8 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { AnimatedNumber } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import {
   CreditCard,
   FileText,
@@ -54,7 +56,7 @@ import { useI18n } from '@/lib/i18n';
 import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
-import { Spinner } from '@/components/ui/spinner';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import type { BadgeProps } from '@/components/ui/badge';
 import type { CaseTone, CaseType, TenantCase } from '@/lib/types/tenant-case';
 
@@ -105,20 +107,16 @@ function formatRelative(iso: string, locale: string): string {
 // Case row
 // ============================================================================
 
-function CaseRow({ c, index, locale }: { c: TenantCase; index: number; locale: string }) {
+function CaseRow({ c, locale }: { c: TenantCase; locale: string }) {
   const TypeIcon = TYPE_ICON[c.type] ?? ClipboardText;
   const badge = TONE_BADGE[c.tone];
   const ToneIcon = badge.icon;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-    >
+    <div>
       <Link href={c.detailLink} className="group block">
-        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-4 sm:p-5 flex items-center gap-4 hover:border-border dark:hover:border-border-strong transition-colors">
-          <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+        <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-4 sm:p-5 flex items-center gap-4 hover:border-border dark:hover:border-border-strong transition-colors">
+          <div className="w-11 h-11 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
             <TypeIcon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
           </div>
 
@@ -127,6 +125,12 @@ function CaseRow({ c, index, locale }: { c: TenantCase; index: number; locale: s
               <h3 className="text-sm sm:text-base font-semibold text-fg dark:text-white group-hover:text-primary transition-colors truncate">
                 {c.titulo}
               </h3>
+              {/* SO-20: el número de radicado también en la lista. */}
+              {c.solicitud?.radicado && (
+                <span className="font-mono text-xs text-fg-muted" data-testid="caso-radicado-lista">
+                  {c.solicitud.radicado}
+                </span>
+              )}
               <Badge variant={badge.variant} className="inline-flex items-center gap-1">
                 <ToneIcon className="w-3 h-3" aria-hidden="true" />
                 {c.estadoLabel}
@@ -142,7 +146,7 @@ function CaseRow({ c, index, locale }: { c: TenantCase; index: number; locale: s
           <CaretRight className="w-5 h-5 text-fg-subtle group-hover:text-primary transition-colors flex-shrink-0" />
         </div>
       </Link>
-    </motion.div>
+    </div>
   );
 }
 
@@ -158,11 +162,15 @@ export default function CasosPage() {
   // subtle badge. This hook owns its own existing poll — no new poller is added here.
   const { unreadCount } = useTenantNotifications();
 
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isOnboardingLoading || isCasesLoading);
+
   // Loading gate — never flash a fake-empty while any source is in flight.
   if (isOnboardingLoading || isCasesLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10] flex items-center justify-center">
-        <Spinner size="lg" variant="current" className="text-primary" />
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+        {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
+        <EsqueletoDePagina variante="list" className="mx-auto max-w-7xl" />
       </div>
     );
   }
@@ -170,7 +178,7 @@ export default function CasosPage() {
   // Onboarding gate.
   if (!isOnboardingComplete) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <CompleteProfileFirst context="rental" />
         </div>
@@ -182,7 +190,7 @@ export default function CasosPage() {
   // this only fires on a hard aggregate failure.
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <EmptyState
             icon={XCircle}
@@ -196,15 +204,11 @@ export default function CasosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <h1 className="text-3xl font-medium text-fg dark:text-white tracking-tight">
             {locale === 'es' ? 'Mis casos' : 'My cases'}
           </h1>
@@ -213,40 +217,29 @@ export default function CasosPage() {
               ? 'Tus pagos y postulaciones en curso, en un solo lugar.'
               : 'Your ongoing payments and applications, all in one place.'}
           </p>
-        </motion.header>
+        </header>
 
-        {/* CASO-03 — in-app notification strip (real) + push/WhatsApp Próximamente (honest) */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="mb-8 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 flex flex-col sm:flex-row sm:items-center gap-4"
+        {/* CASO-03 — el aviso dentro del portal (real); sin promesas de push ni WhatsApp (QA-INQ-95). */}
+        <div
+          className="mb-8 rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 flex flex-col sm:flex-row sm:items-center gap-4"
         >
-          <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
             <Bell className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
           </div>
           <div className="flex-1 min-w-0">
+            {/* QA-INQ-95 (PI-30): sin «Próximamente»: se dice lo que hay hoy. */}
             <p className="text-sm font-semibold text-fg dark:text-white">
               {locale === 'es'
-                ? 'Te avisamos in-app cuando cambia el estado de un caso'
-                : 'We notify you in-app when a case status changes'}
+                ? 'Te avisamos en el portal cuando cambia el estado de un caso'
+                : 'We let you know in the portal when a case status changes'}
             </p>
             <p className="text-xs text-fg-muted dark:text-fg-subtle mt-0.5">
               {locale === 'es'
-                ? 'Push y WhatsApp llegarán próximamente.'
-                : 'Push and WhatsApp are coming soon.'}
+                ? 'Los avisos quedan en la campana de arriba y en Notificaciones.'
+                : 'Notices stay in the bell at the top and in Notifications.'}
             </p>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
-            {/* Push / WhatsApp — disabled affordance, never an "activado" state */}
-            <span
-              className="inline-flex items-center gap-1.5 text-xs text-fg-subtle dark:text-fg-muted select-none"
-              aria-disabled="true"
-              title={locale === 'es' ? 'Aún no disponible' : 'Not available yet'}
-            >
-              <ChatCircle className="w-4 h-4" aria-hidden="true" />
-              {locale === 'es' ? 'Push · WhatsApp — Próximamente' : 'Push · WhatsApp — Coming soon'}
-            </span>
             <Link
               href="/inquilino/notificaciones"
               className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:opacity-80 transition-opacity"
@@ -254,25 +247,21 @@ export default function CasosPage() {
               {locale === 'es' ? 'Ver notificaciones' : 'View notifications'}
               {unreadCount > 0 && (
                 <Badge variant="default" className="ml-0.5 h-auto px-2 py-0.5 font-mono tabular-nums">
-                  {unreadCount}
+                  {/* El conteo llega por sondeo: cuando cambia, cuenta. */}
+                  <AnimatedNumber value={unreadCount} />
                 </Badge>
               )}
               <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
             </Link>
           </div>
-        </motion.div>
+        </div>
 
         {/* Case list (CASO-01) — real rows, or an honest neutral "todo al día" empty */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-10"
-        >
+        <section className="mb-10">
           {cases.length > 0 ? (
             <div className="space-y-3">
-              {cases.map((c, index) => (
-                <CaseRow key={c.id} c={c} index={index} locale={locale} />
+              {cases.map((c) => (
+                <CaseRow key={c.id} c={c} locale={locale} />
               ))}
             </div>
           ) : (
@@ -284,14 +273,10 @@ export default function CasosPage() {
                 : 'You have no open cases right now.'}
             />
           )}
-        </motion.section>
+        </section>
 
         {/* More in the portal — one REAL entry point (Solicitudes) + honest Próximamente (Acuerdos) */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-        >
+        <section>
           <h2 className="text-sm font-mono uppercase tracking-wide text-fg-subtle dark:text-fg-muted mb-4">
             {locale === 'es' ? 'Más en tu portal' : 'More in your portal'}
           </h2>
@@ -299,7 +284,7 @@ export default function CasosPage() {
             {/* Real entry point — PQRS + mantenimiento now flow through /inquilino/solicitudes */}
             <Link
               href="/inquilino/solicitudes"
-              className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6 space-y-4 block hover:border-primary/40 transition-colors"
+              className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6 space-y-4 block hover:border-primary/40 transition-colors"
             >
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
@@ -325,7 +310,7 @@ export default function CasosPage() {
             {/* Real entry point — approved acuerdos now flow through /inquilino/acuerdos */}
             <Link
               href="/inquilino/acuerdos"
-              className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6 space-y-4 block hover:border-primary/40 transition-colors"
+              className="group rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6 space-y-4 block hover:border-primary/40 transition-colors"
             >
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center flex-shrink-0">
@@ -348,9 +333,9 @@ export default function CasosPage() {
               </span>
             </Link>
           </div>
-        </motion.section>
+        </section>
 
-      </div>
+      </motion.div>
     </div>
   );
 }

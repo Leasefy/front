@@ -45,10 +45,10 @@ describe('formatCanon (detalle de contrato)', () => {
   })
 
   it('un canon real de $0 sigue siendo un dato, no se confunde con ausente', () => {
-    expect(formatCanon(0)).toBe('$ 0')
+    expect(formatCanon(0)).toBe('$\u00a00')
   })
 
   it('formatea un canon real sin cambios', () => {
-    expect(formatCanon(1500000)).toBe('$ 1.500.000')
+    expect(formatCanon(1500000)).toBe('$\u00a01.500.000')
   })
 })

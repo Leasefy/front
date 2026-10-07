@@ -22,11 +22,23 @@ export const DISPARADORES_DE_REGLA = ['DIAS_DE_MORA', 'DIA_DEL_MES'] as const;
 export type DisparadorDeRegla = (typeof DISPARADORES_DE_REGLA)[number];
 
 /**
+ * `INTERES_MENSUAL` (PPF-05, QA-PAGOS-95 r2): la tasa del MES a prorrata por día
+ * de mora (base 30): el 2 % mensual da exactamente 2 % en 30 días.
  * `INTERES_DIARIO`: tasa aplicada una vez POR DÍA de mora sobre la base.
  * `PORCENTAJE_DE_LA_BASE`: un porcentaje único de la base, el día que se dispara.
  * `MONTO_FIJO`: un monto en pesos.
  */
-export const FORMULAS_DE_REGLA = ['INTERES_DIARIO', 'PORCENTAJE_DE_LA_BASE', 'MONTO_FIJO'] as const;
+export const FORMULAS_DE_REGLA = [
+  'INTERES_MENSUAL',
+  'INTERES_DIARIO',
+  'PORCENTAJE_DE_LA_BASE',
+  'MONTO_FIJO',
+] as const;
+
+/** Las fórmulas que son interés (no componen; base topada en el capital). */
+export function esFormulaDeInteres(formula: string): boolean {
+  return formula === 'INTERES_DIARIO' || formula === 'INTERES_MENSUAL';
+}
 export type FormulaDeRegla = (typeof FORMULAS_DE_REGLA)[number];
 
 /** Sobre qué plata se calcula. `TOTAL_ADEUDADO` compone: ve los recargos previos. */

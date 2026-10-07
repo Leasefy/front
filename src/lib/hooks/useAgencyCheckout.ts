@@ -30,6 +30,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { agencySubscriptionApi } from '@/lib/api/agency-subscription.service';
 import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 export type AgencyCheckoutState =
   | 'idle'
@@ -328,7 +329,13 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
         await agencySubscriptionApi.selectPlan(planId);
         succeed();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'No se pudo activar el plan.');
+        // Con la regla de oro (02-10-2026): un 4xx dice lo que escribió el
+        // back (un 402 sin texto legible, la frase de su `code`); un 5xx, que
+        // falló de nuestro lado con la referencia; «conexión», sólo sin
+        // respuesta. Antes iba `err.message` crudo.
+        setError(
+          mensajeParaLaPersona(err, { porDefecto: 'No se pudo activar el plan.', accion: 'activar el plan' }),
+        );
         setState('error');
       }
     },
@@ -465,7 +472,11 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
         return;
       }
 
-      setError(err instanceof Error ? err.message : 'No se pudo iniciar el pago.');
+      // Lo demás, con la regla de oro (02-10-2026): el 4xx con su motivo (un
+      // 402 `PLAN_REQUERIDO`/`LIMITE_DEL_PLAN` sin texto legible dice la frase
+      // de su `code`, `codigos-del-plan.ts`); el 5xx «de nuestro lado» con la
+      // referencia; «conexión», sólo sin respuesta.
+      setError(mensajeParaLaPersona(err, { porDefecto: 'No se pudo iniciar el pago.', accion: 'iniciar el pago' }));
       setState('error');
     }
   }, [recoverAlreadyPaidCharge]);
@@ -564,7 +575,9 @@ export function useAgencyCheckout(onSuccess: () => void): UseAgencyCheckout {
         // closed, same principle as `supersedeOpenCharge`). Non-blocking:
         // the overlay is already closed, and the 24h reaper eventually
         // cleans up the still-PENDING charge, same as before this task.
-        toast.error('No pudimos cancelar el cobro pendiente en este momento.');
+        toast.error('No pudimos cancelar el cobro pendiente en este momento.', {
+          description: mensajeParaLaPersona(err, { accion: 'cancelar el cobro pendiente' }),
+        });
       }
     })();
   }, [recoverAlreadyPaidCharge]);

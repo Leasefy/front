@@ -10,6 +10,7 @@ import {
   leerLiquidacionFrenada,
   loteQueTieneLaDispersion,
   motivoLegible,
+  motivoDeUnaAccion,
   RUTA_INMUEBLES,
 } from './dispersiones-errores';
 
@@ -114,5 +115,35 @@ describe('loteQueTieneLaDispersion (23-09)', () => {
       loteQueTieneLaDispersion(new ApiError(409, 'x', 'DISPERSION_EN_UN_LOTE'))?.href,
     ).toBe('/panel/inmobiliaria/pagos/dispersiones/lotes');
     expect(loteQueTieneLaDispersion(new ApiError(409, 'x', 'APROBAR_POR_LOTE'))).toBeNull();
+  });
+});
+
+describe('motivoLegible / motivoDeUnaAccion delegan en el traductor (02-10)', () => {
+  it('🔴 un 4xx con un volcado o un HTML no es un motivo para leer', () => {
+    expect(motivoLegible(new ApiError(400, '<html><body>Bad Request</body></html>'))).toBeNull();
+    expect(
+      motivoLegible(new ApiError(409, 'Invalid `prisma.dispersion.update()` invocation')),
+    ).toBeNull();
+  });
+
+  it('un 400 de validación con varios problemas los dice todos', () => {
+    expect(
+      motivoLegible(new ApiError(400, ['La referencia del giro puede tener hasta 100 caracteres.', 'Falta el banco.'])),
+    ).toBe('La referencia del giro puede tener hasta 100 caracteres. · Falta el banco.');
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia; la red, la conexión', () => {
+    const cinco = new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      referencia: 'ab12cd34',
+    });
+    const texto = motivoDeUnaAccion(cinco, 'aprobar el lote');
+    expect(texto).toContain('No pudimos aprobar el lote: algo falló de nuestro lado');
+    expect(texto).toContain('ab12cd34');
+    expect(motivoDeUnaAccion(new ApiError(0, 'Failed to fetch'), 'aprobar el lote')).toMatch(/conexi[oó]n/);
+    expect(motivoDeUnaAccion(new ApiError(409, 'El lote ya está aprobado.'), 'aprobar el lote')).toBe(
+      'El lote ya está aprobado.',
+    );
   });
 });

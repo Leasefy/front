@@ -4,8 +4,8 @@
  * 🔴 Decía: «El inquilino ya fue notificado para que firme digitalmente».
  *
  * Es imposible. En este flujo la inmobiliaria firma ÚLTIMA:
- * `ContractsService.signAsLandlord` rechaza con «Tenant must sign first» si
- * `contract.tenantSignature` está vacío, y al pasar deja el contrato en
+ * `ContractsService.signAsLandlord` rechaza con 400 `INQUILINO_NO_HA_FIRMADO`
+ * si `contract.tenantSignature` está vacío, y al pasar deja el contrato en
  * SIGNED. O sea que cuando esta pantalla aparece, el inquilino YA firmó: no
  * hay nadie a quien notificar y no queda ningún paso. La pantalla anunciaba
  * como pendiente algo que ya había pasado, y dejaba a quien acababa de firmar
@@ -53,6 +53,9 @@ const CONTRATO = {
   uploadedPdfPath: null,
 };
 
+// El contrato que ve la pantalla; cada prueba puede cambiarlo.
+let contratoEnPantalla: Record<string, unknown> = CONTRATO;
+
 // Los helpers que leen el error (`mensajeDelFallo`, `isPermissionError`) van
 // REALES: son justamente lo que se prueba cuando el back rechaza.
 vi.mock('@/lib/hooks/useContracts', async () => {
@@ -60,7 +63,7 @@ vi.mock('@/lib/hooks/useContracts', async () => {
   return {
     ...real,
     useContract: () => ({
-      contract: CONTRATO,
+      contract: contratoEnPantalla,
       isLoading: false,
       error: null,
       setContract: vi.fn(),
@@ -81,6 +84,7 @@ let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  contratoEnPantalla = CONTRATO;
   signAsLandlordMock.mockReset().mockResolvedValue({ ...CONTRATO, status: 'signed' });
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -134,11 +138,37 @@ describe('Firmar contrato — cuando el back rechaza, se dice el motivo', () => 
     });
   }
 
-  it('400 «Tenant must sign first» → «El inquilino todavía no firmó», y no se anuncia el cierre', async () => {
-    signAsLandlordMock.mockReset().mockRejectedValue(new ApiError(400, 'Tenant must sign first'));
+  it('🔴 400 `INQUILINO_NO_HA_FIRMADO` → la pantalla dice lo mismo que de entrada: aviso visible y botón apagado', async () => {
+    const message = 'El inquilino todavía no firmó. Puedes firmar como arrendador cuando él lo haga.';
+    signAsLandlordMock.mockReset().mockRejectedValue(
+      new ApiError(400, message, 'INQUILINO_NO_HA_FIRMADO', {
+        statusCode: 400,
+        code: 'INQUILINO_NO_HA_FIRMADO',
+        message,
+      }),
+    );
     await firmar();
-    expect(toast.error).toHaveBeenCalledWith('El inquilino todavía no firmó. No puedes firmar hasta que lo haga.');
+    // Ni toast que se va ni el genérico: el aviso queda en la pantalla.
+    expect(toast.error).not.toHaveBeenCalled();
     expect(container.querySelector('[data-testid="firmado-cierre"]')).toBeNull();
+    const bloqueo = container.querySelector('[data-testid="firma-bloqueada"]');
+    expect(bloqueo).not.toBeNull();
+    expect(bloqueo!.textContent).toContain('El inquilino todavía no ha firmado');
+    const boton = container.querySelector('[data-testid="firmar-como-arrendador-apagado"]') as HTMLButtonElement;
+    expect(boton.disabled).toBe(true);
+    // El formulario que dispara la firma ya no está: no se puede reintentar a ciegas.
+    expect(container.querySelector('[data-testid="firmar"]')).toBeNull();
+    expect(container.textContent).not.toContain('El inquilino ya firmó');
+  });
+
+  it('🔴 se decide por el CÓDIGO, no por el texto: un 400 con la frase pero sin el código no apaga la firma', async () => {
+    signAsLandlordMock
+      .mockReset()
+      .mockRejectedValue(new ApiError(400, 'El inquilino todavía no ha firmado. Tenant must sign first'));
+    await firmar();
+    expect(container.querySelector('[data-testid="firma-bloqueada"]')).toBeNull();
+    expect(container.querySelector('[data-testid="firmar"]')).not.toBeNull();
+    expect(toast.error).toHaveBeenCalledWith('No se pudo firmar el contrato.', expect.anything());
   });
 
   it('403 → dice que es de permisos', async () => {
@@ -156,5 +186,87 @@ describe('Firmar contrato — cuando el back rechaza, se dice el motivo', () => 
       description: 'Este contrato no está pendiente de tu firma.',
     });
     expect(container.querySelector('[data-testid="firmado-cierre"]')).toBeNull();
+  });
+
+  it('🔴 02-10 · un 5xx dice que falló de nuestro lado, con la referencia, y no culpa a la conexión', async () => {
+    signAsLandlordMock.mockReset().mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        referencia: 'f1e2d3c4',
+      }),
+    );
+    await firmar();
+    const [titulo, opciones] = vi.mocked(toast.error).mock.calls[0] as [string, { description: string }];
+    expect(titulo).toBe('No se pudo firmar el contrato.');
+    expect(opciones.description).toContain('No pudimos firmar el contrato: algo falló de nuestro lado.');
+    expect(opciones.description).toContain('f1e2d3c4');
+    expect(opciones.description).not.toContain('conexión');
+  });
+
+  it('🔴 02-10 · sin respuesta (status 0) habla de la conexión', async () => {
+    signAsLandlordMock.mockReset().mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await firmar();
+    const [, opciones] = vi.mocked(toast.error).mock.calls[0] as [string, { description: string }];
+    expect(opciones.description).toContain('conexión');
+  });
+});
+
+/**
+ * 🔴 Nico (02-10-2026): si el inquilino todavía no ha firmado, el botón de
+ * firmar como arrendador sale APAGADO y la pantalla lo explica ANTES de
+ * intentar — no después del 400. Y un botón apagado necesita su motivo a la
+ * vista, no sólo un `title` («un botón apagado puede tapar una trampa»).
+ */
+describe('Firmar contrato — el inquilino todavía no ha firmado', () => {
+  function comprobarBloqueo() {
+    const bloqueo = container.querySelector('[data-testid="firma-bloqueada"]');
+    expect(bloqueo).not.toBeNull();
+    const motivo = container.querySelector('#firma-bloqueada-motivo');
+    expect(motivo).not.toBeNull();
+    expect(motivo!.textContent).toContain('El inquilino todavía no ha firmado');
+    const boton = container.querySelector('[data-testid="firmar-como-arrendador-apagado"]') as HTMLButtonElement;
+    expect(boton).not.toBeNull();
+    expect(boton.disabled).toBe(true);
+    expect(boton.textContent).toContain('Firmar como arrendador');
+    // El motivo está atado al botón y se ve: no vive en un `title`.
+    expect(boton.getAttribute('aria-describedby')).toBe('firma-bloqueada-motivo');
+    expect(boton.getAttribute('title')).toBeNull();
+    // No hay forma de disparar la firma, y no se dice lo contrario.
+    expect(container.querySelector('[data-testid="firmar"]')).toBeNull();
+    expect(container.textContent).not.toContain('El inquilino ya firmó');
+    expect(signAsLandlordMock).not.toHaveBeenCalled();
+  }
+
+  it('🔴 pendiente del arrendador pero sin la firma del inquilino → botón apagado y el motivo a la vista, sin pedir nada al back', () => {
+    contratoEnPantalla = { ...CONTRATO, tenantSignature: null };
+    act(() => root.render(<FirmarContratoPage />));
+    comprobarBloqueo();
+  });
+
+  it('🔴 contrato pendiente del inquilino → lo mismo, en vez de «no está pendiente de tu firma»', () => {
+    contratoEnPantalla = { ...CONTRATO, status: 'pending_tenant', tenantSignature: null };
+    act(() => root.render(<FirmarContratoPage />));
+    comprobarBloqueo();
+    expect(container.querySelector('[data-testid="firmar-no-pendiente"]')).toBeNull();
+  });
+
+  it('con la firma del inquilino → el formulario de firma de siempre, sin el aviso', () => {
+    act(() => root.render(<FirmarContratoPage />));
+    expect(container.querySelector('[data-testid="firma-bloqueada"]')).toBeNull();
+    expect(container.querySelector('[data-testid="firmar"]')).not.toBeNull();
+  });
+
+  it('un contrato ya firmado o en borrador sigue diciendo que no está pendiente de tu firma', () => {
+    contratoEnPantalla = { ...CONTRATO, status: 'signed' };
+    act(() => root.render(<FirmarContratoPage />));
+    expect(container.querySelector('[data-testid="firmar-no-pendiente"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="firma-bloqueada"]')).toBeNull();
+    act(() => root.unmount());
+    root = createRoot(container);
+    contratoEnPantalla = { ...CONTRATO, status: 'draft', tenantSignature: null };
+    act(() => root.render(<FirmarContratoPage />));
+    expect(container.querySelector('[data-testid="firmar-no-pendiente"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="firma-bloqueada"]')).toBeNull();
   });
 });

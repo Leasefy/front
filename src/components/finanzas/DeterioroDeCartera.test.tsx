@@ -261,6 +261,9 @@ describe('deterioro de cartera', () => {
     h.aprobar.mockResolvedValue({ ...provision({ estado: 'APROBADA' }), mismoAprobador: true });
     await pintar();
     expect(document.body.querySelector('[data-testid="mismo-aprobador"]')).toBeNull();
+    // Al volver a leer, el back ya la tiene APROBADA (CB-31: el aviso sólo va
+    // con una provisión aprobada).
+    h.deterioro.mockResolvedValue(datos({ provision: provision({ estado: 'APROBADA' }) }));
     await act(async () => {
       document.body.querySelector<HTMLButtonElement>('[data-testid="aprobar"]')!.click();
     });
@@ -337,7 +340,48 @@ describe('deterioro de cartera', () => {
 
 describe('piezas puras', () => {
   it('el rango en días se escribe con y sin tope', () => {
-    expect(rangoEnDias({ desdeDias: 90, hastaDias: 180 })).toBe('90 a 180 días');
-    expect(rangoEnDias({ desdeDias: 180, hastaDias: null })).toBe('180+ días');
+    // 🔴 CB-08 (03-10-2026): los tramos no comparten el 90. El back cuenta
+    // `desde <= días < hasta`, así que el último día del tramo es `hasta − 1`.
+    // Con los tramos del back 26beefbc (0–91, 91–181, 181+).
+    expect(rangoEnDias({ desdeDias: 0, hastaDias: 91 })).toBe('De 0 a 90 días');
+    expect(rangoEnDias({ desdeDias: 91, hastaDias: 181 })).toBe('De 91 a 180 días');
+    expect(rangoEnDias({ desdeDias: 181, hastaDias: null })).toBe('Más de 180 días');
+    // Con los de antes (0–90, 90–180, 180+) tampoco se comparte el 90.
+    expect(rangoEnDias({ desdeDias: 0, hastaDias: 90 })).toBe('De 0 a 89 días');
+    expect(rangoEnDias({ desdeDias: 90, hastaDias: 180 })).toBe('De 90 a 179 días');
+  });
+});
+
+describe('QA de Contabilidad (CB-31, 03-10-2026)', () => {
+  it('🔴 después de anular, el aviso de «la propusiste y la aprobaste tú» ya no sale', async () => {
+    h.deterioro.mockResolvedValue(datos({ provision: provision() }));
+    h.aprobar.mockResolvedValue({ ...provision({ estado: 'APROBADA' }), mismoAprobador: true });
+    await pintar();
+    h.deterioro.mockResolvedValue(datos({ provision: provision({ estado: 'APROBADA' }) }));
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('[data-testid="aprobar"]')!.click();
+    });
+    await act(async () => {
+      botones('Aprobar y asentar').at(-1)!.click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(texto('mismo-aprobador')).toContain('segundo par de ojos');
+
+    // Se anula: el mes vuelve a «Sin proponer» y el aviso se va con la provisión.
+    h.deterioro.mockResolvedValue(datos({ provision: null }));
+    await act(async () => {
+      document.body.querySelector<HTMLButtonElement>('[data-testid="anular"]')!.click();
+    });
+    const motivo = document.body.querySelector<HTMLTextAreaElement>('textarea')!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(motivo, 'Se aprobó con los porcentajes de otro mes');
+      motivo.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => {
+      botones('Anular').at(-1)!.click();
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(texto('estado-de-la-provision')).toBe('Sin proponer');
+    expect(document.body.querySelector('[data-testid="mismo-aprobador"]')).toBeNull();
   });
 });

@@ -19,6 +19,14 @@ vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ locale: 'es', t: (k: string) => k, formatDate: () => '1 sept 2026' }),
 }))
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({ useAgentes: () => ({ agentes: [] }) }))
+// PQRS-FIX (04-10): el cajón pide el detalle y los responsables al abrir (SO-22).
+vi.mock('@/lib/api/pqrs-agencia.service', () => ({
+  pqrsApi: {
+    detalle: () => Promise.reject(new Error('sin detalle en la prueba')),
+    responsables: () => Promise.resolve([]),
+    actualizar: vi.fn(),
+  },
+}))
 vi.mock('@/components/ui/toast', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }))
@@ -111,7 +119,8 @@ describe('PqrsDrawer — quien ya responde no desaparece del selector', () => {
 
   it('sin responsable sigue diciendo que no hay a quién asignar', () => {
     pintar({ pqrs: SOLICITUD, open: true })
-    expect(document.body.textContent).toContain('Sin agentes activos')
+    // SO-22: ya no son «agentes»: cualquier persona del equipo que vea las PQRS.
+    expect(document.body.textContent).toContain('Nadie del equipo puede responder PQRS')
   })
 })
 

@@ -15,6 +15,7 @@ import * as React from 'react'
 
 import es from './locales/es.json'
 import type { I18nContextValue, Locale, TranslationParams } from './types'
+import { plataQueNoEsNumero } from '@/lib/plata/plata-que-no-es-numero'
 
 function getNested(obj: unknown, path: string): string | undefined {
   let current: unknown = obj
@@ -46,7 +47,12 @@ const contextValue: I18nContextValue = {
   locale: 'es' as Locale,
   setLocale: () => {},
   t,
-  formatCurrency: (amount) => String(amount ?? ''),
+  // «Centavos en todo» (C1-C): el doble de las pruebas también falla con texto,
+  // como el `formatCurrency` de verdad (`lib/format.ts`).
+  formatCurrency: (amount) => {
+    plataQueNoEsNumero('formatCurrency (i18n de prueba)', amount)
+    return String(amount ?? '')
+  },
   formatNumber: (value) => String(value ?? ''),
   formatDate: (date) => String(date),
   formatRelativeDate: (date) => String(date),

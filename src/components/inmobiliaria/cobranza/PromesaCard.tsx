@@ -34,7 +34,7 @@ import {
 
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui'
-import { Badge } from '@leasefy/cadence'
+import { Badge, Collapse } from '@leasefy/cadence'
 
 type BadgeVariant = NonNullable<React.ComponentProps<typeof Badge>['variant']>
 
@@ -215,8 +215,10 @@ export function PromesaCard({ promesa }: { promesa: Promesa }) {
       </button>
 
       {/* Detalle — todos los datos de la promesa */}
-      {open && (
-        <div
+      {/* El detalle se abre y se cierra con su altura (`Collapse`), con la
+          misma curva que el chevron; antes aparecía y desaparecía de golpe. */}
+      <Collapse
+          open={open}
           id={panelId}
           className="border-t border-border p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4"
         >
@@ -274,8 +276,7 @@ export function PromesaCard({ promesa }: { promesa: Promesa }) {
               <Link href={`${DEUDOR_BASE}/${promesa.debtorId}`}>Ver deudor</Link>
             </Button>
           </div>
-        </div>
-      )}
+      </Collapse>
     </li>
   )
 }

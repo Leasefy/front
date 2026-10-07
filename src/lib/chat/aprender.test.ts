@@ -2,12 +2,13 @@
  * Lo puro del «¿Aprendo esto?»: a qué URL va (siempre una ruta REAL del micro)
  * y en qué respuestas vale la pena ofrecerlo.
  */
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ApiError } from '@/lib/api/client';
 import { rutaDelMicro } from '@/lib/api/contrato-del-chat-del-micro';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 
-import { propuestaDeshecha, urlDeAprender, valeLaPenaOfrecer } from './aprender';
+import { decidirAprendizaje, propuestaDeshecha, urlDeAprender, valeLaPenaOfrecer } from './aprender';
 
 const AGENCIA = '504bdd59-d05f-4ae2-99c5-b71e6accb58c';
 const TURNO = '3f2b8c1e-9d4a-4f6b-8e2a-1c5d7e9f0a3b';
@@ -55,5 +56,67 @@ describe('valeLaPenaOfrecer', () => {
     expect(valeLaPenaOfrecer({ ...base, ...conTarjetas, turnoId: undefined }, null)).toBe(false);
     expect(valeLaPenaOfrecer({ ...base, ...conTarjetas, status: 'streaming' } as typeof base, null)).toBe(false);
     expect(valeLaPenaOfrecer({ ...base, ...conTarjetas, role: 'user' }, null)).toBe(false);
+  });
+});
+
+/**
+ * 02-10-2026 · La decisión del administrador ya no se traga el fallo: un no-OK
+ * lanza el `ApiError` entero (`falloDelMicro`) y la red caída su `TypeError`,
+ * para que «¿Aprendo esto?» lo diga por el traductor. Antes todo era `null`.
+ */
+describe('decidirAprendizaje', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+  const decidir = () => decidirAprendizaje(AGENCIA, TURNO, { id: 'lesson-1', decision: 'aprender' });
+
+  it('el 403 `SOLO_ADMINISTRADOR` llega entero, con su code', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({ error: 'SOLO_ADMINISTRADOR', code: 'SOLO_ADMINISTRADOR' }), { status: 403 })),
+    );
+    const e = await decidir().catch((x) => x);
+    expect(e).toBeInstanceOf(ApiError);
+    expect(e).toMatchObject({ status: 403, code: 'SOLO_ADMINISTRADOR' });
+  });
+
+  it('un 5xx llega con su referencia', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ statusCode: 500, code: 'ERROR_INTERNO', referencia: 'ab12cd34' }), { status: 500 }),
+      ),
+    );
+    const e = await decidir().catch((x) => x);
+    expect(e).toBeInstanceOf(ApiError);
+    expect(e.detalle.referencia).toBe('ab12cd34');
+  });
+
+  it('sin internet en el navegador, la red caída lanza su `TypeError` (es «la conexión», no «no se guardó»)', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false);
+    try {
+      vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))));
+      await expect(decidir()).rejects.toBeInstanceOf(TypeError);
+    } finally {
+      enLinea.mockRestore();
+    }
+  });
+
+  it('🔴 ARREGLOS-4 · el micro caído con el back sano es «el asistente no está disponible» (503), no la conexión', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))));
+    const e = await decidir().catch((x) => x);
+    expect(e).toBeInstanceOf(ApiError);
+    expect(e.status).toBe(503);
+  });
+
+  it('lo que salió bien se devuelve tal cual; sin a dónde mandarlo, `null` sin preguntar', async () => {
+    const fetchMock = vi.fn(
+      async () => new Response(JSON.stringify({ aplicado: true, estado: 'aprendido', motivo: '', leccionesEnUso: true }), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(decidir()).resolves.toMatchObject({ aplicado: true, estado: 'aprendido' });
+    await expect(decidirAprendizaje(AGENCIA, 'no-es-un-turno', { id: 'lesson-1', decision: 'aprender' })).resolves.toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

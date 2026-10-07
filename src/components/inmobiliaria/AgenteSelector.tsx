@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { motionSpring, Pressable } from '@leasefy/cadence';
 import {
   User,
   Buildings,
@@ -191,12 +192,12 @@ export function AgenteSelector({
         <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
           {/* No Agent Option */}
           {allowNoAgent && (
-            <motion.button
+            <Pressable
+              as="button"
+              press="sm"
               onClick={() => onChange(null)}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.99 }}
               className={cn(
-                'relative p-4 rounded-lg border text-left transition-all duration-200',
+                'relative p-4 rounded-lg border text-left transition-[border-color,background-color,box-shadow] duration-base',
                 value === null
                   ? 'border-primary/30 bg-primary-soft ring-2 ring-primary/30'
                   : 'border-border dark:border-border-strong bg-surface dark:bg-bg hover:border-border dark:hover:border-border-strong hover:'
@@ -208,6 +209,7 @@ export function AgenteSelector({
                   <motion.svg
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
+                    transition={motionSpring.bouncy}
                     className="w-3.5 h-3.5 text-white"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -236,17 +238,17 @@ export function AgenteSelector({
               <p className="text-xs text-muted-foreground">
                 {t('inmobiliaria.agente.assignLater')}
               </p>
-            </motion.button>
+            </Pressable>
           )}
 
           {sortedAgentes.map((agente) => (
-            <motion.button
+            <Pressable
+              as="button"
+              press="sm"
               key={agente.id}
               onClick={() => onChange(agente.id)}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.99 }}
               className={cn(
-                'relative p-4 rounded-lg border text-left transition-all duration-200',
+                'relative p-4 rounded-lg border text-left transition-[border-color,background-color,box-shadow] duration-base',
                 value === agente.id
                   ? 'border-primary/30 bg-primary-soft ring-2 ring-primary/30'
                   : 'border-border dark:border-border-strong bg-surface dark:bg-bg hover:border-border dark:hover:border-border-strong hover:'
@@ -266,6 +268,7 @@ export function AgenteSelector({
                   <motion.svg
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
+                    transition={motionSpring.bouncy}
                     className="w-3.5 h-3.5 text-white"
                     fill="none"
                     viewBox="0 0 24 24"
@@ -353,7 +356,7 @@ export function AgenteSelector({
                   </div>
                 </div>
               </div>
-            </motion.button>
+            </Pressable>
           ))}
         </div>
       ) : (
@@ -384,6 +387,7 @@ export function AgenteSelector({
             <motion.svg
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
+              transition={motionSpring.bouncy}
               className="w-3 h-3"
               fill="none"
               viewBox="0 0 24 24"

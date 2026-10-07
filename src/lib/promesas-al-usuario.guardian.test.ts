@@ -93,33 +93,16 @@ interface Promesa {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const EN_PANTALLA: Record<string, Promesa> = {
-  'app/inquilino/acuerdos/[id]/page.tsx': {
-    estado: 'FALTA',
-    de: 'micro',
-    nota:
-      'Acuerdos de pago del inquilino — el escalón del MEDIO de la cobranza ' +
-      '(cobrar → acuerdo → castigo), con los dos extremos ya construidos. 🔴 El ' +
-      'motor también está construido, en el micro: `src/cartera/payment-plans/` ' +
-      '(engine, política de descuento, romper acuerdo, watcher de incumplimiento, ' +
-      'link de Wompi), expuesto SÓLO con alcance de agencia en ' +
-      '`POST /api/cartera/payment-plans/offer`. Faltan las cuatro rutas con ' +
-      'alcance de INQUILINO que `tenant-acuerdos.service.ts` ya declara: `/mine`, ' +
-      '`/:planId/accept`, `/:planId/payment-url` y `/request`.',
-  },
-  'app/inquilino/casos/page.tsx': {
-    estado: 'FALTA',
-    de: 'infra',
-    nota:
-      'Avisar al inquilino por push y por WhatsApp. El aviso dentro del portal sí ' +
-      'es real; lo que falta es el canal, no la pantalla.',
-  },
-  'app/panel/(landlord)/solicitudes/nueva/page.tsx': {
-    estado: 'HONESTO',
-    de: 'micro',
-    nota:
-      'Llama de verdad a `ownerSolicitudesApi.crear` y sólo dice «Próximamente» ' +
-      'cuando el portal del propietario no responde. Es degradación, no promesa.',
-  },
+  // `app/inquilino/acuerdos/[id]/page.tsx` salió de acá el 02-10-2026 (noche):
+  // «Pagar cuota» ya no espera a `/:planId/payment-url` ni dice «Próximamente»,
+  // va por `/api/inquilino/acuerdos/wompi-session` (`PagarCuota`). Lo que sigue
+  // faltando es del back y del micro, no de la pantalla: las rutas con alcance
+  // de INQUILINO (`/mine`, `/:planId`, `/:planId/accept`, `/request`); sin
+  // `/mine` la lista sale vacía y la pantalla dice «Acuerdo no encontrado».
+  // `/mine`, `/accept` y `/request` los vigila `rutas-que-el-back-no-tiene`;
+  // `/:planId` lo pide la ruta del servidor de la sesión de pago.
+  // `app/inquilino/casos/page.tsx` salió de acá el 04-10-2026 (QA-INQ-95, PI-30):
+  // ya no promete push ni WhatsApp; dice que los avisos quedan en la campana.
   'app/panel/inmobiliaria/pagos/cobranza/fallidos/page.tsx': {
     estado: 'FALTA',
     de: 'back',
@@ -265,13 +248,6 @@ const EN_EL_DICCIONARIO: Record<string, Promesa> = {
     estado: 'FALTA',
     de: 'back',
     nota: 'Lo mismo del propietario: la exportación programada.',
-  },
-  'inmobiliaria.piloto.gobierno.proximamente': {
-    estado: 'HONESTO',
-    de: 'negocio',
-    nota:
-      'Los agentes en pausa de producto (`AGENTES_NO_DISPONIBLES`). La tarjeta se ' +
-      'lee como no disponible sin importar lo que diga el gobierno real.',
   },
 };
 

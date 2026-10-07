@@ -77,7 +77,6 @@ src/
 │   │
 │   ├── layout/               # Layout components
 │   │   ├── Navbar.tsx
-│   │   ├── Footer.tsx
 │   │   └── Sidebar.tsx
 │   │
 │   ├── auth/                 # Authentication components

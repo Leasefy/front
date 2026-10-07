@@ -62,7 +62,7 @@ function RequirementSection({
             type="button"
             onClick={() => { if (isNonNegotiable) onToggleNonNegotiable(); }}
             className={cn(
-              'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200',
+              'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-[color,background-color,border-color,box-shadow] duration-base',
               !isNonNegotiable
                 ? 'bg-surface text-fg'
                 : 'text-fg-subtle hover:text-fg-muted'
@@ -75,7 +75,7 @@ function RequirementSection({
             type="button"
             onClick={() => { if (!isNonNegotiable) onToggleNonNegotiable(); }}
             className={cn(
-              'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200',
+              'flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-[color,background-color,border-color,box-shadow] duration-base',
               isNonNegotiable
                 ? 'bg-primary text-primary-fg'
                 : 'text-fg-subtle hover:text-fg-muted'
@@ -151,7 +151,7 @@ export function StepTenantRequirements() {
                   type="button"
                   onClick={() => toggleEmployment(option.value)}
                   className={cn(
-                    'flex items-center gap-2.5 px-3 py-2.5 rounded-[12px] border text-left transition-all duration-200',
+                    'flex items-center gap-2.5 px-3 py-2.5 rounded-[12px] border text-left transition-[color,background-color,border-color,box-shadow] duration-base',
                     isSelected
                       ? 'border-2 border-primary bg-primary-soft'
                       : 'border-border hover:border-border-strong'
@@ -159,7 +159,7 @@ export function StepTenantRequirements() {
                 >
                   <div
                     className={cn(
-                      'w-4 h-4 rounded-[5px] flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
+                      'w-4 h-4 rounded-[5px] flex items-center justify-center flex-shrink-0 border-2 transition-[color,background-color,border-color,box-shadow] duration-base',
                       isSelected
                         ? 'bg-primary border-primary'
                         : 'border-border-strong'
@@ -228,7 +228,7 @@ export function StepTenantRequirements() {
                   type="button"
                   onClick={() => updateRequirements({ petsPolicy: option.value as PetsPolicy })}
                   className={cn(
-                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-[12px] border text-left transition-all duration-200',
+                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-[12px] border text-left transition-[color,background-color,border-color,box-shadow] duration-base',
                     isSelected
                       ? 'border-2 border-primary bg-primary-soft'
                       : 'border-border hover:border-border-strong'
@@ -236,7 +236,7 @@ export function StepTenantRequirements() {
                 >
                   <div
                     className={cn(
-                      'w-4 h-4 mt-0.5 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
+                      'w-4 h-4 mt-0.5 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-[color,background-color,border-color,box-shadow] duration-base',
                       isSelected
                         ? 'border-primary'
                         : 'border-border-strong'
@@ -282,7 +282,7 @@ export function StepTenantRequirements() {
                   type="button"
                   onClick={() => updateRequirements({ smokingPolicy: option.value as SmokingPolicy })}
                   className={cn(
-                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-[12px] border text-left transition-all duration-200',
+                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-[12px] border text-left transition-[color,background-color,border-color,box-shadow] duration-base',
                     isSelected
                       ? 'border-2 border-primary bg-primary-soft'
                       : 'border-border hover:border-border-strong'
@@ -290,7 +290,7 @@ export function StepTenantRequirements() {
                 >
                   <div
                     className={cn(
-                      'w-4 h-4 mt-0.5 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
+                      'w-4 h-4 mt-0.5 rounded-full flex items-center justify-center flex-shrink-0 border-2 transition-[color,background-color,border-color,box-shadow] duration-base',
                       isSelected
                         ? 'border-primary'
                         : 'border-border-strong'
@@ -419,7 +419,7 @@ export function StepTenantRequirements() {
                   type="button"
                   onClick={() => toggleVerification(option.key)}
                   className={cn(
-                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-[12px] border text-left transition-all duration-200',
+                    'w-full flex items-start gap-3 px-3 py-2.5 rounded-[12px] border text-left transition-[color,background-color,border-color,box-shadow] duration-base',
                     isSelected
                       ? 'border-2 border-primary bg-primary-soft'
                       : 'border-border hover:border-border-strong'
@@ -427,7 +427,7 @@ export function StepTenantRequirements() {
                 >
                   <div
                     className={cn(
-                      'w-4 h-4 mt-0.5 rounded-[5px] flex items-center justify-center flex-shrink-0 border-2 transition-all duration-200',
+                      'w-4 h-4 mt-0.5 rounded-[5px] flex items-center justify-center flex-shrink-0 border-2 transition-[color,background-color,border-color,box-shadow] duration-base',
                       isSelected
                         ? 'bg-primary border-primary'
                         : 'border-border-strong'

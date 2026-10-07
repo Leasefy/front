@@ -29,6 +29,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Button } from '@/components/ui';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { avisosApi } from '@/lib/api/avisos.service';
 import type { AvisoAutomatico, EstadoDeLosAvisos } from '@/lib/api/avisos.service';
 import { cn } from '@/lib/utils';
@@ -98,9 +99,12 @@ export function SeccionAvisos() {
         toast.success(r.prendido ? 'Aviso prendido' : 'Aviso apagado');
       }
     } catch (e) {
-      toast.error('No se pudo cambiar el aviso', {
-        description: e instanceof Error ? e.message : undefined,
-      });
+toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo cambiar el aviso. Prueba de nuevo en un momento.',
+          accion: 'cambiar el aviso',
+        }),
+      );
     } finally {
       setGuardando(null);
     }
@@ -116,9 +120,12 @@ export function SeccionAvisos() {
         });
       }
     } catch (e) {
-      toast.error('No se pudo ver el correo', {
-        description: e instanceof Error ? e.message : undefined,
-      });
+toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo ver el correo. Prueba de nuevo en un momento.',
+          accion: 'armar la vista previa del correo',
+        }),
+      );
     }
   };
 
@@ -167,8 +174,9 @@ export function SeccionAvisos() {
                   className="rounded-lg border border-border bg-surface p-4"
                   data-testid={`aviso-${aviso.codigo}`}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
+                  {/* A 390 px los dos botones bajan debajo del texto (QA 04-10: desbordaban). */}
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-fg">{aviso.titulo}</p>
                       <p className="mt-1 text-xs text-fg-muted">
                         {A_QUIEN[aviso.destinatario]} · {aviso.cuando}

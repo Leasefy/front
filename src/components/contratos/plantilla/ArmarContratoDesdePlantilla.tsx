@@ -33,7 +33,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { Appear, Collapse } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
 import { MotivosDelValidador } from './MotivosDelValidador';
 import {
@@ -43,14 +51,31 @@ import {
   bloqueadaPor,
 } from '@/lib/contratos/plantilla-legal';
 import type { EstadoDelContratoDesdePlantilla } from '@/lib/contratos/useContratoDesdePlantilla';
+import { faltaIdentificarAlArrendatario } from '@/lib/contratos/arrendatario';
+import type { TipoDeDocumentoDePersona } from '@/lib/api/contratos-plantilla.service';
+
+/** La identificación del arrendatario que la pantalla deja corregir. */
+export interface IdentificacionDelArrendatario {
+  nombre: string;
+  tipoDocumento: TipoDeDocumentoDePersona;
+  documento: string;
+}
 
 interface Props {
   /** `template` = elegir del catálogo. `generate` = describirlo y que proponga. */
   modo: 'template' | 'generate';
   estado: EstadoDelContratoDesdePlantilla;
+  /**
+   * T-0145 — nombre y documento del arrendatario, editables. Quien arma el
+   * borrador los manda como `arrendatario*`. Sin la prop no se pinta el bloque:
+   * un contrato manual con inquilino nuevo ya los pide arriba.
+   */
+  arrendatario?: IdentificacionDelArrendatario & {
+    onCambio: (cambio: Partial<IdentificacionDelArrendatario>) => void;
+  };
 }
 
-export function ArmarContratoDesdePlantilla({ modo, estado }: Props) {
+export function ArmarContratoDesdePlantilla({ modo, estado, arrendatario }: Props) {
   const {
     preparacion,
     preparando,
@@ -107,14 +132,16 @@ export function ArmarContratoDesdePlantilla({ modo, estado }: Props) {
       )}
 
       {errorDePreparacion && (
-        <p
+        <Appear
+          as="p"
+          distance="xs"
           data-testid="plantilla-error-preparacion"
           role="alert"
           className="flex items-start gap-2 rounded-lg bg-danger-soft px-4 py-3 text-body-sm text-danger"
         >
           <Warning weight="fill" aria-hidden="true" className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <span>{errorDePreparacion}</span>
-        </p>
+        </Appear>
       )}
 
       {preparando && !preparacion && (
@@ -150,6 +177,16 @@ export function ArmarContratoDesdePlantilla({ modo, estado }: Props) {
               campos={campos}
               onQuitar={estado.quitarClausula}
               onDescartar={estado.descartarPropuesta}
+            />
+          )}
+
+          {arrendatario && (
+            <IdentificacionDelArrendatarioCampos
+              {...arrendatario}
+              obligatoria={faltaIdentificarAlArrendatario([
+                ...motivosDeRechazo,
+                ...(propuesta?.pendientes ?? []),
+              ])}
             />
           )}
 
@@ -356,6 +393,18 @@ function RevisionDeLaPropuesta({
         motivos={propuesta.pendientes}
       />
 
+      {/* QA-CONT-95 r3 (EX-01): notas cortas para quien revisa (no frenan nada),
+          p. ej. que en vivienda «sin mascotas» quedó como constancia. */}
+      {(propuesta.avisos ?? []).map((aviso) => (
+        <p
+          key={aviso}
+          className="text-caption text-warning-700 dark:text-warning-100"
+          data-testid="plantilla-aviso-propuesta"
+        >
+          {aviso}
+        </p>
+      ))}
+
       {propuestas.length === 0 ? (
         <p className="text-body-sm text-fg-muted" data-testid="plantilla-propuesta-sin-clausulas">
           {quitadas.length > 0
@@ -404,6 +453,113 @@ function RevisionDeLaPropuesta({
   );
 }
 
+// ─── Arrendatario ────────────────────────────────────────────────────────────
+
+const TIPOS_DE_DOCUMENTO: ReadonlyArray<{ valor: TipoDeDocumentoDePersona; etiqueta: string }> = [
+  { valor: 'CC', etiqueta: 'Cédula de ciudadanía' },
+  { valor: 'CE', etiqueta: 'Cédula de extranjería' },
+  { valor: 'TI', etiqueta: 'Tarjeta de identidad' },
+  { valor: 'NIT', etiqueta: 'NIT' },
+  { valor: 'PASSPORT', etiqueta: 'Pasaporte' },
+  { valor: 'PPT', etiqueta: 'Permiso por protección temporal' },
+];
+
+/**
+ * Nombre y documento del arrendatario, siempre a la vista y corregibles.
+ *
+ * Se muestran siempre y no sólo cuando el validador se queja: el nombre ya
+ * viene de la postulación y la agencia puede corregirlo antes de que salga
+ * impreso. El documento vacío NO bloquea —si el inquilino lo tiene en su
+ * perfil, el backend lo completa—; los campos pasan a obligatorios cuando el
+ * validador reporta el literal a) del art. 3.º, que es la señal de que el
+ * perfil no lo tenía.
+ */
+function IdentificacionDelArrendatarioCampos({
+  nombre,
+  tipoDocumento,
+  documento,
+  onCambio,
+  obligatoria,
+}: IdentificacionDelArrendatario & {
+  onCambio: (cambio: Partial<IdentificacionDelArrendatario>) => void;
+  obligatoria: boolean;
+}) {
+  const nombreVacio = obligatoria && nombre.trim() === '';
+  const documentoVacio = obligatoria && documento.trim() === '';
+
+  return (
+    <div
+      data-testid="plantilla-arrendatario"
+      className="rounded-lg border border-border bg-surface-muted p-4 space-y-3"
+    >
+      <div>
+        <p className="text-body-sm font-medium text-fg">Identificación del arrendatario</p>
+        <p className="text-caption text-fg-muted mt-0.5">
+          La ley pide identificar a las dos partes (Ley 820 de 2003, art. 3.º, literal a).
+          {obligatoria
+            ? ' El perfil del inquilino no trae estos datos: complétalos para poder emitir el contrato.'
+            : ' Si dejas el documento vacío, se toma del perfil del inquilino cuando está registrado.'}
+        </p>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="plantilla-arrendatario-nombre" required={obligatoria}>
+          Nombre del arrendatario
+        </Label>
+        <Input
+          id="plantilla-arrendatario-nombre"
+          data-testid="plantilla-arrendatario-nombre"
+          value={nombre}
+          maxLength={200}
+          autoComplete="off"
+          aria-required={obligatoria || undefined}
+          aria-invalid={nombreVacio}
+          onChange={(e) => onCambio({ nombre: e.target.value })}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="plantilla-arrendatario-tipo" required={obligatoria}>
+            Tipo de documento
+          </Label>
+          <Select
+            value={tipoDocumento}
+            onValueChange={(v) => onCambio({ tipoDocumento: v as TipoDeDocumentoDePersona })}
+          >
+            <SelectTrigger id="plantilla-arrendatario-tipo" data-testid="plantilla-arrendatario-tipo">
+              <SelectValue placeholder="Elige el tipo" />
+            </SelectTrigger>
+            <SelectContent className="z-[400]">
+              {TIPOS_DE_DOCUMENTO.map((t) => (
+                <SelectItem key={t.valor} value={t.valor}>
+                  {t.etiqueta}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="plantilla-arrendatario-documento" required={obligatoria}>
+            Número de documento
+          </Label>
+          <Input
+            id="plantilla-arrendatario-documento"
+            data-testid="plantilla-arrendatario-documento"
+            value={documento}
+            maxLength={40}
+            autoComplete="off"
+            aria-required={obligatoria || undefined}
+            aria-invalid={documentoVacio}
+            onChange={(e) => onCambio({ documento: e.target.value })}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Campos ──────────────────────────────────────────────────────────────────
 
 function CamposDelContrato({
@@ -431,7 +587,9 @@ function CamposDelContrato({
       {campos.map((campo) => {
         const id = `plantilla-campo-${campo.nombre}`;
         const valor = valores[campo.nombre] ?? '';
-        const vacio = campo.requerida && valor.trim() === '';
+        // 🔴 ARREGLOS-4 (03-10-2026): un requerido vacío no lleva `aria-invalid`:
+        // el adaptador del campo pinta el borde rojo con él, y el formulario no
+        // puede abrirse ya en rojo.
         return (
           <div key={campo.nombre} className="space-y-1.5">
             <Label htmlFor={id}>
@@ -451,7 +609,6 @@ function CamposDelContrato({
                 data-testid={id}
                 rows={3}
                 value={valor}
-                aria-invalid={vacio}
                 onChange={(e) => onEscribir(campo.nombre, e.target.value)}
               />
             ) : (
@@ -459,7 +616,6 @@ function CamposDelContrato({
                 id={id}
                 data-testid={id}
                 value={valor}
-                aria-invalid={vacio}
                 inputMode={
                   campo.tipo === 'numero' ||
                   campo.tipo === 'porcentaje' ||
@@ -610,8 +766,39 @@ function TopesLegalesDelContrato({
           </div>
         ))}
       </dl>
-      <p className="text-caption text-fg-muted mt-2">Fuente del IPC: {topes.fuente}</p>
+      <FuenteDelIpc fuente={topes.fuente} />
     </div>
+  );
+}
+
+/**
+ * QA-CONT C-14: la fuente del IPC era una URL cruda en pantalla
+ * («Fuente del IPC: https://www.dane.gov.co/…»). Si es un enlace, se lee como
+ * enlace con su nombre («Fuente: DANE»); si es texto, se dice tal cual.
+ */
+function FuenteDelIpc({ fuente }: { fuente: string }) {
+  let url: URL | null = null;
+  try {
+    url = /^https?:\/\//i.test(fuente) ? new URL(fuente) : null;
+  } catch {
+    url = null;
+  }
+  if (!url) return <p className="text-caption text-fg-muted mt-2">Fuente del IPC: {fuente}</p>;
+  const host = url.hostname.replace(/^www\./, '');
+  const nombre = /(^|\.)dane\.gov\.co$/.test(host) ? 'DANE' : host;
+  return (
+    <p className="text-caption text-fg-muted mt-2" title="Fuente del IPC">
+      Fuente:{' '}
+      <a
+        href={url.toString()}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-medium text-primary underline underline-offset-2"
+        data-testid="fuente-del-ipc"
+      >
+        {nombre}
+      </a>
+    </p>
   );
 }
 
@@ -646,8 +833,10 @@ function ContratoListo({
 
   return (
     <div className="space-y-3">
+      {/* «Quedó armado» y «quedó viejo» llegan con su entrada (`Appear`);
+          uno reemplaza al otro sin esperar a que el anterior se vaya. */}
       {generado && !quedoViejo && (
-        <div
+        <Appear
           data-testid="plantilla-contrato-listo"
           className="rounded-lg border border-success/30 bg-success-soft p-4"
         >
@@ -682,23 +871,25 @@ function ContratoListo({
                   {verDetalle ? 'Ocultar las cláusulas' : 'Ver qué cláusulas quedaron'}
                 </Button>
               )}
-              {verDetalle && (
+              <Collapse open={verDetalle}>
                 <ul className="mt-1 list-disc pl-4 text-caption text-fg-muted">
                   {generado.clausulas.map((c) => (
                     <li key={c}>{c}</li>
                   ))}
                 </ul>
-              )}
+              </Collapse>
             </div>
           </div>
-        </div>
+        </Appear>
       )}
 
       {/* 🔴 Cambió algo que va IMPRESO después de generar. Sin este aviso se
           crea el contrato con el canon nuevo en la base y el viejo en el PDF
           que firman las partes. */}
       {quedoViejo && (
-        <p
+        <Appear
+          as="p"
+          distance="xs"
           data-testid="plantilla-quedo-viejo"
           role="alert"
           className="flex items-start gap-2 rounded-lg bg-warning-soft px-4 py-3 text-body-sm text-warning"
@@ -708,7 +899,7 @@ function ContratoListo({
             Cambiaste algo después de armar el contrato. Vuelve a generarlo para que el
             PDF diga lo mismo que el formulario.
           </span>
-        </p>
+        </Appear>
       )}
 
       <div className="flex flex-wrap items-center justify-end gap-2">

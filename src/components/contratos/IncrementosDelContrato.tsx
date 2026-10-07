@@ -17,7 +17,7 @@
  * ningún canon, sólo se muestra y se digita.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,9 +28,14 @@ import {
   type AniversarioDelContrato,
   type IncrementosDelContrato as Incrementos,
 } from "@/lib/api/ciclo-de-vida.service";
-import { mensajeDelFallo } from "@/lib/contratos/fallo-de-accion";
+import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
+import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
+import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
+import { errorDelPorcentajeDelIncremento } from "@/lib/contratos/limites-del-contrato-vigente";
+import { plataEnPantalla } from "@/lib/plata/escribir-plata";
+import { diaLegible } from '@/lib/mandato/textos';
 
-const PESOS = new Intl.NumberFormat("es-CO", {
+const PESOS = plataEnPantalla("es-CO", {
   style: "currency",
   currency: "COP",
   maximumFractionDigits: 0,
@@ -56,6 +61,32 @@ function numeroOVacio(texto: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** Lo que el back rechazó de cada campo, por el nombre del campo en su DTO. */
+type ErroresDelServidor = Partial<Record<string, string>>;
+
+/**
+ * El foco al primer campo con error, cuando ya se puede: mientras guarda, la
+ * sección está apagada (`ocupado`) y algunos campos ni se dibujan; `focus()`
+ * sobre uno así no hace nada. Se aplica después del render en que vuelve.
+ */
+function useFocoAlPrimerError() {
+  const pendientes = useRef<string[] | null>(null);
+  useEffect(() => {
+    if (!pendientes.current) return;
+    for (const id of pendientes.current) {
+      const el = document.getElementById(id) as HTMLInputElement | null;
+      if (!el) continue;
+      if (el.disabled) return;
+      el.focus();
+      pendientes.current = null;
+      return;
+    }
+  });
+  return (ids: string[]) => {
+    pendientes.current = ids.length ? ids : null;
+  };
+}
+
 export function IncrementosDelContrato({
   contractId,
   puedeEditar,
@@ -66,6 +97,8 @@ export function IncrementosDelContrato({
   const [datos, setDatos] = useState<Incrementos | null>(null);
   const [fallo, setFallo] = useState(false);
   const [tasa, setTasa] = useState("");
+  const [errorDeLaTasa, setErrorDeLaTasa] = useState<string | undefined>(undefined);
+  const enfocar = useFocoAlPrimerError();
   const [ocupado, setOcupado] = useState(false);
 
   const cargar = useCallback(async () => {
@@ -83,7 +116,17 @@ export function IncrementosDelContrato({
     void cargar();
   }, [cargar]);
 
-  const accion = async (hacer: () => Promise<Incrementos>, exito: string) => {
+  /**
+   * Guarda y devuelve lo que el back rechazó POR CAMPO (para pintarlo debajo
+   * de su campo). Al toast va SÓLO lo que no tiene campo: un 409, un 5xx con su
+   * referencia o la red, por el traductor.
+   */
+  const accion = async (
+    hacer: () => Promise<Incrementos>,
+    exito: string,
+    queSeHacia: string,
+    campos: readonly string[] = [],
+  ): Promise<ErroresDelServidor> => {
     setOcupado(true);
     try {
       const r = await hacer();
@@ -93,8 +136,15 @@ export function IncrementosDelContrato({
       } else {
         toast.success(r.ultimoEnvio?.mensaje ?? exito);
       }
+      return {};
     } catch (err) {
-      toast.error("No se pudo guardar.", { description: mensajeDelFallo(err, "Intenta de nuevo.") });
+      const { porCampo, sueltos } = repartirErroresDelServidor(err, {
+        campos,
+        porDefecto: `No pudimos ${queSeHacia}.`,
+        accion: queSeHacia,
+      });
+      if (sueltos.length) toast.error("No se pudo guardar.", { description: sueltos.join(" · ") });
+      return porCampo;
     } finally {
       setOcupado(false);
     }
@@ -128,7 +178,7 @@ export function IncrementosDelContrato({
           El canon sube aunque la carta no se haya enviado.
         </p>
         {!datos.disponible && (
-          <p className="mt-1 text-caption text-plan-status-yellow">
+          <p className="mt-1 text-caption text-warning-700 dark:text-warning-100">
             Falta una actualización de la base: todavía no se puede digitar ni generar cartas.
           </p>
         )}
@@ -136,7 +186,7 @@ export function IncrementosDelContrato({
           La carta aparece sola {datos.diasAntesDeLaCarta ?? 30} días antes del aniversario y se envía con un clic.
         </p>
         {datos.correoSaleDeVerdad === false && (
-          <p className="mt-1 text-caption text-plan-status-yellow" data-testid="correo-simulado">
+          <p className="mt-1 text-caption text-warning-700 dark:text-warning-100" data-testid="correo-simulado">
             En este entorno el correo no sale: enviar simula y no deja constancia.
           </p>
         )}
@@ -150,10 +200,15 @@ export function IncrementosDelContrato({
               id="tasa-pactada"
               inputMode="decimal"
               value={tasa}
-              onChange={(e) => setTasa(e.target.value)}
+              onChange={(e) => {
+                setTasa(e.target.value);
+                setErrorDeLaTasa(undefined);
+              }}
               disabled={!editable}
               data-testid="tasa-pactada"
               className="mt-1 w-32"
+              aria-invalid={errorDeLaTasa ? true : undefined}
+              aria-describedby="tasa-pactada-error"
             />
           </label>
           <Button
@@ -161,14 +216,28 @@ export function IncrementosDelContrato({
             variant="outline"
             disabled={!editable}
             onClick={() =>
-              void accion(
-                () => cicloDeVidaApi.fijarTasaAnual(contractId, numeroOVacio(tasa)),
-                "Tasa pactada guardada. La tabla se recalcula.",
-              )
+              void (async () => {
+                // Los topes del back, antes de mandar y con su frase (02-10-2026).
+                const local = errorDelPorcentajeDelIncremento(tasa, "tasaPactada");
+                if (local) {
+                  setErrorDeLaTasa(local);
+                  enfocar(["tasa-pactada"]);
+                  return;
+                }
+                const delServidor = await accion(
+                  () => cicloDeVidaApi.fijarTasaAnual(contractId, numeroOVacio(tasa)),
+                  "Tasa pactada guardada. La tabla se recalcula.",
+                  "guardar la tasa pactada",
+                  ["porcentaje"],
+                );
+                setErrorDeLaTasa(delServidor.porcentaje);
+                if (delServidor.porcentaje) enfocar(["tasa-pactada"]);
+              })()
             }
           >
             Guardar tasa
           </Button>
+          <ErrorDelCampo id="tasa-pactada-error" mensaje={errorDeLaTasa} className="w-full" />
         </div>
       )}
 
@@ -184,19 +253,35 @@ export function IncrementosDelContrato({
               editable={editable}
               envioHabilitado={datos.envioHabilitado}
               onDigitar={(body) =>
-                void accion(
+                accion(
                   () => cicloDeVidaApi.digitarIncremento(contractId, a.desde, body),
                   "Incremento guardado. La tabla se recalcula.",
+                  "guardar el incremento",
+                  ["porcentaje", "canonNuevoCop"],
                 )
               }
               onGenerarCarta={() =>
-                void accion(() => cicloDeVidaApi.generarCarta(contractId, a.desde), "Carta generada: queda por revisar.")
+                void accion(
+                  () => cicloDeVidaApi.generarCarta(contractId, a.desde),
+                  "Carta generada: queda por revisar.",
+                  "generar la carta",
+                )
               }
               onRevisar={(contenido) =>
-                void accion(() => cicloDeVidaApi.revisarCarta(contractId, a.desde, contenido), "Carta revisada.")
+                accion(
+                  () => cicloDeVidaApi.revisarCarta(contractId, a.desde, contenido),
+                  "Carta revisada.",
+                  "guardar el texto de la carta",
+                  ["contenido"],
+                )
               }
               onEnviar={(contenido) =>
-                void accion(() => cicloDeVidaApi.enviarCarta(contractId, a.desde, contenido), "Carta enviada.")
+                accion(
+                  () => cicloDeVidaApi.enviarCarta(contractId, a.desde, contenido),
+                  "Carta enviada.",
+                  "enviar la carta",
+                  ["contenido"],
+                )
               }
               onVerSoporte={() =>
                 void (async () => {
@@ -205,15 +290,20 @@ export function IncrementosDelContrato({
                     window.open(url, "_blank", "noopener,noreferrer");
                   } catch (e) {
                     toast.error("No se pudo abrir el soporte.", {
-                      description: mensajeDelFallo(e, "Intenta de nuevo."),
+                      description: mensajeParaLaPersona(e, {
+                        porDefecto: "No pudimos abrir el soporte.",
+                        accion: "abrir el soporte",
+                      }),
                     });
                   }
                 })()
               }
               onConstancia={(body) =>
-                void accion(
+                accion(
                   () => cicloDeVidaApi.registrarConstancia(contractId, a.desde, body),
                   "Constancia registrada: la carta queda enviada.",
+                  "registrar la constancia",
+                  ["medio", "fecha", "nota"],
                 )
               }
             />
@@ -247,19 +337,38 @@ function Aniversario({
   comercial: boolean;
   editable: boolean;
   envioHabilitado: boolean;
-  onDigitar: (body: { porcentaje?: number | null; canonNuevoCop?: number | null }) => void;
+  onDigitar: (body: { porcentaje?: number | null; canonNuevoCop?: number | null }) => Promise<ErroresDelServidor>;
   onGenerarCarta: () => void;
-  onRevisar: (contenido?: string) => void;
-  onEnviar: (contenido?: string) => void;
+  onRevisar: (contenido?: string) => Promise<ErroresDelServidor>;
+  onEnviar: (contenido?: string) => Promise<ErroresDelServidor>;
   onConstancia: (body: {
     medio: "FISICO" | "WHATSAPP" | "OTRO";
     fecha: string;
     nota: string;
     /** 🔴 OPCIONAL (Nico, 17-09): la constancia vale igual sin adjunto. */
     soporte?: File | null;
-  }) => void;
+  }) => Promise<ErroresDelServidor>;
   onVerSoporte: () => void;
 }) {
+  // Lo que el back rechazó de un campo de ESTE aniversario va debajo de él.
+  const [errores, setErrores] = useState<ErroresDelServidor>({});
+  const ids = {
+    porcentaje: `incremento-${a.desde}`,
+    contenido: `carta-${a.desde}`,
+    fecha: `constancia-fecha-${a.desde}`,
+    nota: `constancia-nota-${a.desde}`,
+    medio: `constancia-medio-${a.desde}`,
+  } as const;
+  const enfocar = useFocoAlPrimerError();
+  const pintar = (delServidor: ErroresDelServidor) => {
+    setErrores(delServidor);
+    const campos = (Object.keys(ids) as (keyof typeof ids)[]).filter(
+      (c) => delServidor[c] || (c === "porcentaje" && delServidor.canonNuevoCop),
+    );
+    enfocar(campos.map((c) => ids[c]));
+  };
+  const limpiar = (campo: keyof typeof ids) =>
+    setErrores((prev) => (prev[campo] ? { ...prev, [campo]: undefined } : prev));
   const [porcentaje, setPorcentaje] = useState("");
   const [texto, setTexto] = useState(a.carta?.contenido ?? "");
   const [constancia, setConstancia] = useState(false);
@@ -276,11 +385,12 @@ function Aniversario({
   return (
     <li className="space-y-2 py-3 text-sm" data-testid={`aniversario-${a.desde}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <span className="font-medium">Desde el {a.desde}</span>
+        {/* QA-CONT-95 (C-10): la fecha larga de la casa, nunca el ISO crudo. */}
+        <span className="font-medium">Desde el {diaLegible(a.desde)}</span>
         {sube ? (
           <span>
             {PESOS.format(a.canonAnteriorCop)} → <strong>{PESOS.format(a.canonNuevoCop)}</strong>
-            {a.porcentaje != null && ` (${a.porcentaje} %)`}
+            {a.porcentaje != null && ` (${porcentajeLegible(a.porcentaje)} %)`}
           </span>
         ) : (
           <span className="text-muted-foreground">Sin incremento</span>
@@ -289,7 +399,7 @@ function Aniversario({
       <p className="text-caption text-muted-foreground">
         {sube ? ORIGEN[a.origen as string] : a.motivo}
         {a.carta && ` · ${CARTA[a.carta.estado]}`}
-        {enviada && a.carta?.enviadaAt && ` el ${a.carta.enviadaAt.slice(0, 10)}${a.carta.medio ? ` ${MEDIO[a.carta.medio]}` : ""}`}
+        {enviada && a.carta?.enviadaAt && ` el ${diaLegible(a.carta.enviadaAt)}${a.carta.medio ? ` ${MEDIO[a.carta.medio]}` : ""}`}
         {enviada && a.carta?.soporteNombre && (
           <>
             {" · "}
@@ -314,7 +424,7 @@ function Aniversario({
         </p>
       )}
       {a.bandeja?.estado === "POR_ENVIAR" && (
-        <p className="text-caption text-plan-status-yellow" data-testid={`carta-por-enviar-${a.desde}`}>
+        <p className="text-caption text-warning-700 dark:text-warning-100" data-testid={`carta-por-enviar-${a.desde}`}>
           Carta por enviar: faltan {a.bandeja.diasParaElAniversario} días para el aniversario.
         </p>
       )}
@@ -325,33 +435,62 @@ function Aniversario({
       {comercial && editable && (
         <div className="flex flex-wrap items-end gap-2">
           <Input
+            id={ids.porcentaje}
             inputMode="decimal"
             placeholder="% de este año"
             value={porcentaje}
-            onChange={(e) => setPorcentaje(e.target.value)}
+            onChange={(e) => {
+              setPorcentaje(e.target.value);
+              limpiar("porcentaje");
+            }}
             className="w-32"
-            aria-label={`Incremento del ${a.desde} en porcentaje`}
+            aria-label={`Incremento del ${diaLegible(a.desde)} en porcentaje`}
+            aria-invalid={errores.porcentaje || errores.canonNuevoCop ? true : undefined}
+            aria-describedby={`${ids.porcentaje}-error`}
           />
           <Button
             size="sm"
             variant="outline"
             disabled={numeroOVacio(porcentaje) === null}
-            onClick={() => onDigitar({ porcentaje: numeroOVacio(porcentaje) })}
+            onClick={() => {
+              // Los topes del back, antes de mandar y con su frase (02-10-2026).
+              const local = errorDelPorcentajeDelIncremento(porcentaje, "incremento");
+              if (local) {
+                pintar({ porcentaje: local });
+                return;
+              }
+              void onDigitar({ porcentaje: numeroOVacio(porcentaje) }).then(pintar);
+            }}
           >
             Digitar incremento
           </Button>
+          <ErrorDelCampo
+            id={`${ids.porcentaje}-error`}
+            mensaje={errores.porcentaje ?? errores.canonNuevoCop}
+            className="w-full"
+          />
         </div>
       )}
 
       {sube && editable && !enviada && (
         <div className="space-y-2">
           {a.carta ? (
-            <Textarea
-              value={texto}
-              onChange={(e) => setTexto(e.target.value)}
-              rows={6}
-              aria-label={`Carta del incremento del ${a.desde}`}
-            />
+            <>
+              <Textarea
+                id={ids.contenido}
+                value={texto}
+                onChange={(e) => {
+                  setTexto(e.target.value);
+                  limpiar("contenido");
+                }}
+                rows={6}
+                maxLength={10_000}
+                aria-label={`Carta del incremento del ${diaLegible(a.desde)}`}
+                aria-invalid={errores.contenido ? true : undefined}
+                aria-describedby={`${ids.contenido}-error`}
+              />
+              <ErrorDelCampo id={`${ids.contenido}-error`} mensaje={errores.contenido} className="mt-0" />
+            </>
           ) : (
             <Button size="sm" variant="outline" onClick={onGenerarCarta}>
               Ver y editar la carta
@@ -361,7 +500,7 @@ function Aniversario({
             {(enVentana || a.carta) && (
               <Button
                 size="sm"
-                onClick={() => onEnviar(a.carta ? texto : undefined)}
+                onClick={() => void onEnviar(a.carta ? texto : undefined).then(pintar)}
                 disabled={!envioHabilitado}
                 data-testid={`enviar-carta-${a.desde}`}
               >
@@ -369,7 +508,7 @@ function Aniversario({
               </Button>
             )}
             {a.carta?.estado === "PENDIENTE_DE_REVISION" && (
-              <Button size="sm" variant="outline" onClick={() => onRevisar(texto)}>
+              <Button size="sm" variant="outline" onClick={() => void onRevisar(texto).then(pintar)}>
                 Guardar el texto
               </Button>
             )}
@@ -387,22 +526,54 @@ function Aniversario({
               <label className="text-caption">
                 Medio
                 <select
+                  id={ids.medio}
                   className="mt-1 block rounded-md border border-border bg-background px-2 py-1 text-sm"
                   value={medio}
-                  onChange={(e) => setMedio(e.target.value as "FISICO" | "WHATSAPP" | "OTRO")}
+                  onChange={(e) => {
+                    setMedio(e.target.value as "FISICO" | "WHATSAPP" | "OTRO");
+                    limpiar("medio");
+                  }}
+                  aria-invalid={errores.medio ? true : undefined}
+                  aria-describedby={`${ids.medio}-error`}
                 >
                   <option value="FISICO">En físico</option>
                   <option value="WHATSAPP">Por WhatsApp</option>
                   <option value="OTRO">Otro</option>
                 </select>
+                <ErrorDelCampo id={`${ids.medio}-error`} mensaje={errores.medio} />
               </label>
               <label className="text-caption">
                 Fecha
-                <Input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="mt-1" />
+                <Input
+                  id={ids.fecha}
+                  type="date"
+                  value={fecha}
+                  onChange={(e) => {
+                    setFecha(e.target.value);
+                    limpiar("fecha");
+                  }}
+                  className="mt-1"
+                  aria-invalid={errores.fecha ? true : undefined}
+                  aria-describedby={`${ids.fecha}-error`}
+                />
+                <ErrorDelCampo id={`${ids.fecha}-error`} mensaje={errores.fecha} />
               </label>
               <label className="text-caption">
                 Cómo se entregó
-                <Input value={nota} onChange={(e) => setNota(e.target.value)} className="mt-1 w-64" placeholder="A quién, guía de envío…" />
+                <Input
+                  id={ids.nota}
+                  value={nota}
+                  maxLength={2000}
+                  onChange={(e) => {
+                    setNota(e.target.value);
+                    limpiar("nota");
+                  }}
+                  className="mt-1 w-64"
+                  placeholder="A quién, guía de envío…"
+                  aria-invalid={errores.nota ? true : undefined}
+                  aria-describedby={`${ids.nota}-error`}
+                />
+                <ErrorDelCampo id={`${ids.nota}-error`} mensaje={errores.nota} className="w-64" />
               </label>
               {/* 🔴 El soporte es OPCIONAL (Nico, 17-09): una entrega en
                   portería sin papel también vale como constancia. */}
@@ -420,7 +591,7 @@ function Aniversario({
                 size="sm"
                 variant="outline"
                 disabled={!fecha || nota.trim().length < 3}
-                onClick={() => onConstancia({ medio, fecha, nota: nota.trim(), soporte })}
+                onClick={() => void onConstancia({ medio, fecha, nota: nota.trim(), soporte }).then(pintar)}
                 data-testid={`registrar-constancia-${a.desde}`}
               >
                 Registrar constancia
@@ -435,4 +606,9 @@ function Aniversario({
       )}
     </li>
   );
+}
+
+/** QA-CONT-95: «5,1» con coma decimal (es-CO), no «5.1». */
+export function porcentajeLegible(valor: number): string {
+  return valor.toLocaleString('es-CO', { maximumFractionDigits: 3 });
 }

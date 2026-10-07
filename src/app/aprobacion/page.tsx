@@ -19,6 +19,8 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ConfirmarSalidaDelArriendo } from '@/components/aprobacion/ConfirmarSalidaDelArriendo'
 import { PhoneField } from '@/components/ui/phone-field'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   Select,
   SelectContent,
@@ -153,6 +155,19 @@ export default function AprobacionPage() {
 
   function set<K extends keyof PreApprovalFormFields>(key: K, value: PreApprovalFormFields[K]) {
     setFields((f) => ({ ...f, [key]: value }))
+    // Lo que se marcó (aquí o en el back) deja de valer en cuanto se toca ese campo.
+    setErrors((e) => {
+      if (e[key] === undefined) return e
+      const next = { ...e }
+      delete next[key]
+      return next
+    })
+  }
+
+  /** El foco al primer campo con error (los menús enfocan su disparador). */
+  function enfocarCampo(campo: keyof PreApprovalFormFields) {
+    // Va después del render que pinta el error, para que el lector lo lea junto.
+    window.setTimeout(() => document.getElementById(campo)?.focus(), 0)
   }
 
   /**
@@ -234,11 +249,23 @@ export default function AprobacionPage() {
       setPagando(true)
     } catch (err) {
       payTab?.close()
-      setSubmitError(
-        err instanceof PreScoringError
-          ? err.message
-          : 'No pudimos procesar tu solicitud. Intenta de nuevo.',
-      )
+      // 🔴 02-10-2026 · Sistema de errores: lo que el back rechazó por campo
+      // va a SU campo (y el primero recibe el foco); al pie sólo lo que no
+      // tiene campo, con la regla de oro del traductor. Antes un 400 decía
+      // «Revisa los datos…» sin decir cuál, y un 409 o un 5xx «El servicio no
+      // está disponible».
+      if (err instanceof PreScoringError) {
+        const porCampo = err.porCampo ?? {}
+        const conError = Object.keys(porCampo) as (keyof PreApprovalFormFields)[]
+        if (conError.length > 0) {
+          setErrors((e) => ({ ...e, ...porCampo }))
+          enfocarCampo(conError[0])
+        }
+        const sueltos = err.sueltos ?? [err.message]
+        setSubmitError(sueltos.length > 0 ? sueltos.join(' · ') : null)
+      } else {
+        setSubmitError(mensajeParaLaPersona(err, { accion: 'crear tu estudio' }))
+      }
     } finally {
       setSubmitting(false)
     }
@@ -404,6 +431,8 @@ export default function AprobacionPage() {
                   <Field id="nombres" label="Nombres" error={errors.nombres}>
                     <Input
                       id="nombres"
+                      aria-invalid={errors.nombres ? true : undefined}
+                      aria-describedby={errors.nombres ? 'nombres-error' : undefined}
                       autoComplete="given-name"
                       placeholder="Ej: María"
                       value={fields.nombres}
@@ -414,6 +443,8 @@ export default function AprobacionPage() {
                   <Field id="apellidos" label="Apellidos" error={errors.apellidos}>
                     <Input
                       id="apellidos"
+                      aria-invalid={errors.apellidos ? true : undefined}
+                      aria-describedby={errors.apellidos ? 'apellidos-error' : undefined}
                       autoComplete="family-name"
                       placeholder="Ej: Restrepo"
                       value={fields.apellidos}
@@ -424,6 +455,8 @@ export default function AprobacionPage() {
                   <Field id="cedula" label="Cédula" error={errors.cedula}>
                     <Input
                       id="cedula"
+                      aria-invalid={errors.cedula ? true : undefined}
+                      aria-describedby={errors.cedula ? 'cedula-error' : undefined}
                       inputMode="numeric"
                       autoComplete="off"
                       placeholder="Ej: 1098765432"
@@ -444,6 +477,8 @@ export default function AprobacionPage() {
                   <Field id="email" label="Correo electrónico" error={errors.email} className="md:col-span-2">
                     <Input
                       id="email"
+                      aria-invalid={errors.email ? true : undefined}
+                      aria-describedby={errors.email ? 'email-error' : undefined}
                       type="email"
                       autoComplete="email"
                       placeholder="Ej: maria@correo.com"
@@ -470,7 +505,11 @@ export default function AprobacionPage() {
                     error={errors.ciudad}
                   >
                     <Select value={fields.ciudad} onValueChange={(v) => v && set('ciudad', v)}>
-                      <SelectTrigger id="ciudad">
+                      <SelectTrigger
+                        id="ciudad"
+                        aria-invalid={errors.ciudad ? true : undefined}
+                        aria-describedby={errors.ciudad ? 'ciudad-error' : undefined}
+                      >
                         <SelectValue placeholder="Selecciona una ciudad" />
                       </SelectTrigger>
                       <SelectContent>
@@ -485,7 +524,11 @@ export default function AprobacionPage() {
 
                   <Field id="tipoInmueble" label="Tipo de inmueble" error={errors.tipoInmueble}>
                     <Select value={fields.tipoInmueble} onValueChange={(v) => v && set('tipoInmueble', v)}>
-                      <SelectTrigger id="tipoInmueble">
+                      <SelectTrigger
+                        id="tipoInmueble"
+                        aria-invalid={errors.tipoInmueble ? true : undefined}
+                        aria-describedby={errors.tipoInmueble ? 'tipoInmueble-error' : undefined}
+                      >
                         <SelectValue placeholder="Selecciona el tipo" />
                       </SelectTrigger>
                       <SelectContent>
@@ -501,6 +544,8 @@ export default function AprobacionPage() {
                   <Field id="canon" label="Canon mensual" error={errors.canon} className="md:col-span-2">
                     <MoneyInput
                       id="canon"
+                      aria-invalid={errors.canon ? true : undefined}
+                      aria-describedby={errors.canon ? 'canon-error' : undefined}
                       placeholder="2.000.000"
                       value={fields.canon}
                       onChange={(v) => set('canon', v)}
@@ -514,6 +559,8 @@ export default function AprobacionPage() {
                       id="consent"
                       checked={fields.consent}
                       onCheckedChange={(checked) => set('consent', checked === true)}
+                      aria-invalid={errors.consent ? true : undefined}
+                      aria-describedby={errors.consent ? 'consent-error' : undefined}
                       className="mt-0.5"
                     />
                     <Label htmlFor="consent" className="text-xs font-normal leading-relaxed text-fg-muted">
@@ -522,11 +569,13 @@ export default function AprobacionPage() {
                       consultar mi aprobación con las aseguradoras y ser contactado por un asesor de Leasefy.
                     </Label>
                   </div>
-                  {errors.consent && <p className="text-xs text-danger">{errors.consent}</p>}
+                  <ErrorDelCampo id="consent-error" mensaje={errors.consent} className="mt-0" />
                 </div>
 
                 {submitError && (
-                  <p className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">{submitError}</p>
+                  <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+                    {submitError}
+                  </p>
                 )}
 
                 <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
@@ -617,7 +666,8 @@ function Field({
         {label}
       </Label>
       {children}
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {/* El error entra suave (Cadence `FormError`); el control lo nombra con `${id}-error`. */}
+      <ErrorDelCampo id={`${id}-error`} mensaje={error} className="mt-0" />
     </div>
   )
 }

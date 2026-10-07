@@ -32,10 +32,21 @@ import { PauseModal } from '@/components/inmobiliaria/cobranza/intervention/Paus
 import { ForceStageModal } from '@/components/inmobiliaria/cobranza/intervention/ForceStageModal'
 import { ManualWAModal } from '@/components/inmobiliaria/cobranza/intervention/ManualWAModal'
 import { ManualCallModal } from '@/components/inmobiliaria/cobranza/intervention/ManualCallModal'
+import { CrossFade } from '@leasefy/cadence'
+import { RegistrarGestion } from '@/components/cobranza-manual/RegistrarGestion'
+import { GenerarCarta } from '@/components/cobranza-manual/GenerarCarta'
 
 void React
 
-type OpenModal = 'pause' | 'reanudar' | 'forceStage' | 'manualWA' | 'manualCall' | null
+type OpenModal =
+  | 'pause'
+  | 'reanudar'
+  | 'forceStage'
+  | 'manualWA'
+  | 'manualCall'
+  | 'gestion'
+  | 'carta'
+  | null
 
 const NS = 'inmobiliaria.ai.cobranza'
 
@@ -44,6 +55,8 @@ interface DebtorActionRailProps {
   debtorId: string
   debtorName: string
   onIntervention: () => void
+  /** COBRANZA-MANUAL: se registró una gestión (el detalle muestra «Gestiones»). */
+  onGestionRegistrada?: () => void
 }
 
 /** Future-aware relative time (the sidebar's old formatter — moved here with
@@ -87,6 +100,7 @@ export function DebtorActionRail({
   debtorId,
   debtorName,
   onIntervention,
+  onGestionRegistrada,
 }: DebtorActionRailProps) {
   const { t, locale } = useI18n()
   const perms = usePermissionsContextSafe()
@@ -121,6 +135,11 @@ export function DebtorActionRail({
   const forceStageEnabled = canForceStage && isAdmin
   const manualWAEnabled = canIntervene
   const manualCallEnabled = canIntervene && isAdmin
+  // COBRANZA-MANUAL (04-10-2026): registrar una gestión pide `cobros:create`
+  // del back (administrador, contador y auxiliar de cartera); generar la carta
+  // a mano, ver la cobranza. Ninguna de las dos le manda nada a nadie.
+  const gestionEnabled = isAdmin || (perms?.canAccess('cobros', 'create') ?? false)
+  const cartaEnabled = isAdmin || (perms?.canAccess('cobranza', 'view') ?? false)
 
   const handleSuccess = () => {
     setOpenModal(null)
@@ -148,6 +167,9 @@ export function DebtorActionRail({
         <h3 className="text-sm font-semibold text-fg">
           {t(`${NS}.detalle.proximaAccionTitulo`)}
         </h3>
+        {/* La próxima acción la agenda el agente en vivo: la que había sale y
+            la nueva entra (o «no hay nada programado»). */}
+        <CrossFade swapKey={nextAction ? `${nextAction.channel}-${nextAction.plannedFor}` : 'nada'}>
         {nextAction ? (
           <>
             <div className="mt-2 space-y-1">
@@ -180,6 +202,7 @@ export function DebtorActionRail({
             {t(`${NS}.detail.sidebar.noNextAction`)}
           </p>
         )}
+        </CrossFade>
       </section>
 
       {/* Acciones rápidas */}
@@ -197,6 +220,8 @@ export function DebtorActionRail({
             puerta: quien se equivocaba de fecha dejaba al agente detenido sobre
             ese caso hasta que la fecha pasara sola.
           */}
+          {/* Pausar ⇄ Reanudar: el botón cambia en su lugar con un fundido. */}
+          <CrossFade swapKey={estaPausado ? 'reanudar' : 'pausar'} mode="popLayout" direction="none">
           {estaPausado ? (
             <RailAction
               label={t(`${NS}.detail.acciones.resume.cta`)}
@@ -214,6 +239,21 @@ export function DebtorActionRail({
               testId="rail-pause"
             />
           )}
+          </CrossFade>
+          <RailAction
+            label="Registrar gestión"
+            disabled={!gestionEnabled}
+            disabledTooltip="Registrar gestiones lo hacen el administrador, el contador y el auxiliar de cartera."
+            onClick={() => setOpenModal('gestion')}
+            testId="rail-registrar-gestion"
+          />
+          <RailAction
+            label="Generar carta prejurídica"
+            disabled={!cartaEnabled}
+            disabledTooltip="Tu rol no puede ver la cobranza."
+            onClick={() => setOpenModal('carta')}
+            testId="rail-generar-carta"
+          />
           <RailAction
             label={t(`${NS}.detail.acciones.forceStage.cta`)}
             disabled={!forceStageEnabled}
@@ -288,6 +328,20 @@ export function DebtorActionRail({
         debtorName={debtorName}
         onSuccess={handleSuccess}
       />
+      <RegistrarGestion
+        abierto={openModal === 'gestion'}
+        onCerrar={() => setOpenModal(null)}
+        quien={{ deudorId: debtorId }}
+        nombre={debtorName}
+        onRegistrada={() => onGestionRegistrada?.()}
+      />
+      <GenerarCarta
+        abierto={openModal === 'carta'}
+        onCerrar={() => setOpenModal(null)}
+        debtorId={debtorId}
+        debtorName={debtorName}
+        onGenerada={() => onGestionRegistrada?.()}
+      />
       <ManualCallModal
         open={openModal === 'manualCall'}
         onClose={() => setOpenModal(null)}
@@ -323,7 +377,9 @@ function RailAction({
       disabled={disabled}
       title={disabled ? disabledTooltip : undefined}
       data-testid={testId}
-      className="w-full flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-left transition-colors hover:border-primary/40 disabled:opacity-50 disabled:cursor-not-allowed motion-reduce:transition-none"
+      // Presión del sistema (97%, como `Button`) con el cambio de borde en UNA
+      // sola `transition-[…]`; quieta deshabilitada.
+      className="w-full flex items-center justify-between gap-2 rounded-md border border-border bg-card px-3 py-2 text-left transition-[color,background-color,border-color,transform] duration-fast ease-enter active:scale-[0.97] disabled:active:scale-100 hover:border-primary/40 disabled:opacity-50 disabled:cursor-not-allowed motion-reduce:transition-none"
     >
       <span className="text-sm font-medium text-fg">
         {label}

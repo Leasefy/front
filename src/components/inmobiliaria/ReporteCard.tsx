@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { Pressable } from '@leasefy/cadence';
 import {
   FileText,
   Clock,
@@ -142,10 +142,11 @@ export function ReporteCard({
   // Compact variant - single row for grid views
   if (variant === 'compact') {
     return (
-      <motion.div
-        whileHover={{ y: -2 }}
+      <Pressable
+        hover="lift"
+        press="none"
         className={cn(
-          'w-full p-4 rounded-lg border border-border bg-card transition-all cursor-pointer hover:border-foreground/15',
+          'w-full p-4 rounded-lg border border-border bg-card transition-[border-color,box-shadow] duration-base cursor-pointer hover:border-foreground/15',
           isLocked && 'opacity-75'
         )}
         onClick={isLocked ? onUpgrade : onPreview}
@@ -202,15 +203,16 @@ export function ReporteCard({
             </div>
           </div>
         </div>
-      </motion.div>
+      </Pressable>
     );
   }
 
   // Full card variant
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
-      className="w-full rounded-lg border border-border bg-card overflow-hidden transition-all hover:border-foreground/15"
+    <Pressable
+      hover="lift"
+      press="none"
+      className="w-full rounded-lg border border-border bg-card overflow-hidden transition-[border-color,box-shadow] duration-base hover:border-foreground/15"
     >
       {/* Header Section */}
       <div className="p-5 pb-4">
@@ -381,7 +383,7 @@ export function ReporteCard({
           </>
         )}
       </div>
-    </motion.div>
+    </Pressable>
   );
 }
 

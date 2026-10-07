@@ -33,9 +33,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { Collapse, Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   ArrowRight,
-  CaretDown,
   CaretRight,
   CheckCircle,
   FileArrowUp,
@@ -81,13 +81,41 @@ import {
   type EstadoDelMapeo,
 } from '@/components/contabilidad/mapeo/MapeoContable';
 
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { ApiError } from '@/lib/api/client';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { mensajeDeContabilidad } from './contabilidad-errores';
 import { ImportarCuentas } from './ImportarCuentas';
+import { toast } from '@/components/ui/toast';
+import { avisoDeNaturaleza, naturalezaDeLaClase } from '@/lib/contabilidad/naturaleza-de-la-clase';
 
 export const RUTA_DEL_PASO_5 = '/panel/inmobiliaria/migracion/contables';
 
 /** Sentinel: Radix `Select` no admite `value=""`. */
 const SIN_PADRE = '__raiz__';
+
+/** Los campos del formulario de una cuenta que pueden llevar un error propio. */
+type CampoDeLaCuenta = 'codigo' | 'nombre' | 'naturaleza' | 'padreId';
+
+/** El id del control de cada campo (para enfocarlo y para su error). */
+const ID_DEL_CAMPO_DE_LA_CUENTA: Record<CampoDeLaCuenta, string> = {
+  codigo: 'puc-codigo',
+  nombre: 'puc-nombre',
+  naturaleza: 'puc-naturaleza',
+  padreId: 'puc-padre',
+};
+
+/**
+ * Los códigos de `puc.service.ts` que son de UN campo: van bajo ese campo,
+ * con la frase de `mensajeDeContabilidad`, en vez de un aviso suelto abajo.
+ */
+const CAMPO_DEL_CODIGO_DE_LA_CUENTA: Record<string, CampoDeLaCuenta> = {
+  CODIGO_FUERA_DEL_ARBOL: 'codigo',
+  CODIGO_DUPLICADO: 'codigo',
+  PADRE_DESCONOCIDO: 'padreId',
+  PADRE_CON_MOVIMIENTOS: 'padreId',
+  NATURALEZA_CON_MOVIMIENTOS: 'naturaleza',
+};
 
 // ── Helpers puros ───────────────────────────────────────────────────────────
 
@@ -288,7 +316,7 @@ export function PlanDeCuentas({
     <div className="space-y-6">
       {error ? (
         <div
-          className="flex flex-wrap items-start gap-2 rounded-md border border-border bg-danger-soft p-3"
+          className="flex flex-wrap items-start gap-2 rounded-md bg-danger-soft p-3"
           role="alert"
         >
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
@@ -311,7 +339,7 @@ export function PlanDeCuentas({
 
       {semilla ? (
         <div
-          className="flex items-start gap-2 rounded-md border border-border bg-success-soft p-3"
+          className="flex items-start gap-2 rounded-md bg-success-soft p-3"
           data-testid="puc-semilla-resultado"
         >
           <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-success" weight="fill" />
@@ -411,12 +439,12 @@ export function PlanDeCuentas({
          */
         <section
           ref={mapeoRef}
-          className="scroll-mt-6 rounded-lg border border-border bg-surface p-6 shadow-sm"
+          className="scroll-mt-6 rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
           aria-labelledby="puc-mapeo-titulo"
           data-testid="puc-mapeo"
         >
           <div className="mb-4">
-            <h2 id="puc-mapeo-titulo" className="font-medium text-fg">
+            <h2 id="puc-mapeo-titulo" className="text-sm font-medium text-fg">
               Cuentas de los asientos automáticos
             </h2>
             <p className="text-sm text-fg-muted">
@@ -445,12 +473,12 @@ export function PlanDeCuentas({
 
       {hayCuentas ? (
         <section
-          className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+          className="rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
           aria-labelledby="puc-arbol-titulo"
         >
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
-              <h2 id="puc-arbol-titulo" className="font-medium text-fg">
+              <h2 id="puc-arbol-titulo" className="text-sm font-medium text-fg">
                 Tu plan de cuentas
               </h2>
               <p className="text-sm text-fg-muted" data-testid="puc-resumen">
@@ -529,7 +557,7 @@ export function PlanDeCuentas({
          * lo cambia debajo del dedo.
          */
         <div
-          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border-faint bg-surface p-4 shadow-sm"
           data-testid="puc-pie"
         >
           {mapeo === null ? (
@@ -595,11 +623,11 @@ function SinPlan({
 }) {
   return (
     <section
-      className="rounded-lg border border-border bg-surface p-6 shadow-sm"
+      className="rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
       aria-labelledby="puc-vacio-titulo"
       data-testid="puc-vacio"
     >
-      <h2 id="puc-vacio-titulo" className="font-medium text-fg">
+      <h2 id="puc-vacio-titulo" className="text-sm font-medium text-fg">
         Todavía no hay plan de cuentas
       </h2>
       <p className="mt-1 max-w-2xl text-sm text-fg-muted">
@@ -685,14 +713,14 @@ function PendientesDelContador({
 
   return (
     <section
-      className="rounded-lg border border-warning bg-warning-soft p-5"
+      className="rounded-lg bg-warning-soft p-5"
       aria-labelledby="puc-pendientes-titulo"
       data-testid="puc-pendientes"
     >
       <div className="flex items-start gap-2">
         <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
         <div className="min-w-0 flex-1">
-          <h2 id="puc-pendientes-titulo" className="font-medium text-fg">
+          <h2 id="puc-pendientes-titulo" className="text-sm font-medium text-fg">
             {pendientes.length === 1
               ? 'Una cuenta para confirmar con tu contador'
               : `${pendientes.length} cuentas para confirmar con tu contador`}
@@ -704,13 +732,15 @@ function PendientesDelContador({
         </div>
       </div>
 
-      <ul className="mt-4 space-y-2">
+      {/* Entran escalonadas (ARREGLOS-8, MOV-A6). */}
+      <Stagger as="ul" layout={false} distance="xs" className="mt-4 space-y-2">
         {pendientes.map((p) => {
           const cargada = porCodigo.get(p.codigo);
           return (
-            <li
+            <StaggerItem
+              as="li"
               key={p.codigo}
-              className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-border bg-surface p-3"
+              className="flex flex-wrap items-start justify-between gap-3 rounded-md bg-surface p-3 shadow-sm"
               data-testid={`puc-pendiente-${p.codigo}`}
             >
               <div className="min-w-0">
@@ -742,10 +772,10 @@ function PendientesDelContador({
                   </Button>
                 </div>
               ) : null}
-            </li>
+            </StaggerItem>
           );
         })}
-      </ul>
+      </Stagger>
       {error ? (
         <p className="mt-2 text-sm text-danger" role="alert">
           {error}
@@ -790,7 +820,12 @@ function Nodo({
             aria-label={estaAbierto ? `Contraer ${nodo.codigo}` : `Expandir ${nodo.codigo}`}
             className="flex h-5 w-5 items-center justify-center rounded text-fg-subtle hover:bg-surface-muted hover:text-fg"
           >
-            {estaAbierto ? <CaretDown className="h-3.5 w-3.5" /> : <CaretRight className="h-3.5 w-3.5" />}
+            {/* Una sola flecha que gira con la curva del colapsable (ARREGLOS-8). */}
+            <CaretRight
+              className={`h-3.5 w-3.5 transition-transform duration-slow ease-emphasis ${
+                estaAbierto ? 'rotate-90' : ''
+              }`}
+            />
           </button>
         ) : (
           <span className="h-5 w-5" aria-hidden />
@@ -851,19 +886,23 @@ function Nodo({
           ) : null}
         </span>
       </div>
-      {tieneHijas && estaAbierto ? (
-        <ul className="divide-y divide-border-faint border-t border-border-faint">
-          {hijas.map((h) => (
-            <Nodo
-              key={h.id}
-              nodo={h}
-              abierto={abierto}
-              onAlternar={onAlternar}
-              onEditar={onEditar}
-              onSubcuenta={onSubcuenta}
-            />
-          ))}
-        </ul>
+      {/* Las subcuentas se abren y se cierran con su altura (ARREGLOS-8, MOV-A6);
+          antes aparecían y desaparecían de golpe. */}
+      {tieneHijas ? (
+        <Collapse open={estaAbierto}>
+          <ul className="divide-y divide-border-faint border-t border-border-faint">
+            {hijas.map((h) => (
+              <Nodo
+                key={h.id}
+                nodo={h}
+                abierto={abierto}
+                onAlternar={onAlternar}
+                onEditar={onEditar}
+                onSubcuenta={onSubcuenta}
+              />
+            ))}
+          </ul>
+        </Collapse>
       ) : null}
     </li>
   );
@@ -888,6 +927,19 @@ function FormularioDeCuenta({
   const [naturaleza, setNaturaleza] = useState<NaturalezaContable>(
     editando?.naturaleza ?? padreInicial?.naturaleza ?? 'DEBITO',
   );
+  /**
+   * 🔴 CB-27 (QA de Contabilidad, 03-10-2026): al crear, la naturaleza se
+   * PROPONE por la clase del código (1/5/6/7 débito; 2/3/4 crédito) mientras
+   * nadie la elija a mano; si se elige otra, se avisa (no se impide: existen las
+   * cuentas correctoras).
+   */
+  const [naturalezaAMano, setNaturalezaAMano] = useState(Boolean(editando));
+  useEffect(() => {
+    if (editando || naturalezaAMano) return;
+    const propuesta = naturalezaDeLaClase(codigo);
+    if (propuesta) setNaturaleza(propuesta);
+  }, [codigo, editando, naturalezaAMano]);
+  const avisoNaturaleza = avisoDeNaturaleza(editando?.codigo ?? codigo, naturaleza);
   const [padreId, setPadreId] = useState<string>(padreInicial?.id ?? SIN_PADRE);
   const [imputable, setImputable] = useState(editando?.imputable ?? true);
   const [activa, setActiva] = useState(editando?.activa ?? true);
@@ -901,6 +953,10 @@ function FormularioDeCuenta({
   const frasesNoDeducible = frasesDeLoNoDeducible(soportaLoNoDeducible);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Lo que el back dijo de un campo (un 400 con `campos`, o un código de un campo). */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDeLaCuenta, string>>>({});
+  const olvidar = (campo: CampoDeLaCuenta) =>
+    setDelServidor((d) => (d[campo] ? { ...d, [campo]: undefined } : d));
 
   const ordenadas = useMemo(
     () => [...cuentas].sort((a, b) => a.codigo.localeCompare(b.codigo)),
@@ -920,6 +976,7 @@ function FormularioDeCuenta({
   const guardar = async () => {
     setGuardando(true);
     setError(null);
+    setDelServidor({});
     try {
       if (editando) {
         await contabilidadApi.puc.actualizar(
@@ -938,22 +995,55 @@ function FormularioDeCuenta({
           ...(padreElegido ? { padreId: padreElegido.id } : {}),
         });
       }
+      // CB-27: que se vea que quedó (antes el formulario sólo se cerraba).
+      toast.success(
+        editando
+          ? `Cambios guardados en ${editando.codigo} · ${nombre.trim()}.`
+          : `Cuenta ${codigo} · ${nombre.trim()} creada.`,
+      );
       await onGuardado();
     } catch (e) {
-      setError(mensajeDeContabilidad(e, 'No pudimos guardar la cuenta.'));
+      /*
+       * Lo que es de un campo va bajo ese campo (un 400 con `campos`, o un
+       * código como `CODIGO_DUPLICADO`); el resto, al aviso de abajo con la
+       * regla de oro. Al editar no se ven ni el código ni el padre: lo de esos
+       * dos va al aviso.
+       */
+      const visibles: CampoDeLaCuenta[] = editando
+        ? ['nombre', 'naturaleza']
+        : ['codigo', 'nombre', 'naturaleza', 'padreId'];
+      const reparto = repartirErroresDelServidor<CampoDeLaCuenta>(e, { campos: visibles });
+      const codigoDelError = e instanceof ApiError ? e.code : undefined;
+      const campoDelCodigo = codigoDelError ? CAMPO_DEL_CODIGO_DE_LA_CUENTA[codigoDelError] : undefined;
+      let primero: CampoDeLaCuenta | undefined;
+      if (reparto.delServidor.length > 0) {
+        setDelServidor(reparto.porCampo);
+        primero = reparto.orden[0];
+        if (reparto.sueltos.length > 0) setError(reparto.sueltos.join(' · '));
+      } else if (campoDelCodigo && visibles.includes(campoDelCodigo)) {
+        setDelServidor({ [campoDelCodigo]: mensajeDeContabilidad(e, 'No pudimos guardar la cuenta.') });
+        primero = campoDelCodigo;
+      } else {
+        setError(mensajeDeContabilidad(e, 'No pudimos guardar la cuenta.'));
+      }
+      if (primero) document.getElementById(ID_DEL_CAMPO_DE_LA_CUENTA[primero])?.focus();
       setGuardando(false);
     }
   };
 
+  const errorDelCodigo = fueraDelArbol
+    ? `Tiene que empezar con ${padreElegido?.codigo} y ser más largo.`
+    : delServidor.codigo;
+
   return (
     <section
-      className="rounded-lg border border-primary bg-surface p-6 shadow-sm"
+      className="rounded-lg border border-primary/40 bg-surface p-6 shadow-sm"
       aria-labelledby="puc-formulario-titulo"
       data-testid="puc-formulario"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 id="puc-formulario-titulo" className="font-medium text-fg">
+          <h2 id="puc-formulario-titulo" className="text-sm font-medium text-fg">
             {editando
               ? `Editar ${editando.codigo} · ${editando.nombre}`
               : padreInicial
@@ -988,20 +1078,28 @@ function FormularioDeCuenta({
             inputMode="numeric"
             maxLength={LARGO_MAXIMO_DE_CODIGO}
             disabled={Boolean(editando)}
-            onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
-            aria-invalid={codigo.length > 0 && (!codigoValido || fueraDelArbol)}
-            aria-describedby="puc-codigo-ayuda"
+            onChange={(e) => {
+              olvidar('codigo');
+              setCodigo(e.target.value.replace(/\D/g, ''));
+            }}
+            aria-invalid={
+              (codigo.length > 0 && (!codigoValido || fueraDelArbol)) || Boolean(delServidor.codigo) || undefined
+            }
+            aria-describedby={errorDelCodigo ? 'puc-codigo-error' : undefined}
             data-testid="puc-codigo"
           />
-          <p id="puc-codigo-ayuda" className="text-caption text-fg-subtle">
-            {fueraDelArbol
-              ? `Tiene que empezar con ${padreElegido?.codigo} y ser más largo.`
-              : sugerido
+          <ErrorDelCampo
+            id="puc-codigo-error"
+            className="mt-0"
+            mensaje={errorDelCodigo}
+            pista={
+              sugerido
                 ? `${nombreDeNivel(codigo)} · va a colgar de ${sugerido.codigo} ${sugerido.nombre}.`
                 : codigo
                   ? `${nombreDeNivel(codigo)}.`
-                  : 'Sólo dígitos.'}
-          </p>
+                  : 'Sólo dígitos.'
+            }
+          />
         </div>
 
         <div className="space-y-1">
@@ -1012,19 +1110,41 @@ function FormularioDeCuenta({
             id="puc-nombre"
             value={nombre}
             maxLength={LARGO_MAXIMO_DE_NOMBRE}
-            onChange={(e) => setNombre(e.target.value)}
-            aria-invalid={nombre.length > 0 && !nombreValido}
+            onChange={(e) => {
+              olvidar('nombre');
+              setNombre(e.target.value);
+            }}
+            aria-invalid={(nombre.length > 0 && !nombreValido) || Boolean(delServidor.nombre) || undefined}
+            aria-describedby={delServidor.nombre ? 'puc-nombre-error' : undefined}
             data-testid="puc-nombre"
           />
-          <p className="text-caption text-fg-subtle">Como lo llama tu contador. Mínimo 3 letras.</p>
+          <ErrorDelCampo
+            id="puc-nombre-error"
+            className="mt-0"
+            mensaje={delServidor.nombre}
+            pista="Como lo llama tu contador. Mínimo 3 letras."
+          />
         </div>
 
         <div className="space-y-1">
           <label id="puc-naturaleza-etiqueta" className="text-sm font-medium text-fg">
             Naturaleza
           </label>
-          <Select value={naturaleza} onValueChange={(v) => setNaturaleza(v as NaturalezaContable)}>
-            <SelectTrigger aria-labelledby="puc-naturaleza-etiqueta" data-testid="puc-naturaleza">
+          <Select
+            value={naturaleza}
+            onValueChange={(v) => {
+              olvidar('naturaleza');
+              setNaturalezaAMano(true);
+              setNaturaleza(v as NaturalezaContable);
+            }}
+          >
+            <SelectTrigger
+              id="puc-naturaleza"
+              aria-labelledby="puc-naturaleza-etiqueta"
+              aria-invalid={Boolean(delServidor.naturaleza) || undefined}
+              aria-describedby={delServidor.naturaleza ? 'puc-naturaleza-error' : undefined}
+              data-testid="puc-naturaleza"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -1032,6 +1152,12 @@ function FormularioDeCuenta({
               <SelectItem value="CREDITO">Crédito (pasivos, patrimonio, ingresos)</SelectItem>
             </SelectContent>
           </Select>
+          <ErrorDelCampo id="puc-naturaleza-error" className="mt-0" mensaje={delServidor.naturaleza} />
+          {avisoNaturaleza ? (
+            <p className="text-caption text-warning" role="status" data-testid="puc-naturaleza-distinta">
+              {avisoNaturaleza}
+            </p>
+          ) : null}
         </div>
 
         {!editando ? (
@@ -1039,8 +1165,20 @@ function FormularioDeCuenta({
             <label id="puc-padre-etiqueta" className="text-sm font-medium text-fg">
               Cuenta padre
             </label>
-            <Select value={padreId} onValueChange={setPadreId}>
-              <SelectTrigger aria-labelledby="puc-padre-etiqueta" data-testid="puc-padre">
+            <Select
+              value={padreId}
+              onValueChange={(v) => {
+                olvidar('padreId');
+                setPadreId(v);
+              }}
+            >
+              <SelectTrigger
+                id="puc-padre"
+                aria-labelledby="puc-padre-etiqueta"
+                aria-invalid={Boolean(delServidor.padreId) || undefined}
+                aria-describedby={delServidor.padreId ? 'puc-padre-error' : undefined}
+                data-testid="puc-padre"
+              >
                 <SelectValue placeholder="Automática por el código" />
               </SelectTrigger>
               <SelectContent>
@@ -1052,33 +1190,47 @@ function FormularioDeCuenta({
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-caption text-fg-subtle">
-              Si el padre recibía movimientos, deja de hacerlo: pasan a las subcuentas.
-            </p>
+            <ErrorDelCampo
+              id="puc-padre-error"
+              className="mt-0"
+              mensaje={delServidor.padreId}
+              pista="Si el padre recibía movimientos, deja de hacerlo: pasan a las subcuentas."
+            />
           </div>
         ) : null}
       </div>
 
       <div className="mt-4 flex flex-wrap gap-6">
+        {/* CB-27: cada casilla con su nombre (`aria-labelledby`) y su
+            explicación (`aria-describedby`): el lector de pantalla decía
+            «casilla de verificación» y nada más. */}
         <label className="flex items-start gap-2 text-sm text-fg">
           <Checkbox
             checked={imputable}
             onCheckedChange={(c) => setImputable(c === true)}
+            aria-labelledby="puc-imputable-rotulo"
+            aria-describedby="puc-imputable-ayuda"
             data-testid="puc-imputable"
           />
           <span>
-            Recibe movimientos
-            <span className="block text-caption text-fg-subtle">
+            <span id="puc-imputable-rotulo">Recibe movimientos</span>
+            <span id="puc-imputable-ayuda" className="block text-caption text-fg-subtle">
               Las cuentas con subcuentas no: los movimientos van en la subcuenta.
             </span>
           </span>
         </label>
         {editando ? (
           <label className="flex items-start gap-2 text-sm text-fg">
-            <Checkbox checked={activa} onCheckedChange={(c) => setActiva(c === true)} />
+            <Checkbox
+              checked={activa}
+              onCheckedChange={(c) => setActiva(c === true)}
+              aria-labelledby="puc-activa-rotulo"
+              aria-describedby="puc-activa-ayuda"
+              data-testid="puc-activa"
+            />
             <span>
-              Activa
-              <span className="block text-caption text-fg-subtle">
+              <span id="puc-activa-rotulo">Activa</span>
+              <span id="puc-activa-ayuda" className="block text-caption text-fg-subtle">
                 Inactiva no se puede usar en asientos nuevos; el historial se conserva.
               </span>
             </span>
@@ -1092,11 +1244,13 @@ function FormularioDeCuenta({
               checked={noDeducible}
               disabled={!soportaLoNoDeducible}
               onCheckedChange={(c) => setNoDeducible(c === true)}
+              aria-labelledby="puc-no-deducible-rotulo"
+              aria-describedby="puc-no-deducible-ayuda"
               data-testid="puc-no-deducible"
             />
             <span>
-              {frasesNoDeducible.titulo}
-              <span className="block max-w-prose text-caption text-fg-subtle">
+              <span id="puc-no-deducible-rotulo">{frasesNoDeducible.titulo}</span>
+              <span id="puc-no-deducible-ayuda" className="block max-w-prose text-caption text-fg-subtle">
                 {frasesNoDeducible.explicacion}
               </span>
             </span>
@@ -1105,7 +1259,7 @@ function FormularioDeCuenta({
       </div>
 
       {error ? (
-        <div className="mt-4 flex items-start gap-2 rounded-md border border-border bg-danger-soft p-3" role="alert">
+        <div className="mt-4 flex items-start gap-2 rounded-md bg-danger-soft p-3" role="alert">
           <Warning className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
           <p className="text-sm text-fg">{error}</p>
         </div>

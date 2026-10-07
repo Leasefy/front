@@ -77,6 +77,17 @@ export interface BorradorDeContrato {
   consignacionId?: string;
   propertyId?: string;
   /**
+   * La postulación de la que nace el contrato (T-0145). El backend carga de ahí
+   * al inquilino y completa los `arrendatario*` que vengan vacíos; lo que se
+   * mande explícito gana. Un backend anterior ignora la clave.
+   */
+  applicationId?: string;
+  /**
+   * Un inquilino ya existente de la agencia (contrato manual). Se ignora si
+   * viene `applicationId`.
+   */
+  tenantId?: string;
+  /**
    * 🔴 Sin esto —y sin un tipo de inmueble que lo resuelva— el backend
    * responde 400 `USO_INDETERMINADO`. No adivina, y con razón: emitir un local
    * con la plantilla de vivienda invocaría la Ley 820 sobre un contrato que se
@@ -198,6 +209,11 @@ export interface PropuestaDeLaIa {
   pendientes: MotivoDeRechazo[];
   /** `true` cuando no hay nada ilegal. Puede haber `pendientes` igual. */
   aplicable: boolean;
+  /**
+   * QA-CONT-95 r3 (EX-01): notas para quien revisa, que no frenan nada (p. ej.
+   * «En vivienda, prohibir mascotas no tiene efecto…»). Un back anterior no lo manda.
+   */
+  avisos?: string[];
 }
 
 // ============================================================================
@@ -218,6 +234,8 @@ function cuerpoDelBorrador(b: BorradorDeContrato): Record<string, unknown> {
   const cuerpo: Record<string, unknown> = {};
   poner(cuerpo, 'consignacionId', b.consignacionId);
   poner(cuerpo, 'propertyId', b.propertyId);
+  poner(cuerpo, 'applicationId', b.applicationId);
+  poner(cuerpo, 'tenantId', b.tenantId);
   poner(cuerpo, 'uso', b.uso);
   poner(cuerpo, 'arrendatarioNombre', b.arrendatarioNombre);
   poner(cuerpo, 'arrendatarioDocumento', b.arrendatarioDocumento);

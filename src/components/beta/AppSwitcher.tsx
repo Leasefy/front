@@ -38,9 +38,11 @@ export function AppSwitcher({ currentWorkspace, basePath }: AppSwitcherProps) {
 
   return (
     <div className="flex items-center justify-between">
-      {/* Brand — real Leasefy mark (brand blue on light, white on dark) */}
+      {/* Brand — real Leasefy mark: negro en claro y blanco hueso en oscuro
+          (`text-fg`), como el logo de la barra de las demás plataformas y el
+          de la landing (Nico, 03-10-2026; antes, azul en claro). */}
       <div className="flex items-center gap-2.5">
-        <LeasefyMark className="w-7 h-auto shrink-0 text-primary dark:text-white" />
+        <LeasefyMark className="w-7 h-auto shrink-0 text-fg" />
         <span className="text-sm font-bold text-fg tracking-tight">
           Leasefy
           <span className="text-primary ml-1">AI</span>

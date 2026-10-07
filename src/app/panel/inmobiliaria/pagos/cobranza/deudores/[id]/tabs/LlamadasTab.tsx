@@ -22,14 +22,16 @@ import {
   Badge,
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableRow,
+  TableRowAnimada,
   TableHead,
   TableCell,
 } from '@/components/ui'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import { LlamadaDetalleSheet } from '@/components/inmobiliaria/cobranza/LlamadaDetalleSheet'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 
 void React
 
@@ -77,8 +79,11 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
     shouldPaginate,
   } = useTablePagination(data?.calls ?? [])
 
+  // Movimiento: cada salida en un `CrossFade` con su clave (cargando →
+  // llamadas, → fallo, → vacío).
   if (isLoading && !data) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="space-y-2">
         {Array.from({ length: 4 }, (_, i) => (
           <div
@@ -87,11 +92,13 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
           />
         ))}
       </div>
+      </CrossFade>
     )
   }
 
   if (error) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="rounded-md border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
         <p className="text-sm text-danger">
           {t('inmobiliaria.ai.cobranza.detail.llamadas.error')}: {error}
@@ -106,24 +113,27 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
           {t('inmobiliaria.ai.cobranza.detail.llamadas.errorRetry')}
         </Button>
       </div>
+      </CrossFade>
     )
   }
 
   const calls = data?.calls ?? []
   if (calls.length === 0) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="rounded-md border border-dashed border-border p-8 text-center">
         <p className="text-sm text-fg-muted">
           {t('inmobiliaria.ai.cobranza.detail.llamadas.empty')}
         </p>
       </div>
+      </CrossFade>
     )
   }
 
   const abrir = (callId: string) => setLlamadaAbierta(callId)
 
   return (
-    <>
+    <CrossFade swapKey="llamadas">
       {/* md+ table */}
       <div className="hidden md:block overflow-x-auto rounded-md border border-border bg-surface">
         <Table className="min-w-full divide-y divide-border text-sm">
@@ -146,9 +156,11 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
               </TableHead>
             </TableRow>
           </TableHeader>
-          <TableBody className="divide-y divide-border-faint">
+          {/* Paginar o una llamada nueva en vivo: las filas entran
+              escalonadas y las que sobran salen. */}
+          <TableBodyAnimado className="divide-y divide-border-faint">
             {pageItems.map((c) => (
-              <TableRow
+              <TableRowAnimada
                 key={c.id}
                 role="button"
                 tabIndex={0}
@@ -177,16 +189,16 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
                     {c.compliance_flags_count}
                   </Badge>
                 </TableCell>
-              </TableRow>
+              </TableRowAnimada>
             ))}
-          </TableBody>
+          </TableBodyAnimado>
         </Table>
       </div>
 
       {/* sm cards */}
-      <ul className="md:hidden space-y-2">
+      <Stagger as="ul" className="md:hidden space-y-2">
         {pageItems.map((c) => (
-          <li key={c.id}>
+          <StaggerItem as="li" key={c.id}>
             <button
               type="button"
               onClick={() => abrir(c.id)}
@@ -203,9 +215,9 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
                 {t('inmobiliaria.ai.cobranza.detail.llamadas.columns.compliance')}
               </p>
             </button>
-          </li>
+          </StaggerItem>
         ))}
-      </ul>
+      </Stagger>
 
       <LlamadaDetalleSheet
         callId={llamadaAbierta}
@@ -225,6 +237,6 @@ export function LlamadasTab({ debtorId, refetchKey = 0 }: LlamadasTabProps) {
           />
         </div>
       )}
-    </>
+    </CrossFade>
   )
 }

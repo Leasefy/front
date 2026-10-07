@@ -17,7 +17,18 @@ void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 // El documento no usa `useI18n`: sus palabras viven en `textos.ts` (ver el
-// porqué allá). No hay nada que mockear.
+// porqué allá). Sólo las secciones del panel que leen la API (el anticipo y el
+// saldo a favor al terminar) se cambian por una marca.
+vi.mock('./AnticipoDelContrato', () => ({
+  AnticipoDelContratoSeccion: ({ contractId }: { contractId: string }) => (
+    <div data-testid={`anticipo-${contractId}`} />
+  ),
+}));
+vi.mock('./SaldoAFavorAlTerminar', () => ({
+  SaldoAFavorAlTerminarSeccion: ({ contractId }: { contractId: string }) => (
+    <div data-testid={`saldo-al-terminar-${contractId}`} />
+  ),
+}));
 import { EstadoDeCuentaDocumento } from './EstadoDeCuentaDocumento';
 import { contrato, contratoConImpuestos, estadoDeCuenta, fila } from './ejemplo-de-prueba';
 
@@ -96,9 +107,11 @@ describe('EstadoDeCuentaDocumento', () => {
     expect(quiebre?.textContent).toContain('INVERSIONES EL PORTAL');
   });
 
-  it('«Sistema anterior» se dice con esas palabras, no con «Contrato terminado»', () => {
+  it('«Del sistema anterior» se dice con esas palabras, no con «Contrato terminado»', () => {
     montar(<EstadoDeCuentaDocumento doc={estadoDeCuenta({ contratos: [contrato()] })} hoy={HOY} />);
-    expect(host.textContent).toContain('Sistema anterior');
+    // PG-08 (Nico, 03-10-2026): «Del sistema anterior» y, sin comprobante migrado, lo dice.
+    expect(host.textContent).toContain('Del sistema anterior');
+    expect(host.querySelector('[data-testid="sin-comprobantes"]')?.textContent).toBe('Sin comprobantes cargados');
   });
 
   it('el total del contrato y el general salen, y el general es el número del CEO', () => {
@@ -140,9 +153,14 @@ describe('EstadoDeCuentaDocumento', () => {
         hoy={HOY}
       />,
     );
+    /* PG-15 (03-10-2026), cambiado a propósito: con dos o más impuestos la
+       tabla no cabía a 1440 px; se pliegan en «Impuestos», un renglón por
+       impuesto con su nombre. IVA y retención se siguen viendo. */
     const encabezados = Array.from(host.querySelectorAll('th')).map((th) => th.textContent);
-    expect(encabezados).toContain('IVA');
-    expect(encabezados).toContain('Retención');
+    expect(encabezados).toContain('Impuestos');
+    const plegados = host.querySelector('[data-testid="impuestos-plegados"]')?.textContent ?? '';
+    expect(plegados).toContain('IVA');
+    expect(plegados).toContain('Retención');
   });
 
   it('una cuota pendiente ya vencida lo dice con la palabra, no sólo con el color', () => {
@@ -177,8 +195,16 @@ describe('EstadoDeCuentaDocumento', () => {
        vino pagada está pagada (Nico: «que haya pagado en el sistema anterior
        quiere decir que pagó»). La distinción de dónde salió cada una la siguen
        llevando la barra de dos tonos y su leyenda. */
-    expect(host.textContent).toContain('2 de 4 cuotas');
+    /* 🔴 PG-08 (Nico, 03-10-2026), cambiado a propósito: la cuota del sistema
+       anterior de este ejemplo NO trae comprobante migrado, y sin comprobante
+       «no suma ni en la deuda ni en lo pagado». Ya no se cuenta como pagada
+       («1 de 4», no «2 de 4»), y la leyenda dice por qué. Con su comprobante
+       sí cuenta (resumen.test.ts). */
+    expect(host.textContent).toContain('1 de 4 cuotas');
     expect(host.textContent).toContain('1 del sistema anterior');
+    expect(host.querySelector('[data-testid="anteriores-sin-comprobante"]')?.textContent).toContain(
+      '1 sin comprobantes cargados',
+    );
   });
 
   it('🔴 del lado PROPIETARIO no dice «Resta por pagar» ni «En mora» (QA 22-09)', () => {
@@ -207,6 +233,88 @@ describe('EstadoDeCuentaDocumento', () => {
     expect(resumen).not.toContain('En mora');
     const estado = host.querySelector('[data-testid="estado-del-cliente"]');
     expect(estado?.className).not.toContain('text-danger');
+  });
+
+  it('🔴 «Por girar» del propietario: UNA sola cifra hasta el mes en curso, neta de deducciones, y los próximos giros aparte (Nico, 04-10-2026)', () => {
+    const c = contrato({
+      secciones: {
+        arriendos: [
+          fila({ estado: 'PENDIENTE', fechaVencimiento: '2026-09-01', valorNeto: 4_000_000 }),
+          fila({ estado: 'PENDIENTE', fechaVencimiento: '2027-06-01', valorNeto: 50_000_000 }),
+        ],
+        otrosConceptos: [],
+      },
+    });
+    montar(
+      <EstadoDeCuentaDocumento
+        doc={{
+          ...estadoDeCuenta({
+            cliente: { nombre: 'Paula Propietaria Ruiz', documento: '52123456', tipo: 'PROPIETARIO' },
+            contratos: [c],
+          }),
+          porGirar: {
+            hastaMes: '2026-10',
+            porGirarCop: 3_770_000,
+            cuotas: 1,
+            deduccionesCop: 230_000,
+            proximosGirosCop: 15_835_975,
+            proximosGirosHastaMes: '2027-01',
+          },
+        }}
+        hoy={HOY}
+      />,
+    );
+    const resumen = host.querySelector('[data-testid="estado-resumen"]')?.textContent ?? '';
+    expect(resumen).toContain('Por girar hasta octubre de 2026');
+    expect(host.querySelector('[data-testid="resta-por-pagar"]')?.textContent).toContain('3.770.000');
+    const proximos =
+      host.querySelector('[data-testid="proximos-giros-del-propietario"]')?.textContent ?? '';
+    expect(proximos).toContain('Próximos giros · noviembre de 2026 a enero de 2027');
+    expect(proximos).toContain('15.835.975');
+    expect(proximos).toContain('230.000');
+  });
+
+  it('🔴 ola E: el saldo a favor del inquilino y en qué va su devolución, aparte de lo que debe', () => {
+    const c = contrato({
+      vigente: false,
+      saldoAFavor: {
+        anticipoSinConsumirCop: 250_000,
+        devolucion: { egresoId: 'e-1', estado: 'PAGADO', numero: 31, valorCop: 400_000 },
+      },
+    });
+    montar(<EstadoDeCuentaDocumento doc={estadoDeCuenta({ contratos: [c] })} hoy={HOY} />);
+    const bloque = host.querySelector('[data-testid="saldo-a-favor-contrato-1298"]')?.textContent ?? '';
+    expect(bloque).toContain('250.000');
+    expect(bloque).toContain('400.000');
+    expect(bloque).toContain('31');
+    // En el enlace del cliente no hay acciones del panel.
+    expect(host.querySelector('[data-testid="saldo-al-terminar-ct-1298"]')).toBeNull();
+  });
+
+  it('🔴 ola E: sin saldo a favor ni devolución, no hay bloque', () => {
+    const c = contrato({ saldoAFavor: { anticipoSinConsumirCop: 0, devolucion: null } });
+    montar(<EstadoDeCuentaDocumento doc={estadoDeCuenta({ contratos: [c] })} hoy={HOY} />);
+    expect(host.querySelector('[data-testid="saldo-a-favor-contrato-1298"]')).toBeNull();
+  });
+
+  it('🔴 ola E: en el panel, el contrato terminado del inquilino trae la liquidación con su acción', () => {
+    const terminado = contrato({
+      vigente: false,
+      saldoAFavor: { anticipoSinConsumirCop: 250_000, devolucion: null },
+    });
+    const vigente = contrato({ id: 'ct-77', numero: '77', vigente: true });
+    montar(
+      <EstadoDeCuentaDocumento
+        doc={estadoDeCuenta({ contratos: [terminado, vigente] })}
+        hoy={HOY}
+        conAnticipoDelContrato
+      />,
+    );
+    expect(host.querySelector('[data-testid="saldo-al-terminar-ct-1298"]')).not.toBeNull();
+    // La sección del panel ya lo dice: el bloque informativo no se repite.
+    expect(host.querySelector('[data-testid="saldo-a-favor-contrato-1298"]')).toBeNull();
+    // Un contrato vigente no tiene nada que devolver todavía.
+    expect(host.querySelector('[data-testid="saldo-al-terminar-ct-77"]')).toBeNull();
   });
 
   it('la nota de los filtros sale cuando hay filtros puestos', () => {

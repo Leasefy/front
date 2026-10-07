@@ -26,7 +26,7 @@ import { Images, Star, Trash, UploadSimple } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { Spinner } from '@/components/ui/spinner';
 import { Button } from '@/components/ui/button';
-import { IconButton } from '@leasefy/cadence';
+import { CrossFade, IconButton, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +44,7 @@ import { SubidaDeFotos, filtrarFotos } from '@/components/inmobiliaria/inmueble/
 import { FotosDesdeEnlace } from '@/components/inmobiliaria/inmueble/FotosDesdeEnlace';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { descripcionDelError } from '@/lib/errores/descripcion-del-error';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 interface Imagen {
   id: string;
@@ -126,7 +127,15 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
           subidas += 1;
           setEnCamino((prev) => prev.filter((f) => f.clave !== clave));
         } catch (e) {
-          fallos.push(e instanceof Error ? e.message : archivos[i].name);
+          // Por el traductor: el rechazo del back («La foto pesa más de 5 MB»)
+          // tal cual, un 5xx «de nuestro lado» con la referencia y «conexión»
+          // sólo sin respuesta. Antes era `e.message` crudo.
+          fallos.push(
+            mensajeParaLaPersona(e, {
+              porDefecto: `No pudimos subir «${archivos[i].name}».`,
+              accion: `subir «${archivos[i].name}»`,
+            }),
+          );
           setEnCamino((prev) => prev.map((f) => (f.clave === clave ? { ...f, estado: 'fallo' } : f)));
         }
       }
@@ -219,17 +228,19 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
       }}
       onDrop={soltarEnLaSeccion}
     >
-      {arrastrandoEncima && imagenes.length > 0 && (
-        <div
-          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-primary-soft/90"
-          data-testid="fotos-soltar-overlay"
-        >
+      {/* El velo de «Suelta para subir» aparece y se va con un fundido. */}
+      <Presence
+        show={arrastrandoEncima && imagenes.length > 0}
+        direction="none"
+        duration="fast"
+        className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-primary-soft/90"
+        data-testid="fotos-soltar-overlay"
+      >
           <div className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-fg shadow-md">
             <UploadSimple className="h-4 w-4" weight="bold" />
             Suelta para subir {cupo === 1 ? 'la última foto' : `hasta ${cupo} fotos`}
           </div>
-        </div>
-      )}
+      </Presence>
       <div className="flex items-center justify-between gap-3 px-5 py-4 border-b border-border-faint dark:border-border-strong">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-md bg-surface-muted dark:bg-ink flex items-center justify-center text-fg-muted dark:text-fg-subtle">
@@ -244,7 +255,14 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
         </span>
       </div>
 
-      <div className="p-5 space-y-5">
+      <div className="relative p-5 space-y-5">
+        {/* Cargando → vacío → galería (o → fallo), con un fundido. `popLayout`:
+            lo nuevo entra YA (las fotos que se empiezan a subir se ven al
+            instante) y lo viejo se funde encima. */}
+        <CrossFade
+          mode="popLayout"
+          swapKey={cargando ? 'cargando' : error ? 'fallo' : imagenes.length === 0 && enCamino.length === 0 ? 'vacio' : 'galeria'}
+        >
         {cargando ? (
           <div className="flex items-center gap-2 text-sm text-fg-muted">
             <Spinner size="sm" /> Cargando fotos…
@@ -272,9 +290,11 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
             <FotosDesdeEnlace cupo={cupo} onArchivos={(a) => void subir(a)} disabled={subiendo} />
           </div>
         ) : (
-          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4" data-testid="fotos-galeria">
+          // Subir, quitar u ordenar: las fotos entran y salen, y al cambiar la
+          // portada se DESLIZAN a su nuevo lugar (`layout` de `Stagger`).
+          <Stagger as="ul" className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4" data-testid="fotos-galeria">
             {imagenes.map((img, i) => (
-              <li key={img.id} className="group relative overflow-hidden rounded-lg border border-border bg-surface-muted">
+              <StaggerItem as="li" key={img.id} className="group relative overflow-hidden rounded-lg border border-border bg-surface-muted">
                 <button
                   type="button"
                   onClick={() => onVer?.(i)}
@@ -312,10 +332,11 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
                     icon={<Trash />}
                   />
                 </div>
-              </li>
+              </StaggerItem>
             ))}
             {enCamino.map((f) => (
-              <li
+              <StaggerItem
+                as="li"
                 key={f.clave}
                 className="relative overflow-hidden rounded-lg border border-border bg-surface-muted"
                 data-testid="foto-en-camino"
@@ -335,15 +356,16 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
                     </span>
                   )}
                 </div>
-              </li>
+              </StaggerItem>
             ))}
             {cupo > 0 && (
-              <li>
+              <StaggerItem as="li" key="subir">
                 <SubidaDeFotos variante="ficha" cupo={cupo} maximo={PROPERTY_PHOTO_MAX_COUNT} onArchivos={(a) => void subir(a)} disabled={subiendo} aceptarPegado />
-              </li>
+              </StaggerItem>
             )}
-          </ul>
+          </Stagger>
         )}
+        </CrossFade>
 
         {/* Con galería ya armada el enlace va debajo de la grilla: la
             tarjeta de «Agregar fotos» es para una o dos sueltas, y traer un
@@ -363,7 +385,7 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
         )}
       </div>
       <AlertDialog open={porQuitar !== null} onOpenChange={(abierto) => { if (!abierto) setPorQuitar(null); }}>
-        <AlertDialogContent data-testid="quitar-foto-dialogo">
+        <AlertDialogContent variant="destructive" data-testid="quitar-foto-dialogo">
           <AlertDialogHeader>
             <AlertDialogTitle>¿Quitar esta foto?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -373,8 +395,8 @@ export function FotosDelInmueble({ propertyId, onCambio, onVer }: FotosDelInmueb
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={ocupada !== null}>Cancelar</AlertDialogCancel>
+            {/* Se cierra al confirmar: el progreso se ve sobre la foto. */}
             <AlertDialogAction
-              tone="danger"
               disabled={ocupada !== null}
               onClick={() => void confirmarQuitar()}
               data-testid="quitar-foto-confirmar"

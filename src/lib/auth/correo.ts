@@ -253,3 +253,13 @@ export function webmailDelCorreo(correo: string): { nombre: string; url: string 
   }
   return null;
 }
+
+/**
+ * ¿El `signUp` cayó sobre un correo que YA tiene cuenta? Supabase no lo dice
+ * con un error —para no revelar qué correos existen—: responde 200 con un
+ * usuario SIN identidades y no manda ningún correo (Nico, 01-10: «no llegan
+ * los correos, ni dando reenviar»). Una cuenta nueva trae su identidad.
+ */
+export function esCorreoYaRegistrado(user: { identities?: readonly unknown[] | null } | null | undefined): boolean {
+  return Boolean(user) && Array.isArray(user?.identities) && user!.identities!.length === 0
+}

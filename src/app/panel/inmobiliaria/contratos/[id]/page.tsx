@@ -33,19 +33,24 @@ import {
   CalendarX,
   ArrowsClockwise,
   ArrowsLeftRight,
+  UserSwitch,
 } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
 import { TerminarContrato } from '@/components/contratos/TerminarContrato';
 import { RenovarContratoVencido } from '@/components/contratos/RenovarContratoVencido';
 import { IncrementosDelContrato } from '@/components/contratos/IncrementosDelContrato';
 import { CesionDelInmueble } from '@/components/contratos/CesionDelInmueble';
-import { etiquetaDeVigencia, vigenciaDelContrato, type Vigencia } from '@/lib/contratos/vigencia';
+import { CambioDeInquilino } from '@/components/contratos/CambioDeInquilino';
+import { vigenciaDelContrato, type Vigencia } from '@/lib/contratos/vigencia';
+import { estadoParaMostrar } from '@/lib/contratos/estado-para-mostrar';
 import { sanitizeContractHtml } from '@/lib/utils/sanitize-html';
 import { Button } from '@/components/ui/button';
 import { Spinner, Badge } from '@/components/ui';
+import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { ArriendoDelContrato, AvisoDelContrato } from '@/components/contratos/ArriendoDelContrato';
 import { fechaLegible, hoyLocal } from '@/components/estado-de-cuenta/filas';
+import { soloElDia } from '@/lib/contratos/avance-del-contrato';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAgencyAccess } from '@/lib/auth/useAgencyAccess';
 import { AuditTrail } from '@/components/contract/AuditTrail';
@@ -56,15 +61,20 @@ import { SealStatusBadge } from '@/components/contract/SealStatusBadge';
 import { CodeudoresSection } from '@/components/contract/CodeudoresSection';
 import { PagareSection } from '@/components/contract/PagareSection';
 import { useContract, useContractPreview, useContractActions, useContractRejections, useSignedPdfUrl } from '@/lib/hooks/useContracts';
-import { isPermissionError, mensajeDelFallo, estadoDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { isPermissionError } from '@/lib/contratos/fallo-de-accion';
+import { motivoDelFalloDelContrato } from '@/lib/contratos/errores-del-contrato';
+import { AvisoInmuebleSinCanon } from '@/components/inmobiliaria/CanonPorConfirmar';
+import { esErrorInmuebleSinCanon } from '@/lib/inmuebles/canon-por-confirmar';
 import { CONTRACT_STATUS_LABELS } from '@/lib/types/contract';
 import type { Contract, ContractStatus } from '@/lib/types/contract';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { CrossFade, Presence } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { AdministracionDelContrato } from '@/components/contratos/AdministracionDelContrato';
 import { EscenarioTributario } from '@/components/contratos/EscenarioTributario';
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
 import { CobrosDelContrato } from '@/components/contratos/CobrosDelContrato';
+import { CastigoDelContrato } from '@/components/contratos/CastigoDelContrato';
 import { ReglasDeMoraDelContrato } from '@/components/contratos/ReglasDeMoraDelContrato';
 import { ProrrogaDelContrato } from '@/components/contratos/ProrrogaDelContrato';
 import { CondicionesDelContrato } from '@/components/contratos/CondicionesDelContrato';
@@ -80,6 +90,9 @@ import { InmuebleDelContrato } from '@/components/contratos/InmuebleDelContrato'
 import { ContratoSinSenal } from '@/components/contratos/ContratoSinSenal';
 import { numeroDelContrato, tituloDelContrato } from '@/lib/contratos/numero-del-contrato';
 import { BloqueoPorInventario } from '@/components/inmobiliaria/inventario/BloqueoPorInventario';
+import { falloDeLaFicha } from '@/lib/contratos/fallo-de-la-ficha';
+import { fundirContrato } from '@/lib/contratos/fundir-contrato';
+import { CertificadosDeSuTiempo } from '@/components/contratos/CertificadosDeSuTiempo';
 import {
   bloqueoDelError,
   type BloqueoPorInventario as BloqueoPorInventarioDatos,
@@ -172,12 +185,16 @@ function ContratoDetalleContent() {
   const canInviteTenant = canAccess('contratos', 'create');
 
   const [actionError, setActionError] = useState<string | null>(null);
+  // T-0129 — 409 INMUEBLE_SIN_CANON al activar: se explica con el enlace a editar el inmueble.
+  const [errorSinCanon, setErrorSinCanon] = useState<unknown>(null);
   /** Activar sin inventario actualizado del inmueble: se dice con su enlace. */
   const [bloqueoDeInventario, setBloqueoDeInventario] = useState<BloqueoPorInventarioDatos | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [terminarAbierto, setTerminarAbierto] = useState(false);
   const [cesionAbierta, setCesionAbierta] = useState(false);
+  // QA-CONT CR-06: «Cambiar de inquilino» (punto de quiebre, hoy o antes).
+  const [cambioDeInquilinoAbierto, setCambioDeInquilinoAbierto] = useState(false);
 
   /*
    * 🔴 Cómo está el contrato HOY, calculado y no guardado: un `active` cuya
@@ -207,24 +224,34 @@ function ContratoDetalleContent() {
   const [isCancelling, setIsCancelling] = useState(false);
 
   const runAction = useCallback(
-    async (key: string, op: () => Promise<unknown>, successMessage?: string) => {
+    async (key: 'send' | 'activate', op: () => Promise<unknown>, successMessage?: string) => {
       setActionError(null);
+      setErrorSinCanon(null);
       setBloqueoDeInventario(null);
       setPendingAction(key);
       try {
         await op();
         await refetch();
       } catch (err) {
+        if (esErrorInmuebleSinCanon(err)) {
+          setErrorSinCanon(err);
+          return;
+        }
         const bloqueo = bloqueoDelError(err);
         if (bloqueo) {
           setBloqueoDeInventario(bloqueo);
           return;
         }
-        // El motivo del back (400/409) en palabras; un 403 dice que es de permisos.
+        // El motivo del back (400/409) en palabras; un 403 dice que es de
+        // permisos; un 5xx, que fue nuestro, con la referencia (02-10-2026).
         setActionError(
           isPermissionError(err)
             ? 'No tienes permiso para esta acción.'
-            : mensajeDelFallo(err, 'La operación falló. Intenta de nuevo.')
+            : motivoDelFalloDelContrato(err, {
+                porDefecto:
+                  key === 'send' ? 'No se pudo enviar el contrato a firma.' : 'No se pudo activar el contrato.',
+                accion: key === 'send' ? 'enviar el contrato a firma' : 'activar el contrato',
+              })
         );
       } finally {
         setPendingAction(null);
@@ -246,7 +273,14 @@ function ContratoDetalleContent() {
       // Se lee EL error que vino, no `actions.lastError` (que era el render viejo).
       toast.error(
         isPermissionError(err) ? 'No tienes permisos para esta acción.' : 'No se pudo cancelar el contrato.',
-        { description: isPermissionError(err) ? undefined : mensajeDelFallo(err, 'Intenta de nuevo.') }
+        {
+          description: isPermissionError(err)
+            ? undefined
+            : motivoDelFalloDelContrato(err, {
+                porDefecto: 'Prueba de nuevo en un momento.',
+                accion: 'cancelar el contrato',
+              }),
+        }
       );
       return;
     }
@@ -264,15 +298,21 @@ function ContratoDetalleContent() {
       setActionError(null);
       toast.success('Recordatorio enviado.');
     } catch (err) {
-      // 429 = ya hubo uno en las últimas 24 h; cualquier otro fallo dice su motivo.
-      const msg = mensajeDelFallo(err, 'No se pudo enviar el recordatorio.');
-      if (estadoDelFallo(err) === 429 || /too\s*many|24h/i.test(msg)) {
-        setActionError('Ya enviaste un recordatorio en las últimas 24 horas.');
-      } else if (isPermissionError(err)) {
-        setActionError('No tienes permiso para esta acción.');
-      } else {
-        setActionError(msg);
-      }
+      /*
+       * 02-10-2026 · Decide el `code`, nunca el texto ni el status a secas: el
+       * 429 `RECORDATORIO_RECIENTE` trae en su `message` desde cuándo se puede
+       * mandar otro (hora de Colombia) y se muestra tal cual; otro 429 es el
+       * limitador general (`DEMASIADAS_SOLICITUDES`), que no es «ya enviaste
+       * uno». Un 5xx dice que fue nuestro, con la referencia.
+       */
+      setActionError(
+        isPermissionError(err)
+          ? 'No tienes permiso para esta acción.'
+          : motivoDelFalloDelContrato(err, {
+              porDefecto: 'No se pudo enviar el recordatorio.',
+              accion: 'enviar el recordatorio',
+            }),
+      );
     } finally {
       setPendingAction(null);
     }
@@ -281,9 +321,8 @@ function ContratoDetalleContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-[50vh] flex items-center justify-center">
-        <Spinner size="md" variant="muted" />
-      </div>
+      // Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»).
+      <EsqueletoDePagina variante="detail" className="mx-auto max-w-7xl" />
     );
   }
 
@@ -332,7 +371,7 @@ function ContratoDetalleContent() {
         <div className="max-w-2xl">
           <ContratoSinSenal contratoId={id}>
             <FalloDeCarga
-              error={errorCrudo ?? error}
+              error={falloDeLaFicha(errorCrudo ?? error)}
               queEs="este contrato"
               onReintentar={refetch}
               volverA={{ label: etiquetaDeVuelta, href: rutaDeVuelta }}
@@ -350,15 +389,26 @@ function ContratoDetalleContent() {
   // 🔴 El chip lee la VIGENCIA, como el listado: un `active` cuya fecha de fin
   // pasó dice «Vencido» en ámbar, no «Activo», y uno terminado dice
   // «Terminado». Antes el chip decía «Activo» justo encima de «Vencido desde…».
-  const statusVariant: ContractBadgeVariant = vigencia.vencidoSinRenovar
+  /*
+   * QA-CONT C-05 / C-01: la MISMA palabra que la lista — «Empieza el 1 de
+   * nov» para uno que no ha empezado (antes: «Activo») y «Activo · Termina el
+   * 31 de oct» con la terminación programada.
+   */
+  const estadoDelChip = estadoParaMostrar({
+    contrato: contract,
+    vigencia,
+    etiquetaDelEstado: CONTRACT_STATUS_LABELS[contract.status as ContractStatus] ?? contract.status,
+    locale: 'es',
+    hoy: new Date(`${hoy}T12:00:00`),
+  });
+  const statusVariant: ContractBadgeVariant = estadoDelChip.clave === 'POR_EMPEZAR'
+    ? 'default'
+    : vigencia.vencidoSinRenovar
     ? 'warning'
     : vigencia.estado === 'TERMINADO_ANTICIPADAMENTE' || vigencia.estado === 'TERMINADO_POR_VENCIMIENTO'
       ? 'secondary'
       : CONTRACT_STATUS_BADGE[contract.status as ContractStatus] ?? 'secondary';
-  const statusLabel = etiquetaDeVigencia(
-    vigencia,
-    CONTRACT_STATUS_LABELS[contract.status as ContractStatus] ?? contract.status,
-  );
+  const statusLabel = estadoDelChip.texto;
   const numero = numeroDelContrato(contract);
   // Gate por permisos: contratos usa canAccess ('contratos' ya es módulo del backend).
   // Chat todavía usa el fallback por rol porque 'mensajes' no existe como módulo aún.
@@ -371,6 +421,22 @@ function ContratoDetalleContent() {
   const chatHref = isManager && contract.applicationId
     ? `/panel/inmobiliaria/mensajes?applicationId=${contract.applicationId}`
     : null;
+  // Qué muestra el bloque del documento: cargando → el documento (o el aviso)
+  // se cruzan en vez de saltar (`CrossFade`).
+  const ramaDelDocumento =
+    hasAnySignature && (isLoadingSignedPdf || signedPdfUrl)
+      ? 'firmado'
+      : isLoadingPreview
+        ? 'cargando'
+        : preview?.origin === 'UPLOADED_PDF'
+          ? 'pdf'
+          : preview?.origin === 'GENERATED'
+            ? 'html'
+            : sinDocumento
+              ? 'sin-documento'
+              : falloDelDocumento
+                ? 'fallo'
+                : 'vacio';
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -401,7 +467,7 @@ function ContratoDetalleContent() {
           */}
           <div className="flex items-center gap-3 flex-wrap">
             <h1 className="text-h2 text-fg">{tituloDelContrato(contract)}</h1>
-            <Badge variant={statusVariant}>
+            <Badge variant={statusVariant} title={estadoDelChip.titulo} data-testid="estado-del-contrato">
               {statusLabel}
             </Badge>
           </div>
@@ -433,11 +499,17 @@ function ContratoDetalleContent() {
             canEdit={canEditContracts}
             onReintentado={() => void refetch()}
           />
-          <DownloadContractPdfButton
-            contractId={contract.id}
-            contractStatus={contract.status}
-            variant="secondary"
-          />
+          {/* 🔴 QA-CONT-95 (CR-15, B-06): el migrado SIN documento no ofrece
+              «Descargar PDF» — rebotaba con 400 y un toast. La sección
+              «Documento» ya dice que se cargó desde el sistema anterior. */}
+          {!sinDocumento && (
+            <DownloadContractPdfButton
+              contractId={contract.id}
+              contractStatus={contract.status}
+              variant="secondary"
+              numero={numero.principal}
+            />
+          )}
           {chatHref && (
             <Button asChild variant="secondary" hideArrow className="gap-2">
               <Link href={chatHref}>
@@ -478,6 +550,7 @@ function ContratoDetalleContent() {
               onCancelRequest: () => setIsCancelModalOpen(true),
               onTerminar: () => setTerminarAbierto(true),
               onCeder: () => setCesionAbierta(true),
+              onCambiarInquilino: () => setCambioDeInquilinoAbierto(true),
             })
           : {})}
       />
@@ -511,12 +584,21 @@ function ContratoDetalleContent() {
             onRegistrada={() => void refetch()}
           />
 
+          <CambioDeInquilino
+            contractId={contract.id}
+            inquilinoActual={contract.tenantName || null}
+            abierto={cambioDeInquilinoAbierto}
+            onCerrar={() => setCambioDeInquilinoAbierto(false)}
+            onRegistrado={() => void refetch()}
+          />
+
           <CancelContractModal
             open={isCancelModalOpen}
             onClose={() => setIsCancelModalOpen(false)}
             onConfirm={handleCancel}
             isSubmitting={isCancelling}
             actor="landlord"
+            conPostulacion={Boolean(contract.applicationId)}
           />
         </>
       )}
@@ -528,12 +610,24 @@ function ContratoDetalleContent() {
 
       {bloqueoDeInventario && <BloqueoPorInventario bloqueo={bloqueoDeInventario} />}
 
-      {actionError && (
-        <div className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2">
-          <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-danger">{actionError}</p>
-        </div>
-      )}
+      {/* Lo que una acción no pudo hacer entra y sale (no salta). */}
+      <Presence
+        show={errorSinCanon !== null}
+        initial={false}
+        className="rounded-lg border border-warning/40 bg-warning/5 p-4"
+      >
+        {errorSinCanon !== null && (
+          <AvisoInmuebleSinCanon error={errorSinCanon} inmuebleId={contract?.propertyId} />
+        )}
+      </Presence>
+      <Presence
+        show={Boolean(actionError)}
+        initial={false}
+        className="rounded-lg border border-danger/30 bg-danger-soft/40 p-4 flex items-start gap-2"
+      >
+        <WarningCircle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
+        <p className="text-sm text-danger">{actionError}</p>
+      </Presence>
 
       {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -544,11 +638,15 @@ function ContratoDetalleContent() {
                 todos los inquilinos con su DOCUMENTO (Nico, 2026-09-12). */}
             <PartesDelContrato
               contract={contract}
-              puedeInvitar={canInviteTenant}
-              puedeEditar={canEditContracts}
+              /* QA-CONT-95 (B-16): un contrato CANCELADO no se edita ni invita. */
+              puedeInvitar={canInviteTenant && contract.status !== 'cancelled'}
+              puedeEditar={canEditContracts && contract.status !== 'cancelled'}
               onActualizado={(c) => setContract(c)}
               onConflicto={() => void refetch()}
             />
+            {/* QA-INQ-95 r2 (Nico): quien salió por un cambio de inquilino, con el
+                certificado de que no debe nada por su tiempo. */}
+            <CertificadosDeSuTiempo contractId={contract.id} puedeEmitir={canAccess('documentos', 'create')} />
           </InfoCard>
 
           <InfoCard title="Inmueble" icon={Buildings}>
@@ -576,7 +674,7 @@ function ContratoDetalleContent() {
               /* La dirección de arriba es la que dice el contrato (no se pisa
                  al vincular); la ficha del inmueble es donde se ve cuál quedó. */
               <Link
-                href={`/panel/inmobiliaria/inmuebles/${contract.propertyId}`}
+                href={`/panel/inmobiliaria/inmuebles/${contract.propertyId}?por=inmueble`}
                 className="inline-block text-sm font-medium text-primary hover:underline"
                 data-testid="ver-inmueble"
               >
@@ -593,8 +691,8 @@ function ContratoDetalleContent() {
               se veían en ninguna pantalla — y el uso decide si hay IVA. */}
           <AdministracionDelContrato
             contract={contract}
-            puedeEditar={canEditContracts}
-            onActualizado={(c) => setContract(c)}
+            puedeEditar={canEditContracts && contract.status !== 'cancelled'}
+            onActualizado={(c) => setContract((anterior) => fundirContrato(anterior, c))}
           />
 
           {/* Cómo se llama la situación tributaria que forman las dos partes y
@@ -602,7 +700,13 @@ function ContratoDetalleContent() {
               información sobre el escenario que se da en ese contrato»). Va
               pegado a Administración porque los datos que lo definen —el uso
               del inmueble y el perfil del inquilino— se corrigen justo arriba. */}
-          <EscenarioTributario contract={contract} />
+          <EscenarioTributario
+            contract={contract}
+            // QA-CONT-95 B-32: si el escenario del archivo choca con la ficha
+            // del propietario, quien edita contratos confirma cuál rige.
+            puedeEditar={canEditContracts && contract.status !== 'cancelled'}
+            onConfirmado={() => void refetch()}
+          />
 
           {/* Paso 11: quién respalda este arriendo. Si no está, se dice — un
               contrato sin respaldo registrado no es un contrato sin respaldo,
@@ -659,6 +763,7 @@ function ContratoDetalleContent() {
               <ProrrogaDelContrato
                 contract={contract}
                 puedeEditar={canEditContracts && !esTerminado}
+                puedeAvisar={(canEditContracts || canAccess('operaciones', 'edit')) && !esTerminado}
                 onCambio={() => void refetch()}
               />
               {/* D9 gastos de cobranza, seguro opcional, póliza y administración de la copropiedad. */}
@@ -667,8 +772,11 @@ function ContratoDetalleContent() {
               <GarantiaDeServiciosDelContrato contractId={contract.id} puedeEditar={canEditContracts} />
               {/* T-0109 contract.md §3.1.E — codeudores y su pagaré. Se ocultan
                   solos contra un back sin WU-4 (404 en E1/E5). */}
-              <CodeudoresSection contractId={contract.id} puedeEditar={canEditContracts} />
-              <PagareSection contractId={contract.id} puedeEditar={canEditContracts} />
+              {/* QA-CONT-95 (B-16): a un contrato cancelado o vencido no se le agregan codeudores ni pagarés. */}
+              <CodeudoresSection contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
+              <PagareSection contractId={contract.id} puedeEditar={canEditContracts && !esTerminado} />
+              {/* D-24: si su cartera está castigada (o propuesta), se dice acá, con que sigue debiéndose. */}
+              <CastigoDelContrato contractId={contract.id} />
               <CobrosDelContrato
                 key={contract.propertyId ?? 'sin-inmueble'}
                 contract={contract}
@@ -689,7 +797,12 @@ function ContratoDetalleContent() {
                 En tres pestañas —ingresos · egresos · facturas— porque una
                 sola lista mezclada no deja ver nada (Nico, 2026-09-12).
               */}
-              <ComprobantesDelSistemaAnterior contractId={contract.id} />
+              {/* QA-CONT-95 (H-04): los comprobantes son de Contabilidad; quien no la
+                  lee (el de sólo lectura) no dispara un 403 en cada ficha.
+                  CB-E-14 (QA-FACT-CONTA-95 r2): la lectura de la contabilidad es el
+                  módulo `reportes` (ContabilidadLecturaGuard del back); `contabilidad`
+                  no existe en los permisos y escondía la sección hasta al contador. */}
+              {canAccess('reportes', 'view') && <ComprobantesDelSistemaAnterior contractId={contract.id} />}
               {/* El seguimiento de PQRS del contrato (Nico, 2026-09-12). */}
               <PqrsDelContrato contractId={contract.id} />
               {/* 17-09: lo que la inmobiliaria le cobra al PROPIETARIO por
@@ -716,7 +829,7 @@ function ContratoDetalleContent() {
               <FileText className="w-4 h-4 text-muted-foreground" />
               <h3 className="text-base font-semibold text-foreground">Documento</h3>
             </div>
-            <div className="p-5">
+            <CrossFade swapKey={ramaDelDocumento} className="p-5">
               {/* Cuando hay firma(s), el iframe usa la URL de /pdf (con estampado actualizado).
                   Si está cargando o no hay firmas, cae al /preview (HTML o PDF original). */}
               {hasAnySignature && (isLoadingSignedPdf || signedPdfUrl) ? (
@@ -738,17 +851,19 @@ function ContratoDetalleContent() {
                       </p>
                     </div>
                   )}
-                  {isLoadingSignedPdf ? (
-                    <div className="py-20 flex items-center justify-center">
-                      <Spinner size="default" variant="muted" />
-                    </div>
-                  ) : (
-                    <iframe
-                      src={signedPdfUrl!}
-                      className="w-full h-[720px] rounded-md border border-border bg-surface"
-                      title="Contrato"
-                    />
-                  )}
+                  <CrossFade swapKey={isLoadingSignedPdf ? 'cargando' : 'listo'}>
+                    {isLoadingSignedPdf ? (
+                      <div className="py-20 flex items-center justify-center">
+                        <Spinner size="default" variant="muted" />
+                      </div>
+                    ) : (
+                      <iframe
+                        src={signedPdfUrl!}
+                        className="w-full h-[720px] rounded-md border border-border bg-surface"
+                        title="Contrato"
+                      />
+                    )}
+                  </CrossFade>
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <Info className="w-3.5 h-3.5" />
                     Enlace válido por tiempo limitado. Si caduca, recarga la página.
@@ -809,7 +924,7 @@ function ContratoDetalleContent() {
                   Todavía no hay documento para este contrato.
                 </p>
               )}
-            </div>
+            </CrossFade>
           </section>
 
           {esPreFirma && (
@@ -880,8 +995,9 @@ function decisionesDelContrato({
   onCancelRequest,
   onTerminar,
   onCeder,
+  onCambiarInquilino,
 }: {
-  contract: { id: string; status: string };
+  contract: { id: string; status: string; startDate?: string | null };
   isSubmitting: boolean;
   pendingAction: string | null;
   latestRejectionReason?: string;
@@ -896,6 +1012,8 @@ function decisionesDelContrato({
   onCancelRequest: () => void;
   onTerminar: () => void;
   onCeder: () => void;
+  /** QA-CONT CR-06: abre «Cambiar de inquilino». Sin él, el botón no sale. */
+  onCambiarInquilino?: () => void;
 }): { aviso?: React.ReactNode; acciones?: React.ReactNode } {
   const status = contract.status as ContractStatus;
   const enVozBaja = 'h-auto gap-1.5 px-0 text-caption font-medium text-fg-muted hover:text-fg hover:no-underline';
@@ -910,6 +1028,24 @@ function decisionesDelContrato({
       Cambiar de propietario
     </Button>
   );
+  /*
+   * QA-CONT CR-06: el inquilino también cambia sin que el contrato se acabe
+   * (cesión del arrendatario aceptada por el propietario). Mismo peso que
+   * «Cambiar de propietario»: pasa poco y no compite con «Terminar».
+   */
+  const cambioDeInquilino = onCambiarInquilino ? (
+    <Button
+      type="button"
+      variant="link"
+      hideArrow
+      onClick={onCambiarInquilino}
+      className={enVozBaja}
+      data-testid="abrir-cambio-de-inquilino"
+    >
+      <UserSwitch className="w-3.5 h-3.5" aria-hidden="true" />
+      Cambiar de inquilino
+    </Button>
+  ) : null;
   const terminar = (
     <Button type="button" variant="link" hideArrow onClick={onTerminar} className={enVozBaja} data-testid="abrir-terminar">
       <CalendarX className="w-3.5 h-3.5" aria-hidden="true" />
@@ -965,7 +1101,9 @@ function decisionesDelContrato({
             onClick: onRemind,
             loading: isSubmitting && pendingAction === 'remind',
           }}
-          secundaria={editar}
+          // QA-CONT CR-15: sin «Editar». La pantalla de editar no acepta un
+          // contrato que espera la firma del inquilino y devolvía sin hacer
+          // nada: un botón que rebota no es un botón. Para cambiarlo, se cancela.
         />
       ),
       acciones: cancelar,
@@ -1006,6 +1144,25 @@ function decisionesDelContrato({
     };
   }
 
+  /*
+   * QA-CONT CR-05 (Nico, 03-10-2026: «Empieza el 1 de nov»): un firmado que
+   * todavía no empieza NO ofrece «Activar». Activarlo antes dejaba el inmueble
+   * arrendado y el contrato «Activo» semanas antes de su fecha.
+   */
+  const inicio = soloElDia(contract.startDate ?? null);
+  if (status === 'signed' && inicio && inicio > hoyLocal()) {
+    return {
+      aviso: (
+        <AvisoDelContrato
+          tono="paso"
+          icono={CheckCircle}
+          titulo={`Contrato firmado · empieza el ${fechaLegible(inicio)}`}
+          detalle="Ambas partes firmaron. Se activa desde su fecha de inicio: antes no se ocupa el inmueble ni se cobra nada."
+        />
+      ),
+    };
+  }
+
   if (status === 'signed') {
     return {
       aviso: (
@@ -1039,7 +1196,9 @@ function decisionesDelContrato({
           tono="atencion"
           icono={CalendarX}
           titulo={`Vencido desde el ${fechaLegible(vigencia.vencidoDesde)}`}
-          detalle={`Pasaron ${vigencia.diasVencido} ${vigencia.diasVencido === 1 ? 'día' : 'días'} de la fecha de fin y nadie lo renovó ni lo terminó. Mientras no decidas, sigue activo.`}
+          // QA-CONT CR-19: «sigue activo» a secas hacía creer que la prórroga
+          // corría sola. No: espera a que alguien la confirme (o lo renueve).
+          detalle={`Pasaron ${vigencia.diasVencido} ${vigencia.diasVencido === 1 ? 'día' : 'días'} de la fecha de fin y nadie lo renovó ni lo terminó. Sigue activo, pero la prórroga no se aplica sola: espera un clic en «Prórroga», acá abajo (o en la Bandeja del Piloto, si el proceso diario ya te la dejó ahí). También puedes renovarlo o terminar el arriendo.`}
           principal={{
             label: 'Renovar contrato',
             icon: ArrowsClockwise,
@@ -1052,7 +1211,12 @@ function decisionesDelContrato({
           secundaria={{ label: 'Terminar el arriendo', icon: CalendarX, onClick: onTerminar }}
         />
       ),
-      acciones: cesion,
+      acciones: (
+        <>
+          {cesion}
+          {cambioDeInquilino}
+        </>
+      ),
     };
   }
 
@@ -1068,6 +1232,7 @@ function decisionesDelContrato({
         <>
           {terminar}
           {cesion}
+          {cambioDeInquilino}
         </>
       ),
     };

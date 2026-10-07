@@ -13,7 +13,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Bank } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles'
+import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos'
 import { useWorkItemDetail } from '@/lib/hooks/ai/use-work-item-detail'
 import { runWorkItemAction } from '@/lib/api/agent-workspace'
 import type { WorkItemAction } from '@/lib/api/work-item'
@@ -56,7 +56,7 @@ function ConciliacionCaso() {
 
 export default function ConciliacionCasoPage() {
   return (
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+    <PageGuard roles={[...ROLES_QUE_CONCILIAN]}>
       <ConciliacionCaso />
     </PageGuard>
   )

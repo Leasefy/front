@@ -3,9 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
+import { NoPudimosConfirmarTuSesion } from './NoPudimosConfirmarTuSesion'
 import { useAuth } from '@/lib/auth/use-auth'
 import { useSinSenal } from '@/lib/hooks/use-sin-senal'
 import { getRoleHomeRoute, isPanelRoleAllowed } from '@/lib/auth/role-routes'
+import { olvidarQueContinuo } from '@/lib/auth/regreso-tras-continuar'
 import type { AgencyMemberRole } from '@/lib/auth/types'
 
 const AUTH_STORAGE_KEY = 'arriendo-facil-auth'
@@ -48,7 +51,14 @@ interface ProtectedRouteProps {
  * <ProtectedRoute allowedRoles={['landlord']}>{children}</ProtectedRoute>
  */
 export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, allowAgencyMembers }: ProtectedRouteProps) {
-  const { user, isAuthenticated, isLoading, mfaRequired, mfaEnrollRequired, needsOnboarding, perfilElegido, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked, refreshUser } = useAuth()
+  const { user, isAuthenticated, isLoading, mfaRequired, mfaEnrollRequired, mfaCheckStatus, needsOnboarding, perfilElegido, agencyRole, hasActiveAgencyMembership, agencyMembershipChecked, refreshUser, confirmacionDeLaSesion, signOut } = useAuth()
+  /*
+   * 🔴 Nico, 02-10-2026: sin saber si a la sesión le falta el código, no se
+   * entra. `pending` = todavía se pregunta (cargador); `failed` = no respondió
+   * ni reintentando («No pudimos confirmar tu sesión»). Ninguno de los dos
+   * redirige ni cierra la sesión: sólo bloquea hasta poder verificar.
+   */
+  const sinVerificarElSegundoFactor = isAuthenticated && (mfaCheckStatus === 'pending' || mfaCheckStatus === 'failed')
   const router = useRouter()
   const pathname = usePathname()
   const sinSenal = useSinSenal()
@@ -87,6 +97,8 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   useEffect(() => {
     // Wait for both auth context and storage check to complete
     if (isLoading || isCheckingStorage) return
+    // Sin el veredicto del segundo factor no se decide nada (ver arriba).
+    if (sinVerificarElSegundoFactor) return
 
     // JWT valid but backend has no user record yet → send to onboarding
     // IMPORTANT: this check must come BEFORE !effectiveIsAuthenticated, because
@@ -154,7 +166,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
     // no factor to step up to must enroll one first (they're mutually
     // exclusive states per contract.md T-0099 §3, but the check order still
     // matters if that ever changes).
-    if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll')) {
+    if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll') && !enElRegistro(pathname) && !enElPanelDeLaInmobiliaria(pathname)) {
       router.replace('/auth/mfa-enroll')
       return
     }
@@ -200,16 +212,54 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
       router.replace('/panel/inmobiliaria')
       return
     }
-  }, [isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, blockedAgencyRoles, allowAgencyMembers, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole, isAgencyUser, pathname, router, mfaRequired, mfaEnrollRequired, user, needsOnboarding, perfilElegido])
+  }, [sinVerificarElSegundoFactor, isLoading, isCheckingStorage, effectiveIsAuthenticated, effectiveUser, allowedRoles, blockedAgencyRoles, allowAgencyMembers, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole, isAgencyUser, pathname, router, mfaRequired, mfaEnrollRequired, user, needsOnboarding, perfilElegido])
 
   // Show loading state while checking auth
   if (isLoading || isCheckingStorage) {
+    /*
+     * 🔴 LOGIN-BUCLE (Nico, 06-10-2026): con una sesión guardada que no se
+     * confirma, `isLoading` sigue en true —el efecto de arriba no decide nada,
+     * y por eso ya no se reemplaza la ruta por la de `/auth` por un «todavía no sé»—.
+     * Pasado el tope se dice la verdad, con «Reintentar» y una salida a otra
+     * cuenta que la persona elige; debajo se sigue esperando y, si la
+     * confirmación llega, el panel se monta solo.
+     */
+    if (confirmacionDeLaSesion === 'sin-confirmar') {
+      return (
+        <NoPudimosConfirmarTuSesion>
+          <button
+            type="button"
+            className="text-sm text-muted-foreground underline underline-offset-4"
+            onClick={() => {
+              void (async () => {
+                try {
+                  await signOut()
+                } finally {
+                  window.location.assign(`/auth?returnUrl=${encodeURIComponent(pathname)}`)
+                }
+              })()
+            }}
+            data-testid="sin-confirmar-otra-cuenta"
+          >
+            Entrar con otra cuenta
+          </button>
+        </NoPudimosConfirmarTuSesion>
+      )
+    }
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Verificando acceso...</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Verificando acceso..." />
+      </div>
+    )
+  }
+
+  if (isAuthenticated && mfaCheckStatus === 'failed') {
+    return <NoPudimosConfirmarTuSesion />
+  }
+  if (sinVerificarElSegundoFactor) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Verificando seguridad..." />
       </div>
     )
   }
@@ -223,10 +273,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   if ((needsOnboarding && !pathname.startsWith('/onboarding')) || !effectiveIsAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Redirigiendo...</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Redirigiendo..." />
       </div>
     )
   }
@@ -250,22 +297,17 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   if (user && !user.onboardingCompleted && !tenantOnboardingDoneRender && !pathname.startsWith('/onboarding') && !isAgencyUser && !onAgencyPanelAsMember) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Redirigiendo...</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Redirigiendo..." />
       </div>
     )
   }
 
-  // T-0099: no factor enrolled yet - will redirect to the enroll page.
-  if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll')) {
+  // T-0099: no factor enrolled yet - will redirect to the enroll page
+  // (except in the agency panel, whose layout shows the enrollment inside).
+  if (mfaEnrollRequired && !pathname.startsWith('/auth/mfa-enroll') && !enElRegistro(pathname) && !enElPanelDeLaInmobiliaria(pathname)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Verificando seguridad...</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Verificando seguridad..." />
       </div>
     )
   }
@@ -274,10 +316,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   if (mfaRequired && !pathname.startsWith('/auth/mfa-verify')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Verificando seguridad...</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Verificando seguridad..." />
       </div>
     )
   }
@@ -310,13 +349,13 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
      * deja pasar, y en cuanto vuelve la señal el perfil se confirma solo.
      */
     if (user?.profileSource === 'session' && sinSenal) {
-      return <>{children}</>
+      return <><OlvidarQueContinuo />{children}</>
     }
     if (user?.profileSource === 'session') {
       return (
         <div className="min-h-screen flex items-center justify-center bg-muted p-6">
           <div className="flex max-w-sm flex-col items-center gap-4 text-center">
-            <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
+            <CargaDeMarca tamano="lg" />
             <p className="text-sm text-muted-foreground">
               No pudimos confirmar tu sesión con el servidor. Estamos
               reintentando — no cierres la pestaña.
@@ -335,12 +374,11 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
     }
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">
-            {holdingForMembership ? 'Verificando acceso...' : 'Redirigiendo...'}
-          </p>
-        </div>
+        <CargaDeMarca
+          tamano="lg"
+          disposicion="apilada"
+          texto={holdingForMembership ? 'Verificando acceso...' : 'Redirigiendo...'}
+        />
       </div>
     )
   }
@@ -349,14 +387,56 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
   if (blockedAgencyRoles && agencyRole && blockedAgencyRoles.includes(agencyRole)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-border border-t-foreground rounded-full animate-spin" />
-          <p className="text-sm text-muted-foreground">Redirigiendo...</p>
-        </div>
+        <CargaDeMarca tamano="lg" disposicion="apilada" texto="Redirigiendo..." />
       </div>
     )
   }
 
   // User is authenticated and has required role
-  return <>{children}</>
+  return <><OlvidarQueContinuo />{children}</>
+}
+
+/**
+ * 🔴 LOGIN-BUCLE: el destino de «Continuar como…» abrió bien, así que la marca
+ * de `regreso-tras-continuar.ts` ya no tiene nada que avisar. No pinta nada.
+ */
+function OlvidarQueContinuo() {
+  useEffect(() => {
+    olvidarQueContinuo()
+  }, [])
+  return null
+}
+
+/**
+ * 🔴 Producción (Nico, 30-09-2026): una cuenta nueva llegaba al error de
+ * aprovisionamiento de «Antes de comenzar», tocaba «Reintentar» y aparecía
+ * «Activa tu segundo factor» en medio del registro. Desde el primer intento el
+ * back ya la tiene como ADMIN de una inmobiliaria a medio crear, así que
+ * `segundoFactor.exigido` sale en true y esta guarda la sacaba del registro.
+ *
+ * Dentro de `/onboarding` no se pide INSCRIBIR el segundo factor: el registro
+ * no toca plata, y el back lo sigue exigiendo en cada endpoint que sí
+ * (`AgencyMemberGuard`). Se pide al entrar al panel, que es donde la pantalla
+ * dice «Actívalo una vez». Verificar uno ya inscrito (`mfaRequired`) sí se
+ * exige en todas partes: eso es el inicio de sesión, no una configuración.
+ */
+function enElRegistro(pathname: string): boolean {
+  return pathname === '/onboarding' || pathname.startsWith('/onboarding/')
+}
+
+/**
+ * 🔴 Nico, 30-09-2026: «¿por qué me está sacando y me lleva a esta página?
+ * … Todo lo de activar el 2FA, si no migro o luego de cuando migre, debe
+ * pasar ya DENTRO, porque yo estoy es dentro».
+ *
+ * En el panel de la inmobiliaria esta guarda ya no manda a
+ * `/auth/mfa-enroll`: deja pasar, y el layout del panel
+ * (`SegundoFactorDentroDelPanel`) pinta en vez del panel un esqueleto quieto
+ * con el paso a paso encima. Ese layout es el que garantiza que con
+ * `mfaEnrollRequired` NO se monte nada que pida datos (el 403
+ * `SEGUNDO_FACTOR_REQUERIDO` de T-0099). Verificar un factor ya inscrito
+ * (`mfaRequired`) sigue siendo afuera: es el inicio de sesión.
+ */
+function enElPanelDeLaInmobiliaria(pathname: string): boolean {
+  return pathname === '/panel/inmobiliaria' || pathname.startsWith('/panel/inmobiliaria/')
 }

@@ -66,7 +66,7 @@ export function WizardNavigation({
         className={cn(isFirstStep && 'invisible')}
       >
         <ArrowLeft className="h-4 w-4" />
-        <span className="hidden sm:inline">Atras</span>
+        <span className="hidden sm:inline">Atrás</span>
       </Button>
 
       {/* Step indicator - center (mobile only) */}

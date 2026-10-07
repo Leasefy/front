@@ -23,9 +23,14 @@ import {
 import type { Icon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { Badge, Button } from '@/components/ui';
+import { AnimatedNumber, CrossFade } from '@leasefy/cadence';
+
+/** El número tal cual se escribía antes: sin separador de miles. */
+const enteroTalCual = (n: number) => String(Math.round(n));
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
+  TableRowAnimada,
   TableCell,
   TableHead,
   TableHeader,
@@ -157,7 +162,7 @@ export function DocumentReviewQueueView({
             {/* Con la consulta caída, `counts` viene en ceros: afirmar «0
                 pendientes» sobre un dato que nadie trajo es inventar. Mientras
                 carga tampoco se sabe todavía. */}
-            {isLoading || error ? '—' : counts.pending}
+            {isLoading || error ? '—' : <AnimatedNumber value={counts.pending} format={enteroTalCual} />}
           </span>
           <span className="text-sm text-fg">
             {counts.pending === 1 ? 'soporte por revisar' : 'soportes por revisar'}
@@ -167,14 +172,17 @@ export function DocumentReviewQueueView({
           {SECUNDARIOS.map(({ key, label, icon: CardIcon }) => (
             <span key={key} className="flex items-center gap-1.5" data-testid={`count-${key}`}>
               <CardIcon className="h-4 w-4 text-fg-subtle" aria-hidden="true" />
-              <span className="tabular-nums">{isLoading || error ? '—' : counts[key]}</span>
+              <span className="tabular-nums">
+                {isLoading || error ? '—' : <AnimatedNumber value={counts[key]} format={enteroTalCual} />}
+              </span>
               {label}
             </span>
           ))}
         </div>
       </div>
 
-      {/* Body */}
+      {/* Body: esqueleto → tabla (o → fallo) con un fundido. */}
+      <CrossFade swapKey={isLoading ? 'cargando' : error ? 'fallo' : 'tabla'}>
       {isLoading ? (
         <EsqueletoTabla columnas={COLUMNAS.length} filas={5} />
       ) : error ? (
@@ -198,13 +206,15 @@ export function DocumentReviewQueueView({
                 ))}
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* Tomar, aprobar o rechazar: la fila que sale de la cola se va y
+                las demás suben. */}
+            <TableBodyAnimado>
               {filas.length === 0 ? (
                 /* Sin filtros en esta pantalla: acá el vacío es siempre «todavía no
                    llegó nada», nunca «filtraste mal». Y no se crea desde acá — los
                    soportes los sube quien se postula—, así que la salida útil es ir a
                    ver las postulaciones. */
-                <TableRow>
+                <TableRowAnimada key="vacio">
                   <TableCell colSpan={COLUMNAS.length} className="p-0">
                     <SinDatos
                       queSon="soportes por revisar"
@@ -218,7 +228,7 @@ export function DocumentReviewQueueView({
                       }
                     />
                   </TableCell>
-                </TableRow>
+                </TableRowAnimada>
               ) : (
                 filas.map(({ item, doc }) => {
                   const busy = pendingDocId === doc.id;
@@ -226,9 +236,12 @@ export function DocumentReviewQueueView({
                   const showApprove = doc.reviewStatus !== 'APPROVED';
                   const showReject = doc.reviewStatus !== 'REJECTED';
                   return (
-                    <TableRow key={doc.id} data-testid="review-doc">
+                    <TableRowAnimada key={doc.id} data-testid="review-doc">
                       <TableCell className="align-top">
-                        <p className="font-medium text-fg truncate">{item.tenant.title}</p>
+                        <p className="font-medium text-fg truncate">{item.tenant.fullName}</p>
+                        {item.property?.title ? (
+                          <p className="text-sm text-fg-muted truncate">{item.property.title}</p>
+                        ) : null}
                       </TableCell>
 
                       <TableCell className="max-w-[320px] align-top">
@@ -288,14 +301,15 @@ export function DocumentReviewQueueView({
                           </div>
                         )}
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   );
                 })
               )}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
         </div>
       )}
+      </CrossFade>
     </div>
   );
 }

@@ -19,20 +19,47 @@
  * un `Select`: doscientos inmuebles no se encuentran bajando una lista.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { House, User, UserPlus } from '@phosphor-icons/react'
-import { SegmentedControl } from '@leasefy/cadence'
+import { SegmentedControl, Presence } from '@leasefy/cadence'
 
 import { Input } from '@/components/ui/input'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { Combobox, type ComboboxOption } from '@/components/ui/combobox'
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service'
 import { useInquilinos } from '@/lib/hooks/use-inquilinos'
+import { cuentaDelPortal } from '@/lib/api/inquilinos.service'
 import type { Consignacion } from '@/lib/types/inmobiliaria'
 import { etiquetaDeInmueble } from './VincularInmueble'
 
+/** Lo que la lista sabe del inquilino elegido (T-0145). */
+export interface DatosDelInquilino {
+  nombre: string
+  documento: string
+  correo: string
+  telefono: string
+}
+
 export type SeleccionDeInquilino =
-  | { modo: 'existente'; tenantId: string }
+  | {
+      modo: 'existente'
+      tenantId: string
+      /**
+       * Para armar el contrato cuando `tenantId` no es un UUID (una llave
+       * `doc:…` de quien no tiene cuenta ni ficha): ahí no se manda el id, se
+       * mandan estos datos.
+       */
+      datos?: DatosDelInquilino
+    }
   | { modo: 'nuevo'; nombre: string; documento: string; correo: string; telefono: string }
+
+export interface PersonaDelInquilino {
+  nombre: string
+  documento: string | null
+  correo: string | null
+  telefono: string | null
+}
 
 export interface PartesManuales {
   propertyId: string
@@ -73,20 +100,50 @@ export function validarPartes(partes: PartesManuales): Record<string, string> {
   } else {
     if (q.nombre.trim().length < 2) errores.nombre = 'Escribe el nombre completo.'
     if (q.documento.replace(/\D/g, '').length < 4) errores.documento = 'Escribe el documento.'
-    if (!CORREO.test(q.correo.trim())) errores.correo = 'Escribe un correo válido: ahí le llega la invitación.'
+    // Nico (03-10-2026, CR-14): el borrador nace SIN la cuenta del inquilino
+    // nuevo, así que su correo es OBLIGATORIO —para que siempre se lo pueda
+    // invitar al portal y firme—. El back también lo exige (400).
+    if (!q.correo.trim()) errores.correo = 'Escribe el correo: es obligatorio para invitarlo al portal y que firme.'
+    else if (!CORREO.test(q.correo.trim())) errores.correo = 'Escribe un correo válido: ahí le llega la invitación.'
   }
   return errores
 }
 
 interface Props {
   valor: PartesManuales
-  onCambio: (partes: PartesManuales) => void
+  /** `automatico`: lo cambió la pantalla (la persona pedida), no la persona: no cuenta como «tocado». */
+  onCambio: (partes: PartesManuales, opciones?: { automatico?: boolean }) => void
   /** El inmueble recién elegido, para precargar el canon en los términos. */
   onInmuebleElegido?: (consignacion: Consignacion) => void
   errores?: Record<string, string>
+  /**
+   * La persona con la que se llegó (`?inquilino=` desde Inquilinos, QA-INQ
+   * I-29). Con cuenta del portal queda elegida en «Ya es inquilino»; sin
+   * cuenta (el contrato pide una cuenta para «Ya es inquilino»), pasa a
+   * «Nuevo» con sus datos escritos. Si no está en la lista, no se elige nada.
+   */
+  inquilinoPedido?: string | null
+  /**
+   * El nombre del inquilino elegido de la lista (`null` sin elegir), para el
+   * resumen de «Crear contrato» (QA-CONT C-22). Avisa también cuando la
+   * persona llegó ya elegida (`?inquilino=`), no sólo al tocar el selector.
+   */
+  onNombreDelInquilino?: (nombre: string | null) => void
+  /**
+   * 🔴 QA-CONT-95: la persona de «Ya es inquilino» (nombre, documento, correo y
+   * teléfono), para el contrato de la plantilla: el art. 3 literal a de la Ley
+   * 820 los exige y sin ellos «Usar plantilla» nunca armaba.
+   */
+  onPersonaDelInquilino?: (persona: PersonaDelInquilino | null) => void
+  /**
+   * El inmueble con el que se llegó (`?inmueble=<propertyId>`): la vuelta
+   * desde el inventario de su ficha (QA con avatares, 04-10). Queda elegido
+   * apenas llega la lista; si ya no es elegible, no se elige nada.
+   */
+  inmueblePedido?: string | null
 }
 
-export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, errores = {} }: Props) {
+export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, errores = {}, inquilinoPedido = null, onNombreDelInquilino, onPersonaDelInquilino, inmueblePedido = null }: Props) {
   const [consignaciones, setConsignaciones] = useState<Consignacion[] | null>(null)
   const [errorInmuebles, setErrorInmuebles] = useState<string | null>(null)
   const { inquilinos, cargando: cargandoInquilinos } = useInquilinos({ buscar: '', estado: 'todos' })
@@ -100,7 +157,12 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
       })
       .catch((e: unknown) => {
         if (!vigente) return
-        setErrorInmuebles(e instanceof Error ? e.message : 'No pudimos traer los inmuebles.')
+        setErrorInmuebles(
+          mensajeParaLaPersona(e, {
+            porDefecto: 'No pudimos traer los inmuebles.',
+            accion: 'traer los inmuebles',
+          }),
+        )
         setConsignaciones([])
       })
     return () => {
@@ -113,9 +175,17 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
     () => elegibles.map((c) => ({ value: c.propertyId, label: etiquetaDeInmueble(c) })),
     [elegibles],
   )
+  /*
+   * QA-CONT CR-14: «Ya es inquilino» sólo ofrece a quien tiene cuenta del
+   * portal. El back exige su id (`@IsUUID`) y una cuenta de inquilino: las
+   * personas que en Inquilinos son una identidad (`doc:`/`correo:`) rebotaban
+   * con 404 al crear. A ellas se las carga en «Nuevo» con su documento, y el
+   * back usa su ficha si el documento ya es de la inmobiliaria.
+   */
   const opcionesInquilino = useMemo<ComboboxOption[]>(
     () =>
       [...inquilinos]
+        .filter((q) => cuentaDelPortal(q) !== null)
         .sort((a, b) => a.nombre.localeCompare(b.nombre))
         .map((q) => ({
           value: q.tenantId,
@@ -123,6 +193,73 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
         })),
     [inquilinos],
   )
+
+  /* El inmueble pedido, UNA vez, cuando llega la lista: después manda la persona. */
+  const inmuebleResuelto = useRef(false)
+  useEffect(() => {
+    if (!inmueblePedido || inmuebleResuelto.current || consignaciones === null) return
+    inmuebleResuelto.current = true
+    const c = elegibles.find((x) => x.propertyId === inmueblePedido)
+    if (!c) return
+    onCambio({ ...valor, propertyId: c.propertyId }, { automatico: true })
+    onInmuebleElegido?.(c)
+    // `valor`/`onCambio` cambian con cada render del padre; esto corre una vez.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inmueblePedido, consignaciones, elegibles])
+
+  /* Se resuelve UNA vez, cuando llega la lista: después manda la persona. */
+  const pedidoResuelto = useRef(false)
+  useEffect(() => {
+    if (!inquilinoPedido || pedidoResuelto.current || cargandoInquilinos) return
+    pedidoResuelto.current = true
+    const persona = inquilinos.find((q) => q.tenantId === inquilinoPedido)
+    if (!persona) {
+      if (valor.inquilino.modo === 'existente' && valor.inquilino.tenantId === inquilinoPedido) {
+        onCambio({ ...valor, inquilino: { modo: 'existente', tenantId: '' } }, { automatico: true })
+      }
+      return
+    }
+    if (cuentaDelPortal(persona) === null) {
+      onCambio({
+        ...valor,
+        inquilino: {
+          modo: 'nuevo',
+          nombre: persona.nombre,
+          documento: persona.documento ?? '',
+          correo: persona.email ?? '',
+          telefono: persona.telefono ?? '',
+        },
+      }, { automatico: true })
+    }
+    // `valor`/`onCambio` cambian con cada render del padre; esto corre una vez.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inquilinoPedido, cargandoInquilinos, inquilinos])
+
+  const nombreElegido =
+    valor.inquilino.modo === 'existente'
+      ? (inquilinos.find((q) => q.tenantId === (valor.inquilino as { tenantId: string }).tenantId)?.nombre ?? null)
+      : null
+  const personaElegida =
+    valor.inquilino.modo === 'existente'
+      ? (inquilinos.find((q) => q.tenantId === (valor.inquilino as { tenantId: string }).tenantId) ?? null)
+      : null
+  const llaveDeLaPersona = personaElegida
+    ? [personaElegida.tenantId, personaElegida.nombre, personaElegida.documento, personaElegida.email, personaElegida.telefono].join('|')
+    : ''
+  useEffect(() => {
+    onPersonaDelInquilino?.(
+      personaElegida
+        ? { nombre: personaElegida.nombre, documento: personaElegida.documento, correo: personaElegida.email, telefono: personaElegida.telefono }
+        : null,
+    )
+    // Sólo cuando cambia la persona: `onPersonaDelInquilino` es un setState del padre.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [llaveDeLaPersona])
+  useEffect(() => {
+    onNombreDelInquilino?.(nombreElegido)
+    // Sólo cuando cambia el nombre: `onNombreDelInquilino` es un setState del padre.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nombreElegido])
 
   const elegirInmueble = (propertyId: string | undefined) => {
     onCambio({ ...valor, propertyId: propertyId ?? '' })
@@ -177,8 +314,10 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
             data-testid="inmueble-combobox"
           />
         )}
-        {errorInmuebles && <p className="text-caption text-danger">{errorInmuebles}</p>}
-        {errores.propertyId && <p className="text-caption text-danger">{errores.propertyId}</p>}
+        <Presence show={Boolean(errorInmuebles)} initial={false} distance="xs" as="p" role="alert" className="text-caption text-danger" data-testid="error-de-los-inmuebles">
+          {errorInmuebles}
+        </Presence>
+        <ErrorDelCampo id="inmueble-del-contrato-error" mensaje={errores.propertyId} className="mt-0" />
       </div>
 
       <div className="space-y-3">
@@ -203,7 +342,26 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
           <div className="space-y-1.5">
             <Combobox
               value={valor.inquilino.tenantId || undefined}
-              onChange={(id) => onCambio({ ...valor, inquilino: { modo: 'existente', tenantId: id ?? '' } })}
+              onChange={(id) => {
+                const elegido = inquilinos.find((q) => q.tenantId === id)
+                onCambio({
+                  ...valor,
+                  inquilino: {
+                    modo: 'existente',
+                    tenantId: id ?? '',
+                    ...(elegido
+                      ? {
+                          datos: {
+                            nombre: elegido.nombre,
+                            documento: elegido.documento ?? '',
+                            correo: elegido.email ?? '',
+                            telefono: elegido.telefono ?? '',
+                          },
+                        }
+                      : {}),
+                  },
+                })
+              }}
               options={opcionesInquilino}
               placeholder={cargandoInquilinos ? 'Cargando inquilinos…' : 'Busca por nombre, correo o teléfono'}
               searchPlaceholder="Nombre, correo o teléfono"
@@ -216,21 +374,27 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
                 Todavía no hay inquilinos con arriendos acá. Cárgalo como nuevo.
               </p>
             )}
-            {errores.tenantId && <p className="text-caption text-danger">{errores.tenantId}</p>}
+            <ErrorDelCampo id="inquilino-del-contrato-error" mensaje={errores.tenantId} className="mt-0" />
           </div>
         ) : (
           <div className="space-y-3" data-testid="inquilino-nuevo">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Campo label="Nombre completo" error={errores.nombre}>
+              <Campo id="nuevo-nombre" label="Nombre completo" error={errores.nombre}>
                 <Input
+                  id="nuevo-nombre"
+                  aria-invalid={errores.nombre ? true : undefined}
+                  aria-describedby="nuevo-nombre-error"
                   value={nuevo?.nombre ?? ''}
                   onChange={(e) => cambiarNuevo('nombre', e.target.value)}
                   autoComplete="off"
                   data-testid="nuevo-nombre"
                 />
               </Campo>
-              <Campo label="Documento" error={errores.documento}>
+              <Campo id="nuevo-documento" label="Documento" error={errores.documento}>
                 <Input
+                  id="nuevo-documento"
+                  aria-invalid={errores.documento ? true : undefined}
+                  aria-describedby="nuevo-documento-error"
                   value={nuevo?.documento ?? ''}
                   onChange={(e) => cambiarNuevo('documento', e.target.value)}
                   inputMode="numeric"
@@ -238,8 +402,18 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
                   data-testid="nuevo-documento"
                 />
               </Campo>
-              <Campo label="Correo" error={errores.correo}>
+              <Campo
+                id="nuevo-correo"
+                label="Correo"
+                requerido
+                hint="Obligatorio: ahí le llega la invitación al portal."
+                error={errores.correo}
+              >
                 <Input
+                  id="nuevo-correo"
+                  aria-required="true"
+                  aria-invalid={errores.correo ? true : undefined}
+                  aria-describedby="nuevo-correo-error"
                   type="email"
                   value={nuevo?.correo ?? ''}
                   onChange={(e) => cambiarNuevo('correo', e.target.value)}
@@ -247,8 +421,11 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
                   data-testid="nuevo-correo"
                 />
               </Campo>
-              <Campo label="Teléfono" hint="Opcional">
+              <Campo id="nuevo-telefono" label="Teléfono" hint="Opcional" error={errores.telefono}>
                 <Input
+                  id="nuevo-telefono"
+                  aria-invalid={errores.telefono ? true : undefined}
+                  aria-describedby="nuevo-telefono-error"
                   value={nuevo?.telefono ?? ''}
                   onChange={(e) => cambiarNuevo('telefono', e.target.value)}
                   inputMode="tel"
@@ -270,25 +447,35 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
 }
 
 function Campo({
+  id,
   label,
   error,
   hint,
+  requerido,
   children,
 }: {
+  /** El id del control: el error va en `${id}-error`, el que nombra su `aria-describedby`. */
+  id: string
   label: string
   error?: string
   hint?: string
+  /** Marca el campo como obligatorio (el asterisco; el control lleva su `aria-required`). */
+  requerido?: boolean
   children: React.ReactNode
 }) {
   return (
     <div className="space-y-1">
-      <label className="block text-caption font-medium text-fg">{label}</label>
+      <label className="block text-caption font-medium text-fg" htmlFor={id}>
+        {label}
+        {requerido ? (
+          <span className="ml-0.5 text-danger" aria-hidden="true">
+            *
+          </span>
+        ) : null}
+      </label>
       {children}
-      {error ? (
-        <p className="text-caption text-danger">{error}</p>
-      ) : hint ? (
-        <p className="text-caption text-fg-muted">{hint}</p>
-      ) : null}
+      {/* El error entra suave y, si hay ayuda, se cruza con ella. */}
+      <ErrorDelCampo id={`${id}-error`} mensaje={error} pista={hint} className="mt-0" />
     </div>
   )
 }

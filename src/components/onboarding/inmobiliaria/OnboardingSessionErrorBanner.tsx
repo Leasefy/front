@@ -1,8 +1,13 @@
 'use client'
 
-import { ArrowClockwise, EnvelopeSimple, LockKey, Warning, WarningCircle } from '@phosphor-icons/react'
+import { ArrowClockwise, EnvelopeSimple, HourglassMedium, LockKey, Plugs, WarningCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import type { OnboardingSessionError } from '@/lib/api/onboarding-session.service'
+import { useEstadoDeConexion } from '@/lib/conexion/estado-de-conexion'
+import {
+  textoDeServicioNoDisponible,
+  useEstadoDelServicio,
+} from '@/lib/conexion/servicio-no-disponible'
 
 export interface OnboardingSessionErrorBannerProps {
   error: OnboardingSessionError
@@ -83,36 +88,16 @@ export function OnboardingSessionErrorBanner({ error, onRetry, isRetrying }: Onb
 
     case 'unavailable':
     case 'network':
-      return (
-        <div
-          data-testid="onboarding-error-banner-retryable"
-          className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2"
-        >
-          <Warning className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-warning">
-              {error.kind === 'network' ? 'No pudimos conectarnos' : 'El servicio no está disponible'}
-            </p>
-            <p className="text-body-sm text-fg-muted mt-0.5">{error.message}</p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              hideArrow
-              onClick={onRetry}
-              disabled={isRetrying}
-              className="mt-3"
-            >
-              <ArrowClockwise className="w-4 h-4" />
-              Reintentar
-            </Button>
-          </div>
-        </div>
-      )
+      return <AsistenteCaido onRetry={onRetry} isRetrying={isRetrying} />
 
     // 'conflict' is corrected in-place by the hook (currentStep is realigned)
     // and 'unknown' covers any status the service doesn't special-case.
     default:
+      // Un 502/504 del micro es su proxy diciendo que atrás no hay nadie: el
+      // asistente está caído, no «un error inesperado».
+      if (error.status === 502 || error.status === 504) {
+        return <AsistenteCaido onRetry={onRetry} isRetrying={isRetrying} />
+      }
       return (
         <div
           data-testid="onboarding-error-banner-unknown"
@@ -138,4 +123,58 @@ export function OnboardingSessionErrorBanner({ error, onRetry, isRetrying }: Onb
         </div>
       )
   }
+}
+
+/**
+ * El micro de agentes no contesta (01-10-2026). Estos pasos le hablan DIRECTO
+ * al micro, así que su caída no es «Leasefy entero caído» —el back sigue
+ * andando y la franja global no se prende—: es una parte, el asistente (capa
+ * 2). Antes decía «El servicio no está disponible» y el `message` crudo del
+ * micro; ahora nombra qué se cayó, dice que no es culpa de la persona y —sólo
+ * si el back lo confirma— que el equipo ya está avisado.
+ *
+ * La excepción es no tener internet: eso no es el asistente, y la franja de
+ * arriba ya lo dice.
+ */
+function AsistenteCaido({ onRetry, isRetrying }: { onRetry: () => void; isRetrying?: boolean }) {
+  const conexion = useEstadoDeConexion()
+  const sinInternet = conexion === 'sin-internet'
+  // Con internet caído no se le pregunta al back por el asistente: no llegaría.
+  const estadoDelServicio = useEstadoDelServicio(sinInternet ? null : 'asistente')
+  const texto = sinInternet
+    ? {
+        titulo: 'Esperando la conexión…',
+        detalle: 'Lo que ya guardaste está a salvo. Apenas vuelva, dale a «Reintentar».',
+      }
+    : textoDeServicioNoDisponible('asistente', {
+        equipoAvisado: estadoDelServicio?.equipoAvisado === true,
+        tranquilidad: 'Lo que ya guardaste está a salvo.',
+      })
+  const Icono = sinInternet ? HourglassMedium : Plugs
+
+  return (
+    <div
+      data-testid="onboarding-error-banner-retryable"
+      role="status"
+      className="rounded-md bg-warning-soft border border-border p-3 flex items-start gap-2"
+    >
+      <Icono className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="duotone" aria-hidden />
+      <div className="flex-1">
+        <p className="text-sm font-medium text-fg">{texto.titulo}</p>
+        <p className="text-body-sm text-fg-muted mt-0.5">{texto.detalle}</p>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          hideArrow
+          onClick={onRetry}
+          disabled={isRetrying}
+          className="mt-3"
+        >
+          <ArrowClockwise className="w-4 h-4" />
+          Reintentar
+        </Button>
+      </div>
+    </div>
+  )
 }

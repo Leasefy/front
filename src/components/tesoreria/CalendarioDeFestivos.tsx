@@ -36,12 +36,38 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/toast';
 import { tesoreriaApi } from '@/lib/api/tesoreria.service';
 import type { CalendarioDelAnio } from '@/lib/api/tesoreria.types';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import {
+  errorDeLaFechaDelFestivo,
+  errorDelNombreDelFestivo,
+} from '@/lib/tesoreria/limites-de-tesoreria';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
+
+/** Los dos campos de «Agregar un día», y el id de cada uno. */
+type CampoDelFestivo = 'fecha' | 'nombre';
+const ID_DEL_CAMPO: Record<CampoDelFestivo, string> = {
+  fecha: 'fecha-del-festivo',
+  nombre: 'nombre-del-festivo',
+};
+
+function enfocar(campo: CampoDelFestivo | undefined) {
+  if (campo) document.getElementById(ID_DEL_CAMPO[campo])?.focus();
+}
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
 
 /** El día de la semana de un `YYYY-MM-DD`, leído en UTC como lo cuenta el back. */
 function diaDeLaSemana(fecha: string): string {
   return DIAS[new Date(`${fecha}T00:00:00.000Z`).getUTCDay()] ?? '';
+}
+
+/** «1 festivo» / «18 festivos»: PG-13 (03-10-2026) — antes «18 festivo(s) en 18 día(s)». */
+export function cuantosFestivos(activos: number, diasDistintos: number): string {
+  const festivos = `${activos} ${activos === 1 ? 'festivo' : 'festivos'}`;
+  const dias = `${diasDistintos} ${diasDistintos === 1 ? 'día distinto' : 'días distintos'}`;
+  return `${festivos} en ${dias}`;
 }
 
 export function CalendarioDeFestivosPanel() {
@@ -55,6 +81,7 @@ export function CalendarioDeFestivosPanel() {
   const [fecha, setFecha] = useState('');
   const [nombre, setNombre] = useState('');
   const [nacional, setNacional] = useState(false);
+  const [errores, setErrores] = useState<Partial<Record<CampoDelFestivo, string>>>({});
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -73,6 +100,18 @@ export function CalendarioDeFestivosPanel() {
   }, [cargar]);
 
   const agregar = async () => {
+    // 🔁 Espejo del tope del back: un día real, entre el 2000 y el 2100.
+    const delCliente: Partial<Record<CampoDelFestivo, string>> = {};
+    const eFecha = errorDeLaFechaDelFestivo(fecha);
+    const eNombre = errorDelNombreDelFestivo(nombre);
+    if (eFecha) delCliente.fecha = eFecha;
+    if (eNombre) delCliente.nombre = eNombre;
+    if (delCliente.fecha || delCliente.nombre) {
+      setErrores(delCliente);
+      enfocar(delCliente.fecha ? 'fecha' : 'nombre');
+      return;
+    }
+    setErrores({});
     setTrabajando(true);
     try {
       await tesoreriaApi.corregirCalendario({
@@ -86,7 +125,15 @@ export function CalendarioDeFestivosPanel() {
       setNombre('');
       await cargar();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo guardar el día.');
+      // Un 400 por campo va debajo de su campo; lo demás, al aviso.
+      const reparto = repartirErroresDelServidor<CampoDelFestivo>(error, {
+        campos: ['fecha', 'nombre'],
+        porDefecto: 'No se pudo guardar el día.',
+        accion: 'agregar el día al calendario',
+      });
+      setErrores(reparto.porCampo);
+      enfocar(reparto.orden[0]);
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setTrabajando(false);
     }
@@ -104,7 +151,12 @@ export function CalendarioDeFestivosPanel() {
       toast.success(`${dia.fecha} deja de contar como festivo para esta inmobiliaria.`);
       await cargar();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo apagar el día.');
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo apagar el día.',
+          accion: 'marcar el día como hábil',
+        }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -117,7 +169,12 @@ export function CalendarioDeFestivosPanel() {
       toast.success('La corrección se borró: el día vuelve a lo que diga el cálculo.');
       await cargar();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'No se pudo borrar la corrección.');
+      toast.error(
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo borrar la corrección.',
+          accion: 'borrar la corrección',
+        }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -144,7 +201,7 @@ export function CalendarioDeFestivosPanel() {
 
             <TituloDeBloque
               titulo={`Festivos de ${datos.anio}`}
-              explicacion={`${datos.activos} festivo(s) en ${datos.diasDistintos} día(s) distintos. Se calculan con la Ley 51 de 1983 (los trasladables caen el lunes siguiente) y la Pascua. Dos festivos pueden caer el mismo día: en 2025 el Sagrado Corazón y San Pedro cayeron los dos el 30 de junio.`}
+              explicacion={`${cuantosFestivos(datos.activos, datos.diasDistintos)}. Se calculan con la Ley 51 de 1983 (los trasladables caen el lunes siguiente) y la Pascua. Dos festivos pueden caer el mismo día: en 2025 el Sagrado Corazón y San Pedro cayeron los dos el 30 de junio.`}
               accion={
                 <div className="space-y-1">
                   <Label htmlFor="anio-del-calendario">Año</Label>
@@ -180,7 +237,8 @@ export function CalendarioDeFestivosPanel() {
                       className="border-t border-border"
                       data-testid={`dia-${d.fecha}`}
                     >
-                      <td className="p-3 font-mono tabular-nums">{d.fecha}</td>
+                      {/* PG-13: la fecha de la casa («1 ene 2026»), no el ISO crudo. */}
+                      <td className="whitespace-nowrap p-3 font-mono tabular-nums">{fechaCorta(d.fecha)}</td>
                       <td className="p-3 text-fg-muted">{diaDeLaSemana(d.fecha)}</td>
                       <td className="p-3">
                         <span className={d.activo ? 'text-fg' : 'text-fg-muted line-through'}>
@@ -243,20 +301,32 @@ export function CalendarioDeFestivosPanel() {
                       id="fecha-del-festivo"
                       type="date"
                       value={fecha}
-                      onChange={(e) => setFecha(e.target.value)}
+                      onChange={(e) => {
+                        setFecha(e.target.value);
+                        setErrores((previos) => ({ ...previos, fecha: undefined }));
+                      }}
+                      aria-invalid={errores.fecha ? true : undefined}
+                      aria-describedby={errores.fecha ? 'fecha-del-festivo-error' : undefined}
                       data-testid="fecha-del-festivo"
                     />
+                    <ErrorDelCampo id="fecha-del-festivo-error" mensaje={errores.fecha} />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="nombre-del-festivo">Nombre</Label>
                     <Input
                       id="nombre-del-festivo"
                       value={nombre}
-                      onChange={(e) => setNombre(e.target.value)}
+                      onChange={(e) => {
+                        setNombre(e.target.value);
+                        setErrores((previos) => ({ ...previos, nombre: undefined }));
+                      }}
                       placeholder="Día de la familia"
                       maxLength={120}
+                      aria-invalid={errores.nombre ? true : undefined}
+                      aria-describedby={errores.nombre ? 'nombre-del-festivo-error' : undefined}
                       data-testid="nombre-del-festivo"
                     />
+                    <ErrorDelCampo id="nombre-del-festivo-error" mensaje={errores.nombre} />
                   </div>
                   <div className="flex items-end">
                     <Button

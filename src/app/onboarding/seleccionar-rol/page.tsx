@@ -2,141 +2,26 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { House, Buildings, Storefront, Check, type Icon } from '@phosphor-icons/react'
-import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/use-auth'
-import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles'
-import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
 import { getAgencyHomeRoute } from '@/lib/auth/role-routes'
-import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
-import { LeasefyLogotype } from '@/components/brand'
-import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
-import { saludo } from '@/lib/onboarding/saludo'
-
-type RoleChoice = 'tenant' | 'landlord' | 'inmobiliaria' | null
+import {
+  RUTA_DEL_ASISTENTE,
+  useRegistroDeLaInmobiliaria,
+} from '@/lib/auth/registro-de-la-inmobiliaria'
+import { CargaDeMarca } from '@/components/ui/carga-de-marca'
+import { EleccionDePerfil } from '@/components/onboarding/perfil/EleccionDePerfil'
+import { PanelAntesDeComenzarConAprovisionamiento } from '@/components/onboarding/perfil/PanelAntesDeComenzar'
 
 const PENDING_INVITATION_KEY = 'pending-invitation-token'
 
-interface OpcionDePerfil {
-  valor: Exclude<RoleChoice, null>
-  /** La clave con la que el admin puede apagar el perfil en /admin/registration-profiles. */
-  bandera: 'tenant' | 'landlord' | 'agency'
-  titulo: string
-  descripcion: string
-  icono: Icon
-}
-
-/** El orden es el de la conversación: primero lo simple, al final lo que trae equipo. */
-const PERFILES: OpcionDePerfil[] = [
-  {
-    valor: 'tenant',
-    bandera: 'tenant',
-    titulo: 'Inquilino',
-    descripcion: 'Busco un lugar para vivir',
-    icono: House,
-  },
-  {
-    valor: 'landlord',
-    bandera: 'landlord',
-    titulo: 'Propietario',
-    descripcion: 'Quiero arrendar mi propiedad',
-    icono: Buildings,
-  },
-  {
-    valor: 'inmobiliaria',
-    bandera: 'agency',
-    titulo: 'Soy una inmobiliaria',
-    descripcion: 'Gestiona propiedades de múltiples propietarios con tu equipo',
-    icono: Storefront,
-  },
-]
-
 /**
- * Una tarjeta de perfil.
- *
- * Antes había tres copias de este bloque y las tres no pintaban igual: las de
- * inquilino y propietario se marcaban en negro (`bg-ink`) y sólo la de
- * inmobiliaria en azul. Lo seleccionado en el producto es azul primary, sin
- * excepciones — de ahí que esto sea UN componente y no tres bloques.
+ * «Selecciona tu perfil». Las tarjetas, su animación y «Antes de comenzar»
+ * viven en `EleccionDePerfil`; esta página sólo decide si a esta persona le
+ * toca verlas o si ya tiene otro destino.
  */
-function TarjetaDePerfil({
-  opcion,
-  seleccionada,
-  onSelect,
-}: {
-  opcion: OpcionDePerfil
-  seleccionada: boolean
-  onSelect: () => void
-}) {
-  const Icono = opcion.icono
-
-  return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={seleccionada}
-      onClick={onSelect}
-      data-testid={`perfil-${opcion.valor}`}
-      className={cn(
-        'group relative flex w-full items-center gap-4 rounded-lg border p-5 text-left',
-        'transition-[border-color,background-color,box-shadow] duration-200',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
-        seleccionada
-          ? 'border-primary bg-primary-soft shadow-[0_1px_2px_rgba(0,0,0,0.04)]'
-          : 'border-border bg-surface hover:border-border-strong hover:bg-surface-muted/40',
-      )}
-    >
-      <span
-        className={cn(
-          'flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-md transition-colors',
-          seleccionada
-            ? 'bg-primary text-primary-fg'
-            : 'bg-surface-muted text-fg-subtle group-hover:text-fg-muted',
-        )}
-      >
-        <Icono className="h-6 w-6" weight={seleccionada ? 'fill' : 'regular'} aria-hidden />
-      </span>
-
-      <span className="min-w-0 flex-1 pr-7">
-        <span className="block text-[15px] font-semibold text-fg">{opcion.titulo}</span>
-        <span className="mt-0.5 block text-[13px] leading-snug text-fg-muted">
-          {opcion.descripcion}
-        </span>
-      </span>
-
-      {seleccionada && (
-        <motion.span
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-          className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-fg"
-        >
-          <Check className="h-3.5 w-3.5" weight="bold" aria-hidden />
-        </motion.span>
-      )}
-    </button>
-  )
-}
-
 export default function SeleccionarRolPage() {
   const router = useRouter()
-  const { user, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole, perfilElegido, elegirPerfil } = useAuth()
-  // Admin can switch signup profiles off (see /admin/registration-profiles).
-  // Fails open: if the config backend is down (or takes too long), all are shown.
-  const { isEnabled: isProfileEnabled, esProvisional } = useEnabledProfiles()
-  const [selected, setSelected] = useState<RoleChoice>(null)
-  const [isLoading, setIsLoading] = useState(false)
-
-  // Si ya había elegido y se fue antes de terminar, la tarjeta arranca
-  // marcada: «Continuar» es un clic. Sólo si el admin no apagó ese perfil.
-  useEffect(() => {
-    if (!perfilElegido) return
-    const opcion = PERFILES.find((perfil) => perfil.bandera === perfilElegido)
-    if (!opcion || !isProfileEnabled(opcion.bandera)) return
-    setSelected((actual) => actual ?? opcion.valor)
-  }, [perfilElegido, isProfileEnabled])
+  const { user, hasActiveAgencyMembership, agencyMembershipChecked, agencyRole } = useAuth()
 
   // Bounded fallback for the membership-probe wait below: if the probe never
   // settles (e.g. it wasn't triggered on this client-side navigation, or the
@@ -149,19 +34,13 @@ export default function SeleccionarRolPage() {
     return () => clearTimeout(id)
   }, [])
 
-  /*
-   * Las tarjetas no se pintan hasta saber cuáles dejó el admin (Nico,
-   * 2026-09-07: «Propietario» está apagado y se alcanzó a ver un instante).
-   * El hook arranca con todos los perfiles mientras llega la respuesta, y
-   * pintarlos así es exactamente el parpadeo. Espera acotada: si la config no
-   * responde, se pintan todos igual — el registro nunca se bloquea por esto.
-   */
-  const [configWaitElapsed, setConfigWaitElapsed] = useState(false)
-  useEffect(() => {
-    const id = setTimeout(() => setConfigWaitElapsed(true), 2500)
-    return () => clearTimeout(id)
-  }, [])
-  const perfilesListos = !esProvisional || configWaitElapsed
+  // 🔴 Membresía activa NO es registro terminado (Nico, 01-10-2026: «nos
+  // llevó al seleccionar rol y nos llevó luego de un rato a esta pantalla,
+  // literal ingresó a la plataforma»). La agencia y la membresía ADMIN nacen
+  // en «Antes de comenzar», ANTES del asistente; la regla de abajo era para
+  // los miembros INVITADOS y sacaba al panel también al dueño a medias.
+  // Mismo veredicto que el candado del panel (`AsistentePendienteGuard`).
+  const registro = useRegistroDeLaInmobiliaria(user?.id ?? null, hasActiveAgencyMembership)
 
   // Defense-in-depth: an invited user must NEVER see the personal role picker.
   // If a pending invitation token is present, send them to /registro (the
@@ -183,7 +62,7 @@ export default function SeleccionarRolPage() {
   if (user && !agencyMembershipChecked && !probeWaitElapsed) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center p-6">
-        <Spinner />
+        <CargaDeMarca tamano="lg" />
       </div>
     )
   }
@@ -191,9 +70,19 @@ export default function SeleccionarRolPage() {
   // An ACTIVE agency member must never see the personal role picker either —
   // they already have an agency destination. Send them to their per-sub-role
   // agency landing route (the spinner/bounded-wait above guarantees agencyRole
-  // is resolved by the time we get here).
+  // is resolved by the time we get here) — unless the agency's registration
+  // wizard is unfinished: the OWNER who left it a medias goes back to it.
+  // Antes, el dueño con el registro a medias: a terminarlo, nunca al panel.
+  // Mientras se pregunta, el cargador (ni tarjetas ni panel).
   if (hasActiveAgencyMembership) {
-    router.replace(getAgencyHomeRoute(agencyRole))
+    if (registro === 'verificando') {
+      return (
+        <div className="min-h-screen bg-bg flex items-center justify-center p-6">
+          <CargaDeMarca tamano="lg" />
+        </div>
+      )
+    }
+    router.replace(registro === 'a-medias' ? RUTA_DEL_ASISTENTE : getAgencyHomeRoute(agencyRole))
     return null
   }
 
@@ -203,81 +92,16 @@ export default function SeleccionarRolPage() {
     return null
   }
 
-  const handleContinue = async () => {
-    if (!selected) return
-    setIsLoading(true)
-    const perfil = PERFILES.find((opcion) => opcion.valor === selected)?.bandera ?? 'tenant'
-    // La elección se guarda para que la próxima entrada retome en este
-    // onboarding y no acá (Nico, 2026-09-07). Se guarda en segundo plano: el
-    // clic navega YA, y si guardar falla o tarda no retiene a nadie — a lo
-    // sumo la próxima vez vuelve al selector.
-    void elegirPerfil(perfil).catch(() => undefined)
-    router.push(rutaDeOnboarding(perfil))
-  }
-
-  const visibles = PERFILES.filter((perfil) => isProfileEnabled(perfil.bandera))
-
   return (
-    <div className="min-h-screen bg-bg">
-      <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
-        {/* El mismo logotipo que la sidebar del panel y el header de los pasos — el cuadrado azul no es la marca (Nico, 2026-09-07). */}
-        <LeasefyLogotype className="h-6 w-auto" />
-        <SalirDelRegistro />
-      </header>
-
-      <main className="flex min-h-[calc(100vh-5rem)] items-start justify-center px-6 pb-16 pt-6 sm:items-center sm:pt-0">
-        <div className="w-full max-w-md">
-          <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-fg sm:text-3xl">
-              {saludo(user?.name)}
-            </h1>
-            <p className="mx-auto mt-2 max-w-sm text-body-sm text-fg-muted">
-              Selecciona tu perfil para personalizar tu experiencia
-            </p>
-          </div>
-
-          {perfilesListos ? (
-            <div
-              role="radiogroup"
-              aria-label="Tu perfil"
-              className="mb-7 grid grid-cols-1 gap-3"
-            >
-              {visibles.map((perfil) => (
-                <TarjetaDePerfil
-                  key={perfil.valor}
-                  opcion={perfil}
-                  seleccionada={selected === perfil.valor}
-                  onSelect={() => setSelected(perfil.valor)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div
-              className="mb-7 grid grid-cols-1 gap-3"
-              role="status"
-              aria-live="polite"
-              aria-label="Cargando los perfiles"
-              data-testid="perfiles-cargando"
-            >
-              {[0, 1].map((i) => (
-                <div key={i} className="h-[104px] animate-pulse rounded-lg border border-border bg-surface-muted" />
-              ))}
-            </div>
-          )}
-
-          <Button
-            type="button"
-            onClick={handleContinue}
-            disabled={!selected || isLoading}
-            hideArrow
-            size="lg"
-            className="w-full"
-          >
-            {isLoading ? <Spinner size="sm" variant="current" /> : 'Continuar'}
-          </Button>
-
-        </div>
-      </main>
-    </div>
+    <EleccionDePerfil
+      panelDeInmobiliaria={(cerrar, alAbrirRegistro, alSaberSiPuedeCambiar, alSaberDelRegistroAMedias) => (
+        <PanelAntesDeComenzarConAprovisionamiento
+          onCerrar={cerrar}
+          onApertura={alAbrirRegistro}
+          onPuedeCambiarDePerfil={alSaberSiPuedeCambiar}
+          onRegistroAMedias={alSaberDelRegistroAMedias}
+        />
+      )}
+    />
   )
 }

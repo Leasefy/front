@@ -4,6 +4,9 @@
  */
 
 import type {
+  DepositoDelContratoDelBack,
+  EstadoDelContratoDelBack,
+  ReglaDeCobroDelBack,
   EscenarioTributarioDelContrato,
   PerfilesDelContrato,
   PropietariosDelContrato,
@@ -156,6 +159,8 @@ export interface BackendContract {
    * exige completas sólo para `contractOrigin !== 'MIGRATED'`.
    */
   monthlyRent: number | null;
+  /** Depósito en COP (sólo comercial, Nico 03-10-2026). Ausente en respuestas viejas. */
+  deposit?: number | null;
   startDate: string | null;
   endDate: string | null;
   paymentDay: number | null;         // backend usa `paymentDay` (el front lo mapea a paymentDueDay)
@@ -170,6 +175,12 @@ export interface BackendContract {
   motivoDeTerminacion?: string | null;
   notaDeTerminacion?: string | null;
   finPactadoOriginal?: string | null;
+  /** QA-CONT C-05/C-01: el estado que se muestra, con la terminación programada. Lista y ficha. */
+  estadoParaMostrar?: EstadoDelContratoDelBack;
+  /** QA-CONT C-07: la regla de cobro. Sólo la ficha. */
+  reglaDeCobro?: ReglaDeCobroDelBack;
+  /** QA-CONT CR-11: si el depósito aplica (comercial). Sólo la ficha. */
+  depositoDelContrato?: DepositoDelContratoDelBack;
   diasDePlazo?: number | null;
   /**
    * 🔴 Con qué número paga el inquilino (columna `referencia_de_recaudo`).
@@ -183,8 +194,18 @@ export interface BackendContract {
   periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL' | null;
   /** La del contrato. Llega como string: es Decimal en Prisma. */
   comisionPorcentaje?: number | string | null;
+  /** Decimal de Prisma (viaja como string): la penalidad propia del contrato, en cánones. QA-CONT-95. */
+  penalidadTerminacionCanones?: number | string | null;
+  /** `AAAA-MM-DD…` (columna DATE): desde cuándo se cobra. QA-CONT-95. */
+  fechaDeCartera?: string | null;
   /** La de la consignación — la que de verdad liquida. Sólo la devuelve GET /:id. */
   comisionDeConsignacion?: number | null;
+  /** CO-28 (QA-MIGRACION-95): el mandato no traía la comisión. */
+  comisionSinDefinir?: boolean;
+  /** CO-28: por qué el contrato no tiene tabla de cuotas, o `null`. */
+  sinTablaDeCuotas?: string | null;
+  /** NI-05 (QA-MIGRACION-95): qué traía el archivo de un migrado. */
+  loQueTraiaElArchivo?: { traiaDeposito: boolean; traiaPeriodicidad: boolean } | null;
   /**
    * El dueño según la consignación del inmueble (la ficha `Propietario` de
    * la inmobiliaria). `landlordName` NO es eso en un contrato migrado: es el
@@ -193,7 +214,8 @@ export interface BackendContract {
   propietarioDeLaConsignacion?: {
     id: string;
     name: string;
-    documentNumber: string;
+    /** `null` = ficha sin documento todavía (T-0128). */
+    documentNumber: string | null;
   } | null;
   /**
    * TODOS los dueños del inmueble con su porcentaje y su parte del canon, y
@@ -300,6 +322,11 @@ export interface CreateContractDto {
   prorratearPrimerMes?: boolean;
   /** Días de plazo antes de la mora (0-60). `null`/ausente = hereda los de la inmobiliaria. */
   diasDePlazo?: number | null;
+  /**
+   * QA-CONT-95 C-16: desde cuándo se cobra (el día en que recibe el inmueble),
+   * AAAA-MM-DD, ≥ inicio. Ausente = desde el inicio (`CreateContractDto.fechaDeCartera`).
+   */
+  fechaDeCartera?: string;
   insuranceTier?: InsuranceTier;          // default NONE
   customClauses?: CustomClause[];
   /** Default: 'GENERATED'. Use 'UPLOADED_PDF' when a landlord-provided PDF is attached. */
@@ -328,7 +355,12 @@ export interface CrearContratoManualDto extends Omit<CreateContractDto, 'applica
 export interface ContratoManualCreadoBackend {
   contract: BackendContract;
   inquilino: {
-    userId: string;
+    /**
+     * QA-CONT CR-14 (back 2a681c93): `null` = el borrador nació SIN la cuenta del
+     * inquilino; se invita desde el contrato («Invitar al portal») y, sin ella,
+     * enviarlo a firmar responde 409 `INQUILINO_SIN_CUENTA`.
+     */
+    userId: string | null;
     /** Se le acaba de mandar la invitación a crear su cuenta. */
     invitado: boolean;
     /** Ya era inquilino de la agencia. */

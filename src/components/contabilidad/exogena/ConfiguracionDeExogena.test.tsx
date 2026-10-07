@@ -227,3 +227,48 @@ describe('<ConfiguracionDeExogena>', () => {
     expect((q('switch-girosAPropietariosEn1001') as HTMLButtonElement).disabled).toBe(true);
   });
 });
+
+/*
+ * Sistema de errores (02-10-2026): 🔁 el tope de cuantías menores con ceros de
+ * más dice la frase del back bajo el campo y no deja guardar; un 5xx dice «de
+ * nuestro lado» con la referencia.
+ */
+describe('<ConfiguracionDeExogena> · el tope en su campo', () => {
+  function escribirTope(valor: string) {
+    const input = q('tope-propio') as HTMLInputElement;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, valor);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  it('🔁 un tope con ceros de más dice la frase del back y no deja guardar', async () => {
+    await pintar();
+    await act(async () => {
+      escribirTope('100000000000');
+    });
+    expect(document.getElementById('tope-propio-error')?.textContent).toBe(
+      'El tope de cuantías menores no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
+    );
+    expect(q('tope-propio')!.getAttribute('aria-invalid')).toBe('true');
+    expect((q('guardar-configuracion') as HTMLButtonElement).disabled).toBe(true);
+    expect(api.guardarConfiguracion).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx al guardar dice «de nuestro lado» con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    api.guardarConfiguracion.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: '9a9a9a9a',
+      }),
+    );
+    await pintar();
+    await clic(q('switch-saldo2815En1009')!);
+    await clic(q('guardar-configuracion')!);
+
+    const texto = toastMock.error.mock.calls.at(-1)![0] as string;
+    expect(texto).toMatch(/No pudimos guardar la configuración: algo falló de nuestro lado/);
+    expect(texto).toContain('9a9a9a9a');
+  });
+});

@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/table';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { SinDatos } from '@/components/estado/SinDatos';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { contabilidadApi, type EstadoDeCuenta as Estado } from '@/lib/api/contabilidad.service';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
 import { inquilinosApi } from '@/lib/api/inquilinos.service';
@@ -51,6 +52,9 @@ import { cn } from '@/lib/utils';
 import { Monto } from '../Monto';
 import { TarjetaDeInforme } from '../piezas';
 import { RangoDeFechas } from '../RangoDeFechas';
+import { DescargarElInforme } from './DescargarElInforme';
+import { tablasDelEstadoDeCuenta } from '@/lib/contabilidad/tablas-de-los-informes';
+import { documentoConTipo } from '@/lib/propietarios/datos-por-completar';
 
 const TIPOS = ['PROPIETARIO', 'ARRENDATARIO', 'PROVEEDOR', 'OTRO'] as const;
 type Tipo = (typeof TIPOS)[number];
@@ -121,7 +125,7 @@ export function EstadoDeCuenta() {
             ? (await propietariosApi.getAll({ search: q, limit: 8 })).map((p) => ({
                 id: p.id,
                 nombre: p.name,
-                detalle: p.documentNumber ? `${p.documentType} ${p.documentNumber}` : (p.email ?? ''),
+                detalle: p.documentNumber ? documentoConTipo(p.documentType, p.documentNumber, ' ') : (p.email ?? ''),
               }))
             : (await inquilinosApi.listar({ buscar: q })).slice(0, 8).map((i) => ({
                 id: i.tenantId,
@@ -282,17 +286,36 @@ export function EstadoDeCuenta() {
                 className="font-mono"
                 autoComplete="off"
                 aria-invalid={(idManual.trim() !== '' && !UUID.test(idManual.trim())) || undefined}
+                aria-describedby={
+                  idManual.trim() !== '' && !UUID.test(idManual.trim())
+                    ? 'tercero-busqueda-error'
+                    : undefined
+                }
               />
-              {idManual.trim() !== '' && !UUID.test(idManual.trim()) ? (
-                <p className="text-caption text-danger" role="alert">
-                  Tiene que ser un id (uuid).
-                </p>
-              ) : null}
+              <ErrorDelCampo
+                id="tercero-busqueda-error"
+                mensaje={
+                  idManual.trim() !== '' && !UUID.test(idManual.trim())
+                    ? 'Tiene que ser un id (uuid).'
+                    : null
+                }
+              />
             </>
           )}
         </div>
 
         <RangoDeFechas desde={rango.desde} hasta={rango.hasta} onChange={setRango} />
+        {/* CB-C-13 (QA-FACT-CONTA-95 r2): lo que el contador firma se baja, con TODAS las filas. */}
+        <DescargarElInforme
+          informe="Estado de cuenta del tercero"
+          periodo={rango}
+          tablas={() =>
+            estado
+              ? tablasDelEstadoDeCuenta(estado, elegido ? `${elegido.nombre} · ${elegido.detalle}` : `${terceroTipo} ${terceroId}`)
+              : []
+          }
+          disabled={!estado || !listo}
+        />
         </>
       }
     >

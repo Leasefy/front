@@ -241,6 +241,34 @@ describe('amortizacionDe', () => {
     expect(amortizacionDe(c).anterioresCop).toBe(0);
   });
 
+  /*
+   * 🔴 PG-08 (Nico, 03-10-2026): los meses del sistema anterior SIN comprobante
+   * migrado no suman en lo pagado. Siguen en su tramo (existen) pero «Pagadas
+   * N de M» y «$X de $Y» no los afirman pagados; con el comprobante, sí.
+   */
+  it('🔴 PG-08: lo del sistema anterior cuenta como pagado sólo CON su comprobante', () => {
+    const conComprobante = fila({
+      estado: 'ANTERIOR',
+      valorNeto: 400,
+      documentoDePago: { numero: 'C-1', tipo: 'INGRESO', descripcion: 'Comprobante migrado' },
+    });
+    const sinComprobante = fila({ estado: 'ANTERIOR', valorNeto: 400, documentoDePago: null });
+    const c = contrato({
+      secciones: {
+        arriendos: [fila({ estado: 'CANCELADA', valorNeto: 100 }), conComprobante, sinComprobante],
+        otrosConceptos: [],
+      },
+    });
+    const a = amortizacionDe(c);
+    expect(a.cubiertas).toBe(2);
+    expect(a.cubiertoCop).toBe(500);
+    expect(a.anterioresSinComprobante).toBe(1);
+    // El tramo del sistema anterior sigue con las dos (existen) y los totales no cambian.
+    expect(a.anteriores).toBe(2);
+    expect(a.anterioresCop).toBe(800);
+    expect(a.total).toBe(3);
+  });
+
   it('una cuota ANULADA sale del total: dejó de existir', () => {
     const c = contrato({
       secciones: {

@@ -302,7 +302,16 @@ export function mapearColumnas(
       if (usados.has(columna.campo)) continue;
       if (columna.campo === 'nombre' && esParteNumerada(n)) continue;
       for (const termino of terminosDe(columna)) {
-        if (termino.length < LARGO_MINIMO_PARA_CONTENER) continue;
+        if (termino.length < LARGO_MINIMO_PARA_CONTENER) {
+          /*
+           * Un alias corto («cc», «nit») no se busca adentro de otra palabra,
+           * pero SÍ como palabra completa: «Nit/CC», «CC propietario» o
+           * «NIT o CC» son la columna del documento, y sin esto quedaban sin
+           * mapear y TODAS las filas sin documento (QA-MIG-A, MG-03).
+           */
+          if (` ${n} `.includes(` ${termino} `)) candidatos.push({ i, campo: columna.campo, termino });
+          continue;
+        }
         if (n.includes(termino)) candidatos.push({ i, campo: columna.campo, termino });
       }
     }
@@ -400,6 +409,25 @@ function celda(valor: unknown): string {
  * vacía simplemente no está: «MARIA» + «» + «RUIZ» + «GOMEZ» es «MARIA RUIZ
  * GOMEZ», no «MARIA  RUIZ GOMEZ».
  */
+/**
+ * MG-22: los nombres y los apellidos POR SEPARADO, tal como los parte el
+ * archivo. Viajan junto al nombre completo para que el back no lo vuelva a
+ * partir a ojo («Gloria Patricia Úsuga» = «Gloria Patricia» + «Úsuga», no
+ * «Gloria» + «Patricia Úsuga»). Una mitad vacía = no se manda ninguna.
+ */
+export function mitadesDelNombre(
+  partes: Partial<Record<ParteDelNombre, unknown>>,
+): { nombres: string; apellidos: string } | null {
+  const mitad = (a: ParteDelNombre, b: ParteDelNombre, juntos: ParteDelNombre) => {
+    const primero = celda(partes[a]);
+    const segundo = celda(partes[b]);
+    return (primero || segundo ? [primero, segundo] : [celda(partes[juntos])]).filter(Boolean).join(' ');
+  };
+  const nombres = mitad('primerNombre', 'segundoNombre', 'nombres');
+  const apellidos = mitad('primerApellido', 'segundoApellido', 'apellidos');
+  return nombres && apellidos ? { nombres, apellidos } : null;
+}
+
 export function componerNombre(partes: Partial<Record<ParteDelNombre, unknown>>): string {
   const numerados = (a: ParteDelNombre, b: ParteDelNombre, juntos: ParteDelNombre) => {
     const primero = celda(partes[a]);
@@ -475,6 +503,15 @@ export function armarFila(
     const compuesto = componerNombre(partes);
     if (compuesto) cruda.nombre = compuesto;
   }
+  // MG-22: con las partes, mandan las partes — aunque la fila traiga además
+  // su nombre completo (que sigue siendo el nombre que se muestra).
+  if (nombreSeArmaPorPartes(mapeo)) {
+    const mitades = mitadesDelNombre(partes);
+    if (mitades) {
+      cruda.nombres = mitades.nombres;
+      cruda.apellidos = mitades.apellidos;
+    }
+  }
   // Las columnas «a notas» se pegan debajo de la nota propia, una por línea.
   const lineas = mapeo
     .filter((m) => m.aNotas)
@@ -484,7 +521,18 @@ export function armarFila(
     })
     .filter(Boolean);
   if (lineas.length > 0) cruda.notas = [celda(cruda.notas), ...lineas].filter(Boolean).join('\n');
-  return filaDePlantilla(cruda);
+  const salida = filaDePlantilla(cruda);
+  // QA-MIGRACION-95 (ER-01): la fila de la HOJA (la del Excel, con encabezado
+  // y títulos contados) viaja aparte —no es una celda— para que la lista de
+  // trabajo diga la misma fila que ve la persona. Necesita el back con
+  // `FilaTerceroDto.filaDelArchivo` (desplegar el back primero).
+  // `_rowIndex` es el número de SheetJS en base 0 (encabezado en A1 → primera
+  // fila de datos = 1): la fila que la persona ve en Excel es `_rowIndex + 1`.
+  const filaDeLaHoja = fila._rowIndex;
+  if (typeof filaDeLaHoja === 'number' && Number.isInteger(filaDeLaHoja) && filaDeLaHoja >= 0) {
+    (salida as FilaTercero & { filaDelArchivo?: number }).filaDelArchivo = filaDeLaHoja + 1;
+  }
+  return salida;
 }
 
 /**
@@ -523,4 +571,17 @@ export function nombreDeLoteSugerido(tipo: 'PROPIETARIO' | 'INQUILINO', ahora = 
     `${partes.get('year')}-${partes.get('month')}-${partes.get('day')}` +
     `-${hora}${partes.get('minute')}`;
   return `${base}-${sello}`.slice(0, 60);
+}
+
+/**
+ * El ejemplo de la plantilla, listo para el placeholder: «Ej: 050».
+ *
+ * Pelado, un «050» o un «7» en un campo vacío se leían como un valor ya
+ * escrito (Nico, 01-10: «se ven como si estuvieran llenos»). Con el «Ej:»
+ * delante no hay forma de confundirlo — es la misma convención del campo de
+ * teléfono (`phone-field.tsx`). Sin ejemplo, no hay placeholder.
+ */
+export function placeholderDeEjemplo(ejemplo: string | null | undefined): string | undefined {
+  const limpio = ejemplo?.trim();
+  return limpio ? `Ej: ${limpio}` : undefined;
 }

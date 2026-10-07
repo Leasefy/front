@@ -72,7 +72,9 @@ describe('usePilotoPulso', () => {
     fetchPulso.mockRejectedValue(new Error('timeout: el Piloto no contestó a tiempo'))
     await act(async () => root.render(React.createElement(Prueba)))
     expect(resultado?.isLoading).toBe(false)
-    expect(resultado?.error).toMatch(/timeout/)
+    // ARREGLOS-4: el hook guarda el error ENTERO (el traductor lo lee como «tardó»).
+    expect(resultado?.error).toBeInstanceOf(Error)
+    expect((resultado?.error as Error).message).toMatch(/timeout/)
     fetchPulso.mockResolvedValue({ data: { estado: 'ok' }, notAvailable: false })
     await act(async () => {
       await resultado?.refetch()

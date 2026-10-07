@@ -36,10 +36,28 @@ export function oneYearAheadISO(from: string): string {
 }
 
 /**
- * Tope del canon mensual. Por debajo del límite de `int4` (2.147.483.647), que
- * es el tipo de `contracts.monthly_rent` en el back.
+ * La fecha de fin por defecto: inicio + 12 meses − 1 día (QA-CONT C-13, Nico
+ * 03-10-2026). «Del 3-oct-2026 al 3-oct-2027» eran 12 meses y un día; un
+ * contrato de un año rige hasta el día ANTERIOR a su aniversario (D8): del 1 de
+ * noviembre al 31 de octubre. Un inicio el 31 cuyo aniversario no existe cae en
+ * el último día de ese mes y resta uno desde ahí. Sin pasar por UTC.
  */
-export const CANON_MAXIMO_COP = 1_000_000_000;
+export function finPorDefectoISO(from: string): string {
+  const [anio, mes, dia] = from.split('-').map(Number);
+  if (!anio || !mes || !dia) return from;
+  const ultimoDelMes = new Date(anio + 1, mes, 0).getDate();
+  const d = new Date(anio + 1, mes - 1, Math.min(dia, ultimoDelMes) - 1);
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${dd}`;
+}
+
+/**
+ * Tope del canon mensual. Por debajo del límite de `int4` (2.147.483.647), que
+ * es el tipo de `contracts.monthly_rent` en el back. Desde el 02-10-2026 sale
+ * del espejo del DTO (antes era 1.000 millones sólo acá y el back no topaba).
+ */
+export { CANON_MAXIMO_COP } from '@/lib/contratos/limites-del-contrato';
 /** Cuánto se acepta retrofechar un contrato, y cuánto adelantarlo. */
 export const ANIOS_HACIA_ATRAS = 5;
 export const ANIOS_HACIA_ADELANTE = 2;

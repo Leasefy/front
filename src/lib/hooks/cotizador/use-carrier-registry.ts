@@ -14,7 +14,8 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDeLaRespuesta } from './fallo-de-la-respuesta'
 
 // =============================================================================
 // Types
@@ -53,10 +54,21 @@ export interface OverrideFields {
 
 const POLL_INTERVAL_MS = 60_000
 
+/** El entorno sin la URL del micro: no es la red ni algo que la persona hizo. */
+const SIN_AGENTE = 'El cotizador no está configurado en este entorno. Avísanos si lo ves.'
+/** Sin inmobiliaria en la sesión no hay a nombre de quién guardar. */
+const SIN_INMOBILIARIA = 'Tu sesión no tiene una inmobiliaria activa. Vuelve a entrar e intenta de nuevo.'
+
 export interface UseCarrierRegistryResult {
   data: RegistryResponse | null
   isLoading: boolean
-  error: string | null
+  /**
+   * El fallo entero de la última carga (02-10-2026): un `ApiError` con el
+   * status y el cuerpo del micro, o el `TypeError` de un `fetch` que no salió.
+   * Antes era el status como texto («403») y la tabla lo pintaba tal cual;
+   * ahora `FalloDeCarga` decide qué decir (permiso, de nuestro lado, conexión).
+   */
+  error: unknown
   refetch: () => Promise<void>
   saveOverride: (carrierName: string, route: string, fields: Partial<OverrideFields>) => Promise<void>
   resetOverride: (carrierName: string, route: string) => Promise<void>
@@ -71,12 +83,12 @@ export function useCarrierRegistry(): UseCarrierRegistryResult {
   const agencyId = agency?.id ?? null
   const [data, setData] = useState<RegistryResponse | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<unknown>(null)
 
   const fetchOnce = useCallback(async () => {
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
     if (!agentUrl) {
-      setError('NEXT_PUBLIC_AGENT_URL not configured')
+      setError(new Error(SIN_AGENTE))
       setIsLoading(false)
       return
     }
@@ -85,16 +97,15 @@ export function useCarrierRegistry(): UseCarrierRegistryResult {
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/cotizador/aseguradoras/registry`,
-        { headers: agentAuthHeaders() },
+      const res = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/cotizador/aseguradoras/registry`
       )
-      if (!res.ok) throw new Error(`${res.status}`)
+      if (!res.ok) throw await falloDeLaRespuesta(res)
       const json = await res.json() as RegistryResponse
       setData(json)
       setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'fetch_failed')
+      setError(err)
     } finally {
       setIsLoading(false)
     }
@@ -116,7 +127,8 @@ export function useCarrierRegistry(): UseCarrierRegistryResult {
   /**
    * saveOverride — fires PUT to the override endpoint.
    * Does NOT call refetch() — caller handles optimistic state.
-   * Throws on non-2xx responses.
+   * Throws on non-2xx responses: un `ApiError` con el status y el cuerpo del
+   * micro (`falloDeLaRespuesta`), para que la pantalla lo diga con el traductor.
    */
   const saveOverride = useCallback(async (
     carrierName: string,
@@ -124,41 +136,40 @@ export function useCarrierRegistry(): UseCarrierRegistryResult {
     fields: Partial<OverrideFields>,
   ): Promise<void> => {
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
-    if (!agentUrl) throw new Error('NEXT_PUBLIC_AGENT_URL not configured')
-    if (!agencyId) throw new Error('Agency not authenticated')
+    if (!agentUrl) throw new Error(SIN_AGENTE)
+    if (!agencyId) throw new Error(SIN_INMOBILIARIA)
 
-    const res = await globalThis.fetch(
+    const res = await agentFetch(
       `${agentUrl}/api/agency/${agencyId}/cotizador/aseguradoras/${carrierName}/override`,
       {
         method: 'PUT',
-        headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ route, ...fields }),
       },
     )
-    if (!res.ok) throw new Error(`${res.status}`)
+    if (!res.ok) throw await falloDeLaRespuesta(res)
   }, [agencyId])
 
   /**
    * resetOverride — fires DELETE to the override endpoint.
    * Does NOT call refetch() — caller handles optimistic state.
-   * Throws on non-2xx responses.
+   * Throws on non-2xx responses (un `ApiError`, como `saveOverride`).
    */
   const resetOverride = useCallback(async (
     carrierName: string,
     route: string,
   ): Promise<void> => {
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
-    if (!agentUrl) throw new Error('NEXT_PUBLIC_AGENT_URL not configured')
-    if (!agencyId) throw new Error('Agency not authenticated')
+    if (!agentUrl) throw new Error(SIN_AGENTE)
+    if (!agencyId) throw new Error(SIN_INMOBILIARIA)
 
-    const res = await globalThis.fetch(
+    const res = await agentFetch(
       `${agentUrl}/api/agency/${agencyId}/cotizador/aseguradoras/${carrierName}/override?route=${encodeURIComponent(route)}`,
       {
         method: 'DELETE',
-        headers: agentAuthHeaders(),
       },
     )
-    if (!res.ok) throw new Error(`${res.status}`)
+    if (!res.ok) throw await falloDeLaRespuesta(res)
   }, [agencyId])
 
   return { data, isLoading, error, refetch, saveOverride, resetOverride }

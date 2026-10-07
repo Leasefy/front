@@ -32,6 +32,22 @@ const { api, parseMock } = vi.hoisted(() => ({
   parseMock: vi.fn(),
 }));
 
+/*
+ * El paso con tipo fijo abre en «lo ya cargado» cuando la inmobiliaria ya
+ * tiene personas (Nico, 01-10). Estas pruebas son de la SUBIDA: arrancan sin
+ * nadie cargado, que es cuando la subida va abierta. Lo ya cargado se prueba
+ * en `MigrarTerceros.ya-cargados.test.tsx`.
+ */
+vi.mock('./TercerosYaCargados', async () => {
+  const { useEffect } = await import('react');
+  return {
+    TercerosYaCargados: ({ onEstado }: { onEstado: (e: unknown) => void }) => {
+      useEffect(() => onEstado({ cargando: false, fallo: false, total: 0 }), [onEstado]);
+      return null;
+    },
+  };
+});
+
 vi.mock('@/lib/api/migracion-terceros.service', async () => {
   const actual = await vi.importActual<
     typeof import('@/lib/api/migracion-terceros.service')
@@ -391,6 +407,11 @@ describe('la lista de trabajo', () => {
       ],
     });
     await clic('No traer ninguna de estas');
+    // QA-MIGRACION-95 (TE-08): descartar en masa ahora confirma antes.
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>('[data-testid="masivo-confirmar-descartar"]')!.click();
+    });
+    await act(async () => {});
 
     const errorCaja = container.querySelector('[data-testid="error-de-lista"]')!;
     expect(errorCaja.textContent).toContain('el correo no es válido');
@@ -486,5 +507,90 @@ describe('dos pestañas sobre la misma fila', () => {
     expect(
       container.querySelector<HTMLInputElement>('[data-testid="campo-correo"]')!.value,
     ).toBe('nuevo@correo.co');
+  });
+});
+
+/*
+ * T-0125 · aviso antes de cerrar la pestaña. Un archivo leído en el navegador
+ * y NO preparado todavía existe sólo ahí: cerrar la pestaña lo pierde. Una vez
+ * preparado vive en el back (se retoma), así que ya no hay nada que avisar.
+ */
+describe('aviso antes de cerrar la pestaña', () => {
+  function intentarSalir(): boolean {
+    const evento = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(evento);
+    return evento.defaultPrevented;
+  }
+
+  it('sin archivo, cerrar no pregunta', async () => {
+    await pintar();
+    expect(intentarSalir()).toBe(false);
+  });
+
+  it('🔴 con el archivo leído y sin preparar, cerrar pregunta', async () => {
+    await pintar();
+    await subirArchivo();
+    expect(intentarSalir()).toBe(true);
+  });
+
+  it('🔴 mientras se prepara, cerrar pregunta', async () => {
+    api.preparar.mockReturnValue(new Promise(() => undefined)); // nunca termina
+    await pintar();
+    await subirArchivo();
+    await clic('Revisar 2 inquilinos');
+    expect(intentarSalir()).toBe(true);
+  });
+
+  it('con la carga ya preparada en el back, cerrar no pregunta: se retoma', async () => {
+    api.preparar.mockResolvedValue(LOTE);
+    await pintar();
+    await subirArchivo();
+    await clic('Revisar 2 inquilinos');
+    expect(container.querySelector('[data-testid="lista-de-trabajo"]')).not.toBeNull();
+    expect(intentarSalir()).toBe(false);
+  });
+});
+
+
+describe('QA-MIG-A MG-20: el aviso de «crear con datos por completar» se va al crear', () => {
+  it('después de «Crear N» ya no dice «se crea con el botón de arriba»', async () => {
+    const incompleta: FilaDeStaging = {
+      ...filaPendiente(1),
+      errores: [{ codigo: 'FALTA_DOCUMENTO', campo: 'documento', mensaje: 'falta el número de documento' }],
+    };
+    api.filas.mockResolvedValue({ filas: [incompleta], total: 1, pagina: 1, porPagina: 25 });
+    api.resumen.mockResolvedValue({ ...LOTE, total: 3, requierenAtencion: 1, listos: 2 });
+    api.lotesAbiertos.mockResolvedValue([LOTE]);
+    api.corregir.mockResolvedValue({ ...incompleta, estado: 'LISTO', errores: [] });
+    await pintar();
+    await clic('Retomar');
+
+    await clic('Crear con datos por completar');
+    expect(container.textContent).toContain('se crea con el botón de arriba');
+
+    api.aplicar.mockResolvedValueOnce({
+      lote: 'inquilinos-x', intentadas: 3, aplicadas: 3, fallidas: 0, invitados: 0, resultados: [], restantes: 0,
+    });
+    const crear = [...container.querySelectorAll('button')].find((b) => /^Crear \d+ inquilinos/.test(b.textContent ?? ''));
+    expect(crear).toBeTruthy();
+    await act(async () => crear!.click());
+    await act(async () => {});
+    expect(container.textContent).not.toContain('se crea con el botón de arriba');
+  });
+});
+
+describe('QA-MIG-A MG-37: un archivo sin filas lo dice', () => {
+  it('vacío o sólo encabezados: el aviso nombra el archivo y no aparece el mapeo', async () => {
+    await pintar();
+    parseMock.mockResolvedValue({ rows: [], headers: ['Nombre', 'Correo'] });
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const archivo = new File([''], 'vacio.csv');
+    Object.defineProperty(input, 'files', { value: [archivo], configurable: true });
+    await act(async () => {
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await act(async () => {});
+    expect(container.textContent).toContain('«vacio.csv» no trae ninguna fila de datos');
+    expect(container.textContent).not.toContain('Así entendimos tus columnas');
   });
 });

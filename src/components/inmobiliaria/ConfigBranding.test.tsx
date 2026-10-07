@@ -242,5 +242,69 @@ describe('<ConfigBranding>', () => {
       expect(hexInput('primary').disabled).toBe(true)
       expect(hexInput('secondary').disabled).toBe(true)
     })
+
+    // 02-10-2026 · tanda 2 del sistema de errores (A6).
+    it('🔴 un 400 con `branding.primaryColor` pinta el error bajo ese color, no en el toast', async () => {
+      const { ApiError } = await import('@/lib/api/client')
+      updateAgency.mockRejectedValueOnce(
+        new ApiError(400, ['El color principal debe ser un hex de 6 dígitos.'], 'DATOS_INVALIDOS', {
+          campos: [
+            { campo: 'branding.primaryColor', regla: 'formato', mensaje: 'El color principal debe ser un hex de 6 dígitos.' },
+          ],
+        }),
+      )
+      render({ agency: { ...AGENCY, branding: { primaryColor: '#112233', secondaryColor: '#445566' } } })
+      act(() => {
+        setValue(hexInput('primary'), '#aabbcc')
+      })
+      await act(async () => {
+        saveColorsButton().click()
+        await new Promise((r) => setTimeout(r, 0))
+      })
+      expect(container.querySelector('#branding-primary-error')?.textContent).toBe(
+        'El color principal debe ser un hex de 6 dígitos.',
+      )
+      expect(hexInput('primary').getAttribute('aria-invalid')).toBe('true')
+      expect(toast.error).not.toHaveBeenCalled()
+    })
+
+    it('un 5xx al guardar los colores dice «de nuestro lado» con la referencia', async () => {
+      const { ApiError } = await import('@/lib/api/client')
+      updateAgency.mockRejectedValueOnce(
+        new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', { statusCode: 500, referencia: 'deadbeef' }),
+      )
+      render({ agency: { ...AGENCY, branding: { primaryColor: '#112233', secondaryColor: '#445566' } } })
+      act(() => {
+        setValue(hexInput('primary'), '#aabbcc')
+      })
+      await act(async () => {
+        saveColorsButton().click()
+        await new Promise((r) => setTimeout(r, 0))
+      })
+      const descripcion = String((toast.error as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1].description)
+      expect(descripcion).toContain('No pudimos guardar los colores: algo falló de nuestro lado')
+      expect(descripcion).toContain('deadbeef')
+    })
+  })
+
+  describe('el logo — la regla de oro', () => {
+    it('un 5xx al subir dice «de nuestro lado» con la referencia, no el texto crudo', async () => {
+      const { ApiError } = await import('@/lib/api/client')
+      uploadAgencyLogo.mockRejectedValueOnce(
+        new ApiError(500, 'Internal server error', 'ERROR_INTERNO', { statusCode: 500, referencia: '1234abcd' }),
+      )
+      render()
+      await selectFile(new File(['bytes'], 'logo.png', { type: 'image/png' }))
+      expect(errorBox()?.textContent).toContain('No pudimos subir el logo: algo falló de nuestro lado')
+      expect(errorBox()?.textContent).toContain('1234abcd')
+      expect(errorBox()?.textContent).not.toContain('Internal server error')
+    })
+
+    it('sin respuesta (status 0) habla de la conexión', async () => {
+      uploadAgencyLogo.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      render()
+      await selectFile(new File(['bytes'], 'logo.png', { type: 'image/png' }))
+      expect(errorBox()?.textContent).toMatch(/conexión/)
+    })
   })
 })

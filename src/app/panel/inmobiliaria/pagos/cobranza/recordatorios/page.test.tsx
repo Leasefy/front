@@ -44,6 +44,7 @@ const SIN_EXCLUIR = {
   YA_PAGO: 0,
   AUN_NO_VENCE: 0,
   DENTRO_DEL_PLAZO: 0,
+  PLAZO_SIN_FIJAR: 0,
   CUBIERTO_POR_ANTICIPO: 0,
   YA_SE_LE_ENVIO: 0,
   SIN_DATOS_DE_CONTACTO: 0,
@@ -327,6 +328,51 @@ describe('🔴 deuda no es cartera: los motivos nuevos se ven', () => {
     expect(contenedor.textContent).toContain('es deuda, no cartera')
   })
 
+  /*
+   * 🔴 QA-CONT CR-31 (Nico, 03-10-2026): sin días de plazo fijados por la
+   * inmobiliaria, la cuota vencida NO entra a la cobranza. El back la excluye
+   * con `PLAZO_SIN_FIJAR`; sin ese motivo en el catálogo, esa gente
+   * desaparecía del resumen y nadie sabía que faltaba fijar el plazo.
+   */
+  it('cuenta a los excluidos por plazo sin fijar y da el camino para fijarlo', async () => {
+    destinatariosMock.mockResolvedValue({
+      ...PREVIA_CON_INTERES,
+      lesLlega: 0,
+      excluidos: { ...SIN_EXCLUIR, PLAZO_SIN_FIJAR: 2, AUN_NO_VENCE: 1 },
+      destinatarios: [
+        { ...PREVIA_CON_INTERES.destinatarios[1]! },
+        {
+          ...PREVIA_CON_INTERES.destinatarios[2]!,
+          esCartera: false,
+          leLlega: false,
+          motivo: 'PLAZO_SIN_FIJAR' as const,
+          explicacion:
+            'La cuota venció, pero la inmobiliaria todavía no fijó sus días de plazo: no entra a la cartera en mora ni a la cobranza. Se fijan en Configuración → Cartera.',
+        },
+      ],
+    })
+    await montar()
+    await act(async () => {
+      botonQueDice(/Ver a quién le llega/)?.click()
+    })
+
+    expect(contenedor.querySelector('[data-testid="excluidos-PLAZO_SIN_FIJAR"]')?.textContent).toContain(
+      'Plazo sin fijar: 2',
+    )
+    const aviso = contenedor.querySelector('[data-testid="aviso-plazo-sin-fijar"]')
+    expect(aviso?.textContent).toContain(
+      'La inmobiliaria no ha fijado sus días de plazo: la cuota vencida no entra a la cobranza hasta fijarlos',
+    )
+    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo',
+    )
+    // La fila de esa cuota no dice «dentro del plazo»: no hay plazo.
+    const filas = [...contenedor.querySelectorAll('[data-testid="fila-destinatario"]')]
+    const laDelPlazo = filas.find((f) => f.textContent?.includes('no fijó sus días de plazo'))
+    expect(laDelPlazo?.textContent).toContain('vencida · plazo sin fijar')
+    expect(laDelPlazo?.textContent).not.toContain('dentro del plazo')
+  })
+
   it('explica por qué la lista se encoge al pasar al aviso con interés', async () => {
     destinatariosMock.mockResolvedValue(PREVIA_CON_INTERES)
     await montar()
@@ -389,5 +435,141 @@ describe('sin la migración aplicada', () => {
     await montar()
     expect(contenedor.textContent).toContain('20260915160000')
     expect(botonQueDice(/Ver a quién le llega/)?.disabled).toBe(true)
+  })
+})
+
+// ── Errores: un solo traductor y la regla de oro (02-10-2026) ────────────────
+// Antes había una copia local `mensajeDeError` que pintaba el `message` crudo
+// (o «Error 500») y un 400 con `campos` iba entero al toast.
+
+describe('errores al guardar las condiciones y al enviar', () => {
+  async function escribirEn(id: string, valor: string) {
+    const input = contenedor.querySelector<HTMLInputElement>(`#${id}`)!
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+    await act(async () => {
+      setter.call(input, valor)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    return input
+  }
+
+  async function errorDelToast(): Promise<string> {
+    const { toast } = await import('@/components/ui')
+    const llamadas = (toast.error as unknown as ReturnType<typeof vi.fn>).mock.calls
+    return String(llamadas.at(-1)?.[0] ?? '')
+  }
+
+  beforeEach(async () => {
+    const { toast } = await import('@/components/ui')
+    ;(toast.error as unknown as ReturnType<typeof vi.fn>).mockClear()
+  })
+
+  it('un día del recordatorio fuera de 1–28 se ataja antes de enviar, debajo del campo y con el foco', async () => {
+    await montar()
+    const input = await escribirEn('dia-recordatorio', '31')
+    await act(async () => {
+      botonQueDice(/Guardar condiciones/)?.click()
+    })
+    expect(guardarMock).not.toHaveBeenCalled()
+    expect(contenedor.querySelector('#dia-recordatorio-error')?.textContent).toBe(
+      'El día del recordatorio va de 1 a 28, en números enteros.',
+    )
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(input.getAttribute('aria-describedby')).toBe('dia-recordatorio-error')
+    expect(document.activeElement).toBe(input)
+  })
+
+  it('un 400 con `campos` pinta el error en su campo, le da el foco y no va al toast', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    guardarMock.mockRejectedValue(
+      new ApiError(400, 'Los días entre avisos no pueden pasar de 30.', 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: 'Los días entre avisos no pueden pasar de 30.',
+        campos: [
+          { campo: 'diasEntreAvisos', regla: 'maximo', mensaje: 'Los días entre avisos no pueden pasar de 30.' },
+        ],
+      }),
+    )
+    await montar()
+    const input = await escribirEn('dias-entre', '5')
+    await act(async () => {
+      botonQueDice(/Guardar condiciones/)?.click()
+    })
+    expect(guardarMock).toHaveBeenCalledTimes(1)
+    expect(contenedor.querySelector('#dias-entre-error')?.textContent).toBe(
+      'Los días entre avisos no pueden pasar de 30.',
+    )
+    expect(document.activeElement).toBe(input)
+    const { toast } = await import('@/components/ui')
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('un 5xx al guardar dice «de nuestro lado» con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    guardarMock.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    )
+    await montar()
+    await escribirEn('dias-entre', '5')
+    await act(async () => {
+      botonQueDice(/Guardar condiciones/)?.click()
+    })
+    const texto = await errorDelToast()
+    expect(texto).toContain('No pudimos guardar las condiciones de cobro: algo falló de nuestro lado')
+    expect(texto).toContain('ab12cd34')
+    expect(texto).not.toMatch(/conexi[oó]n/i)
+  })
+
+  it('un envío que no sale (status 0) habla de la conexión', async () => {
+    enviarMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    await montar()
+    await act(async () => {
+      botonQueDice(/Ver a quién le llega/)?.click()
+    })
+    await act(async () => {
+      botonQueDice(/Enviar a/)?.click()
+    })
+    expect(await errorDelToast()).toMatch(/conexi[oó]n/i)
+  })
+
+  it('un 409 al enviar muestra el `message` del back, no el status', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    enviarMock.mockRejectedValue(
+      new ApiError(409, 'Ese paso ya se envió hoy por correo.', 'YA_ENVIADO', {
+        statusCode: 409,
+        code: 'YA_ENVIADO',
+        message: 'Ese paso ya se envió hoy por correo.',
+      }),
+    )
+    await montar()
+    await act(async () => {
+      botonQueDice(/Ver a quién le llega/)?.click()
+    })
+    await act(async () => {
+      botonQueDice(/Enviar a/)?.click()
+    })
+    const texto = await errorDelToast()
+    expect(texto).toBe('Ese paso ya se envió hoy por correo.')
+    expect(texto).not.toContain('409')
+  })
+})
+
+// QA-IA-95 (05-10-2026, IA95-16): «A quién le va a llegar el aviso de 2026-10» y «De N cuotas de
+// 2026-10…»: el mes en formato de máquina. Va en palabras.
+describe('el mes en palabras (QA-IA-95)', () => {
+  it('el título y la vista previa dicen «octubre de 2026», nunca «2026-10»', async () => {
+    await montar()
+    expect(contenedor.textContent).toContain('A quién le va a llegar el aviso de octubre de 2026')
+    await act(async () => {
+      botonQueDice(/Ver a quién le llega/)?.click()
+    })
+    expect(contenedor.textContent).toContain('cuotas de octubre de 2026')
+    expect(contenedor.textContent).not.toMatch(/\b2026-10\b/)
   })
 })

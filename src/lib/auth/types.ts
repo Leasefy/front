@@ -13,6 +13,37 @@ import type { PerfilDeOnboarding } from './perfil-de-onboarding'
 // ============================================================================
 
 /** Frontend-facing role (used in UI logic, routes, etc.) */
+/** Where a session must go before it may reach a panel (T-0123 WU-3). */
+export type MfaDestino = 'enroll' | 'verify' | 'none'
+
+/**
+ * ¿Ya se sabe si a esta sesión le falta el código del segundo factor?
+ * (Nico, 02-10-2026: si no se puede saber, no se entra.)
+ *  - `pending`: se está preguntando (sesión nueva, o «Reintentar»).
+ *  - `verified`: la consulta respondió; `mfaRequired`/`mfaEnrollRequired`
+ *    dicen la verdad.
+ *  - `failed`: no respondió ni reintentando. Las pantallas protegidas muestran
+ *    «No pudimos confirmar tu sesión» con «Reintentar»; no se cierra la sesión.
+ */
+export type EstadoDelChequeoMfa = 'pending' | 'verified' | 'failed'
+
+/**
+ * 🔴 LOGIN-BUCLE (Nico, 06-10-2026): ¿hay una sesión guardada que todavía no
+ * se pudo confirmar? «Todavía no sé» NUNCA es «no hay sesión»: mientras dure,
+ * `isLoading` sigue en true y nadie manda al login.
+ *  - `no-aplica`: no hay nada por confirmar (ya se resolvió, o no había sesión
+ *    guardada al cargar).
+ *  - `revisando`: hay una sesión guardada y se está confirmando (Supabase,
+ *    `GET /users/me/bootstrap`, el segundo factor).
+ *  - `sin-confirmar`: pasó el tope y sigue sin respuesta. Las pantallas
+ *    protegidas muestran «No pudimos confirmar tu sesión» con «Reintentar»; se
+ *    sigue esperando debajo y, si la respuesta llega, se entra solo.
+ */
+export type ConfirmacionDeLaSesion = 'no-aplica' | 'revisando' | 'sin-confirmar'
+
+/** Lo que dice Supabase de la sesión guardada al apretar «Continuar». */
+export type VigenciaDeLaSesion = 'viva' | 'muerta' | 'sin-respuesta'
+
 export type UserRole = 'tenant' | 'landlord' | 'agency'
 
 /** Backend role enum (matches Prisma/NestJS) */
@@ -203,6 +234,18 @@ export interface AuthState {
    */
   mfaEnrollRequired: boolean
   /**
+   * Ver `EstadoDelChequeoMfa`. Opcional SÓLO para que los dobles de prueba no
+   * tengan que traerlo: `AuthProvider` siempre lo pone. Los guardias bloquean
+   * con `pending`/`failed`, nunca con `undefined`.
+   */
+  mfaCheckStatus?: EstadoDelChequeoMfa
+  /**
+   * Ver `ConfirmacionDeLaSesion`. Opcional por lo mismo que `mfaCheckStatus`:
+   * `AuthProvider` siempre lo pone; un doble de prueba sin él se lee como
+   * 'no-aplica' (lo de siempre).
+   */
+  confirmacionDeLaSesion?: ConfirmacionDeLaSesion
+  /**
    * True when Supabase Auth has a valid JWT but the backend returned 401
    * "User not found" — meaning the user hasn't completed onboarding yet.
    * Callers should redirect to /onboarding/seleccionar-rol when this is true.
@@ -252,10 +295,27 @@ export interface AuthContextType extends AuthState {
   signOut: () => Promise<void>
   /** Alias for signOut - backwards compatible */
   logout: () => Promise<void>
-  refreshUser: () => Promise<void>
+  /** Re-fetches the bootstrap AND re-evaluates the second-factor requirement;
+   *  resolves with where the user must go before reaching a panel (T-0123 WU-3). */
+  refreshUser: () => Promise<MfaDestino>
   /** null clears a field on the backend; undefined leaves it unchanged */
   updateProfile: (data: { firstName?: string | null; lastName?: string | null; phone?: string | null; rut?: string | null; address?: string | null; birthDate?: string | null; emergencyContactName?: string | null; emergencyContactPhone?: string | null }) => Promise<void>
   setMfaVerified: () => void
+  /** Vuelve a preguntar por el segundo factor después de un `failed`. Opcional por lo mismo que `mfaCheckStatus`. */
+  retryMfaCheck?: () => Promise<void>
+  /**
+   * «Reintentar» de una sesión `sin-confirmar` (ver `ConfirmacionDeLaSesion`):
+   * recarga la página, que vuelve a levantar auth-js desde cero. Opcional por
+   * lo mismo que `mfaCheckStatus`.
+   */
+  reintentarConfirmarLaSesion?: () => void
+  /**
+   * Pregunta a Supabase si la sesión guardada sigue viva (la renueva si el
+   * token venció). `muerta` = no hay sesión y ya no queda guardada: renovar
+   * falló de verdad. Lo usa «Continuar» de `SesionYaAbierta`. Opcional por lo
+   * mismo que `mfaCheckStatus`.
+   */
+  confirmarSesionVigente?: () => Promise<VigenciaDeLaSesion>
   /** Set agency context (called after registration or login for agency members) */
   setAgency: (agency: Agency | null, role: AgencyMemberRole | null) => void
   /** Manually retry fetching the agency membership (e.g. an error card's

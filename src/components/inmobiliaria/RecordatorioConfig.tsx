@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { toast } from '@/components/ui/toast';
-import { motion } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   Bell,
   Gear,
@@ -22,6 +22,8 @@ import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Chip } from '@leasefy/cadence';
 import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 
 // Available day options for pre-vencimiento
 const DAYS_BEFORE_OPTIONS = [1, 3, 5, 7] as const;
@@ -82,15 +84,21 @@ Arriendos Premium`;
  * DaySelector - Multi-select component for day selection
  */
 function DaySelector({
+  id,
   options,
   selected,
   onChange,
   label,
+  error,
 }: {
+  /** El id del grupo de días; su error vive en `${id}-error`. */
+  id: string;
   options: readonly number[];
   selected: number[];
   onChange: (days: number[]) => void;
   label: string;
+  /** Lo que el servidor dijo de estos días (02-10-2026). */
+  error?: string | null;
 }) {
   const { t } = useI18n();
 
@@ -104,8 +112,16 @@ function DaySelector({
 
   return (
     <div className="space-y-3">
-      <label className="text-sm font-medium text-foreground">{label}</label>
-      <div className="flex flex-wrap gap-2">
+      <label id={`${id}-etiqueta`} className="text-sm font-medium text-foreground">
+        {label}
+      </label>
+      <div
+        id={id}
+        role="group"
+        aria-labelledby={`${id}-etiqueta`}
+        aria-describedby={`${id}-error`}
+        className="flex flex-wrap gap-2"
+      >
         {options.map((day) => {
           const isSelected = selected.includes(day);
           return (
@@ -128,9 +144,21 @@ function DaySelector({
           {t('inmobiliaria.cobros.recordatorioConfig.selectAtLeastOneDay')}
         </p>
       )}
+      <ErrorDelCampo id={`${id}-error`} mensaje={error} />
     </div>
   );
 }
+
+type CampoDeLosRecordatorios = 'daysBefore' | 'daysAfter';
+/** Los días del back (`UpdateAgencyDto`) → el selector de la pantalla. */
+const DIAS_DEL_SERVIDOR = {
+  reminderDaysBefore: 'daysBefore',
+  reminderDaysAfter: 'daysAfter',
+} as const;
+const ID_DEL_SELECTOR: Record<CampoDeLosRecordatorios, string> = {
+  daysBefore: 'recordatorio-dias-antes',
+  daysAfter: 'recordatorio-dias-despues',
+};
 
 /**
  * ChannelToggle - Switch component for notification channel
@@ -229,22 +257,29 @@ export function RecordatorioConfig({
   const { t } = useI18n();
   const [localConfig, setLocalConfig] = React.useState<RecordatorioConfigData>(config);
   const [isSaving, setIsSaving] = React.useState(false);
+  /** Lo que el servidor dijo de cada grupo de días (02-10-2026). */
+  const [erroresDelServidor, setErroresDelServidor] = React.useState<
+    Partial<Record<CampoDeLosRecordatorios, string>>
+  >({});
 
   // Reset local config when opening
   React.useEffect(() => {
     if (isOpen) {
       setLocalConfig(config);
+      setErroresDelServidor({});
     }
   }, [isOpen, config]);
 
   // Handle days before change
   const handleDaysBeforeChange = (days: number[]) => {
     setLocalConfig((prev) => ({ ...prev, daysBefore: days }));
+    setErroresDelServidor(({ daysBefore: _quitado, ...resto }) => resto);
   };
 
   // Handle days after change
   const handleDaysAfterChange = (days: number[]) => {
     setLocalConfig((prev) => ({ ...prev, daysAfter: days }));
+    setErroresDelServidor(({ daysAfter: _quitado, ...resto }) => resto);
   };
 
   // Handle channel toggle
@@ -285,13 +320,28 @@ export function RecordatorioConfig({
       });
       onClose();
     } catch (error) {
-      toast.error(
-        t('inmobiliaria.cobros.recordatorioConfig.guardarError'),
-        {
-          description:
-            error instanceof Error ? error.message : String(error),
-        },
-      );
+      /*
+       * 02-10-2026 · Un 400 sobre los días va bajo SU grupo, con el foco en el
+       * primer día; lo demás va al toast por el traductor (un 5xx dice que fue
+       * nuestro, con la referencia; «conexión» sólo sin respuesta). Antes era
+       * `error.message` crudo: un 500 decía «Internal server error».
+       */
+      const { porCampo, orden, sueltos } = repartirErroresDelServidor<CampoDeLosRecordatorios>(error, {
+        mapa: DIAS_DEL_SERVIDOR,
+        campos: ['daysBefore', 'daysAfter'],
+        porDefecto: t('inmobiliaria.cobros.recordatorioConfig.guardarError'),
+        accion: 'guardar los recordatorios',
+      });
+      setErroresDelServidor(porCampo);
+      const primero = orden[0];
+      if (primero) {
+        document.getElementById(ID_DEL_SELECTOR[primero])?.querySelector<HTMLElement>('button')?.focus();
+      }
+      if (sueltos.length > 0) {
+        toast.error(t('inmobiliaria.cobros.recordatorioConfig.guardarError'), {
+          description: sueltos.join(' · '),
+        });
+      }
     } finally {
       setIsSaving(false);
     }
@@ -309,14 +359,14 @@ export function RecordatorioConfig({
         descripcion={t('inmobiliaria.cobros.recordatorioConfig.description')}
       />
 
-      <CajonCuerpo className="space-y-8">
+      <CajonCuerpo>
+        {/* Movimiento (ola 2, 03-10-2026): las secciones llegan escalonadas con
+            el techo del sistema (320 ms) y 4 px mientras entra el cajón. Antes
+            cada una tenía su retraso a mano (0,1 → 0,4 s): la última terminaba
+            de llegar más de medio segundo después. */}
+        <Stagger className="space-y-8" distance="xs" layout={false}>
         {/* Pre-vencimiento Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="space-y-4"
-        >
+        <StaggerItem as="section" key="antes" className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Calendar className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">
@@ -324,20 +374,17 @@ export function RecordatorioConfig({
             </h3>
           </div>
           <DaySelector
+            id={ID_DEL_SELECTOR.daysBefore}
             options={DAYS_BEFORE_OPTIONS}
             selected={localConfig.daysBefore}
             onChange={handleDaysBeforeChange}
             label={t('inmobiliaria.cobros.recordatorioConfig.daysBefore')}
+            error={erroresDelServidor.daysBefore}
           />
-        </motion.section>
+        </StaggerItem>
 
         {/* Post-vencimiento Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-4"
-        >
+        <StaggerItem as="section" key="despues" className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Warning className="w-4 h-4 text-warning" />
             <h3 className="text-sm font-semibold text-foreground">
@@ -345,27 +392,29 @@ export function RecordatorioConfig({
             </h3>
           </div>
           <DaySelector
+            id={ID_DEL_SELECTOR.daysAfter}
             options={DAYS_AFTER_OPTIONS}
             selected={localConfig.daysAfter}
             onChange={handleDaysAfterChange}
             label={t('inmobiliaria.cobros.recordatorioConfig.daysAfter')}
+            error={erroresDelServidor.daysAfter}
           />
-        </motion.section>
+        </StaggerItem>
 
         {/* Notification Channels Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="space-y-4"
-        >
+        <StaggerItem as="section" key="canales" className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Bell className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">
               {t('inmobiliaria.cobros.recordatorioConfig.notificationChannels')}
             </h3>
           </div>
-          <div className="space-y-3">
+          <div
+            role="group"
+            aria-label={t('inmobiliaria.cobros.recordatorioConfig.notificationChannels')}
+            aria-describedby="recordatorio-canales-error"
+            className="space-y-3"
+          >
             {CHANNELS.map((channel) => (
               <ChannelToggle
                 key={channel.value}
@@ -375,27 +424,25 @@ export function RecordatorioConfig({
               />
             ))}
           </div>
-          {localConfig.channels.length === 0 && (
-            <p className="text-xs text-destructive flex items-center gap-1">
-              <Warning className="w-3.5 h-3.5" />
-              {t('inmobiliaria.cobros.recordatorioConfig.selectAtLeastOneChannel')}
-            </p>
-          )}
+          {/* El error del grupo de canales entra suave, como el de cualquier campo. */}
+          <ErrorDelCampo
+            id="recordatorio-canales-error"
+            mensaje={
+              localConfig.channels.length === 0
+                ? t('inmobiliaria.cobros.recordatorioConfig.selectAtLeastOneChannel')
+                : null
+            }
+          />
           {/* El back guarda los DÍAS (`agency.reminderDaysBefore/After`) y no
               tiene columna para los canales. Decirlo es preferible a que el
               cartel de «guardado» abarque algo que no se guardó. */}
           <p className="text-[11px] text-muted-foreground">
             {t('inmobiliaria.cobros.recordatorioConfig.canalesNoSeGuardan')}
           </p>
-        </motion.section>
+        </StaggerItem>
 
         {/* Message Templates Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="space-y-4"
-        >
+        <StaggerItem as="section" key="plantillas" className="space-y-4">
           <div className="flex items-center gap-2 pb-2 border-b border-border">
             <Envelope className="w-4 h-4 text-primary" />
             <h3 className="text-sm font-semibold text-foreground">
@@ -413,7 +460,8 @@ export function RecordatorioConfig({
           <p className="text-xs text-muted-foreground">
             {t('inmobiliaria.cobros.recordatorioConfig.templateNote')}
           </p>
-        </motion.section>
+        </StaggerItem>
+        </Stagger>
       </CajonCuerpo>
 
       {/* Acciones: en el pie fijo del cajón, la principal a la derecha. */}

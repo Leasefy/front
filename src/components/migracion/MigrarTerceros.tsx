@@ -78,7 +78,12 @@ import {
   leerPrimerasFilasDeCadaHoja,
   parseSpreadsheetFile,
 } from '@/components/inmobiliaria/import/lib/parseFile';
-import { elegirDondeEstaLaTabla, fraseDeDondeSeLeyo } from '@/lib/migracion/donde-esta-la-tabla';
+import {
+  elegirDondeEstaLaTabla,
+  elegirFilaDeEncabezado,
+  fraseDeDondeSeLeyo,
+} from '@/lib/migracion/donde-esta-la-tabla';
+import { ElegirDondeEstaLaTabla, type DondeSeLeyoLaTabla } from './ElegirDondeEstaLaTabla';
 import { fraseDeFilasDeTotales } from '@/lib/migracion/fila-de-totales';
 import { MENSAJES_DE_LA_MIGRACION } from './limites-de-la-migracion';
 import {
@@ -117,10 +122,12 @@ import {
 } from '@/lib/migracion/columnas-de-tercero';
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
 import { descargarPlantillaDeTerceros } from '@/lib/migracion/plantilla-de-terceros';
+import { alcanceDeLasIncompletas, avisoDeReemplazo, explicacionDelValorPorDefecto } from '@/lib/migracion/valor-por-defecto';
 import { fraseDelMotivo, motivosConFilas } from '@/lib/migracion/motivos-de-fila';
 import {
   aplicarLoteDeTerceros,
   AplicacionInterrumpida,
+  creadasDeVerdad,
   type ProgresoDeAplicacion,
 } from '@/lib/migracion/aplicar-lote-de-terceros';
 import { AvanceDeRetomar, type FaseDeRetomar } from './AvanceDeRetomar';
@@ -434,11 +441,15 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
 
   /** Dónde se leyó la tabla, si no fue A1 de la primera hoja (MG-01/02). */
   const [dondeSeLeyo, setDondeSeLeyo] = useState<string | null>(null);
+  /** QA-MIGRACION-95 (MP-06): hoja y fila leídas, para que la persona elija otras. */
+  const [donde, setDonde] = useState<DondeSeLeyoLaTabla | null>(null);
 
+  /** `elegido`: la hoja (y la fila) que eligió la persona; sin él, se adivina. */
   const leerArchivo = useCallback(
-    async (archivo: File) => {
+    async (archivo: File, elegido?: { hoja: string; fila?: number }) => {
       setError(null);
       setDondeSeLeyo(null);
+      setDonde(null);
       setAplicacion(null);
       setArchivo(archivo);
       setNombreDeArchivo(archivo.name);
@@ -452,13 +463,24 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
          * como siempre: es una mejora, no un requisito.
          */
         let donde: { hoja?: string; fila: number } = { fila: 0 };
+        let porHoja: Array<{ hoja: string; filas: string[][] }> = [];
         try {
-          donde = elegirDondeEstaLaTabla(
-            await leerPrimerasFilasDeCadaHoja(archivo, 15),
-            (celdas) => mapearColumnas(columnas, celdas).filter((m) => m.campo).length,
-          );
+          porHoja = await leerPrimerasFilasDeCadaHoja(archivo, 15);
+          const puntuar = (celdas: string[]) =>
+            mapearColumnas(columnas, celdas).filter((m) => m.campo).length;
+          if (elegido) {
+            // La primera hoja viaja como `undefined`, igual que cuando se adivina.
+            const filasDeLaHoja = porHoja.find((h) => h.hoja === elegido.hoja)?.filas ?? [];
+            donde = {
+              hoja: elegido.hoja === porHoja[0]?.hoja ? undefined : elegido.hoja,
+              fila: elegido.fila ?? elegirFilaDeEncabezado(filasDeLaHoja, puntuar),
+            };
+          } else {
+            donde = elegirDondeEstaLaTabla(porHoja, puntuar);
+          }
         } catch {
           donde = { fila: 0 };
+          porHoja = [];
         }
         const { rows, headers, filasDeTotales } = await parseSpreadsheetFile(archivo, donde.hoja, {
           filaDeEncabezado: donde.fila,
@@ -466,6 +488,19 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
         setDondeSeLeyo(
           [fraseDeDondeSeLeyo(donde), fraseDeFilasDeTotales(filasDeTotales ?? [])].filter(Boolean).join(' ') || null,
         );
+        {
+          const hojaLeida = donde.hoja ?? porHoja[0]?.hoja;
+          setDonde(
+            hojaLeida === undefined
+              ? null
+              : {
+                  hojas: porHoja.map((h) => h.hoja),
+                  hoja: hojaLeida,
+                  fila: donde.fila,
+                  primerasFilas: porHoja.find((h) => h.hoja === hojaLeida)?.filas ?? [],
+                },
+          );
+        }
         if (rows.length === 0) {
           setError(MENSAJES_DE_LA_MIGRACION.archivoSinFilas(archivo.name));
           setFilas([]);
@@ -496,6 +531,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
     setArchivo(null);
     setLeyendo(false);
     setDondeSeLeyo(null);
+    setDonde(null);
     setNombreDeArchivo('');
     setFilas([]);
     setEncabezados([]);
@@ -1500,7 +1536,22 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             ocupado={leyendo || cargando}
             testid="archivo-de-terceros"
           />
-        ) : (
+        ) : null}
+
+        {/* QA-MIGRACION-95 (MP-06): si se adivinó mal la hoja o la fila de los
+            encabezados, se elige acá. Fuera del mapeo a propósito: una fila
+            mal elegida puede dejar el archivo sin filas, y la salida tiene que
+            seguir a la vista. */}
+        {archivo && donde ? (
+          <ElegirDondeEstaLaTabla
+            donde={donde}
+            ocupado={leyendo || cargando}
+            onElegirHoja={(hoja) => void leerArchivo(archivo, { hoja })}
+            onElegirFila={(fila) => void leerArchivo(archivo, { hoja: donde.hoja, fila })}
+          />
+        ) : null}
+
+        {archivo ? null : (
           <ZonaDeArchivo
             rootProps={getRootProps()}
             inputProps={getInputProps()}
@@ -1911,8 +1962,10 @@ function ListaDeTrabajo({
             a <span className="font-mono tabular-nums">{resumen.requierenAtencion}</span>{' '}
             {resumen.requierenAtencion === 1 ? 'le' : 'les'} falta algo
           </span>{' '}
-          y <span className="font-mono tabular-nums">{resumen.aplicados}</span> ya se{' '}
-          {resumen.aplicados === 1 ? 'creó' : 'crearon'}.
+          {/* QA-MIGRACION-95: «ya se crearon» era falso al re-subir (se enlazan
+              las que ya estaban); «ya están en Leasefy» vale para las dos. */}
+          y <span className="font-mono tabular-nums">{resumen.aplicados}</span> ya{' '}
+          {resumen.aplicados === 1 ? 'está' : 'están'} en Leasefy.
         </p>
 
         {resumen.listos > 0 ? (
@@ -2018,7 +2071,8 @@ function ListaDeTrabajo({
         >
           <p className="flex items-center gap-2 text-sm font-medium text-fg">
             <CheckCircle className="h-4 w-4 text-success" weight="fill" />
-            <span className="font-mono tabular-nums">{aplicacion.aplicadas}</span> creadas
+            {/* QA-MIGRACION-95: las que ya estaban se enlazan, no se «crean». */}
+            <span className="font-mono tabular-nums">{creadasDeVerdad(aplicacion)}</span> creadas
             {aplicacion.invitados > 0 ? (
               <>
                 {' · '}
@@ -2041,6 +2095,14 @@ function ListaDeTrabajo({
               </>
             ) : null}
           </p>
+          {(aplicacion.yaEstaban ?? 0) > 0 ? (
+            /* QA-MIGRACION-95: re-subir el mismo archivo no duplica, y se dice. */
+            <p className="text-sm text-fg-muted" data-testid="ya-estaban-en-leasefy">
+              {aplicacion.yaEstaban === 1
+                ? 'Una ya estaba en Leasefy (mismo documento o mismo correo): se enlazó a su ficha y no se duplicó.'
+                : `${aplicacion.yaEstaban} ya estaban en Leasefy (mismo documento o mismo correo): se enlazaron a su ficha y no se duplicaron.`}
+            </p>
+          ) : null}
           {(aplicacion.incompletas ?? 0) > 0 ? (
             /*
              * T-0128 · las que se crearon SIN su documento. No es un fallo ni
@@ -2066,9 +2128,22 @@ function ListaDeTrabajo({
           ) : null}
           {(aplicacion.sinCorreo ?? 0) > 0 ? (
             <p className="text-sm text-fg-muted" data-testid="sin-correo">
-              {aplicacion.sinCorreo === 1
-                ? 'Un inquilino venía sin correo: quedó creado con su documento, sin cuenta del portal. La cuenta nace cuando le cargues el correo desde su ficha.'
-                : `${aplicacion.sinCorreo} inquilinos venían sin correo: quedaron creados con su documento, sin cuenta del portal. La cuenta nace cuando les cargues el correo desde su ficha.`}
+              {/* QA-MIGRACION-95 (06-10): quien venía sin correo Y sin documento
+                  no «quedó creado con su documento»: quedó con su nombre. */}
+              {(() => {
+                const sinDoc = aplicacion.resultados.filter(
+                  (r) => r.sinCorreo && r.datosPendientes?.includes('documento'),
+                ).length;
+                const conQue =
+                  sinDoc === 0
+                    ? 'con su documento'
+                    : sinDoc === aplicacion.sinCorreo
+                      ? 'con su nombre (sin documento ni correo)'
+                      : 'con su documento (o sólo con su nombre, si tampoco lo traía)';
+                return aplicacion.sinCorreo === 1
+                  ? `Un inquilino venía sin correo: quedó creado ${conQue}, sin cuenta del portal. La cuenta nace cuando le cargues el correo desde su ficha.`
+                  : `${aplicacion.sinCorreo} inquilinos venían sin correo: quedaron creados ${conQue}, sin cuenta del portal. La cuenta nace cuando les cargues el correo desde su ficha.`;
+              })()}
             </p>
           ) : null}
           {(aplicacion.sinInvitar ?? 0) > 0 ? (
@@ -2501,7 +2576,6 @@ function ResolucionMasiva({
         : null;
 
   const filas = cantidad === 1 ? 'fila' : 'filas';
-  const aLas = cantidad === 1 ? 'a la fila' : `a las ${cantidad.toLocaleString('es-CO')}`;
 
   return (
     /*
@@ -2625,9 +2699,8 @@ function ResolucionMasiva({
 
         {/* El valor por defecto es eso: un valor para lo que está vacío. Pisar lo
             que la persona ya tiene es otra decisión y se pide aparte. */}
-        <p className="max-w-prose text-caption text-fg-muted">
-          Sólo se llena donde ese campo está vacío; lo que ya trae valor no se toca. Después puedes
-          cambiarlo fila por fila.
+        <p className="max-w-prose text-caption text-fg-muted" data-testid="masivo-explicacion">
+          {explicacionDelValorPorDefecto(sobrescribir)}
         </p>
         {campo ? (
           <label className="flex cursor-pointer items-start gap-2 text-sm text-fg">
@@ -2642,7 +2715,7 @@ function ResolucionMasiva({
               También reemplazar los que ya tienen valor
               {sobrescribir ? (
                 <span className="block text-caption text-warning">
-                  Ojo: el valor que ya traían {aLas} se pierde.
+                  {avisoDeReemplazo(cantidad)}
                 </span>
               ) : null}
             </span>
@@ -2674,7 +2747,7 @@ function ResolucionMasiva({
           </Button>
           <span className="text-caption text-fg-muted" data-testid="masivo-incompletas-alcance">
             {completables === null
-              ? `Sólo cambia las ${filas} a las que únicamente les falta el documento o su tipo; las demás siguen acá.`
+              ? alcanceDeLasIncompletas(cantidad)
               : completables === 0
                 ? 'Ninguna de éstas se puede crear así: tienen otro problema que hay que resolver.'
                 : completables === cantidad
@@ -2756,13 +2829,10 @@ function ResolucionMasiva({
           isLoading={cargando && enVuelo === 'descartar'}
           className="text-danger hover:bg-danger-soft hover:text-danger"
           onClick={() => {
-            // Descartar miles de filas que no se ven pide confirmación.
-            if (porFiltro) {
-              setConfirmaDescarte(true);
-              return;
-            }
-            setEnVuelo('descartar');
-            onAplicar({ descartar: true });
+            // QA-MIGRACION-95 (TE-08): descartar EN MASA siempre pide
+            // confirmación —también las marcadas a mano, no sólo «todas las de
+            // la carga»—. La salida de UNA fila es su propio «No traer esta fila».
+            setConfirmaDescarte(true);
           }}
           data-testid="masivo-descartar"
         >

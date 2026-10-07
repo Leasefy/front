@@ -200,17 +200,23 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
             <div
               key={software.id}
               className={cn(
-                'animate-stagger-in rounded-lg border transition-[border-color,background-color,box-shadow] cursor-pointer',
+                'animate-stagger-in rounded-lg border transition-[border-color,background-color,box-shadow]',
                 isExpanded
                   ? 'border-primary/30 bg-primary-soft/50 dark:bg-primary/10'
                   : 'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong bg-surface dark:bg-bg'
               )}
               style={{ animationDelay: retrasoEscalonado(index) }}
-              onClick={() => handleCardClick(software.id)}
             >
               <div className="p-5">
-                {/* Top row */}
-                <div className="flex items-center justify-between mb-3">
+                {/* Top row. QA-MIGRACION-95 (IN-01): un botón de verdad, con
+                    aria-expanded; la tarjeta era un <div onClick> que el
+                    teclado no alcanzaba. El enlace al sitio queda afuera. */}
+                <button
+                  type="button"
+                  aria-expanded={isExpanded}
+                  onClick={() => handleCardClick(software.id)}
+                  className="flex w-full items-center justify-between mb-3 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
@@ -241,7 +247,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
                       <CaretDown className="w-4 h-4 text-fg-subtle" />
                     )}
                   </div>
-                </div>
+                </button>
 
                 {/* Expandable export instructions */}
                 {isExpanded && (
@@ -273,7 +279,6 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
                         href={software.sitio}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
                         className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
                       >
                         Ver el sitio de {software.name}

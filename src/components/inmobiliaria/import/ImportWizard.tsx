@@ -87,9 +87,18 @@ const INITIAL_STATE: ImportWizardState = {
   subidaRetomada: null,
 };
 
+/**
+ * Desde dónde se lanza la importación (decisión (b) de Nico, 06-10-2026): la
+ * Puesta en marcha es MIGRACIÓN y no va al centro de procesos (sus cargas se
+ * ven en el paso); desde Inmuebles sí va al centro. Sin decirlo = Puesta en marcha.
+ */
+export type OrigenDeLaImportacion = 'puesta-en-marcha' | 'inmuebles';
+
 export interface ImportStepProps {
   state: ImportWizardState;
   updateState: (partial: Partial<ImportWizardState>) => void;
+  /** Ver `OrigenDeLaImportacion`. */
+  origen?: OrigenDeLaImportacion;
   /** Adentro del muro de migración: qué hacer en vez de navegar al portafolio. */
   onSalir?: () => void;
   /**
@@ -148,7 +157,10 @@ export function ImportWizard({
   onContinuar,
   onOcupado,
   congelado = false,
+  origen = 'puesta-en-marcha',
 }: {
+  /** Ver `OrigenDeLaImportacion`: la página de Inmuebles pasa `inmuebles`. */
+  origen?: OrigenDeLaImportacion;
   onSalir?: () => void;
   onContinuar?: () => void;
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
@@ -403,6 +415,7 @@ export function ImportWizard({
     const stepProps: ImportStepProps = {
       state: wizardState,
       updateState,
+      origen,
       onSalir,
       onContinuar,
       onOcupado: avisarOcupado,
@@ -650,7 +663,11 @@ export function ImportWizard({
                   hideArrow
                   onClick={confirmCancel}
                 >
-                  {t('inmobiliaria.import.portal.backToPortfolio')}
+                  {/* QA-MIGRACION-95 (IN-01): dentro del muro no hay portafolio;
+                      `onSalir` reinicia el asistente y el rótulo lo dice. */}
+                  {onSalir
+                    ? t('inmobiliaria.import.portal.otroMetodo')
+                    : t('inmobiliaria.import.portal.backToPortfolio')}
                 </Button>
               ) : currentStep < visibleSteps.length ? (
                 <Button

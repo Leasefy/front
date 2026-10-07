@@ -50,6 +50,7 @@ import { numeroDelContratoDelEstado } from './numero';
 import { estadoDeLaDevolucion } from './saldo-a-favor';
 import { BotonAnularRecibo } from './AnularReciboDeLaFila';
 import { formatCurrency } from '@/lib/format';
+import { porcentajeDeLaParte } from '@/lib/facturacion/por-facturar';
 import {
   Table,
   TableBody,
@@ -190,6 +191,17 @@ export function ContratoDelEstado({
               { direccion: contrato.inmueble.direccion },
             )}
           </p>
+          {/* QA-MIGRACION-95 (CA-05): su % en copropiedad; el 100 % no se dice. */}
+          {esPropietario && contrato.copropiedad ? (
+            <p data-testid="copropiedad-del-contrato" className="mt-0.5 text-body-sm text-fg-muted">
+              {contrato.copropiedad.suParteBps === null
+                ? t('estadoDeCuenta.copropiedadSinPorcentaje', { propietarios: contrato.copropiedad.propietarios })
+                : t('estadoDeCuenta.copropiedad', {
+                    propietarios: contrato.copropiedad.propietarios,
+                    porcentaje: porcentajeDeLaParte(contrato.copropiedad.suParteBps),
+                  })}
+            </p>
+          ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <span
@@ -698,6 +710,17 @@ function Pildora({
    * 🔴 Nico (03-10-2026): la cuota que una nota crédito dejó en $0 no se pagó:
    * la saldó la nota. «Saldada por nota crédito NC-12», no «Cancelada».
    */
+  // 🔴 CA-06: su parte no está definida (falta el % de cada dueño).
+  if (fila.sinPorcentaje) {
+    return (
+      <span
+        className="inline-block whitespace-nowrap rounded-full bg-warning-soft px-2.5 py-0.5 text-caption text-warning"
+        data-testid="sin-porcentaje"
+      >
+        {t('estadoDeCuenta.sinPorcentaje')}
+      </span>
+    );
+  }
   if (fila.saldadaPorNota) {
     return (
       <span
@@ -807,6 +830,16 @@ function Pago({ fila }: { fila: FilaDelEstadoDeCuenta }) {
           {doc.numero} · {doc.tipo}
         </p>
       )}
+      {/* QA-MIGRACION-95 (CA-08): el recibo migrado sin el documento del inquilino dice cómo se asoció. */}
+      {doc?.asociadoPor && (
+        <p className="text-caption text-fg-subtle" data-testid="asociado-por">
+          {t(
+            doc.asociadoPor === 'numero_contrato'
+              ? 'estadoDeCuenta.asociadoPorNumeroDeContrato'
+              : 'estadoDeCuenta.asociadoPorCodigoDelInmueble',
+          )}
+        </p>
+      )}
       {/* PG-08: un mes del sistema anterior con su comprobante se lee como
           pago, pero tampoco suma en los totales (lo cobró el sistema de antes). */}
       {fila.estado === 'ANTERIOR' && (
@@ -853,7 +886,7 @@ function FilaDeLaTabla({
         <Pildora fila={fila} rol={rol} />
       </TableCell>
       <TableCell className="whitespace-nowrap text-right align-top font-mono tabular-nums">
-        {formatCurrency(fila.valorBruto)}
+        {plataDeLaFila(fila, fila.valorBruto)}
       </TableCell>
       {compacta ? (
         columnas.length > 0 && (
@@ -872,13 +905,18 @@ function FilaDeLaTabla({
         ))
       )}
       <TableCell className="whitespace-nowrap text-right align-top font-mono font-medium tabular-nums">
-        {formatCurrency(fila.valorNeto)}
+        {plataDeLaFila(fila, fila.valorNeto)}
       </TableCell>
       <TableCell className="max-w-[220px] align-top">
         <Pago fila={fila} />
       </TableCell>
     </TableRow>
   );
+}
+
+/** CA-06: una parte sin definir no es «$ 0»: es «—» (la píldora dice por qué). */
+function plataDeLaFila(fila: FilaDelEstadoDeCuenta, valor: number): string {
+  return fila.sinPorcentaje ? '—' : formatCurrency(valor);
 }
 
 /**
@@ -937,7 +975,7 @@ function TarjetaDeFila({
           {t('estadoDeCuenta.colNeto')}
         </span>
         <span className="font-mono text-base font-medium tabular-nums text-fg">
-          {formatCurrency(fila.valorNeto)}
+          {plataDeLaFila(fila, fila.valorNeto)}
         </span>
       </div>
 
@@ -946,7 +984,7 @@ function TarjetaDeFila({
           <Vence fila={fila} hoy={hoy} rol={rol} />
         </Dato>
         <Dato etiqueta={t('estadoDeCuenta.colBruto')}>
-          <span className="font-mono tabular-nums">{formatCurrency(fila.valorBruto)}</span>
+          <span className="font-mono tabular-nums">{plataDeLaFila(fila, fila.valorBruto)}</span>
         </Dato>
         {columnas.map((c) => (
           <Dato key={c} etiqueta={ETIQUETA_DE_COLUMNA[c]}>

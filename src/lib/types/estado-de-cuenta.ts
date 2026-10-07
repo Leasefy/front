@@ -147,6 +147,13 @@ export interface FilaDelEstadoDeCuenta {
    * NC-12» (sin número si la nota todavía no lo tiene). Ausente en el resto.
    */
   saldadaPorNota?: SaldadaPorNota;
+  /**
+   * 🔴 CA-06 (Nico, 06-10-2026): en el estado de cuenta de UN propietario, la
+   * cuota de un inmueble en copropiedad que vino de la migración sin el % de
+   * cada dueño. Su parte no está definida: la plata llega en cero y se pinta
+   * «Sin definir · falta el porcentaje», sin «atrasado». Ausente en el resto.
+   */
+  sinPorcentaje?: true;
 }
 
 /**
@@ -221,6 +228,13 @@ export interface ContratoDelEstadoDeCuenta {
    * por pagar + comprobante de egreso). Sólo del inquilino; ausente si no hay.
    */
   saldoAFavor?: SaldoAFavorDelContrato | null;
+  /**
+   * QA-MIGRACION-95 (CA-05): el inmueble es de varios dueños y este
+   * propietario tiene `suParteBps` (5000 = 50 %) entre `propietarios`. Sólo del
+   * propietario y en copropiedad; ausente con un dueño o con un back anterior.
+   * `suParteBps: null` = el mandato vino sin el porcentaje de cada dueño.
+   */
+  copropiedad?: { suParteBps: number | null; propietarios: number };
   cortes: PuntoDeQuiebre[];
 }
 

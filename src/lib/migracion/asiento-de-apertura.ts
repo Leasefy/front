@@ -111,7 +111,12 @@ export function totalesDeApertura(filas: readonly FilaDeApertura[]): {
  */
 export function fraseDelDescuadre(totales: { debitos: number; creditos: number; diferencia: number }): string | null {
   if (totales.diferencia === 0) return null;
-  const plata = (n: number) => `$${Math.abs(n).toLocaleString('es-CO')}`;
+  // QA-MIGRACION-95: con centavos, los dos decimales («$1.234.567,80», no «,8»).
+  const plata = (n: number) => {
+    const v = Math.abs(n);
+    const conCentavos = Math.round(v * 100) % 100 !== 0;
+    return `$${v.toLocaleString('es-CO', { minimumFractionDigits: conCentavos ? 2 : 0, maximumFractionDigits: 2 })}`;
+  };
   const falta = totales.diferencia > 0 ? 'créditos' : 'débitos';
   return `No cuadra: faltan ${plata(totales.diferencia)} en ${falta} para que los dos totales sean iguales (débitos ${plata(totales.debitos)}, créditos ${plata(totales.creditos)}).`;
 }

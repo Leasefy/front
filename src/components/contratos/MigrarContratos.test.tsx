@@ -642,6 +642,18 @@ describe('<MigrarContratos> — activables, el botón de activar (T-0035)', () =
     expect(container.textContent).toContain('Ninguno se puede activar todavía')
   })
 
+  it('QA-MIGRACION-95: con NINGUNO activado (activables=0, pendientes>0) la lista no dice «Ya están activos»', async () => {
+    // Visto en el navegador con C13 (3 filas, 0 listas, 3 con algo por
+    // resolver, 0 activadas): el encabezado decía «Ya están activos. De acá en
+    // adelante se editan desde cada contrato», sobre contratos que no existían.
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(0)
+
+    expect(container.textContent).not.toContain('Ya están activos')
+    expect(container.textContent).toContain('Ninguno está activo todavía')
+  })
+
   it('con el modo sparse PRENDIDO (activables=30, listos=0): el botón aparece con la cuenta real, no con `listos`', async () => {
     render()
     await esperar()

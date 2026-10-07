@@ -200,6 +200,12 @@ export interface BackendContract {
   fechaDeCartera?: string | null;
   /** La de la consignación — la que de verdad liquida. Sólo la devuelve GET /:id. */
   comisionDeConsignacion?: number | null;
+  /** CO-28 (QA-MIGRACION-95): el mandato no traía la comisión. */
+  comisionSinDefinir?: boolean;
+  /** CO-28: por qué el contrato no tiene tabla de cuotas, o `null`. */
+  sinTablaDeCuotas?: string | null;
+  /** NI-05 (QA-MIGRACION-95): qué traía el archivo de un migrado. */
+  loQueTraiaElArchivo?: { traiaDeposito: boolean; traiaPeriodicidad: boolean } | null;
   /**
    * El dueño según la consignación del inmueble (la ficha `Propietario` de
    * la inmobiliaria). `landlordName` NO es eso en un contrato migrado: es el

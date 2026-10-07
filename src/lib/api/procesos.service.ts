@@ -4,8 +4,13 @@
  * Nico (22-09-2026): «creemos un CENTRO DE PROCESOS para esas cargas y
  * descargas de todos los documentos que tenemos en la plataforma». Todo lo
  * largo que se lanza —reprocesar asientos, el archivo del lote al banco, la
- * emisión del mes, las cargas de la migración, una exportación— queda acá con
- * su avance, quién lo lanzó y el archivo que dejó.
+ * emisión del mes, una importación de inmuebles desde Inmuebles, una
+ * exportación— queda acá con su avance, quién lo lanzó y el archivo que dejó.
+ *
+ * 🔴 La MIGRACIÓN (la Puesta en marcha: terceros, inmuebles, contratos y lo
+ * contable) NO va al centro (Nico, 01-10: «menos migración, que allá sí pasa
+ * sólo allá»; 06-10): cada paso muestra sus propias cargas. El back ya no las
+ * registra y no lista ni cuenta las viejas.
  */
 
 import { ApiError, apiClient, fetchConSesion } from '@/lib/api/client'

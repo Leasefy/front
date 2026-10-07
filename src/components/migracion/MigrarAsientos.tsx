@@ -954,7 +954,7 @@ function Revision({
               </h3>
               <p className="mt-0.5 text-sm text-fg-muted">
                 No se crean solas: un código suelto no dice ni la naturaleza ni
-                de qué cuelga. Créalas en el paso 4 con tu contador y vuelve a
+                de qué cuelga. Créalas en el plan de cuentas con tu contador y vuelve a
                 revisar: el archivo sigue acá.
               </p>
             </div>
@@ -977,13 +977,13 @@ function Revision({
           <div className="mt-4 flex flex-wrap gap-2">
             {onIrAlPuc ? (
               <Button size="sm" variant="outline" hideArrow onClick={onIrAlPuc}>
-                Crear las cuentas en el paso 4
+                Crear las cuentas en el plan de cuentas
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Button>
             ) : (
               <Button asChild size="sm" variant="outline" hideArrow>
                 <Link href={RUTA_DEL_PASO_4} target="_blank" rel="noopener">
-                  Crear las cuentas en el paso 4
+                  Crear las cuentas en el plan de cuentas
                   <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                 </Link>
               </Button>

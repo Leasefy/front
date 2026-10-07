@@ -269,7 +269,15 @@ export function ArriendoDelContrato({
           {depositoAplica(contract) ? (
             <div>
               <dt className="text-label uppercase tracking-wide text-fg-subtle">Depósito</dt>
-              {depositoParaMostrar(contract) !== null ? (
+              {/* NI-05 (Nico, 06-10): un migrado cuyo archivo SÍ traía el
+                  depósito en 0 dice «$ 0»; el que no lo traía, «Sin depósito
+                  pactado» (la base guarda 0 en los dos). */}
+              {depositoParaMostrar(contract) === null &&
+              contract.loQueTraiaElArchivo?.traiaDeposito === true ? (
+                <dd className="mt-1.5 font-mono text-body tabular-nums text-fg" data-testid="deposito-del-arriendo">
+                  {formatCurrency(0)}
+                </dd>
+              ) : depositoParaMostrar(contract) !== null ? (
                 <dd className="mt-1.5 font-mono text-body tabular-nums text-fg" data-testid="deposito-del-arriendo">
                   {formatCurrency(depositoParaMostrar(contract) ?? 0)}
                 </dd>
@@ -668,8 +676,16 @@ function CuentaDelArriendo({
   // 16-09); el consolidado del inquilino va en su ficha de tercero.
   const soloEste =
     cuenta.estado === 'listo' ? `&contrato=${encodeURIComponent(cuenta.contrato.numero)}` : '';
+  /*
+   * CO-28 (QA-MIGRACION-95, 06-10): un contrato sin tabla de cuotas porque
+   * nadie sabe la comisión decía «Resta por pagar $ 0 · Al día · Nada
+   * vencido» en su mes 6. No es que esté al día: no tiene cuotas. Se dice el
+   * motivo del back y qué hacer, en lugar de los tres números (y sin el
+   * enlace a un estado de cuenta vacío).
+   */
+  const sinTabla = contract.sinTablaDeCuotas ?? null;
   const enlace =
-    cuenta.estado === 'listo' || cuenta.estado === 'sin-cuotas'
+    !sinTabla && (cuenta.estado === 'listo' || cuenta.estado === 'sin-cuotas')
       ? `${rutaDelEstadoDeCuenta('inquilino', cuenta.tenantRef)}?volver=${encodeURIComponent(volverAca)}${soloEste}`
       : null;
 
@@ -695,7 +711,17 @@ function CuentaDelArriendo({
         ) : null}
       </div>
 
-      {cuenta.estado === 'listo' && deuda ? (
+      {sinTabla ? (
+        <div className="px-5 pb-5 pt-3">
+          <AlertaAccionable
+            severidad="warning"
+            titulo="Este contrato no tiene tabla de cuotas"
+            data-testid="sin-tabla-de-cuotas"
+          >
+            {sinTabla}
+          </AlertaAccionable>
+        </div>
+      ) : cuenta.estado === 'listo' && deuda ? (
         /* La primera celda es más ancha: «$ 190.214.516» a 26 px no entra en
            un tercio del bloque con la barra lateral abierta (DESIGN.md §19: un
            número no se parte). Por debajo de `md` las tres se apilan. */

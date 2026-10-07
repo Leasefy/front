@@ -79,6 +79,7 @@ import {
   estadoDeLaDeduccionEnPalabras,
 } from '@/components/inmobiliaria/deducciones/DeduccionesDelEstado';
 import { claveDelLado, texto } from './textos';
+import { porcentajeDeLaParte } from '@/lib/facturacion/por-facturar';
 import { numeroDelContratoDelEstado } from './numero';
 import { estadoDeLaDevolucion } from './saldo-a-favor';
 import { interesesDelContrato, interesesDelEstado } from './intereses';
@@ -249,6 +250,20 @@ function tituloDelContratoEnElPapel(
 ): string {
   const numero = numeroDelContratoDelEstado(contrato);
   return frase('estadoDeCuenta.contrato', { numero: numero.principal });
+}
+
+/** QA-MIGRACION-95 (CA-05): su % en copropiedad, como en la pantalla; `null` con un dueño. */
+function copropiedadEnElPapel(
+  contrato: Pick<ContratoDelEstadoDeCuenta, 'rol' | 'copropiedad'>,
+): string | null {
+  if (contrato.rol !== 'PROPIETARIO' || !contrato.copropiedad) return null;
+  if (contrato.copropiedad.suParteBps === null) {
+    return frase('estadoDeCuenta.copropiedadSinPorcentaje', { propietarios: contrato.copropiedad.propietarios });
+  }
+  return frase('estadoDeCuenta.copropiedad', {
+    propietarios: contrato.copropiedad.propietarios,
+    porcentaje: porcentajeDeLaParte(contrato.copropiedad.suParteBps),
+  });
 }
 
 function frase(clave: string, params?: Record<string, string | number>): string {
@@ -789,6 +804,9 @@ function ContratoEnLaPortada({
             { direccion: contrato.inmueble.direccion },
           )}
         </Text>
+        {copropiedadEnElPapel(contrato) ? (
+          <Text style={estilos.direccion}>{copropiedadEnElPapel(contrato)}</Text>
+        ) : null}
       </View>
 
       <View style={{ flexGrow: 1, paddingRight: 18 }}>
@@ -919,6 +937,9 @@ function PaginaDelContrato({
                 { direccion: contrato.inmueble.direccion },
               )}
             </Text>
+            {copropiedadEnElPapel(contrato) ? (
+              <Text style={estilos.bandaDireccion}>{copropiedadEnElPapel(contrato)}</Text>
+            ) : null}
           </View>
           <Text
             style={[
@@ -1269,7 +1290,9 @@ function FilaDeLaTabla({
         >
           {/* 🔴 Nico (03-10-2026): la saldó una nota crédito, no un pago. */}
           {paraElPapel(
-            fila.saldadaPorNota
+            fila.sinPorcentaje
+              ? frase('estadoDeCuenta.sinPorcentaje')
+              : fila.saldadaPorNota
               ? fila.saldadaPorNota.numero
                 ? frase('estadoDeCuenta.saldadaPorNota', { numero: fila.saldadaPorNota.numero })
                 : frase('estadoDeCuenta.saldadaPorNotaSinNumero')
@@ -1283,7 +1306,7 @@ function FilaDeLaTabla({
       </Text>
 
       <Text style={[estilos.celda, estilos.numero, cuerpo, { width: medidas.bruto }]}>
-        {formatCurrency(fila.valorBruto)}
+        {fila.sinPorcentaje ? '—' : formatCurrency(fila.valorBruto)}
       </Text>
 
       {columnas.map((c) => (
@@ -1307,7 +1330,7 @@ function FilaDeLaTabla({
           { width: medidas.neto, fontFamily: MONO },
         ]}
       >
-        {formatCurrency(fila.valorNeto)}
+        {fila.sinPorcentaje ? '—' : formatCurrency(fila.valorNeto)}
       </Text>
 
       <Text style={[estilos.celda, estilos.numero, cuerpo, { width: medidas.vence, textAlign: 'left' }]}>

@@ -521,7 +521,18 @@ export function armarFila(
     })
     .filter(Boolean);
   if (lineas.length > 0) cruda.notas = [celda(cruda.notas), ...lineas].filter(Boolean).join('\n');
-  return filaDePlantilla(cruda);
+  const salida = filaDePlantilla(cruda);
+  // QA-MIGRACION-95 (ER-01): la fila de la HOJA (la del Excel, con encabezado
+  // y títulos contados) viaja aparte —no es una celda— para que la lista de
+  // trabajo diga la misma fila que ve la persona. Necesita el back con
+  // `FilaTerceroDto.filaDelArchivo` (desplegar el back primero).
+  // `_rowIndex` es el número de SheetJS en base 0 (encabezado en A1 → primera
+  // fila de datos = 1): la fila que la persona ve en Excel es `_rowIndex + 1`.
+  const filaDeLaHoja = fila._rowIndex;
+  if (typeof filaDeLaHoja === 'number' && Number.isInteger(filaDeLaHoja) && filaDeLaHoja >= 0) {
+    (salida as FilaTercero & { filaDelArchivo?: number }).filaDelArchivo = filaDeLaHoja + 1;
+  }
+  return salida;
 }
 
 /**

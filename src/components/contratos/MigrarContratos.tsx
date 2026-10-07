@@ -21,6 +21,8 @@
  *    Un "1.200 procesados" que esconde 300 saltados es peor que un error.
  */
 
+import { lineaDeLaCarga } from "@/components/migracion/datos-de-la-carga";
+import { tituloDeLaVistaPrevia } from "@/lib/contratos/titulo-de-la-vista-previa";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import {
   activarContratosCompleto,
@@ -75,7 +77,14 @@ import {
   leerPrimerasFilasDeCadaHoja,
   parseSpreadsheetFile,
 } from "@/components/inmobiliaria/import/lib/parseFile";
-import { elegirDondeEstaLaTabla } from "@/lib/migracion/donde-esta-la-tabla";
+import {
+  elegirDondeEstaLaTabla,
+  elegirFilaDeEncabezado,
+} from "@/lib/migracion/donde-esta-la-tabla";
+import {
+  ElegirDondeEstaLaTabla,
+  type DondeSeLeyoLaTabla,
+} from "@/components/migracion/ElegirDondeEstaLaTabla";
 import { fraseDeFilasDeTotales } from "@/lib/migracion/fila-de-totales";
 import {
   fechasConMesPrimero,
@@ -333,6 +342,8 @@ export function MigrarContratos({
   const [hojaLeida, setHojaLeida] = useState<string | undefined>(undefined);
   /** Qué columnas de fechas venían mes/día/año y se leyeron así (MG-08). */
   const [avisoDeFechas, setAvisoDeFechas] = useState<string | null>(null);
+  /** QA-MIGRACION-95 (MP-06): hoja y fila leídas, para que la persona elija otras. */
+  const [donde, setDonde] = useState<DondeSeLeyoLaTabla | null>(null);
   const [mapeo, setMapeo] = useState<MapeoDeColumna[]>([]);
   /*
    * 🔴 DESMARCADA por defecto (QA 22-09). El comentario de Nico del 09-09 ya
@@ -545,13 +556,16 @@ export function MigrarContratos({
     setMapeo([]);
     setFilaDeEncabezado(0);
     setHojaLeida(undefined);
+    setDonde(null);
     setAvisoDeFechas(null);
     setIdempotencyKey("");
     setError(null);
   }, []);
 
-  const leerArchivo = useCallback(async (archivo: File) => {
+  /** `elegido`: la hoja (y la fila) que eligió la persona; sin él, se adivina. */
+  const leerArchivo = useCallback(async (archivo: File, elegido?: { hoja: string; fila?: number }) => {
     setError(null);
+    setDonde(null);
     setActivacion(null);
     setActualizados(null);
     setArchivo(archivo);
@@ -574,20 +588,42 @@ export function MigrarContratos({
        */
       let fila = 0;
       let hoja: string | undefined;
+      let porHoja: Array<{ hoja: string; filas: string[][] }> = [];
       try {
-        const donde = elegirDondeEstaLaTabla(
-          await leerPrimerasFilasDeCadaHoja(archivo, 15),
-          (celdas) => mapearColumnas(celdas).filter((m) => m.campo).length,
-        );
-        fila = donde.fila;
-        hoja = donde.hoja;
+        porHoja = await leerPrimerasFilasDeCadaHoja(archivo, 15);
+        const puntuar = (celdas: string[]) => mapearColumnas(celdas).filter((m) => m.campo).length;
+        if (elegido) {
+          // La primera hoja viaja como `undefined`, igual que cuando se adivina.
+          hoja = elegido.hoja === porHoja[0]?.hoja ? undefined : elegido.hoja;
+          fila =
+            elegido.fila ??
+            elegirFilaDeEncabezado(porHoja.find((h) => h.hoja === elegido.hoja)?.filas ?? [], puntuar);
+        } else {
+          const donde = elegirDondeEstaLaTabla(porHoja, puntuar);
+          fila = donde.fila;
+          hoja = donde.hoja;
+        }
       } catch {
+        porHoja = [];
         // Si la exploración falla, se lee como siempre desde la primera fila:
         // es una mejora, no un requisito para poder leer el archivo.
       }
       const { rows, headers, filasDeTotales } = await parseSpreadsheetFile(archivo, hoja, {
         filaDeEncabezado: fila,
       });
+      {
+        const hojaDelLibro = hoja ?? porHoja[0]?.hoja;
+        setDonde(
+          hojaDelLibro === undefined
+            ? null
+            : {
+                hojas: porHoja.map((h) => h.hoja),
+                hoja: hojaDelLibro,
+                fila,
+                primerasFilas: porHoja.find((h) => h.hoja === hojaDelLibro)?.filas ?? [],
+              },
+        );
+      }
       // Fechas mes/día/año (un export en inglés): se leen así POR COLUMNA y
       // se dice; nunca se corren un mes en silencio (MG-08).
       if (rows.length === 0) {
@@ -1281,7 +1317,7 @@ export function MigrarContratos({
                       {" · "}
                       <Clock className="h-3 w-3" />
                       {l.total != null
-                        ? `procesando ${l.pendientes + l.listos} / ${l.total}`
+                        ? `procesando ${(l.procesadas ?? l.pendientes + l.listos).toLocaleString("es-CO")} / ${l.total.toLocaleString("es-CO")}`
                         : "procesando"}
                     </span>
                   ) : (
@@ -1328,6 +1364,30 @@ export function MigrarContratos({
                       ) : null}
                     </>
                   )}
+                  {l.estado === "FALLIDO" ? (
+                    <span className="block text-danger">
+                      {l.error ?? "La preparación de esta carga se detuvo por un error."}
+                    </span>
+                  ) : null}
+                  {/* QA-MIGRACION-95 (06-10): la migración salió del centro de
+                      procesos; quién, cuándo y cuánto tardó se dicen aquí. */}
+                  {lineaDeLaCarga({
+                    subidoPor: l.subidoPor,
+                    creadoEn: l.creadoEn,
+                    actualizadoEn: l.actualizadoEn,
+                    terminada: l.estado === "FALLIDO",
+                    enCurso: procesando,
+                  }) ? (
+                    <span className="block text-caption text-fg-subtle" data-testid={`datos-de-la-carga-${l.lote}`}>
+                      {lineaDeLaCarga({
+                        subidoPor: l.subidoPor,
+                        creadoEn: l.creadoEn,
+                        actualizadoEn: l.actualizadoEn,
+                        terminada: l.estado === "FALLIDO",
+                        enCurso: procesando,
+                      })}
+                    </span>
+                  ) : null}
                 </p>
                 <div className="flex shrink-0 items-center gap-2">
                   {/*
@@ -1449,7 +1509,23 @@ export function MigrarContratos({
             ocupado={leyendo || cargando}
             testid="archivo-de-contratos"
           />
-        ) : (
+        ) : null}
+
+        {/* QA-MIGRACION-95 (MP-06): si se adivinó mal la hoja o la fila de los
+            encabezados, se elige acá (fuera del mapeo: una fila mal elegida
+            puede dejar el archivo sin contratos y la salida sigue a la vista). */}
+        {archivo && donde ? (
+          <div className="mt-3">
+            <ElegirDondeEstaLaTabla
+              donde={donde}
+              ocupado={leyendo || cargando}
+              onElegirHoja={(h) => void leerArchivo(archivo, { hoja: h })}
+              onElegirFila={(f) => void leerArchivo(archivo, { hoja: donde.hoja, fila: f })}
+            />
+          </div>
+        ) : null}
+
+        {archivo ? null : (
           <div
             {...getRootProps()}
             className={`flex cursor-pointer flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center transition-colors ${
@@ -1626,7 +1702,9 @@ export function MigrarContratos({
                             ? "elegido a mano"
                             : m.porque
                               ? `coincidió con «${m.porque}»`
-                              : "—"}
+                              : m.noSeMigra && !m.campo
+                                ? m.noSeMigra
+                                : "—"}
                         </span>
                         {/*
                           La marca de lo adivinado. Sin ella, «Ciudad» y
@@ -1684,8 +1762,10 @@ export function MigrarContratos({
               data-testid="resumen-de-lectura"
             >
               <h3 className="text-sm font-medium text-fg">
-                Qué trae el archivo, de sus {lectura.total}{" "}
-                {lectura.total === 1 ? "fila" : "filas"}
+                {/* MP-07 (QA-MIGRACION-95): «de sus 1 fila» con un solo contrato. */}
+                {lectura.total === 1
+                  ? "Qué trae el archivo, de su única fila"
+                  : `Qué trae el archivo, de sus ${lectura.total} filas`}
               </h3>
               <p className="mt-0.5 text-caption text-fg-muted">
                 Esto es lo que se pudo LEER. A qué inmueble y a qué ficha queda
@@ -1721,10 +1801,7 @@ export function MigrarContratos({
             <div className="space-y-2" data-testid="vista-previa-migracion">
               <div>
                 <h3 className="text-sm font-medium text-fg">
-                  Así quedarían las{" "}
-                  {vistaPrevia[0].valores.length === 1
-                    ? "primera fila"
-                    : `primeras ${vistaPrevia[0].valores.length} filas`}
+                  {tituloDeLaVistaPrevia(vistaPrevia[0].valores.length)}
                 </h3>
                 <p className="text-caption text-fg-muted">
                   Todavía no se crea nada. Si algo acá está en la fila
@@ -2390,6 +2467,26 @@ function ListaDeTrabajo({
            * no haber hecho nada: «0 contratos activados» y ni una palabra de
            * los 1.836 que acababan de recibir su fecha de cartera.
            */}
+          {/*
+           * CO-20 (QA-MIGRACION-95, 06-10): re-subir el MISMO archivo decía
+           * «0 contratos activados» y nada más. Los que ya estaban (mismo
+           * consecutivo) se enlazaron al contrato existente sin duplicarlo:
+           * se dice, como en terceros (ID-01).
+           */}
+          {(activacion.yaMigradas ?? 0) > 0 ? (
+            <p className="text-sm text-muted-foreground" data-testid="aviso-ya-migrados">
+              {/* Sin «(mismo consecutivo)»: desde ID-07 también se reconoce, sin
+                  consecutivo, por inmueble, inquilino y fechas. */}
+              {activacion.yaMigradas === 1
+                ? "1 contrato ya estaba migrado: se enlazó al que ya existía, sin duplicarlo."
+                : `${activacion.yaMigradas} contratos ya estaban migrados: se enlazaron a los que ya existían, sin duplicarlos.`}
+              {actualizados && actualizados.actualizadas > 0
+                ? ""
+                : activacion.yaMigradas === 1
+                  ? " El archivo no traía nada nuevo para él."
+                  : " El archivo no traía nada nuevo para ellos."}
+            </p>
+          ) : null}
           {actualizados && actualizados.actualizadas > 0 ? (
             <p
               className="text-sm text-muted-foreground"
@@ -2455,6 +2552,21 @@ function ListaDeTrabajo({
                     activacion.sinInmueble === 1 ? "tiene" : "tienen"
                   } inmueble: elígelo o créalo en la lista y vuelve a activar.`}
             </p>
+          ) : null}
+          {/*
+           * CO-28 (QA-MIGRACION-95, 06-10): los que se activaron y se quedan
+           * SIN tabla de cuotas porque nadie sabe la comisión. Antes la
+           * pantalla decía «2 contratos activados» y la ficha «Al día».
+           */}
+          {activacion.sinComision && activacion.sinComision.cuantos > 0 ? (
+            <div className="text-sm text-danger" data-testid="aviso-sin-comision">
+              <p>
+                {activacion.sinComision.cuantos === 1
+                  ? "1 contrato quedó activado sin tabla de cuotas."
+                  : `${activacion.sinComision.cuantos} contratos quedaron activados sin tabla de cuotas.`}{" "}
+                {activacion.sinComision.motivo}
+              </p>
+            </div>
           ) : null}
           {activacion.fallidas > 0 ? (
             <ul className="space-y-1 text-sm text-muted-foreground">
@@ -2539,7 +2651,16 @@ function ListaDeTrabajo({
         <p className="mt-0.5 text-sm text-muted-foreground">
           {resumen.activables > 0
             ? "Cada uno con el propietario al que le vamos a consignar el inmueble y el porcentaje que le vamos a cobrar. Si alguno quedó con el propietario equivocado, cámbialo acá — después de activar ya es un contrato y se edita desde el contrato."
-            : resumen.activadosSinPropietario
+            : /*
+               * QA-MIGRACION-95 (06-10): «activables = 0» no quiere decir «todo
+               * activado»: también es «a todos les falta algo». Decía «Ya están
+               * activos» sobre contratos que no existían.
+               */
+              resumen.activados === 0
+              ? "Ninguno está activo todavía: a cada uno le falta algo que se completa acá, fila por fila, y al resolverlo pasa a listo solo."
+              : resumen.pendientes > 0
+              ? `${resumen.activados} ${resumen.activados === 1 ? "ya está activo y se edita" : "ya están activos y se editan"} desde cada contrato; a ${resumen.pendientes === 1 ? "la otra le falta" : `las otras ${resumen.pendientes} les falta`} algo que se completa acá, fila por fila.`
+              : resumen.activadosSinPropietario
               ? "Ya están activos. Los que no tienen propietario se consignan acá mismo; todo lo demás se edita desde cada contrato."
               : "Ya están activos. De acá en adelante se editan desde cada contrato, no desde la migración."}
         </p>

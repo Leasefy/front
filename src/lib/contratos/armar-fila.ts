@@ -75,6 +75,20 @@ function plataDeContrato(v: unknown, conCentavos = false): number | undefined {
 }
 
 /**
+ * 🔴 EN-38 (QA-MIGRACION-95, 06-10-2026; misma regla que NI-07 en inmuebles):
+ * con la llave de los contratos APAGADA, una celda con centavos de verdad
+ * («2.500.000,29») NO se redondea en silencio. `comoEntero` la volvía
+ * 2.500.000 y el contrato quedaba guardado así, sin decir nada. Ahora el canon
+ * no viaja y viaja la celda tal cual (`canonConCentavosDelArchivo`): el back
+ * frena la fila con su motivo y la persona escribe el canon al peso.
+ */
+export function traeCentavosSinLlave(v: unknown, conCentavos: boolean): boolean {
+  if (conCentavos || !hayValor(v) || plataConLetras(v)) return false
+  const n = plataConCentavosDeLaCelda(v)
+  return typeof n === 'number' && Number.isFinite(n) && !Number.isInteger(n)
+}
+
+/**
  * «Centavos en todo» (C3-FRONT; P14 a «que no se redondee, se trae tal
  * cual»): con la llave de los contratos, la celda trae sus centavos
  * («$2.350.000,29» → 2350000.29). Un entero se lee EXACTAMENTE como siempre
@@ -185,7 +199,18 @@ export function armarFilaAMigrar(
   mapeo: MapeoDeColumna[],
   opciones: OpcionesDeLaLectura = {},
 ): FilaAMigrar {
-  return leerFilaDelArchivo(fila, mapeo, opciones).fila
+  const armada = leerFilaDelArchivo(fila, mapeo, opciones).fila
+  /*
+   * QA-MIGRACION-95 (C14, como ER-01 en terceros): la fila de la HOJA viaja
+   * aparte para que la lista diga la fila que ve la persona en Excel («Fila 4»
+   * con el encabezado en la fila 3), no la posición entre los datos.
+   * `_rowIndex` es base 0 de SheetJS: la fila del Excel es `_rowIndex + 1`.
+   */
+  const filaDeLaHoja = fila._rowIndex
+  if (typeof filaDeLaHoja === 'number' && Number.isInteger(filaDeLaHoja) && filaDeLaHoja >= 1) {
+    return { ...armada, filaDelArchivo: filaDeLaHoja + 1 }
+  }
+  return armada
 }
 
 /**
@@ -327,7 +352,12 @@ export function leerFilaDelArchivo(
         conCentavos,
       )
     : undefined
-  const monthlyRent = canonTotal ?? canonSuelto ?? sumaDeLasPartes
+  // EN-38: la celda con centavos (sin la llave) no se redondea: no viaja canon.
+  const celdaConCentavos = [v('canonTotal'), canonPorPropietario ? undefined : rawCanon].find((c) =>
+    traeCentavosSinLlave(c, conCentavos),
+  )
+  const monthlyRent =
+    celdaConCentavos !== undefined ? undefined : (canonTotal ?? canonSuelto ?? sumaDeLasPartes)
 
   /*
    * Lo que el archivo dice del contrato más allá del canon: el consecutivo, el
@@ -375,6 +405,9 @@ export function leerFilaDelArchivo(
     referenciaDeRecaudo,
     endDate: hayValor(rawFin) ? comoFecha(rawFin) : undefined,
     monthlyRent,
+    ...(celdaConCentavos !== undefined
+      ? { canonConCentavosDelArchivo: String(celdaConCentavos).trim().slice(0, 60) }
+      : {}),
     deposit: plataDeContrato(rawDeposito, conCentavos),
     // X5: un día de pago ausente o fuera de [1,28] viaja ausente, nunca
     // fabricado como "el 1" — eso es lo que hacía que 1383 filas quedaran
@@ -429,7 +462,11 @@ export function leerFilaDelArchivo(
     fila: filaAMigrar,
     origen: {
       consecutivo,
-      codigoDeOrigen: propiedad.codigo,
+      // QA-MIGRACION-95 (06-10): la columna propia «Código inmueble» también es
+      // el código de origen (el resumen de lectura y la vista previa lo miran).
+      // Antes sólo contaba el código empaquetado en «Propiedad» y la pantalla
+      // decía «0 traen código de origen» de un archivo que lo trae en todas.
+      codigoDeOrigen: textoOpcional(v('codigoInmueble')) ?? propiedad.codigo,
       propietarios,
       inquilinos,
       escenario,

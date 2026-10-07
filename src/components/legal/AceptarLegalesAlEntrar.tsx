@@ -73,6 +73,11 @@ export function AceptarLegalesAlEntrar() {
       <DialogContent
         size="md"
         hideClose
+        // QA-MIGRACION-95 (06-10): por encima de la puesta en marcha («¿Migramos tu inmobiliaria?» y su
+        // velo de espera van en z-[1000]). El diálogo es modal y les quita los clics: debajo de ellas,
+        // la persona veía la pregunta de la migración sin poder contestarla y esta ventana quedaba tapada.
+        overlayClassName="z-[1100]"
+        className="z-[1100]"
         onEscapeKeyDown={(e) => e.preventDefault()}
         onInteractOutside={(e) => e.preventDefault()}
         data-testid="aceptar-legales"

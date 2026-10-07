@@ -95,8 +95,12 @@ export function AdministracionDelContrato({
   const formulario = useRef<HTMLDivElement | null>(null)
 
   const [uso, setUso] = useState<Uso | ''>((contract.usoInmueble as Uso) ?? '')
+  // NI-05: si el archivo no la traía, el MENSUAL de la base no se ofrece como
+  // elegido: queda vacío hasta que alguien la elija.
   const [periodicidad, setPeriodicidad] = useState<Periodicidad | ''>(
-    (contract.periodicidad as Periodicidad) ?? '',
+    contract.loQueTraiaElArchivo?.traiaPeriodicidad === false
+      ? ''
+      : ((contract.periodicidad as Periodicidad) ?? ''),
   )
   const [comision, setComision] = useState(
     contract.comisionPorcentaje != null ? String(contract.comisionPorcentaje) : '',
@@ -286,14 +290,25 @@ export function AdministracionDelContrato({
           valor={contract.usoInmueble ? USOS[contract.usoInmueble as Uso] : null}
           ausente="Sin definir — no se sabe si el canon lleva IVA"
         />
+        {/*
+          NI-05 (Nico, 06-10): la base guarda MENSUAL cuando el archivo de la
+          migración no traía la periodicidad. Eso no es un dato del archivo: se
+          dice «Sin definir» y que, mientras tanto, las cuotas salen mes a mes.
+        */}
         <Fila
           etiqueta="Periodicidad"
           valor={
-            contract.periodicidad
-              ? PERIODICIDADES[contract.periodicidad as Periodicidad]
-              : null
+            contract.loQueTraiaElArchivo?.traiaPeriodicidad === false
+              ? null
+              : contract.periodicidad
+                ? PERIODICIDADES[contract.periodicidad as Periodicidad]
+                : null
           }
-          ausente="Sin definir"
+          ausente={
+            contract.loQueTraiaElArchivo?.traiaPeriodicidad === false
+              ? 'Sin definir: el archivo no la traía. Mientras no la elijas, las cuotas salen mes a mes'
+              : 'Sin definir'
+          }
         />
         {/*
           QA-CONT C-07: UNA regla. La ficha decía «Se genera el 1… sin días de
@@ -368,10 +383,27 @@ export function AdministracionDelContrato({
           }
           ausente="Sin definir"
         />
+        {/*
+          CO-28 (QA-MIGRACION-95, 06-10): un mandato que SÍ existe pero cuyo
+          archivo no traía la comisión llega con `comisionDeConsignacion: null`
+          y la ficha decía «Sin consignación: este inmueble no genera cobros»,
+          que es falso. Se dice lo que pasa: no venía, y sin ella (si el
+          contrato tampoco la trae) no se arma la tabla de cuotas.
+        */}
         <Fila
           etiqueta="Comisión"
-          valor={deConsignacion != null ? `${deConsignacion}%` : null}
-          ausente="Sin consignación: este inmueble no genera cobros"
+          valor={
+            deConsignacion != null
+              ? `${deConsignacion}%`
+              : contract.comisionSinDefinir && delContrato != null
+                ? `${delContrato}% (la del contrato: el mandato no la traía)`
+                : null
+          }
+          ausente={
+            contract.comisionSinDefinir
+              ? 'No venía en el archivo: escríbela con «Corregir»'
+              : 'Sin consignación: este inmueble no genera cobros'
+          }
         />
         {discrepan ? (
           <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning-soft/40 p-2.5">

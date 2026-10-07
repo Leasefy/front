@@ -22,6 +22,7 @@
 import { parseSpreadsheetFile } from '@/components/inmobiliaria/import/lib/parseFile';
 import type { ColumnaDePlantilla } from '@/lib/api/migracion-terceros.service';
 import { mapearColumnas } from '@/lib/migracion/columnas-de-tercero';
+import { fraseDeFilasDeTotales } from '@/lib/migracion/fila-de-totales';
 
 /** Cuántas filas de arriba se miran por hoja buscando los encabezados. */
 export const FILAS_A_MIRAR = 30;
@@ -186,7 +187,12 @@ export async function leerTablaDelArchivo(
     rows: r.rows as Record<string, unknown>[],
     headers: r.headers,
     donde: elegida,
-    frase: fraseDeDondeSeLeyo(elegida),
+    // QA-MIGRACION-95 (06-10): la fila de TOTALES que el lector aparta también se dice
+    // («La fila 67, «TOTALES», es la de totales del archivo…»); antes salía del conteo en silencio.
+    frase:
+      [fraseDeDondeSeLeyo(elegida), fraseDeFilasDeTotales(r.filasDeTotales ?? [])]
+        .filter(Boolean)
+        .join(' ') || null,
     vacio: r.rows.length > 0 ? null : r.headers.length > 0 ? 'encabezados' : 'archivo',
   };
 }

@@ -25,7 +25,7 @@ import { procesosApi } from '@/lib/api/procesos.service'
 import type { EstadoDeProceso, FiltrosDeProcesos, Proceso, TipoDeProceso } from '@/lib/api/procesos.types'
 import { useCentroDeProcesos } from '@/lib/hooks/use-centro-de-procesos'
 import { FilaDeProceso } from './FilaDeProceso'
-import { NOMBRE_DEL_ESTADO, NOMBRE_DEL_TIPO } from './estado-del-proceso'
+import { NOMBRE_DEL_ESTADO, NOMBRE_DEL_TIPO, TIPOS_DE_LA_MIGRACION } from './estado-del-proceso'
 
 const POR_PAGINA = 30
 const TODOS = 'todos'
@@ -129,7 +129,9 @@ export function HistorialDeProcesos() {
         <div className="flex flex-wrap items-end gap-3 border-b border-border-faint px-4 py-3">
           <Filtro etiqueta="Filtrar por tipo" valor={tipo} onCambio={setTipo} testId="filtro-tipo">
             <SelectItem value={TODOS}>Todos los tipos</SelectItem>
-            {Object.entries(NOMBRE_DEL_TIPO).map(([k, v]) => (
+            {Object.entries(NOMBRE_DEL_TIPO)
+              .filter(([k]) => !TIPOS_DE_LA_MIGRACION.includes(k))
+              .map(([k, v]) => (
               <SelectItem key={k} value={k}>
                 {v}
               </SelectItem>
@@ -170,7 +172,7 @@ export function HistorialDeProcesos() {
           <p className="px-4 py-10 text-center text-body-sm text-fg-muted" data-testid="historial-vacio">
             {tipo !== TODOS || estado !== TODOS || persona !== TODOS
               ? 'Ningún proceso con estos filtros.'
-              : 'Todavía no hay procesos. Cuando generes un archivo, emitas facturas, reproceses asientos o cargues la migración, aparecen aquí.'}
+              : 'Todavía no hay procesos. Cuando generes un archivo, emitas facturas, reproceses asientos o importes inmuebles desde Inmuebles, aparecen aquí. La migración no: sus cargas se ven en cada paso de la Puesta en marcha.'}
           </p>
         ) : (
           <Stagger as="ul" layout={false} className="divide-y divide-border-faint">

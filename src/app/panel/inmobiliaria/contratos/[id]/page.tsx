@@ -674,7 +674,7 @@ function ContratoDetalleContent() {
               /* La dirección de arriba es la que dice el contrato (no se pisa
                  al vincular); la ficha del inmueble es donde se ve cuál quedó. */
               <Link
-                href={`/panel/inmobiliaria/inmuebles/${contract.propertyId}`}
+                href={`/panel/inmobiliaria/inmuebles/${contract.propertyId}?por=inmueble`}
                 className="inline-block text-sm font-medium text-primary hover:underline"
                 data-testid="ver-inmueble"
               >

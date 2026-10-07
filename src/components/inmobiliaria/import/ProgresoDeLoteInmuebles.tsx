@@ -12,6 +12,7 @@
 import { Queue, XCircle } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { abrirCentroDeProcesos } from '@/lib/api/procesos.service';
+import { Progress } from '@/components/ui/progress';
 import type { EstadoDeLoteInmuebles } from '@/lib/api/inmuebles-importacion.service';
 
 export function ProgresoDeLoteInmuebles({
@@ -36,14 +37,17 @@ export function ProgresoDeLoteInmuebles({
   }
 
   const total = estado?.total ?? 0;
-
+  const procesadas = Math.min(estado?.procesadas ?? 0, total);
+  const porcentaje = total > 0 ? Math.round((procesadas / total) * 100) : 0;
   /*
-   * 🔴 23-09 (Nico: «¿para qué muestras la carga también en la tabla? Ya
-   * tenemos centro de procesos, todas las cargas déjalas que sucedan allí»):
-   * sin barra ni «4 / 10 filas procesadas» propios — el centro ya los muestra.
-   * Queda lo que el centro NO dice: que la importación espera a que esto
-   * termine para seguir, y que irse es seguro.
+   * Decisión (b) de Nico (06-10-2026): sólo la importación lanzada desde
+   * Inmuebles va al centro de procesos; la de la Puesta en marcha es
+   * migración y NO va al centro («todo al centro, menos migración», 01-10).
+   * Allí el avance se ve aquí mismo. Un back que no dice el origen = Puesta
+   * en marcha (igual que el back sin `?origen`).
    */
+  const enElCentro = estado?.origen === 'inmuebles';
+
   return (
     <div className="rounded-lg border border-border p-6 space-y-4" data-testid="lote-inmuebles-progreso">
       <div className="flex items-center gap-2">
@@ -55,20 +59,35 @@ export function ProgresoDeLoteInmuebles({
         </p>
       </div>
 
-      <p className="text-sm text-fg-muted">
-        El avance lo sigues en el centro de procesos, arriba a la derecha. Cuando termine, la revisión
-        aparece aquí.
-      </p>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        hideArrow
-        onClick={() => abrirCentroDeProcesos()}
-        data-testid="lote-inmuebles-ver-en-el-centro"
-      >
-        Ver en el centro de procesos
-      </Button>
+      {enElCentro ? (
+        <>
+          <p className="text-sm text-fg-muted">
+            El avance lo sigues en el centro de procesos, arriba a la derecha. Cuando termine, la revisión
+            aparece aquí.
+          </p>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            hideArrow
+            onClick={() => abrirCentroDeProcesos()}
+            data-testid="lote-inmuebles-ver-en-el-centro"
+          >
+            Ver en el centro de procesos
+          </Button>
+        </>
+      ) : total > 0 ? (
+        <div className="space-y-1.5" data-testid="lote-inmuebles-avance">
+          <Progress value={porcentaje} size="sm" aria-label="Avance de la carga" />
+          <p className="text-caption text-fg-muted">
+            <span className="font-mono tabular-nums">{procesadas.toLocaleString('es-CO')}</span> de{' '}
+            <span className="font-mono tabular-nums">{total.toLocaleString('es-CO')}</span> filas revisadas.
+            Cuando termine, la revisión aparece aquí.
+          </p>
+        </div>
+      ) : (
+        <p className="text-sm text-fg-muted">Cuando termine, la revisión aparece aquí.</p>
+      )}
 
       <p className="text-sm text-fg-muted">
         Puedes cerrar esta pestaña — seguimos trabajando igual, y te avisamos con

@@ -662,8 +662,9 @@ describe('ContratoDetallePage — la cuenta del contrato', () => {
 
     expect(container.querySelector('[data-testid="vincular-inmueble"]')).toBeNull()
     expect(container.textContent).not.toContain('Sin inmueble vinculado')
+    // Fuera de la migración (QA-MIGRACION-95): entra «por el inmueble», sin el 404 previo.
     expect(container.querySelector('[data-testid="ver-inmueble"]')?.getAttribute('href')).toBe(
-      '/panel/inmobiliaria/inmuebles/prop-1',
+      '/panel/inmobiliaria/inmuebles/prop-1?por=inmueble',
     )
   })
 })

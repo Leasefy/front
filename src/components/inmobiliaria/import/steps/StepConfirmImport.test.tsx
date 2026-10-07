@@ -121,6 +121,7 @@ vi.mock('@/lib/hooks/use-estado-de-lote-inmuebles', () => ({
 
 import { StepConfirmImport, fraseDeLaComision } from './StepConfirmImport';
 import { RanuraVivaContext } from '@/components/migracion/ranura-viva';
+import { MigracionContext } from '@/components/migracion/migracion-context';
 import { RanuraDelPie } from '../ImportWizard';
 import { ApiError } from '@/lib/api/client';
 import type { ImportProperty } from '../lib/importTypes';
@@ -275,9 +276,11 @@ function render(
     ranuraViva?: HTMLElement | null;
     /** El pie del asistente, a la derecha de «Anterior». */
     ranuraDelPie?: HTMLElement | null;
+    /** IN-18 (QA-MIGRACION-95): el contexto del muro, cuando la carga corre dentro de él. */
+    migracion?: { recargar: () => Promise<void> } | null;
   } = {},
 ) {
-  const { ranuraViva = null, ranuraDelPie = null, ...delPaso } = props;
+  const { ranuraViva = null, ranuraDelPie = null, migracion = null, ...delPaso } = props;
   act(() => {
     root.render(
       React.createElement(
@@ -286,7 +289,11 @@ function render(
         React.createElement(
           RanuraVivaContext.Provider,
           { value: ranuraViva },
-          React.createElement(StepConfirmImport, { state, updateState, ...delPaso }),
+          React.createElement(
+            MigracionContext.Provider,
+            { value: migracion as never },
+            React.createElement(StepConfirmImport, { state, updateState, ...delPaso }),
+          ),
         ),
       ),
     );
@@ -508,7 +515,8 @@ describe('<StepConfirmImport> — ubicar las direcciones (en el navegador, guard
 
     expect(toastMock.info).toHaveBeenCalledWith(
       '1 de 2 sin dirección exacta',
-      expect.objectContaining({ description: expect.stringContaining('1 quedan en el centro de su municipio') }),
+      // QA-MIGRACION-95 (IN-06): una se dice en singular («1 queda»).
+      expect.objectContaining({ description: expect.stringContaining('1 queda en el centro de su municipio') }),
     );
   });
 
@@ -524,7 +532,7 @@ describe('<StepConfirmImport> — ubicar las direcciones (en el navegador, guard
     await adelantar(100);
 
     const [, opciones] = toastMock.info.mock.calls[0];
-    expect(opciones.description).toContain('1 quedan sin punto en el mapa');
+    expect(opciones.description).toContain('1 queda sin punto en el mapa');
     expect(opciones.description).not.toContain('centro de su municipio');
   });
 
@@ -883,6 +891,30 @@ describe('<StepConfirmImport> — mientras el servidor crea (T-0131)', () => {
     await adelantar(4_000);
     expect(porTestId('creacion-avance')?.textContent).toContain('60 de 100 creadas');
     expect(porTestId('creacion-porcentaje')?.textContent).toBe('60%');
+  });
+
+  /*
+   * IN-18 (QA-MIGRACION-95, 06-10): dentro del muro, el final de la creación
+   * (que corre en el servidor y no cuenta como «ocupado») no le llegaba al
+   * muro: el paso seguía sin marcar tras «¡Importación completada!».
+   */
+  it('al terminar de crear en el servidor, el muro vuelve a preguntar su estado', async () => {
+    const recargar = vi.fn().mockResolvedValue(undefined);
+    api.resumen.mockResolvedValue({ lote: 'lote-1', total: 2, pendientes: 0, listos: 0, activados: 2, descartados: 0 });
+    estadoLoteState.estado = lote({
+      estado: 'PROCESANDO',
+      fase: 'CREANDO',
+      total: 2,
+      creacion: { total: 2, creadas: 1, fallidas: 0, pendientes: 1 },
+    });
+    render(baseState(), { migracion: { recargar } });
+    await asentar();
+    expect(recargar).not.toHaveBeenCalled();
+    api.estadoDeLote.mockResolvedValue(
+      lote({ estado: 'LISTO', fase: 'TERMINADA', total: 2, creacion: { total: 2, creadas: 2, fallidas: 0, pendientes: 0 } }),
+    );
+    await adelantar(4_000);
+    expect(recargar).toHaveBeenCalled();
   });
 
   it('una creación que se rindió en el servidor ofrece «Reintentar», que llama `reintentar` y NUNCA `crear` otra vez', async () => {

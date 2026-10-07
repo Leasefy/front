@@ -31,7 +31,7 @@ const { useConsignacionMock, usePropietarioMock, useAgenteMock, usePropertyMock 
 
 // `?editar=1` (el «Editar» del kebab de la lista) abre el formulario: el test
 // controla la query con `queryDePrueba`.
-const queryDePrueba = { editar: null as string | null };
+const queryDePrueba = { editar: null as string | null, por: null as string | null };
 const routerReplaceMock = vi.fn();
 // La ficha dibuja Candidatos, que decide con `usePermissions` (S3). Permisos
 // abiertos: estas pruebas miran la ficha, no el gate de decidir.
@@ -42,7 +42,7 @@ vi.mock('@/lib/hooks/usePermissions', () => ({
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'consig-1' }),
   useRouter: () => ({ push: vi.fn(), replace: routerReplaceMock }),
-  useSearchParams: () => ({ get: (k: string) => (k === 'editar' ? queryDePrueba.editar : null) }),
+  useSearchParams: () => ({ get: (k: string) => (k === 'editar' ? queryDePrueba.editar : k === 'por' ? queryDePrueba.por : null) }),
 }));
 
 // El cajón de edición tiene su propio test; acá sólo importa que se abra
@@ -228,6 +228,31 @@ describe('<ConsignacionDetailPage> — property photo wiring', () => {
     expect(usePropertyMock).toHaveBeenCalledWith('prop-1');
     const stub = container.querySelector('[data-testid="view-portal-stub"]');
     expect(stub?.getAttribute('data-thumbnail')).toBe('https://cdn.test/foto.jpg');
+  });
+});
+
+/*
+ * Fuera de la migración (QA-MIGRACION-95, pedido de main, 06-10): la ficha del
+ * contrato y el cajón del candidato sólo tienen el id del INMUEBLE. La ficha
+ * pedía `GET /consignaciones/<id del inmueble>` (404) antes de buscarlo por el
+ * inmueble. Con `?por=inmueble` lo busca directo y deja la URL en la del
+ * mandato.
+ */
+describe('<ConsignacionDetailPage> — entrar por el id del inmueble', () => {
+  afterEach(() => { queryDePrueba.por = null; });
+
+  it('con `?por=inmueble` busca el mandato por el inmueble y pasa la URL a la del mandato', () => {
+    queryDePrueba.por = 'inmueble';
+    useConsignacionMock.mockReturnValue({ consignacion: { ...BASE_CONSIGNACION, id: 'consig-9' } });
+    renderPage();
+    expect(useConsignacionMock).toHaveBeenCalledWith('consig-1', { porInmueble: true });
+    expect(routerReplaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles/consig-9', { scroll: false });
+  });
+
+  it('sin el parámetro, como siempre (por el id del mandato)', () => {
+    useConsignacionMock.mockReturnValue({ consignacion: BASE_CONSIGNACION });
+    renderPage();
+    expect(useConsignacionMock).toHaveBeenCalledWith('consig-1', { porInmueble: false });
   });
 });
 

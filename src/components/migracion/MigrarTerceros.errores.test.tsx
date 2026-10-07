@@ -407,6 +407,11 @@ describe('la lista de trabajo', () => {
       ],
     });
     await clic('No traer ninguna de estas');
+    // QA-MIGRACION-95 (TE-08): descartar en masa ahora confirma antes.
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>('[data-testid="masivo-confirmar-descartar"]')!.click();
+    });
+    await act(async () => {});
 
     const errorCaja = container.querySelector('[data-testid="error-de-lista"]')!;
     expect(errorCaja.textContent).toContain('el correo no es válido');

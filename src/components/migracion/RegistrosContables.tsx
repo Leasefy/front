@@ -208,7 +208,7 @@ export function RegistrosContables({
               </h2>
               <p className="mt-0.5 text-sm text-fg-muted">
                 Un asiento se imputa a cuentas, y todavía no hay ninguna que
-                reciba movimientos. Carga el plan en el paso 4 y vuelve.
+                reciba movimientos. Carga el plan de cuentas y vuelve.
               </p>
             </div>
           </div>
@@ -220,13 +220,13 @@ export function RegistrosContables({
               onClick={onIrAlPuc}
               data-testid="contables-ir-al-puc"
             >
-              Ir al paso 4
+              Ir al plan de cuentas
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
           ) : (
             <Button asChild size="sm" className="mt-4" hideArrow>
               <Link href={RUTA_DEL_PASO_4} data-testid="contables-ir-al-puc">
-                Ir al paso 4
+                Ir al plan de cuentas
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Link>
             </Button>

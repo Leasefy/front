@@ -32,6 +32,7 @@ import type {
   EnvioDelEnlace,
   FiltrosDelEstadoDeCuenta,
   ResumenDelEstadoDeCuenta,
+  ContratoDelPortal,
 } from '@/lib/types/estado-de-cuenta';
 
 const BASE = '/inmobiliaria/estado-de-cuenta';
@@ -121,6 +122,14 @@ export const estadoDeCuentaApi = {
    */
   mio(): Promise<EstadoDeCuenta> {
     return apiClient.get<EstadoDeCuenta>('/portal/estado-de-cuenta');
+  },
+
+  /**
+   * QA-MIGRACION-95 — CA-04: MIS contratos vigentes sin arriendo (el migrado
+   * sin día de pago). Resuelto por la sesión, nunca por un id.
+   */
+  misContratos(): Promise<{ contratos: ContratoDelPortal[] }> {
+    return apiClient.get<{ contratos: ContratoDelPortal[] }>('/portal/estado-de-cuenta/contratos');
   },
 
   /** SO-09 (04-10): el soporte de un descuento MÍO (propietario), firmado una hora. */

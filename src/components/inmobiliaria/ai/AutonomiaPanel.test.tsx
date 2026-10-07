@@ -26,6 +26,7 @@ vi.mock('@/components/ui/toast', () => ({ toast: toastMock }))
 
 import { AutonomiaPanel } from './AutonomiaPanel'
 import { I18nProvider } from '@/lib/i18n'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 import type { AgentAutonomiaResponse } from '@/lib/api/agent-workspace'
 
 const DATA: AgentAutonomiaResponse = {
@@ -240,14 +241,45 @@ describe('AutonomiaPanel — modo como control real', () => {
     expect(toastMock.success).toHaveBeenCalled()
   })
 
-  it('si la escritura falla, avisa por el toast de error', async () => {
-    const onCambiarModo = vi.fn(async () => ({ ok: false, error: '403' }))
+  it('si la escritura falla, avisa por el toast de error con lo que pasó (nunca «403» ni el texto de la carga)', async () => {
+    // Tanda 2 de errores (02-10-2026): antes decía «No se pudo cargar la
+    // configuración de autonomía: 403».
+    const fallo = await falloDelMicro({
+      status: 403,
+      json: async () => ({ code: 'SIN_PERMISO', message: 'Sólo un administrador cambia la autonomía de un agente.' }),
+    })
+    const onCambiarModo = vi.fn(async () => ({ ok: false, error: '403', fallo }))
     render({ data: DATA, onCambiarModo, puedeCambiar: true })
     const sombra = radios().find((r) => r.textContent?.includes('Manual'))!
     await act(async () => {
       sombra.click()
     })
-    expect(toastMock.error).toHaveBeenCalled()
-    expect(String(toastMock.error.mock.calls[0][0])).toContain('403')
+    expect(toastMock.error).toHaveBeenCalledWith('Sólo un administrador cambia la autonomía de un agente.')
+    expect(String(toastMock.error.mock.calls[0][0])).not.toMatch(/403|cargar/)
+  })
+
+  it('un 5xx al guardar dice «de nuestro lado» con la referencia', async () => {
+    const fallo = await falloDelMicro({ status: 502, json: async () => ({ error: 'Bad Gateway', requestId: '0badcafe-77' }) })
+    const onCambiarModo = vi.fn(async () => ({ ok: false, error: '502', fallo }))
+    render({ data: DATA, onCambiarModo, puedeCambiar: true })
+    const sombra = radios().find((r) => r.textContent?.includes('Manual'))!
+    await act(async () => {
+      sombra.click()
+    })
+    const texto = String(toastMock.error.mock.calls[0][0])
+    expect(texto).toContain('No pudimos cambiar la autonomía del agente: algo falló de nuestro lado')
+    expect(texto).toContain('0badcafe')
+    expect(texto).not.toMatch(/conexi/i)
+  })
+
+  it('si el pedido ni salió (status 0) habla de la conexión', async () => {
+    const red = new TypeError('Failed to fetch')
+    const onCambiarModo = vi.fn(async () => ({ ok: false, error: red.message, fallo: red }))
+    render({ data: DATA, onCambiarModo, puedeCambiar: true })
+    const sombra = radios().find((r) => r.textContent?.includes('Manual'))!
+    await act(async () => {
+      sombra.click()
+    })
+    expect(String(toastMock.error.mock.calls[0][0])).toMatch(/conexión/)
   })
 })

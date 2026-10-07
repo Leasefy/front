@@ -1,8 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Toaster } from '@/components/ui/toast';
-import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, SealCheck, Wrench } from '@phosphor-icons/react';
+import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, SealCheck, Wrench, Lifebuoy, Tag } from '@phosphor-icons/react';
 // Sparkle import removed — re-add when AI Beta nav item is uncommented
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -13,16 +12,15 @@ import { I18nProvider, useI18n } from '@/lib/i18n';
 import { useMySubscription } from '@/lib/hooks/useSubscription';
 import { cn } from '@/lib/utils';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
-
-// Define the setup steps - same as LandlordDashboardEmpty
-const LANDLORD_SETUP_STEPS: ProfileCompletionStep[] = [
-  { id: 1, labelEs: 'Info personal', labelEn: 'Personal info', completed: false },
-  { id: 2, labelEs: 'Propiedad', labelEn: 'Property', completed: false },
-  { id: 3, labelEs: 'Inquilino ideal', labelEn: 'Ideal tenant', completed: false },
-  { id: 4, labelEs: 'Cobros', labelEn: 'Payments', completed: false },
-];
-
-const ONBOARDING_STORAGE_KEY = 'plan_onboarding_landlord';
+import { useAuth } from '@/lib/auth';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
+import {
+  PropietarioDeInmobiliariaProvider,
+  esRutaDelPropietarioDeInmobiliaria,
+} from '@/lib/context/PropietarioDeInmobiliariaContext';
+import { pasosDelPerfilDelPropietario } from '@/lib/perfil/pasos-del-perfil-del-propietario';
 
 const LANDLORD_NAV_ITEMS: NavItem[] = [
   {
@@ -69,6 +67,27 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
     label: 'Aprobar reparaciones',
     href: '/panel/aprobaciones',
     icon: Wrench,
+  },
+  // 🔴 #14 (MANOS-1, 04-10-2026): cuando su inmueble tiene candidatos, el
+  // propietario escoge quién lo arrienda (Avali se lo pide y se lo recuerda).
+  {
+    label: 'Escoger inquilino',
+    href: '/panel/escoger-inquilino',
+    icon: UsersThree,
+  },
+  // MANOS-2 (04-10-2026): cuando su inmueble lleva más de un mes desocupado,
+  // la inmobiliaria le pregunta si quiere revisar el canon; el número lo pone él.
+  {
+    label: 'Revisar el canon',
+    href: '/panel/revisar-canon',
+    icon: Tag,
+  },
+  // SO-27 (PQRS-FIX, 04-10-2026): el propietario radica sus PQRS y reporta
+  // daños desde su portal (antes sólo podía escribir en Mensajes).
+  {
+    label: 'Solicitudes',
+    href: '/panel/solicitudes',
+    icon: Lifebuoy,
   },
   {
     label: 'Mensajes',
@@ -134,6 +153,26 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
   // },
 ];
 
+/**
+ * El menú de quien tiene a una INMOBILIARIA como administradora: sólo lo suyo.
+ * Sin Candidatos, Visitas, Arriendos ni «Pronto» (eso es del propietario
+ * independiente, y sus rutas responden «panel en pausa»), ni plan que mejorar.
+ */
+const AGENCY_OWNER_NAV_ITEMS: NavItem[] = [
+  { label: 'Inicio', href: '/panel', icon: SquaresFour, exact: true },
+  { label: 'Estado de cuenta', href: '/panel/estado-de-cuenta', icon: Receipt },
+  { label: 'Aprobar reparaciones', href: '/panel/aprobaciones', icon: Wrench },
+  // 🔴 #14 (MANOS-1, 04-10-2026): escoger entre los candidatos de su inmueble.
+  { label: 'Escoger inquilino', href: '/panel/escoger-inquilino', icon: UsersThree },
+  // MANOS-2 (04-10-2026): revisar el canon del inmueble desocupado (el número lo pone él).
+  { label: 'Revisar el canon', href: '/panel/revisar-canon', icon: Tag },
+  // SO-27 (PQRS-FIX, 04-10-2026): radicar PQRS y reportar daños desde su portal.
+  { label: 'Solicitudes', href: '/panel/solicitudes', icon: Lifebuoy },
+  { label: 'Mis informes', href: '/panel/informes', icon: Receipt },
+  { label: 'Certificados de retención', href: '/panel/certificados', icon: SealCheck },
+  { label: 'Mensajes', href: '/panel/mensajes', icon: Chat },
+];
+
 interface PanelLayoutProps {
   children: React.ReactNode;
 }
@@ -145,73 +184,47 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
   const { isCollapsed } = useSidebar();
   const { t, locale } = useI18n();
   const { subscription } = useMySubscription();
-  const showUpgrade = subscription?.planId === 'starter';
-
-  // Onboarding progress state
-  const [onboardingSteps, setOnboardingSteps] = useState<ProfileCompletionStep[]>(LANDLORD_SETUP_STEPS);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [onboardingComplete, setOnboardingComplete] = useState(false);
-
-  // Load onboarding progress from localStorage
+  // ¿Una inmobiliaria le administra los inmuebles? Mientras se sabe, se le da el
+  // menú corto: ofrecerle «Mejorar plan» a quien no lo compra sería peor que
+  // un menú que se completa un instante después.
+  const administrados = useContratosAdministrados();
+  const deInmobiliaria = administrados.cargando || administrados.doc !== null || Boolean(administrados.fichaSinContratos);
+  const showUpgrade = !deInmobiliaria && subscription?.planId === 'starter';
+  const pathname = usePathname();
+  const router = useRouter();
   useEffect(() => {
-    const loadOnboardingProgress = () => {
-      const saved = localStorage.getItem(ONBOARDING_STORAGE_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
+    // Las pantallas del propietario independiente no son suyas: de ahí vuelve a lo suyo.
+    if (!administrados.cargando && administrados.doc && !esRutaDelPropietarioDeInmobiliaria(pathname)) {
+      router.replace('/panel/estado-de-cuenta');
+    }
+  }, [administrados.cargando, administrados.doc, pathname, router]);
 
-          // If onboarding was fully completed, hide the widget
-          if (parsed.isComplete) {
-            setOnboardingComplete(true);
-            setIsLoaded(true);
-            return;
-          }
-
-          const completedStepIds = parsed.completedSteps || [];
-          setOnboardingSteps(LANDLORD_SETUP_STEPS.map(step => ({
-            ...step,
-            completed: completedStepIds.includes(step.id),
-          })));
-        } catch (e) {
-          console.error('Error loading onboarding progress:', e);
-        }
-      }
-      setIsLoaded(true);
-    };
-
-    loadOnboardingProgress();
-
-    // Listen for storage changes (for cross-tab sync and manual updates)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === ONBOARDING_STORAGE_KEY) {
-        loadOnboardingProgress();
-      }
-    };
-
-    // Custom event for same-tab updates
-    const handleOnboardingUpdate = () => {
-      loadOnboardingProgress();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('onboarding-updated', handleOnboardingUpdate);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('onboarding-updated', handleOnboardingUpdate);
-    };
-  }, []);
-
-  // Calculate profile completion
-  const completedCount = onboardingSteps.filter(s => s.completed).length;
+  /*
+   * 🔴 ARREGLOS-4 (03-10-2026) · «Completa tu perfil» cuenta lo MISMO que la
+   * tarjeta del perfil: lo que la persona ya guardó, del usuario de la sesión
+   * (`lib/perfil/pasos-del-perfil-del-propietario.ts`). Antes contaba los
+   * cuatro pasos del asistente de bienvenida guardados en el `localStorage` de
+   * ESTE navegador: «0/4» en la barra contra «3 de 5» en el perfil, y en otro
+   * navegador (o con la cuenta nacida de la migración) 0/4 para siempre.
+   */
+  const { user } = useAuth();
+  const pasosDelPerfil = pasosDelPerfilDelPropietario(user);
+  const onboardingSteps: ProfileCompletionStep[] = pasosDelPerfil.map((p, i) => ({
+    id: i + 1,
+    labelEs: p.etiquetaEs,
+    labelEn: p.etiquetaEn,
+    completed: p.completo,
+  }));
+  const completedCount = onboardingSteps.filter((s) => s.completed).length;
   const totalSteps = onboardingSteps.length;
   const percentage = Math.round((completedCount / totalSteps) * 100);
+  const perfilCompleto = completedCount === totalSteps;
 
   return (
     <div className="min-h-screen bg-plan-page">
       {/* PLan CRM Sidebar */}
       <PlanSidebar
-        navItems={LANDLORD_NAV_ITEMS}
+        navItems={deInmobiliaria ? AGENCY_OWNER_NAV_ITEMS : LANDLORD_NAV_ITEMS}
         logo={{
           title: 'PLan',
           // 🔴 Adentro de la plataforma el logo vuelve al inicio del panel, no
@@ -223,10 +236,11 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         showUpgrade={showUpgrade}
         upgradeHref="/panel/upgrade"
         upgradeLabel="Mejorar Plan"
-        profileCompletion={isLoaded && !onboardingComplete ? {
+        profileCompletion={user && !perfilCompleto ? {
           percentage,
-          href: '/onboarding/propietario',
-          label: locale === 'es' ? 'Completa tu cuenta' : 'Complete your account',
+          // Los pasos son los del perfil: ahí se completan.
+          href: '/panel/perfil',
+          label: locale === 'es' ? 'Completa tu perfil' : 'Complete your profile',
           completedCount,
           totalSteps,
           steps: onboardingSteps,
@@ -239,9 +253,13 @@ function PanelLayoutInner({ children }: { children: React.ReactNode }) {
         'transition-all duration-200',
         isCollapsed ? 'lg:pl-16' : 'lg:pl-[240px]'
       )}>
-        <PlanHeader />
+        <PropietarioDeInmobiliariaProvider value={deInmobiliaria}>
+          <PlanHeader showMagnifyingGlass={!deInmobiliaria} />
+        </PropietarioDeInmobiliariaProvider>
         <main id="main-content" tabIndex={-1}>
-          {children}
+          {/* Una pantalla del propietario independiente no se monta para quien
+              tiene inmobiliaria: ni pide datos (503) ni muestra ceros. */}
+          {deInmobiliaria && !esRutaDelPropietarioDeInmobiliaria(pathname) ? null : children}
         </main>
       </div>
 

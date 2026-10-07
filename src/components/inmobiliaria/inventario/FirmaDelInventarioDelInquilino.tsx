@@ -19,6 +19,7 @@ import { ActaEntregaView } from '@/components/inmobiliaria/ActaEntregaView';
 import { toast } from '@/components/ui/toast';
 import { inventarioDelInmuebleApi } from '@/lib/api/inventario-del-inmueble.service';
 import { useI18n } from '@/lib/i18n';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { instanteLegible } from '@/lib/inventario/bloqueo-por-inventario';
 import type { InventarioParaElInquilino } from '@/lib/types/inventario-del-inmueble';
 
@@ -60,8 +61,12 @@ export function FirmaDelInventarioDelInquilino({ contractId }: { contractId: str
       setDatos(r);
       toast.success(t(`${B}.firmaExito`));
     } catch (err) {
+      // El traductor, no `err.message` crudo: un código de firma vencido o
+      // incorrecto lo explica el back (4xx); un 5xx dice que fue nuestro con
+      // la referencia; «conexión» sólo si no hubo respuesta.
       toast.error(t(`${B}.firmaError`), {
-        description: err instanceof Error ? err.message : undefined,
+        description:
+          mensajeParaLaPersona(err, { porDefecto: '', accion: 'firmar el inventario' }) || undefined,
       });
     } finally {
       setFirmando(false);

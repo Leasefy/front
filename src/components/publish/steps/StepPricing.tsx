@@ -7,10 +7,15 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { formatCurrency } from '@/lib/format';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { ariaDelCampo, idDelCampo, idDelError } from '../campos-con-error';
 
 export function StepPricing() {
   const locale = 'es';
-  const { draft, updateDraft } = usePublish();
+  const { draft, updateDraft, erroresDelServidor } = usePublish();
+  const errorCanon = erroresDelServidor.monthlyRent;
+  const errorAdministracion = erroresDelServidor.adminFee;
+  const errorDeposito = erroresDelServidor.deposit;
   const [hasAdminFee, setHasAdminFee] = useState(draft.adminFee > 0);
   const [hasDeposit, setHasDeposit] = useState(draft.deposit > 0);
 
@@ -39,14 +44,15 @@ export function StepPricing() {
       <div className="space-y-5">
         {/* Monthly Rent */}
         <div className="space-y-2">
-          <Label htmlFor="monthlyRent" className="flex items-center gap-2 text-fg">
+          <Label htmlFor={idDelCampo('monthlyRent')} className="flex items-center gap-2 text-fg">
             <CurrencyDollar className="w-4 h-4 text-fg-subtle" />
             Canon de arrendamiento mensual *
           </Label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle z-10">$</span>
             <Input
-              id="monthlyRent"
+              {...ariaDelCampo('monthlyRent', errorCanon)}
+              invalid={!!errorCanon}
               type="text"
               placeholder="2,500,000"
               value={formatInputValue(draft.monthlyRent)}
@@ -54,6 +60,7 @@ export function StepPricing() {
               className="pl-8 font-mono tabular-nums"
             />
           </div>
+          <ErrorDelCampo id={idDelError('monthlyRent')} mensaje={errorCanon} />
         </div>
 
         {/* Admin Fee */}
@@ -73,16 +80,21 @@ export function StepPricing() {
             />
           </div>
           {hasAdminFee && (
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle z-10">$</span>
-              <Input
-                id="adminFee"
-                type="text"
-                placeholder="350,000"
-                value={formatInputValue(draft.adminFee)}
-                onChange={(e) => updateDraft({ adminFee: parseInputValue(e.target.value) })}
-                className="pl-8 font-mono tabular-nums"
-              />
+            <div>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle z-10">$</span>
+                <Input
+                  {...ariaDelCampo('adminFee', errorAdministracion)}
+                  invalid={!!errorAdministracion}
+                  aria-label="Cuota de administración"
+                  type="text"
+                  placeholder="350,000"
+                  value={formatInputValue(draft.adminFee)}
+                  onChange={(e) => updateDraft({ adminFee: parseInputValue(e.target.value) })}
+                  className="pl-8 font-mono tabular-nums"
+                />
+              </div>
+              <ErrorDelCampo id={idDelError('adminFee')} mensaje={errorAdministracion} />
             </div>
           )}
         </div>
@@ -108,7 +120,9 @@ export function StepPricing() {
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-subtle z-10">$</span>
                 <Input
-                  id="deposit"
+                  {...ariaDelCampo('deposit', errorDeposito)}
+                  invalid={!!errorDeposito}
+                  aria-label="Depósito de garantía"
                   type="text"
                   placeholder="2,500,000"
                   value={formatInputValue(draft.deposit)}
@@ -116,6 +130,7 @@ export function StepPricing() {
                   className="pl-8 font-mono tabular-nums"
                 />
               </div>
+              <ErrorDelCampo id={idDelError('deposit')} mensaje={errorDeposito} />
               <p className="text-xs text-fg-muted">
                 Generalmente equivale a 1–2 meses de arriendo
               </p>

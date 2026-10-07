@@ -185,11 +185,15 @@ function useApiData<T>(
 // Propietarios
 // ============================================================================
 
-export function usePropietarios(params?: Parameters<typeof propietariosApi.getAll>[0]) {
+export function usePropietarios(
+  params?: Parameters<typeof propietariosApi.getAll>[0],
+  /** `skip`: no pedir (quien no tiene `propietarios:view`: el back respondería 403). */
+  options?: { skip?: boolean },
+) {
   const { data, ...rest } = useApiData(
     () => propietariosApi.getAll(params),
-    [params?.search, params?.city, params?.page],
-    false,
+    [params?.search, params?.city, params?.page, options?.skip],
+    options?.skip ?? false,
     0,
     ['propietarios'],
   );
@@ -353,11 +357,15 @@ export function useAgentePipeline(id: string | undefined) {
 // Consignaciones (Portafolio)
 // ============================================================================
 
-export function useConsignaciones(params?: Parameters<typeof consignacionesApi.getAll>[0]) {
+export function useConsignaciones(
+  params?: Parameters<typeof consignacionesApi.getAll>[0],
+  /** `skip`: no pedir (p. ej. quien no tiene `portafolio:view`: el back respondería 403). */
+  options?: { skip?: boolean },
+) {
   const { data, ...rest } = useApiData(
     () => consignacionesApi.getAll(params),
     [params?.status, params?.agenteId, params?.propietarioId],
-    false,
+    options?.skip ?? false,
     0,
     ['consignaciones'],
   );
@@ -403,14 +411,29 @@ export function useInmueblesSinConsignacion() {
  * misma y con una copia aparte se quedó sin ella: cada fila de Postulaciones
  * moría en «No encontramos esa propiedad».
  */
-export function useConsignacion(id: string | undefined) {
-  const { data, ...rest } = useApiData(
+export function useConsignacion(
+  id: string | undefined,
+  /**
+   * QA-CONT C-20 (03-10-2026) · `porInmueble`: el id ES del inmueble (la ficha
+   * del contrato sólo tiene el `propertyId`). Se pide la lista filtrada por
+   * inmueble y después la ficha del mandato, sin el `GET /consignaciones/<id
+   * del inmueble>` que daba 404 en la consola de cada ficha. Sin mandato,
+   * `null` (no es un error: el inmueble no está consignado acá).
+   * `activo: false` no pide nada (el rol no ve el portafolio: 403 seguro).
+   */
+  opciones?: { porInmueble?: boolean; activo?: boolean },
+) {
+  const porInmueble = opciones?.porInmueble === true;
+  const activo = opciones?.activo !== false;
+  const { data, ...rest } = useApiData<Consignacion | null>(
     async () => {
       if (!id) throw new Error('No ID');
-      return consignacionesApi.getByIdOrPropertyId(id);
+      if (!porInmueble) return consignacionesApi.getByIdOrPropertyId(id);
+      const delInmueble = await consignacionesApi.getAll({ propertyId: id });
+      return delInmueble.length > 0 ? consignacionesApi.getById(delInmueble[0].id) : null;
     },
-    [id],
-    false,
+    [id, porInmueble, activo],
+    !activo,
     0,
     ['consignaciones'],
   );
@@ -486,11 +509,15 @@ export function useAgencyAvaluos(
 // Dispersiones
 // ============================================================================
 
-export function useDispersiones(params?: Parameters<typeof dispersionesApi.getAll>[0]) {
+export function useDispersiones(
+  params?: Parameters<typeof dispersionesApi.getAll>[0],
+  /** `skip`: no pedir (p. ej. quien no tiene `dispersiones:view`: el back respondería 403). */
+  options?: { skip?: boolean },
+) {
   const { data, ...rest } = useApiData(
     () => dispersionesApi.getAll(params),
     [params?.month, params?.status, params?.propietarioId],
-    false,
+    options?.skip ?? false,
     0,
     ['dispersiones'],
   );
@@ -705,12 +732,16 @@ export function useActasEntrega() {
  * `config.agency` carries the real agency profile (name, nit, phone, logoUrl,
  * financial defaults, memberRole...). There are no top-level `name`/`branding`
  * fields — that shape never existed in the backend.
+ *
+ * `activo = false` no pide nada (ARREGLOS-4, 03-10-2026): el back la cierra con
+ * `configuracion:view`, y el layout del panel la pedía para TODO miembro — un
+ * 403 en cada pantalla del contador y de la asesora.
  */
-export function useInmobiliariaConfig() {
+export function useInmobiliariaConfig(activo = true) {
   const { data, ...rest } = useApiData(
     () => inmobiliariaConfigApi.getConfigOverview(),
-    [],
-    false,
+    [activo],
+    !activo,
     0,
     ['config', 'agency'],
   );

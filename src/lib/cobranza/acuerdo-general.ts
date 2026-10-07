@@ -12,6 +12,8 @@
  * desde Acuerdos de pago.
  */
 
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+
 /** El subconjunto de la política que forma el acuerdo general. */
 export interface AcuerdoGeneral {
   maxDiscountPct: number
@@ -21,7 +23,7 @@ export interface AcuerdoGeneral {
   allowedPaymentPlans: number[]
 }
 
-const pesos = new Intl.NumberFormat('es-CO', {
+const pesos = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,

@@ -11,13 +11,14 @@
  * columna), así que en teléfono, donde la foto no se pinta, no se descarga la
  * versión grande.
  *
- * Al cambiar de paso el contenido se funde (clave = el paso). Con «reducir
- * movimiento» el `MotionConfig` del marco deja sólo el fundido.
+ * Al cambiar de paso el contenido se cruza (`CrossFade`, clave = el paso) y
+ * las razones nuevas entran escalonadas. Con «reducir movimiento» quedan sólo
+ * los fundidos (las primitivas lo hacen solas).
  */
 
 import type { ReactNode } from 'react'
 import Image from 'next/image'
-import { AnimatePresence, motion } from 'framer-motion'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import type { Icon } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 
@@ -54,14 +55,7 @@ export function OnboardingInfoPanel({
 }: OnboardingInfoPanelProps) {
   return (
     <div className={cn('overflow-hidden rounded-lg border border-border bg-surface', className)}>
-      <AnimatePresence mode="wait" initial={false}>
-        <motion.div
-          key={pasoId}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        >
+      <CrossFade swapKey={pasoId}>
           {foto ? (
             <div className="relative hidden aspect-[4/3] overflow-hidden bg-surface-muted lg:block">
               <Image src={foto} alt="" fill sizes={TAMANOS_DE_LA_FOTO} className="object-cover" />
@@ -77,9 +71,11 @@ export function OnboardingInfoPanel({
               {titulo}
             </h2>
 
-            <ul className="mt-4 space-y-3">
+            {/* La primera vez se ven quietas (el `CrossFade` no anima su primer
+                contenido); al cambiar de paso, las nuevas entran una tras otra. */}
+            <Stagger as="ul" className="mt-4 space-y-3" layout={false}>
               {razones.map(({ icono: Icono, texto }) => (
-                <li key={texto} className="flex items-start gap-3">
+                <StaggerItem as="li" key={texto} className="flex items-start gap-3">
                   <span
                     aria-hidden
                     className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-soft text-primary"
@@ -87,9 +83,9 @@ export function OnboardingInfoPanel({
                     <Icono className="h-3.5 w-3.5" weight="bold" />
                   </span>
                   <span className="pt-1 text-body-sm leading-snug text-fg-muted">{texto}</span>
-                </li>
+                </StaggerItem>
               ))}
-            </ul>
+            </Stagger>
 
             {pie ? (
               <p className="mt-5 flex items-start gap-2.5 border-t border-border-faint pt-4 text-caption text-fg-muted">
@@ -98,8 +94,7 @@ export function OnboardingInfoPanel({
               </p>
             ) : null}
           </div>
-        </motion.div>
-      </AnimatePresence>
+      </CrossFade>
     </div>
   )
 }

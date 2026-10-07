@@ -1,5 +1,6 @@
 'use client';
 
+import { retrasoEscalonado } from '../lib/retraso-escalonado';
 import { useState } from 'react';
 import {
   Buildings,
@@ -199,17 +200,23 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
             <div
               key={software.id}
               className={cn(
-                'animate-stagger-in rounded-lg border transition-all cursor-pointer',
+                'animate-stagger-in rounded-lg border transition-[border-color,background-color,box-shadow]',
                 isExpanded
                   ? 'border-primary/30 bg-primary-soft/50 dark:bg-primary/10'
                   : 'border-border dark:border-border-strong hover:border-border dark:hover:border-border-strong bg-surface dark:bg-bg'
               )}
-              style={{ animationDelay: `${index * 80}ms` }}
-              onClick={() => handleCardClick(software.id)}
+              style={{ animationDelay: retrasoEscalonado(index) }}
             >
               <div className="p-5">
-                {/* Top row */}
-                <div className="flex items-center justify-between mb-3">
+                {/* Top row. QA-MIGRACION-95 (IN-01): un botón de verdad, con
+                    aria-expanded; la tarjeta era un <div onClick> que el
+                    teclado no alcanzaba. El enlace al sitio queda afuera. */}
+                <button
+                  type="button"
+                  aria-expanded={isExpanded}
+                  onClick={() => handleCardClick(software.id)}
+                  className="flex w-full items-center justify-between mb-3 rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
@@ -240,7 +247,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
                       <CaretDown className="w-4 h-4 text-fg-subtle" />
                     )}
                   </div>
-                </div>
+                </button>
 
                 {/* Expandable export instructions */}
                 {isExpanded && (
@@ -253,7 +260,7 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
                         <li
                           key={stepIndex}
                           className="animate-content-reveal flex items-start gap-3"
-                          style={{ animationDelay: `${stepIndex * 60}ms` }}
+                          style={{ animationDelay: retrasoEscalonado(stepIndex) }}
                         >
                           <div className="w-7 h-7 rounded-full bg-surface-muted dark:bg-ink flex items-center justify-center shrink-0 mt-0.5">
                             <span className="text-xs font-mono text-fg-muted dark:text-fg-subtle">
@@ -272,7 +279,6 @@ export function StepSoftwareMigration({ state, updateState }: ImportStepProps) {
                         href={software.sitio}
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
                         className="mt-3 inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
                       >
                         Ver el sitio de {software.name}

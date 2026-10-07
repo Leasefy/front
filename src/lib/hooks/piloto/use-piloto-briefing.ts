@@ -18,7 +18,13 @@ import { fetchPilotoBriefing, type PilotoBriefing } from '@/lib/api/piloto'
 export interface UsePilotoBriefingResult {
   data: PilotoBriefing | null
   isLoading: boolean
-  error: string | null
+  /**
+   * El error ENTERO, no su texto (ARREGLOS-4, 03-10-2026): el `ApiError` del
+   * micro, el 503 «el asistente de Leasefy no está disponible» de
+   * `agentFetch`, el de red o el de «no contestó a tiempo». La pantalla lo dice
+   * con `FalloDeCarga` / `mensajeParaLaPersona`. `null` si no falló.
+   */
+  error: unknown
   /** Backend 404 — el Gerente aún no publica briefing (no es un error). */
   notAvailable: boolean
   refetch: () => Promise<void>
@@ -30,7 +36,7 @@ export function usePilotoBriefing(): UsePilotoBriefingResult {
 
   const [data, setData] = useState<PilotoBriefing | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const [notAvailable, setNotAvailable] = useState(false)
 
   /** Guard de respuestas viejas: cada fetch aborta el anterior. */
@@ -58,7 +64,7 @@ export function usePilotoBriefing(): UsePilotoBriefingResult {
       setError(null)
     } catch (err) {
       if (controller.signal.aborted) return
-      setError(err instanceof Error ? err.message : 'Failed to fetch piloto briefing')
+      setError(err ?? new Error('Failed to fetch piloto briefing'))
     } finally {
       if (!controller.signal.aborted) setIsLoading(false)
     }

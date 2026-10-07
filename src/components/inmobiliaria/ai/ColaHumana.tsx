@@ -34,7 +34,7 @@ import {
   Hourglass,
 } from '@phosphor-icons/react'
 
-import { StatusBadge, type SemanticTone } from '@leasefy/cadence'
+import { CrossFade, Presence, StatusBadge, type SemanticTone } from '@leasefy/cadence'
 
 import type {
   Severidad,
@@ -46,14 +46,27 @@ import { useI18n } from '@/lib/i18n'
 import type { TranslationParams } from '@/lib/i18n'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
+import { repartirFalloDeLaAccion } from './fallo-de-la-accion'
+import { tieneCampos } from './campos-de-la-accion'
+import { FormularioDeLaAccion } from './FormularioDeLaAccion'
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui/table'
+
+/**
+ * La fila del motivo (o de los campos) que despliega una acción: entra bajando
+ * 4px desde su caso y sale acelerando (`Presence` como `<tr>`), con las mismas
+ * clases que una fila de la tabla. Antes aparecía y desaparecía de golpe.
+ */
+const FILA_DEL_MOTIVO = 'border-b border-border-faint last:border-b-0'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 
@@ -208,12 +221,15 @@ export interface ColaHumanaProps {
    * (`inmobiliaria.ai.workspace.pages.{agente}.estado.*`) in all estado chips.
    */
   agente?: string
-  /** Posts the action's body to its endpoint; returns ok/error for toasting. */
+  /**
+   * Posts the action's body to its endpoint. `fallo` es el error entero para
+   * el traductor (`error` es el código viejo y no se muestra).
+   */
   onAction: (
     item: WorkItem,
     action: WorkItemAction,
     body?: Record<string, unknown>,
-  ) => Promise<{ ok: boolean; error?: string }>
+  ) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   /** Optional: open the work-item detail. */
   onOpen?: (item: WorkItem) => void
   /** Title for the empty state (defaults to the generic "Cola vacía"). */
@@ -255,9 +271,13 @@ function FilaDeCaso({
   const { t } = useI18n()
   const [reasonForActionId, setReasonForActionId] = useState<string | null>(null)
   const [reasonText, setReasonText] = useState('')
+  /** Lo que el micro dijo del motivo (un 400 con `campos`): va debajo del campo. */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null)
   const [busyActionId, setBusyActionId] = useState<string | null>(null)
+  const motivoId = `reason-${item.id}`
 
-  async function run(action: WorkItemAction, body?: Record<string, unknown>) {
+  /** Manda la acción; si sale bien, avisa y cierra el panel. Devuelve lo que dijo el micro. */
+  async function ejecutar(action: WorkItemAction, body?: Record<string, unknown>) {
     setBusyActionId(action.id)
     const res = await onAction(item, action, body)
     setBusyActionId(null)
@@ -265,26 +285,54 @@ function FilaDeCaso({
       toast.success(t(`${WORKSPACE_NS}.acciones.toastOk`, { label: action.label }))
       setReasonForActionId(null)
       setReasonText('')
-    } else {
-      toast.error(t(`${WORKSPACE_NS}.acciones.toastFail`, { error: res.error ?? 'error' }))
+      setErrorDelMotivo(null)
+    }
+    return res
+  }
+
+  /** El flujo de siempre: sin cuerpo, o con el motivo. */
+  async function run(action: WorkItemAction, body?: Record<string, unknown>) {
+    const res = await ejecutar(action, body)
+    if (!res.ok) {
+      // Con la regla de oro: el error del motivo a su campo (y el foco ahí);
+      // al toast lo demás. Antes: «No se pudo: 403» o el código del micro.
+      const { motivo, sueltos } = repartirFalloDeLaAccion(res.fallo, action.label, body?.reason !== undefined)
+      setErrorDelMotivo(motivo ?? null)
+      if (motivo) document.getElementById(motivoId)?.focus()
+      if (sueltos.length > 0) toast.error(sueltos.join(' · '))
     }
   }
 
+  /** La acción pide algo antes de mandarse: sus campos declarados o el motivo. */
+  const pideAlgo = (action: WorkItemAction) => tieneCampos(action) || Boolean(action.requiresReason)
+
   function handleClick(action: WorkItemAction) {
-    if (action.requiresReason) {
+    if (pideAlgo(action)) {
       // El primer clic despliega el motivo; el envío sale del panel de abajo.
       setReasonForActionId((cur) => (cur === action.id ? null : action.id))
+      setErrorDelMotivo(null)
       return
     }
     void run(action)
   }
 
   const pendingReasonAction = item.actions.find((a) => a.id === reasonForActionId)
+  // Cada fila del motivo conserva su última acción mientras sale: sin esto se
+  // vaciaba en el mismo cuadro en que empezaba a irse.
+  const accionConCampos = useUltimoPresente(
+    pendingReasonAction && tieneCampos(pendingReasonAction) ? pendingReasonAction : null,
+  )
+  const accionSinCampos = useUltimoPresente(
+    pendingReasonAction && !tieneCampos(pendingReasonAction) ? pendingReasonAction : null,
+  )
   const abrible = Boolean(onOpen)
 
+  // Movimiento: el caso es un `TableRowAnimada` del cuerpo animado de la
+  // cola: entra escalonado y, cuando se resuelve y sale de la lista, se va
+  // con su animación en vez de desaparecer.
   return (
     <>
-      <TableRow
+      <TableRowAnimada
         data-testid={`work-item-${item.id}`}
         className={abrible ? 'cursor-pointer' : undefined}
         onClick={abrible ? () => onOpen?.(item) : undefined}
@@ -389,7 +437,7 @@ function FilaDeCaso({
                   size="sm"
                   hideArrow
                   disabled={busyActionId !== null}
-                  aria-pressed={action.requiresReason ? reasonForActionId === action.id : undefined}
+                  aria-pressed={pideAlgo(action) ? reasonForActionId === action.id : undefined}
                   onClick={() => handleClick(action)}
                 >
                   {action.kind === 'primary' && <CheckCircle className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -400,26 +448,65 @@ function FilaDeCaso({
             </div>
           )}
         </TableCell>
-      </TableRow>
+      </TableRowAnimada>
 
-      {/* El motivo, a todo el ancho y pegado a su caso. */}
-      {pendingReasonAction && (
-        <TableRow data-testid={`work-item-motivo-${item.id}`}>
+      {/* Lo que la acción pide (sus campos declarados, 02-10-2026), a todo el
+          ancho y pegado a su caso. */}
+      <Presence
+        as="tr"
+        show={Boolean(pendingReasonAction && tieneCampos(pendingReasonAction))}
+        direction="down"
+        distance="xs"
+        className={FILA_DEL_MOTIVO}
+        data-testid={`work-item-motivo-${item.id}`}
+      >
+        {accionConCampos && (
+          <TableCell colSpan={columnas} className="bg-surface-muted/40">
+            <FormularioDeLaAccion
+              key={accionConCampos.id}
+              idBase={`accion-${item.id}-${accionConCampos.id}`}
+              action={accionConCampos}
+              onEnviar={(cuerpo) => ejecutar(accionConCampos, cuerpo)}
+              onCancelar={() => setReasonForActionId(null)}
+              deshabilitado={busyActionId !== null && busyActionId !== accionConCampos.id}
+            />
+          </TableCell>
+        )}
+      </Presence>
+
+      {/* El motivo (una acción sin campos declarados), a todo el ancho y
+          pegado a su caso. */}
+      <Presence
+        as="tr"
+        show={Boolean(pendingReasonAction && !tieneCampos(pendingReasonAction))}
+        direction="down"
+        distance="xs"
+        className={FILA_DEL_MOTIVO}
+        data-testid={`work-item-motivo-${item.id}`}
+      >
+        {accionSinCampos && (
           <TableCell colSpan={columnas} className="bg-surface-muted/40">
             <div className="space-y-1.5">
               <label className="text-[11px] text-fg-muted" htmlFor={`reason-${item.id}`}>
                 {t(`${WORKSPACE_NS}.acciones.motivoPara`, {
-                  accion: pendingReasonAction.label.toLowerCase(),
+                  accion: accionSinCampos.label.toLowerCase(),
                 })}
               </label>
               <Textarea
-                id={`reason-${item.id}`}
+                id={motivoId}
                 value={reasonText}
-                onChange={(e) => setReasonText(e.target.value)}
+                onChange={(e) => {
+                  setReasonText(e.target.value)
+                  setErrorDelMotivo(null)
+                }}
                 rows={2}
                 className="w-full max-w-2xl resize-none text-xs"
                 placeholder={t(`${WORKSPACE_NS}.acciones.motivoPlaceholder`)}
+                {...(errorDelMotivo
+                  ? { 'aria-describedby': `${motivoId}-error`, 'aria-invalid': true as const }
+                  : {})}
               />
+              <ErrorDelCampo id={`${motivoId}-error`} mensaje={errorDelMotivo} className="mt-0" />
               <div className="flex items-center gap-2">
                 <Button
                   type="button"
@@ -427,7 +514,7 @@ function FilaDeCaso({
                   size="sm"
                   hideArrow
                   disabled={reasonText.trim().length === 0 || busyActionId !== null}
-                  onClick={() => void run(pendingReasonAction, { reason: reasonText.trim() })}
+                  onClick={() => void run(accionSinCampos, { reason: reasonText.trim() })}
                 >
                   <XCircle className="h-3.5 w-3.5" aria-hidden="true" />
                   {t(`${WORKSPACE_NS}.acciones.confirmar`)}
@@ -440,6 +527,7 @@ function FilaDeCaso({
                   onClick={() => {
                     setReasonForActionId(null)
                     setReasonText('')
+                    setErrorDelMotivo(null)
                   }}
                 >
                   {t(`${WORKSPACE_NS}.acciones.cancelar`)}
@@ -447,8 +535,8 @@ function FilaDeCaso({
               </div>
             </div>
           </TableCell>
-        </TableRow>
-      )}
+        )}
+      </Presence>
     </>
   )
 }
@@ -492,11 +580,15 @@ export function ColaHumana({
   // Los cuatro estados, en el orden de la casa: cargando → falló → vacío →
   // hay datos. La carga y el fallo van ANTES que el vacío para que la cola
   // nunca diga «no hay casos» mientras todavía no sabe.
+  // Movimiento: cada estado en un `CrossFade` con su clave (esqueleto →
+  // cola, → fallo); lo que ya estaba al montarse no se anima.
   if (isLoading) {
     return (
+      <CrossFade swapKey="esqueleto">
       <div data-testid="cola-humana-loading">
         <EsqueletoTabla columnas={COLUMNAS.length} filas={5} />
       </div>
+      </CrossFade>
     )
   }
 
@@ -504,13 +596,16 @@ export function ColaHumana({
     // El cartel de la casa decide qué decir y si ofrecer reintentar: un 403 no
     // se anuncia igual que una red caída, y sobre un 404 no se reintenta.
     return (
+      <CrossFade swapKey="fallo">
       <div data-testid="cola-humana-error">
         <FalloDeCarga error={error} queEs="la cola" onReintentar={onReintentar} />
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="cola">
     <div className="overflow-hidden rounded-lg border border-border bg-card" data-testid="cola-humana">
       <Table>
         <TableHeader>
@@ -525,11 +620,13 @@ export function ColaHumana({
             ))}
           </TableRow>
         </TableHeader>
-        <TableBody>
+        {/* Resolver un caso lo saca de la cola con su animación; paginar o
+            un caso nuevo hace entrar las filas escalonadas (techo 320 ms). */}
+        <TableBodyAnimado>
           {sorted.length === 0 ? (
             // El vacío vive DENTRO del cuerpo para que los encabezados se
             // sigan viendo: la tabla existe, lo que no hay son casos.
-            <TableRow data-testid="cola-humana-empty">
+            <TableRowAnimada key="vacio" data-testid="cola-humana-empty">
               <TableCell colSpan={COLUMNAS.length} className="p-0">
                 <SinDatos
                   queSon="casos"
@@ -545,7 +642,7 @@ export function ColaHumana({
                   }
                 />
               </TableCell>
-            </TableRow>
+            </TableRowAnimada>
           ) : (
             pageItems.map((item) => (
               <FilaDeCaso
@@ -558,7 +655,7 @@ export function ColaHumana({
               />
             ))
           )}
-        </TableBody>
+        </TableBodyAnimado>
       </Table>
 
       {shouldPaginate && (
@@ -574,5 +671,6 @@ export function ColaHumana({
         </div>
       )}
     </div>
+    </CrossFade>
   )
 }

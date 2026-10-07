@@ -12,7 +12,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
-const { api, permisos } = vi.hoisted(() => ({
+const { api, permisos, toastError } = vi.hoisted(() => ({
+  toastError: vi.fn(),
   api: {
     listas: (() => Promise.resolve(null)) as () => Promise<unknown>,
     cargadas: (() => Promise.resolve(null)) as () => Promise<unknown>,
@@ -39,6 +40,9 @@ vi.mock('@/lib/api/crm.service', async () => {
     },
   }
 })
+vi.mock('@/components/ui/toast', () => ({
+  toast: { error: toastError, success: vi.fn(), info: vi.fn(), warning: vi.fn() },
+}))
 vi.mock('@/lib/hooks/usePermissions', () => ({
   usePermissions: () => ({
     isLoading: false,
@@ -105,6 +109,7 @@ beforeEach(() => {
     Promise.resolve({ disponible: true, motivo: null, listas: [] }),
   )
   api.revisar.mockClear()
+  toastError.mockClear()
   permisos.edit = true
   contenedor = document.createElement('div')
   document.body.appendChild(contenedor)
@@ -204,6 +209,40 @@ describe('ListasClient', () => {
     const cajon = document.querySelector('[data-testid="cajon-de-la-lista"]')!
     expect(cajon).not.toBeNull()
     expect(cajon.querySelector('[data-testid="lista-archivo"]')).not.toBeNull()
+  })
+
+  it('🔴 si «volver a revisar» falla, lo dice: era un try/finally sin catch (02-10-2026)', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    api.revisar.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'beef1234',
+      }),
+    )
+    await pintar()
+    await act(async () => {
+      contenedor
+        .querySelector<HTMLElement>('[data-testid="revisar-sin-verificar"]')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    const dicho = String(toastError.mock.calls[0]?.[0] ?? '')
+    expect(dicho).toMatch(/de nuestro lado/)
+    expect(dicho).toContain('beef1234')
+    expect(dicho).not.toMatch(/conexi[oó]n/)
+    // El botón vuelve a estar disponible: no queda «Revisando…» colgado.
+    expect($('[data-testid="revisar-sin-verificar"]')?.textContent).toBe('Volver a revisar')
+  })
+
+  it('sin respuesta, la falla de «volver a revisar» habla de la conexión', async () => {
+    api.revisar.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await pintar()
+    await act(async () => {
+      contenedor
+        .querySelector<HTMLElement>('[data-testid="revisar-sin-verificar"]')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+    expect(String(toastError.mock.calls[0]?.[0] ?? '')).toMatch(/conexión/)
   })
 
   it('sin permiso de edición no ofrece revisar', async () => {

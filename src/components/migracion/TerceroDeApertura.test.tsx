@@ -34,6 +34,7 @@ vi.mock('@/lib/api/inquilinos.service', async () => {
 });
 
 import { TerceroDeApertura } from './TerceroDeApertura';
+import { ApiError } from '@/lib/api/client';
 
 let container: HTMLDivElement;
 let root: Root;
@@ -117,5 +118,53 @@ describe('TerceroDeApertura', () => {
     });
     expect(inquilinosMock.listar).not.toHaveBeenCalled();
     expect(propietariosMock.getAll).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Una búsqueda que falla ya no se ve igual que «no hay nadie con ese nombre»
+ * (02-10-2026): el motivo va debajo del campo, con la regla de oro.
+ */
+describe('TerceroDeApertura — cuando la búsqueda falla', () => {
+  async function buscarCon(texto: string) {
+    await act(async () => {
+      root.render(<TerceroDeApertura valor={null} onCambio={vi.fn()} testId="t" />);
+    });
+    const buscar = document.querySelector('[data-testid="t-buscar"]') as HTMLInputElement;
+    await act(async () => {
+      escribir(buscar, texto);
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+    return buscar;
+  }
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia, debajo del campo', async () => {
+    inquilinosMock.listar.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'abcd1234',
+      }),
+    );
+    const buscar = await buscarCon('ana');
+    const error = document.getElementById('t-buscar-error');
+    expect(error?.textContent).toMatch(/^No pudimos buscar el tercero: algo falló de nuestro lado/);
+    expect(error?.textContent).toContain('abcd1234');
+    expect(buscar.getAttribute('aria-invalid')).toBe('true');
+    expect(buscar.getAttribute('aria-describedby')).toBe('t-buscar-error');
+  });
+
+  it('sin respuesta habla de la conexión; al volver a escribir el aviso se va', async () => {
+    inquilinosMock.listar.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    const buscar = await buscarCon('ana');
+    expect(document.getElementById('t-buscar-error')?.textContent).toMatch(/conexión/);
+
+    await act(async () => {
+      escribir(buscar, 'anab');
+    });
+    expect(buscar.getAttribute('aria-invalid')).toBeNull();
   });
 });

@@ -43,6 +43,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Bank, CheckCircle, Plus, UploadSimple, WarningOctagon } from '@phosphor-icons/react';
+import { Appear } from '@leasefy/cadence';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Avisos, SinLaMigracion, TituloDeBloque } from '@/components/finanzas/piezas';
@@ -61,6 +62,8 @@ import type {
   ResultadoDeImportar,
 } from '@/lib/api/tesoreria.types';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { contar } from '@/lib/texto/plural';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 /** El tope del back (4 MB): se dice antes de subir, no después del 400. */
 const TOPE_BYTES = 4_000_000;
@@ -334,10 +337,13 @@ function ImportarArchivo({
       setContenido(texto);
       setPrevia(await tesoreriaApi.previa(texto, archivo.name, convenioId || undefined));
     } catch (error) {
+      // El 400 del formato trae su motivo en palabras; un 5xx dice que fue
+      // nuestro, con la referencia; sólo sin respuesta se habla de la conexión.
       toast.error(
-        error instanceof Error
-          ? error.message
-          : 'No se pudo leer el archivo con el formato de este convenio.',
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo leer el archivo con el formato de este convenio.',
+          accion: 'leer el archivo con el formato del convenio',
+        }),
       );
     } finally {
       setLeyendo(false);
@@ -354,12 +360,15 @@ function ImportarArchivo({
         toast.info('Este archivo ya se había importado: no se aplicó nada.');
       } else {
         toast.success(
-          `${r.archivo.nuevas} movimiento(s) nuevos. ${r.lote ? `Hay un lote de ${r.lote.cantidad} pago(s) esperando aprobación.` : 'Ninguno calzó exacto: quedaron en la cola manual.'}`,
+          `${contar(r.archivo.nuevas, 'movimiento nuevo', 'movimientos nuevos')}. ${r.lote ? `Hay un lote de ${contar(r.lote.cantidad, 'pago')} esperando aprobación.` : 'Ninguno calzó exacto: quedaron en la cola manual.'}`,
         );
       }
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : 'No se pudo importar el archivo.',
+        mensajeParaLaPersona(error, {
+          porDefecto: 'No se pudo importar el archivo.',
+          accion: 'importar el archivo',
+        }),
       );
     } finally {
       setImportando(false);
@@ -417,7 +426,14 @@ function ImportarArchivo({
           </p>
         ) : null}
 
-        {previa ? <Previa previa={previa} /> : null}
+        {/* Movimiento (ola 2, 03-10-2026): la vista previa del archivo y el
+            resultado de importarlo ENTRAN (fundido y 4 px); otro archivo leído
+            es otra vista previa, y vuelve a entrar. */}
+        {previa ? (
+          <Appear key={`${previa.lineas}|${previa.validas}|${previa.totalCop}`} distance="xs">
+            <Previa previa={previa} />
+          </Appear>
+        ) : null}
 
         {previa && previa.validas > 0 && previa.puedeImportarse ? (
           <Button
@@ -428,11 +444,15 @@ function ImportarArchivo({
             <UploadSimple className="h-4 w-4" aria-hidden="true" />
             {importando
               ? 'Importando…'
-              : `Importar ${previa.validas} pago(s) por ${formatCurrency(previa.totalCop)}`}
+              : `Importar ${contar(previa.validas, 'pago')} por ${formatCurrency(previa.totalCop)}`}
           </Button>
         ) : null}
 
-        {resultado ? <Resultado resultado={resultado} /> : null}
+        {resultado ? (
+          <Appear distance="xs">
+            <Resultado resultado={resultado} />
+          </Appear>
+        ) : null}
       </div>
     </section>
   );
@@ -450,7 +470,7 @@ function Previa({ previa }: { previa: PreviaDelRecaudo }) {
           <WarningOctagon className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
           <span>
             Este archivo ya se importó el {previa.yaImportado.createdAt.slice(0, 10)} como «
-            {previa.yaImportado.nombre}» ({previa.yaImportado.nuevas} movimiento(s) nuevos).
+            {previa.yaImportado.nombre}» ({contar(previa.yaImportado.nuevas, 'movimiento nuevo', 'movimientos nuevos')}).
             Volver a subirlo no va a aplicar nada.
           </span>
         </div>
@@ -525,7 +545,7 @@ function Rechazadas({
   return (
     <div className="space-y-2 rounded-lg border border-warning/40 bg-warning-soft p-3 text-sm">
       <p className="font-medium text-fg">
-        {rechazadas.length} línea(s) no se pudieron leer. Las demás entran igual.
+        {rechazadas.length === 1 ? '1 línea no se pudo leer' : `${contar(rechazadas.length, 'línea')} no se pudieron leer`}. Las demás entran igual.
       </p>
       <ul className="space-y-2" data-testid="lineas-rechazadas">
         {rechazadas.slice(0, 10).map((r) => (
@@ -567,16 +587,16 @@ function Resultado({ resultado }: { resultado: ResultadoDeImportar }) {
         )}
       </p>
       <ul className="space-y-1 text-fg-muted">
-        <li>{archivo.nuevas} pago(s) nuevos.</li>
+        <li>{contar(archivo.nuevas, 'pago nuevo', 'pagos nuevos')}.</li>
         <li>
           {archivo.repetidas} ya estaban registrados (el banco manda el mes corrido: el archivo
           de fin de mes se pisa con el de la quincena).
         </li>
-        <li>{archivo.filasRechazadas} línea(s) rechazadas.</li>
+        <li>{contar(archivo.filasRechazadas, 'línea rechazada', 'líneas rechazadas')}.</li>
       </ul>
       {lote ? (
         <p className="text-fg">
-          Se armó un lote de {lote.cantidad} pago(s) por {formatCurrency(lote.totalCop)} que{' '}
+          Se armó un lote de {contar(lote.cantidad, 'pago')} por {formatCurrency(lote.totalCop)} que{' '}
           <Link
             href="/panel/inmobiliaria/pagos/recaudo"
             className="font-medium text-primary underline-offset-4 hover:underline"

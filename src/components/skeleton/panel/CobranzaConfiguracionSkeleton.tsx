@@ -37,7 +37,7 @@ export function CobranzaConfiguracionSkeleton() {
       {[0, 1, 2, 3].map((i) => (
         <div
           key={i}
-          className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-[#1a1a1c] p-6 space-y-4"
+          className="rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-surface-muted p-6 space-y-4"
         >
           <Skeleton className="h-5 w-1/3" />
           <Skeleton className="h-3 w-2/3" />

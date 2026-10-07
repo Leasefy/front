@@ -30,6 +30,7 @@
  */
 
 import { apiClient } from './client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { anunciarProceso } from './procesos.service';
 
 // ============================================================================
@@ -80,7 +81,11 @@ export type Faltante =
   | 'fecha_consignacion'
   | 'posible_duplicado'
   /** Varios dueños y los porcentajes (o la plata) no cuadran. */
-  | 'reparto';
+  | 'reparto'
+  /** MG-36: el mismo código viene en otra fila del archivo con otros datos. */
+  | 'codigo_repetido'
+  /** EN-38 / NI-07 (QA-MIGRACION-95): cifra con centavos con la llave apagada. */
+  | 'plata_con_centavos';
 
 /**
  * Un dueño de `propietarios[]`. Espejo de `PropietarioDelInmuebleDto` del
@@ -227,6 +232,20 @@ export interface FilaDeImportacion {
   ubicacion?: UbicacionDeFila;
   /** T-0130 — por qué falló la creación de esta fila, si falló. */
   errorDeActivacion?: string | null;
+  /**
+   * MG-36 — sólo con `codigo_repetido`: las otras filas del archivo con el
+   * mismo código y en qué datos difieren de ésta. Ausente = back anterior.
+   */
+  repetidas?: FilaRepetidaDelArchivo[];
+}
+
+/** MG-36 — otra fila del archivo con el mismo código y datos distintos. */
+export interface FilaRepetidaDelArchivo {
+  id: string;
+  /** La fila del archivo (como la cuenta la persona). */
+  fila: number;
+  /** `campo` es la clave del dato; `aqui`/`alla` el texto de cada fila (`''` = vacío). */
+  diferencias: { campo: string; aqui: string; alla: string }[];
 }
 
 export interface EstadoDeLoteInmuebles {
@@ -268,6 +287,10 @@ export interface EstadoDeLoteInmuebles {
   actualizadoEn?: string;
   /** T-0131 — `null` antes del primer «Crear todas»; ausente = back anterior. */
   creacion?: CreacionDeLote | null;
+  /** QA-MIGRACION-95 · quién subió la carga (ausente = back anterior). */
+  subidoPor?: string | null;
+  /** Desde dónde se lanzó: la Puesta en marcha (fuera del centro de procesos) o Inmuebles (ausente = Puesta en marcha). */
+  origen?: 'puesta-en-marcha' | 'inmuebles';
 }
 
 /**
@@ -276,9 +299,14 @@ export interface EstadoDeLoteInmuebles {
  */
 export interface CreacionDeLote {
   total: number;
+  /** Filas ya creadas (incluye las que re-apuntaron un inmueble que ya estaba). */
   creadas: number;
   fallidas: number;
   pendientes: number;
+  /** Inmuebles distintos que dejaron esas filas. Ausente con un back anterior. */
+  inmuebles?: number;
+  /** De ésos, los que nacieron con esta carga (QA-MIG-A, MG-36). */
+  nuevos?: number;
 }
 
 /** `POST .../lotes/:lote/crear` — 202. Llamarlo con el lote ya CREANDO devuelve lo mismo. */
@@ -514,11 +542,18 @@ export const inmueblesImportacionApi = {
     inmuebles: ImportarInmuebleDto[],
     idempotencyKey?: string,
     tanda?: OpcionesDeTanda,
+    origen: 'puesta-en-marcha' | 'inmuebles' = 'puesta-en-marcha',
   ): Promise<EstadoDeLoteInmuebles> {
-    // La carga aparece en el centro de procesos del header (22-09). Por tandas,
-    // sólo se anuncia con la primera: las demás son el mismo proceso.
-    if (!tanda || tanda.desde === 0) anunciarProceso();
-    return apiClient.post<EstadoDeLoteInmuebles>(`${BASE}/preparar`, {
+    /*
+     * Decisión (b) de Nico (06-10-2026): sólo la importación lanzada desde
+     * Inmuebles va al centro de procesos (y se anuncia con la primera tanda).
+     * La de la Puesta en marcha es migración: NO va al centro (Nico, 01-10 y
+     * 06-10); sus cargas se ven en el paso. Sin `?origen` el back la trata
+     * como Puesta en marcha.
+     */
+    const desdeInmuebles = origen === 'inmuebles';
+    if (desdeInmuebles && (!tanda || tanda.desde === 0)) anunciarProceso();
+    return apiClient.post<EstadoDeLoteInmuebles>(`${BASE}/preparar${desdeInmuebles ? '?origen=inmuebles' : ''}`, {
       inmuebles,
       ...(idempotencyKey ? { idempotencyKey } : {}),
       /*
@@ -657,8 +692,10 @@ export const inmueblesImportacionApi = {
         );
       } catch (e) {
         if (total.procesadas === 0) throw e;
+        // El motivo con la regla de oro: «conexión» sólo si no hubo respuesta;
+        // un 5xx dice que fue nuestro, con la referencia (nunca `e.message` crudo).
         total.interrumpida = {
-          motivo: e instanceof Error ? e.message : 'Se cortó la conexión a mitad.',
+          motivo: mensajeParaLaPersona(e, { porDefecto: 'Se cortó a mitad.', accion: 'terminar el cambio' }),
         };
         return total;
       }

@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Info } from '@phosphor-icons/react'
+import { CrossFade } from '@leasefy/cadence'
+import { useDireccionDelPaso } from '@/components/onboarding/wizard/use-direccion-del-paso'
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol'
 import { CargaDeMarca } from '@/components/ui/carga-de-marca'
 import { useOnboardingSession } from '@/lib/hooks/use-onboarding-session'
@@ -14,11 +17,15 @@ import { PanelAntesDeComenzar } from '@/components/onboarding/perfil/PanelAntesD
 import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
 import { AgencyStepForm } from '@/components/onboarding/inmobiliaria/AgencyStepForm'
 import {
+  agenciaDelBorrador,
   computeAgencyStepPrefill,
   type AgencyStepPreStepValues,
 } from '@/components/onboarding/inmobiliaria/agency-step-prefill'
 import { MembersStepForm, type PendingMembersInvites } from '@/components/onboarding/inmobiliaria/MembersStepForm'
-import { crearInvitacionesDelEquipo } from '@/components/onboarding/inmobiliaria/crear-invitaciones'
+import {
+  correosConInvitacion,
+  crearInvitacionesDelEquipo,
+} from '@/components/onboarding/inmobiliaria/crear-invitaciones'
 import {
   toMembersRequest,
   type MembersStepFormValues,
@@ -72,8 +79,18 @@ export default function OnboardingInmobiliariaClient() {
 }
 
 function ProvisionedOnboardingWizard() {
-  const { status, sessionId, agencyPrefill, valoresGuardados, fallo, retry, provision } =
-    useOnboardingProvisioning()
+  const {
+    status,
+    sessionId,
+    agencyPrefill,
+    valoresGuardados,
+    fallo,
+    retry,
+    provision,
+    corrigiendo,
+    corregirDatos,
+    volverAlAsistente,
+  } = useOnboardingProvisioning()
 
   // Mientras se pregunta dónde quedó esta persona no se le muestra el paso
   // previo: pedirle la razón social para tapársela medio segundo después con
@@ -104,10 +121,13 @@ function ProvisionedOnboardingWizard() {
     return (
       <EleccionDePerfil
         abiertaAlInicio
-        panelDeInmobiliaria={(cerrar) => (
+        volverAlAsistente={corrigiendo && sessionId ? volverAlAsistente : undefined}
+        panelDeInmobiliaria={(cerrar, _alAbrirRegistro, alSaberSiPuedeCambiar, alSaberDelRegistroAMedias) => (
           <PanelAntesDeComenzar
-            aprovisionamiento={{ status, valoresGuardados, fallo, retry, provision }}
+            aprovisionamiento={{ status, valoresGuardados, fallo, retry, provision, corrigiendo }}
             onCerrar={cerrar}
+            onPuedeCambiarDePerfil={alSaberSiPuedeCambiar}
+            onRegistroAMedias={alSaberDelRegistroAMedias}
           />
         )}
       />
@@ -143,14 +163,28 @@ function ProvisionedOnboardingWizard() {
     )
   }
 
-  return <OnboardingWizard sessionId={sessionId} preStepAgency={agencyPrefill} />
+  return (
+    <OnboardingWizard
+      sessionId={sessionId}
+      preStepAgency={agencyPrefill}
+      onCorregirInmobiliaria={corregirDatos}
+    />
+  )
 }
 
 function OnboardingWizard({
   sessionId,
   preStepAgency,
+  onCorregirInmobiliaria,
 }: {
   sessionId: string
+  /**
+   * «Salir» → «Volver a los datos de la inmobiliaria» (Nico, 01-10-2026):
+   * ahí se corrige la razón social, que en el paso Agencia es de solo
+   * lectura. `undefined` con el `?session=` de desarrollo, que no tiene ese
+   * formulario detrás.
+   */
+  onCorregirInmobiliaria?: () => void
   /**
    * Razón social + NIT captured in-session by `OwnerNameStepForm` (via
    * `useOnboardingProvisioning`). `undefined` for the `?session=` dev
@@ -209,17 +243,50 @@ function OnboardingWizard({
    * pasó con cada persona y el equipo se puede invitar desde el panel.
    */
   const handleSubmitMembers = async (values: MembersStepFormValues) => {
-    // Al volver a editar Miembros, quien ya estaba en el borrador ya tiene su
-    // invitación del back: sólo se invita a los correos NUEVOS.
-    const yaInvitados = new Set(miembrosDelBorrador(draft).map((m) => m.email.toLowerCase()))
     const result = await submitMembers(toMembersRequest(values))
     if (!result) return result
+    // Al volver a editar Miembros sólo se invita a quien el BACK todavía no
+    // tiene invitado (01-10-2026, Alexis: una invitación que el back rechazó
+    // seguía en el borrador, se daba por hecha y el correo nunca salió).
+    //
+    // 🔴 Si no se le puede preguntar al back, se le pide la invitación de
+    // TODOS y el back decide (02-10-2026, Alexis: «siempre falla la primera
+    // vez»). El respaldo era el borrador del micro, y el borrador NO dice quién
+    // quedó invitado: cuando el back rechaza las dos llamadas (GET y POST
+    // /inmobiliaria/agency/members, 403 `SEGUNDO_FACTOR_REQUERIDO`), el
+    // segundo intento tomaba a la persona del borrador por invitada y el paso
+    // «funcionaba» sin invitar a nadie. A lo sumo, una invitación vigente
+    // vuelve con el 409 del back que lo dice.
+    //
+    // Desde el 02-10 (Nico) el back deja al FUNDADOR invitar y listar sin
+    // segundo factor mientras dura el registro (`invitar-desde-el-registro.ts`
+    // del back), así que el paso invita normal. El 403 queda de respaldo: un
+    // back anterior, o alguien que no es el fundador o ya salió de esa ventana.
+    const yaInvitados = (await correosConInvitacion()) ?? new Set<string>()
     const nuevos = values.members.filter((m) => !yaInvitados.has(m.email.trim().toLowerCase()))
     if (nuevos.length === 0) return result
 
     const invitaciones = await crearInvitacionesDelEquipo(nuevos)
     if (invitaciones.length > 0) setPendingMembersInvites({ invitaciones })
     return result
+  }
+
+  // «Reintentar» en la pantalla de resultados: vuelve a pedirle al back SÓLO
+  // las invitaciones que fallaron —y que reintentar puede arreglar— y deja
+  // las demás como estaban.
+  const reintentarInvitaciones = async () => {
+    const fallidas =
+      pendingMembersInvites?.invitaciones.filter((i) => i.error !== null && i.reintentable !== false) ?? []
+    if (fallidas.length === 0) return
+    const otraVez = await crearInvitacionesDelEquipo(
+      fallidas.map((i) => ({ email: i.email, role: i.role, nombre: i.nombre })),
+    )
+    const porCorreo = new Map(otraVez.map((i) => [i.email, i]))
+    setPendingMembersInvites((actual) =>
+      actual
+        ? { invitaciones: actual.invitaciones.map((i) => porCorreo.get(i.email) ?? i) }
+        : actual,
+    )
   }
 
   // `complete`'s defensive missing-steps CTA sends the user back to an earlier
@@ -292,12 +359,82 @@ function OnboardingWizard({
     !pendingMembersInvites &&
     ORDEN_DEL_MICRO.indexOf(completeStepOverride) < ORDEN_DEL_MICRO.indexOf(currentStep)
 
+  /*
+   * 🔴 Volvió de corregir la razón social (01-10-2026). El back ya tiene el
+   * nombre nuevo, pero el asistente guardó el viejo en su paso Agencia, y es
+   * ESE el que el micro escribe al crear la inmobiliaria: sin volver a
+   * guardarlo, Laura le diría a los inquilinos el nombre viejo. Se abre el
+   * paso Agencia (la razón social ya sale con la nueva, de solo lectura) para
+   * confirmarlo; al guardar, sigue donde iba.
+   */
+  const razonSocialNueva = preStepAgency?.legalName?.trim() || null
+  const razonSocialDelAsistente = (() => {
+    const guardada = agenciaDelBorrador(draft)?.legalName
+    return typeof guardada === 'string' && guardada.trim() ? guardada.trim() : null
+  })()
+  const razonSocialPorConfirmar =
+    razonSocialNueva !== null &&
+    razonSocialDelAsistente !== null &&
+    razonSocialNueva !== razonSocialDelAsistente &&
+    currentStep !== null &&
+    currentStep !== 'complete' &&
+    ORDEN_DEL_MICRO.indexOf(currentStep) > ORDEN_DEL_MICRO.indexOf('agency')
+
+  useEffect(() => {
+    if (razonSocialPorConfirmar && completeStepOverride === null && !pendingMembersInvites) {
+      completarPaso('agency')
+    }
+    // `completarPaso` sólo pone estado: no hace falta como dependencia.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [razonSocialPorConfirmar, completeStepOverride, pendingMembersInvites])
+
   // While the invite-links screen is pending, keep the stepper/header pinned
   // to "Miembros" instead of following the hook's already-advanced `currentStep`.
   const displayStep = pendingMembersInvites ? 'members' : effectiveStep
 
+  // «Salir» → volver a los datos de la inmobiliaria, mientras el asistente
+  // acepte reescribir la Agencia (hasta que se acepten los términos: después
+  // el micro ya no la reescribe y corregir el nombre lo dejaría distinto).
+  const volver =
+    onCorregirInmobiliaria && currentStep !== null && currentStep !== 'complete'
+      ? {
+          etiqueta: 'Volver a los datos de la inmobiliaria',
+          descripcion: 'Ahí corriges la razón social o tu nombre, y sigues aquí donde ibas.',
+          onVolver: onCorregirInmobiliaria,
+        }
+      : undefined
+
   const cargando = status === 'loading' && error === null
   const conErrorDeSesion = error !== null && error.kind !== 'validation' && error.kind !== 'conflict'
+
+  /*
+   * Qué se ve en la tarjeta. Al cambiar, el paso nuevo entra por la derecha
+   * al avanzar y por la izquierda al volver a uno hecho (`CrossFade` de
+   * pasos); la carga y el error de la sesión entran subiendo. `popLayout`: lo
+   * nuevo monta YA, al mismo tiempo que el título del paso (que recibe el
+   * foco), y lo viejo se va por encima, acelerando.
+   */
+  const pasoDeLaVista: OnboardingWizardStep =
+    pasoYaGuardado && completeStepOverride
+      ? completeStepOverride
+      : pendingMembersInvites || effectiveStep === 'members'
+        ? 'members'
+        : effectiveStep === null || effectiveStep === 'start'
+          ? 'agency'
+          : effectiveStep
+  const claveDeLaVista = cargando
+    ? 'cargando'
+    : conErrorDeSesion
+      ? 'error-de-la-sesion'
+      : status === 'loading'
+        ? 'esperando'
+        : pasoYaGuardado
+          ? `ya-guardado-${pasoDeLaVista}`
+          : pasoDeLaVista
+  const direccion = useDireccionDelPaso(
+    claveDeLaVista,
+    cargando || conErrorDeSesion || status === 'loading' ? null : ORDEN_DEL_MICRO.indexOf(pasoDeLaVista),
+  )
 
   // El marco (pasos a la izquierda, el paso al centro, lo informativo a la
   // derecha) es el mismo del inquilino: `MarcoDelAsistente`. Acá sólo se
@@ -308,8 +445,10 @@ function OnboardingWizard({
       pasoAlcanzado={pasoDelMicro}
       onNavigateToStep={revisarPaso}
       sinEncabezado={cargando || conErrorDeSesion}
+      volver={volver}
     >
-      <div className="space-y-6">
+      <div className="relative">
+      <CrossFade swapKey={claveDeLaVista} direction={direccion} mode="popLayout" className="space-y-6">
         {cargando && (
           <CargaDeMarca
             tamano="lg"
@@ -334,20 +473,36 @@ function OnboardingWizard({
                 onVolver={() => setCompleteStepOverride(null)}
               />
             ) : effectiveStep === 'agency' || effectiveStep === null || effectiveStep === 'start' ? (
+              <>
+              {razonSocialPorConfirmar && (
+                <div
+                  role="status"
+                  className="mb-5 flex items-start gap-2.5 rounded-md bg-info-soft p-3"
+                  data-testid="razon-social-por-confirmar"
+                >
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" weight="fill" aria-hidden />
+                  <p className="text-body-sm text-fg">
+                    Cambiaste la razón social. Confirma los datos de la agencia y sigues donde ibas.
+                  </p>
+                </div>
+              )}
               <AgencyStepForm
                 isSubmitting={isSubmitting}
                 onSubmit={withOverrideClear(submitAgency)}
-                submitError={error !== null && error.kind === 'validation' ? error.message : null}
+                // El 400 entero: sus `campos` van a cada campo (02-10-2026).
+                errorDelServidor={error !== null && error.kind === 'validation' ? error : null}
                 prefill={computeAgencyStepPrefill(preStepAgency, draft)}
                 sessionId={sessionId}
               />
+              </>
             ) : effectiveStep === 'members' || pendingMembersInvites ? (
               <MembersStepForm
                 isSubmitting={isSubmitting}
                 onSubmit={withOverrideClear(handleSubmitMembers)}
-                submitError={error !== null && error.kind === 'validation' ? error.message : null}
+                errorDelServidor={error !== null && error.kind === 'validation' ? error : null}
                 pendingInvites={pendingMembersInvites}
                 onContinueAfterInvites={() => setPendingMembersInvites(null)}
+                onReintentarInvitaciones={reintentarInvitaciones}
                 sessionId={sessionId}
                 guardados={miembrosDelBorrador(draft)}
               />
@@ -360,6 +515,8 @@ function OnboardingWizard({
               <PaymentProviderAutoSkipStep
                 isSubmitting={isSubmitting}
                 onSkip={() => withOverrideClear(submitPaymentProvider)({ skip: true })}
+                // El `null` del paso no se traga el 400: su frase está en `error` (02-10-2026).
+                mensajeDelFallo={error !== null && error.kind === 'validation' ? error.message : null}
               />
             ) : effectiveStep === 'policy' ? (
               // Invisible step — the collection policy is an optional adjustment
@@ -371,6 +528,7 @@ function OnboardingWizard({
                 onSkip={() =>
                   withOverrideClear(submitPolicy)(toPolicyRequest(POLICY_STEP_DEFAULT_VALUES))
                 }
+                mensajeDelFallo={error !== null && error.kind === 'validation' ? error.message : null}
               />
             ) : effectiveStep === 'habeas_data' ? (
               // The signed-habeas-data upload was replaced by a terms
@@ -389,13 +547,14 @@ function OnboardingWizard({
               <CompleteStepForm
                 isSubmitting={isSubmitting}
                 onSubmit={crearInmobiliaria}
-                error={error !== null && error.kind === 'conflict' ? error : null}
+                error={error !== null && (error.kind === 'conflict' || error.kind === 'validation') ? error : null}
                 onNavigateToStep={completarPaso}
                 draft={draft}
               />
             )}
           </>
         )}
+      </CrossFade>
       </div>
     </MarcoDelAsistente>
   )

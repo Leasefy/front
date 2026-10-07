@@ -2,7 +2,6 @@
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { CaretLeft, PaperPlaneTilt } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { toast } from '@/components/ui/toast';
@@ -43,12 +42,10 @@ function GenerarDispersionesContent() {
 
   return (
     <div className="min-h-screen bg-plan-page">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="border-b border-border bg-background"
-      >
+      {/* Header — la página ya no anima su propia entrada: la pone el
+          `template.tsx` (antes el encabezado bajaba y el asistente subía con
+          retraso, encima de esa entrada). */}
+      <div className="border-b border-border bg-background">
         {/* 🔴 Nico, 22-09: «¿por qué no utilizas todo el ancho? ¡para eso lo
             tienes!». Esta pantalla tenía DOS topes distintos —el encabezado en
             `max-w-4xl` (896 px) y el contenido en `max-w-6xl` (1152 px)—, así
@@ -78,17 +75,12 @@ function GenerarDispersionesContent() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
 
       {/* Wizard Content */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="px-6 py-6 lg:px-8"
-      >
+      <div className="px-6 py-6 lg:px-8">
         <GenerarDispersion onComplete={handleComplete} onCancel={handleCancel} />
-      </motion.div>
+      </div>
     </div>
   );
 }

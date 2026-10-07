@@ -117,12 +117,17 @@ vi.mock('@/components/providers/SmoothScroll', () => ({
  * veredicto la devuelven con números. `recargar` tiene identidad estable a
  * propósito: el muro la usa como dependencia de un efecto.
  */
-const { deudaMock, recargarDeuda } = vi.hoisted(() => ({
+const { deudaMock, recargarDeuda, pedidosDeDeuda } = vi.hoisted(() => ({
   deudaMock: vi.fn(),
   recargarDeuda: async () => {},
+  // QA-MIGRACION-95 (ER-05): con qué `habilitado` pregunta el muro por la deuda.
+  pedidosDeDeuda: [] as Array<boolean | undefined>,
 }));
 vi.mock('@/lib/hooks/use-migracion-con-deuda', () => ({
-  useDeudaDeMigracion: () => ({ deuda: deudaMock(), recargar: recargarDeuda }),
+  useDeudaDeMigracion: (habilitado?: boolean) => {
+    pedidosDeDeuda.push(habilitado);
+    return { deuda: deudaMock(), recargar: recargarDeuda };
+  },
   useMigracionConDeuda: () => deudaMock(),
 }));
 
@@ -202,9 +207,7 @@ async function pintar() {
     root = createRoot(container);
     root.render(
       <MuroDeMigracion>
-        <a href="/panel/inmobiliaria/reportes/resumen" data-testid="algo-del-panel">
-          Panel
-        </a>
+        <span data-testid="algo-del-panel">Panel</span>
       </MuroDeMigracion>,
     );
   });
@@ -323,6 +326,21 @@ describe('con `bloquea: true`', () => {
       resuelta: null,
       pasos: RECIEN_LLEGADA,
     });
+  });
+
+  it('QA-MIGRACION-95 (ER-05): quien no ve contratos no le pregunta al back por la deuda (era un 403 en cada vuelta)', async () => {
+    // Visto con el asesor y el auxiliar de una inmobiliaria nueva: el muro pedía
+    // `GET /contracts/migrar/resumen` y el back respondía 403 cuatro veces.
+    permisos.puede = false;
+    pedidosDeDeuda.length = 0;
+    try {
+      await pintar();
+      expect(q('muro-migracion')).not.toBeNull();
+      expect(pedidosDeDeuda.length).toBeGreaterThan(0);
+      expect(pedidosDeDeuda.every((h) => h === false)).toBe(true);
+    } finally {
+      permisos.puede = true;
+    }
   });
 
   it('el panel se ve desenfocado detrás — no se desmonta', async () => {
@@ -677,6 +695,61 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
     expect(q('muro-porque-contables')?.textContent).toContain('migracion.pasos.puc.titulo');
   });
 
+  it('🔴 recién llegada: el Plan de cuentas se puede abrir sin terminar Contratos (Nico, 04-10)', async () => {
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: RECIEN_LLEGADA,
+    });
+
+    await pintar();
+
+    expect(q('muro-paso-puc')?.getAttribute('data-habilitado')).toBe('true');
+    expect(q('muro-porque-puc')).toBeNull();
+    await click('muro-ir-puc');
+    expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('puc');
+    expect(q('contenido-puc')).not.toBeNull();
+    expect(q('muro-aviso-frenado')).toBeNull();
+    // Los registros contables siguen esperando, y no por el plan.
+    expect(q('muro-ir-contables')).toBeNull();
+    expect(q('muro-paso-contables')?.getAttribute('data-habilitado')).toBe('false');
+  });
+
+  it('🔴 los registros contables dicen POR QUÉ esperan a los terceros y los contratos', async () => {
+    // Estaba en «contables» con todo listo; el refresco trae Contratos
+    // pendiente y el plan listo: el aviso explica la espera.
+    estadoMock.estado.mockResolvedValueOnce({
+      bloquea: true,
+      resuelta: null,
+      pasos: [...TODO_MIGRADO.slice(0, 5), paso('contables', 'pendiente')],
+    });
+    estadoMock.estado.mockResolvedValue({
+      bloquea: true,
+      resuelta: null,
+      pasos: [
+        ...TODO_MIGRADO.slice(0, 3),
+        paso('contratos', 'pendiente'),
+        paso('puc', 'listo', 75),
+        paso('contables', 'pendiente'),
+      ],
+    });
+
+    vi.useFakeTimers();
+    try {
+      await pintar();
+      expect(q('muro-en-foco')?.getAttribute('data-paso')).toBe('contables');
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(CADA_CUANTO_SE_REFRESCA_MS);
+      });
+      const aviso = q('muro-aviso-frenado')?.textContent ?? '';
+      expect(aviso).toContain('migracion.muro.esperanTercerosYContratos');
+      expect(aviso).toContain('migracion.pasos.contratos.titulo');
+      expect(q('contenido-contables')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('los saltos entre el 5 y el 6 se quedan ADENTRO del muro', async () => {
     estadoMock.estado.mockResolvedValue({
       bloquea: true,
@@ -731,8 +804,11 @@ describe('los pasos van encadenados, y el contenido del paso vive adentro', () =
 
     expect(q('muro-sin-permiso')).not.toBeNull();
     expect(q('contenido-propietarios')).toBeNull();
-    // Y la salida de «arranco de cero» sigue estando.
-    expect(q('muro-arrancar-de-cero')).not.toBeNull();
+    // Y tiene salida. QA-MIGRACION-95 (MU-12, Nico 06-10 «(a)»): sin permiso para
+    // resolver la migración, «arranco de cero» (que omite, 403) se cambia por la
+    // línea «la termina un administrador» y su «Entrar al panel» (sólo para él).
+    expect(q('muro-arrancar-de-cero')).toBeNull();
+    expect(q('muro-entrar-sin-resolver')).not.toBeNull();
   });
 
   it('un paso elegido que quedó frenado (el anterior volvió a pendiente) lo dice y ofrece ir', async () => {
@@ -1296,6 +1372,18 @@ describe('🔴 «No vengo de otro sistema, arranco de cero»', () => {
     expect(q('muro-confirmar-no')).not.toBeNull();
   });
 
+  it('QA-MIGRACION-95 (MU-07): con pasos ya cargados no dice «sin nada cargado»', async () => {
+    // Visto con 5 de 6 pasos listos: «Vas a entrar al panel sin nada cargado:
+    // cada propietario, inquilino, inmueble y contrato lo vas a tener que crear
+    // a mano». Mentía: lo cargado se queda.
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: [...TODO_MIGRADO.slice(1), paso('propietarios', 'pendiente')] });
+    await pintar();
+    await click('muro-arrancar-de-cero');
+    const confirmacion = q('muro-confirmar-cero')?.textContent ?? '';
+    expect(confirmacion).toContain('migracion.muro.confirmar.detalleConAlgoCargado');
+    expect(confirmacion).not.toContain('migracion.muro.confirmar.detalle::');
+  });
+
   it('«volver» cancela y deja el muro como estaba', async () => {
     await pintar();
     await click('muro-arrancar-de-cero');
@@ -1587,6 +1675,103 @@ describe('la migración abierta a mano, con el muro abajo', () => {
     await act(async () => {});
     expect(estadoMock.terminar).toHaveBeenCalledTimes(1);
     expect(q('muro-migracion')).toBeNull();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// QA-MIGRACION-95 (MU-12, Nico 06-10 «(a)»): quien no puede resolver la
+// migración no queda encerrado.
+// ══════════════════════════════════════════════════════════════════════════
+
+describe('MU-12: el miembro sin permiso para resolver la migración', () => {
+  // Visto en el navegador: el asesor y el contador de una inmobiliaria nueva
+  // apretaban «En otro momento» o la ✕, el back respondía 403 a `omitir`
+  // (pide configuracion:edit) y el muro tapaba TODO el panel. Ahora el muro
+  // baja sólo para esa persona, sin llamar a omitir, y se dice por qué.
+  const CLAVE_DEL_MIEMBRO = 'leasefy:migracion:bajado-por-el-miembro:agencia:persona';
+  const qDoc = (testid: string) => document.querySelector(`[data-testid="${testid}"]`);
+  async function clickDoc(testid: string) {
+    const el = qDoc(testid) as HTMLElement | null;
+    if (!el) throw new Error(`No existe [data-testid="${testid}"] en el documento`);
+    await act(async () => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+  }
+
+  beforeEach(() => {
+    localStorage.removeItem(CLAVE_DEL_MIEMBRO);
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    estadoMock.omitir.mockRejectedValue(Object.assign(new Error('403'), { status: 403 }));
+    permisos.puede = false;
+  });
+  afterEach(() => {
+    permisos.puede = true;
+    localStorage.removeItem(CLAVE_DEL_MIEMBRO);
+    localStorage.removeItem('leasefy:migracion:decision:agencia');
+  });
+
+  it('la ✕ le baja el muro sólo a él, sin llamar a omitir, y queda recordado', async () => {
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
+    await pintar();
+    expect(q('muro-migracion')).not.toBeNull();
+    // En vez de «arranco de cero» (que también pide omitir), la línea y la salida.
+    expect(q('muro-arrancar-de-cero')).toBeNull();
+    expect(q('muro-termina-un-administrador')?.textContent).toContain('migracion.muro.terminaUnAdministrador');
+    await click('muro-cerrar');
+    await act(async () => {});
+    expect(estadoMock.omitir).not.toHaveBeenCalled();
+    expect(q('muro-migracion')).toBeNull();
+    expect(localStorage.getItem(CLAVE_DEL_MIEMBRO)).toBe('1');
+  });
+
+  it('«Entrar al panel» de la línea hace lo mismo', async () => {
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
+    await pintar();
+    await click('muro-entrar-sin-resolver');
+    await act(async () => {});
+    expect(estadoMock.omitir).not.toHaveBeenCalled();
+    expect(q('muro-migracion')).toBeNull();
+  });
+
+  it('«En otro momento» de la pregunta tampoco llama a omitir y deja entrar', async () => {
+    localStorage.removeItem('leasefy:migracion:decision:agencia');
+    await pintar();
+    await clickDoc('migrar-en-otro-momento');
+    await act(async () => {});
+    expect(estadoMock.omitir).not.toHaveBeenCalled();
+    expect(q('muro-migracion')).toBeNull();
+    expect(qDoc('decision-de-migracion')).toBeNull();
+  });
+
+  it('con los 6 pasos listos, «Entrar al panel» tampoco llama a terminar (403) y le baja el muro a él', async () => {
+    // Visto en el navegador (b-mu12t): el asesor y el contador apretaban
+    // «Entrar al panel» con todo listo, `terminar` respondía 403 y el muro
+    // seguía puesto con «No tienes permiso para editar la configuración».
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: TODO_MIGRADO });
+    estadoMock.terminar.mockRejectedValue(Object.assign(new Error('403'), { status: 403 }));
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
+    await pintar();
+    const entrar = q('muro-ya-termine') ?? q('muro-entrar-igual');
+    expect(entrar).not.toBeNull();
+    await click(entrar?.getAttribute('data-testid') as string);
+    await act(async () => {});
+    expect(estadoMock.terminar).not.toHaveBeenCalled();
+    expect(q('muro-fallo')).toBeNull();
+    expect(q('muro-migracion')).toBeNull();
+    expect(localStorage.getItem(CLAVE_DEL_MIEMBRO)).toBe('1');
+  });
+
+  it('recordado: la próxima vez entra sin muro; el administrador sigue viendo el muro como siempre', async () => {
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
+    localStorage.setItem(CLAVE_DEL_MIEMBRO, '1');
+    await pintar();
+    expect(q('muro-migracion')).toBeNull();
+    act(() => root?.unmount());
+    container?.remove();
+    permisos.puede = true;
+    await pintar();
+    expect(q('muro-migracion')).not.toBeNull();
+    expect(q('muro-arrancar-de-cero')).not.toBeNull();
   });
 });
 
@@ -2062,5 +2247,224 @@ describe('el aviso hacia arriba, al layout (el segundo factor dentro del panel n
       (q('bienvenida-entrar') as HTMLButtonElement).click();
     });
     expect(avisos.at(-1)).toBe(false);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// 🔴 Mientras no se sabe, el panel no se ve nítido (Nico, 01-10-2026)
+// ══════════════════════════════════════════════════════════════════════════
+
+import { ESPERA_MAXIMA_DEL_ESTADO_MS } from './MuroDeMigracion';
+import { ApiError } from '@/lib/api/client';
+
+describe('la llegada al panel: difuminado hasta saber si toca decidir', () => {
+  const MARCA = 'leasefy:migracion:muro-abajo:agencia';
+  const DECISION = 'leasefy:migracion:decision:agencia';
+  const velo = () => document.querySelector('[data-testid="muro-esperando-estado"]');
+
+  beforeEach(() => {
+    localStorage.removeItem(MARCA);
+    localStorage.removeItem(DECISION);
+  });
+
+  /** Pinta SIN dejar que la consulta vuelva: el primer cuadro. */
+  function pintarPrimerCuadro() {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    act(() => {
+      root = createRoot(container);
+      root.render(
+        <MuroDeMigracion>
+          <span data-testid="algo-del-panel">Panel</span>
+        </MuroDeMigracion>,
+      );
+    });
+  }
+
+  it('🔴 desde el primer cuadro: borroso, inerte, oculto y con el velo', () => {
+    estadoMock.estado.mockReturnValue(new Promise(() => {}));
+    pintarPrimerCuadro();
+    const detras = q('panel-detras-del-muro') as HTMLElement;
+    expect(detras.className).toContain('blur');
+    expect(detras.hasAttribute('inert')).toBe(true);
+    expect(detras.getAttribute('aria-hidden')).toBe('true');
+    expect(velo()).not.toBeNull();
+    expect(q('muro-migracion')).toBeNull();
+  });
+
+  it('si toca decidir, la pregunta entra encima y el panel sigue borroso', async () => {
+    let responder: (v: unknown) => void = () => {};
+    estadoMock.estado.mockReturnValue(new Promise((r) => (responder = r)));
+    pintarPrimerCuadro();
+    await act(async () => {
+      responder({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    });
+    expect(document.querySelector('[data-testid="decision-de-migracion"]')).not.toBeNull();
+    const detras = q('panel-detras-del-muro') as HTMLElement;
+    expect(detras.className).toContain('blur');
+    expect(detras.hasAttribute('inert')).toBe(true);
+    expect(localStorage.getItem(MARCA)).toBeNull();
+  });
+
+  it('si no le aplica, el panel queda nítido y se recuerda: la próxima carga no parpadea', async () => {
+    estadoMock.estado.mockResolvedValue({ bloquea: false, resuelta: 'completada', pasos: TODO_MIGRADO });
+    await pintar();
+    expect((q('panel-detras-del-muro') as HTMLElement).className).toBe('');
+    expect(localStorage.getItem(MARCA)).toBe('1');
+
+    act(() => root?.unmount());
+    container.remove();
+    estadoMock.estado.mockReturnValue(new Promise(() => {}));
+    pintarPrimerCuadro();
+    expect((q('panel-detras-del-muro') as HTMLElement).className).toBe('');
+    expect(q('panel-detras-del-muro')?.hasAttribute('inert')).toBe(false);
+  });
+
+  it('quien ya decidió «en otro momento» entra nítido desde el primer cuadro', () => {
+    localStorage.setItem(DECISION, 'luego');
+    estadoMock.estado.mockReturnValue(new Promise(() => {}));
+    pintarPrimerCuadro();
+    expect((q('panel-detras-del-muro') as HTMLElement).className).toBe('');
+  });
+
+  it('una respuesta que vuelve a bloquear borra la marca', async () => {
+    localStorage.setItem(MARCA, '1');
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    await pintar();
+    expect(localStorage.getItem(MARCA)).toBeNull();
+  });
+
+  it('🔴 si tarda más del tope, cae a «no sé»: el panel se ve (nunca borroso para siempre)', () => {
+    vi.useFakeTimers();
+    try {
+      estadoMock.estado.mockReturnValue(new Promise(() => {}));
+      pintarPrimerCuadro();
+      expect((q('panel-detras-del-muro') as HTMLElement).className).toContain('blur');
+      act(() => {
+        vi.advanceTimersByTime(ESPERA_MAXIMA_DEL_ESTADO_MS);
+      });
+      const detras = q('panel-detras-del-muro') as HTMLElement;
+      expect(detras.className).toBe('');
+      expect(detras.hasAttribute('inert')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('un 403 de permisos (no el del segundo factor) se recuerda como «no le va»', async () => {
+    estadoMock.estado.mockRejectedValue(new ApiError(403, 'Sin permiso', 'SIN_PERMISO_DE_MODULO'));
+    await pintar();
+    expect((q('panel-detras-del-muro') as HTMLElement).className).toBe('');
+    expect(localStorage.getItem(MARCA)).toBe('1');
+  });
+
+  it('el 403 del segundo factor NO se recuerda: es una ventana, no una respuesta', async () => {
+    estadoMock.estado.mockRejectedValue(new ApiError(403, 'x', 'SEGUNDO_FACTOR_REQUERIDO'));
+    await pintar();
+    expect(localStorage.getItem(MARCA)).toBeNull();
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// Sistema de errores (02-10-2026): ningún fallo del muro se calla ni culpa a
+// la conexión cuando el servidor sí respondió.
+// ══════════════════════════════════════════════════════════════════════════
+
+import { toast as toastDelMuro } from '@/components/ui/toast';
+
+describe('el muro y la regla de oro de los errores', () => {
+  const ERROR_500 = () =>
+    new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      message: 'Error interno del servidor.',
+      referencia: 'ab12cd34',
+    });
+  const qDoc = (testid: string) => document.querySelector(`[data-testid="${testid}"]`);
+  async function clickDoc(testid: string) {
+    const el = qDoc(testid) as HTMLElement | null;
+    if (!el) throw new Error(`No existe [data-testid="${testid}"] en el documento`);
+    await act(async () => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('🔴 «arranco de cero» con un 5xx: de nuestro lado, con la referencia, sin el texto crudo', async () => {
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
+    estadoMock.omitir.mockRejectedValue(ERROR_500());
+
+    await pintar();
+    await click('muro-arrancar-de-cero');
+    await click('muro-confirmar-si');
+    await act(async () => {});
+
+    const t = q('muro-fallo')?.textContent ?? '';
+    expect(t).toContain('No pudimos dejar la migración para después: algo falló de nuestro lado');
+    expect(t).toContain('ab12cd34');
+    expect(t).not.toContain('Error interno del servidor');
+    expect(t).not.toMatch(/conexi[oó]n/);
+    expect(q('muro-fallo')?.getAttribute('role')).toBe('alert');
+  });
+
+  it('🔴 «En otro momento» que no pudo omitir lo DICE (antes el catch estaba vacío) y el muro se queda', async () => {
+    const error = vi.spyOn(toastDelMuro, 'error');
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    estadoMock.omitir.mockRejectedValue(ERROR_500());
+
+    await pintar();
+    await clickDoc('migrar-en-otro-momento');
+    await act(async () => {});
+
+    expect(error).toHaveBeenCalledWith(
+      'No pudimos dejar la migración para después',
+      expect.objectContaining({
+        description: expect.stringContaining('ab12cd34'),
+      }),
+    );
+    error.mockRestore();
+  });
+
+  it('la ✕ con la red caída habla de la conexión (ahí sí no hubo respuesta)', async () => {
+    const error = vi.spyOn(toastDelMuro, 'error');
+    estadoMock.estado.mockResolvedValue({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA });
+    localStorage.setItem('leasefy:migracion:decision:agencia', 'ahora');
+    estadoMock.omitir.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    await pintar();
+    await click('muro-cerrar');
+    await act(async () => {});
+
+    expect(error).toHaveBeenCalledWith(
+      'No pudimos dejar la migración para después',
+      expect.objectContaining({ description: expect.stringMatching(/conexión/) }),
+    );
+    expect(q('muro-migracion')).not.toBeNull();
+    error.mockRestore();
+  });
+
+  it('«No requiero migración» con el recordatorio caído avisa, y omite igual', async () => {
+    const aviso = vi.spyOn(toastDelMuro, 'warning');
+    const abierto = { bloquea: false, resuelta: 'omitida', pasos: RECIEN_LLEGADA };
+    estadoMock.estado
+      .mockResolvedValueOnce({ bloquea: true, resuelta: null, pasos: RECIEN_LLEGADA })
+      .mockResolvedValue(abierto);
+    estadoMock.omitir.mockResolvedValue(abierto);
+    estadoMock.recordatorio.mockRejectedValue(ERROR_500());
+
+    await pintar();
+    await clickDoc('no-requiero-migracion');
+    await act(async () => {});
+
+    expect(aviso).toHaveBeenCalledWith(
+      'No pudimos apagar el recordatorio de la migración',
+      expect.objectContaining({ description: expect.stringContaining('ab12cd34') }),
+    );
+    expect(estadoMock.omitir).toHaveBeenCalledWith('no_requiere_migracion');
+    aviso.mockRestore();
   });
 });

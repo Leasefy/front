@@ -3,10 +3,18 @@
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { CrossFade } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { MapPin, Calendar, House, CreditCard, ArrowUpRight, CheckCircle, Clock, WarningCircle } from '@phosphor-icons/react';
 
 import { toast } from 'sonner';
-import { useLeases, useMyPayments, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { useLeases, useLeasePaymentInfo } from '@/lib/hooks/useLeases';
+import { useEstadoDeCuentaDelPortal } from '@/lib/hooks/useResumenDelPortal';
+import { resumenDePagos } from '@/lib/estado-de-cuenta/resumen-de-pagos';
+import { proximoPagoDelPortal } from '@/lib/estado-de-cuenta/proximo-pago-del-portal';
+import { hoyLocal } from '@/components/estado-de-cuenta/filas';
+import { estadoGeneralDelArriendo, diaDePagoLegible } from '@/lib/estado-de-cuenta/estado-general-del-portal';
 import { leasesApi } from '@/lib/api/leases.service';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -15,22 +23,57 @@ import { CompleteProfileFirst } from '@/components/tenant/CompleteProfileFirst';
 import { EmptyState } from '@/components/ui/empty-state';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
+import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
+import { NoVoyARenovar } from '@/components/inquilino/NoVoyARenovar';
+import { ContratosSinArriendo } from '@/components/inquilino/ContratosSinArriendo';
+import { useContratosDelPortal } from '@/lib/hooks/use-contratos-del-portal';
+
+/**
+ * QA-INQ-95: el inicio y el fin del arriendo son DÍAS. `new Date('2025-11-01T00:00:00.000Z')`
+ * en Colombia es el 31 de octubre: «Mi arriendo» decía «31 de oct de 2025 → 30 de oct de 2026»
+ * de un contrato del 1 de noviembre al 31 de octubre. Un instante (con hora) sigue siendo instante.
+ */
+function diaDelArriendo(iso: string): Date {
+  return fechaDeVigencia(iso) ?? new Date(iso);
+}
 
 /**
  * Tenant Leases Page - Landing Style (matching main dashboard)
  */
+/** El portal en inglés es residual: sólo las etiquetas que ya existían. */
+function estadoEn(es: string): string {
+  const m: Record<string, string> = {
+    'Al día': 'Up to date',
+    'En verificación': 'In verification',
+    'Pago rechazado': 'Payment rejected',
+    'Pendiente': 'Pending',
+    'Con saldo vencido': 'Overdue balance',
+    'Pago del mes recibido': 'This month received',
+  };
+  return m[es] ?? es;
+}
+
 export default function ArriendoPage() {
   const { t, locale, formatCurrency } = useI18n();
   const { isComplete: isOnboardingComplete, isLoading: isOnboardingLoading } = useOnboardingStatus();
 
   const { leases, isLoading, error, errorCrudo, refetch, getActive } = useLeases();
-  const { getNextPayment } = useMyPayments();
 
   const activeLeases = isOnboardingComplete ? getActive() : [];
   const primaryLease = activeLeases[0];
+  // QA-MIGRACION-95 — CA-04 (Nico, (a)): los contratos migrados sin arriendo
+  // (sin día de pago en el archivo), por la identidad de la sesión.
+  const { contratos: contratosSinArriendo, cargando: cargandoContratos } = useContratosDelPortal(isOnboardingComplete === true);
+  const cuantosContratos = activeLeases.length + contratosSinArriendo.length;
 
   // Estado del período actual — misma fuente única que pagos/page.tsx.
   const { info: paymentInfo } = useLeasePaymentInfo(primaryLease?.id ?? null);
+  // UNA lectura del estado de cuenta: el «Estado general» y el «Próximo pago» de
+  // cada tarjeta salen de ahí, como «Pagos» (QA-INQ-95: el próximo pago venía de
+  // `/tenant-payments/mine`, armado con el día pactado y el canon entero).
+  const estadoDeCuenta = useEstadoDeCuentaDelPortal(Boolean(primaryLease));
+  const hoy = hoyLocal();
+  const resumenDeCuotas = estadoDeCuenta ? resumenDePagos(estadoDeCuenta, hoy) : null;
 
   // Calculate totals
   const totalMonthlyRent = activeLeases.reduce(
@@ -39,7 +82,7 @@ export default function ArriendoPage() {
   );
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+    return diaDelArriendo(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -47,7 +90,7 @@ export default function ArriendoPage() {
   };
 
   const formatShortDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
+    return diaDelArriendo(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'short',
     });
@@ -55,15 +98,15 @@ export default function ArriendoPage() {
 
   // Get days remaining for a lease
   const getDaysRemaining = (endDate: string) => {
-    const end = new Date(endDate);
+    const end = diaDelArriendo(endDate);
     const today = new Date();
     return Math.max(0, Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
   };
 
   // Calculate lease progress (time elapsed)
   const getLeaseProgress = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = diaDelArriendo(startDate);
+    const end = diaDelArriendo(endDate);
     const today = new Date();
     const totalDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
     const elapsedDays = (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
@@ -71,6 +114,8 @@ export default function ArriendoPage() {
   };
 
   // Loading state
+  // Carga → contenido: entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(isOnboardingLoading || isLoading);
   if (isOnboardingLoading || isLoading) {
     return (
       <div className="min-h-screen bg-bg">
@@ -105,64 +150,44 @@ export default function ArriendoPage() {
     );
   }
 
-  // Estado general — refleja el período actual real (currentPeriodStatus), no una
-  // constante "Al día". Neutral y factual: sin "EN MORA", sin countdown, sin
-  // referencias a centrales de riesgo (PAGO-01 / PITFALLS 8).
-  const overallStatus = (() => {
-    switch (paymentInfo?.currentPeriodStatus) {
-      case 'APPROVED':
-        return {
-          label: locale === 'es' ? 'Al día' : 'Up to date',
-          detail: locale === 'es' ? 'Pago del período confirmado' : 'Current period confirmed',
-          Icon: CheckCircle,
-          iconColor: 'text-success',
-        };
-      case 'PENDING_VALIDATION':
-        return {
-          label: locale === 'es' ? 'En verificación' : 'In verification',
-          detail: locale === 'es' ? 'Pago en proceso de validación' : 'Payment being validated',
-          Icon: Clock,
-          iconColor: 'text-warning',
-        };
-      case 'REJECTED':
-        return {
-          label: locale === 'es' ? 'Pago rechazado' : 'Payment rejected',
-          detail:
-            paymentInfo?.currentPeriodRejectionReason ??
-            (locale === 'es' ? 'Revisa el estado de cuenta' : 'Check your account status'),
-          Icon: WarningCircle,
-          iconColor: 'text-danger',
-        };
-      case 'NONE':
-        return {
-          label: locale === 'es' ? 'Pendiente' : 'Pending',
-          detail: locale === 'es' ? 'Pago del período pendiente' : 'Current period pending',
-          Icon: Clock,
-          iconColor: 'text-fg-subtle',
-        };
-      default:
-        return null; // sin arriendo activo / info no cargada
-    }
-  })();
+  // Estado general — sale de las CUOTAS (la misma fuente que «Mi estado de
+  // cuenta»), no sólo del pago del período: con cuotas vencidas no se dice
+  // «Al día». Neutral y factual, sin referencias a centrales de riesgo.
+  const estadoGeneral = estadoGeneralDelArriendo(
+    paymentInfo?.currentPeriodStatus,
+    resumenDeCuotas,
+    paymentInfo?.currentPeriodRejectionReason,
+  );
+  const overallStatus = estadoGeneral
+    ? {
+        label: locale === 'es' ? estadoGeneral.etiqueta : estadoEn(estadoGeneral.etiqueta),
+        detail: estadoGeneral.detalle,
+        Icon: estadoGeneral.tono === 'ok' ? CheckCircle : estadoGeneral.tono === 'peligro' ? WarningCircle : Clock,
+        iconColor:
+          estadoGeneral.tono === 'ok'
+            ? 'text-success'
+            : estadoGeneral.tono === 'peligro'
+              ? 'text-danger'
+              : estadoGeneral.tono === 'espera'
+                ? 'text-warning'
+                : 'text-fg-subtle',
+      }
+    : null;
   const OverallStatusIcon = overallStatus?.Icon ?? Clock;
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <h1 className="text-3xl font-medium text-fg tracking-tight">
             {t('rental.title')}
           </h1>
           <p className="mt-1 text-fg-muted">
             {locale === 'es' ? 'Gestiona tus contratos de arriendo activos' : 'Manage your active rental contracts'}
           </p>
-        </motion.header>
+        </header>
 
         {/*
           Los KPI solo cuando hay algo que resumir.
@@ -172,12 +197,7 @@ export default function ArriendoPage() {
           estar lo único útil de esta pantalla: qué hacer para tener un arriendo.
         */}
         {activeLeases.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
           {/* Active Leases */}
           <div className="rounded-xl bg-surface-muted p-6">
             <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-4">
@@ -221,23 +241,19 @@ export default function ArriendoPage() {
                 : (locale === 'es' ? 'Sin información de pago' : 'No payment info')}
             </p>
           </div>
-        </motion.div>
+        </div>
         )}
 
         {/* Leases List */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
+        <section>
           {/* Sin contratos no va el encabezado: "Contratos activos · 0
               contratos" arriba de "No tienes arriendos activos" dice lo mismo
               dos veces, y la segunda ya lo dice mejor. */}
-          {activeLeases.length > 0 && (
+          {cuantosContratos > 0 && (
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-fg">{locale === 'es' ? 'Contratos activos' : 'Active contracts'}</h2>
               <span className="text-sm text-fg-muted">
-                {activeLeases.length} {locale === 'es' ? (activeLeases.length !== 1 ? 'contratos' : 'contrato') : (activeLeases.length !== 1 ? 'contracts' : 'contract')}
+                {cuantosContratos} {locale === 'es' ? (cuantosContratos !== 1 ? 'contratos' : 'contrato') : (cuantosContratos !== 1 ? 'contracts' : 'contract')}
               </span>
             </div>
           )}
@@ -245,19 +261,16 @@ export default function ArriendoPage() {
           {activeLeases.length > 0 ? (
             <div className="space-y-4">
               {activeLeases.map((lease, index) => {
-                const nextPayment = getNextPayment(lease.id);
+                const nextPayment = estadoDeCuenta
+                  ? proximoPagoDelPortal(estadoDeCuenta, hoy, lease.contractId ?? null)
+                  : null;
                 const daysRemaining = getDaysRemaining(lease.endDate);
                 const leaseProgress = getLeaseProgress(lease.startDate, lease.endDate);
 
                 return (
-                  <motion.div
-                    key={lease.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 + index * 0.1 }}
-                  >
+                  <div key={lease.id}>
                     <Link href={`/inquilino/arriendo/${lease.id}`}>
-                      <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-all duration-300 overflow-hidden">
+                      <div className="group rounded-xl border border-border bg-surface hover:border-border-strong transition-colors duration-slow overflow-hidden">
                         <div className="flex flex-col lg:flex-row">
                           {/* Image */}
                           <div className="relative w-full lg:w-72 h-52 lg:h-auto flex-shrink-0">
@@ -269,7 +282,7 @@ export default function ArriendoPage() {
                               alt={lease.propertyTitle}
                               sizes="(max-width: 1024px) 100vw, 288px"
                               priority={index === 0}
-                              className="transition-transform duration-500 group-hover:scale-105"
+                              className="transition-transform duration-reveal group-hover:scale-105"
                             />
                             {/* Status Badge */}
                             <div className="absolute top-4 left-4">
@@ -286,7 +299,9 @@ export default function ArriendoPage() {
 
                           {/* Content */}
                           <div className="flex-1 p-6">
-                            {lease.renovacion && (
+                            {/* D-19: con un aviso de no renovación, la tarjeta no ofrece
+                                «Aceptar renovación»: el aviso va debajo de la tarjeta. */}
+                            {lease.renovacion && !(lease.avisoNoRenovar ?? lease.renovacion.avisoNoRenovar) && (
                               <div className="mb-4 rounded-lg border border-primary/30 bg-primary-soft/40 p-3">
                                 <p className="text-sm font-medium text-primary flex items-center gap-1.5">
                                   <ArrowUpRight className="w-4 h-4" />
@@ -298,6 +313,8 @@ export default function ArriendoPage() {
                                     {formatCurrency(lease.renovacion.proposedRent + (lease.renovacion.proposedAdminFee ?? 0))}
                                   </span>
                                 </p>
+                                {/* Aceptar → «Aceptaste»: el botón se cruza con la confirmación. */}
+                                <CrossFade swapKey={lease.renovacion.tenantAcceptedAt ? 'aceptada' : 'pendiente'}>
                                 {lease.renovacion.tenantAcceptedAt ? (
                                   <p className="mt-2 text-xs font-medium text-success flex items-center gap-1.5">
                                     <CheckCircle className="w-4 h-4" weight="fill" />
@@ -313,8 +330,10 @@ export default function ArriendoPage() {
                                         await leasesApi.acceptRenovacion(lease.id);
                                         toast.success(locale === 'es' ? 'Renovación aceptada' : 'Renewal accepted');
                                         refetch();
-                                      } catch {
-                                        toast.error(locale === 'es' ? 'No se pudo aceptar' : 'Could not accept');
+                                      } catch (err) {
+                                        toast.error(locale === 'es' ? 'No se pudo aceptar la renovación' : 'Could not accept the renewal', {
+                                          description: mensajeParaLaPersona(err, { accion: 'aceptar la renovación' }),
+                                        });
                                       }
                                     }}
                                     className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-primary/90 transition-colors"
@@ -323,6 +342,7 @@ export default function ArriendoPage() {
                                     {locale === 'es' ? 'Aceptar renovación' : 'Accept renewal'}
                                   </button>
                                 )}
+                                </CrossFade>
                               </div>
                             )}
                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
@@ -330,10 +350,13 @@ export default function ArriendoPage() {
                                 <h3 className="text-lg font-semibold text-fg group-hover:text-primary transition-colors">
                                   {lease.propertyTitle}
                                 </h3>
+                                {/* Los migrados llevan la dirección como título: no se repite. */}
+                                {lease.propertyAddress && lease.propertyAddress.trim() !== (lease.propertyTitle ?? '').trim() && (
                                 <p className="text-sm text-fg-muted mt-1 flex items-center gap-1.5">
                                   <MapPin className="w-3.5 h-3.5" />
                                   {lease.propertyAddress}
                                 </p>
+                                )}
                               </div>
                               <div className="sm:text-right">
                                 <p className="text-2xl font-bold text-fg">
@@ -360,7 +383,7 @@ export default function ArriendoPage() {
                               <div>
                                 <p className="text-xs text-fg-subtle mb-1">{locale === 'es' ? 'Día de pago' : 'Payment day'}</p>
                                 <p className="text-sm font-medium text-fg">
-                                  {locale === 'es' ? `Día ${lease.paymentDay}` : `Day ${lease.paymentDay}`}
+                                  {diaDePagoLegible(lease.paymentDay) ?? (locale === 'es' ? 'Sin definir' : 'Not set')}
                                 </p>
                               </div>
                               <div>
@@ -381,12 +404,13 @@ export default function ArriendoPage() {
                                 <span>{formatDate(lease.endDate)}</span>
                               </div>
                               <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
+                                {/* `transform`, no `width`: la barra entera corrida a su avance. */}
                                 <div
                                   className={cn(
-                                    "h-full rounded-full transition-all duration-500",
+                                    "h-full w-full rounded-full transition-transform duration-slow ease-enter",
                                     daysRemaining < 30 ? "bg-warning" : "bg-success"
                                   )}
-                                  style={{ width: `${leaseProgress}%` }}
+                                  style={{ transform: `translateX(${leaseProgress - 100}%)` }}
                                 />
                               </div>
                               <p className="text-xs text-fg-muted mt-1.5 text-right">
@@ -404,7 +428,7 @@ export default function ArriendoPage() {
                                   <div>
                                     <p className="text-xs text-fg-muted">{t('dashboard.nextPayment')}</p>
                                     <p className="text-sm font-semibold text-fg">
-                                      {formatCurrency(nextPayment.amount)} · {formatShortDate(nextPayment.dueDate)}
+                                      {formatCurrency(nextPayment.valor)} · {formatShortDate(nextPayment.fecha)}
                                     </p>
                                   </div>
                                 </div>
@@ -418,11 +442,17 @@ export default function ArriendoPage() {
                         </div>
                       </div>
                     </Link>
-                  </motion.div>
+                    {/* D-19 (QA-INQ-95 ronda 2): la otra mitad de la decisión, también
+                        desde la lista (antes sólo «Aceptar renovación»). Va FUERA del
+                        enlace de la tarjeta: abrir el diálogo no navega al detalle. */}
+                    <div className="mt-2 px-1">
+                      <NoVoyARenovar lease={lease} onCambio={refetch} />
+                    </div>
+                  </div>
                 );
               })}
             </div>
-          ) : (
+          ) : contratosSinArriendo.length > 0 || cargandoContratos ? null : (
             <EmptyState
               icon={House}
               title="No tienes arriendos activos"
@@ -433,9 +463,15 @@ export default function ArriendoPage() {
               action={{ label: 'Ver propiedades para mí', href: '/inquilino/para-ti' }}
             />
           )}
-        </motion.section>
+          {/* QA-MIGRACION-95 — CA-04: los contratos que la inmobiliaria cargó sin arriendo. */}
+          {contratosSinArriendo.length > 0 ? (
+            <div className={activeLeases.length > 0 ? 'mt-4' : undefined}>
+              <ContratosSinArriendo contratos={contratosSinArriendo} />
+            </div>
+          ) : null}
+        </section>
 
-      </div>
+      </motion.div>
     </div>
   );
 }

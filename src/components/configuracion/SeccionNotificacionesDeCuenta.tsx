@@ -13,6 +13,7 @@
 import type { Icon } from '@phosphor-icons/react';
 
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { Switch } from '@/components/ui';
 import { useI18n } from '@/lib/i18n';
 import { useNotificationSettings } from '@/lib/hooks/useSettings';
@@ -64,8 +65,16 @@ export function SeccionNotificacionesDeCuenta({ filas }: { filas: readonly FilaD
                         ? t('inmobiliaria.config.notifications.enabled')
                         : t('inmobiliaria.config.notifications.disabled'),
                     );
-                  } catch {
-                    toast.error('No pudimos guardar tu preferencia. Intenta de nuevo.');
+                  } catch (err) {
+                    // Por el traductor (02-10-2026): un 4xx dice qué pasó, un
+                    // 5xx que fue nuestro con la referencia, «conexión» sólo
+                    // sin respuesta. Antes, el mismo texto para todo.
+                    toast.error(
+                      mensajeParaLaPersona(err, {
+                        porDefecto: 'No pudimos guardar tu preferencia. Prueba de nuevo en un momento.',
+                        accion: 'guardar tu preferencia',
+                      }),
+                    );
                   }
                 }}
               />

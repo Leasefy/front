@@ -114,8 +114,15 @@ export type CarteraDeEntidad =
       diasDeMoraMaximo: number;
       /** El interés de mora, aparte del capital (0 si no hay o no vino). */
       interesDeMoraCop: number;
+      /**
+       * Lo vencido sin pagar que sigue dentro del plazo (no es mora). Con el
+       * plazo sin fijar (CR-31) la mora es $0 aunque deba tres cánones: lo
+       * vencido sin pagar es `carteraCop + vencidaEnPlazoCop` (P-8).
+       */
+      vencidaEnPlazoCop?: number;
     }
-  | { estado: 'sin_cuotas' | 'no_disponible' };
+  /** `sin_permiso`: el rol de quien pregunta no ve la Cartera (P-9): no se muestra nada de su plata. */
+  | { estado: 'sin_cuotas' | 'no_disponible' | 'sin_permiso' };
 
 export interface ContratoDeEntidad {
   id: string;
@@ -186,8 +193,12 @@ function leerCartera(v: unknown): CarteraDeEntidad {
       porVencerCop: numero(v.porVencerCop) ?? 0,
       diasDeMoraMaximo: numero(v.diasDeMoraMaximo) ?? 0,
       interesDeMoraCop: numero(v.interesDeMoraCop) ?? 0,
+      // QA-CHAT (04-10): sin esto la tarjeta decía «Al día · Cartera $0» con
+      // tres cánones vencidos dentro del plazo (P-8).
+      vencidaEnPlazoCop: numero(v.vencidaEnPlazoCop) ?? 0,
     };
   }
+  if (esObjeto(v) && v.estado === 'sin_permiso') return { estado: 'sin_permiso' };
   return { estado: esObjeto(v) && v.estado === 'sin_cuotas' ? 'sin_cuotas' : 'no_disponible' };
 }
 

@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { Appear } from '@leasefy/cadence';
 import { CheckCircle, WarningCircle, X } from '@phosphor-icons/react';
 
 import { WizardShell } from '@/components/wizard/WizardShell';
@@ -23,6 +23,7 @@ import { StepReview } from '@/components/wizard/steps/StepReview';
 import { Button } from '@/components/ui/button';
 import { IconButton } from '@leasefy/cadence';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 // ============================================================================
 // Helpers
@@ -144,7 +145,13 @@ export default function CompletarPage({ params }: CompletarPageProps) {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Error cargando la postulación');
+          // 02-10-2026 · Regla de oro: el motivo por el traductor, no `err.message` crudo.
+          setError(
+            mensajeParaLaPersona(err, {
+              accion: 'cargar tu postulación',
+              porDefecto: 'No se pudo cargar la postulación.',
+            }),
+          );
         }
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -226,11 +233,8 @@ function UpdateWizardContent({
   if (isSuccess) {
     return (
       <div className="min-h-screen bg-surface-muted flex items-center justify-center px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-surface rounded-xl p-8 max-w-md w-full text-center"
-        >
+        {/* Enviar → «¡Información actualizada!»: la tarjeta llega (es un cambio, no la entrada de la página). */}
+        <Appear className="bg-surface rounded-xl p-8 max-w-md w-full text-center">
           <div className="w-16 h-16 rounded-full bg-success-soft flex items-center justify-center mx-auto mb-6">
             <CheckCircle className="w-8 h-8 text-success" />
           </div>
@@ -249,7 +253,7 @@ function UpdateWizardContent({
           >
             Ver mi aplicación
           </Button>
-        </motion.div>
+        </Appear>
       </div>
     );
   }

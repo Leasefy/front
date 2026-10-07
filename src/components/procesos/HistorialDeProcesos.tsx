@@ -18,13 +18,14 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { procesosApi } from '@/lib/api/procesos.service'
 import type { EstadoDeProceso, FiltrosDeProcesos, Proceso, TipoDeProceso } from '@/lib/api/procesos.types'
 import { useCentroDeProcesos } from '@/lib/hooks/use-centro-de-procesos'
 import { FilaDeProceso } from './FilaDeProceso'
-import { NOMBRE_DEL_ESTADO, NOMBRE_DEL_TIPO } from './estado-del-proceso'
+import { NOMBRE_DEL_ESTADO, NOMBRE_DEL_TIPO, TIPOS_DE_LA_MIGRACION } from './estado-del-proceso'
 
 const POR_PAGINA = 30
 const TODOS = 'todos'
@@ -128,7 +129,9 @@ export function HistorialDeProcesos() {
         <div className="flex flex-wrap items-end gap-3 border-b border-border-faint px-4 py-3">
           <Filtro etiqueta="Filtrar por tipo" valor={tipo} onCambio={setTipo} testId="filtro-tipo">
             <SelectItem value={TODOS}>Todos los tipos</SelectItem>
-            {Object.entries(NOMBRE_DEL_TIPO).map(([k, v]) => (
+            {Object.entries(NOMBRE_DEL_TIPO)
+              .filter(([k]) => !TIPOS_DE_LA_MIGRACION.includes(k))
+              .map(([k, v]) => (
               <SelectItem key={k} value={k}>
                 {v}
               </SelectItem>
@@ -155,6 +158,10 @@ export function HistorialDeProcesos() {
           )}
         </div>
 
+        {/* Esqueleto → vacío → lista con un fundido; al filtrar o al llegar
+            un proceso nuevo, las filas entran escalonadas y las que sobran
+            salen. */}
+        <CrossFade swapKey={!data && centro.cargando ? 'cargando' : lista.length === 0 ? 'vacio' : 'lista'}>
         {!data && centro.cargando ? (
           <ul className="space-y-2 p-4" aria-busy="true">
             {[0, 1, 2].map((i) => (
@@ -165,15 +172,18 @@ export function HistorialDeProcesos() {
           <p className="px-4 py-10 text-center text-body-sm text-fg-muted" data-testid="historial-vacio">
             {tipo !== TODOS || estado !== TODOS || persona !== TODOS
               ? 'Ningún proceso con estos filtros.'
-              : 'Todavía no hay procesos. Cuando generes un archivo, emitas facturas, reproceses asientos o cargues la migración, aparecen aquí.'}
+              : 'Todavía no hay procesos. Cuando generes un archivo, emitas facturas, reproceses asientos o importes inmuebles desde Inmuebles, aparecen aquí. La migración no: sus cargas se ven en cada paso de la Puesta en marcha.'}
           </p>
         ) : (
-          <ul className="divide-y divide-border-faint">
+          <Stagger as="ul" layout={false} className="divide-y divide-border-faint">
             {lista.map((p) => (
-              <FilaDeProceso key={p.id} proceso={p} onCambio={() => void centro.refetch()} />
+              <StaggerItem as="li" key={p.id}>
+                <FilaDeProceso as="div" proceso={p} onCambio={() => void centro.refetch()} />
+              </StaggerItem>
             ))}
-          </ul>
+          </Stagger>
         )}
+        </CrossFade>
 
         {hayMas && (
           <div className="border-t border-border-faint px-4 py-3">

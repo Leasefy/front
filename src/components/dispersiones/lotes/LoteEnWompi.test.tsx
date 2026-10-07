@@ -30,6 +30,8 @@ vi.mock('@/components/ui/toast', () => ({
 }));
 
 import { avanceEnPalabras, LoteEnWompi } from './LoteEnWompi';
+import { toast } from '@/components/ui/toast';
+import { ApiError } from '@/lib/api/client';
 
 const LOTE = 'lote-1';
 
@@ -187,6 +189,59 @@ describe('Un lote en Wompi', () => {
     await act(async () => b?.click());
     expect(h.consultar).toHaveBeenCalledWith(LOTE);
     expect(onCambio).toHaveBeenCalled();
+  });
+});
+
+/*
+ * 02-10-2026 · Los fallos con Wompi, con la regla de oro. Wompi NUNCA se llama
+ * de verdad: `wompiPagosApi` es un doble. Un 4xx dice lo que escribió el back;
+ * un 5xx, que falló de nuestro lado con la referencia; «conexión», sólo sin
+ * respuesta.
+ */
+describe('02-10 — los fallos de enviar y consultar', () => {
+  const fallo500 = () =>
+    new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      message: 'Error interno del servidor',
+      referencia: 'ab12cd34',
+    });
+
+  async function enviarCon(error: unknown) {
+    h.enviar.mockRejectedValue(error);
+    await pintar();
+    await act(async () => enviar()?.click());
+    const confirmar = document.body.querySelector<HTMLButtonElement>('[data-testid="confirmar-enviar-a-wompi"]');
+    await act(async () => confirmar?.click());
+    return document.body.querySelector('[data-testid="dialogo-enviar-a-wompi"]')?.textContent ?? '';
+  }
+
+  it('enviar con un 409 dice el motivo del back, tal cual', async () => {
+    const texto = await enviarCon(new ApiError(409, 'Este lote ya está en Wompi.', 'LOTE_EN_WOMPI'));
+    expect(texto).toContain('Este lote ya está en Wompi.');
+  });
+
+  it('🔴 enviar con un 5xx: «de nuestro lado» con la referencia', async () => {
+    const texto = await enviarCon(fallo500());
+    expect(texto).toContain('No pudimos mandar el lote a Wompi: algo falló de nuestro lado');
+    expect(texto).toContain('ab12cd34');
+  });
+
+  it('enviar sin respuesta: ahí sí habla de la conexión', async () => {
+    const texto = await enviarCon(new ApiError(0, 'Failed to fetch'));
+    expect(texto).toMatch(/conexi[oó]n/);
+  });
+
+  it('🔴 consultar con un 5xx: el toast lo dice con la referencia, no se queda sin descripción', async () => {
+    vi.mocked(toast.error).mockReset();
+    h.consultar.mockRejectedValue(fallo500());
+    await pintar({ estado: 'EN_WOMPI', vista: vista({ envio: envio() }) });
+    const b = [...container.querySelectorAll('button')].find((x) => x.textContent?.includes('Consultar ahora'));
+    await act(async () => b?.click());
+    const [titulo, opciones] = vi.mocked(toast.error).mock.calls[0] as unknown as [string, { description?: string }];
+    expect(titulo).toBe('No se pudo consultar a Wompi');
+    expect(opciones.description).toContain('No pudimos consultar a Wompi: algo falló de nuestro lado');
+    expect(opciones.description).toContain('ab12cd34');
   });
 });
 

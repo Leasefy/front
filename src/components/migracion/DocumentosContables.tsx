@@ -71,6 +71,18 @@ import {
 import { CargasDeComprobantesAbiertas } from "./CargasDeComprobantesAbiertas";
 import { ComprobantesSinContrato } from "./ComprobantesSinContrato";
 import { mensajeDeContabilidad } from "./contabilidad-errores";
+import { fraseDelArchivoVacio, leerTablaDelArchivo } from "./encabezado-del-archivo";
+
+/**
+ * 🔴 QA-MIG-B (04-10): el lector por trozos es de TEXTO. Un Excel (.xlsx es
+ * un ZIP) se leía como si fuera un CSV y el encabezado salía «PK…»: el
+ * archivo entero frenado con un nombre de columna basura. Un Excel va por el
+ * lector de planillas de la casa (con la hoja y la fila de encabezados
+ * correctas) y después por los mismos lotes.
+ */
+function esPlanilla(nombre: string): boolean {
+  return /\.(xlsx|xlsm|xls|ods|fods)$/i.test(nombre);
+}
 
 /** El acumulado de todos los lotes: es lo que la persona lee al final. */
 interface Acumulado {
@@ -237,6 +249,34 @@ export function DocumentosContables({
       let saltadosAcc = 0;
 
       try {
+        if (esPlanilla(elArchivo.name)) {
+          const tabla = await leerTablaDelArchivo(elArchivo, COLUMNAS_DE_DOCUMENTO);
+          setEncabezados(tabla.headers);
+          mapeoDelArchivo = mapearColumnas(COLUMNAS_DE_DOCUMENTO, tabla.headers);
+          setMapeo(mapeoDelArchivo);
+          if (tabla.vacio) {
+            setError(fraseDelArchivoVacio(elArchivo.name, tabla.vacio, "comprobantes"));
+            setFase("elegir");
+            return;
+          }
+          for (let i = 0; i < tabla.rows.length; i += MAX_DOCUMENTOS_POR_LOTE) {
+            if (cancelar.current) break;
+            const filas = tabla.rows.slice(i, i + MAX_DOCUMENTOS_POR_LOTE);
+            setLeidas(i + filas.length);
+            const documentos: DocumentoMigrado[] = armarDocumentos(filas, mapeoDelArchivo);
+            if (documentos.length === 0) continue;
+            const r =
+              modo === "revisar"
+                ? await contabilidadApi.migracion.documentos.revisar(documentos)
+                : await contabilidadApi.migracion.documentos.migrar(documentos);
+            acc = sumar(acc, r);
+            setAcumulado(acc);
+          }
+          setLeidas(tabla.rows.length);
+          setFase(modo === "revisar" ? "revisado" : "listo");
+          if (modo === "migrar") setMigraciones((v) => v + 1);
+          return;
+        }
         const resultado = await leerCsvEnTrozos(elArchivo, {
           tamanoDeLote: MAX_DOCUMENTOS_POR_LOTE,
           cancelado: () => cancelar.current,
@@ -568,8 +608,9 @@ function ResumenDeDocumentos({
             {acumulado.porDocumento.toLocaleString("es-CO")}
           </span>{" "}
           <span className="text-fg-muted">
-            quedaron colgados de un contrato por el documento del tercero (el
-            «REF» del concepto).
+            {/* QA-MIGRACION-95: con uno, en singular («1 quedó colgado…»). */}
+            {acumulado.porDocumento === 1 ? "quedó colgado" : "quedaron colgados"} de un
+            contrato por el documento del tercero (el «REF» del concepto).
           </span>
         </p>
         <p className="text-fg">
@@ -603,9 +644,9 @@ function ResumenDeDocumentos({
             {acumulado.soloInmueble.toLocaleString("es-CO")}
           </span>{" "}
           <span className="text-fg-muted">
-            quedaron colgados SÓLO de su inmueble: el concepto dice el código,
-            pero ese día el inmueble no tenía contrato vigente. No tienen
-            inquilino, pero salen en la ficha del inmueble.
+            {acumulado.soloInmueble === 1
+              ? "quedó colgado SÓLO de su inmueble: el concepto dice el código, pero ese día el inmueble no tenía contrato vigente. No tiene inquilino, pero sale en la ficha del inmueble."
+              : "quedaron colgados SÓLO de su inmueble: el concepto dice el código, pero ese día el inmueble no tenía contrato vigente. No tienen inquilino, pero salen en la ficha del inmueble."}
           </span>
         </p>
         <p className="text-fg">
@@ -613,10 +654,9 @@ function ResumenDeDocumentos({
             {acumulado.sinContrato.toLocaleString("es-CO")}
           </span>{" "}
           <span className="text-fg-muted">
-            quedaron SIN contrato: el concepto no nombra a ningún tercero,
-            contrato ni inmueble de tu agencia que se pueda resolver sin
-            adivinar. Se guardan igual, con su concepto, y se pueden buscar; lo
-            que no se hace es inventarles un contrato.
+            {acumulado.sinContrato === 1
+              ? "quedó SIN contrato: el concepto no nombra a ningún tercero, contrato ni inmueble de tu agencia que se pueda resolver sin adivinar. Se guarda igual, con su concepto, y se puede buscar; lo que no se hace es inventarle un contrato."
+              : "quedaron SIN contrato: el concepto no nombra a ningún tercero, contrato ni inmueble de tu agencia que se pueda resolver sin adivinar. Se guardan igual, con su concepto, y se pueden buscar; lo que no se hace es inventarles un contrato."}
           </span>
         </p>
       </div>

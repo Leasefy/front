@@ -121,7 +121,12 @@ export function RecordatorioDeMigracion() {
   // importador abierto suelto desde Configuración).
   if (!leDioMigrar && !empezada) return null;
 
-  const n = Math.min(hechos + 1, total);
+  // QA-MIGRACION-95 (MU-07): el número es la POSICIÓN del paso que sigue, no
+  // «hechos + 1»: si vuelve a faltar Propietarios con todo lo demás listo, es
+  // el paso 1 (decía «Paso 6 de 6 · Sigue con Propietarios»).
+  const exigibles = estado.pasos.filter((p) => p.estado !== "no_disponible");
+  const posicion = siguiente ? exigibles.findIndex((p) => p.id === siguiente.id) : -1;
+  const n = posicion >= 0 ? posicion + 1 : Math.min(hechos + 1, total);
 
   return (
     <div
@@ -153,9 +158,9 @@ export function RecordatorioDeMigracion() {
                   key={i}
                   className={cn(
                     "h-1.5 flex-1 rounded-full",
-                    i < hechos
+                    exigibles[i]?.estado === "listo"
                       ? "bg-primary"
-                      : i === hechos
+                      : i === n - 1
                         ? "bg-primary/25 ring-1 ring-inset ring-primary"
                         : "bg-surface-muted",
                   )}

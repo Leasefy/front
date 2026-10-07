@@ -218,9 +218,11 @@ function EstudioSolicitud() {
             aria-valuemax={100}
             aria-label={tf(`${NS}.solicitud.progreso.label`, 'Progreso de la solicitud')}
           >
+            {/* Avanza con `scaleX` (sólo transform) y la curva del sistema; el
+                ancho ya no se anima (era `transition-all`). */}
             <div
-              className="h-full rounded-full bg-primary transition-all duration-300"
-              style={{ width: `${progressPct}%` }}
+              className="h-full w-full origin-left rounded-full bg-primary transition-transform duration-slow ease-standard"
+              style={{ transform: `scaleX(${progressPct / 100})` }}
             />
           </div>
         </section>

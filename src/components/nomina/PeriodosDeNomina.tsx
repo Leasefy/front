@@ -27,6 +27,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { Prohibit } from '@phosphor-icons/react';
 
 import {
   AlertDialog,
@@ -43,16 +44,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { toast } from '@/components/ui/toast';
 import { detalleDelFallo, nominaApi } from '@/lib/api/nomina.service';
 import type { PeriodoDeNomina, Periodos } from '@/lib/api/nomina.types';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { mesActual } from '@/lib/recaudo/meses';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import {
@@ -73,6 +75,7 @@ export function PeriodosDeNominaPanel() {
   const [armando, setArmando] = useState(false);
   const [avisos, setAvisos] = useState<string[]>([]);
   const [anulando, setAnulando] = useState<PeriodoDeNomina | null>(null);
+  const [enviandoAnulacion, setEnviandoAnulacion] = useState(false);
   const [motivo, setMotivo] = useState('');
 
   const armar = async () => {
@@ -97,7 +100,7 @@ export function PeriodosDeNominaPanel() {
           `No se puede liquidar: falta ${detalle.queFalta.join(', ')}. Cárgalo en Configuración.`,
         ]);
       }
-      toast.error(mensajeDelFallo(error, 'No se pudo armar el borrador.'));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo armar el borrador.', accion: 'armar el borrador' }));
     } finally {
       setArmando(false);
     }
@@ -128,7 +131,7 @@ export function PeriodosDeNominaPanel() {
       }
       await estado.recargar();
     } catch (error) {
-      toast.error(mensajeDelFallo(error, 'No se pudo aprobar el período.'));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo aprobar el período.', accion: 'aprobar el período' }));
     }
   };
 
@@ -148,7 +151,7 @@ export function PeriodosDeNominaPanel() {
           `No se asentó: estas cuentas no existen en tu PUC — ${detalle.cuentas.join(', ')}. Créalas en Contabilidad → PUC o cambia el mapeo. Nómina no crea cuentas.`,
         ]);
       }
-      toast.error(mensajeDelFallo(error, 'No se pudo asentar el período.'));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo asentar el período.', accion: 'asentar el período' }));
     }
   };
 
@@ -159,12 +162,13 @@ export function PeriodosDeNominaPanel() {
       if (r.aviso) setAvisos([r.aviso]);
       await estado.recargar();
     } catch (error) {
-      toast.error(mensajeDelFallo(error, 'No se pudo marcar como pagado.'));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo marcar como pagado.', accion: 'marcar el período como pagado' }));
     }
   };
 
   const confirmarAnulacion = async () => {
-    if (!anulando) return;
+    if (!anulando || enviandoAnulacion) return;
+    setEnviandoAnulacion(true);
     try {
       const r = await nominaApi.anular(anulando.id, motivo);
       toast.success('El período quedó anulado y las novedades volvieron a estar libres.');
@@ -173,7 +177,9 @@ export function PeriodosDeNominaPanel() {
       setMotivo('');
       await estado.recargar();
     } catch (error) {
-      toast.error(mensajeDelFallo(error, 'No se pudo anular el período.'));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo anular el período.', accion: 'anular el período' }));
+    } finally {
+      setEnviandoAnulacion(false);
     }
   };
 
@@ -265,9 +271,9 @@ export function PeriodosDeNominaPanel() {
                       <TableHead />
                     </TableRow>
                   </TableHeader>
-                  <TableBody>
+                  <TableBodyAnimado>
                     {datos.periodos.map((p) => (
-                      <TableRow key={p.id} data-testid={`periodo-${p.id}`}>
+                      <TableRowAnimada key={p.id} data-testid={`periodo-${p.id}`}>
                         <TableCell>
                           <Link
                             className="font-medium text-brand underline"
@@ -344,9 +350,9 @@ export function PeriodosDeNominaPanel() {
                             ) : null}
                           </div>
                         </TableCell>
-                      </TableRow>
+                      </TableRowAnimada>
                     ))}
-                  </TableBody>
+                  </TableBodyAnimado>
                 </Table>
               </div>
             )}
@@ -358,10 +364,14 @@ export function PeriodosDeNominaPanel() {
       <AlertDialog
         open={anulando !== null}
         onOpenChange={(abierto) => {
-          if (!abierto) setAnulando(null);
+          if (!abierto && !enviandoAnulacion) setAnulando(null);
         }}
       >
-        <AlertDialogContent data-testid="dialogo-de-anulacion">
+        <AlertDialogContent
+          variant="destructive"
+          icon={<Prohibit weight="bold" />}
+          data-testid="dialogo-de-anulacion"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               Anular la nómina de{' '}
@@ -389,10 +399,15 @@ export function PeriodosDeNominaPanel() {
             />
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={enviandoAnulacion}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => void confirmarAnulacion()}
+              onClick={(e) => {
+                // Abierto hasta que el back conteste: si falla, el motivo no se pierde.
+                e.preventDefault();
+                void confirmarAnulacion();
+              }}
               disabled={motivo.trim().length < 10}
+              loading={enviandoAnulacion}
               data-testid="confirmar-anulacion"
             >
               Anular

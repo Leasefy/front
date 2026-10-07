@@ -27,21 +27,36 @@ import { useSearchParams } from 'next/navigation'
 import type { Session } from '@supabase/supabase-js'
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol'
 import { Button } from '@/components/ui/button'
+import { CrossFade } from '@leasefy/cadence'
 import { ForceLightMode } from '@/components/providers/ForceLightMode'
 import { getSupabase } from '@/lib/supabase/client'
 import { useHidratado } from '@/lib/hooks/use-hidratado'
 import { sanitizeReturnUrl } from '@/lib/utils'
 import { DESTINO_POR_DEFECTO, tipoDeConfirmacion } from '@/lib/auth/regreso-del-correo'
+import { leerErrorDeSupabase, mensajeDeSupabase } from '@/lib/auth/errores-de-supabase'
 
 type Estado = 'listo' | 'confirmando' | 'confirmado' | 'ya-confirmado' | 'gastado' | 'fallo' | 'incompleto'
 
 const ESPERA_DE_LA_SESION_MS = 4000
 
-/** Supabase contesta `otp_expired` (403) tanto si el token venció como si ya se usó. */
+/**
+ * Supabase contesta `otp_expired` (403) tanto si el token venció como si ya se
+ * usó. Por el código y el status, nunca por el texto en inglés (02-10-2026).
+ */
 function esEnlaceGastado(error: unknown): boolean {
-  const e = error as { code?: string; status?: number; message?: string } | null
-  if (!e) return false
-  return e.code === 'otp_expired' || e.status === 403 || /invalid or has expired/i.test(e.message ?? '')
+  if (!error) return false
+  const { codigo, status } = leerErrorDeSupabase(error)
+  return codigo === 'otp_expired' || status === 403
+}
+
+/**
+ * Por qué no se pudo, con la regla de oro (02-10-2026). Antes decía «Revisa tu
+ * conexión» ante CUALQUIER fallo; ahora la conexión sólo cuando el pedido no
+ * salió, y un 5xx dice que falló de nuestro lado. El enlace no se gastó.
+ */
+function motivoDelFallo(error: unknown): string {
+  const motivo = mensajeDeSupabase(error, { porDefecto: 'Algo no salió bien. Intenta de nuevo en un momento.' })
+  return `${motivo} El enlace sigue sirviendo.`
 }
 
 function ConfirmarContent() {
@@ -50,6 +65,7 @@ function ConfirmarContent() {
   const tipo = tipoDeConfirmacion(sp.get('type'))
   const destino = sanitizeReturnUrl(sp.get('returnUrl'), DESTINO_POR_DEFECTO)
   const [estado, setEstado] = useState<Estado>(tokenHash ? 'listo' : 'incompleto')
+  const [motivo, setMotivo] = useState<string | null>(null)
   const sesion = useRef<Session | null>(null)
   // Se suelta con el primer evento de auth (el INITIAL_SESSION). Puede llegar
   // DESPUÉS de la respuesta de verifyOtp: el AuthProvider también se suscribe
@@ -92,6 +108,7 @@ function ConfirmarContent() {
     const sb = getSupabase()
     if (!sb) {
       enCurso.current = false
+      setMotivo(motivoDelFallo(null))
       setEstado('fallo')
       return
     }
@@ -119,9 +136,11 @@ function ConfirmarContent() {
         return
       }
       enCurso.current = false
+      setMotivo(motivoDelFallo(error))
       setEstado('fallo')
-    } catch {
+    } catch (e) {
       enCurso.current = false
+      setMotivo(motivoDelFallo(e))
       setEstado('fallo')
     }
   }
@@ -145,7 +164,7 @@ function ConfirmarContent() {
     },
     fallo: {
       titulo: 'No pudimos confirmar tu correo',
-      cuerpo: 'Revisa tu conexión e intenta de nuevo. El enlace sigue sirviendo.',
+      cuerpo: motivo ?? motivoDelFallo(null),
     },
     incompleto: {
       titulo: 'Este enlace está incompleto',
@@ -161,8 +180,14 @@ function ConfirmarContent() {
           <div className="mb-8 flex justify-center">
             <LeasefyLogotype size={24} className="text-fg" title="Leasefy" />
           </div>
+          {/* Lo que dice la pantalla cambia con el resultado (listo → falló, ya
+              usado…): título, texto y botón se cruzan juntos. «Confirmando…»
+              es el mismo estado que «listo» (sólo cambia el botón). */}
+          <CrossFade swapKey={estado === 'confirmando' ? 'listo' : estado}>
           <h1 className="text-xl font-semibold text-fg mb-2">{titulo}</h1>
-          <p className="text-sm text-fg-muted mb-6">{cuerpo}</p>
+          <p className="text-sm text-fg-muted mb-6" role={estado === 'fallo' ? 'alert' : undefined}>
+            {cuerpo}
+          </p>
 
           {(estado === 'listo' || estado === 'confirmando') && (
             <Button
@@ -184,6 +209,7 @@ function ConfirmarContent() {
               <a href={entrar}>Ir a iniciar sesión</a>
             </Button>
           )}
+          </CrossFade>
         </div>
       </div>
     </ForceLightMode>

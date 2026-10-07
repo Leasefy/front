@@ -21,13 +21,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from '@/lib/auth'
 import { getApiConfig } from '@/lib/api/config'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
-import {
-  SIN_AGENTE_CONFIGURADO,
-  SIN_AGENCIA,
-  mensajeDeRespuestaFallida,
-  mensajeDeErrorDeRed,
-} from './traer-del-agente'
+import { agentFetch } from '@/lib/api/agent-fetch'
+import { SIN_AGENTE_CONFIGURADO, SIN_AGENCIA, mensajeDeErrorDeRed, RespuestaDelAgente } from './traer-del-agente'
 import { getMockKpis } from '@/lib/data/mock-mantenimiento'
 import type { MaintenanceKpis } from '@/lib/types/mantenimiento'
 
@@ -106,12 +101,11 @@ export function useMantenimientoOverview(): UseMantenimientoOverviewResult {
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/api/agency/${agencyId}/mantenimiento/overview`,
-        { headers: agentAuthHeaders() },
+      const res = await agentFetch(
+        `${agentUrl}/api/agency/${agencyId}/mantenimiento/overview`
       )
       if (!vigente()) return
-      if (!res.ok) throw new Error(mensajeDeRespuestaFallida(res, 'los indicadores de mantenimiento'))
+      if (!res.ok) throw new RespuestaDelAgente(res, 'los indicadores de mantenimiento')
       const json: MantenimientoOverviewEnvelope = await res.json()
       setData(json)
       setError(null)

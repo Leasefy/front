@@ -83,4 +83,32 @@ describe('🔴 el panel tiene un solo landmark principal', () => {
     const texto = readFileSync(LAYOUT, 'utf8');
     expect(texto.match(/<main/g) ?? []).toHaveLength(1);
   });
+
+  /*
+   * 🔴 03-10 (ARREGLOS-4) · El chat abría el suyo desde un COMPONENTE
+   * (`components/beta/BetaLayout.tsx`), que este barrido no mira: el inicio
+   * del panel (`/panel/inmobiliaria`) tenía dos «principal». Dentro del layout
+   * de la inmobiliaria, `BetaLayout` va con `dentroDelPanel` (su área es un
+   * `<div>`); el alias `/panel/beta` no cuelga de ese layout y conserva el suyo.
+   */
+  it('el chat dentro del panel de la inmobiliaria no abre otro <main>', () => {
+    const sinLaMarca: string[] = [];
+    const recorrer = (d: string) => {
+      for (const e of readdirSync(d)) {
+        const p = join(d, e);
+        if (statSync(p).isDirectory()) recorrer(p);
+        else if (/\.tsx$/.test(p) && !/\.test\.tsx$/.test(p)) {
+          const texto = readFileSync(p, 'utf8');
+          for (const m of texto.matchAll(/<BetaLayout\b[^>]*>/g)) {
+            if (!/\bdentroDelPanel\b/.test(m[0])) sinLaMarca.push(`${p}: ${m[0]}`);
+          }
+        }
+      }
+    };
+    recorrer('src/app/panel/inmobiliaria');
+    expect(sinLaMarca, `Pásale dentroDelPanel:\n  ${sinLaMarca.join('\n  ')}\n`).toEqual([]);
+    // Y la marca hace lo que dice: con ella, el área del chat es un <div>.
+    const beta = readFileSync('src/components/beta/BetaLayout.tsx', 'utf8');
+    expect(beta).toMatch(/dentroDelPanel \? \(\s*<div id="beta-chat-main"/);
+  });
 });

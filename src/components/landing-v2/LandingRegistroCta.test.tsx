@@ -60,12 +60,15 @@ describe('<LandingRegistroCta>', () => {
     expect(anchor.className).toBe('btn primary sm')
   })
 
-  it('renders "Empezar ahora" while auth is still loading, even with a user in context', () => {
+  // QA 01-10-2026: «Empezar ahora» aparecía o desaparecía solo segundos
+  // después de cargar. Mientras la sesión no se sabe: un hueco invisible.
+  it.each(['header', 'mobile', 'banner'] as const)('mientras carga (%s) deja un hueco invisible y ningún enlace', (variant) => {
     mockUseAuth.mockReturnValue({ user: { role: 'agency' }, isAuthenticated: true, isLoading: true })
-    render({ variant: 'header' })
-    const anchor = container.querySelector('a')!
-    expect(anchor.textContent).toBe('Empezar ahora')
-    expect(anchor.getAttribute('href')).toBe('/auth?mode=register')
+    render({ variant })
+    expect(container.querySelector('a')).toBeNull()
+    const hueco = container.querySelector('[data-testid="hueco-de-boton-de-sesion"]') as HTMLElement
+    expect(hueco.getAttribute('aria-hidden')).toBe('true')
+    expect(hueco.style.visibility).toBe('hidden')
   })
 
   it('renders nothing for the header variant when authenticated', () => {

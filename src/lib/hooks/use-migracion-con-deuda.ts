@@ -24,6 +24,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { contractsApi } from '@/lib/api/contracts.service'
+import { usePermissions } from '@/lib/hooks/usePermissions'
 import {
   hayDeuda,
   leerDeuda,
@@ -39,10 +40,20 @@ export interface EstadoDeLaDeuda {
 }
 
 /** Lee la deuda una vez y la deja recargable. */
-export function useDeudaDeMigracion(): EstadoDeLaDeuda {
+export function useDeudaDeMigracion(
+  /**
+   * QA-PROP-95 (04-10-2026): sin `contratos:view` no se pregunta — la
+   * respuesta es un 403 seguro (asesor en Propietarios). Por defecto, sí.
+   */
+  habilitado = true,
+): EstadoDeLaDeuda {
   const [deuda, setDeuda] = useState<DeudaDeMigracion | null>(null)
 
   const recargar = useCallback(async () => {
+    if (!habilitado) {
+      setDeuda(null)
+      return
+    }
     try {
       const bruto: unknown = await contractsApi.migracion.resumen()
       const leida = leerDeuda(bruto)
@@ -51,7 +62,7 @@ export function useDeudaDeMigracion(): EstadoDeLaDeuda {
       // Sin permiso o sin back: no se afirma nada.
       setDeuda(null)
     }
-  }, [])
+  }, [habilitado])
 
   useEffect(() => {
     void recargar()
@@ -65,5 +76,8 @@ export function useDeudaDeMigracion(): EstadoDeLaDeuda {
  * que recargar. Mismo dato, misma regla.
  */
 export function useMigracionConDeuda(): DeudaDeMigracion | null {
-  return useDeudaDeMigracion().deuda
+  // QA-PROP-95 (04-10-2026): quien no ve contratos (el asesor en Propietarios)
+  // no pregunta: la respuesta era un 403 seguro en la red.
+  const { canAccess } = usePermissions()
+  return useDeudaDeMigracion(canAccess('contratos', 'view')).deuda
 }

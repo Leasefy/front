@@ -8,7 +8,9 @@
  * HUMANAS, cada una con su rol dentro del ciclo del pago:
  *
  *   Gabriela  — Agente principal de pagos (orquesta y supervisa todo)
- *   Laura     — Generadora de cobros
+ *   Cuenti    — Generador de cobros (IA95-10, 05-10-2026: antes «Laura»;
+ *               Laura es sólo la voz y el WhatsApp de cobranza. Nico, 22:25:
+ *               nombre inventado como Fixi, Cobri o Niti)
  *   Nicolás   — Enviador de links
  *   Valentina — Monitora de pagos
  *   Samuel    — Liquidador de propietarios
@@ -18,7 +20,7 @@
  *   1. Las personas del equipo (cards: avatar + rol + presentación en
  *      primera persona + "Qué hace" + "Resultados que muestra").
  *   2. El FLUJO CONECTADO de un lote mensual:
- *      Laura → Nicolás → Valentina → Conciliación → Samuel → Sofía → Gabriela.
+ *      Cuenti → Nicolás → Valentina → Conciliación → Samuel → Sofía → Gabriela.
  *
  * UX-only scaffold: tokens semánticos del DS (CERO hex). Las métricas/tabla de
  * "lote mensual" son ILUSTRATIVAS y están claramente rotuladas — no inventan
@@ -79,11 +81,11 @@ const GABRIELA: EquipoPagosPersonaData = {
   ],
 }
 
-const LAURA: EquipoPagosPersonaData = {
-  id: 'laura',
-  nombre: 'Laura',
-  inicial: 'L',
-  rol: 'Generadora de cobros',
+const CUENTI: EquipoPagosPersonaData = {
+  id: 'cuenti',
+  nombre: 'Cuenti',
+  inicial: 'C',
+  rol: 'Generador de cobros',
   icon: Receipt,
   accent: 'blue',
   presentacion:
@@ -182,7 +184,7 @@ const SOFIA: EquipoPagosPersonaData = {
 /** Orden de presentación de las cards (principal primero). */
 const PERSONAS: EquipoPagosPersonaData[] = [
   GABRIELA,
-  LAURA,
+  CUENTI,
   NICOLAS,
   VALENTINA,
   SAMUEL,
@@ -212,13 +214,13 @@ type FlowNode = {
   link?: { href: string; label: string }
 }
 
-/** Laura → Nicolás → Valentina → Conciliación → Samuel → Sofía → Gabriela. */
+/** Cuenti → Nicolás → Valentina → Conciliación → Samuel → Sofía → Gabriela. */
 const FLOW: FlowNode[] = [
   {
-    id: 'laura',
+    id: 'cuenti',
     icon: Receipt,
     accent: 'blue',
-    quien: 'Laura',
+    quien: 'Cuenti',
     titulo: 'Genera los cobros del mes',
     detalle: 'Arma cada cobro con su valor, concepto y vencimiento, listo para enviar.',
     link: { href: '/panel/inmobiliaria/pagos/cartera/cobros', label: 'Ver cobros' },
@@ -277,7 +279,7 @@ type LoteRow = {
 }
 
 const LOTE_EJEMPLO: LoteRow[] = [
-  { agente: 'Laura', trabajo: 'Generar cobros del mes', estado: 'conciliado', resultado: 'Lote armado y programado' },
+  { agente: 'Cuenti', trabajo: 'Generar cobros del mes', estado: 'conciliado', resultado: 'Lote armado y programado' },
   { agente: 'Nicolás', trabajo: 'Enviar links de pago', estado: 'enviado', resultado: 'Links entregados por su canal' },
   { agente: 'Valentina', trabajo: 'Monitorear pagos', estado: 'en_proceso', resultado: 'Seguimiento de cada pago' },
   { agente: 'Conciliación', trabajo: 'Cruzar pagos con el banco', estado: 'en_conciliacion', resultado: 'Dinero confirmado' },

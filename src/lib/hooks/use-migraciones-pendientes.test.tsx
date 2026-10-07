@@ -28,17 +28,18 @@ describe('useMigracionesPendientes', () => {
   let container: HTMLDivElement
   const result: { current: Resultado | null } = { current: null }
 
-  function Sonda() {
-    result.current = useMigracionesPendientes()
+  function Sonda({ activo }: { activo?: boolean }) {
+    // Sin `activo`, el valor por defecto; con él, el que se pasa (una sola llamada al hook).
+    result.current = useMigracionesPendientes(...(activo === undefined ? [] : [activo]))
     return null
   }
 
-  async function montar() {
+  async function montar(activo?: boolean) {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-      root.render(<Sonda />)
+      root.render(<Sonda activo={activo} />)
     })
   }
 
@@ -64,6 +65,13 @@ describe('useMigracionesPendientes', () => {
   it('si falla NO devuelve cero: devuelve "no sabemos"', async () => {
     lotesAbiertosMock.mockRejectedValue(new Error('boom'))
     await montar()
+    expect(result.current?.pendientes).toBeUndefined()
+  })
+
+  it('🔴 ARREGLOS-4 · sin `contratos:view` (activo = false) no se pide nada: era un 403 en cada pantalla de la asesora', async () => {
+    lotesAbiertosMock.mockResolvedValue([{ lote: 'lote-a', pendientes: 5, listos: 2 }])
+    await montar(false)
+    expect(lotesAbiertosMock).not.toHaveBeenCalled()
     expect(result.current?.pendientes).toBeUndefined()
   })
 

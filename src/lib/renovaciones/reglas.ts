@@ -8,6 +8,7 @@
  */
 import type { Renovacion, RenovacionStatus } from '@/lib/types/inmobiliaria';
 import { IPC_HISTORICAL, calculateNewRent } from '@/lib/constants/inmobiliaria-data';
+import type { AreaDePlata } from '@/lib/plata/con-centavos';
 
 /**
  * Los tres pasos que ve la inmobiliaria. La negociación y la aprobación del
@@ -49,10 +50,29 @@ export function ipcSugerido(hoy: Date = new Date()): { rate: number; anio: numbe
   return fila ? { rate: fila.rate, anio } : null;
 }
 
-/** El canon al que llega el IPC: el tope legal de aumento en vivienda (Ley 820, art. 20). */
-export function topeConIpc(canonActual: number, ipc: number): number {
-  return calculateNewRent(canonActual, ipc);
+/**
+ * El canon al que llega el IPC: el tope legal de aumento en vivienda (Ley 820, art. 20).
+ * Con `conCentavos` (las llaves de la renovación, C4) va al centavo, como el back.
+ */
+export function topeConIpc(
+  canonActual: number,
+  ipc: number,
+  opciones: { conCentavos?: boolean } = {},
+): number {
+  return calculateNewRent(canonActual, ipc, opciones);
 }
+
+/**
+ * «Centavos en todo» (C4, Q2 a): el canon de la renovación se guarda en
+ * `renovaciones` (área `inmuebles_y_mandato`) y termina siendo el canon del
+ * contrato y su deuda. 🔁 Espejo de `AREAS_DE_LA_RENOVACION` del back
+ * (`renovaciones/dto/update-stage.dto.ts`).
+ */
+export const AREAS_DE_LA_RENOVACION = [
+  'inmuebles_y_mandato',
+  'contratos_y_cuotas',
+  'cobros_recibos_y_cartera',
+] as const satisfies readonly AreaDePlata[];
 
 export interface VariacionDelCanon {
   pesos: number;

@@ -33,6 +33,17 @@
  * detrás de un id. Si el back necesita otra, hace falta un selector y un
  * endpoint que lo alimente.
  *
+ * ── Ola E (03-10-2026): lo que faltaba de la regla de Juan Camilo ──────────
+ *
+ *   · al marcarla se ELIGE (opcional) la entrada del extracto con la que volvió
+ *     la plata, y queda conciliada como la devolución de ESTE giro (C2-SALIDAS
+ *     Q4);
+ *   · el resultado dice si se le avisó al propietario, si el giro queda
+ *     RETENIDO hasta corregir la cuenta y qué pasó en el libro;
+ *   · la devolución se cierra SOLA cuando el lote que la vuelve a girar queda
+ *     pagado (o se marca girada), con la fecha de ese pago: «Volver a girar»
+ *     queda sólo para la que ya salió y no se cerró.
+ *
  * ── Falla ABIERTO ──────────────────────────────────────────────────────────
  *
  * Si la lectura de giros devueltos falla o llega `disponible: false` (falta la
@@ -42,6 +53,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Presence } from '@leasefy/cadence';
 import { ArrowUUpLeft, WarningCircle } from '@phosphor-icons/react';
 
 import { Badge } from '@/components/ui/badge';
@@ -58,21 +70,33 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/toast';
 import { codigoSinMigrar, finanzasApi } from '@/lib/api/finanzas.service';
+import { girosDevueltosApi } from '@/lib/api/giros-devueltos';
 import {
   MOTIVOS_DE_DEVOLUCION,
   type DevolucionRegistrada,
   type GiroDevuelto,
+  type LineaDeLaDevolucion,
   type MotivoDeDevolucion,
   type Regiro,
 } from '@/lib/api/finanzas.types';
 import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { diaLegible } from '@/lib/mandato/textos';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { useI18n } from '@/lib/i18n';
 
-/** El fallo en palabras y, si es el 503 de la migración, quién la aplica. */
-export function explicarGiro(error: unknown, porDefecto: string): string {
-  const mensaje = mensajeDelFallo(error, porDefecto);
+/**
+ * El fallo en palabras y, si es el 503 de la migración, quién la aplica.
+ *
+ * Con `accion` (02-10-2026), un 5xx dice QUÉ no se pudo hacer: «No pudimos
+ * marcar el giro como devuelto: algo falló de nuestro lado…», con la
+ * referencia. Lo demás sigue por `mensajeDelFallo` (la regla de oro).
+ */
+export function explicarGiro(error: unknown, porDefecto: string, accion?: string): string {
+  const mensaje =
+    accion && leerFallo(error).tipo === 'nuestro'
+      ? mensajeParaLaPersona(error, { porDefecto, accion })
+      : mensajeDelFallo(error, porDefecto);
   return codigoSinMigrar(error) ? `${mensaje} (nuestro equipo la está habilitando)` : mensaje;
 }
 
@@ -88,7 +112,44 @@ export function hoyEnBogota(ahora: Date = new Date()): string {
 
 /** ¿Este giro sigue vivo (devuelto y sin regirar)? */
 export function estaSinResolver(giro: GiroDevuelto): boolean {
-  return !giro.dispersionNuevaId && !giro.fechaDelNuevoGiro && !giro.resueltoAt;
+  return (
+    !giro.dispersionNuevaId && !giro.fechaDelNuevoGiro && !giro.resueltoAt && !giro.regiradoAt
+  );
+}
+
+/** 🔴 Ola E: qué pasó con el aviso al propietario, en palabras. */
+export function avisoEnPalabras(
+  estado: NonNullable<DevolucionRegistrada['aviso']>['estado'] | undefined,
+): string | null {
+  switch (estado) {
+    case 'ENVIADO':
+      return 'Le escribimos al propietario para que sepa que la plata volvió y qué hacer.';
+    case 'SIMULADO':
+      return 'El aviso al propietario quedó listo, pero el envío de correos está apagado en este ambiente: no salió.';
+    case 'SIN_CORREO':
+      return 'El propietario no tiene correo registrado: avísale tú.';
+    case 'FALLIDO':
+      return 'No pudimos avisarle al propietario: avísale tú.';
+    default:
+      return null;
+  }
+}
+
+/** 🔴 Ola E: el estado del cambio de cuenta pedido después de la devolución. */
+export function cambioDeCuentaEnPalabras(estado: string | undefined | null): string {
+  switch (estado) {
+    case 'PENDIENTE_CONFIRMACION':
+      return 'El cambio de cuenta espera que el propietario lo confirme.';
+    case 'CONFIRMADO':
+      return 'El propietario confirmó la cuenta nueva: falta que un administrador la apruebe.';
+    case 'APROBADO':
+      return 'La cuenta nueva ya está aprobada.';
+    case 'RECHAZADO':
+    case 'ANULADO':
+      return 'El último cambio de cuenta no siguió: hay que pedir otro.';
+    default:
+      return 'Todavía nadie ha registrado la cuenta correcta (Propietarios → Cambiar cuenta bancaria).';
+  }
 }
 
 export interface GirosDelLote {
@@ -162,9 +223,10 @@ export function AccionesDelGiro({
   onRegirar: () => void;
 }) {
   if (giro && !estaSinResolver(giro)) {
+    const cuando = giro.fechaDelNuevoGiro ?? giro.fechaDelEgreso ?? null;
     return (
-      <span className="text-xs text-fg-muted" data-testid={`regirado-${dispersionId}`}>
-        Se volvió a girar{giro.fechaDelNuevoGiro ? ` el ${diaLegible(giro.fechaDelNuevoGiro)}` : ''}.
+      <span className="text-sm text-fg-muted" data-testid={`regirado-${dispersionId}`}>
+        Se volvió a girar{cuando ? ` el ${diaLegible(cuando)}` : ''}.
       </span>
     );
   }
@@ -173,6 +235,20 @@ export function AccionesDelGiro({
     return (
       <div className="flex flex-wrap items-center gap-2" data-testid={`devuelto-${dispersionId}`}>
         <Badge variant="warning">Devuelto</Badge>
+        {giro.retenidoHastaCorregirLaCuenta ? (
+          <Badge
+            variant="destructive"
+            data-testid={`retenido-${dispersionId}`}
+            title={cambioDeCuentaEnPalabras(giro.cambioDeCuenta?.estado)}
+          >
+            Falta corregir la cuenta
+          </Badge>
+        ) : null}
+        {giro.lineaDelExtracto ? (
+          <span className="text-sm text-fg-muted" data-testid={`linea-de-la-devolucion-${dispersionId}`}>
+            Volvió en el extracto el {diaLegible(giro.lineaDelExtracto.fecha)}
+          </span>
+        ) : null}
         {giro.tieneSoporte ? <VerSoporte giroId={giro.id} /> : null}
         {puedeEditar ? (
           <Button
@@ -263,6 +339,14 @@ export function MarcarDevueltoDialog({
   const [soporte, setSoporte] = useState<File | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [resultado, setResultado] = useState<DevolucionRegistrada | null>(null);
+  /*
+   * 🔴 Ola E (C2-SALIDAS Q4): la entrada del extracto con la que volvió la
+   * plata. Opcional: si todavía no se cargó el extracto, se registra sin ella y
+   * la conciliación la propone después. Falla abierto: si no se pueden leer las
+   * líneas, el diálogo funciona como antes.
+   */
+  const [lineas, setLineas] = useState<LineaDeLaDevolucion[]>([]);
+  const [lineaElegida, setLineaElegida] = useState<string>('');
 
   useEffect(() => {
     if (!abierto) return;
@@ -272,7 +356,25 @@ export function MarcarDevueltoDialog({
     setFecha(hoyEnBogota());
     setSoporte(null);
     setResultado(null);
-  }, [abierto]);
+    setLineas([]);
+    setLineaElegida('');
+    if (!dispersionId) return;
+    let vivo = true;
+    girosDevueltosApi
+      .lineasDeLaDevolucion(dispersionId)
+      .then((r) => {
+        if (!vivo || !r?.disponible) return;
+        setLineas(r.lineas ?? []);
+        const yaEnlazada = (r.lineas ?? []).find((l) => l.yaEnlazada);
+        if (yaEnlazada) setLineaElegida(yaEnlazada.movimientoId);
+      })
+      .catch(() => {
+        // Falla abierto: sin la lista, se registra sin la línea.
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [abierto, dispersionId]);
 
   async function marcar() {
     if (!dispersionId || !soporte) return;
@@ -286,12 +388,17 @@ export function MarcarDevueltoDialog({
           codigoDelBanco: codigo.trim() || undefined,
           fechaDeLaDevolucion: fecha,
           soporte,
+          ...(lineaElegida ? { movimientoBancarioId: lineaElegida } : {}),
         }),
       );
       onListo();
     } catch (e) {
       toast.error('No se pudo marcar el giro como devuelto.', {
-        description: explicarGiro(e, 'No se pudo marcar el giro como devuelto.'),
+        description: explicarGiro(
+          e,
+          'No se pudo marcar el giro como devuelto.',
+          'marcar el giro como devuelto',
+        ),
       });
     } finally {
       setEnviando(false);
@@ -300,9 +407,16 @@ export function MarcarDevueltoDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-lg" data-testid="dialogo-marcar-devuelto">
+      {/* La variante sigue al estado: formulario y, al terminar, éxito. */}
+      <DialogContent
+        size="md"
+        variant={resultado ? 'success' : undefined}
+        data-testid="dialogo-marcar-devuelto"
+      >
         <DialogHeader>
-          <DialogTitle>Marcar el giro como devuelto</DialogTitle>
+          <DialogTitle>
+            {resultado ? 'El giro quedó marcado como devuelto' : 'Marcar el giro como devuelto'}
+          </DialogTitle>
           <DialogDescription>
             {nombreTitular} · {formatCurrency(valorCop)}. La plata vuelve a estar por girar: el
             propietario no la recibió.
@@ -311,7 +425,7 @@ export function MarcarDevueltoDialog({
 
         {resultado ? (
           <div className="space-y-3 text-sm" data-testid="resultado-de-la-devolucion">
-            <p className="rounded-md bg-surface-muted px-4 py-3 text-fg" data-testid="texto-de-la-bitacora">
+            <p className="rounded-[14px] border border-border px-4 py-3 text-fg" data-testid="texto-de-la-bitacora">
               {resultado.queHacer.bitacora}
             </p>
             <ul className="space-y-1 text-fg-muted">
@@ -330,6 +444,28 @@ export function MarcarDevueltoDialog({
               {resultado.queHacer.dejarEnBitacora ? (
                 <li>· Quedó escrito en la bitácora del contrato.</li>
               ) : null}
+              {avisoEnPalabras(resultado.aviso?.estado) ? (
+                <li data-testid="estado-del-aviso">· {avisoEnPalabras(resultado.aviso?.estado)}</li>
+              ) : null}
+              {resultado.lineaDelExtracto ? (
+                <li data-testid="linea-enlazada">
+                  · La entrada del extracto del {diaLegible(resultado.lineaDelExtracto.fecha)} quedó
+                  conciliada como esta devolución.
+                </li>
+              ) : null}
+              {resultado.asiento ? (
+                <li data-testid="estado-del-asiento">
+                  ·{' '}
+                  {resultado.asiento.generado
+                    ? `En la contabilidad quedó la reversa (asiento N.º ${resultado.asiento.numero}); el egreso se asienta otra vez el día que salga el nuevo giro.`
+                    : `En la contabilidad: ${resultado.asiento.motivo}`}
+                </li>
+              ) : null}
+              <li>
+                · Se vuelve a girar en el próximo lote
+                {resultado.retenidoHastaCorregirLaCuenta ? ', cuando se apruebe la cuenta nueva' : ''}; la
+                devolución se cierra sola cuando ese giro sale.
+              </li>
             </ul>
           </div>
         ) : (
@@ -382,6 +518,50 @@ export function MarcarDevueltoDialog({
                 {t('inmobiliaria.dispersiones.giroDevuelto.soporteAyuda')}
               </p>
             </div>
+            {/* Las entradas del extracto aparecen (y se van) con `Presence`. */}
+            <Presence show={lineas.length > 0} initial={false}>
+              <fieldset className="space-y-2" data-testid="lineas-de-la-devolucion">
+                  <legend className="text-sm font-medium text-fg">
+                    La entrada del extracto con la que volvió la plata
+                  </legend>
+                  <p className="text-sm text-fg-muted">
+                    Opcional. Queda conciliada como la devolución de este giro.
+                  </p>
+                  <label className="flex items-center gap-2 text-sm text-fg">
+                    <input
+                      type="radio"
+                      name="linea-de-la-devolucion"
+                      value=""
+                      checked={lineaElegida === ''}
+                      onChange={() => setLineaElegida('')}
+                    />
+                    Todavía no está en el extracto
+                  </label>
+                  {lineas.map((l) => (
+                    <label
+                      key={l.movimientoId}
+                      className="flex items-start gap-2 text-sm text-fg"
+                      data-testid={`linea-${l.movimientoId}`}
+                    >
+                      <input
+                        type="radio"
+                        name="linea-de-la-devolucion"
+                        value={l.movimientoId}
+                        checked={lineaElegida === l.movimientoId}
+                        onChange={() => setLineaElegida(l.movimientoId)}
+                        className="mt-1"
+                      />
+                      <span>
+                        {diaLegible(l.fecha)} · {formatCurrency(l.valorCop)} ·{' '}
+                        <span className="text-fg-muted">{l.descripcion}</span>
+                        {l.yaEnlazada ? (
+                          <span className="text-fg-muted"> (ya conciliada como esta devolución)</span>
+                        ) : null}
+                      </span>
+                    </label>
+                  ))}
+              </fieldset>
+            </Presence>
             <div className="space-y-1.5">
               <Label htmlFor="codigo-del-banco">Código del banco</Label>
               <Input
@@ -406,7 +586,7 @@ export function MarcarDevueltoDialog({
 
         <DialogFooter>
           {resultado ? (
-            <Button hideArrow onClick={onCerrar}>
+            <Button variant="outline" hideArrow onClick={onCerrar}>
               Listo
             </Button>
           ) : (
@@ -472,7 +652,7 @@ export function RegirarDialog({
       onListo();
     } catch (e) {
       toast.error('No se pudo registrar el nuevo giro.', {
-        description: explicarGiro(e, 'No se pudo registrar el nuevo giro.'),
+        description: explicarGiro(e, 'No se pudo registrar el nuevo giro.', 'registrar el nuevo giro'),
       });
     } finally {
       setEnviando(false);
@@ -481,9 +661,14 @@ export function RegirarDialog({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="max-w-lg" data-testid="dialogo-regirar">
+      {/* La variante sigue al estado: formulario y, al terminar, éxito. */}
+      <DialogContent
+        size="md"
+        variant={resultado ? 'success' : undefined}
+        data-testid="dialogo-regirar"
+      >
         <DialogHeader>
-          <DialogTitle>Volver a girar</DialogTitle>
+          <DialogTitle>{resultado ? 'El nuevo giro quedó registrado' : 'Volver a girar'}</DialogTitle>
           <DialogDescription>
             {nombreTitular}. La fecha decide dónde queda el egreso: si el giro sale el MISMO día de
             la devolución, el egreso conserva su fecha; si sale otro día, se re-fecha.
@@ -492,7 +677,7 @@ export function RegirarDialog({
 
         {resultado ? (
           <div className="space-y-2 text-sm" data-testid="resultado-del-regiro">
-            <p className="rounded-md bg-surface-muted px-4 py-3 text-fg" data-testid="motivo-del-egreso">
+            <p className="rounded-[14px] border border-border px-4 py-3 text-fg" data-testid="motivo-del-egreso">
               {resultado.egreso.motivo}
             </p>
             <p className="text-fg-muted">
@@ -517,17 +702,17 @@ export function RegirarDialog({
                 El giro se devolvió el {diaLegible(giro?.fechaDeLaDevolucion)}.
               </p>
             </div>
-            <p className="rounded-md border border-border px-4 py-3 text-xs text-fg-muted">
-              Se registra sobre la misma dispersión del propietario, que es la que volvió a estar
-              por girar. Si la plata salió en otra, avísale a quien lleva finanzas: todavía no hay
-              forma de elegirla acá.
+            <p className="rounded-md border border-border px-4 py-3 text-sm text-fg-muted">
+              Normalmente no hace falta: la devolución se cierra sola cuando el lote que la vuelve a
+              girar queda pagado (o se marca girada), con la fecha de ese pago. Úsalo sólo si la
+              plata ya salió y la devolución no se cerró sola.
             </p>
           </div>
         )}
 
         <DialogFooter>
           {resultado ? (
-            <Button hideArrow onClick={onCerrar}>
+            <Button variant="outline" hideArrow onClick={onCerrar}>
               Listo
             </Button>
           ) : (

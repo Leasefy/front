@@ -30,9 +30,11 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ConfigUsuarios } from '@/components/inmobiliaria';
 import { PermisosDeLaPersona } from '@/components/inmobiliaria/PermisosDeLaPersona';
 import { AgenteLeaderboard } from '@/components/inmobiliaria/AgenteLeaderboard';
+import { MetasEnElRanking } from '@/components/comercial/MetasEnElRanking';
 import { CaptacionesYArriendos } from '@/components/inmobiliaria/CaptacionesYArriendos';
 import { AgenteWorkloadChart } from '@/components/inmobiliaria/AgenteWorkloadChart';
 import { useAgencyUsers, useAgentes, inmobiliariaConfigApi } from '@/lib/hooks/useInmobiliaria';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { agencyApi, permissionsApi } from '@/lib/api/inmobiliaria.service';
 import type { AgencyInviteResult, AgencyRole, AgencyUser, UserInvite } from '@/lib/types/inmobiliaria';
 import { EsqueletoDeSeccion } from './piezas';
@@ -46,12 +48,23 @@ export function SeccionEquipo() {
   const searchParams = useSearchParams();
   const { canAccess, isAdmin } = usePermissions();
 
-  const [vista, setVista] = useState<Vista>('miembros');
+  /*
+   * 🔴 03-10 (pruebas en el navegador): el padrón (`GET /inmobiliaria/agency/members`)
+   * es `configuracion:view` en el back —ningún rol fuera del ADMIN lo trae por
+   * defecto—, pero la sección se abre con el módulo `agentes`. La asesora
+   * entraba a «Miembros», la primera pestaña, y lo primero que veía era «No
+   * tienes acceso a Configuración» (Ranking, Carga y Captaciones sí le
+   * funcionan). Quien no ve el padrón no tiene esa pestaña, entra a Ranking y
+   * no se pide la lista.
+   */
+  const puedeVerElPadron = isAdmin || canAccess('configuracion', 'view');
+  const [vistaElegida, setVista] = useState<Vista>('miembros');
+  const vista: Vista = !puedeVerElPadron && vistaElegida === 'miembros' ? 'ranking' : vistaElegida;
   // 🔴 22-09 noche · «Permisos de esta persona». Las rutas del back son sólo
   // del ADMIN (`ensureAdmin`), así que el gate es `isAdmin` y no el de invitar.
   const [personaDePermisos, setPersonaDePermisos] = useState<AgencyUser | null>(null);
 
-  const { users, isLoading, errorCrudo, refetch } = useAgencyUsers();
+  const { users, isLoading, errorCrudo, refetch } = useAgencyUsers(puedeVerElPadron);
   // Sólo para Ranking y Carga: métricas por agente activo. No es un padrón, y
   // no se pide hasta que se mira (`skip`): el 90% de las visitas es al padrón.
   const {
@@ -83,17 +96,17 @@ export function SeccionEquipo() {
    */
   const puedeAdministrarEquipo = isAdmin || canAccess('agentes', 'create');
 
-  const VISTAS: Array<{ id: Vista; label: string; icon: React.ElementType }> = useMemo(
-    () => [
+  const VISTAS: Array<{ id: Vista; label: string; icon: React.ElementType }> = useMemo(() => {
+    const todas: Array<{ id: Vista; label: string; icon: React.ElementType }> = [
       { id: 'miembros', label: t('inmobiliaria.config.tabs.miembros'), icon: UsersThree },
       { id: 'ranking', label: t('inmobiliaria.agentes.leaderboard'), icon: Trophy },
       { id: 'carga', label: t('inmobiliaria.agentes.tabs.workload'), icon: ChartBar },
       // 17-09: quién captó y quién arrendó. Reemplaza a las comisiones por
       // asesor, que se liquidan por fuera de Leasefy.
       { id: 'captaciones', label: 'Captaciones y arriendos', icon: Handshake },
-    ],
-    [t],
-  );
+    ];
+    return todas.filter((v) => v.id !== 'miembros' || puedeVerElPadron);
+  }, [t, puedeVerElPadron]);
 
   /*
    * Cuando el correo no sale, la invitación igual quedó creada — lo que falta
@@ -132,7 +145,9 @@ export function SeccionEquipo() {
           const descripcion =
             result.emailStatus === 'not_configured'
               ? `${invite.name || invite.email} quedó invitado, pero el servidor todavía no manda correos. Pásale tú el enlace.`
-              : `${invite.name || invite.email} quedó invitado, pero el correo no salió. Pásale tú el enlace.`;
+              : result.emailStatus === 'suppressed'
+                ? `${invite.name || invite.email} quedó invitado. Este entorno es de pruebas y no manda correos: pásale tú el enlace.`
+                : `${invite.name || invite.email} quedó invitado, pero el correo no salió. Pásale tú el enlace.`;
           toast.warning(t('inmobiliaria.config.toasts.inviteEmailNotDelivered'), {
             description: descripcion,
             action: accionDelCorreoCaido(result, invite.email),
@@ -144,7 +159,10 @@ export function SeccionEquipo() {
           });
         }
       } catch (error) {
-        toast.error('Error al invitar', { description: error instanceof Error ? error.message : undefined });
+        // 🔴 No se traga: el modal (`AgenteFormModal`) se queda abierto con lo
+        // escrito y dice qué pasó, por campo si el 400 trae `campos`. Antes el
+        // toast decía «Error al invitar» y el modal se cerraba y se reseteaba.
+        throw error;
       }
     },
     [refetch, t, accionDelCorreoCaido],
@@ -157,9 +175,12 @@ export function SeccionEquipo() {
         await refetch();
         toast.success(t('inmobiliaria.config.toasts.roleUpdated'));
       } catch (error) {
-        toast.error('Error al actualizar rol', {
-          description: error instanceof Error ? error.message : undefined,
-        });
+        toast.error(
+          mensajeParaLaPersona(error, {
+            porDefecto: 'No pudimos cambiar el rol. Prueba de nuevo en un momento.',
+            accion: 'cambiar el rol',
+          }),
+        );
       }
     },
     [refetch, t],
@@ -175,9 +196,12 @@ export function SeccionEquipo() {
         await refetch();
         toast.success(t('inmobiliaria.config.toasts.userStatusUpdated'));
       } catch (error) {
-        toast.error('Error al actualizar estado', {
-          description: error instanceof Error ? error.message : undefined,
-        });
+        toast.error(
+          mensajeParaLaPersona(error, {
+            porDefecto: 'No pudimos cambiar el estado de la persona. Prueba de nuevo en un momento.',
+            accion: 'cambiar el estado de la persona',
+          }),
+        );
       }
     },
     [users, refetch, t],
@@ -194,7 +218,9 @@ export function SeccionEquipo() {
             description:
               result.emailStatus === 'not_configured'
                 ? `El servidor todavía no tiene correo configurado. El enlace de ${email} es nuevo y sirve: pásaselo tú.`
-                : `El enlace de ${email} es nuevo y sirve. Pásaselo tú.`,
+                : result.emailStatus === 'suppressed'
+                  ? `Este entorno es de pruebas y no manda correos. El enlace de ${email} es nuevo y sirve: pásaselo tú.`
+                  : `El enlace de ${email} es nuevo y sirve. Pásaselo tú.`,
             action: accionDelCorreoCaido(result, user?.email ?? ''),
             duration: 12000,
           });
@@ -205,9 +231,12 @@ export function SeccionEquipo() {
         }
         await refetch();
       } catch (error) {
-        toast.error('No pudimos reenviar la invitación', {
-          description: error instanceof Error ? error.message : undefined,
-        });
+        toast.error(
+          mensajeParaLaPersona(error, {
+            porDefecto: 'No pudimos reenviar la invitación. Prueba de nuevo en un momento.',
+            accion: 'reenviar la invitación',
+          }),
+        );
       }
     },
     [users, refetch, t, accionDelCorreoCaido],
@@ -220,9 +249,12 @@ export function SeccionEquipo() {
         await refetch();
         toast.success(t('inmobiliaria.config.toasts.userDeleted'));
       } catch (error) {
-        toast.error('Error al eliminar usuario', {
-          description: error instanceof Error ? error.message : undefined,
-        });
+        toast.error(
+          mensajeParaLaPersona(error, {
+            porDefecto: 'No pudimos quitar a la persona del equipo. Prueba de nuevo en un momento.',
+            accion: 'quitar a la persona del equipo',
+          }),
+        );
       }
     },
     [refetch, t],
@@ -248,24 +280,32 @@ export function SeccionEquipo() {
 
   return (
     <div className="space-y-4">
-      <SegmentedControl<Vista>
-        value={vista}
-        onChange={setVista}
-        aria-label={t('inmobiliaria.config.tabs.equipo')}
-        options={VISTAS.map((v) => {
-          const Icono = v.icon;
-          return {
-            value: v.id,
-            ariaLabel: v.label,
-            label: (
-              <span className="flex items-center gap-2">
-                <Icono className="h-4 w-4" weight={vista === v.id ? 'fill' : 'regular'} />
-                <span>{v.label}</span>
-              </span>
-            ),
-          };
-        })}
-      />
+      {/* 🔴 ARREGLOS-4 (03-10-2026): a 390 px las cuatro pestañas no cabían y
+          empujaban la pantalla de lado. Se desplazan dentro de su riel, como el
+          filtro de «Mis propiedades» y los comprobantes del sistema anterior. */}
+      <div
+        className="min-w-0 max-w-full overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        data-testid="equipo-pestanas"
+      >
+        <SegmentedControl<Vista>
+          value={vista}
+          onChange={setVista}
+          aria-label={t('inmobiliaria.config.tabs.equipo')}
+          options={VISTAS.map((v) => {
+            const Icono = v.icon;
+            return {
+              value: v.id,
+              ariaLabel: v.label,
+              label: (
+                <span className="flex items-center gap-2 whitespace-nowrap">
+                  <Icono className="h-4 w-4" weight={vista === v.id ? 'fill' : 'regular'} />
+                  <span>{v.label}</span>
+                </span>
+              ),
+            };
+          })}
+        />
+      </div>
 
       {vista === 'captaciones' ? (
         <CaptacionesYArriendos />
@@ -308,7 +348,11 @@ export function SeccionEquipo() {
           esqueleto={<EsqueletoDeSeccion filas={3} />}
         >
           {vista === 'ranking' ? (
-            <AgenteLeaderboard agentes={agentes} />
+            <div className="space-y-4">
+              {/* COMERCIAL (04-10-2026): el avance de las metas del mes. */}
+              <MetasEnElRanking />
+              <AgenteLeaderboard agentes={agentes} />
+            </div>
           ) : (
             <AgenteWorkloadChart agentes={agentes} />
           )}

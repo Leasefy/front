@@ -237,7 +237,7 @@ export function AgenteProfile({ agente, onEdit }: AgenteProfileProps) {
           {/* Split Bar */}
           <div className="h-3 rounded-full bg-surface-muted dark:bg-ink overflow-hidden flex mb-3">
             <div
-              className="bg-primary transition-all"
+              className="bg-primary"
               style={{ width: `${agentPercent}%` }}
             />
             <div

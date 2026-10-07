@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { WarningCircle } from '@phosphor-icons/react';
+import { Prohibit } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,6 +23,11 @@ interface CancelContractModalProps {
   isSubmitting?: boolean;
   /** Rol del usuario actual — cambia el copy ("tu" vs "el propietario"). */
   actor?: 'landlord' | 'tenant';
+  /**
+   * QA-CONT-95 (D-11): ¿el contrato salió de una postulación? Sin ella (un
+   * contrato armado a mano) no hay «aplicación» que cerrar.
+   */
+  conPostulacion?: boolean;
 }
 
 export function CancelContractModal({
@@ -31,6 +36,7 @@ export function CancelContractModal({
   onConfirm,
   isSubmitting = false,
   actor = 'landlord',
+  conPostulacion = true,
 }: CancelContractModalProps) {
   const [reason, setReason] = useState('');
 
@@ -56,29 +62,23 @@ export function CancelContractModal({
         if (!abierto && !isSubmitting) onClose();
       }}
     >
-      <DialogContent data-testid="cancelar-contrato-dialog">
+      {/* Destructiva: el medallón rojo reemplaza al chip hecho a mano, y lo que
+          se pierde va en la descripción (antes, repetido en un recuadro rojo). */}
+      <DialogContent
+        variant="destructive"
+        icon={<Prohibit weight="bold" />}
+        data-testid="cancelar-contrato-dialog"
+      >
         <DialogHeader>
-          {/* Chip + título + descripción como UN hijo de la cabecera: el header
-              del DS apila sus hijos en columna y pone la ✕ a la derecha solo. */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center shrink-0">
-              <WarningCircle className="w-5 h-5 text-danger" />
-            </div>
-            <div className="min-w-0">
-              <DialogTitle>Cancelar contrato</DialogTitle>
-              <DialogDescription className="text-xs mt-0.5">
-                Esta acción es terminal y no se puede deshacer
-              </DialogDescription>
-            </div>
-          </div>
+          <DialogTitle>Cancelar contrato</DialogTitle>
+          <DialogDescription>
+            {/* QA-CONT-95 (D-11): «postulación», no «aplicación»; y lo que
+                pasa con el inmueble, que es lo que importa al cancelar. */}
+            {conPostulacion
+              ? `El contrato se cancela, el inmueble vuelve a quedar disponible y la postulación queda cerrada; no se puede deshacer. Si quieres volver a intentar con el mismo ${otherParty}, vas a tener que crear una postulación nueva.`
+              : 'El contrato se cancela y el inmueble vuelve a quedar disponible; no se puede deshacer.'}
+          </DialogDescription>
         </DialogHeader>
-
-        <div className="rounded-lg border border-danger/30 bg-danger-soft p-3">
-          <p className="text-sm text-danger">
-            Al cancelar, el contrato termina y la aplicación asociada queda cerrada.
-            Si quieres volver a intentar con el mismo {otherParty}, vas a tener que crear una aplicación nueva.
-          </p>
-        </div>
 
         <div className="space-y-1">
           <label className="block text-xs font-medium text-fg">
@@ -109,7 +109,7 @@ export function CancelContractModal({
         <DialogFooter>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             hideArrow
             onClick={onClose}
             disabled={isSubmitting}
@@ -123,7 +123,6 @@ export function CancelContractModal({
             onClick={handleSubmit}
             disabled={!canSubmit}
             isLoading={isSubmitting}
-            className="gap-2"
           >
             Cancelar contrato
           </Button>

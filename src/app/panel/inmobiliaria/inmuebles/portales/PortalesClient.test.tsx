@@ -297,7 +297,7 @@ describe('Publicación en portales', () => {
 
     // Y ya no vive dentro del diálogo de la cuenta.
     await clic(porTestId('cuenta-FINCARAIZ'))
-    const form = porTestId('form-de-cuenta')!
+    const form = enElModal('form-de-cuenta')!
     expect(form.textContent).not.toMatch(/ejecutivo comercial/)
     expect(form.querySelector('details')).toBeNull()
     // El cuidado del portal SÍ se queda: no es explicación, es una advertencia
@@ -349,7 +349,9 @@ describe('Publicación en portales', () => {
     await abrirComoSePublica()
     const pasos = enElModal('como-funciona')!.querySelectorAll('ol > li')
     expect(pasos.length).toBe(4)
-    expect(pasos[0].textContent).toMatch(/Conecta tu cuenta/)
+    // 05-10-2026: «Anota», no «Conecta» — no hay integración, sólo se anota la
+    // cuenta (y el que no deja publicar sin ella es Leasefy, no el portal).
+    expect(pasos[0].textContent).toMatch(/Anota tu cuenta/)
     expect(pasos[3].textContent).toMatch(/Confirma que ya salió/)
   })
 
@@ -367,12 +369,31 @@ describe('Publicación en portales', () => {
     h.api.guardarCuenta.mockResolvedValue({ aviso: null })
     await montar()
     await clic(porTestId('cuenta-FINCARAIZ'))
-    expect(porTestId('form-de-cuenta')).not.toBeNull()
+    expect(enElModal('form-de-cuenta')).not.toBeNull()
     await act(async () => {
-      porTestId('form-de-cuenta')!.dispatchEvent(
+      enElModal('form-de-cuenta')!.dispatchEvent(
         new Event('submit', { bubbles: true, cancelable: true }),
       )
     })
+    expect(h.api.guardarCuenta).toHaveBeenCalledWith(
+      expect.objectContaining({ portal: 'FINCARAIZ', activa: true }),
+    )
+  })
+
+  it('P1c — el diálogo de la cuenta es el de la casa: título en la cabecera y «Guardar» en el pie', async () => {
+    // 02-10-2026: el armazón `Modal` dejó de ser una caja a mano y pasó al
+    // `Dialog` de la casa. El título nombra al diálogo, y el botón de guardar
+    // vive en el pie fijo —FUERA del <form>— y lo envía con `form=`.
+    h.api.guardarCuenta.mockResolvedValue({ aviso: null })
+    await montar()
+    await clic(porTestId('cuenta-FINCARAIZ'))
+    const dialogo = document.body.querySelector<HTMLElement>('[role="dialog"]')!
+    expect(dialogo).not.toBeNull()
+    const titulo = document.getElementById(dialogo.getAttribute('aria-labelledby') ?? '')
+    expect(titulo?.textContent).toBe('Anotar tu cuenta de Fincaraíz')
+    const guardar = enElModal('guardar-cuenta')!
+    expect(enElModal('form-de-cuenta')!.contains(guardar)).toBe(false)
+    await clic(guardar)
     expect(h.api.guardarCuenta).toHaveBeenCalledWith(
       expect.objectContaining({ portal: 'FINCARAIZ', activa: true }),
     )
@@ -419,10 +440,10 @@ describe('Publicación en portales', () => {
     })
     await montar()
     await clic(porTestId('abrir-publicar'))
-    await clic(porTestId('elegir-prop-1'))
+    await clic(enElModal('elegir-prop-1'))
     // Metrocuadrado tiene cuenta activa; Fincaraíz no tiene ninguna.
-    expect(porTestId('marcar-METROCUADRADO')).not.toBeNull()
-    expect(porTestId('marcar-FINCARAIZ')).toBeNull()
+    expect(enElModal('marcar-METROCUADRADO')).not.toBeNull()
+    expect(enElModal('marcar-FINCARAIZ')).toBeNull()
   })
 
   it('P4 — lo que le falta al inmueble lo dice el back, y se muestra tal cual', async () => {
@@ -451,8 +472,8 @@ describe('Publicación en portales', () => {
     })
     await montar()
     await clic(porTestId('abrir-publicar'))
-    await clic(porTestId('elegir-prop-1'))
-    const falta = porTestId('le-falta')
+    await clic(enElModal('elegir-prop-1'))
+    const falta = enElModal('le-falta')
     expect(falta).not.toBeNull()
     const items = Array.from(falta!.querySelectorAll('li')).map((li) => li.textContent)
     expect(items).toEqual([
@@ -461,7 +482,7 @@ describe('Publicación en portales', () => {
     ])
     // Y no se ofrece publicar algo que el back va a rechazar.
     expect(
-      (porTestId('confirmar-publicar') as HTMLButtonElement).disabled,
+      (enElModal('confirmar-publicar') as HTMLButtonElement).disabled,
     ).toBe(true)
   })
 
@@ -584,5 +605,92 @@ describe('las tarjetas de portal', () => {
     expect(t).toContain('Se publica automático')
     // Y NO le dice que «no puede recibir avisos»: ese texto es de los de afuera.
     expect(t).not.toContain('necesitamos los datos de tu cuenta')
+  })
+})
+
+/**
+ * Sistema de errores, tanda 2 (02-10-2026): la cuenta del portal pinta el 400
+ * en su campo; confirmar y despublicar pasan por el traductor (antes, una
+ * copia local leía `err.message` crudo: un 500 decía «Internal server error»).
+ */
+describe('los errores de la pantalla de portales', () => {
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    return new ApiError(status, cuerpo.message as string | string[], cuerpo.code as string, cuerpo)
+  }
+
+  async function guardarLaCuenta() {
+    await clic(porTestId('cuenta-FINCARAIZ'))
+    await act(async () => {
+      enElModal('form-de-cuenta')!.dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      )
+    })
+  }
+
+  it('🔴 un 400 en «identificadorEnElPortal» va debajo de su campo, con el foco y sin toast', async () => {
+    const MENSAJE = 'El identificador en el portal puede tener hasta 120 caracteres.'
+    h.api.guardarCuenta.mockRejectedValue(
+      errorDelBack(400, {
+        code: 'DATOS_INVALIDOS',
+        message: [MENSAJE],
+        campos: [{ campo: 'identificadorEnElPortal', regla: 'longitud_maxima', mensaje: MENSAJE }],
+      }),
+    )
+    await montar()
+    await guardarLaCuenta()
+
+    expect(document.getElementById('cuenta-identificador-error')?.textContent).toBe(MENSAJE)
+    const campo = enElModal('cuenta-identificador') as HTMLInputElement
+    expect(campo.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(campo)
+    expect(h.toast.error).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un 5xx al guardar la cuenta dice «de nuestro lado» con la referencia', async () => {
+    h.api.guardarCuenta.mockRejectedValue(
+      errorDelBack(500, { code: 'ERROR_INTERNO', message: 'Error interno del servidor.', referencia: 'abcd1234' }),
+    )
+    await montar()
+    await guardarLaCuenta()
+
+    const dicho = String(h.toast.error.mock.calls[0][0])
+    expect(dicho).toMatch(/^No pudimos guardar la cuenta: algo falló de nuestro lado/)
+    expect(dicho).toContain('abcd1234')
+    expect(dicho).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta, guardar la cuenta habla de la conexión', async () => {
+    h.api.guardarCuenta.mockRejectedValue(new TypeError('Failed to fetch'))
+    await montar()
+    await guardarLaCuenta()
+    expect(String(h.toast.error.mock.calls[0][0])).toMatch(/conexión/)
+  })
+
+  it('🔴 confirmar que el aviso está arriba: un 500 no pinta «Internal server error»', async () => {
+    h.api.tablero.mockResolvedValue({ disponible: true, motivo: null, filas: [POR_SUBIR] })
+    h.api.confirmar.mockRejectedValue(
+      errorDelBack(500, { code: 'ERROR_INTERNO', message: 'Internal server error', referencia: 'feed0001' }),
+    )
+    await montar()
+    await clic(porTestId('confirmar-f-1'))
+
+    const dicho = String(h.toast.error.mock.calls[0][0])
+    expect(dicho).toMatch(/de nuestro lado/)
+    expect(dicho).toContain('feed0001')
+    expect(dicho).not.toContain('Internal server error')
+  })
+
+  it('despublicar sin respuesta habla de la conexión; con un 409 dice lo que dijo el back', async () => {
+    h.api.tablero.mockResolvedValue({ disponible: true, motivo: null, filas: [PUBLICADA] })
+    h.api.despublicar.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await montar()
+    await clic(porTestId('bajar-f-2'))
+    expect(String(h.toast.error.mock.calls[0][0])).toMatch(/conexión/)
+
+    h.api.despublicar.mockRejectedValueOnce(
+      errorDelBack(409, { code: 'YA_DESPUBLICADA', message: 'Ese aviso ya estaba despublicado.' }),
+    )
+    await clic(porTestId('bajar-f-2'))
+    expect(String(h.toast.error.mock.calls[1][0])).toBe('Ese aviso ya estaba despublicado.')
   })
 })

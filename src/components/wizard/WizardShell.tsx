@@ -1,12 +1,12 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, MapPin, Check, WarningCircle, Info, X } from '@phosphor-icons/react';
 
-import { Progress } from '@leasefy/cadence';
+import { Appear, CrossFade, Progress } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/lib/format';
 import { Button } from '@/components/ui/button';
@@ -93,6 +93,17 @@ export function WizardShell({
       ? 'Tu nombre y documento vienen de tu estudio de arrendamiento vigente y no se pueden editar. El resto de tus datos los precargamos de tu postulación anterior — revisa cada paso antes de enviar.'
       : 'Tu nombre y documento vienen de tu estudio de arrendamiento vigente y no se pueden editar. Revisa el resto de los datos antes de enviar.'
     : 'Precargamos los datos de tu postulación anterior. Revisa cada paso antes de enviar.';
+
+  /*
+   * Hacia dónde va el paso: adelante entra por la derecha, atrás por la
+   * izquierda (`CrossFade direction`). Un `useRef`: sólo tiene que recordar.
+   */
+  const pasoAnteriorRef = useRef(currentStep);
+  const direccionRef = useRef<'forward' | 'backward'>('forward');
+  if (currentStep !== pasoAnteriorRef.current) {
+    direccionRef.current = currentStep > pasoAnteriorRef.current ? 'forward' : 'backward';
+    pasoAnteriorRef.current = currentStep;
+  }
 
   const currentStepConfig = WIZARD_STEPS[currentStep - 1];
 
@@ -265,7 +276,7 @@ export function WizardShell({
                             : undefined
                         }
                         className={cn(
-                          'relative z-10 size-8 rounded-full flex items-center justify-center transition-all',
+                          'relative z-10 size-8 rounded-full flex items-center justify-center transition-[color,background-color,border-color,box-shadow]',
                           'font-mono text-[13px] font-semibold tabular-nums',
                           isCompleted && !isCurrent
                             ? 'bg-primary border-2 border-primary text-primary-fg'
@@ -356,14 +367,18 @@ export function WizardShell({
                 </p>
               </div>
 
-              {/* Form content */}
+              {/* Form content — cada paso se cruza con el siguiente (16 px hacia
+                  donde se avanza). El primero llega quieto (viene del servidor).
+                  `popLayout`: el paso nuevo se monta YA y el viejo sale por encima. */}
               <div className="px-4 py-6 lg:px-6 lg:py-8">
-                {children}
+                <CrossFade swapKey={currentStep} direction={direccionRef.current} mode="popLayout">
+                  {children}
+                </CrossFade>
               </div>
 
-              {/* Validation Errors */}
+              {/* Validation Errors — entran subiendo 8 px como los avisos del sistema. */}
               {attemptedAdvance && !currentStepValidation.isValid && (
-                <div className="px-4 lg:px-6 mb-4" aria-live="assertive" role="alert">
+                <Appear className="px-4 lg:px-6 mb-4" aria-live="assertive" role="alert">
                   <div className="flex items-start gap-3 p-4 bg-danger-soft border border-danger/20 rounded-[14px]">
                     <WarningCircle className="h-5 w-5 text-danger flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
@@ -385,14 +400,14 @@ export function WizardShell({
                       </ul>
                     </div>
                   </div>
-                </div>
+                </Appear>
               )}
 
               {/* Submission error — otherwise a failed submit (e.g. 403 for a
                   non-tenant account, a blocked consent, or a server error) is
                   invisible and the button looks stuck on "Enviar solicitud". */}
               {submissionError && (
-                <div
+                <Appear
                   role="alert"
                   className="mx-4 mb-3 rounded-lg border border-danger/30 bg-danger-soft px-4 py-3 text-sm text-danger lg:mx-6"
                 >
@@ -410,7 +425,7 @@ export function WizardShell({
                       </Link>
                     </>
                   )}
-                </div>
+                </Appear>
               )}
 
               {/* Compass */}

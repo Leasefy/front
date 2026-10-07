@@ -21,7 +21,13 @@ const POLL_MS = 60_000
 export interface UsePilotoActivityResult {
   items: ActivityItem[]
   isLoading: boolean
-  error: string | null
+  /**
+   * El error ENTERO, no su texto (ARREGLOS-4, 03-10-2026): el `ApiError` del
+   * micro, el 503 «el asistente de Leasefy no está disponible» de
+   * `agentFetch`, el de red o el de «no contestó a tiempo». La pantalla lo dice
+   * con `FalloDeCarga` / `mensajeParaLaPersona`. `null` si no falló.
+   */
+  error: unknown
   /** Backend 404 — el feed aún no está publicado (no es un error). */
   notAvailable: boolean
   refetch: () => Promise<void>
@@ -33,7 +39,7 @@ export function usePilotoActivity(limit = 50): UsePilotoActivityResult {
 
   const [items, setItems] = useState<ActivityItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<unknown>(null)
   const [notAvailable, setNotAvailable] = useState(false)
 
   /** Guard de respuestas viejas: cada fetch aborta el anterior. */
@@ -70,7 +76,7 @@ export function usePilotoActivity(limit = 50): UsePilotoActivityResult {
       loadedOnceRef.current = true
     } catch (err) {
       if (controller.signal.aborted) return
-      setError(err instanceof Error ? err.message : 'Failed to fetch piloto activity')
+      setError(err ?? new Error('Failed to fetch piloto activity'))
     } finally {
       if (!controller.signal.aborted) setIsLoading(false)
     }

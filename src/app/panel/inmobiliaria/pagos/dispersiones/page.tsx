@@ -5,7 +5,6 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { useState, useMemo, useCallback, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { toast } from '@/components/ui/toast';
 import {
   Bank,
@@ -14,6 +13,7 @@ import {
   SquaresFour,
   Lightning,
   DownloadSimple,
+  Stamp,
 } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
@@ -46,6 +46,7 @@ import { apiClient } from '@/lib/api/client';
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -77,11 +78,12 @@ import {
   esAprobadorYEjecutor,
   esAprobarPorLote,
   loteQueTieneLaDispersion,
-  motivoLegible,
+  motivoDeUnaAccion,
 } from '@/lib/api/dispersiones-errores';
+import { traeErroresPorCampo } from '@/lib/errores/errores-en-el-formulario';
 import { mesEnTitulo } from '@/lib/utils/mes';
 import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
-import { SegmentedControl } from '@leasefy/cadence';
+import { CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -96,15 +98,13 @@ function getCurrentMonth(): string {
 
 /**
  * Por qué falló UNA acción (aprobar, girar), en una frase que se puede leer.
- * Un 4xx trae su motivo escrito por el back; la red y el servidor, no.
+ * Un 4xx trae su motivo escrito por el back; un 5xx dice «de nuestro lado» con
+ * la referencia, y «conexión» sólo sale si no hubo respuesta (el traductor,
+ * `motivoDeUnaAccion`). Antes cualquier fallo que no fuera un 4xx o un status
+ * 0 decía lo mismo, sin referencia para soporte.
  */
-function motivoDeLaAccion(error: unknown): string {
-  const motivo = motivoLegible(error);
-  if (motivo) return motivo;
-  if (error instanceof ApiError && error.status === 0) {
-    return 'No llegó al servidor: revisa tu conexión y vuelve a intentarlo.';
-  }
-  return 'Falló de nuestro lado; vuelve a intentarlo en un momento.';
+function motivoDeLaAccion(error: unknown, accion: string): string {
+  return motivoDeUnaAccion(error, accion);
 }
 
 /**
@@ -442,7 +442,7 @@ function DispersionesContent() {
       }
       toast.error('No se pudo aprobar la dispersión', {
         id,
-        description: motivoDeLaAccion(error),
+        description: motivoDeLaAccion(error, 'aprobar la dispersión'),
       });
     }
   }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote, avisarQueEstaEnUnLote]);
@@ -493,6 +493,16 @@ function DispersionesContent() {
 
       setIsDetailOpen(false);
     } catch (error) {
+      /*
+       * Un 400 con `campos` (la referencia de más de 100 caracteres, la cuenta
+       * de origen) es del FORMULARIO del cajón: se le devuelve para que lo
+       * ponga debajo de su campo, con el foco ahí, y no en un toast que se va
+       * solo. Lo que no tiene campo lo dice el cajón en un toast.
+       */
+      if (traeErroresPorCampo(error)) {
+        toast.dismiss(id);
+        throw error;
+      }
       await refetchDispersiones();
       if (esAprobarPorLote(error)) {
         avisarQueEsPorLote(error, id);
@@ -507,7 +517,7 @@ function DispersionesContent() {
         esAprobadorYEjecutor(error)
           ? 'El giro lo anota otra persona'
           : 'No se pudo guardar la referencia del giro',
-        { id, description: motivoDeLaAccion(error) },
+        { id, description: motivoDeLaAccion(error, 'guardar la referencia del giro') },
       );
     }
   }, [t, refetchDispersiones, cargarResumen, avisarQueEsPorLote, avisarQueEstaEnUnLote]);
@@ -560,7 +570,13 @@ function DispersionesContent() {
     const resultados = await Promise.allSettled(lote.map((d) => dispersionesApi.approve(d.id)));
     const errores = resultados.flatMap((r, i) =>
       r.status === 'rejected'
-        ? [{ id: lote[i].id, nombre: lote[i].propietarioName, motivo: motivoDeLaAccion(r.reason) }]
+        ? [
+            {
+              id: lote[i].id,
+              nombre: lote[i].propietarioName,
+              motivo: motivoDeLaAccion(r.reason, 'aprobar la dispersión'),
+            },
+          ]
         : [],
     );
     const aprobadas = lote.length - errores.length;
@@ -609,7 +625,7 @@ function DispersionesContent() {
       });
     } catch (error) {
       toast.error('No se pudo descargar el extracto', {
-        description: motivoDeLaAccion(error),
+        description: motivoDeLaAccion(error, 'descargar el extracto'),
       });
     }
   }, [t]);
@@ -699,7 +715,9 @@ function DispersionesContent() {
    *   - falló y la lista sí está → estimado con las filas, rotulado.
    */
   let bloqueDeResumen: JSX.Element;
+  let claseDeResumen: 'resumen' | 'fallo' | 'cargando';
   if (resumenDelBack || (resumenFallo && !cargandoLista && !listaCaida)) {
+    claseDeResumen = 'resumen';
     bloqueDeResumen = (
       <DispersionResumen
         summary={summary}
@@ -714,6 +732,7 @@ function DispersionesContent() {
       />
     );
   } else if (resumenFallo && listaCaida) {
+    claseDeResumen = 'fallo';
     bloqueDeResumen = (
       <FalloDeCarga
         error={resumenFallo}
@@ -722,6 +741,7 @@ function DispersionesContent() {
       />
     );
   } else {
+    claseDeResumen = 'cargando';
     bloqueDeResumen = <EsqueletoIndicadores cantidad={3} className="lg:grid-cols-3" />;
   }
 
@@ -754,18 +774,18 @@ function DispersionesContent() {
         </div>
       </div>
 
-      {/* Summary Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        data-testid="dispersiones-resumen"
-      >
+      {/* Summary Section — la página ya no anima su propia entrada (la pone el
+          `template.tsx`); se anima el CAMBIO: esqueleto → resumen / fallo se
+          cruzan (`popLayout`: lo nuevo entra ya y lo viejo se va encima). */}
+      <div className="relative" data-testid="dispersiones-resumen">
+        <CrossFade swapKey={claseDeResumen} mode="popLayout">
         {bloqueDeResumen}
-      </motion.div>
+        </CrossFade>
+      </div>
 
       {/* El informe de «Aprobar todas» cuando no salieron todas: queda hasta
           que se cierre, con el motivo de cada una. */}
+      <Presence show={Boolean(informe)} initial={false}>
       {informe && (
         <AlertaAccionable
           severidad="warning"
@@ -782,14 +802,10 @@ function DispersionesContent() {
           </ul>
         </AlertaAccionable>
       )}
+      </Presence>
 
       {/* Unified Card - View Toggle + Filters + Content + Pagination */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="rounded-lg border border-border bg-card"
-      >
+      <div className="rounded-lg border border-border bg-card">
         {/* View Toggle Header - FIRST (Primary hierarchy) */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
           <SegmentedControl
@@ -821,11 +837,15 @@ function DispersionesContent() {
           />
           {/* El conteo sólo cuando la lista es de verdad: «0 dispersiones»
               encima de un fallo es otro «no hay». */}
-          {!cargandoLista && !listaCaida && (
-            <span className="text-xs text-fg-muted tabular-nums">
+          <Presence
+            as="span"
+            show={!cargandoLista && !listaCaida}
+            initial={false}
+            direction="none"
+            className="text-xs text-fg-muted tabular-nums"
+          >
               {filteredDispersiones.length} {t('inmobiliaria.nav.dispersiones').toLowerCase()}
-            </span>
-          )}
+          </Presence>
         </div>
 
         {/* Filters Section - SECOND */}
@@ -870,9 +890,13 @@ function DispersionesContent() {
               />
             }
           >
+            {/* Tabla ⇄ tarjetas se cruzan; dentro, las filas y las tarjetas
+                entran escalonadas (cuerpo nuevo por mes y página). */}
+            <CrossFade swapKey={viewMode}>
             {viewMode === 'table' ? (
               <DispersionTable
                 dispersiones={paginatedDispersiones}
+                  clave={`${filters.month}|${page}|${pageSize}`}
                 onViewDetail={handleDispersionClick}
                 // Con aprobación por lote la fila no ofrece aprobar ni girar:
                 // las dos dan 409. «Ver detalle» sigue, y ahí está el enlace.
@@ -881,10 +905,13 @@ function DispersionesContent() {
                 showSummary
               />
             ) : (
-              <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Stagger
+                  key={`${filters.month}|${page}|${pageSize}`}
+                  className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                >
                 {paginatedDispersiones.map((dispersion) => (
+                    <StaggerItem key={dispersion.id}>
                   <DispersionCard
-                    key={dispersion.id}
                     dispersion={dispersion}
                     onViewDetail={handleDispersionClick}
                     onProcess={
@@ -893,9 +920,11 @@ function DispersionesContent() {
                         : undefined
                     }
                   />
+                    </StaggerItem>
                 ))}
-              </div>
+                </Stagger>
             )}
+            </CrossFade>
           </EstadoDeDatos>
         </div>
 
@@ -913,7 +942,7 @@ function DispersionesContent() {
             />
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Dispersion Detail Modal */}
       <DispersionDetail
@@ -935,7 +964,7 @@ function DispersionesContent() {
           if (!aprobandoTodas) setConfirmandoAprobarTodas(abierto);
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent variant="confirm" icon={<Stamp weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>
               Vas a aprobar {pendientesEnPantalla.length}{' '}
@@ -951,7 +980,7 @@ function DispersionesContent() {
             <AlertDialogCancel disabled={aprobandoTodas}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               data-testid="confirmar-aprobar-todas"
-              disabled={aprobandoTodas}
+              loading={aprobandoTodas}
               onClick={(e) => {
                 // El diálogo se cierra al terminar, con el informe: no antes.
                 e.preventDefault();
@@ -967,33 +996,18 @@ function DispersionesContent() {
       {/* Extracto Modal */}
       <Dialog open={isExtractoOpen} onOpenChange={(open) => !open && handleExtractoClose()}>
         {/*
-          Más ancho porque el extracto tiene nueve columnas. El scroll vertical
-          ya lo pone el primitivo del Dialog, así que NO se agrega otro acá:
-          dos scrollers anidados se pelean el gesto.
-
-          `data-lenis-prevent` sí es obligatorio — el scroll suave se come el
-          de cualquier cosa flotante si no se le dice que no toque esto.
+          `xl` (880) porque el extracto tiene nueve columnas. El scroll vertical
+          (con `data-lenis-prevent`) lo pone el cuerpo del Dialog: NO se agrega
+          otro acá, dos scrollers anidados se pelean el gesto. «Descargar PDF»
+          va en el pie, no metido en el título (DESIGN.md §17).
         */}
-        <DialogContent className="max-w-5xl max-h-[90vh]" data-lenis-prevent>
+        <DialogContent size="xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>{t('inmobiliaria.dispersiones.detail.ownerStatement')}</span>
-              {extractoData && !extractoCargando && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => extractoDispersion && handleDownloadExtracto(extractoDispersion)}
-                  className="flex items-center gap-2"
-                >
-                  <DownloadSimple className="w-4 h-4" />
-                  {t('inmobiliaria.dispersiones.downloadPdf')}
-                </Button>
-              )}
-            </DialogTitle>
+            <DialogTitle>{t('inmobiliaria.dispersiones.detail.ownerStatement')}</DialogTitle>
           </DialogHeader>
-          {/* : es hijo de un grid, y sin esto se estira al ancho de
+          {/* `min-w-0`: es hijo de un grid, y sin esto se estira al ancho de
               la tabla en vez de dejar que ella scrollee adentro. */}
-          <div className="min-w-0 p-6 pt-4" data-testid="extracto-cuerpo">
+          <div className="min-w-0" data-testid="extracto-cuerpo">
             <EstadoDeDatos
               cargando={extractoCargando}
               error={extractoError}
@@ -1004,6 +1018,17 @@ function DispersionesContent() {
               {extractoData && <ExtractoPropietario extracto={extractoData} />}
             </EstadoDeDatos>
           </div>
+          {extractoData && !extractoCargando && (
+            <DialogFooter>
+              <Button
+                hideArrow
+                onClick={() => extractoDispersion && handleDownloadExtracto(extractoDispersion)}
+              >
+                <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+                {t('inmobiliaria.dispersiones.downloadPdf')}
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </div>

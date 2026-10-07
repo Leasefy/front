@@ -20,7 +20,17 @@ vi.mock('next/link', () => ({
 }))
 vi.mock('@/components/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }))
 
-import { ArchivoDelLote, type ArchivoDelLoteEstado } from './ArchivoDelLote'
+// 02-10-2026: el hook pide el archivo al back cuando el centro no lo tiene.
+const h = vi.hoisted(() => ({ generarArchivo: vi.fn(), descargarArchivo: vi.fn() }))
+vi.mock('@/lib/hooks/use-centro-de-procesos', () => ({
+  useCentroDeProcesos: () => ({ data: { procesos: [] }, refetch: vi.fn(async () => undefined) }),
+}))
+vi.mock('@/lib/api/lotes-de-dispersion.service', () => ({
+  lotesDeDispersionApi: { generarArchivo: h.generarArchivo, descargarArchivo: h.descargarArchivo },
+}))
+
+import { ArchivoDelLote, useArchivoDelLote, type ArchivoDelLoteEstado } from './ArchivoDelLote'
+import { ApiError } from '@/lib/api/client'
 import type { Proceso } from '@/lib/api/procesos.types'
 
 function proceso(extra: Partial<Proceso>): Proceso {
@@ -91,5 +101,52 @@ describe('<ArchivoDelLote>', () => {
     act(() => root.render(<ArchivoDelLote archivo={estado(listo)} generadoAt={null} />))
     expect(container.querySelector('[data-testid="fila-de-proceso"]')).not.toBeNull()
     expect(container.querySelector('[data-testid="descargar-proceso"]')).not.toBeNull()
+  })
+})
+
+/*
+ * 02-10-2026 · Si el archivo no se pudo preparar, se dice con la regla de oro:
+ * un 5xx «de nuestro lado» con la referencia de soporte, no `e.message` crudo.
+ */
+describe('useArchivoDelLote — el fallo al preparar el archivo (02-10)', () => {
+  function Sonda() {
+    const archivo = useArchivoDelLote('lote-1', 'ARCHIVO_GENERADO', vi.fn())
+    return (
+      <div>
+        <button type="button" data-testid="bajar" onClick={() => void archivo.descargar()}>
+          bajar
+        </button>
+        <ArchivoDelLote archivo={archivo} generadoAt={null} />
+      </div>
+    )
+  }
+
+  it('🔴 un 5xx: «de nuestro lado» con la referencia', async () => {
+    h.generarArchivo.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    )
+    await act(async () => root.render(<Sonda />))
+    await act(async () => {
+      ;(container.querySelector('[data-testid="bajar"]') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    const texto = container.querySelector('[data-testid="archivo-del-lote"]')?.textContent ?? ''
+    expect(texto).toContain('No pudimos descargar el archivo del lote: algo falló de nuestro lado')
+    expect(texto).toContain('ab12cd34')
+  })
+
+  it('sin respuesta: ahí sí habla de la conexión', async () => {
+    h.generarArchivo.mockRejectedValue(new ApiError(0, 'Failed to fetch'))
+    await act(async () => root.render(<Sonda />))
+    await act(async () => {
+      ;(container.querySelector('[data-testid="bajar"]') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(container.querySelector('[data-testid="archivo-del-lote"]')?.textContent).toMatch(/conexi[oó]n/)
   })
 })

@@ -37,7 +37,9 @@ vi.mock('next/link', () => ({
   ),
 }))
 
-vi.mock('@/components/ui/sheet', () => ({
+vi.mock('@/components/ui/sheet', async () => ({
+  // Las piezas del cajón (cabecera con título y acciones, cuerpo, pie) como DOM plano.
+  ...(await import('@/components/ui/sheet-test-stub')),
   // Con el cajón cerrado Radix no pinta nada, y desde que el cajón se cierra
   // con `open` (y no desmontándose, que era lo que mataba la animación de
   // salida) esa diferencia importa: si el mock pintara igual, el test estaría

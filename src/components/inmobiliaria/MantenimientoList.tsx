@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   Wrench,
   Lightning,
@@ -26,6 +26,7 @@ import {
   User,
   MapPin,
   ListBullets,
+  Prohibit,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -346,12 +347,8 @@ function MantenimientoCard({
   const daysSince = getDaysSinceCreated(solicitud.createdAt);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="p-5 rounded-lg bg-card border border-border hover:border-foreground/20 transition-all"
-    >
+    // La entrada y la salida las pone el `StaggerItem` de la grilla.
+    <div className="p-5 rounded-lg bg-card border border-border hover:border-foreground/20 transition-colors duration-base">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-4">
         <div className="flex items-center gap-3">
@@ -473,7 +470,7 @@ function MantenimientoCard({
           {solicitud.quotes.length > 0 && (
             <div className="flex items-center gap-1">
               <CurrencyCircleDollar className="w-4 h-4" />
-              <span>{solicitud.quotes.length} cotiz.</span>
+              <span>{solicitud.quotes.length === 1 ? '1 cotización' : `${solicitud.quotes.length} cotizaciones`}</span>
             </div>
           )}
 
@@ -493,7 +490,7 @@ function MantenimientoCard({
           </span>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -660,11 +657,12 @@ export function MantenimientoList({
 
       {/* Cards Grid */}
       {filteredData.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          <AnimatePresence mode="popLayout">
+        // Filtrar, paginar, cerrar o cancelar: las tarjetas entran escalonadas
+        // (techo de 320 ms) y la que se va, sale. Paginada: sin `layout`.
+        <Stagger layout={false} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {pageItems.map((solicitud) => (
+              <StaggerItem key={solicitud.id} className="flex [&>*]:w-full">
               <MantenimientoCard
-                key={solicitud.id}
                 solicitud={solicitud}
                 onViewDetails={() => onViewDetails?.(solicitud)}
                 // Sólo se pasa lo que el padre atiende. Envolver siempre en una
@@ -678,9 +676,9 @@ export function MantenimientoList({
                 t={t}
                 fmtDate={fmtDate}
               />
+              </StaggerItem>
             ))}
-          </AnimatePresence>
-        </div>
+        </Stagger>
       ) : (
         // Los dos vacíos: nunca hubo solicitudes (ofrece crear) o hay pero el
         // filtro no deja ver ninguna (ofrece quitarlo). `queSon` es «arreglos»
@@ -718,7 +716,11 @@ export function MantenimientoList({
           if (!abierto) setSolicitudACancelar(null);
         }}
       >
-        <AlertDialogContent data-testid="confirmar-cancelar-solicitud">
+        <AlertDialogContent
+          variant="destructive"
+          icon={<Prohibit weight="bold" />}
+          data-testid="confirmar-cancelar-solicitud"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>¿Cancelar esta solicitud?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -730,7 +732,6 @@ export function MantenimientoList({
           <AlertDialogFooter>
             <AlertDialogCancel>Volver</AlertDialogCancel>
             <AlertDialogAction
-              tone="danger"
               data-testid="confirmar-cancelar-solicitud-si"
               onClick={() => {
                 if (solicitudACancelar) onCancel?.(solicitudACancelar);

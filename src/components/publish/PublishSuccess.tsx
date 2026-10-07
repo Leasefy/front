@@ -4,16 +4,76 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Check, Eye, ShareNetwork, ArrowRight, Sparkle, Buildings, MapPin, CurrencyDollar, UserPlus } from '@phosphor-icons/react';
-import { usePublish } from '@/lib/context/PublishContext';
+import { Check, Eye, ShareNetwork, ArrowRight, Sparkle, Buildings, MapPin, CurrencyDollar, UserPlus, WarningCircle } from '@phosphor-icons/react';
+import {
+  Appear,
+  Stagger,
+  StaggerItem,
+  motionDuration,
+  motionEase,
+  motionSpring,
+} from '@leasefy/cadence';
+import { usePublish, type FotoQueNoSubio } from '@/lib/context/PublishContext';
 import { useAuth } from '@/lib/auth/use-auth';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { formatCurrency } from '@/lib/format';
 import { PLANS, AGENCY_PLANS } from '@/lib/constants/subscription-plans';
 import confetti from 'canvas-confetti';
 
+/**
+ * Las fotos que no subieron al publicar, cada una con su motivo (02-10-2026).
+ * El inmueble ya quedó publicado; antes esto vivía sólo en un toast que se iba
+ * solo y decía el motivo de la primera. Acá queda la lista entera, con lo que
+ * dijo el traductor de errores para cada una: nada inventado.
+ */
+function FotosQueNoSubieron({ fotos }: { fotos: FotoQueNoSubio[] }) {
+  const titulo =
+    fotos.length === 1 ? 'Una foto no se subió' : `${fotos.length} fotos no se subieron`;
+  return (
+    <Appear
+      as="section"
+      aria-labelledby="fotos-que-no-subieron-titulo"
+      data-testid="fotos-que-no-subieron"
+      className="rounded-[14px] border border-warning/20 bg-warning-soft p-4"
+    >
+      <div className="flex items-start gap-2.5">
+        <WarningCircle className="mt-0.5 size-4 shrink-0 text-warning" weight="fill" aria-hidden />
+        <div className="min-w-0 flex-1">
+          <h2 id="fotos-que-no-subieron-titulo" className="text-sm font-medium text-fg">
+            {titulo}
+          </h2>
+          <p className="mt-0.5 text-sm text-fg-muted">
+            El inmueble quedó publicado. Puedes agregarlas desde el inmueble.
+          </p>
+          <Stagger as="ul" className="mt-3 space-y-2">
+            {fotos.map((foto, i) => (
+              // La lista no cambia después de montarse: el índice sólo
+              // desempata dos archivos con el mismo nombre.
+              <StaggerItem
+                key={`${i}-${foto.nombre}`}
+                as="li"
+                className="rounded-[10px] bg-surface/70 px-3 py-2"
+              >
+                <p className="truncate font-mono text-caption text-fg" title={foto.nombre}>
+                  {foto.nombre}
+                </p>
+                <p className="mt-0.5 text-sm text-fg-muted">{foto.motivo}</p>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        </div>
+      </div>
+    </Appear>
+  );
+}
+
 export function PublishSuccess() {
-  const { draft } = usePublish();
+  const { draft, fotosQueNoSubieron } = usePublish();
+  /*
+   * Con fotos que no subieron, la persona tiene que poder leer cuáles y por qué:
+   * no se la lleva sola al panel a los 5 s (se va con el botón cuando quiera).
+   */
+  const hayFotosSinSubir = fotosQueNoSubieron.length > 0;
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [countdown, setCountdown] = useState(5);
@@ -78,7 +138,7 @@ export function PublishSuccess() {
 
   // Auto-redirect countdown (only for authenticated users)
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || hayFotosSinSubir) return;
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
@@ -92,7 +152,7 @@ export function PublishSuccess() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [router, isAuthenticated]);
+  }, [router, isAuthenticated, hayFotosSinSubir]);
 
   const planLabels = Object.fromEntries([
     ...PLANS.map((p) => [p.id, `Plan ${p.name}`]),
@@ -101,12 +161,11 @@ export function PublishSuccess() {
 
   return (
     <div className="min-h-screen bg-bg flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-lg w-full"
-      >
+      {/* Publicar → «¡Publicación exitosa!»: la tarjeta llega (16 px, `slow`),
+          el visto entra con el resorte de rebote leve y lo de abajo se escalona
+          con el techo de 320 ms. Todo con los tokens; antes eran retrasos a mano
+          hasta 0,5 s y duraciones sueltas. */}
+      <Appear distance="md" duration="slow" className="max-w-lg w-full">
         {/* Success card */}
         <div className="bg-surface rounded-xl border border-border overflow-hidden">
           {/* Header */}
@@ -126,50 +185,46 @@ export function PublishSuccess() {
                 <motion.div
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.1, duration: 0.6 }}
+                  transition={{ delay: 0.05, duration: motionDuration.reveal, ease: motionEase.enter }}
                   className="absolute inset-0 rounded-full border-2 border-white/10"
                   style={{ transform: 'scale(1.6)' }}
                 />
                 <motion.div
                   initial={{ scale: 0, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
+                  transition={{ delay: 0.1, duration: motionDuration.reveal, ease: motionEase.enter }}
                   className="absolute inset-0 rounded-full border border-white/15"
                   style={{ transform: 'scale(1.3)' }}
                 />
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  transition={{ delay: 0.3, type: 'spring', stiffness: 200, damping: 12 }}
+                  transition={{ ...motionSpring.bouncy, delay: 0.15 }}
                   className="relative w-24 h-24 rounded-full bg-white shadow-[0_8px_32px_rgba(0,0,0,0.15)] flex items-center justify-center"
                 >
                   <Check className="w-10 h-10 text-[#1A40FF]" strokeWidth={2.5} />
                 </motion.div>
               </div>
 
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.4 }}
-              >
+              <Appear delay={0.2}>
                 <h1 className="text-2xl font-bold text-white mb-1.5 tracking-tight">
                   ¡Publicación exitosa!
                 </h1>
                 <p className="text-white/70 text-[15px]">
                   Tu inmueble ya está activo y visible
                 </p>
-              </motion.div>
+              </Appear>
             </div>
           </div>
 
-          {/* Property summary */}
-          <div className="p-6 space-y-4">
+          {/* Property summary — se escalona después del encabezado. */}
+          <Stagger delay={0.25} layout={false} className="p-6 space-y-4">
+            {hayFotosSinSubir && <FotosQueNoSubieron key="fotos-sin-subir" fotos={fotosQueNoSubieron} />}
+
             {/* Preview image */}
             {draft.photos.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+              <StaggerItem
+                key="foto"
                 className="aspect-video rounded-xl overflow-hidden relative"
               >
                 <img
@@ -185,16 +240,11 @@ export function PublishSuccess() {
                     <span>{draft.neighborhood}, {draft.city}</span>
                   </div>
                 </div>
-              </motion.div>
+              </StaggerItem>
             )}
 
             {/* Quick stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="grid grid-cols-3 gap-3"
-            >
+            <StaggerItem key="datos" className="grid grid-cols-3 gap-3">
               <div className="bg-surface-muted p-3 rounded-xl text-center">
                 <CurrencyDollar className="w-4 h-4 mx-auto text-fg-subtle mb-1" />
                 <p className="text-sm font-semibold text-fg">
@@ -218,15 +268,10 @@ export function PublishSuccess() {
                 </p>
                 <p className="text-xs text-fg-subtle">Activo</p>
               </div>
-            </motion.div>
+            </StaggerItem>
 
             {/* Action buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="space-y-3 pt-2"
-            >
+            <StaggerItem key="acciones" className="space-y-3 pt-2">
               {isAuthenticated ? (
                 <Link
                   href="/panel/propiedades"
@@ -253,8 +298,8 @@ export function PublishSuccess() {
                 <ShareNetwork className="w-4 h-4" />
                 Compartir anuncio
               </button>
-            </motion.div>
-          </div>
+            </StaggerItem>
+          </Stagger>
 
           {/* Footer */}
           <div className="px-6 py-4 bg-surface-muted border-t border-border">
@@ -267,9 +312,11 @@ export function PublishSuccess() {
                 <ArrowRight className="w-4 h-4" />
               </Link>
               {isAuthenticated ? (
-                <span className="text-xs text-fg-subtle">
-                  Redirigiendo en {countdown}s...
-                </span>
+                hayFotosSinSubir ? null : (
+                  <span className="text-xs text-fg-subtle">
+                    Redirigiendo en {countdown}s...
+                  </span>
+                )
               ) : (
                 <span className="text-xs text-fg-subtle">
                   Inicia sesion para acceder al panel
@@ -278,7 +325,7 @@ export function PublishSuccess() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </Appear>
 
       <AuthModal
         isOpen={showAuthModal}

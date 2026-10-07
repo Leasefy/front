@@ -131,6 +131,39 @@ describe('pasoHabilitado — el paso N+1 espera al N', () => {
   });
 });
 
+describe('🔴 el Plan de cuentas no espera a nadie (Nico, 04-10: «soltar sólo el Plan de cuentas»)', () => {
+  it('recién llegada: el contador puede subir el plan de cuentas sin terminar Contratos', () => {
+    const indicePuc = RECIEN_LLEGADA.findIndex((p) => p.id === 'puc');
+    expect(pasoHabilitado(RECIEN_LLEGADA, indicePuc)).toBe(true);
+    expect(pasoQueFrena(RECIEN_LLEGADA, indicePuc)).toBeNull();
+  });
+
+  it('los saldos y los movimientos SIGUEN esperando a terceros y contratos, aunque el plan esté listo', () => {
+    const pasos = [
+      paso('propietarios', 'listo'),
+      paso('inquilinos', 'listo'),
+      paso('propiedades', 'listo'),
+      paso('contratos', 'pendiente'),
+      paso('puc', 'listo', 75),
+      paso('contables', 'pendiente'),
+    ];
+    expect(pasoHabilitado(pasos, 5)).toBe(false);
+    expect(pasoQueFrena(pasos, 5)?.id).toBe('contratos');
+  });
+
+  it('sólo se suelta el plan: inquilinos, inmuebles y contratos siguen en orden', () => {
+    expect(pasoHabilitado(RECIEN_LLEGADA, 1)).toBe(false);
+    expect(pasoHabilitado(RECIEN_LLEGADA, 2)).toBe(false);
+    expect(pasoHabilitado(RECIEN_LLEGADA, 3)).toBe(false);
+    expect(pasoHabilitado(RECIEN_LLEGADA, 5)).toBe(false);
+  });
+
+  it('un plan de cuentas `no_disponible` sigue sin botón', () => {
+    const pasos = [paso('propietarios', 'pendiente'), paso('puc', 'no_disponible')];
+    expect(pasoHabilitado(pasos, 1)).toBe(false);
+  });
+});
+
 describe('pasoQueFrena — el porqué que se muestra bajo el candado', () => {
   it('nombra el paso inmediatamente anterior que falta, no el primero de la lista', () => {
     const pasos = [
@@ -281,6 +314,8 @@ describe('leerDeuda', () => {
   it('lee el resumen real de la agencia de Nico', () => {
     expect(leerDeuda(RESUMEN_DE_NICO)).toEqual({
       contratos: 91,
+      // QA-CONT-95: también las que SÍ son contrato (el veredicto las nombra).
+      activados: 91,
       pendientes: 0,
       sinInmueble: 89,
       sinPropietario: 89,
@@ -315,6 +350,8 @@ describe('leerDeuda', () => {
     const r = leerDeuda({ lote: null, total: 10, pendientes: 2 });
     expect(r).toEqual({
       contratos: 10,
+      // QA-CONT-95: sin el conteo, `null` (el veredicto cae a `contratos`).
+      activados: null,
       pendientes: 2,
       sinInmueble: 0,
       sinPropietario: 0,

@@ -7,6 +7,7 @@ import { toast } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
 import { useI18n } from '@/lib/i18n';
+import { mensajeDelFalloDeLaAccion } from '@/lib/chat/fallo-de-la-accion';
 import {
   decidirAprendizaje,
   leerAprendizaje,
@@ -64,7 +65,23 @@ export function AprenderEsto({ message }: { message: ChatMessage }) {
 
   const decidir = async (a: Aprendizaje, decision: 'aprender' | 'descartar') => {
     setDecidiendo(a.id);
-    const r = await decidirAprendizaje(agencyId, message.turnoId, { id: a.id, decision, propuestaId });
+    let r: Awaited<ReturnType<typeof decidirAprendizaje>>;
+    try {
+      r = await decidirAprendizaje(agencyId, message.turnoId, { id: a.id, decision, propuestaId });
+    } catch (err) {
+      // El fallo entero, por el traductor (02-10-2026): un 403 dice quién
+      // puede, un 5xx «de nuestro lado» con la referencia, la red caída «la
+      // conexión». Antes todo era «No pude guardarlo. Intenta de nuevo.».
+      setDecidiendo(null);
+      toast.error(
+        mensajeDelFalloDeLaAccion(err, {
+          accion: 'guardar tu decisión',
+          porDefecto: t('beta.cerebro.errorGuardar'),
+          sinPermiso: 'Sólo el administrador de la inmobiliaria decide qué aprende el chat.',
+        }),
+      );
+      return;
+    }
     setDecidiendo(null);
     if (!r || !r.aplicado || !r.estado) {
       toast.error(r?.motivo || t('beta.cerebro.errorGuardar'));

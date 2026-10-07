@@ -1,11 +1,12 @@
 /**
- * La decisión del gate de postulación.
+ * El botón «Postularme» y la oferta del estudio.
  *
- * Reglas que se protegen acá:
- *  · aprobado y dentro del tope → NO se estorba (motivo null)
- *  · sin tope conocido → tampoco se estorba: no se le niega algo a alguien
- *    por un dato que todavía no tenemos
- *  · cada bloqueo tiene su motivo propio, porque cada uno se explica distinto
+ * 🔴 El estudio es OPCIONAL (Nico, 04-10-2026: «el estudio es opcional, no es
+ * obligatorio»). Reglas que se protegen acá:
+ *  · el botón NUNCA frena: sin estudio, vencido, en curso o sin respaldo lleva
+ *    igual al asistente (antes abría «Antes de postularte»);
+ *  · con una postulación activa lleva a ella;
+ *  · `ofertaDelEstudio` decide qué se le OFRECE en /aplicar, nunca un freno.
  */
 
 import * as React from 'react'
@@ -38,14 +39,24 @@ vi.mock('@/components/ui/button', () => ({
 
 vi.mock('@/components/ui/dialog', () => ({
   Dialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  DialogContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  // La variante viaja como `data-variant`, igual que en el Content de Cadence.
+  DialogContent: ({
+    children,
+    variant,
+    'data-testid': testId,
+  }: {
+    children: React.ReactNode
+    variant?: string
+    'data-testid'?: string
+  }) => (
+    <div data-testid={testId} data-variant={variant}>
+      {children}
+    </div>
+  ),
   DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-}))
-
-vi.mock('@/components/providers/SmoothScroll', () => ({
-  useLenis: () => ({ stop: vi.fn(), start: vi.fn() }),
+  DialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }))
 
 vi.mock('next/link', () => ({
@@ -54,9 +65,9 @@ vi.mock('next/link', () => ({
   ),
 }))
 
-vi.mock('@phosphor-icons/react', () => ({ Info: () => null, WarningCircle: () => null }))
+vi.mock('@phosphor-icons/react', () => ({ Info: () => null }))
 
-import { PostularButton, AntesDePostularte, motivoDeBloqueo } from './PostularButton'
+import { PostularButton, ofertaDelEstudio } from './PostularButton'
 import { cabeEnTope, estaVigente, type Aprobacion } from '@/lib/api/aprobacion.service'
 
 const APROBADA: Aprobacion = {
@@ -69,98 +80,35 @@ const APROBADA: Aprobacion = {
   canonConsultadoCop: null,
 }
 
-describe('motivoDeBloqueo', () => {
-  it('aprobado y dentro del tope no estorba', () => {
-    expect(motivoDeBloqueo({ aprobacion: APROBADA, vigente: true, canonCop: 1_500_000 })).toBeNull()
+describe('ofertaDelEstudio', () => {
+  it('aprobado y vigente: nada que ofrecer', () => {
+    expect(ofertaDelEstudio({ aprobacion: APROBADA, vigente: true })).toBeNull()
   })
 
-  it('el canon exactamente igual al tope entra', () => {
-    expect(motivoDeBloqueo({ aprobacion: APROBADA, vigente: true, canonCop: 2_000_000 })).toBeNull()
-  })
-
-  it('por encima del tope NO bloquea: el tope es informativo y la inmobiliaria decide (D13)', () => {
-    expect(motivoDeBloqueo({ aprobacion: APROBADA, vigente: true, canonCop: 2_000_001 })).toBeNull()
-    expect(motivoDeBloqueo({ aprobacion: APROBADA, vigente: true, canonCop: 9_000_000 })).toBeNull()
-  })
-
-  it('sin tope conocido NO bloquea — no se niega por un dato que falta', () => {
-    const sinTope = { ...APROBADA, topeAprobadoCop: null }
-    expect(motivoDeBloqueo({ aprobacion: sinTope, vigente: true, canonCop: 99_000_000 })).toBeNull()
-  })
-
-  it('sin canon (no sabemos el precio) no bloquea', () => {
-    expect(motivoDeBloqueo({ aprobacion: APROBADA, vigente: true })).toBeNull()
-  })
-
-  it('vencida bloquea aunque el canon entre', () => {
-    expect(motivoDeBloqueo({ aprobacion: APROBADA, vigente: false, canonCop: 100_000 })).toBe(
-      'vencida',
-    )
+  it('vencida: se le ofrece renovar', () => {
+    expect(ofertaDelEstudio({ aprobacion: APROBADA, vigente: false })).toBe('vencido')
   })
 
   it.each([
-    ['sin_estudio', 'sin_aprobacion'],
-    ['en_proceso', 'en_proceso'],
-    ['rechazado', 'rechazado'],
-  ])('estado %s → motivo %s', (estado, esperado) => {
-    expect(
-      motivoDeBloqueo({ aprobacion: { ...APROBADA, estado }, vigente: false, canonCop: 100_000 }),
-    ).toBe(esperado)
+    ['sin_estudio', 'sin_estudio'],
+    ['en_proceso', 'en_curso'],
+    ['rechazado', 'sin_respaldo'],
+  ])('estado %s → oferta %s', (estado, esperado) => {
+    expect(ofertaDelEstudio({ aprobacion: { ...APROBADA, estado }, vigente: false })).toBe(esperado)
   })
 
-  it('mientras no se sabe nada (null) se deja pasar, no se castiga la duda', () => {
-    expect(motivoDeBloqueo({ aprobacion: null, vigente: false, canonCop: 100_000 })).toBeNull()
-  })
-})
-
-/**
- * La puerta de sesión.
- *
- * Sin sesión, «sin_estudio» NO prueba que la persona no se haya estudiado —
- * prueba que no sabemos quién es. Puede tener cuenta y aprobación vigente y
- * estar simplemente deslogueada; mandarla a pagar otra vez un estudio que ya
- * pagó es el peor error que puede cometer esta pantalla.
- */
-describe('motivoDeBloqueo — invitado sin sesión', () => {
-  const SIN_ESTUDIO: Aprobacion = { ...APROBADA, estado: 'sin_estudio', topeAprobadoCop: null }
-
-  it('sin sesión y sin estudio pregunta si ya tiene cuenta, no manda a pagar', () => {
-    expect(motivoDeBloqueo({ aprobacion: SIN_ESTUDIO, vigente: false, haySesion: false })).toBe(
-      'sin_sesion',
-    )
+  it('mientras no se sabe nada (null) no se ofrece nada', () => {
+    expect(ofertaDelEstudio({ aprobacion: null, vigente: false })).toBeNull()
   })
 
-  it('CON sesión y sin estudio sí manda a estudiarse', () => {
-    expect(motivoDeBloqueo({ aprobacion: SIN_ESTUDIO, vigente: false, haySesion: true })).toBe(
-      'sin_aprobacion',
-    )
+  it('sin sesión y sin estudio: ofrece entrar (puede tener cuenta), no lo da por «sin estudio»', () => {
+    const SIN_ESTUDIO: Aprobacion = { ...APROBADA, estado: 'sin_estudio', topeAprobadoCop: null }
+    expect(ofertaDelEstudio({ aprobacion: SIN_ESTUDIO, vigente: false, haySesion: false })).toBe('sin_sesion')
+    expect(ofertaDelEstudio({ aprobacion: SIN_ESTUDIO, vigente: false, haySesion: true })).toBe('sin_estudio')
   })
 
-  it('por defecto asume que hay sesión: no le cambia el resultado a quien no manda el dato', () => {
-    expect(motivoDeBloqueo({ aprobacion: SIN_ESTUDIO, vigente: false })).toBe('sin_aprobacion')
-  })
-
-  it('un respaldo local aprobado pasa de largo aunque no haya sesión', () => {
-    // Quien se aprobó por un link de WhatsApp todavía no tiene cuenta, y su
-    // aprobación es real: no se le pide entrar para usar lo que ya se ganó.
-    expect(
-      motivoDeBloqueo({
-        aprobacion: APROBADA,
-        vigente: true,
-        canonCop: 1_500_000,
-        haySesion: false,
-      }),
-    ).toBeNull()
-  })
-
-  it('sin sesión, un rechazo sigue siendo un rechazo', () => {
-    expect(
-      motivoDeBloqueo({
-        aprobacion: { ...APROBADA, estado: 'rechazado' },
-        vigente: false,
-        haySesion: false,
-      }),
-    ).toBe('rechazado')
+  it('un respaldo local aprobado no recibe oferta aunque no haya sesión', () => {
+    expect(ofertaDelEstudio({ aprobacion: APROBADA, vigente: true, haySesion: false })).toBeNull()
   })
 })
 
@@ -200,145 +148,6 @@ describe('estaVigente', () => {
 
   it('null no revienta', () => {
     expect(estaVigente(null, ahora)).toBe(false)
-  })
-})
-
-/**
- * T-0132 (asegurabilidad-opcional-al-postular) — contract §3.3: the
- * approval study never blocks applying any more. `AntesDePostularte` gets a
- * "continue without knowing" exit for every motivo; `rechazado` additionally
- * shows a warning alert (likely rejection); `sin_aprobacion` / `vencida` /
- * `en_proceso` / `sin_sesion` show a neutral note instead (A-1: the owner
- * treats en_proceso/vencida the same as "no study").
- *
- * T-0143 (postular-sin-sesion-y-copy-opcional) closes O-1: `sin_sesion` now
- * gets the same continue-without exit too, alongside its two original paths
- * ("Es mi primera vez" / "Ya tengo cuenta, entrar").
- */
-describe('<AntesDePostularte> — T-0132', () => {
-  let container: HTMLDivElement
-  let root: Root
-
-  beforeEach(() => {
-    container = document.createElement('div')
-    document.body.appendChild(container)
-    root = createRoot(container)
-  })
-
-  afterEach(() => {
-    act(() => root.unmount())
-    container.remove()
-  })
-
-  function render(motivo: Parameters<typeof AntesDePostularte>[0]['motivo']) {
-    act(() => {
-      root.render(
-        <AntesDePostularte open={true} onClose={() => {}} motivo={motivo} propertyId="prop-X" />,
-      )
-    })
-  }
-
-  // Button/Link are mocked above as plain <span>/<a> that do NOT forward
-  // arbitrary props (only `children`/`href`/`onClick`), so a `data-testid`
-  // placed on a Button/Link never reaches the DOM here — same reason the
-  // "ya postulado" suite below asserts on `href`/`textContent`, not
-  // `data-testid`, for links. Plain `<div data-testid="…">` elsewhere in
-  // this component (the alert/note) are NOT mocked, so those DO work.
-  function continuar(): HTMLAnchorElement | null {
-    return (
-      Array.from(container.querySelectorAll('a')).find(
-        (a) => a.getAttribute('href') === '/aplicar/prop-X',
-      ) ?? null
-    )
-  }
-
-  it('sin_sesion: T-0143 closes O-1 — gains the continue-without-knowing exit too', () => {
-    render('sin_sesion')
-    expect(continuar()?.getAttribute('href')).toBe('/aplicar/prop-X')
-    // The two original exits stay — the new one is additive, not a replacement.
-    expect(container.textContent).toContain('Es mi primera vez')
-    expect(container.textContent).toContain('Ya tengo cuenta, entrar')
-  })
-
-  it('rechazado: shows a WARNING alert (likely rejection)', () => {
-    render('rechazado')
-    const alerta = container.querySelector('[data-testid="antes-de-postularte-alerta-rechazo"]')
-    expect(alerta).toBeTruthy()
-    // No neutral note on this motivo — it gets the alert instead.
-    expect(container.querySelector('[data-testid="antes-de-postularte-nota-neutral"]')).toBeFalsy()
-  })
-
-  it('rechazado: "postularme de todas formas" continues to /aplicar/:id, and the kept link to /inquilino/aprobacion survives', () => {
-    render('rechazado')
-    expect(continuar()?.getAttribute('href')).toBe('/aplicar/prop-X')
-    const links = Array.from(container.querySelectorAll('a')).map((a) => a.getAttribute('href'))
-    expect(links).toContain('/inquilino/aprobacion')
-  })
-
-  it.each(['sin_aprobacion', 'vencida', 'en_proceso', 'sin_sesion'] as const)(
-    '%s: shows the NEUTRAL note (no alert) and a continue exit to /aplicar/:id',
-    (motivo) => {
-      render(motivo)
-      expect(container.querySelector('[data-testid="antes-de-postularte-nota-neutral"]')).toBeTruthy()
-      expect(
-        container.querySelector('[data-testid="antes-de-postularte-alerta-rechazo"]'),
-      ).toBeFalsy()
-      expect(continuar()?.getAttribute('href')).toBe('/aplicar/prop-X')
-    },
-  )
-
-  it('sin_aprobacion: the kept "Conoce hasta cuánto te arrendamos" link to /aprobacion survives', () => {
-    render('sin_aprobacion')
-    const links = Array.from(container.querySelectorAll('a')).map((a) => a.getAttribute('href'))
-    expect(links).toContain('/aprobacion')
-  })
-
-  it('vencida: the kept "Renovar mi aprobación" link to /aprobacion survives', () => {
-    render('vencida')
-    expect(container.textContent).toContain('Renovar mi aprobación')
-  })
-
-  it('en_proceso: the kept "Ver el estado" link to /inquilino/aprobacion survives', () => {
-    render('en_proceso')
-    const links = Array.from(container.querySelectorAll('a')).map((a) => a.getAttribute('href'))
-    expect(links).toContain('/inquilino/aprobacion')
-  })
-
-  it('tenant copy never says "asegurabilidad" or "estudio" (front/docs/VOCABULARIO.md)', () => {
-    for (const motivo of ['sin_aprobacion', 'vencida', 'en_proceso', 'rechazado', 'sin_sesion'] as const) {
-      render(motivo)
-      expect(container.textContent?.toLowerCase()).not.toContain('asegurabilidad')
-      expect(container.textContent?.toLowerCase()).not.toContain('estudio')
-    }
-  })
-
-  /*
-   * T-0143: the approval study is optional/recommended, never required — the
-   * back stopped gating applications on it back in T-0132, but the copy
-   * still said "necesitas" (sin_aprobacion) and implied a wait was mandatory
-   * (en_proceso, vencida). No dialog may read as "you must" any more.
-   */
-  it('copy never presents the study as required ("necesitas"/"obligatorio")', () => {
-    for (const motivo of ['sin_aprobacion', 'vencida', 'en_proceso', 'rechazado', 'sin_sesion'] as const) {
-      render(motivo)
-      const texto = container.textContent?.toLowerCase() ?? ''
-      expect(texto).not.toContain('necesitas')
-      expect(texto).not.toContain('obligatorio')
-    }
-  })
-
-  it('Ahora no keeps closing the dialog for every motivo', () => {
-    const onClose = vi.fn()
-    act(() => {
-      root.render(
-        <AntesDePostularte open={true} onClose={onClose} motivo="sin_aprobacion" propertyId="prop-X" />,
-      )
-    })
-    const ahoraNo = Array.from(container.querySelectorAll('span, button')).find(
-      (el) => el.textContent === 'Ahora no',
-    ) as HTMLElement | undefined
-    ahoraNo?.click()
-    expect(onClose).toHaveBeenCalled()
   })
 })
 
@@ -385,6 +194,18 @@ describe('PostularButton — ya postulado', () => {
     expect(link()?.getAttribute('href')).toBe('/inquilino/aplicaciones/app-1')
     expect(container.textContent).toContain('Ir a mi postulación')
     expect(container.textContent).not.toContain('Postularme')
+  })
+
+  it.each([
+    ['vencida', { aprobacion: APROBADA, cargando: false, vigente: false }],
+    ['en curso', { aprobacion: { ...APROBADA, estado: 'en_proceso' }, cargando: false, vigente: false }],
+    ['sin estudio', { aprobacion: { ...APROBADA, estado: 'sin_estudio' }, cargando: false, vigente: false }],
+    ['sin respaldo', { aprobacion: { ...APROBADA, estado: 'rechazado' }, cargando: false, vigente: false }],
+  ])('🔴 %s: NO frena, lleva al asistente (el estudio es opcional)', (_caso, aprobacion) => {
+    aprobacionMock.mockReturnValue(aprobacion)
+    render({ propertyId: 'prop-X', canonCop: 1_000_000 })
+    expect(link()?.getAttribute('href')).toBe('/aplicar/prop-X')
+    expect(container.querySelector('[data-testid="antes-de-postularte"]')).toBeNull()
   })
 
   it('la postulación activa tiene prioridad aunque la aprobación esté vencida', () => {

@@ -32,12 +32,17 @@ import {
   Clock,
   CheckCircle,
   WarningCircle,
+  PaperPlaneTilt,
 } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import {
   useTemplates,
   type TemplateApiItem,
@@ -59,6 +64,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 // =============================================================================
 // Constants
@@ -312,6 +318,11 @@ function TemplateEditorContent({
   const [isRefreshingWa, setIsRefreshingWa] = useState(false)
   const [errorToast, setErrorToast] = useState<string | null>(null)
   const [successToast, setSuccessToast] = useState<string | null>(null)
+  /**
+   * El error del cuerpo de la plantilla: vacío (se ataja antes de enviar: el
+   * micro lo rechaza con una frase en inglés) o lo que mandó el micro en `campos`.
+   */
+  const [errorDelCuerpo, setErrorDelCuerpo] = useState<string | null>(null)
 
   const showErrorToast = useCallback((msg: string) => {
     setErrorToast(msg)
@@ -337,6 +348,12 @@ function TemplateEditorContent({
 
   // Save draft handler — PUT only (does NOT call /publish)
   const handleSaveDraft = useCallback(async () => {
+    if (localDraft.trim() === '') {
+      setErrorDelCuerpo('Escribe el texto de la plantilla antes de guardarla.')
+      document.getElementById('plantilla-cuerpo')?.focus()
+      return
+    }
+    setErrorDelCuerpo(null)
     setIsSaving(true)
     try {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL ?? ''
@@ -350,12 +367,21 @@ function TemplateEditorContent({
           body: JSON.stringify({ body: localDraft }),
         },
       )
-      if (!res.ok) throw new Error(`${res.status}`)
+      if (!res.ok) throw await falloDelMicro(res)
       showSuccessToast(t('inmobiliaria.ai.templates.saveDraft'))
     } catch (err) {
-      showErrorToast(
-        err instanceof Error ? err.message : t('inmobiliaria.ai.templates.error.saveDraft'),
-      )
+      // Un 400 con `campos` va debajo del texto; lo demás (un 5xx con la
+      // referencia, la red) al aviso. Antes: el status crudo («400»).
+      const reparto = repartirErroresDelServidor<'body'>(err, {
+        campos: ['body'],
+        porDefecto: 'No pudimos guardar el borrador.',
+        accion: 'guardar el borrador',
+      })
+      if (reparto.porCampo.body) {
+        setErrorDelCuerpo(reparto.porCampo.body)
+        document.getElementById('plantilla-cuerpo')?.focus()
+      }
+      if (reparto.sueltos.length > 0) showErrorToast(reparto.sueltos.join(' · '))
     } finally {
       setIsSaving(false)
     }
@@ -376,16 +402,9 @@ function TemplateEditorContent({
           headers: { 'Content-Type': 'application/json' },
         },
       )
-      if (!res.ok) {
-        // Revert on 4xx (T-36-10-02)
-        setLocalStatus(prevStatus)
-        if (res.status === 409) {
-          showErrorToast(t('inmobiliaria.ai.templates.error.publish'))
-        } else {
-          throw new Error(`${res.status}`)
-        }
-        return
-      }
+      // Revert on 4xx (T-36-10-02): el catch vuelve al estado anterior y dice
+      // por qué (un 409 su `message`, un 5xx «de nuestro lado»).
+      if (!res.ok) throw await falloDelMicro(res)
       // El agente devuelve la plantilla completa, no un `{ status }`: ese campo
       // no existe del lado servidor. El estado se deduce de wa_submission_status.
       const json = (await res.json()) as TemplateApiItem
@@ -399,12 +418,15 @@ function TemplateEditorContent({
     } catch (err) {
       setLocalStatus(prevStatus)
       showErrorToast(
-        err instanceof Error ? err.message : t('inmobiliaria.ai.templates.error.publish'),
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos publicar la plantilla.',
+          accion: 'publicar la plantilla',
+        }),
       )
     } finally {
       setIsPublishing(false)
     }
-  }, [agencyId, template.id, template.category, localStatus, showErrorToast, t])
+  }, [agencyId, template.id, template.category, localStatus, showErrorToast])
 
   // WA status refresh
   const handleRefreshWaStatus = useCallback(async () => {
@@ -515,19 +537,19 @@ function TemplateEditorContent({
                 {t('inmobiliaria.ai.templates.publish')}
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            {/* Publicar es una confirmación: el alto de los botones lo da el pie
+                del modal (en el celular, a todo el ancho). El progreso se ve en
+                el botón «Publicar» de la barra, que publica en optimista. */}
+            <AlertDialogContent variant="confirm" icon={<PaperPlaneTilt weight="bold" />}>
               <AlertDialogHeader>
                 <AlertDialogTitle>{t(dialogTitleKey)}</AlertDialogTitle>
                 <AlertDialogDescription>{t(dialogBodyKey)}</AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="min-h-[44px]">
+                <AlertDialogCancel>
                   {t('inmobiliaria.ai.templates.dialog.publish.cancel')}
                 </AlertDialogCancel>
-                <AlertDialogAction
-                  className="min-h-[44px]"
-                  onClick={() => void handlePublish()}
-                >
+                <AlertDialogAction onClick={() => void handlePublish()}>
                   {t('inmobiliaria.ai.templates.dialog.publish.confirm')}
                 </AlertDialogAction>
               </AlertDialogFooter>
@@ -539,7 +561,7 @@ function TemplateEditorContent({
       {/* Page body */}
       <div className="p-4 md:p-6 space-y-6 flex-1">
         {/* Unknown variable warning (T-36-10-01 UI layer) */}
-        {unknownVars.length > 0 && (
+        <Presence show={unknownVars.length > 0} direction="none" initial={false}>
           <Alert
             data-unknown-var-alert
             className="border-warning/30 bg-warning-soft text-warning"
@@ -554,7 +576,7 @@ function TemplateEditorContent({
                 .join(' ')}
             </AlertDescription>
           </Alert>
-        )}
+        </Presence>
 
         {/* Variable picker */}
         <section>
@@ -577,16 +599,23 @@ function TemplateEditorContent({
         <div className="grid md:grid-cols-2 gap-6">
           {/* Left: monospace textarea */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-fg-muted">
+            <label htmlFor="plantilla-cuerpo" className="text-sm font-medium text-fg-muted">
               {t('inmobiliaria.ai.templates.editor.bodyLabel')}
             </label>
             <Textarea
+              id="plantilla-cuerpo"
               ref={textareaRef}
               value={localDraft}
-              onChange={(e) => setLocalDraft(e.target.value)}
+              onChange={(e) => {
+                setLocalDraft(e.target.value)
+                setErrorDelCuerpo(null)
+              }}
               className="font-mono text-sm min-h-[200px] resize-y"
               placeholder="Escribe el cuerpo de la plantilla..."
+              aria-invalid={errorDelCuerpo ? true : undefined}
+              aria-describedby={errorDelCuerpo ? 'plantilla-cuerpo-error' : undefined}
             />
+            <ErrorDelCampo id="plantilla-cuerpo-error" mensaje={errorDelCuerpo} />
           </div>
 
           {/* Right: live preview */}
@@ -637,18 +666,18 @@ function TemplateEditorContent({
       </div>
 
       {/* Success toast */}
-      {successToast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-success/30 bg-success-soft text-success px-4 py-3 text-sm">
+      <Presence show={Boolean(successToast)} className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-success/30 bg-success-soft text-success px-4 py-3 text-sm">
           {successToast}
-        </div>
-      )}
+      </Presence>
 
       {/* Error toast */}
-      {errorToast && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-sm">
+      <Presence show={Boolean(errorToast)}
+          role="alert"
+          data-testid="plantilla-error"
+          className="fixed bottom-4 right-4 z-50 max-w-xs rounded-md border border-danger/30 bg-danger-soft text-danger px-4 py-3 text-sm"
+        >
           {errorToast}
-        </div>
-      )}
+      </Presence>
     </div>
   )
 }
@@ -670,8 +699,14 @@ export default function TemplatePage(props: { params: Promise<{ id: string }> })
   )
 
   // Phase 38-05a: PageSkeleton primitive (detail variant) — dynamic route, no EmptyState.
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // editor, → no está); los avisos flotantes entran y salen con `Presence`.
   if (isLoading && !data) {
-    return <PageSkeleton variant="detail" />
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="detail" />
+      </CrossFade>
+    )
   }
 
   if (!template) {
@@ -679,11 +714,17 @@ export default function TemplatePage(props: { params: Promise<{ id: string }> })
     // para que el agente las use»), que acá no viene al caso — el caso es que
     // ESTA plantilla no está en el catálogo.
     return (
+      <CrossFade swapKey="no-esta">
       <div className="p-6 text-sm text-fg-muted">
         {t('inmobiliaria.ai.templates.notFound')}
       </div>
+      </CrossFade>
     )
   }
 
-  return <TemplateEditorContent template={template} agencyId={agencyId} />
+  return (
+    <CrossFade swapKey="editor">
+      <TemplateEditorContent template={template} agencyId={agencyId} />
+    </CrossFade>
+  )
 }

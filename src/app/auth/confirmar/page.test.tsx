@@ -186,6 +186,42 @@ describe('/auth/confirmar', () => {
     expect(window.location.href).toBe('/onboarding/inmobiliaria')
   })
 
+  // 02-10-2026 · La regla de oro: antes decía «Revisa tu conexión» ante
+  // CUALQUIER fallo.
+  it('🔴 un 5xx de Supabase no culpa a la conexión: dice que falló de nuestro lado', async () => {
+    st.verifyOtp = vi.fn().mockResolvedValue({
+      error: Object.assign(new Error('Database error'), { name: 'AuthApiError', status: 500, code: 'unexpected_failure' }),
+    })
+    await montar()
+    await tocar(boton())
+    expect(container.textContent).toContain('No pudimos confirmar tu correo')
+    expect(container.textContent).toMatch(/de nuestro lado/)
+    expect(container.textContent).not.toMatch(/conexi[oó]n|Database/)
+    expect(container.textContent).toContain('El enlace sigue sirviendo.')
+  })
+
+  it('🔴 sin respuesta (el pedido no salió): ahí sí la conexión', async () => {
+    st.verifyOtp = vi.fn().mockResolvedValue({
+      error: Object.assign(new Error('Failed to fetch'), { name: 'AuthRetryableFetchError', status: 0 }),
+    })
+    await montar()
+    await tocar(boton())
+    expect(container.textContent).toMatch(/conexión/)
+  })
+
+  it('un token gastado se reconoce por su código aunque Supabase cambie el texto', async () => {
+    st.verifyOtp = vi.fn().mockResolvedValue({
+      error: Object.assign(new Error('Token has expired or is invalid'), { status: 403, code: 'otp_expired' }),
+    })
+    await montar()
+    await tocar(boton())
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    await emitir('INITIAL_SESSION', null)
+    expect(container.textContent).toContain('Este enlace ya no sirve')
+  })
+
   it('sin token_hash: enlace incompleto, sin llamar a Supabase', async () => {
     st.search = 'returnUrl=%2Fonboarding%2Finmobiliaria'
     await montar()

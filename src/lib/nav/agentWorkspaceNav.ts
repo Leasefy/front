@@ -30,8 +30,11 @@ import {
   // Receipt,  ← reactivar junto con la pestaña «Cobros a inquilinos»
   WarningCircle,
   Bank,
+  HeartStraight,
+  Warning,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
+import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos';
 
 /**
  * Single source of truth for each AI agent's INTERNAL navigation.
@@ -103,7 +106,11 @@ const CONCILIACION = `${PANEL}/conciliacion`;
 // const ESTUDIO = `${PANEL}/postulaciones/estudio`;  ← reactivar junto con el workspace «estudio» (oculto)
 const MATCHING = `${PANEL}/postulaciones/matching`;
 const PAGOS = `${PANEL}/pagos`;
-const CONTADOR_ROLES: AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR];
+const RETENCION = `${PANEL}/retencion`;
+// IA95-34 (Nico, 05-10-2026): quienes entran a Conciliación; el auxiliar de
+// cartera también concilia. Antes era `CONTADOR_ROLES` (administrador y contador),
+// que sólo usaba este bloque.
+const QUIENES_CONCILIAN: AgencyRole[] = [...ROLES_QUE_CONCILIAN];
 
 export const AGENT_WORKSPACES: AgentWorkspace[] = [
   // ── Cobranza ──────────────────────────────────────────────────────────────
@@ -162,7 +169,13 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
     module: 'cotizador',
     items: [
       { labelKey: 'inmobiliaria.ai.nav.cotizadorResumen', href: ASEGURABILIDAD, icon: SquaresFour, exact: true, module: 'cotizador' },
-      { labelKey: 'inmobiliaria.ai.nav.cotizadorCola', href: `${ASEGURABILIDAD}/cola`, icon: ClipboardText, module: 'cotizador' },
+      // OCULTA — «Por revisar» (05-10-2026, PROMESAS-Y-DIRECTOR con el visto de main):
+      // la cola del cotizador el micro la devuelve SIEMPRE vacía a propósito
+      // (`agency-ai-hub-work-items.ts`, `case 'cotizador'` → `emptyResponse`: el
+      // motor resuelve cada cotización solo, no deja nada que aprobar). Una
+      // pestaña que lleva a nada es una pestaña muerta. La RUTA sigue viva por URL
+      // y su vacío lo dice.
+      // { labelKey: 'inmobiliaria.ai.nav.cotizadorCola', href: `${ASEGURABILIDAD}/cola`, icon: ClipboardText, module: 'cotizador' },
       // OCULTA — «Nueva consulta». Nico (2026-09-08): «¿para qué tienes una
       // sección de nueva consulta si tienes un CTA en Resumen? Deja lo de
       // Resumen y ya». La pestaña duplicaba el botón primario del Resumen: dos
@@ -201,15 +214,17 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
     labelKey: 'inmobiliaria.nav.conciliacion',
     icon: Bank,
     module: null,
-    roles: CONTADOR_ROLES,
+    // IA95-34 (Nico, 05-10-2026): el auxiliar de cartera también concilia
+    // (`el-auxiliar-de-cartera-no-ve-los-bancos.ts`, `ROLES_QUE_CONCILIAN`).
+    roles: QUIENES_CONCILIAN,
     items: [
-      { labelKey: 'inmobiliaria.ai.nav.resumen', href: CONCILIACION, icon: SquaresFour, exact: true, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.conciliacionCola', href: `${CONCILIACION}/cola`, icon: ClipboardText, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.conciliacionMovimientos', href: `${CONCILIACION}/movimientos`, icon: ArrowsClockwise, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.conciliacionConexiones', href: `${CONCILIACION}/conexiones`, icon: GitMerge, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.conciliacionLiquidaciones', href: `${CONCILIACION}/liquidaciones`, icon: Wallet, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.conciliacionAnalitica', href: `${CONCILIACION}/analitica`, icon: ChartLineUp, module: null, roles: CONTADOR_ROLES },
-      { labelKey: 'inmobiliaria.ai.nav.conciliacionConfiguracion', href: `${CONCILIACION}/configuracion`, icon: SlidersHorizontal, module: null, roles: CONTADOR_ROLES },
+      { labelKey: 'inmobiliaria.ai.nav.resumen', href: CONCILIACION, icon: SquaresFour, exact: true, module: null, roles: QUIENES_CONCILIAN },
+      { labelKey: 'inmobiliaria.ai.nav.conciliacionCola', href: `${CONCILIACION}/cola`, icon: ClipboardText, module: null, roles: QUIENES_CONCILIAN },
+      { labelKey: 'inmobiliaria.ai.nav.conciliacionMovimientos', href: `${CONCILIACION}/movimientos`, icon: ArrowsClockwise, module: null, roles: QUIENES_CONCILIAN },
+      { labelKey: 'inmobiliaria.ai.nav.conciliacionConexiones', href: `${CONCILIACION}/conexiones`, icon: GitMerge, module: null, roles: QUIENES_CONCILIAN },
+      { labelKey: 'inmobiliaria.ai.nav.conciliacionLiquidaciones', href: `${CONCILIACION}/liquidaciones`, icon: Wallet, module: null, roles: QUIENES_CONCILIAN },
+      { labelKey: 'inmobiliaria.ai.nav.conciliacionAnalitica', href: `${CONCILIACION}/analitica`, icon: ChartLineUp, module: null, roles: QUIENES_CONCILIAN },
+      { labelKey: 'inmobiliaria.ai.nav.conciliacionConfiguracion', href: `${CONCILIACION}/configuracion`, icon: SlidersHorizontal, module: null, roles: QUIENES_CONCILIAN },
     ],
   },
   // ── Estudio del inquilino (Evaluación de candidatos) — OCULTO ─────────────
@@ -251,6 +266,28 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.matchingCola', href: `${MATCHING}/cola`, icon: ClipboardText, module: 'matching' },
       // «Analítica» de Matching: el micro no publica ese endpoint y la tab era un error garantizado (2026-09-08). La ruta rebota al resumen.
       { labelKey: 'inmobiliaria.ai.nav.matchingConfiguracion', href: `${MATCHING}/configuracion`, icon: SlidersHorizontal, module: 'matching' },
+    ],
+  },
+  // ── Retención ─────────────────────────────────────────────────────────────
+  // QA-CONT C-19 (Nico, 03-10-2026: «cuidado que esto no tiene una navegación
+  // clara»; eligió «Moverlas a Agentes IA con navegación»). Vivían colgadas de
+  // `/contratos/(retencion)/` sin migas, sin pestañas y con el menú marcando
+  // «Contratos». Ahora son un agente con su sala: el tablero, la bandeja de
+  // riesgo y la cola de decisiones por aprobar, con el aviso naranja de datos
+  // de ejemplo hasta que el agente exista. El gate es el de su layout
+  // (`retencion:view`); `retencion` no está en ninguna matriz, así que en los
+  // hechos lo abre el ADMIN (`isAdmin`), igual que la fila del menú.
+  {
+    slug: 'retencion',
+    basePath: RETENCION,
+    labelKey: 'inmobiliaria.ai.nav.retencion',
+    icon: HeartStraight,
+    module: null,
+    roles: [AGENCY_ROLES.ADMIN],
+    items: [
+      { labelKey: 'inmobiliaria.ai.nav.resumen', href: RETENCION, icon: SquaresFour, exact: true, module: null, roles: [AGENCY_ROLES.ADMIN] },
+      { labelKey: 'inmobiliaria.ai.nav.retencionRiesgo', href: `${RETENCION}/riesgo`, icon: Warning, module: null, roles: [AGENCY_ROLES.ADMIN] },
+      { labelKey: 'inmobiliaria.ai.nav.retencionPorAprobar', href: `${RETENCION}/aprobar`, icon: ListChecks, module: null, roles: [AGENCY_ROLES.ADMIN] },
     ],
   },
   // ── Mantenimiento (tickets) — APAGADO ─────────────────────────────────────

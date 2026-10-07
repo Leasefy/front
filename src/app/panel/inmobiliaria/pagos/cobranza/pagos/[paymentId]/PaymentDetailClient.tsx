@@ -14,20 +14,23 @@
  * error for the not-found path.
  */
 
+import { useEffect } from 'react'
 import Link from 'next/link'
 
 import { CurrencyCircleDollar } from '@phosphor-icons/react'
 
-import { Button } from '@/components/ui'
-import { StatusBadge, type SemanticTone } from '@leasefy/cadence'
+import { Button, toast } from '@/components/ui'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { CrossFade, StatusBadge, type SemanticTone } from '@leasefy/cadence'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import { usePaymentDetail } from '@/lib/hooks/cobranza/use-payment-detail'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 const BACK_HREF = '/panel/inmobiliaria/pagos/cobranza/pagos'
 
-const copFormat = new Intl.NumberFormat('es-CO', {
+const copFormat = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,
@@ -133,15 +136,36 @@ function BackLink() {
 }
 
 export default function PaymentDetailClient({ paymentId }: { paymentId: string }) {
-  const { data, isLoading, verifyPayment, isVerifying } = usePaymentDetail({ paymentId })
+  const { data, isLoading, verifyPayment, isVerifying, falloDeVerificacion, limpiarFalloDeVerificacion } =
+    usePaymentDetail({ paymentId })
 
+  // Antes un fallo al verificar no decía nada: el botón volvía a su estado y
+  // el pago seguía «reportado» sin que nadie supiera por qué.
+  useEffect(() => {
+    if (!falloDeVerificacion) return
+    toast.error(
+      mensajeParaLaPersona(falloDeVerificacion, {
+        porDefecto: 'No pudimos verificar el pago.',
+        accion: 'verificar el pago',
+      }),
+    )
+    limpiarFalloDeVerificacion()
+  }, [falloDeVerificacion, limpiarFalloDeVerificacion])
+
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // pago, → no disponible); lo que ya estaba al montarse no se anima.
   if (isLoading) {
-    return <PageSkeleton variant="detail" />
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="detail" />
+      </CrossFade>
+    )
   }
 
   // Fail-soft fallback: no payment (404 / unmigrated / no backend) → EmptyState.
   if (!data) {
     return (
+      <CrossFade swapKey="no-disponible">
       <div className="p-4 lg:p-8 max-w-3xl mx-auto space-y-6">
         <BackLink />
         <h1 className="text-h2 text-fg">Detalle de pago</h1>
@@ -152,6 +176,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
           primaryCta={{ label: 'Volver a pagos', href: BACK_HREF }}
         />
       </div>
+      </CrossFade>
     )
   }
 
@@ -163,6 +188,7 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
   }
 
   return (
+    <CrossFade swapKey="pago">
     <div className="p-4 lg:p-8 max-w-3xl mx-auto space-y-6">
       <BackLink />
 
@@ -255,5 +281,6 @@ export default function PaymentDetailClient({ paymentId }: { paymentId: string }
         )}
       </div>
     </div>
+    </CrossFade>
   )
 }

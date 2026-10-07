@@ -83,7 +83,7 @@ describe('<ModalAvisarNoElegidos>', () => {
   }
 
   const confirmar = async () => {
-    const boton = container.querySelector('[data-testid="confirmar-eleccion"]') as HTMLButtonElement
+    const boton = document.body.querySelector('[data-testid="confirmar-eleccion"]') as HTMLButtonElement
     await act(async () => {
       boton.click()
     })
@@ -106,7 +106,7 @@ describe('<ModalAvisarNoElegidos>', () => {
     montar()
     return confirmar().then(() => {
       expect(reject).not.toHaveBeenCalled()
-      expect(container.textContent).toContain('No le avisamos a nadie más')
+      expect(document.body.textContent).toContain('No le avisamos a nadie más')
     })
   })
 
@@ -142,7 +142,7 @@ describe('<ModalAvisarNoElegidos>', () => {
 
   it('destildar a alguien lo deja fuera del aviso', async () => {
     montar()
-    const casilla = container.querySelector('[data-testid="avisar-b"]') as HTMLInputElement
+    const casilla = document.body.querySelector('[data-testid="avisar-b"]') as HTMLInputElement
     act(() => casilla.click())
     await confirmar()
 
@@ -166,7 +166,7 @@ describe('<ModalAvisarNoElegidos>', () => {
 
   it('el mensaje que se manda es el que quedó en pantalla', async () => {
     montar({ otros: [candidato('b', 'Bruno Díaz')] })
-    const area = container.querySelector('#mensaje-no-elegidos') as HTMLTextAreaElement
+    const area = document.body.querySelector('#mensaje-no-elegidos') as HTMLTextAreaElement
     expect(area.value).toContain('se asignó a otra')
 
     await confirmar()
@@ -175,10 +175,112 @@ describe('<ModalAvisarNoElegidos>', () => {
 
   it('sin nadie más esperando, sólo aprueba', async () => {
     const { onListo } = montar({ otros: [] })
-    expect(container.textContent).toContain('No hay nadie más esperando')
+    expect(document.body.textContent).toContain('No hay nadie más esperando')
     await confirmar()
     expect(approve).toHaveBeenCalledWith('a')
     expect(reject).not.toHaveBeenCalled()
     expect(onListo).toHaveBeenCalled()
+  })
+
+  describe('es el Dialog del producto, no un overlay a mano', () => {
+    const escape = () =>
+      act(() => {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      })
+
+    it('se anuncia como diálogo con el nombre del elegido', () => {
+      montar()
+      const dialogo = document.body.querySelector('[role="dialog"]')
+      expect(dialogo).not.toBeNull()
+      const titulo = document.getElementById(dialogo!.getAttribute('aria-labelledby') ?? '')
+      expect(titulo?.textContent).toBe('Eliges a Ana Gómez')
+    })
+
+    it('Escape y la ✕ cierran cuando no hay nada en curso', () => {
+      const onCerrar = vi.fn()
+      montar({ onCerrar })
+      escape()
+      expect(onCerrar).toHaveBeenCalledTimes(1)
+
+      const aspa = document.body.querySelector<HTMLButtonElement>('[aria-label="Cerrar"]')
+      expect(aspa).not.toBeNull()
+      act(() => aspa!.click())
+      expect(onCerrar).toHaveBeenCalledTimes(2)
+    })
+
+    it('mientras aprueba y avisa no se sale: Escape no cierra y la ✕ no está', async () => {
+      // Irse a mitad deja al elegido aprobado y a los demás sin aviso.
+      let terminar: () => void = () => {}
+      approve.mockImplementation(() => new Promise<void>((r) => { terminar = () => r() }))
+      const onCerrar = vi.fn()
+      montar({ onCerrar })
+      await confirmar()
+
+      escape()
+      expect(onCerrar).not.toHaveBeenCalled()
+      expect(document.body.querySelector('[aria-label="Cerrar"]')).toBeNull()
+
+      await act(async () => { terminar() })
+    })
+
+    it('un clic en el velo no es una respuesta: no cierra', async () => {
+      const onCerrar = vi.fn()
+      montar({ onCerrar })
+      // Radix engancha el «clic afuera» en el tick siguiente al montaje.
+      await act(async () => { await new Promise((r) => setTimeout(r, 0)) })
+      const velo = Array.from(document.body.querySelectorAll<HTMLElement>('[data-state="open"]')).find(
+        (el) => el.getAttribute('role') !== 'dialog' && !el.closest('[role="dialog"]'),
+      )
+      expect(velo).toBeDefined()
+      act(() => {
+        velo!.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+      })
+      expect(onCerrar).not.toHaveBeenCalled()
+    })
+  })
+
+  /*
+   * 02-10-2026 · Sistema de errores: el fallo de aprobar al elegido y el de
+   * cada aviso pasan por el traductor; cada fila que no salió dice por qué.
+   */
+  describe('cuando el back dice que no', () => {
+    const quinientos = () =>
+      Object.assign(new Error('Internal server error'), {
+        status: 500,
+        detalle: { statusCode: 500, code: 'ERROR_INTERNO', message: 'Internal server error', referencia: 'ab12cd34' },
+      })
+
+    it('🔴 si aprobar al elegido da 5xx, dice que es nuestro con la referencia, no el texto crudo', async () => {
+      approve.mockRejectedValue(quinientos())
+      montar()
+      await confirmar()
+      const texto = document.body.querySelector('[data-testid="error-del-elegido"]')?.textContent ?? ''
+      expect(texto).toContain('de nuestro lado')
+      expect(texto).toContain('ab12cd34')
+      expect(texto).not.toContain('Internal server error')
+      expect(reject).not.toHaveBeenCalled()
+    })
+
+    it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+      approve.mockRejectedValue(new TypeError('Failed to fetch'))
+      montar()
+      await confirmar()
+      const texto = document.body.querySelector('[data-testid="error-del-elegido"]')?.textContent ?? ''
+      expect(texto.toLowerCase()).toContain('conexión')
+    })
+
+    it('la fila que no salió dice por qué (lo que mandó el back)', async () => {
+      reject.mockImplementation((id: string) =>
+        id === 'b'
+          ? Promise.reject(Object.assign(new Error('Esta postulación ya fue retirada.'), { status: 409 }))
+          : Promise.resolve(undefined),
+      )
+      montar()
+      await confirmar()
+      expect(document.body.querySelector('[data-testid="motivo-b"]')?.textContent).toBe(
+        'Esta postulación ya fue retirada.',
+      )
+      expect(document.body.querySelector('[data-testid="motivo-c"]')).toBeNull()
+    })
   })
 })

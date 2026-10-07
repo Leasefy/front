@@ -24,13 +24,17 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CaretDown, CaretRight, Scales } from '@phosphor-icons/react'
+import { CaretRight, Scales } from '@phosphor-icons/react'
+import { Collapse } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/toast'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { castigoApi } from '@/lib/api/castigo.service'
 import { reportesApi } from '@/lib/api/inmobiliaria.service'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
@@ -85,13 +89,23 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
   const [candidatas, setCandidatas] = useState<CandidatasACastigo | null>(null)
   const [marcadas, setMarcadas] = useState<Set<string>>(new Set())
   const [motivo, setMotivo] = useState('')
+  /** El error del motivo que mandó el back (`campos[].motivo`). */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
+  /**
+   * 🔴 (02-10-2026) Si la cartera no se pudo leer se DICE. Antes el fallo se
+   * tragaba y la lista quedaba vacía: «No hay cartera: no hay nada que
+   * castigar», una afirmación que nadie podía hacer.
+   */
+  const [falloDeLaCartera, setFalloDeLaCartera] = useState<unknown>(null)
 
   const cargarContratos = useCallback(async () => {
+    setFalloDeLaCartera(null)
     try {
       const informe = await reportesApi.getCartera()
       setContratos(contratosConCartera(informe.items))
-    } catch {
+    } catch (e) {
+      setFalloDeLaCartera(e)
       setContratos([])
     }
   }, [])
@@ -113,7 +127,10 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
       )
     } catch (e) {
       toast.error('No se pudieron leer las cuotas del contrato', {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeParaLaPersona(e, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'leer las cuotas del contrato',
+        }),
       })
     }
   }
@@ -130,6 +147,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
   const proponer = async () => {
     if (!elegido || total.cuotas === 0 || motivo.trim().length === 0) return
     setGuardando(true)
+    setErrorDelMotivo(null)
     try {
       const propuesto = await castigoApi.proponer({
         contractId: elegido.contractId,
@@ -143,7 +161,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
        */
       toast.success(
         propuesto?.estado === 'CASTIGADA'
-          ? 'Castigada por ti como administrador (P-4): tu firma valió por los dos lados. Sale de la cartera activa y de la cobranza.'
+          ? 'Castigada por ti como administrador: tu firma valió por los dos lados. Sale de la cartera activa y de la cobranza.'
           : 'Propuesto. Ahora lo firman el administrador y el contador.',
       )
       setElegido(null)
@@ -154,9 +172,19 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
       setContratos(null)
       onListo()
     } catch (e) {
-      toast.error('No se pudo proponer el castigo', {
-        description: e instanceof Error ? e.message : undefined,
+      // Un 400 del motivo va debajo del motivo; lo demás, al aviso.
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: ['motivo'] as const,
+        porDefecto: 'Prueba de nuevo en un momento.',
+        accion: 'proponer el castigo',
       })
+      if (porCampo.motivo) {
+        setErrorDelMotivo(porCampo.motivo)
+        document.getElementById('motivo-de-la-propuesta')?.focus()
+      }
+      if (sueltos.length > 0) {
+        toast.error('No se pudo proponer el castigo', { description: sueltos.join(' · ') })
+      }
     } finally {
       setGuardando(false)
     }
@@ -171,11 +199,14 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
         onClick={() => setAbierto((v) => !v)}
         data-testid="abrir-proponer-castigo"
       >
-        {abierto ? (
-          <CaretDown className="h-4 w-4 text-fg-muted" aria-hidden="true" />
-        ) : (
-          <CaretRight className="h-4 w-4 text-fg-muted" aria-hidden="true" />
+        {/* Un solo caret que gira con la curva de los paneles. */}
+        <CaretRight
+          className={cn(
+            'h-4 w-4 text-fg-muted transition-transform duration-slow ease-emphasis',
+            abierto && 'rotate-90',
         )}
+          aria-hidden="true"
+        />
         <Scales className="h-4 w-4 text-fg-muted" aria-hidden="true" />
         <span className="text-sm font-medium text-fg">Proponer un castigo</span>
         <span className="text-xs text-fg-muted">
@@ -183,7 +214,8 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
         </span>
       </button>
 
-      {abierto && (
+      {/* Se abre y se cierra con `Collapse` (altura + fundido). */}
+      <Collapse open={abierto}>
         <div className="space-y-4 border-t border-border p-4">
           {/* ── 1. De quién ──────────────────────────────────────────── */}
           {!elegido && (
@@ -194,6 +226,18 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
               </p>
               {contratos === null ? (
                 <p className="text-sm text-fg-muted">Leyendo la cartera…</p>
+              ) : falloDeLaCartera ? (
+                <div className="space-y-2" data-testid="cartera-sin-leer">
+                  <p className="text-sm text-fg">
+                    No pudimos leer la cartera.{' '}
+                    {mensajeParaLaPersona(falloDeLaCartera, {
+                      porDefecto: 'Prueba de nuevo en un momento.',
+                    })}
+                  </p>
+                  <Button hideArrow size="sm" variant="secondary" onClick={() => void cargarContratos()}>
+                    Intentar de nuevo
+                  </Button>
+                </div>
               ) : contratos.length === 0 ? (
                 <p className="text-sm text-fg-muted">
                   No hay cartera: no hay nada que castigar.
@@ -315,15 +359,24 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
                     })}
                   </ul>
 
-                  <Textarea
-                    value={motivo}
-                    onChange={(e) => setMotivo(e.target.value)}
-                    rows={2}
-                    maxLength={500}
-                    placeholder="Por qué esta cartera es incobrable. Es lo que van a leer las dos personas que la firman."
-                    aria-label="Motivo del castigo"
-                    data-testid="motivo-de-la-propuesta"
-                  />
+                  <div>
+                    <Textarea
+                      id="motivo-de-la-propuesta"
+                      value={motivo}
+                      onChange={(e) => {
+                        setMotivo(e.target.value)
+                        setErrorDelMotivo(null)
+                      }}
+                      rows={2}
+                      maxLength={500}
+                      placeholder="Por qué esta cartera es incobrable. Es lo que van a leer las dos personas que la firman."
+                      aria-label="Motivo del castigo"
+                      aria-invalid={errorDelMotivo ? true : undefined}
+                      aria-describedby={errorDelMotivo ? 'motivo-de-la-propuesta-error' : undefined}
+                      data-testid="motivo-de-la-propuesta"
+                    />
+                    <ErrorDelCampo id="motivo-de-la-propuesta-error" mensaje={errorDelMotivo} />
+                  </div>
 
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="text-sm text-fg-muted">
@@ -349,7 +402,7 @@ export function ProponerCastigo({ onListo }: { onListo: () => void }) {
             </div>
           )}
         </div>
-      )}
+      </Collapse>
     </Card>
   )
 }

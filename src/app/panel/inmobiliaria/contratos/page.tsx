@@ -13,7 +13,7 @@
  * CONTRACT_STATUS_COLORS already ship dark variants).
  */
 
-import { useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef, type KeyboardEvent } from 'react';
 import Link from 'next/link';
 import { MagnifyingGlass, SortAscending, SortDescending } from '@phosphor-icons/react';
 import {
@@ -22,10 +22,12 @@ import {
   FILTROS_INICIALES,
   type CampoDeOrden,
   type FiltrosDeContratos,
+  vencidoSinRenovar,
 } from '@/lib/contratos/filtrar-contratos';
 import { numeroDelContrato } from '@/lib/contratos/numero-del-contrato';
 import { ContratoFilters } from '@/components/contratos/ContratoFilters';
 import { formatearVigencia } from '@/lib/contratos/fecha-de-vigencia';
+import { estadoParaMostrar, noHaEmpezado } from '@/lib/contratos/estado-para-mostrar';
 import { useRouter } from 'next/navigation';
 import { fmtCop } from './format';
 import {
@@ -40,7 +42,6 @@ import {
 
 import {
   colorDeVigencia,
-  etiquetaDeVigencia,
   vigenciaDelContrato,
 } from '@/lib/contratos/vigencia';
 import { cn } from '@/lib/utils';
@@ -48,10 +49,20 @@ import { useI18n } from '@/lib/i18n';
 import { useAutoRefresh } from '@/lib/hooks/use-auto-refresh';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
-import { Eyebrow } from '@leasefy/cadence';
+import { AnimatedNumber, Eyebrow } from '@leasefy/cadence';
+
 import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableBodyAnimado,
+  TableRowAnimada,
+} from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { useContracts } from '@/lib/hooks/useContracts';
@@ -64,6 +75,9 @@ import {
   DropdownListItem,
   DropdownListTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAccesoDeLaPantalla } from '@/components/auth/acceso-de-la-pantalla';
+import { usePermissions } from '@/lib/hooks/usePermissions';
+import { clasificarFallo } from '@/lib/errores/clasificar';
 import {
   CONTRACT_STATUS_LABELS,
   CONTRACT_STATUS_COLORS,
@@ -74,6 +88,16 @@ import {
 
 function fmtDate(iso: string | null | undefined, locale: string): string {
   return formatearVigencia(iso, locale);
+}
+
+/** El dueño del inmueble que trae la fila (cuando el back lo manda en la lista). */
+function propietarioDeLaFila(c: Contract): string | null {
+  const varios = c.propietariosDelContrato?.propietarios ?? [];
+  if (varios.length > 1) {
+    const principal = varios.find((p) => p.esPrincipal) ?? varios[0]!;
+    return `${principal.name} y ${varios.length - 1} más`;
+  }
+  return varios[0]?.name ?? c.propietarioDeLaConsignacion?.name ?? null;
 }
 
 // ── Stat card ────────────────────────────────────────────────────────────────
@@ -98,13 +122,27 @@ function CifraDeLaTabla({
   /** La línea de abajo: «No se pudo traer» cuando el número es una raya por un fallo. */
   sub?: string;
 }) {
+  // La cifra que llega DESPUÉS de cargar (montó con la raya) cuenta desde 0;
+  // la que ya estaba al montarse no se anima, y si después cambia cuenta desde
+  // la anterior. El texto final es el de siempre (sin separador de miles).
+  const llegaDespues = useRef(typeof value !== 'number');
   return (
     <div className="px-5 py-4" data-testid="contratos-kpi">
       <div className="flex items-center gap-2">
         <span className={cn('w-2 h-2 rounded-full flex-shrink-0', dot)} />
         <span className="text-caption text-muted-foreground truncate">{label}</span>
       </div>
-      <p className="mt-1.5 text-2xl font-medium tabular-nums text-foreground">{value}</p>
+      <p className="mt-1.5 text-2xl font-medium tabular-nums text-foreground">
+        {typeof value === 'number' ? (
+          <AnimatedNumber
+            value={value}
+            from={llegaDespues.current ? 0 : undefined}
+            format={(n) => String(Math.round(n))}
+          />
+        ) : (
+          value
+        )}
+      </p>
       {sub ? <p className="mt-0.5 text-caption text-muted-foreground">{sub}</p> : null}
     </div>
   );
@@ -164,10 +202,35 @@ function ContratosContent() {
   const tx = (es: string, en: string) => (locale === 'en' ? en : es);
 
   const { contracts, stats, isLoading, error, errorCrudo, refetch } = useContracts();
+  /*
+   * 🔴 QA-CONT-95 (CR-33, H-07): la lista es el dato PRINCIPAL de la pantalla.
+   * Si el servidor la NIEGA (sin permiso, sin segundo factor), se apaga la
+   * pantalla entera con el cartel —como hace `EstadoDeDatos principal`—: antes
+   * el cartel salía dentro de la tabla y «Nuevo contrato» y el engranaje
+   * quedaban vivos. Un 500 no apaga nada.
+   */
+  const accesoDeLaPantalla = useAccesoDeLaPantalla();
+  const denegarLaPantalla = accesoDeLaPantalla?.denegar;
+  const pantallaYaDenegada = Boolean(accesoDeLaPantalla?.denegado);
+  useEffect(() => {
+    const fallo = errorCrudo ?? error;
+    if (!fallo || !denegarLaPantalla || pantallaYaDenegada) return;
+    const tipo = clasificarFallo(fallo, { queEs: 'los contratos' }).tipo;
+    if (tipo === 'sinPermiso' || tipo === 'sinSegundoFactor') {
+      denegarLaPantalla({ error: fallo, queEs: 'los contratos' });
+    }
+  }, [error, errorCrudo, denegarLaPantalla, pantallaYaDenegada]);
   // Contratos migrados que existen y no cobran (sin inmueble o sin
   // propietario). Vivía en la página de migración, que ya no existe: se dice
   // acá, que es donde la persona está mirando sus contratos.
   const deuda = useMigracionConDeuda();
+  /*
+   * 🔴 QA-CONT-95 (MC-15): migrar es ESCRIBIR contratos. Quien sólo los ve (el
+   * contador, el de sólo lectura) no recibe un enlace que lo lleva a una
+   * pantalla negada: el aviso se le dice igual, sin el botón que rebota.
+   */
+  const { canAccess, isAdmin } = usePermissions();
+  const puedeMigrar = isAdmin || canAccess('contratos', 'create');
 
   useAutoRefresh(refetch);
   const sinDato = tx('No se pudo traer', "Couldn't load");
@@ -188,6 +251,20 @@ function ContratosContent() {
     [contracts, filtros],
   );
   const conFiltros = hayFiltros(filtros);
+  /*
+   * QA-CONT C-05 (Nico, 03-10-2026): un contrato que empieza el 1 de noviembre
+   * NO es «Activo» ni suma en los activos: dice «Empieza el 1 de nov».
+   */
+  const porEmpezar = useMemo(
+    () => contracts.filter((c) => c.status === 'active' && noHaEmpezado(c)).length,
+    [contracts],
+  );
+  // QA-CONT-95 (A-03): los vencidos sin renovar tampoco son «Activos» (la fila
+  // dice «Vencido»); se cuentan aparte, como los por empezar.
+  const vencidosSinRenovar = useMemo(
+    () => contracts.filter((c) => vencidoSinRenovar(c)).length,
+    [contracts],
+  );
   const limpiarFiltros = () =>
     // El orden no es un filtro: se conserva.
     setFiltros({ ...FILTROS_INICIALES, campo: filtros.campo, sentido: filtros.sentido });
@@ -272,12 +349,14 @@ function ContratosContent() {
               </Button>
             </DropdownListTrigger>
             <DropdownListContent align="end" className="w-56">
-              <DropdownListItem asChild data-testid="accion-migrar-contratos">
-                <Link href="/panel/inmobiliaria/contratos/migrar">
-                  <UploadSimple className="w-4 h-4" />
-                  <span className="text-sm">{tx('Migrar contratos', 'Migrate contracts')}</span>
-                </Link>
-              </DropdownListItem>
+              {puedeMigrar && (
+                <DropdownListItem asChild data-testid="accion-migrar-contratos">
+                  <Link href="/panel/inmobiliaria/contratos/migrar">
+                    <UploadSimple className="w-4 h-4" />
+                    <span className="text-sm">{tx('Migrar contratos', 'Migrate contracts')}</span>
+                  </Link>
+                </DropdownListItem>
+              )}
               <DropdownListItem asChild data-testid="accion-agregar-conceptos">
                 <Link href="/panel/inmobiliaria/contratos/conceptos">
                   <ListPlus className="w-4 h-4" />
@@ -319,10 +398,11 @@ function ContratosContent() {
                     `${deuda.sinPropietario} migrated ${deuda.sinPropietario === 1 ? 'contract' : 'contracts'} without an owner: will not bill.`,
                   )
           }
-          accion={{
+          accion={puedeMigrar ? {
+            
             label: tx('Completarlos en la migración', 'Complete them in the migration'),
             href: '/panel/inmobiliaria/contratos/migrar',
-          }}
+          } : undefined}
           data-testid="alerta-migrados-sin-cobrar"
         >
           {tx(
@@ -338,13 +418,16 @@ function ContratosContent() {
         <AlertaAccionable
           severidad="warning"
           titulo={tx(
-            `${deuda.pendientes} filas de tu migración nunca se activaron: no existen como contrato.`,
+            deuda.pendientes === 1
+              ? '1 fila de tu migración nunca se activó: no existe como contrato.'
+              : `${deuda.pendientes} filas de tu migración nunca se activaron: no existen como contrato.`,
             `${deuda.pendientes} rows of your migration were never activated: they do not exist as contracts.`,
           )}
-          accion={{
+          accion={puedeMigrar ? {
+            
             label: tx('Revisar las filas', 'Review the rows'),
             href: '/panel/inmobiliaria/contratos/migrar',
-          }}
+          } : undefined}
           data-testid="alerta-migracion-sin-activar"
         >
           {tx(
@@ -399,8 +482,24 @@ function ContratosContent() {
           />
           <CifraDeLaTabla
             label={tx('Activos', 'Active')}
-            value={isLoading || error ? '—' : stats.active}
-            sub={error ? sinDato : undefined}
+            value={isLoading || error ? '—' : stats.active - porEmpezar - vencidosSinRenovar}
+            sub={
+              error
+                ? sinDato
+                : !isLoading && (porEmpezar > 0 || vencidosSinRenovar > 0)
+                  ? [
+                      porEmpezar > 0 ? tx(`+ ${porEmpezar} por empezar`, `+ ${porEmpezar} not started yet`) : null,
+                      vencidosSinRenovar > 0
+                        ? tx(
+                            `+ ${vencidosSinRenovar} ${vencidosSinRenovar === 1 ? 'vencido sin renovar' : 'vencidos sin renovar'}`,
+                            `+ ${vencidosSinRenovar} ended, not renewed`,
+                          )
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(' · ')
+                  : undefined
+            }
             dot="bg-success"
           />
           <CifraDeLaTabla
@@ -432,11 +531,35 @@ function ContratosContent() {
           />
         )}
 
-        <Table>
-          <TableHeader>
+        {/*
+          🔴 QA-CONT C-17: a 1440 la tabla «no cabía entera» (direcciones y la
+          flecha cortadas) y a 390 se corría de lado. Ahora: la vigencia va en
+          dos renglones, el propietario va bajo la dirección (C-16) y las celdas
+          son más angostas; bajo `md` cada fila es una tarjeta apilada (la misma
+          fila, otro dibujo: sin duplicar el DOM) y el encabezado se esconde.
+        */}
+        <Table className="max-md:block">
+          <TableHeader className="max-md:hidden">
             <TableRow>
               {COLUMNS.map((col, i) => (
-                <TableHead key={i} className="whitespace-nowrap">
+                <TableHead
+                  key={i}
+                  className="whitespace-nowrap px-4"
+                  /*
+                   * C-18: `aria-sort` va en el `th` (el encabezado de la
+                   * columna), no en el botón: un lector de pantalla lo anuncia
+                   * desde la celda. Sin orden propio, «none» en las que ordenan.
+                   */
+                  aria-sort={
+                    col.campo
+                      ? filtros.campo === col.campo
+                        ? filtros.sentido === 'asc'
+                          ? 'ascending'
+                          : 'descending'
+                        : 'none'
+                      : undefined
+                  }
+                >
                   {col.campo ? (
                     /*
                       allowlist: disparador de orden — no hay primitiva en
@@ -448,13 +571,6 @@ function ContratosContent() {
                       type="button"
                       onClick={() => ordenarPor(col.campo as CampoDeOrden)}
                       className="flex items-center gap-1.5 uppercase hover:text-fg"
-                      aria-sort={
-                        filtros.campo === col.campo
-                          ? filtros.sentido === 'asc'
-                            ? 'ascending'
-                            : 'descending'
-                          : undefined
-                      }
                       data-testid={`ordenar-${col.campo}`}
                     >
                       {col.label}
@@ -467,7 +583,7 @@ function ContratosContent() {
               ))}
             </TableRow>
           </TableHeader>
-          <TableBody>
+          <TableBody className="max-md:block">
             {isLoading && contracts.length === 0 && <TableSkeleton cells={COLUMNS.length} />}
 
             {/* El fallo ocupa el mismo hueco que el vacío: es la misma pantalla
@@ -550,89 +666,130 @@ function ContratosContent() {
                 </TableCell>
               </TableRow>
             )}
-
-            {pageItems.map((c) => (
-                <TableRow
-                  key={c.id}
-                  onClick={() => openContract(c)}
-                  className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors cursor-pointer"
-                >
-                  <TableCell className="px-5 py-4">
-                    <CeldaDeNumero contrato={c} />
-                  </TableCell>
-                  <TableCell className="px-5 py-4">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="grid place-items-center w-8 h-8 rounded-full bg-muted flex-shrink-0">
-                        <User className="w-4 h-4 text-muted-foreground" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-foreground truncate">{c.tenantName || '—'}</p>
-                        <p className="text-caption text-muted-foreground truncate">{c.tenantEmail}</p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-5 py-4 max-w-[220px]">
-                    <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
-                      <House className="w-3.5 h-3.5 flex-shrink-0" />
-                      {c.propertyId === null ? (
-                        <span className="truncate" title="Sin inmueble">
-                          Sin inmueble
-                        </span>
-                      ) : (
-                        <span className="truncate" title={`${c.propertyAddress}, ${c.propertyCity}`}>
-                          {c.propertyAddress}
-                          {c.propertyCity ? `, ${c.propertyCity}` : ''}
-                        </span>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell className="px-5 py-4 tabular-nums font-mono whitespace-nowrap text-foreground">
-                    {fmtCop(c.monthlyRent)}
-                  </TableCell>
-                  <TableCell className="px-5 py-4 whitespace-nowrap text-muted-foreground tabular-nums">
-                    {fmtDate(c.startDate, locale)} <span className="opacity-50">→</span> {fmtDate(c.endDate, locale)}
-                  </TableCell>
-                  <TableCell className="px-5 py-4">
-                    {/*
-                      🔴 El chip lo decide la VIGENCIA, no el estado crudo
-                      (auditoría 2026-09-13, N2). Un contrato `active` cuya
-                      fecha de fin ya pasó decía «Activo» en verde para
-                      siempre, mientras se le seguían generando cobros.
-                    */}
-                    {(() => {
-                      const v = vigenciaDelContrato({
-                        status: c.status,
-                        endDate: c.endDate,
-                        terminadoEn: c.terminadoEn ?? null,
-                        startDate: c.startDate ?? null,
-                        fechaDeCartera: c.fechaDeCartera ?? null,
-                      });
-                      return (
-                        <span
-                          className={cn(
-                            'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap',
-                            colorDeVigencia(
-                              v,
-                              CONTRACT_STATUS_COLORS[c.status] ?? 'bg-muted text-muted-foreground',
-                            ),
-                          )}
-                          title={v.leyenda}
-                          data-testid={v.vencidoSinRenovar ? 'contrato-vencido' : undefined}
-                        >
-                          {etiquetaDeVigencia(
-                            v,
-                            CONTRACT_STATUS_LABELS[c.status] ?? c.status,
-                          )}
-                        </span>
-                      );
-                    })()}
-                  </TableCell>
-                  <TableCell className="px-5 py-4 text-right">
-                    <CaretRight className="w-4 h-4 text-muted-foreground inline-block" />
-                  </TableCell>
-                </TableRow>
-              ))}
           </TableBody>
+          {/* Las filas de datos van en su propio cuerpo animado: entran
+              escalonadas (techo de 320 ms) y, al buscar, filtrar o cambiar de
+              página, las que se van salen en su lugar (`key` = el id). */}
+          <TableBodyAnimado className="max-md:block">
+            {pageItems.map((c) => (
+              <TableRowAnimada
+                key={c.id}
+                onClick={() => openContract(c)}
+                /* CR-20: la fila se abre también con el teclado (Enter o espacio). */
+                tabIndex={0}
+                role="link"
+                aria-label={`Abrir el contrato ${numeroDelContrato(c).principal ?? ''} de ${c.tenantName || 'sin inquilino'}`}
+                onKeyDown={(e: KeyboardEvent) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openContract(c);
+                  }
+                }}
+                className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:items-center max-md:gap-x-3 max-md:gap-y-1.5 max-md:px-4 max-md:py-3.5"
+                data-testid="fila-de-contrato"
+              >
+                <TableCell className="px-4 py-4 max-md:order-5 max-md:block max-md:p-0 max-md:text-right">
+                  <CeldaDeNumero contrato={c} />
+                </TableCell>
+                <TableCell className="px-4 py-4 max-w-[240px] max-md:order-1 max-md:block max-md:max-w-none max-md:p-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="grid place-items-center w-8 h-8 rounded-full bg-muted flex-shrink-0 max-md:hidden">
+                      <User className="w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground truncate">{c.tenantName || '—'}</p>
+                      <p className="text-caption text-muted-foreground truncate max-md:hidden">{c.tenantEmail}</p>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="px-4 py-4 max-w-[240px] max-md:order-3 max-md:col-span-2 max-md:block max-md:max-w-none max-md:p-0">
+                  <div className="flex items-center gap-1.5 text-muted-foreground min-w-0">
+                    <House className="w-3.5 h-3.5 flex-shrink-0" />
+                    {c.propertyId === null ? (
+                      <span className="truncate" title="Sin inmueble">
+                        Sin inmueble
+                      </span>
+                    ) : (
+                      <span className="truncate" title={`${c.propertyAddress}, ${c.propertyCity}`}>
+                        {c.propertyAddress}
+                        {c.propertyCity ? `, ${c.propertyCity}` : ''}
+                      </span>
+                    )}
+                  </div>
+                  {/* C-16: de quién es el inmueble (también se busca por ahí). */}
+                  {propietarioDeLaFila(c) ? (
+                    <p className="mt-0.5 truncate pl-5 text-caption text-fg-subtle" data-testid="propietario-de-la-fila">
+                      {tx('Propietario', 'Owner')}: {propietarioDeLaFila(c)}
+                    </p>
+                  ) : null}
+                </TableCell>
+                <TableCell className="px-4 py-4 tabular-nums font-mono whitespace-nowrap text-foreground max-md:order-4 max-md:block max-md:p-0">
+                  {fmtCop(c.monthlyRent)}
+                </TableCell>
+                <TableCell className="px-4 py-4 whitespace-nowrap text-muted-foreground tabular-nums max-md:order-6 max-md:col-span-2 max-md:block max-md:p-0 max-md:text-caption">
+                  {fmtDate(c.startDate, locale)}{' '}
+                  <span className="opacity-50">→</span>
+                  {/* Dos renglones en escritorio: así la columna no estira la tabla. */}
+                  <br className="max-md:hidden" />
+                  <span className="md:hidden"> </span>
+                  {fmtDate(c.endDate, locale)}
+                </TableCell>
+                <TableCell className="px-4 py-4 max-md:order-2 max-md:block max-md:p-0 max-md:text-right">
+                  {/*
+                    🔴 El chip lo decide la VIGENCIA, no el estado crudo
+                    (auditoría 2026-09-13, N2). Un contrato `active` cuya
+                    fecha de fin ya pasó decía «Activo» en verde para
+                    siempre, mientras se le seguían generando cobros.
+                  */}
+                  {(() => {
+                    const v = vigenciaDelContrato({
+                      status: c.status,
+                      endDate: c.endDate,
+                      terminadoEn: c.terminadoEn ?? null,
+                      startDate: c.startDate ?? null,
+                      fechaDeCartera: c.fechaDeCartera ?? null,
+                    });
+                    /*
+                     * C-05 / C-01 (Nico): «Empieza el 1 de nov» y «Activo ·
+                     * Termina el 31 de oct», con las mismas palabras que la ficha.
+                     */
+                    const estado = estadoParaMostrar({
+                      contrato: c,
+                      vigencia: v,
+                      etiquetaDelEstado: CONTRACT_STATUS_LABELS[c.status] ?? c.status,
+                      locale,
+                    });
+                    return (
+                      <span
+                        className={cn(
+                          'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap',
+                          estado.clave === 'POR_EMPEZAR'
+                            ? 'bg-plan-status-blue-bg text-primary'
+                            : colorDeVigencia(
+                                v,
+                                CONTRACT_STATUS_COLORS[c.status] ?? 'bg-muted text-muted-foreground',
+                              ),
+                        )}
+                        title={estado.titulo ?? v.leyenda}
+                        data-testid={
+                          estado.clave === 'POR_EMPEZAR'
+                            ? 'contrato-por-empezar'
+                            : v.vencidoSinRenovar
+                              ? 'contrato-vencido'
+                              : undefined
+                        }
+                      >
+                        {estado.texto}
+                      </span>
+                    );
+                  })()}
+                </TableCell>
+                <TableCell className="px-3 py-4 text-right max-md:hidden">
+                  <CaretRight className="w-4 h-4 text-muted-foreground inline-block" />
+                </TableCell>
+              </TableRowAnimada>
+            ))}
+          </TableBodyAnimado>
         </Table>
 
         {/* Pie: sólo si hay más de una página. */}

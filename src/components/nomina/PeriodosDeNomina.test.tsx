@@ -352,3 +352,54 @@ describe('armar el borrador', () => {
     expect(texto()).toContain('no son nómina laboral');
   });
 });
+
+/*
+ * Sistema de errores (02-10-2026): la regla de oro al armar el borrador. Un
+ * 400 sin campo dice el mensaje del back; un 5xx, «de nuestro lado» con la
+ * referencia; sin respuesta, la conexión.
+ */
+describe('armar el borrador · la regla de oro', () => {
+  async function armarCon(error: unknown) {
+    const { toast } = await import('@/components/ui/toast');
+    await montar([]);
+    h.armar.mockRejectedValue(error);
+    await act(async () => {
+      boton('armar-borrador')?.click();
+    });
+    return vi.mocked(toast.error).mock.calls.at(-1)![0] as string;
+  }
+
+  it('🔴 un 400 dice lo que mandó el back', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const texto = await armarCon(
+      new ApiError(400, ['El mes va como YYYY-MM.'], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['El mes va como YYYY-MM.'],
+        campos: [{ campo: 'mes', regla: 'formato', mensaje: 'El mes va como YYYY-MM.' }],
+      }),
+    );
+    expect(texto).toBe('El mes va como YYYY-MM.');
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const texto = await armarCon(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'bbbb2222',
+      }),
+    );
+    expect(texto).toMatch(/No pudimos armar el borrador: algo falló de nuestro lado/);
+    expect(texto).toContain('bbbb2222');
+  });
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const texto = await armarCon(new ApiError(0, 'Failed to fetch'));
+    expect(texto).toMatch(/conexión/);
+    expect(texto).not.toContain('Failed to fetch');
+  });
+});

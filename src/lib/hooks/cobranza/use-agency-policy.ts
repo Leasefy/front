@@ -21,6 +21,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 import { useRefetchOnVisible } from '@/lib/hooks/useRefetchOnVisible'
 import type { components } from '@/lib/api/generated/agent'
 
@@ -107,9 +108,10 @@ export function useAgencyPolicy(): UseAgencyPolicyResult {
       )
       if (res.status === 404) {
         setNotProvisioned(true)
-        throw new Error('404')
+        throw await falloDelMicro(res)
       }
-      if (!res.ok) throw new Error(`${res.status}`)
+      // El sobre del micro entero (status, `code`, `campos`): la pantalla lo traduce.
+      if (!res.ok) throw await falloDelMicro(res)
       const json = (await res.json()) as AgencyPolicy
       setNotProvisioned(false)
       setData(json)

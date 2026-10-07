@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { getSupabase } from '@/lib/supabase/client'
 import { sanitizeReturnUrl } from '@/lib/utils/safe-redirect'
 import { Wordmark } from '@/components/admin/Wordmark'
+import { mensajeDeSupabase } from '@/lib/auth/errores-de-supabase'
 
 /**
  * /admin/login — magic-link (Supabase signInWithOtp). No passwords. The link
@@ -102,7 +103,14 @@ function LoginForm({ error, nextPath }: { error?: string; nextPath?: string }) {
       if (e2) throw e2
       window.location.href = `/admin/login?sent=1` + (nextPath ? `&next=${encodeURIComponent(nextPath)}` : '')
     } catch (err) {
-      setLocalErr((err as Error).message)
+      // 02-10-2026 · Antes, el mensaje de Supabase tal cual, en inglés. Ahora
+      // por su traductor: por código, «conexión» sólo sin respuesta.
+      setLocalErr(
+        mensajeDeSupabase(err, {
+          porDefecto: 'No pudimos enviarte el enlace. Prueba de nuevo en un momento.',
+          accion: 'enviarte el enlace',
+        }),
+      )
       setSubmitting(false)
     }
   }

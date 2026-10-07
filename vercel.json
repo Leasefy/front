@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "regions": ["iad1"],
-  "installCommand": "git clone --depth 1 --branch main https://x-access-token:$CADENCE_REPO_TOKEN@github.com/Leasefy/cadence.git ../cadence && pnpm --dir ../cadence install --frozen-lockfile --ignore-scripts && pnpm install",
+  "installCommand": "git clone --depth 1 --branch \"$(cat .cadence-ref 2>/dev/null || echo main)\" https://x-access-token:$CADENCE_REPO_TOKEN@github.com/Leasefy/cadence.git ../cadence && pnpm --dir ../cadence install --frozen-lockfile --ignore-scripts && pnpm install",
   "headers": [
     {
       "source": "/(.*)",

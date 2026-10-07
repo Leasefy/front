@@ -16,7 +16,7 @@ import { useInvitation } from '@/lib/hooks/useInvitation';
 import { apiClient } from '@/lib/api/client';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 // ============================================================================
 // Helpers
@@ -165,7 +165,14 @@ export default function InvitacionPage() {
       // rol nuevo que escribió el back.
       window.location.replace('/panel/inmobiliaria');
     } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'Error al aceptar la invitación');
+      // 02-10-2026: con la regla de oro del traductor (antes, `err.message`
+      // crudo: un 5xx decía «Error interno del servidor.»; la red, «Failed to fetch»).
+      setActionError(
+        mensajeParaLaPersona(err, {
+          accion: 'aceptar la invitación',
+          porDefecto: 'No pudimos aceptar la invitación. Prueba de nuevo en un momento.',
+        }),
+      );
       setAccepting(false);
     }
   }
@@ -184,7 +191,10 @@ export default function InvitacionPage() {
        * con el motivo, y se queda para poder reintentar.
        */
       toast.error('No se pudo rechazar la invitación', {
-        description: mensajeDelFallo(err, 'Reintenta en un momento.'),
+        description: mensajeParaLaPersona(err, {
+          accion: 'rechazar la invitación',
+          porDefecto: 'Reintenta en un momento.',
+        }),
       });
       setDeclining(false);
       return;
@@ -309,7 +319,7 @@ export default function InvitacionPage() {
 
         {/* Error message */}
         {actionError && (
-          <div className="rounded-md bg-danger-soft border border-danger/30 px-4 py-3">
+          <div role="alert" className="rounded-md bg-danger-soft border border-danger/30 px-4 py-3">
             <p className="text-sm text-danger">{actionError}</p>
           </div>
         )}

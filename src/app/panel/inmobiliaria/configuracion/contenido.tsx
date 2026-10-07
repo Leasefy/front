@@ -13,7 +13,7 @@ import { SeccionSlaDePqrs } from './SeccionSlaDePqrs';
 import { SeccionBitacora } from './SeccionBitacora';
 import { SeccionMovimientos } from './SeccionMovimientos';
 import { SeccionProteccionDeDatos } from './SeccionProteccionDeDatos';
-import type { AgencyRole } from '@/lib/auth/agency-roles';
+import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { ChatLessonsPanel } from '@/components/inmobiliaria/ai/lessons/ChatLessonsPanel';
 
@@ -24,12 +24,18 @@ import { SeccionIntegraciones } from './SeccionIntegraciones';
 import { SeccionMigracion } from './SeccionMigracion';
 import { SeccionMandato } from './SeccionMandato';
 import { SeccionCostosDeLaPlata } from './SeccionCostosDeLaPlata';
+import { DiferenciasConocidas } from './DiferenciasConocidas';
+import { CuentasDeLasDiferencias } from './CuentasDeLasDiferencias';
+import { CuentasDelTraslado } from './CuentasDelTraslado';
+// D-CONCILIACION (ola 3): la alerta de partidas, el efectivo y la cuenta contable de cada cuenta bancaria.
+import { ConciliacionCierreYEfectivo } from './ConciliacionCierreYEfectivo';
 import { SeccionMediosDePago } from './SeccionMediosDePago';
 import { SeccionMediosDeRecibo } from './SeccionMediosDeRecibo';
 import { SeccionSedes } from './SeccionSedes';
 import { SeccionNotificaciones } from './SeccionNotificaciones';
 import { SeccionPerfil } from './SeccionPerfil';
 import { SeccionPermisos } from './SeccionPermisos';
+import { SeccionComercial } from './SeccionComercial';
 import { SeccionPreferencias } from './SeccionPreferencias';
 import { SeccionSeguridad } from './SeccionSeguridad';
 import { seccionPorId, type SeccionId } from './secciones';
@@ -46,12 +52,28 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
       return <SeccionEquipo />;
     case 'permisos':
       return <SeccionPermisos />;
+    case 'comercial':
+      return <SeccionComercial />;
     case 'medios-de-pago':
       return <SeccionMediosDePago />;
     case 'medios-de-recibo':
       return <SeccionMediosDeRecibo />;
     case 'costos-de-la-plata':
-      return <SeccionCostosDeLaPlata />;
+      // 02-10-2026 (S2-D): las diferencias conocidas de la conciliación (la
+      // retención, la comisión) son de la misma familia: lo que cuesta mover
+      // la plata. Misma puerta (sólo el administrador).
+      return (
+        <div className="space-y-6">
+          <SeccionCostosDeLaPlata />
+          <DiferenciasConocidas />
+          {/* C2-DESHACER (Nico, P1): las cuentas del asiento automático de las diferencias. */}
+          <CuentasDeLasDiferencias />
+          {/* E-03 (QA-PAGOS-95 r2): las cuentas del PUC del traslado de la comisión (no tenían pantalla). */}
+          <CuentasDelTraslado />
+          {/* D-CONCILIACION (Nico, P9/P10/P12): alerta a los 30 días, efectivo y cuenta contable por cuenta bancaria. */}
+          <ConciliacionCierreYEfectivo />
+        </div>
+      );
     case 'sedes':
       return <SeccionSedes />;
     case 'mandato':
@@ -90,7 +112,12 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
 /** El mismo `PageGuard` que tenía la pantalla antes de unificarse. */
 export function GuardaDeSeccion({ id, children }: { id: SeccionId; children: React.ReactNode }) {
   const { gate } = seccionPorId(id);
-  if (gate.tipo === 'todos') return <>{children}</>;
+  if (gate.tipo === 'todos') {
+    if (!gate.menos || gate.menos.length === 0) return <>{children}</>;
+    // QA-IA-95: todos los roles menos los de `menos` (por URL tampoco entran).
+    const roles = (Object.values(AGENCY_ROLES) as AgencyRole[]).filter((r) => !gate.menos!.includes(r));
+    return <PageGuard roles={roles}>{children}</PageGuard>;
+  }
   if (gate.tipo === 'admin') return <PageGuard adminOnly>{children}</PageGuard>;
   if (gate.tipo === 'roles') return <PageGuard roles={gate.roles as AgencyRole[]}>{children}</PageGuard>;
   return <PageGuard module={gate.module}>{children}</PageGuard>;

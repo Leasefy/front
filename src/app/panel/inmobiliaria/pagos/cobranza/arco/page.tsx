@@ -20,6 +20,7 @@ import {
   ArrowClockwise,
   CheckCircle,
   Clock,
+  IdentificationCard,
   Scales,
   ShieldCheck,
   Warning,
@@ -41,19 +42,22 @@ import { SlaCountdownBadge } from '@/components/inmobiliaria/cobranza/SlaCountdo
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Button } from '@/components/ui/button'
+import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
+import { PasosExplicados, type PasoExplicado } from '@/components/ui/pasos-explicados'
 import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableRow,
   TableHead,
   TableCell,
+  TableRowAnimada,
 } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TablePagination } from '@/components/ui/pagination'
 // Piezas que resuelve el design system: no rehacerlas a mano.
-import { Banner, Callout, Card, Eyebrow, KpiCard, MonoLabel } from '@leasefy/cadence'
+import { AnimatedNumber, Banner, Callout, Card, CrossFade, Eyebrow, KpiCard, MonoLabel, Presence } from '@leasefy/cadence'
 
 const NS = 'inmobiliaria.ai.arco'
 
@@ -78,9 +82,43 @@ const TYPE_VARIANT: Record<ArcoRequestType, 'default' | 'secondary' | 'warning' 
 // ─── Cabecera explicativa ─────────────────────────────────────────────────────
 
 /**
- * Qué es esta pantalla, en el menor espacio posible. Es una bandeja que se
- * visita poco y con consecuencias legales: quien entra por primera vez no
- * debería tener que preguntar para qué sirve.
+ * «¿Cómo funciona?» — el viaje de una solicitud, detrás del botón del
+ * encabezado (Nico, 05-10-2026: «eso no debe de estar ahí siempre […]
+ * llévalas al botón que al dar clic abre drawer y explica mejor cada cosa»).
+ * Era el párrafo «qué es esta bandeja» puesto en la cabecera; sus frases
+ * siguen acá, repartidas en tres pasos.
+ */
+function ComoFuncionaArco() {
+  const { t } = useI18n()
+  const pasos: PasoExplicado[] = [
+    { id: 'paso1', icono: IdentificationCard, titulo: t(`${NS}.intro.paso1.title`), explicacion: t(`${NS}.intro.paso1.desc`) },
+    { id: 'paso2', icono: Clock, titulo: t(`${NS}.intro.paso2.title`), explicacion: t(`${NS}.intro.paso2.desc`) },
+    {
+      id: 'paso3',
+      icono: CheckCircle,
+      titulo: t(`${NS}.intro.paso3.title`),
+      explicacion: t(`${NS}.intro.paso3.desc`),
+      quien: 'tu',
+      tuParte: t(`${NS}.intro.paso3.tuParte`),
+    },
+  ]
+  return (
+    <ParaEntenderMas
+      etiqueta={t('common.comoFunciona.boton')}
+      titulo={t(`${NS}.intro.titulo`)}
+      descripcion={t(`${NS}.intro.descripcion`)}
+      variante="secundario"
+    >
+      <PasosExplicados data-testid="arco-como-funciona" pasos={pasos} />
+    </ParaEntenderMas>
+  )
+}
+
+/**
+ * Lo que esta bandeja TIENE que decir, siempre a la vista: la ley que la rige,
+ * la consecuencia de responder tarde (aviso legal) y los plazos que se están
+ * aplicando (datos reales). El «qué es esta pantalla» se fue al botón
+ * «¿Cómo funciona?» del encabezado (05-10-2026).
  */
 function IntroPanel({ terms }: { terms: ArcoSlaTerms }) {
   const { t } = useI18n()
@@ -102,9 +140,6 @@ function IntroPanel({ terms }: { terms: ArcoSlaTerms }) {
       <div className="flex flex-col gap-5 md:flex-row md:items-start md:gap-8">
         <div className="min-w-0 flex-1 space-y-2">
           <Eyebrow>{t(`${NS}.intro.eyebrow`)}</Eyebrow>
-          <p className="max-w-[62ch] text-sm leading-relaxed text-fg-muted">
-            {t(`${NS}.intro.body`)}
-          </p>
           <p className="max-w-[62ch] text-sm leading-relaxed text-fg-muted">
             {t(`${NS}.intro.consequence`)}
           </p>
@@ -148,7 +183,7 @@ function AttentionBanner({
   onFocus: () => void
 }) {
   const { t } = useI18n()
-  if (overdue === 0 && urgent === 0) return null
+  const hay = overdue > 0 || urgent > 0
 
   const critical = overdue > 0
   const count = critical ? overdue : urgent
@@ -160,7 +195,11 @@ function AttentionBanner({
     .replace('{count}', String(count))
     .replace('{days}', String(ARCO_URGENT_THRESHOLD_DAYS))
 
+  // Sale con `Presence` (fundido): atender lo vencido la retira con su
+  // animación (antes `return null` la desmontaba de golpe). La entrada la
+  // pone el propio `Banner` (sube 8px), por eso aquí sin desplazamiento.
   return (
+    <Presence show={hay} direction="none">
     <Banner
       role="status"
       variant={critical ? 'danger' : 'warning'}
@@ -182,6 +221,7 @@ function AttentionBanner({
         </Button>
       </span>
     </Banner>
+    </Presence>
   )
 }
 
@@ -220,11 +260,18 @@ function RequestsTable({
 }) {
   const { t } = useI18n()
 
+  // Vacío ⇄ tabla (cambiar de pestaña o de filtro): el uno sale y el otro
+  // entra; es el mismo `CrossFade` en las dos ramas.
   if (total === 0) {
-    return <EmptyState icon={CheckCircle} title={emptyTitle} description={emptyBody} />
+    return (
+      <CrossFade swapKey={`vacio-${emptyTitle}`}>
+        <EmptyState icon={CheckCircle} title={emptyTitle} description={emptyBody} />
+      </CrossFade>
+    )
   }
 
   return (
+    <CrossFade swapKey="tabla">
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
       <Table className="min-w-full">
@@ -238,9 +285,10 @@ function RequestsTable({
             <TableHead className="px-4 py-2.5 text-right">{t(`${NS}.table.actions`)}</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        {/* Cambiar de pestaña, filtrar o paginar: las filas entran escalonadas (techo 320 ms) y las que sobran salen. */}
+        <TableBodyAnimado>
           {rows.map((row) => (
-            <TableRow
+            <TableRowAnimada
               key={row.id}
               className={cn(
                 'border-t border-border transition-colors hover:bg-surface-muted',
@@ -302,9 +350,9 @@ function RequestsTable({
                   </Link>
                 </Button>
               </TableCell>
-            </TableRow>
+            </TableRowAnimada>
           ))}
-        </TableBody>
+        </TableBodyAnimado>
       </Table>
       </div>
 
@@ -324,6 +372,7 @@ function RequestsTable({
         </div>
       )}
     </Card>
+    </CrossFade>
   )
 }
 
@@ -397,11 +446,18 @@ export default function ArcoInboxPage() {
   const updatedAgo = formatUpdatedAgo(t, lastUpdatedAt)
 
   // Primera carga: esqueleto. Los refetch posteriores no desmontan la vista.
+  // Movimiento: esqueleto → bandeja en un `CrossFade` (el mismo nodo en las
+  // dos ramas); lo que ya estaba al montarse no se anima.
   if (isLoading && requests.length === 0 && !error) {
-    return <PageSkeleton variant="list" />
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="list" />
+      </CrossFade>
+    )
   }
 
   return (
+    <CrossFade swapKey="bandeja">
     <div className="space-y-6 p-4 md:p-6">
       {/* Encabezado */}
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -424,28 +480,31 @@ export default function ArcoInboxPage() {
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          hideArrow
-          onClick={() => void refetch()}
-          disabled={isRefreshing}
-          aria-label={t('common.refresh')}
-        >
-          <ArrowClockwise
-            className={cn('mr-1.5 h-4 w-4', isRefreshing && 'animate-spin')}
-            weight="regular"
-            aria-hidden="true"
-          />
-          {t('common.refresh')}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* ¿Cómo funciona? — el cajón con el viaje de una solicitud (05-10-2026). */}
+          <ComoFuncionaArco />
+          <Button
+            variant="outline"
+            size="sm"
+            hideArrow
+            onClick={() => void refetch()}
+            disabled={isRefreshing}
+            aria-label={t('common.refresh')}
+          >
+            <ArrowClockwise
+              className={cn('mr-1.5 h-4 w-4', isRefreshing && 'animate-spin')}
+              weight="regular"
+              aria-hidden="true"
+            />
+            {t('common.refresh')}
+          </Button>
+        </div>
       </div>
 
       <IntroPanel terms={slaTerms} />
 
       {/* Error: no reemplaza la tabla — los datos viejos siguen sirviendo. */}
-      {error && (
-        <div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-danger-soft p-3">
+      <Presence show={Boolean(error)} className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-danger-soft p-3">
           <Warning className="h-5 w-5 shrink-0 text-danger" weight="fill" aria-hidden="true" />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-danger">{t(`${NS}.error.load`)}</p>
@@ -454,8 +513,7 @@ export default function ArcoInboxPage() {
           <Button variant="outline" size="sm" hideArrow onClick={() => void refetch()}>
             {t(`${NS}.error.retry`)}
           </Button>
-        </div>
-      )}
+      </Presence>
 
       <AttentionBanner
         overdue={kpis.overdue}
@@ -496,8 +554,7 @@ export default function ArcoInboxPage() {
       </div>
 
       {/* Filtro activo desde la banda de atención */}
-      {onlyAttention && (
-        <div className="flex items-center gap-2">
+      <Presence show={onlyAttention} direction="none" initial={false} className="flex items-center gap-2">
           <Badge variant="warning">{t(`${NS}.attention.cta`)}</Badge>
           <Button
             variant="ghost"
@@ -510,8 +567,7 @@ export default function ArcoInboxPage() {
           >
             {t('common.all')}
           </Button>
-        </div>
-      )}
+      </Presence>
 
       {/* Pestañas por tipo + tabla */}
       <Tabs value={activeTab} onValueChange={(v) => changeTab(v as TabValue)}>
@@ -526,7 +582,7 @@ export default function ArcoInboxPage() {
                   variant={hasOverdue ? 'destructive' : 'secondary'}
                   className="px-1.5 py-0.5 font-mono text-[11px] tabular-nums"
                 >
-                  {count}
+                  <AnimatedNumber value={count} format={(n) => String(Math.round(n))} />
                 </Badge>
                 {/* El color no puede ser la única señal (DESIGN.md §7). */}
                 {hasOverdue && (
@@ -567,5 +623,6 @@ export default function ArcoInboxPage() {
         </div>
       </Tabs>
     </div>
+    </CrossFade>
   )
 }

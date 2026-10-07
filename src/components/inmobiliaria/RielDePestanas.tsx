@@ -21,10 +21,16 @@
  * compartir y a la que se puede volver. Y la marca es EXACTA — con coincidencia
  * por prefijo, la raíz quedaría activa estando en cualquier hija, que es justo
  * el defecto que hace que un riel de pestañas deje de servir.
+ *
+ * Movimiento (sistema de Cadence): la card blanca de la activa es un
+ * `MotionIndicator` (resorte ágil) que se desliza de una lectura a otra cuando
+ * el riel sigue montado; con movimiento reducido salta.
  */
 
 import Link from 'next/link'
+import { useId } from 'react'
 import { usePathname } from 'next/navigation'
+import { MotionIndicator } from '@leasefy/cadence'
 import type { Icon } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
@@ -46,6 +52,7 @@ export interface RielDePestanasProps {
 export function RielDePestanas({ items, ariaLabel }: RielDePestanasProps) {
   const pathname = usePathname() ?? ''
   const { t } = useI18n()
+  const indicador = `${useId()}-activa`
 
   return (
     <nav aria-label={ariaLabel}>
@@ -59,13 +66,20 @@ export function RielDePestanas({ items, ariaLabel }: RielDePestanasProps) {
               href={p.href}
               aria-current={activa ? 'page' : undefined}
               className={cn(
-                'group flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-sm px-3 text-[13px] transition-colors duration-150',
+                'group relative isolate flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-sm px-3 text-[13px] transition-colors duration-fast',
                 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface-muted',
                 activa
-                  ? 'bg-surface font-medium text-fg shadow-sm'
+                  ? 'font-medium text-fg'
                   : 'text-fg-muted hover:bg-surface/60 hover:text-fg',
               )}
             >
+              {activa && (
+                <MotionIndicator
+                  layoutId={indicador}
+                  data-indicador-de-la-activa=""
+                  className="inset-0 -z-10 rounded-sm bg-surface shadow-sm"
+                />
+              )}
               <Icono
                 className={cn('h-4 w-4', activa ? 'text-primary' : 'text-fg-subtle group-hover:text-fg')}
                 weight={activa ? 'fill' : 'regular'}

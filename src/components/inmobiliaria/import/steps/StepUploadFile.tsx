@@ -28,8 +28,15 @@ import {
   TableRow,
   TableCell,
 } from '@/components/ui/table';
-import { parseSpreadsheetFile, downloadTemplate } from '../lib/parseFile';
+import { parseSpreadsheetFile, downloadTemplate, leerPrimerasFilasDeCadaHoja } from '../lib/parseFile';
+import { fraseDeFilasDeTotales } from '@/lib/migracion/fila-de-totales';
+import {
+  elegirDondeEstaLaTabla,
+  elegirFilaDeEncabezado,
+  fraseDeDondeSeLeyo,
+} from '@/lib/migracion/donde-esta-la-tabla';
 import { autoMapColumns } from '../lib/columnMapping';
+import { ElegirDondeEstaLaTabla } from '@/components/migracion/ElegirDondeEstaLaTabla';
 import type { ImportStepProps } from '../ImportWizard';
 
 /**
@@ -65,12 +72,56 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
   const [parseError, setParseError] = useState<string | null>(null);
   const [rowWarning, setRowWarning] = useState<string | null>(null);
 
-  const processFile = useCallback(async (file: File, sheetName?: string) => {
+  const [dondeSeLeyo, setDondeSeLeyo] = useState<string | null>(null);
+  /** QA-MIGRACION-95 (MP-06): la fila de los encabezados leída y las de arriba, para elegir otra. */
+  const [filaDeEncabezado, setFilaDeEncabezado] = useState<{ fila: number; primerasFilas: string[][] } | null>(null);
+
+  /** `filaElegida`: la fila de los encabezados que eligió la persona (con `sheetName`). */
+  const processFile = useCallback(async (file: File, sheetName?: string, filaElegida?: number) => {
     setIsParsing(true);
     setParseError(null);
     setRowWarning(null);
+    setDondeSeLeyo(null);
     try {
-      const result = await parseSpreadsheetFile(file, sheetName);
+      /*
+       * En qué hoja y fila empieza la tabla (QA-MIG-A, MG-15): con el título
+       * «REPORTE DE INMUEBLES EN ARRIENDO» en A1, esa celda se mapeaba como
+       * «Canon» y el CÓDIGO de cada inmueble entraba como su canon. Cuenta
+       * sólo lo reconocido con certeza (nivel 1), no el parecido de letras.
+       */
+      const puntuar = (celdas: string[]) =>
+        autoMapColumns(celdas).filter((m) => m.targetField && m.confidence >= 0.9).length;
+      let hoja = sheetName;
+      let fila = 0;
+      setFilaDeEncabezado(null);
+      try {
+        const porHoja = await leerPrimerasFilasDeCadaHoja(file, 15);
+        if (sheetName) {
+          fila =
+            filaElegida ??
+            elegirFilaDeEncabezado(porHoja.find((h) => h.hoja === sheetName)?.filas ?? [], puntuar);
+        } else {
+          const donde = elegirDondeEstaLaTabla(porHoja, puntuar);
+          hoja = donde.hoja;
+          fila = donde.fila;
+        }
+        const hojaLeida = hoja ?? porHoja[0]?.hoja;
+        setFilaDeEncabezado({
+          fila,
+          primerasFilas: porHoja.find((h) => h.hoja === hojaLeida)?.filas ?? [],
+        });
+      } catch {
+        // Si la exploración falla, se lee como siempre: A1 de la hoja pedida.
+      }
+      const result = await parseSpreadsheetFile(file, hoja, { filaDeEncabezado: fila });
+      setDondeSeLeyo(
+        [
+          fraseDeDondeSeLeyo({ hoja: sheetName ? undefined : hoja, fila }),
+          fraseDeFilasDeTotales(result.filasDeTotales ?? []),
+        ]
+          .filter(Boolean)
+          .join(' ') || null,
+      );
 
       if (result.rows.length === 0) {
         setParseError('El archivo está vacío o no tiene datos válidos');
@@ -90,7 +141,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
         rawRows: result.rows,
         headers: result.headers,
         sheetNames: result.sheetNames,
-        selectedSheet: sheetName || result.sheetNames[0] || '',
+        selectedSheet: hoja || result.sheetNames[0] || '',
         columnMappings,
       });
     } catch (err) {
@@ -150,6 +201,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
   const soltarArchivo = useCallback(() => {
     setParseError(null);
     setRowWarning(null);
+    setFilaDeEncabezado(null);
     updateState({
       file: null,
       fileName: '',
@@ -202,6 +254,30 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
         </div>
       )}
 
+      {/* QA-MIGRACION-95 (MP-06): la hoja se elige arriba; la fila de los
+          encabezados, acá, por si se adivinó mal. */}
+      {state.file && filaDeEncabezado && !isParsing ? (
+        <ElegirDondeEstaLaTabla
+          soloLaFila
+          donde={{
+            hojas: state.sheetNames,
+            hoja: state.selectedSheet,
+            fila: filaDeEncabezado.fila,
+            primerasFilas: filaDeEncabezado.primerasFilas,
+          }}
+          onElegirHoja={handleSheetChange}
+          onElegirFila={(fila) => {
+            if (state.file) void processFile(state.file, state.selectedSheet, fila);
+          }}
+        />
+      ) : null}
+
+      {hasFile && dondeSeLeyo ? (
+        <p className="text-caption text-fg-muted" data-testid="donde-se-leyo">
+          {dondeSeLeyo}
+        </p>
+      ) : null}
+
       {/*
         Con archivo: una tarjeta, no la zona de arrastre. La zona dejaba el
         archivo puesto sin forma de quitarlo — sólo de reemplazarlo, y sólo si
@@ -234,7 +310,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
         <div
           {...getRootProps()}
           className={cn(
-            'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all duration-200',
+            'border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors duration-base',
             isDragActive
               ? 'border-primary/30 bg-primary-soft'
               : 'border-border dark:border-border-strong hover:border-primary/30 dark:hover:border-primary/30 hover:bg-surface-muted dark:hover:bg-ink'

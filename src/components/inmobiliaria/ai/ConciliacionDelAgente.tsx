@@ -41,18 +41,21 @@ import {
   CaretRight,
   Robot,
 } from '@phosphor-icons/react';
+import { SegmentedControl, Badge, Presence } from '@leasefy/cadence';
+// El Dialog del ADAPTADOR local (z del panel y la ✕ del producto), no el de Cadence pelado.
 import {
-  SegmentedControl,
-  Badge,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@leasefy/cadence';
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
@@ -72,6 +75,7 @@ import {
   type ConciliacionQueueItem,
   type IngestBank,
 } from '@/lib/hooks/conciliacion/use-conciliacion-queue';
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 
 // ── Summary card config ─────────────────────────────────────────────────────
 
@@ -112,7 +116,7 @@ function itemCaso(item: ConciliacionQueueItem): string {
 
 /** Format COP amounts */
 function fmtCop(val: number): string {
-  return new Intl.NumberFormat('es-CO', {
+  return plataEnPantalla('es-CO', {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,
@@ -135,14 +139,27 @@ function fmtDate(iso: string | null): string {
 
 // ── Reject dialog ───────────────────────────────────────────────────────────
 
+/** Lo que devuelve el rechazo: si el back lo confirmó y, si no, el error entero. */
+interface ResultadoDelRechazo {
+  ok: boolean;
+  fallo?: unknown;
+}
+
 interface RejectDialogProps {
   /** `null` = cerrado. Antes el padre lo montaba con `{rejectTarget && …}`. */
   matchId: string | null;
-  onConfirm: (reason: string) => void;
+  /**
+   * Manda el rechazo. El diálogo se queda abierto hasta que el back lo
+   * confirme: si falla, el motivo escrito sigue ahí y el error se ve.
+   */
+  onConfirm: (reason: string) => Promise<ResultadoDelRechazo>;
   onCancel: () => void;
   t: (k: string) => string;
   busy: boolean;
 }
+
+/** El id del motivo: el foco y el `aria-describedby` de su error. */
+const ID_DEL_MOTIVO = 'rechazo-del-cruce-motivo';
 
 /**
  * El envoltorio: sólo es dueño del `Dialog`.
@@ -155,6 +172,13 @@ interface RejectDialogProps {
  * desmonta al terminar la salida, así que la próxima vez el textarea abre
  * vacío —como cuando el padre lo remontaba— pero sin vaciarse a la vista
  * mientras el diálogo se va.
+ *
+ * 02-10-2026 · Y no se va hasta que el back confirme. Antes se cerraba al
+ * apretar «Rechazar», ANTES de mandar: si el micro decía que no, el motivo
+ * escrito se perdía y el error quedaba en un toast detrás de una pantalla que
+ * ya no tenía el diálogo. Ahora se queda abierto con el botón ocupado; si
+ * falla, el motivo sigue ahí y el error se ve en el diálogo: bajo el motivo si
+ * es de ese campo, y si no, la frase del traductor.
  */
 function RejectDialog({ matchId, onConfirm, onCancel, t, busy }: RejectDialogProps) {
   return (
@@ -176,32 +200,74 @@ function CuerpoDelRechazo({
   busy,
 }: Omit<RejectDialogProps, 'matchId'>) {
   const [reason, setReason] = useState('');
+  /** Lo que el micro dijo del motivo (un 400 con `campos`): va debajo del motivo. */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
+  /** Lo demás (un 409, un 5xx con su referencia, la red), por el traductor. */
+  const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
   const k = (s: string) => `inmobiliaria.conciliacion.${s}`;
 
+  async function confirmar() {
+    const motivo = reason.trim();
+    if (!motivo || busy) return;
+    setErrorDelMotivo(null);
+    setErrorGeneral(null);
+    const resultado = await onConfirm(motivo);
+    if (resultado.ok) return;
+    const reparto = repartirErroresDelServidor<'reason'>(resultado.fallo, {
+      campos: ['reason'],
+      porDefecto: 'No se pudo rechazar el cruce.',
+      accion: 'rechazar el cruce',
+    });
+    setErrorDelMotivo(reparto.porCampo.reason ?? null);
+    setErrorGeneral(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null);
+    if (reparto.porCampo.reason) {
+      requestAnimationFrame(() => document.getElementById(ID_DEL_MOTIVO)?.focus());
+    }
+  }
+
   return (
-    <DialogContent className="max-w-sm">
+    <DialogContent variant="destructive" icon={<XCircle weight="bold" />} size="sm">
         <DialogHeader>
           <DialogTitle>{t(k('rejectDialogTitle'))}</DialogTitle>
           <DialogDescription>{t(k('rejectDialogDesc'))}</DialogDescription>
         </DialogHeader>
-        <Textarea
-          className="h-24 resize-none"
-          placeholder={t(k('rejectReasonPlaceholder'))}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          aria-label={t(k('rejectReasonPlaceholder'))}
-        />
+        <div className="space-y-1.5">
+          <Textarea
+            id={ID_DEL_MOTIVO}
+            className="h-24 resize-none"
+            placeholder={t(k('rejectReasonPlaceholder'))}
+            value={reason}
+            onChange={(e) => {
+              setReason(e.target.value);
+              setErrorDelMotivo(null);
+            }}
+            aria-label={t(k('rejectReasonPlaceholder'))}
+            {...(errorDelMotivo
+              ? { 'aria-describedby': `${ID_DEL_MOTIVO}-error`, 'aria-invalid': true as const }
+              : {})}
+          />
+          <ErrorDelCampo id={`${ID_DEL_MOTIVO}-error`} mensaje={errorDelMotivo} className="mt-0" />
+          <Presence
+            as="p"
+            show={Boolean(errorGeneral)}
+            role="alert"
+            className="text-caption text-danger"
+            data-testid="rechazo-del-cruce-error"
+          >
+            {errorGeneral}
+          </Presence>
+        </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onCancel} disabled={busy} hideArrow>
+          <Button variant="outline" onClick={onCancel} disabled={busy} hideArrow>
             {t(k('cancel'))}
           </Button>
           <Button
             variant="destructive"
-            onClick={() => { if (reason.trim()) onConfirm(reason.trim()); }}
+            onClick={() => void confirmar()}
             disabled={!reason.trim() || busy}
             isLoading={busy}
             hideArrow
-            className="gap-1.5"
+            data-testid="rechazo-del-cruce-confirmar"
           >
             {t(k('rejectConfirm'))}
           </Button>
@@ -334,22 +400,33 @@ export function ConciliacionDelAgente() {
     if (result.ok) {
       toast.success(t(k('toastConfirmed')));
     } else {
-      toast.error(t(k('toastActionError')), { description: result.error });
+      // La descripción dice qué pasó, con la regla de oro (antes: el código
+      // del micro o el status crudo).
+      toast.error(t(k('toastActionError')), {
+        description: mensajeParaLaPersona(result.fallo, {
+          porDefecto: 'No se pudo confirmar el cruce.',
+          accion: 'confirmar el cruce',
+        }),
+      });
     }
   }
 
-  async function handleRejectSubmit(reason: string) {
-    if (!rejectTarget) return;
+  /**
+   * El diálogo se queda abierto (y ocupado) hasta que el back confirme. Si
+   * falla, NO se cierra: el motivo escrito sigue ahí y el diálogo dice qué
+   * pasó (`CuerpoDelRechazo`).
+   */
+  async function handleRejectSubmit(reason: string): Promise<ResultadoDelRechazo> {
+    if (!rejectTarget) return { ok: false };
     const matchId = rejectTarget;
-    setRejectTarget(null);
     setBusyRow(matchId);
     const result = await rejectMatch(matchId, reason);
     setBusyRow(null);
     if (result.ok) {
+      setRejectTarget(null);
       toast.success(t(k('toastRejected')));
-    } else {
-      toast.error(t(k('toastActionError')), { description: result.error });
     }
+    return result;
   }
 
   async function handleReverse(matchId: string) {
@@ -359,7 +436,12 @@ export function ConciliacionDelAgente() {
     if (result.ok) {
       toast.success(t(k('toastReversed')));
     } else {
-      toast.error(t(k('toastActionError')), { description: result.error });
+      toast.error(t(k('toastActionError')), {
+        description: mensajeParaLaPersona(result.fallo, {
+          porDefecto: 'No se pudo revertir el cruce.',
+          accion: 'revertir el cruce',
+        }),
+      });
     }
   }
 
@@ -386,7 +468,12 @@ export function ConciliacionDelAgente() {
         }),
       });
     } else {
-      toast.error(t(k('uploadError')), { description: result.error });
+      toast.error(t(k('uploadError')), {
+        description: mensajeParaLaPersona(result.fallo, {
+          porDefecto: 'El agente no recibió el extracto.',
+          accion: 'cargar el extracto',
+        }),
+      });
     }
   }
 

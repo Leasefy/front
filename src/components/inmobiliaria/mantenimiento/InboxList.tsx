@@ -17,6 +17,7 @@
 import { Wrench } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/lib/i18n'
+import { Stagger, StaggerItem } from '@leasefy/cadence'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import type { MaintenanceTicketCard } from '@/lib/types/mantenimiento'
 import { TicketCard } from './TicketCard'
@@ -113,11 +114,15 @@ export function InboxList({
       <div role="status" aria-live="polite" className="sr-only">
         {`${sorted.length} · ${t('inmobiliaria.ai.mantenimiento.inbox.sortedByScore')}`}
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" data-testid="inbox-list">
+      {/* Los tickets entran escalonados (techo de 320 ms) al llegar y al
+          filtrar; los que sobran salen y los demás se acomodan. */}
+      <Stagger className="grid grid-cols-1 lg:grid-cols-2 gap-4" data-testid="inbox-list">
         {sorted.map((ticket) => (
-          <TicketCard key={ticket.id} ticket={ticket} onSelect={onSelect} />
+          <StaggerItem key={ticket.id} className="flex [&>*]:w-full">
+            <TicketCard ticket={ticket} onSelect={onSelect} />
+          </StaggerItem>
         ))}
-      </div>
+      </Stagger>
     </div>
   )
 }

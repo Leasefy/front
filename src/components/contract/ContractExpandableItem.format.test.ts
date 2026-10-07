@@ -13,7 +13,7 @@ describe('formatCanon', () => {
   })
 
   it('formatea un canon real', () => {
-    expect(formatCanon(1200000)).toBe('$ 1.200.000')
+    expect(formatCanon(1200000)).toBe('$\u00a01.200.000')
   })
 })
 

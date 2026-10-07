@@ -20,7 +20,7 @@
  */
 
 import * as React from 'react';
-import { SegmentedControl } from '@leasefy/cadence';
+import { Appear, SegmentedControl } from '@leasefy/cadence';
 import { Funnel, X } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
@@ -149,7 +149,8 @@ export function FiltrosDelEstado({
           value={conFechas ? 'fechas' : opcion}
           onValueChange={(v) => elegirPeriodo(v as OpcionDePeriodo)}
         >
-          <SelectTrigger className="w-auto max-w-[220px] gap-2" data-testid="filtro-periodo">
+          {/* QA-PROP-95 G-14: el nombre del control (axe «button-name»). */}
+          <SelectTrigger className="w-auto max-w-[220px] gap-2" data-testid="filtro-periodo" aria-label={`Período: ${etiquetaDelPeriodo}`}>
             <span className="truncate">{etiquetaDelPeriodo}</span>
           </SelectTrigger>
           <SelectContent>
@@ -163,8 +164,9 @@ export function FiltrosDelEstado({
           </SelectContent>
         </Select>
 
+        {/* Las fechas exactas y «Limpiar» ENTRAN con un fundido al aparecer. */}
         {conFechas && (
-          <>
+          <Appear as="span" direction="none" className="flex flex-wrap items-center gap-3">
             <Input
               type="date"
               value={filtros.desde}
@@ -186,7 +188,7 @@ export function FiltrosDelEstado({
               className="w-[10.5rem]"
               data-testid="filtro-hasta"
             />
-          </>
+          </Appear>
         )}
 
         {contratos.length > 1 && (
@@ -194,7 +196,11 @@ export function FiltrosDelEstado({
             value={filtros.contrato || 'all'}
             onValueChange={(v) => onCambiar({ ...filtros, contrato: v === 'all' ? '' : v })}
           >
-            <SelectTrigger className="w-auto max-w-[200px] gap-2" data-testid="filtro-contrato">
+            <SelectTrigger
+              className="w-auto max-w-[200px] gap-2"
+              data-testid="filtro-contrato"
+              aria-label={`Contrato: ${filtros.contrato ? t('estadoDeCuenta.contrato', { numero: filtros.contrato }) : t('estadoDeCuenta.todosLosContratos')}`}
+            >
               <span className="truncate">
                 {filtros.contrato
                   ? t('estadoDeCuenta.contrato', { numero: filtros.contrato })
@@ -213,6 +219,7 @@ export function FiltrosDelEstado({
         )}
 
         {activos && (
+          <Appear as="span" direction="none" className="inline-flex">
           <Button
             variant="link"
             size="sm"
@@ -228,6 +235,7 @@ export function FiltrosDelEstado({
             {t('estadoDeCuenta.limpiar')}
             <X className="w-3.5 h-3.5" />
           </Button>
+          </Appear>
         )}
 
         {/* «N de M»: las filas que quedan contra las del documento entero. */}

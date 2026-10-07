@@ -143,3 +143,42 @@ describe('Invitación — A5: rechazar', () => {
     expect(h.toastError).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * 02-10-2026 · Aceptar la invitación con el sistema de errores. Antes se
+ * pintaba `err.message` crudo («Error interno del servidor.», «Failed to fetch»).
+ */
+describe('Invitación — aceptar con la regla de oro', () => {
+  it('🔴 un 5xx dice que fue nuestro, con la referencia, y no culpa a la conexión', async () => {
+    conEstado({ status: 'valid', invitation: INVITACION });
+    h.post.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
+    );
+    await montar();
+
+    await clic(botonConTexto('Aceptar invitación'));
+
+    const texto = container.textContent ?? '';
+    expect(texto).toMatch(/No pudimos aceptar la invitación: algo falló de nuestro lado/);
+    expect(texto).toContain('ab12cd34');
+    expect(texto).not.toMatch(/conexi[oó]n/);
+    expect(texto).not.toContain('Error interno del servidor.');
+  });
+
+  it('un 409 dice lo que mandó el back', async () => {
+    conEstado({ status: 'valid', invitation: INVITACION });
+    h.post.mockRejectedValue(new ApiError(409, 'Esta invitación ya fue usada.', 'INVITACION_USADA'));
+    await montar();
+    await clic(botonConTexto('Aceptar invitación'));
+    expect(container.textContent).toContain('Esta invitación ya fue usada.');
+  });
+
+  it('sin respuesta (la red): ahí sí se habla de la conexión', async () => {
+    conEstado({ status: 'valid', invitation: INVITACION });
+    h.post.mockRejectedValue(new TypeError('Failed to fetch'));
+    await montar();
+    await clic(botonConTexto('Aceptar invitación'));
+    expect(container.textContent).toMatch(/conexión/);
+    expect(container.textContent).not.toContain('Failed to fetch');
+  });
+});

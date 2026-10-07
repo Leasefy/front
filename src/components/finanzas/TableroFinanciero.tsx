@@ -22,9 +22,11 @@
  * 3. **Sumar la deuda con la cartera.** El back manda `cartera.totalCop` y sus
  *    tramos: son la cartera, lo que ya pasó el plazo. La deuda del contrato
  *    —que es 12,9 veces más grande— vive en `/pagos/cartera` y no se mezcla.
- * 4. **Callar qué parte de la cartera está en siniestro.** Está adentro del
- *    total y se dice aparte: ya no la persigue la cobranza, la reclama la
- *    aseguradora.
+ * 4. **Callar qué parte de la cartera está en siniestro.** El back la saca
+ *    del total y de los tramos (`carteraDelTablero`) y se dice APARTE: ya no
+ *    la persigue la cobranza, la reclama la aseguradora. (CONSISTENCIA,
+ *    04-10-2026: el pie decía «De eso, $104 M está en siniestro» debajo de
+ *    una cartera de $102 M.)
  * 5. **Dejar una cifra sin definición.** Cada una dice qué mide, debajo.
  */
 
@@ -43,11 +45,18 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { FIJAR_EL_PLAZO_HREF } from '@/lib/api/cobranza-secuencia.types';
 import { finanzasApi } from '@/lib/api/finanzas.service';
 import type { TableroFinanciero as Tablero, TramoDeCartera } from '@/lib/api/finanzas.types';
 import { mesActual, nombreDelMes } from '@/lib/recaudo/meses';
-import { SIN_MEDIR, textoDeTasa } from '@/lib/tasas';
+import {
+  definicionDePorGirar,
+  rotuloDePorGirar,
+  rotuloDeProximosGiros,
+} from '@/lib/propietarios/por-girar';
+import { SIN_MEDIR, tasaEnPantalla } from '@/lib/tasas';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 
 const NUMERO = new Intl.NumberFormat('es-CO');
 
@@ -89,8 +98,28 @@ export function definicionDelTramo(
  */
 export function textoDeLaVariacion(variacionPct: number | null): string {
   if (variacionPct === null || !Number.isFinite(variacionPct)) return SIN_MEDIR;
-  const signo = variacionPct > 0 ? '+' : '';
-  return `${signo}${variacionPct.toFixed(1)}%`;
+  // TB-04: «+4,2 %» como se escribe en Colombia (antes «+4.2%»).
+  return tasaEnPantalla(variacionPct, 1, { conSigno: true });
+}
+
+/**
+ * 🔴 N-06 (QA-PAGOS-95, 05-10-2026): «% recaudado 9,7 %» al lado de «Entró en
+ * el mes $ 31.191.000» y «Se debe del mes $ 162.341.531» no se podía rehacer
+ * (31,2 ÷ 162,3 = 19,2 %): el porcentaje mide lo que entró a las cuotas DEL
+ * MES, no la caja del mes. Con el numerador del back, la tarjeta dice cuánto
+ * de cuánto y por qué no es lo de «Entró en el mes».
+ */
+export function definicionDeLaTasa(
+  recaudo: Tablero['recaudo'],
+  mes: string,
+  base: string,
+): string {
+  if (recaudo.abonadoDelMesCop == null) return `Qué parte de ${base} llegó. ${recaudo.rotulo}`;
+  const deQue = recaudo.base === 'EMITIDO' ? 'de los cobros emitidos de' : 'de las cuotas de';
+  return (
+    `${formatCurrency(recaudo.abonadoDelMesCop)} de ${formatCurrency(recaudo.causadoDelMesCop)} ` +
+    `${deQue} ${nombreDelMes(mes)} ya entraron. No es lo de «Entró en el mes»: ése cuenta también lo que se pagó de otros meses.`
+  );
 }
 
 export function TableroFinancieroPanel() {
@@ -187,7 +216,8 @@ export function TableroFinancieroPanel() {
             <BloqueDeMargen tablero={tablero} />
 
             <p className="text-caption text-fg-muted">
-              Datos al {tablero.hoy} (hora de Bogotá).{' '}
+              {/* PG-13 (03-10-2026): la fecha de la casa, no «2026-10-03». */}
+              Datos al {fechaLarga(tablero.hoy)} (hora de Bogotá).{' '}
               {tablero.sedeId === null
                 ? 'Consolidado de todas las sedes.'
                 : `Sólo la sede ${sedes.find((s) => s.id === tablero.sedeId)?.nombre ?? tablero.sedeId}.`}
@@ -219,7 +249,7 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
           id="recaudo-del-dia"
           etiqueta="Entró hoy"
           valor={recaudo.delDiaCop}
-          definicion={`Los recibos de caja con fecha ${tablero.hoy}, de cualquier período.`}
+          definicion={`Los recibos de caja con fecha ${fechaLarga(tablero.hoy)}, de cualquier período.`}
         />
         <Cifra
           id="recaudo-del-mes"
@@ -236,17 +266,19 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
         <CifraDeTexto
           id="tasa-de-recaudo"
           etiqueta="% recaudado"
-          texto={textoDeTasa(recaudo.tasaPct)}
-          definicion={`Qué parte de ${base} llegó. ${recaudo.rotulo}`}
+          texto={tasaEnPantalla(recaudo.tasaPct)}
+          definicion={definicionDeLaTasa(recaudo, tablero.mes, base)}
           pie={
             <span data-testid="comparacion-mes-anterior">
               {conMayusculaInicial(nombreDelMes(recaudo.mesAnterior.mes))}:{' '}
-              {formatCurrency(recaudo.mesAnterior.recaudadoCop)} de{' '}
-              {formatCurrency(recaudo.mesAnterior.causadoCop)} ({textoDeTasa(recaudo.mesAnterior.tasaPct)}
+              {/* N-06: con el numerador del back, el mismo con que se sacó su %. */}
+              {formatCurrency(recaudo.mesAnterior.abonadoCop ?? recaudo.mesAnterior.recaudadoCop)} de{' '}
+              {formatCurrency(recaudo.mesAnterior.causadoCop)} ({tasaEnPantalla(recaudo.mesAnterior.tasaPct)}
               ). Variación del recaudo:{' '}
               <span data-testid="variacion-del-recaudo">{textoDeLaVariacion(recaudo.variacionPct)}</span>
+              {/* TB-04: un solo guion (antes «— —»: la raya de la cifra y otra delante de la frase). */}
               {recaudo.variacionPct === null
-                ? ' — el mes anterior no recaudó nada, así que no hay contra qué comparar.'
+                ? '. El mes anterior no recaudó nada, así que no hay contra qué comparar.'
                 : '.'}
             </span>
           }
@@ -275,16 +307,31 @@ function BloqueDeCartera({ tablero }: { tablero: Tablero }) {
           </Link>
         }
       />
+      {cartera.plazoSinFijar && (
+        <p
+          className="rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-fg"
+          data-testid="cartera-plazo-sin-fijar"
+        >
+          La cartera está en cero porque esta inmobiliaria todavía no fijó sus días de plazo: sin
+          plazo, lo vencido se ve como «Vencida», no corre mora y no entra a la cobranza.{' '}
+          <Link
+            href={FIJAR_EL_PLAZO_HREF}
+            className="font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Fijar los días de plazo
+          </Link>
+        </p>
+      )}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <Cifra
           id="cartera-total"
           etiqueta="Cartera"
           valor={cartera.totalCop}
-          definicion="Todo el capital que pasó el plazo, siniestros incluidos. La suma de los tramos de al lado."
+          definicion="El capital que pasó el plazo y todavía persigue la cobranza. Es la suma de los tramos de al lado; lo que está en siniestro va aparte."
           tono="warning"
           pie={
             <span data-testid="cartera-en-siniestro">
-              De eso, {formatCurrency(cartera.enSiniestroCop)} está en siniestro: lo reclama la
+              Aparte, {formatCurrency(cartera.enSiniestroCop)} en siniestro: lo reclama la
               aseguradora, no la cobranza.
             </span>
           }
@@ -367,13 +414,27 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
           </Link>
         }
       />
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        {/* 🔴 «Por girar» → UNA sola cifra: hasta el mes EN CURSO, aunque el
+            tablero mire otro mes (Nico, 04-10-2026). La manda el back con la
+            misma función de las otras pantallas. */}
         <Cifra
           id="por-girar"
-          etiqueta="Por girar"
+          etiqueta={rotuloDePorGirar(propietarios.porGirarHastaMes ?? tablero.mes)}
           valor={propietarios.porGirarCop}
-          definicion="Neto liquidado que todavía no entró a ningún lote: se le debe al propietario y no ha salido."
+          definicion={definicionDePorGirar(propietarios.porGirarHastaMes ?? tablero.mes)}
         />
+        {propietarios.proximosGiros && (
+          <Cifra
+            id="proximos-giros"
+            etiqueta={rotuloDeProximosGiros(
+              propietarios.proximosGiros.desdeMes,
+              propietarios.proximosGiros.hastaMes,
+            )}
+            valor={propietarios.proximosGiros.totalCop}
+            definicion="Lo de los meses siguientes al mes en curso. Va aparte: todavía no se debe girar y no se suma a «Por girar»."
+          />
+        )}
         <Cifra
           id="retenido"
           etiqueta="Retenido"
@@ -389,9 +450,9 @@ function BloqueDePropietarios({ tablero }: { tablero: Tablero }) {
         />
         <Cifra
           id="girado-del-mes"
-          etiqueta="Girado en el mes"
+          etiqueta={`Girado en ${nombreDelMes(tablero.mes)}`}
           valor={propietarios.giradoDelMesCop}
-          definicion="Lo que salió al banco en lotes marcados como pagados dentro del mes."
+          definicion="Lo que salió al banco ese mes, por el día en que salió: lotes marcados como pagados y dispersiones procesadas una a una. Es el mismo «Dispersado» de Recaudo."
           tono="success"
         />
       </div>
@@ -467,7 +528,7 @@ function BloqueDeMargen({ tablero }: { tablero: Tablero }) {
             <span data-testid="margen-pct">
               {margen.margenPct === null
                 ? `${SIN_MEDIR} sobre ingresos: no hubo ingresos propios contra los cuales medirlo.`
-                : `${textoDeTasa(margen.margenPct)} de los ingresos propios.`}
+                : `${tasaEnPantalla(margen.margenPct)} de los ingresos propios.`}
             </span>
           }
         />

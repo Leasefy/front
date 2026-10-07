@@ -13,7 +13,7 @@ import { agentFetch } from '@/lib/api/agent-fetch'
 import { useCallDetail } from '@/lib/hooks/cobranza/use-call-detail'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { Button } from '@/components/ui'
-import { Badge } from '@leasefy/cadence'
+import { Badge, CrossFade } from '@leasefy/cadence'
 import CallAudioPlayer from '@/components/inmobiliaria/cobranza/call/CallAudioPlayer'
 import CallTranscript from '@/components/inmobiliaria/cobranza/call/CallTranscript'
 import CallQAPanel from '@/components/inmobiliaria/cobranza/call/CallQAPanel'
@@ -157,12 +157,21 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
   }, [isExportingTranscript, data, agencyId, callId])
 
   // -------- Loading skeleton (Phase 38-05a: PageSkeleton primitive, detail variant) --------
-  if (isLoading && !data) return <PageSkeleton variant="detail" />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // llamada, → fallo, → vacío); lo que ya estaba al montarse no se anima.
+  if (isLoading && !data) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="detail" />
+      </CrossFade>
+    )
+  }
 
 
   // -------- Error --------
   if (error && !data) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="p-6 lg:p-8">
         <div className="rounded-lg border border-danger/30 bg-danger-soft p-6 max-w-xl">
           <p className="text-sm text-danger font-medium">
@@ -183,17 +192,20 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
           </Button>
         </div>
       </div>
+      </CrossFade>
     )
   }
 
   // -------- Empty (no data) --------
   if (!data) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="p-6 lg:p-8">
         <p className="text-sm text-fg-muted">
           {t('inmobiliaria.ai.cobranza.call.empty')}
         </p>
       </div>
+      </CrossFade>
     )
   }
 
@@ -204,6 +216,7 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
   const overallPct = data.qa.overall == null ? null : Math.round(data.qa.overall)
 
   return (
+    <CrossFade swapKey="llamada">
     <div className="p-6 lg:p-8 space-y-6">
       {/* Header */}
       <header className="space-y-3">
@@ -348,5 +361,6 @@ export default function CallDetailClient({ callId }: CallDetailClientProps) {
         </aside>
       </div>
     </div>
+    </CrossFade>
   )
 }

@@ -17,17 +17,19 @@
  */
 
 import Link from 'next/link'
+import { Presence } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { toDebtorRef } from '@/lib/hooks/cobranza/compliance-entries'
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
 } from '@/components/ui/table'
 
 const CASOS_HREF = '/panel/inmobiliaria/pagos/cobranza/deudores'
@@ -38,10 +40,15 @@ export function CobranzaDeudoresQuePesan() {
   const { data, isLoading } = useDailyReport()
 
   const deudores = (data?.top_debtors ?? []).slice(0, TOP_N)
-  if (isLoading || deudores.length === 0) return null
 
+  // El reporte llega después del resto del panorama: la tarjeta entra con su
+  // animación (`Presence`) en vez de aparecer de golpe al lado del embudo.
+  // Sin datos sigue sin montarse (Presence no pinta nada).
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
+    <Presence
+      show={!isLoading && deudores.length > 0}
+      className="rounded-lg border border-border bg-card overflow-hidden"
+    >
       <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-fg">Los que más pesan</h3>
         <Link
@@ -64,9 +71,9 @@ export function CobranzaDeudoresQuePesan() {
             </TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody>
+        <TableBodyAnimado>
           {deudores.map((d) => (
-            <TableRow key={d.debtor_id}>
+            <TableRowAnimada key={d.debtor_id}>
               {/*
                 El nombre, y sólo si no viene, la referencia. Esta columna
                 mostraba `A9820375` —los primeros ocho caracteres del UUID—
@@ -94,10 +101,10 @@ export function CobranzaDeudoresQuePesan() {
               <TableCell numeric className="font-mono">
                 {formatCurrency(d.balance_cop)}
               </TableCell>
-            </TableRow>
+            </TableRowAnimada>
           ))}
-        </TableBody>
+        </TableBodyAnimado>
       </Table>
-    </div>
+    </Presence>
   )
 }

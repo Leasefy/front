@@ -47,7 +47,8 @@ vi.mock('@/components/procesos/descargar-archivo-del-proceso', () => ({
   descargarArchivoDelProceso: descargar,
 }))
 
-import { InformeDeFacturacion } from './InformeDeFacturacion'
+import { InformeDeFacturacion, mensajeDelFalloDeEmision } from './InformeDeFacturacion'
+import { ApiError } from '@/lib/api/client'
 import type { ResultadoDeLaCorrida } from './facturasPorTandas'
 
 function corrida(cuantas: number, procesosConZip: string[] = []): ResultadoDeLaCorrida {
@@ -167,5 +168,39 @@ describe('<InformeDeFacturacion> — la descarga del lote', () => {
     expect(procesos.ver).toHaveBeenCalledTimes(1)
     expect(abrir).toHaveBeenCalledWith({ procesoId: 'proc-tanda' })
     expect(descargar).not.toHaveBeenCalled()
+  })
+})
+
+/*
+ * 02-10-2026 · Los fallos de la emisión y de la descarga, con la regla de oro:
+ * un 5xx dice «de nuestro lado» con la referencia de soporte (antes salía el
+ * `message` crudo, «Error interno del servidor»); «conexión», sólo sin respuesta.
+ */
+describe('los fallos con la regla de oro (02-10)', () => {
+  const fallo500 = () =>
+    new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+      statusCode: 500,
+      code: 'ERROR_INTERNO',
+      message: 'Error interno del servidor',
+      referencia: 'ab12cd34',
+    })
+
+  it('🔴 mensajeDelFalloDeEmision: un 5xx dice qué no se pudo hacer, con la referencia', () => {
+    const texto = mensajeDelFalloDeEmision(fallo500())
+    expect(texto).toContain('No pudimos emitir las facturas: algo falló de nuestro lado')
+    expect(texto).toContain('ab12cd34')
+    expect(mensajeDelFalloDeEmision(new ApiError(403, 'Sólo el administrador o el contador pueden facturar.'))).toBe(
+      'Sólo el administrador o el contador pueden facturar.',
+    )
+    expect(mensajeDelFalloDeEmision(new ApiError(0, 'Failed to fetch'))).toMatch(/conexi[oó]n/)
+  })
+
+  it('🔴 bajar el ZIP con un 5xx dice «de nuestro lado» con la referencia', async () => {
+    facturacion.zipDeFacturas.mockRejectedValue(fallo500())
+    await montar(corrida(3))
+    await descargarLasFacturas()
+    const texto = toastMock.error.mock.calls.at(-1)?.[0] as string
+    expect(texto).toContain('No pudimos descargar el ZIP de las facturas: algo falló de nuestro lado')
+    expect(texto).toContain('ab12cd34')
   })
 })

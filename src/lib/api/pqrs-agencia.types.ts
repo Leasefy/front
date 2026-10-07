@@ -61,6 +61,79 @@ export interface Pqrs {
   cerradaAt: string | null;
   createdAt: string;
   updatedAt: string;
+  /** SO-24: lo que se escogió además del tipo de la Ley 1755. */
+  subtipo?: PqrsSubtipo | null;
+  /** Horas prometidas por la inmobiliaria; `null` = los 15 días hábiles de ley. */
+  slaHoras?: number | null;
+  /** Cuándo se escaló al jefe y a quién (cron de las 13:00). */
+  escaladoAt?: string | null;
+  escaladoANombre?: string | null;
+}
+
+/** SO-24: «Reparación» y «Sugerencia», con el tipo de la Ley 1755 detrás. */
+export type PqrsSubtipo = 'REPARACION' | 'SUGERENCIA';
+
+/** Por dónde le llegó la respuesta al solicitante (SO-04). */
+export type MedioDeRespuesta = 'PORTAL' | 'CORREO' | 'TELEFONO' | 'PRESENCIAL';
+export const MEDIOS_SIN_PORTAL: Exclude<MedioDeRespuesta, 'PORTAL'>[] = ['CORREO', 'TELEFONO', 'PRESENCIAL'];
+
+export type TipoDeEventoDePqrs =
+  | 'RADICADA'
+  | 'ASIGNADA'
+  | 'REASIGNADA'
+  | 'EN_PROCESO'
+  | 'EN_COTIZACION'
+  | 'RESPUESTA'
+  | 'RESUELTA'
+  | 'CERRADA'
+  | 'ESCALADA'
+  | 'ADJUNTO';
+
+export interface EventoDePqrs {
+  id: string;
+  tipo: TipoDeEventoDePqrs;
+  at: string;
+  actorUserId: string | null;
+  actorNombre: string | null;
+  aUserId: string | null;
+  aNombre: string | null;
+  texto: string | null;
+  medio: MedioDeRespuesta | null;
+}
+
+export interface AdjuntoDePqrs {
+  id: string;
+  nombre: string;
+  tipo: 'application/pdf' | 'image/jpeg' | 'image/png' | 'image/webp';
+  tamano: number;
+  subidoAt: string;
+}
+
+/** `GET /inmobiliaria/pqrs/:id` — lo que abre el cajón. */
+export interface PqrsConHistorial extends Pqrs {
+  historial: EventoDePqrs[];
+  respuesta: { texto: string; medio: MedioDeRespuesta; at: string; porNombre: string | null } | null;
+  adjuntos: AdjuntoDePqrs[];
+  /** ¿Quien la radicó lee la respuesta en su portal? Sin portal se escoge el medio. */
+  tienePortal: boolean;
+  historialDisponible: boolean;
+  /** PI-28: su solicitud en Mantenimiento (una reparación); `null` si no tiene. Ausente con un back anterior. */
+  mantenimiento?: MantenimientoDeLaPqrs | null;
+}
+
+/** PI-28: la solicitud de Mantenimiento de una reparación radicada como PQRS. */
+export interface MantenimientoDeLaPqrs {
+  id: string;
+  titulo: string;
+  /** El estado del back (`REPORTED`, `QUOTED`, `MAINT_APPROVED`…). */
+  estado: string;
+}
+
+/** `GET /inmobiliaria/pqrs/responsables` (SO-22). */
+export interface ResponsableDePqrs {
+  userId: string;
+  nombre: string;
+  rol: string;
 }
 
 export interface ResumenPqrs {
@@ -71,6 +144,9 @@ export interface ResumenPqrs {
   enCotizacion: number;
   resueltas: number;
   cerradas: number;
+  /** SO-25: abiertas con el plazo vencido / que vencen en ≤ 2 días hábiles. */
+  vencidas: number;
+  porVencer: number;
 }
 
 export interface PqrsListResponse {
@@ -112,16 +188,23 @@ export interface CrearPqrsInput {
   descripcion?: string;
   consignacionId?: string;
   asignadoAUserId?: string;
+  subtipo?: PqrsSubtipo;
 }
 
 export interface ActualizarPqrsInput {
   estado?: PqrsEstado;
   /** `null` desasigna. */
   asignadoAUserId?: string | null;
+  /** SO-04: obligatoria para pasar a RESUELTA. */
+  respuesta?: string;
+  /** Sin portal: por dónde se le entregó. */
+  medioRespuesta?: Exclude<MedioDeRespuesta, 'PORTAL'>;
 }
 
 export const RESUMEN_PQRS_VACIO: ResumenPqrs = {
   total: 0,
+  vencidas: 0,
+  porVencer: 0,
   recibidas: 0,
   asignadas: 0,
   enProceso: 0,

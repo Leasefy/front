@@ -1,5 +1,6 @@
 'use client';
 
+import { AnimatedNumber, Presence } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { getYearlySavings } from '@/lib/constants/subscription-plans';
 import { precioLegible } from '@/lib/planes/precio-del-plan-del-propietario';
@@ -55,7 +56,7 @@ export function PricingCard({
     <Card
       className={cn(
         'p-6 flex flex-col relative text-card-foreground rounded-[20px]',
-        'transition-all duration-300 ease-out',
+        'transition-[transform,box-shadow,border-color] duration-slow ease-standard',
         plan.highlighted
           ? 'border-primary ring-1 ring-primary'
           : 'shadow-subtle hover:-translate-y-0.5 hover:shadow-elevated',
@@ -82,17 +83,28 @@ export function PricingCard({
       <div className="text-center mb-6">
         <div className="flex items-baseline justify-center gap-1">
           <span className={cn('text-3xl font-bold font-mono tabular-nums', 'text-foreground')}>
-            {price === 0 ? 'Gratis' : precioLegible(monthlyEquivalent)}
+            {/* Al cambiar entre mensual y anual, la cifra cuenta hasta la nueva. */}
+            {price === 0 ? (
+              'Gratis'
+            ) : typeof monthlyEquivalent === 'number' ? (
+              <AnimatedNumber value={monthlyEquivalent} format={precioLegible} />
+            ) : (
+              precioLegible(monthlyEquivalent)
+            )}
           </span>
           {price !== 0 && <span className="text-muted-foreground">/mes</span>}
         </div>
 
         {/* Yearly billing note */}
-        {billingCycle === 'yearly' && price !== null && price > 0 && (
-          <p className={cn('text-sm mt-1', 'text-muted-foreground')}>
-            Facturado anualmente (<span className="font-mono tabular-nums">{precioLegible(plan.price.yearly)}</span>)
-          </p>
-        )}
+        {/* Lo del plan anual entra y SALE al cambiar el ciclo. */}
+        <Presence
+          as="p"
+          show={billingCycle === 'yearly' && price !== null && price > 0}
+          distance="xs"
+          className={cn('text-sm mt-1', 'text-muted-foreground')}
+        >
+          Facturado anualmente (<span className="font-mono tabular-nums">{precioLegible(plan.price.yearly)}</span>)
+        </Presence>
 
         {/* Savings badge for yearly */}
         {billingCycle === 'yearly' && yearlySavings > 0 && (

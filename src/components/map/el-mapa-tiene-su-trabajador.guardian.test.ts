@@ -11,11 +11,18 @@
  * copia el worker a `public/`, el paquete instalado trae los archivos que se
  * copian, y cada componente que monta un mapa importa el módulo que apunta a
  * esa copia.
+ *
+ * 03-10-2026 (Nico: «el mapa no carga… se ve como gris»): un árbol que reusa
+ * `node_modules` sin `npm install` no tenía la copia. Cuarta pieza:
+ * `next.config.mjs` la asegura al cargar (`next dev`/`build`/`start`), y la
+ * función que lo hace es idempotente.
  */
 
 import { describe, expect, it } from 'vitest'
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
+import { ARCHIVOS_DEL_TRABAJADOR, asegurarElTrabajadorDeMaplibre } from '../../../scripts/copiar-trabajador-de-maplibre.mjs'
 
 function archivos(d: string, out: string[] = []): string[] {
   for (const e of readdirSync(d)) {
@@ -35,6 +42,29 @@ describe('el worker de MapLibre', () => {
   it('el paquete instalado trae los archivos que se copian', () => {
     for (const f of ['maplibre-gl-worker.mjs', 'maplibre-gl-shared.mjs']) {
       expect(existsSync(join('node_modules/maplibre-gl/dist', f)), f).toBe(true)
+    }
+  })
+
+  it('next.config.mjs lo asegura al cargar (next dev, build y start), sin tumbar el arranque', () => {
+    const config = readFileSync('next.config.mjs', 'utf8')
+    expect(config).toMatch(/import \{ asegurarElTrabajadorDeMaplibre \} from "\.\/scripts\/copiar-trabajador-de-maplibre\.mjs"/)
+    expect(config).toMatch(/try \{\s*asegurarElTrabajadorDeMaplibre\(/)
+  })
+
+  it('asegurarlo es idempotente: copia lo que falta y no reescribe lo que ya está', () => {
+    const raiz = mkdtempSync(join(tmpdir(), 'maplibre-'))
+    try {
+      writeFileSync(join(raiz, 'package.json'), '{"name":"prueba"}')
+      symlinkSync(resolve('node_modules'), join(raiz, 'node_modules'))
+      const primera = asegurarElTrabajadorDeMaplibre(raiz) as { version: string; copiados: number }
+      expect(primera.copiados).toBe(ARCHIVOS_DEL_TRABAJADOR.length)
+      for (const f of ARCHIVOS_DEL_TRABAJADOR as string[]) {
+        const copia = join(raiz, 'public', 'maplibre', primera.version, f)
+        expect(statSync(copia).size).toBe(statSync(join('node_modules/maplibre-gl/dist', f)).size)
+      }
+      expect((asegurarElTrabajadorDeMaplibre(raiz) as { copiados: number }).copiados).toBe(0)
+    } finally {
+      rmSync(raiz, { recursive: true, force: true })
     }
   })
 

@@ -25,6 +25,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   OnboardingSessionError,
+  errorDelOnboarding,
   submitAgency as submitAgencyStep,
   submitMembers as submitMembersStep,
   submitPaymentProvider as submitPaymentProviderStep,
@@ -73,6 +74,14 @@ export interface UseOnboardingSessionResult {
   error: OnboardingSessionError | null
   /** Re-runs `resumeOnboarding`. Exposed so the UI can retry after a terminal error. */
   refresh: () => Promise<void>
+  /*
+   * Las acciones de cada paso resuelven la respuesta, o `null` si el paso NO salió: nunca lanzan
+   * (los formularios y los pasos automáticos cuentan con eso). `null` no se traga el error: queda
+   * en `error`, con su `kind` (decidido por el status), `status`, `campos` y el cuerpo en
+   * `detalle`, para que lo pinte el formulario (un 400: cada problema en su campo), el banner
+   * (`OnboardingSessionErrorBanner`: un 5xx «de nuestro lado» con la referencia) o el paso
+   * automático (02-10-2026).
+   */
   submitAgency: (
     body: OnboardingSessionAgencyRequest,
   ) => Promise<OnboardingSessionAgencyResponse | null>
@@ -101,10 +110,13 @@ function wait(ms: number): Promise<void> {
   })
 }
 
+/**
+ * 02-10-2026 · Todo error llega con su status y su cuerpo (`errorDelOnboarding`, del servicio).
+ * Antes uno que no fuera un `OnboardingSessionError` quedaba `unknown`, sin status y con su
+ * `message` crudo: un 400 perdía sus `campos` y un 5xx su referencia.
+ */
 function toOnboardingSessionError(err: unknown): OnboardingSessionError {
-  if (err instanceof OnboardingSessionError) return err
-  const message = err instanceof Error ? err.message : 'Error desconocido en el onboarding.'
-  return new OnboardingSessionError('unknown', null, message)
+  return errorDelOnboarding(err)
 }
 
 async function withRetry<T>(action: () => Promise<T>): Promise<T> {

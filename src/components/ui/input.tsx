@@ -4,6 +4,7 @@ import * as React from "react"
 import { Input as DSInput } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
+import { ariaDiceInvalido } from "./campo-invalido"
 
 /**
  * ADAPTER fino sobre el Input de @leasefy/cadence.
@@ -15,6 +16,11 @@ import { cn } from "@/lib/utils"
  * Antes el adapter tipaba sus props como las de un `<input>` pelado, así que
  * pasarlas no compilaba y cada formulario terminaba dibujando su propio borde
  * rojo a mano. Van declaradas acá para que el estado del campo lo pinte el DS.
+ *
+ * 🔴 `aria-invalid` también pinta el borde (ARREGLOS-4, 03-10-2026): lo que el
+ * lector de pantalla anuncia como error se ve como error. Por eso un campo
+ * requerido VACÍO no lleva `aria-invalid` hasta que haya un error dicho (ver
+ * `campo-invalido.test.tsx`).
  */
 export interface InputProps extends React.ComponentProps<"input"> {
   /** Estado de error — borde y anillo de peligro del DS. */
@@ -24,11 +30,12 @@ export interface InputProps extends React.ComponentProps<"input"> {
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, ...props }, ref) => (
+  ({ className, invalid, ...props }, ref) => (
     <DSInput
       ref={ref}
       className={cn("h-11 px-4 text-base md:text-sm", className)}
       {...props}
+      invalid={Boolean(invalid) || ariaDiceInvalido(props["aria-invalid"])}
     />
   )
 )

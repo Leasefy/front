@@ -37,9 +37,10 @@
  * «+ Agregar» mientras el inquilino sí.
  */
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { Presence } from '@leasefy/cadence'
 import Link from 'next/link'
-import { PencilSimple, Plus, Trash, Warning } from '@phosphor-icons/react'
+import { PencilSimple, Plus, Trash, UserMinus, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -62,6 +63,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { toast } from '@/components/ui/toast'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { conRegreso } from '@/lib/nav/ruta-de-regreso'
 import { contractsApi } from '@/lib/api/contracts.service'
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service'
@@ -136,18 +140,17 @@ export function PartesDelContrato({
           </ul>
         )}
 
-        {/* La salida de un contrato migrado sin cuenta de inquilino: se
-            muestra sólo mientras `tenantId` siga null (T-0036 §3.2.B6). */}
-        {contract.tenantId === null && (
-          <div className="pt-1">
-            <InvitarInquilino
-              contract={contract}
-              puedeInvitar={puedeInvitar}
-              onActualizado={onActualizado}
-              onConflicto={onConflicto}
-            />
-          </div>
-        )}
+        {/* La invitación al portal (T-0036 §3.2.B6). 🔴 CR-08: también con la
+            cuenta vinculada —el inquilino que nunca entró: estado y «Reenviar
+            invitación»—; el componente decide con lo que dice el back. */}
+        <div className="pt-1 empty:hidden">
+          <InvitarInquilino
+            contract={contract}
+            puedeInvitar={puedeInvitar}
+            onActualizado={onActualizado}
+            onConflicto={onConflicto}
+          />
+        </div>
       </div>
     </div>
   )
@@ -202,7 +205,12 @@ function FilaDeInquilino({
       onListaNueva(lista)
       toast.success('Lo quitamos del contrato.')
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'No pudimos quitarlo.')
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos quitarlo del contrato.',
+          accion: 'quitarlo del contrato',
+        }),
+      )
     } finally {
       setQuitando(false)
     }
@@ -242,7 +250,7 @@ function FilaDeInquilino({
         ) : null}
       </div>
       <AlertDialog open={confirmando} onOpenChange={(abierto) => !quitando && setConfirmando(abierto)}>
-        <AlertDialogContent>
+        <AlertDialogContent variant="destructive" icon={<UserMinus weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Quitar a {inquilino.nombre || 'este coarrendatario'} del contrato?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -255,8 +263,7 @@ function FilaDeInquilino({
           <AlertDialogFooter>
             <AlertDialogCancel disabled={quitando}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              tone="danger"
-              disabled={quitando}
+              loading={quitando}
               data-testid="confirmar-quitar-inquilino"
               onClick={(e) => {
                 // Se queda abierto mientras quita: el cierre lo decide la respuesta.
@@ -283,6 +290,9 @@ function AgregarInquilino({
   const [abierto, setAbierto] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Lo que el back rechazó de un campo va debajo de ESE campo.
+  const [errores, setErrores] = useState<Partial<Record<CampoDelInquilino, string>>>({})
+  const formulario = useRef<HTMLDivElement | null>(null)
   const [nombre, setNombre] = useState('')
   const [documento, setDocumento] = useState('')
   const [email, setEmail] = useState('')
@@ -291,6 +301,7 @@ function AgregarInquilino({
   async function guardar() {
     setGuardando(true)
     setError(null)
+    setErrores({})
     try {
       onListaNueva(
         await contractsApi.agregarInquilino(contractId, {
@@ -307,10 +318,25 @@ function AgregarInquilino({
       setEmail('')
       setTelefono('')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No pudimos agregarlo.')
+      const { porCampo, orden, sueltos } = repartirErroresDelServidor(e, {
+        campos: CAMPOS_DEL_INQUILINO,
+        porDefecto: 'No pudimos agregarlo al contrato.',
+        accion: 'agregarlo al contrato',
+      })
+      setErrores(porCampo)
+      setError(sueltos.length ? sueltos.join(' · ') : null)
+      const primero = orden[0]
+      if (primero) {
+        formulario.current?.querySelector<HTMLInputElement>(`#inquilino-${primero}`)?.focus()
+      }
     } finally {
       setGuardando(false)
     }
+  }
+
+  const cambiar = (campo: CampoDelInquilino, fijar: (v: string) => void) => (v: string) => {
+    fijar(v)
+    setErrores((prev) => (prev[campo] ? { ...prev, [campo]: undefined } : prev))
   }
 
   // Nombre y documento son lo mínimo: el documento es quien identifica.
@@ -330,7 +356,7 @@ function AgregarInquilino({
       </Button>
 
       <Dialog open={abierto} onOpenChange={(v) => !guardando && setAbierto(v)}>
-        <DialogContent className="max-w-md" data-testid="agregar-inquilino-dialogo">
+        <DialogContent size="sm" data-testid="agregar-inquilino-dialogo">
           <DialogHeader>
             <DialogTitle>Agregar un inquilino</DialogTitle>
             <DialogDescription>
@@ -339,18 +365,43 @@ function AgregarInquilino({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
-            <Campo etiqueta="Nombre completo" valor={nombre} onChange={setNombre} testId="inquilino-nombre" />
+          <div className="space-y-3" ref={formulario}>
+            <Campo
+              etiqueta="Nombre completo"
+              valor={nombre}
+              onChange={cambiar('nombre', setNombre)}
+              testId="inquilino-nombre"
+              maxLength={200}
+              error={errores.nombre}
+            />
             <Campo
               etiqueta="Documento"
               valor={documento}
-              onChange={setDocumento}
+              onChange={cambiar('documento', setDocumento)}
               testId="inquilino-documento"
+              maxLength={40}
+              error={errores.documento}
               ayuda="Es lo que identifica a la persona. El correo sólo sirve para crearle cuenta."
             />
-            <Campo etiqueta="Correo (opcional)" valor={email} onChange={setEmail} testId="inquilino-email" />
-            <Campo etiqueta="Teléfono (opcional)" valor={telefono} onChange={setTelefono} testId="inquilino-telefono" />
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            <Campo
+              etiqueta="Correo (opcional)"
+              valor={email}
+              onChange={cambiar('email', setEmail)}
+              testId="inquilino-email"
+              maxLength={255}
+              error={errores.email}
+            />
+            <Campo
+              etiqueta="Teléfono (opcional)"
+              valor={telefono}
+              onChange={cambiar('telefono', setTelefono)}
+              testId="inquilino-telefono"
+              maxLength={40}
+              error={errores.telefono}
+            />
+            <Presence show={Boolean(error)} initial={false} distance="xs" as="p" role="alert" className="text-sm text-destructive" data-testid="agregar-inquilino-error">
+              {error}
+            </Presence>
           </div>
 
           <DialogFooter>
@@ -373,26 +424,49 @@ function AgregarInquilino({
   )
 }
 
+/** Los campos de `AgregarInquilinoDto`, con el mismo nombre que en el back. */
+type CampoDelInquilino = 'nombre' | 'documento' | 'email' | 'telefono'
+const CAMPOS_DEL_INQUILINO: readonly CampoDelInquilino[] = ['nombre', 'documento', 'email', 'telefono']
+
 function Campo({
   etiqueta,
   valor,
   onChange,
   testId,
   ayuda,
+  maxLength,
+  error,
 }: {
   etiqueta: string
   valor: string
   onChange: (v: string) => void
   testId: string
   ayuda?: string
+  /** El tope de la columna del back: no se puede escribir más. */
+  maxLength?: number
+  error?: string
 }) {
   return (
     <div className="space-y-1">
       <label className="text-caption text-muted-foreground" htmlFor={testId}>
         {etiqueta}
       </label>
-      <Input id={testId} data-testid={testId} value={valor} onChange={(e) => onChange(e.target.value)} />
-      {ayuda ? <p className="text-[11px] text-muted-foreground">{ayuda}</p> : null}
+      <Input
+        id={testId}
+        data-testid={testId}
+        value={valor}
+        maxLength={maxLength}
+        onChange={(e) => onChange(e.target.value)}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={`${testId}-error`}
+      />
+      {/* La ayuda gris y el error se cruzan: nunca los dos a la vez. */}
+      <ErrorDelCampo
+        id={`${testId}-error`}
+        mensaje={error}
+        pista={ayuda}
+        className="mt-0"
+      />
     </div>
   )
 }
@@ -449,6 +523,20 @@ function Propietarios({
         ) : null}
       </div>
 
+      {contract.propietariosDelContrato?.participacionesDesconocidas ? (
+        /* CO-15 (QA-MIGRACION-95): el 50/50 guardado es el provisional; la
+           regla de Nico (04-10) es decirlo y no girar. */
+        <p
+          className="flex items-start gap-1.5 text-caption text-warning"
+          data-testid="participaciones-desconocidas"
+        >
+          <Warning className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+          <span>
+            El archivo de la migración no decía cuánto es de cada dueño: el giro de este inmueble
+            no sale hasta que pongas el porcentaje en la ficha del inmueble.
+          </span>
+        </p>
+      ) : null}
       {!sumanCien ? (
         /* Nunca se esconde: con participaciones torcidas el back NO reparte el
            canon, y una lista sin el aviso se lee como si estuviera bien. */
@@ -480,17 +568,28 @@ function Propietarios({
         {lista.map((p) => (
           <li key={p.id} className="flex items-start justify-between gap-3 text-sm">
             <div className="min-w-0">
-              <Link
-                href={conRegreso(
-                  `/panel/inmobiliaria/propietarios/${p.id}`,
-                  `/panel/inmobiliaria/contratos/${contract.id}`,
-                )}
-                className="block break-words font-medium text-foreground hover:underline"
-                data-testid="propietario-ficha"
-              >
-                {p.name}
-              </Link>
-              <span className="block text-caption text-muted-foreground">{documentoParaMostrar(p.documentNumber)}</span>
+              {p.sinFicha ? (
+                /* QA-PROP-95 B-06: el dueño del archivo sin ficha. Su id es el de
+                   la parte del historial: enlazarlo abría «no encontrado». */
+                <span className="block break-words font-medium text-foreground" data-testid="propietario-sin-ficha">
+                  {p.name}
+                </span>
+              ) : (
+                <Link
+                  href={conRegreso(
+                    `/panel/inmobiliaria/propietarios/${p.id}`,
+                    `/panel/inmobiliaria/contratos/${contract.id}`,
+                  )}
+                  className="block break-words font-medium text-foreground hover:underline"
+                  data-testid="propietario-ficha"
+                >
+                  {p.name}
+                </Link>
+              )}
+              <span className="block text-caption text-muted-foreground">
+                {documentoParaMostrar(p.documentNumber)}
+                {p.sinFicha ? ' · Dueño según el archivo, sin ficha de propietario en Leasefy' : ''}
+              </span>
             </div>
             {varios ? (
               /* El % y la plata de cada uno, y el chip en el mayoritario — el
@@ -560,7 +659,12 @@ function EditarPropietarios({
       setConsignacion(mandato)
       setAbierto(true)
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'No pudimos abrir el mandato del inmueble.')
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos abrir el mandato del inmueble.',
+          accion: 'abrir el mandato del inmueble',
+        }),
+      )
     } finally {
       setBuscando(false)
     }

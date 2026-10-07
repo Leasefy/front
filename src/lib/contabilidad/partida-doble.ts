@@ -9,11 +9,24 @@
  * Las reglas son las del DTO (`CrearAsientoDto` / `MovimientoDto`):
  *   - mínimo dos líneas
  *   - cada línea tiene cuenta, y débito XOR crédito (nunca los dos, nunca ninguno)
- *   - montos enteros, en pesos, positivos, hasta `MAX_COP_POR_MOVIMIENTO`
+ *   - montos enteros (o con hasta dos decimales con la llave de la contabilidad),
+ *     en pesos, positivos, hasta `MAX_COP_POR_MOVIMIENTO`
  *   - suma de débitos === suma de créditos
  */
 
 import { MAX_COP_POR_MOVIMIENTO } from '@/lib/api/contabilidad.service';
+import { esPlataQueSeAcepta } from '@/lib/plata/con-centavos';
+import { aCentavos } from '@/lib/plata/plata';
+
+/**
+ * «Centavos en todo» (C3-FRONT): con la llave de la contabilidad
+ * (`contabilidad_facturacion_y_exogena`, el `@EsPlataDeLasAreas` de
+ * `MovimientoDto` en el back) los montos aceptan hasta dos decimales y los
+ * totales se suman EXACTOS al centavo; sin ella, pesos enteros como siempre.
+ */
+export interface OpcionesDeLaPartidaDoble {
+  conCentavos?: boolean;
+}
 
 /** Una línea tal como vive en el formulario: los montos pueden estar vacíos. */
 export interface LineaDelFormulario {
@@ -24,6 +37,12 @@ export interface LineaDelFormulario {
   debitoCop: number | null;
   creditoCop: number | null;
   descripcion: string;
+  /**
+   * 🔴 CONSISTENCIA (04-10-2026): de quién es el movimiento (propietario o
+   * inquilino). Sin tercero la línea bloquea la exógena («107 movimientos sin
+   * tercero»). Opcional: un movimiento global sigue siendo válido.
+   */
+  tercero?: { tipo: string; id: string; nombre: string } | null;
 }
 
 export interface Totales {
@@ -56,26 +75,46 @@ function montoPresente(v: number | null): boolean {
   return v !== null && !Number.isNaN(v) && v !== 0;
 }
 
-function montoValido(v: number): boolean {
-  return Number.isInteger(v) && v > 0 && v <= MAX_COP_POR_MOVIMIENTO;
+function montoValido(v: number, conCentavos: boolean): boolean {
+  return esPlataQueSeAcepta(v, conCentavos) && v > 0 && v <= MAX_COP_POR_MOVIMIENTO;
 }
 
 /** Los totales, contando sólo los montos bien formados. */
-export function totalesDe(lineas: readonly LineaDelFormulario[]): Totales {
+export function totalesDe(
+  lineas: readonly LineaDelFormulario[],
+  { conCentavos = false }: OpcionesDeLaPartidaDoble = {},
+): Totales {
+  if (conCentavos) {
+    // En centavos enteros: 0,1 + 0,2 cuadra con 0,3.
+    let debitos = 0;
+    let creditos = 0;
+    for (const l of lineas) {
+      if (montoPresente(l.debitoCop) && montoValido(l.debitoCop as number, true)) {
+        debitos += aCentavos(l.debitoCop as number);
+      }
+      if (montoPresente(l.creditoCop) && montoValido(l.creditoCop as number, true)) {
+        creditos += aCentavos(l.creditoCop as number);
+      }
+    }
+    return { debitos: debitos / 100, creditos: creditos / 100, diferencia: (debitos - creditos) / 100 };
+  }
   let debitos = 0;
   let creditos = 0;
   for (const l of lineas) {
-    if (montoPresente(l.debitoCop) && montoValido(l.debitoCop as number)) {
+    if (montoPresente(l.debitoCop) && montoValido(l.debitoCop as number, false)) {
       debitos += l.debitoCop as number;
     }
-    if (montoPresente(l.creditoCop) && montoValido(l.creditoCop as number)) {
+    if (montoPresente(l.creditoCop) && montoValido(l.creditoCop as number, false)) {
       creditos += l.creditoCop as number;
     }
   }
   return { debitos, creditos, diferencia: debitos - creditos };
 }
 
-export function validarPartidaDoble(lineas: readonly LineaDelFormulario[]): Veredicto {
+export function validarPartidaDoble(
+  lineas: readonly LineaDelFormulario[],
+  { conCentavos = false }: OpcionesDeLaPartidaDoble = {},
+): Veredicto {
   const porLinea: Record<string, ErrorDeLinea> = {};
 
   for (const l of lineas) {
@@ -95,7 +134,7 @@ export function validarPartidaDoble(lineas: readonly LineaDelFormulario[]): Vere
       continue;
     }
     const monto = (hayDebito ? l.debitoCop : l.creditoCop) as number;
-    if (!Number.isInteger(monto) || monto < 0) {
+    if (!esPlataQueSeAcepta(monto, conCentavos) || monto < 0) {
       porLinea[l.clave] = 'MONTO_INVALIDO';
       continue;
     }
@@ -104,7 +143,7 @@ export function validarPartidaDoble(lineas: readonly LineaDelFormulario[]): Vere
     }
   }
 
-  const totales = totalesDe(lineas);
+  const totales = totalesDe(lineas, { conCentavos });
   const generales: Veredicto['generales'] = [];
   if (lineas.length < MINIMO_DE_LINEAS) generales.push('MUY_POCAS_LINEAS');
   if (totales.diferencia !== 0) generales.push('DESCUADRADO');
@@ -122,8 +161,19 @@ export const TEXTO_DE_ERROR_DE_LINEA: Record<ErrorDeLinea, string> = {
   SIN_MONTO: 'Falta el monto: débito o crédito.',
   DOS_LADOS: 'Una línea va por un solo lado: débito o crédito, no los dos.',
   MONTO_INVALIDO: 'El monto va en pesos enteros, en positivo.',
-  MONTO_FUERA_DE_RANGO: 'Demasiado grande para una línea. Partilo en dos.',
+  MONTO_FUERA_DE_RANGO: 'Demasiado grande para una línea. Pártelo en dos.',
 };
+
+/**
+ * La frase de un error de línea según la llave de la contabilidad: «en pesos
+ * enteros» SÓLO con la llave apagada (la de siempre, `TEXTO_DE_ERROR_DE_LINEA`).
+ */
+export function textoDeErrorDeLinea(error: ErrorDeLinea, conCentavos: boolean): string {
+  if (error === 'MONTO_INVALIDO' && conCentavos) {
+    return 'El monto va en pesos, con hasta dos decimales (centavos), en positivo.';
+  }
+  return TEXTO_DE_ERROR_DE_LINEA[error];
+}
 
 /** Una línea nueva, vacía. */
 export function lineaVacia(clave: string): LineaDelFormulario {

@@ -177,9 +177,11 @@ function makePolicy(overrides?: { maxDiscountPct?: number }) {
 }
 
 interface FetchRouting {
-  plan?: ReturnType<typeof makePlan>
+  plan?: ReturnType<typeof makePlan> & { operatorApprovedAt?: string | null }
   debtor?: ReturnType<typeof makeDebtor>
   policy?: ReturnType<typeof makePolicy>
+  /** Lo que responde POST /:planId/accept (por defecto 200 vigente). */
+  accept?: { status: number; body: unknown }
 }
 
 function installFetch(routing: FetchRouting): {
@@ -190,6 +192,16 @@ function installFetch(routing: FetchRouting): {
   const fetchMock = vi.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
     const u = String(url)
     calls.push({ url: u, init })
+    if (u.includes('/cartera/payment-plans/') && u.endsWith('/accept')) {
+      const r = routing.accept ?? {
+        status: 200,
+        body: { planId: 'PLAN-1', status: 'active', acceptedAt: '2026-10-03T10:00:00.000Z' },
+      }
+      return new Response(JSON.stringify(r.body), {
+        status: r.status,
+        headers: { 'content-type': 'application/json' },
+      })
+    }
     if (u.includes('/cartera/payment-plans/') && u.endsWith('/approve')) {
       return new Response(
         JSON.stringify({
@@ -453,6 +465,78 @@ describe('usePaymentPlanApproval', () => {
     expect(ref.current?.plan?.wompiLink).toBe('https://checkout.wompi.co/l/abc123')
     // No extra GET issued by the approve flow itself.
     expect(getCallsAfter).toBe(getCallsBefore)
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('🔴 Test 7 (S5 Q4): operatorApprovedAt sale del GET; sin él (micro anterior) cuenta como no aprobado', async () => {
+    installFetch({ plan: { ...makePlan(), operatorApprovedAt: '2026-10-02T15:00:00.000Z' } })
+    const a = mount({ planId: 'PLAN-1', canApprove: true })
+    await flush()
+    expect(a.ref.current?.plan?.operatorApprovedAt).toBe('2026-10-02T15:00:00.000Z')
+    act(() => a.root.unmount())
+    a.container.remove()
+
+    installFetch({ plan: makePlan() })
+    const b = mount({ planId: 'PLAN-1', canApprove: true })
+    await flush()
+    expect(b.ref.current?.plan?.operatorApprovedAt).toBeNull()
+    act(() => b.root.unmount())
+    b.container.remove()
+  })
+
+  it('🔴 Test 8 (S5 Q4): acceptPlan con el plan aprobado → POST /accept y queda vigente', async () => {
+    const { calls } = installFetch({ plan: { ...makePlan(), operatorApprovedAt: '2026-10-02T15:00:00.000Z' } })
+    const { ref, root, container } = mount({ planId: 'PLAN-1', canApprove: true })
+    await flush()
+    let r: Awaited<ReturnType<UsePaymentPlanApprovalResult['acceptPlan']>> | undefined
+    await act(async () => {
+      r = await ref.current!.acceptPlan()
+    })
+    expect(r).toEqual({ ok: true, acceptedAt: '2026-10-03T10:00:00.000Z' })
+    const post = calls.find((c) => c.url.endsWith('/PLAN-1/accept'))
+    expect(post?.init?.method).toBe('POST')
+    expect(ref.current?.plan?.status).toBe('active')
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('🔴 Test 9 (S5 Q4): el 409 ACUERDO_SIN_APROBAR vuelve con su code y apaga la marca de aprobado', async () => {
+    installFetch({
+      plan: { ...makePlan(), operatorApprovedAt: '2026-10-02T15:00:00.000Z' },
+      accept: {
+        status: 409,
+        body: {
+          statusCode: 409,
+          code: 'ACUERDO_SIN_APROBAR',
+          message: 'Este acuerdo todavía no está aprobado por la inmobiliaria: apruébalo primero.',
+          error: 'Plan has not been approved',
+        },
+      },
+    })
+    const { ref, root, container } = mount({ planId: 'PLAN-1', canApprove: true })
+    await flush()
+    let r: Awaited<ReturnType<UsePaymentPlanApprovalResult['acceptPlan']>> | undefined
+    await act(async () => {
+      r = await ref.current!.acceptPlan()
+    })
+    expect(r && 'code' in r ? r.code : null).toBe('ACUERDO_SIN_APROBAR')
+    expect(ref.current?.plan?.operatorApprovedAt).toBeNull()
+    expect(ref.current?.plan?.status).toBe('offered')
+    act(() => root.unmount())
+    container.remove()
+  })
+
+  it('Test 10: acceptPlan sin permiso no llama al micro', async () => {
+    const { calls } = installFetch({})
+    const { ref, root, container } = mount({ planId: 'PLAN-1', canApprove: false })
+    await flush()
+    let r: Awaited<ReturnType<UsePaymentPlanApprovalResult['acceptPlan']>> | undefined
+    await act(async () => {
+      r = await ref.current!.acceptPlan()
+    })
+    expect(r).toEqual({ error: 'PERMISSION_DENIED' })
+    expect(calls.some((c) => c.url.endsWith('/accept'))).toBe(false)
     act(() => root.unmount())
     container.remove()
   })

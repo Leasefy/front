@@ -24,7 +24,14 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Appear } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import {
+  MAX_LARGO_NOMBRE_DE_LA_PLANTILLA,
+  MAX_LARGO_VERSION_DE_LA_PLANTILLA,
+} from '@/lib/documentos/limites-de-los-documentos';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -111,6 +118,10 @@ export function EditorDePlantilla({ abierto, plantilla, onCerrar, onGuardado }: 
   const [catalogo, setCatalogo] = useState<VariableDePlantilla[]>([]);
   const [fallaDelCatalogo, setFallaDelCatalogo] = useState(false);
   const areaRef = useRef<HTMLTextAreaElement | null>(null);
+  /** Lo que el back rechazó, por campo; cada campo borra el suyo al tocarse. */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDeLaPlantilla, string>>>({});
+  const quitar = (campo: CampoDeLaPlantilla) =>
+    setDelServidor((d) => (d[campo] ? { ...d, [campo]: undefined } : d));
 
   // Al abrir: los datos de la plantilla que se edita, o el borrador en blanco.
   useEffect(() => {
@@ -119,6 +130,7 @@ export function EditorDePlantilla({ abierto, plantilla, onCerrar, onGuardado }: 
     setCategoria(plantilla?.category ?? 'CARTA');
     setVersion(plantilla?.version ?? '1.0');
     setContenido(plantilla?.content ?? '');
+    setDelServidor({});
   }, [abierto, plantilla]);
 
   // El catálogo se pide una vez por apertura.
@@ -208,11 +220,20 @@ export function EditorDePlantilla({ abierto, plantilla, onCerrar, onGuardado }: 
       onGuardado();
       onCerrar();
     } catch (e: unknown) {
-      // El mensaje del back tal cual: nombra la variable que no supo llenar, y
-      // eso es lo único que sirve para arreglarla.
-      toast.error('No se pudo guardar la plantilla', {
-        description: e instanceof Error ? e.message : undefined,
+      // 02-10-2026: lo que el back rechazó por campo va bajo SU campo, con el
+      // foco; el resto —el mensaje que nombra la variable que no supo llenar,
+      // que es lo único que sirve para arreglarla— al aviso, por el traductor.
+      const reparto = repartirErroresDelServidor<CampoDeLaPlantilla>(e, {
+        campos: CAMPOS_DE_LA_PLANTILLA,
+        porDefecto: 'Prueba de nuevo en un momento.',
+        accion: 'guardar la plantilla',
       });
+      setDelServidor(reparto.porCampo);
+      const primero = reparto.orden[0];
+      if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus();
+      if (reparto.sueltos.length > 0) {
+        toast.error('No se pudo guardar la plantilla', { description: reparto.sueltos.join(' · ') });
+      }
     } finally {
       setGuardando(false);
     }
@@ -231,17 +252,27 @@ export function EditorDePlantilla({ abierto, plantilla, onCerrar, onGuardado }: 
             <Input
               id="plantilla-nombre"
               value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              maxLength={160}
+              onChange={(e) => {
+                setNombre(e.target.value);
+                quitar('name');
+              }}
+              // El tope de la columna (`VarChar(200)`), el mismo del back.
+              maxLength={MAX_LARGO_NOMBRE_DE_LA_PLANTILLA}
               placeholder="Carta de bienvenida al inquilino"
               data-testid="plantilla-nombre"
+              aria-invalid={delServidor.name ? true : undefined}
+              aria-describedby={delServidor.name ? 'plantilla-nombre-error' : undefined}
             />
+            <ErrorDelCampo id="plantilla-nombre-error" mensaje={delServidor.name} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="plantilla-categoria">Categoría</Label>
             <Select
               value={categoria}
-              onValueChange={(v) => setCategoria(v as CategoriaDeDocumento)}
+              onValueChange={(v) => {
+                setCategoria(v as CategoriaDeDocumento);
+                quitar('category');
+              }}
             >
               <SelectTrigger id="plantilla-categoria" data-testid="plantilla-categoria">
                 <SelectValue />
@@ -254,16 +285,23 @@ export function EditorDePlantilla({ abierto, plantilla, onCerrar, onGuardado }: 
                 ))}
               </SelectContent>
             </Select>
+            <ErrorDelCampo id="plantilla-categoria-error" mensaje={delServidor.category} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="plantilla-version">Versión</Label>
             <Input
               id="plantilla-version"
               value={version}
-              onChange={(e) => setVersion(e.target.value)}
-              maxLength={12}
+              onChange={(e) => {
+                setVersion(e.target.value);
+                quitar('version');
+              }}
+              maxLength={MAX_LARGO_VERSION_DE_LA_PLANTILLA}
               className="w-24"
+              aria-invalid={delServidor.version ? true : undefined}
+              aria-describedby={delServidor.version ? 'plantilla-version-error' : undefined}
             />
+            <ErrorDelCampo id="plantilla-version-error" mensaje={delServidor.version} />
           </div>
         </div>
 
@@ -311,21 +349,31 @@ export function EditorDePlantilla({ abierto, plantilla, onCerrar, onGuardado }: 
             id="plantilla-contenido"
             ref={areaRef}
             value={contenido}
-            onChange={(e) => setContenido(e.target.value)}
+            onChange={(e) => {
+              setContenido(e.target.value);
+              quitar('content');
+            }}
             rows={14}
             className="font-mono text-caption"
             placeholder="<h1>Carta de bienvenida</h1>&#10;<p>{{arrendatarioNombre}}, bienvenido a {{inmuebleDireccion}}.</p>"
             data-testid="plantilla-contenido"
+            aria-invalid={delServidor.content ? true : undefined}
+            aria-describedby={delServidor.content ? 'plantilla-contenido-error' : undefined}
           />
-          <p className="text-caption text-fg-subtle">
-            Se admite HTML sencillo: títulos, párrafos, listas y tablas. Lo que escribas
-            es el papel que se imprime.
-          </p>
+          <ErrorDelCampo
+            id="plantilla-contenido-error"
+            mensaje={delServidor.content}
+            className="mt-0"
+            pista="Se admite HTML sencillo: títulos, párrafos, listas y tablas. Lo que escribas es el papel que se imprime."
+          />
         </div>
 
         {/* 🔴 Lo que impide guardar, dicho acá y no escondido. */}
+        {/* Lo que dice el validador mientras se escribe llega con su entrada
+            (`Appear`); se va de una cuando deja de aplicar. */}
         {desconocidas.length > 0 && (
-          <div
+          <Appear
+            distance="xs"
             className="rounded-lg border border-danger/40 bg-danger-soft p-3 text-body-sm"
             data-testid="variables-desconocidas"
           >
@@ -367,20 +415,20 @@ export function EditorDePlantilla({ abierto, plantilla, onCerrar, onGuardado }: 
               Saldría impresa con las llaves adentro en un documento que alguien firma, así
               que no se puede guardar así.
             </p>
-          </div>
+          </Appear>
         )}
 
         {usadas.length > 0 && desconocidas.length === 0 && (
-          <p className="text-caption text-fg-muted" data-testid="variables-ok">
+          <Appear as="p" distance="xs" className="text-caption text-fg-muted" data-testid="variables-ok">
             {usadas.length === 1
               ? 'Usa 1 dato del contrato. Se reemplaza al generar el documento.'
               : `Usa ${usadas.length} datos del contrato. Se reemplazan al generar el documento.`}
-          </p>
+          </Appear>
         )}
 
         {/* Cómo se va a ver. Con las variables sin reemplazar, y dicho. */}
         {contenido.trim() !== '' && (
-          <div className="space-y-1.5">
+          <Appear className="space-y-1.5">
             <p className="text-body-sm font-medium text-fg">Cómo se va a ver</p>
             {/* `sandbox=""` y fondo blanco: es el PAPEL, no una superficie del
                 panel, y el HTML lo escribe una persona — sin sandbox un
@@ -397,7 +445,7 @@ export function EditorDePlantilla({ abierto, plantilla, onCerrar, onGuardado }: 
               Las variables se ven con sus llaves porque todavía no hay contrato: al
               generar el documento se reemplazan por los datos reales.
             </p>
-          </div>
+          </Appear>
         )}
 
         <div className="flex flex-wrap justify-end gap-2 border-t border-border pt-4">
@@ -426,5 +474,17 @@ export function EditorDePlantilla({ abierto, plantilla, onCerrar, onGuardado }: 
     </Cajon>
   );
 }
+
+type CampoDeLaPlantilla = 'name' | 'category' | 'version' | 'content';
+
+/** En el orden en que se ven: el foco va al primero con error. */
+const CAMPOS_DE_LA_PLANTILLA: readonly CampoDeLaPlantilla[] = ['name', 'category', 'version', 'content'];
+
+const ID_DEL_CAMPO: Record<CampoDeLaPlantilla, string> = {
+  name: 'plantilla-nombre',
+  category: 'plantilla-categoria',
+  version: 'plantilla-version',
+  content: 'plantilla-contenido',
+};
 
 export default EditorDePlantilla;

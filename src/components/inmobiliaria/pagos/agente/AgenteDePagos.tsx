@@ -174,7 +174,7 @@ export function AgenteDePagos({ lectura }: { lectura: AgenteDePagosLectura }) {
         </div>
         <p className="max-w-2xl text-body-sm text-fg-muted">
           Seis agentes que preparan y envían el cobro por link de pago, vigilan los pagos que fallan y
-          dejan lista la liquidación de cada propietario. Entran a trabajar cuando el ERP les pasa un
+          dejan lista la liquidación de cada propietario. Entran a trabajar cuando Leasefy genera un
           cobro. La plata se sigue operando en Pagos: este equipo automatiza partes de ese trabajo.
         </p>
       </header>

@@ -107,7 +107,7 @@ export function PilotoPreparacion() {
 
       {/* La anatomía del cajón de la casa (cabecera fija, cuerpo con scroll),
           con `SheetContent` propio porque el disparador vive acá adentro. */}
-      <SheetContent side="right" className="flex w-full flex-col gap-0 !p-0 sm:max-w-lg">
+      <SheetContent side="right" size="md" layout="manual">
         <CajonCabecera
           titulo={
             <span className="flex items-center gap-2">
@@ -154,7 +154,7 @@ export function PilotoPreparacion() {
             </div>
           )}
 
-          {!isLoading && (error || notAvailable) && (
+          {!isLoading && (Boolean(error) || notAvailable) && (
             <div className="rounded-lg border border-border bg-surface-muted px-3 py-3">
               <p className="text-body-sm font-medium text-fg">
                 {t("inmobiliaria.piloto.preparacion.sinFuente")}
@@ -163,7 +163,7 @@ export function PilotoPreparacion() {
                 {/* No se afirma «no está listo»: no se pudo medir. */}
                 {t("inmobiliaria.piloto.preparacion.sinFuenteHint")}
               </p>
-              {error && (
+              {Boolean(error) && (
                 <Button
                   className="mt-2"
                   size="sm"

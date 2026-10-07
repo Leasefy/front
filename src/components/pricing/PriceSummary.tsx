@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { AnimatedNumber, Presence } from '@leasefy/cadence';
 import { formatCurrency } from '@/lib/format';
 import { precioLegible } from '@/lib/planes/precio-del-plan-del-propietario';
 import type { Plan, BillingCycle } from '@/lib/types/subscription';
@@ -88,15 +89,14 @@ export function PriceSummary({
         </div>
 
         {/* Discount line */}
-        {appliedCoupon && savings > 0 && (
-          <div className="flex justify-between items-center text-success">
+        {/* Entra al aplicar el cupón y SALE al quitarlo. */}
+        <Presence show={!!appliedCoupon && savings > 0} distance="xs" className="flex justify-between items-center text-success">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-success" />
-              {appliedCoupon.description}
+              {appliedCoupon?.description}
             </span>
             <span className="font-medium font-mono tabular-nums">-{formatCurrency(savings)}</span>
-          </div>
-        )}
+        </Presence>
 
         {/* Free period notice */}
         {isTrial && (
@@ -129,7 +129,14 @@ export function PriceSummary({
           </span>
           <div className="text-right">
             <span className="text-xl font-bold font-mono tabular-nums text-foreground">
-              {isFree ? 'Gratis' : precioLegible(finalPrice)}
+              {/* El total cuenta hasta el nuevo al aplicar o quitar un cupón. */}
+              {isFree ? (
+                'Gratis'
+              ) : typeof finalPrice === 'number' ? (
+                <AnimatedNumber value={finalPrice} format={precioLegible} />
+              ) : (
+                precioLegible(finalPrice)
+              )}
             </span>
             {!isFree && (
               <span className="text-muted-foreground text-sm ml-1">
@@ -147,14 +154,12 @@ export function PriceSummary({
         )}
 
         {/* Savings summary */}
-        {savings > 0 && !isTrial && (
-          <div className="flex items-center justify-center gap-1.5 pt-2 text-success">
+        <Presence show={savings > 0 && !isTrial} distance="xs" className="flex items-center justify-center gap-1.5 pt-2 text-success">
             <Info className="w-3.5 h-3.5" />
             <span className="text-xs font-medium">
               Ahorras <span className="font-mono tabular-nums">{formatCurrency(savings)}</span> con este cupon
             </span>
-          </div>
-        )}
+        </Presence>
       </div>
     </div>
   );

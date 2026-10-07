@@ -19,10 +19,25 @@ import {
   Plus,
   IdentificationCard,
   Warning,
+  Lifebuoy,
+  Wrench,
 } from '@phosphor-icons/react';
+import { NuevaPqrsDrawer } from '@/components/inmobiliaria/pqrs/NuevaPqrsDrawer';
+import type { PqrsFormulario } from '@/components/inmobiliaria/pqrs/pqrs-reglas';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import { IconButton, MonoLabel } from '@leasefy/cadence';
+import {
+  AnimatedNumber,
+  CrossFade,
+  IconButton,
+  MonoLabel,
+  Presence,
+  enterTransition,
+  exitTransition,
+  motionDistance,
+  motionScale,
+  usePrefersReducedMotion,
+} from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -176,8 +191,24 @@ function MessagesSkeleton() {
 // Main widget
 // ============================================================================
 
+
+/** QA-INQ-95 (PI-44): de qué es el hilo, dicho al inquilino. */
+export function encabezadoDelHilo(kind: string | undefined): string {
+  if (kind === 'APPLICATION') return 'Sobre tu postulación';
+  if (kind === 'PROPERTY_INQUIRY') return 'Sobre el inmueble';
+  return 'Sobre tu arriendo';
+}
+function encabezadoDelHiloEn(kind: string | undefined): string {
+  if (kind === 'APPLICATION') return 'About your application';
+  if (kind === 'PROPERTY_INQUIRY') return 'About the property';
+  return 'About your rental';
+}
+
 export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidgetProps) {
   const { t, locale } = useI18n();
+  // Para las transiciones hechas a mano (filas, burbujas, el menú): con
+  // movimiento reducido quedan fundidos cortos, como en las primitivas.
+  const reducido = usePrefersReducedMotion();
   /* Para `{{inmobiliaria}}` de las plantillas: el nombre real de la agencia
      del usuario, no uno inventado. Ver `datosDePlantilla`. */
   const { agency } = useAuth();
@@ -217,6 +248,12 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [showOptionsList, setShowOptionsList] = useState(false);
+  /*
+   * SO-30 (PQRS-FIX, 04-10-2026): desde un mensaje se radica la PQRS o la
+   * reparación con el texto y la persona ya puestos (antes había que copiarlo a
+   * mano en Solicitudes). Sólo en el panel de la inmobiliaria.
+   */
+  const [radicarDesdeMensaje, setRadicarDesdeMensaje] = useState<Partial<PqrsFormulario> | null>(null);
   // «Nuevo mensaje»: hasta acá la bandeja no podía iniciar ninguna
   // conversación — sólo se llenaba si el otro escribía primero.
   const [nuevoMensajeAbierto, setNuevoMensajeAbierto] = useState(false);
@@ -266,7 +303,15 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     ? (locale === 'es' ? 'propietarios' : 'landlords')
     : (locale === 'es' ? 'inquilinos' : 'tenants');
   const headerTitle = isTenant ? t('messages.title') : t('landlord.messages.title');
-  const headerSubtitle = isTenant ? t('messages.subtitle') : t('landlord.messages.subtitle');
+  // SO-28 (PQRS-FIX, 04-10-2026): el propietario habla con SU inmobiliaria, no
+  // con «inquilinos y candidatos» (ese texto es del panel de la inmobiliaria).
+  const headerSubtitle = isTenant
+    ? t('messages.subtitle')
+    : enPanelDeInmobiliaria
+      ? t('landlord.messages.subtitle')
+      : locale === 'es'
+        ? 'Comunicación con tu inmobiliaria'
+        : 'Messages with your agency';
 
   // Auto-select: URL (?conversationId= new, ?applicationId= legacy,
   // resolved to the matching thread) > current selection > first available.
@@ -323,7 +368,8 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   const filteredConversations = conversations.filter(
     (c) =>
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.property.toLowerCase().includes(searchQuery.toLowerCase()),
+      c.property.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (c.tema ?? '').toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   useEffect(() => {
@@ -574,11 +620,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
         {/* Header — en pantalla completa no hay título ni bajada: el sidebar
             ya dice «Mensajes» y el contador de no leídos vive en su badge. */}
         {!pantallaCompleta && (
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 flex-shrink-0"
-        >
+        <header className="mb-6 flex-shrink-0">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-1">
               <h1 className="text-2xl font-semibold text-foreground tracking-tight">
@@ -588,23 +630,24 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                 {headerSubtitle}
               </p>
             </div>
-            {totalUnread > 0 && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-primary-soft rounded-full shrink-0">
+            {/* «N sin leer»: cuenta cuando cambia y sale cuando se lee todo. */}
+            <Presence
+              show={totalUnread > 0}
+              initial={false}
+              distance="xs"
+              className="flex items-center gap-2 px-4 py-2 bg-primary-soft rounded-full shrink-0"
+            >
                 <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
                 <span className="text-sm font-medium text-primary">
-                  {totalUnread} {locale === 'es' ? 'sin leer' : 'unread'}
+                  <AnimatedNumber value={totalUnread} /> {locale === 'es' ? 'sin leer' : 'unread'}
                 </span>
-              </div>
-            )}
+            </Presence>
           </div>
-        </motion.header>
+        </header>
         )}
 
         {/* Chat Container */}
-        <motion.div
-          initial={{ opacity: 0, y: pantallaCompleta ? 0 : 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: pantallaCompleta ? 0 : 0.1 }}
+        <div
           className={cn(
             'bg-card overflow-hidden flex-1 min-h-0',
             !pantallaCompleta && 'rounded-lg border border-border',
@@ -644,8 +687,21 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                 />
               </div>
 
-              {/* Conversations */}
+              {/* Conversations — cargando → lista (o el fallo, o el vacío) se
+                  cruzan; dentro de la lista, buscar o una conversación nueva
+                  hace entrar y salir filas, y las demás se corren. */}
               <div className="flex-1 overflow-y-auto">
+                <CrossFade
+                  swapKey={
+                    isLoadingConversations
+                      ? 'cargando'
+                      : errorConversaciones
+                        ? 'fallo'
+                        : filteredConversations.length === 0
+                          ? 'vacio'
+                          : 'lista'
+                  }
+                >
                 {isLoadingConversations ? (
                   <ConversationsSkeleton />
                 ) : errorConversaciones ? (
@@ -687,16 +743,19 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                     )}
                   </div>
                 ) : (
-                  <div className="divide-y divide-border">
-                    {filteredConversations.map((conversation, index) => (
+                  <div className="relative divide-y divide-border">
+                    <AnimatePresence initial={false} mode="popLayout">
+                    {filteredConversations.map((conversation) => (
                       <motion.button
                         key={conversation.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.05 }}
+                        layout="position"
+                        initial={{ opacity: 0, y: motionDistance.sm }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, transition: exitTransition(reducido) }}
+                        transition={enterTransition(reducido)}
                         onClick={() => handleSelectConversation(conversation)}
                         className={cn(
-                          'w-full flex items-start gap-3 px-4 py-4 text-left transition-all',
+                          'w-full flex items-start gap-3 px-4 py-4 text-left transition-colors',
                           selectedConversationId === conversation.id
                             ? 'bg-card border-l-2 border-l-primary'
                             : 'hover:bg-card/80',
@@ -724,9 +783,11 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           </div>
                           <div className="mb-1 flex min-w-0 items-center gap-1.5">
                             <InsigniaDePerfil perfil={conversation.perfil} conIcono={false} />
-                            {conversation.property && (
-                              <span className="truncate text-caption text-muted-foreground">
-                                {conversation.property}
+                            {/* SO-29 (QA-INQ-95 r2): el TEMA del hilo («Postulación ·
+                                …», «Arriendo · …»); sin tema, el inmueble como antes. */}
+                            {(conversation.tema || conversation.property) && (
+                              <span className="truncate text-caption text-muted-foreground" data-testid="tema-del-hilo">
+                                {conversation.tema || conversation.property}
                               </span>
                             )}
                           </div>
@@ -749,8 +810,10 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         )}
                       </motion.button>
                     ))}
+                    </AnimatePresence>
                   </div>
                 )}
+                </CrossFade>
               </div>
             </div>
 
@@ -835,10 +898,13 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
 
                       {/* Sin ficha a dónde ir, el menú queda vacío: entonces no
                           hay menú. Un `⋮` que abre una lista de nada es ruido. */}
-                      {fichaDeLaContraparte && (
+                      {(fichaDeLaContraparte || enPanelDeInmobiliaria) && (
                       <div className="relative" ref={optionsListRef}>
                         <IconButton
                           variant="ghost"
+                          aria-haspopup="menu"
+                          aria-expanded={showOptionsList}
+                          data-testid="mensajes-mas-opciones"
                           onClick={() => setShowOptionsList(!showOptionsList)}
                           className={cn(
                             'rounded-full',
@@ -853,10 +919,13 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         <AnimatePresence>
                           {showOptionsList && (
                             <motion.div
-                              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                              // Flotante del sistema: nace al 96 % desde su ancla
+                              // (arriba a la derecha) y sale acelerando.
+                              initial={{ opacity: 0, scale: motionScale.pop, y: -motionDistance.xs }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                              transition={{ duration: 0.15 }}
+                              exit={{ opacity: 0, scale: motionScale.pop, transition: exitTransition(reducido) }}
+                              transition={enterTransition(reducido)}
+                              style={{ transformOrigin: 'top right' }}
                               /*
                                 `w-52` (208 px) no le daba: «Silenciar
                                 notificaciones» se partía en dos renglones y
@@ -877,6 +946,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                 actúan sobre el hilo. Sólo aparece cuando hay a
                                 dónde ir; ver `fichaDeLaContraparte`.
                               */}
+                              {fichaDeLaContraparte && (
                               <button
                                 type="button"
                                 onClick={verFicha}
@@ -886,6 +956,40 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                 <IdentificationCard className="h-4 w-4 flex-shrink-0 text-fg-muted" />
                                 {fichaDeLaContraparte.etiqueta}
                               </button>
+                              )}
+                              {enPanelDeInmobiliaria && (
+                                <>
+                                  {(['PQRS', 'REPARACION'] as const).map((que) => (
+                                    <button
+                                      key={que}
+                                      type="button"
+                                      role="menuitem"
+                                      data-testid={que === 'PQRS' ? 'radicar-como-pqrs' : 'crear-reparacion'}
+                                      onClick={() => {
+                                        setShowOptionsList(false)
+                                        const ultimo = [...messages].reverse().find((m) => !m.isMine)
+                                        const texto = (ultimo?.content ?? '').trim()
+                                        setRadicarDesdeMensaje({
+                                          solicitanteTipo:
+                                            selectedConversation.perfil === 'LANDLORD' ? 'PROPIETARIO' : selectedConversation.perfil === 'TENANT' ? 'INQUILINO' : 'TERCERO',
+                                          solicitanteNombre: selectedConversation.name ?? '',
+                                          asunto: (texto.split(/\n|\. /)[0] ?? '').slice(0, 120),
+                                          descripcion: texto.slice(0, 2000),
+                                          ...(que === 'REPARACION' ? { tipo: 'SOLICITUD' as const, subtipo: 'REPARACION' as const } : {}),
+                                        })
+                                      }}
+                                      className="flex w-full items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm text-fg transition-colors hover:bg-surface-muted"
+                                    >
+                                      {que === 'PQRS' ? (
+                                        <Lifebuoy className="h-4 w-4 flex-shrink-0 text-fg-muted" />
+                                      ) : (
+                                        <Wrench className="h-4 w-4 flex-shrink-0 text-fg-muted" />
+                                      )}
+                                      {que === 'PQRS' ? 'Radicar como PQRS' : 'Crear solicitud de reparación'}
+                                    </button>
+                                  ))}
+                                </>
+                              )}
                             </motion.div>
                           )}
                         </AnimatePresence>
@@ -912,15 +1016,14 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-medium text-foreground truncate">
+                              {/* QA-INQ-95 (PI-44): el hilo de una POSTULACIÓN o de una
+                                  consulta no es «tu arriendo» (Iván leía «Sobre tu
+                                  arriendo — Carrera 35…», el inmueble al que se postuló). */}
                               {locale === 'es'
-                                ? `Sobre tu arriendo — ${selectedConversation.property}`
-                                : `About your rental — ${selectedConversation.property}`}
+                                ? `${encabezadoDelHilo(selectedConversation.kind)} — ${selectedConversation.property}`
+                                : `${encabezadoDelHiloEn(selectedConversation.kind)} — ${selectedConversation.property}`}
                             </p>
-                            <p className="text-caption text-muted-foreground mt-0.5">
-                              {locale === 'es'
-                                ? 'Estamos conectando cada chat a su arriendo; el hilo por arriendo llega próximamente.'
-                                : "We're tying each chat to its rental; per-rental threads are coming soon."}
-                            </p>
+                            {/* QA-INQ-95: sin «llega próximamente»; el encabezado dice lo que hay. */}
                           </div>
                         </div>
                       )}
@@ -987,11 +1090,15 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                             )}
                             <AnimatePresence initial={false}>
                               {messages.map((message, index) => (
+                                // Sólo los mensajes NUEVOS entran (el hilo que ya
+                                // estaba no se anima): suben 8 px sin retraso. El
+                                // retraso por índice hacía esperar ~2 s al mensaje
+                                // 100 de un hilo largo.
                                 <motion.div
                                   key={message.id}
-                                  initial={{ opacity: 0, y: 10 }}
+                                  initial={{ opacity: 0, y: motionDistance.sm }}
                                   animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: index * 0.02 }}
+                                  transition={enterTransition(reducido)}
                                   className={cn('flex', message.isMine ? 'justify-end' : 'justify-start')}
                                 >
                                   <div
@@ -1136,9 +1243,21 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           >
                             <Warning className="mt-px h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
                             <span className="flex-1">
-                              {locale === 'es'
-                                ? 'No se pudo enviar. Tu mensaje quedó en el campo: prueba de nuevo.'
-                                : "Couldn't send. Your message is back in the box — try again."}
+                              {/* 02-10-2026 · El porqué viene del traductor (`useChat`):
+                                  un 403 dice la regla, un 5xx «de nuestro lado» con su
+                                  referencia, y la conexión SÓLO sin respuesta. Antes era
+                                  siempre «prueba de nuevo», también cuando reintentar no
+                                  lo arreglaba. */}
+                              {locale === 'es' ? (
+                                <>
+                                  <span className="block" data-testid="mensaje-no-enviado-motivo">
+                                    No se pudo enviar. {errorDeEnvio}
+                                  </span>
+                                  <span className="block">Tu mensaje quedó en el campo.</span>
+                                </>
+                              ) : (
+                                "Couldn't send. Your message is back in the box — try again."
+                              )}
                             </span>
                             <button
                               type="button"
@@ -1200,16 +1319,13 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                       </div>
                     </div>
 
-                    {/* Info Panel */}
-                    <AnimatePresence>
-                      {showInfoPanel && (
-                        <motion.div
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
-                          transition={{ duration: 0.2 }}
-                          className="w-full lg:w-80 border-l border-border bg-card overflow-y-auto"
-                        >
+                    {/* Info Panel — entra desde la derecha (16 px) y sale por el mismo lado. */}
+                    <Presence
+                      show={showInfoPanel}
+                      direction="left"
+                      distance="md"
+                      className="w-full lg:w-80 border-l border-border bg-card overflow-y-auto"
+                    >
                           {/* Panel Header */}
                           <div className="flex items-center justify-between p-4 border-b border-border">
                             <h3 className="text-base font-semibold text-foreground">
@@ -1306,15 +1422,13 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                             </div>
                             )}
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    </Presence>
                   </div>
                 </>
               )}
             </div>
           </div>
-        </motion.div>
+        </div>
       </div>
 
 
@@ -1323,6 +1437,16 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
         onCerrar={() => setNuevoMensajeAbierto(false)}
         onHiloAbierto={alAbrirHiloNuevo}
       />
+      {enPanelDeInmobiliaria && (
+        <NuevaPqrsDrawer
+          open={radicarDesdeMensaje !== null}
+          onOpenChange={(abierto) => {
+            if (!abierto) setRadicarDesdeMensaje(null)
+          }}
+          onCreated={() => setRadicarDesdeMensaje(null)}
+          inicial={radicarDesdeMensaje ?? undefined}
+        />
+      )}
     </div>
   );
 }

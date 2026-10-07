@@ -24,11 +24,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from '@/components/ui/dialog';
 import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { consignacionesApi } from '@/lib/api/inmobiliaria.service';
 import type { Agente } from '@/lib/types/inmobiliaria';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 /** Los tres roles reales de `AgenteRole`. Escribe otros y salía la llave cruda. */
 const ROLE_LABELS: Record<string, string> = {
@@ -84,8 +86,11 @@ export function AsignarAgente({
       onAsignado();
       onCerrar();
     } catch (err) {
+      // Por el traductor (sistema de errores, 02-10-2026): el motivo del back
+      // si lo dio, un 5xx «de nuestro lado» con la referencia, y «conexión»
+      // sólo sin respuesta. Antes iba `err.message` crudo.
       toast.error('No pudimos asignar el agente', {
-        description: err instanceof Error ? err.message : undefined,
+        description: mensajeParaLaPersona(err, { accion: 'asignar el agente' }),
       });
     } finally {
       setGuardando(null);
@@ -94,7 +99,7 @@ export function AsignarAgente({
 
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>Asignar agente</DialogTitle>
           <DialogDescription>
@@ -179,11 +184,11 @@ export function AsignarAgente({
           </ul>
         </EstadoDeDatos>
 
-        <div className="flex justify-end pt-1">
-          <Button variant="secondary" hideArrow onClick={onCerrar}>
+        <DialogFooter>
+          <Button variant="outline" hideArrow onClick={onCerrar}>
             Cancelar
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

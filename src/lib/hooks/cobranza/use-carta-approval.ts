@@ -30,6 +30,7 @@ import { useCallback, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 import type { components } from '@/lib/api/generated/agent'
 
 import type { RejectReasonSlug } from '@/components/inmobiliaria/cobranza/approval/RechazarForm'
@@ -47,8 +48,16 @@ export interface UseCartaApprovalResult {
   isRejecting: boolean
   approveResult: CartaApproveResponse | null
   rejectResult: { ok: boolean } | null
+  /**
+   * Un código del hook cuando la acción ni salió (`ENV_OR_AGENCY_MISSING`,
+   * `REJECT_REASON_REQUIRED`…) o el de compatibilidad (`approve 500`). NO es
+   * para una persona: la pantalla usa `mensajeDeLaAccion({ error, fallo })`.
+   */
   approveError: string | null
   rejectError: string | null
+  /** El `ApiError` del micro o el error de la red, tal cual, para el traductor. */
+  approveFallo: unknown
+  rejectFallo: unknown
   /** S3 presigned download URL — 7-day TTL enforced server-side. */
   pdfDownloadUrl: string | null
   /** Wall-clock at approve-success — drives client-side TTL countdown. */
@@ -89,6 +98,8 @@ export function useCartaApproval(): UseCartaApprovalResult {
   const [rejectResult, setRejectResult] = useState<{ ok: boolean } | null>(null)
   const [approveError, setApproveError] = useState<string | null>(null)
   const [rejectError, setRejectError] = useState<string | null>(null)
+  const [approveFallo, setApproveFallo] = useState<unknown>(null)
+  const [rejectFallo, setRejectFallo] = useState<unknown>(null)
   const [pdfDownloadUrl, setPdfDownloadUrl] = useState<string | null>(null)
   const [pdfApprovedAt, setPdfApprovedAt] = useState<Date | null>(null)
 
@@ -109,6 +120,7 @@ export function useCartaApproval(): UseCartaApprovalResult {
       }
       setIsApproving(true)
       setApproveError(null)
+      setApproveFallo(null)
       try {
         const res = await authFetch(
           `${agentUrl}/api/agency/${agencyId}/cartera/legal-artifacts/${artifactId}/approve`,
@@ -122,8 +134,9 @@ export function useCartaApproval(): UseCartaApprovalResult {
           },
         )
         if (!res.ok) {
-          const text = await res.text().catch(() => '')
-          setApproveError(text || `approve ${res.status}`)
+          // Antes se pintaba el cuerpo crudo de la respuesta o «approve 500».
+          setApproveError(`approve ${res.status}`)
+          setApproveFallo(await falloDelMicro(res))
           return
         }
         const json = (await res.json()) as CartaApproveResponse
@@ -132,6 +145,8 @@ export function useCartaApproval(): UseCartaApprovalResult {
         setPdfApprovedAt(new Date())
       } catch (err) {
         setApproveError(err instanceof Error ? err.message : 'approve failed')
+        // Un `fetch` que no salió llega tal cual: el traductor lo lee como conexión.
+        setApproveFallo(err)
       } finally {
         setIsApproving(false)
       }
@@ -156,6 +171,7 @@ export function useCartaApproval(): UseCartaApprovalResult {
       }
       setIsRejecting(true)
       setRejectError(null)
+      setRejectFallo(null)
       try {
         const body: Record<string, string> = { rejectReason: reject_reason }
         if (reject_comment) body.rejectComment = reject_comment
@@ -167,13 +183,14 @@ export function useCartaApproval(): UseCartaApprovalResult {
           },
         )
         if (!res.ok) {
-          const text = await res.text().catch(() => '')
-          setRejectError(text || `reject ${res.status}`)
+          setRejectError(`reject ${res.status}`)
+          setRejectFallo(await falloDelMicro(res))
           return
         }
         setRejectResult({ ok: true })
       } catch (err) {
         setRejectError(err instanceof Error ? err.message : 'reject failed')
+        setRejectFallo(err)
       } finally {
         setIsRejecting(false)
       }
@@ -188,6 +205,8 @@ export function useCartaApproval(): UseCartaApprovalResult {
     rejectResult,
     approveError,
     rejectError,
+    approveFallo,
+    rejectFallo,
     pdfDownloadUrl,
     pdfApprovedAt,
     approve,

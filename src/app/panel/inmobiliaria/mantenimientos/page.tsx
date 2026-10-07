@@ -1,14 +1,22 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useMemo, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import {
+  repartirErroresDelServidor,
+  traeErroresPorCampo,
+} from '@/lib/errores/errores-en-el-formulario';
+import {
+  CAMPOS_DEL_MANTENIMIENTO,
+  type CampoDelMantenimiento,
+} from '@/components/inmobiliaria/MantenimientoForm';
 import { Wrench, Plus, CurrencyDollar, SquaresFour, Kanban } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
-import { SegmentedControl } from '@leasefy/cadence';
+import { AnimatedNumber, CrossFade, SegmentedControl } from '@leasefy/cadence';
 import { Cajon, CajonCabecera, CajonCuerpo } from '@/components/ui/cajon';
 import type {
   SolicitudMantenimiento,
@@ -17,6 +25,10 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { mesEnTitulo } from '@/lib/utils/mes';
+import {
+  lasQueNoSubieron,
+  subirFotosDelMantenimiento,
+} from '@/lib/mantenimiento/subir-fotos-del-mantenimiento';
 import {
   useMantenimientos,
   useConsignaciones,
@@ -31,6 +43,7 @@ import {
   type MantenimientoFormData,
 } from '@/components/inmobiliaria';
 import { usePermissions } from '@/lib/hooks/usePermissions';
+import { CompletarSolicitudDialog } from '@/components/inmobiliaria/mantenimiento/CompletarSolicitudDialog';
 import { ACargoDeDialog } from '@/components/inmobiliaria/deducciones/ACargoDeDialog';
 import { BandejaDeAprobacionesDelPropietario } from '@/components/inmobiliaria/deducciones/BandejaDeAprobacionesDelPropietario';
 import { aprobacionesDeReparacionApi } from '@/lib/api/aprobaciones-de-reparacion.service';
@@ -79,11 +92,23 @@ function getQuickStats(mantenimientos: SolicitudMantenimiento[]) {
   const activeMantenimientos = mantenimientos.filter((m) =>
     ['reported', 'quoted', 'approved', 'in_progress'].includes(m.status)
   );
-  const quotedMantenimientos = mantenimientos.filter((m) => m.status === 'quoted');
+  /*
+   * 🔴 SO-13 (QA 04-10): «por aprobar» es lo que la INMOBILIARIA tiene que
+   * decidir. Lo que espera la respuesta del propietario se cuenta aparte: no
+   * es trabajo de la inmobiliaria y ya no se mezcla.
+   */
+  const esperaAlPropietario = (m: SolicitudMantenimiento) =>
+    m.aprobacionDelPropietario?.estado === 'PENDIENTE';
+  const quotedMantenimientos = mantenimientos.filter(
+    (m) => m.status === 'quoted' && !esperaAlPropietario(m),
+  );
 
   return {
     active: activeMantenimientos.length,
     quoted: quotedMantenimientos.length,
+    esperanAlPropietario: mantenimientos.filter(
+      (m) => m.status === 'quoted' && esperaAlPropietario(m),
+    ).length,
   };
 }
 
@@ -99,7 +124,12 @@ interface StatCardProps {
   subValueColor?: 'warning' | 'info' | 'default';
   bgColor: string;
   iconColor: string;
+  /** La cifra llegó después de cargar: cuenta desde 0 (como `KpiValor`). */
+  contarDesdeCero?: boolean;
 }
+
+/** El número tal cual se escribía antes (`{value}`): sin separador de miles. */
+const enteroTalCual = (n: number) => String(Math.round(n));
 
 function StatCard({
   icon: Icon,
@@ -109,6 +139,7 @@ function StatCard({
   subValueColor = 'default',
   bgColor,
   iconColor,
+  contarDesdeCero = false,
 }: StatCardProps) {
   const subValueColors = {
     warning: 'text-warning font-medium',
@@ -123,7 +154,14 @@ function StatCard({
           <Icon className={cn('w-5 h-5', iconColor)} />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-2xl font-bold text-foreground">{value}</p>
+          <p className="text-2xl font-bold text-foreground">
+            {/* La cifra cuenta al llegar y cuando cambia (aprobar, cerrar). */}
+            {typeof value === 'number' ? (
+              <AnimatedNumber value={value} from={contarDesdeCero ? 0 : undefined} format={enteroTalCual} />
+            ) : (
+              value
+            )}
+          </p>
           <p className="text-xs text-muted-foreground">{label}</p>
           {subValue && (
             <p className={cn('text-xs mt-0.5', subValueColors[subValueColor])}>
@@ -207,6 +245,10 @@ function MantenimientosContent() {
   const [isMantenimientoViewerOpen, setIsMantenimientoViewerOpen] = useState(false);
   const [isMantenimientoFormOpen, setIsMantenimientoFormOpen] = useState(false);
   const [isSubmittingMantenimiento, setIsSubmittingMantenimiento] = useState(false);
+  /** Lo que el back rechazó al crear, por campo: el formulario lo pinta bajo cada uno. */
+  const [erroresDelFormulario, setErroresDelFormulario] = useState<
+    Partial<Record<CampoDelMantenimiento, string>> | undefined
+  >(undefined);
   // El diálogo de cotización lleva su propia solicitud: se abre desde el
   // tablero, desde la lista y desde el cajón del detalle, y no siempre hay un
   // cajón abierto detrás.
@@ -243,7 +285,27 @@ function MantenimientosContent() {
     setIsMantenimientoViewerOpen(true);
   }, []);
 
+  /*
+   * PI-28: «Abrirla en Mantenimiento» desde el cajón de una PQRS llega con
+   * `?solicitud=<id>` y abre ESA solicitud apenas la lista la trae. Se lee de
+   * `window.location` (no `useSearchParams`) para no pedir un Suspense nuevo.
+   */
+  const solicitudPedida = useRef<string | null>(null);
+  useEffect(() => {
+    solicitudPedida.current = new URLSearchParams(window.location.search).get('solicitud');
+  }, []);
+  useEffect(() => {
+    const id = solicitudPedida.current;
+    if (!id || !mantenimientosData) return;
+    const pedida = mantenimientosData.find((m) => m.id === id);
+    if (pedida) {
+      solicitudPedida.current = null;
+      handleViewMantenimiento(pedida);
+    }
+  }, [mantenimientosData, handleViewMantenimiento]);
+
   const handleNewMantenimiento = useCallback(() => {
+    setErroresDelFormulario(undefined);
     setIsMantenimientoFormOpen(true);
   }, []);
 
@@ -251,15 +313,27 @@ function MantenimientosContent() {
     setIsSubmittingMantenimiento(true);
 
     try {
-      await mantenimientoApi.create({
+      // 🔴 02-10-2026: la solicitud viaja SIN fotos. Antes viajaba la vista
+      // previa del navegador (`blob:`) en `photoUrls` y nadie más la podía
+      // abrir; ahora las fotos se suben de verdad, después, una por una.
+      const creada = await mantenimientoApi.create({
         consignacionId: data.consignacionId,
         type: data.type,
         priority: data.priority,
         title: data.title,
         description: data.description,
-        photoUrls: data.photoUrls,
         paidBy: data.paidBy,
       });
+
+      // La solicitud ya existe: una foto que no sube NO la deshace. Se dice
+      // cuál y por qué, y la solicitud queda creada.
+      const fotos = data.fotos ?? [];
+      const subida =
+        fotos.length > 0 && creada?.id
+          ? await subirFotosDelMantenimiento(creada.id, fotos, (id, foto) =>
+              mantenimientoApi.subirFoto(id, foto),
+            )
+          : null;
 
       await recargarMantenimientos();
 
@@ -268,12 +342,30 @@ function MantenimientosContent() {
       toast.success(t('inmobiliaria.operaciones.toasts.requestCreated'), {
         description: t('inmobiliaria.operaciones.toasts.requestCreatedDesc', { title: data.title }),
       });
+      if (subida && subida.fallidas.length > 0) {
+        const n = subida.fallidas.length;
+        toast.error(
+          n === 1
+            ? 'La solicitud quedó creada, pero una foto no se subió'
+            : `La solicitud quedó creada, pero ${n} fotos no se subieron`,
+          { description: lasQueNoSubieron(subida.fallidas) },
+        );
+      }
     } catch (error) {
       // El back dice por qué no la creó («El inmueble no tiene contrato
-      // activo», un 403…): eso es lo que se muestra, como al mover o cotizar.
-      toast.error('No se pudo crear la solicitud', {
-        description: error instanceof Error ? error.message : undefined,
+      // activo», un 403…). 02-10-2026: un 400 con `campos` va bajo cada campo
+      // del formulario (con el foco en el primero); al toast sólo lo que no
+      // tiene dónde ir, por el traductor: «conexión» sólo sin respuesta, un 5xx
+      // con su referencia.
+      const reparto = repartirErroresDelServidor<CampoDelMantenimiento>(error, {
+        campos: CAMPOS_DEL_MANTENIMIENTO,
+        porDefecto: 'Prueba de nuevo en un momento.',
+        accion: 'crear la solicitud',
       });
+      setErroresDelFormulario(reparto.orden.length > 0 ? reparto.porCampo : undefined);
+      if (reparto.sueltos.length > 0) {
+        toast.error('No se pudo crear la solicitud', { description: reparto.sueltos.join(' · ') });
+      }
       setIsSubmittingMantenimiento(false);
     }
   }, [t, recargarMantenimientos]);
@@ -316,7 +408,10 @@ function MantenimientosContent() {
         await mantenimientoApi.updateStatus(solicitudId, newStatus);
       } catch (error) {
         toast.error('No se pudo mover la solicitud', {
-          description: error instanceof Error ? error.message : undefined,
+          description: mensajeParaLaPersona(error, {
+            porDefecto: 'Prueba de nuevo en un momento.',
+            accion: 'mover la solicitud',
+          }),
         });
         // Relanzar: quien arrastró la tarjeta tiene que enterarse de que no
         // quedó, y el tablero ya no vuelve a festejar por su cuenta.
@@ -406,7 +501,10 @@ function MantenimientosContent() {
         );
       } catch (error) {
         toast.error('No se pudo aprobar la cotización', {
-          description: error instanceof Error ? error.message : undefined,
+          description: mensajeParaLaPersona(error, {
+            porDefecto: 'Prueba de nuevo en un momento.',
+            accion: 'aprobar la cotización',
+          }),
         });
         throw error;
       }
@@ -434,6 +532,36 @@ function MantenimientosContent() {
       propuestaDelDialogo.quoteId === cotizacionPorAprobar?.quoteId)
       ? propuestaDelDialogo.aCargoDeSugerido
       : null;
+
+  /** SO-11 (04-10): el responsable escogido al crear llega marcado. */
+  const PAGADOR_A_CARGO: Record<string, 'PROPIETARIO' | 'INQUILINO' | 'COMPARTIDA' | 'INMOBILIARIA'> = {
+    owner: 'PROPIETARIO',
+    tenant: 'INQUILINO',
+    split: 'COMPARTIDA',
+    agency: 'INMOBILIARIA',
+  };
+  const solicitudDelDialogo = cotizacionPorAprobar
+    ? mantenimientos.find((m) => m.id === cotizacionPorAprobar.solicitudId)
+    : undefined;
+  const preseleccionDelDialogo = solicitudDelDialogo
+    ? (PAGADOR_A_CARGO[solicitudDelDialogo.paidBy] ?? null)
+    : null;
+
+  /**
+   * Cerrada desde el diálogo de «Marcar como completada», que ya subió las
+   * fotos del trabajo y llamó a `PUT :id/complete` (Nico, 02-10-2026). Acá
+   * sólo lo que pasa después de cualquier cierre: recargar, avisar y cerrar
+   * el cajón. Los errores los dice el diálogo, bajo las fotos.
+   */
+  const handleSolicitudCompletada = useCallback(async () => {
+    await recargarMantenimientos();
+    toast.success(
+      t('inmobiliaria.operaciones.toasts.statusUpdated', {
+        status: t('inmobiliaria.operaciones.maintenance.status.completed'),
+      }),
+    );
+    handleMantenimientoViewerClose();
+  }, [t, recargarMantenimientos, handleMantenimientoViewerClose]);
 
   /**
    * La misma transición, para quien NO espera la promesa (los botones del
@@ -485,9 +613,16 @@ function MantenimientosContent() {
       try {
         await mantenimientoApi.addQuote(solicitudId, cotizacion);
       } catch (error) {
-        toast.error('No se pudo guardar la cotización', {
-          description: error instanceof Error ? error.message : undefined,
-        });
+        // Un 400 con `campos` lo pinta el diálogo bajo cada campo; el resto
+        // (un 409, un 5xx, la red) se dice acá, por el traductor.
+        if (!traeErroresPorCampo(error)) {
+          toast.error('No se pudo guardar la cotización', {
+            description: mensajeParaLaPersona(error, {
+              porDefecto: 'Prueba de nuevo en un momento.',
+              accion: 'guardar la cotización',
+            }),
+          });
+        }
         throw error;
       }
 
@@ -503,6 +638,48 @@ function MantenimientosContent() {
     [t, recargarMantenimientos]
   );
 
+  /*
+   * 🔴 SO-14 (QA 04-10): soltar una tarjeta respeta las MISMAS reglas que los
+   * botones del cajón. A «Completada» abre el cierre (fotos y costo final); a
+   * «Aprobada» sin cotización aprobada abre la aprobación (o pide la
+   * cotización). Lo demás va directo y el back frena lo que espera al
+   * propietario con su motivo.
+   */
+  const [porCompletar, setPorCompletar] = useState<SolicitudMantenimiento | null>(null);
+  const alSoltarEnElTablero = useCallback(
+    (solicitud: SolicitudMantenimiento, destino: MantenimientoStatus): boolean => {
+      if (destino === 'completed') {
+        if (solicitud.aprobacionDelPropietario?.estado === 'PENDIENTE') return false;
+        setPorCompletar(solicitud);
+        return true;
+      }
+      if (
+        destino === 'approved' &&
+        (solicitud.status === 'reported' || solicitud.status === 'quoted') &&
+        !solicitud.selectedQuoteId
+      ) {
+        if (solicitud.quotes.length === 0) {
+          toast.info('Primero agrega una cotización', {
+            description: 'Se aprueba una cotización: escoge el proveedor y el valor.',
+          });
+          handleRequestQuote(solicitud.id);
+          return true;
+        }
+        if (solicitud.quotes.length === 1) {
+          void handleApproveQuote(solicitud.id, solicitud.quotes[0].id);
+          return true;
+        }
+        toast.info('Escoge cuál cotización aprobar', {
+          description: 'Tiene varias: ábrela y aprueba una desde el comparador.',
+        });
+        handleViewMantenimiento(solicitud);
+        return true;
+      }
+      return false;
+    },
+    [handleRequestQuote, handleApproveQuote, handleViewMantenimiento],
+  );
+
   // Consignaciones for form (rented properties only)
   const rentedConsignaciones = useMemo(
     () => consignaciones.filter((c) => c.availability === 'rented'),
@@ -511,6 +688,10 @@ function MantenimientosContent() {
 
   // Show loading state
   const isLoading = isLoadingMantenimientos || isLoadingConsignaciones;
+  // ¿Se vio la carga? Entonces las cifras que llegan cuentan desde 0; las que
+  // ya estaban al montarse (caché) no se animan.
+  const huboCarga = useRef(false);
+  if (isLoading) huboCarga.current = true;
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -554,7 +735,8 @@ function MantenimientosContent() {
           cuenta donde vive —en la lista, con su «Reintentar»— y los números
           que no se pudieron traer no se inventan. */}
 
-      {/* Quick Stats - Informational Only */}
+      {/* Quick Stats - Informational Only. Esqueleto → cifras con un fundido. */}
+      <CrossFade swapKey={isLoading ? 'cargando' : 'listo'}>
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[...Array(2)].map((_, i) => (
@@ -570,11 +752,7 @@ function MantenimientosContent() {
           ))}
         </div>
       ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Un cero que en realidad es «no lo pudimos traer» afirma algo
               falso, y encima tranquiliza: «no tienes nada pendiente». Cuando
               la consulta falló va una raya. */}
@@ -592,17 +770,26 @@ function MantenimientosContent() {
             subValueColor={stats.quoted > 0 && !mantenimientosError ? 'info' : 'default'}
             bgColor="bg-primary-soft"
             iconColor="text-primary"
+            contarDesdeCero={huboCarga.current}
           />
           <StatCard
             icon={CurrencyDollar}
             label={t('inmobiliaria.operaciones.stats.pendingQuotes')}
             value={mantenimientosError ? '—' : stats.quoted}
-            subValue={mantenimientosError ? 'No se pudo traer' : undefined}
+            subValue={
+              mantenimientosError
+                ? 'No se pudo traer'
+                : stats.esperanAlPropietario > 0
+                  ? `${stats.esperanAlPropietario} ${stats.esperanAlPropietario === 1 ? 'espera' : 'esperan'} al propietario`
+                  : undefined
+            }
             bgColor="bg-neutral-100 dark:bg-neutral-800"
             iconColor="text-neutral-600 dark:text-neutral-300"
+            contarDesdeCero={huboCarga.current}
           />
-        </motion.div>
+        </div>
       )}
+      </CrossFade>
 
       {/* 🔴 D12: lo que espera al propietario y lo que él rechazó. */}
       <BandejaDeAprobacionesDelPropietario
@@ -615,12 +802,7 @@ function MantenimientosContent() {
 
       {/* Las solicitudes, directo en la tarjeta: sin barra de pestañas porque
           ya no hay entre qué elegir. */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="rounded-lg border border-border bg-card"
-      >
+      <div className="rounded-lg border border-border bg-card">
         {/* View Toggle */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/20">
           <div className="flex items-center gap-3">
@@ -632,13 +814,19 @@ function MantenimientosContent() {
                 <span className="text-fg-muted">Solicitudes sin cargar</span>
               ) : (
                 <>
-                  <span className="font-medium text-foreground">
-                    {mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length}
-                  </span>
-                  {' '}{t('inmobiliaria.operaciones.maintenance.activeRequests')}
-                  {mantenimientos.filter((m) => m.status === 'quoted').length > 0 && (
+                  <AnimatedNumber
+                    className="font-medium text-foreground"
+                    value={mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length}
+                    format={enteroTalCual}
+                  />
+                  {' '}
+                  {/* SO-11: «1 solicitud activa», no «1 solicitudes activas». */}
+                  {mantenimientos.filter((m) => m.status !== 'completed' && m.status !== 'cancelled').length === 1
+                    ? 'solicitud activa'
+                    : t('inmobiliaria.operaciones.maintenance.activeRequests')}
+                  {stats.quoted > 0 && (
                     <span className="ml-2 text-primary">
-                      ({t('inmobiliaria.operaciones.stats.toApproveCount', { count: mantenimientos.filter((m) => m.status === 'quoted').length })})
+                      ({t('inmobiliaria.operaciones.stats.toApproveCount', { count: stats.quoted })})
                     </span>
                   )}
                 </>
@@ -684,31 +872,22 @@ function MantenimientosContent() {
           onReintentar={reintentar}
           esqueleto={<EsqueletoTabla columnas={4} filas={4} />}
         >
-          <AnimatePresence mode="wait">
+          {/* Tablero ⇄ lista: una vista se va (rápido) y la otra entra. */}
+          <CrossFade swapKey={mantenimientoView} direction="none">
             {mantenimientoView === 'kanban' ? (
-              <motion.div
-                key="kanban"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="p-5"
-              >
+              <div className="p-5">
                 {/* M6: el tablero vacío eran cinco columnas en cero y ninguna
                     salida. Ahora ofrece lo mismo que la lista hermana. */}
                 <MantenimientoKanban
                   data={mantenimientos}
                   onViewDetails={handleViewMantenimiento}
                   onStatusChange={puedeEditar ? handleMantenimientoStatusChange : undefined}
+                  alSoltar={puedeEditar ? alSoltarEnElTablero : undefined}
                   onCrear={puedeCrear ? handleNewMantenimiento : undefined}
                 />
-              </motion.div>
+              </div>
             ) : (
-              <motion.div
-                key="cards"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
+              <div>
                 {/* `onAddQuote` faltaba, y la entrada «Agregar cotización» de
                     los tres puntos de cada tarjeta sólo se dibuja si alguien la
                     atiende: estaba escrita en `MantenimientoList` y no aparecía
@@ -722,11 +901,11 @@ function MantenimientosContent() {
                   onCrear={puedeCrear ? handleNewMantenimiento : undefined}
                   minimal
                 />
-              </motion.div>
+              </div>
             )}
-          </AnimatePresence>
+          </CrossFade>
         </EstadoDeDatos>
-      </motion.div>
+      </div>
 
       {/* Mantenimiento Viewer Sheet
           Sin `onAddNote`: no hay endpoint de notas para mantenimientos, así que
@@ -740,6 +919,10 @@ function MantenimientosContent() {
         // les contestaba 403. Sin el callback el comparador no lo ofrece.
         onApproveQuote={puedeEditar ? handleApproveQuote : undefined}
         onRequestQuote={puedeEditar ? handleRequestQuote : undefined}
+        // «Marcar como completada» con las fotos del trabajo (02-10-2026).
+        onCompletada={puedeEditar ? handleSolicitudCompletada : undefined}
+        // SO-14 (04-10): calificar al proveedor al cerrar.
+        onCalificado={puedeEditar ? recargarMantenimientos : undefined}
       />
 
       {/* Agregarle una cotización a una solicitud ya creada. Vive en la página
@@ -753,6 +936,21 @@ function MantenimientosContent() {
         onGuardar={handleGuardarCotizacion}
       />
 
+      {/* SO-14: el cierre al soltar la tarjeta en «Completada». */}
+      {porCompletar && (
+        <CompletarSolicitudDialog
+          abierto={porCompletar !== null}
+          solicitudId={porCompletar.id}
+          costoAprobado={porCompletar.approvedAmount ?? null}
+          onCerrar={() => setPorCompletar(null)}
+          onCompletada={async () => {
+            setPorCompletar(null);
+            await handleSolicitudCompletada();
+          }}
+          t={t}
+        />
+      )}
+
       {/* A cargo de quién queda la reparación, antes de aprobar la cotización. */}
       <ACargoDeDialog
         abierto={cotizacionPorAprobar !== null}
@@ -761,6 +959,7 @@ function MantenimientosContent() {
         }}
         cotizacion={cotizacionDelDialogo}
         sugerencia={sugerenciaDelDialogo}
+        preseleccion={preseleccionDelDialogo}
         onConfirmar={aprobarCotizacion}
       />
 
@@ -790,6 +989,7 @@ function MantenimientosContent() {
             onSubmit={handleMantenimientoFormSubmit}
             onCancel={handleMantenimientoFormCancel}
             isSubmitting={isSubmittingMantenimiento}
+            erroresDelServidor={erroresDelFormulario}
           />
         )}
       </Cajon>

@@ -13,12 +13,14 @@ import { ArrowLeft } from '@phosphor-icons/react'
 import { Eyebrow } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { ROLES_DE_CONTRATOS } from '@/lib/contratos/roles-de-contratos'
 import { MigrarContratos } from '@/components/contratos/MigrarContratos'
 import {
   FilasFrenadas,
   VeredictoDeMigracion,
 } from '@/components/migracion/VeredictoDeMigracion'
 import { useDeudaDeMigracion } from '@/lib/hooks/use-migracion-con-deuda'
+import { usePermissions } from '@/lib/hooks/usePermissions'
 
 export default function MigrarContratosPage() {
   /*
@@ -39,9 +41,18 @@ export default function MigrarContratosPage() {
    * ya está en la pantalla donde se resuelve.
    */
   const { deuda, recargar } = useDeudaDeMigracion()
+  /*
+   * 🔴 QA-CONT-95 (MC-15): quien sólo VE contratos (el contador, el de sólo
+   * lectura) veía «Descartar», «Retomar» y el cargador, y el back le respondía
+   * 403 al tocarlos. Ve cómo quedó la migración y se le dice que subir y
+   * activar es de quien crea contratos. El guard sigue por «view» (ver arriba):
+   * esto sólo cambia lo que se le ofrece, y el administrador nunca lo pierde.
+   */
+  const { canAccess, isAdmin, isLoading } = usePermissions()
+  const soloLectura = !isLoading && !isAdmin && !canAccess('contratos', 'create')
 
   return (
-    <PageGuard module="contratos">
+    <PageGuard module="contratos" roles={ROLES_DE_CONTRATOS}>
       <div className="space-y-6 p-6 lg:p-8">
         <header className="space-y-1">
           <Link
@@ -73,7 +84,20 @@ export default function MigrarContratosPage() {
           </>
         ) : null}
 
-        <MigrarContratos onLoteCambio={() => void recargar()} />
+        {soloLectura ? (
+          <p
+            className="rounded-lg border border-border bg-surface-muted p-4 text-sm text-fg-muted"
+            data-testid="migrar-solo-lectura"
+          >
+            Tu rol puede ver cómo quedó la migración, pero no subir archivos ni activar contratos: eso
+            lo hace quien crea contratos en la inmobiliaria.{' '}
+            <Link href="/panel/inmobiliaria/contratos" className="font-medium text-primary hover:underline">
+              Volver a Contratos
+            </Link>
+          </p>
+        ) : (
+          <MigrarContratos onLoteCambio={() => void recargar()} />
+        )}
       </div>
     </PageGuard>
   )

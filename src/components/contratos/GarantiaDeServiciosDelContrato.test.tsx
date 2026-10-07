@@ -198,6 +198,30 @@ describe('<GarantiaDeServiciosDelContrato> (D10)', () => {
     expect(($('guardar-movimiento') as HTMLButtonElement).disabled).toBe(false);
   });
 
+  it('🔴 una fecha fuera de 2000–2100 se dice bajo la fecha, con la frase del back, y no se manda (02-10)', async () => {
+    api.garantiaDeServicios.mockResolvedValue(conGarantia());
+    await montar();
+    const tipo = $('movimiento-tipo') as HTMLSelectElement;
+    await act(async () => {
+      tipo.value = 'DEVOLUCION';
+      tipo.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await escribir($('movimiento-valor') as HTMLInputElement, '120.000');
+    await escribir($('movimiento-descripcion') as HTMLInputElement, 'Devolución al inquilino');
+    const fecha = $('movimiento-fecha') as HTMLInputElement;
+
+    await escribir(fecha, '1999-12-31');
+    expect(container!.querySelector('#movimiento-fecha-error')?.textContent).toBe(
+      'La fecha del movimiento debe estar entre el año 2000 y el 2100.',
+    );
+    expect(fecha.getAttribute('aria-invalid')).toBe('true');
+    expect(($('guardar-movimiento') as HTMLButtonElement).disabled).toBe(true);
+
+    await escribir(fecha, '2026-09-15');
+    expect(fecha.getAttribute('aria-invalid')).toBeNull();
+    expect(($('guardar-movimiento') as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it('la diferencia por cobrar se dice y se cobra como concepto', async () => {
     api.garantiaDeServicios.mockResolvedValue(
       conGarantia({

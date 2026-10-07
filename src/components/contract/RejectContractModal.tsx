@@ -1,12 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, WarningCircle, XCircle, PencilSimple } from '@phosphor-icons/react';
-import { IconButton, RadioCardGroup, RadioCard } from '@leasefy/cadence';
+import { XCircle, PencilSimple } from '@phosphor-icons/react';
+import { RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import type { RejectionType } from '@/lib/types/contract';
 
 const REASON_MIN = 5;
@@ -58,171 +66,139 @@ export function RejectContractModal({
     await onConfirm(type, reasonTrimmed);
   };
 
+  // La clase del modal sigue al tipo elegido: pedir cambios no borra nada (el
+  // proceso sigue); el rechazo definitivo cierra el proceso.
+  const definitivo = type === 'DEFINITIVE';
+
   return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={isSubmitting ? undefined : onClose}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 10 }}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-surface rounded-lg w-full max-w-lg border border-border"
+    <Dialog
+      open={open}
+      onOpenChange={(abierto) => {
+        // Mientras se envía no se sale (ni con Esc, ni con el velo, ni con la ✕).
+        if (!abierto && !isSubmitting) onClose();
+      }}
+    >
+      <DialogContent
+        size="md"
+        variant={definitivo ? 'destructive' : 'confirm'}
+        icon={definitivo ? <XCircle weight="bold" /> : <PencilSimple weight="bold" />}
+      >
+        <DialogHeader>
+          <DialogTitle>
+            {lockToType === 'MODIFICATIONS'
+              ? 'Pedir cambios al propietario'
+              : lockToType === 'DEFINITIVE'
+                ? 'Rechazar contrato definitivamente'
+                : 'Rechazar contrato'}
+          </DialogTitle>
+          <DialogDescription>
+            {lockToType === 'MODIFICATIONS'
+              ? 'El propietario recibirá tu pedido y podrá corregir el contrato.'
+              : lockToType === 'DEFINITIVE'
+                ? 'El contrato se cancela y el proceso termina. Para retomarlo habría que crear una nueva aplicación.'
+                : 'Indica cómo quieres continuar el proceso'}
+          </DialogDescription>
+        </DialogHeader>
+
+        {/* Solo mostramos el selector cuando el caller NO fijó el tipo.
+            Cuando se abre desde un botón específico ("Pedir cambios" / "Rechazar definitivamente"),
+            el título y la descripción ya dicen qué pasa. */}
+        {!lockToType && (
+          <RadioCardGroup
+            className="space-y-2"
+            value={type}
+            onValueChange={(v) => setType(v as RejectionType)}
           >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-4 p-5 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className={cn(
-                  'w-10 h-10 rounded-xl flex items-center justify-center',
-                  lockToType === 'MODIFICATIONS'
-                    ? 'bg-warning-soft'
-                    : 'bg-danger-soft'
-                )}>
-                  <WarningCircle className={cn(
-                    'w-5 h-5',
-                    lockToType === 'MODIFICATIONS'
-                      ? 'text-warning'
-                      : 'text-danger'
-                  )} />
-                </div>
-                <div>
-                  <h2 className="text-base font-semibold text-fg">
-                    {lockToType === 'MODIFICATIONS'
-                      ? 'Pedir cambios al propietario'
-                      : lockToType === 'DEFINITIVE'
-                        ? 'Rechazar contrato definitivamente'
-                        : 'Rechazar contrato'}
-                  </h2>
-                  <p className="text-xs text-fg-muted mt-0.5">
-                    {lockToType === 'MODIFICATIONS'
-                      ? 'El propietario recibirá tu pedido y podrá corregir el contrato.'
-                      : lockToType === 'DEFINITIVE'
-                        ? 'Esta acción cierra el proceso definitivamente.'
-                        : 'Indica cómo quieres continuar el proceso'}
-                  </p>
-                </div>
-              </div>
-              <IconButton
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                disabled={isSubmitting}
-                aria-label="Cerrar"
-                icon={<X className="w-5 h-5" />}
-              />
-            </div>
+            <RadioCard
+              value="MODIFICATIONS"
+              label={
+                <span className="flex items-center gap-1.5">
+                  <PencilSimple className="w-4 h-4 text-warning" />
+                  Pedir modificaciones
+                </span>
+              }
+              description="El propietario puede editar los términos y volver a enviarlo. El proceso continúa."
+            />
+            <RadioCard
+              value="DEFINITIVE"
+              label={
+                <span className="flex items-center gap-1.5">
+                  <XCircle className="w-4 h-4 text-danger" />
+                  Rechazo definitivo
+                </span>
+              }
+              description="El contrato se cancela y el proceso termina. Para retomarlo habría que crear una nueva aplicación."
+            />
+          </RadioCardGroup>
+        )}
 
-            {/* Body */}
-            <div className="p-5 space-y-4">
-              {/* Solo mostramos el selector cuando el caller NO fijó el tipo.
-                  Cuando se abre desde un botón específico ("Pedir cambios" / "Rechazar definitivamente"),
-                  mostramos solo un banner explicativo en vez del radio. */}
-              {!lockToType && (
-                <RadioCardGroup
-                  className="space-y-2"
-                  value={type}
-                  onValueChange={(v) => setType(v as RejectionType)}
-                >
-                  <RadioCard
-                    value="MODIFICATIONS"
-                    label={
-                      <span className="flex items-center gap-1.5">
-                        <PencilSimple className="w-4 h-4 text-warning" />
-                        Pedir modificaciones
-                      </span>
-                    }
-                    description="El propietario puede editar los términos y volver a enviarlo. El proceso continúa."
-                  />
-                  <RadioCard
-                    value="DEFINITIVE"
-                    label={
-                      <span className="flex items-center gap-1.5">
-                        <XCircle className="w-4 h-4 text-danger" />
-                        Rechazo definitivo
-                      </span>
-                    }
-                    description="El contrato se cancela y el proceso termina. Para retomarlo habría que crear una nueva aplicación."
-                  />
-                </RadioCardGroup>
-              )}
+        <div className="space-y-1">
+          <label htmlFor="motivo-del-rechazo" className="block text-xs font-medium text-fg">
+            Motivo <span className="text-danger">*</span>
+          </label>
+          <Textarea
+            id="motivo-del-rechazo"
+            aria-required="true"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            onBlur={() => setTouched(true)}
+            placeholder={
+              type === 'MODIFICATIONS'
+                ? 'Ej: El depósito es muy alto, propongo reducirlo a 1 mes de renta.'
+                : 'Ej: Decidí no continuar con esta propiedad.'
+            }
+            rows={4}
+            maxLength={REASON_MAX}
+            disabled={isSubmitting}
+            aria-invalid={reasonError ? true : undefined}
+            aria-describedby={reasonError ? 'motivo-del-rechazo-error' : undefined}
+            className={cn(
+              'resize-none',
+              reasonError && 'border-danger focus-visible:ring-danger/30'
+            )}
+          />
+          <div className="flex items-start justify-between gap-3">
+            {/* 02-10-2026: el error entra suave y se cruza con la ayuda
+                (`ErrorDelCampo` = `FormError` de Cadence), en vez de un
+                párrafo rojo hecho a mano que aparecía de golpe. */}
+            <ErrorDelCampo
+              id="motivo-del-rechazo-error"
+              mensaje={reasonError}
+              pista={`Mínimo ${REASON_MIN} caracteres. El propietario va a verlo.`}
+              className="mt-0"
+            />
+            <p className={cn(
+              'text-xs font-mono tabular-nums',
+              reasonTrimmed.length > REASON_MAX ? 'text-danger' : 'text-fg-muted'
+            )}>
+              {reasonTrimmed.length}/{REASON_MAX}
+            </p>
+          </div>
+        </div>
 
-              <div className="space-y-1">
-                <label className="block text-xs font-medium text-fg">
-                  Motivo <span className="text-danger">*</span>
-                </label>
-                <Textarea
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  onBlur={() => setTouched(true)}
-                  placeholder={
-                    type === 'MODIFICATIONS'
-                      ? 'Ej: El depósito es muy alto, propongo reducirlo a 1 mes de renta.'
-                      : 'Ej: Decidí no continuar con esta propiedad.'
-                  }
-                  rows={4}
-                  maxLength={REASON_MAX}
-                  disabled={isSubmitting}
-                  className={cn(
-                    'resize-none',
-                    reasonError && 'border-danger focus-visible:ring-danger/30'
-                  )}
-                />
-                <div className="flex items-center justify-between">
-                  {reasonError ? (
-                    <p className="text-xs text-danger">{reasonError}</p>
-                  ) : (
-                    <p className="text-xs text-fg-muted">
-                      Mínimo {REASON_MIN} caracteres. El propietario va a verlo.
-                    </p>
-                  )}
-                  <p className={cn(
-                    'text-xs tabular-nums',
-                    reasonTrimmed.length > REASON_MAX ? 'text-danger' : 'text-fg-muted'
-                  )}>
-                    {reasonTrimmed.length}/{REASON_MAX}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-5 border-t border-border flex items-center justify-end gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                hideArrow
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                hideArrow
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-                isLoading={isSubmitting}
-                className={cn(
-                  'gap-2 text-white',
-                  type === 'DEFINITIVE'
-                    ? 'bg-danger hover:bg-danger/90'
-                    : 'bg-warning hover:bg-warning/90'
-                )}
-              >
-                {type === 'DEFINITIVE' ? 'Rechazar definitivamente' : 'Enviar cambios solicitados'}
-              </Button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="secondary"
+            hideArrow
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            variant={definitivo ? 'destructive' : 'default'}
+            hideArrow
+            onClick={handleSubmit}
+            disabled={!canSubmit}
+            isLoading={isSubmitting}
+          >
+            {definitivo ? 'Rechazar definitivamente' : 'Enviar cambios solicitados'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

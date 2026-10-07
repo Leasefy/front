@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { getMock, postMock, invalidarMock } = vi.hoisted(() => ({
+const { getMock, postMock, putMock, invalidarMock } = vi.hoisted(() => ({
   getMock: vi.fn(),
   postMock: vi.fn(),
+  putMock: vi.fn(),
   invalidarMock: vi.fn(),
 }));
 
@@ -10,32 +11,45 @@ vi.mock('@/lib/api/client', () => ({
   apiClient: {
     get: (...args: unknown[]) => getMock(...args),
     post: (...args: unknown[]) => postMock(...args),
+    put: (...args: unknown[]) => putMock(...args),
   },
 }));
 vi.mock('./refresco-de-datos', () => ({ invalidar: (...args: unknown[]) => invalidarMock(...args) }));
 
-import { conciliacionBancariaApi, filaParaElBack } from './conciliacion-bancaria.service';
+import {
+  conciliacionBancariaApi,
+  diferenciaParaElBack,
+  filaParaElBack,
+  opcionesParaElBack,
+} from './conciliacion-bancaria.service';
 
 const BASE = '/inmobiliaria/conciliacion-bancaria';
 
 beforeEach(() => {
   getMock.mockReset();
   postMock.mockReset();
+  putMock.mockReset();
+  putMock.mockResolvedValue({});
   invalidarMock.mockReset();
   postMock.mockResolvedValue({});
   getMock.mockResolvedValue({});
 });
 
 describe('conciliacionBancariaApi — el contrato con el back', () => {
-  it('cargarExtracto manda nombre y filas con las claves exactas; la referencia vacía no viaja', async () => {
-    await conciliacionBancariaApi.cargarExtracto('sep.csv', [
-      { fecha: '2026-09-03', valorCop: 1800000, descripcion: 'PAGO', referencia: '12' },
-      { fecha: '2026-09-04', valorCop: -45000, descripcion: 'CUOTA', referencia: '' },
-    ]);
+  it('cargarExtracto manda nombre, la cuenta (obligatoria) y filas con las claves exactas; lo vacío no viaja', async () => {
+    await conciliacionBancariaApi.cargarExtracto(
+      'sep.csv',
+      [
+        { fecha: '2026-09-03', valorCop: 1800000, descripcion: 'PAGO', referencia: '12', saldoCop: 11800000 },
+        { fecha: '2026-09-04', valorCop: -45000, descripcion: 'CUOTA', referencia: '' },
+      ],
+      { cuentaId: 'cta-1' },
+    );
     expect(postMock).toHaveBeenCalledWith(`${BASE}/extracto`, {
       nombreArchivo: 'sep.csv',
+      cuentaId: 'cta-1',
       filas: [
-        { fecha: '2026-09-03', valorCop: 1800000, descripcion: 'PAGO', referencia: '12' },
+        { fecha: '2026-09-03', valorCop: 1800000, descripcion: 'PAGO', referencia: '12', saldoCop: 11800000 },
         { fecha: '2026-09-04', valorCop: -45000, descripcion: 'CUOTA' },
       ],
     });
@@ -44,6 +58,32 @@ describe('conciliacionBancariaApi — el contrato con el back', () => {
       'valorCop',
       'descripcion',
     ]);
+    expect(invalidarMock).toHaveBeenCalledWith('cobros');
+  });
+
+  it('🔴 (02-10-2026) los saldos, el período y la confirmación de otra cuenta viajan sólo si vienen', async () => {
+    expect(
+      opcionesParaElBack({
+        cuentaId: 'cta-1',
+        saldoInicialCop: 0,
+        saldoFinalCop: -5,
+        desde: '2026-09-01',
+        hasta: '',
+        aceptarIgualesDeOtraCuenta: true,
+      }),
+    ).toEqual({ cuentaId: 'cta-1', saldoInicialCop: 0, saldoFinalCop: -5, desde: '2026-09-01', aceptarIgualesDeOtraCuenta: true });
+    expect(opcionesParaElBack({ cuentaId: 'cta-1', aceptarIgualesDeOtraCuenta: false })).toEqual({ cuentaId: 'cta-1' });
+  });
+
+  it('las cuentas, el filtro por cuenta y «es de la pasarela» pegan a sus rutas', async () => {
+    await conciliacionBancariaApi.cuentas();
+    expect(getMock).toHaveBeenLastCalledWith(`${BASE}/cuentas`);
+    await conciliacionBancariaApi.listar({ cuenta: 'sin-cuenta' });
+    expect(getMock).toHaveBeenLastCalledWith(`${BASE}/movimientos?cuenta=sin-cuenta`);
+    await conciliacionBancariaApi.resumen('pasarela');
+    expect(getMock).toHaveBeenLastCalledWith(`${BASE}/resumen?cuenta=pasarela`);
+    await conciliacionBancariaApi.esDeLaPasarela('m-1', 'p-1');
+    expect(postMock).toHaveBeenLastCalledWith(`${BASE}/movimientos/m-1/es-de-la-pasarela`, { pagoEnLineaId: 'p-1' });
     expect(invalidarMock).toHaveBeenCalledWith('cobros');
   });
 
@@ -80,6 +120,75 @@ describe('conciliacionBancariaApi — el contrato con el back', () => {
 
     await conciliacionBancariaApi.conciliarSeguros();
     expect(postMock).toHaveBeenCalledWith(`${BASE}/conciliar-seguros`, {});
+  });
+});
+
+describe('conciliacionBancariaApi — muchos a uno: un movimiento son varios recibos (02-10)', () => {
+  it('recibosQueSuman pide las combinaciones del movimiento por GET, sin cuerpo', async () => {
+    const respuesta = { propuestas: [], ambigua: false, agotada: false, sePuedeAplicar: true };
+    getMock.mockResolvedValueOnce(respuesta);
+    await expect(conciliacionBancariaApi.recibosQueSuman('m-7')).resolves.toBe(respuesta);
+    expect(getMock).toHaveBeenCalledWith(`${BASE}/movimientos/m-7/recibos-que-suman`);
+    expect(getMock.mock.calls[0]).toHaveLength(1);
+    // Leer no cambia nada: no despierta a nadie.
+    expect(invalidarMock).not.toHaveBeenCalled();
+  });
+
+  it('conciliarConRecibos manda SÓLO `reciboIds` (forbidNonWhitelisted) y despierta a cobros', async () => {
+    const ids = ['r-1', 'r-2', 'r-3'];
+    await conciliacionBancariaApi.conciliarConRecibos('m-7', ids);
+    expect(postMock).toHaveBeenCalledWith(`${BASE}/movimientos/m-7/conciliar-con-recibos`, {
+      reciboIds: ['r-1', 'r-2', 'r-3'],
+    });
+    const cuerpo = postMock.mock.calls[0][1] as Record<string, unknown>;
+    expect(Object.keys(cuerpo)).toEqual(['reciboIds']);
+    // Una copia: si quien llama muta su arreglo después, el cuerpo no cambia.
+    expect(cuerpo.reciboIds).not.toBe(ids);
+    expect(invalidarMock).toHaveBeenCalledWith('cobros');
+  });
+
+  it('si el back dice que no, el error sube tal cual y no se despierta a nadie', async () => {
+    const rechazo = Object.assign(new Error('Uno de los recibos ya está conciliado.'), {
+      status: 409,
+      code: 'RECIBO_YA_CONCILIADO',
+    });
+    postMock.mockRejectedValueOnce(rechazo);
+    await expect(conciliacionBancariaApi.conciliarConRecibos('m-7', ['r-1'])).rejects.toBe(rechazo);
+    expect(invalidarMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('conciliacionBancariaApi — diferencias conocidas de la inmobiliaria (02-10)', () => {
+  it('diferenciasConocidas lee por GET', async () => {
+    await conciliacionBancariaApi.diferenciasConocidas();
+    expect(getMock).toHaveBeenCalledWith(`${BASE}/diferencias-conocidas`);
+  });
+
+  it('guardar manda por PUT la lista entera, cada una con SÓLO las claves de su tipo', async () => {
+    await conciliacionBancariaApi.guardarDiferenciasConocidas([
+      { nombre: '  Retención arrendamientos ', tipo: 'RETENCION', porcentaje: 3.5, aQuien: 'empresas' },
+      { nombre: 'Comisión ACH', tipo: 'COMISION', valorCop: 6500, aQuien: 'todos' },
+    ]);
+    expect(putMock).toHaveBeenCalledWith(`${BASE}/diferencias-conocidas`, {
+      diferencias: [
+        { nombre: 'Retención arrendamientos', tipo: 'RETENCION', porcentaje: 3.5, aQuien: 'empresas' },
+        { nombre: 'Comisión ACH', tipo: 'COMISION', valorCop: 6500, aQuien: 'todos' },
+      ],
+    });
+    // 🔴 Una retención con `valorCop` (o una comisión con `porcentaje`) es un 400.
+    const retencion = diferenciaParaElBack({
+      nombre: 'x',
+      tipo: 'RETENCION',
+      porcentaje: 1,
+      aQuien: 'todos',
+      valorCop: 99,
+    } as never);
+    expect(Object.keys(retencion)).toEqual(['nombre', 'tipo', 'porcentaje', 'aQuien']);
+  });
+
+  it('guardar sin diferencias manda la lista vacía (las borra todas)', async () => {
+    await conciliacionBancariaApi.guardarDiferenciasConocidas([]);
+    expect(putMock).toHaveBeenCalledWith(`${BASE}/diferencias-conocidas`, { diferencias: [] });
   });
 });
 

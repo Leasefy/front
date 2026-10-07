@@ -12,12 +12,14 @@ import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CrossFade, Presence } from '@leasefy/cadence';
 import { CasillasDeCodigo } from '@/components/ui/casillas-de-codigo';
 import { ForceLightMode } from '@/components/providers/ForceLightMode';
 import { MfaSetupSection } from '@/components/settings/MfaSetupSection';
 import { RestablecerSegundoFactorPorCorreo } from '@/components/auth/RestablecerSegundoFactorPorCorreo';
 import { leerRestablecimientoPendiente } from '@/lib/auth/restablecimiento-pendiente';
-import { mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor';
+import { laSesionSeCerro, mensajeDeSupabaseAuth } from '@/lib/auth/errores-del-segundo-factor';
+import { FRASES_DE_SUPABASE, leerErrorDeSupabase, sinRespuestaDeSupabase } from '@/lib/auth/errores-de-supabase';
 import { FondoDeMarca } from '@/components/auth/FondoDeMarca';
 import LogoDefs from '@/components/landing-v2/LogoDefs';
 import { destinoTrasElSegundoFactor } from '@/lib/auth/regreso-tras-el-segundo-factor';
@@ -88,7 +90,9 @@ async function factorVerificadoPorHttp(seguir: () => boolean): Promise<string | 
   const token = await esperarElToken(seguir);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!token || !url || !anonKey) throw new Error('sin sesión');
+  // Sin token y con el AuthProvider ya contestado: no hay sesión (no es «no se pudo preguntar»).
+  if (!token) throw Object.assign(new Error('sin sesión'), { sinSesion: hayRespuestaDeSesion() });
+  if (!url || !anonKey) throw new Error('sin Supabase');
   const control = new AbortController();
   const reloj = setTimeout(() => control.abort(), 10_000);
   try {
@@ -96,7 +100,7 @@ async function factorVerificadoPorHttp(seguir: () => boolean): Promise<string | 
       signal: control.signal,
       headers: { apikey: anonKey, Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) throw Object.assign(new Error(`HTTP ${res.status}`), { status: res.status });
     const usuario = (await res.json()) as { factors?: Array<{ id: string; factor_type: string; status: string }> };
     return usuario.factors?.find((f) => f.factor_type === 'totp' && f.status === 'verified')?.id ?? null;
   } finally {
@@ -201,6 +205,23 @@ export default function MfaVerifyPage() {
   const enUnFlujoPropio = sinLaApp || restablecido || cambiandoElFactor || quiereInscribir;
 
   /**
+   * 🔴 Nico, 05-10: con la sesión muerta ningún código entra y el factor ni
+   * se puede consultar. Esta pantalla no es la salida: se cierra lo que quede
+   * y se va a la contraseña con el destino que traía (el `returnUrl`).
+   */
+  const aLaContrasena = useCallback(async () => {
+    const destino = returnUrlDeLaBarra();
+    try {
+      await signOut();
+    } catch {
+      // La sesión ya estaba muerta: no hay nada más que cerrar.
+    }
+    router.replace(destino ? `/auth?returnUrl=${encodeURIComponent(destino)}` : '/auth');
+  }, [signOut, router]);
+  const aLaContrasenaRef = useRef(aLaContrasena);
+  aLaContrasenaRef.current = aLaContrasena;
+
+  /**
    * 🔴 Nico, 29-09: pidió el código al correo, la página se montó de nuevo
    * mientras lo buscaba y volvió a las casillas de la APP; escribió ahí el
    * código del correo y le dijo «Código incorrecto». Si hay un restablecimiento
@@ -249,25 +270,59 @@ export default function MfaVerifyPage() {
   const consultaDelFactorRef = useRef<Promise<string | null> | null>(null);
   useEffect(() => {
     let vivo = true;
+    // 🔴 Nico, 05-10: al recargar con la sesión muerta, las dos preguntas
+    // fallaban y la pantalla concluía «no tiene factor»: le ofrecía ACTIVARLO a
+    // quien ya lo tenía. Sin sesión no se pregunta nada: se va a la contraseña.
+    let sesionMuerta = false;
+    const aLaContrasenaPorLaSesion = () => {
+      if (!vivo) return;
+      vivo = false;
+      toast.error(FRASES_DE_SUPABASE.session_not_found);
+      void aLaContrasenaRef.current();
+    };
     const porElSdk = (async () => {
       const supabase = getSupabase();
       if (!supabase) throw new Error('sin Supabase');
       const { data: factors, error } = await supabase.auth.mfa.listFactors();
-      if (error) throw error;
+      if (error) {
+        if (laSesionSeCerro({ status: error.status, codigo: error.code, mensaje: error.message })) sesionMuerta = true;
+        throw error;
+      }
       return factors?.totp?.find((f) => f.status === 'verified')?.id ?? null;
     })();
-    const consulta = primeroQueConteste([porElSdk, factorVerificadoPorHttp(() => vivo)]);
+    let contesto = false;
+    const porHttp = factorVerificadoPorHttp(() => vivo).catch((e: { sinSesion?: boolean; status?: number }) => {
+      // Sin token con el AuthProvider ya contestado no hay sesión. Se le dan 3 s
+      // al SDK por si la trae (un null de paso del AuthProvider); si no
+      // contesta —puede quedarse con el candado, ver arriba—, a la contraseña.
+      if (e?.sinSesion) {
+        setTimeout(() => {
+          if (vivo && !contesto && !getAccessToken() && hayRespuestaDeSesion()) aLaContrasenaPorLaSesion();
+        }, 3_000);
+      }
+      // Un 401/403 con el token en memoria puede ser un token viejo que el SDK
+      // sí renueva: decide el SDK; si él también falla, la sesión murió.
+      if (e?.status === 401 || e?.status === 403) sesionMuerta = true;
+      throw e;
+    });
+    const consulta = primeroQueConteste([porElSdk, porHttp]);
     consultaDelFactorRef.current = consulta;
     consulta
       .then((id) => {
+        contesto = true;
         if (!vivo) return;
         if (id) setFactorId(id);
         setTieneFactor(Boolean(id));
       })
       .catch(() => {
+        if (!vivo) return;
+        if (sesionMuerta) {
+          aLaContrasenaPorLaSesion();
+          return;
+        }
         // Si ni siquiera se pudo preguntar, se ofrece inscribirlo: es la
         // única de las dos salidas que sirve cuando no se sabe.
-        if (vivo) setTieneFactor(false);
+        setTieneFactor(false);
       });
     return () => {
       vivo = false;
@@ -332,18 +387,30 @@ export default function MfaVerifyPage() {
       const msg = (err as Error).message || '';
       // 🔴 Las casillas se pintan en rojo además del aviso: el aviso se va solo
       // y el campo se queda vacío, así que sin esto no queda rastro de que lo
-      // que falló fue el código y no otra cosa.
-      setHayError(true);
+      // que falló fue el código y no otra cosa. Si lo que falló fue la red o
+      // Supabase (sin respuesta, un 5xx), el código no tuvo la culpa: no se
+      // pinta en rojo (02-10-2026, regla de oro).
+      const { status } = leerErrorDeSupabase(err);
+      setHayError(!sinRespuestaDeSupabase(err) && !(typeof status === 'number' && status >= 500));
       // Por el CÓDIGO del error, no por palabras sueltas: «invalid JWT… token
       // is expired» (sesión vencida) contiene «invalid» y «expired» y se
       // mostraba como «Código incorrecto» (Nico, 01-10). Nada en inglés ni un
       // «Error 422» pelado (29-09).
       const e = err as { status?: number; code?: string };
       if (e.code === 'mfa_verification_failed') setRechazados((n) => n + 1);
-      toast.error(mensajeDeSupabaseAuth({ status: e.status, codigo: e.code, mensaje: msg }));
+      const datos = { status: e.status, codigo: e.code, mensaje: msg };
+      toast.error(mensajeDeSupabaseAuth(datos));
       setCode('');
+      // 🔴 Nico, 05-10: dejó esta pantalla abierta mucho rato, la sesión ya no
+      // se pudo renovar, el aviso dijo «Tu sesión se cerró…» y la pantalla se
+      // quedó pidiendo el código: con la sesión muerta ninguno entra. Se cierra
+      // y se va a la contraseña, con el destino que traía (el `returnUrl`).
+      if (laSesionSeCerro(datos)) {
+        setHayError(false);
+        await aLaContrasena();
+      }
     }
-  }, [factorId, code, setMfaVerified, user, router]);
+  }, [factorId, code, setMfaVerified, user, router, aLaContrasena]);
 
   /** Seis dígitos y ya no hay nada más que preguntar: se envía solo. */
   const enviarSiSePuede = useCallback(
@@ -389,6 +456,21 @@ export default function MfaVerifyPage() {
     await signOut();
     router.replace('/auth');
   }, [signOut, router]);
+
+  /*
+   * Qué muestra la tarjeta. Al cambiar (verificar ↔ «no tengo la app» ↔
+   * activarlo de nuevo), el título y el cuerpo se cruzan JUNTOS con
+   * `CrossFade`: sale lo viejo en 150 ms y entra lo nuevo subiendo 4 px. La
+   * primera vista llega visible desde el servidor (`initial` en `false`).
+   */
+  const tituloDeLaTarjeta = restablecido
+    ? 'restablecido'
+    : sinLaApp
+      ? 'sin-la-app'
+      : inscribiendo
+        ? 'inscribir'
+        : 'verificar';
+  const cuerpoDeLaTarjeta = sinLaApp && !restablecido ? 'restablecer' : inscribiendo ? 'inscribir' : 'codigo';
 
   return (
     <ForceLightMode>
@@ -442,6 +524,7 @@ export default function MfaVerifyPage() {
                     seguridad» se parte en dos renglones dentro de una tarjeta
                     de 480. (`DESIGN.md` dice que `.text-h2` son 22 px y no es
                     cierto — medido: 36.) */}
+                <CrossFade swapKey={tituloDeLaTarjeta} className="space-y-2">
                 <h1 className="text-balance font-heading text-[30px] font-medium leading-[1.1] tracking-[-0.03em] text-fg">
                   {restablecido
                     ? 'Activa tu segundo factor de nuevo'
@@ -464,8 +547,18 @@ export default function MfaVerifyPage() {
                         ? 'Tu rol maneja la plata de propietarios e inquilinos, así que entrar con contraseña no alcanza. Actívalo acá una vez: son dos minutos.'
                         : 'Abre tu app de autenticación y escribe el código de seis dígitos.'}
                 </p>
+                </CrossFade>
                 {/* Con qué cuenta se está entrando: quien se fue y volvió (o
-                    tiene varias) lo ve sin adivinar (Nico, 01-10). */}
+                    tiene varias) lo ve sin adivinar (Nico, 01-10). El
+                    esqueleto y el correo miden lo mismo: se cruzan en el
+                    lugar (`popLayout`). `empty:hidden`: sin nada que mostrar
+                    no deja un hueco. */}
+                <div className="relative empty:hidden">
+                <CrossFade
+                  swapKey={correoDeLaCuenta ? 'correo' : buscandoElCorreo ? 'cargando' : 'nada'}
+                  mode="popLayout"
+                  className="empty:hidden"
+                >
                 {correoDeLaCuenta ? (
                   <p className="flex justify-center pt-1" data-testid="mfa-verify-cuenta">
                     <span className="inline-flex h-9 max-w-full items-center gap-2 rounded-full border border-border-faint bg-surface-muted px-3 text-body-sm text-fg">
@@ -478,6 +571,8 @@ export default function MfaVerifyPage() {
                     <Skeleton className="h-9 w-64 rounded-full bg-surface-muted" />
                   </div>
                 ) : null}
+                </CrossFade>
+                </div>
               </div>
 
               {/*
@@ -485,6 +580,7 @@ export default function MfaVerifyPage() {
                 ofrece inscribirlo, acá mismo, porque Configuración → Seguridad
                 está del otro lado del muro que esta pantalla levanta.
               */}
+              <CrossFade swapKey={cuerpoDeLaTarjeta}>
               {sinLaApp && !restablecido ? (
                 <RestablecerSegundoFactorPorCorreo
                   correo={correoDeLaCuenta}
@@ -526,7 +622,8 @@ export default function MfaVerifyPage() {
                     autoFocus
                   />
 
-                  {rechazados >= 3 ? (
+                  {/* Al tercer rechazo aparece la salida, subiendo 8 px. */}
+                  <Presence show={rechazados >= 3}>
                     <div
                       className="space-y-2 rounded-md bg-warning-soft px-3.5 py-3 text-left text-body-sm text-fg"
                       data-testid="mfa-verify-ninguno-sirve"
@@ -546,7 +643,7 @@ export default function MfaVerifyPage() {
                         Restablecer con un código al correo
                       </Button>
                     </div>
-                  ) : null}
+                  </Presence>
 
                   <Button
                     onClick={() => void handleVerify()}
@@ -567,10 +664,12 @@ export default function MfaVerifyPage() {
                   </p>
                 </div>
               )}
+              </CrossFade>
 
               {/* 🔴 La puerta de emergencia: sin app no hay código, y hay que
                   poder decirlo aunque el SDK no conteste. */}
-              {!inscribiendo && !sinLaApp && (
+              {/* El pie se va (y vuelve) con `Presence`, junto con el cambio de la tarjeta. */}
+              <Presence show={!inscribiendo && !sinLaApp} initial={false}>
                 <div className="space-y-1 border-t border-border-faint pt-5 text-center">
                   {/* La pregunta nombra los casos: «No tengo la app» sola no
                       la reconoce quien cambió de celular o ve que ningún
@@ -595,7 +694,7 @@ export default function MfaVerifyPage() {
                     {revisandoLaCuenta ? 'Revisando tu cuenta…' : 'Restablécelo con un código a tu correo'}
                   </Button>
                 </div>
-              )}
+              </Presence>
 
               <div className="text-center">
                 <button

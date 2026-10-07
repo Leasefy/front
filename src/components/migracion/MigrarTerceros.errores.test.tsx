@@ -407,6 +407,11 @@ describe('la lista de trabajo', () => {
       ],
     });
     await clic('No traer ninguna de estas');
+    // QA-MIGRACION-95 (TE-08): descartar en masa ahora confirma antes.
+    await act(async () => {
+      document.querySelector<HTMLButtonElement>('[data-testid="masivo-confirmar-descartar"]')!.click();
+    });
+    await act(async () => {});
 
     const errorCaja = container.querySelector('[data-testid="error-de-lista"]')!;
     expect(errorCaja.textContent).toContain('el correo no es válido');
@@ -546,3 +551,46 @@ describe('aviso antes de cerrar la pestaña', () => {
   });
 });
 
+
+describe('QA-MIG-A MG-20: el aviso de «crear con datos por completar» se va al crear', () => {
+  it('después de «Crear N» ya no dice «se crea con el botón de arriba»', async () => {
+    const incompleta: FilaDeStaging = {
+      ...filaPendiente(1),
+      errores: [{ codigo: 'FALTA_DOCUMENTO', campo: 'documento', mensaje: 'falta el número de documento' }],
+    };
+    api.filas.mockResolvedValue({ filas: [incompleta], total: 1, pagina: 1, porPagina: 25 });
+    api.resumen.mockResolvedValue({ ...LOTE, total: 3, requierenAtencion: 1, listos: 2 });
+    api.lotesAbiertos.mockResolvedValue([LOTE]);
+    api.corregir.mockResolvedValue({ ...incompleta, estado: 'LISTO', errores: [] });
+    await pintar();
+    await clic('Retomar');
+
+    await clic('Crear con datos por completar');
+    expect(container.textContent).toContain('se crea con el botón de arriba');
+
+    api.aplicar.mockResolvedValueOnce({
+      lote: 'inquilinos-x', intentadas: 3, aplicadas: 3, fallidas: 0, invitados: 0, resultados: [], restantes: 0,
+    });
+    const crear = [...container.querySelectorAll('button')].find((b) => /^Crear \d+ inquilinos/.test(b.textContent ?? ''));
+    expect(crear).toBeTruthy();
+    await act(async () => crear!.click());
+    await act(async () => {});
+    expect(container.textContent).not.toContain('se crea con el botón de arriba');
+  });
+});
+
+describe('QA-MIG-A MG-37: un archivo sin filas lo dice', () => {
+  it('vacío o sólo encabezados: el aviso nombra el archivo y no aparece el mapeo', async () => {
+    await pintar();
+    parseMock.mockResolvedValue({ rows: [], headers: ['Nombre', 'Correo'] });
+    const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+    const archivo = new File([''], 'vacio.csv');
+    Object.defineProperty(input, 'files', { value: [archivo], configurable: true });
+    await act(async () => {
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await act(async () => {});
+    expect(container.textContent).toContain('«vacio.csv» no trae ninguna fila de datos');
+    expect(container.textContent).not.toContain('Así entendimos tus columnas');
+  });
+});

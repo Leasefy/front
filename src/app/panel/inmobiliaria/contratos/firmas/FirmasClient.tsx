@@ -24,8 +24,11 @@
  */
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { Signature } from '@phosphor-icons/react'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
@@ -43,6 +46,7 @@ import { invitacionApi } from '@/lib/api/crm.service'
 import { invalidar } from '@/lib/api/refresco-de-datos'
 import { usePermissions } from '@/lib/hooks/usePermissions'
 import { useCrm } from '@/lib/hooks/use-crm'
+import { diaEnColombia, fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 
 export function FirmasClient() {
   const { canAccess } = usePermissions()
@@ -57,10 +61,13 @@ export function FirmasClient() {
   const recordatorios = barrido.datos?.recordatorios ?? []
   const vencidas = barrido.datos?.vencidas ?? []
   const porVencer = barrido.datos?.porVencer ?? []
+  // QA-CONT-95 D-10: lo que va a tiempo también es «pendiente de firmar».
+  const aTiempo = barrido.datos?.aTiempo ?? []
   const vacio =
     recordatorios.length === 0 &&
     vencidas.length === 0 &&
-    porVencer.length === 0
+    porVencer.length === 0 &&
+    aTiempo.length === 0
 
   async function cancelar(contractId: string) {
     setResultado(null)
@@ -75,8 +82,15 @@ export function FirmasClient() {
       setMotivo('')
       setLiberar(false)
       invalidar('contratos')
-    } catch {
-      setResultado('No se pudo cancelar. Vuelve a intentar.')
+    } catch (err) {
+      // 02-10-2026: regla de oro — el motivo del back (un 409 dice por qué no),
+      // un 5xx es nuestro con la referencia, y sólo la red habla de conexión.
+      setResultado(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo cancelar la invitación.',
+          accion: 'cancelar la invitación',
+        }),
+      )
     }
   }
 
@@ -123,11 +137,9 @@ export function FirmasClient() {
         ))}
       </section>
 
-      {resultado ? (
-        <p className="text-sm" data-testid="resultado-cancelacion">
-          {resultado}
-        </p>
-      ) : null}
+      <Presence show={Boolean(resultado)} initial={false} distance="xs" as="p" className="text-sm" data-testid="resultado-cancelacion">
+        {resultado}
+      </Presence>
 
       {barrido.noHabilitado ? (
         <Card>
@@ -166,9 +178,11 @@ export function FirmasClient() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ul className="divide-y">
+                  {/* La que se cancela sale y las de abajo suben (`key` = el contrato). */}
+                  <Stagger as="ul" className="divide-y">
                     {vencidas.map((v) => (
-                      <li
+                      <StaggerItem
+                        as="li"
                         key={v.contractId}
                         className="space-y-2 py-3"
                         data-testid={`vencida-${v.contractId}`}
@@ -183,58 +197,65 @@ export function FirmasClient() {
                         </p>
 
                         {puedeEditar ? (
-                          cancelando === v.contractId ? (
-                            <div className="space-y-2">
-                              <Input
-                                value={motivo}
-                                onChange={(e) => setMotivo(e.target.value)}
-                                placeholder="Por qué se cancela"
-                                data-testid={`motivo-${v.contractId}`}
-                              />
-                              <label className="flex items-center gap-2 text-sm">
-                                <Checkbox
-                                  checked={liberar}
-                                  onCheckedChange={(c) => setLiberar(c === true)}
-                                  data-testid={`liberar-${v.contractId}`}
+                          /* «Cancelar» se cruza con el motivo. `popLayout`: el
+                             campo se monta YA y el botón se va por encima. */
+                          <CrossFade
+                            swapKey={cancelando === v.contractId ? 'motivo' : 'boton'}
+                            mode="popLayout"
+                          >
+                            {cancelando === v.contractId ? (
+                              <div className="space-y-2">
+                                <Input
+                                  value={motivo}
+                                  onChange={(e) => setMotivo(e.target.value)}
+                                  placeholder="Por qué se cancela"
+                                  data-testid={`motivo-${v.contractId}`}
                                 />
-                                Liberar el inmueble (vuelve a estar disponible)
-                              </label>
-                              <div className="flex gap-2">
-                                <Button
-                                  size="sm"
-                                  disabled={motivo.trim().length < 5}
-                                  onClick={() => void cancelar(v.contractId)}
-                                  data-testid={`confirmar-cancelar-${v.contractId}`}
-                                >
-                                  Cancelar la invitación
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => setCancelando(null)}
-                                >
-                                  Volver
-                                </Button>
+                                <label className="flex items-center gap-2 text-sm">
+                                  <Checkbox
+                                    checked={liberar}
+                                    onCheckedChange={(c) => setLiberar(c === true)}
+                                    data-testid={`liberar-${v.contractId}`}
+                                  />
+                                  Liberar el inmueble (vuelve a estar disponible)
+                                </label>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    disabled={motivo.trim().length < 5}
+                                    onClick={() => void cancelar(v.contractId)}
+                                    data-testid={`confirmar-cancelar-${v.contractId}`}
+                                  >
+                                    Cancelar la invitación
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => setCancelando(null)}
+                                  >
+                                    Volver
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setCancelando(v.contractId)
-                                setMotivo('')
-                                setLiberar(false)
-                              }}
-                              data-testid={`cancelar-${v.contractId}`}
-                            >
-                              Cancelar la invitación
-                            </Button>
-                          )
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setCancelando(v.contractId)
+                                  setMotivo('')
+                                  setLiberar(false)
+                                }}
+                                data-testid={`cancelar-${v.contractId}`}
+                              >
+                                Cancelar la invitación
+                              </Button>
+                            )}
+                          </CrossFade>
                         ) : null}
-                      </li>
+                      </StaggerItem>
                     ))}
-                  </ul>
+                  </Stagger>
                 </CardContent>
               </Card>
             ) : null}
@@ -257,17 +278,62 @@ export function FirmasClient() {
                     te espera en la Bandeja del Piloto con un clic y en Manual te
                     lo propone. El inmueble sigue reservado.
                   </p>
-                  <ul className="divide-y">
+                  <Stagger as="ul" className="divide-y">
                     {porVencer.map((p) => (
-                      <li
+                      <StaggerItem
+                        as="li"
                         key={p.invitacionId}
                         className="py-3 text-sm"
                         data-testid={`por-vencer-${p.contractId}`}
                       >
                         {p.tenantName ?? 'Contrato sin nombre del inquilino'}
-                      </li>
+                      </StaggerItem>
                     ))}
-                  </ul>
+                  </Stagger>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            {/* 🔴 QA-CONT-95 D-10/UC-13 (04-10-2026): el primero de los tres
+                estados que explica la pantalla. Antes no venía nunca y, con el
+                #57 esperando firma, la pantalla decía «No hay nadie pendiente
+                de firmar». */}
+            {aTiempo.length > 0 ? (
+              <Card data-testid="a-tiempo">
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    A tiempo ({aTiempo.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Stagger as="ul" className="divide-y">
+                    {aTiempo.map((a) => (
+                      <StaggerItem
+                        as="li"
+                        key={a.contractId}
+                        className="space-y-1 py-3"
+                        data-testid={`a-tiempo-${a.contractId}`}
+                      >
+                        <p className="text-sm">
+                          <Link
+                            href={`/panel/inmobiliaria/contratos/${a.contractId}`}
+                            className="font-medium text-primary hover:underline"
+                          >
+                            {a.code != null ? `Contrato #${a.code}` : 'Contrato'}
+                          </Link>
+                          {' · '}
+                          {a.tenantName ?? 'Sin nombre del inquilino'}
+                          {' · '}
+                          {a.esperaA === 'INQUILINO'
+                            ? 'espera la firma del inquilino'
+                            : 'el inquilino ya firmó: falta la firma de la inmobiliaria'}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          {lineaDelPlazo(a)}
+                        </p>
+                      </StaggerItem>
+                    ))}
+                  </Stagger>
                 </CardContent>
               </Card>
             ) : null}
@@ -283,9 +349,10 @@ export function FirmasClient() {
                   <p className="text-muted-foreground mb-3 text-sm">
                     Esta pantalla no envía: arma el texto y deja la constancia.
                   </p>
-                  <ul className="divide-y">
+                  <Stagger as="ul" className="divide-y">
                     {recordatorios.map((r) => (
-                      <li
+                      <StaggerItem
+                        as="li"
                         key={r.contractId}
                         className="space-y-1 py-3"
                         data-testid={`recordatorio-${r.contractId}`}
@@ -295,9 +362,9 @@ export function FirmasClient() {
                           Recordatorio {r.numero} de {r.de} ·{' '}
                           {r.correo ?? 'sin correo'}
                         </p>
-                      </li>
+                      </StaggerItem>
                     ))}
-                  </ul>
+                  </Stagger>
                 </CardContent>
               </Card>
             ) : null}
@@ -306,4 +373,27 @@ export function FirmasClient() {
       )}
     </div>
   )
+}
+
+type ATiempo = NonNullable<
+  NonNullable<Awaited<ReturnType<typeof invitacionApi.barrido>>>['aTiempo']
+>[number]
+
+/** «Vence el 11 de octubre de 2026 (le quedan 7 días) · Próximo recordatorio: 7 de octubre de 2026». */
+export function lineaDelPlazo(a: ATiempo): string {
+  if (!a.venceEl) {
+    return 'Se mandó a firmar antes de que existiera el vencimiento: no vence sola. «Recordar» desde su ficha le pone los días para firmar.'
+  }
+  const quedan =
+    a.diasQueFaltan == null
+      ? ''
+      : a.diasQueFaltan === 1
+        ? ' (le queda 1 día)'
+        : ` (le quedan ${a.diasQueFaltan} días)`
+  const vence = `Vence el ${fechaLarga(diaEnColombia(a.venceEl))}${quedan}`
+  if (a.esperaA !== 'INQUILINO') return vence
+  const proximo = a.proximoRecordatorioEl
+    ? ` · Próximo recordatorio: ${fechaLarga(diaEnColombia(a.proximoRecordatorioEl))}`
+    : ''
+  return `${vence} · Recordatorios: ${a.recordatoriosEnviados} de ${a.de}${proximo}`
 }

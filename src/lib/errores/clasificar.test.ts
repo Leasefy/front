@@ -274,6 +274,40 @@ describe('clasificarFallo — sin créditos y tardó demasiado', () => {
     expect(fallo.titulo).toContain('créditos')
   })
 
+  /*
+   * 02-10-2026 · Los 402 del back llevan `code`. La inmobiliaria sin plan
+   * activo y el tope del plan no son «sin créditos de IA».
+   */
+  it('🔴 PLAN_REQUERIDO dice que no hay plan activo, no «sin créditos de IA»', () => {
+    const fallo = clasificarFallo(
+      new ApiError(
+        402,
+        'Necesitas una suscripción activa para acceder al panel de tu inmobiliaria. Actualiza tu plan para continuar.',
+        'PLAN_REQUERIDO',
+      ),
+    )
+    expect(fallo.titulo).toBe('Tu inmobiliaria no tiene un plan activo')
+    expect(fallo.titulo).not.toContain('créditos')
+    expect(fallo.descripcion).toContain('suscripción activa')
+    expect(fallo.sePuedeReintentar).toBe(false)
+  })
+
+  it('🔴 LIMITE_DEL_PLAN dice el tope con el texto del back; sin texto, la frase del código', () => {
+    const conTexto = clasificarFallo(
+      new ApiError(402, 'Alcanzaste el límite de agentes de tu plan. Sube de plan para agregar más.', 'LIMITE_DEL_PLAN'),
+    )
+    expect(conTexto.titulo).toBe('Llegaste al límite de tu plan')
+    expect(conTexto.descripcion).toBe('Alcanzaste el límite de agentes de tu plan. Sube de plan para agregar más.')
+    const sinTexto = clasificarFallo(new ApiError(402, '', 'LIMITE_DEL_PLAN'))
+    expect(sinTexto.descripcion).toBe('Llegaste al límite de tu plan. Sube de plan para agregar más.')
+  })
+
+  it('NOMINA_NO_HABILITADA nombra el módulo', () => {
+    const fallo = clasificarFallo(new ApiError(402, 'El módulo de Nómina no está habilitado.', 'NOMINA_NO_HABILITADA'))
+    expect(fallo.titulo).toBe('El módulo de Nómina no está habilitado')
+    expect(fallo.titulo).not.toContain('créditos')
+  })
+
   it.each([
     Object.assign(new Error('The operation timed out'), { name: 'TimeoutError' }),
     Object.assign(new Error('signal is aborted without reason'), { name: 'AbortError' }),

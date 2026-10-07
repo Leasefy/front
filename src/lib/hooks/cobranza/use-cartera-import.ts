@@ -28,6 +28,8 @@
 import { useCallback, useState } from 'react'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { useAuth } from '@/lib/auth'
 
 export interface CarteraImportErrorEntry {
@@ -75,8 +77,15 @@ export type CarteraImportStatus =
 export interface UseCarteraImportResult {
   status: CarteraImportStatus
   summary: CarteraImportSummary | null
-  /** Mensaje legible para el operador (errores reales / "Próximamente"). */
+  /**
+   * Mensaje legible para el operador, ya traducido (`mensajeParaLaPersona`):
+   * un 400 dice qué tiene el archivo, un 5xx que fue nuestro (con la
+   * referencia), «conexión» sólo si el `fetch` no salió. «Próximamente» SÓLO
+   * con un 404 o sin agente configurado.
+   */
   message: string | null
+  /** El error tal cual (el `ApiError` del micro o el de la red), si lo hubo. */
+  fallo: unknown
   /** Sube un archivo CSV. Devuelve el summary o null si degradó / falló. */
   importFile: (file: File) => Promise<CarteraImportSummary | null>
   /** Limpia el resumen/estado para volver a subir otro archivo. */
@@ -92,11 +101,24 @@ export function useCarteraImport(): UseCarteraImportResult {
   const [status, setStatus] = useState<CarteraImportStatus>('idle')
   const [summary, setSummary] = useState<CarteraImportSummary | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [fallo, setFallo] = useState<unknown>(null)
 
   const reset = useCallback(() => {
     setStatus('idle')
     setSummary(null)
     setMessage(null)
+    setFallo(null)
+  }, [])
+
+  const registrarFallo = useCallback((e: unknown) => {
+    setStatus('error')
+    setFallo(e)
+    setMessage(
+      mensajeParaLaPersona(e, {
+        porDefecto: 'No pudimos importar la cartera.',
+        accion: 'importar la cartera',
+      }),
+    )
   }, [])
 
   const importFile = useCallback(
@@ -111,6 +133,7 @@ export function useCarteraImport(): UseCarteraImportResult {
 
       setStatus('uploading')
       setMessage(null)
+      setFallo(null)
 
       try {
         const form = new FormData()
@@ -134,16 +157,9 @@ export function useCarteraImport(): UseCarteraImportResult {
         }
 
         if (!res.ok) {
-          // 400/401/403/503 — error real, mensaje honesto sin romper la pantalla.
-          let detail = `${res.status}`
-          try {
-            const body = (await res.json()) as { error?: string }
-            if (body?.error) detail = body.error
-          } catch {
-            /* respuesta sin cuerpo JSON */
-          }
-          setStatus('error')
-          setMessage(detail)
+          // 400/401/403/5xx — error real, traducido. Antes se pintaba el
+          // `error` del cuerpo (en inglés) o el status crudo.
+          registrarFallo(await falloDelMicro(res))
           return null
         }
 
@@ -152,15 +168,15 @@ export function useCarteraImport(): UseCarteraImportResult {
         setStatus('done')
         setMessage(null)
         return json
-      } catch {
-        // Red caída / backend inalcanzable → degrada a "Próximamente" (fail-soft).
-        setStatus('unavailable')
-        setMessage(UNAVAILABLE_MESSAGE)
+      } catch (e) {
+        // Antes la red caída decía «Próximamente», que es mentira: el import
+        // existe, lo que no hubo fue respuesta. Llega tal cual al traductor.
+        registrarFallo(e)
         return null
       }
     },
-    [agencyId],
+    [agencyId, registrarFallo],
   )
 
-  return { status, summary, message, importFile, reset }
+  return { status, summary, message, fallo, importFile, reset }
 }

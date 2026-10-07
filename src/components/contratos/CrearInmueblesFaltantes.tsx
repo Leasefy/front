@@ -28,6 +28,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
+import { Presence } from '@leasefy/cadence'
 import { Buildings, WarningCircle } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -43,11 +44,23 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { SIN_TIPO, TIPOS_DE_INMUEBLE_FALTANTE } from '@/lib/contratos/tipos-de-inmueble-faltante'
+import {
   contractsApi,
   type PrevisualizacionInmueblesFaltantes,
   type ResultadoInmueblesFaltantes,
 } from '@/lib/api/contracts.service'
 import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+
+const ID_DE_LA_CIUDAD = 'ciudad-inmuebles-faltantes'
 
 /** Filas por petición: cada inmueble reserva su código bajo lock, así que tandas cortas. */
 const TANDA = 25
@@ -79,12 +92,27 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
   const [previa, setPrevia] = useState<PrevisualizacionInmueblesFaltantes | null>(null)
   const [confirmando, setConfirmando] = useState(false)
   const [ciudad, setCiudad] = useState('')
+  /**
+   * El tipo para las filas cuya dirección no lo dice. Sin elegir, esas filas
+   * NO se crean (se dicen omitidas): antes nacían todas como apartamento
+   * (QA-MIG-A, MG-34).
+   */
+  const [tipo, setTipo] = useState<string>(SIN_TIPO)
   const [corriendo, setCorriendo] = useState(false)
   /** Filas que ya pasaron por una tanda en esta corrida (creadas, resueltas u omitidas). */
   const [revisadas, setRevisadas] = useState(0)
   /** La corrida se cortó: el botón pasa a decir «Continuar». */
   const [seCorto, setSeCorto] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  /** Lo que el back dijo de la ciudad (`CrearInmueblesFaltantesDto.ciudad`). */
+  const [errorDeLaCiudad, setErrorDeLaCiudad] = useState<string | null>(null)
+  /** La ciudad está apagada mientras corre: el foco va cuando termina. */
+  const [enfocarLaCiudad, setEnfocarLaCiudad] = useState(false)
+  useEffect(() => {
+    if (corriendo || !enfocarLaCiudad) return
+    document.getElementById(ID_DE_LA_CIUDAD)?.focus()
+    setEnfocarLaCiudad(false)
+  }, [corriendo, enfocarLaCiudad])
   const [resultado, setResultado] = useState<ResultadoInmueblesFaltantes | null>(null)
 
   const contar = useCallback(async () => {
@@ -107,6 +135,7 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
   async function crear() {
     setCorriendo(true)
     setError(null)
+    setErrorDeLaCiudad(null)
     setSeCorto(false)
     setRevisadas(0)
     let acumulado: ResultadoInmueblesFaltantes = {
@@ -120,10 +149,12 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
     try {
       let cursor: number | undefined
       for (let i = 0; i < MAX_TANDAS; i++) {
-        const t = await contractsApi.migracion.crearInmueblesFaltantes({ lote }, ciudad, {
-          limite: TANDA,
-          despuesDeFila: cursor,
-        })
+        const t = await contractsApi.migracion.crearInmueblesFaltantes(
+          { lote },
+          ciudad,
+          { limite: TANDA, despuesDeFila: cursor },
+          tipo === SIN_TIPO ? undefined : tipo,
+        )
         acumulado = acumular(acumulado, t)
         setResultado(acumulado)
         setRevisadas(acumulado.pedidas)
@@ -136,10 +167,20 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
     } catch (e) {
       // Lo creado en las tandas anteriores YA quedó guardado: se dice, y el
       // mismo botón continúa con las filas que falten.
-      setSeCorto(true)
-      setError(
-        `${e instanceof Error ? e.message : 'No pudimos crear los inmuebles.'} — se alcanzaron a crear ${acumulado.creados}. Lo creado quedó guardado: pulsa «Continuar» para seguir con los que faltan.`,
-      )
+      setSeCorto(acumulado.pedidas > 0)
+      // Un 400 de la ciudad va debajo de la ciudad; lo demás, al aviso.
+      const reparto = repartirErroresDelServidor(e, {
+        campos: ['ciudad'],
+        porDefecto: 'No pudimos crear los inmuebles.',
+        accion: 'crear los inmuebles',
+      })
+      setErrorDeLaCiudad(reparto.porCampo.ciudad ?? null)
+      const sueltos = reparto.sueltos.join(' · ')
+      const guardado =
+        ` — se alcanzaron a crear ${acumulado.creados}. Lo creado quedó guardado: pulsa «Continuar» para seguir con los que faltan.`
+      if (acumulado.creados > 0) setError(`${sueltos || 'No pudimos crear los inmuebles.'}${guardado}`)
+      else setError(sueltos || null)
+      if (reparto.porCampo.ciudad) setEnfocarLaCiudad(true)
     } finally {
       setCorriendo(false)
       await contar()
@@ -196,7 +237,11 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
       {resultado ? <ResultadoDeCreacion resultado={resultado} /> : null}
 
       <AlertDialog open={confirmando} onOpenChange={(v) => !corriendo && setConfirmando(v)}>
-        <AlertDialogContent data-testid="crear-inmuebles-faltantes-dialogo">
+        <AlertDialogContent
+          variant="confirm"
+          icon={<Buildings weight="bold" />}
+          data-testid="crear-inmuebles-faltantes-dialogo"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>Crear {n} {n === 1 ? 'inmueble' : 'inmuebles'}</AlertDialogTitle>
             <AlertDialogDescription asChild>
@@ -218,17 +263,46 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-1">
-            <label className="text-caption text-muted-foreground" htmlFor="ciudad-inmuebles-faltantes">
+            <label className="text-caption text-muted-foreground" htmlFor={ID_DE_LA_CIUDAD}>
               Ciudad para las filas que no la traen
             </label>
             <Input
-              id="ciudad-inmuebles-faltantes"
+              id={ID_DE_LA_CIUDAD}
               value={ciudad}
-              onChange={(e) => setCiudad(e.target.value)}
+              onChange={(e) => {
+                setCiudad(e.target.value)
+                setErrorDeLaCiudad(null)
+              }}
               placeholder="La de la inmobiliaria"
               disabled={corriendo}
+              invalid={Boolean(errorDeLaCiudad)}
+              aria-invalid={errorDeLaCiudad ? true : undefined}
+              aria-describedby={errorDeLaCiudad ? `${ID_DE_LA_CIUDAD}-error` : undefined}
               data-testid="crear-inmuebles-faltantes-ciudad"
             />
+            <ErrorDelCampo id={`${ID_DE_LA_CIUDAD}-error`} mensaje={errorDeLaCiudad} />
+          </div>
+          <div className="space-y-1">
+            <label className="text-caption text-muted-foreground" htmlFor="tipo-inmuebles-faltantes">
+              Tipo para las que la dirección no lo dice
+            </label>
+            <Select value={tipo} onValueChange={setTipo} disabled={corriendo}>
+              <SelectTrigger id="tipo-inmuebles-faltantes" data-testid="crear-inmuebles-faltantes-tipo">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="z-[400]">
+                <SelectItem value={SIN_TIPO}>Ninguno: ésas las creo fila por fila</SelectItem>
+                {TIPOS_DE_INMUEBLE_FALTANTE.map((t) => (
+                  <SelectItem key={t.valor} value={t.valor}>
+                    {t.etiqueta}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-caption text-muted-foreground">
+              Si la dirección lo dice («CASA 7», «AP 801», «LC 101»), se usa el de la
+              dirección. No se pone un tipo que nadie dijo.
+            </p>
           </div>
           {corriendo ? (
             <p
@@ -242,12 +316,11 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
               esperar aquí: lo creado se va guardando.
             </p>
           ) : null}
-          {error ? (
-            <p className="flex items-center gap-1.5 text-sm text-destructive">
-              <WarningCircle className="h-4 w-4" />
-              {error}
-            </p>
-          ) : null}
+          {/* El aviso de la acción (no es de un campo): un 409, un 5xx, la red. */}
+          <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="flex items-center gap-1.5 text-sm text-destructive" role="alert">
+            <WarningCircle className="h-4 w-4" />
+            {error}
+          </Presence>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={corriendo}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
@@ -257,7 +330,7 @@ export function CrearInmueblesFaltantes({ lote, onListo }: Props) {
                 e.preventDefault()
                 void crear()
               }}
-              disabled={corriendo}
+              loading={corriendo}
               data-testid="crear-inmuebles-faltantes-confirmar"
             >
               {corriendo ? 'Creando…' : seCorto ? `Continuar con ${n}` : `Crear ${n}`}

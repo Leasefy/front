@@ -5,6 +5,8 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PortadaDelInmueble, primeraFoto } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { ArrowUpRight, MapPin, CreditCard, FileText, House, CaretRight, MagnifyingGlass, Heart, Shield, CheckCircle, Check, ArrowRight, Lightbulb, ClipboardText } from '@phosphor-icons/react';
 
 import { useFeaturedProperties } from '@/lib/hooks/useProperties';
@@ -12,7 +14,12 @@ import { useAuth } from '@/lib/auth';
 import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
 import { useEvaluation } from '@/lib/hooks/useEvaluation';
 import { useTenantApplications } from '@/lib/hooks/useApplications';
-import { useLeases, useMyPayments } from '@/lib/hooks/useLeases';
+import { useLeases } from '@/lib/hooks/useLeases';
+import { useContratosDelPortal } from '@/lib/hooks/use-contratos-del-portal';
+import { useEstadoDeCuentaDelPortal } from '@/lib/hooks/useResumenDelPortal';
+import { proximoPagoDelPortal } from '@/lib/estado-de-cuenta/proximo-pago-del-portal';
+import { hoyLocal } from '@/components/estado-de-cuenta/filas';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { useTenantCases } from '@/lib/hooks/use-tenant-cases';
 import { PropertyDetailSheet } from '@/components/tenant/PropertyDetailSheet';
 import { TenantDashboardEmpty } from '@/components/tenant/TenantDashboardEmpty';
@@ -38,6 +45,7 @@ import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { useI18n } from '@/lib/i18n';
 import type { Property } from '@/lib/types/property';
 import { formatArea } from '@/lib/format';
+import { areaConocida } from '@/lib/inmuebles/area-conocida';
 
 /**
  * Tenant Dashboard - Landing Page Style
@@ -134,16 +142,8 @@ export default function InquilinoPage() {
     error: errorArriendos,
     refetch: recargarArriendos,
   } = useLeases();
-  const { getNextPayment } = useMyPayments();
 
   const activeLeases = getActiveLeases();
-  const nextPaymentRaw = getNextPayment();
-  const nextPayment: { amount: number; dueDate: string } | null = nextPaymentRaw
-    ? { amount: nextPaymentRaw.amount, dueDate: nextPaymentRaw.dueDate }
-    : null;
-  const primaryLease: { id: string; propertyName: string } | null = activeLeases[0]
-    ? { id: activeLeases[0].id, propertyName: activeLeases[0].propertyTitle }
-    : null;
 
   /*
    * Vista previa de su catálogo. Se piden más de las que se muestran porque
@@ -204,11 +204,26 @@ export default function InquilinoPage() {
     !errorPostulaciones &&
     !errorArriendos;
   const { openCasesCount } = useTenantCases({ skip: !dashboardWillRender });
+  // QA-MIGRACION-95 — CA-04 (Nico, (a)): el inquilino migrado sin arriendo (el
+  // archivo no traía día de pago) tiene contratos vigentes igual: el inicio no
+  // lo trata como alguien que busca dónde vivir.
+  const { contratos: contratosSinArriendo } = useContratosDelPortal(dashboardWillRender);
+  const cuantosArriendos = activeLeases.length + contratosSinArriendo.length;
+  // «Próximo pago» sale del estado de cuenta, la misma cuenta que «Pagos» y «Mi
+  // arriendo» (QA-INQ-95: venía de `/tenant-payments/mine`, armado con el día
+  // pactado y el canon entero del modelo viejo).
+  const estadoDeCuenta = useEstadoDeCuentaDelPortal(dashboardWillRender && cuantosArriendos > 0);
+  const nextPayment = estadoDeCuenta ? proximoPagoDelPortal(estadoDeCuenta, hoyLocal()) : null;
 
   // Loading state — wait for auth + real data so the "new user" banner doesn't flash
-  if (authLoading || isOnboardingComplete === null || applicationsLoading || leasesLoading) {
+  const cargandoElPanel =
+    authLoading || isOnboardingComplete === null || applicationsLoading || leasesLoading;
+  // Carga → contenido: si se vio el esqueleto, el panel entra con 4 px; si los
+  // datos ya estaban, no anima (la entrada de la página es del template).
+  const entrada = useEntradaTrasCargar(cargandoElPanel);
+  if (cargandoElPanel) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         {/* Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»). */}
         <EsqueletoDePagina variante="dashboard" className="mx-auto max-w-7xl" />
       </div>
@@ -227,7 +242,7 @@ export default function InquilinoPage() {
    */
   if (errorPostulaciones || errorArriendos) {
     return (
-      <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
+      <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
         <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
           <FalloDeCarga
             error={errorPostulaciones ?? errorArriendos}
@@ -251,7 +266,7 @@ export default function InquilinoPage() {
    * Un fallo no es una ausencia. Los hooks siempre expusieron `error`; la
    * pantalla lo ignoraba.
    */
-  const isNewUser = activeLeases.length === 0 && activeApplications.length === 0;
+  const isNewUser = cuantosArriendos === 0 && activeApplications.length === 0;
 
   // Casos abiertos — conteo REAL (proyección de las fuentes ya cargadas; ver
   // use-tenant-cases). La tarjeta sólo aparece cuando cuenta algo (>0), igual
@@ -261,15 +276,11 @@ export default function InquilinoPage() {
   const hayCasos = !isNewUser && openCasesCount > 0;
 
   return (
-    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0e0e10]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-bg">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Hero Header */}
-        <motion.header
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <header className="mb-8">
           <p className="text-sm font-medium text-fg-muted dark:text-fg-subtle mb-1">
             {greeting}
           </p>
@@ -279,7 +290,7 @@ export default function InquilinoPage() {
           {/* Acá iba un "¡Tu perfil está listo!" que repetía, palabra por
               palabra, la tarjeta que viene justo debajo. Dos felicitaciones
               seguidas por el mismo hecho. Queda una. */}
-        </motion.header>
+        </header>
 
         {/*
           Lo primero del home es la aprobación, y reemplaza al viejo
@@ -296,12 +307,7 @@ export default function InquilinoPage() {
           `detalle` apunta a "para ti" y no a la pantalla del tope.
         */}
         {isNewUser && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="mb-8"
-          >
+          <div className="mb-8">
             <TopeAprobadoBanner
               aprobacion={aprobacion}
               vigente={aprobacionVigente}
@@ -311,14 +317,11 @@ export default function InquilinoPage() {
                 variant: 'default',
               }}
             />
-          </motion.div>
+          </div>
         )}
 
         {/* Stats Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
+        <div
           className={`grid gap-4 mb-8 ${
             isNewUser
               ? 'grid-cols-1 sm:grid-cols-2'
@@ -341,14 +344,14 @@ export default function InquilinoPage() {
           <>
           {/* Active Leases */}
           <Link href="/inquilino/arriendo" className="group">
-            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
                 <House className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
               </div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Arriendos' : 'Rentals'}</p>
-              <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">{activeLeases.length}</p>
+              <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">{cuantosArriendos}</p>
               <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
-                {activeLeases.length === 0
+                {cuantosArriendos === 0
                   ? (locale === 'es' ? 'Sin arriendos activos' : 'No active rentals')
                   : (locale === 'es' ? 'Contratos vigentes' : 'Active contracts')}
               </p>
@@ -357,8 +360,8 @@ export default function InquilinoPage() {
 
           {/* Applications */}
           <Link href="/inquilino/aplicaciones" className="group">
-            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+            <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
                 <FileText className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
               </div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('nav.applications')}</p>
@@ -373,8 +376,8 @@ export default function InquilinoPage() {
               Sólo cuando hay casos: "Casos 0" no resume nada (misma regla del grid). */}
           {hayCasos && (
             <Link href="/inquilino/casos" className="group">
-              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
                   <ClipboardText className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                 </div>
                 <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Casos' : 'Cases'}</p>
@@ -389,22 +392,25 @@ export default function InquilinoPage() {
           )}
 
           {/* Next Payment or CTA */}
-          {nextPayment && primaryLease ? (
+          {nextPayment && cuantosArriendos > 0 ? (
             <Link href="/inquilino/pagos" className="group">
-              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
                   <CreditCard className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                 </div>
                 <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{t('dashboard.nextPayment')}</p>
                 <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">
-                  {i18nFormatCurrency((nextPayment as { amount: number }).amount)}
+                  {i18nFormatCurrency(nextPayment.valor)}
+                </p>
+                <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
+                  {locale === 'es' ? `Vence el ${fechaCorta(nextPayment.fecha)}` : `Due ${fechaCorta(nextPayment.fecha)}`}
                 </p>
               </div>
             </Link>
           ) : (
             <Link href="/inquilino/explorar" className="group">
-              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5 hover:bg-surface-muted dark:hover:bg-[#222224] transition-colors">
-                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center mb-3">
+              <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
+                <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">
                   <MagnifyingGlass className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                 </div>
                 <p className="text-xs text-primary font-medium mb-1">
@@ -416,18 +422,14 @@ export default function InquilinoPage() {
               </div>
             </Link>
           )}
-        </motion.div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
 
             {/* Recommended Properties - Always show prominently */}
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
+            <section>
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h2 className="text-xl font-semibold text-fg dark:text-white">
@@ -458,21 +460,20 @@ export default function InquilinoPage() {
                 </Link>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {featuredProperties.map((property, index) => (
-                  <motion.button
-                    key={property.id}
+              {/* Las destacadas llegan DESPUÉS del panel (su propia consulta):
+                  entran escalonadas, con el techo de 320 ms del sistema. */}
+              <Stagger className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {featuredProperties.map((property) => (
+                  <StaggerItem key={property.id} className="flex">
+                  <button
                     onClick={() => handleViewProperty(property)}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.25 + index * 0.05 }}
-                    className="group relative overflow-hidden rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] hover:border-border dark:hover:border-border-strong transition-colors duration-300 text-left w-full"
+                    className="group relative overflow-hidden rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted hover:border-border dark:hover:border-border-strong transition-colors duration-slow text-left w-full"
                   >
                     <div className="relative aspect-[16/10] overflow-hidden">
                       <PortadaDelInmueble
                         property={property}
                         alt={property.title}
-                        className="group-hover:scale-105 transition-transform duration-500"
+                        className="group-hover:scale-105 transition-transform duration-reveal"
                       />
 
                       {/*
@@ -491,7 +492,7 @@ export default function InquilinoPage() {
                       {/* Heart - Glass effect */}
                       <div
                         onClick={(e) => e.stopPropagation()}
-                        className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-all backdrop-blur-xl bg-surface/20 border border-white/30 hover:bg-surface/30 cursor-pointer"
+                        className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-[transform,background-color] backdrop-blur-xl bg-surface/20 border border-white/30 hover:bg-surface/30 cursor-pointer"
                       >
                         <Heart className="w-4 h-4 text-white drop-" />
                       </div>
@@ -523,7 +524,7 @@ export default function InquilinoPage() {
                       {/* Sólo los datos que el inmueble trae: los migrados llegan
                           sin habitaciones, baños ni área, y las pastillas salían
                           «hab», «baños», «m²» sin número. */}
-                      {(property.bedrooms != null || property.bathrooms != null || property.area != null) && (
+                      {(property.bedrooms != null || property.bathrooms != null || areaConocida(property.area)) && (
                         <div data-testid="datos-del-inmueble" className="flex items-center gap-2 pt-3 border-t border-border-faint dark:border-border-strong">
                           {property.bedrooms != null && (
                             <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
@@ -540,7 +541,7 @@ export default function InquilinoPage() {
                                 : 'bath'}
                             </span>
                           )}
-                          {property.area != null && (
+                          {areaConocida(property.area) && (
                             <span className="px-2.5 py-1 bg-surface-muted dark:bg-ink rounded-md text-xs text-fg-muted dark:text-fg-subtle font-medium">
                               {formatArea(property.area)}
                             </span>
@@ -548,10 +549,11 @@ export default function InquilinoPage() {
                         </div>
                       )}
                     </div>
-                  </motion.button>
+                  </button>
+                  </StaggerItem>
                 ))}
-              </div>
-            </motion.section>
+              </Stagger>
+            </section>
 
             {/*
               Antes esto era un bloque suelto: sin encabezado y sobre un fondo
@@ -565,11 +567,7 @@ export default function InquilinoPage() {
               borde como el resto de las superficies del home.
             */}
             {activeApplications.length === 0 && (
-              <motion.section
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 }}
-              >
+              <section>
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h2 className="text-xl font-semibold text-fg dark:text-white">
@@ -590,7 +588,7 @@ export default function InquilinoPage() {
                   </Link>
                 </div>
 
-                <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618]">
+                <div className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted">
                   {/* "aplicación / aplicar" está muerto: docs/VOCABULARIO.md.
                       Y el CTA va a su catálogo, que es lo siguiente que haría. */}
                   <EmptyState
@@ -607,7 +605,7 @@ export default function InquilinoPage() {
                     }}
                   />
                 </div>
-              </motion.section>
+              </section>
             )}
           </div>
 
@@ -615,11 +613,8 @@ export default function InquilinoPage() {
           <div className="space-y-6">
 
             {/* Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-              className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5"
+            <div
+              className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5"
             >
               <h3 className="font-semibold text-fg dark:text-white mb-4">
                 {t('dashboard.quickActions')}
@@ -650,10 +645,10 @@ export default function InquilinoPage() {
                     label: locale === 'es' ? 'Mi perfil' : 'My profile',
                     desc: locale === 'es' ? 'Editar información' : 'Edit information'
                   },
-                ].map((action, i) => (
-                  <Link key={i} href={action.href}>
-                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface dark:hover:bg-[#222224] transition-colors group">
-                      <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center transition-shadow">
+                ].map((action) => (
+                  <Link key={action.href} href={action.href}>
+                    <div className="flex items-center gap-3 p-3 rounded-xl hover:bg-surface dark:hover:bg-border transition-colors group">
+                      <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center transition-shadow">
                         <action.icon className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -667,18 +662,15 @@ export default function InquilinoPage() {
                   </Link>
                 ))}
               </div>
-            </motion.div>
+            </div>
 
             {/* Tips Card for New Users */}
             {isNewUser && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#161618] p-5"
+              <div
+                className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-surface dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center flex-shrink-0">
                     <Lightbulb className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
                   </div>
                   <div>
@@ -692,15 +684,12 @@ export default function InquilinoPage() {
                     </p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             )}
 
             {/* Help Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.35 }}
-              className="rounded-xl bg-surface dark:bg-[#1a1a1c] border border-border dark:border-border-strong p-5"
+            <div
+              className="rounded-xl bg-surface dark:bg-surface-muted border border-border dark:border-border-strong p-5"
             >
               <h4 className="font-semibold text-fg dark:text-white text-sm mb-2">
                 {locale === 'es' ? '¿Necesitas ayuda?' : 'Need help?'}
@@ -717,10 +706,10 @@ export default function InquilinoPage() {
                 {locale === 'es' ? 'Ir al centro de ayuda' : 'Go to help center'}
                 <ArrowRight className="w-4 h-4" />
               </Link>
-            </motion.div>
+            </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Property Detail Sheet */}
       <PropertyDetailSheet

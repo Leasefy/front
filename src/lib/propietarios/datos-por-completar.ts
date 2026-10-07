@@ -13,6 +13,12 @@ export const SIN_REGISTRAR = 'Sin registrar';
 const ETIQUETA_DEL_DATO: Record<string, string> = {
   documento: 'documento',
   tipoDocumento: 'tipo de documento',
+  // QA-PROP P-28 (back 5731a4e2): sin cuenta no se le puede girar.
+  cuentaBancaria: 'cuenta bancaria',
+  // COLA-FRONT (04-10): algo arrendado y ningún giro programado.
+  diaDeGiro: 'día de giro',
+  // QA-PROP-95 B-08 (04-10): dice «CC» y el número tiene forma de NIT de empresa.
+  tipoDocumentoPorRevisar: 'revisar el tipo de documento (el número parece un NIT)',
 };
 
 /** El número de documento listo para pintar: «Sin registrar» si no hay. */
@@ -32,9 +38,14 @@ export function documentoConTipo(
 ): string {
   const n = numero?.trim();
   if (!n) return SIN_REGISTRAR;
-  const t = tipo?.trim();
+  const crudo = tipo?.trim();
+  // QA-PROP-95 (P-08): el tipo se dice como lo dice la gente, no con la etiqueta
+  // del enum («PASSPORT: AB998877» → «Pasaporte: AB998877»).
+  const t = crudo ? (TIPO_EN_PALABRAS[crudo.toUpperCase()] ?? crudo) : '';
   return t ? `${t}${separador}${n}` : n;
 }
+
+const TIPO_EN_PALABRAS: Record<string, string> = { PASSPORT: 'Pasaporte', PASAPORTE: 'Pasaporte', PPT: 'PPT', TI: 'TI', CE: 'CE', CC: 'CC', NIT: 'NIT' };
 
 /**
  * «Datos por completar: documento, tipo de documento», o `null` si no falta

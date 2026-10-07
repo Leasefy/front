@@ -24,6 +24,15 @@ import { StepReview } from '@/components/wizard/steps/StepReview';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PostulacionDirecta } from '@/components/tenant/PostulacionDirecta';
 import { usePostulacionDirecta } from '@/lib/hooks/use-postulacion-directa';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { ofertaDelEstudio, type OfertaDelEstudio as Oferta } from '@/components/tenant/PostularButton';
+import { OfertaDelEstudio } from '@/components/tenant/OfertaDelEstudio';
+import { useAprobacion } from '@/lib/hooks/use-aprobacion';
+import {
+  leerElegibilidad,
+  ofertaPorElegibilidad,
+  type Elegibilidad,
+} from '@/lib/tenant/antes-de-postularte';
 
 // ============================================================================
 // Page props
@@ -81,6 +90,40 @@ export default function AplicarPage({ params }: AplicarPageProps) {
     { id: string; status: string } | null | undefined
   >(undefined);
   const [withdrawing, setWithdrawing] = useState(false);
+  const [errorAlRetirar, setErrorAlRetirar] = useState<string | null>(null);
+
+  // 🔴 El estudio es OPCIONAL (Nico, 04-10-2026; reemplaza F-08 y el «Antes de
+  // postularte» de QA-IA-A): nadie se queda sin postularse por el estudio. Lo
+  // que se lee acá es qué OFRECERLE: con sesión, el veredicto del back; sin
+  // sesión, la aprobación local (quien se aprobó por un enlace y aún no tiene
+  // cuenta).
+  const aprobacionLocal = useAprobacion();
+  const [elegibilidad, setElegibilidad] = useState<Elegibilidad | null | undefined>(undefined);
+  useEffect(() => {
+    if (resolviendoSesion) return;
+    if (!isAuthed) {
+      setElegibilidad(null);
+      return;
+    }
+    let cancelado = false;
+    void leerElegibilidad().then((e) => {
+      if (!cancelado) setElegibilidad(e);
+    });
+    return () => {
+      cancelado = true;
+    };
+  }, [isAuthed, resolviendoSesion]);
+  const oferta: Oferta | null = isAuthed
+    ? ofertaPorElegibilidad(elegibilidad)
+    : aprobacionLocal.cargando
+      ? null
+      : ofertaDelEstudio({
+          aprobacion: aprobacionLocal.aprobacion,
+          vigente: aprobacionLocal.vigente,
+          haySesion: false,
+        });
+  const decidiendoSiPuede =
+    resolviendoSesion || (isAuthed ? elegibilidad === undefined : aprobacionLocal.cargando);
 
   useEffect(() => {
     if (resolviendoSesion) return; // todavía no se sabe si hay sesión
@@ -115,10 +158,20 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   const handleWithdrawAndReapply = useCallback(async () => {
     if (!existingApp) return;
     setWithdrawing(true);
+    setErrorAlRetirar(null);
     try {
       await applicationsApi.withdraw(existingApp.id);
       setExistingApp(null); // withdrawn → the wizard can render
-    } catch {
+    } catch (err) {
+      // 🔴 02-10-2026: antes sólo se apagaba el spinner y la persona no sabía
+      // que no se retiró. Ahora se dice por qué, con la regla de oro.
+      setErrorAlRetirar(
+        mensajeParaLaPersona(err, {
+          accion: 'retirar tu postulación',
+          porDefecto: 'No pudimos retirar tu postulación. Prueba de nuevo en un momento.',
+        }),
+      );
+    } finally {
       setWithdrawing(false);
     }
   }, [existingApp]);
@@ -225,7 +278,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
   // of the two paths they take. Se espera a las dos: mostrar el formulario y
   // reemplazarlo un segundo después por la pantalla directa sería peor que
   // esperar.
-  if (decidiendoCamino || (isAuthed && existingApp === undefined)) {
+  if (decidiendoCamino || decidiendoSiPuede || (isAuthed && existingApp === undefined)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
         <CargaDeMarca tamano="lg" />
@@ -241,6 +294,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
         applicationId={existingApp.id}
         onWithdraw={handleWithdrawAndReapply}
         withdrawing={withdrawing}
+        error={errorAlRetirar}
       />
     );
   }
@@ -279,7 +333,7 @@ export default function AplicarPage({ params }: AplicarPageProps) {
       agentCode={agentCode}
       linkCode={linkCode}
     >
-      <WizardContent property={property} />
+      <WizardContent property={property} oferta={oferta} />
     </ApplicationProvider>
   );
 }
@@ -292,12 +346,15 @@ interface AlreadyAppliedCardProps {
   applicationId: string;
   onWithdraw: () => void;
   withdrawing: boolean;
+  /** Por qué no se pudo retirar (null = no hubo fallo). */
+  error: string | null;
 }
 
 function AlreadyAppliedCard({
   applicationId,
   onWithdraw,
   withdrawing,
+  error,
 }: AlreadyAppliedCardProps) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted px-4">
@@ -331,6 +388,11 @@ function AlreadyAppliedCard({
             Retirar y volver a postular
           </Button>
         </div>
+        {error ? (
+          <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger">
+            {error}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -342,12 +404,14 @@ function AlreadyAppliedCard({
 
 interface WizardContentProps {
   property: Property;
+  /** Qué ofrecerle sobre el estudio (nunca un freno). `null` = nada. */
+  oferta: Oferta | null;
 }
 
 /**
  * Wrapper that handles the submission state and switches between wizard and confirmation
  */
-function WizardContent({ property }: WizardContentProps) {
+function WizardContent({ property, oferta }: WizardContentProps) {
   const { application, isGuestSubmission } = useApplication();
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -363,7 +427,11 @@ function WizardContent({ property }: WizardContentProps) {
   return (
     <>
       <WizardShell property={property}>
-        <WizardStepContent onSubmissionComplete={handleSubmissionComplete} />
+        <WizardStepContent
+          onSubmissionComplete={handleSubmissionComplete}
+          oferta={oferta}
+          propertyId={property.id}
+        />
       </WizardShell>
       {enviada ? (
         <PostulacionEnviadaModal
@@ -383,12 +451,14 @@ function WizardContent({ property }: WizardContentProps) {
 
 interface WizardStepContentProps {
   onSubmissionComplete: () => void;
+  oferta: Oferta | null;
+  propertyId: string;
 }
 
 /**
  * Renders the appropriate step component based on current step
  */
-function WizardStepContent({ onSubmissionComplete }: WizardStepContentProps) {
+function WizardStepContent({ onSubmissionComplete, oferta, propertyId }: WizardStepContentProps) {
   const { currentStep, application, submitApplication, isLoading } = useApplication();
 
   // Handle form submission
@@ -399,6 +469,13 @@ function WizardStepContent({ onSubmissionComplete }: WizardStepContentProps) {
 
   return (
     <div className="space-y-6">
+      {/* El estudio, ofrecido como ayuda al empezar (nunca un freno) y, al
+          final, cómo va a ver la inmobiliaria la postulación. */}
+      {oferta && currentStep === 1 && <OfertaDelEstudio oferta={oferta} propertyId={propertyId} />}
+      {oferta && currentStep === 5 && (
+        <OfertaDelEstudio oferta={oferta} propertyId={propertyId} compacta />
+      )}
+
       {/* Step 1: Personal Information */}
       {currentStep === 1 && <StepPersonal />}
 

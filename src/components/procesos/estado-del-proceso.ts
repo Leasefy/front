@@ -6,6 +6,13 @@
 
 import type { EstadoDeProceso, Proceso } from '@/lib/api/procesos.types'
 
+/**
+ * 🔴 La migración NO va al centro de procesos (Nico, 01-10 y 06-10): el back
+ * ya no la registra ni lista las cargas viejas; el filtro tampoco la ofrece.
+ * Los nombres siguen abajo sólo por si llega una fila vieja.
+ */
+export const TIPOS_DE_LA_MIGRACION: readonly string[] = ['MIGRACION_CONTRATOS', 'MIGRACION_INMUEBLES']
+
 export const NOMBRE_DEL_TIPO: Record<string, string> = {
   REPROCESAR_ASIENTOS: 'Reprocesar asientos',
   ARCHIVO_DEL_LOTE: 'Archivo del lote al banco',

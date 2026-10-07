@@ -25,6 +25,7 @@
  */
 
 import { useCallback, useRef, useState } from 'react'
+import { Presence } from '@leasefy/cadence'
 import { UploadSimple, Warning } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -49,6 +50,12 @@ import {
 } from '@/lib/listas-restrictivas/columnas-del-archivo'
 import { captacionApi } from '@/lib/api/crm.service'
 import { errorEnCristiano } from '@/lib/errores/en-cristiano'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import {
+  errorDeVigenteDesde,
+  revisarLasFilas,
+} from '@/lib/captacion/limites-de-la-captacion'
 
 /**
  * Las tres que publica un organismo, más «propia». El código viaja al back como
@@ -79,7 +86,17 @@ interface LoQueSeLeyo {
   filas: FilaDeLaLista[]
   /** Filas del archivo que se descartaron por no tener nombre. */
   descartadas: number
+  /** Detalles de más de 500 caracteres, recortados para que la lista entre. */
+  detallesRecortados: number
+  /**
+   * Lo que el back rechazaría y no se arregla solo (un nombre o un documento
+   * más largo que su columna, más de 50.000 filas): frena la carga.
+   */
+  problema: string | null
 }
+
+/** Los campos del cajón que pueden traer un error propio. */
+type CampoDeLaLista = 'vigenteDesde' | 'archivo'
 
 export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaListaProps) {
   const hoy = new Date().toISOString().slice(0, 10)
@@ -88,18 +105,29 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
   const [leyendo, setLeyendo] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [leido, setLeido] = useState<LoQueSeLeyo | null>(null)
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaLista, string>>>({})
   const archivoRef = useRef<HTMLInputElement>(null)
+  const vigenteRef = useRef<HTMLInputElement>(null)
 
   const fuente = FUENTES.find((f) => f.codigo === codigo) ?? FUENTES[0]
 
   const limpiar = useCallback(() => {
     setLeido(null)
+    setErrores({})
     if (archivoRef.current) archivoRef.current.value = ''
   }, [])
+
+  /** Pinta el error en su campo y le da el foco al primero. */
+  function marcar(nuevos: Partial<Record<CampoDeLaLista, string>>) {
+    setErrores(nuevos)
+    const primero = nuevos.vigenteDesde ? vigenteRef.current : nuevos.archivo ? archivoRef.current : null
+    primero?.focus()
+  }
 
   async function leerArchivo(archivo: File) {
     setLeyendo(true)
     setLeido(null)
+    setErrores((e) => ({ ...e, archivo: undefined }))
     try {
       let columnas: ColumnasDelArchivo = { nombre: null, documento: null, detalle: null }
       const filas: FilaDeLaLista[] = []
@@ -116,7 +144,18 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
           }
         },
       })
-      setLeido({ nombreDelArchivo: archivo.name, columnas, filas, descartadas })
+      // El espejo de los topes del back, ANTES de mandar nada: 50.000 filas,
+      // nombre ≤ 300, documento ≤ 40; el detalle largo se recorta y se dice.
+      const revision = revisarLasFilas(filas)
+      setLeido({
+        nombreDelArchivo: archivo.name,
+        columnas,
+        filas: revision.filas,
+        descartadas,
+        detallesRecortados: revision.detallesRecortados,
+        problema: revision.error,
+      })
+      if (revision.error) setErrores((e) => ({ ...e, archivo: revision.error ?? undefined }))
     } catch (e) {
       toast.error(errorEnCristiano(e, 'No se pudo leer el archivo.'))
     } finally {
@@ -126,6 +165,15 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
 
   async function cargar() {
     if (!leido || leido.filas.length === 0 || cargando) return
+    const deLaFecha = errorDeVigenteDesde(vigenteDesde)
+    if (deLaFecha || leido.problema) {
+      marcar({
+        ...(deLaFecha ? { vigenteDesde: deLaFecha } : {}),
+        ...(leido.problema ? { archivo: leido.problema } : {}),
+      })
+      return
+    }
+    setErrores({})
     setCargando(true)
     try {
       const r = await captacionApi.cargarLista({
@@ -150,14 +198,36 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
       onOpenChange(false)
       onCargada()
     } catch (e) {
-      toast.error(errorEnCristiano(e, 'No se pudo cargar la lista.'))
+      // Un 400 con `campos` va a su campo (la fecha, o el archivo si es una
+      // fila); al toast sólo lo que no tiene dónde ir. El cajón queda abierto
+      // con lo leído: no hay que volver a elegir el archivo.
+      const r = repartirErroresDelServidor<CampoDeLaLista>(e, {
+        mapa: {
+          vigenteDesde: 'vigenteDesde',
+          filas: 'archivo',
+          nombre: 'archivo',
+          documento: 'archivo',
+          detalle: 'archivo',
+        },
+        campos: ['vigenteDesde', 'archivo'],
+        porDefecto: 'No se pudo cargar la lista.',
+        accion: 'cargar la lista',
+      })
+      if (r.orden.length > 0) marcar(r.porCampo)
+      if (r.delServidor.length === 0) {
+        // Sin campos: la regla de oro (conexión sólo sin respuesta; 5xx con la
+        // referencia) y la traducción de los motivos del back.
+        toast.error(errorEnCristiano(e, 'No se pudo cargar la lista.'))
+      } else if (r.sueltos.length > 0) {
+        toast.error(r.sueltos.join(' · '))
+      }
     } finally {
       setCargando(false)
     }
   }
 
   const sinNombre = leido !== null && leido.columnas.nombre === null
-  const listo = leido !== null && !sinNombre && leido.filas.length > 0
+  const listo = leido !== null && !sinNombre && leido.filas.length > 0 && !leido.problema
 
   return (
     <Cajon
@@ -197,16 +267,29 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
         <div className="space-y-1.5">
           <Label htmlFor="lista-vigente">Vigente desde</Label>
           <Input
+            ref={vigenteRef}
             id="lista-vigente"
             type="date"
             value={vigenteDesde}
-            onChange={(e) => setVigenteDesde(e.target.value)}
+            onChange={(e) => {
+              setVigenteDesde(e.target.value)
+              setErrores((prev) => ({ ...prev, vigenteDesde: undefined }))
+            }}
+            invalid={!!errores.vigenteDesde}
+            aria-invalid={errores.vigenteDesde ? true : undefined}
+            aria-describedby="lista-vigente-error"
             data-testid="lista-vigente"
           />
-          <p className="text-caption text-fg-muted">
-            La fecha de publicación del archivo, no la de hoy: es lo que dice
-            contra qué versión de la lista se comparó a cada tercero.
-          </p>
+          <ErrorDelCampo
+            id="lista-vigente-error"
+            mensaje={errores.vigenteDesde}
+            pista={
+              <span className="text-caption text-fg-muted">
+                La fecha de publicación del archivo, no la de hoy: es lo que dice
+                contra qué versión de la lista se comparó a cada tercero.
+              </span>
+            }
+          />
         </div>
 
         <div className="space-y-1.5">
@@ -221,15 +304,23 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
               const archivo = e.target.files?.[0]
               if (archivo) void leerArchivo(archivo)
             }}
+            invalid={!!errores.archivo}
+            aria-invalid={errores.archivo ? true : undefined}
+            aria-describedby="lista-archivo-error"
             data-testid="lista-archivo"
           />
+          <ErrorDelCampo id="lista-archivo-error" mensaje={errores.archivo} />
         </div>
 
-        {leyendo && (
-          <p className="flex items-center gap-2 text-sm text-fg-muted" data-testid="lista-leyendo">
+        <Presence
+          as="p"
+          show={leyendo}
+          distance="xs"
+          className="flex items-center gap-2 text-sm text-fg-muted"
+          data-testid="lista-leyendo"
+        >
             <Spinner className="h-4 w-4" /> Leyendo el archivo…
-          </p>
-        )}
+        </Presence>
 
         {/* 🔴 Lo que se encontró, ANTES de cargar. Una lista mal leída bloquea
             a clientes reales: nadie carga a ciegas. */}
@@ -264,6 +355,14 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
                   <p className="text-caption text-fg-muted">
                     {leido.descartadas.toLocaleString('es-CO')} filas se
                     descartaron por no tener nombre.
+                  </p>
+                )}
+                {leido.detallesRecortados > 0 && (
+                  <p className="text-caption text-fg-muted" data-testid="lista-detalles-recortados">
+                    {leido.detallesRecortados === 1
+                      ? 'Un detalle pasaba de 500 caracteres y se recortó'
+                      : `${leido.detallesRecortados.toLocaleString('es-CO')} detalles pasaban de 500 caracteres y se recortaron`}
+                    : es una nota, no se compara contra nadie.
                   </p>
                 )}
                 <ul className="space-y-1" data-testid="lista-ejemplos">

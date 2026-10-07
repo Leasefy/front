@@ -32,9 +32,12 @@ vi.mock('@/lib/hooks/use-onboarding-provisioning', () => ({
  * 404 y no se podía regenerar (auditoría 2026-09-05).
  */
 const mockInviteUser = vi.fn()
+// Quién ya tiene invitación lo dice el back (`GET /inmobiliaria/agency/members`).
+const mockGetUsers = vi.fn()
 vi.mock('@/lib/api/inmobiliaria.service', () => ({
   inmobiliariaConfigApi: {
     inviteUser: (invite: unknown) => mockInviteUser(invite),
+    getUsers: () => mockGetUsers(),
   },
 }))
 
@@ -107,6 +110,9 @@ beforeEach(() => {
   mockUseOnboardingSession.mockClear()
   mockUseOnboardingProvisioning.mockClear()
   mockUseOnboardingProvisioning.mockReturnValue(baseProvisioningResult())
+  // Por defecto el back dice que sólo está la fundadora.
+  mockGetUsers.mockReset()
+  mockGetUsers.mockResolvedValue([{ email: 'fundadora@inmobiliaria.test', status: 'active' }])
 })
 
 afterEach(() => {
@@ -137,6 +143,19 @@ function setInputValue(input: HTMLInputElement, value: string) {
     setter?.call(input, value)
     input.dispatchEvent(new Event('input', { bubbles: true }))
   })
+}
+
+/**
+ * 02-10-2026 · En «Antes de comenzar» la ayuda y el error de cada campo se
+ * cruzan (Cadence `FormError` con `hint`): el error entra cuando la ayuda
+ * terminó de salir.
+ */
+async function esperarElCruce() {
+  for (let i = 0; i < 10; i++) {
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 20))
+    })
+  }
 }
 
 async function clickSubmit() {
@@ -277,7 +296,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     })
   })
 
-  it('pide el apellido en vez de guardar «Ana Ana» como nombre y apellido', () => {
+  it('pide el apellido en vez de guardar «Ana Ana» como nombre y apellido', async () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
       baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
@@ -289,10 +308,11 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     submitNameForm()
 
     expect(provision).not.toHaveBeenCalled()
+    await esperarElCruce()
     expect(container.textContent).toContain('Falta el apellido')
   })
 
-  it('blocks submit and shows a hint per empty required field', () => {
+  it('blocks submit and shows a hint per empty required field', async () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
       baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
@@ -302,6 +322,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     submitNameForm()
 
     expect(provision).not.toHaveBeenCalled()
+    await esperarElCruce()
     expect(container.textContent).toContain('Escribe tu nombre completo para continuar.')
     expect(container.textContent).toContain('La razón social es obligatoria.')
     expect(container.textContent).toContain('El NIT es obligatorio.')
@@ -334,7 +355,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     })
   })
 
-  it('el campo del NIT sólo deja dígitos, y con pocos bloquea el envío y lo dice sin jerga', () => {
+  it('el campo del NIT sólo deja dígitos, y con pocos bloquea el envío y lo dice sin jerga', async () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
       baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
@@ -350,6 +371,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     submitNameForm()
 
     expect(provision).not.toHaveBeenCalled()
+    await esperarElCruce()
     expect(container.textContent).toContain('Le faltan dígitos')
   })
 
@@ -365,7 +387,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     expect(byId('agencyNit').value).toBe('9000000000-0')
   })
 
-  it('rechaza un dígito de verificación que no corresponde y dice cuál es', () => {
+  it('rechaza un dígito de verificación que no corresponde y dice cuál es', async () => {
     const provision = vi.fn()
     mockUseOnboardingProvisioning.mockReturnValue(
       baseProvisioningResult({ status: 'needs-info', sessionId: null, provision }),
@@ -379,6 +401,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     submitNameForm()
 
     expect(provision).not.toHaveBeenCalled()
+    await esperarElCruce()
     expect(container.textContent).toContain('es 8')
   })
 
@@ -428,7 +451,9 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     ).toBe('true')
   })
 
-  it('con la inmobiliaria ya creada no ofrece cambiar de perfil', () => {
+  // Nico, 01-10-2026: la ✕ está siempre; con la inmobiliaria a medias, elegir
+  // otro perfil pregunta y la deja de lado (`DELETE /users/me/onboarding/agency`).
+  it('con la inmobiliaria ya creada la ✕ sigue, para volver a las tarjetas', () => {
     mockUseOnboardingProvisioning.mockReturnValue(
       baseProvisioningResult({
         status: 'needs-info',
@@ -438,8 +463,7 @@ describe('<OnboardingInmobiliariaClient> — owner info pre-step', () => {
     )
     render()
 
-    expect(container.querySelector('[data-testid="cerrar-antes-de-comenzar"]')).toBeNull()
-    expect(container.querySelector('[data-testid="cambiar-de-perfil"]')).toBeNull()
+    expect(container.querySelector('[data-testid="cerrar-antes-de-comenzar"]')).not.toBeNull()
   })
 })
 
@@ -528,7 +552,7 @@ describe('<OnboardingInmobiliariaClient>', () => {
     expect(container.querySelector('[data-testid="wizard-step-placeholder"]')).toBeFalsy()
   })
 
-  it('🔴 clic en un paso hecho de la barra vuelve a ese paso EDITABLE, con lo que ya quedó (Nico, 2026-09-07 y 30-09)', () => {
+  it('🔴 clic en un paso hecho de la barra vuelve a ese paso EDITABLE, con lo que ya quedó (Nico, 2026-09-07 y 30-09)', async () => {
     mockUseOnboardingSession.mockReturnValue(
       baseHookResult({
         currentStep: 'habeas_data',
@@ -543,6 +567,9 @@ describe('<OnboardingInmobiliariaClient>', () => {
     act(() => {
       volverAAgencia.click()
     })
+    // El paso que se va sale animado (`CrossFade` en `popLayout`): se espera
+    // a que termine de irse antes de mirar que ya no está.
+    await act(async () => {})
 
     // La sesión sigue abierta: el formulario se puede editar y trae lo guardado.
     expect(container.querySelector('[data-testid="paso-ya-guardado"]')).toBeFalsy()
@@ -973,6 +1000,8 @@ describe('<OnboardingInmobiliariaClient> — complete step (work-unit 3f)', () =
     act(() => {
       volverAAgencia.click()
     })
+    // El paso que se va sale animado (`CrossFade` en `popLayout`).
+    await act(async () => {})
 
     expect(container.querySelector('[data-testid="paso-ya-guardado"]')).toBeTruthy()
     expect(container.querySelector('[data-testid="agency-step-form"]')).toBeFalsy()
@@ -984,6 +1013,7 @@ describe('<OnboardingInmobiliariaClient> — complete step (work-unit 3f)', () =
     act(() => {
       ;(container.querySelector('[data-testid="volver-al-paso-actual"]') as HTMLButtonElement).click()
     })
+    await act(async () => {})
     expect(container.querySelector('[data-testid="paso-ya-guardado"]')).toBeFalsy()
     expect(container.querySelector('[data-testid="complete-step-form"]')).toBeTruthy()
   })
@@ -991,6 +1021,11 @@ describe('<OnboardingInmobiliariaClient> — complete step (work-unit 3f)', () =
   it('🔴 volver a editar Miembros arranca con los guardados y sólo invita a los correos NUEVOS (Nico, 30-09)', async () => {
     mockInviteUser.mockClear()
     mockInviteUser.mockResolvedValue({ emailDelivered: true, emailStatus: 'sent', invitationToken: 'tok-nuevo' })
+    // Ana ya tiene su invitación EN EL BACK: eso, y no el borrador, la saca de la lista.
+    mockGetUsers.mockResolvedValue([
+      { email: 'fundadora@inmobiliaria.test', status: 'active' },
+      { email: 'ana@inmobiliaria.test', status: 'invited' },
+    ])
     const submitMembers = vi.fn().mockResolvedValue({
       sessionId: 'sess-1',
       currentStep: 'habeas_data',
@@ -1023,6 +1058,119 @@ describe('<OnboardingInmobiliariaClient> — complete step (work-unit 3f)', () =
     expect(submitMembers).toHaveBeenCalledTimes(1)
     expect(mockInviteUser).toHaveBeenCalledTimes(1)
     expect(mockInviteUser).toHaveBeenCalledWith(expect.objectContaining({ email: 'bob@inmobiliaria.test' }))
+  })
+})
+
+/**
+ * 🔴 02-10-2026 (Alexis, QA): «En el punto 2 del flujo de creación de cuenta
+ * siempre falla la primera vez al ingresar un invitado». Un invitado VIEWER
+ * (`alex.dev+9@leasefy.co`), plan inicial.
+ */
+describe('<OnboardingInmobiliariaClient> — Miembros, primer intento (Alexis 02-10)', () => {
+  function enMiembros(overrides: Record<string, unknown> = {}) {
+    const submitMembers = vi.fn().mockResolvedValue({
+      sessionId: 'sess-1',
+      currentStep: 'payment_provider',
+      nextStep: 'policy',
+      draft: {},
+      inviteTokens: [],
+    })
+    mockUseOnboardingSession.mockReturnValue(
+      baseHookResult({ currentStep: 'members', submitMembers, ...overrides }),
+    )
+    return submitMembers
+  }
+
+  async function invitarALaVisora() {
+    // La tarjeta «MIEMBRO 1» ya escrita y SIN enviar (el borrador local del
+    // paso): así llega con el rol «Solo lectura», que en la prueba no se puede
+    // elegir en el Select de Radix. El micro todavía no tiene a nadie.
+    sessionStorage.setItem(
+      'leasefy-asistente:sess-1:members',
+      JSON.stringify({ members: [{ email: 'alex.dev+9@leasefy.co', role: 'VIEWER', nombre: '' }] }),
+    )
+    render()
+    expect(byId('members.0.email').value).toBe('alex.dev+9@leasefy.co')
+    await act(async () => {
+      ;(container.querySelector('[data-testid="members-step-form"] button[type="submit"]') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  // Desde el 02-10 (Nico) el back deja al fundador invitar Y listar sin
+  // segundo factor mientras dura el registro: las dos llamadas responden.
+  it('el PRIMER intento invita en el back y muestra la invitación, sin error', async () => {
+    mockInviteUser.mockReset()
+    mockInviteUser.mockResolvedValue({
+      emailDelivered: false,
+      emailStatus: 'suppressed',
+      invitationToken: 'tok-9',
+    })
+    const submitMembers = enMiembros()
+
+    await invitarALaVisora()
+
+    expect(submitMembers).toHaveBeenCalledTimes(1)
+    expect(submitMembers).toHaveBeenCalledWith({
+      members: [{ email: 'alex.dev+9@leasefy.co', role: 'VIEWER' }],
+    })
+    // Quién ya está invitado se le preguntó al back, no al borrador.
+    expect(mockGetUsers).toHaveBeenCalled()
+    expect(mockInviteUser).toHaveBeenCalledTimes(1)
+    expect(mockInviteUser).toHaveBeenCalledWith({ email: 'alex.dev+9@leasefy.co', name: '', role: 'viewer' })
+    expect(container.querySelector('[data-testid="members-invite-links"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="members-invite-errors"]')).toBeFalsy()
+    expect(container.innerHTML).not.toContain('segundo factor')
+    expect(container.innerHTML).toContain('/invitacion/tok-9')
+  })
+
+  it('🔴 si el back no deja ni preguntar quién está invitado (403 del segundo factor), NADIE del borrador se da por invitado', async () => {
+    // RESPALDO: un back anterior al 02-10 (o quien no es el fundador o ya
+    // salió de la ventana del registro) le exige el segundo factor al ADMIN en
+    // GET y POST /inmobiliaria/agency/members (`AgencyMemberGuard`), y el
+    // fundador llega al asistente sin él (ProtectedRoute `enElRegistro`).
+    const sinSegundoFactor = Object.assign(
+      new Error('Tu rol exige segundo factor. Actívalo en Configuración → Seguridad y vuelve a entrar.'),
+      { status: 403, code: 'SEGUNDO_FACTOR_REQUERIDO' },
+    )
+    mockGetUsers.mockRejectedValue(sinSegundoFactor)
+    mockInviteUser.mockReset()
+    mockInviteUser.mockRejectedValue(sinSegundoFactor)
+    // Segundo intento: la visora YA quedó en el borrador del micro por el
+    // primero (el micro guarda el paso antes de que el back invite).
+    const submitMembers = vi.fn().mockResolvedValue({
+      sessionId: 'sess-1',
+      currentStep: 'habeas_data',
+      nextStep: 'complete',
+      draft: {},
+    })
+    mockUseOnboardingSession.mockReturnValue(
+      baseHookResult({
+        currentStep: 'habeas_data',
+        submitMembers,
+        draft: { members: [{ email: 'alex.dev+9@leasefy.co', role: 'VIEWER', requestedRole: 'VIEWER' }] },
+      }),
+    )
+    render()
+
+    act(() => {
+      ;(container.querySelector('[data-testid="wizard-step-link-members"]') as HTMLButtonElement).click()
+    })
+    expect(byId('members.0.email').value).toBe('alex.dev+9@leasefy.co')
+    await act(async () => {
+      ;(container.querySelector('[data-testid="members-step-form"] button[type="submit"]') as HTMLButtonElement).click()
+      await new Promise((r) => setTimeout(r, 0))
+    })
+
+    // Antes: el borrador era el respaldo, la visora se daba por invitada, no
+    // se le pedía nada al back y el paso «funcionaba» sin invitar a nadie.
+    expect(mockInviteUser).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'alex.dev+9@leasefy.co', role: 'viewer' }),
+    )
+    expect(container.querySelector('[data-testid="members-invite-errors"]')).toBeTruthy()
+    expect(
+      container.querySelector('[data-testid="invite-error-alex.dev+9@leasefy.co"]')?.textContent,
+    ).toContain('segundo factor')
   })
 })
 

@@ -38,11 +38,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { toast } from '@/components/ui/toast';
 import { nominaApi } from '@/lib/api/nomina.service';
@@ -51,10 +52,32 @@ import type {
   Personas,
   TipoDePersona,
 } from '@/lib/api/nomina.types';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { atributosDelError, useErroresDelFormulario } from './errores-del-formulario';
+import { MENSAJES_DE_NOMINA, SALARIO_MAXIMO_DEL_MES_COP, pasaDe } from './limites-de-nomina';
 import { Avisos, TituloDeBloque } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
+
+/** Los campos de la persona que pueden llevar error, con el nombre del DTO. */
+type CampoDeLaPersona = 'nombre' | 'documento' | 'cargo' | 'salarioCop' | 'fechaIngreso';
+const CAMPOS_DE_LA_PERSONA: readonly CampoDeLaPersona[] = [
+  'nombre',
+  'documento',
+  'cargo',
+  'salarioCop',
+  'fechaIngreso',
+];
+const ID_DEL_CAMPO_DE_LA_PERSONA: Record<CampoDeLaPersona, string> = {
+  nombre: 'nombre-de-persona',
+  documento: 'documento-de-persona',
+  cargo: 'cargo-de-persona',
+  salarioCop: 'salario-de-persona',
+  fechaIngreso: 'ingreso-de-persona',
+};
+const idDeLaPersona = (c: CampoDeLaPersona) => ID_DEL_CAMPO_DE_LA_PERSONA[c];
+/** 🔁 Los largos de `CrearPersonaDto` (back): se ataja escribir de más. */
+const LARGO_MAXIMO = { nombre: 200, documento: 30, cargo: 120 } as const;
 
 /** El contrato que le corresponde a cada tipo, para que el formulario no falle. */
 const CONTRATO_POR_TIPO: Record<TipoDePersona, string> = {
@@ -159,9 +182,9 @@ export function PersonasDeNominaPanel() {
                         <TableHead>Estado</TableHead>
                       </TableRow>
                     </TableHeader>
-                    <TableBody>
+                    <TableBodyAnimado>
                       {personas.personas.map((p) => (
-                        <TableRow key={p.id} data-testid={`persona-${p.id}`}>
+                        <TableRowAnimada key={p.id} data-testid={`persona-${p.id}`}>
                           <TableCell>
                             <span className="font-medium text-fg">{p.nombre}</span>
                             {p.documento ? (
@@ -202,9 +225,9 @@ export function PersonasDeNominaPanel() {
                               ? 'Activo'
                               : `Retirado${p.fechaRetiro ? ` el ${p.fechaRetiro.slice(0, 10)}` : ''}`}
                           </TableCell>
-                        </TableRow>
+                        </TableRowAnimada>
                       ))}
-                    </TableBody>
+                    </TableBodyAnimado>
                   </Table>
                 </div>
               )}
@@ -248,11 +271,24 @@ function NuevaPersona({
   const [claseRiesgoArl, setClase] = useState(catalogo.claseDeRiesgoSugerida);
   const [etapa, setEtapa] = useState('LECTIVA');
   const [guardando, setGuardando] = useState(false);
+  const errores = useErroresDelFormulario<CampoDeLaPersona>(idDeLaPersona);
 
   const descripcion = catalogo.tipos.find((t) => t.tipo === tipo)?.descripcion;
 
+  // 🔁 El tope del back (`SALARIO_MAXIMO_DEL_MES_COP`), con su misma frase.
+  const salarioFueraDeRango = pasaDe(salario, SALARIO_MAXIMO_DEL_MES_COP)
+    ? MENSAJES_DE_NOMINA.salarioMaximo
+    : null;
+  const errorDe = (campo: CampoDeLaPersona): string | undefined =>
+    (campo === 'salarioCop' ? salarioFueraDeRango : null) ?? errores.delServidor[campo];
+
   const crear = async () => {
+    if (salarioFueraDeRango) {
+      document.getElementById(idDeLaPersona('salarioCop'))?.focus();
+      return;
+    }
     setGuardando(true);
+    errores.limpiar();
     try {
       await nominaApi.crearPersona({
         tipo,
@@ -269,7 +305,11 @@ function NuevaPersona({
       toast.success(`${nombre} quedó registrada en nómina.`);
       await onCreada();
     } catch (error) {
-      toast.error(mensajeDelFallo(error, 'No se pudo registrar a la persona.'));
+      errores.repartir(error, {
+        campos: CAMPOS_DE_LA_PERSONA,
+        porDefecto: 'No se pudo registrar a la persona.',
+        accion: 'registrar a la persona',
+      });
     } finally {
       setGuardando(false);
     }
@@ -316,27 +356,45 @@ function NuevaPersona({
               <Input
                 id="nombre-de-persona"
                 value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
+                maxLength={LARGO_MAXIMO.nombre}
+                onChange={(e) => {
+                  errores.olvidar('nombre');
+                  setNombre(e.target.value);
+                }}
                 data-testid="campo-nombre"
+                {...atributosDelError('nombre-de-persona', errorDe('nombre'))}
               />
+              <ErrorDelCampo id="nombre-de-persona-error" mensaje={errorDe('nombre')} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="documento-de-persona">Documento</Label>
               <Input
                 id="documento-de-persona"
                 value={documento}
-                onChange={(e) => setDocumento(e.target.value)}
+                maxLength={LARGO_MAXIMO.documento}
+                onChange={(e) => {
+                  errores.olvidar('documento');
+                  setDocumento(e.target.value);
+                }}
                 data-testid="campo-documento"
+                {...atributosDelError('documento-de-persona', errorDe('documento'))}
               />
+              <ErrorDelCampo id="documento-de-persona-error" mensaje={errorDe('documento')} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="cargo-de-persona">Cargo</Label>
               <Input
                 id="cargo-de-persona"
                 value={cargo}
-                onChange={(e) => setCargo(e.target.value)}
+                maxLength={LARGO_MAXIMO.cargo}
+                onChange={(e) => {
+                  errores.olvidar('cargo');
+                  setCargo(e.target.value);
+                }}
                 data-testid="campo-cargo"
+                {...atributosDelError('cargo-de-persona', errorDe('cargo'))}
               />
+              <ErrorDelCampo id="cargo-de-persona-error" mensaje={errorDe('cargo')} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="salario-de-persona">
@@ -346,9 +404,14 @@ function NuevaPersona({
                 id="salario-de-persona"
                 type="number"
                 value={salario}
-                onChange={(e) => setSalario(e.target.value)}
+                onChange={(e) => {
+                  errores.olvidar('salarioCop');
+                  setSalario(e.target.value);
+                }}
                 data-testid="campo-salario"
+                {...atributosDelError('salario-de-persona', errorDe('salarioCop'))}
               />
+              <ErrorDelCampo id="salario-de-persona-error" mensaje={errorDe('salarioCop')} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ingreso-de-persona">Fecha de ingreso</Label>
@@ -356,9 +419,14 @@ function NuevaPersona({
                 id="ingreso-de-persona"
                 type="date"
                 value={fechaIngreso}
-                onChange={(e) => setFechaIngreso(e.target.value)}
+                onChange={(e) => {
+                  errores.olvidar('fechaIngreso');
+                  setFechaIngreso(e.target.value);
+                }}
                 data-testid="campo-ingreso"
+                {...atributosDelError('ingreso-de-persona', errorDe('fechaIngreso'))}
               />
+              <ErrorDelCampo id="ingreso-de-persona-error" mensaje={errorDe('fechaIngreso')} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="periodicidad-de-persona">Periodicidad</Label>
@@ -413,12 +481,14 @@ function NuevaPersona({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onCerrar}>
+          <Button variant="outline" hideArrow onClick={onCerrar} disabled={guardando}>
             Cancelar
           </Button>
           <Button
+            hideArrow
             onClick={() => void crear()}
             disabled={guardando || nombre.trim().length < 3 || !fechaIngreso}
+            isLoading={guardando}
             data-testid="guardar-persona"
           >
             Registrar

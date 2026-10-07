@@ -45,9 +45,10 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
-import { KpiCard } from '@leasefy/cadence'
+import { KpiCard, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useDailyReport } from '@/lib/hooks/cobranza/use-daily-report'
 import { useRecovery } from '@/lib/hooks/cobranza/use-recovery'
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 import type { CarteraOverviewResponse } from '@/lib/hooks/cobranza/use-cartera-overview'
 
 interface Metrica {
@@ -97,6 +98,13 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
     // leer la dirección dos veces.
     const mora = rec?.moraReducedPct ?? null
     const moraDias = rec?.moraWindowDays ?? 90
+    // N-10 (QA-PAGOS-95 r2): de cuánto a cuánto y desde qué día; sin cartera hoy
+    // no hay «recuperación» (el índice en cero no es mora que bajó).
+    const sinCarteraHoy = rec?.moraSinCarteraHoy === true
+    const deCuantoACuanto =
+      rec?.moraDesdePct != null && rec?.moraHastaPct != null && rec?.moraDesdeDia
+        ? `De ${formatNumber(rec.moraDesdePct)} % a ${formatNumber(rec.moraHastaPct)} % desde el ${fechaLarga(rec.moraDesdeDia)}`
+        : null
 
     return [
       {
@@ -137,21 +145,24 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
       {
         key: 'mora',
         label:
-          mora == null || mora === 0
+          sinCarteraHoy || mora == null || mora === 0
             ? 'Variación de mora'
             : mora > 0
               ? 'Mora reducida'
               : 'Mora aumentada',
         icon: mora != null && mora < 0 ? TrendUp : TrendDown,
-        value: mora != null ? `${formatNumber(Math.abs(mora))} pts` : null,
-        sublabel:
-          mora == null
+        value: sinCarteraHoy ? '—' : mora != null ? `${formatNumber(Math.abs(mora))} pts` : null,
+        sublabel: sinCarteraHoy
+          ? 'Hoy no hay cartera en mora: no hay recuperación que medir.'
+          : mora == null
             ? ''
-            : mora === 0
-              ? `Sin cambio en ${moraDias} días`
-              : mora > 0
-                ? `Bajó en ${moraDias} días`
-                : `Subió en ${moraDias} días`,
+            : deCuantoACuanto
+              ? `${deCuantoACuanto}.`
+              : mora === 0
+                ? `Sin cambio en ${moraDias} días`
+                : mora > 0
+                  ? `Bajó en ${moraDias} días`
+                  : `Subió en ${moraDias} días`,
       },
       {
         key: 'casos-activos',
@@ -209,21 +220,27 @@ export function CobranzaResultadosKpis({ overview }: CobranzaResultadosKpisProps
           la fila del título. Cuando esta rejilla vivía con una fila propia
           `justify-end` para el botón, quedaba una franja casi vacía entre el
           título y las tarjetas. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+      {/* Las tarjetas se montan a medida que cada fuente responde (recaudo,
+          reporte diario): entran escalonadas y las demás se corren a su lugar
+          (`layout`), en vez de saltar de golpe. */}
+      {/* QA-IA-95 (IA-B-09): en cinco columnas a 1440 px los rótulos se cortaban («TASA DE RESPUES…»,
+          «VARIACIÓN DE MO…»): las cinco en fila sólo con pantalla ancha. */}
+      <Stagger className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 min-[1680px]:grid-cols-5 gap-3">
         {metricas.map((m) => {
           const MetricaIcon = m.icon
           return (
-            <KpiCard
-              key={m.key}
-              label={m.label}
-              value={m.value as string}
-              sublabel={m.sublabel}
-              icon={<MetricaIcon weight="duotone" aria-hidden="true" />}
-              data-testid={`cobranza-kpi-${m.key}`}
-            />
+            <StaggerItem key={m.key} className="min-w-0 [&>*]:h-full">
+              <KpiCard
+                label={m.label}
+                value={m.value as string}
+                sublabel={m.sublabel}
+                icon={<MetricaIcon weight="duotone" aria-hidden="true" />}
+                data-testid={`cobranza-kpi-${m.key}`}
+              />
+            </StaggerItem>
           )
         })}
-      </div>
+      </Stagger>
     </section>
   )
 }

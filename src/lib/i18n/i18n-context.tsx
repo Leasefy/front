@@ -1,12 +1,13 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { fechaRelativa } from './fecha-relativa';
 import type { Locale, I18nContextValue, TranslationParams, Translations } from './types';
 import { formatCurrency as formatCurrencyUtil, formatNumber as formatNumberUtil } from '@/lib/format';
 import es from './locales/es.json';
 import en from './locales/en.json';
 import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
+import { hayPlataConCentavos, suscribirseALaConfigDePlata } from '@/lib/plata/con-centavos';
 
 const translations: Record<Locale, Translations> = { es, en };
 
@@ -85,10 +86,22 @@ export function I18nProvider({ children, defaultLocale = DEFAULT_LOCALE }: I18nP
     [locale]
   );
 
+  // «Centavos en todo» (P8 a): cuando el back prende alguna llave de la plata,
+  // la cifra con centavos se pinta con sus centavos. Sólo escucha la respuesta
+  // (la pide `LlavesDeLaPlata`, en el layout raíz): al cambiar, quien formatea
+  // con este `formatCurrency` vuelve a pintar.
+  const hayCentavos = useSyncExternalStore(
+    suscribirseALaConfigDePlata,
+    hayPlataConCentavos,
+    () => false
+  );
+
   // Format currency — delegates to shared format.ts utility (null-safe).
   const formatCurrency = useCallback(
     (amount: number | null | undefined): string => formatCurrencyUtil(amount, locale),
-    [locale]
+    // `hayCentavos`: una función nueva cuando cambia la llave, para que se repinte.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [locale, hayCentavos]
   );
 
   // Format number — delegates to shared format.ts utility (null-safe).

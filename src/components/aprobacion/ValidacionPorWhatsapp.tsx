@@ -25,6 +25,7 @@ import { ArrowsClockwise, Bell, CheckCircle, WarningCircle, WhatsappLogo } from 
 
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import {
   reenviarValidacion,
   verificarValidacion,
@@ -104,7 +105,10 @@ export function ValidacionPorWhatsapp({
       setErrorAlRevisar(
         err instanceof ValidacionError
           ? err.message
-          : 'No pudimos revisar tu validación. Intenta de nuevo en un momento.',
+          : mensajeParaLaPersona(err, {
+              accion: 'revisar tu validación',
+              porDefecto: 'No pudimos revisar tu validación. Intenta de nuevo en un momento.',
+            }),
       )
     } finally {
       setRevisando(false)
@@ -124,7 +128,10 @@ export function ValidacionPorWhatsapp({
         mensaje:
           err instanceof ValidacionError
             ? err.message
-            : 'No pudimos reenviar tu validación. Intenta de nuevo en unos minutos.',
+            : mensajeParaLaPersona(err, {
+                accion: 'reenviar tu validación',
+                porDefecto: 'No pudimos reenviar tu validación. Intenta de nuevo en unos minutos.',
+              }),
       })
     } finally {
       setReenviando(false)

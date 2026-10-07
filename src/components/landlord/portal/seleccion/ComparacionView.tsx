@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from '@/components/ui/toast';
 import { ownerSeleccionApi } from '@/lib/api/owner-seleccion.service';
 import type { EleccionComparacion } from '@/lib/api/owner-seleccion.types';
+import { falloDeLaAccionDelPortal } from '../fallo-de-la-accion';
 
 interface ComparacionViewProps {
   agencyId: string | null;
@@ -48,13 +49,20 @@ export function ComparacionView({ agencyId, processId, comparacion, reload }: Co
         reload();
         return;
       }
-      if (res.status === 0) {
+      // 02-10-2026: «Próximamente» SÓLO si el portal no está habilitado; la
+      // red caída habla de la conexión y lo demás pasa por el traductor (antes
+      // cualquier status 0 era «Próximamente» y el resto, `res.error` crudo).
+      const fallo = falloDeLaAccionDelPortal(res, {
+        accion: 'registrar la elección',
+        porDefecto: 'Prueba de nuevo en un momento.',
+      });
+      if (fallo.tipo === 'no-habilitado') {
         toast('Próximamente', {
           description: 'La elección se habilita cuando tu inmobiliaria active el Portal del Propietario.',
         });
         return;
       }
-      toast('No pudimos registrar la elección', { description: res.error ?? 'Intenta de nuevo.' });
+      toast.error('No pudimos registrar la elección', { description: fallo.texto });
     } finally {
       setSubmitting(false);
     }

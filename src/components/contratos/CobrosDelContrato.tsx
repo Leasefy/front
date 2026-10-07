@@ -18,7 +18,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowSquareOut,
-  CaretDown,
   CaretRight,
   Printer,
   Receipt,
@@ -47,6 +46,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { nombreDelMes } from '@/lib/utils/mes'
 import { cn } from '@/lib/utils'
+import { Collapse } from '@leasefy/cadence'
 import type { Contract } from '@/lib/types/contract'
 
 /** Donde finanzas emite y lista los cobros: la pestaña «Cobros emitidos» de Cartera. */
@@ -107,7 +107,12 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
   }, [cargar])
 
   const resumen = useMemo<ResumenDeCobros>(() => {
-    const lista = cobros ?? []
+    /*
+     * 🔴 QA-CONT-95 (B-40): un cobro ANTERIOR a la fecha de cartera y sin cuota
+     * (`anteriorALaCartera`, back de QA-INQ-95) no es deuda: la ficha de #3
+     * decía «5 períodos · saldo $4.700.000» con el estado de cuenta en $0.
+     */
+    const lista = (cobros ?? []).filter((c) => !c.anteriorALaCartera)
     const saldo = lista.reduce((s, c) => s + (c.pendingAmount ?? 0), 0)
     const enMora = lista.filter((c) => c.status === 'late' || c.status === 'defaulted').length
     const pendientes = lista.filter((c) => (c.pendingAmount ?? 0) > 0).length
@@ -215,7 +220,9 @@ export function CobrosDelContrato({ contract, onResumen }: Props) {
             <TableBody>
               {pageItems.map((c) => {
                 const estaAbierto = abierto === c.id
-                const estado = ESTADO[c.status] ?? { etiqueta: c.status, variante: 'default' as const }
+                const estado = c.anteriorALaCartera
+                  ? { etiqueta: 'Antes de la cartera: no es deuda', variante: 'default' as const }
+                  : (ESTADO[c.status] ?? { etiqueta: c.status, variante: 'default' as const })
                 return (
                   <FilaDeCobro
                     key={c.id}
@@ -274,9 +281,26 @@ function FilaDeCobro({
         selected={abierto}
         onClick={onToggle}
         data-testid={`cobro-${cobro.month}`}
-        aria-expanded={abierto}
       >
-        <TableCell className="whitespace-nowrap font-medium">{periodo}</TableCell>
+        {/* QA-CONT-95 (I-09): `aria-expanded` va en un BOTÓN, no en la fila de
+            una tabla (axe «aria-conditional-attr»); el botón además se alcanza
+            con el teclado. El clic en la fila sigue abriendo. */}
+        <TableCell className="whitespace-nowrap font-medium">
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-left font-medium text-fg"
+            aria-expanded={abierto}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggle()
+            }}
+            data-testid={`abrir-cobro-${cobro.month}`}
+          >
+            {periodo}
+          </Button>
+        </TableCell>
         <TableCell muted className="whitespace-nowrap tabular-nums">
           {vence}
         </TableCell>
@@ -286,43 +310,55 @@ function FilaDeCobro({
         </TableCell>
         <TableCell
           numeric
-          muted={cobro.pendingAmount <= 0}
-          className={cn(cobro.pendingAmount > 0 && 'font-medium')}
+          muted={cobro.pendingAmount <= 0 || cobro.anteriorALaCartera === true}
+          className={cn(cobro.pendingAmount > 0 && !cobro.anteriorALaCartera && 'font-medium')}
         >
-          {formatCurrency(cobro.pendingAmount)}
+          {/* QA-CONT-95 (B-40): el anterior a la cartera no tiene saldo que cobrar acá. */}
+          {cobro.anteriorALaCartera ? '—' : formatCurrency(cobro.pendingAmount)}
         </TableCell>
         <TableCell>
           <Badge variant={estado.variante}>{estado.etiqueta}</Badge>
         </TableCell>
         <TableCell muted>
-          {abierto ? <CaretDown className="h-4 w-4" /> : <CaretRight className="h-4 w-4" />}
+          {/* El chevron gira con la misma curva con la que se abre el detalle. */}
+          <CaretRight
+            className={cn(
+              'h-4 w-4 transition-transform duration-slow ease-emphasis',
+              abierto && 'rotate-90',
+            )}
+          />
         </TableCell>
       </TableRow>
       {abierto ? (
         <TableRow className="bg-surface-muted hover:bg-surface-muted">
-          <TableCell colSpan={7} className="px-4 py-4">
-            {/* `width: 0; min-width: 100%`: el detalle ocupa el ancho de la
-                tabla sin ENSANCHARLA — si no, el desglose y los recibos
-                empujan las columnas y la tabla se sale de la tarjeta. */}
-            <div style={{ width: 0, minWidth: '100%' }}>
-              <div className="grid gap-5 xl:grid-cols-2">
-                <DesgloseAdeudado
-                  cobro={cobro}
-                  conceptos={cobro.conceptos ?? []}
-                  sinEstadoDePago
-                  className="min-w-0"
-                />
-                <RecibosDeCajaHistorial recibos={cobro.recibosDeCaja ?? []} className="min-w-0" />
+          <TableCell colSpan={7} className="p-0">
+            {/* El detalle se abre con su altura (`Collapse`; el relleno va
+                adentro para que la altura arranque en 0). Al cerrar se va de
+                una, como antes. */}
+            <Collapse open initial className="px-4 py-4">
+              {/* `width: 0; min-width: 100%`: el detalle ocupa el ancho de la
+                  tabla sin ENSANCHARLA — si no, el desglose y los recibos
+                  empujan las columnas y la tabla se sale de la tarjeta. */}
+              <div style={{ width: 0, minWidth: '100%' }}>
+                <div className="grid gap-5 xl:grid-cols-2">
+                  <DesgloseAdeudado
+                    cobro={cobro}
+                    conceptos={cobro.conceptos ?? []}
+                    sinEstadoDePago
+                    className="min-w-0"
+                  />
+                  <RecibosDeCajaHistorial recibos={cobro.recibosDeCaja ?? []} className="min-w-0" />
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button asChild variant="secondary" size="sm" hideArrow>
+                    <Link href={cuentaDeCobro} data-testid={`cuenta-de-cobro-${cobro.month}`}>
+                      <Printer className="mr-1 h-3.5 w-3.5" />
+                      Cuenta de cobro
+                    </Link>
+                  </Button>
+                </div>
               </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Button asChild variant="secondary" size="sm" hideArrow>
-                  <Link href={cuentaDeCobro} data-testid={`cuenta-de-cobro-${cobro.month}`}>
-                    <Printer className="mr-1 h-3.5 w-3.5" />
-                    Cuenta de cobro
-                  </Link>
-                </Button>
-              </div>
-            </div>
+            </Collapse>
           </TableCell>
         </TableRow>
       ) : null}

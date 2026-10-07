@@ -99,7 +99,9 @@ vi.mock('@/lib/hooks/cotizador/use-quote-metadata', () => ({
   useQuoteMetadata: (_qid: string) => mockMetadata,
 }))
 
-vi.mock('@/lib/api/client', () => ({
+vi.mock('@/lib/api/client', async (importOriginal) => ({
+  // `ApiError` de verdad: `falloDeLaRespuesta` lo arma con el status y el cuerpo.
+  ...(await importOriginal<typeof import('@/lib/api/client')>()),
   getAccessToken: () => 'test-token',
 }))
 
@@ -125,10 +127,12 @@ vi.mock('@/components/inmobiliaria/cotizador/WizardStep1Candidato', () => ({
         onChange={(e) => onChange('cedula', e.target.value)}
       />
       <input
+        id="cotizador-nombre"
         data-testid="step1-nombre"
         value={value.nombre}
         onChange={(e) => onChange('nombre', e.target.value)}
       />
+      <span data-testid="step1-nombre-error">{errors?.nombre ?? ''}</span>
       <input
         data-testid="step1-ciudad"
         value={value.ciudad}
@@ -142,8 +146,10 @@ vi.mock('@/components/inmobiliaria/cotizador/WizardStep1Candidato', () => ({
   ),
 }))
 vi.mock('@/components/inmobiliaria/cotizador/WizardStep2Propiedad', () => ({
-  WizardStep2Propiedad: ({ onNext, onBack }: any) => (
+  WizardStep2Propiedad: ({ onNext, onBack, errors }: any) => (
     <div data-testid="step2">
+      <input id="cotizador-canon" data-testid="step2-canon" />
+      <span data-testid="step2-canon-error">{errors?.canonCop ?? ''}</span>
       <button data-testid="step2-next" type="button" onClick={onNext}>
         next
       </button>
@@ -531,3 +537,167 @@ describe('NuevaCotizacionPage — Phase 33 re-quote flow', () => {
     unmount(h)
   })
 })
+
+// ---------------------------------------------------------------------------
+// 02-10-2026 · El sistema de errores: lo que responde el micro al enviar
+// ---------------------------------------------------------------------------
+
+/** Monta la página con el `fetch` que responde lo que se le pase y llena el paso 1. */
+async function enviarConLaRespuesta(respuesta: () => Promise<unknown>): Promise<Harness> {
+  vi.spyOn(globalThis, 'fetch').mockImplementationOnce(() => respuesta() as Promise<Response>)
+  const h = mount()
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+  const escribir = (testid: string, valor: string) => {
+    const input = h.container.querySelector(`[data-testid="${testid}"]`) as HTMLInputElement
+    act(() => {
+      setter?.call(input, valor)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+  escribir('step1-cedula', '1017234567')
+  escribir('step1-nombre', 'Ana Restrepo')
+  escribir('step1-ciudad', 'Medellín')
+  act(() => {
+    ;(h.container.querySelector('[data-testid="step1-next"]') as HTMLButtonElement).click()
+  })
+  return h
+}
+
+/** Perezosa: el `fetch` doble la llama recién cuando la página envía. */
+function respuesta(status: number, cuerpo: unknown) {
+  return () => Promise.resolve({ ok: status < 400, status, json: async () => cuerpo })
+}
+
+const METADATA_PARA_ENVIAR = {
+  data: {
+    quoteId: PARENT_UUID,
+    cedulaHashPrefix8: 'aaaaaaaa',
+    canonCop: 1500000,
+    ciudad: 'Bogotá',
+    tipoInmueble: 'apartamento',
+    status: 'completed',
+    createdAt: '2026-05-20',
+    completedAt: '2026-05-20',
+  },
+  isLoading: false,
+  error: null,
+}
+
+/**
+ * Re-cotizar SIN la huella de la cédula: el paso 1 pide la cédula escrita (así
+ * su error tiene dónde pintarse) y el paso 2 ya trae el canon y el tipo de la
+ * cotización original (el doble del paso 2 no escribe).
+ */
+async function enviar(respuestaDelMicro: () => Promise<unknown>): Promise<Harness> {
+  mockFromParam = PARENT_UUID
+  mockMetadata = METADATA_PARA_ENVIAR
+  const h = await enviarConLaRespuesta(respuestaDelMicro)
+  act(() => {
+    ;(h.container.querySelector('[data-testid="step2-next"]') as HTMLButtonElement).click()
+  })
+  act(() => {
+    ;(h.container.querySelector('[data-testid="step3-config-next"]') as HTMLButtonElement).click()
+  })
+  await act(async () => {
+    ;(h.container.querySelector('[data-testid="step3-submit"]') as HTMLButtonElement).click()
+  })
+  await act(async () => {
+    await new Promise((r) => setTimeout(r, 0))
+  })
+  return h
+}
+
+describe('NuevaCotizacionPage — lo que dice cuando el micro no acepta la consulta (02-10-2026)', () => {
+  beforeEach(() => {
+    ensureLocalStorage()
+    mockHasDraft = false
+    routerPush.mockReset()
+    ;(process.env as Record<string, string>).NEXT_PUBLIC_AGENT_URL = 'http://agent.test'
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('🔴 un 400 con `campos` vuelve al paso del campo, lo pinta debajo y le da el foco', async () => {
+    const h = await enviar(
+      respuesta(400, {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['El nombre no puede tener más de 200 caracteres.'],
+        campos: [{ campo: 'nombre', regla: 'longitud_maxima', mensaje: 'El nombre no puede tener más de 200 caracteres.' }],
+        success: false,
+        error: 'Validation error',
+      }),
+    )
+    expect(h.container.querySelector('[data-testid="step1"]')).not.toBeNull()
+    expect(getText(h.container, '[data-testid="step1-nombre-error"]')).toBe(
+      'El nombre no puede tener más de 200 caracteres.',
+    )
+    expect(document.activeElement?.id).toBe('cotizador-nombre')
+    // Nada suelto: el error ya está en su campo.
+    expect(h.container.querySelector('.bg-danger-soft')).toBeNull()
+    expect(routerPush).not.toHaveBeenCalled()
+    unmount(h)
+  })
+
+  it('un 400 en el canon vuelve al paso 2 y lo dice bajo el canon', async () => {
+    const h = await enviar(
+      respuesta(400, {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['Este dato no puede ser mayor que 1.000.000.000.000.'],
+        campos: [{ campo: 'canonCop', regla: 'maximo', mensaje: 'Este dato no puede ser mayor que 1.000.000.000.000.' }],
+      }),
+    )
+    expect(h.container.querySelector('[data-testid="step2"]')).not.toBeNull()
+    expect(getText(h.container, '[data-testid="step2-canon-error"]')).toContain('1.000.000.000.000')
+    expect(document.activeElement?.id).toBe('cotizador-canon')
+    unmount(h)
+  })
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia del micro, sin culpar a la conexión', async () => {
+    const h = await enviar(
+      respuesta(500, {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        requestId: 'abcd1234-ffff-4fff-8fff-000000000000',
+      }),
+    )
+    const texto = h.container.textContent ?? ''
+    expect(texto).toContain('de nuestro lado')
+    expect(texto).toContain('abcd1234')
+    expect(texto).not.toMatch(/conexi[oó]n/i)
+    expect(texto).not.toContain('Error 500')
+    unmount(h)
+  })
+
+  it('🔴 sin respuesta (el `fetch` no salió, sin internet) habla de la conexión', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    try {
+      const h = await enviar(() => Promise.reject(new TypeError('Failed to fetch')))
+      expect(h.container.textContent ?? '').toMatch(/conexi[oó]n/i)
+      unmount(h)
+    } finally {
+      enLinea.mockRestore()
+    }
+  })
+
+  it('🔴 ARREGLOS-4 · con el micro caído y el back sano, dice que el asistente no está disponible', async () => {
+    const h = await enviar(() => Promise.reject(new TypeError('Failed to fetch')))
+    const texto = h.container.textContent ?? ''
+    expect(texto).toMatch(/El asistente de Leasefy no está disponible/)
+    expect(texto).not.toMatch(/conexi[oó]n/i)
+    unmount(h)
+  })
+
+  it('un 403 del micro (en inglés, sin `message`) dice que no tienes permiso', async () => {
+    const h = await enviar(respuesta(403, { error: 'Forbidden — no membership row' }))
+    const texto = h.container.textContent ?? ''
+    expect(texto).toContain('No tienes permiso para crear consultas de asegurabilidad')
+    expect(texto).not.toContain('Forbidden')
+    unmount(h)
+  })
+})
+

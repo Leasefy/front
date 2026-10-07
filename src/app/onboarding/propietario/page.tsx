@@ -1,12 +1,14 @@
 'use client'
 
 import { LeasefyLogotype } from '@/components/brand/LeasefySymbol';
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
+import { toast } from 'sonner'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/lib/auth/use-auth'
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
+import { Appear, CrossFade, Presence, motionScale, motionSpring } from '@leasefy/cadence'
 import { ArrowRight, ArrowLeft, Check, Shield, House, User, Phone, Envelope, ChatCircle, MapPin, CurrencyDollar, Rocket, SealCheck, Money, X } from '@phosphor-icons/react'
 import { cn, sanitizeReturnUrl } from '@/lib/utils'
 import { apiClient } from '@/lib/api/client'
@@ -15,6 +17,23 @@ import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import {
+  celularParaElBack,
+  partirElNombre,
+  revisarDatosDelPropietario,
+  type CampoDelPropietario,
+  type ErroresDelPropietario,
+} from './datos-del-propietario'
+
+/** La ruta de cada dato en el cuerpo de `POST /users/me/onboarding` → su campo en el paso 1. */
+const CAMPO_DEL_SERVIDOR: Record<string, CampoDelPropietario> = {
+  firstName: 'displayName',
+  lastName: 'displayName',
+  phone: 'phone',
+}
+const CAMPOS_DEL_PASO_1: readonly CampoDelPropietario[] = ['displayName', 'phone']
 
 // ============================================================================
 // TextTs & Constants
@@ -69,6 +88,9 @@ function OnboardingPropietarioContent() {
   const [isComplete, setIsComplete] = useState(false)
   // Shown when the user taps a disabled CTA: explains the first missing field
   const [disabledHint, setDisabledHint] = useState<string | null>(null)
+  // La última pista, para que no se vacíe mientras sale (`Presence`).
+  const [pistaVisible, setPistaVisible] = useState<string | null>(null)
+  if (disabledHint && disabledHint !== pistaVisible) setPistaVisible(disabledHint)
 
   // Clear the disabled-CTA hint when changing steps
   useEffect(() => {
@@ -110,19 +132,43 @@ function OnboardingPropietarioContent() {
     }
   }, [])
 
+  // Lo que el back rechazó por campo (un 400 con `campos`): se va al tocar el campo.
+  const [erroresDelServidor, setErroresDelServidor] = useState<ErroresDelPropietario>({})
+  // El celular se marca en rojo al salir de él (o al intentar seguir), no mientras se escribe.
+  const [celularRevisado, setCelularRevisado] = useState(false)
+
   const updateData = (updates: Partial<OnboardingData>) => {
     setData(prev => ({ ...prev, ...updates }))
+    setErroresDelServidor((prev) => {
+      const tocados = (Object.keys(updates) as (keyof OnboardingData)[]).filter(
+        (k): k is CampoDelPropietario => k === 'displayName' || k === 'phone',
+      )
+      if (!tocados.some((c) => prev[c] !== undefined)) return prev
+      const next = { ...prev }
+      for (const c of tocados) delete next[c]
+      return next
+    })
   }
+
+  // Las mismas reglas que el back (`datos-del-propietario.ts`).
+  const erroresDelCliente = useMemo(
+    () => revisarDatosDelPropietario({ displayName: data.displayName, phone: data.phone }),
+    [data.displayName, data.phone],
+  )
+  const errorDelNombre =
+    (data.displayName.trim() ? erroresDelCliente.displayName : undefined) ?? erroresDelServidor.displayName
+  const errorDelCelular = (celularRevisado ? erroresDelCliente.phone : undefined) ?? erroresDelServidor.phone
 
   // When coming from publish wizard (returnUrl present), skip property step
   const fromPublish = !!returnUrl
   const totalSteps = fromPublish ? 1 : 2
 
-  const isStep1Valid = data.displayName.trim().length > 0
+  const isStep1Valid = Object.keys(erroresDelCliente).length === 0
   const isStep2Valid = data.propertyTextT !== null && data.propertyCity.trim().length > 0
 
   // First missing-field message per step (for the disabled-CTA tap affordance)
-  const step1HintMessage = 'Ingresa tu nombre completo para continuar'
+  const step1HintMessage =
+    erroresDelCliente.displayName ?? erroresDelCliente.phone ?? 'Ingresa tu nombre completo para continuar'
   const step2HintMessage = data.propertyTextT === null
     ? 'Selecciona el tipo de propiedad para continuar'
     : 'Selecciona la ciudad para continuar'
@@ -147,20 +193,23 @@ function OnboardingPropietarioContent() {
   const handleSubmit = async () => {
     if (!fromPublish && !isStep2Valid) return
 
+    if (Object.keys(erroresDelCliente).length > 0) {
+      setCelularRevisado(true)
+      setStep(1)
+      return
+    }
+
     setIsSubmitting(true)
+    setErroresDelServidor({})
     try {
       // Split displayName into first/last for backend
-      const nameParts = data.displayName.trim().split(/\s+/)
-      const firstName = nameParts[0] || ''
-      const lastName = nameParts.slice(1).join(' ') || firstName
+      const { firstName, lastName } = partirElNombre(data.displayName)
 
-      // Call backend onboarding endpoint
-      // Strip spaces from phone — backend expects 3XXXXXXXXX or +573XXXXXXXXX
-      const rawPhone = data.phone?.replace(/\s/g, '') || ''
+      // Call backend onboarding endpoint (el celular en E.164, o nada).
       await apiClient.post('/users/me/onboarding', {
         firstName,
         lastName,
-        phone: rawPhone.length >= 10 ? rawPhone : undefined,
+        phone: celularParaElBack(data.phone),
         userType: 'LANDLORD',
       })
 
@@ -192,7 +241,25 @@ function OnboardingPropietarioContent() {
 
       setIsComplete(true)
     } catch (error) {
-      console.error('Error:', error)
+      console.error('Error saving landlord onboarding:', error)
+      // 🔴 02-10-2026 · Antes sólo hacía `console.error`: el botón se volvía a
+      // prender y nadie decía nada. Ahora, con la regla de oro del traductor:
+      //  · lo que el back rechazó por campo va a SU campo (paso 1), con foco;
+      //  · lo demás va a un toast: un 5xx dice que fue nuestro, con la
+      //    referencia; «conexión» sólo cuando no hubo respuesta.
+      const reparto = repartirErroresDelServidor<CampoDelPropietario>(error, {
+        mapa: CAMPO_DEL_SERVIDOR,
+        campos: CAMPOS_DEL_PASO_1,
+        accion: 'guardar tu perfil',
+        porDefecto: 'No pudimos guardar tu perfil. Prueba de nuevo en un momento.',
+      })
+      setErroresDelServidor(reparto.porCampo)
+      const primero = reparto.orden[0]
+      if (primero) {
+        setStep(1)
+        setTimeout(() => document.getElementById(primero === 'phone' ? 'ownerPhone' : 'displayName')?.focus(), 0)
+      }
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '))
     } finally {
       setIsSubmitting(false)
     }
@@ -215,14 +282,17 @@ function OnboardingPropietarioContent() {
   if (isComplete) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center p-6">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full text-center"
-        >
-          <div className="w-20 h-20 bg-success-soft rounded-full flex items-center justify-center mx-auto mb-6">
+        {/* «¡Listo!» llega después de guardar (nunca en el HTML del servidor):
+            sube 8 px y el visto entra con el resorte de rebote leve. */}
+        <Appear className="max-w-md w-full text-center">
+          <motion.div
+            initial={{ scale: motionScale.pop, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={motionSpring.bouncy}
+            className="w-20 h-20 bg-success-soft rounded-full flex items-center justify-center mx-auto mb-6"
+          >
             <Check className="w-10 h-10 text-success" weight="bold" />
-          </div>
+          </motion.div>
           <h1 className="text-3xl font-bold text-fg mb-3">
             ¡Listo, {data.displayName.split(' ')[0]}!
           </h1>
@@ -256,7 +326,7 @@ function OnboardingPropietarioContent() {
               </>
             )}
           </div>
-        </motion.div>
+        </Appear>
       </div>
     )
   }
@@ -318,15 +388,15 @@ function OnboardingPropietarioContent() {
 
       {/* Main Content */}
       <main className="max-w-md mx-auto px-6 py-12">
-        <AnimatePresence mode="wait">
+        {/*
+          Paso 1 ↔ paso 2: el nuevo entra por la derecha al avanzar y por la
+          izquierda al volver (`CrossFade` de pasos). Su `initial` es `false`:
+          el paso 1 llega visible desde el HTML del servidor (antes nacía en
+          `opacity: 0` hasta hidratar).
+        */}
+        <CrossFade swapKey={step} direction={step === 2 ? 'forward' : 'backward'}>
           {step === 1 ? (
-            <motion.div
-              key="step1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+            <div>
               {/* Step 1: About You */}
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary-soft text-primary rounded-full text-sm font-medium mb-4">
@@ -356,12 +426,17 @@ function OnboardingPropietarioContent() {
                   </label>
                   <Input
                     id="displayName"
+                    aria-required="true"
                     type="text"
                     autoComplete="name"
                     value={data.displayName}
                     onChange={(e) => updateData({ displayName: e.target.value })}
                     placeholder="Tu nombre completo"
+                    invalid={Boolean(errorDelNombre)}
+                    aria-invalid={Boolean(errorDelNombre) || undefined}
+                    aria-describedby={errorDelNombre ? 'displayName-error' : undefined}
                   />
+                  <ErrorDelCampo id="displayName-error" mensaje={errorDelNombre} />
                 </div>
 
                 {/* Phone */}
@@ -393,20 +468,17 @@ function OnboardingPropietarioContent() {
                     }}
                     placeholder="300 123 4567"
                     maxLength={12}
-                    className={cn(
-                      data.phone && data.phone.replace(/\s/g, '').length > 0 && data.phone.replace(/\s/g, '').length < 10
-                        ? "border-warning focus:border-warning"
-                        : ""
-                    )}
+                    onBlur={() => setCelularRevisado(true)}
+                    invalid={Boolean(errorDelCelular)}
+                    aria-invalid={Boolean(errorDelCelular) || undefined}
+                    aria-describedby={errorDelCelular ? 'ownerPhone-error' : undefined}
                   />
-                  <p className="text-xs text-fg-subtle mt-1.5">
-                    Solo para notificaciones importantes de tu propiedad
-                  </p>
-                  {data.phone && data.phone.replace(/\s/g, '').length > 0 && data.phone.replace(/\s/g, '').length < 10 && (
-                    <p className="mt-1 text-xs text-warning">
-                      El número debe tener 10 dígitos
-                    </p>
-                  )}
+                  {/* La ayuda y el error se cruzan (Cadence `FormError` con `hint`). */}
+                  <ErrorDelCampo
+                    id="ownerPhone-error"
+                    mensaje={errorDelCelular}
+                    pista="Solo para notificaciones importantes de tu propiedad"
+                  />
                 </div>
 
               </div>
@@ -415,7 +487,10 @@ function OnboardingPropietarioContent() {
               <span
                 className={cn('block', !isStep1Valid && !isSubmitting && 'cursor-not-allowed')}
                 onClick={() => {
-                  if (!isStep1Valid && !isSubmitting) setDisabledHint(step1HintMessage)
+                  if (!isStep1Valid && !isSubmitting) {
+                    setDisabledHint(step1HintMessage)
+                    setCelularRevisado(true)
+                  }
                 }}
               >
               <Button
@@ -443,21 +518,16 @@ function OnboardingPropietarioContent() {
                 )}
               </Button>
               </span>
-              {disabledHint && !isStep1Valid && (
+              {/* La pista del botón apagado aparece y se va con `Presence`. */}
+              <Presence show={Boolean(disabledHint) && !isStep1Valid} distance="xs">
                 <p role="status" className="mt-3 text-xs text-warning text-center">
-                  {disabledHint}
+                  {disabledHint || pistaVisible}
                 </p>
-              )}
+              </Presence>
               </form>
-            </motion.div>
+            </div>
           ) : (
-            <motion.div
-              key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+            <div>
               {/* Step 2: Your Property */}
               <div className="text-center mb-10">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-success-soft text-success rounded-full text-sm font-medium mb-4">
@@ -492,7 +562,7 @@ function OnboardingPropietarioContent() {
                         type="button"
                         onClick={() => updateData({ propertyTextT: type.value })}
                         className={cn(
-                          "flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-all text-left",
+                          "flex items-center gap-3 px-4 py-3.5 rounded-xl border transition-colors duration-fast ease-standard text-left",
                           data.propertyTextT === type.value
                             ? "border-fg bg-surface-muted"
                             : "border-border bg-surface hover:border-border-strong"
@@ -516,7 +586,7 @@ function OnboardingPropietarioContent() {
                     Ciudad <span className="text-danger">*</span>
                   </label>
                   <Select value={data.propertyCity} onValueChange={(value) => updateData({ propertyCity: value })}>
-                    <SelectTrigger id="propertyCity">
+                    <SelectTrigger id="propertyCity" aria-required="true">
                       <SelectValue placeholder="Selecciona una ciudad" />
                     </SelectTrigger>
                     <SelectContent>
@@ -606,15 +676,16 @@ function OnboardingPropietarioContent() {
                   </Button>
                 </span>
               </div>
-              {disabledHint && !isStep2Valid && (
+              {/* La pista del botón apagado aparece y se va con `Presence`. */}
+              <Presence show={Boolean(disabledHint) && !isStep2Valid} distance="xs">
                 <p role="status" className="mt-3 text-xs text-warning text-center">
-                  {disabledHint}
+                  {disabledHint || pistaVisible}
                 </p>
-              )}
+              </Presence>
               </form>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
+        </CrossFade>
       </main>
     </div>
   )

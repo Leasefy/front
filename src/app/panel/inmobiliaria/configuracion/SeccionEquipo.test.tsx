@@ -24,7 +24,7 @@ vi.mock('@/lib/i18n', () => ({
   useI18n: () => ({ t: (k: string) => k.split('.').pop() as string, locale: 'es' }),
 }))
 
-let permisos = { isAdmin: true, canAccess: () => true }
+let permisos: { isAdmin: boolean; canAccess: (modulo?: string, accion?: string) => boolean } = { isAdmin: true, canAccess: () => true }
 vi.mock('@/lib/hooks/usePermissions', () => ({
   usePermissions: () => permisos,
 }))
@@ -35,7 +35,7 @@ const miembros = [
 ]
 
 vi.mock('@/lib/hooks/useInmobiliaria', () => ({
-  useAgencyUsers: () => ({ users: miembros, isLoading: false, errorCrudo: null, refetch: vi.fn() }),
+  useAgencyUsers: vi.fn(() => ({ users: miembros, isLoading: false, errorCrudo: null, refetch: vi.fn() })),
   useAgentes: () => ({ agentes: [], isLoading: false, errorCrudo: null, refetch: vi.fn() }),
   inmobiliariaConfigApi: { inviteUser: vi.fn(), deleteUser: vi.fn() },
 }))
@@ -45,12 +45,28 @@ vi.mock('@/lib/api/inmobiliaria.service', () => ({
   permissionsApi: { updateMemberRole: vi.fn(), updateMemberStatus: vi.fn() },
 }))
 
+const h = vi.hoisted(() => ({
+  modal: null as null | { onSubmit: (invite: unknown) => Promise<void> },
+  toastError: vi.fn(),
+}))
+
 // El formulario es un diálogo: cerrado no aporta al DOM y complica el render.
+// Se guardan sus props para probar qué recibe cuando el back no guarda.
 vi.mock('@/components/inmobiliaria/AgenteFormModal', () => ({
-  AgenteFormModal: () => null,
+  AgenteFormModal: (props: { onSubmit: (invite: unknown) => Promise<void> }) => {
+    h.modal = props
+    return null
+  },
+}))
+
+vi.mock('@/components/ui/toast', () => ({
+  toast: { success: vi.fn(), error: h.toastError, info: vi.fn(), warning: vi.fn() },
 }))
 
 import { SeccionEquipo } from './SeccionEquipo'
+import { inmobiliariaConfigApi } from '@/lib/hooks/useInmobiliaria'
+import { agencyApi } from '@/lib/api/inmobiliaria.service'
+import { ApiError } from '@/lib/api/client'
 
 let container: HTMLDivElement
 let root: Root
@@ -114,7 +130,8 @@ describe('sección Equipo', () => {
     }
 
     it('sin permiso para administrar el equipo, el menú sólo ofrece ver la ficha', async () => {
-      permisos = { isAdmin: false, canAccess: () => false }
+      // Ve el padrón (un permiso puntual de `configuracion:view`) pero no invita.
+      permisos = { isAdmin: false, canAccess: (m, a) => m === 'configuracion' && a === 'view' }
       await render()
       const items = await abrirMenuDe('nuevo@agencia.com')
 
@@ -133,6 +150,58 @@ describe('sección Equipo', () => {
       expect(items).toContain('activate')
       expect(items).toContain('delete')
     })
+
+    it('reenviar con un 5xx dice «de nuestro lado» con la referencia, no el texto crudo', async () => {
+      h.toastError.mockReset()
+      vi.mocked(agencyApi.resendInvitation).mockRejectedValueOnce(
+        new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+          statusCode: 500,
+          code: 'ERROR_INTERNO',
+          referencia: 'f00dbabe',
+        }),
+      )
+      await render()
+      await abrirMenuDe('nuevo@agencia.com')
+      const reenviar = [...document.body.querySelectorAll<HTMLElement>('[role="menuitem"]')].find(
+        (el) => (el.textContent ?? '').trim() === 'resendInvite',
+      )!
+      await act(async () => {
+        reenviar.click()
+        await new Promise((r) => setTimeout(r, 0))
+      })
+      expect(h.toastError).toHaveBeenCalledTimes(1)
+      const texto = String(h.toastError.mock.calls[0][0])
+      expect(texto).toContain('No pudimos reenviar la invitación: algo falló de nuestro lado')
+      expect(texto).toContain('f00dbabe')
+    })
+  })
+
+  it('🔴 invitar no se traga el error: el formulario lo recibe y se queda abierto con lo escrito', async () => {
+    const error = new ApiError(400, ['El nombre puede tener hasta 120 caracteres.'], 'DATOS_INVALIDOS', {
+      campos: [{ campo: 'name', regla: 'longitud_maxima', mensaje: 'El nombre puede tener hasta 120 caracteres.' }],
+    })
+    vi.mocked(inmobiliariaConfigApi.inviteUser).mockRejectedValueOnce(error)
+    await render()
+    expect(h.modal).not.toBeNull()
+    await expect(h.modal!.onSubmit({ email: 'x@y.co', name: 'X', role: 'agente' })).rejects.toBe(error)
+  })
+
+  it('🔴 quien no ve el padrón (la asesora: `agentes:view`, sin `configuracion`) entra a Ranking: sin la pestaña «Miembros» y sin pedir la lista', async () => {
+    const pedidos: boolean[] = []
+    const { useAgencyUsers } = await import('@/lib/hooks/useInmobiliaria')
+    vi.mocked(useAgencyUsers).mockImplementation(((habilitado?: boolean) => {
+      pedidos.push(habilitado !== false)
+      return { users: miembros, isLoading: false, errorCrudo: null, refetch: vi.fn() }
+    }) as never)
+    permisos = { isAdmin: false, canAccess: (m, a) => m === 'agentes' && a === 'view' }
+    await render()
+    const texto = container.textContent ?? ''
+    expect(texto).not.toContain('miembros')
+    expect(texto).toContain('leaderboard')
+    expect(container.querySelectorAll('table')).toHaveLength(0)
+    expect(texto).not.toContain('Ana Pérez')
+    expect(pedidos.length).toBeGreaterThan(0)
+    expect(pedidos.every((p) => p === false)).toBe(true)
   })
 
   it('ofrece las tres vistas: el padrón y los dos tableros de desempeño', async () => {
@@ -141,5 +210,18 @@ describe('sección Equipo', () => {
     expect(texto).toContain('miembros')
     expect(texto).toContain('leaderboard')
     expect(texto).toContain('workload')
+  })
+
+  it('🔴 ARREGLOS-4 · a 390 px las pestañas se desplazan dentro de su riel, no la página', async () => {
+    // happy-dom no calcula layout: se fijan las clases que lo evitan (como
+    // «Mis propiedades» y `cobros-a-390.test.tsx`).
+    await render()
+    const riel = container.querySelector<HTMLElement>('[data-testid="equipo-pestanas"]')
+    expect(riel).not.toBeNull()
+    expect(riel!.className).toContain('overflow-x-auto')
+    expect(riel!.className).toContain('min-w-0')
+    expect(riel!.className).toContain('max-w-full')
+    // Las pestañas viven ADENTRO del riel.
+    expect(riel!.textContent).toContain('leaderboard')
   })
 })

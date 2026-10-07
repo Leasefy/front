@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * Hooks del agente de Retención ("Laura"). Patrón calcado de
+ * Hooks del agente de Retención. Patrón calcado de
  * `useCarteraOverview`: useAuth → agencyId, fetch con bearer, estados
- * { data, isLoading, error, refetch }. Mock-first vía el cliente (`usingMock`).
+ * { data, isLoading, error, refetch } + `apagado` (Retención no activada). Sin mock.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/lib/auth'
@@ -18,8 +18,10 @@ import type {
 interface AsyncState<T> {
   data: T | null
   isLoading: boolean
-  error: string | null
-  usingMock: boolean
+  /** El error ENTERO (lo lee `EstadoDeDatos`), no su texto. */
+  error: unknown
+  /** Retención no está activada: no hay datos y la pantalla lo dice. */
+  apagado: boolean
 }
 
 const TIMEOUT_MS = 12_000
@@ -31,7 +33,7 @@ export function useRetencionDashboard() {
     data: null,
     isLoading: true,
     error: null,
-    usingMock: false,
+    apagado: false,
   })
   const abortRef = useRef<AbortController | null>(null)
 
@@ -42,12 +44,12 @@ export function useRetencionDashboard() {
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
     setState((s) => ({ ...s, isLoading: true }))
     try {
-      const { data, usingMock } = await fetchDashboard(agencyId ?? 'demo', controller.signal)
+      const { data, apagado } = await fetchDashboard(agencyId ?? 'demo', controller.signal)
       if (controller.signal.aborted) return
-      setState({ data, isLoading: false, error: null, usingMock })
+      setState({ data, isLoading: false, error: null, apagado })
     } catch (err) {
       if (controller.signal.aborted) return
-      setState((s) => ({ ...s, isLoading: false, error: err instanceof Error ? err.message : 'error' }))
+      setState((s) => ({ ...s, isLoading: false, error: err }))
     } finally {
       clearTimeout(timer)
     }
@@ -68,7 +70,7 @@ export function useRetencionBandeja(tab: BandejaTab | 'todos' = 'todos') {
     data: null,
     isLoading: true,
     error: null,
-    usingMock: false,
+    apagado: false,
   })
   const abortRef = useRef<AbortController | null>(null)
 
@@ -79,12 +81,12 @@ export function useRetencionBandeja(tab: BandejaTab | 'todos' = 'todos') {
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
     setState((s) => ({ ...s, isLoading: true }))
     try {
-      const { data, usingMock } = await fetchBandeja(agencyId ?? 'demo', tab, controller.signal)
+      const { data, apagado } = await fetchBandeja(agencyId ?? 'demo', tab, controller.signal)
       if (controller.signal.aborted) return
-      setState({ data, isLoading: false, error: null, usingMock })
+      setState({ data, isLoading: false, error: null, apagado })
     } catch (err) {
       if (controller.signal.aborted) return
-      setState((s) => ({ ...s, isLoading: false, error: err instanceof Error ? err.message : 'error' }))
+      setState((s) => ({ ...s, isLoading: false, error: err }))
     } finally {
       clearTimeout(timer)
     }
@@ -105,7 +107,7 @@ export function useRetencionCaso(caseId: string) {
     data: null,
     isLoading: true,
     error: null,
-    usingMock: false,
+    apagado: false,
   })
   const abortRef = useRef<AbortController | null>(null)
 
@@ -117,12 +119,12 @@ export function useRetencionCaso(caseId: string) {
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
     setState((s) => ({ ...s, isLoading: true }))
     try {
-      const { data, usingMock } = await fetchCaseBundle(agencyId ?? 'demo', caseId, controller.signal)
+      const { data, apagado } = await fetchCaseBundle(agencyId ?? 'demo', caseId, controller.signal)
       if (controller.signal.aborted) return
-      setState({ data, isLoading: false, error: null, usingMock })
+      setState({ data, isLoading: false, error: null, apagado })
     } catch (err) {
       if (controller.signal.aborted) return
-      setState((s) => ({ ...s, isLoading: false, error: err instanceof Error ? err.message : 'error' }))
+      setState((s) => ({ ...s, isLoading: false, error: err }))
     } finally {
       clearTimeout(timer)
     }

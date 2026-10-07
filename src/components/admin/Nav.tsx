@@ -34,6 +34,8 @@ export const NAV_ITEMS = [
   { href: '/admin/keys', label: 'Keys', hint: 'rotación 90d', code: '24' },
   { href: '/admin/feature-flags', label: 'Flags', hint: 'per-tenant', code: '25' },
   { href: '/admin/pricing-config', label: 'Pricing', hint: 'modelo agencia', code: '26' },
+  // ACT-09 (Nico, 05-10-2026): el Piloto automático de cada inmobiliaria lo deja Leasefy en prueba, contratado o apagado.
+  { href: '/admin/piloto', label: 'Piloto automático', hint: 'prueba · contratado · apagado', code: '37' },
   { href: '/admin/plans', label: 'Planes', hint: 'catálogo agency', code: '30' },
   { href: '/admin/agency-targets', label: 'Targets', hint: 'metas mensuales', code: '27' },
   { href: '/admin/avaluos', label: 'Avalúos', hint: 'firma certificados', code: '28' },
@@ -41,8 +43,11 @@ export const NAV_ITEMS = [
   { href: '/admin/cotizador', label: 'Cotizador', hint: 'carriers · credenciales', code: '31' },
   { href: '/admin/inmuebles', label: 'Inmuebles', hint: 'riesgo · historial interno', code: '32' },
   { href: '/admin/chat-feedback', label: 'Chat feedback', hint: 'pulgares · dónde falla', code: '33' },
+  // Prendida el 04-10-2026: Nico aprobó la cláusula de la política (v4.0 §13 y §16).
+  { href: '/admin/chat-preguntas', label: 'Preguntas del chat', hint: 'qué preguntan · sugerencias', code: '36' },
   { href: '/admin/modulos-pagos', label: 'Módulos', hint: 'nómina · qué compró cada una', code: '34' },
   { href: '/admin/exogena', label: 'Exógena', hint: 'conceptos por año · publicar', code: '34' },
+  { href: '/admin/recaudo-en-linea', label: 'Recaudo en línea', hint: 'wompi · liquidaciones', code: '35' },
 ] as const
 
 export function Nav({ userEmail }: { userEmail: string }) {
@@ -56,7 +61,8 @@ export function Nav({ userEmail }: { userEmail: string }) {
   return (
     <aside className="w-64 shrink-0 border-r border-bg-border bg-bg-surface min-h-screen flex flex-col sticky top-0 h-screen overflow-y-auto" data-lenis-prevent>
       <div className="px-5 py-5 border-b border-bg-border">
-        <Wordmark size="md" variant="blue" />
+        {/* Negro, como el logo de la barra de las otras plataformas y el de la landing (Nico, 03-10). */}
+        <Wordmark size="md" variant="ink" />
         <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-fg-subtle">admin · v1</div>
       </div>
 

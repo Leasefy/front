@@ -3,6 +3,7 @@ import type { Icon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { CajaQueEntra } from '@/components/estado/entrada-del-estado';
 
 /**
  * EmptyState — EL estado vacío del panel. Canónico único.
@@ -113,7 +114,9 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   return (
-    <div
+    // Entra con `Appear` de Cadence (8 px y fundido) salvo dentro de un
+    // `EstadoDeDatos` que ya lo anima: ver `CajaQueEntra`.
+    <CajaQueEntra
       // role="status" + aria-label hacen que el lector de pantalla anuncie el
       // vacío UNA vez con su título, en vez de leer ícono + título + párrafo
       // sueltos cuando la lista termina de cargar.
@@ -133,6 +136,6 @@ export function EmptyState({
       {children && <div className="mt-5 w-full max-w-sm text-left">{children}</div>}
       {action && <div className="mt-5">{renderAction(action, 'secondary', 'sm')}</div>}
       {secondaryAction && <div className="mt-2">{renderAction(secondaryAction, 'link', 'sm')}</div>}
-    </div>
+    </CajaQueEntra>
   );
 }

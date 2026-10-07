@@ -640,6 +640,12 @@ export interface DocumentosDelMandato {
     completo: boolean
     falta: { tipo: string; nombre: string; porQue: string; detalle: string }[]
   }
+  /**
+   * IN-14 (QA 04-10): si ya se le giró a alguno de los dueños del mandato. Con
+   * `true` la puerta «antes del primer giro» ya pasó y la ficha dice
+   * «Documentos que faltan». Ausente en un back anterior = `false`.
+   */
+  yaHuboGiros?: boolean
 }
 
 export interface ConsultaDeListas {
@@ -660,6 +666,38 @@ export interface ConsultaDeListas {
   coincidencias: { lista: string; nombreEnLaLista: string; parecido: number }[] | null
   motivoDeLaRevision: string | null
   createdAt: string
+}
+
+/** Quién registró o anuló una comisión de venta. */
+export interface PersonaDeLaComision {
+  userId: string
+  nombre: string | null
+}
+
+/** La comisión de venta de un mandato (C-10), en su tabla. */
+export interface ComisionDeVenta {
+  id: string
+  consignacionId: string
+  contractId: string
+  /** `AAAA-MM-DD`. */
+  fechaDeLaEscritura: string
+  precioDeVentaCop: number
+  porcentaje: number
+  comisionCop: number
+  createdAt: string
+  estado: 'VIVA' | 'ANULADA'
+  registradoPor: PersonaDeLaComision | null
+  anulacion: { anuladaEl: string; por: PersonaDeLaComision | null; motivo: string } | null
+}
+
+/** Lo que muestra el mandato: la viva, o las anuladas con su motivo, quién y cuándo. */
+export interface ComisionesDeVentaDelMandato {
+  /** `false` = la base todavía no tiene la tabla: no se puede registrar. */
+  disponible: boolean
+  motivo: string | null
+  viva: ComisionDeVenta | null
+  /** La anulada más reciente primero. */
+  anuladas: ComisionDeVenta[]
 }
 
 export const captacionApi = {
@@ -779,9 +817,58 @@ export const captacionApi = {
       } | null
       falta: { code: string; message: string } | null
       sePuedeRegistrarLaComision: boolean
+      /**
+       * El contrato sobre el que se registraría la comisión (el vigente del
+       * inmueble o, si ya terminó, el más reciente). `null` = el inmueble no
+       * tiene contrato y la comisión no se puede registrar.
+       */
+      contrato: {
+        id: string
+        codigo: number | null
+        inquilino: string | null
+        /**
+         * ARREGLOS-6b: el inmueble no tiene contrato de arriendo y la comisión va
+         * sobre el de OTRO inmueble del mismo propietario (un back anterior no lo manda).
+         */
+        delMismoPropietario?: true
+        /** La dirección de ese otro inmueble. */
+        direccion?: string | null
+      } | null
+      /** ARREGLOS-3: de qué es el mandato (un back anterior no lo manda). */
+      tipoDeMandato?: 'RENT' | 'SALE'
+      /** ARREGLOS-3: sin comisión de venta pactada, qué hacer (`null` = sí está pactada). */
+      sinComision?: string | null
     }>(
       `${BASE}/captacion/mandatos/${consignacionId}/venta/previsualizar`,
       body,
+    ),
+
+  /** La comisión de venta del mandato: la viva y las anuladas (Nico, 02-10-2026). */
+  comisionesDeVenta: (consignacionId: string) =>
+    apiClient.get<ComisionesDeVentaDelMandato>(
+      `${BASE}/captacion/mandatos/${consignacionId}/venta/comision`,
+    ),
+
+  /**
+   * Registra la comisión de venta. Sin `contractId` el back toma el contrato
+   * del inmueble (el mismo de la previsualización). 503
+   * `COMISION_DE_VENTA_SIN_MIGRACION` sin la tabla; 409
+   * `COMISION_DE_VENTA_YA_REGISTRADA` si ya hay una viva.
+   */
+  registrarComisionDeVenta: (
+    consignacionId: string,
+    body: { contractId?: string; fechaDeLaEscritura: string; precioDeVentaCop: number },
+  ) =>
+    apiClient.post<ComisionDeVenta>(
+      `${BASE}/captacion/mandatos/${consignacionId}/venta/comision`,
+      body,
+    ),
+
+  /** Anula la comisión de venta, SIEMPRE con motivo: queda quién y cuándo. */
+  anularComisionDeVenta: (consignacionId: string, comisionId: string, motivo: string) =>
+    apiClient.post<ComisionDeVenta>(
+      `${BASE}/captacion/mandatos/${consignacionId}/venta/comision/${comisionId}/anular`,
+      { motivo },
     ),
 
   consultarListas: (body: {
@@ -928,6 +1015,24 @@ export const invitacionApi = {
         invitacionId: string
         contractId: string
         tenantName: string | null
+      }[]
+      /**
+       * QA-CONT-95 D-10: lo que va A TIEMPO (y los contratos en firma sin
+       * reloj, con `invitacionId`/`venceEl` en `null`). Un back anterior no lo
+       * manda.
+       */
+      aTiempo?: {
+        invitacionId: string | null
+        contractId: string
+        code: number | null
+        tenantName: string | null
+        esperaA: 'INQUILINO' | 'INMOBILIARIA'
+        enviadaEl: string | null
+        venceEl: string | null
+        diasQueFaltan: number | null
+        recordatoriosEnviados: number
+        de: number
+        proximoRecordatorioEl: string | null
       }[]
     }>(`${BASE}/invitacion-a-firmar/barrido`),
 }

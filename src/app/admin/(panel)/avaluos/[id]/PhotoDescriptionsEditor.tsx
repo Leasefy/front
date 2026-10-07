@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { ApiError } from '@/lib/admin/api'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import {
   savePhotoDescriptions,
   PHOTO_DESCRIPTION_MAX_CHARS,
@@ -90,7 +91,7 @@ export function PhotoDescriptionsEditor({ id, photos }: { id: string; photos: Ph
       } else if (err instanceof ApiError && err.status === 403) {
         setError('El servicio de avalúos rechazó la edición (403). Refresca la sesión e intenta de nuevo.')
       } else {
-        setError(err instanceof ApiError ? err.message : 'Error de red al guardar.')
+        setError(mensajeDelAdmin(err, { accion: 'guardar las descripciones' }))
       }
     } finally {
       setSaving(false)

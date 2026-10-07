@@ -219,6 +219,15 @@ describe('rechazado — tiene salidas, no es un callejón', () => {
     render()
     expect(texto()).not.toMatch(/2\.800\.000/)
   })
+
+  it('🔴 se dice en tono informativo, no de error: no es definitivo y hay salidas', () => {
+    montar(RECHAZADO)
+    render()
+    const medallon = document.querySelector('[data-testid="rechazado-medallon"]')
+    expect(medallon?.getAttribute('data-tono')).toBe('info')
+    expect(medallon?.className).toContain('bg-info-soft')
+    expect(medallon?.className).not.toContain('danger')
+  })
 })
 
 describe('en proceso', () => {

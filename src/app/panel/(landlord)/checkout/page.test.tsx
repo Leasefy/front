@@ -105,6 +105,7 @@ vi.mock('@/components/ui/select', () => {
 })
 
 import CheckoutPage from './page'
+import { ApiError } from '@/lib/api/client'
 
 let host: HTMLDivElement
 let root: Root
@@ -231,6 +232,53 @@ describe('checkout del plan del propietario', () => {
 
     expect(assign).not.toHaveBeenCalled()
     expect(host.querySelector('[role="alert"]')?.textContent).toContain('landlord.checkout.bankLinkMissing')
+  })
+
+  // 02-10-2026 · Sistema de errores: lo que el back rechaza por campo va bajo
+  // su campo (con el foco); un 5xx dice «de nuestro lado» con la referencia;
+  // sólo la falta de respuesta habla de la conexión.
+  async function llenarYPagar(rechazo: unknown) {
+    startPseCheckout.mockRejectedValue(rechazo)
+    const selects = host.querySelectorAll('select')
+    escribir(selects[0], '1007')
+    escribir(host.querySelector<HTMLInputElement>('#pse-documento')!, '1234567890')
+    escribir(host.querySelector<HTMLInputElement>('#pse-nombre')!, 'Ana Pérez')
+    await act(async () => {
+      botonDePagar().click()
+    })
+    await flush()
+  }
+
+  it('🔴 un 400 en el documento va bajo el documento, con el foco, y no al aviso general', async () => {
+    const mensaje = 'El documento debe tener entre 6 y 15 dígitos'
+    await llenarYPagar(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'legalId', regla: 'formato', mensaje }],
+      }),
+    )
+    expect(host.querySelector('#pse-documento-error')?.textContent).toBe(mensaje)
+    expect(host.querySelector('#pse-documento')?.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement?.id).toBe('pse-documento')
+    expect(host.textContent).not.toContain('landlord.checkout.paymentStartError')
+  })
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia, sin culpar a la conexión', async () => {
+    await llenarYPagar(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
+    )
+    const aviso = Array.from(host.querySelectorAll('[role="alert"]')).map((n) => n.textContent).join(' ')
+    expect(aviso).toMatch(/No pudimos iniciar el pago: algo falló de nuestro lado/)
+    expect(aviso).toContain('ab12cd34')
+    expect(aviso).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta (la red): ahí sí se habla de la conexión', async () => {
+    await llenarYPagar(new TypeError('Failed to fetch'))
+    const aviso = Array.from(host.querySelectorAll('[role="alert"]')).map((n) => n.textContent).join(' ')
+    expect(aviso).toMatch(/conexión/)
   })
 
   it('🔴 los precios son los que cobra el back, no los del front (QA 23-09)', () => {

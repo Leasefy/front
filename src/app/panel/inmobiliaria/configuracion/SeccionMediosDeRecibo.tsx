@@ -159,6 +159,13 @@ export function SeccionMediosDeRecibo() {
                           <p className="text-xs text-fg-muted">
                             {prendido ? 'Se ofrece al registrar un pago.' : 'No se ofrece.'}
                           </p>
+                          {/* 🔴 ARREGLOS-5 (Nico Q2 a): un solo interruptor de efectivo. */}
+                          {normalizarMedio(m.medio) === 'EFECTIVO' && (
+                            <p className="text-caption text-fg-muted" data-testid="efectivo-tambien-en-la-conciliacion">
+                              Es el mismo «La inmobiliaria recibe efectivo» de la conciliación (Costos de la plata):
+                              prendido, la planilla de caja de cada día se cruza contra la consignación del banco.
+                            </p>
+                          )}
                         </div>
                         <Switch
                           checked={prendido}

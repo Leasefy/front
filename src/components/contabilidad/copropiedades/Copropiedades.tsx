@@ -20,6 +20,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Buildings, Plus } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -27,11 +28,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination';
@@ -44,8 +46,10 @@ import {
   type Copropiedad,
 } from '@/lib/api/copropiedades.service';
 import { clasificarFallo } from '@/lib/errores/clasificar';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { cn } from '@/lib/utils';
-import { FaltaLaMigracion, TarjetaDeInforme } from '../piezas';
+import { FaltaLaMigracion, Nota, TarjetaDeInforme } from '../piezas';
 
 const COLUMNAS = 4;
 
@@ -117,6 +121,29 @@ export function Copropiedades() {
           </>
         }
       >
+        {/* 🔴 CB-29 (QA de Contabilidad, 03-10-2026): la fila no abre nada, y no
+            decía dónde se le asignan los inmuebles. Se asignan desde el
+            CONTRATO (Condiciones → «¿A qué copropiedad pertenece el
+            inmueble?»): la pantalla lo dice, con el enlace, y no inventa otra
+            forma de asignarlos. */}
+        {falta ? null : (
+          <div className="border-b border-border px-4 py-3">
+            <Nota testId="donde-se-asignan-los-inmuebles">
+              <p>
+                Cada inmueble se asigna a su copropiedad desde la ficha de su contrato: Condiciones →
+                «¿A qué copropiedad pertenece el inmueble?». La columna «Inmuebles» cuenta los que ya
+                están asignados.{' '}
+                <Link
+                  href="/panel/inmobiliaria/contratos"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  Ir a Contratos
+                </Link>
+              </p>
+            </Nota>
+          </div>
+        )}
+
         {creando ? (
           <FormularioDeCopropiedad
             onListo={() => {
@@ -142,9 +169,9 @@ export function Copropiedades() {
                   <TableHead numeric>Inmuebles</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBodyAnimado>
                 {error ? (
-                  <TableRow className="hover:bg-transparent">
+                  <TableRow key="fallo" className="hover:bg-transparent">
                     <TableCell colSpan={COLUMNAS} className="p-0">
                       <SinDatos
                         queSon="copropiedades"
@@ -160,7 +187,7 @@ export function Copropiedades() {
                     </TableCell>
                   </TableRow>
                 ) : pageItems.length === 0 ? (
-                  <TableRow className="hover:bg-transparent">
+                  <TableRow key="vacio" className="hover:bg-transparent">
                     <TableCell colSpan={COLUMNAS} className="p-0">
                       {texto !== '' ? (
                         <SinDatos
@@ -205,7 +232,8 @@ export function Copropiedades() {
                   </TableRow>
                 ) : (
                   pageItems.map((c) => (
-                    <TableRow key={c.id} data-testid="fila-de-copropiedad">
+                    // Sin hover: la fila no abre nada (CB-29), no debe parecer un botón.
+                    <TableRowAnimada key={c.id} data-testid="fila-de-copropiedad" className="hover:bg-transparent">
                       <TableCell>
                         <span className={cn('text-fg', !c.activa && 'text-fg-muted line-through')}>
                           {c.nombre}
@@ -222,10 +250,10 @@ export function Copropiedades() {
                       <TableCell numeric className="tabular-nums">
                         {c.inmuebles.toLocaleString('es-CO')}
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   ))
                 )}
-              </TableBody>
+              </TableBodyAnimado>
             </Table>
 
             {shouldPaginate ? (
@@ -257,6 +285,8 @@ export function Copropiedades() {
   );
 }
 
+type CampoDeLaCopropiedad = 'nombre' | 'nit' | 'direccion';
+
 function FormularioDeCopropiedad({
   onListo,
   onCancelar,
@@ -268,6 +298,14 @@ function FormularioDeCopropiedad({
   const [nit, setNit] = useState('');
   const [direccion, setDireccion] = useState('');
   const [guardando, setGuardando] = useState(false);
+  /** Lo que el back dijo de un campo (un 400 con `campos`). */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDeLaCopropiedad, string>>>({});
+  const olvidar = (campo: CampoDeLaCopropiedad) =>
+    setDelServidor((d) => (d[campo] ? { ...d, [campo]: undefined } : d));
+  const describir = (campo: CampoDeLaCopropiedad) =>
+    delServidor[campo]
+      ? { 'aria-invalid': true as const, 'aria-describedby': `copro-${campo}-error` }
+      : {};
 
   const soloDigitos = nit.replace(/\D/g, '');
   const puede = nombre.trim().length >= 3 && soloDigitos.length >= 5;
@@ -285,7 +323,20 @@ function FormularioDeCopropiedad({
       );
       onListo();
     } catch (e) {
-      toast.error(clasificarFallo(e).descripcion);
+      /*
+       * Lo que es de un campo va bajo ese campo (y se enfoca); lo demás al
+       * toast, con la regla de oro (un 5xx «de nuestro lado» con la referencia).
+       * `clasificarFallo` es para un fallo de CARGA, con su título: acá es una
+       * acción.
+       */
+      const reparto = repartirErroresDelServidor<CampoDeLaCopropiedad>(e, {
+        campos: ['nombre', 'nit', 'direccion'],
+        porDefecto: 'No se pudo registrar la copropiedad.',
+        accion: 'registrar la copropiedad',
+      });
+      setDelServidor(reparto.porCampo);
+      if (reparto.orden[0]) document.getElementById(`copro-${reparto.orden[0]}`)?.focus();
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setGuardando(false);
     }
@@ -298,34 +349,50 @@ function FormularioDeCopropiedad({
         <Input
           id="copro-nombre"
           value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
+          onChange={(e) => {
+            olvidar('nombre');
+            setNombre(e.target.value);
+          }}
           placeholder="Conjunto Residencial Altos del Poblado"
+          {...describir('nombre')}
         />
+        <ErrorDelCampo id="copro-nombre-error" mensaje={delServidor.nombre} />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="copro-nit">NIT</Label>
         <Input
           id="copro-nit"
           value={nit}
-          onChange={(e) => setNit(e.target.value)}
+          onChange={(e) => {
+            olvidar('nit');
+            setNit(e.target.value);
+          }}
           placeholder="900123456"
           inputMode="numeric"
           className="tabular-nums"
+          {...describir('nit')}
         />
         {/* El DV se calcula, no se pide: quien lo teclea se equivoca y el
             error sólo aparece cuando la DIAN rechaza el archivo. */}
-        <p className="text-caption text-fg-subtle">
-          Sin puntos ni dígito de verificación: ese lo calcula el sistema.
-        </p>
+        <ErrorDelCampo
+          id="copro-nit-error"
+          mensaje={delServidor.nit}
+          pista="Sin puntos ni dígito de verificación: ese lo calcula el sistema."
+        />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="copro-direccion">Dirección (opcional)</Label>
         <Input
           id="copro-direccion"
           value={direccion}
-          onChange={(e) => setDireccion(e.target.value)}
+          onChange={(e) => {
+            olvidar('direccion');
+            setDireccion(e.target.value);
+          }}
           placeholder="Cra. 43A #7-50"
+          {...describir('direccion')}
         />
+        <ErrorDelCampo id="copro-direccion-error" mensaje={delServidor.direccion} />
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:col-span-3">
         <Button

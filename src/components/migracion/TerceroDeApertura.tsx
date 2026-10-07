@@ -24,6 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { propietariosApi } from '@/lib/api/inmobiliaria.service';
 import { inquilinosApi } from '@/lib/api/inquilinos.service';
 import type {
@@ -41,7 +43,14 @@ interface Candidato {
   id: string;
   nombre: string;
   detalle: string;
+  /**
+   * QA-FACT-CONTA-95: el inquilino sin cuenta en el portal (`doc:…`, `correo:…`)
+   * no tiene el id que la contabilidad guarda: elegirlo daba «Este dato no tiene
+   * un valor válido» al crear el asiento. Se muestra, apagado, con el porqué.
+   */
+  sinCuenta?: boolean;
 }
+
 
 /** Las dos listas del panel, con el id que la contabilidad entiende. */
 async function buscarCandidatos(tipo: TipoDeTerceroDeApertura, q: string): Promise<Candidato[]> {
@@ -56,6 +65,7 @@ async function buscarCandidatos(tipo: TipoDeTerceroDeApertura, q: string): Promi
     id: i.tenantId,
     nombre: i.nombre,
     detalle: i.email ?? i.telefono ?? '',
+    sinCuenta: i.tieneCuentaDelPortal === false,
   }));
 }
 
@@ -71,9 +81,16 @@ export function TerceroDeApertura({
   const [tipo, setTipo] = useState<TipoDeTerceroDeApertura>(valor?.tipo ?? 'ARRENDATARIO');
   const [busqueda, setBusqueda] = useState('');
   const [candidatos, setCandidatos] = useState<Candidato[]>([]);
+  /**
+   * Por qué falló la búsqueda (02-10-2026). Antes un fallo se veía igual que
+   * «no hay nadie con ese nombre»: la lista quedaba vacía sin decir nada. Con
+   * la regla de oro: «conexión» sólo sin respuesta; un 5xx, de nuestro lado.
+   */
+  const [fallo, setFallo] = useState<string | null>(null);
 
   useEffect(() => {
     const q = busqueda.trim();
+    setFallo(null);
     if (q.length < 2) {
       setCandidatos([]);
       return;
@@ -83,8 +100,10 @@ export function TerceroDeApertura({
       try {
         const lista = await buscarCandidatos(tipo, q);
         if (vivo) setCandidatos(lista);
-      } catch {
-        if (vivo) setCandidatos([]);
+      } catch (e) {
+        if (!vivo) return;
+        setCandidatos([]);
+        setFallo(mensajeParaLaPersona(e, { porDefecto: 'No pudimos buscar el tercero.', accion: 'buscar el tercero' }));
       }
     }, 250);
     return () => {
@@ -132,10 +151,13 @@ export function TerceroDeApertura({
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Nombre o documento (opcional)"
           aria-label="Buscar el tercero"
+          aria-invalid={fallo ? true : undefined}
+          aria-describedby={fallo ? `${testId}-buscar-error` : undefined}
           className="h-8 text-caption"
           data-testid={`${testId}-buscar`}
         />
       </div>
+      <ErrorDelCampo id={`${testId}-buscar-error`} mensaje={fallo} />
       {candidatos.length > 0 ? (
         <ul className="divide-y divide-border-faint rounded-md border border-border bg-surface" role="listbox">
           {candidatos.map((c) => (
@@ -144,8 +166,11 @@ export function TerceroDeApertura({
                 type="button"
                 role="option"
                 aria-selected={false}
-                className="flex w-full items-center justify-between gap-2 px-2 py-1 text-left text-caption hover:bg-surface-muted"
+                aria-disabled={c.sinCuenta || undefined}
+                disabled={c.sinCuenta}
+                className="flex w-full items-center justify-between gap-2 px-2 py-1 text-left text-caption hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-70"
                 onClick={() => {
+                  if (c.sinCuenta) return;
                   onCambio({ tipo, id: c.id, nombre: c.nombre });
                   setBusqueda('');
                   setCandidatos([]);
@@ -153,7 +178,11 @@ export function TerceroDeApertura({
                 data-testid={`${testId}-opcion-${c.id}`}
               >
                 <span className="font-medium text-fg">{c.nombre}</span>
-                <span className="text-fg-subtle">{c.detalle}</span>
+                <span className="text-fg-subtle">
+                  {c.sinCuenta
+                    ? 'Sin cuenta en el portal: todavía no se puede usar de tercero del asiento.'
+                    : c.detalle}
+                </span>
               </button>
             </li>
           ))}

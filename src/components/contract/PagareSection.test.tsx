@@ -156,3 +156,40 @@ describe('<PagareSection>', () => {
     expect(simular).toHaveBeenCalledWith('p-1', 'f-1', 'FIRMAR');
   });
 });
+
+/**
+ * 🔴 02-10-2026 · Emitir el pagaré: el motivo con la regla de oro. Antes la
+ * descripción era `mensajeDelFallo(err, '')`: un 5xx salía sin decir de quién
+ * era ni con qué referencia escribir.
+ */
+describe('<PagareSection> — el fallo al emitir', () => {
+  async function emitirConError(error: unknown) {
+    const { toast } = await import('sonner');
+    vi.spyOn(toast, 'error');
+    obtener.mockResolvedValueOnce({ disponible: true, pagare: null });
+    emitir.mockRejectedValueOnce(error);
+    await montar(true);
+    const boton = [...container.querySelectorAll('button')].find((b) => /emitir/i.test(b.textContent ?? ''));
+    if (!boton) throw new Error('No está el botón de emitir');
+    await act(async () => {
+      boton.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    return vi.mocked(toast.error).mock.calls[0] as [string, { description: string }];
+  }
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia', async () => {
+    const [titulo, opciones] = await emitirConError(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: '3a4b5c6d' }),
+    );
+    expect(titulo).toBe('No se pudo emitir el pagaré.');
+    expect(opciones.description).toContain('No pudimos emitir el pagaré: algo falló de nuestro lado.');
+    expect(opciones.description).toContain('3a4b5c6d');
+  });
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    const [, opciones] = await emitirConError(new ApiError(0, 'Failed to fetch'));
+    expect(opciones.description).toContain('conexión');
+  });
+});

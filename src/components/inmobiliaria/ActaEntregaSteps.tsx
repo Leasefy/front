@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Lightning,
   Signature,
@@ -24,7 +23,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { IconButton, Chip, RadioCardGroup, RadioCard } from '@leasefy/cadence';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { errorDelDeposito, errorDeLosDescuentos } from '@/lib/actas/limites-del-acta';
+import { liquidarElDeposito } from '@/lib/actas/devolucion-del-deposito';
+import { IconButton, Chip, RadioCardGroup, RadioCard, Presence, Collapse, Stagger, StaggerItem } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
 import type {
   ActaInventoryItem,
@@ -156,8 +158,8 @@ export function StepBasicInfo({ formData, updateFormData, consignaciones, select
       </div>
 
       {/* Selected Property Info */}
-      {selectedConsignacion && (
-        <div className="p-4 rounded-lg bg-surface-muted border border-border">
+      <Presence show={Boolean(selectedConsignacion)} initial={false} className="p-4 rounded-lg bg-surface-muted border border-border">
+        {selectedConsignacion && (
           <div className="flex items-start gap-4">
             {selectedConsignacion.propertyThumbnail && (
               <img
@@ -181,8 +183,8 @@ export function StepBasicInfo({ formData, updateFormData, consignaciones, select
               )}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Presence>
 
       {/* Date and Time */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -192,6 +194,7 @@ export function StepBasicInfo({ formData, updateFormData, consignaciones, select
           </label>
           <Input
             type="date"
+            required
             value={formData.deliveryDate}
             onChange={(e) => updateFormData({ deliveryDate: e.target.value })}
             className="w-full"
@@ -201,8 +204,10 @@ export function StepBasicInfo({ formData, updateFormData, consignaciones, select
           <label className="text-sm font-medium text-fg">
             {t('inmobiliaria.acta.time')}
           </label>
+          {/* La hora se guarda con el acta (02-10-2026): sin ella no se sigue. */}
           <Input
             type="time"
+            required
             value={formData.deliveryTime}
             onChange={(e) => updateFormData({ deliveryTime: e.target.value })}
             className="w-full"
@@ -419,14 +424,13 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
       {/* Items List */}
       {activeRoom && (
         <div className="space-y-3">
-          <AnimatePresence mode="popLayout">
-            {activeRoomItems.map((item, index) => (
-              <motion.div
+          {/* Los ítems del espacio entran escalonados (techo de 320 ms); el
+              que se borra sale y los de abajo suben (`key` = el id). Al
+              cambiar de espacio la lista se monta de nuevo. */}
+          <Stagger key={activeRoom} className="space-y-3">
+            {activeRoomItems.map((item) => (
+              <StaggerItem
                 key={item.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ delay: index * 0.02 }}
                 className="p-4 rounded-lg bg-surface-muted border border-border"
               >
                 <div className="flex items-start gap-3">
@@ -455,7 +459,7 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
                     </div>
 
                     {/* Defect Description */}
-                    {item.hasDefects && (
+                    <Collapse open={Boolean(item.hasDefects)}>
                       <Input
                         type="text"
                         placeholder={t('inmobiliaria.acta.defectPlaceholder')}
@@ -463,7 +467,7 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
                         onChange={(e) => updateItemDefect(item.id, e.target.value)}
                         className="w-full h-9 px-3 text-sm border-warning/40 bg-warning-soft/40"
                       />
-                    )}
+                    </Collapse>
                   </div>
 
                   {/* Actions */}
@@ -486,9 +490,9 @@ export function StepInventory({ formData, updateFormData, t }: StepProps) {
                     />
                   </div>
                 </div>
-              </motion.div>
+              </StaggerItem>
             ))}
-          </AnimatePresence>
+          </Stagger>
 
           {/* Add Item Button */}
           <Button
@@ -684,14 +688,16 @@ export function StepMetersKeys({ formData, updateFormData, t }: StepProps) {
             </div>
           ))}
 
-          {formData.keysDelivered.length === 0 && (
-            <div className="p-6 rounded-lg bg-surface-muted border border-dashed border-border text-center">
-              <Key className="w-8 h-8 text-fg-subtle mx-auto mb-2" />
-              <p className="text-fg-muted text-sm">
-                {t('inmobiliaria.acta.noKeysRegistered')}
-              </p>
-            </div>
-          )}
+          <Presence
+            show={formData.keysDelivered.length === 0}
+            initial={false}
+            className="p-6 rounded-lg bg-surface-muted border border-dashed border-border text-center"
+          >
+            <Key className="w-8 h-8 text-fg-subtle mx-auto mb-2" />
+            <p className="text-fg-muted text-sm">
+              {t('inmobiliaria.acta.noKeysRegistered')}
+            </p>
+          </Presence>
         </div>
       </div>
     </div>
@@ -765,6 +771,7 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-fg-muted">$</span>
               <Input
+                id="acta-deposito"
                 type="text"
                 value={formData.depositAmount?.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US') || ''}
                 onChange={(e) => {
@@ -773,8 +780,12 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
                 }}
                 placeholder="0"
                 className="w-full pl-8"
+                aria-invalid={errorDelDeposito(formData.depositAmount) ? true : undefined}
+                aria-describedby={errorDelDeposito(formData.depositAmount) ? 'acta-deposito-error' : undefined}
               />
             </div>
+            {/* El tope del back (`limites-del-acta.ts`), con su frase, antes de enviar. */}
+            <ErrorDelCampo id="acta-deposito-error" mensaje={errorDelDeposito(formData.depositAmount)} />
           </div>
 
           {/* Deductions */}
@@ -841,19 +852,41 @@ export function StepObservations({ formData, updateFormData, t }: StepProps) {
               </div>
             ))}
 
-            {/* Net to Return */}
-            {formData.depositAmount && (
-              <div className="p-4 rounded-lg bg-success-soft border border-success">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-success">
-                    {t('inmobiliaria.acta.amountToReturn')}:
-                  </span>
-                  <span className="font-mono font-bold tabular-nums text-success">
-                    ${(formData.depositAmount - (formData.deductions?.reduce((sum, d) => sum + d.amount, 0) || 0)).toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}
-                  </span>
+            {/* Concepto escrito y valor dentro del tope del back, bajo la lista. */}
+            <ErrorDelCampo id="acta-descuentos-error" mensaje={errorDeLosDescuentos(formData.deductions)} />
+
+            {/* 🔴 Lo que se devuelve NUNCA es negativo (Nico, 02-10-2026): lo que
+                los descuentos pasan del depósito es un cargo aparte. */}
+            {formData.depositAmount ? (() => {
+              const { aDevolverCop, aCargoDelInquilinoCop } = liquidarElDeposito(
+                formData.depositAmount,
+                formData.deductions,
+              );
+              const pesos = (n: number) => `$${n.toLocaleString(locale === 'es' ? 'es-CL' : 'en-US')}`;
+              return (
+                <div className="space-y-2">
+                  <div className="p-4 rounded-lg bg-success-soft border border-success" data-testid="acta-a-devolver">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-success">
+                        {t('inmobiliaria.acta.amountToReturn')}:
+                      </span>
+                      <span className="font-mono font-bold tabular-nums text-success">
+                        {pesos(aDevolverCop)}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Entra y sale con el movimiento de Cadence (transform y
+                      opacidad; con movimiento reducido, sólo el fundido). */}
+                  <Presence show={aCargoDelInquilinoCop > 0} initial={false} as="p"
+                    className="rounded-lg border border-warning bg-warning-soft p-3 text-sm text-warning"
+                    data-testid="acta-a-cargo-del-inquilino"
+                    role="status"
+                  >
+                    {t('inmobiliaria.acta.aCargoDelInquilino', { monto: pesos(aCargoDelInquilinoCop) })}
+                  </Presence>
                 </div>
-              </div>
-            )}
+              );
+            })() : null}
           </div>
         </div>
       )}

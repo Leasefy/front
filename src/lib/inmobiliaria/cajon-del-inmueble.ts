@@ -32,7 +32,7 @@
  *
  * Los cajones se prueban EN ORDEN y el primero que calza se lleva la fila, así
  * que son disjuntos por construcción; y el último es un complemento, así que
- * son exhaustivos. Sumar los cinco da el total, siempre — no por disciplina de
+ * son exhaustivos. Sumarlos todos da el total, siempre — no por disciplina de
  * quien los lea después, sino porque no hay forma de que no dé.
  *
  *   1. `sinMandato`    — la fila no es una consignación: es un inmueble
@@ -41,9 +41,13 @@
  *                        disponibilidad del mandato, que en lo migrado quedó
  *                        vieja: un mandato puede seguir diciendo «disponible»
  *                        o «en mantenimiento» sobre un inmueble ocupado.
- *   3. `enProceso`     — sin contrato y con el mandato en proceso.
- *   4. `mantenimiento` — sin contrato y con el mandato en mantenimiento.
- *   5. `disponible`    — todo lo demás. Es el COMPLEMENTO, no un valor: así,
+ *   3. `borrador`      — sin contrato y con el inmueble en BORRADOR (`DRAFT`):
+ *                        no está publicado. Antes caía en «Disponible» (QA con
+ *                        avatares, 04-10: «Dejar en borrador» y la lista lo
+ *                        mostraba disponible) y contaba como vacante ofrecida.
+ *   4. `enProceso`     — sin contrato y con el mandato en proceso.
+ *   5. `mantenimiento` — sin contrato y con el mandato en mantenimiento.
+ *   6. `disponible`    — todo lo demás. Es el COMPLEMENTO, no un valor: así,
  *                        un `availability` que el back agregue mañana cae en
  *                        un cajón visible en vez de desaparecer de la suma.
  */
@@ -55,6 +59,7 @@ export type CajonDelInmueble =
   | 'arrendado'
   | 'enProceso'
   | 'mantenimiento'
+  | 'borrador'
   | 'sinMandato'
 
 /** En el orden en que se leen en pantalla. */
@@ -63,6 +68,7 @@ export const CAJONES_DEL_INMUEBLE: readonly CajonDelInmueble[] = [
   'arrendado',
   'enProceso',
   'mantenimiento',
+  'borrador',
   'sinMandato',
 ] as const
 
@@ -84,13 +90,14 @@ function normalizar(valor: string | null | undefined): string {
 export function cajonDelInmueble(fila: PortafolioRow): CajonDelInmueble {
   if (fila.kind !== 'consignacion') return 'sinMandato'
   if (estaArrendado(fila)) return 'arrendado'
+  if (normalizar(fila.propertyStatus) === 'draft') return 'borrador'
   const disponibilidad = normalizar(fila.availability)
   if (disponibilidad === 'in_process') return 'enProceso'
   if (disponibilidad === 'maintenance') return 'mantenimiento'
   return 'disponible'
 }
 
-/** Cuántos hay en cada cajón. Los cinco suman `filas.length`. */
+/** Cuántos hay en cada cajón. Los seis suman `filas.length`. */
 export function contarPorCajon(
   filas: readonly PortafolioRow[],
 ): Record<CajonDelInmueble, number> {
@@ -99,6 +106,7 @@ export function contarPorCajon(
     arrendado: 0,
     enProceso: 0,
     mantenimiento: 0,
+    borrador: 0,
     sinMandato: 0,
   }
   for (const fila of filas) cuenta[cajonDelInmueble(fila)] += 1

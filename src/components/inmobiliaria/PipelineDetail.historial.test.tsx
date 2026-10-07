@@ -34,10 +34,11 @@ vi.mock('next/link', () => ({
 
 // El Sheet de Radix monta en un portal y se apoya en APIs que happy-dom no
 // tiene completas; acá sólo interesa el cuerpo del panel.
-vi.mock('@/components/ui/sheet', () => ({
+vi.mock('@/components/ui/sheet', async () => ({
+  // Las piezas del cajón (cabecera con título y acciones, cuerpo, pie) como DOM plano.
+  ...(await import('@/components/ui/sheet-test-stub')),
   Sheet: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   SheetContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  SheetHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   SheetTitle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 

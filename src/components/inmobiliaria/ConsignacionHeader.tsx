@@ -10,7 +10,6 @@ import {
   Briefcase,
   MapPin,
   CalendarBlank,
-  Percent,
   PencilSimple,
   Eye,
   DotsThree,
@@ -40,6 +39,8 @@ import { IconButton } from '@leasefy/cadence';
 import type { Consignacion, PropertyAvailability, ConsignacionStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { textoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
+import { cajonDelInmueble } from '@/lib/inmobiliaria/cajon-del-inmueble';
 
 interface ConsignacionHeaderProps {
   consignacion: Consignacion;
@@ -182,7 +183,16 @@ export function ConsignacionHeader({
   const terminada = consignacion.status === 'terminated';
 
   const PropertyIcon = PROPERTY_TYPE_ICONS[consignacion.propertyType];
-  const availability = AVAILABILITY_STYLES[consignacion.availability];
+  // QA con avatares (04-10): un borrador no está publicado; decía «Disponible».
+  const availability =
+    cajonDelInmueble({ kind: 'consignacion', ...consignacion }) === 'borrador'
+      ? {
+          bg: 'bg-surface-muted dark:bg-ink',
+          text: 'text-fg-muted dark:text-fg-subtle',
+          labelKey: 'inmobiliaria.consignaciones.availability.draft',
+          icon: PencilSimple,
+        }
+      : AVAILABILITY_STYLES[consignacion.availability];
   const status = STATUS_STYLES[consignacion.status];
   const AvailabilityIcon = availability.icon;
   const thumbnailUrl = propertyThumbnailUrl || consignacion.propertyThumbnail;
@@ -256,8 +266,8 @@ export function ConsignacionHeader({
           {/* Commission pill — a SALE mandate's commissionPercent is always
               0 (contract-addendum-2.md §A.3); show saleCommissionPercent. */}
           <div className="absolute top-3 right-3">
+            {/* IN-03: sin el ícono de porcentaje — el texto ya dice «10 %». */}
             <span className="px-3 py-1.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-sm font-medium flex items-center gap-1.5">
-              <Percent className="w-4 h-4" />
               {textoDeLaComision(consignacion)}{' '}
               {consignacion.listingType === 'sale'
                 ? t('inmobiliaria.consignaciones.header.saleCommission')
@@ -320,7 +330,7 @@ export function ConsignacionHeader({
           <div className="flex items-center gap-2 text-fg-muted dark:text-fg-subtle mb-4">
             <MapPin className="w-5 h-5 shrink-0" />
             <span className="text-base">
-              {consignacion.propertyAddress}, {consignacion.propertyZone}, {consignacion.propertyCity}
+              {[consignacion.propertyAddress, barrioYCiudad(consignacion.propertyZone, consignacion.propertyCity)].filter(Boolean).join(', ')}
             </span>
           </div>
 
@@ -329,7 +339,7 @@ export function ConsignacionHeader({
           {consignacion.listingType === 'sale' ? (
             <div className="flex flex-wrap items-baseline gap-3 mb-5">
               <span className="text-3xl lg:text-4xl font-bold text-fg">
-                {consignacion.saleCommissionPercent != null ? `${consignacion.saleCommissionPercent}%` : '—'}
+                {textoDeLaComision(consignacion)}
               </span>
               <span className="text-lg text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.header.saleCommission')}</span>
             </div>
@@ -436,17 +446,29 @@ export function ConsignacionHeader({
                       <CaretDown className="w-4 h-4" />
                     </Button>
                   </DropdownListTrigger>
-                  <DropdownListContent align="start" className="w-48">
+                  <DropdownListContent align="start" className="w-64">
                     {(Object.entries(AVAILABILITY_STYLES) as [PropertyAvailability, typeof AVAILABILITY_STYLES[PropertyAvailability]][]).map(([key, style]) => {
                       const Icon = style.icon;
+                      // IN-21 (QA 04-10): con contrato vigente, «Disponible» viene
+                      // apagado y dice por qué (el back igual lo frena).
+                      const frenadoPorContrato = key === 'available' && consignacion.arrendado === true;
                       return (
                         <DropdownListItem
                           key={key}
+                          disabled={frenadoPorContrato}
+                          data-testid={`cambiar-estado-${key}`}
                           onSelect={() => onChangeStatus?.(key)}
                           className={cn(consignacion.availability === key && 'bg-surface-muted dark:bg-ink')}
                         >
                           <Icon className={cn('w-4 h-4', style.text)} />
-                          <span className="text-fg dark:text-fg-subtle">{t(style.labelKey)}</span>
+                          <span className="text-fg dark:text-fg-subtle">
+                            {t(style.labelKey)}
+                            {frenadoPorContrato && (
+                              <span className="block text-xs text-fg-muted">
+                                Tiene un contrato vigente: primero hay que terminarlo.
+                              </span>
+                            )}
+                          </span>
                           {consignacion.availability === key && (
                             <CheckCircle className="w-4 h-4 ml-auto text-primary" />
                           )}

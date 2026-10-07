@@ -18,7 +18,7 @@
  * back to their client-side filter path on null.
  */
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { agentFetch } from '@/lib/api/agent-fetch';
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Public types — endpoint response shape
@@ -95,8 +95,7 @@ export async function agentSearch(
   const url = `${agentUrl}/api/agency/${agencyId}/search?${qs}`;
 
   try {
-    const res = await globalThis.fetch(url, {
-      headers: agentAuthHeaders(),
+    const res = await agentFetch(url, {
       signal,
     });
 

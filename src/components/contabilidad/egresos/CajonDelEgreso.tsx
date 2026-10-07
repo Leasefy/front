@@ -44,6 +44,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
 import { mensajeDeContabilidad } from '@/components/migracion/contabilidad-errores';
 import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   NOMBRE_DEL_BENEFICIARIO,
   NOMBRE_DEL_ESTADO_DE_EGRESO,
@@ -70,17 +71,33 @@ import { MOTIVO_SIN_CAMBIO_DE_EGRESO, type PuedeEscribir } from '../use-puede-es
  * conciliado, y la traducción genérica de `mensajeDeContabilidad` («esa fecha
  * cae en un período cerrado») se comería justo eso. El 403 sí va traducido.
  */
+/** Los 503 de esta ruta que son «falta la migración», no una caída. */
+const CODIGOS_SIN_MIGRAR = new Set([
+  'CAMBIOS_DE_EGRESO_SIN_MIGRAR',
+  'EGRESOS_SIN_MIGRAR',
+  'FALTA_UNA_MIGRACION',
+]);
+
 function mensajeDelCambio(e: unknown): string {
   // El 503 nombra la migración que falta: eso es para Víctor, no para el cliente.
-  if (e instanceof ApiError && e.status === 503) {
+  // Sólo el de la migración: un 503 de una caída lo dice el traductor.
+  if (e instanceof ApiError && e.status === 503 && CODIGOS_SIN_MIGRAR.has(e.code ?? '')) {
     return 'Todavía no se pueden corregir egresos: falta un paso de la base de datos que nuestro equipo está habilitando.';
   }
   // El 403 de esta ruta es el del permiso puntual: dice lo mismo que el cajón
   // dice antes del intento. `mensajeDeContabilidad` diría «el administrador o
   // el contador», y el contador sin el permiso es justo quien lo está leyendo.
   if (e instanceof ApiError && e.status === 403) return MOTIVO_SIN_CAMBIO_DE_EGRESO;
-  if (e instanceof ApiError && e.message) return e.message;
-  return mensajeDeContabilidad(e, 'No se pudo guardar el cambio.');
+  /*
+   * Lo demás con la regla de oro (02-10-2026). Un 4xx dice el `message` del
+   * back tal cual (su 409 nombra QUÉ punta del período está cerrada; la tabla
+   * de `mensajeDeContabilidad` se comería eso); un 5xx dice «de nuestro lado»
+   * con la referencia, nunca «Error interno del servidor»; la red, conexión.
+   */
+  return mensajeParaLaPersona(e, {
+    porDefecto: 'No se pudo guardar el cambio.',
+    accion: 'guardar el cambio del egreso',
+  });
 }
 
 function valorLegible(cambio: CambioDeEgreso, cual: 'valorAnterior' | 'valorNuevo'): string {

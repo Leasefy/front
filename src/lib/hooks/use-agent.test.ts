@@ -11,7 +11,8 @@
  *   (1) dispatch (no body) → poll → COMPLETED maps to result
  *   (2) PENDING then COMPLETED (active poll loop)
  *   (3) FAILED surfaces an error + failed trace
- *   (4) dispatch error (e.g. 429) surfaces an error, never polls
+ *   (4) dispatch error surfaces an error, never polls (the monthly cap is a
+ *       402 LIMITE_DEL_PLAN since 02-10-2026, no longer a 429)
  *   (5) AWAITING_EVALUATION exits the poll with awaiting state, no throw
  *   (6) every awaiting_reason surfaces (7 values incl. consent_unavailable)
  *   (7) recheckScoring transitions awaiting → completed (by applicationId)
@@ -182,6 +183,87 @@ describe('runScoring — dispatch error', () => {
     expect(hook.get().error).toMatch(/límite pro/i)
     expect(hook.get().trace?.status).toBe('failed')
     expect(hook.get().result).toBeNull()
+  })
+})
+
+// ── (4b) el tope del mes es un 402 LIMITE_DEL_PLAN (02-10-2026) ────────────────
+
+/** Un error como el `ApiError` real: status y code arriba, el cuerpo en `detalle`. */
+function errorDelBack(status: number, message: string, detalle: Record<string, unknown> = {}) {
+  return Object.assign(new Error(message), {
+    name: 'ApiError',
+    status,
+    code: detalle.code,
+    detalle: { statusCode: status, message, ...detalle },
+  })
+}
+
+describe('runScoring — los fallos al despachar, con la regla de oro', () => {
+  const TOPE =
+    'Alcanzaste el límite de 30 evaluaciones de este mes de tu plan. Sube de plan para evaluar más candidatos, o espera al próximo mes.'
+
+  it('🔴 el 402 LIMITE_DEL_PLAN dice el motivo del back y marca el tope «evaluaciones» (no «demasiadas solicitudes»)', async () => {
+    mockPost.mockReset()
+    mockPost.mockRejectedValueOnce(
+      errorDelBack(402, TOPE, { code: 'LIMITE_DEL_PLAN', limite: 'evaluaciones' }),
+    )
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_1') })
+
+    expect(hook.get().error).toBe(TOPE)
+    expect(hook.get().error).not.toMatch(/demasiad|conexi/i)
+    expect(hook.get().limiteDelPlan).toBe('evaluaciones')
+    expect(mockGet).not.toHaveBeenCalled()
+    expect(hook.get().trace?.status).toBe('failed')
+  })
+
+  it('un 402 de otro motivo no se toma por el tope del plan', async () => {
+    mockPost.mockReset()
+    mockPost.mockRejectedValueOnce(errorDelBack(402, 'Sin créditos de IA.'))
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_1') })
+    expect(hook.get().limiteDelPlan).toBeNull()
+  })
+
+  it('un 5xx dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
+    mockPost.mockReset()
+    mockPost.mockRejectedValueOnce(
+      errorDelBack(500, 'Internal server error', { code: 'ERROR_INTERNO', referencia: 'a1b2c3d4' }),
+    )
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_1') })
+    expect(hook.get().error).toContain('de nuestro lado')
+    expect(hook.get().error).toContain('a1b2c3d4')
+    expect(hook.get().error).not.toMatch(/conexi/i)
+    expect(hook.get().limiteDelPlan).toBeNull()
+  })
+
+  it('sin respuesta (status 0) habla de la conexión', async () => {
+    mockPost.mockReset()
+    mockPost.mockRejectedValueOnce(Object.assign(new TypeError('Failed to fetch'), { status: 0 }))
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_1') })
+    expect(hook.get().error).toMatch(/conexión/i)
+  })
+
+  it('un error sin texto ya no dice «Unknown error»', async () => {
+    mockPost.mockReset()
+    mockPost.mockRejectedValueOnce({})
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_1') })
+    expect(hook.get().error).toBe('No pudimos iniciar la evaluación. Prueba de nuevo en un momento.')
+  })
+
+  it('clearResult borra también el tope del plan', async () => {
+    mockPost.mockReset()
+    mockPost.mockRejectedValueOnce(
+      errorDelBack(402, TOPE, { code: 'LIMITE_DEL_PLAN', limite: 'evaluaciones' }),
+    )
+    const hook = renderHook()
+    await act(async () => { await hook.get().runScoring('app_1') })
+    act(() => { hook.get().clearResult() })
+    expect(hook.get().limiteDelPlan).toBeNull()
+    expect(hook.get().error).toBeNull()
   })
 })
 

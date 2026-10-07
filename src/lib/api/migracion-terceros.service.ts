@@ -26,6 +26,7 @@
  */
 
 import { ApiError, apiClient } from './client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 
 /** Descartar filas (PATCH filas / filas/masivo con `descartar`) exige `configuracion:delete`. */
 export const SOLO_UN_ADMINISTRADOR_DESCARTA = 'Solo un administrador puede descartar filas.';
@@ -137,6 +138,10 @@ export const CLAVES_DE_FILA = [
   // Del NIT: se compara con el calculado (2026-09-07).
   'digitoVerificacion',
   'nombre',
+  // MG-22: el nombre en PARTES (las dos mitades). Mandan sobre partir el
+  // nombre completo a ojo. Las arma `armarFila`; nunca se editan sueltas.
+  'nombres',
+  'apellidos',
   'correo',
   'telefono',
   'direccion',
@@ -359,6 +364,10 @@ export interface ResultadoDeFila {
   pasaARevisar?: true;
   /** T-0128 · se creó incompleta: qué datos quedan por completar. */
   datosPendientes?: ('tipoDocumento' | 'documento')[];
+  /** La fila venía sin correo (el back lo manda por fila; QA-MIGRACION-95). */
+  sinCorreo?: boolean;
+  /** QA-MIGRACION-95 · la persona ya estaba en Leasefy: se enlazó, no se creó. Un back viejo no lo manda. */
+  yaExistia?: true;
 }
 
 export interface ResumenDeAplicacion {
@@ -377,6 +386,11 @@ export interface ResumenDeAplicacion {
    * les cargue el correo (2026-09-07). Un back viejo no lo manda.
    */
   sinCorreo?: number;
+  /**
+   * QA-MIGRACION-95 · cuántas de las `aplicadas` ya estaban en Leasefy (se
+   * enlazaron, no se crearon). Un back viejo no lo manda: ausente = 0.
+   */
+  yaEstaban?: number;
   resultados: ResultadoDeFila[];
   /**
    * Cuántas filas listas quedaron sin intentarse en esta llamada: mientras
@@ -448,6 +462,15 @@ export function filaDePlantilla(cruda: Record<string, unknown>): FilaTercero {
 // ══ HTTP ════════════════════════════════════════════════════════════════════
 
 const BASE = '/inmobiliaria/migracion-terceros';
+
+/**
+ * Las revisiones (`POST revisar`) en vuelo, por lote. Una segunda llamada al
+ * mismo lote mientras la primera no volvió recibe LA MISMA promesa: Nico
+ * (02-10-2026) tocó «Retomar» varias veces sobre una carga de 1.729 inquilinos
+ * que no respondía y quedaron siete `revisar` colgados a la vez, cada uno
+ * reescribiendo el lote entero en el back.
+ */
+const revisionesEnVuelo = new Map<string, Promise<{ revisadas: number; ahoraListas: number }>>();
 
 export const migracionTercerosApi = {
   /**
@@ -658,8 +681,10 @@ export const migracionTercerosApi = {
           }
           throw e;
         }
+        // El motivo con la regla de oro: «conexión» sólo si no hubo respuesta;
+        // un 5xx dice que fue nuestro, con la referencia (nunca `e.message` crudo).
         total.interrumpida = {
-          motivo: e instanceof Error ? e.message : 'Se cortó la conexión a mitad.',
+          motivo: mensajeParaLaPersona(e, { porDefecto: 'Se cortó a mitad.', accion: 'terminar el cambio' }),
         };
         return total;
       }
@@ -729,9 +754,19 @@ export const migracionTercerosApi = {
    * cuando ya están al día. Existe porque una regla que cambia no debe dejar
    * filas frenadas por un motivo que ya no existe (Nico, 2026-09-07: 798
    * filas con el mensaje viejo hasta volver a subir el archivo).
+   *
+   * Se pide UNA vez al abrir una carga («Retomar»), no en cada refresco de la
+   * lista; y dos llamadas al mismo lote a la vez comparten la petición
+   * (`revisionesEnVuelo`).
    */
-  async revisar(lote: string): Promise<{ revisadas: number; ahoraListas: number }> {
-    return apiClient.post<{ revisadas: number; ahoraListas: number }>(`${BASE}/revisar`, { lote });
+  revisar(lote: string): Promise<{ revisadas: number; ahoraListas: number }> {
+    const enVuelo = revisionesEnVuelo.get(lote);
+    if (enVuelo) return enVuelo;
+    const revision = apiClient
+      .post<{ revisadas: number; ahoraListas: number }>(`${BASE}/revisar`, { lote })
+      .finally(() => revisionesEnVuelo.delete(lote));
+    revisionesEnVuelo.set(lote, revision);
+    return revision;
   },
 
   /**

@@ -18,6 +18,7 @@ import {
   lotesDeDispersionApi,
   RECURSO_DE_LOTES,
   type FiltrosDeLotes,
+  type LoteDeDispersion,
   type LoteResumen,
   type VistaDelLote,
 } from '@/lib/api/lotes-de-dispersion.service';
@@ -78,5 +79,45 @@ export function useLoteDeDispersion(id: string) {
     () => lotesDeDispersionApi.ver(id),
     id,
   );
-  return { vista: datos, cargando, error, refetch, setVista: setDatos };
+  /*
+   * 🔴 QA-FACT-CONTA-95 r2 (FA-E-11): el resultado de la facturación y de los
+   * extractos SÓLO viene en la respuesta de «Marcar pagado», nunca en `ver`.
+   * Ese mismo POST invalida `lotes-de-dispersion` y el refresco automático
+   * volvía a pedir el lote un instante después: el detalle perdía «N facturas
+   * emitidas…» antes de que nadie lo leyera (en el clon: LABC-9 y LABC-10
+   * emitidas y el detalle callado). Se guarda aparte, por lote, y se le vuelve
+   * a poner a la vista que llega del refresco.
+   */
+  const delPago = useRef<{
+    loteId: string;
+    facturacion?: LoteDeDispersion['facturacion'];
+    extractosDeCompensados?: LoteDeDispersion['extractosDeCompensados'];
+  } | null>(null);
+  const setVista = useCallback(
+    (v: VistaDelLote) => {
+      if (v.lote.facturacion || v.lote.extractosDeCompensados) {
+        delPago.current = {
+          loteId: v.lote.id,
+          facturacion: v.lote.facturacion,
+          extractosDeCompensados: v.lote.extractosDeCompensados,
+        };
+      }
+      setDatos(v);
+    },
+    [setDatos],
+  );
+  const guardado = delPago.current;
+  const vista =
+    datos && guardado && guardado.loteId === datos.lote.id
+      ? {
+          ...datos,
+          lote: {
+            ...datos.lote,
+            facturacion: datos.lote.facturacion ?? guardado.facturacion,
+            extractosDeCompensados:
+              datos.lote.extractosDeCompensados ?? guardado.extractosDeCompensados,
+          },
+        }
+      : datos;
+  return { vista, cargando, error, refetch, setVista };
 }

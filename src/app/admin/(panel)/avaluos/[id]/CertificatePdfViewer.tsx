@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ApiError } from '@/lib/admin/api'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { fetchAvaluoCertificatePdf } from '@/lib/admin/avaluos'
 
 /**
@@ -38,7 +38,7 @@ export function CertificatePdfViewer({ id }: { id: string }) {
       })
       .catch((err) => {
         if (cancelled || controller.signal.aborted) return
-        setError(err instanceof ApiError ? `No se pudo cargar el PDF (${err.status}).` : 'Error de red al cargar el PDF.')
+        setError(mensajeDelAdmin(err, { accion: 'cargar el PDF', porDefecto: 'No se pudo cargar el PDF.' }))
       })
       .finally(() => {
         if (!cancelled) setLoading(false)

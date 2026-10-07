@@ -54,6 +54,7 @@ vi.mock('sonner', () => ({
 
 import { PreferencesSection } from './PreferencesSection'
 import type { TenantPreferences } from '@/lib/api/tenant-preferences.service'
+import { toast } from 'sonner'
 
 const ROW: TenantPreferences = {
   preferredCities: ['Chapinero'],
@@ -207,5 +208,105 @@ describe('PreferencesSection', () => {
       preferredBedrooms: 3,
       preferredPropertyTypes: ['APARTMENT', 'HOUSE'],
     })
+  })
+})
+
+/**
+ * 🔴 02-10-2026 (Nico, pregunta 2) · El onboarding ya atajaba el presupuesto
+ * de once cifras; esta tarjeta no, y el fallo salía con `err.message` crudo.
+ * Ahora: el mismo tope y la misma frase ANTES de mandar, y el error del back
+ * por el traductor (por campo, regla de oro).
+ */
+describe('PreferencesSection — errores (sistema de errores)', () => {
+  const TOPE = 'El presupuesto no puede pasar de $100.000.000 al mes. Revisa que no sobren ceros.'
+
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    const mensaje = Array.isArray(cuerpo.message) ? cuerpo.message.join(' · ') : String(cuerpo.message ?? '')
+    return Object.assign(new Error(mensaje), {
+      name: 'ApiError',
+      status,
+      code: cuerpo.code,
+      messages: Array.isArray(cuerpo.message) ? cuerpo.message : undefined,
+      detalle: cuerpo,
+    })
+  }
+
+  function escribir(input: HTMLInputElement, valor: string) {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!
+    act(() => {
+      setter.call(input, valor)
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+
+  const campo = (id: string) => container.querySelector<HTMLInputElement>(`#${id}`)!
+
+  async function editarYGuardar(cambio?: () => void) {
+    getPrefsMock.mockResolvedValue(ROW)
+    await render()
+    await act(async () => {
+      buttonByText('Editar').click()
+    })
+    cambio?.()
+    await act(async () => {
+      buttonByText('common.save').click()
+    })
+  }
+
+  it('🔴 un presupuesto de once cifras no sale: la frase del back debajo del campo y sin PATCH', async () => {
+    await editarYGuardar(() => escribir(campo('preferencias-maxBudget'), '30000000000'))
+
+    expect(updatePrefsMock).not.toHaveBeenCalled()
+    expect(container.querySelector('#preferencias-maxBudget-error')?.textContent).toBe(TOPE)
+    expect(campo('preferencias-maxBudget').getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(campo('preferencias-maxBudget'))
+    expect(toast.error).not.toHaveBeenCalled()
+
+    // Al corregirlo, el error se va (el `FormError` sale con su animación
+    // diciendo lo último que dijo: lo que cambia de una es el campo).
+    escribir(campo('preferencias-maxBudget'), '100000000')
+    expect(campo('preferencias-maxBudget').getAttribute('aria-invalid')).toBeNull()
+  })
+
+  it('un negativo o un decimal ya no se pierden en silencio', async () => {
+    await editarYGuardar(() => escribir(campo('preferencias-minBudget'), '-5'))
+    expect(updatePrefsMock).not.toHaveBeenCalled()
+    expect(container.querySelector('#preferencias-minBudget-error')?.textContent).toBe(
+      'El presupuesto no puede ser negativo.',
+    )
+  })
+
+  it('🔴 un 400 DATOS_INVALIDOS con campos: el error va a SU campo, con el foco, sin toast', async () => {
+    updatePrefsMock.mockRejectedValue(
+      errorDelBack(400, {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [TOPE],
+        campos: [{ campo: 'maxBudget', regla: 'maximo', mensaje: TOPE }],
+      }),
+    )
+    await editarYGuardar()
+
+    expect(container.querySelector('#preferencias-maxBudget-error')?.textContent).toBe(TOPE)
+    expect(document.activeElement).toBe(campo('preferencias-maxBudget'))
+    expect(toast.error).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia, y no culpa a la conexión', async () => {
+    updatePrefsMock.mockRejectedValue(
+      errorDelBack(500, { statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor.', referencia: 'ab12cd34' }),
+    )
+    await editarYGuardar()
+
+    const texto = String(vi.mocked(toast.error).mock.calls[0][0])
+    expect(texto).toMatch(/^No pudimos guardar tus preferencias: algo falló de nuestro lado/)
+    expect(texto).toContain('ab12cd34')
+    expect(texto).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta (status 0): ahí sí se habla de la conexión', async () => {
+    updatePrefsMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    await editarYGuardar()
+    expect(String(vi.mocked(toast.error).mock.calls[0][0])).toMatch(/conexión/)
   })
 })

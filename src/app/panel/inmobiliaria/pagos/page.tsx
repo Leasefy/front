@@ -85,6 +85,7 @@
 
 import Link from 'next/link'
 import { CaretRight, Clock, Robot, User as UserIcon, Gear } from '@phosphor-icons/react'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { SectionLabel } from '@/components/ui/section-label'
@@ -94,6 +95,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { PrioridadInbox } from '@/components/inmobiliaria/pagos/PrioridadInbox'
 import { DeudaDelMesPanel } from '@/components/inmobiliaria/pagos/DeudaDelMesPanel'
 import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview'
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
 import { useAgentWorkItems } from '@/lib/hooks/ai/use-agent-work-items'
 import type { OverviewFeedEntry } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
@@ -208,6 +210,11 @@ function PagosHome() {
           una agencia del ERP viene vacía casi siempre: reservarle media
           pantalla a un vacío estructural es regalarle el lugar más valioso de
           la vista a la nada. */}
+      {/* Movimiento (ola 2, 03-10-2026): la sección entra y SALE (si al
+          terminar de cargar no hay nada, se va con su salida en vez de
+          cortarse), y el fallo ⇄ la bandeja se cruzan. */}
+      <Presence show={Boolean(wiError) || hayAtencion || wiLoading} initial={false}>
+        <CrossFade swapKey={wiError ? 'fallo' : 'bandeja'} initial={false}>
       {wiError ? (
         <section className="space-y-3" aria-label={t('inmobiliaria.ai.pagos_home.resumen.atencion.aria')}>
           <h2 className="text-base font-semibold text-fg">
@@ -240,6 +247,8 @@ function PagosHome() {
           <PrioridadInbox items={items} onAction={runAction} isLoading={wiLoading} />
         </section>
       ) : null}
+        </CrossFade>
+      </Presence>
 
       {/* El bloque operativo: el mes, lo que se debe, lo pagado, dónde está lo
           que falta, y el recibo de caja. */}
@@ -262,6 +271,13 @@ function PagosHome() {
             </Link>
           )}
         </div>
+        {/* Cargando → fallo / vacío / la lista: se cruzan. Las entradas nuevas
+            del feed (al volver a leerlo) entran escalonadas por su id. */}
+        <CrossFade
+          swapKey={
+            ovError ? 'fallo' : ovLoading ? 'cargando' : feedVisible.length === 0 ? 'vacio' : 'lista'
+          }
+        >
         {ovError ? (
           <FalloDeCarga
             error={ovError}
@@ -281,9 +297,9 @@ function PagosHome() {
           </p>
         ) : (
           <Card className="p-2">
-            <ul className="divide-y divide-border">
+              <Stagger as="ul" className="divide-y divide-border" distance="xs">
               {feedVisible.map((entry) => (
-                <li key={entry.id} className="flex items-start gap-3 px-3 py-3">
+                  <StaggerItem as="li" key={entry.id} className="flex items-start gap-3 px-3 py-3">
                   <FeedActorChip actorType={entry.actorType} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-fg">{entry.titulo}</p>
@@ -292,20 +308,49 @@ function PagosHome() {
                   <span className="shrink-0 text-xs tabular-nums text-fg-muted">
                     {tiempoRelativo(entry.occurredAt)}
                   </span>
-                </li>
+                  </StaggerItem>
               ))}
-            </ul>
+              </Stagger>
           </Card>
         )}
+        </CrossFade>
       </section>
     </div>
   )
 }
 
+/**
+ * 🔴 PG-R07 (QA de Pagos, 03-10-2026): la Deuda del mes del AUXILIAR DE
+ * CARTERA. Su trabajo es hacer recibos y ésta es la puerta («Registrar un
+ * pago»), así que la ve (Nico, la recomendada). Sin la bandeja ni la actividad
+ * del agente de pagos: son la cola de facturas de proveedor, que no es suya, y
+ * pedirlas sólo le pintaría un «no pudimos cargar».
+ */
+function PagosDelAuxiliar() {
+  const { t } = useI18n()
+  return (
+    <div className="space-y-8 p-6 lg:p-8" data-testid="pagos-del-auxiliar">
+      <header className="space-y-1.5">
+        <SectionLabel>Pagos · inquilinos</SectionLabel>
+        <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.pagos_home.title')}</h1>
+        <p className="max-w-2xl text-sm text-fg-muted line-clamp-2">
+          {t('inmobiliaria.ai.pagos_home.subtitle')}
+        </p>
+      </header>
+      <DeudaDelMesPanel />
+    </div>
+  )
+}
+
+function PagosSegunElRol() {
+  const rol = usePermissionsContextSafe()?.agencyRole ?? null
+  return rol === AGENCY_ROLES.AUXILIAR_CARTERA ? <PagosDelAuxiliar /> : <PagosHome />
+}
+
 export default function PagosPage() {
   return (
-    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
-      <PagosHome />
+    <PageGuard roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR, AGENCY_ROLES.AUXILIAR_CARTERA]}>
+      <PagosSegunElRol />
     </PageGuard>
   )
 }

@@ -154,7 +154,7 @@ function asientoDelBack(yaExistia: boolean, montoCop = 1_000_000): AsientoRegist
     agencyId: 'ag-1',
     numero: 7,
     fecha: '2026-02-05',
-    descripcion: 'Saldos iniciales al 2026-02-05',
+    descripcion: 'Saldos iniciales al 5 de febrero de 2026',
     origen: 'MANUAL',
     origenId: null,
     cerrado: false,
@@ -283,7 +283,7 @@ describe('AsientoDeApertura — el cartel del final', () => {
     await registrar(asientoDelBack(false));
 
     const texto = q('apertura-creado')!.textContent ?? '';
-    expect(texto).toContain('Asiento N.º 7 registrado con fecha 2026-02-05');
+    expect(texto).toContain('Asiento N.º 7 registrado con fecha del 5 de febrero de 2026');
     expect(texto).not.toContain('ya estaba registrado');
     // Y el monto sale del asiento guardado, no de las filas vacías del form.
     expect(texto).toContain('1.000.000');
@@ -340,5 +340,78 @@ describe('AsientoDeApertura — T-0125: la apertura se identifica por su fecha, 
     const alerta = container.querySelector('[role="alert"]');
     expect(alerta?.textContent).toContain('N.º 12');
     expect(alerta?.textContent).toMatch(/revers/i);
+  });
+});
+
+/*
+ * Sistema de errores (02-10-2026): un 5xx dice «de nuestro lado» con la
+ * referencia (antes salía «Error interno del servidor» tal cual); el corte de
+ * red sigue con su texto propio, que explica que reintentar es seguro.
+ */
+describe('🔴 los saldos iniciales guardan los centavos (Nico, 04-10-2026)', () => {
+  it('con la llave de la contabilidad APAGADA, «1.500.000,37» viaja tal cual y cuadra al centavo', async () => {
+    await pintar();
+    const selects = container.querySelectorAll('select');
+    await escribir(selects[0] ?? null, 'c-1');
+    await escribir(selects[1] ?? null, 'c-2');
+    await escribir(q('apertura-debito-0'), '1.500.000,37');
+    await escribir(q('apertura-credito-1'), '1.500.000,37');
+    api.asientos.crear.mockResolvedValue(asientoDelBack(false, 1_500_000.37));
+    const boton = q('apertura-enviar') as HTMLButtonElement | null;
+    expect(boton?.disabled).toBe(false);
+    await click(boton);
+    await act(async () => {});
+    const enviado = api.asientos.crear.mock.calls[0]![0];
+    expect(enviado.movimientos.map((m: { debitoCop?: number; creditoCop?: number }) => [m.debitoCop ?? 0, m.creditoCop ?? 0])).toEqual([
+      [1_500_000.37, 0],
+      [0, 1_500_000.37],
+    ]);
+  });
+});
+
+describe('AsientoDeApertura — la regla de oro', () => {
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    await pintar();
+    const { ApiError } = await import('@/lib/api/client');
+    api.asientos.crear.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: '1a2b3c4d',
+      }),
+    );
+    await llenarUnAsientoQueCuadra();
+    await click(q('apertura-enviar'));
+    await act(async () => {});
+
+    const texto = container.textContent ?? '';
+    expect(texto).toMatch(/No pudimos registrar el asiento: algo falló de nuestro lado/);
+    expect(texto).toContain('1a2b3c4d');
+    expect(texto).not.toContain('Error interno del servidor');
+  });
+
+  it('el corte de red (status 0) sigue diciendo que reintentar es seguro', async () => {
+    await pintar();
+    const { ApiError } = await import('@/lib/api/client');
+    api.asientos.crear.mockRejectedValue(new ApiError(0, 'Failed to fetch'));
+    await llenarUnAsientoQueCuadra();
+    await click(q('apertura-enviar'));
+    await act(async () => {});
+
+    const texto = container.textContent ?? '';
+    expect(texto).toMatch(/conexión/);
+    expect(texto).toMatch(/no se registra dos veces/);
+  });
+});
+
+/* QA-MIG-B (04-10): español de Colombia, sin voseo («partilo» → «pártelo»). */
+describe('QA-MIG-B — los textos de la apertura', () => {
+  it('no usan voseo', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { resolve } = await import('node:path');
+    const fuente = readFileSync(resolve(__dirname, 'AsientoDeApertura.tsx'), 'utf8');
+    expect(fuente).not.toMatch(/\b(partilo|elegí|tenés|podés|revisá|cargá)\b/);
+    expect(fuente).toContain('pártelo en dos líneas');
   });
 });

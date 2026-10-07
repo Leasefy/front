@@ -146,10 +146,15 @@ export function frasesDeCuantiasMenores(
   formatoDeMonto: (n: number) => string,
 ): string | null {
   if (!cuantias.activa) return null;
+  // QA-FACT-CONTA-95 r2: un back que no manda cuántas (antes del arreglo) no
+  // escribe «undefined filas»: dice la regla sin el número.
+  const cuantas = Number.isFinite(cuantias.filas)
+    ? `${cuantias.filas} ${cuantias.filas === 1 ? 'fila se agrupa' : 'filas se agrupan'}`
+    : 'Los pagos de cada tercero que no llegan al tope se agrupan'
   return (
-    `${cuantias.filas} ${cuantias.filas === 1 ? 'fila se agrupa' : 'filas se agrupan'} en cuantías menores ` +
+    `${cuantas} en cuantías menores ` +
     `(pagos por debajo de ${formatoDeMonto(cuantias.topeCop)}) bajo el NIT ${cuantias.nit}. ` +
-    'El tope y la agrupación los fija la resolución de la DIAN del año: confirmalos con el contador.'
+    'El tope y la agrupación los fija la resolución de la DIAN del año: confírmalos con el contador.'
   );
 }
 
@@ -181,4 +186,42 @@ export function totalesDelAnio(resumen: ResumenDeExogena): { filas: number; tota
     }),
     { filas: 0, totalCop: 0 },
   );
+}
+
+// ── CB-12 (QA de Contabilidad, 03-10-2026): lo que la tarjeta del formato dice ──
+
+/**
+ * El estado del formato dicho como está DE VERDAD. «Generada» al lado de «Esto
+ * impide presentar el formato» se leía como «está lista»; el back sólo sabe
+ * GENERADA / APROBADA / ANULADA, y la tarjeta sabe además si tiene bloqueos o
+ * filas.
+ */
+export function estadoParaMostrarDelFormato(
+  f: Pick<ResumenDeFormato, 'estado' | 'bloqueos' | 'filas'>,
+): { texto: string; tono: 'peligro' | 'listo' | 'neutro' } {
+  if (f.estado === 'APROBADA') return { texto: 'Con visto bueno', tono: 'listo' };
+  if (f.estado === 'ANULADA') return { texto: 'Visto bueno quitado', tono: 'neutro' };
+  if (f.bloqueos.length > 0) return { texto: 'No se puede presentar', tono: 'peligro' };
+  if (f.filas === 0) return { texto: 'Sin filas', tono: 'neutro' };
+  return { texto: 'Falta el visto bueno', tono: 'neutro' };
+}
+
+/**
+ * UNA ayuda corta debajo de las acciones del formato, en vez de un motivo
+ * debajo de cada botón apagado (el del «Visto bueno» repetía, palabra por
+ * palabra, el bloqueo del cartel rojo de arriba). Cada botón guarda su motivo
+ * completo en el `title` y para el lector de pantalla.
+ */
+export function ayudaDelFormato(
+  f: Pick<ResumenDeFormato, 'estado' | 'bloqueos' | 'filas'>,
+  permiso: PermisoDeAprobar,
+  escritura: { puede: boolean; motivo: string | null },
+): string | null {
+  if (!escritura.puede && escritura.motivo) return escritura.motivo;
+  if (f.estado === 'APROBADA') return 'Ya tiene el visto bueno: si hay que corregir algo, primero se quita.';
+  if (f.bloqueos.length > 0) {
+    return 'El visto bueno se da cuando no quede nada en «Esto impide presentar el formato».';
+  }
+  if (f.filas === 0) return 'Sin filas: no hay nada que mirar, descargar ni aprobar.';
+  return permiso.puede ? null : permiso.motivo;
 }

@@ -9,6 +9,11 @@
  * era retomarla, esperar a que cargara la revisión y buscar «Descartar lote
  * completo» adentro. Nico llegó a tener CUATRO encima —re-subidas del mismo
  * archivo— y se quedó sin salida en el paso 3.
+ *
+ * T-0130 (5409c377) movió la tarjeta a `CargasAMedias` («Tienes N cargas a
+ * medias»): sale en cualquier paso, Descartar pide confirmación —es lo único
+ * destructivo— y los 409 del lote se traducen por `code` (`mensajeDeCarga`).
+ * T-0131 (a2b267c6) cuenta lo que entró como «N de M creadas».
  */
 
 import * as React from 'react';
@@ -41,18 +46,18 @@ vi.mock('@/lib/api/inmuebles-importacion.service', async () => {
   return { ...actual, inmueblesImportacionApi: apiMock };
 });
 
-/* Los pasos, inertes: el asistente tiene que quedarse en el 1 sin método ni
-   filas, que es la única condición en la que la tarjeta se dibuja. */
+/* Los pasos, inertes: lo que se mira es la tarjeta de cargas, que desde T-0130
+   se dibuja en cualquier paso. */
 vi.mock('./steps/StepChooseMethod', () => ({ StepChooseMethod: () => <div data-testid="paso-1" /> }));
 vi.mock('./steps/StepUploadFile', () => ({ StepUploadFile: () => <div /> }));
 vi.mock('./steps/StepColumnMapping', () => ({ StepColumnMapping: () => <div /> }));
-vi.mock('./steps/StepAIReview', () => ({ StepAIReview: () => <div /> }));
 vi.mock('./steps/StepConfirmImport', () => ({ StepConfirmImport: () => <div /> }));
 vi.mock('./steps/StepSoftwareMigration', () => ({ StepSoftwareMigration: () => <div /> }));
 vi.mock('./steps/StepPortalImport', () => ({ StepPortalImport: () => <div /> }));
 vi.mock('./steps/StepPasteLinks', () => ({ StepPasteLinks: () => <div /> }));
 
 import { ImportWizard } from './ImportWizard';
+import { ApiError } from '@/lib/api/client';
 import type { EstadoDeLoteInmuebles } from '@/lib/api/inmuebles-importacion.service';
 
 function lote(over: Partial<EstadoDeLoteInmuebles>): EstadoDeLoteInmuebles {
@@ -68,6 +73,8 @@ function lote(over: Partial<EstadoDeLoteInmuebles>): EstadoDeLoteInmuebles {
     jobId: null,
     error: null,
     creadoEn: '2026-09-10T12:00:00.000Z',
+    // El back de T-0130 manda siempre la etapa; `LISTA` = ya en revisión.
+    fase: 'LISTA',
     ...over,
   };
 }
@@ -104,6 +111,22 @@ async function pintar() {
   });
 }
 
+/** Descartar y confirmar en el diálogo (T-0130: Descartar pide confirmación). */
+async function descartarYConfirmar(lote: string) {
+  await act(async () => {
+    q(`descartar-${lote}`)!.click();
+  });
+  expect(q('dialogo-descartar-carga')).not.toBeNull();
+  // Hasta confirmar no sale nada: abrir el diálogo no descarta.
+  expect(apiMock.descartarLote).not.toHaveBeenCalled();
+  await act(async () => {
+    q('confirmar-descartar-carga')!.click();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+}
+
 describe('<ImportWizard> — las cargas sin terminar se pueden descartar desde la tarjeta', () => {
   it('descarta sin entrar, lo saca de la lista y dice cuántas filas quedaron fuera', async () => {
     apiMock.lotesAbiertos.mockResolvedValue([
@@ -113,14 +136,11 @@ describe('<ImportWizard> — las cargas sin terminar se pueden descartar desde l
     apiMock.descartarLote.mockResolvedValue({ lote: 'vieja-a', descartadas: 2_864, activadas: 0, yaDescartadas: 0 });
 
     await pintar();
-    expect(q('lotes-inmuebles-abiertos')!.textContent).toContain('2 importaciones sin terminar');
+    expect(q('lotes-inmuebles-abiertos')!.textContent).toContain('Tienes 2 cargas a medias');
 
-    await act(async () => {
-      q('descartar-vieja-a')!.click();
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await descartarYConfirmar('vieja-a');
 
+    expect(apiMock.descartarLote).toHaveBeenCalledTimes(1);
     expect(apiMock.descartarLote).toHaveBeenCalledWith('vieja-a');
     expect(q('descartar-vieja-a')).toBeNull();
     // La otra sigue: descartar una no toca a las demás.
@@ -149,38 +169,43 @@ describe('<ImportWizard> — las cargas sin terminar se pueden descartar desde l
 
     await pintar();
 
+    // Cuántos entraron: desde T-0131 se cuenta como «N de M creadas».
     const buena = q('carga-buena')!.textContent!;
     expect(buena).toContain('hoy');
-    expect(buena).toContain('2824 ya en tu portafolio');
+    expect(buena).toContain('2.824 de 2.864 creadas');
     expect(buena).toContain('Sin nada que activar');
     expect(buena).not.toContain('frenan este paso');
 
     const frena = q('carga-frena')!.textContent!;
+    expect(frena).toContain('2.145 de 2.864 creadas');
     expect(frena).toContain('679 listos sin activar');
     expect(frena).toContain('frenan este paso');
 
+    // La fantasma no puede verse tan alarmante como la que sí frena.
     const fantasma = q('carga-fantasma')!.textContent!;
     expect(fantasma).toContain('ayer');
-    expect(fantasma).toContain('2864 por revisar');
-    expect(fantasma).toContain('no frenan este paso');
+    expect(fantasma).toContain('0 de 2.864 creadas');
+    expect(fantasma).toContain('2.864 por revisar');
+    expect(fantasma).toContain('no frena este paso');
+    expect(fantasma).not.toContain('frenan este paso');
   });
 
   it('un 409 «todavía se está procesando» se dice tal cual y la carga NO se saca de la lista', async () => {
     apiMock.lotesAbiertos.mockResolvedValue([lote({ lote: 'vieja-a' })]);
+    // T-0130: el 409 trae `code`, y es el `code` el que decide qué se dice.
     apiMock.descartarLote.mockRejectedValue(
-      new Error('Ese lote todavía se está preparando. Esperá a que termine para activarlo.'),
+      new ApiError(409, 'Lote en proceso', 'LOTE_EN_PROCESO'),
     );
 
     await pintar();
-    await act(async () => {
-      q('descartar-vieja-a')!.click();
-      await Promise.resolve();
-      await Promise.resolve();
-    });
+    await descartarYConfirmar('vieja-a');
 
+    expect(apiMock.descartarLote).toHaveBeenCalledWith('vieja-a');
     expect(q('descartar-vieja-a')).not.toBeNull();
+    expect(toastMock.success).not.toHaveBeenCalled();
+    // «Espera», no un fallo de la persona.
     expect(toastMock.error).toHaveBeenCalledWith(
-      expect.stringContaining('todavía se está preparando'),
+      expect.stringContaining('se está procesando en este momento. Espera a que termine'),
     );
   });
 

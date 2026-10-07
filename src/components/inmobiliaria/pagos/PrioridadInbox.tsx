@@ -16,6 +16,7 @@
 
 import { useMemo, useState } from 'react'
 import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { Warning } from '@phosphor-icons/react'
 
 import {
@@ -24,11 +25,12 @@ import {
   Badge,
   Table,
   TableHeader,
-  TableBody,
   TableHead,
   TableRow,
   TableCell,
 } from '@/components/ui'
+import { TableBodyAnimado, TableRowAnimada } from '@/components/ui/table'
+import { CrossFade } from '@leasefy/cadence'
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import type { Severidad, WorkItem, WorkItemAction } from '@/lib/api/work-item'
@@ -61,7 +63,7 @@ export interface PrioridadInboxProps {
     item: WorkItem,
     action: WorkItemAction,
     body?: Record<string, unknown>,
-  ) => Promise<{ ok: boolean; error?: string }>
+  ) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   isLoading?: boolean
 }
 
@@ -89,14 +91,23 @@ function InboxRow({
     const res = await onAction(item, accionReal)
     setBusy(false)
     if (res.ok) toast.success(`${accionReal.label} · listo`)
-    else toast.error(`No se pudo completar: ${res.error ?? 'error'}`)
+    // 02-10-2026 · Por el traductor, no el código crudo del micro («403»,
+    // «not_configured»): un 4xx dice qué pasó, un 5xx que fue nuestro con la
+    // referencia, y sólo sin respuesta se habla de la conexión.
+    else
+      toast.error(
+        mensajeParaLaPersona(res.fallo ?? null, {
+          porDefecto: `No se pudo completar «${accionReal.label}». Prueba de nuevo en un momento.`,
+          accion: `completar «${accionReal.label}»`,
+        }),
+      )
   }
 
   const prioridadVariant =
     prioridad === 'alta' ? 'destructive' : prioridad === 'media' ? 'warning' : 'success'
 
   return (
-    <TableRow className="align-top">
+    <TableRowAnimada className="align-top">
       {/* Prioridad */}
       <TableCell className="py-3 pr-3 whitespace-nowrap">
         <Badge variant={prioridadVariant}>{pri.label}</Badge>
@@ -131,7 +142,7 @@ function InboxRow({
           </Button>
         )}
       </TableCell>
-    </TableRow>
+    </TableRowAnimada>
   )
 }
 
@@ -166,27 +177,26 @@ export function PrioridadInbox({ items, onAction, isLoading }: PrioridadInboxPro
     shouldPaginate,
   } = useTablePagination(sorted)
 
-  if (isLoading) {
+  /*
+   * Movimiento (ola 2, 03-10-2026): cargando → vacío / la cola se cruzan, y
+   * un caso que se resuelve SALE de la tabla en su lugar (`key` = el id).
+   * Cambiar de página monta un cuerpo nuevo.
+   */
     return (
+    <CrossFade swapKey={isLoading ? 'cargando' : sorted.length === 0 ? 'vacio' : 'cola'}>
+      {isLoading ? (
       <div className="space-y-2" aria-busy="true">
         {[0, 1, 2].map((i) => (
           <div key={i} className="h-14 rounded-lg border border-border bg-surface-muted animate-pulse" />
         ))}
       </div>
-    )
-  }
-
-  if (sorted.length === 0) {
-    return (
+      ) : sorted.length === 0 ? (
       <EmptyState
         icon={Warning}
         title="Todo al día"
         description="No hay pagos que requieran tu atención en este momento."
       />
-    )
-  }
-
-  return (
+      ) : (
     <div className="overflow-x-auto rounded-lg border border-border bg-card">
       <Table className="min-w-[640px]">
         <TableHeader>
@@ -197,11 +207,14 @@ export function PrioridadInbox({ items, onAction, isLoading }: PrioridadInboxPro
             <TableHead className="px-4 text-right">Acción</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className="[&_td:first-child]:pl-4 [&_td:last-child]:pr-4">
+            <TableBodyAnimado
+              key={`${page}|${pageSize}`}
+              className="[&_td:first-child]:pl-4 [&_td:last-child]:pr-4"
+            >
           {pageItems.map((item) => (
             <InboxRow key={item.id} item={item} onAction={onAction} />
           ))}
-        </TableBody>
+            </TableBodyAnimado>
       </Table>
 
       {/* Pie: sólo si hay más de una página. */}
@@ -218,5 +231,7 @@ export function PrioridadInbox({ items, onAction, isLoading }: PrioridadInboxPro
         </div>
       )}
     </div>
+      )}
+    </CrossFade>
   )
 }

@@ -19,6 +19,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { useRefetchOnVisible } from '@/lib/hooks/useRefetchOnVisible'
 import type { components } from '@/lib/api/generated/agent'
 
@@ -32,20 +34,14 @@ export interface UseAcuerdosGeneralesResult {
   /** Falló la carga. Distinto de «no hay ninguno», que es lista vacía. */
   error: string | null
   refetch: () => Promise<void>
+  /**
+   * Crear, editar y borrar tiran el `ApiError` del micro (status, `code`,
+   * `campos`): la pantalla lo traduce con `mensajeParaLaPersona` o lo reparte
+   * por campo. Un `fetch` que no salió llega tal cual (status 0 = conexión).
+   */
   crear: (nuevo: AcuerdoGeneralNuevo) => Promise<AcuerdoGeneral>
   editar: (id: string, parche: AcuerdoGeneralParche) => Promise<AcuerdoGeneral>
   borrar: (id: string) => Promise<void>
-}
-
-/** El texto del back cuando lo hay; si no, uno que se entienda. */
-async function mensajeDeError(res: Response, porDefecto: string): Promise<string> {
-  try {
-    const json = (await res.json()) as { error?: string }
-    if (typeof json.error === 'string' && json.error.length > 0) return json.error
-  } catch {
-    /* cuerpo no-JSON: seguimos con el genérico */
-  }
-  return porDefecto
 }
 
 export function useAcuerdosGenerales(): UseAcuerdosGeneralesResult {
@@ -70,14 +66,19 @@ export function useAcuerdosGenerales(): UseAcuerdosGeneralesResult {
     }
     try {
       const res = await agentFetch(url)
-      if (!res.ok) throw new Error(await mensajeDeError(res, `${res.status}`))
+      if (!res.ok) throw await falloDelMicro(res)
       const json = (await res.json()) as components['schemas']['CobranzaAcuerdosGeneralesResponse']
       setAcuerdos(json.acuerdos)
       setError(null)
     } catch (err) {
       // Con error NO se vacía la lista: mostrar «no hay acuerdos» cuando en
       // realidad no pudimos leerlos es la mentira que más caro sale acá.
-      setError(err instanceof Error ? err.message : 'No pudimos cargar los acuerdos.')
+      setError(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos cargar los acuerdos generales.',
+          accion: 'cargar los acuerdos generales',
+        }),
+      )
     } finally {
       setIsLoading(false)
     }
@@ -106,9 +107,7 @@ export function useAcuerdosGenerales(): UseAcuerdosGeneralesResult {
         headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(nuevo),
       })
-      if (!res.ok) {
-        throw new Error(await mensajeDeError(res, 'No pudimos crear el acuerdo.'))
-      }
+      if (!res.ok) throw await falloDelMicro(res)
       const creado = (await res.json()) as AcuerdoGeneral
       // Se reordena en el cliente con el MISMO criterio del motor, para que la
       // tabla no mienta hasta la próxima carga.
@@ -132,9 +131,7 @@ export function useAcuerdosGenerales(): UseAcuerdosGeneralesResult {
         headers: agentAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(parche),
       })
-      if (!res.ok) {
-        throw new Error(await mensajeDeError(res, 'No pudimos guardar el cambio.'))
-      }
+      if (!res.ok) throw await falloDelMicro(res)
       const actualizado = (await res.json()) as AcuerdoGeneral
       setAcuerdos((prev) => prev.map((a) => (a.id === id ? actualizado : a)))
       return actualizado
@@ -150,9 +147,7 @@ export function useAcuerdosGenerales(): UseAcuerdosGeneralesResult {
         method: 'DELETE',
         headers: agentAuthHeaders(),
       })
-      if (!res.ok) {
-        throw new Error(await mensajeDeError(res, 'No pudimos borrar el acuerdo.'))
-      }
+      if (!res.ok) throw await falloDelMicro(res)
       setAcuerdos((prev) => prev.filter((a) => a.id !== id))
     },
     [base],

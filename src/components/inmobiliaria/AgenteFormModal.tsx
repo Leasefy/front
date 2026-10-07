@@ -1,13 +1,9 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useCallback, useId } from 'react';
 import {
-  X,
   User,
   Envelope,
-  Phone,
   MapPin,
   Percent,
   Buildings,
@@ -25,8 +21,25 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { IconButton, RadioCardGroup, RadioCard } from '@leasefy/cadence';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import Link from 'next/link';
+import { Banner, Collapse, Presence, RadioCardGroup, RadioCard } from '@leasefy/cadence';
 import { useI18n } from '@/lib/i18n';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { leerElError } from '@/lib/conexion/leer-el-error';
+import { CODIGO_LIMITE_DEL_PLAN } from '@/lib/errores/codigos-del-plan';
+import {
+  MAX_LARGO_NOMBRE_DEL_INVITADO,
+  MENSAJES_DE_LA_INMOBILIARIA,
+} from '@/lib/configuracion/limites-de-la-inmobiliaria';
 import type { AgenteRole, AgencyRole, UserInvite } from '@/lib/types/inmobiliaria';
 import { getRoleLabel, ROLES_DEL_SISTEMA } from '@/lib/types/inmobiliaria';
 
@@ -41,11 +54,30 @@ import { getRoleLabel, ROLES_DEL_SISTEMA } from '@/lib/types/inmobiliaria';
 interface AgenteFormModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /**
+   * Tiene que RECHAZAR si el back no guardó la invitación: el modal se queda
+   * abierto con lo escrito y dice qué pasó (por campo si el 400 trae `campos`).
+   */
   onSubmit: (data: UserInvite) => Promise<void> | void;
   /** 'agent' = agent-only (default), 'member' = full invite with role selector */
   variant?: 'agent' | 'member';
   isLoading?: boolean;
 }
+
+/**
+ * Los campos del formulario que pueden traer un error del servidor.
+ *
+ * 02-10-2026 · Sin teléfono: el modal lo pedía (obligatorio para un asesor) y
+ * NUNCA se guardaba. `InviteMemberDto` no tiene `phone`, `inviteUser` lo
+ * quitaba del cuerpo antes de mandarlo y la fila del equipo muestra el
+ * teléfono del USUARIO (su perfil), no uno escrito al invitar. Se le pedía a
+ * la persona un dato que se tiraba a la basura.
+ */
+type CampoDelFormulario = 'name' | 'email' | 'zone' | 'commissionSplit';
+const CAMPOS_DEL_FORMULARIO: readonly CampoDelFormulario[] = ['name', 'email', 'zone', 'commissionSplit'];
+
+/** Dónde se ven y se cambian los planes (el 402 del tope de asesores). */
+const PAGINA_DE_LOS_PLANES = '/panel/inmobiliaria/upgrade';
 
 // Colombian departments grouped by natural region.
 const ZONE_GROUPS: { label: string; zones: string[] }[] = [
@@ -87,12 +119,20 @@ export function AgenteFormModal({
   const { t } = useI18n();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [mounted, setMounted] = useState(false);
+  // Lo que el servidor dijo y no va en ningún campo (un 409, un 5xx, la red).
+  // El texto se conserva al ocultarlo: el aviso sale diciendo lo último que
+  // dijo, no vacío.
+  const [errorGeneral, setErrorGeneral] = useState<string | null>(null);
+  const [verErrorGeneral, setVerErrorGeneral] = useState(false);
+  // El 402 del tope de asesores del plan: se dice acá, con «Ver planes».
+  const [topeDelPlan, setTopeDelPlan] = useState(false);
+  // El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo): el
+  // botón de enviar lo apunta con `form=`.
+  const idDelFormulario = useId();
 
   // Shared fields
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [systemRole, setSystemRole] = useState<AgencyRole>(variant === 'agent' ? 'agente' : 'agente');
 
   // Agent-specific fields
@@ -135,43 +175,33 @@ export function AgenteFormModal({
     { value: 'all', label: 'Todos' },
   ];
 
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-      return () => {
-        document.body.style.overflow = '';
-        document.documentElement.style.overflow = '';
-      };
-    }
-  }, [isOpen]);
-
   const resetForm = useCallback(() => {
-    setName(''); setEmail(''); setPhone('');
+    setName(''); setEmail('');
     setSystemRole(variant === 'agent' ? 'agente' : 'agente');
     setAgentRole('agent'); setZone(''); setSpecialization('all');
     setCommissionSplit(50); setMessage('');
-    setErrors({});
+    setErrors({}); setErrorGeneral(null); setVerErrorGeneral(false); setTopeDelPlan(false);
   }, [variant]);
 
   const validateForm = useCallback(() => {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = t('inmobiliaria.agente.errorNameRequired');
+    else if (name.trim().length > MAX_LARGO_NOMBRE_DEL_INVITADO) newErrors.name = MENSAJES_DE_LA_INMOBILIARIA.nombreDelInvitadoLargo;
     if (!email.trim()) newErrors.email = t('inmobiliaria.agente.errorEmailRequired');
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = t('inmobiliaria.agente.errorEmailInvalid');
-    if (showAgentFields && !phone.trim()) newErrors.phone = t('inmobiliaria.agente.errorPhoneRequired');
     if (showAgentFields && agentRole === 'agent' && (commissionSplit < 0 || commissionSplit > 100)) newErrors.commissionSplit = t('inmobiliaria.agente.errorCommissionRange');
     setErrors(newErrors);
+    const primero = CAMPOS_DEL_FORMULARIO.find((c) => newErrors[c]);
+    if (primero) requestAnimationFrame(() => document.getElementById(`${idDelFormulario}-${primero}`)?.focus());
     return Object.keys(newErrors).length === 0;
-  }, [name, email, phone, commissionSplit, showAgentFields, t]);
+  }, [name, email, commissionSplit, showAgentFields, t, idDelFormulario, agentRole]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
     setIsSubmitting(true);
+    setVerErrorGeneral(false);
     try {
       const invite: UserInvite = {
         email,
@@ -184,7 +214,6 @@ export function AgenteFormModal({
       }
 
       if (showAgentFields) {
-        invite.phone = phone || undefined;
         invite.zone = zone || undefined;
         invite.specialization = specialization.toUpperCase() as UserInvite['specialization'];
         if (agentRole === 'agent') invite.commissionSplit = commissionSplit;
@@ -195,7 +224,51 @@ export function AgenteFormModal({
       resetForm();
       onClose();
     } catch (error) {
-      console.error('Error submitting:', error);
+      // 🔴 Antes: `console.error` y nada. SeccionEquipo se tragaba el error,
+      // el modal se cerraba y se perdía lo escrito. Ahora se queda abierto,
+      // cada error del 400 va a su campo (con el foco en el primero) y lo
+      // demás se dice acá arriba del pie, por el traductor.
+      const reparto = repartirErroresDelServidor(error, {
+        campos: CAMPOS_DEL_FORMULARIO,
+        porDefecto: 'No pudimos enviar la invitación. Prueba de nuevo en un momento.',
+        accion: 'enviar la invitación',
+      });
+      const leido = leerElError(error);
+      const porCampo: Partial<Record<CampoDelFormulario, string>> = { ...reparto.porCampo };
+      let orden: CampoDelFormulario[] = reparto.orden;
+      let sueltos = reparto.sueltos;
+      /*
+       * 🔴 03-10 (pruebas en el navegador): los tres 409 de invitar son del
+       * CORREO —ya es miembro activo, ya tiene una invitación pendiente o es de
+       * otra inmobiliaria (`AgencyService.inviteMember`)— y llegan sin `campos`.
+       * Iban al aviso de abajo, que en un portátil queda fuera de la vista del
+       * cuerpo del diálogo: la persona apretaba «Enviar invitación» y no veía
+       * nada. Van bajo «Email», con el foco ahí.
+       */
+      if (leido.status === 409 && orden.length === 0 && sueltos.length > 0) {
+        porCampo.email = sueltos.join(' · ');
+        orden = ['email'];
+        sueltos = [];
+      }
+      setErrors((prev) => ({ ...prev, ...porCampo }));
+      const general = sueltos.length > 0 ? sueltos.join(' · ') : null;
+      if (general) setErrorGeneral(general);
+      setVerErrorGeneral(!!general);
+      setTopeDelPlan(leido.code === CODIGO_LIMITE_DEL_PLAN);
+      const primero = orden[0];
+      if (primero) requestAnimationFrame(() => document.getElementById(`${idDelFormulario}-${primero}`)?.focus());
+      // Lo que no tiene campo se dice abajo, pegado al pie: se trae a la vista
+      // (el cuerpo del diálogo se desplaza y el aviso podía quedar escondido).
+      else if (general) {
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() =>
+            document
+              .getElementById(idDelFormulario)
+              ?.querySelector<HTMLElement>('[data-testid="invitacion-error"]')
+              ?.scrollIntoView?.({ block: 'nearest' }),
+          ),
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -208,257 +281,219 @@ export function AgenteFormModal({
   // --- Error border for Cadence Input (skin comes from the adapter) ---
   const errorCls = (hasError: boolean) => (hasError ? 'border-danger focus-visible:ring-danger/30' : undefined);
 
-  if (!mounted) return null;
+  /*
+   * El `Dialog` de la plataforma (DESIGN.md §17). Era un portal a mano con su
+   * capa, su ✕ y su bloqueo del scroll del body, sin Esc ni foco atrapado.
+   *
+   * Las capas: el `Dialog` vive en z-[300] y las listas de los `Select` de
+   * este formulario (Rol, Zona, Especialización) abren en su propio portal
+   * en z-[400] (`components/ui/select.tsx`): quedan ENCIMA del modal. Con la
+   * escala vieja (`z-modal` = 50) el modal tenía que bajarse para no taparlas.
+   */
+  return (
+    <Dialog
+      open={isOpen}
+      onOpenChange={(abierto) => {
+        // Mientras se envía no se sale (ni con Esc, ni con el velo, ni con la ✕).
+        if (!abierto && !isFormLoading) handleClose();
+      }}
+    >
+      <DialogContent size="md" icon={<UserCircle weight="bold" />}>
+        <DialogHeader>
+          <DialogTitle>
+            {variant === 'agent' ? t('inmobiliaria.agente.newAgent') : 'Invitar usuario'}
+          </DialogTitle>
+          <DialogDescription>
+            {variant === 'agent'
+              ? t('inmobiliaria.agente.newAgentDescription')
+              : 'Envía una invitación por correo para unirse a tu agencia.'}
+          </DialogDescription>
+        </DialogHeader>
 
-  const modalContent = (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* ── Backdrop ──────────────────────────────────────────────────
-              Estaba en `zIndex: 99998`, y el modal en 99999. Ese número no
-              sale de ningún lado: el proyecto tiene una escala declarada en
-              globals.css (`--z-modal-backdrop: 40`, `--z-modal: 50`,
-              `--z-popover: 60`) justamente para que las capas se ordenen
-              solas.
-
-              Ganarle a todo tiene una consecuencia que se ve: los dos <Select>
-              de este mismo formulario —Zona y Especialización— abren su lista
-              en OTRO portal, a nivel de <body>, con z-index 400. Medido: al
-              hacer clic el trigger pasaba a `data-state="open"` y el listbox
-              existía con 224×384 px de tamaño real… detrás del backdrop. Se
-              veía como un select muerto: clic y nada.
-
-              Con la escala, el popover (60) queda arriba del modal (50), que
-              es para lo que la escala existe. */}
-          <div
-            onClick={handleClose}
-            className="fixed inset-0 z-modal-backdrop bg-black/50 backdrop-blur-sm"
-          />
-
-          {/* Modal */}
-          <div
-            className="fixed inset-0 z-modal flex items-center justify-center p-4 pointer-events-none"
-            onWheel={(e) => e.stopPropagation()}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="pointer-events-auto w-full max-w-lg bg-card rounded-[20px] flex flex-col max-h-[85vh]"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between p-6 border-b border-border">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-surface-muted flex items-center justify-center">
-                    <UserCircle className="w-5 h-5 text-fg-muted" weight="duotone" />
-                  </div>
-                  <div>
-                    <h2 className="text-base font-semibold text-foreground">
-                      {variant === 'agent' ? t('inmobiliaria.agente.newAgent') : 'Invitar usuario'}
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      {variant === 'agent'
-                        ? t('inmobiliaria.agente.newAgentDescription')
-                        : 'Envía una invitación por correo para unirse a tu agencia.'}
-                    </p>
-                  </div>
-                </div>
-                <IconButton
-                  variant="ghost"
-                  size="sm"
-                  icon={<X className="w-5 h-5" />}
-                  onClick={handleClose}
-                  disabled={isFormLoading}
-                  aria-label={t('inmobiliaria.agente.cancel')}
-                />
-              </div>
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto overscroll-contain p-6 space-y-5">
-                {/* Name */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                    <User className="w-4 h-4 text-muted-foreground" />
-                    {t('inmobiliaria.agente.fullName')} *
-                  </label>
-                  <Input type="text" value={name} onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((p) => { const n = { ...p }; delete n.name; return n; }); }} placeholder="Juan Perez" className={errorCls(!!errors.name)} />
-                  {errors.name && <p className="text-xs text-danger">{errors.name}</p>}
-                </div>
-
-                {/* Email */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                    <Envelope className="w-4 h-4 text-muted-foreground" />
-                    Email *
-                  </label>
-                  <Input type="email" value={email} onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; }); }} placeholder="juan@inmobiliaria.com" className={errorCls(!!errors.email)} />
-                  {errors.email && <p className="text-xs text-danger">{errors.email}</p>}
-                </div>
-
-                {/* Rol del sistema — sólo al invitar un miembro */}
-                {variant === 'member' && (
-                  <div className="space-y-2">
-                    <label htmlFor="rol-del-sistema" className="text-sm font-medium text-foreground">
-                      Rol *
-                    </label>
-                    <Select value={systemRole} onValueChange={(v) => setSystemRole(v as AgencyRole)}>
-                      <SelectTrigger id="rol-del-sistema" data-testid="rol-del-sistema">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {SYSTEM_ROLE_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-
-                {/* Phone — always for agent, shown for member when agente */}
-                {(variant === 'agent' || showAgentFields) && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                      <Phone className="w-4 h-4 text-muted-foreground" />
-                      {t('inmobiliaria.agente.phone')} {showAgentFields ? '*' : ''}
-                    </label>
-                    <Input type="tel" value={phone} onChange={(e) => { setPhone(e.target.value); if (errors.phone) setErrors((p) => { const n = { ...p }; delete n.phone; return n; }); }} placeholder="+57 300 123 4567" className={errorCls(!!errors.phone)} />
-                    {errors.phone && <p className="text-xs text-danger">{errors.phone}</p>}
-                  </div>
-                )}
-
-                {/* ──── Agent-specific fields ──── */}
-                {showAgentFields && (
-                  <>
-                    {variant === 'member' && (
-                      <div className="pt-2 border-t border-border">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Datos del agente</p>
-                      </div>
-                    )}
-
-                    {/* Agent Business Role */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">{t('inmobiliaria.agente.role')}</label>
-                      <RadioCardGroup
-                        className="grid grid-cols-3 gap-2"
-                        value={agentRole}
-                        onValueChange={(v) => setAgentRole(v as AgenteRole)}
-                      >
-                        {AGENT_ROLE_OPTIONS.map((opt) => (
-                          <RadioCard
-                            key={opt.value}
-                            value={opt.value}
-                            label={opt.label}
-                            description={opt.description}
-                            disabled={opt.disabled}
-                          />
-                        ))}
-                      </RadioCardGroup>
-                    </div>
-
-                    {/* Zone + Specialization — persisted on the AgencyMember (backend
-                        InviteMemberDto supports zone + specialization). */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-muted-foreground" />
-                          {t('inmobiliaria.agente.zone')}
-                        </label>
-                        <Select value={zone || undefined} onValueChange={setZone}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder={t('inmobiliaria.agente.selectZone')} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {ZONE_GROUPS.map((g) => (
-                              <SelectGroup key={g.label}>
-                                <SelectLabel>{g.label}</SelectLabel>
-                                {g.zones.map((z) => <SelectItem key={z} value={z}>{z}</SelectItem>)}
-                              </SelectGroup>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                          <Buildings className="w-4 h-4 text-muted-foreground" />
-                          {t('inmobiliaria.agente.specialization')}
-                        </label>
-                        <Select value={specialization} onValueChange={(v) => setSpecialization(v as typeof specialization)}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {SPECIALIZATION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    {/* Commission — solo para agentes, no para coordinator/director */}
-                    {agentRole === 'agent' && (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                          <Percent className="w-4 h-4 text-muted-foreground" />
-                          {t('inmobiliaria.agente.commissionPercentage')}
-                        </label>
-                        <div className="flex items-center gap-4">
-                          <Slider
-                            min={0}
-                            max={100}
-                            step={1}
-                            value={[commissionSplit]}
-                            onValueChange={([v]) => setCommissionSplit(v)}
-                            className="flex-1"
-                            aria-label={t('inmobiliaria.agente.commissionPercentage')}
-                          />
-                          <div className="relative w-20">
-                            <Input type="number" min={0} max={100} value={commissionSplit} onChange={(e) => setCommissionSplit(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))} className="pr-7 text-center font-mono tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
-                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">%</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.commissionPercentageDesc')}</p>
-                        {errors.commissionSplit && <p className="text-xs text-danger">{errors.commissionSplit}</p>}
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Message — member variant only */}
-                {variant === 'member' && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Mensaje personalizado (opcional)</label>
-                    <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Agrega un mensaje para el invitado..." rows={3} className="resize-none" />
-                  </div>
-                )}
-              </form>
-
-              {/* Footer */}
-              <div className="flex items-center justify-end gap-2 p-6 border-t border-border">
-                <Button type="button" variant="secondary" hideArrow onClick={handleClose} disabled={isFormLoading}>
-                  {t('inmobiliaria.agente.cancel')}
-                </Button>
-                <Button type="submit" hideArrow onClick={handleSubmit} disabled={isFormLoading} isLoading={isFormLoading}>
-                  {isFormLoading ? (
-                    variant === 'agent' ? t('inmobiliaria.agente.creating') : 'Enviando...'
-                  ) : variant === 'agent' ? (
-                    t('inmobiliaria.agente.createAgent')
-                  ) : (
-                    <>
-                      <PaperPlaneTilt className="w-4 h-4" />
-                      Enviar invitación
-                    </>
-                  )}
-                </Button>
-              </div>
-            </motion.div>
+        <form id={idDelFormulario} onSubmit={handleSubmit} className="space-y-5">
+          {/* Name */}
+          <div className="space-y-2">
+            <label htmlFor={`${idDelFormulario}-name`} className="text-sm font-medium text-foreground flex items-center gap-2">
+              <User className="w-4 h-4 text-muted-foreground" />
+              {t('inmobiliaria.agente.fullName')} *
+            </label>
+            <Input id={`${idDelFormulario}-name`} aria-invalid={!!errors.name || undefined} aria-describedby={`${idDelFormulario}-name-error`} maxLength={MAX_LARGO_NOMBRE_DEL_INVITADO} type="text" value={name} onChange={(e) => { setName(e.target.value); if (errors.name) setErrors((p) => { const n = { ...p }; delete n.name; return n; }); }} placeholder="Juan Perez" className={errorCls(!!errors.name)} />
+            <ErrorDelCampo id={`${idDelFormulario}-name-error`} mensaje={errors.name} className="mt-0" />
           </div>
-        </>
-      )}
-    </AnimatePresence>
-  );
 
-  return createPortal(modalContent, document.body);
+          {/* Email */}
+          <div className="space-y-2">
+            <label htmlFor={`${idDelFormulario}-email`} className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Envelope className="w-4 h-4 text-muted-foreground" />
+              Email *
+            </label>
+            <Input id={`${idDelFormulario}-email`} aria-invalid={!!errors.email || undefined} aria-describedby={`${idDelFormulario}-email-error`} type="email" value={email} onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors((p) => { const n = { ...p }; delete n.email; return n; }); }} placeholder="juan@inmobiliaria.com" className={errorCls(!!errors.email)} />
+            <ErrorDelCampo id={`${idDelFormulario}-email-error`} mensaje={errors.email} className="mt-0" />
+          </div>
+
+          {/* Rol del sistema — sólo al invitar un miembro */}
+          {variant === 'member' && (
+            <div className="space-y-2">
+              <label htmlFor="rol-del-sistema" className="text-sm font-medium text-foreground">
+                Rol *
+              </label>
+              <Select value={systemRole} onValueChange={(v) => setSystemRole(v as AgencyRole)}>
+                <SelectTrigger id="rol-del-sistema" data-testid="rol-del-sistema">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SYSTEM_ROLE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* ──── Agent-specific fields ──── */}
+          {/* Los campos del agente se abren y se cierran con su altura al
+              cambiar el rol (antes aparecían y desaparecían de golpe). */}
+          <Collapse open={showAgentFields} className="space-y-5">
+              {variant === 'member' && (
+                <div className="pt-2 border-t border-border">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Datos del agente</p>
+                </div>
+              )}
+
+              {/* Agent Business Role */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">{t('inmobiliaria.agente.role')}</label>
+                <RadioCardGroup
+                  className="grid grid-cols-3 gap-2"
+                  value={agentRole}
+                  onValueChange={(v) => setAgentRole(v as AgenteRole)}
+                >
+                  {AGENT_ROLE_OPTIONS.map((opt) => (
+                    <RadioCard
+                      key={opt.value}
+                      value={opt.value}
+                      label={opt.label}
+                      description={opt.description}
+                      disabled={opt.disabled}
+                    />
+                  ))}
+                </RadioCardGroup>
+              </div>
+
+              {/* Zone + Specialization — persisted on the AgencyMember (backend
+                  InviteMemberDto supports zone + specialization). */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-muted-foreground" />
+                    {t('inmobiliaria.agente.zone')}
+                  </label>
+                  <Select value={zone || undefined} onValueChange={(v) => { setZone(v); if (errors.zone) setErrors((p) => { const n = { ...p }; delete n.zone; return n; }); }}>
+                    <SelectTrigger id={`${idDelFormulario}-zone`} aria-invalid={!!errors.zone || undefined} aria-describedby={`${idDelFormulario}-zone-error`} className="w-full">
+                      <SelectValue placeholder={t('inmobiliaria.agente.selectZone')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ZONE_GROUPS.map((g) => (
+                        <SelectGroup key={g.label}>
+                          <SelectLabel>{g.label}</SelectLabel>
+                          {g.zones.map((z) => <SelectItem key={z} value={z}>{z}</SelectItem>)}
+                        </SelectGroup>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <ErrorDelCampo id={`${idDelFormulario}-zone-error`} mensaje={errors.zone} className="mt-0" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Buildings className="w-4 h-4 text-muted-foreground" />
+                    {t('inmobiliaria.agente.specialization')}
+                  </label>
+                  <Select value={specialization} onValueChange={(v) => setSpecialization(v as typeof specialization)}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SPECIALIZATION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Commission — solo para agentes, no para coordinator/director */}
+              <Collapse open={agentRole === 'agent'}>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <Percent className="w-4 h-4 text-muted-foreground" />
+                    {t('inmobiliaria.agente.commissionPercentage')}
+                  </label>
+                  <div className="flex items-center gap-4">
+                    <Slider
+                      min={0}
+                      max={100}
+                      step={1}
+                      value={[commissionSplit]}
+                      onValueChange={([v]) => setCommissionSplit(v)}
+                      className="flex-1"
+                      aria-label={t('inmobiliaria.agente.commissionPercentage')}
+                    />
+                    <div className="relative w-20">
+                      <Input id={`${idDelFormulario}-commissionSplit`} aria-invalid={!!errors.commissionSplit || undefined} aria-describedby={`${idDelFormulario}-commissionSplit-error`} type="number" min={0} max={100} value={commissionSplit} onChange={(e) => setCommissionSplit(Math.min(100, Math.max(0, parseInt(e.target.value) || 0)))} className="pr-7 text-center font-mono tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">%</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t('inmobiliaria.agente.commissionPercentageDesc')}</p>
+                  <ErrorDelCampo id={`${idDelFormulario}-commissionSplit-error`} mensaje={errors.commissionSplit} className="mt-0" />
+                </div>
+              </Collapse>
+          </Collapse>
+
+          {/* Message — member variant only */}
+          {variant === 'member' && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Mensaje personalizado (opcional)</label>
+              <Textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Agrega un mensaje para el invitado..." rows={3} className="resize-none" />
+            </div>
+          )}
+
+          {/* Lo que el servidor dijo y no va en ningún campo. Entra suave
+              (Presence de Cadence: transform/opacity, movimiento reducido). */}
+          <Presence show={verErrorGeneral}>
+            <Banner variant="danger" role="alert" data-testid="invitacion-error">
+              {errorGeneral}
+              {topeDelPlan && (
+                <>
+                  {' '}
+                  <Link href={PAGINA_DE_LOS_PLANES} className="font-medium underline underline-offset-2">
+                    Ver planes
+                  </Link>
+                </>
+              )}
+            </Banner>
+          </Presence>
+        </form>
+
+        <DialogFooter>
+          <Button type="button" variant="secondary" hideArrow onClick={handleClose} disabled={isFormLoading}>
+            {t('inmobiliaria.agente.cancel')}
+          </Button>
+          <Button type="submit" form={idDelFormulario} hideArrow disabled={isFormLoading} isLoading={isFormLoading}>
+            {isFormLoading ? (
+              variant === 'agent' ? t('inmobiliaria.agente.creating') : 'Enviando...'
+            ) : variant === 'agent' ? (
+              t('inmobiliaria.agente.createAgent')
+            ) : (
+              <>
+                <PaperPlaneTilt className="w-4 h-4" />
+                Enviar invitación
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export default AgenteFormModal;

@@ -27,6 +27,8 @@ const { replaceMock, refreshUserMock, authState, ruta } = vi.hoisted(() => {
       isLoading: false,
       mfaRequired: false,
       mfaEnrollRequired: false,
+      mfaCheckStatus: undefined as 'pending' | 'verified' | 'failed' | undefined,
+      retryMfaCheck: vi.fn().mockResolvedValue(undefined),
       needsOnboarding: false,
       perfilElegido: null as string | null,
       agencyRole: null as string | null,
@@ -61,6 +63,7 @@ beforeEach(() => {
   authState.isLoading = false
   authState.mfaRequired = false
   authState.mfaEnrollRequired = false
+  authState.mfaCheckStatus = undefined
   authState.needsOnboarding = false
   authState.perfilElegido = null
   authState.agencyRole = null
@@ -475,3 +478,64 @@ describe('ProtectedRoute — sin señal deja trabajar', () => {
     expect(replaceMock).toHaveBeenCalledWith('/inquilino')
   })
 })
+
+/*
+ * 🔴 Nico, 02-10-2026: si la consulta del segundo factor no responde, NO se
+ * entra al panel; se muestra «No pudimos confirmar tu sesión» con
+ * «Reintentar», sin cerrar la sesión ni mandar al login.
+ */
+describe('ProtectedRoute — sin el veredicto del segundo factor no se entra', () => {
+  it('«failed»: no monta el panel, muestra la pantalla de reintento y no redirige', async () => {
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
+    authState.mfaCheckStatus = 'failed'
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(false)
+    expect(container.querySelector('[data-testid="no-pudimos-confirmar-sesion"]')).not.toBeNull()
+    expect(container.textContent).toContain('No pudimos confirmar tu sesión')
+    expect(replaceMock).not.toHaveBeenCalled()
+  })
+
+  it('«Reintentar» vuelve a preguntar', async () => {
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
+    authState.mfaCheckStatus = 'failed'
+    await renderPanel()
+    await act(async () => {
+      ;(container.querySelector('[data-testid="reintentar-confirmar-sesion"]') as HTMLButtonElement).click()
+    })
+    expect(authState.retryMfaCheck).toHaveBeenCalledTimes(1)
+  })
+
+  it('«pending»: tampoco monta el panel (cargador), aunque `isLoading` ya se haya soltado', async () => {
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
+    authState.mfaCheckStatus = 'pending'
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(false)
+    expect(container.textContent).toContain('Verificando seguridad')
+    expect(replaceMock).not.toHaveBeenCalled()
+  })
+
+  it('«verified» sin código pendiente: entra normal', async () => {
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
+    authState.mfaCheckStatus = 'verified'
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(true)
+  })
+
+  it('«verified» con el código pendiente: va a pedirlo', async () => {
+    authState.user = { id: 'u1', role: 'agency', onboardingCompleted: true }
+    authState.mfaCheckStatus = 'verified'
+    authState.mfaRequired = true
+
+    await renderPanel()
+
+    expect(childMounted()).toBe(false)
+    expect(replaceMock).toHaveBeenCalledWith('/auth/mfa-verify')
+  })
+})
+

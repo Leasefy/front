@@ -13,11 +13,11 @@ import { resolve } from 'node:path';
 import { describe, it, expect } from 'vitest';
 
 import { mapearColumnas } from './columnas-de-tercero';
-import { armarAsientos, COLUMNAS_DE_ASIENTO, nombreDeLoteDeAsientos, type CampoDeAsiento } from './columnas-de-asiento';
+import { armarAsientos, COLUMNAS_DE_ASIENTO, montosSinMapear, nombreDeLoteDeAsientos, numeroDelComprobante, type CampoDeAsiento } from './columnas-de-asiento';
 
 /** `MigrarAsientoDto` / `MigrarMovimientoDto` (back-erp/src/inmobiliaria/contabilidad/migracion/dto/index.ts). */
 const DTO_ASIENTO = ['numeroOriginal', 'fecha', 'descripcion', 'movimientos'];
-const DTO_MOVIMIENTO = ['codigoCuenta', 'debito', 'credito', 'descripcion', 'terceroTipo', 'terceroId'];
+const DTO_MOVIMIENTO = ['codigoCuenta', 'debito', 'credito', 'descripcion', 'terceroTipo', 'terceroId', 'valor', 'naturalezaDelValor', 'terceroDocumento', 'terceroNombre'];
 
 describe('auto-mapeo con encabezados reales', () => {
   it('un export típico de Siigo se mapea solo', () => {
@@ -140,7 +140,8 @@ describe('armarAsientos', () => {
 
 describe('nombreDeLoteDeAsientos', () => {
   it('cabe en los 60 de @MaxLength y lleva el sello de la hora', () => {
-    const n = nombreDeLoteDeAsientos(new Date('2026-09-01T00:30:00Z'));
+    // QA-MIG-B: con la hora LOCAL de quien sube (antes salía en UTC).
+    const n = nombreDeLoteDeAsientos(new Date(2026, 8, 1, 0, 30));
     expect(n).toBe('asientos-2026-09-01-0030');
     expect(n.length).toBeLessThanOrEqual(60);
   });
@@ -262,5 +263,138 @@ describe('regresión: la muestra real entera pasa por el mapeo y el armado', () 
       totalDebitos += d;
     }
     expect(totalDebitos).toBe(2_141_126_351);
+  });
+});
+
+/*
+ * QA-MIG-B (04-10) — libros diarios de World Office, Alegra, Helisa y saldos
+ * iniciales por tercero. La migración no funde, no pierde y no inventa.
+ */
+describe('QA-MIG-B — otros sistemas contables', () => {
+  const linea = (o: Record<string, unknown>) => ({ Fecha: '2026-08-05', Concepto: 'x', ...o });
+
+  it('🔴 «Tipo Doc» y «Número» separados: RC 1 y CE 1 del mismo día son DOS asientos', () => {
+    const encabezados = ['Tipo Doc', 'Número', 'Fecha', 'Cuenta', 'Nit', 'Concepto', 'Débito', 'Crédito'];
+    const mapeo = mapearColumnas(COLUMNAS_DE_ASIENTO, encabezados);
+    expect(mapeo.find((m) => m.columna === 'Tipo Doc')?.campo).toBe('tipoComprobante');
+    const asientos = armarAsientos(
+      [
+        linea({ 'Tipo Doc': 'RC', Número: 1, Cuenta: '11100501', Débito: '100' }),
+        linea({ 'Tipo Doc': 'RC', Número: 1, Cuenta: '13050501', Crédito: '100' }),
+        linea({ 'Tipo Doc': 'CE', Número: 1, Cuenta: '28150501', Débito: '90' }),
+        linea({ 'Tipo Doc': 'CE', Número: 1, Cuenta: '11100501', Crédito: '90' }),
+      ],
+      mapeo,
+    );
+    expect(asientos.map((a) => [a.numeroOriginal, a.movimientos.length])).toEqual([
+      ['RC-1', 2],
+      ['CE-1', 2],
+    ]);
+  });
+
+  it('el número que ya trae el tipo no lo repite', () => {
+    expect(numeroDelComprobante('RC', 'RC00001')).toBe('RC00001');
+    expect(numeroDelComprobante('RC', '1')).toBe('RC-1');
+    expect(numeroDelComprobante('', '7')).toBe('7');
+    expect(numeroDelComprobante('RC', '')).toBe('');
+  });
+
+  it('«Valor» con signo y «D/C» se mapean y viajan crudos (el back los lee)', () => {
+    const mapeo = mapearColumnas(COLUMNAS_DE_ASIENTO, ['Fecha', 'Doc', 'Cuenta', 'Nit', 'Tercero', 'Detalle', 'Valor', 'D/C']);
+    const campo = (c: string) => mapeo.find((m) => m.columna === c)?.campo;
+    expect([campo('Valor'), campo('D/C'), campo('Nit'), campo('Tercero')]).toEqual(['valor', 'naturalezaDelValor', 'terceroDocumento', 'terceroNombre']);
+    expect(montosSinMapear(mapeo)).toBe(false);
+    const [a] = armarAsientos(
+      [
+        { Fecha: '2026-07-31', Doc: 'AP-1', Cuenta: '13050501', Nit: '1036111001', Tercero: 'Laura Mejía', Detalle: 'Saldo', Valor: '2.350.000,00', 'D/C': 'D' },
+        { Fecha: '2026-07-31', Doc: 'AP-1', Cuenta: '310505', Nit: '', Tercero: '', Detalle: 'Saldo', Valor: '2.350.000,00', 'D/C': 'C' },
+      ],
+      mapeo,
+    );
+    expect(a.movimientos[0]).toEqual({
+      codigoCuenta: '13050501',
+      valor: '2.350.000,00',
+      naturalezaDelValor: 'D',
+      descripcion: 'Saldo',
+      terceroDocumento: '1036111001',
+      terceroNombre: 'Laura Mejía',
+    });
+    expect(a.movimientos[1]).toMatchObject({ valor: '2.350.000,00', naturalezaDelValor: 'C' });
+  });
+
+  it('con Débito o Crédito llenos, el «Valor» no viaja: dos fuentes para el mismo monto no se adivinan', () => {
+    const mapeo = mapearColumnas(COLUMNAS_DE_ASIENTO, ['Fecha', 'Cuenta', 'Descripción', 'Débito', 'Crédito', 'Valor']);
+    const [a] = armarAsientos([{ Fecha: '2026-07-31', Cuenta: '110505', Descripción: 'x', Débito: '100', Crédito: '', Valor: '100' }], mapeo);
+    expect(a.movimientos[0]).toEqual({ codigoCuenta: '110505', debito: '100' });
+  });
+
+  it('sin Débito, Crédito ni Valor, se sabe antes de revisar', () => {
+    expect(montosSinMapear(mapearColumnas(COLUMNAS_DE_ASIENTO, ['Fecha', 'Cuenta', 'Descripción']))).toBe(true);
+  });
+
+  it('una fila que sólo trae «Valor» no se salta como fila vacía', () => {
+    const mapeo = mapearColumnas(COLUMNAS_DE_ASIENTO, ['Fecha', 'Cuenta', 'Descripción', 'Valor']);
+    const [a] = armarAsientos([{ Fecha: '2026-07-31', Cuenta: '', Descripción: 'x', Valor: '-5' }], mapeo);
+    expect(a.movimientos).toEqual([{ codigoCuenta: '', valor: '-5' }]);
+  });
+});
+
+describe('MC-27 (MIG-C 04-10): sin número, dos pagos idénticos del mismo día', () => {
+  const sinNumero = mapearColumnas(COLUMNAS_DE_ASIENTO, ['Fecha', 'Cuenta', 'Descripción', 'Débito', 'Crédito']);
+
+  it('🔴 el archivo 30 del corpus: son DOS asientos de 2 líneas, no uno de 4', () => {
+    const asientos = armarAsientos(
+      [
+        { Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'Comisión transferencia', Débito: '3.500', Crédito: '' },
+        { Fecha: '2026-08-20', Cuenta: '11100501', Descripción: 'Comisión transferencia', Débito: '', Crédito: '3.500' },
+        { Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'Comisión transferencia', Débito: '3.500', Crédito: '' },
+        { Fecha: '2026-08-20', Cuenta: '11100501', Descripción: 'Comisión transferencia', Débito: '', Crédito: '3.500' },
+      ],
+      sinNumero,
+    );
+    expect(asientos).toHaveLength(2);
+    expect(asientos.map((a) => a.movimientos.length)).toEqual([2, 2]);
+  });
+
+  it('un asiento legítimo de varias líneas sigue entero: sólo cuadra al final', () => {
+    const asientos = armarAsientos(
+      [
+        { Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'Factura internet', Débito: '100.000', Crédito: '' },
+        { Fecha: '2026-08-20', Cuenta: '240805', Descripción: 'Factura internet', Débito: '19.000', Crédito: '' },
+        { Fecha: '2026-08-20', Cuenta: '11100501', Descripción: 'Factura internet', Débito: '', Crédito: '119.000' },
+      ],
+      sinNumero,
+    );
+    expect(asientos).toHaveLength(1);
+    expect(asientos[0].movimientos).toHaveLength(3);
+  });
+
+  it('con número no se parte nunca (el número dice qué va junto)', () => {
+    const conNumero = mapearColumnas(COLUMNAS_DE_ASIENTO, ['Comprobante', 'Fecha', 'Cuenta', 'Descripción', 'Débito', 'Crédito']);
+    const asientos = armarAsientos(
+      [
+        { Comprobante: 'CE-9', Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'X', Débito: 10 },
+        { Comprobante: 'CE-9', Fecha: '2026-08-20', Cuenta: '1110', Descripción: 'X', Crédito: 10 },
+        { Comprobante: 'CE-9', Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'X', Débito: 10 },
+        { Comprobante: 'CE-9', Fecha: '2026-08-20', Cuenta: '1110', Descripción: 'X', Crédito: 10 },
+      ],
+      conNumero,
+    );
+    expect(asientos).toHaveLength(1);
+  });
+
+  it('las piezas de una clave salen seguidas aunque el archivo las intercale', () => {
+    const asientos = armarAsientos(
+      [
+        { Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'A', Débito: 1 },
+        { Fecha: '2026-08-20', Cuenta: '1110', Descripción: 'A', Crédito: 1 },
+        { Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'B', Débito: 2 },
+        { Fecha: '2026-08-20', Cuenta: '1110', Descripción: 'B', Crédito: 2 },
+        { Fecha: '2026-08-20', Cuenta: '530505', Descripción: 'A', Débito: 1 },
+        { Fecha: '2026-08-20', Cuenta: '1110', Descripción: 'A', Crédito: 1 },
+      ],
+      sinNumero,
+    );
+    expect(asientos.map((a) => a.descripcion)).toEqual(['A', 'A', 'B']);
   });
 });

@@ -53,6 +53,7 @@
 import { useCallback, useEffect, useId, useRef, useState, type Ref } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, useReducedMotion, type Variants } from 'framer-motion'
+import { motionEase } from '@leasefy/cadence'
 import confetti from 'canvas-confetti'
 
 import { CargaDeMarca } from '@/components/ui/carga-de-marca'
@@ -73,8 +74,16 @@ const COLORES_DE_LA_CHISPA = ['#ffffff', '#ffffff', '#f4d9a6', '#a9d4f5', '#c9d1
 /** Donde se abre la aurora: a la altura del logo. */
 const ORIGEN = '50% 36%'
 
-const SUAVE = [0.22, 1, 0.36, 1] as const
-const HACIA_AFUERA = [0.4, 0, 1, 1] as const
+/*
+ * Las curvas son las del sistema (entrar desacelera, salir acelera). Las
+ * DURACIONES no son tokens a propósito: esto es la puesta en escena de ~5 s
+ * que Nico pidió («algo más wow… que entra y se va con una animación bien
+ * top», 30-09), no una entrada de interfaz; está contada arriba paso a paso.
+ * El movimiento reducido se lee aquí y no sólo en `MotionProvider` porque
+ * además quita el dibujo, la chispa y el `clipPath` (no son transformaciones).
+ */
+const SUAVE = motionEase.enter
+const HACIA_AFUERA = motionEase.exit
 
 type Fase = 'viva' | 'saliendo' | 'esperando'
 
@@ -220,7 +229,7 @@ export function InmobiliariaCreada({ nombre, onIrAlPanel }: InmobiliariaCreadaPr
         transition={
           viva
             ? { clipPath: { duration: 1.05, ease: [0.65, 0, 0.35, 1] } }
-            : { opacity: { duration: animar ? 0.55 : 0.25, delay: animar ? 0.1 : 0, ease: 'easeIn' } }
+            : { opacity: { duration: animar ? 0.55 : 0.25, delay: animar ? 0.1 : 0, ease: HACIA_AFUERA } }
         }
       >
         <motion.div
@@ -332,7 +341,7 @@ function LogoQueSeDibuja({ animar, saliendo, ref }: LogoQueSeDibujaProps) {
           style={{ background: 'radial-gradient(closest-side, rgba(255,255,255,0.2), rgba(255,255,255,0))' }}
           animate={animar ? { opacity: [1, 0.6], scale: [1, 0.92] } : undefined}
           transition={
-            animar ? { delay: 1.7, duration: 1.6, repeat: Infinity, repeatType: 'mirror', ease: 'easeInOut' } : undefined
+            animar ? { delay: 1.7, duration: 1.6, repeat: Infinity, repeatType: 'mirror', ease: motionEase.standard } : undefined
           }
         />
       </motion.div>
@@ -390,7 +399,7 @@ function LogoQueSeDibuja({ animar, saliendo, ref }: LogoQueSeDibujaProps) {
           fill="#ffffff"
           initial={animar ? { opacity: 0 } : false}
           animate={{ opacity: 1 }}
-          transition={{ delay: animar ? 1.3 : 0, duration: animar ? 0.5 : 0, ease: 'easeOut' }}
+          transition={{ delay: animar ? 1.3 : 0, duration: animar ? 0.5 : 0, ease: SUAVE }}
         />
       </svg>
     </motion.div>

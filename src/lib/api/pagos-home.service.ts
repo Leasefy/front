@@ -4,7 +4,7 @@
  * Four GET wrappers around the agent microservice's `pagos/home` routes:
  *   GET ${NEXT_PUBLIC_AGENT_URL}/api/agency/{agencyId}/pagos/home/...
  *
- * Auth: Supabase bearer token via `agentAuthHeaders()` (no cookies) — same
+ * Auth: Supabase bearer token via `agentFetch` (no cookies) — same
  * pattern as cotizador / property-capture / ai-hub.
  *
  * Error signalling (so hooks can branch without re-reading the body):
@@ -16,7 +16,7 @@
  *   - missing NEXT_PUBLIC_AGENT_URL → throw PagosHomeError code 'no_agent_url'.
  */
 
-import { agentAuthHeaders } from './agent-auth'
+import { agentFetch } from './agent-fetch'
 import type {
   OwnerInbox,
   PagosHomeAttention,
@@ -86,9 +86,7 @@ async function toPagosHomeError(res: Response): Promise<PagosHomeError> {
 // ── 1. metrics ───────────────────────────────────────────────────────────────
 
 export async function getPagosHomeMetrics(agencyId: string): Promise<PagosHomeMetrics> {
-  const res = await globalThis.fetch(`${agentBaseUrl()}${AGENCY_BASE(agencyId)}/metrics`, {
-    headers: agentAuthHeaders(),
-  })
+  const res = await agentFetch(`${agentBaseUrl()}${AGENCY_BASE(agencyId)}/metrics`)
   if (!res.ok) throw await toPagosHomeError(res)
   return (await res.json()) as PagosHomeMetrics
 }
@@ -96,9 +94,7 @@ export async function getPagosHomeMetrics(agencyId: string): Promise<PagosHomeMe
 // ── 2. attention ─────────────────────────────────────────────────────────────
 
 export async function getPagosHomeAttention(agencyId: string): Promise<PagosHomeAttention> {
-  const res = await globalThis.fetch(`${agentBaseUrl()}${AGENCY_BASE(agencyId)}/attention`, {
-    headers: agentAuthHeaders(),
-  })
+  const res = await agentFetch(`${agentBaseUrl()}${AGENCY_BASE(agencyId)}/attention`)
   if (!res.ok) throw await toPagosHomeError(res)
   return (await res.json()) as PagosHomeAttention
 }
@@ -109,9 +105,8 @@ export async function getPaymentDetail(
   agencyId: string,
   invoiceId: string,
 ): Promise<PaymentDetail | null> {
-  const res = await globalThis.fetch(
-    `${agentBaseUrl()}${AGENCY_BASE(agencyId)}/payment/${encodeURIComponent(invoiceId)}`,
-    { headers: agentAuthHeaders() },
+  const res = await agentFetch(
+    `${agentBaseUrl()}${AGENCY_BASE(agencyId)}/payment/${encodeURIComponent(invoiceId)}`
   )
   if (res.status === 404) return null
   if (!res.ok) throw await toPagosHomeError(res)
@@ -121,9 +116,7 @@ export async function getPaymentDetail(
 // ── 4. owner inbox ───────────────────────────────────────────────────────────
 
 export async function getOwnerInbox(agencyId: string): Promise<OwnerInbox> {
-  const res = await globalThis.fetch(`${agentBaseUrl()}${AGENCY_BASE(agencyId)}/owner-inbox`, {
-    headers: agentAuthHeaders(),
-  })
+  const res = await agentFetch(`${agentBaseUrl()}${AGENCY_BASE(agencyId)}/owner-inbox`)
   if (!res.ok) throw await toPagosHomeError(res)
   return (await res.json()) as OwnerInbox
 }

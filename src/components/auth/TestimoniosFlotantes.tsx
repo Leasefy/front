@@ -32,7 +32,8 @@
  */
 
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { CrossFade } from '@leasefy/cadence';
 
 export interface Testimonio {
   agencia: string;
@@ -100,7 +101,6 @@ export function TestimoniosFlotantes({
   testimonios?: Testimonio[];
 }) {
   const [indice, setIndice] = useState(0);
-  const reducido = useReducedMotion();
   const total = testimonios.length;
 
   useEffect(() => {
@@ -125,13 +125,14 @@ export function TestimoniosFlotantes({
         Inmobiliarias que ya operan con Leasefy
       </p>
 
-      <AnimatePresence mode="wait">
-        <motion.figure
-          key={indice}
-          initial={reducido ? { opacity: 0 } : { opacity: 0, y: 18, filter: 'blur(6px)' }}
-          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-          exit={reducido ? { opacity: 0 } : { opacity: 0, y: -10, filter: 'blur(4px)' }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      {/*
+        El que sale se va acelerando y el nuevo sube 8 px con fundido
+        (`CrossFade`, entrada `slow`: es una tarjeta que se lee, no un menú).
+        Antes entraba y salía con `filter: blur`, que repinta la tarjeta —y su
+        `backdrop-blur` encima del video— en cada cuadro.
+      */}
+      <CrossFade swapKey={indice} distance="sm" duration="slow">
+        <figure
           className="relative overflow-hidden rounded-lg border border-white/15 bg-[#14130f]/45 p-6 text-white shadow-[0_24px_64px_-20px_rgba(0,0,0,0.6)] backdrop-blur-2xl"
           data-testid="testimonio"
         >
@@ -172,22 +173,24 @@ export function TestimoniosFlotantes({
             {testimonios.map((x, i) => (
               <span key={x.agencia} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/20">
                 {i < indice && <span className="block h-full w-full bg-white/70" />}
+                {/* El tramo se llena con `scaleX` (no `width`: no recalcula el
+                    layout en cada cuadro). Lineal y con la duración del
+                    intervalo porque ES un reloj, no una entrada. Con
+                    movimiento reducido, `MotionProvider` lo deja lleno de una. */}
                 {i === indice && (
                   <motion.span
                     key={indice}
-                    className="block h-full bg-white"
-                    initial={{ width: '0%' }}
-                    animate={{ width: '100%' }}
-                    transition={
-                      reducido ? { duration: 0 } : { duration: intervaloMs / 1000, ease: 'linear' }
-                    }
+                    className="block h-full w-full origin-left bg-white"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ duration: intervaloMs / 1000, ease: 'linear' }}
                   />
                 )}
               </span>
             ))}
           </div>
-        </motion.figure>
-      </AnimatePresence>
+        </figure>
+      </CrossFade>
     </div>
   );
 }

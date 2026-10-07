@@ -9,6 +9,7 @@
  */
 
 import type { MismoPaso } from '@/lib/doble-control/el-administrador';
+import type { SegundaPersonaEnLaPantalla } from '@/lib/dispersiones/segunda-persona-por-monto';
 
 /** En qué punto está el lote. Es el enum `EstadoDelLote` del back. */
 export type EstadoDelLote =
@@ -350,6 +351,12 @@ export interface VistaDelLote {
    */
   creadoPorNombre?: string | null;
   aprobadoPorNombre?: string | null;
+  /**
+   * 🔴 Decisión de Nico (05-10-2026): si el lote pasa el monto de la segunda
+   * persona, quien lo armó no lo aprueba aunque sea administrador. `null` = ya
+   * no espera aprobación; ausente = back anterior (el 403 es la autoridad).
+   */
+  segundaPersona?: SegundaPersonaEnLaPantalla | null;
 }
 
 export interface LoteArmado {
@@ -426,7 +433,22 @@ export interface CandidatoDeDispersion {
    * nunca la rechazó.
    */
   rechazoDeWompi?: string | null;
+  /**
+   * 🔴 PG-05 (QA de Pagos, 03-10-2026): POR QUÉ no va al archivo, como código.
+   * Antes toda exclusión se contaba como «le falta un dato bancario», y Paula
+   * —con cuenta, pero con el giro anterior devuelto— salía ahí. Opcional: un
+   * back anterior no lo manda.
+   */
+  tipoDeExclusion?: TipoDeExclusion | null;
 }
+
+/** Espejo de `lotes/tipo-de-exclusion.ts` del back. */
+export type TipoDeExclusion =
+  | 'SE_COMPENSA'
+  | 'RETENIDA_GIRO_DEVUELTO'
+  | 'RETENIDA_CAMBIO_DE_CUENTA'
+  | 'SIN_CUENTA'
+  | 'DATO_BANCARIO';
 
 export interface CandidatosDeDispersion {
   orden: OrdenDeCandidatos;
@@ -436,6 +458,8 @@ export interface CandidatosDeDispersion {
   sugeridos: string[];
   totalCop: number;
   cantidad: number;
+  /** PG-05: cuántas hay de cada exclusión. Opcional: un back anterior no lo manda. */
+  exclusiones?: Record<TipoDeExclusion, number>;
 }
 
 /** Con qué se arma el lote: a quiénes, en qué orden y hasta qué monto. */

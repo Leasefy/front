@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { adminApi, ApiError } from '@/lib/admin/api'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
@@ -107,7 +108,7 @@ function PromptEditor({
       setFeedback({ ok: true, msg: `Guardado. Prompt: ${res.length} chars.` })
       onSaved()
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : 'Error de red'
+      const msg = mensajeDelAdmin(err, { accion: 'guardar el prompt' })
       setFeedback({ ok: false, msg })
     } finally {
       setSubmitting(false)

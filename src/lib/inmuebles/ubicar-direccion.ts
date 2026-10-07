@@ -283,10 +283,15 @@ export async function ubicarDireccion(d: DireccionAUbicar): Promise<Ubicacion> {
         const punto = { lat: primero.lat, lng: primero.lon };
 
         // 1. Por nombre: el buscador ya dijo en qué municipio cayó.
+        //    QA-MIGRACION-95 (IN-06): y del MISMO departamento, si los dos lo
+        //    dicen. Rionegro (Antioquia) y Rionegro (Santander) se llaman igual:
+        //    el de Santander pasaba como «dirección» a 200 km. Distinto
+        //    departamento no se descarta: va a la distancia, como sin nombre.
         if (
           primero.city &&
           d.ciudad &&
-          comoNombre(primero.city) === comoNombre(d.ciudad)
+          comoNombre(primero.city) === comoNombre(d.ciudad) &&
+          (!primero.state || !d.departamento || comoNombre(primero.state) === comoNombre(d.departamento))
         ) {
           return { ...punto, precision: 'direccion', etiqueta: primero.label };
         }

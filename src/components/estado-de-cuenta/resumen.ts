@@ -26,6 +26,7 @@ import type {
   EstadoDeCuenta,
   FilaDelEstadoDeCuenta,
 } from '@/lib/types/estado-de-cuenta';
+import { sinComprobantesDelSistemaAnterior } from './filas';
 
 /** Un día en milisegundos. */
 const UN_DIA = 24 * 60 * 60 * 1000;
@@ -69,6 +70,11 @@ export interface ResumenDelCliente {
   enPlazo: boolean;
   /** Cuántas filas vencidas siguen dentro del plazo. */
   cuotasEnPlazo: number;
+  /**
+   * 🔴 CR-31: esas vencidas no están «en plazo» sino SIN plazo: la inmobiliaria
+   * no ha fijado sus días (`plazoSinFijar` del back). Se rotula «Vencida».
+   */
+  sinPlazoFijado: boolean;
   cuotasVencidas: number;
   /**
    * Lo vencido y no pagado, sumado de las FILAS. No se toma de
@@ -136,7 +142,26 @@ export function resumirElCliente(
     : [];
 
   const masVieja = vencidas[0] ? señalar(vencidas[0].fila, vencidas[0].contrato) : null;
-  const proxima = futuras[0] ? señalar(futuras[0].fila, futuras[0].contrato) : null;
+  /*
+   * 🔴 P-16 (QA-PROP, back 5731a4e2): del lado del PROPIETARIO la próxima es la
+   * suma del próximo mes de TODOS sus contratos, y la manda el back
+   * (`doc.proximaCuota`): tomar la primera fila daba la de UN contrato
+   * («$1.585.800» contra la suma). Ausente (inquilino, back anterior): la
+   * primera fila que no ha vencido, como siempre.
+   */
+  const proxima =
+    doc.proximaCuota !== undefined
+      ? doc.proximaCuota
+        ? {
+            fecha: doc.proximaCuota.fecha.slice(0, 10),
+            valor: doc.proximaCuota.monto,
+            concepto: futuras[0]?.fila.concepto ?? '',
+            contrato: doc.proximaCuota.contratos === 1 ? (futuras[0]?.contrato ?? '') : '',
+          }
+        : null
+      : futuras[0]
+        ? señalar(futuras[0].fila, futuras[0].contrato)
+        : null;
 
   return {
     cancelado: doc.totales.cancelado,
@@ -152,6 +177,7 @@ export function resumirElCliente(
         : 0,
     enPlazo: enCartera.length === 0 && enPlazo.length > 0,
     cuotasEnPlazo: enPlazo.length,
+    sinPlazoFijado: enPlazo.some(({ fila }) => fila.plazoSinFijar === true),
     cuotasVencidas: vencidas.length,
     vencidoCop: vencidas.reduce((s, { fila }) => s + fila.valorNeto, 0),
   };
@@ -201,6 +227,14 @@ export interface AmortizacionDelContrato {
    */
   cubiertas: number;
   cubiertoCop: number;
+  /**
+   * 🔴 PG-08 (Nico, 03-10-2026): las cuotas del sistema anterior SIN
+   * comprobante migrado. Siguen en su tramo gris (existen: el contrato tiene
+   * esas cuotas), pero NO son «cubiertas»: sin comprobante no se afirma que
+   * se pagaron, y tampoco son deuda. Con el comprobante, sí cuentan como
+   * pagadas (`cubiertas`).
+   */
+  anterioresSinComprobante: number;
 }
 
 /**
@@ -216,28 +250,59 @@ export interface AmortizacionDelContrato {
 export function amortizacionDe(
   contrato: ContratoDelEstadoDeCuenta,
 ): AmortizacionDelContrato {
-  const filas = contrato.secciones.arriendos.filter((f) => f.estado !== 'ANULADA');
+  // CA-06: una parte sin definir (falta el % de cada dueño) no es una cuota suya todavía.
+  const filas = contrato.secciones.arriendos.filter((f) => f.estado !== 'ANULADA' && !f.sinPorcentaje);
   const pagadasFilas = filas.filter((f) => f.estado === 'CANCELADA');
-  const anteriores = filas.filter((f) => f.estado === 'ANTERIOR').length;
 
+  // La PLATA se suma fila por fila (un abono parcial es plata que entró).
   const pagadoCop = pagadasFilas.reduce((s, f) => s + f.valorNeto, 0);
   const anterioresCop = filas
     .filter((f) => f.estado === 'ANTERIOR')
     .reduce((s, f) => s + f.valorNeto, 0);
   const pactadoCop = filas.reduce((s, f) => s + f.valorNeto, 0);
-  const total = filas.length;
+
+  // 🔴 QA-INQ-95 (04-10-2026): las CUOTAS se cuentan por cuota, no por fila.
+  // Una cuota pagada con varios recibos se parte en una fila por recibo (y la
+  // abonada a medias, en lo pagado + el saldo): contar filas decía «Pagadas 11
+  // de 20 cuotas» de un contrato de 12. Las filas de una misma cuota comparten
+  // `cuotaId`; sin él, cada fila es una cuota (como siempre).
+  const cuotas = new Map<string, typeof filas>();
+  filas.forEach((f, i) => {
+    const llave = f.cuotaId ? `c:${f.cuotaId}` : `f:${i}`;
+    const grupo = cuotas.get(llave);
+    if (grupo) grupo.push(f);
+    else cuotas.set(llave, [f]);
+  });
+  const grupos = [...cuotas.values()];
+  const pagadas = grupos.filter((g) => g.every((f) => f.estado === 'CANCELADA')).length;
+  const gruposAnteriores = grupos.filter((g) => g.some((f) => f.estado === 'ANTERIOR'));
+  const anteriores = gruposAnteriores.length;
+  const total = grupos.length;
+
+  // PG-08: «vino pagado» sólo con el comprobante migrado.
+  const anterioresConComprobante = gruposAnteriores.filter(
+    (g) => !g.some((f) => f.estado === 'ANTERIOR' && sinComprobantesDelSistemaAnterior(f)),
+  );
+  const anterioresSinComprobante = anteriores - anterioresConComprobante.length;
 
   return {
-    pagadas: pagadasFilas.length,
+    pagadas,
     anteriores,
     total,
     pagadoCop,
     anterioresCop,
-    // Lo que el inquilino ya no debe: lo de acá más lo que vino pagado.
-    cubiertas: pagadasFilas.length + anteriores,
-    cubiertoCop: pagadoCop + anterioresCop,
+    // Lo que el inquilino ya no debe: lo de acá más lo que vino pagado CON su
+    // comprobante (PG-08: sin comprobante no se afirma que se pagó).
+    cubiertas: pagadas + anterioresConComprobante.length,
+    cubiertoCop:
+      pagadoCop +
+      anterioresConComprobante.reduce(
+        (s, g) => s + g.filter((f) => f.estado === 'ANTERIOR').reduce((t, f) => t + f.valorNeto, 0),
+        0,
+      ),
+    anterioresSinComprobante,
     pactadoCop,
-    porcentaje: total === 0 ? 0 : Math.round((pagadasFilas.length / total) * 100),
+    porcentaje: total === 0 ? 0 : Math.round((pagadas / total) * 100),
     porcentajeAnterior: total === 0 ? 0 : Math.round((anteriores / total) * 100),
   };
 }

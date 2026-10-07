@@ -39,6 +39,7 @@
  */
 
 import { apiClient, ApiError } from './client'
+import { camposDelError } from '@/lib/errores/traductor-de-errores'
 import { anunciarProceso, RECURSO_DE_PROCESOS } from './procesos.service'
 import { invalidar } from './refresco-de-datos'
 import type {
@@ -118,6 +119,13 @@ export interface FacturaDelMes {
    * terna que identifica la cuota: por eso emitir dos veces no puede facturar
    * dos veces el mismo mes.
    */
+  /**
+   * 🔴 La nota crédito total que dejó la cuota en $0 (COLA-BACK, 04-10-2026;
+   * `null` si no hay). Una factura YA emitida y anulada con una nota sigue en
+   * estado EMITIDA: esto es lo que dice que quedó sin efecto. Un back anterior
+   * no lo manda.
+   */
+  saldadaPorNota?: { notaCreditoId: string; numero: string } | null
   clave: string
   /** La cuota del estado de cuenta de la que sale esta factura. */
   cuotaId: string
@@ -164,6 +172,24 @@ export interface FacturaDelMes {
    */
   estado: 'POR_EMITIR' | 'GENERADA' | 'EMITIDA'
   /**
+   * 🔴 Por qué no se emite hoy, con su código (QA-FACT, 03-10-2026; back
+   * `prefacturas-de-las-cuotas.ts::CodigoNoEmitible`). Opcional: un back
+   * anterior sólo manda `emitible` y `motivoNoEmitible`, y la pantalla lee eso.
+   */
+  codigoNoEmitible?: CodigoNoEmitible | null
+  /**
+   * La factura del canon sale por mandato a nombre del propietario
+   * (`por-mandato.ts` del back). QA-FACT-PROF: con él la fila lleva a su ficha
+   * cuando le falta el tipo de documento. Opcional: un back anterior no lo manda.
+   */
+  mandato?: { porMandato: boolean; mandanteId: string | null; mandanteNombre: string | null } | null
+  /**
+   * 🔴 Copropiedad (Nico, 03-10): la parte de ESTE copropietario en puntos
+   * básicos (7000 = 70 %). Sólo en la comisión de una copropiedad; `null` con
+   * un solo dueño; ausente con un back anterior.
+   */
+  participacionBps?: number | null
+  /**
    * Lo que los recibos ya abonaron a la factura y su saldo, al día con cada
    * pago. `null` mientras no hay factura (POR_EMITIR) o si la base no tiene
    * la migración de facturas generadas. Puede faltar en un back viejo.
@@ -206,6 +232,8 @@ export interface FacturaDelMes {
     origen: OrigenDelRecargo | null
     /** Por qué está en cartera y aun así no lleva recargo. `null` si lleva. */
     motivo: string | null
+    /** `true` cuando el motivo es que la agencia no tiene reglas de mora activas. */
+    sinReglas?: boolean
   } | null
   /**
    * Lo que esta fila tiene que decir y no cabe en un número: una cuota en mora
@@ -214,6 +242,28 @@ export interface FacturaDelMes {
    */
   avisos: string[]
 }
+
+/** Por qué una fila no se emite hoy (QA-FACT, 03-10-2026), como lo dice el back. */
+export type CodigoNoEmitible =
+  | 'MES_NO_EMPEZO'
+  | 'ANULADA_POR_NOTA_CREDITO'
+  | 'PARTICIPACIONES_NO_SUMAN_100'
+  | 'ESCENARIO_SIN_CONFIRMAR'
+  | 'ANTES_DE_LA_FECHA_DE_CARTERA'
+  | 'COPROPIEDAD_SIN_MIGRACION'
+  | 'GIRO_SIN_PAGAR'
+  /** QA-FACT-PROF (04-10): la factura por mandato cuyo propietario no tiene tipo de documento. */
+  | 'MANDANTE_SIN_TIPO_DE_DOCUMENTO'
+  /** QA-FACT-CONTA-95 · B-08 (05-10): su ficha dice «CC» con un número que parece un NIT. */
+  | 'MANDANTE_TIPO_DE_DOCUMENTO_POR_REVISAR'
+  /** QA-FACT-CONTA-95 · B-08 (05-10): su ficha no tiene número de documento. */
+  | 'MANDANTE_SIN_DOCUMENTO'
+  /**
+   * 🔴 QA-FACT-CONTA-95 r2 (decisión de Nico 05-10, «la a»): el inquilino no tiene
+   * el tipo de documento guardado (ni en el contrato ni en su cuenta): no se
+   * numera; nunca se adivina por el largo del número.
+   */
+  | 'INQUILINO_SIN_TIPO_DE_DOCUMENTO'
 
 export interface ContratoOmitido {
   contractId: string
@@ -346,6 +396,12 @@ export interface FacturasPorGenerar {
   }
   /** Sin resolución vigente el back NO emite: el botón tiene que decirlo. */
   resolucion: EstadoDeLaResolucion
+  /**
+   * 🔴 FA-R24: la resolución que numera las COMISIONES. `resolucion` es la del
+   * canon. Ausente con un back anterior: la pantalla la saca de
+   * `GET /resolucion` (`porTipo`).
+   */
+  resolucionDeLaComision?: EstadoDeLaResolucion | null
 }
 
 /** Hasta dónde mirar. Sin nada, el mes en curso. */
@@ -380,6 +436,29 @@ export interface ResultadoDeGeneracion {
   zipEnElCentro?: boolean
   /** `true` = este back junta las tandas de una corrida en UN proceso (23-09). */
   corridaAgrupable?: boolean
+  /**
+   * 🔴 QA-FACT (03-10-2026): las elegidas que hoy no se pueden emitir, con su
+   * código y su frase (escenario sin confirmar, comisión sin giro pagado…).
+   * Ausentes con un back anterior.
+   */
+  bloqueadas?: {
+    clave: string
+    contractId: string
+    destinatario: DestinatarioDeFactura
+    terceroNombre: string
+    codigo: string
+    motivo: string
+  }[]
+  cuantasBloqueadas?: number
+  /** La cola y la entrega de lo emitido. `null` si no están cableadas. */
+  transmision?: {
+    encoladas: number
+    entregadas: number
+    porCanalAlterno: number
+    sinCola: boolean
+    /** FA-R10: numeradas con una resolución de PRUEBA, que no se le entregan a nadie. */
+    noEntregadasPorPrueba?: number
+  } | null
 }
 
 /**
@@ -414,6 +493,20 @@ export interface ResolucionDeFacturacion {
   vigenteHasta: string
   ultimoNumeroUsado: number
   anulada: boolean
+  /** Nico (03-10): marcada de PRUEBA al cargarla. Ausente con un back anterior. */
+  esDePrueba?: boolean
+  /**
+   * Cuántos documentos numeró DE VERDAD en Leasefy (`null` = no se pudo
+   * contar). No es `usados`: ése sale de «último número usado», que puede
+   * venir del programa anterior.
+   */
+  documentosNumerados?: number | null
+  /**
+   * 🔴 Nico (03-10, noche): el administrador puede cambiar la casilla «de
+   * prueba» (`PATCH resolucion/:id`): hay migración y no numeró nada. Ausente
+   * con un back sin esa ruta: entonces no se ofrece.
+   */
+  sePuedeMarcarDePrueba?: boolean
   usados: number
   disponibles: number
   puedeNumerar: boolean
@@ -422,16 +515,50 @@ export interface ResolucionDeFacturacion {
   siguiente: string | null
 }
 
+/** Lo que responde `PATCH resolucion/:id`. */
+export interface ResolucionMarcadaDePrueba {
+  id: string
+  numero: string
+  prefijo: string
+  esDePrueba: boolean
+  /** «Quedó «de prueba»: lo que numere se transmite, pero nunca se le entrega a un cliente.» */
+  explicacion?: string
+}
+
 export interface ResolucionesDeLaAgencia {
   resoluciones: ResolucionDeFacturacion[]
   vigente: EstadoDeLaResolucion
   /** `false` sin la migración 20260918000000: no se puede elegir tipo. */
   porTipoDisponible: boolean
+  /**
+   * 🔴 `true` = esta base guarda la casilla «Es una resolución de prueba»
+   * (QA-FACT). Sin ella (o con un back anterior) la casilla no se ofrece: el
+   * back rechazaría `esDePrueba`.
+   */
+  marcaDePruebaDisponible?: boolean
   /** Con qué resolución se numera hoy cada tipo de documento. */
   porTipo: ResolucionPorTipo[]
   umbrales: { numeros: number; dias: number }
   /** Qué hay que avisar hoy: rango por agotarse, vencimiento cerca, bloqueos. */
   avisos: AvisoDeLaResolucion[]
+}
+
+/**
+ * 🔴 Q10 (QA-FACT, 03-10-2026): lo que la plataforma propone ANTES de cargar una
+ * resolución: el mayor número ya usado con ese prefijo dentro del rango
+ * (facturas, notas débito, documentos soporte y lo migrado del sistema
+ * anterior) y si el rango se cruza con otra resolución. No escribe nada.
+ */
+export interface SugerenciaDeLaResolucion {
+  prefijo: string
+  desde: number
+  hasta: number
+  mayorYaUsado: number | null
+  dondeEstaElMayor: string | null
+  ultimoNumeroPropuesto: number
+  siguiente: string
+  seCruza: boolean
+  explicacion: string | null
 }
 
 /** Lo que se manda para cargar una resolución. Las fechas van «YYYY-MM-DD». */
@@ -446,6 +573,11 @@ export interface NuevaResolucion {
   ultimoNumeroUsado?: number
   /** Ausente = numera cualquier tipo (una sola resolución para todo). */
   tipoDeDocumento?: TipoDeDocumento
+  /**
+   * 🔴 Nico (03-10-2026, 19:4x): la resolución de PRUEBA se marca con una
+   * casilla al cargarla; lo que numere no se le entrega a ningún cliente.
+   */
+  esDePrueba?: boolean
 }
 
 // ══ Llamadas ════════════════════════════════════════════════════════════════
@@ -479,6 +611,8 @@ export type BloqueoDeNotaCredito =
   | 'SIN_NUMERO_DIAN'
   | 'YA_ANULADA'
   | 'MIGRACION_PENDIENTE'
+  /** QA-FACT-CONTA-95 (FA3-09): la DIAN la rechazó; no se anula con nota. */
+  | 'RECHAZADA_POR_LA_DIAN'
 
 export interface EstadoDeLaAnulacion {
   puede: boolean
@@ -487,10 +621,22 @@ export interface EstadoDeLaAnulacion {
   explicacion: string | null
 }
 
+/**
+ * 🔴 Qué hace la nota crédito (Nico, 03-10-2026): baja la deuda de la cuota
+ * (por defecto) o, si el error era sólo de un dato del documento, deja la
+ * deuda igual y sale en el mismo paso la factura corregida.
+ */
+export type EfectoDeLaNotaCredito = 'BAJA_LA_DEUDA' | 'SOLO_EL_DOCUMENTO'
+
 export interface NotaCreditoDeLaFactura {
   id: string
-  /** `NC-12`: consecutivo PROPIO, no el de las facturas. */
-  numero: string
+  /** `NC-12`: consecutivo PROPIO, no el de las facturas. `null` = generada, sin emitir. */
+  numero: string | null
+  /**
+   * `GENERADA` = nació sin número (al anular un cobro) y se emite desde «Notas»
+   * (Q6, 03-10). Ausente con un back anterior.
+   */
+  estado?: 'GENERADA' | 'EMITIDA' | null
   concepto: ConceptoDeNotaCredito
   motivo: string
   valorCop: number
@@ -525,6 +671,95 @@ export interface FacturaEmitida {
   anulacion: EstadoDeLaAnulacion
   /** Qué se le puede hacer hoy: anular, acreditar en parte o cobrar de más. */
   correccion: EstadoDeLaCorreccion
+  /**
+   * QA-FACT-CONTA-95 (FA3-09): cómo quedó ante la DIAN («Validada por la
+   * DIAN», «Rechazada por la DIAN», «En cola»…). `null`/ausente = no está en
+   * la cola (o un back anterior): no se dice nada.
+   */
+  transmision?: { estado: string; nombre: string } | null
+}
+
+/**
+ * 🔴 Una nota de la pestaña «Notas (NC/ND)», como la lista el back de QA-FACT
+ * (`GET /facturacion/notas/lista?mes=`): crédito y débito, por el mes (día de
+ * Bogotá) en que se EMITIERON, con lo que hicieron en la deuda.
+ */
+export interface NotaDelMes {
+  id: string
+  tipo: 'NOTA_CREDITO' | 'NOTA_DEBITO'
+  /** `NC-3`, `ND-1` o el número DIAN. `null` = generada, sin emitir. */
+  numero: string | null
+  estado: 'GENERADA' | 'EMITIDA'
+  parcial: boolean
+  concepto: string
+  conceptoNombre: string
+  motivo: string
+  valorCop: number
+  baseCop: number | null
+  ivaCop: number | null
+  /** Nació al anular un cobro que tenía factura. */
+  deCobroAnulado: boolean
+  /**
+   * N-31 (QA-FACT-CONTA-95 r3): nació al terminar el contrato (la factura de un
+   * mes que el fin recortó o anuló). Un back viejo no lo manda.
+   */
+  delFinDelContrato?: boolean
+  creadaAt: string
+  /** `AAAA-MM-DD` en Bogotá. */
+  dia: string
+  factura: {
+    id: string
+    numeroDian: string | null
+    mes: string
+    destinatario: DestinatarioDeFactura
+    terceroNombre: string
+    terceroDocumento: string | null
+    inmueble: string
+    contractId: string
+  }
+  /** Lo que movió en la deuda de la cuota. `null` = no la movió. */
+  enLaDeuda: { movimiento: 'BAJA' | 'SUBE'; valorCop: number; mes: string } | null
+  notaContable: string | null
+  transmision: { estado: string; estadoNombre: string } | null
+  entrega: { estado: string; estadoNombre: string } | null
+  puedeEmitir: boolean
+  porQueNoSePuedeEmitir: string | null
+  tienePdf: boolean
+}
+
+export interface NotasDelMes {
+  mes: string | null
+  disponible: boolean
+  notaDebitoDisponible?: boolean
+  notas: NotaDelMes[]
+}
+
+/**
+ * 🔴 Q6 (QA-FACT): una factura de INTERESES por emitir. Nace sin número cuando
+ * un recibo paga intereses de un mes cuya factura ya salió; va por «Otros».
+ */
+export interface FacturaDeIntereses {
+  id: string
+  clave: string
+  contractId: string
+  codigoDelContrato: number | null
+  mes: string
+  terceroNombre: string
+  terceroDocumento: string | null
+  inmueble: string
+  totalCop: number
+  lineas: LineaDeFactura[]
+  generadaAt: string
+  /** Nace pagada: es la factura de lo que el recibo YA pagó. */
+  pagada: boolean
+}
+
+export interface InteresesPorEmitir {
+  disponible: boolean
+  /** La resolución de «Otros» con la que se numeran. */
+  resolucion: EstadoDeLaResolucion | null
+  facturas: FacturaDeIntereses[]
+  explicacion: string | null
 }
 
 export interface FacturasEmitidasDelMes {
@@ -533,6 +768,12 @@ export interface FacturasEmitidasDelMes {
   anulacionDisponible: boolean
   /** `false` sin la migración 20260918000000: sólo existe la nota TOTAL. */
   notaParcialDisponible: boolean
+  /**
+   * 🔴 QA-FACT-CONTA-95 r2 (FA-B-06): la inmobiliaria no ha fijado sus días de
+   * plazo, así que no corre interés de mora y la nota débito de «Intereses de
+   * mora» no se ofrece. Un back anterior no lo manda (= como antes).
+   */
+  plazoSinFijar?: boolean
   facturas: FacturaEmitida[]
 }
 
@@ -573,7 +814,11 @@ export const facturacionPorMesService = {
        * ellas: cada tanda es su proceso, como antes. No se emite dos veces:
        * el 400 llega antes de tocar nada.
        */
-      if (e instanceof ApiError && e.status === 400 && /should not exist/i.test(e.message)) {
+      // `no_permitido` es la regla del contrato de errores (02-10-2026); el
+      // texto en inglés, el de un back anterior.
+      const claveDesconocida =
+        camposDelError(e).some((c) => c.regla === 'no_permitido') || /should not exist/i.test(String((e as Error)?.message))
+      if (e instanceof ApiError && e.status === 400 && claveDesconocida) {
         return apiClient.post<ResultadoDeGeneracion>(`${BASE}/generar`, cuerpo)
       }
       throw e
@@ -609,6 +854,12 @@ export const facturacionPorMesService = {
       `${BASE}/documentos.zip?ids=${facturaIds.map(encodeURIComponent).join(',')}`,
     ),
 
+  /** Q10: el último número usado que se propone para una resolución nueva. */
+  sugerenciaDeLaResolucion: (rango: { prefijo: string; desde: number; hasta: number }) =>
+    apiClient.get<SugerenciaDeLaResolucion>(
+      `${BASE}/resolucion/sugerencia?prefijo=${encodeURIComponent(rango.prefijo)}&desde=${rango.desde}&hasta=${rango.hasta}`,
+    ),
+
   /** Las resoluciones de la agencia. Sólo ADMIN o CONTADOR. */
   resoluciones: () =>
     apiClient.get<ResolucionesDeLaAgencia>(`${BASE}/resolucion`),
@@ -633,6 +884,23 @@ export const facturacionPorMesService = {
       ...(datos.tipoDeDocumento
         ? { tipoDeDocumento: datos.tipoDeDocumento }
         : {}),
+      // Sólo marcada: un back sin el campo (`forbidNonWhitelisted`) rechazaría
+      // la clave, y «no es de prueba» es lo de siempre.
+      ...(datos.esDePrueba ? { esDePrueba: true } : {}),
+    }),
+
+  /**
+   * 🔴 Nico (03-10-2026): el administrador marca o desmarca «de prueba» una
+   * resolución YA cargada, sólo mientras no haya numerado nada. 403 a los demás
+   * roles, 409 si ya numeró, 503 sin la migración. Ruta de QA-FACT-BACK-B.
+   */
+  /**
+   * `PATCH /resolucion/:id { esDePrueba }` — 403 `SOLO_EL_ADMINISTRADOR`, 409
+   * `RESOLUCION_YA_NUMERO` (con `numerados`), 503 `FALTA_UNA_MIGRACION`.
+   */
+  marcarDePrueba: (id: string, esDePrueba: boolean) =>
+    apiClient.patch<ResolucionMarcadaDePrueba>(`${BASE}/resolucion/${encodeURIComponent(id)}`, {
+      esDePrueba,
     }),
 
   /**
@@ -664,11 +932,58 @@ export const facturacionPorMesService = {
    */
   emitirNotaCredito: (
     facturaId: string,
-    datos: { concepto: ConceptoDeNotaCredito; motivo: string },
+    datos: { concepto: ConceptoDeNotaCredito; motivo: string; efecto?: EfectoDeLaNotaCredito },
   ) =>
-    apiClient.post<{ id: string; numeroDeLaNota: string; valorCop: number }>(
-      `${BASE}/${facturaId}/nota-credito`,
-      { concepto: datos.concepto, motivo: datos.motivo },
+    apiClient.post<{
+      id: string
+      numeroDeLaNota: string
+      valorCop: number
+      /** Qué pasó con la deuda de la cuota, en palabras. Ausente con un back anterior. */
+      deuda?: { explicacion?: string | null } | null
+      /** La factura corregida, cuando se pidió «sólo el documento». */
+      facturaCorregida?: {
+        estado: 'EMITIDA' | 'POR_FACTURAR'
+        numeroDian: string | null
+        motivo: string | null
+      } | null
+    }>(`${BASE}/${facturaId}/nota-credito`, {
+      concepto: datos.concepto,
+      motivo: datos.motivo,
+      // Sólo «sólo el documento» viaja: bajar la deuda es lo que hace el back
+      // por defecto, y un back anterior (con `forbidNonWhitelisted`) rechazaría
+      // la clave.
+      ...(datos.efecto === 'SOLO_EL_DOCUMENTO' ? { efecto: datos.efecto } : {}),
+    }),
+
+  /** Las notas crédito y débito emitidas (o generadas) en el mes. Un back anterior: 404. */
+  notasDelMes: (mes: string) =>
+    apiClient.get<NotasDelMes>(`${BASE}/notas/lista?mes=${encodeURIComponent(mes)}`),
+
+  /** El PDF de una nota crédito emitida. */
+  pdfDeLaNota: (notaId: string) =>
+    apiClient.getBlob(`${BASE}/notas-credito/${encodeURIComponent(notaId)}/pdf`),
+
+  /** Q6: las facturas de intereses por emitir. Un back anterior: 404. */
+  interesesPorEmitir: () => apiClient.get<InteresesPorEmitir>(`${BASE}/intereses/por-emitir`),
+
+  /** Q6: emite (numera) las facturas de intereses elegidas, con la resolución de «Otros». */
+  emitirIntereses: (ids: readonly string[]) =>
+    apiClient.post<ResultadoDeGeneracion>(`${BASE}/intereses/emitir`, { ids: [...ids] }),
+
+  /**
+   * 🔴 Emite una nota crédito GENERADA (la que nace sin número al anular un
+   * cobro con factura; Q6/Q7, 03-10-2026). Un back sin la ruta responde 404.
+   */
+  emitirNotaGenerada: (notaId: string) =>
+    apiClient.post<{
+      id: string
+      numeroDeLaNota: string
+      valorCop: number
+      /** Lo que pasó, en palabras (la corregida, si salió; N-31). */
+      explicacion?: string
+    }>(
+      `${BASE}/notas-credito/${encodeURIComponent(notaId)}/emitir`,
+      {},
     ),
 }
 
@@ -742,19 +1057,62 @@ const NOMBRE_DEL_MES = [
  * y en Bogotá (UTC−5) cae en agosto. Un selector de mes que dice el mes
  * anterior es exactamente el defecto que no se puede tener acá.
  */
+const MES_CORTO = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic']
+
+/** Un DÍA: `2028-01-15` o la medianoche UTC exacta con que llega un `@db.Date`. */
+const SOLO_DIA = /^(\d{4})-(\d{2})-(\d{2})(?:T00:00:00(?:\.0+)?Z)?$/
+
 /**
- * `2028-01-15` → `15/01/2028`.
+ * `2028-01-15` → `15 ene 2028`, la fecha de la casa (la misma del estado de
+ * cuenta).
  *
- * Se leen los primeros diez caracteres, sin construir un `Date`: un
- * `@db.Date` llega como `...T00:00:00.000Z` y en Bogotá (UTC−5) se pinta el
- * día anterior. Una vigencia que dice el día equivocado es exactamente el
- * defecto que no se puede tener en una resolución de la DIAN.
+ * 🔴 FA-R29 (QA-FACT, 03-10-2026): antes cortaba los diez primeros caracteres
+ * de CUALQUIER ISO y escribía `15/01/2028`. Para un DÍA (`@db.Date`, que llega
+ * como medianoche UTC) eso está bien: en Bogotá (UTC−5) un `new Date()` lo
+ * pintaría el día anterior. Pero una nota crédito de las 8 de la noche
+ * (`…T01:00:00Z` del día siguiente) salía con el día de MAÑANA. Un instante se
+ * lee en la hora de Colombia; un día, tal cual.
  */
 export function fechaLegible(iso: string | null): string {
   if (!iso) return '—'
-  const [anio, mes, dia] = iso.slice(0, 10).split('-')
-  if (!anio || !mes || !dia) return iso
-  return `${dia}/${mes}/${anio}`
+  const dia = SOLO_DIA.exec(iso)
+  let anio: number
+  let mes: number
+  let d: number
+  if (dia) {
+    anio = Number(dia[1])
+    mes = Number(dia[2])
+    d = Number(dia[3])
+  } else {
+    const instante = new Date(iso)
+    if (Number.isNaN(instante.getTime())) return iso
+    const partes = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Bogota',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(instante)
+    const de = (t: string) => Number(partes.find((p) => p.type === t)?.value)
+    anio = de('year')
+    mes = de('month')
+    d = de('day')
+  }
+  const nombre = MES_CORTO[mes - 1]
+  if (!nombre || !anio || !d) return iso
+  return `${d} ${nombre} ${anio}`
+}
+
+/**
+ * `2027-09-01` → `1 de septiembre de 2027`: la fecha DENTRO de una frase («la
+ * autorización vence el 1 de septiembre de 2027»). Las mismas reglas de
+ * `fechaLegible` para un día y para un instante.
+ */
+export function fechaEnFrase(iso: string | null): string {
+  const corta = fechaLegible(iso)
+  const m = /^(\d{1,2}) ([a-z]{3}) (\d{4})$/.exec(corta)
+  if (!m) return corta
+  const nombre = NOMBRE_DEL_MES[MES_CORTO.indexOf(m[2])]
+  return nombre ? `${m[1]} de ${nombre} de ${m[3]}` : corta
 }
 
 export function mesLegible(mes: string): string {

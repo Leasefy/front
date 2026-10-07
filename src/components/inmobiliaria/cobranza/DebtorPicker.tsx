@@ -25,6 +25,7 @@ import { Button, Input } from '@/components/ui'
 import { Spinner } from '@/components/ui/spinner'
 import { hashCedulaPrefix } from '@/lib/cobranza/hash-cedula-prefix'
 import { useDebtorList } from '@/lib/hooks/cobranza/use-debtor-list'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 /** Lo mínimo que el llamador necesita saber del deudor elegido. */
 export interface PickedDebtor {
@@ -141,12 +142,16 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
 
       {hint && <p className="text-xs text-fg-muted">{hint}</p>}
 
-      {error && (
-        <p className="text-xs text-danger">
+      <Presence as="p" show={Boolean(error)} className="text-xs text-danger">
           No pudimos cargar los deudores. {error}
-        </p>
-      )}
+      </Presence>
 
+      {/* Buscando → resultados (o → «ninguno coincide»): cada estado entra
+          con su fundido; los resultados, escalonados. */}
+      <CrossFade
+        swapKey={isLoading ? 'buscando' : pages.length === 0 && !error ? 'vacio' : 'resultados'}
+        className="space-y-2"
+      >
       {isLoading ? (
         <div className="flex items-center gap-2 px-1 py-3 text-caption text-fg-muted">
           <Spinner size="sm" variant="default" />
@@ -162,13 +167,15 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
         <>
           {/* `data-lenis-prevent`: sin esto Lenis se traga la rueda del ratón y
               la lista no scrollea dentro del modal. */}
-          <ul
+          <Stagger
+            as="ul"
+            layout={false}
             data-lenis-prevent
             className="max-h-56 overflow-y-auto rounded-lg border border-border divide-y divide-border"
             aria-label="Resultados de deudores"
           >
             {visibles.map((d) => (
-              <li key={d.id}>
+              <StaggerItem as="li" key={d.id}>
                 <button
                   type="button"
                   onClick={() =>
@@ -187,9 +194,9 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
                     {d.cedulaMasked}
                   </span>
                 </button>
-              </li>
+              </StaggerItem>
             ))}
-          </ul>
+          </Stagger>
           {sobrantes > 0 && (
             <p className="text-xs text-fg-muted tabular-nums">
               {sobrantes} resultado{sobrantes === 1 ? '' : 's'} más — afina la
@@ -198,6 +205,7 @@ export function DebtorPicker({ value, onChange, inputId }: DebtorPickerProps) {
           )}
         </>
       )}
+      </CrossFade>
     </div>
   )
 }

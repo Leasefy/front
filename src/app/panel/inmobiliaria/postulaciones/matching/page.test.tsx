@@ -143,6 +143,48 @@ describe('Resumen de Matching — el vacío honesto', () => {
     expect(pantalla.querySelector('[data-testid="matching-resumen-datos"]')).toBeNull()
   })
 
+  it('IA-A-05 (QA-IA-95): los cuatro KPI del micro en cero son el mismo vacío honesto, sin «Calce promedio 0,0 %»', async () => {
+    overviewMock.mockReturnValue({
+      ...overviewBase,
+      notAvailable: false,
+      data: {
+        agente: 'matching',
+        kpis: [
+          { id: 'en_cola', label: 'Candidatos esperando tu visto bueno', value: 0, format: 'number' },
+          { id: 'candidatos_30d', label: 'Candidatos con opciones (30 días)', value: 0, format: 'number' },
+          { id: 'enviados_30d', label: 'Correos enviados (30 días)', value: 0, format: 'number' },
+          { id: 'calce_promedio', label: 'Calce promedio del mejor inmueble (30 días)', value: 0, format: 'percent' },
+        ],
+        pipeline: [],
+        feed: [],
+        generatedAt: '2026-10-05T12:00:00.000Z',
+      },
+    })
+    const pantalla = await montar()
+    expect(pantalla.querySelector('[data-testid="empty-state"]')?.textContent).toContain('Matching todavía no tiene casos en tu cartera')
+    expect(pantalla.textContent).not.toContain('Calce promedio')
+  })
+
+  it('con candidatos en la cola pero ninguno con opciones en 30 días, el calce promedio es «—»', async () => {
+    overviewMock.mockReturnValue({
+      ...overviewBase,
+      notAvailable: false,
+      data: {
+        agente: 'matching',
+        kpis: [
+          { id: 'en_cola', label: 'Candidatos esperando tu visto bueno', value: 2, format: 'number' },
+          { id: 'candidatos_30d', label: 'Candidatos con opciones (30 días)', value: 0, format: 'number' },
+          { id: 'calce_promedio', label: 'Calce promedio del mejor inmueble (30 días)', value: 0, format: 'percent' },
+        ],
+        pipeline: [{ estado: 'sugerido', count: 2 }],
+        feed: [],
+        generatedAt: '2026-10-05T12:00:00.000Z',
+      },
+    })
+    const pantalla = await montar()
+    expect(pantalla.querySelector('[data-testid="calce-sin-casos"]')?.textContent).toBe('—')
+  })
+
   it('con KPIs reales se pintan los números y el CTA lleva el conteo', async () => {
     overviewMock.mockReturnValue({
       ...overviewBase,
@@ -178,7 +220,16 @@ describe('Resumen de Matching — el vacío honesto', () => {
     overviewMock.mockReturnValue({ ...overviewBase })
     const pantalla = await montar()
 
-    const pasos = pantalla.querySelectorAll('[data-testid="matching-como-funciona"] li')
+    // 05-10-2026 (Nico: «llévalas al botón que al dar clic abre drawer»): los
+    // pasos ya no están puestos; viven en el cajón del botón del encabezado.
+    expect(pantalla.querySelector('[data-testid="matching-como-funciona"]')).toBeNull()
+    const boton = pantalla.querySelector<HTMLButtonElement>('header [data-testid="para-entender-mas"]')
+    expect(boton).not.toBeNull()
+    await act(async () => {
+      boton!.click()
+    })
+    // El cajón pinta en un portal colgado del `body`, fuera de `pantalla`.
+    const pasos = document.body.querySelectorAll('[data-testid="matching-como-funciona"] li')
     expect(pasos.length).toBe(3)
     expect(pasos[0].textContent).toContain('Un candidato se queda sin inmueble')
     expect(pasos[2].textContent).toContain('Decides si se le mandan las opciones')

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -15,25 +15,24 @@ import {
 } from '@dnd-kit/core';
 import { useDraggable, useDroppable } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/components/ui/toast';
 import {
   CaretDown,
   CaretUp,
   DotsSixVertical,
   ArrowsOutSimple,
-  X,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui';
-import { IconButton } from '@leasefy/cadence';
-import { useLenis } from '@/components/providers/SmoothScroll';
+import { Collapse, CrossFade, IconButton, Presence } from '@leasefy/cadence';
+import { Sheet, SheetBody, SheetContent, SheetHeader } from '@/components/ui/sheet';
 import { useI18n } from '@/lib/i18n';
 import type { PipelineItem, PipelineStage } from '@/lib/types/inmobiliaria';
 import { PIPELINE_STAGES, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
-import { PipelineCard } from './PipelineCard';
-import { MotivoDialog } from '@/components/inmobiliaria/agenda/MotivoDialog';
+import { PipelineCard, NombresDeAgentesContext } from './PipelineCard';
+import { mensajeDelRechazoDelMotivo } from '@/components/inmobiliaria/agenda/MotivoDialog';
+import { MotivoDePerdidaDialog } from '@/components/inmobiliaria/MotivoDePerdidaDialog';
+import { revisarMotivoDePerdida } from '@/lib/pipeline/limites-del-pipeline';
 
 // ============================================================================
 // Types
@@ -41,6 +40,13 @@ import { MotivoDialog } from '@/components/inmobiliaria/agenda/MotivoDialog';
 
 interface PipelineBoardProps {
   items: PipelineItem[];
+  /**
+   * PL-16 (04-10-2026): soltar en «Visita programada» NO mueve la tarjeta:
+   * pide el día, la hora y el asesor, y crea la visita en la Agenda.
+   */
+  onPedirVisita?: (item: PipelineItem) => void;
+  /** El equipo, para poner nombre al agente de cada tarjeta. */
+  agentes?: ReadonlyArray<{ id: string; userId?: string; name: string }>;
   onItemClick: (item: PipelineItem) => void;
   /**
    * Devuelve una promesa que se RESUELVE cuando el back confirmó, y se
@@ -101,7 +107,7 @@ function DraggableCard({ item, onClick, motivoBloqueo }: DraggableCardProps) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        'transition-opacity duration-200',
+        'transition-opacity duration-base',
         isDragging && 'opacity-40'
       )}
       title={motivoBloqueo}
@@ -145,46 +151,15 @@ function DroppableColumn({
 }: DroppableColumnProps) {
   const { t } = useI18n();
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed);
+  // «Ver todo»: el cajón con todos los leads de la columna. Portal, foco, Esc,
+  // bloqueo del scroll y Lenis los ponen el `Sheet` y `SmoothScroll`.
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   const { setNodeRef } = useDroppable({
     id: stage,
     data: { stage },
   });
-  const { stop: stopLenis, start: startLenis } = useLenis();
 
   const stageInfo = getPipelineStageInfo(stage);
-
-  // Track client-side mounting
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // Stop Lenis and lock body scroll when sidebar is open
-  useEffect(() => {
-    if (isSidebarOpen) {
-      // Stop Lenis smooth scroll to allow native scroll in sidebar
-      stopLenis();
-
-      const scrollY = window.scrollY;
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.left = '0';
-      document.body.style.right = '0';
-      document.body.style.overflow = 'hidden';
-
-      return () => {
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        document.body.style.right = '';
-        document.body.style.overflow = '';
-        window.scrollTo(0, scrollY);
-        // Restart Lenis
-        startLenis();
-      };
-    }
-  }, [isSidebarOpen, stopLenis, startLenis]);
 
   // Extract background and text color classes from stageInfo
   const bgColorClass = stageInfo?.color?.split(' ')[0] || 'bg-surface-muted';
@@ -197,7 +172,7 @@ function DroppableColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        'flex flex-col h-full rounded-lg border bg-muted/40 transition-all duration-200',
+        'flex flex-col h-full rounded-lg border bg-muted/40 transition-[border-color,box-shadow] duration-base',
         isOver
           ? 'border-primary/30 border-dashed ring-2 ring-primary/20'
           : 'border-border'
@@ -250,27 +225,26 @@ function DroppableColumn({
         )}
       </div>
 
-      {/* Column Body - Scrollable card container */}
-      <AnimatePresence initial={false}>
-        {!isCollapsed && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2, ease: 'easeInOut' }}
-            className="flex-1 overflow-hidden"
-          >
+      {/* Column Body - Scrollable card container. Se pliega y se despliega
+          con su altura (`Collapse`: la única primitiva que anima la altura). */}
+      <Collapse open={!isCollapsed}>
             <div
               className={cn(
-                'flex flex-col gap-2.5 p-2.5 overflow-y-auto',
+                'relative flex flex-col gap-2.5 p-2.5 overflow-y-auto',
                 'max-h-[calc(100vh-280px)]'
               )}
             >
+              {/* Vacía ⇄ con leads: al soltar el primero o sacar el último, lo
+                  nuevo entra ya y lo viejo se funde encima (`popLayout`). Lo que
+                  ya estaba al cargar no se anima. */}
+              <CrossFade
+                swapKey={items.length === 0 ? 'vacia' : 'con-leads'}
+                mode="popLayout"
+                className="flex flex-col gap-2.5"
+              >
               {items.length === 0 ? (
                 /* Empty State */
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                <div
                   className={cn(
                     'flex flex-col items-center justify-center py-8 px-4 rounded-md border-2 border-dashed',
                     isOver
@@ -285,7 +259,7 @@ function DroppableColumn({
                   <p className="text-[10px] text-muted-foreground/70 text-center mt-1">
                     {t('inmobiliaria.pipeline.dragHere')}
                   </p>
-                </motion.div>
+                </div>
               ) : (
                 /* Cards */
                 items.map((item) => (
@@ -303,22 +277,21 @@ function DroppableColumn({
                   />
                 ))
               )}
+              </CrossFade>
 
-              {/* Drop zone at bottom when not empty and dragging over */}
-              {items.length > 0 && isOver && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  className={cn(
-                    'flex items-center justify-center py-4 rounded-md border-2 border-dashed',
-                    'border-primary/30 bg-primary-soft/50'
-                  )}
-                >
-                  <p className="text-xs text-primary">
-                    {t('inmobiliaria.pipeline.dropHere')}
-                  </p>
-                </motion.div>
-              )}
+              {/* Drop zone at bottom when not empty and dragging over: abre su
+                  lugar con la altura y se cierra al soltar o salir. */}
+              <Collapse
+                open={items.length > 0 && isOver}
+                className={cn(
+                  'flex items-center justify-center py-4 rounded-md border-2 border-dashed',
+                  'border-primary/30 bg-primary-soft/50'
+                )}
+              >
+                <p className="text-xs text-primary">
+                  {t('inmobiliaria.pipeline.dropHere')}
+                </p>
+              </Collapse>
             </div>
 
             {/* Ver todo button */}
@@ -336,97 +309,47 @@ function DroppableColumn({
                 </Button>
               </div>
             )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      </Collapse>
 
       {/* Collapsed footer showing count */}
-      {isCollapsed && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="p-3 text-center"
-        >
-          <p className="text-xs text-muted-foreground">
-            {items.length} {items.length === 1 ? t('inmobiliaria.pipeline.leadSingular') : t('inmobiliaria.pipeline.leadPlural')}
-          </p>
-        </motion.div>
-      )}
+      <Presence show={isCollapsed} initial={false} className="p-3 text-center">
+        <p className="text-xs text-muted-foreground">
+          {items.length} {items.length === 1 ? t('inmobiliaria.pipeline.leadSingular') : t('inmobiliaria.pipeline.leadPlural')}
+        </p>
+      </Presence>
 
-      {/* Ver Todo - Custom Portal Sidebar */}
-      {isMounted && isSidebarOpen && createPortal(
-        <>
-          {/* Backdrop */}
-          {/* Drawer layer = z-[300] (misma capa que <Sheet>/<Drawer>). Antes z-[9998/9999],
-              que tapaba cualquier AlertDialog disparado desde adentro. Ver DESIGN.md §17. */}
-          <div
-            className="fixed inset-0 bg-black/60 z-[300]"
-            onClick={() => setIsSidebarOpen(false)}
-            style={{ touchAction: 'none' }}
+      {/* Ver Todo — el cajón flotante de la casa */}
+      <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+        <SheetContent side="right" size="sm" aria-describedby={undefined}>
+          <SheetHeader
+            leading={
+              <div
+                className={cn(
+                  'w-3 h-3 rounded-full',
+                  bgColorClass.replace('-100', '-500')
+                )}
+              />
+            }
+            title={stageInfo?.labelEs || stage}
+            description={`${items.length} ${items.length === 1 ? t('inmobiliaria.pipeline.leadSingular') : t('inmobiliaria.pipeline.leadPlural')}`}
           />
 
-          {/* Sidebar */}
-          <div
-            className="fixed top-0 right-0 w-full sm:w-[420px] bg-card z-[300]"
-            style={{ height: '100dvh' }}
-          >
-            {/* Header - Fixed height */}
-            <div
-              className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 border-b border-border bg-card"
-              style={{ height: '73px' }}
-            >
-              <div className="flex items-center gap-3">
-                <div
-                  className={cn(
-                    'w-3 h-3 rounded-full',
-                    bgColorClass.replace('-100', '-500')
-                  )}
-                />
-                <div>
-                  <h2 className="text-base font-semibold text-foreground">
-                    {stageInfo?.labelEs || stage}
-                  </h2>
-                  <p className="text-sm text-muted-foreground">
-                    {items.length} {items.length === 1 ? t('inmobiliaria.pipeline.leadSingular') : t('inmobiliaria.pipeline.leadPlural')}
-                  </p>
-                </div>
-              </div>
-              <IconButton
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsSidebarOpen(false)}
-                aria-label={t('inmobiliaria.pipeline.close')}
-                icon={<X className="w-5 h-5" />}
+          {/* Sin `px-4`: las tarjetas van con el padding del cajón, en la línea
+              del título (DESIGN.md §Drawers, «Contenido alineado al padding»). */}
+          <SheetBody className="space-y-3 py-4">
+            {items.map((item) => (
+              <PipelineCard
+                key={item.id}
+                item={item}
+                onClick={(clickedItem) => {
+                  setIsSidebarOpen(false);
+                  onCardClick(clickedItem);
+                }}
               />
-            </div>
-
-            {/* Scrollable Content - Absolute positioned */}
-            <div
-              className="absolute left-0 right-0 p-4 space-y-3"
-              style={{
-                top: '73px',
-                bottom: '0px',
-                overflowY: 'scroll',
-                WebkitOverflowScrolling: 'touch',
-                overscrollBehavior: 'contain',
-              }}
-              onWheel={(e) => e.stopPropagation()}
-            >
-              {items.map((item) => (
-                <PipelineCard
-                  key={item.id}
-                  item={item}
-                  onClick={(clickedItem) => {
-                    setIsSidebarOpen(false);
-                    onCardClick(clickedItem);
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        </>,
-        document.body
-      )}
+            ))}
+          </SheetBody>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
@@ -444,13 +367,26 @@ export function PipelineBoard({
   onItemClick,
   onStageChange,
   puedeMover = true,
+  agentes,
+  onPedirVisita,
 }: PipelineBoardProps) {
+  const nombresDeAgentes = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const a of agentes ?? []) {
+      if (!a.name) continue;
+      m[a.id] = a.name;
+      if (a.userId) m[a.userId] = a.name;
+    }
+    return m;
+  }, [agentes]);
   const { t } = useI18n();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
   // El lead que se soltó en «Perdido» y espera su motivo.
   const [perdiendo, setPerdiendo] = useState<PipelineItem | null>(null);
   const [enviandoMotivo, setEnviandoMotivo] = useState(false);
+  /** Lo que el back dijo del motivo (o del movimiento): va bajo el campo del diálogo. */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
 
   // Get the item being dragged
   const activeItem = useMemo(() => {
@@ -543,7 +479,14 @@ export function PipelineBoard({
        * tarjeta no se mueve hasta que se confirma.
        */
       if (newStage === 'lost') {
+        setErrorDelMotivo(null);
         setPerdiendo(item);
+        return;
+      }
+
+      // PL-16: «Visita programada» se agenda (día, hora y asesor).
+      if (newStage === 'visit_scheduled' && onPedirVisita) {
+        onPedirVisita(item);
         return;
       }
 
@@ -562,23 +505,38 @@ export function PipelineBoard({
         description: `${item.candidateName}: ${oldStageInfo?.labelEs || item.stage} → ${newStageInfo?.labelEs || newStage}`,
       });
     },
-    [items, onStageChange, t, puedeMover]
+    [items, onStageChange, t, puedeMover, onPedirVisita]
   );
 
   /**
    * Confirmar el motivo del arrastre a «Perdido».
    *
-   * Si el back dice que no, la página ya lo avisó con su mensaje (409/400) y
-   * devolvió la tarjeta: el diálogo queda abierto para corregir o cancelar,
-   * como en el cajón.
+   * Si el back dice que no, la página devuelve la tarjeta (y, con motivo, NO
+   * avisa en un toast): el porqué va bajo el campo del diálogo, que queda
+   * abierto con lo escrito para corregir o cancelar, como en el cajón.
    */
   const confirmarPerdido = useCallback(
     async (motivo: string) => {
       if (!perdiendo) return;
+      // El mismo tope que el back (`MoveStageDto.lostReason`, VarChar(500)):
+      // el diálogo ya lo dice bajo el campo; ésta es la segunda guarda.
+      const largo = revisarMotivoDePerdida(motivo);
+      if (largo) {
+        setErrorDelMotivo(largo);
+        return;
+      }
+      setErrorDelMotivo(null);
       setEnviandoMotivo(true);
       try {
         await onStageChange(perdiendo.id, 'lost', motivo);
-      } catch {
+      } catch (error) {
+        setErrorDelMotivo(
+          mensajeDelRechazoDelMotivo(error, {
+            campo: 'lostReason',
+            porDefecto: 'No se pudo marcar como perdido. Prueba de nuevo en un momento.',
+            accion: 'marcar el lead como perdido',
+          }),
+        );
         setEnviandoMotivo(false);
         return;
       }
@@ -591,18 +549,16 @@ export function PipelineBoard({
     [perdiendo, onStageChange, t]
   );
 
-  // Get stages to display (all except lost at the end).
-  // Columns holding cards come first (funnel order preserved within each
-  // group) so real activity is visible without horizontal scrolling.
-  const mainStages = useMemo(() => {
-    const ordered = PIPELINE_STAGES.filter((s) => s.stage !== 'lost').map((s) => s.stage);
-    return [
-      ...ordered.filter((stage) => itemsByStage[stage].length > 0),
-      ...ordered.filter((stage) => itemsByStage[stage].length === 0),
-    ];
-  }, [itemsByStage]);
+  // PL-02 (04-10-2026): las columnas van SIEMPRE en el orden del embudo
+  // (Interesado → Visita programada → … → Cerrado | Perdido). Antes las que
+  // tenían tarjetas se iban adelante y el tablero se leía al revés.
+  const mainStages = useMemo(
+    () => PIPELINE_STAGES.filter((s) => s.stage !== 'lost').map((s) => s.stage),
+    [],
+  );
 
   return (
+    <NombresDeAgentesContext.Provider value={nombresDeAgentes}>
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
@@ -637,13 +593,15 @@ export function PipelineBoard({
       </div>
 
       {/* El mismo diálogo y el mismo mínimo que «Marcar perdido» en el cajón. */}
-      <MotivoDialog
+      <MotivoDePerdidaDialog
         abierto={perdiendo !== null}
-        titulo={`¿Marcar a ${perdiendo?.candidateName ?? ''} como perdido?`}
-        descripcion="Sale del embudo. Cuenta por qué se cayó: es lo que se lee después para saber qué falló."
-        etiquetaConfirmar="Marcar como perdido"
+        nombre={perdiendo?.candidateName ?? ''}
         enviando={enviandoMotivo}
-        onCerrar={() => setPerdiendo(null)}
+        error={errorDelMotivo}
+        onCerrar={() => {
+          setPerdiendo(null);
+          setErrorDelMotivo(null);
+        }}
         onConfirmar={(motivo) => void confirmarPerdido(motivo)}
       />
 
@@ -659,6 +617,7 @@ export function PipelineBoard({
         )}
       </DragOverlay>
     </DndContext>
+    </NombresDeAgentesContext.Provider>
   );
 }
 

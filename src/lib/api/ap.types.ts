@@ -190,5 +190,6 @@ export interface FacturaExtractResponse {
   /** URL firmada del primer documento en Storage; null si el micro no tiene Storage configurado. */
   adjuntoUrl: string | null;
   tokensUsed: number;
-  estimatedCostUsd: number;
+  /** 🔴 En pesos (Nico, 04-10-2026): el micro convierte el costo del modelo con la tasa de la plataforma. */
+  estimatedCostCop: number;
 }

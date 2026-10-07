@@ -29,7 +29,11 @@
 import { apiClient } from './client';
 
 /** Los dos certificados. El código es el de la plantilla legal del back. */
-export type TipoDeCertificado = 'PAZ_Y_SALVO' | 'CERTIFICADO_ESTAR_AL_DIA';
+export type TipoDeCertificado =
+  | 'PAZ_Y_SALVO'
+  | 'CERTIFICADO_ESTAR_AL_DIA'
+  /** QA-INQ-95 r2 (Nico): quien salió por un cambio de inquilino, por SU tiempo. */
+  | 'CERTIFICADO_DE_SU_TIEMPO';
 
 /** Por qué no se puede emitir. `code` es lo que la pantalla puede mirar. */
 export interface ImpedimentoDelCertificado {

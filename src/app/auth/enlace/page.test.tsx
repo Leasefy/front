@@ -143,6 +143,40 @@ describe('/auth/enlace', () => {
     expect(window.location.href).toBe('/onboarding/inmobiliaria')
   })
 
+  // 02-10-2026 · Regla de oro: si falló la red o Supabase, el enlace puede
+  // estar bien; no se le pide otro enlace a la persona.
+  it('🔴 abrir la sesión sin respuesta: habla de la conexión, no de pedir otro enlace', async () => {
+    ubicar('#access_token=eyJ.a.b&refresh_token=r3fr35h&type=invite')
+    window.history.replaceState = vi.fn()
+    st.setSession = vi.fn().mockResolvedValue({
+      error: Object.assign(new Error('Failed to fetch'), { name: 'AuthRetryableFetchError', status: 0 }),
+    })
+    await montar()
+    expect(container.textContent).toMatch(/conexión/)
+    expect(container.textContent).not.toMatch(/reenvíen/)
+  })
+
+  it('🔴 un 5xx de Supabase al abrir la sesión: falló de nuestro lado', async () => {
+    ubicar('#access_token=eyJ.a.b&refresh_token=r3fr35h&type=invite')
+    window.history.replaceState = vi.fn()
+    st.setSession = vi.fn().mockResolvedValue({
+      error: Object.assign(new Error('Internal error'), { name: 'AuthApiError', status: 500 }),
+    })
+    await montar()
+    expect(container.textContent).toMatch(/de nuestro lado/)
+    expect(container.textContent).not.toMatch(/conexi[oó]n|Internal/)
+  })
+
+  it('un token rechazado (4xx) sigue diciendo que pidan otro enlace', async () => {
+    ubicar('#access_token=eyJ.a.b&refresh_token=r3fr35h&type=invite')
+    window.history.replaceState = vi.fn()
+    st.setSession = vi.fn().mockResolvedValue({
+      error: Object.assign(new Error('Invalid Refresh Token'), { name: 'AuthApiError', status: 400, code: 'refresh_token_not_found' }),
+    })
+    await montar()
+    expect(container.textContent).toContain('Pide que te lo reenvíen')
+  })
+
   it('nunca llama a getSession()', async () => {
     ubicar('#error_code=otp_expired')
     await montar()

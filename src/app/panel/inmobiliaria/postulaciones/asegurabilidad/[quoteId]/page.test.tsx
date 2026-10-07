@@ -46,7 +46,7 @@ let mockCarriers: Array<{
 vi.mock('@/lib/hooks/cotizador/use-quote-stream', () => ({
   useQuoteStream: () => ({
     carriers: mockCarriers,
-    totalCostUsd: 0,
+    totalCostCop: 0,
     isConnected: true,
     error: null,
     reconnect: vi.fn(),

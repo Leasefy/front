@@ -23,6 +23,8 @@ import {
   debtorLabel,
   outcomeLabel,
 } from '@/lib/cobranza/dispute-vocab'
+import { MotionIndicator, Stagger, StaggerItem } from '@leasefy/cadence'
+import { useId } from 'react'
 
 export interface DisputasListProps {
   disputes: CobranzaDispute[]
@@ -36,28 +38,36 @@ export function DisputasList({
   onSelect,
 }: DisputasListProps) {
   const { formatCurrency, formatRelativeDate } = useI18n()
+  // La marca de la elegida (fondo + borde izquierdo) se desliza de una fila a
+  // otra (`MotionIndicator`, un `layoutId` por lista).
+  const idDeLaLista = useId()
 
   return (
-    <ul className="divide-y divide-border" aria-label="Disputas">
+    <Stagger as="ul" className="divide-y divide-border" aria-label="Disputas">
       {disputes.map((d) => {
         const estado = DISPUTE_ESTADO[asDisputeStatus(d.status)]
         const seleccionada = d.id === selectedId
         const resultado = outcomeLabel(d)
         return (
-          <li key={d.id}>
+          <StaggerItem as="li" key={d.id}>
             <button
               type="button"
               onClick={() => onSelect(d)}
               aria-current={seleccionada ? 'true' : undefined}
               data-testid={`disputa-fila-${d.id}`}
               className={cn(
-                'w-full text-left px-4 py-3 space-y-1.5 transition-colors',
+                'relative isolate w-full text-left px-4 py-3 space-y-1.5 transition-colors',
                 'focus-visible:outline-none focus-visible:bg-surface-muted',
-                seleccionada
-                  ? 'bg-surface-muted border-l-2 border-l-primary'
-                  : 'border-l-2 border-l-transparent hover:bg-surface-muted/60',
+                'border-l-2 border-l-transparent',
+                !seleccionada && 'hover:bg-surface-muted/60',
               )}
             >
+              {seleccionada && (
+                <MotionIndicator
+                  layoutId={`${idDeLaLista}-elegida`}
+                  className="inset-y-0 -left-0.5 right-0 -z-10 bg-surface-muted border-l-2 border-l-primary"
+                />
+              )}
               <div className="flex items-start justify-between gap-2">
                 <span className="text-sm font-medium text-fg truncate min-w-0">
                   {debtorLabel(d)}
@@ -82,9 +92,9 @@ export function DisputasList({
                 )}
               </div>
             </button>
-          </li>
+          </StaggerItem>
         )
       })}
-    </ul>
+    </Stagger>
   )
 }

@@ -3,7 +3,6 @@ import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Buildings,
   SquaresFour,
@@ -16,8 +15,13 @@ import {
   FileArrowUp,
   Sparkle,
   WarningCircle,
+  SignOut,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useVacanciaYMandatos } from '@/lib/comercial/use-vacancia-y-mandatos';
+import { esVacanciaLarga, mandatoPorVencerOVencido } from '@/lib/comercial/comercial';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { Button, EmptyState } from '@/components/ui';
@@ -27,7 +31,7 @@ import {
   PAGE_SIZE_OPTIONS,
   DEFAULT_PAGE_SIZE,
 } from '@/lib/hooks/use-table-pagination';
-import { SegmentedControl } from '@leasefy/cadence';
+import { CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   useConsignaciones,
   useInmueblesSinConsignacion,
@@ -56,6 +60,7 @@ import { InmuebleSinMandatoCard } from '@/components/inmobiliaria/InmuebleSinMan
 import { ConsignacionTable } from '@/components/inmobiliaria/ConsignacionTable';
 import { DisponiblesSinSenal } from '@/components/inmobiliaria/DisponiblesSinSenal';
 import { cajonDelInmueble, contarPorCajon } from '@/lib/inmobiliaria/cajon-del-inmueble';
+import { coincideConLaBusqueda } from '@/lib/inmuebles/buscar-en-el-portafolio';
 import { ConsignacionFilters, ConsignacionFiltersState } from '@/components/inmobiliaria/ConsignacionFilters';
 import { PedirCitaModal } from '@/components/inmobiliaria/agenda/PedirCitaModal';
 import { CompletarMandatoDialog } from '@/components/inmobiliaria/CompletarMandatoDialog';
@@ -105,7 +110,14 @@ function PortafolioContent() {
   } = useInmueblesSinConsignacion();
   const { propietarios: allPropietarios } = usePropietarios();
   const { agentes: allAgentes } = useAgentes();
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  // COMERCIAL (Nico, 04-10-2026): días de vacancia y mandatos que se vencen.
+  // Fuente aparte: si falla, la lista sigue igual, sin esos datos.
+  const { porConsignacion: comercialPorConsignacion } = useVacanciaYMandatos();
+  // IN-19 (QA 04-10): en el celular abre en TARJETAS (la tabla no cabe a
+  // 390 px); lo que la persona elija con el selector manda.
+  const esCelular = useIsMobile();
+  const [vistaElegida, setViewMode] = useState<ViewMode | null>(null);
+  const viewMode: ViewMode = vistaElegida ?? (esCelular ? 'grid' : 'table');
   const [citaFor, setCitaFor] = useState<Consignacion | null>(null);
   const [mandatoFor, setMandatoFor] = useState<InmuebleSinConsignacion | null>(null);
 
@@ -175,14 +187,10 @@ function PortafolioContent() {
 
     let result: PortafolioRow[] = [...portafolioRows];
 
-    // Search filter
+    // 🔴 IN-09 (QA 04-10): código (con y sin «#»), propietario, inquilino,
+    // barrio y ciudad, además de título y dirección — sin tildes ni mayúsculas.
     if (filters.search) {
-      const query = filters.search.toLowerCase();
-      result = result.filter(
-        (c) =>
-          c.propertyTitle.toLowerCase().includes(query) ||
-          c.propertyAddress.toLowerCase().includes(query)
-      );
+      result = result.filter((c) => coincideConLaBusqueda(c, filters.search, propietariosMap));
     }
 
     /*
@@ -218,8 +226,28 @@ function PortafolioContent() {
       result = result.filter((c) => normalize(c.propertyType) === normalize(filters.propertyType));
     }
 
+    // COMERCIAL: más de 30 días vacante / mandato por vencer o vencido.
+    if (filters.comercial === 'vacante30') {
+      result = result.filter(
+        (c) => c.kind === 'consignacion' && esVacanciaLarga(comercialPorConsignacion[c.id]?.vacancia),
+      );
+    } else if (filters.comercial === 'mandato') {
+      result = result.filter(
+        (c) => c.kind === 'consignacion' && mandatoPorVencerOVencido(comercialPorConsignacion[c.id]?.mandato),
+      );
+    }
+
     return result;
-  }, [filters, portafolioRows]);
+  }, [filters, portafolioRows, propietariosMap, comercialPorConsignacion]);
+
+  /** Cuántos hay en cada filtro comercial, sobre el portafolio entero (como los cajones). */
+  const conteoComercial = useMemo(() => {
+    const mandatos = portafolioRows.filter((c) => c.kind === 'consignacion');
+    return {
+      vacante30: mandatos.filter((c) => esVacanciaLarga(comercialPorConsignacion[c.id]?.vacancia)).length,
+      mandato: mandatos.filter((c) => mandatoPorVencerOVencido(comercialPorConsignacion[c.id]?.mandato)).length,
+    };
+  }, [portafolioRows, comercialPorConsignacion]);
 
   /**
    * ¿Hay algún filtro puesto? Es lo ÚNICO que distingue «todavía no tienes
@@ -236,7 +264,8 @@ function PortafolioContent() {
     filters.agenteId !== 'all' ||
     filters.propietarioId !== 'all' ||
     filters.city !== 'all' ||
-    filters.propertyType !== 'all';
+    filters.propertyType !== 'all' ||
+    Boolean(filters.comercial);
 
   const elVacioEsPorLosFiltros = hayFiltrosPuestos && portafolioRows.length > 0;
 
@@ -441,11 +470,13 @@ function PortafolioContent() {
       setPorEliminar(null);
     } catch (err) {
       // El back responde 409 con el motivo. Ese texto explica QUÉ lo retiene,
-      // así que se muestra tal cual en vez de un «no se pudo» genérico.
+      // así que se muestra tal cual en vez de un «no se pudo» genérico (el
+      // traductor lo deja pasar; sin red o con un 5xx dice lo que corresponde).
       setMotivoDelRechazo(
-        err instanceof Error && err.message
-          ? err.message
-          : 'No pudimos retirarlo. Prueba de nuevo en un momento.',
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No pudimos retirarlo. Prueba de nuevo en un momento.',
+          accion: 'retirar el inmueble',
+        }),
       );
     } finally {
       setEliminando(false);
@@ -469,7 +500,9 @@ function PortafolioContent() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        {/* IN-19: a 390 px los botones van apilados a lo ancho; antes «Nueva
+            consignación» se salía por la derecha. */}
+        <div className="flex flex-col-reverse gap-2 shrink-0 sm:flex-row sm:items-center [&>button]:w-full sm:[&>button]:w-auto">
           {/* Captura con IA — venía de «Inmuebles · catálogo». Apagada a pedido
               de Nico (2026-09-02: «eso no sirve ahora»). Desde el 15-09 la ruta
               /inmuebles/captura REDIRIGE acá (W6): estaba viva sin un solo
@@ -526,13 +559,10 @@ function PortafolioContent() {
         </div>
       )}
 
-      {/* Unified Data Card - View Toggle + Filters + Content + Pagination */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="rounded-lg border border-border bg-card overflow-hidden"
-      >
+      {/* Unified Data Card - View Toggle + Filters + Content + Pagination.
+          Sin entrada propia: la página ya entra con el `template.tsx`. Lo que
+          se anima acá adentro son los CAMBIOS (vista, filtros, páginas). */}
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         {/* View Toggle Header - First */}
         <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted/20">
           <SegmentedControl<ViewMode>
@@ -563,10 +593,16 @@ function PortafolioContent() {
             ]}
           />
           <span className="text-sm text-fg-muted tabular-nums">
+            {/* «1 inmueble» / «N inmuebles»: el singular es su propia clave
+                (`…Uno`, como el resto del diccionario); antes decía
+                «1 inmuebles» (QA con avatares, 04-10). */}
             {sePudoContar
-              ? t('inmobiliaria.portafolio.stats.propertyCount', {
-                  count: filteredConsignaciones.length,
-                })
+              ? t(
+                  filteredConsignaciones.length === 1
+                    ? 'inmobiliaria.portafolio.stats.propertyCountUno'
+                    : 'inmobiliaria.portafolio.stats.propertyCount',
+                  { count: filteredConsignaciones.length },
+                )
               : t('inmobiliaria.portafolio.stats.propertyCountSinContar')}
           </span>
         </div>
@@ -580,6 +616,7 @@ function PortafolioContent() {
           agentes={allAgentes}
           conteo={conteoPorCajon}
           total={sePudoContar ? portafolioRows.length : null}
+          conteoComercial={sePudoContar ? conteoComercial : null}
         />
 
         {/* Content */}
@@ -593,16 +630,15 @@ function PortafolioContent() {
             queEs="los inmuebles"
             onReintentar={recargarConsignaciones}
           >
-          <AnimatePresence mode="wait">
+          {/* Tabla ⇄ tarjetas: una vista se va (rápido) y la otra entra. */}
+          <CrossFade swapKey={viewMode}>
             {viewMode === 'grid' ? (
-              <motion.div
-                key="grid"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-              >
+              <>
                 {paginatedConsignaciones.length > 0 ? (
-                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  // Al filtrar o cambiar de página, las tarjetas entran
+                  // escalonadas (techo de 320 ms) y las que se van, salen.
+                  // Paginada: sin `layout` (no mide la grilla en cada cambio).
+                  <Stagger layout={false} className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {/*
                       C10, closed for the grid (T-0038 WU-6): this used to
                       filter `kind === 'sinMandato'` out entirely — imported
@@ -615,29 +651,31 @@ function PortafolioContent() {
                       `Consignacion`-typed; the two shapes share no
                       commission/availability/tenant fields to unify).
                     */}
-                    {paginatedConsignaciones.map((row) =>
-                      row.kind === 'consignacion' ? (
-                        <ConsignacionCard
-                          key={row.id}
-                          consignacion={row}
-                          propietarioName={propietariosMap[row.propietarioId]}
-                          agenteName={agentesMap[row.agenteId]?.name}
-                          agenteAvatar={agentesMap[row.agenteId]?.avatar}
-                          onClick={() => handleView(row)}
-                          onView={() => handleView(row)}
-                          onEdit={() => handleEdit(row)}
-                          onAgendarCita={() => handleAgendarCita(row)}
-                        />
-                      ) : (
-                        <InmuebleSinMandatoCard
-                          key={portafolioRowKey(row)}
-                          inmueble={row}
-                          onClick={() => setMandatoFor(row)}
-                          onCompletarMandato={setMandatoFor}
-                        />
-                      ),
-                    )}
-                  </div>
+                    {paginatedConsignaciones.map((row) => (
+                      // `flex`: la tarjeta sigue llenando el alto de su fila.
+                      <StaggerItem key={portafolioRowKey(row)} className="flex">
+                        {row.kind === 'consignacion' ? (
+                          <ConsignacionCard
+                            consignacion={row}
+                            propietarioName={propietariosMap[row.propietarioId]}
+                            agenteName={agentesMap[row.agenteId]?.name}
+                            agenteAvatar={agentesMap[row.agenteId]?.avatar}
+                            onClick={() => handleView(row)}
+                            onView={() => handleView(row)}
+                            onEdit={() => handleEdit(row)}
+                            onAgendarCita={() => handleAgendarCita(row)}
+                            comercial={comercialPorConsignacion[row.id]}
+                          />
+                        ) : (
+                          <InmuebleSinMandatoCard
+                            inmueble={row}
+                            onClick={() => setMandatoFor(row)}
+                            onCompletarMandato={setMandatoFor}
+                          />
+                        )}
+                      </StaggerItem>
+                    ))}
+                  </Stagger>
                 ) : (
                   <SinDatos
                     hayFiltros={elVacioEsPorLosFiltros}
@@ -649,14 +687,9 @@ function PortafolioContent() {
                     onLimpiarFiltros={limpiarFiltros}
                   />
                 )}
-              </motion.div>
+              </>
             ) : (
-              <motion.div
-                key="table"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-              >
+              <>
                 {paginatedConsignaciones.length > 0 ? (
                   <ConsignacionTable
                     consignaciones={paginatedConsignaciones}
@@ -670,6 +703,7 @@ function PortafolioContent() {
                     onPrepararSinSenal={(c) => void handlePrepararSinSenal(c)}
                     onEliminar={abrirEliminar}
                     onCompletarMandato={setMandatoFor}
+                    comercialPorConsignacion={comercialPorConsignacion}
                   />
                 ) : (
                   <SinDatos
@@ -682,9 +716,9 @@ function PortafolioContent() {
                     onLimpiarFiltros={limpiarFiltros}
                   />
                 )}
-              </motion.div>
+              </>
             )}
-          </AnimatePresence>
+          </CrossFade>
           </EstadoDeDatos>
         </div>
 
@@ -707,10 +741,13 @@ function PortafolioContent() {
             onPageSizeChange={setPageSize}
           />
         )}
-      </motion.div>
+      </div>
 
-      <AlertDialog open={Boolean(porEliminar)} onOpenChange={(abierto) => !abierto && setPorEliminar(null)}>
-        <AlertDialogContent>
+      <AlertDialog
+        open={Boolean(porEliminar)}
+        onOpenChange={(abierto) => !abierto && !eliminando && setPorEliminar(null)}
+      >
+        <AlertDialogContent variant="destructive" icon={<SignOut weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>¿Retirar este inmueble de tu portafolio?</AlertDialogTitle>
             {/* Se dice qué se termina y qué NO se toca. «Eliminar» a secas deja
@@ -724,25 +761,24 @@ function PortafolioContent() {
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          {motivoDelRechazo && (
-            <p
-              role="alert"
-              className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
-            >
-              {motivoDelRechazo}
-            </p>
-          )}
+          <Presence
+            as="p"
+            show={Boolean(motivoDelRechazo)}
+            role="alert"
+            className="rounded-lg border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+          >
+            {motivoDelRechazo}
+          </Presence>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={eliminando}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
-              tone="danger"
               // `preventDefault` para que Radix NO cierre el diálogo al apretar:
               // si el back lo rechaza, cerrarlo se lleva el motivo con él.
               onClick={(e) => {
                 e.preventDefault();
                 void confirmarEliminar();
               }}
-              disabled={eliminando}
+              loading={eliminando}
             >
               {eliminando ? 'Retirando…' : 'Retirar'}
             </AlertDialogAction>

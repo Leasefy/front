@@ -1,16 +1,17 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { Bank, Wallet, House, Star, Warning, CaretRight, TrashSimple, Plus, X, Check } from '@phosphor-icons/react';
+import { Bank, Wallet, House, Star, CaretRight, TrashSimple, Plus, X, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
-import { IconButton } from '@leasefy/cadence';
+import { Collapse, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Spinner } from '@/components/ui/spinner';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import {
   Select,
   SelectTrigger,
@@ -37,7 +38,32 @@ import { paymentMethodsApi } from '@/lib/api/payment-methods.service';
 import { useMyProperties } from '@/lib/hooks/useProperties';
 import { SettingsModal } from './SettingsModal';
 
-export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
+/** Los campos del formulario que pueden tener un error. */
+type CampoDeLaCuenta = 'bankCode' | 'accountType' | 'accountNumber' | 'holderName' | 'document' | 'walletCode' | 'phone';
+
+/**
+ * Nombre en el cuerpo de `POST /landlords/me/payment-methods` → campo del
+ * formulario. `bankName` y `methodType` salen del banco o la billetera elegidos.
+ */
+function mapaDelServidor(metodo: 'bank' | 'wallet'): Partial<Record<string, CampoDeLaCuenta | null>> {
+  return {
+    bankName: metodo === 'bank' ? 'bankCode' : 'walletCode',
+    methodType: metodo === 'bank' ? null : 'walletCode',
+    accountType: 'accountType',
+    accountNumber: 'accountNumber',
+    holderName: 'holderName',
+    holderDocumentNumber: 'document',
+    phoneNumber: 'phone',
+  };
+}
+
+const idDelCampo = (campo: CampoDeLaCuenta) => `cuenta-de-pago-${campo}`;
+
+export function PaymentAccountsSection(
+  // `delay` ya no se usa (la entrada la pone el marco); se conserva para no
+  // romper a quien lo pasa.
+  _props: { delay?: number },
+) {
   const { t } = useI18n();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -83,8 +109,27 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
   const [showPropertyDropdown, setShowPropertyDropdown] = useState(false);
   const propertyDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Per-field validation errors
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  // Per-field validation errors (del cliente o del back), debajo de su campo.
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<CampoDeLaCuenta, string>>>({});
+  const limpiarError = (campo: CampoDeLaCuenta) =>
+    setFieldErrors((prev) => {
+      if (prev[campo] === undefined) return prev;
+      const n = { ...prev };
+      delete n[campo];
+      return n;
+    });
+  /** Las props de accesibilidad de un campo con su error debajo. */
+  const propsDelCampo = (campo: CampoDeLaCuenta) => ({
+    id: idDelCampo(campo),
+    'aria-invalid': fieldErrors[campo] ? true : undefined,
+    'aria-describedby': fieldErrors[campo] ? `${idDelCampo(campo)}-error` : undefined,
+  });
+  const errorDelCampo = (campo: CampoDeLaCuenta) => (
+    <ErrorDelCampo id={`${idDelCampo(campo)}-error`} mensaje={fieldErrors[campo]} />
+  );
+  const enfocar = (campo: CampoDeLaCuenta | undefined) => {
+    if (campo && typeof document !== 'undefined') document.getElementById(idDelCampo(campo))?.focus();
+  };
 
   // Bank form
   const [bankForm, setBankForm] = useState<BankAccountFormData>({
@@ -145,7 +190,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
 
   // Validate based on current method type — per-field errors
   const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
+    const errors: Partial<Record<CampoDeLaCuenta, string>> = {};
     if (accountMethodType === 'bank') {
       if (!bankForm.bankCode) errors.bankCode = t('landlordSettings.paymentAccounts.validation.bankRequired');
       if (!bankForm.accountType) errors.accountType = t('landlordSettings.paymentAccounts.validation.accountTypeRequired');
@@ -160,6 +205,9 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
       if (!walletForm.holderName || walletForm.holderName.length < 3) errors.holderName = t('landlordSettings.paymentAccounts.validation.holderNameRequired');
     }
     setFieldErrors(errors);
+    // Antes, el titular, el banco, el tipo y la billetera tenían error pero no
+    // se pintaban: «Agregar» no hacía nada y no decía por qué.
+    enfocar((Object.keys(errors) as CampoDeLaCuenta[])[0]);
     return Object.keys(errors).length === 0;
   };
 
@@ -169,6 +217,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
     setFieldErrors({});
     setIsLoading(true);
 
+    let newAccount: PaymentAccount;
     try {
       let accountData: Partial<PaymentAccount>;
 
@@ -196,20 +245,42 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
         } as Partial<DigitalWallet>;
       }
 
-      const newAccount = await paymentMethodsApi.create(accountData);
+      newAccount = await paymentMethodsApi.create(accountData);
+    } catch (err) {
+      // 02-10-2026 · Lo que el back rechazó por campo va debajo de SU campo,
+      // con el foco; al toast, sólo lo suelto (regla de oro del traductor).
+      const reparto = repartirErroresDelServidor<CampoDeLaCuenta>(err, {
+        mapa: mapaDelServidor(accountMethodType),
+        porDefecto: t('landlordSettings.toasts.errorAddingAccount'),
+        accion: 'agregar la cuenta',
+      });
+      setFieldErrors(reparto.porCampo);
+      enfocar(reparto.orden[0]);
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
+      setIsLoading(false);
+      return;
+    }
 
-      // Update property assignments if any selected
+    // La cuenta YA quedó creada: si falla asignarle un inmueble, no se puede
+    // decir «no pudimos agregar la cuenta» (antes lo decía y la cuenta estaba).
+    try {
       for (const propId of selectedPropertyIds) {
         await paymentMethodsApi.assignProperty(newAccount.id, propId);
       }
-
       await recargarCuentas();
-
       setShowAddAccountModal(false);
       resetForms();
       toast.success(t('landlordSettings.toasts.accountAdded'));
-    } catch {
-      toast.error(t('landlordSettings.toasts.errorAddingAccount'));
+    } catch (err) {
+      await recargarCuentas();
+      setShowAddAccountModal(false);
+      resetForms();
+      toast.error(
+        `La cuenta quedó creada, pero no pudimos asignarle los inmuebles. ${mensajeParaLaPersona(err, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'asignar los inmuebles',
+        })}`,
+      );
     } finally {
       setIsLoading(false);
     }
@@ -224,8 +295,14 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
       await paymentMethodsApi.update(accountId, { isDefault: true });
       await recargarCuentas();
       toast.success(t('landlordSettings.toasts.accountSetDefault'));
-    } catch {
-      toast.error(t('landlordSettings.toasts.errorUpdatingAccount'));
+    } catch (err) {
+      // Antes: un texto fijo ante cualquier fallo. Por el traductor.
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: t('landlordSettings.toasts.errorUpdatingAccount'),
+          accion: 'marcar la cuenta como principal',
+        }),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -250,8 +327,13 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
       setShowDeleteAccountModal(false);
       setEditingAccount(null);
       toast.success(t('landlordSettings.toasts.accountDeleted'));
-    } catch {
-      toast.error(t('landlordSettings.toasts.errorDeletingAccount'));
+    } catch (err) {
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: t('landlordSettings.toasts.errorDeletingAccount'),
+          accion: 'eliminar la cuenta',
+        }),
+      );
     } finally {
       setIsLoading(false);
     }
@@ -277,10 +359,10 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
 
   return (
     <>
-      <motion.section
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay }}
+      {/* Sin entrada propia (era un fundido que subía 20 px con retraso): la
+          sección entra con el marco de Configuración, que ya anima el cambio
+          de sección. */}
+      <section
         // La tarjeta de Configuración de la inmobiliaria: el título y la bajada
         // de «Cuentas de pago» ya los pone el marco (Nico, 2026-09-15).
         className="rounded-lg border border-border bg-surface overflow-hidden"
@@ -384,13 +466,37 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
             <span className="text-sm font-medium">{t('landlordSettings.paymentAccounts.addAccount')}</span>
           </Button>
         </div>
-      </motion.section>
+      </section>
 
       {/* Unified Add Account Modal */}
       <SettingsModal
         open={showAddAccountModal}
         onClose={() => { setShowAddAccountModal(false); resetForms(); }}
         title={t('landlordSettings.paymentAccounts.modals.addAccount.title')}
+        footer={
+          <>
+            <Button
+              variant="outline"
+              hideArrow
+              disabled={isLoading}
+              onClick={() => { setShowAddAccountModal(false); resetForms(); }}
+            >
+              {t('landlordSettings.modals.cancel')}
+            </Button>
+            <Button
+              hideArrow
+              onClick={handleAddAccount}
+              isLoading={isLoading}
+              disabled={isLoading}
+            >
+              {!isLoading &&
+                (accountMethodType === 'bank' ? <Bank className="w-4 h-4" /> : <Wallet className="w-4 h-4" />)}
+              {isLoading
+                ? t('landlordSettings.paymentAccounts.modals.addAccount.adding')
+                : t('landlordSettings.paymentAccounts.modals.addAccount.addButton')}
+            </Button>
+          </>
+        }
       >
         <div className="space-y-5">
           {/* Segmented Control: Banco | Billetera Digital */}
@@ -401,9 +507,9 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
             <div className="flex gap-1 p-1 bg-surface-muted rounded-lg">
               <button
                 type="button"
-                onClick={() => setAccountMethodType('bank')}
+                onClick={() => { setAccountMethodType('bank'); setFieldErrors({}); }}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-all',
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-colors',
                   accountMethodType === 'bank'
                     ? 'bg-surface text-fg'
                     : 'text-fg-subtle hover:text-fg-muted'
@@ -414,9 +520,9 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
               </button>
               <button
                 type="button"
-                onClick={() => setAccountMethodType('wallet')}
+                onClick={() => { setAccountMethodType('wallet'); setFieldErrors({}); }}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-all',
+                  'flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-colors',
                   accountMethodType === 'wallet'
                     ? 'bg-surface text-fg'
                     : 'text-fg-subtle hover:text-fg-muted'
@@ -438,9 +544,9 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 </label>
                 <Select
                   value={bankForm.bankCode}
-                  onValueChange={(v) => setBankForm(prev => ({ ...prev, bankCode: v as BankCode }))}
+                  onValueChange={(v) => { setBankForm(prev => ({ ...prev, bankCode: v as BankCode })); limpiarError('bankCode'); }}
                 >
-                  <SelectTrigger className="h-12 rounded-lg">
+                  <SelectTrigger className="h-12 rounded-lg" {...propsDelCampo('bankCode')}>
                     <SelectValue placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.selectBank')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -449,6 +555,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     ))}
                   </SelectContent>
                 </Select>
+                {errorDelCampo('bankCode')}
               </div>
 
               {/* Account Type */}
@@ -456,12 +563,12 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 <label className="block text-sm font-medium text-fg-muted mb-2">
                   {t('landlordSettings.paymentAccounts.modals.addBankAccount.accountType')}
                 </label>
-                <div className="flex gap-4">
+                <div className="flex gap-4" role="group" {...propsDelCampo('accountType')} tabIndex={-1}>
                   <button
                     type="button"
-                    onClick={() => setBankForm(prev => ({ ...prev, accountType: 'savings' }))}
+                    onClick={() => { setBankForm(prev => ({ ...prev, accountType: 'savings' })); limpiarError('accountType'); }}
                     className={cn(
-                      'flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-all',
+                      'flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-colors',
                       bankForm.accountType === 'savings'
                         ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 text-[#1A40FF]'
                         : 'border-border text-fg-muted hover:border-border-strong'
@@ -471,9 +578,9 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setBankForm(prev => ({ ...prev, accountType: 'checking' }))}
+                    onClick={() => { setBankForm(prev => ({ ...prev, accountType: 'checking' })); limpiarError('accountType'); }}
                     className={cn(
-                      'flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-all',
+                      'flex-1 py-3 px-4 rounded-lg border text-sm font-medium transition-colors',
                       bankForm.accountType === 'checking'
                         ? 'border-[#1A40FF]/30 bg-[#1A40FF]/10 text-[#1A40FF]'
                         : 'border-border text-fg-muted hover:border-border-strong'
@@ -482,6 +589,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     {t('landlordSettings.paymentAccounts.accountTypes.checking')}
                   </button>
                 </div>
+                {errorDelCampo('accountType')}
               </div>
 
               {/* Account Number */}
@@ -491,15 +599,14 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 </label>
                 <Input
                   type="text"
+                  {...propsDelCampo('accountNumber')}
                   value={bankForm.accountNumber}
-                  onChange={(e) => { setBankForm(prev => ({ ...prev, accountNumber: e.target.value.replace(/\D/g, '') })); setFieldErrors(prev => { const n = { ...prev }; delete n.accountNumber; return n; }); }}
+                  onChange={(e) => { setBankForm(prev => ({ ...prev, accountNumber: e.target.value.replace(/\D/g, '') })); limpiarError('accountNumber'); }}
                   className={cn('h-12 rounded-lg', fieldErrors.accountNumber && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40')}
                   placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.accountNumberPlaceholder')}
                   maxLength={20}
                 />
-                {fieldErrors.accountNumber && (
-                  <p className="text-xs text-danger mt-1">{fieldErrors.accountNumber}</p>
-                )}
+                {errorDelCampo('accountNumber')}
               </div>
 
               {/* Account Holder Name */}
@@ -509,11 +616,13 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 </label>
                 <Input
                   type="text"
+                  {...propsDelCampo('holderName')}
                   value={bankForm.accountHolderName}
-                  onChange={(e) => setBankForm(prev => ({ ...prev, accountHolderName: e.target.value }))}
-                  className="h-12 rounded-lg"
+                  onChange={(e) => { setBankForm(prev => ({ ...prev, accountHolderName: e.target.value })); limpiarError('holderName'); }}
+                  className={cn('h-12 rounded-lg', fieldErrors.holderName && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40')}
                   placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.accountHolderPlaceholder')}
                 />
+                {errorDelCampo('holderName')}
               </div>
 
               {/* Document */}
@@ -523,15 +632,14 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 </label>
                 <Input
                   type="text"
+                  {...propsDelCampo('document')}
                   value={bankForm.accountHolderDocument}
-                  onChange={(e) => { setBankForm(prev => ({ ...prev, accountHolderDocument: e.target.value.replace(/\D/g, '') })); setFieldErrors(prev => { const n = { ...prev }; delete n.document; return n; }); }}
+                  onChange={(e) => { setBankForm(prev => ({ ...prev, accountHolderDocument: e.target.value.replace(/\D/g, '') })); limpiarError('document'); }}
                   className={cn('h-12 rounded-lg', fieldErrors.document && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40')}
                   placeholder={t('landlordSettings.paymentAccounts.modals.addBankAccount.documentPlaceholder')}
                   maxLength={12}
                 />
-                {fieldErrors.document && (
-                  <p className="text-xs text-danger mt-1">{fieldErrors.document}</p>
-                )}
+                {errorDelCampo('document')}
               </div>
             </>
           ) : (
@@ -543,9 +651,9 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 </label>
                 <Select
                   value={walletForm.walletCode}
-                  onValueChange={(v) => setWalletForm(prev => ({ ...prev, walletCode: v as WalletCode }))}
+                  onValueChange={(v) => { setWalletForm(prev => ({ ...prev, walletCode: v as WalletCode })); limpiarError('walletCode'); }}
                 >
-                  <SelectTrigger className="h-12 rounded-lg">
+                  <SelectTrigger className="h-12 rounded-lg" {...propsDelCampo('walletCode')}>
                     <SelectValue placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.selectWallet')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -554,6 +662,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     ))}
                   </SelectContent>
                 </Select>
+                {errorDelCampo('walletCode')}
               </div>
 
               {/* Phone Number */}
@@ -570,16 +679,15 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   </div>
                   <Input
                     type="text"
+                    {...propsDelCampo('phone')}
                     value={walletForm.phoneNumber}
-                    onChange={(e) => { setWalletForm(prev => ({ ...prev, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })); setFieldErrors(prev => { const n = { ...prev }; delete n.phone; return n; }); }}
+                    onChange={(e) => { setWalletForm(prev => ({ ...prev, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })); limpiarError('phone'); }}
                     className={cn('flex-1 h-12 rounded-lg', fieldErrors.phone && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40')}
                     placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.phonePlaceholder')}
                     maxLength={10}
                   />
                 </div>
-                {fieldErrors.phone && (
-                  <p className="text-xs text-danger mt-1">{fieldErrors.phone}</p>
-                )}
+                {errorDelCampo('phone')}
               </div>
 
               {/* Holder Name */}
@@ -589,11 +697,13 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 </label>
                 <Input
                   type="text"
+                  {...propsDelCampo('holderName')}
                   value={walletForm.holderName}
-                  onChange={(e) => setWalletForm(prev => ({ ...prev, holderName: e.target.value }))}
-                  className="h-12 rounded-lg"
+                  onChange={(e) => { setWalletForm(prev => ({ ...prev, holderName: e.target.value })); limpiarError('holderName'); }}
+                  className={cn('h-12 rounded-lg', fieldErrors.holderName && 'border-danger/40 focus-visible:ring-danger/20 focus-visible:border-danger/40')}
                   placeholder={t('landlordSettings.paymentAccounts.modals.addWallet.holderPlaceholder')}
                 />
+                {errorDelCampo('holderName')}
               </div>
             </>
           )}
@@ -609,7 +719,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 type="button"
                 onClick={() => setShowPropertyDropdown(prev => !prev)}
                 className={cn(
-                  'w-full h-10 px-3 pr-10 border rounded-lg text-sm text-left relative transition-all appearance-none cursor-pointer',
+                  'w-full h-10 px-3 pr-10 border rounded-lg text-sm text-left relative transition-[color,background-color,border-color,box-shadow] appearance-none cursor-pointer',
                   showPropertyDropdown
                     ? 'border-[#1A40FF]/30 ring-2 ring-[#1A40FF]/20 bg-surface'
                     : 'border-border bg-surface'
@@ -631,13 +741,15 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                 )} />
               </button>
               {/* Selected chips */}
-              {selectedPropertyIds.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
+              {/* Cada inmueble elegido entra como pastilla y, al quitarlo, SALE
+                  (las demás se corren). Sin pastillas, la fila no ocupa lugar. */}
+              <Stagger className="flex flex-wrap gap-1.5 mt-2 empty:hidden">
                   {selectedPropertyIds.map((pid) => {
                     const prop = landlordProperties.find(p => p.id === pid);
                     if (!prop) return null;
                     return (
-                      <span
+                      <StaggerItem
+                        as="span"
                         key={pid}
                         className="inline-flex items-center gap-1 pl-2 pr-1 py-1 bg-[#EEF1FF] dark:bg-[#1A40FF]/15 text-[#1A40FF] dark:text-[#5570FF] text-xs font-medium rounded-md"
                       >
@@ -651,13 +763,12 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                           icon={<X className="w-3 h-3" />}
                           className="w-4 h-4 min-h-0 rounded-full ml-0.5 hover:bg-[#EEF1FF] dark:hover:bg-[#1A40FF]"
                         />
-                      </span>
+                      </StaggerItem>
                     );
                   })}
-                </div>
-              )}
-              {/* Dropdown panel with checkboxes */}
-              {showPropertyDropdown && (
+              </Stagger>
+              {/* Dropdown panel with checkboxes: se abre y se cierra con su altura. */}
+              <Collapse open={showPropertyDropdown}>
                 <div className="mt-1 border border-border rounded-lg bg-surface overflow-hidden max-h-48 overflow-y-auto">
                   {landlordProperties.map((property) => {
                     const isSelected = selectedPropertyIds.includes(property.id);
@@ -673,7 +784,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                         className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-surface-muted transition-colors text-left"
                       >
                         <div className={cn(
-                          'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all',
+                          'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors',
                           isSelected
                             ? 'border-[#1A40FF]/30 bg-[#1A40FF]'
                             : 'border-border-strong'
@@ -687,7 +798,7 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                     );
                   })}
                 </div>
-              )}
+              </Collapse>
             </div>
           )}
 
@@ -707,55 +818,58 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
               {t('landlordSettings.paymentAccounts.modals.addBankAccount.setDefault')}
             </span>
           </label>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3 pt-2">
-            <Button
-              variant="outline"
-              hideArrow
-              onClick={() => { setShowAddAccountModal(false); resetForms(); }}
-              className="flex-1 rounded-lg"
-            >
-              {t('landlordSettings.modals.cancel')}
-            </Button>
-            <Button
-              hideArrow
-              onClick={handleAddAccount}
-              disabled={isLoading}
-              className="flex-1 rounded-lg"
-            >
-              {isLoading ? (
-                <Spinner size="xs" variant="current" />
-              ) : (
-                accountMethodType === 'bank' ? <Bank className="w-4 h-4" /> : <Wallet className="w-4 h-4" />
-              )}
-              {isLoading
-                ? t('landlordSettings.paymentAccounts.modals.addAccount.adding')
-                : t('landlordSettings.paymentAccounts.modals.addAccount.addButton')}
-            </Button>
-          </div>
         </div>
       </SettingsModal>
 
       {/* Delete Payment Account Modal */}
-      <SettingsModal open={showDeleteAccountModal} onClose={() => { setShowDeleteAccountModal(false); setEditingAccount(null); }} title={t('landlordSettings.paymentAccounts.modals.deleteAccount.title')}>
+      <SettingsModal
+        open={showDeleteAccountModal}
+        onClose={() => { setShowDeleteAccountModal(false); setEditingAccount(null); }}
+        title={t('landlordSettings.paymentAccounts.modals.deleteAccount.title')}
+        variant="destructive"
+        description={t('landlordSettings.paymentAccounts.modals.deleteAccount.confirmMessage')}
+        footer={
+          editingAccount ? (
+            <>
+              <Button
+                variant="outline"
+                hideArrow
+                disabled={isLoading}
+                onClick={() => { setShowDeleteAccountModal(false); setEditingAccount(null); }}
+              >
+                {t('landlordSettings.modals.cancel')}
+              </Button>
+              <Button
+                variant="destructive"
+                hideArrow
+                onClick={handleDeletePaymentAccount}
+                isLoading={isLoading}
+                disabled={isLoading || getPropertyCountForAccount(editingAccount.id) > 0 || (editingAccount.isDefault && paymentAccounts.length > 1)}
+              >
+                {!isLoading && <TrashSimple className="w-4 h-4" />}
+                {isLoading ? t('landlordSettings.paymentAccounts.modals.deleteAccount.deleting') : t('landlordSettings.paymentAccounts.modals.deleteAccount.deleteButton')}
+              </Button>
+            </>
+          ) : null
+        }
+      >
         <div className="space-y-4">
           {editingAccount && (
             <>
-              <div className="p-4 bg-danger-soft border border-danger/30 rounded-lg flex gap-3">
-                <div className="w-10 h-10 rounded-xl bg-danger-soft flex items-center justify-center flex-shrink-0">
-                  <Warning className="w-5 h-5 text-danger" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-danger">
-                    {t('landlordSettings.paymentAccounts.modals.deleteAccount.confirmMessage')}
-                  </p>
-                  <p className="text-xs text-danger mt-1">
+              <div className="flex items-center gap-3 rounded-lg border border-border p-4">
+                {isBankAccount(editingAccount) ? (
+                  <Bank className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden />
+                ) : (
+                  <Wallet className="h-5 w-5 shrink-0 text-fg-muted" aria-hidden />
+                )}
+                <p className="text-sm text-fg">
+                  {isBankAccount(editingAccount) ? editingAccount.bankName : editingAccount.walletName}{' '}
+                  <span className="font-mono tabular-nums text-fg-muted">
                     {isBankAccount(editingAccount)
-                      ? `${editingAccount.bankName} ${maskAccountNumber(editingAccount.accountNumber)}`
-                      : `${editingAccount.walletName} ${maskPhoneNumber(editingAccount.phoneNumber)}`}
-                  </p>
-                </div>
+                      ? maskAccountNumber(editingAccount.accountNumber)
+                      : maskPhoneNumber(editingAccount.phoneNumber)}
+                  </span>
+                </p>
               </div>
               {getPropertyCountForAccount(editingAccount.id) > 0 && (
                 <div className="p-3 bg-warning-soft border border-warning/30 rounded-lg">
@@ -771,26 +885,6 @@ export function PaymentAccountsSection({ delay = 0.18 }: { delay?: number }) {
                   </p>
                 </div>
               )}
-              <div className="flex gap-3 pt-2">
-                <Button
-                  variant="outline"
-                  hideArrow
-                  onClick={() => { setShowDeleteAccountModal(false); setEditingAccount(null); }}
-                  className="flex-1 rounded-lg"
-                >
-                  {t('landlordSettings.modals.cancel')}
-                </Button>
-                <Button
-                  variant="destructive"
-                  hideArrow
-                  onClick={handleDeletePaymentAccount}
-                  disabled={isLoading || getPropertyCountForAccount(editingAccount.id) > 0 || (editingAccount.isDefault && paymentAccounts.length > 1)}
-                  className="flex-1 rounded-lg"
-                >
-                  {isLoading ? <Spinner size="xs" variant="current" /> : <TrashSimple className="w-4 h-4" />}
-                  {isLoading ? t('landlordSettings.paymentAccounts.modals.deleteAccount.deleting') : t('landlordSettings.paymentAccounts.modals.deleteAccount.deleteButton')}
-                </Button>
-              </div>
             </>
           )}
         </div>

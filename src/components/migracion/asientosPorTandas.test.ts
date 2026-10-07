@@ -118,11 +118,12 @@ describe('revisarPorTandas', () => {
     expect(r.revision.rechazadas).toBe(1_000);
     expect(r.revision.yaMigradas).toBe(500);
     // «240805 no está en el PUC» se dice UNA vez, con sus tres filas juntas.
+    // QA-MIG-B: las de la segunda tanda con su número en el ARCHIVO (5.000 + n).
     expect(r.revision.cuentasFaltantes).toEqual([
-      { codigo: '240805', filas: [3, 7, 9] },
-      { codigo: '415510', filas: [11] },
+      { codigo: '240805', filas: [3, 7, 5_009] },
+      { codigo: '415510', filas: [5_011] },
     ]);
-    expect(r.revision.motivos).toEqual([{ motivo: 'cuenta inexistente', filas: [3, 7, 9] }]);
+    expect(r.revision.motivos).toEqual([{ motivo: 'cuenta inexistente', filas: [3, 7, 5_009] }]);
   });
 
   /*
@@ -365,3 +366,45 @@ describe('aplicarPorTandas · declara el avance del archivo', () => {
   });
 });
 
+describe('QA-MIG-B — números de asiento del archivo entero', () => {
+  it('🔴 una rechazada de la segunda tanda se muestra con su número en el archivo, y los avisos se unen', async () => {
+    const revisar = vi
+      .fn()
+      .mockResolvedValueOnce(revision({ total: 5_000, listas: 5_000, avisos: [{ motivo: 'nota', filas: [2] }] }))
+      .mockResolvedValueOnce(
+        revision({
+          total: 10,
+          rechazadas: 1,
+          avisos: [{ motivo: 'nota', filas: [4] }],
+          filas: [{ fila: 4, numeroOriginal: 'X', estado: 'RECHAZADA', errores: ['x'], advertencias: [], clave: 'c' }],
+        }),
+      );
+    const r = await revisarPorTandas('L', asientos(5_010), revisar);
+    expect(r.revision.filas[0].fila).toBe(5_004);
+    expect(r.revision.avisos).toEqual([{ motivo: 'nota', filas: [2, 5_004] }]);
+  });
+});
+
+describe('MC-27 (MIG-C 04-10): una tanda no separa dos piezas iguales', () => {
+  it('🔴 el corte se corre hacia atrás para que dos asientos sin número iguales vayan en el mismo envío', async () => {
+    const igual = (): AsientoMigrado => ({
+      fecha: '2026-08-20',
+      descripcion: 'Comisión transferencia',
+      movimientos: [{ codigoCuenta: '530505', debito: '3.500' }, { codigoCuenta: '1110', credito: '3.500' }],
+    });
+    const lista: AsientoMigrado[] = [...asientos(2), igual(), igual(), ...asientos(2)];
+    const envios: { asientos: AsientoMigrado[]; desde?: number }[] = [];
+    const aplicar = vi.fn(async (l: { asientos: AsientoMigrado[]; desde?: number }) => {
+      envios.push(l);
+      return {
+        lote: 'L', total: l.asientos.length, aplicados: l.asientos.length, restantes: 0, omitidos: 0, yaMigrados: 0,
+        primerNumero: null, ultimoNumero: null, cuentasFaltantes: [], motivos: [], fallasAlEscribir: [],
+      } as unknown as InformeDeMigracion;
+    });
+    await aplicarPorTandas('L', lista, aplicar as never, undefined, { tamano: 3 });
+    // Con tamaño 3 el corte caía entre las dos iguales (índices 2 y 3).
+    const dondeVan = envios.map((e) => e.asientos.filter((a) => a.descripcion === 'Comisión transferencia').length);
+    expect(dondeVan).toContain(2);
+    expect(envios.map((e) => e.desde)).toEqual([0, 2, 5]);
+  });
+});

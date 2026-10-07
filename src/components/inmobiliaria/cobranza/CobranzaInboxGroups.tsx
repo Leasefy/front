@@ -41,6 +41,7 @@ import {
 
 import { Button } from '@/components/ui'
 import { Badge, type BadgeProps } from '@/components/ui/badge'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 
 // ── Grupos del inbox ──────────────────────────────────────────────────────────
 
@@ -235,11 +236,11 @@ export function InboxItemCard({
           <span className="text-sm font-semibold text-fg truncate">
             {item.inquilino || VACIO}
           </span>
-          {unread && (
+          <Presence show={unread} as="span" direction="none" initial={false} className="shrink-0">
             <Badge variant="default" className="shrink-0">
               Nuevo
             </Badge>
-          )}
+          </Presence>
           <Badge variant={GRUPO_BADGE_VARIANT[item.grupo]} className="gap-1 shrink-0">
             <GrupoIcon className="w-3 h-3" weight="duotone" aria-hidden="true" />
             {meta.label}
@@ -360,32 +361,40 @@ export function InboxThreadPanel({
   formatRecibido,
   onResponder,
 }: InboxThreadPanelProps) {
+  // Movimiento: cada estado en un `CrossFade` con su clave (cargando →
+  // conversación, → sin mensajes); los mensajes entran escalonados.
   if (isLoading) {
     return (
+      <CrossFade swapKey="cargando">
       <div
         className="rounded-lg border border-border bg-surface-muted p-4 text-sm text-fg-muted"
         role="status"
       >
         Cargando conversación…
       </div>
+      </CrossFade>
     )
   }
 
   if (messages.length === 0) {
     return (
+      <CrossFade swapKey="sin-mensajes">
       <div className="rounded-lg border border-border bg-surface-muted p-4 text-sm text-fg-muted">
         Esta conversación todavía no tiene mensajes para mostrar.
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="conversacion">
     <div className="rounded-lg border border-border bg-surface-muted p-4 space-y-3">
-      <ul className="space-y-2.5" aria-label="Mensajes de la conversación">
+      <Stagger as="ul" className="space-y-2.5" aria-label="Mensajes de la conversación">
         {messages.map((m) => {
           const inbound = m.direction === 'inbound'
           return (
-            <li
+            <StaggerItem
+              as="li"
               key={m.id}
               className={`flex ${inbound ? 'justify-start' : 'justify-end'}`}
             >
@@ -409,10 +418,10 @@ export function InboxThreadPanel({
                   </p>
                 )}
               </div>
-            </li>
+            </StaggerItem>
           )
         })}
-      </ul>
+      </Stagger>
 
       <div className="flex items-center justify-end gap-2 border-t border-border pt-3">
         {onMarkRead && (
@@ -439,5 +448,6 @@ export function InboxThreadPanel({
         )}
       </div>
     </div>
+    </CrossFade>
   )
 }

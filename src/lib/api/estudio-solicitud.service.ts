@@ -17,7 +17,9 @@
  *    existe un estudio para esta persona: no se cobra de nuevo.
  */
 
-import { apiClient, ApiError } from '@/lib/api/client'
+import { apiClient } from '@/lib/api/client'
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 
 export interface CrearOrdenPreScoringRequest {
   /** Cédula, solo dígitos (6–10). */
@@ -55,15 +57,136 @@ export interface PreScoringOrdenExistente {
 
 export type CrearOrdenPreScoringResponse = PreScoringOrdenNueva | PreScoringOrdenExistente
 
-export type PreScoringErrorKind = 'validation' | 'unauthorized' | 'unavailable' | 'network'
+/**
+ * Qué pasó, para quien llama (02-10-2026, sistema de errores):
+ *  · `validation`: un 400/422; trae `porCampo` con cada problema en SU campo;
+ *  · `unauthorized`: 401 (sesión vencida) o 403;
+ *  · `conflict`: un 409; el `message` del back dice qué choca;
+ *  · `rejected`: otro 4xx (404, 429…), con lo que dijo el back;
+ *  · `ours`: un 5xx o una respuesta que no se entiende; es nuestro, con la referencia;
+ *  · `unavailable`: una caída (503 `SERVICIO_NO_DISPONIBLE`, Leasefy sin responder);
+ *  · `network`: no hubo respuesta. SÓLO acá se habla de la conexión.
+ *
+ * Antes un 409 y un 5xx decían «El servicio no está disponible» y un 400 decía
+ * «Revisa los datos ingresados» sin decir cuál.
+ */
+export type PreScoringErrorKind =
+  | 'validation'
+  | 'unauthorized'
+  | 'conflict'
+  | 'rejected'
+  | 'ours'
+  | 'unavailable'
+  | 'network'
+
+/** Los campos del formulario de `/aprobacion` (`PreApprovalFormFields`). */
+export type CampoDelEstudio =
+  | 'nombres'
+  | 'apellidos'
+  | 'email'
+  | 'cedula'
+  | 'phone'
+  | 'ciudad'
+  | 'canon'
+  | 'tipoInmueble'
+  | 'consent'
+
+const CAMPOS_DEL_ESTUDIO: readonly CampoDelEstudio[] = [
+  'nombres',
+  'apellidos',
+  'email',
+  'cedula',
+  'phone',
+  'ciudad',
+  'canon',
+  'tipoInmueble',
+  'consent',
+]
+
+/** El nombre del dato en el cuerpo (snake_case del contrato) → el campo del formulario. */
+const CAMPO_DEL_FORMULARIO: Partial<Record<string, CampoDelEstudio>> = {
+  cedula: 'cedula',
+  ciudad: 'ciudad',
+  canon_mensual_cop: 'canon',
+  tipo_inmueble: 'tipoInmueble',
+  'candidate.names': 'nombres',
+  names: 'nombres',
+  'candidate.surnames': 'apellidos',
+  surnames: 'apellidos',
+  'candidate.email': 'email',
+  email: 'email',
+  phoneE164: 'phone',
+  consent_granted: 'consent',
+}
+
+const ACCION = 'crear tu estudio'
+const SESION_VENCIDA = 'Tu sesión expiró. Inicia sesión de nuevo para continuar.'
 
 export class PreScoringError extends Error {
   constructor(
     public readonly kind: PreScoringErrorKind,
     message: string,
+    /** Lo que el back rechazó, en el campo del formulario que corresponde. */
+    public readonly porCampo: Partial<Record<CampoDelEstudio, string>> = {},
+    /** El error original, para quien quiera leer `referencia` o `code`. */
+    public readonly original?: unknown,
+    /**
+     * Lo que no tiene campo donde ir (va al pie del formulario). En un 400
+     * con todo repartido queda vacío y el `message` sólo invita a mirar los
+     * campos marcados.
+     */
+    public readonly sueltos: string[] = message ? [message] : [],
   ) {
     super(message)
     this.name = 'PreScoringError'
+  }
+}
+
+/** El fallo de `POST /pre-scoring`, leído con el traductor de la plataforma. */
+function comoPreScoringError(err: unknown): PreScoringError {
+  const fallo = leerFallo(err)
+  switch (fallo.tipo) {
+    case 'sinRespuesta':
+      return new PreScoringError('network', mensajeParaLaPersona(err), {}, err)
+    case 'leasefyNoResponde':
+    case 'servicioCaido':
+      return new PreScoringError('unavailable', mensajeParaLaPersona(err, { accion: ACCION }), {}, err)
+    case 'sesion':
+      return new PreScoringError('unauthorized', SESION_VENCIDA, {}, err)
+    case 'sinPermiso':
+      return new PreScoringError(
+        'unauthorized',
+        mensajeParaLaPersona(err, { porDefecto: 'No tienes permiso para pedir este estudio.' }),
+        {},
+        err,
+      )
+    case 'datos': {
+      const reparto = repartirErroresDelServidor<CampoDelEstudio>(err, {
+        mapa: CAMPO_DEL_FORMULARIO,
+        campos: CAMPOS_DEL_ESTUDIO,
+        accion: ACCION,
+        porDefecto: 'Hay un dato que no pudimos aceptar. Revisa el formulario e intenta de nuevo.',
+      })
+      // Todo quedó en su campo: el mensaje general sólo invita a mirarlos.
+      const mensaje = reparto.sueltos.length
+        ? reparto.sueltos.join(' · ')
+        : 'Revisa los campos marcados.'
+      return new PreScoringError('validation', mensaje, reparto.porCampo, err, reparto.sueltos)
+    }
+    case 'conflicto':
+      return new PreScoringError(
+        'conflict',
+        mensajeParaLaPersona(err, { porDefecto: 'Ya hay una solicitud de estudio en curso para estos datos.' }),
+        {},
+        err,
+      )
+    default:
+      return new PreScoringError(
+        fallo.tipo === 'nuestro' || fallo.tipo === 'desconocido' ? 'ours' : 'rejected',
+        mensajeParaLaPersona(err, { accion: ACCION }),
+        {},
+        err,
+      )
   }
 }
 
@@ -78,9 +201,10 @@ interface RawPreScoringResponse {
 }
 
 /**
- * Crea la orden de pre-scoring. Lanza `PreScoringError` con un `kind` y un
- * mensaje en español presentable ante cualquier falla — sin fallback de
- * demo: acá no hay dato inventado que mostrar, el flujo termina en un pago
+ * Crea la orden de pre-scoring. Lanza `PreScoringError` con un `kind`, un
+ * mensaje en español presentable (el traductor de la plataforma, con la regla
+ * de oro) y, en un 400, cada problema en su campo (`porCampo`) — sin fallback
+ * de demo: acá no hay dato inventado que mostrar, el flujo termina en un pago
  * real.
  */
 export async function crearOrdenPreScoring(
@@ -101,31 +225,7 @@ export async function crearOrdenPreScoring(
   try {
     raw = await apiClient.post<RawPreScoringResponse>('/pre-scoring', body)
   } catch (err) {
-    if (err instanceof ApiError) {
-      if (err.status === 400 || err.status === 422) {
-        throw new PreScoringError('validation', 'Revisa los datos ingresados e intenta de nuevo.')
-      }
-      if (err.status === 401 || err.status === 403) {
-        throw new PreScoringError(
-          'unauthorized',
-          'Tu sesión expiró. Inicia sesión de nuevo para continuar.',
-        )
-      }
-      if (err.status === 0) {
-        throw new PreScoringError(
-          'network',
-          'No pudimos conectarnos. Verifica tu conexión e intenta de nuevo.',
-        )
-      }
-      throw new PreScoringError(
-        'unavailable',
-        'El servicio no está disponible en este momento. Intenta más tarde.',
-      )
-    }
-    throw new PreScoringError(
-      'network',
-      'No pudimos conectarnos. Verifica tu conexión e intenta de nuevo.',
-    )
+    throw comoPreScoringError(err)
   }
 
   if (
@@ -148,9 +248,11 @@ export async function crearOrdenPreScoring(
   }
 
   // Una respuesta 2xx con una forma que no reconocemos es tan inválida como
-  // un error: no se inventa una orden a partir de un dato que no vino.
+  // un error: no se inventa una orden a partir de un dato que no vino. Es
+  // nuestro (el back respondió algo que el front no sabe leer), no del
+  // servicio ni de la persona.
   throw new PreScoringError(
-    'unavailable',
-    'El servicio no está disponible en este momento. Intenta más tarde.',
+    'ours',
+    `No pudimos ${ACCION}: algo falló de nuestro lado. No es nada que hayas hecho; prueba de nuevo en un momento.`,
   )
 }

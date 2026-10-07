@@ -24,14 +24,16 @@
  *   1. **cuando todavía es el sugerido, lo dice**. Una lista que parece propia y
  *      no lo es hace que nadie la revise, y el día que el candidato sube los
  *      papeles equivocados nadie entiende por qué.
- *   2. 🔴 **el estudio de Leasefy no se puede apagar** (F-08: «nunca se firma o
- *      postula sin el estudio»). Se muestra con candado y sin interruptor, no
+ *   2. 🔴 **el estudio de Leasefy es OPCIONAL para todos y no se edita**
+ *      (Nico, 04-10-2026: «el estudio es opcional, no es obligatorio»; antes
+ *      F-08 lo hacía obligatorio). Se muestra con candado y sin interruptor, no
  *      con un interruptor que después devuelve un 409: un control deshabilitado
  *      con su porqué al lado enseña la regla; uno que falla, enseña a
  *      desconfiar de la pantalla.
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useId, useMemo, useState } from 'react'
+import { CrossFade, MotionIndicator, Stagger, StaggerItem } from '@leasefy/cadence'
 import { Checkbox } from '@/components/ui/checkbox';
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano'
 import {
@@ -39,7 +41,6 @@ import {
   Lock,
   Plus,
   Trash,
-  X,
   FileArrowUp,
   TextAa,
   Handshake,
@@ -48,8 +49,28 @@ import type { Icon } from '@phosphor-icons/react'
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
-import { useLenis } from '@/components/providers/SmoothScroll'
 import { toast } from '@/components/ui/toast'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import {
   Badge,
   Button,
@@ -89,25 +110,12 @@ function claseDe(clase: string) {
   return CLASE[clase as Clase] ?? { texto: clase, icono: ListChecks }
 }
 
-/** El 400/409 del back trae su motivo redactado: vale más que un genérico. */
-function mensajeDeError(e: unknown, porDefecto: string): string {
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: unknown }).message
-    if (typeof m === 'string' && m.trim()) return m
-  }
-  return porDefecto
-}
-
-/**
- * 🔴 DESIGN §8: todo modal para a Lenis mientras está abierto y lo vuelve a
- * arrancar al cerrar. El contenedor que scrollea lleva `data-lenis-prevent`.
- */
-function useLenisQuieto() {
-  const lenis = useLenis()
-  useEffect(() => {
-    lenis.stop()
-    return () => lenis.start()
-  }, [lenis])
+type CampoDelRequisito = 'perfil' | 'etiqueta' | 'detalle'
+const CAMPOS_DEL_REQUISITO: readonly CampoDelRequisito[] = ['perfil', 'etiqueta', 'detalle']
+const ID_DEL_CAMPO: Record<CampoDelRequisito, string> = {
+  perfil: 'req-perfil',
+  etiqueta: 'req-etiqueta',
+  detalle: 'req-detalle',
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -125,7 +133,6 @@ function DialogoDeRequisito({
   onCerrar: () => void
   onCreado: () => void
 }) {
-  useLenisQuieto()
   const [perfil, setPerfil] = useState(
     perfilSugerido ?? perfiles[0]?.perfil ?? '',
   )
@@ -134,10 +141,17 @@ function DialogoDeRequisito({
   const [clase, setClase] = useState<Clase>('DOCUMENTO')
   const [obligatorio, setObligatorio] = useState(true)
   const [guardando, setGuardando] = useState(false)
+  // Lo que el back rechazó, debajo de su campo (02-10-2026).
+  const [errores, setErrores] = useState<Partial<Record<CampoDelRequisito, string>>>({})
+  const aria = (campo: CampoDelRequisito) =>
+    errores[campo]
+      ? { 'aria-invalid': true as const, 'aria-describedby': `${ID_DEL_CAMPO[campo]}-error` }
+      : {}
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!etiqueta.trim() || !perfil) return
+    setErrores({})
     setGuardando(true)
     try {
       await postulacionesApi.crearRequisito({
@@ -151,45 +165,44 @@ function DialogoDeRequisito({
       invalidar('postulaciones')
       onCreado()
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo agregar el requisito'))
+      const reparto = repartirErroresDelServidor(err, {
+        campos: CAMPOS_DEL_REQUISITO,
+        porDefecto: 'No se pudo agregar el requisito',
+        accion: 'agregar el requisito',
+      })
+      setErrores(reparto.porCampo)
+      const primero = reparto.orden[0]
+      if (primero) document.getElementById(ID_DEL_CAMPO[primero])?.focus()
+      if (reparto.sueltos.length) toast.error(reparto.sueltos.join(' · '))
     } finally {
       setGuardando(false)
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={guardando ? undefined : onCerrar}
-      />
-      <div
-        data-lenis-prevent
-        style={{ overscrollBehavior: 'contain' }}
-        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-background"
-      >
-        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-border bg-background px-6 py-4">
-          <div className="space-y-0.5">
-            <h2 className="text-base font-semibold text-fg">
-              Agregar un requisito
-            </h2>
-            <p className="text-sm text-fg-muted">
-              Lo va a ver quien se postule con ese perfil, al momento de aplicar.
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            hideArrow
-            onClick={onCerrar}
-            disabled={guardando}
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        // Mientras se guarda no se sale (ni con Esc, ni con el velo, ni con la ✕).
+        if (!abierto && !guardando) onCerrar()
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Agregar un requisito</DialogTitle>
+          <DialogDescription>
+            Lo va a ver quien se postule con ese perfil, al momento de aplicar.
+          </DialogDescription>
+        </DialogHeader>
 
-        <form onSubmit={enviar} className="space-y-4 p-6" data-testid="form-requisito">
+        {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
+            el botón de agregar lo apunta con `form=`. */}
+        <form
+          id={ID_DEL_FORM_DE_REQUISITO}
+          onSubmit={enviar}
+          className="space-y-4"
+          data-testid="form-requisito"
+        >
           <div className="space-y-1.5">
             <Label htmlFor="req-perfil">¿A qué perfil se lo pides?</Label>
             <select
@@ -198,6 +211,7 @@ function DialogoDeRequisito({
               onChange={(e) => setPerfil(e.target.value)}
               className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm"
               data-testid="req-perfil"
+              {...aria('perfil')}
             >
               {perfiles.map((p) => (
                 <option key={p.perfil} value={p.perfil}>
@@ -205,6 +219,7 @@ function DialogoDeRequisito({
                 </option>
               ))}
             </select>
+            <ErrorDelCampo id="req-perfil-error" mensaje={errores.perfil} className="mt-0" />
           </div>
 
           <div className="space-y-1.5">
@@ -217,7 +232,9 @@ function DialogoDeRequisito({
               required
               placeholder="Certificado de ingresos de contador público"
               data-testid="req-etiqueta"
+              {...aria('etiqueta')}
             />
+            <ErrorDelCampo id="req-etiqueta-error" mensaje={errores.etiqueta} className="mt-0" />
           </div>
 
           <div className="space-y-1.5">
@@ -229,11 +246,14 @@ function DialogoDeRequisito({
               maxLength={300}
               rows={2}
               placeholder="Firmado, con tarjeta profesional y no mayor a 30 días."
+              {...aria('detalle')}
             />
-            <p className="text-xs text-fg-subtle">
-              Lo que escribas acá es lo que el candidato lee. Mientras más
-              preciso, menos papeles mal mandados.
-            </p>
+            <ErrorDelCampo
+              id="req-detalle-error"
+              mensaje={errores.detalle}
+              className="mt-0"
+              pista="Lo que escribas acá es lo que el candidato lee. Mientras más preciso, menos papeles mal mandados."
+            />
           </div>
 
           <fieldset className="space-y-1.5">
@@ -281,23 +301,33 @@ function DialogoDeRequisito({
             </span>
           </label>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={onCerrar} disabled={guardando}>
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={guardando || !etiqueta.trim()}
-              data-testid="guardar-requisito"
-            >
-              {guardando ? 'Agregando…' : 'Agregar'}
-            </Button>
-          </div>
         </form>
-      </div>
-    </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            hideArrow
+            onClick={onCerrar}
+            disabled={guardando}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={ID_DEL_FORM_DE_REQUISITO}
+            disabled={guardando || !etiqueta.trim()}
+            data-testid="guardar-requisito"
+          >
+            {guardando ? 'Agregando…' : 'Agregar'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
+
+const ID_DEL_FORM_DE_REQUISITO = 'form-agregar-requisito'
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Un requisito
@@ -319,8 +349,13 @@ function FilaDeRequisito({
   onBorrar: () => void
 }) {
   const { texto, icono: Icono } = claseDe(r.clase)
+  // «Obligatorio | Opcional»: la píldora de la elegida se DESLIZA a la otra.
+  const indicador = `${useId()}-obligatorio`
+  // Un `StaggerItem`: agregar o quitar un requisito lo hace entrar o salir, y
+  // los de abajo se corren a su lugar.
   return (
-    <li
+    <StaggerItem
+      as="li"
       className="flex flex-wrap items-start justify-between gap-3 py-3"
       data-testid={`requisito-${r.id}`}
     >
@@ -334,7 +369,7 @@ function FilaDeRequisito({
           <p className="flex items-center gap-2 font-medium text-fg">
             {r.etiqueta}
             {r.esElEstudio ? (
-              <Lock className="h-4 w-4 text-fg-subtle" aria-label="No se puede apagar" />
+              <Lock className="h-4 w-4 text-fg-subtle" aria-label="No se puede cambiar" />
             ) : null}
           </p>
           {r.detalle ? <p className="text-sm text-fg-muted">{r.detalle}</p> : null}
@@ -342,14 +377,14 @@ function FilaDeRequisito({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        {/* 🔴 F-08: el estudio no se puede volver opcional. Va como etiqueta
-            fija con su porqué al lado, no como un control que después
-            devuelve 409. */}
+        {/* 🔴 El estudio es opcional para todos (Nico, 04-10-2026). Va como
+            etiqueta fija con su porqué al lado, no como un control que
+            después devuelve 409. */}
         {r.esElEstudio ? (
           <>
-            <Badge variant="default">Obligatorio</Badge>
+            <Badge variant="secondary">Opcional</Badge>
             <span className="text-xs text-fg-subtle" data-testid={`estudio-candado-${r.id}`}>
-              Nadie se postula ni firma sin estudio
+              No frena la postulación: quien no lo tiene te llega marcado «Sin estudio»
             </span>
           </>
         ) : puedeEditar && !esElPreset ? (
@@ -378,13 +413,16 @@ function FilaDeRequisito({
                     if (r.obligatorio !== o.valor) onAlternar()
                   }}
                   className={cn(
-                    'px-3 py-1 text-xs transition-colors disabled:opacity-50',
+                    'relative isolate px-3 py-1 text-xs transition-colors disabled:opacity-50',
                     r.obligatorio === o.valor
-                      ? 'bg-fg font-medium text-background'
+                      ? 'font-medium text-background'
                       : 'text-fg-muted hover:text-fg',
                   )}
                   data-testid={`poner-${o.valor ? 'obligatorio' : 'opcional'}-${r.id}`}
                 >
+                  {r.obligatorio === o.valor && (
+                    <MotionIndicator layoutId={indicador} className="inset-0 -z-10 bg-fg" />
+                  )}
                   {o.texto}
                 </button>
               ))}
@@ -408,7 +446,7 @@ function FilaDeRequisito({
           </Badge>
         )}
       </div>
-    </li>
+    </StaggerItem>
   )
 }
 
@@ -421,6 +459,7 @@ export function RequisitosClient() {
   const puedeEditar = canAccess('configuracion', 'edit')
 
   const [perfil, setPerfil] = useState<string | null>(null)
+  const indicadorDelPerfil = `${useId()}-perfil`
   const datos = useCrm(
     () => postulacionesApi.requisitos(perfil ?? undefined),
     [perfil],
@@ -476,7 +515,12 @@ export function RequisitosClient() {
       toast.success('Ya es tu lista: ahora puedes editarla, agregar y quitar.')
       invalidar('postulaciones')
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo guardar la lista'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo guardar la lista',
+          accion: 'guardar la lista',
+        }),
+      )
     } finally {
       setSembrando(false)
     }
@@ -488,7 +532,12 @@ export function RequisitosClient() {
       await postulacionesApi.editarRequisito(id, { obligatorio })
       invalidar('postulaciones')
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo cambiar el requisito'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo cambiar el requisito',
+          accion: 'cambiar el requisito',
+        }),
+      )
     } finally {
       setTocando(null)
     }
@@ -502,7 +551,12 @@ export function RequisitosClient() {
       invalidar('postulaciones')
       setPorBorrar(null)
     } catch (err) {
-      toast.error(mensajeDeError(err, 'No se pudo quitar el requisito'))
+      toast.error(
+        mensajeParaLaPersona(err, {
+          porDefecto: 'No se pudo quitar el requisito',
+          accion: 'quitar el requisito',
+        }),
+      )
     } finally {
       setTocando(null)
     }
@@ -515,10 +569,18 @@ export function RequisitosClient() {
           <h1 className="text-2xl font-semibold tracking-tight">
             Requisitos por tipo de inquilino
           </h1>
-          <p className="text-sm text-fg-muted">
-            Esto es exactamente lo que ve quien se postula a uno de tus
-            inmuebles: los papeles que le pides según su perfil. Es la política
-            de riesgo de esta inmobiliaria, y la defines tú.
+          {/*
+            🔴 QA-IA-A (04-10-2026): decía «Esto es exactamente lo que ve quien
+            se postula», y no era cierto: el formulario de postulación le pide
+            a TODOS la cédula y el extracto bancario, sin leer esta lista (ni
+            conoce los perfiles Empresa y Extranjero). Hasta que el formulario
+            la lea, la pantalla dice cómo se usa hoy.
+          */}
+          <p className="text-sm text-fg-muted" data-testid="requisitos-como-se-usa">
+            Los papeles que le pides a cada perfil: es la política de riesgo de
+            esta inmobiliaria, y la defines tú. Hoy el formulario de postulación
+            le pide a todos la cédula y el extracto bancario; lo demás de esta
+            lista se lo pides al candidato con «Pedir info» desde su ficha.
           </p>
         </div>
         {puedeEditar && !esElPreset && perfiles.length > 0 ? (
@@ -584,13 +646,19 @@ export function RequisitosClient() {
                         aria-selected={activa}
                         onClick={() => setPerfil(p.perfil)}
                         className={cn(
-                          'shrink-0 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm transition-colors',
-                          activa
-                            ? 'border-fg font-medium text-fg'
-                            : 'border-transparent text-fg-muted hover:text-fg',
+                          'relative shrink-0 whitespace-nowrap border-b-2 border-transparent px-4 py-2.5 text-sm transition-colors',
+                          activa ? 'font-medium text-fg' : 'text-fg-muted hover:text-fg',
                         )}
                         data-testid={p.perfil ? `perfil-${p.perfil}` : 'perfil-todos'}
                       >
+                        {/* El subrayado de la activa (el mismo de antes), que
+                            se DESLIZA a la pestaña elegida. */}
+                        {activa && (
+                          <MotionIndicator
+                            layoutId={indicadorDelPerfil}
+                            className="inset-x-0 -bottom-0.5 h-0.5 bg-fg"
+                          />
+                        )}
                         {p.nombre}
                       </button>
                     )
@@ -630,8 +698,10 @@ export function RequisitosClient() {
                   />
                 }
               >
+                {/* Otro perfil: la lista vieja se va rápido y entra la nueva. */}
+                <CrossFade swapKey={perfil ?? 'todos'}>
                 {perfil ? (
-                  <ul className="divide-y" data-testid="lista-de-requisitos">
+                  <Stagger as="ul" className="divide-y" data-testid="lista-de-requisitos">
                     {requisitos.map((r) => (
                       <FilaDeRequisito
                         key={r.id}
@@ -643,7 +713,7 @@ export function RequisitosClient() {
                         onBorrar={() => setPorBorrar(r)}
                       />
                     ))}
-                  </ul>
+                  </Stagger>
                 ) : (
                   <div className="space-y-6" data-testid="lista-de-requisitos">
                     {grupos.map((g) => (
@@ -655,7 +725,7 @@ export function RequisitosClient() {
                             {g.items.length === 1 ? 'requisito' : 'requisitos'}
                           </span>
                         </h3>
-                        <ul className="divide-y border-t">
+                        <Stagger as="ul" className="divide-y border-t">
                           {g.items.map((r) => (
                             <FilaDeRequisito
                               key={r.id}
@@ -669,11 +739,12 @@ export function RequisitosClient() {
                               onBorrar={() => setPorBorrar(r)}
                             />
                           ))}
-                        </ul>
+                        </Stagger>
                       </section>
                     ))}
                   </div>
                 )}
+                </CrossFade>
               </EstadoDeDatos>
             </CardContent>
           </Card>
@@ -718,42 +789,39 @@ function ConfirmarBorrado({
   onCerrar: () => void
   onConfirmar: () => void
 }) {
-  useLenisQuieto()
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={ocupado ? undefined : onCerrar}
-      />
-      <div
-        data-lenis-prevent
-        style={{ overscrollBehavior: 'contain' }}
-        className="relative w-full max-w-md overflow-y-auto rounded-lg bg-background p-6"
-        role="alertdialog"
-        aria-modal="true"
-        data-testid="confirmar-borrado"
-      >
-        <h2 className="text-base font-semibold text-fg">
-          ¿Dejar de pedir «{requisito.etiqueta}»?
-        </h2>
-        <p className="mt-2 text-sm text-fg-muted">
-          Quien se postule con ese perfil ya no va a mandarlo, y nadie lo va a
-          echar de menos al revisar. Puedes volver a agregarlo cuando quieras.
-        </p>
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onCerrar} disabled={ocupado}>
-            Cancelar
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={onConfirmar}
-            disabled={ocupado}
+    <AlertDialog
+      open
+      onOpenChange={(abierto) => {
+        // Mientras se quita no se sale (ni con Esc ni con Cancelar).
+        if (!abierto && !ocupado) onCerrar()
+      }}
+    >
+      {/* Destructiva: medallón rojo y el botón de la acción sale rojo solo. */}
+      <AlertDialogContent variant="destructive" data-testid="confirmar-borrado">
+        <AlertDialogHeader>
+          <AlertDialogTitle>¿Dejar de pedir «{requisito.etiqueta}»?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Quien se postule con ese perfil ya no va a mandarlo, y nadie lo va a
+            echar de menos al revisar. Puedes volver a agregarlo cuando quieras.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={ocupado}>Cancelar</AlertDialogCancel>
+          <AlertDialogAction
+            loading={ocupado}
+            onClick={(e) => {
+              // El diálogo se cierra cuando el back confirma (`borrar` limpia
+              // `porBorrar`); si falla, se queda abierto para reintentar.
+              e.preventDefault()
+              onConfirmar()
+            }}
             data-testid="confirmar-borrado-si"
           >
             {ocupado ? 'Quitando…' : 'Dejar de pedirlo'}
-          </Button>
-        </div>
-      </div>
-    </div>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }

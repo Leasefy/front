@@ -30,18 +30,30 @@
  * `@/components/mantenimientos/TablaDeProveedores`, con el porqué escrito ahí.
  */
 
-import { useCallback, useEffect, useState } from 'react';
-import { Plus, Star, X } from '@phosphor-icons/react';
-import { Eyebrow } from '@leasefy/cadence';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Plus, Star } from '@phosphor-icons/react';
+import { CrossFade, Eyebrow, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button, Badge, Input } from '@/components/ui';
 import { TablaDeProveedores } from '@/components/mantenimientos/TablaDeProveedores';
 import { ESPECIALIDADES } from '@/components/mantenimientos/especialidades';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { usePermissions } from '@/lib/hooks/usePermissions';
-import { useLenis } from '@/components/providers/SmoothScroll';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { errorDeLaVigencia } from '@/lib/mantenimiento/limites-del-mantenimiento';
 import { cn } from '@/lib/utils';
+import { ACCEPT_DE_ADJUNTOS, problemaDelAdjunto } from '@/lib/api/pqrs-adjuntos';
 import {
   proveedoresDeMantenimientoApi,
   type ProveedorDeMantenimiento,
@@ -81,7 +93,9 @@ function ContenidoDeProveedores() {
       toast.success(`${p.nombre} queda inactivo. Su historial se conserva.`);
       await cargar();
     } catch (e) {
-      toast.error(mensajeDeError(e, 'No se pudo desactivar el proveedor'));
+      toast.error('No se pudo desactivar el proveedor', {
+        description: mensajeParaLaPersona(e, { accion: 'desactivar el proveedor' }),
+      });
     }
   };
 
@@ -91,7 +105,9 @@ function ContenidoDeProveedores() {
       toast.success(`${p.nombre} vuelve a estar activo.`);
       await cargar();
     } catch (e) {
-      toast.error(mensajeDeError(e, 'No se pudo reactivar el proveedor'));
+      toast.error('No se pudo reactivar el proveedor', {
+        description: mensajeParaLaPersona(e, { accion: 'reactivar el proveedor' }),
+      });
     }
   };
 
@@ -156,20 +172,6 @@ function ContenidoDeProveedores() {
   );
 }
 
-/**
- * 🔴 DESIGN §8: todo modal para a Lenis mientras está abierto y lo vuelve a
- * arrancar al cerrar (incluido el cleanup). Sin esto la rueda del mouse queda
- * secuestrada y el cuerpo del modal se ve congelado. El contenedor que scrollea
- * además lleva `data-lenis-prevent`.
- */
-function useLenisQuieto() {
-  const lenis = useLenis();
-  useEffect(() => {
-    lenis.stop();
-    return () => lenis.start();
-  }, [lenis]);
-}
-
 // ── El formulario ───────────────────────────────────────────────────────────
 
 function FormularioDeProveedor({
@@ -181,7 +183,6 @@ function FormularioDeProveedor({
   onCerrar: () => void;
   onGuardado: () => void;
 }) {
-  useLenisQuieto();
   const [form, setForm] = useState<GuardarProveedor>({
     nombre: proveedor?.nombre ?? '',
     documento: proveedor?.documento ?? '',
@@ -195,16 +196,59 @@ function FormularioDeProveedor({
     notas: proveedor?.notas ?? '',
   });
   const [guardando, setGuardando] = useState(false);
+  /*
+   * 🔴 SO-12 (QA 04-10): el RUT y la seguridad social se SUBEN (antes se
+   * escribía el nombre del archivo y nunca había archivo).
+   */
+  const [archivos, setArchivos] = useState<{ rut: File | null; 'seguridad-social': File | null }>({
+    rut: null,
+    'seguridad-social': null,
+  });
+  const [problemaDeArchivo, setProblemaDeArchivo] = useState<{ rut?: string; 'seguridad-social'?: string }>({});
+  const elegirArchivo = (tipo: 'rut' | 'seguridad-social', archivo: File | undefined) => {
+    if (!archivo) return;
+    const problema = problemaDelAdjunto(archivo);
+    setProblemaDeArchivo((p) => ({ ...p, [tipo]: problema ?? undefined }));
+    if (!problema) setArchivos((a) => ({ ...a, [tipo]: archivo }));
+  };
+  const abrirDocumento = async (tipo: 'rut' | 'seguridad-social') => {
+    if (!proveedor) return;
+    try {
+      const { url } = await proveedoresDeMantenimientoApi.abrirDocumento(proveedor.id, tipo);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (err) {
+      toast.error('No se pudo abrir el documento', {
+        description: mensajeParaLaPersona(err, { porDefecto: 'Prueba de nuevo en un momento.', accion: 'abrir el documento' }),
+      });
+    }
+  };
   const [falla, setFalla] = useState<string | null>(null);
+  // El aviso de la falla sale con su animación sin vaciarse mientras se va.
+  const fallaQueSeVe = useUltimoPresente(falla);
+  /** Lo que rechazó el back, por campo; cada campo borra el suyo al tocarse. */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDelProveedor, string>>>({});
+  const formulario = useRef<HTMLFormElement>(null);
+
+  /** Cambiar un campo borra el error que el servidor le había puesto. */
+  const poner = <K extends CampoDelProveedor>(campo: K, valor: GuardarProveedor[K]) => {
+    setForm((f) => ({ ...f, [campo]: valor }));
+    setDelServidor((d) => (d[campo] ? { ...d, [campo]: undefined } : d));
+  };
+
+  // El espejo del back: una vigencia que no es un día (o en el año 99999) se
+  // dice acá, con la misma frase, antes de enviar.
+  const errorDe = (campo: CampoDelProveedor): string | undefined =>
+    delServidor[campo] ??
+    (campo === 'rutVigenteHasta' || campo === 'seguridadSocialVigenteHasta'
+      ? (errorDeLaVigencia(form[campo]) ?? undefined)
+      : undefined);
 
   const alternar = (valor: string) => {
     const actuales = form.especialidades ?? [];
-    setForm({
-      ...form,
-      especialidades: actuales.includes(valor)
-        ? actuales.filter((v) => v !== valor)
-        : [...actuales, valor],
-    });
+    poner(
+      'especialidades',
+      actuales.includes(valor) ? actuales.filter((v) => v !== valor) : [...actuales, valor],
+    );
   };
 
   const enviar = async (e: React.FormEvent) => {
@@ -212,65 +256,85 @@ function FormularioDeProveedor({
     if (guardando) return;
     setGuardando(true);
     setFalla(null);
+    setDelServidor({});
     // Los vacíos no viajan: el back distingue «no lo mandó» de «lo borró».
     const limpio = Object.fromEntries(
-      Object.entries(form).filter(([, v]) =>
-        Array.isArray(v) ? true : v !== '' && v !== undefined,
+      Object.entries(form).filter(
+        ([k, v]) =>
+          // SO-12: el nombre del archivo ya no se escribe: lo pone la subida.
+          k !== 'rutNombre' &&
+          k !== 'seguridadSocialNombre' &&
+          (Array.isArray(v) ? true : v !== '' && v !== undefined),
       ),
     ) as GuardarProveedor;
     try {
-      if (proveedor) {
-        await proveedoresDeMantenimientoApi.actualizar(proveedor.id, limpio);
-      } else {
-        await proveedoresDeMantenimientoApi.crear(limpio);
+      const guardado = proveedor
+        ? await proveedoresDeMantenimientoApi.actualizar(proveedor.id, limpio)
+        : await proveedoresDeMantenimientoApi.crear(limpio);
+      const id = guardado?.id ?? proveedor?.id;
+      for (const tipo of ['rut', 'seguridad-social'] as const) {
+        const archivo = archivos[tipo];
+        if (archivo && id) await proveedoresDeMantenimientoApi.subirDocumento(id, tipo, archivo);
       }
       toast.success(proveedor ? 'Proveedor actualizado' : 'Proveedor registrado');
       onGuardado();
     } catch (err) {
-      setFalla(mensajeDeError(err, 'No se pudo guardar el proveedor'));
+      // 02-10-2026: lo del back va a SU campo, con el foco en el primero; el
+      // aviso de abajo queda para lo que no tiene dónde ir (un 409, un 5xx con
+      // su referencia, la red).
+      const reparto = repartirErroresDelServidor<CampoDelProveedor>(err, {
+        campos: CAMPOS_DEL_PROVEEDOR,
+        porDefecto: 'No se pudo guardar el proveedor',
+        accion: 'guardar el proveedor',
+      });
+      setDelServidor(reparto.porCampo);
+      setFalla(reparto.sueltos.length ? reparto.sueltos.join(' · ') : null);
+      const primero = reparto.orden[0];
+      if (primero) {
+        formulario.current?.querySelector<HTMLElement>(`#proveedor-${primero}`)?.focus();
+      }
     } finally {
       setGuardando(false);
     }
   };
 
+  const hayVigenciaMala =
+    !!errorDeLaVigencia(form.rutVigenteHasta) || !!errorDeLaVigencia(form.seguridadSocialVigenteHasta);
   const puedeEnviar =
-    form.nombre.trim().length > 0 && form.documento.trim().length > 0 && !guardando;
+    form.nombre.trim().length > 0 &&
+    form.documento.trim().length > 0 &&
+    !hayVigenciaMala &&
+    !guardando;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={guardando ? undefined : onCerrar}
-      />
-      <div data-lenis-prevent
-        style={{ overscrollBehavior: 'contain' }}
-        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-background">
-        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-background px-6 py-4">
-          <h2 className="text-base font-semibold text-fg">
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        // Mientras se guarda no se sale (ni con Esc, ni con el velo, ni con la ✕).
+        if (!abierto && !guardando) onCerrar();
+      }}
+    >
+      <DialogContent aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>
             {proveedor ? `Editar a ${proveedor.nombre}` : 'Registrar proveedor'}
-          </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            hideArrow
-            onClick={onCerrar}
-            disabled={guardando}
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={enviar} className="space-y-4 p-6">
-          <Campo label="Nombre" requerido>
+        {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
+            el botón de guardar lo apunta con `form=`. */}
+        <form id={ID_DEL_FORM_DE_PROVEEDOR} onSubmit={enviar} className="space-y-4" ref={formulario}>
+          <Campo nombre="nombre" error={errorDe('nombre')} label="Nombre" requerido>
             {/* 🔴 21-09 · Con `placeholder`. Nico: «¿por qué estos inputs no
                 tienen placeholder?». Un campo en blanco al lado de un rótulo de
                 una palabra deja a la persona adivinando el FORMATO: si el
                 nombre es el de la empresa o el del plomero que contesta. El
                 ejemplo lo resuelve sin gastar una línea de ayuda. */}
             <Input
+              id="proveedor-nombre"
+              {...ariaDe('nombre', errorDe('nombre'))}
               value={form.nombre}
-              onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+              onChange={(e) => poner('nombre', e.target.value)}
               maxLength={200}
               placeholder="Plomería Andina S.A.S. o Jorge Martínez"
               required
@@ -278,13 +342,17 @@ function FormularioDeProveedor({
           </Campo>
 
           <Campo
+            nombre="documento"
+            error={errorDe('documento')}
             label="NIT o cédula"
             requerido
             ayuda="Con eso se le paga y se le retiene."
           >
             <Input
+              id="proveedor-documento"
+              {...ariaDe('documento', errorDe('documento'))}
               value={form.documento}
-              onChange={(e) => setForm({ ...form, documento: e.target.value })}
+              onChange={(e) => poner('documento', e.target.value)}
               maxLength={20}
               placeholder="900123456-7 o 71234567"
               required
@@ -292,20 +360,24 @@ function FormularioDeProveedor({
           </Campo>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Campo label="Teléfono">
+            <Campo nombre="telefono" error={errorDe('telefono')} label="Teléfono">
               <Input
+                id="proveedor-telefono"
+                {...ariaDe('telefono', errorDe('telefono'))}
                 type="tel"
                 value={form.telefono ?? ''}
-                onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+                onChange={(e) => poner('telefono', e.target.value)}
                 maxLength={20}
                 placeholder="3001234567"
               />
             </Campo>
-            <Campo label="Correo">
+            <Campo nombre="correo" error={errorDe('correo')} label="Correo">
               <Input
+                id="proveedor-correo"
+                {...ariaDe('correo', errorDe('correo'))}
                 type="email"
                 value={form.correo ?? ''}
-                onChange={(e) => setForm({ ...form, correo: e.target.value })}
+                onChange={(e) => poner('correo', e.target.value)}
                 maxLength={200}
                 placeholder="contacto@proveedor.com"
               />
@@ -337,134 +409,208 @@ function FormularioDeProveedor({
                 );
               })}
             </div>
+            <ErrorDelCampo id="proveedor-especialidades-error" mensaje={errorDe('especialidades')} />
           </fieldset>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Campo
+              nombre="rutNombre"
+              error={problemaDeArchivo['rut'] ?? errorDe('rutNombre')}
               label="RUT"
               ayuda="Sin él no se le puede facturar ni retener."
             >
-              <Input
-                value={form.rutNombre ?? ''}
-                onChange={(e) => setForm({ ...form, rutNombre: e.target.value })}
-                placeholder="Nombre del archivo"
-                maxLength={255}
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <label
+                  htmlFor="proveedor-rutNombre"
+                  className="inline-flex h-10 cursor-pointer items-center rounded-[12px] border border-border px-3 text-sm text-fg hover:bg-surface-hover"
+                >
+                  {archivos['rut'] ? 'Cambiar archivo' : 'Subir archivo'}
+                </label>
+                <input
+                  id="proveedor-rutNombre"
+                  data-testid="proveedor-archivo-rut"
+                  type="file"
+                  accept={ACCEPT_DE_ADJUNTOS}
+                  className="sr-only"
+                  onChange={(e) => elegirArchivo('rut', e.target.files?.[0])}
+                />
+                <span className="min-w-0 truncate text-sm text-fg-muted">
+                  {archivos['rut']?.name ?? (proveedor?.rut?.nombre ? `Guardado: ${proveedor?.rut?.nombre}` : 'PDF o foto, hasta 10 MB')}
+                </span>
+                {proveedor && proveedor?.rut?.nombre && !archivos['rut'] && (
+                  <button type="button" className="text-sm text-primary hover:underline" onClick={() => void abrirDocumento('rut')}>
+                    Ver
+                  </button>
+                )}
+              </div>
             </Campo>
-            <Campo label="RUT vigente hasta">
+            <Campo nombre="rutVigenteHasta" error={errorDe('rutVigenteHasta')} label="RUT vigente hasta">
               <Input
+                id="proveedor-rutVigenteHasta"
+                {...ariaDe('rutVigenteHasta', errorDe('rutVigenteHasta'))}
                 type="date"
                 value={form.rutVigenteHasta ?? ''}
-                onChange={(e) =>
-                  setForm({ ...form, rutVigenteHasta: e.target.value })
-                }
+                onChange={(e) => poner('rutVigenteHasta', e.target.value)}
               />
             </Campo>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Campo
+              nombre="seguridadSocialNombre"
+              error={problemaDeArchivo['seguridad-social'] ?? errorDe('seguridadSocialNombre')}
               label="Seguridad social"
               ayuda="Si se accidenta dentro del inmueble, el riesgo es de la inmobiliaria."
             >
-              <Input
-                value={form.seguridadSocialNombre ?? ''}
-                onChange={(e) =>
-                  setForm({ ...form, seguridadSocialNombre: e.target.value })
-                }
-                placeholder="Nombre del archivo"
-                maxLength={255}
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <label
+                  htmlFor="proveedor-seguridadSocialNombre"
+                  className="inline-flex h-10 cursor-pointer items-center rounded-[12px] border border-border px-3 text-sm text-fg hover:bg-surface-hover"
+                >
+                  {archivos['seguridad-social'] ? 'Cambiar archivo' : 'Subir archivo'}
+                </label>
+                <input
+                  id="proveedor-seguridadSocialNombre"
+                  data-testid="proveedor-archivo-seguridad-social"
+                  type="file"
+                  accept={ACCEPT_DE_ADJUNTOS}
+                  className="sr-only"
+                  onChange={(e) => elegirArchivo('seguridad-social', e.target.files?.[0])}
+                />
+                <span className="min-w-0 truncate text-sm text-fg-muted">
+                  {archivos['seguridad-social']?.name ?? (proveedor?.seguridadSocial?.nombre ? `Guardado: ${proveedor?.seguridadSocial?.nombre}` : 'PDF o foto, hasta 10 MB')}
+                </span>
+                {proveedor && proveedor?.seguridadSocial?.nombre && !archivos['seguridad-social'] && (
+                  <button type="button" className="text-sm text-primary hover:underline" onClick={() => void abrirDocumento('seguridad-social')}>
+                    Ver
+                  </button>
+                )}
+              </div>
             </Campo>
-            <Campo label="Vigente hasta">
+            <Campo
+              nombre="seguridadSocialVigenteHasta"
+              error={errorDe('seguridadSocialVigenteHasta')}
+              label="Vigente hasta"
+            >
               <Input
+                id="proveedor-seguridadSocialVigenteHasta"
+                {...ariaDe('seguridadSocialVigenteHasta', errorDe('seguridadSocialVigenteHasta'))}
                 type="date"
                 value={form.seguridadSocialVigenteHasta ?? ''}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    seguridadSocialVigenteHasta: e.target.value,
-                  })
-                }
+                onChange={(e) => poner('seguridadSocialVigenteHasta', e.target.value)}
               />
             </Campo>
           </div>
 
-          <Campo label="Notas">
+          <Campo nombre="notas" error={errorDe('notas')} label="Notas">
             <textarea
+              id="proveedor-notas"
+              {...ariaDe('notas', errorDe('notas'))}
               value={form.notas ?? ''}
-              onChange={(e) => setForm({ ...form, notas: e.target.value })}
+              onChange={(e) => poner('notas', e.target.value)}
               maxLength={2000}
               rows={3}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
             />
           </Campo>
 
-          {falla && (
-            <div
-              role="alert"
-              className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger"
-            >
-              {falla}
-            </div>
-          )}
+          <Presence
+            show={Boolean(falla)}
+            role="alert"
+            className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-caption text-danger"
+          >
+            {fallaQueSeVe}
+          </Presence>
 
-          {/*
-            🔴 19-09 (visto en el navegador, no en una prueba): el pie NO era
-            pegajoso y el encabezado sí. Con el alto real de una pantalla
-            (806 px) el formulario mide 860 y «Registrar» caía en y=836: fuera
-            de vista, sin ninguna señal de que hubiera algo más abajo. Alguien
-            llenaba Nombre y NIT —los dos únicos obligatorios— y no encontraba
-            con qué guardar. El mismo defecto de siempre: el control que
-            necesitás no está donde estás mirando.
-          */}
-          <div className="sticky bottom-0 -mx-6 -mb-6 flex gap-2 border-t border-border bg-background px-6 py-4">
-            <Button
-              type="button"
-              variant="secondary"
-              hideArrow
-              onClick={onCerrar}
-              disabled={guardando}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              hideArrow
-              isLoading={guardando}
-              disabled={!puedeEnviar}
-              className="flex-1"
-            >
-              {proveedor ? 'Guardar' : 'Registrar'}
-            </Button>
-          </div>
         </form>
-      </div>
-    </div>
+
+        {/*
+          🔴 19-09 (visto en el navegador, no en una prueba): el pie NO era
+          pegajoso y el encabezado sí. Con el alto real de una pantalla
+          (806 px) el formulario mide 860 y «Registrar» caía en y=836: fuera
+          de vista, sin ninguna señal de que hubiera algo más abajo. Alguien
+          llenaba Nombre y NIT —los dos únicos obligatorios— y no encontraba
+          con qué guardar. Desde el 02-10 el pie es el `DialogFooter`: fijo,
+          fuera del cuerpo que scrollea.
+        */}
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            hideArrow
+            onClick={onCerrar}
+            disabled={guardando}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={ID_DEL_FORM_DE_PROVEEDOR}
+            hideArrow
+            isLoading={guardando}
+            disabled={!puedeEnviar}
+          >
+            {proveedor ? 'Guardar' : 'Registrar'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
+const ID_DEL_FORM_DE_PROVEEDOR = 'form-proveedor-de-mantenimiento';
+
+type CampoDelProveedor = Exclude<keyof GuardarProveedor, 'rutRuta' | 'seguridadSocialRuta' | 'activo'>;
+
+/** En el orden en que se ven: el foco va al primero con error. */
+const CAMPOS_DEL_PROVEEDOR: readonly CampoDelProveedor[] = [
+  'nombre',
+  'documento',
+  'telefono',
+  'correo',
+  'especialidades',
+  'rutNombre',
+  'rutVigenteHasta',
+  'seguridadSocialNombre',
+  'seguridadSocialVigenteHasta',
+  'notas',
+];
+
+const ariaDe = (campo: CampoDelProveedor, error: string | undefined) =>
+  error
+    ? { 'aria-invalid': true as const, 'aria-describedby': `proveedor-${campo}-error` }
+    : {};
+
+/**
+ * Un campo del formulario. El error entra suave bajo el campo
+ * (`ErrorDelCampo`, el `FormError` de Cadence) y se cruza con la ayuda si la hay.
+ */
 function Campo({
+  nombre,
   label,
   ayuda,
   requerido,
+  error,
   children,
 }: {
+  nombre: CampoDelProveedor;
   label: string;
   ayuda?: string;
   requerido?: boolean;
+  error?: string;
   children: React.ReactNode;
 }) {
   return (
-    <label className="block">
-      <span className="mb-1 block text-xs font-medium text-foreground">
+    <div className="block">
+      <label htmlFor={`proveedor-${nombre}`} className="mb-1 block text-xs font-medium text-foreground">
         {label}
         {requerido && <span className="ml-0.5 text-danger">*</span>}
-      </span>
+      </label>
       {children}
-      {ayuda && <span className="mt-1 block text-[11px] text-fg-muted">{ayuda}</span>}
-    </label>
+      {error || ayuda ? (
+        <ErrorDelCampo id={`proveedor-${nombre}-error`} mensaje={error} pista={ayuda} className="mt-1" />
+      ) : null}
+    </div>
   );
 }
 
@@ -477,7 +623,6 @@ function HistorialDeCalificaciones({
   proveedor: ProveedorDeMantenimiento;
   onCerrar: () => void;
 }) {
-  useLenisQuieto();
   const [filas, setFilas] = useState<CalificacionDelProveedor[] | null>(null);
   const [error, setError] = useState<unknown>(null);
 
@@ -489,26 +634,22 @@ function HistorialDeCalificaciones({
   }, [proveedor.id]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCerrar} />
-      <div data-lenis-prevent
-        style={{ overscrollBehavior: 'contain' }}
-        className="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-background">
-        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-background px-6 py-4">
-          <h2 className="text-base font-semibold text-fg">
-            Cómo le ha ido a {proveedor.nombre}
-          </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            hideArrow
-            onClick={onCerrar}
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="space-y-3 p-6">
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        if (!abierto) onCerrar();
+      }}
+    >
+      <DialogContent aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>Cómo le ha ido a {proveedor.nombre}</DialogTitle>
+        </DialogHeader>
+        {/* Cargando → calificaciones (o → vacío / fallo) con un fundido, y las
+            calificaciones entran escalonadas. */}
+        <CrossFade
+          className="space-y-3"
+          swapKey={error ? 'fallo' : filas === null ? 'cargando' : filas.length === 0 ? 'vacio' : 'lista'}
+        >
           {error ? (
             <p role="alert" className="text-sm text-danger">
               No se pudo cargar el historial.
@@ -520,8 +661,10 @@ function HistorialDeCalificaciones({
           {filas?.length === 0 && (
             <p className="text-sm text-fg-muted">Todavía no lo han calificado.</p>
           )}
-          {filas?.map((c) => (
-            <div key={c.id} className="rounded-md border border-border p-3">
+          {filas && filas.length > 0 && (
+          <Stagger className="space-y-3">
+          {filas.map((c) => (
+            <StaggerItem key={c.id} className="rounded-md border border-border p-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1 text-sm">
                   <Star className="h-4 w-4 text-warning" weight="fill" />
@@ -539,24 +682,14 @@ function HistorialDeCalificaciones({
               {c.comentario && (
                 <p className="mt-2 text-sm text-fg-muted">{c.comentario}</p>
               )}
-            </div>
+            </StaggerItem>
           ))}
-        </div>
-      </div>
-    </div>
+          </Stagger>
+          )}
+        </CrossFade>
+      </DialogContent>
+    </Dialog>
   );
-}
-
-/**
- * El 503 del back trae su motivo redactado (`PROVEEDORES_NO_DISPONIBLES`:
- * falta la migración). Mostrarlo tal cual vale más que un «algo salió mal».
- */
-function mensajeDeError(e: unknown, porDefecto: string): string {
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: unknown }).message;
-    if (typeof m === 'string' && m.trim()) return m;
-  }
-  return porDefecto;
 }
 
 export default function ProveedoresPage() {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
 import { Buildings, Plus, MapPin, Bed, Bathtub, Square, Eye, PencilSimple, DotsThreeVertical, Users, CurrencyDollar, GridFour, List, House, TrendUp } from '@phosphor-icons/react';
@@ -15,9 +16,47 @@ import {
   DropdownListTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button, Card } from '@/components/ui';
-import { PageHeader, KpiCard, SearchInput, SegmentedControl, IconButton } from '@leasefy/cadence';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
+import { PageHeader, KpiCard, SearchInput, SegmentedControl, IconButton, CrossFade, StaggerItem } from '@leasefy/cadence';
 
 type ViewMode = 'grid' | 'list';
+
+/**
+ * La forma de lo que viene (contadores, filtro y tarjetas) mientras carga: con
+ * el vacío en su lugar, la pantalla decía «Aún no tienes propiedades» a quien
+ * sí las tenía. Semántica de carga como `EsqueletoDePagina`.
+ */
+function EsqueletoDeLasPropiedades({ etiqueta }: { etiqueta: string }) {
+  return (
+    <div role="status" aria-busy="true" aria-label={etiqueta} data-testid="esqueleto-de-las-propiedades">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-lg border border-border p-5 space-y-3">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-7 w-16" />
+          </div>
+        ))}
+      </div>
+      <div className="rounded-lg border border-border p-4 mb-6 space-y-3">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-8 w-56 max-w-full" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="rounded-lg border border-border overflow-hidden">
+            <Skeleton className="h-48 w-full rounded-none" />
+            <div className="p-5 space-y-3">
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <span className="sr-only">{etiqueta}…</span>
+    </div>
+  );
+}
 type FunnelStatus = 'all' | 'available' | 'rented' | 'pending';
 
 export default function PropiedadesPage() {
@@ -27,7 +66,19 @@ export default function PropiedadesPage() {
   const [searchQuery, setMagnifyingGlassQuery] = useState('');
 
   // Fetch landlord properties with candidate counts from API
-  const { properties: myProperties, isLoading: isLoadingProperties } = useLandlordProperties();
+  const {
+    properties: myProperties,
+    isLoading: isLoadingProperties,
+    error: errorDeCarga,
+    refetch,
+  } = useLandlordProperties();
+  /*
+   * 🔴 ARREGLOS-2 punto 5 (03-10-2026, visto por MOV-A5 a 390 px): mientras
+   * cargaba se pintaba el VACÍO («Aún no tienes propiedades») y los contadores
+   * en 0, y con un error también. Ahora: el esqueleto mientras carga, el error
+   * con su reintento si falló, y el contenido entra suave tras el esqueleto.
+   */
+  const entrada = useEntradaTrasCargar(isLoadingProperties);
 
   // Apply filters
   const filteredProperties = myProperties.filter(p => {
@@ -65,23 +116,49 @@ export default function PropiedadesPage() {
   return (
     <div className="min-h-screen bg-bg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Header */}
+        {/* Header. A 390 px el botón con su texto no cabía al lado del título y
+            se montaba sobre el encabezado (y se salía de la pantalla): en
+            pantallas chicas va sólo el «+», con su nombre para el lector. */}
         <PageHeader
+          className="mb-6"
           title={t('landlord.properties.title')}
           subtitle={t('landlord.properties.subtitle')}
           actions={
             <Button asChild hideArrow>
-              <Link href="/publicar?from=panel">
+              <Link
+                href="/publicar?from=panel"
+                aria-label={t('landlord.properties.newProperty')}
+                title={t('landlord.properties.newProperty')}
+                data-testid="nueva-propiedad"
+              >
                 <Plus className="w-4 h-4" />
-                {t('landlord.properties.newProperty')}
+                <span className="hidden sm:inline">{t('landlord.properties.newProperty')}</span>
               </Link>
             </Button>
           }
         />
 
-        {/* Stats Cards */}
+        {isLoadingProperties ? (
+          <EsqueletoDeLasPropiedades etiqueta={t('landlord.properties.title')} />
+        ) : errorDeCarga ? (
+          <div
+            role="alert"
+            data-testid="propiedades-error"
+            className="bg-surface rounded-lg border border-border py-16 px-6 text-center"
+          >
+            <p className="text-fg mb-4">{errorDeCarga}</p>
+            <Button type="button" variant="outline" hideArrow onClick={() => void refetch()}>
+              {t('common.retry')}
+            </Button>
+          </div>
+        ) : (
+        <motion.div {...entrada}>
+        {/* Stats Cards. Por debajo de lg el total y el ingreso van a lo ancho:
+            a 390 px el ingreso («$ 8.900.000») no cabía en media fila y se
+            salía de su tarjeta. Así quedan tres filas sin huecos. */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <KpiCard
+            className="col-span-2 lg:col-span-1"
             label={t('landlord.properties.totalProperties')}
             value={String(totalProperties)}
             icon={<Buildings />}
@@ -97,6 +174,7 @@ export default function PropiedadesPage() {
             icon={<Users />}
           />
           <KpiCard
+            className="col-span-2 lg:col-span-1"
             label={t('landlord.properties.monthlyIncome')}
             value={i18nFormatCurrency(totalMonthlyIncome)}
             icon={<TrendUp />}
@@ -107,7 +185,7 @@ export default function PropiedadesPage() {
         <Card className="p-4 mb-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             {/* MagnifyingGlass */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <SearchInput
                 value={searchQuery}
                 onChange={(e) => setMagnifyingGlassQuery(e.target.value)}
@@ -118,52 +196,64 @@ export default function PropiedadesPage() {
               />
             </div>
 
-            {/* Status Funnel */}
-            <SegmentedControl
-              size="md"
-              aria-label={t('landlord.properties.subtitle')}
-              value={filterStatus}
-              onChange={(value) => setFunnelStatus(value as FunnelStatus)}
-              options={[
-                { value: 'all', label: t('landlord.properties.filterAll') },
-                { value: 'available', label: t('landlord.properties.filterAvailable') },
-                { value: 'rented', label: t('landlord.properties.filterRented') },
-                { value: 'pending', label: t('landlord.properties.filterPending') },
-              ]}
-            />
+            {/* El estado y la vista en una fila. A 390 px los cuatro estados no
+                caben: se desplazan DENTRO de su riel (nunca la página entera) y
+                la vista se queda a su lado, de su tamaño. */}
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="min-w-0 flex-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" data-testid="filtro-de-estado">
+                <SegmentedControl
+                  size="md"
+                  aria-label={t('landlord.properties.subtitle')}
+                  value={filterStatus}
+                  onChange={(value) => setFunnelStatus(value as FunnelStatus)}
+                  options={[
+                    { value: 'all', label: t('landlord.properties.filterAll') },
+                    { value: 'available', label: t('landlord.properties.filterAvailable') },
+                    { value: 'rented', label: t('landlord.properties.filterRented') },
+                    { value: 'pending', label: t('landlord.properties.filterPending') },
+                  ]}
+                />
+              </div>
 
-            {/* View Toggle */}
-            <SegmentedControl
-              size="md"
-              aria-label={t('landlord.properties.gridView')}
-              value={viewMode}
-              onChange={(value) => setViewMode(value as ViewMode)}
-              options={[
-                { value: 'grid', label: <GridFour className="w-4 h-4" />, ariaLabel: t('landlord.properties.gridView') },
-                { value: 'list', label: <List className="w-4 h-4" />, ariaLabel: t('landlord.properties.listView') },
-              ]}
-            />
+              {/* View Toggle */}
+              <SegmentedControl
+                size="md"
+                className="shrink-0"
+                aria-label={t('landlord.properties.gridView')}
+                value={viewMode}
+                onChange={(value) => setViewMode(value as ViewMode)}
+                options={[
+                  { value: 'grid', label: <GridFour className="w-4 h-4" />, ariaLabel: t('landlord.properties.gridView') },
+                  { value: 'list', label: <List className="w-4 h-4" />, ariaLabel: t('landlord.properties.listView') },
+                ]}
+              />
+            </div>
           </div>
         </Card>
 
-        {/* Properties Grid/List */}
+        {/* Properties Grid/List — cambiar de vista (o quedar sin resultados) cruza
+            el contenido; buscar o filtrar saca y mete tarjetas con la salida y la
+            entrada del sistema, y las demás se corren. Lo que ya estaba no se anima. */}
+        <CrossFade swapKey={filteredProperties.length > 0 ? viewMode : 'vacio'}>
         {filteredProperties.length > 0 ? (
           viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <AnimatePresence initial={false} mode="popLayout">
               {filteredProperties.map((property) => {
                 const candidateCount = property.candidateCount ?? 0;
                 return (
+                  <StaggerItem key={property.id} className="grid">
                   <Link
                     key={property.id}
                     href={`/panel/${property.id}`}
-                    className="bg-surface rounded-lg border border-border overflow-hidden group hover: hover:shadow-neutral-200/50 dark:hover:shadow-neutral-900/50 transition-all duration-300 block"
+                    className="bg-surface rounded-lg border border-border overflow-hidden group hover: hover:shadow-neutral-200/50 dark:hover:shadow-neutral-900/50 transition-[box-shadow,border-color] duration-slow block"
                   >
                     {/* Image */}
                     <div className="relative h-48 bg-surface-muted overflow-hidden">
                       <PortadaDelInmueble
                         property={property}
                         alt={property.title}
-                        className="group-hover:scale-105 transition-transform duration-500"
+                        className="group-hover:scale-105 transition-transform duration-reveal"
                       />
                       <div className="absolute top-3 left-3">
                         {getStatusBadge(property.status)}
@@ -246,15 +336,19 @@ export default function PropiedadesPage() {
                       </div>
                     </div>
                   </Link>
+                  </StaggerItem>
                 );
               })}
+              </AnimatePresence>
             </div>
           ) : (
             /* List View */
-            <div className="bg-surface rounded-lg border border-border overflow-hidden">
+            <div className="relative bg-surface rounded-lg border border-border overflow-hidden">
+              <AnimatePresence initial={false} mode="popLayout">
               {filteredProperties.map((property, index) => {
                 const candidateCount = property.candidateCount ?? 0;
                 return (
+                  <StaggerItem key={property.id} className="grid">
                   <Link
                     key={property.id}
                     href={`/panel/${property.id}`}
@@ -344,8 +438,10 @@ export default function PropiedadesPage() {
                       </DropdownList>
                     </div>
                   </Link>
+                  </StaggerItem>
                 );
               })}
+              </AnimatePresence>
             </div>
           )
         ) : (
@@ -367,6 +463,9 @@ export default function PropiedadesPage() {
               </Link>
             </Button>
           </div>
+        )}
+        </CrossFade>
+        </motion.div>
         )}
       </div>
     </div>

@@ -25,6 +25,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 
 // ── Tipos del contrato del backend (agency-cobranza-owner-reports.ts) ─────────
 
@@ -97,10 +98,19 @@ export interface UseOwnerReportsResult {
   generate: (body: GenerateOwnerReportBody) => Promise<OwnerReport | null>
   isGenerating: boolean
   generateError: string | null
+  /**
+   * Por qué falló el último «generar»: el `ApiError` del micro o el error de
+   * la red tal cual, para el traductor (`mensajeDeLaAccion`). `generateError`
+   * queda como código (`ENV_OR_AGENCY_MISSING`, `generate 500`): no es para
+   * una persona.
+   */
+  generateFallo: unknown
   /** POST approve — T-323: requiere click humano. markAsSent confirma entrega. */
   approve: (id: string, markAsSent?: boolean) => Promise<OwnerReport | null>
   isApproving: boolean
   approveError: string | null
+  /** Por qué falló el último «aprobar»: como `generateFallo`. */
+  approveFallo: unknown
   /** GET pdf — devuelve el blob si el backend lo entrega, o un estado honesto. */
   downloadPdf: (id: string) => Promise<OwnerReportPdfResult>
   isDownloading: boolean
@@ -118,9 +128,11 @@ export function useOwnerReports(
 
   const [isGenerating, setIsGenerating] = useState(false)
   const [generateError, setGenerateError] = useState<string | null>(null)
+  const [generateFallo, setGenerateFallo] = useState<unknown>(null)
 
   const [isApproving, setIsApproving] = useState(false)
   const [approveError, setApproveError] = useState<string | null>(null)
+  const [approveFallo, setApproveFallo] = useState<unknown>(null)
 
   const [isDownloading, setIsDownloading] = useState(false)
 
@@ -198,14 +210,15 @@ export function useOwnerReports(
       }
       setIsGenerating(true)
       setGenerateError(null)
+      setGenerateFallo(null)
       try {
         const res = await authFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/owner-reports/generate`,
           { method: 'POST', body: JSON.stringify(body) },
         )
         if (!res.ok) {
-          const text = await res.text().catch(() => '')
-          setGenerateError(text || `generate ${res.status}`)
+          setGenerateError(`generate ${res.status}`)
+          setGenerateFallo(await falloDelMicro(res))
           return null
         }
         const created = (await res.json()) as OwnerReport
@@ -213,6 +226,8 @@ export function useOwnerReports(
         return created
       } catch (err) {
         setGenerateError(err instanceof Error ? err.message : 'generate failed')
+        // Un `fetch` que no salió llega tal cual: el traductor lo lee como conexión.
+        setGenerateFallo(err)
         return null
       } finally {
         setIsGenerating(false)
@@ -230,14 +245,15 @@ export function useOwnerReports(
       }
       setIsApproving(true)
       setApproveError(null)
+      setApproveFallo(null)
       try {
         const res = await authFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/owner-reports/${id}/approve`,
           { method: 'POST', body: JSON.stringify({ markAsSent: Boolean(markAsSent) }) },
         )
         if (!res.ok) {
-          const text = await res.text().catch(() => '')
-          setApproveError(text || `approve ${res.status}`)
+          setApproveError(`approve ${res.status}`)
+          setApproveFallo(await falloDelMicro(res))
           return null
         }
         const updated = (await res.json()) as OwnerReport
@@ -245,6 +261,7 @@ export function useOwnerReports(
         return updated
       } catch (err) {
         setApproveError(err instanceof Error ? err.message : 'approve failed')
+        setApproveFallo(err)
         return null
       } finally {
         setIsApproving(false)
@@ -299,9 +316,11 @@ export function useOwnerReports(
     generate,
     isGenerating,
     generateError,
+    generateFallo,
     approve,
     isApproving,
     approveError,
+    approveFallo,
     downloadPdf,
     isDownloading,
   }

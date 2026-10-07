@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Phone, ChatTeardropDots, EnvelopeSimple, CaretDown } from '@phosphor-icons/react'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
 import { Button } from '@/components/ui'
 import { type CarteraStage, stageColorClasses, stageDisplayName } from '@/lib/cartera'
@@ -70,7 +71,11 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
     </div>
   )
 
-  const listContent = isLoading ? (
+  // Cargando → vacío → lista: cada estado entra con su fundido, y los
+  // contactos que el agente agenda después entran escalonados a la lista.
+  const listContent = (
+    <CrossFade swapKey={isLoading ? 'cargando' : top10.length === 0 ? 'vacio' : 'lista'}>
+    {isLoading ? (
     <div className="space-y-2 p-5">
       {[1, 2, 3].map((i) => (
         <div key={i} className="h-10 rounded-md bg-surface-muted animate-pulse" />
@@ -79,9 +84,9 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
   ) : top10.length === 0 ? (
     emptyState
   ) : (
-    <ul className="divide-y divide-border-faint">
+    <Stagger as="ul" className="divide-y divide-border-faint">
       {top10.map((action) => (
-        <li key={action.id}>
+        <StaggerItem as="li" key={action.id}>
           <button
             type="button"
             onClick={() => router.push(`/panel/inmobiliaria/pagos/cobranza/deudores/${action.id}`)}
@@ -98,9 +103,11 @@ export function CobranzaNextActionsPanel({ actions, isLoading = false }: Cobranz
             </div>
             <StageBadge stage={action.stage} />
           </button>
-        </li>
+        </StaggerItem>
       ))}
-    </ul>
+    </Stagger>
+  )}
+    </CrossFade>
   )
 
   return (

@@ -152,19 +152,22 @@ describe('ArriendoDelContrato — un contrato AL DÍA, de arriba abajo', () => {
     expect(barra.getAttribute('aria-valuetext')).toBe('Mes 13 de 24 · del 21 ago 2025 al 20 ago 2027')
     expect(barra.children).toHaveLength(24)
     expect($('marca-de-hoy')).not.toBeNull()
+    // 🔴 03-10: «Hoy · 3 oct 2026» no se parte en dos renglones a 390 px
+    // (bajaba «2026» encima de la barra).
+    expect($('etiqueta-de-hoy')?.className).toContain('whitespace-nowrap')
   })
 
   it('3 · cuánto paga y cuándo, sin «Día 21 / +2 de plazo»', () => {
-    expect(texto('canon-del-arriendo')).toBe('$1.650.000 al mes')
+    expect(texto('canon-del-arriendo')).toBe('$ 1.650.000 al mes')
     expect(texto('ritmo-de-pago')).toBe('Paga el 21 de cada mes, con 2 días de plazo.')
     expect(container.textContent).not.toContain('+2 de plazo')
   })
 
   it('4 · cómo va con la plata, desde el estado de cuenta', () => {
-    expect(texto('resta-por-pagar')).toBe('$19.214.516')
+    expect(texto('resta-por-pagar')).toBe('$ 19.214.516')
     expect(texto('cuotas-pagadas')).toBe('13 de 24 cuotas pagadas')
     expect(texto('proxima-cuota')).toBe('21 sep 2026')
-    expect(container.textContent).toContain('$1.650.000 · en 5 días')
+    expect(container.textContent).toContain('$\u00a01.650.000 · en 5 días')
     expect($('estado-de-la-deuda')!.getAttribute('data-estado')).toBe('AL_DIA')
     expect(texto('estado-nombre')).toBe('Al día')
     expect(texto('estado-detalle')).toBe('Nada vencido')
@@ -192,13 +195,13 @@ describe('ArriendoDelContrato — los TRES estados de la deuda', () => {
 
     expect($('estado-de-la-deuda')!.getAttribute('data-estado')).toBe('VENCIDO_EN_PLAZO')
     expect(texto('estado-nombre')).toBe('Vencido, en plazo')
-    expect(texto('estado-detalle')).toBe('$1.650.000 vencido · le queda 1 día de plazo')
+    expect(texto('estado-detalle')).toBe('$ 1.650.000 vencido · le queda 1 día de plazo')
     expect(texto('proxima-cuota')).toBe('21 oct 2026')
   })
 
   it('el último día de plazo se dice así', async () => {
     await pintar(contrato(), '2026-09-23')
-    expect(texto('estado-detalle')).toBe('$1.650.000 vencido · hoy es su último día de plazo')
+    expect(texto('estado-detalle')).toBe('$ 1.650.000 vencido · hoy es su último día de plazo')
   })
 
   it('EN CARTERA: pasó el plazo, con los días de mora', async () => {
@@ -206,7 +209,7 @@ describe('ArriendoDelContrato — los TRES estados de la deuda', () => {
 
     expect($('estado-de-la-deuda')!.getAttribute('data-estado')).toBe('EN_CARTERA')
     expect(texto('estado-nombre')).toBe('En cartera')
-    expect(texto('estado-detalle')).toBe('$1.650.000 en cartera · 12 días de mora')
+    expect(texto('estado-detalle')).toBe('$ 1.650.000 en cartera · 12 días de mora')
   })
 
   it('cartera y algo en plazo a la vez: dice cuánto es cartera y cuánto va vencido en total', async () => {
@@ -216,7 +219,7 @@ describe('ArriendoDelContrato — los TRES estados de la deuda', () => {
     await pintar(contrato(), '2026-09-22')
 
     expect(texto('estado-nombre')).toBe('En cartera')
-    expect(texto('estado-detalle')).toBe('$1.650.000 en cartera · 30 días de mora $3.300.000 vencido en total')
+    expect(texto('estado-detalle')).toBe('$ 1.650.000 en cartera · 30 días de mora $ 3.300.000 vencido en total')
   })
 
   it('con el plazo heredado todavía por llegar, no afirma ningún estado', async () => {
@@ -252,7 +255,7 @@ describe('ArriendoDelContrato — cuando el estado de cuenta no está', () => {
 
     expect($('cuenta-cargando')).not.toBeNull()
     expect($('resta-por-pagar')).toBeNull()
-    expect(container.textContent).not.toContain('$0')
+    expect(container.textContent).not.toContain('$ 0')
   })
 
   it('fallo: lo dice y deja reintentar', async () => {
@@ -366,8 +369,9 @@ describe('ArriendoDelContrato — la barra y el movimiento', () => {
     })
 
     const tramos = container.querySelectorAll('[role="progressbar"] > div > div')
-    expect((tramos[0] as HTMLElement).style.width).toBe('100%')
-    expect((tramos[23] as HTMLElement).style.width).toBe('0%')
+    // Llena con `scaleX` (transform), no con `width` (03-10-2026).
+    expect((tramos[0] as HTMLElement).style.transform).toBe('scaleX(1)')
+    expect((tramos[23] as HTMLElement).style.transform).toBe('scaleX(0)')
     // La transición sólo existe bajo `motion-safe:`.
     expect((tramos[0] as HTMLElement).className).not.toMatch(/(^|\s)transition-/)
   })
@@ -405,5 +409,45 @@ describe('AvisoDelContrato — el tono vive en el círculo, no en la caja', () =
     await act(async () => botones.find((b) => b.textContent?.includes('Terminar'))!.click())
     expect(principal).toHaveBeenCalledTimes(1)
     expect(secundaria).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('QA-CONT-95 (B-16) · el contrato cancelado', () => {
+  it('🔴 no muestra «Mes 1 de 12 · Quedan 11 meses»: dice que se canceló', async () => {
+    await pintar(
+      contrato({ status: 'cancelled', startDate: '2026-10-04T00:00:00.000Z', endDate: '2027-10-03T00:00:00.000Z' }),
+      '2026-10-04',
+    )
+    const linea = texto('linea-del-contrato') ?? ''
+    expect(linea).toContain('Se canceló')
+    expect(linea).not.toContain('Quedan')
+  })
+})
+
+describe('QA-CONT-95 r3 (D-25) · la deuda subrogada a la aseguradora', () => {
+  it('🔴 la ficha la dice aparte, con la aseguradora, el siniestro y el valor', async () => {
+    const conSubrogacion = {
+      ...estadoDeCuenta(),
+      subrogacion: {
+        aseguradoras: [
+          { nombre: 'Aseguradora Prueba S.A.', nit: '860000123', valorCop: 2_900_000, siniestros: ['SIN-PC-001'] },
+        ],
+        totalCop: 2_900_000,
+      },
+    }
+    uso.valor = listo({ cuenta: { estado: 'listo', contrato: conSubrogacion, tenantRef: '71234567' } })
+    await pintar(contrato(), '2026-09-16')
+    const caja = texto('subrogacion-del-contrato') ?? ''
+    expect(caja).toContain('Deuda subrogada a la aseguradora')
+    expect(caja).toContain('Aseguradora Prueba S.A. · NIT 860000123 · SIN-PC-001:')
+    expect(caja).toMatch(/2\.900\.000/)
+    expect(caja).toContain('no entran en «Resta por pagar»')
+    // No suma a lo que se le debe a la inmobiliaria.
+    expect(texto('resta-por-pagar')).toMatch(/19\.214\.516/)
+  })
+
+  it('sin subrogación no pinta nada', async () => {
+    await pintar(contrato(), '2026-09-16')
+    expect($('subrogacion-del-contrato')).toBeNull()
   })
 })

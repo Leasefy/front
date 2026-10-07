@@ -28,6 +28,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { estaVivo, type ReciboDeCaja } from '@/lib/api/recibos-de-caja.types';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import {
+  MENSAJES_DEL_RECIBO,
+  MOTIVO_DE_ANULAR_MAXIMO,
+  MOTIVO_DE_ANULAR_MINIMO,
+} from '@/lib/recaudo/limites-del-recibo';
 
 export interface RecibosDeCajaHistorialProps {
   recibos: ReciboDeCaja[];
@@ -62,6 +69,8 @@ export function RecibosDeCajaHistorial({
   const [motivo, setMotivo] = React.useState('');
   const [anulando, setAnulando] = React.useState(false);
   const [errorDeAnular, setErrorDeAnular] = React.useState<string | null>(null);
+  /** El error del motivo (el de la pantalla o el que mandó el servidor en `campos`). */
+  const [errorDelMotivo, setErrorDelMotivo] = React.useState<string | null>(null);
 
   const ordenados = React.useMemo(() => [...recibos].sort(masRecientePrimero), [recibos]);
   const vivos = React.useMemo(() => ordenados.filter(estaVivo), [ordenados]);
@@ -74,17 +83,24 @@ export function RecibosDeCajaHistorial({
     setAAnular(null);
     setMotivo('');
     setErrorDeAnular(null);
+    setErrorDelMotivo(null);
   }, []);
 
   const confirmarAnular = React.useCallback(async () => {
     if (!aAnular || !onAnular) return;
     const limpio = motivo.trim();
     if (!limpio) {
-      setErrorDeAnular(t('recibos.anular.motivoRequerido'));
+      setErrorDelMotivo(t('recibos.anular.motivoRequerido'));
+      return;
+    }
+    // Los mismos topes y frases que el back (`lib/recaudo/limites-del-recibo.ts`).
+    if (limpio.length < MOTIVO_DE_ANULAR_MINIMO) {
+      setErrorDelMotivo(MENSAJES_DEL_RECIBO.motivoCorto);
       return;
     }
     setAnulando(true);
     setErrorDeAnular(null);
+    setErrorDelMotivo(null);
     try {
       await onAnular(aAnular, limpio);
       toast.success(t('recibos.anular.anulado', { numero: String(aAnular.numero) }), {
@@ -92,8 +108,21 @@ export function RecibosDeCajaHistorial({
       });
       cerrarAnular();
     } catch (error) {
-      // El mensaje del back va tal cual: dice POR QUÉ no se pudo.
-      setErrorDeAnular(error instanceof Error ? error.message : t('recibos.anular.fallo'));
+      /*
+       * El motivo del back (un 4xx) dice POR QUÉ no se pudo; un 5xx, que fue
+       * nuestro (con la referencia). Un 400 sobre el motivo va bajo el campo,
+       * con el foco (02-10-2026).
+       */
+      const { porCampo, sueltos } = repartirErroresDelServidor(error, {
+        campos: ['motivo'] as const,
+        porDefecto: t('recibos.anular.fallo'),
+        accion: 'anular el recibo',
+      });
+      if (porCampo.motivo) {
+        setErrorDelMotivo(porCampo.motivo);
+        document.getElementById('motivo-anulacion')?.focus();
+      }
+      setErrorDeAnular(sueltos.length > 0 ? sueltos.join(' · ') : null);
     } finally {
       setAnulando(false);
     }
@@ -247,9 +276,9 @@ export function RecibosDeCajaHistorial({
 
       {/* Anular — el motivo es obligatorio y el back lo exige. */}
       <Dialog open={aAnular !== null} onOpenChange={(abierto) => !abierto && cerrarAnular()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent size="sm" variant="destructive" icon={<Prohibit weight="bold" />}>
           <DialogHeader>
-            <DialogTitle className="text-foreground">
+            <DialogTitle>
               {t('recibos.anular.titulo', { numero: String(aAnular?.numero ?? '') })}
             </DialogTitle>
             <DialogDescription>
@@ -266,11 +295,18 @@ export function RecibosDeCajaHistorial({
             <Textarea
               id="motivo-anulacion"
               rows={3}
+              maxLength={MOTIVO_DE_ANULAR_MAXIMO}
               value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
+              onChange={(e) => {
+                setMotivo(e.target.value);
+                setErrorDelMotivo(null);
+              }}
               placeholder={t('recibos.anular.motivoPlaceholder')}
+              aria-invalid={Boolean(errorDelMotivo) || undefined}
+              aria-describedby="motivo-anulacion-error"
               className="w-full resize-none"
             />
+            <ErrorDelCampo id="motivo-anulacion-error" mensaje={errorDelMotivo} />
           </div>
 
           {errorDeAnular && <Banner variant="danger">{errorDeAnular}</Banner>}

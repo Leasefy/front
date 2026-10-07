@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { Appear, CrossFade, Stagger, StaggerItem } from '@leasefy/cadence';
 import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2';
 import { Button } from '@/components/ui/button';
@@ -42,12 +43,16 @@ const testimonials = [
 
 export default function InmobiliariasPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  // «Siguiente» trae el par nuevo por la derecha; «Anterior», por la izquierda.
+  const [direccion, setDireccion] = useState<'forward' | 'backward'>('forward');
 
   const nextTestimonial = () => {
+    setDireccion('forward');
     setCurrentIndex((prev) => (prev + 2) % testimonials.length);
   };
 
   const prevTestimonial = () => {
+    setDireccion('backward');
     setCurrentIndex((prev) => (prev - 2 + testimonials.length) % testimonials.length);
   };
 
@@ -73,7 +78,7 @@ export default function InmobiliariasPage() {
               {/* Left Content */}
               <div className="space-y-4">
                 <motion.span
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
                   className="inline-flex items-center gap-2 text-xs font-mono uppercase font-normal text-white/90 bg-white/10 backdrop-blur-2xl rounded-full px-4 py-2 border border-white/15"
                 >
@@ -82,9 +87,8 @@ export default function InmobiliariasPage() {
                 </motion.span>
 
                 <motion.h1
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
                   className="text-4xl md:text-5xl lg:text-6xl font-heading font-medium text-white tracking-[-0.03em] leading-[1.1]"
                 >
                   Escala tu operación
@@ -92,9 +96,8 @@ export default function InmobiliariasPage() {
                 </motion.h1>
 
                 <motion.p
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
                   className="!mt-2 text-lg text-white/70 max-w-lg"
                 >
                   CRM de candidatos, scoring con IA, contratos digitales y API completa.
@@ -102,9 +105,8 @@ export default function InmobiliariasPage() {
                 </motion.p>
 
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
                   className="flex flex-col sm:flex-row gap-3 pt-2"
                 >
                   <Link href="/auth">
@@ -125,9 +127,8 @@ export default function InmobiliariasPage() {
 
                 {/* Hero Stats - No separator line */}
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
                   className="flex items-center gap-8 pt-6"
                 >
                   {[
@@ -145,22 +146,19 @@ export default function InmobiliariasPage() {
 
               {/* Right - Hero Widget (Glass style, aligned to right) */}
               <motion.div
-                initial={{ opacity: 0, x: 50, scale: 0.95 }}
+                initial={false}
                 animate={{ opacity: 1, x: 0, scale: 1 }}
-                transition={{ delay: 0.3, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                 className="hidden lg:flex lg:justify-end"
               >
                 <div className="relative">
                   <motion.div
-                    initial={{ opacity: 0 }}
+                    initial={false}
                     animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4, duration: 0.5 }}
                     className="bg-white/10 backdrop-blur-2xl rounded-xl border border-white/15 p-5 w-[300px]"
                   >
                     <motion.div
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={false}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5, duration: 0.4 }}
                       className="flex items-center gap-3 mb-5"
                     >
                       <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
@@ -171,9 +169,8 @@ export default function InmobiliariasPage() {
                         <p className="text-white/60 text-xs">Plan Flex</p>
                       </div>
                       <motion.div
-                        initial={{ scale: 0 }}
+                        initial={false}
                         animate={{ scale: 1 }}
-                        transition={{ delay: 0.8, type: "spring", stiffness: 400 }}
                       >
                         <CheckCircle className="w-5 h-5 text-[#2C7A53]" />
                       </motion.div>
@@ -181,9 +178,8 @@ export default function InmobiliariasPage() {
 
                     <div className="space-y-3">
                       <motion.div
-                        initial={{ opacity: 0, y: 15 }}
+                        initial={false}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6, duration: 0.4 }}
                         className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/10"
                       >
                         <div className="flex items-center justify-between mb-1">
@@ -195,27 +191,24 @@ export default function InmobiliariasPage() {
 
                       <div className="grid grid-cols-3 gap-2">
                         <motion.div
-                          initial={{ opacity: 0, y: 15 }}
+                          initial={false}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.7, duration: 0.4 }}
                           className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center border border-white/10"
                         >
                           <p className="text-lg font-bold text-white">45</p>
                           <p className="text-[9px] text-white/60">Propiedades</p>
                         </motion.div>
                         <motion.div
-                          initial={{ opacity: 0, y: 15 }}
+                          initial={false}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.75, duration: 0.4 }}
                           className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center border border-white/10"
                         >
                           <p className="text-lg font-bold text-white">12</p>
                           <p className="text-[9px] text-white/60">Agentes</p>
                         </motion.div>
                         <motion.div
-                          initial={{ opacity: 0, y: 15 }}
+                          initial={false}
                           animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.8, duration: 0.4 }}
                           className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center border border-white/10"
                         >
                           <p className="text-lg font-bold text-white">89%</p>
@@ -227,9 +220,8 @@ export default function InmobiliariasPage() {
 
                   {/* Floating notification */}
                   <motion.div
-                    initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                    initial={false}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ delay: 1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                     className="absolute -bottom-4 -left-4 bg-white rounded-xl p-3 border border-border"
                   >
                     <div className="flex items-center gap-2.5">
@@ -268,11 +260,7 @@ export default function InmobiliariasPage() {
             {/* Problems Bento Grid */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
               {/* Image Card 1 - Procesos manuales */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
+              <Appear inView distance="md" duration="slow"
                 className="md:col-span-4 relative rounded-xl overflow-hidden h-[320px] group"
               >
                 <Image
@@ -280,7 +268,7 @@ export default function InmobiliariasPage() {
                   alt="Manual processes"
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
@@ -293,14 +281,10 @@ export default function InmobiliariasPage() {
                   <h3 className="text-white text-xl font-mono uppercase font-normal mb-1">Procesos manuales</h3>
                   <p className="text-white/70 text-sm">Excel, WhatsApp, papeles. Tu equipo pierde horas en tareas repetitivas.</p>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Image Card 2 - Evaluaciones lentas */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+              <Appear inView distance="md" duration="slow" delay={0.1}
                 className="md:col-span-4 relative rounded-xl overflow-hidden h-[320px] group"
               >
                 <Image
@@ -308,7 +292,7 @@ export default function InmobiliariasPage() {
                   alt="Slow evaluations"
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
@@ -321,14 +305,10 @@ export default function InmobiliariasPage() {
                   <h3 className="text-white text-xl font-mono uppercase font-normal mb-1">Evaluaciones lentas</h3>
                   <p className="text-white/70 text-sm">Días para evaluar un candidato. Los buenos inquilinos se van con la competencia.</p>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Image Card 3 - Impagos frecuentes */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.2 }}
+              <Appear inView distance="md" duration="slow" delay={0.2}
                 className="md:col-span-4 relative rounded-xl overflow-hidden h-[320px] group"
               >
                 <Image
@@ -336,7 +316,7 @@ export default function InmobiliariasPage() {
                   alt="Payment defaults"
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
+                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10" />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
@@ -349,14 +329,10 @@ export default function InmobiliariasPage() {
                   <h3 className="text-white text-xl font-mono uppercase font-normal mb-1">Impagos frecuentes</h3>
                   <p className="text-white/70 text-sm">Sin scoring predictivo, los impagos afectan tu rentabilidad.</p>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Illustration Card 1 - Sin integración */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.3 }}
+              <Appear inView distance="md" duration="slow" delay={0.3}
                 className="md:col-span-6 bg-surface rounded-xl p-8 h-[280px] flex flex-col justify-between"
               >
                 <div>
@@ -378,14 +354,10 @@ export default function InmobiliariasPage() {
                   </div>
                   <span className="text-xs text-muted-foreground">3 sistemas desconectados</span>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Illustration Card 2 - Escalabilidad limitada */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.4 }}
+              <Appear inView distance="md" duration="slow" delay={0.32}
                 className="md:col-span-6 bg-surface rounded-xl p-8 h-[280px] flex flex-col justify-between"
               >
                 <div>
@@ -408,7 +380,7 @@ export default function InmobiliariasPage() {
                     <span className="text-xs text-muted-foreground">con<br/>automatización</span>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
             </div>
           </div>
         </section>
@@ -433,11 +405,7 @@ export default function InmobiliariasPage() {
             {/* Solutions Bento Grid */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5">
               {/* Large Card - CRM de Candidatos */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
+              <Appear inView distance="md" duration="slow"
                 className="md:col-span-7 bg-foreground rounded-xl p-6 relative overflow-hidden"
               >
                 <div className="flex gap-6">
@@ -482,14 +450,10 @@ export default function InmobiliariasPage() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Small Card - Scoring con IA */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.1 }}
+              <Appear inView distance="md" duration="slow" delay={0.1}
                 className="md:col-span-5 bg-white rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
@@ -523,14 +487,10 @@ export default function InmobiliariasPage() {
                     <span className="text-[10px] text-[#2C7A53] font-medium mt-1">Bajo riesgo</span>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Small Card - Multi-Propiedad */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.2 }}
+              <Appear inView distance="md" duration="slow" delay={0.2}
                 className="md:col-span-5 bg-white rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
@@ -562,14 +522,10 @@ export default function InmobiliariasPage() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Large Card - API REST */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.3 }}
+              <Appear inView distance="md" duration="slow" delay={0.3}
                 className="md:col-span-7 bg-[#6B6B6B] rounded-xl p-6 relative overflow-hidden"
               >
                 <div className="flex gap-6">
@@ -610,14 +566,10 @@ export default function InmobiliariasPage() {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
 
               {/* Additional row - Contratos Digitales & Seguro */}
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.4 }}
+              <Appear inView distance="md" duration="slow" delay={0.32}
                 className="md:col-span-6 bg-white rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
@@ -646,13 +598,9 @@ export default function InmobiliariasPage() {
                     <span className="text-[9px] text-muted-foreground mt-1.5">Firmado</span>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
 
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.5 }}
+              <Appear inView distance="md" duration="slow" delay={0.32}
                 className="md:col-span-6 bg-white rounded-xl p-6 border border-border"
               >
                 <div className="flex gap-4">
@@ -674,7 +622,7 @@ export default function InmobiliariasPage() {
                     <span className="text-[9px] text-muted-foreground mt-1.5">100% cubierto</span>
                   </div>
                 </div>
-              </motion.div>
+              </Appear>
             </div>
           </div>
         </section>
@@ -683,11 +631,7 @@ export default function InmobiliariasPage() {
         <section className="bg-white overflow-hidden">
           <div className="container-platform py-[80px] pb-[100px]">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.6 }}
+              <Appear inView direction="right" distance="md" duration="slow"
                 className="lg:sticky lg:top-32"
               >
                 <h2 className="text-[40px] md:text-[52px] font-heading font-light text-foreground tracking-[-0.03em] leading-[1.05] mb-10">
@@ -710,20 +654,21 @@ export default function InmobiliariasPage() {
                     <CaretRight className="w-5 h-5" />
                   </button>
                 </div>
-              </motion.div>
+              </Appear>
 
-              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-5">
-                <AnimatePresence mode="popLayout">
+              {/*
+                El par de testimonios cambia como un paso: el viejo se va hacia
+                un lado y el nuevo entra desde el otro (`CrossFade`); adentro
+                las dos tarjetas llegan una tras otra (`Stagger`, 40 ms).
+              */}
+              <CrossFade swapKey={currentIndex} direction={direccion} className="lg:col-span-2">
+                <Stagger className="grid grid-cols-1 md:grid-cols-2 gap-5" layout={false}>
                   {[0, 1].map((offset) => {
                     const index = (currentIndex + offset) % testimonials.length;
                     const testimonial = testimonials[index];
                     return (
-                      <motion.div
-                        key={`${index}-${currentIndex}`}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.4, delay: offset * 0.1 }}
+                      <StaggerItem
+                        key={testimonial.author}
                         className="bg-muted rounded-xl p-8 flex flex-col"
                       >
                         <div className="mb-6">
@@ -755,11 +700,11 @@ export default function InmobiliariasPage() {
                             </p>
                           </div>
                         </div>
-                      </motion.div>
+                      </StaggerItem>
                     );
                   })}
-                </AnimatePresence>
-              </div>
+                </Stagger>
+              </CrossFade>
             </div>
           </div>
         </section>

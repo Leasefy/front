@@ -24,7 +24,8 @@
  * lectura es no tocar el modelo.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useId, useMemo, useState } from 'react'
+import { CrossFade, MotionIndicator } from '@leasefy/cadence'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { ArrowSquareOut, Lifebuoy } from '@phosphor-icons/react'
@@ -109,6 +110,8 @@ export function PqrsDelContrato({ contractId }: Props) {
   // El error ENTERO: `FalloDeCarga` lo clasifica y no muestra el inglés del back.
   const [error, setError] = useState<unknown>(null)
   const [filtro, setFiltro] = useState<PqrsEstado | null>(null)
+  // La marca del filtro activo es UNA que se desliza al nuevo.
+  const marcaDelFiltro = `${useId()}-filtro`
 
   // La solicitud devuelve a quien llegó desde acá a ESTE contrato y no a la
   // lista de solicitudes. Fuera del App Router `usePathname()` viene null y el
@@ -173,83 +176,105 @@ export function PqrsDelContrato({ contractId }: Props) {
         </Button>
       </div>
 
-      {datos === null && error === null ? (
-        <p className="text-sm text-muted-foreground">Cargando…</p>
-      ) : error !== null ? (
-        <FalloDeCarga
-          error={error}
-          queEs="las PQRS de este contrato"
-          onReintentar={cargar}
-          enmarcado={false}
-        />
-      ) : datos !== null && datos.relacion.propertyId === null ? (
-        // Sin inmueble no hay con qué atar una PQRS, y decirlo es distinto de
-        // decir «no tiene»: acá falta el vínculo, no la historia.
-        <p className="text-sm text-muted-foreground" data-testid="pqrs-del-contrato-sin-inmueble">
-          Este contrato todavía no tiene inmueble asociado, así que no hay con
-          qué atarle una PQRS.
-        </p>
-      ) : solicitudes.length === 0 ? (
-        <div className="space-y-1" data-testid="pqrs-del-contrato-vacio">
-          <p className="text-sm text-muted-foreground">Este contrato no tiene PQRS.</p>
-          <p className="text-caption text-muted-foreground">{lineaDeRelacion(datos!.relacion)}</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <p
-              className="text-sm font-medium text-foreground tabular-nums"
-              data-testid="pqrs-del-contrato-resumen"
-            >
-              {lineaDeResumen(datos!.resumen)}
-            </p>
+      {/* Cargando → las PQRS (o el fallo, o el vacío): se cruzan. `popLayout`:
+          lo nuevo entra YA y lo viejo se va por encima. */}
+      <CrossFade
+        swapKey={
+          datos === null && error === null
+            ? 'cargando'
+            : error !== null
+              ? 'fallo'
+              : datos !== null && datos.relacion.propertyId === null
+                ? 'sin-inmueble'
+                : solicitudes.length === 0
+                  ? 'vacio'
+                  : 'lista'
+        }
+        mode="popLayout"
+        direction="none"
+      >
+        {datos === null && error === null ? (
+          <p className="text-sm text-muted-foreground">Cargando…</p>
+        ) : error !== null ? (
+          <FalloDeCarga
+            error={error}
+            queEs="las PQRS de este contrato"
+            onReintentar={cargar}
+            enmarcado={false}
+          />
+        ) : datos !== null && datos.relacion.propertyId === null ? (
+          // Sin inmueble no hay con qué atar una PQRS, y decirlo es distinto de
+          // decir «no tiene»: acá falta el vínculo, no la historia.
+          <p className="text-sm text-muted-foreground" data-testid="pqrs-del-contrato-sin-inmueble">
+            Este contrato todavía no tiene inmueble asociado, así que no hay con
+            qué atarle una PQRS.
+          </p>
+        ) : solicitudes.length === 0 ? (
+          <div className="space-y-1" data-testid="pqrs-del-contrato-vacio">
+            <p className="text-sm text-muted-foreground">Este contrato no tiene PQRS.</p>
             <p className="text-caption text-muted-foreground">{lineaDeRelacion(datos!.relacion)}</p>
           </div>
-
-          {hayHerramientas && (
-            <div className="flex flex-wrap gap-2" data-testid="pqrs-del-contrato-filtro">
-              <FiltroChip activo={filtro === null} onClick={() => setFiltro(null)}>
-                Todas
-              </FiltroChip>
-              {estadosPresentes.map((estado) => (
-                <FiltroChip
-                  key={estado}
-                  activo={filtro === estado}
-                  onClick={() => setFiltro(estado)}
-                >
-                  {ESTADO_LABEL[estado]}
-                </FiltroChip>
-              ))}
+        ) : (
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <p
+                className="text-sm font-medium text-foreground tabular-nums"
+                data-testid="pqrs-del-contrato-resumen"
+              >
+                {lineaDeResumen(datos!.resumen)}
+              </p>
+              <p className="text-caption text-muted-foreground">{lineaDeRelacion(datos!.relacion)}</p>
             </div>
-          )}
 
-          <ul className="divide-y divide-border border-t border-border">
-            {pageItems.map((p) => (
-              <FilaDePqrs key={p.id} pqrs={p} href={conVuelta(`${SOLICITUDES}?pqrs=${p.id}`)} />
-            ))}
-          </ul>
+            {hayHerramientas && (
+              <div className="flex flex-wrap gap-2" data-testid="pqrs-del-contrato-filtro">
+                <FiltroChip marca={marcaDelFiltro} activo={filtro === null} onClick={() => setFiltro(null)}>
+                  Todas
+                </FiltroChip>
+                {estadosPresentes.map((estado) => (
+                  <FiltroChip
+                    key={estado}
+                    marca={marcaDelFiltro}
+                    activo={filtro === estado}
+                    onClick={() => setFiltro(estado)}
+                  >
+                    {ESTADO_LABEL[estado]}
+                  </FiltroChip>
+                ))}
+              </div>
+            )}
 
-          {hayHerramientas && shouldPaginate && (
-            <TablePagination
-              total={total}
-              page={page}
-              pageSize={pageSize}
-              pageSizeOptions={PAGE_SIZE_OPTIONS}
-              onPageChange={setPage}
-              onPageSizeChange={setPageSize}
-            />
-          )}
-        </div>
-      )}
+            <ul className="divide-y divide-border border-t border-border">
+              {pageItems.map((p) => (
+                <FilaDePqrs key={p.id} pqrs={p} href={conVuelta(`${SOLICITUDES}?pqrs=${p.id}`)} />
+              ))}
+            </ul>
+
+            {hayHerramientas && shouldPaginate && (
+              <TablePagination
+                total={total}
+                page={page}
+                pageSize={pageSize}
+                pageSizeOptions={PAGE_SIZE_OPTIONS}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+              />
+            )}
+          </div>
+        )}
+      </CrossFade>
     </section>
   )
 }
 
 function FiltroChip({
+  marca,
   activo,
   onClick,
   children,
 }: {
+  /** `layoutId` de la marca del activo: la misma en todos los chips. */
+  marca: string
   activo: boolean
   onClick: () => void
   children: React.ReactNode
@@ -260,12 +285,19 @@ function FiltroChip({
       onClick={onClick}
       aria-pressed={activo}
       className={cn(
-        'rounded-full border px-3 py-1 text-caption font-medium transition-colors',
+        'relative isolate rounded-full border px-3 py-1 text-caption font-medium transition-colors',
         activo
-          ? 'border-primary bg-primary-soft text-primary'
+          ? 'border-transparent text-primary'
           : 'border-border text-muted-foreground hover:bg-surface-muted',
       )}
     >
+      {/* El borde y el fondo del activo son una marca que se desliza. */}
+      {activo && (
+        <MotionIndicator
+          layoutId={marca}
+          className="-inset-px -z-10 rounded-full border border-primary bg-primary-soft"
+        />
+      )}
       {children}
     </button>
   )
@@ -298,7 +330,7 @@ function FilaDePqrs({ pqrs, href }: { pqrs: Pqrs; href: string }) {
           <span
             className={cn(
               'text-caption tabular-nums',
-              sla.vencido ? 'font-medium text-destructive' : 'text-muted-foreground',
+              sla.vencido ? 'font-medium text-danger' : 'text-muted-foreground',
             )}
           >
             {sla.vencido ? sla.texto : `Vence en ${sla.texto}`}

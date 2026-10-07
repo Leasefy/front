@@ -18,7 +18,7 @@
  */
 
 import { useEffect, useState } from 'react'
-import { MonoLabel } from '@leasefy/cadence'
+import { CrossFade, MonoLabel } from '@leasefy/cadence'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 import { useI18n } from '@/lib/i18n'
@@ -91,6 +91,8 @@ function SuscripcionContent() {
          No page-level EmptyState — this is a per-user toggle form (Habeas Data
          D-34-06), not a list. Even "both toggles off" is a valid state, not an
          empty one. See SUMMARY deviations. */}
+      {/* Esqueleto → formulario con su fundido (`CrossFade`). */}
+      <CrossFade swapKey={isLoading && !data ? 'cargando' : data ? 'formulario' : 'nada'} className="space-y-6">
       {isLoading && !data && <PageSkeleton variant="list" />}
 
       {data && (
@@ -145,6 +147,7 @@ function SuscripcionContent() {
           )}
         </>
       )}
+      </CrossFade>
     </div>
   )
 }

@@ -3,10 +3,20 @@
  * palabras. El back manda `{ statusCode, code, message }`; el CÓDIGO es el
  * contrato y el mensaje es copy. Acá se traduce a lo que la persona tiene
  * que hacer, no a lo que el sistema no pudo.
+ *
+ * 🔴 Sistema de errores (02-10-2026): este traductor se queda SÓLO con los
+ * códigos de negocio de la contabilidad (la tabla de abajo, la apertura ya
+ * registrada y el 403 sin código del guard de escritura). Todo lo demás —un
+ * 400 de validación con `campos`, un 409 sin código propio, un 5xx, la red—
+ * lo dice `mensajeParaLaPersona`, con la regla de oro: «conexión» sólo cuando
+ * no hubo respuesta; un 5xx, «de nuestro lado» con la referencia. Antes un
+ * `TypeError: Failed to fetch` o un 500 salían crudos en la pantalla.
  */
 
 import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { formatDate } from '@/lib/format';
+import { conCentavosEn, configDePlataAhora } from '@/lib/plata/con-centavos';
 
 const MENSAJES: Record<string, string> = {
   // puc.service.ts
@@ -78,13 +88,52 @@ function mensajeDeAperturaYaRegistrada(e: ApiError): string {
   return `Ya hay un asiento de apertura con esa fecha de corte y otros saldos. ${CORRECCION_DE_LA_APERTURA}`;
 }
 
-export function mensajeDeContabilidad(e: unknown, respaldo: string): string {
+/**
+ * El 403 de `ContabilidadEscrituraGuard`, que viene SIN `code`. Es el mismo
+ * texto de `MOTIVO_SIN_ESCRITURA` (`use-puede-escribir.ts`): la pantalla dice
+ * lo mismo antes y después del intento. Un 403 CON código
+ * (`SIN_ACCESO_A_CONTABILIDAD`, los de nómina) trae su propio mensaje y lo
+ * dice el traductor.
+ */
+/** `MONTO_INVALIDO` con la llave de la contabilidad prendida (el back dice lo mismo). */
+const MONTO_INVALIDO_CON_CENTAVOS = 'Los montos van en pesos, con hasta dos decimales (centavos).';
+
+const SIN_PERMISO_DE_ESCRITURA =
+  'Sólo el administrador o el contador de la inmobiliaria pueden mover la contabilidad.';
+
+/**
+ * «No se pudo crear el asiento.» → «crear el asiento»: lo que se estaba
+ * haciendo, para que un 5xx diga «No pudimos crear el asiento: algo falló de
+ * nuestro lado…». Si el respaldo no tiene esa forma, el 5xx dice la frase
+ * general.
+ */
+function accionDelRespaldo(respaldo: string): string | undefined {
+  const m = /^No (?:se pudo|se pudieron|pudimos) ([^.:]+)[.:]/.exec(respaldo.trim());
+  return m ? m[1].trim() : undefined;
+}
+
+/**
+ * La frase para la persona. `respaldo` es lo que se dice si el error no trae
+ * nada legible; `accion` (opcional, en infinitivo) nombra lo que se estaba
+ * haciendo para un 5xx —si falta, sale del respaldo—.
+ */
+export function mensajeDeContabilidad(e: unknown, respaldo: string, accion?: string): string {
   if (e instanceof ApiError) {
-    if (e.status === 403) {
-      return 'Sólo el administrador o el contador de la inmobiliaria pueden mover la contabilidad.';
-    }
     if (e.code === 'APERTURA_YA_REGISTRADA') return mensajeDeAperturaYaRegistrada(e);
+    // «Centavos en todo»: «sin centavos» SÓLO con la llave de la contabilidad
+    // apagada (la que ya preguntó la pantalla del asiento); prendida, el monto
+    // inválido es el que trae más de dos decimales.
+    if (
+      e.code === 'MONTO_INVALIDO' &&
+      conCentavosEn(configDePlataAhora(), 'contabilidad_facturacion_y_exogena')
+    ) {
+      return MONTO_INVALIDO_CON_CENTAVOS;
+    }
     if (e.code && MENSAJES[e.code]) return MENSAJES[e.code];
+    if (e.status === 403 && !e.code) return SIN_PERMISO_DE_ESCRITURA;
   }
-  return e instanceof Error && e.message ? e.message : respaldo;
+  return mensajeParaLaPersona(e, {
+    porDefecto: respaldo,
+    accion: accion ?? accionDelRespaldo(respaldo),
+  });
 }

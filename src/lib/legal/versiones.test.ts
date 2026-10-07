@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { VERSION_POLITICA_DE_TRATAMIENTO, VERSION_TERMINOS } from './versiones'
+import { VERSION_POLITICA_DE_TRATAMIENTO, VERSION_TERMINOS, VIGENCIA_POLITICA_DE_TRATAMIENTO } from './versiones'
+import { POLITICA_V3 } from './politica-v3'
+import { POLITICA_V4 } from './politica-v4'
 
 /**
  * La versión que se guarda como prueba tiene que ser la que está publicada.
@@ -55,3 +57,50 @@ describe('las versiones legales no se separan de lo publicado', () => {
     expect(portal).not.toContain("createEmptyDocumentConsent('")
   })
 })
+
+/**
+ * 🔴 La cláusula de las preguntas al asistente, aprobada TAL CUAL por Nico el
+ * 04-10-2026: política v4.0 (§13 y §16), la frase del Anexo de Encargo en la
+ * §19 de los términos (v2.1). Un cambio material es una versión NUEVA; la v3.0
+ * queda intacta (es lo que aceptó quien aceptó antes).
+ */
+describe('la cláusula de las preguntas al asistente (v4.0)', () => {
+  const textoDe = (secciones: typeof POLITICA_V4, n: number) =>
+    JSON.stringify(secciones.find((s) => s.n === n)?.bloques ?? [])
+
+  const VINETA_13 =
+    '**Conversaciones con el asistente de la plataforma**: 12 meses desde la última pregunta. Si borras una conversación, la borramos también de nuestros servidores.'
+  const VINETA_16 =
+    '**Revisar las preguntas que le hacen al asistente** para entender qué necesitan las inmobiliarias y mejorar sus respuestas. Las lee sólo el equipo de producto de Leasefy, con la inmobiliaria a la que pertenecen pero **sin el nombre ni el correo de quien preguntó**, y con los números largos (documentos, cuentas, teléfonos) ocultos. No las usamos para contactar a nadie, no las vendemos y no las compartimos con terceros. Se guardan 12 meses.'
+
+  it('la versión publicada es la 4.0, con su fecha de vigencia', () => {
+    expect(VERSION_POLITICA_DE_TRATAMIENTO).toBe('politica-tratamiento-v4.0')
+    expect(VIGENCIA_POLITICA_DE_TRATAMIENTO).toBe('2026-10-04')
+    const pagina = leer('src/app/privacidad/page.tsx')
+    expect(pagina).toContain('POLITICA_V4')
+    expect(pagina).toContain('VIGENCIA_POLITICA_DE_TRATAMIENTO')
+  })
+
+  it('§13 y §16 traen las viñetas nuevas palabra por palabra', () => {
+    expect(textoDe(POLITICA_V4, 13)).toContain(JSON.stringify(VINETA_13).slice(1, -1))
+    expect(textoDe(POLITICA_V4, 16)).toContain(JSON.stringify(VINETA_16).slice(1, -1))
+  })
+
+  it('la v3.0 no se tocó, y fuera de esas dos viñetas la v4.0 es la v3.0', () => {
+    expect(textoDe(POLITICA_V3, 13)).not.toContain('asistente de la plataforma')
+    expect(textoDe(POLITICA_V3, 16)).not.toContain('Revisar las preguntas')
+    const sinLasNuevas = JSON.stringify(POLITICA_V4)
+      .replace(',' + JSON.stringify(VINETA_13), '')
+      .replace(',' + JSON.stringify(VINETA_16), '')
+    expect(sinLasNuevas).toBe(JSON.stringify(POLITICA_V3))
+  })
+
+  it('los términos v2.1 traen la frase del Anexo de Encargo en la §19', () => {
+    expect(VERSION_TERMINOS).toBe('terminos-v2.1')
+    const terminos = leer('src/components/legal/TerminosContenido.tsx').replace(/\s+/g, ' ')
+    expect(terminos).toContain(
+      'La inmobiliaria autoriza a Leasefy a revisar, en los términos de la §16 de la Política, las preguntas que su equipo hace al asistente, con el único fin de mejorar el servicio.',
+    )
+  })
+})
+

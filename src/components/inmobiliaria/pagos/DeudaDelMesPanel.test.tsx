@@ -352,6 +352,16 @@ describe('el mes', () => {
   it('mesesRecientes va del más nuevo al más viejo y cruza el año', () => {
     expect(mesesRecientes(3, new Date(2026, 1, 15))).toEqual(['2026-02', '2026-01', '2025-12'])
   })
+
+  it('🔴 PG-R18 (03-10-2026): con `adelante` ofrece los meses que vienen, también cruzando el año', () => {
+    expect(mesesRecientes(2, new Date(2026, 10, 15), 3)).toEqual([
+      '2027-02',
+      '2027-01',
+      '2026-12',
+      '2026-11',
+      '2026-10',
+    ])
+  })
 })
 
 describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
@@ -601,6 +611,32 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     expect($('[data-testid="pagos-cuotas-tabla"]').className).not.toContain('border-border')
   })
 
+  it('🔴 N-02 (QA-PAGOS-95): dentro de la frase el mes va en minúscula («que se deben en octubre de 2026»), no «Octubre»', () => {
+    montar()
+    const frase = $('[data-testid="resumen-del-mes"]').textContent ?? ''
+    expect(frase).toMatch(/que se deben en [a-z]+ de \d{4}/)
+    expect(frase).not.toMatch(/que se deben en [A-Z]/)
+    expect($('[data-testid="alcance-de-la-tabla"]').textContent).toMatch(/cuotas? de [a-z]+ de \d{4}\./)
+  })
+
+  it('🔴 A-04 (QA-PAGOS-95): sin plazo fijado, el aviso lleva «Fijar los días de plazo» al campo', () => {
+    conMes(
+      mes({
+        filas: [fila({ cajon: 'VENCIDA_EN_PLAZO', plazoSinFijar: true, enMora: false, diasDeMora: 0 })],
+        avisos: ['Hay 1 cuota vencida que no entra a la cartera en mora ni a la cobranza porque esta inmobiliaria todavía no fijó sus días de plazo para pagar.'],
+      }),
+    )
+    montar()
+    const enlace = $('[data-testid="mes-fijar-el-plazo"]') as HTMLAnchorElement
+    expect(enlace.textContent).toBe('Fijar los días de plazo')
+    expect(enlace.getAttribute('href')).toBe('/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo')
+  })
+
+  it('con el plazo fijado no ofrece fijarlo', () => {
+    montar()
+    expect(document.querySelector('[data-testid="mes-fijar-el-plazo"]')).toBeNull()
+  })
+
   it('🔴 dice lo que estos números NO cuentan', () => {
     conMes(
       mes({
@@ -628,6 +664,12 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     montar()
     expect($('[data-testid="fallo-de-carga"]').textContent).toContain('502 Bad Gateway')
     expect(host.querySelector('[data-testid="resumen-del-mes"]')).toBeNull()
+  })
+
+  it('🔴 PG-13 (03-10-2026): «Leído contra el 15 de septiembre de 2026», no «2026-09-15»', () => {
+    montar()
+    expect(host.textContent).toContain('Leído contra el 15 de septiembre de 2026')
+    expect(host.textContent).not.toContain('2026-09-15')
   })
 
   it('🔴 la columna «Período» dice el mes: el back manda `mes`, no `month`', () => {
@@ -719,6 +761,16 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
       )
     })
 
+    it('🔴 PG-R12 (03-10-2026): el cajón de la cuota ofrece SU cuenta de cobro, que sale de la cuota y no de un cobro', () => {
+      montar()
+      act(() => {
+        ($('[data-testid="cuota-fila"]') as HTMLElement).click()
+      })
+      expect(
+        document.body.querySelector('[data-testid="cajon-cuenta-de-cobro"]')?.getAttribute('href'),
+      ).toBe('/panel/inmobiliaria/pagos/cartera/cuotas/q1/cuenta-de-cobro?volver=%2Fpanel%2Finmobiliaria%2Fpagos')
+    })
+
     it('el pie lo dice con palabras: cada fila es un mes del estado de cuenta', () => {
       montar()
       expect(host.textContent).toContain('estado de cuenta')
@@ -763,22 +815,22 @@ describe('DeudaDelMesPanel — la deuda del mes, no los cobros', () => {
     montar()
 
     // Las cifras grandes no cambian: siguen siendo capital.
-    expect($('[data-testid="mes-falta"]').textContent).toBe('$6.000.000')
-    expect($('[data-testid="mes-cartera"]').textContent).toBe('$2.000.000')
+    expect($('[data-testid="mes-falta"]').textContent).toBe('$\u00a06.000.000')
+    expect($('[data-testid="mes-cartera"]').textContent).toBe('$\u00a02.000.000')
     expect($('[data-testid="mes-intereses"]').textContent).toBe(
-      'cartera.interes.masIntereses:$52.000',
+      'cartera.interes.masIntereses:$\u00a052.000',
     )
     // `toContain` y no `toBe` desde el 21-09: el resumen del mes dejó de ser
     // tres fichas y pasó a ser una frase, así que este renglón vive dentro de
     // ella y trae el espacio y el punto de la oración. Lo que la prueba cuida
     // es que el interés se diga aparte del capital, no la puntuación.
     expect($('[data-testid="mes-falta-con-intereses"]').textContent).toContain(
-      'cartera.interes.conIntereses:$6.052.000',
+      'cartera.interes.conIntereses:$\u00a06.052.000',
     )
     expect(todos('[data-testid="cuota-intereses"]').map((e) => e.textContent)).toEqual(
       expect.arrayContaining([
-        'cartera.interes.masIntereses:$40.000',
-        'cartera.interes.masIntereses:$12.000',
+        'cartera.interes.masIntereses:$\u00a040.000',
+        'cartera.interes.masIntereses:$\u00a012.000',
       ]),
     )
   })

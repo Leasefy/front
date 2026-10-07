@@ -164,6 +164,7 @@ export function TitularDeLaCuentaCampos({
               <Select value={valor.tipo || undefined} onValueChange={(v) => cambiar({ tipo: v as DocumentType })}>
                 <SelectTrigger
                   id={`${prefijo}titular-tipo`}
+                  aria-required="true"
                   data-testid="titular-tipo-documento"
                   title={valor.tipo ? t(ETIQUETA_DEL_TIPO[valor.tipo]) : undefined}
                   className={cn('[&>span]:truncate [&>span]:text-left', errores.tipo && 'border-danger/30')}
@@ -195,6 +196,7 @@ export function TitularDeLaCuentaCampos({
                 />
                 <Input
                   id={`${prefijo}titular-numero`}
+                  aria-required="true"
                   type="text"
                   value={valor.numero}
                   onChange={(e) => cambiar({ numero: e.target.value })}
@@ -218,6 +220,7 @@ export function TitularDeLaCuentaCampos({
               />
               <Input
                 id={`${prefijo}titular-nombre`}
+                aria-required="true"
                 type="text"
                 value={valor.nombre}
                 onChange={(e) => cambiar({ nombre: e.target.value })}

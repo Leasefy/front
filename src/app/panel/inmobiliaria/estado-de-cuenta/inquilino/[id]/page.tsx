@@ -19,9 +19,13 @@ import { CompartirEstadoDeCuenta } from '@/components/estado-de-cuenta/Compartir
 import { PantallaDelEstadoDeCuenta } from '@/components/estado-de-cuenta/PantallaDelEstadoDeCuenta';
 import { RUTA_DE_REGLAS_DE_MORA } from '@/components/estado-de-cuenta/intereses';
 import { estadoDeCuentaApi } from '@/lib/api/estado-de-cuenta.service';
+import { cuentaDelPortal, inquilinosApi } from '@/lib/api/inquilinos.service';
+import { identidadDeLaRuta } from '@/lib/inquilinos/identidad-de-la-ruta';
 import { rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { ProveedorDeAnularRecibo } from '@/components/estado-de-cuenta/AnularReciboDeLaFila';
+import { ProveedorDeCondonarIntereses } from '@/components/estado-de-cuenta/CondonarInteresesDeLaFila';
+import { GestionesDeLaPersona } from '@/components/cobranza-manual/GestionesDeLaPersona';
 
 const LISTA = '/panel/inmobiliaria/inquilinos';
 
@@ -36,15 +40,63 @@ function Contenido() {
   // Al anular se vuelve a montar la pantalla, que relee el documento.
   const { isAdmin } = usePermissions();
   const [version, setVersion] = React.useState(0);
+  // COBRANZA-MANUAL (04-10-2026): las gestiones de cobro de la persona, con
+  // «Registrar gestión», debajo del documento. La persona es la del documento
+  // que devolvió el back (su número de documento), no el `id` de la ruta, que
+  // puede ser la cuenta del portal.
+  const [cliente, setCliente] = React.useState<{ documento: string; nombre: string } | null>(null);
+  /*
+   * EC-05 (QA-INQ-95 ronda 2): el WhatsApp sale por el chat de la CUENTA del
+   * portal. Antes se le pasaba siempre el `id` de la ruta y a quien no tiene
+   * cuenta el ítem salía prendido; el «no tiene cuenta» llegaba recién después
+   * de confirmar. Se pregunta a la ficha: sin cuenta, `null` y el ítem dice por
+   * qué está apagado. Si la ficha no responde (p. ej. sin `contratos:view`),
+   * queda como antes y el back responde `SIN_CUENTA`.
+   */
+  const [cuentaDelPortalId, setCuentaDelPortalId] = React.useState<string | null | undefined>(undefined);
+  React.useEffect(() => {
+    let vivo = true;
+    inquilinosApi
+      .obtener(identidadDeLaRuta(id))
+      .then((persona) => {
+        if (vivo) setCuentaDelPortalId(cuentaDelPortal(persona));
+      })
+      .catch(() => {
+        if (vivo) setCuentaDelPortalId(undefined);
+      });
+    return () => {
+      vivo = false;
+    };
+  }, [id]);
+  // QA-INQ-95 (04-10-2026): `cargar` es estable por `id` y `cliente` sólo cambia si cambió
+  // la persona. Antes era una flecha nueva en cada render y guardaba un objeto nuevo al
+  // resolver: otro render → otro `cargar` → la pantalla volvía a pedir, ~27 veces por
+  // segundo, hasta que el limitador del back respondía 429.
+  const cargar = React.useCallback(
+    (filtro?: Parameters<typeof estadoDeCuentaApi.inquilino>[1]) =>
+      estadoDeCuentaApi.inquilino(id, filtro).then((doc) => {
+        const documento = doc.cliente?.documento?.trim();
+        const nombre = doc.cliente?.nombre ?? '';
+        setCliente((antes) => {
+          if (!documento) return antes === null ? antes : null;
+          if (antes && antes.documento === documento && antes.nombre === nombre) return antes;
+          return { documento, nombre };
+        });
+        return doc;
+      }),
+    [id],
+  );
 
   return (
     <ProveedorDeAnularRecibo habilitado={isAdmin} onAnulado={() => setVersion((v) => v + 1)}>
+      {/* B-13 (QA-PAGOS-95 r2): condonar intereses, sólo el administrador. */}
+      <ProveedorDeCondonarIntereses habilitado={isAdmin} onCambio={() => setVersion((v) => v + 1)}>
       <PantallaDelEstadoDeCuenta
         key={version}
         /* El recorte lo hace el BACK (auditoría 13-09, E4): la pantalla manda
            el filtro y pinta lo que vuelve, que es exactamente lo mismo que ve
            quien abre el enlace compartido. */
-        cargar={(filtro) => estadoDeCuentaApi.inquilino(id, filtro)}
+        cargar={cargar}
         volverA={{ href: volver }}
         /* Es el panel: las cuotas en mora sin intereses dicen por qué y llevan
            a configurar las reglas. El portal y el enlace no lo pasan. */
@@ -62,13 +114,23 @@ function Contenido() {
             /* El `tenantRef` del inquilino ES su `User.id` cuando tiene cuenta
                del portal, que es justo lo que necesita el hilo del chat. Cuando
                no la tiene, el back responde `SIN_CUENTA` y el ítem lo cuenta. */
-            personaId={id}
+            personaId={cuentaDelPortalId === undefined ? id : cuentaDelPortalId}
             nota={nota}
             /* Viaja con el enlace: el cliente ve la misma vista filtrada. */
             filtros={filtros}
           />
         )}
       />
+      {cliente ? (
+        <div className="mx-auto w-full max-w-[1200px] px-4 pb-8 sm:px-6 lg:px-8 print:hidden">
+          <GestionesDeLaPersona
+            quien={{ documento: cliente.documento }}
+            nombre={cliente.nombre}
+            className="rounded-lg border border-border bg-card p-4 sm:p-5"
+          />
+        </div>
+      ) : null}
+      </ProveedorDeCondonarIntereses>
     </ProveedorDeAnularRecibo>
   );
 }

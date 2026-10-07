@@ -78,13 +78,13 @@ export function ScoreProgressBar({
         aria-valuemax={100}
         aria-label={`Puntuacion: ${clampedScore} de 100`}
       >
-        {/* Progress fill with animation */}
+        {/* Progress fill with animation: crece con `scaleX` (sólo transform), no con `width`. */}
         <div
           className={cn(
-            'absolute inset-y-0 left-0 rounded-full transition-all duration-700 ease-out',
+            'absolute inset-y-0 left-0 w-full origin-left rounded-full transition-transform duration-reveal ease-enter',
             colors.bg
           )}
-          style={{ width: `${clampedScore}%` }}
+          style={{ transform: `scaleX(${clampedScore / 100})` }}
         />
       </div>
 

@@ -43,6 +43,8 @@ export interface TenantApplicationView {
     city: string;
     neighborhood: string;
     monthlyRent: number;
+    /** A qué inmobiliaria se le reclama (F-07). Ausente en datos viejos. */
+    agencyId?: string | null;
   } | null;
 }
 
@@ -71,6 +73,7 @@ const STATUS_TO_TENANT_MAP: Record<string, TenantApplicationStatus> = {
   REJECTED: 'rejected',
   WITHDRAWN: 'withdrawn',
   CONTRACT_FAILED: 'contract_failed',
+  NO_ADJUDICADO: 'no_adjudicado',
 };
 
 // ============================================================================
@@ -156,6 +159,7 @@ function mapToTenantView(ba: BackendApplication): TenantApplicationView {
           city: ba.property.city,
           neighborhood: ba.property.neighborhood,
           monthlyRent: ba.property.monthlyRent,
+          agencyId: ba.property.agencyId ?? null,
         }
       : null,
   };
@@ -263,6 +267,34 @@ export const applicationsApi = {
     data: Record<string, unknown>
   ): Promise<void> {
     await apiClient.patch(`/applications/${id}/steps/${step}`, data);
+  },
+
+  /**
+   * F-07: quien no pasó pide el detalle del motivo o avisa que un dato está
+   * mal. Ruta pública y de sólo escritura del back (`POST
+   * /postulaciones/reclamos/:agencyId`): llega a «Reclamos» de la inmobiliaria.
+   */
+  async reclamar(
+    agencyId: string,
+    datos: {
+      applicationId: string;
+      solicitanteNombre: string;
+      solicitanteCorreo: string;
+      tipo: 'DETALLE' | 'CORRECCION';
+      mensaje: string;
+    },
+  ): Promise<{ id: string }> {
+    return apiClient.post<{ id: string }>(`/postulaciones/reclamos/${agencyId}`, datos);
+  },
+
+  /** Lo que el candidato escribió sobre esta postulación y lo que le respondieron. */
+  async misReclamos(applicationId: string): Promise<
+    Array<{ id: string; tipo: 'DETALLE' | 'CORRECCION'; mensaje: string; createdAt: string; respuesta: string | null; respondidoEl: string | null }>
+  > {
+    const r = await apiClient.get<{ reclamos: Array<{ id: string; tipo: 'DETALLE' | 'CORRECCION'; mensaje: string; createdAt: string; respuesta: string | null; respondidoEl: string | null }> }>(
+      `/postulaciones/reclamos/de/${applicationId}`,
+    );
+    return Array.isArray(r?.reclamos) ? r.reclamos : [];
   },
 
   /** Withdraw an application */

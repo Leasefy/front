@@ -19,6 +19,7 @@ import {
 } from '@/lib/hooks/cobranza/use-call-transcript'
 import type { CallComplianceEvent } from '@/lib/hooks/cobranza/use-call-detail'
 import CompliancePill from './CompliancePill'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 
 interface CallTranscriptProps {
   callId: string
@@ -127,6 +128,12 @@ export default function CallTranscript({
         </h2>
       </header>
 
+      {/* Cargando → turnos (o → fallo, → vacía): cada estado entra con su
+          fundido; los turnos, escalonados (techo 320 ms, sin `layout`: una
+          llamada larga tiene muchos). */}
+      <CrossFade
+        swapKey={isLoading && !data ? 'cargando' : error && !data ? 'fallo' : data && data.turns.length === 0 ? 'vacia' : data ? 'turnos' : 'nada'}
+      >
       {isLoading && !data && (
         <div className="p-4 space-y-3" aria-live="polite">
           {[0, 1, 2, 3].map((i) => (
@@ -183,12 +190,12 @@ export default function CallTranscript({
         la página scrollea normal.
       */}
       {data && data.turns.length > 0 && (
-        <ul className="divide-y divide-border-faint">
+        <Stagger as="ul" layout={false} className="divide-y divide-border-faint">
           {data.turns.map((turn) => {
             const sp = speakerTone(turn.speaker)
             const flags = eventosPorTurno.get(turn.id) ?? []
             return (
-              <li key={turn.id} className="px-4 py-3 flex flex-col gap-1.5">
+              <StaggerItem as="li" key={turn.id} className="px-4 py-3 flex flex-col gap-1.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     className={`inline-flex items-center rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${sp.cls}`}
@@ -222,11 +229,12 @@ export default function CallTranscript({
                     ))}
                   </div>
                 )}
-              </li>
+              </StaggerItem>
             )
           })}
-        </ul>
+        </Stagger>
       )}
+      </CrossFade>
     </section>
   )
 }

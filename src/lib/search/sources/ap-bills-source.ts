@@ -19,7 +19,7 @@
  * href: /panel/inmobiliaria/pagos/cxp/:id
  */
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { agentFetch } from '@/lib/api/agent-fetch';
 import type { SearchSource, SearchResult } from '@/lib/hooks/useFederatedSearch';
 import { agentSearch } from '@/lib/search/agent-search-client';
 import { Receipt } from '@phosphor-icons/react';
@@ -130,9 +130,9 @@ export const apBillsSource: SearchSource = {
     }
 
     // ── Fallback: original AP bills endpoint with client-side filter ─────────
-    const res = await globalThis.fetch(
+    const res = await agentFetch(
       `${agentUrl}/api/agency/${ctx.agencyId}/ap/bills`,
-      { headers: agentAuthHeaders(), signal },
+      { signal },
     );
     if (!res.ok) throw new Error(`${res.status}`);
     const json = (await res.json()) as { bills: ApBill[] };

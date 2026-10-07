@@ -49,7 +49,9 @@ export type CampoDeDocumento =
   | 'anticipoAplicado'
   | 'valorRestanteAnticipo'
   | 'creadoPor'
-  | 'fechaCreacionOrigen';
+  | 'fechaCreacionOrigen'
+  | 'terceroDocumento'
+  | 'terceroNombre';
 
 export const COLUMNAS_DE_DOCUMENTO: readonly (ColumnaDePlantilla & {
   campo: CampoDeDocumento;
@@ -57,7 +59,10 @@ export const COLUMNAS_DE_DOCUMENTO: readonly (ColumnaDePlantilla & {
   {
     campo: 'prefijo',
     titulo: 'Prefijo',
-    obligatoria: true,
+    // QA-MIG-B: no obligatoria como COLUMNA — puede venir pegado al número
+    // («FV-1-5521»). La fila sin prefijo de ninguna de las dos formas la
+    // frena el back con su motivo.
+    obligatoria: false,
     ejemplo: 'CE',
     alias: ['prefijo', 'serie', 'prefijo documento', 'prefix'],
     ayuda: 'CE, CI, FAC… Junto con el consecutivo identifica el comprobante.',
@@ -67,7 +72,9 @@ export const COLUMNAS_DE_DOCUMENTO: readonly (ColumnaDePlantilla & {
     titulo: 'Consecutivo',
     obligatoria: true,
     ejemplo: '26,766',
-    alias: ['consecutivo', 'numero', 'numero documento', 'nro', 'no documento', 'numero comprobante'],
+    // QA-MIG-B (04-10): SIIGO exporta «Comprobante: FV-1-5521», con el
+    // prefijo y el número juntos; `armarDocumentos` los separa.
+    alias: ['consecutivo', 'numero', 'numero documento', 'nro', 'no documento', 'numero comprobante', 'comprobante', 'documento'],
     ayuda: 'El número del comprobante. Con separador de miles también se entiende.',
   },
   {
@@ -125,7 +132,9 @@ export const COLUMNAS_DE_DOCUMENTO: readonly (ColumnaDePlantilla & {
     titulo: 'Anulado',
     obligatoria: false,
     ejemplo: 'NO',
-    alias: ['anulado', 'anulada', 'esta anulado', 'estado anulado'],
+    // QA-MIG-B: SIIGO trae «Estado: Contabilizado/Anulado». El back lo lee
+    // (`leerAnulado`); antes un comprobante anulado entraba vigente.
+    alias: ['anulado', 'anulada', 'esta anulado', 'estado anulado', 'estado', 'estado del documento'],
   },
   {
     campo: 'esAnticipo',
@@ -169,6 +178,25 @@ export const COLUMNAS_DE_DOCUMENTO: readonly (ColumnaDePlantilla & {
     ejemplo: '2026-09-08 10:39:01',
     alias: ['fecha creacion', 'fecha de creacion', 'creado el', 'fecha registro'],
   },
+  /*
+   * QA-MIG-B (04-10): el tercero en su propia columna. Es lo que cierra el
+   * 56 % de comprobantes que el concepto solo no asocia («Factura 57521»).
+   * Antes la columna se ignoraba.
+   */
+  {
+    campo: 'terceroDocumento',
+    titulo: 'Documento del tercero',
+    obligatoria: false,
+    ejemplo: '43111222',
+    alias: ['nit', 'nit tercero', 'tercero nit', 'identificacion', 'identificacion tercero', 'documento tercero', 'cedula', 'nit cc', 'cc nit', 'tercero'],
+  },
+  {
+    campo: 'terceroNombre',
+    titulo: 'Nombre del tercero',
+    obligatoria: false,
+    ejemplo: 'Gloria Henao',
+    alias: ['nombre tercero', 'nombre del tercero', 'razon social', 'cliente', 'proveedor', 'beneficiario'],
+  },
 ];
 
 /**
@@ -184,6 +212,8 @@ const LIMITES_DTO: Partial<Record<CampoDeDocumento, number>> = {
   terceroAnticipo: 500,
   creadoPor: 400,
   fechaCreacionOrigen: 40,
+  terceroDocumento: 300,
+  terceroNombre: 300,
 };
 
 function texto(v: unknown): string {
@@ -225,9 +255,23 @@ export function armarDocumentos(
 
   const documentos: DocumentoMigrado[] = [];
   for (const fila of filas) {
-    const prefijo = texto(leer(fila, 'prefijo')).slice(0, LIMITES_DTO.prefijo);
+    let prefijo = texto(leer(fila, 'prefijo')).slice(0, LIMITES_DTO.prefijo);
     const fecha = texto(leer(fila, 'fecha')).slice(0, LIMITES_DTO.fecha);
-    const consecutivoCrudo = leer(fila, 'consecutivo');
+    let consecutivoCrudo = leer(fila, 'consecutivo');
+    /*
+     * 🔴 QA-MIG-B (04-10): sin columna de prefijo, un consecutivo como
+     * «FV-1-5521» (SIIGO) trae los dos: el prefijo es todo lo de antes del
+     * último guion o espacio («FV-1») y el consecutivo, el número final. Es
+     * la misma celda partida, no un dato inventado. Sin esto el archivo
+     * entero salía «La fila no trae prefijo».
+     */
+    if (!prefijo && !columnaDe.has('prefijo')) {
+      const junto = /^([A-Za-zÁÉÍÓÚÑ][\wÁÉÍÓÚÑáéíóúñ-]*?)[-\s]+(\d[\d.,]*)$/.exec(texto(consecutivoCrudo));
+      if (junto) {
+        prefijo = junto[1].slice(0, LIMITES_DTO.prefijo);
+        consecutivoCrudo = junto[2];
+      }
+    }
 
     // Una fila sin nada de lo que identifica el comprobante es la fila vacía
     // que Excel deja al final. No se manda: sería una fila rechazada en el
@@ -237,12 +281,12 @@ export function armarDocumentos(
     const documento: DocumentoMigrado = { prefijo, fecha };
 
     for (const campo of CLAVES_CRUDAS) {
-      const valor = leer(fila, campo);
+      const valor = campo === 'consecutivo' ? consecutivoCrudo : leer(fila, campo);
       if (valor !== undefined && texto(valor) !== '') {
         (documento as unknown as Record<string, unknown>)[campo] = valor;
       }
     }
-    for (const campo of ['tipo', 'concepto', 'terceroAnticipo', 'creadoPor', 'fechaCreacionOrigen'] as const) {
+    for (const campo of ['tipo', 'concepto', 'terceroAnticipo', 'creadoPor', 'fechaCreacionOrigen', 'terceroDocumento', 'terceroNombre'] as const) {
       const valor = texto(leer(fila, campo));
       if (valor) {
         (documento as unknown as Record<string, unknown>)[campo] = valor.slice(

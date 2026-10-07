@@ -75,7 +75,8 @@ type CostPerPesoData = {
   populated: boolean
   reason?: string
   cost_per_peso?: number | null
-  numerator_usd_voice?: number | null
+  /** 🔴 En pesos (Nico, 04-10-2026): el micro ya no manda dólares. */
+  numerator_cop_voice?: number | null
   denominator_cop_paid?: number | null
   sparkline_90d?: SparklinePoint[]
 }

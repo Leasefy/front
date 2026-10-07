@@ -30,6 +30,7 @@ import {
 import { useI18n } from '@/lib/i18n'
 
 import type { MergedCarrierRow } from './CarrierRegistryTable'
+import { Presence } from '@leasefy/cadence'
 
 // =============================================================================
 // Types
@@ -149,9 +150,9 @@ export function CarrierOverridePopover({
           disabled={!canConfigure}
           className="h-8 text-sm"
         />
-        {priorityError && (
-          <p className="text-xs text-danger">{priorityError}</p>
-        )}
+        <Presence as="p" show={Boolean(priorityError)} className="text-xs text-danger">
+          {priorityError}
+        </Presence>
       </div>
 
       {/* Mode */}

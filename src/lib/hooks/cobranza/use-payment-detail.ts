@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 
 // Mirrors CobranzaPaymentDetail from the agent backend
 // (src/server/routes/agency-cobranza-payment-verify.ts). `status` is a
@@ -59,6 +60,15 @@ export interface UsePaymentDetailResult {
    */
   verifyPayment: (action: VerifyAction, note?: string) => Promise<boolean>
   isVerifying: boolean
+  /**
+   * Por qué falló la última verificación: el `ApiError` del micro o el error
+   * de la red, tal cual, para `mensajeParaLaPersona`. `null` si la última salió
+   * (o no se intentó). Antes el fallo se escribía en `error` —el de la CARGA—
+   * como «500» y la pantalla no lo leía: verificar fallaba en silencio.
+   */
+  falloDeVerificacion: unknown
+  /** El fallo de la verificación todavía «sin avisar»: la pantalla lo limpia al mostrarlo. */
+  limpiarFalloDeVerificacion: () => void
 }
 
 export function usePaymentDetail({ paymentId }: UsePaymentDetailArgs): UsePaymentDetailResult {
@@ -68,6 +78,8 @@ export function usePaymentDetail({ paymentId }: UsePaymentDetailArgs): UsePaymen
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isVerifying, setIsVerifying] = useState(false)
+  const [falloDeVerificacion, setFalloDeVerificacion] = useState<unknown>(null)
+  const limpiarFalloDeVerificacion = useCallback(() => setFalloDeVerificacion(null), [])
 
   const fetchData = useCallback(async () => {
     const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
@@ -105,6 +117,7 @@ export function usePaymentDetail({ paymentId }: UsePaymentDetailArgs): UsePaymen
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId || !paymentId) return false
       setIsVerifying(true)
+      setFalloDeVerificacion(null)
       try {
         const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/cobranza/pagos/${paymentId}/verify`,
@@ -115,13 +128,14 @@ export function usePaymentDetail({ paymentId }: UsePaymentDetailArgs): UsePaymen
           },
         )
         if (!res.ok) {
-          setError(`${res.status}`)
+          setFalloDeVerificacion(await falloDelMicro(res))
           return false
         }
         await fetchData()
         return true
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to verify payment')
+        // Un `fetch` que no salió llega tal cual (el traductor lo lee como conexión).
+        setFalloDeVerificacion(err)
         return false
       } finally {
         setIsVerifying(false)
@@ -138,5 +152,14 @@ export function usePaymentDetail({ paymentId }: UsePaymentDetailArgs): UsePaymen
     fetchData()
   }, [fetchData, agencyId, paymentId])
 
-  return { data, isLoading, error, refetch: fetchData, verifyPayment, isVerifying }
+  return {
+    data,
+    isLoading,
+    error,
+    refetch: fetchData,
+    verifyPayment,
+    isVerifying,
+    falloDeVerificacion,
+    limpiarFalloDeVerificacion,
+  }
 }

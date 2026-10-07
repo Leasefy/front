@@ -202,6 +202,10 @@ describe('pqrsToCase — solicitud metadata pass-through (no SLA math)', () => {
       cotizacionMonto: 350000,
       cotizacionId: 'cot-9',
       cotizacionAprobadaAt: '2026-07-20T10:00:00.000Z',
+      // PQRS-FIX (04-10): el radicado, la respuesta (aún no hay) y los archivos.
+      radicado: 'PQRS-2026-0001',
+      respuesta: null,
+      adjuntos: undefined,
     });
   });
 

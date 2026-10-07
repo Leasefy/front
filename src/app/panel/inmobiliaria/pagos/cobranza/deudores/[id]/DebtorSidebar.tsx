@@ -19,7 +19,7 @@ import * as React from 'react'
 import { useEffect, useState } from 'react'
 
 import { useI18n } from '@/lib/i18n'
-import { MonoLabel } from '@leasefy/cadence'
+import { AnimatedNumber, CrossFade, MonoLabel, Presence } from '@leasefy/cadence'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
 import type { DebtorDetailResponse } from '@/lib/hooks/cobranza/use-debtor-detail'
 import { usePIIRevealContext, type PIIFieldKey } from '@/lib/context/PIIRevealContext'
@@ -72,6 +72,8 @@ export function DebtorSidebar({
   }
 
   const contactAttempts = data.sidebar?.contactAttemptsCount ?? 0
+  /** El número tal cual se escribía antes: sin separador de miles. */
+  const enteroTalCual = (n: number) => String(Math.round(n))
   const kpis = data.kpis ?? null
 
   const renderMask = (
@@ -107,24 +109,35 @@ export function DebtorSidebar({
       </h2>
 
       {/* Human case state — the headline of the context */}
+      {/* Movimiento: el estado del caso cambia en vivo (una llamada, una
+          promesa): la etiqueta vieja sale y la nueva entra en su lugar. La
+          pausa entra y sale con `Presence`, y las cifras cuentan al cambiar. */}
       {caseStateKey && (
-        <span
+        <CrossFade
+          as="span"
+          swapKey={caseStateKey}
+          mode="popLayout"
+          direction="none"
           data-testid="case-state-badge"
           className="inline-flex items-center px-2.5 py-1 rounded-full bg-surface-muted text-xs font-medium text-fg-muted"
         >
           {t(caseStateKey)}
-        </span>
+        </CrossFade>
       )}
 
       {/* Paused notice */}
-      {data.isPaused && data.carterapausedUntil && (
-        <div className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2 text-xs text-warning">
-          {t(`${NS}.detail.sidebar.paused`).replace(
-            '{{date}}',
-            new Date(data.carterapausedUntil).toLocaleDateString(locale),
-          )}
-        </div>
-      )}
+      <Presence
+        show={Boolean(data.isPaused && data.carterapausedUntil)}
+        initial={false}
+        className="rounded-md bg-warning-soft border border-warning/30 px-3 py-2 text-xs text-warning"
+      >
+          {data.carterapausedUntil
+            ? t(`${NS}.detail.sidebar.paused`).replace(
+                '{{date}}',
+                new Date(data.carterapausedUntil).toLocaleDateString(locale),
+              )
+            : null}
+      </Presence>
 
       {/* Case KPIs — the API already sends these (kpis.*) */}
       {kpis && (
@@ -134,7 +147,7 @@ export function DebtorSidebar({
               {t(`${NS}.detalle.saldoPendiente`)}
             </p>
             <p className="mt-0.5 text-xl font-semibold tracking-[-0.02em] text-fg tabular-nums">
-              {formatCurrency(kpis.totalOwed)}
+              <AnimatedNumber value={kpis.totalOwed} format={formatCurrency} />
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -143,7 +156,7 @@ export function DebtorSidebar({
                 {t(`${NS}.detalle.pagosRecibidos`)}
               </p>
               <p className="mt-0.5 text-sm font-semibold text-fg tabular-nums">
-                {kpis.paymentsCount}
+                <AnimatedNumber value={kpis.paymentsCount} format={enteroTalCual} />
               </p>
               {/* Cuánto entró, no sólo cuántas veces. «Saldo pendiente» y esto
                   eran el MISMO número —los pagos aprobados— con dos títulos
@@ -159,7 +172,7 @@ export function DebtorSidebar({
                 {t(`${NS}.detalle.llamadasRealizadas`)}
               </p>
               <p className="mt-0.5 text-sm font-semibold text-fg tabular-nums">
-                {kpis.callsCount}
+                <AnimatedNumber value={kpis.callsCount} format={enteroTalCual} />
               </p>
             </div>
           </div>
@@ -172,7 +185,7 @@ export function DebtorSidebar({
           {t(`${NS}.detail.sidebar.contactAttempts`)}
         </p>
         <p className="mt-1 text-sm text-fg font-mono">
-          {contactAttempts}
+          <AnimatedNumber value={contactAttempts} format={enteroTalCual} />
         </p>
       </div>
 

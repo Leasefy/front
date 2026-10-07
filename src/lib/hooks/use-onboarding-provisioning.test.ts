@@ -44,6 +44,7 @@ import { ApiError } from '@/lib/api/client'
 import {
   useOnboardingProvisioning,
   interpretarFallo,
+  REVISA_LOS_CAMPOS,
   INMOBILIARIA_USER_TYPE,
   type ProvisioningInput,
 } from './use-onboarding-provisioning'
@@ -505,5 +506,77 @@ describe('interpretarFallo ante una caída', () => {
     const fallo = interpretarFallo(new ApiError(503, 'Intenta en unos minutos.'))
     expect(fallo.caida).toBeUndefined()
     expect(fallo.mensaje).toBe('Intenta en unos minutos.')
+  })
+})
+
+/**
+ * 02-10-2026 · La regla de oro en «Antes de comenzar»: un 400 con `campos`
+ * va a SUS campos (no arriba); un 5xx dice que fue nuestro, con la referencia;
+ * «conexión» sólo cuando no hubo respuesta.
+ */
+describe('interpretarFallo con la regla de oro', () => {
+  it('🔴 un 400 DATOS_INVALIDOS reparte los `campos` en los campos del formulario', () => {
+    const fallo = interpretarFallo(
+      new ApiError(
+        400,
+        ['El nombre puede tener hasta 100 caracteres.', 'El NIT no es válido.'],
+        'DATOS_INVALIDOS',
+        {
+          statusCode: 400,
+          code: 'DATOS_INVALIDOS',
+          message: ['El nombre puede tener hasta 100 caracteres.', 'El NIT no es válido.'],
+          campos: [
+            { campo: 'firstName', regla: 'longitud_maxima', mensaje: 'El nombre puede tener hasta 100 caracteres.' },
+            { campo: 'agency.nit', regla: 'formato', mensaje: 'El NIT no es válido.' },
+          ],
+        },
+      ),
+    )
+    expect(fallo.campos).toEqual({
+      nombre: 'El nombre puede tener hasta 100 caracteres.',
+      nit: 'El NIT no es válido.',
+    })
+    expect(fallo.paraCorregir).toBe(true)
+    // Arriba no se repite lo que ya está en cada campo.
+    expect(fallo.mensaje).toBe(REVISA_LOS_CAMPOS)
+  })
+
+  it('lo que no tiene campo en el formulario queda arriba', () => {
+    const fallo = interpretarFallo(
+      new ApiError(400, 'Elige cómo prefieres que te contactemos.', 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        campos: [{ campo: 'preferredContact', regla: 'opcion', mensaje: 'Elige cómo prefieres que te contactemos.' }],
+      }),
+    )
+    expect(fallo.campos).toBeUndefined()
+    expect(fallo.mensaje).toBe('Elige cómo prefieres que te contactemos.')
+  })
+
+  it('🔴 un 500 dice que fue nuestro, con la referencia, y no culpa a la conexión', () => {
+    const fallo = interpretarFallo(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'ab12cd34',
+      }),
+    )
+    expect(fallo.mensaje).toMatch(/^No pudimos crear tu inmobiliaria: algo falló de nuestro lado/)
+    expect(fallo.mensaje).toContain('ab12cd34')
+    expect(fallo.mensaje).not.toMatch(/conexi[oó]n/)
+    expect(fallo.reintentable).toBe(true)
+  })
+
+  it('sin respuesta (status 0, lo que arma `apiClient` cuando `fetch` no salió): caída de conexión', () => {
+    const fallo = interpretarFallo(new ApiError(0, 'Failed to fetch'))
+    expect(fallo.caida).toEqual({ tipo: 'conexion' })
+    expect(fallo.reintentable).toBe(true)
+    expect(fallo.mensaje).not.toContain('Failed to fetch')
+  })
+
+  it('un error de JavaScript (no vino del back) no muestra su texto', () => {
+    const fallo = interpretarFallo(new Error('Cannot read properties of undefined'))
+    expect(fallo.mensaje).toBe('No pudimos preparar el registro de tu inmobiliaria. Vuelve a intentarlo en unos minutos.')
   })
 })

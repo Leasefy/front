@@ -34,7 +34,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowsClockwise, FileText, Plus, Prohibit } from '@phosphor-icons/react';
+import Link from 'next/link';
+import { ArrowsClockwise, FileText, Money, Plus, Prohibit } from '@phosphor-icons/react';
 
 import {
   AlertDialog,
@@ -48,8 +49,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
@@ -58,6 +65,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
@@ -84,11 +93,18 @@ import {
   type FacturaDeProveedor,
   type PaginaDeFacturas,
 } from '@/lib/api/gastos.service';
-import { diaLegible } from '@/lib/contabilidad/fechas';
+import { diaDe, diaLegible } from '@/lib/contabilidad/fechas';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
 import { Monto } from '../Monto';
 import { AccionConMotivo, FaltaLaMigracion, Nota } from '../piezas';
 import { usePuedeEscribir } from '../use-puede-escribir';
+import { PagarFactura } from './PagarFactura';
+import { egresoDeLaFacturaEnPalabras, sePuedePagar } from '@/lib/contabilidad/pagar-factura';
+import { CampoDeDia } from '../CampoDeDia';
 import { FormularioDeFactura } from './FormularioDeFactura';
+
+/** El valor de «todas» en los `Select` del DS (Radix no acepta `''`). */
+const TODOS = '__todos__';
 
 const TONO_DEL_ESTADO: Record<
   EstadoDeFacturaDeProveedor,
@@ -130,6 +146,8 @@ export function FacturasDeProveedor({
   /** El asiento que quedó después de causar, para mostrarlo. */
   const [asiento, setAsiento] = useState<AsientoContable | null>(null);
   const [anulando, setAnulando] = useState<FacturaDeProveedor | null>(null);
+  /** 🔴 CB-R21: la factura que se está mandando a pagar (cajón abierto). */
+  const [pagando, setPagando] = useState<FacturaDeProveedor | null>(null);
   const [motivo, setMotivo] = useState('');
   const [enviandoAnulacion, setEnviandoAnulacion] = useState(false);
 
@@ -287,9 +305,10 @@ export function FacturasDeProveedor({
 
   return (
     <div className="space-y-6" data-testid="facturas-de-proveedor">
+      {/* 🔴 CB-17: la explicación ya la dice la cabecera de la pantalla, palabra
+          por palabra; acá se repetía a 80 px. Queda una vez, arriba. */}
       <TituloDeBloque
         titulo="Facturas de proveedor"
-        explicacion="Lo que la inmobiliaria gasta en sí misma: el contador, la luz de la oficina, las cerraduras. Es lo que le da gastos propios al P&G y filas al formato 1001 de la exógena. Lo que se le gira al propietario NO va acá: eso baja un pasivo y no es gasto."
         accion={
           <AccionConMotivo
             puede={escritura.puede}
@@ -306,61 +325,71 @@ export function FacturasDeProveedor({
 
       {/* ── Filtros ───────────────────────────────────────────────────── */}
       <section className="grid gap-3 rounded-lg border border-border bg-surface p-4 sm:grid-cols-4">
-        <div className="space-y-1.5">
+        {/* 🔴 CB-04 / CB-17: el selector de fecha y el `Select` del DS, no el
+            `<input type="date">` ni el `<select>` del navegador. */}
+        <div className="min-w-0 space-y-1.5">
           <Label htmlFor="facturas-desde">Desde</Label>
-          <Input
+          <CampoDeDia
             id="facturas-desde"
-            type="date"
             value={desde}
             max={hasta || undefined}
-            onChange={(e) => setDesde(e.target.value)}
-            data-testid="filtro-desde"
+            onChange={setDesde}
+            placeholder="Sin fecha"
+            quitable
+            etiquetaDeQuitar="Quitar la fecha «desde»"
+            testid="filtro-desde"
           />
         </div>
-        <div className="space-y-1.5">
+        <div className="min-w-0 space-y-1.5">
           <Label htmlFor="facturas-hasta">Hasta</Label>
-          <Input
+          <CampoDeDia
             id="facturas-hasta"
-            type="date"
             value={hasta}
             min={desde || undefined}
-            onChange={(e) => setHasta(e.target.value)}
-            data-testid="filtro-hasta"
+            onChange={setHasta}
+            placeholder="Sin fecha"
+            quitable
+            etiquetaDeQuitar="Quitar la fecha «hasta»"
+            testid="filtro-hasta"
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="facturas-estado">Estado</Label>
-          <select
-            id="facturas-estado"
-            className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
-            value={estado}
-            onChange={(e) => setEstado(e.target.value as EstadoDeFacturaDeProveedor | '')}
-            data-testid="filtro-estado"
+          <Label id="facturas-estado">Estado</Label>
+          <Select
+            value={estado || TODOS}
+            onValueChange={(v) => setEstado(v === TODOS ? '' : (v as EstadoDeFacturaDeProveedor))}
           >
-            <option value="">Todas</option>
-            {ESTADOS_DE_FACTURA.map((e) => (
-              <option key={e} value={e}>
-                {NOMBRE_DEL_ESTADO_DE_FACTURA[e]}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger aria-labelledby="facturas-estado" data-testid="filtro-estado">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={TODOS}>Todas</SelectItem>
+              {ESTADOS_DE_FACTURA.map((e) => (
+                <SelectItem key={e} value={e}>
+                  {NOMBRE_DEL_ESTADO_DE_FACTURA[e]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="facturas-rubro">Rubro</Label>
-          <select
-            id="facturas-rubro"
-            className="h-11 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
-            value={rubroFiltro}
-            onChange={(e) => setRubroFiltro(e.target.value)}
-            data-testid="filtro-rubro"
+          <Label id="facturas-rubro">Rubro</Label>
+          <Select
+            value={rubroFiltro || TODOS}
+            onValueChange={(v) => setRubroFiltro(v === TODOS ? '' : v)}
           >
-            <option value="">Todos</option>
-            {rubros.map((r) => (
-              <option key={r.rubro} value={r.rubro}>
-                {r.nombre}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger aria-labelledby="facturas-rubro" data-testid="filtro-rubro">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={TODOS}>Todos</SelectItem>
+              {rubros.map((r) => (
+                <SelectItem key={r.rubro} value={r.rubro}>
+                  {r.nombre}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </section>
 
@@ -437,11 +466,11 @@ export function FacturasDeProveedor({
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              <TableBodyAnimado>
                 {pagina.facturas.map((f) => {
                   const p = permisos(f);
                   return (
-                    <TableRow key={f.id} data-testid={`factura-${f.id}`}>
+                    <TableRowAnimada key={f.id} data-testid={`factura-${f.id}`}>
                       <TableCell className="whitespace-nowrap">
                         <p className="font-mono text-caption text-fg">
                           {f.prefijoDelProveedor ? `${f.prefijoDelProveedor}-` : ''}
@@ -451,7 +480,9 @@ export function FacturasDeProveedor({
                           {NOMBRE_DEL_TIPO_DE_FACTURA[f.tipo]}
                         </p>
                       </TableCell>
-                      <TableCell className="max-w-[16rem]">
+                      {/* CB-17: la tabla no cabía a 1440 (las acciones se cortaban):
+                          columnas de texto más angostas y la fecha corta de la casa. */}
+                      <TableCell className="max-w-[14rem]">
                         <p className="truncate text-sm text-fg" title={f.proveedorNombre}>
                           {f.proveedorNombre}
                         </p>
@@ -461,9 +492,9 @@ export function FacturasDeProveedor({
                         </p>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-caption text-fg-muted">
-                        {diaLegible(f.fecha)}
+                        {fechaCorta(diaDe(f.fecha))}
                       </TableCell>
-                      <TableCell className="max-w-[18rem]">
+                      <TableCell className="max-w-[14rem]">
                         <p className="truncate text-sm text-fg" title={f.concepto}>
                           {f.concepto}
                         </p>
@@ -491,6 +522,15 @@ export function FacturasDeProveedor({
                             Asiento N.º {f.asientoNumero}
                           </p>
                         ) : null}
+                        {f.egreso ? (
+                          <Link
+                            href="/panel/inmobiliaria/contabilidad/egresos"
+                            className="mt-1 block text-caption text-fg-muted underline-offset-2 hover:text-fg hover:underline"
+                            data-testid={`egreso-de-${f.id}`}
+                          >
+                            {egresoDeLaFacturaEnPalabras(f.egreso)}
+                          </Link>
+                        ) : null}
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-2">
@@ -517,12 +557,24 @@ export function FacturasDeProveedor({
                             <Prohibit className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
                             Anular
                           </AccionConMotivo>
+                          {/* 🔴 CB-R21: pagar la causada crea SU egreso (Egresos → lote → doble firma). */}
+                          {sePuedePagar(f) ? (
+                            <AccionConMotivo
+                              puede={escritura.puede}
+                              motivo={escritura.motivo}
+                              onClick={() => setPagando(f)}
+                              testId={`pagar-${f.id}`}
+                            >
+                              <Money className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+                              Pagar
+                            </AccionConMotivo>
+                          ) : null}
                         </div>
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   );
                 })}
-              </TableBody>
+              </TableBodyAnimado>
             </Table>
           </div>
         )}
@@ -616,7 +668,11 @@ export function FacturasDeProveedor({
           }
         }}
       >
-        <AlertDialogContent data-testid="dialogo-de-anulacion">
+        <AlertDialogContent
+          variant="destructive"
+          icon={<Prohibit weight="bold" />}
+          data-testid="dialogo-de-anulacion"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle>
               ¿Anular la factura {anulando?.prefijoDelProveedor ?? ''}
@@ -625,7 +681,7 @@ export function FacturasDeProveedor({
             <AlertDialogDescription>
               {anulando?.asientoNumero
                 ? `El asiento N.º ${anulando.asientoNumero} se REVERSA con un asiento espejo: no se borra, y los dos quedan en el libro. `
-                : 'La factura queda anulada. '}
+                : 'La factura queda anulada —no se borra— y, como todavía no tiene asiento, no hay nada que reversar en el libro. '}
               El motivo se guarda con la anulación y lo va a leer el contador.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -648,7 +704,8 @@ export function FacturasDeProveedor({
                 e.preventDefault();
                 void anular();
               }}
-              disabled={enviandoAnulacion || motivo.trim().length === 0}
+              disabled={motivo.trim().length === 0}
+              loading={enviandoAnulacion}
               data-testid="confirmar-anulacion"
             >
               {enviandoAnulacion ? 'Anulando…' : 'Anular'}
@@ -656,6 +713,15 @@ export function FacturasDeProveedor({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <PagarFactura
+        factura={pagando}
+        onCerrar={() => setPagando(null)}
+        onPagada={() => {
+          setPagando(null);
+          void cargar();
+        }}
+      />
     </div>
   );
 }

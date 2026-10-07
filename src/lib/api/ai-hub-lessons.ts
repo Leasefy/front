@@ -8,7 +8,7 @@
  *   GET  /api/agency/:agencyId/ai-hub/chat/lessons
  *   POST /api/agency/:agencyId/ai-hub/chat/lessons/:lessonId/certify
  *
- * Auth = Supabase bearer via agentAuthHeaders(); base URL = NEXT_PUBLIC_AGENT_URL.
+ * Auth = Supabase bearer via agentFetch; base URL = NEXT_PUBLIC_AGENT_URL.
  * Mirrors src/lib/api/ai-hub-chat.ts's network/error/base-url conventions
  * exactly (agentBaseUrl / isAgentConfigured / `Error(... <status>)` on non-OK).
  *
@@ -19,7 +19,8 @@
  * the evidence is too thin — the UI MUST surface that reason.
  */
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { agentFetch } from './agent-fetch';
+import { falloDelMicro } from '@/lib/api/fallo-del-micro';
 
 // ── Backend contract (mirror of the agent's agency-ai-hub chat-lessons) ──────
 
@@ -119,9 +120,8 @@ export async function getChatLessons(
   signal?: AbortSignal,
 ): Promise<ChatLessonsResponse> {
   const url = `${agentBaseUrl()}/api/agency/${agencyId}/ai-hub/chat/lessons`;
-  const res = await fetch(url, {
+  const res = await agentFetch(url, {
     method: 'GET',
-    headers: agentAuthHeaders(),
     ...(signal ? { signal } : {}),
   });
   if (!res.ok) throw new Error(`ai-hub chat lessons ${res.status}`);
@@ -133,7 +133,10 @@ export async function getChatLessons(
  *
  * Returns the backend's verdict verbatim. The caller MUST inspect `applied`:
  * a certify that hit the fail-closed fence resolves with `applied: false` and a
- * `reason` (NOT an HTTP error). A non-OK status (e.g. 403 for VIEWER) throws.
+ * `reason` (NOT an HTTP error). A non-OK status (e.g. 403 for VIEWER) throws
+ * the WHOLE failure: an `ApiError` with status, `code` and body (02-10-2026),
+ * so the panel says it through the translator. Before it was
+ * `Error('ai-hub chat lessons certify 403')`, shown raw in the toast.
  */
 export async function certifyChatLesson(args: {
   agencyId: string;
@@ -142,12 +145,12 @@ export async function certifyChatLesson(args: {
   signal?: AbortSignal;
 }): Promise<CertifyLessonResponse> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/lessons/${args.lessonId}/certify`;
-  const res = await fetch(url, {
+  const res = await agentFetch(url, {
     method: 'POST',
-    headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ decision: args.decision }),
     ...(args.signal ? { signal: args.signal } : {}),
   });
-  if (!res.ok) throw new Error(`ai-hub chat lessons certify ${res.status}`);
+  if (!res.ok) throw await falloDelMicro(res);
   return (await res.json()) as CertifyLessonResponse;
 }

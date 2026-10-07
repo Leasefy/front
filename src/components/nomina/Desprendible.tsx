@@ -28,7 +28,7 @@ import { useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   Table,
   TableBody,
@@ -88,7 +88,7 @@ function Constancia({
       await onReenviado();
     } catch (error) {
       toast.error(
-        mensajeDelFallo(error, 'No se pudo reenviar el desprendible.'),
+        mensajeParaLaPersona(error, { porDefecto: 'No se pudo reenviar el desprendible.', accion: 'reenviar el desprendible' }),
       );
     } finally {
       setEnviando(false);

@@ -69,7 +69,7 @@
  *    busca a la persona en el banco y en la migración.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -79,11 +79,13 @@ import {
   Envelope,
   FileText,
   IdentificationCard,
+  PencilSimple,
   Phone,
   Receipt,
+  UserCircleMinus,
   Warning,
 } from '@phosphor-icons/react';
-import { IconButton } from '@leasefy/cadence';
+import { CrossFade, IconButton, Stagger, StaggerItem } from '@leasefy/cadence';
 import { toast } from '@/components/ui/toast';
 
 import { Badge } from '@/components/ui/badge';
@@ -91,18 +93,26 @@ import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { BotonEnviarMensaje } from '@/components/messages/BotonEnviarMensaje';
 import { InterruptorDeWhatsapp } from '@/components/messages/InterruptorDeWhatsapp';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetBody, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Spinner } from '@/components/ui/spinner';
 import {
   RenglonDeArriendo,
-  RUTA_DEL_CONTRATO_MANUAL,
+  rutaDelContratoManualPara,
+  textoDeVigentes,
 } from '@/components/inmobiliaria/InquilinosTable';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { RUTA_DE_REGLAS_DE_MORA } from '@/components/estado-de-cuenta/intereses';
+import { documentoParaMostrar } from '@/lib/inquilinos/documento-con-dv';
 import { useI18n } from '@/lib/i18n';
 import { useInquilinoDetalle } from '@/lib/hooks/use-inquilino-detalle';
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import { nombreDelMes } from '@/lib/utils/mes';
 import { cn } from '@/lib/utils';
-import { arriendosVigentes, type Inquilino } from '@/lib/api/inquilinos.service';
+import {
+  arriendosVigentes,
+  cuentaDelPortal,
+  type Inquilino,
+} from '@/lib/api/inquilinos.service';
 import { rutaDelEstadoDeCuenta } from '@/lib/api/estado-de-cuenta.service';
 import { estadoDeLaDeuda } from '@/lib/estado-de-cuenta/estado-de-la-deuda';
 import type { CobroConDesglose } from '@/lib/api/recibos-de-caja.types';
@@ -110,6 +120,11 @@ import type { CobroStatus } from '@/lib/types/inmobiliaria';
 import { DatosPorCompletar } from '@/components/inmobiliaria/DatosPorCompletar';
 
 const NS = 'inquilinos.cajon';
+/** Donde la inmobiliaria fija sus días de plazo (CR-31), la ruta del aviso de la ficha del contrato. */
+const RUTA_DEL_PLAZO = '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo';
+
+/** QA-INQ-95 (E-33): con más de estos días en cartera, la persona está «En cobranza». */
+export const DIAS_PARA_ESTAR_EN_COBRANZA = 60;
 
 /** Cuántos cobros caben antes de que la lista deje de leerse. El resto, en el contrato. */
 const TOPE_DE_COBROS = 12;
@@ -182,9 +197,13 @@ export interface InquilinoDrawerProps {
   /** La persona de la fila; `null` cierra el cajón. */
   persona: Inquilino | null;
   onCerrar: () => void;
+  /** E-16: abre «Editar datos» con esta persona. Sin él, no hay botón. */
+  onEditar?: (persona: Inquilino) => void;
+  /** Sube cuando sus datos cambiaron: el cajón vuelve a pedir su detalle. */
+  version?: number;
 }
 
-export function InquilinoDrawer({ persona, onCerrar }: InquilinoDrawerProps) {
+export function InquilinoDrawer({ persona, onCerrar, onEditar, version = 0 }: InquilinoDrawerProps) {
   /*
    * El cajón NO se desmonta al cerrar: `open` manda de verdad. Antes esto era
    * `if (!persona) return null` con `<Sheet open>` fijo, y cerrar era borrarlo
@@ -197,20 +216,40 @@ export function InquilinoDrawer({ persona, onCerrar }: InquilinoDrawerProps) {
    * blanco, que se ve peor que el corte.
    */
   const ultima = useUltimoPresente(persona);
+  /*
+   * QA-INQ-95 (L-06): el cajón se abre por estado, no por un `Trigger` de
+   * Radix, así que al cerrarlo el foco caía al principio de la página («Saltar
+   * al contenido principal»). Se recuerda qué tenía el foco AL ABRIR (en
+   * `onOpenAutoFocus`, antes de que Radix lo mueva adentro) y al cerrar vuelve ahí.
+   */
+  const disparador = useRef<HTMLElement | null>(null);
 
   return (
     <Sheet open={Boolean(persona)} onOpenChange={(abierto) => !abierto && onCerrar()}>
       <SheetContent
         side="right"
-        className="flex w-full flex-col gap-0 !p-0 sm:max-w-2xl"
+        size="lg"
+        // Cabecera y cuerpo viven en `CuerpoDelCajon`.
+        layout="manual"
         aria-describedby={undefined}
         data-testid="inquilino-cajon"
+        onOpenAutoFocus={() => {
+          const activo = typeof document !== 'undefined' ? document.activeElement : null;
+          disparador.current = activo instanceof HTMLElement && activo !== document.body ? activo : null;
+        }}
+        onCloseAutoFocus={(e) => {
+          const d = disparador.current;
+          if (d && d.isConnected) {
+            e.preventDefault();
+            d.focus();
+          }
+        }}
       >
         {/* El título accesible lo exige Radix y va acá, no en el cuerpo: así
             `CuerpoDelCajon` se monta en un test sin el contexto del Sheet.
             En pantalla el nombre lo pinta la cabecera del cuerpo. */}
         <SheetTitle className="sr-only">{ultima?.nombre ?? ''}</SheetTitle>
-        {ultima && <CajonDeInquilino persona={ultima} />}
+        {ultima && <CajonDeInquilino persona={ultima} onEditar={onEditar} version={version} />}
       </SheetContent>
     </Sheet>
   );
@@ -223,10 +262,18 @@ export function InquilinoDrawer({ persona, onCerrar }: InquilinoDrawerProps) {
  * abrir otra persona. En el envoltorio —que está montado siempre— el hook
  * quedaría vivo con el cajón cerrado.
  */
-function CajonDeInquilino({ persona }: { persona: Inquilino }) {
-  const detalle = useInquilinoDetalle(persona);
+function CajonDeInquilino({
+  persona,
+  onEditar,
+  version,
+}: {
+  persona: Inquilino;
+  onEditar?: (persona: Inquilino) => void;
+  version: number;
+}) {
+  const detalle = useInquilinoDetalle(persona, version);
   if (!detalle) return null;
-  return <CuerpoDelCajon detalle={detalle} />;
+  return <CuerpoDelCajon detalle={detalle} onEditar={onEditar} />;
 }
 
 /**
@@ -235,10 +282,23 @@ function CajonDeInquilino({ persona }: { persona: Inquilino }) {
  */
 export function CuerpoDelCajon({
   detalle,
+  onEditar,
 }: {
   detalle: NonNullable<ReturnType<typeof useInquilinoDetalle>>;
+  /** E-16: «Editar datos». Sin él (o sin `contratos:edit`), no hay botón. */
+  onEditar?: (persona: Inquilino) => void;
 }) {
-  const { t, formatCurrency, formatDate } = useI18n();
+  const { t, formatCurrency, formatDate, locale } = useI18n();
+  /*
+   * Editar pide `contratos:edit`, el permiso con el que el back protege
+   * `PATCH /inmobiliaria/inquilinos/:tenantId`: un botón que abre un
+   * formulario cuyo guardar da 403 es peor que no tenerlo. Fuera del panel
+   * (pruebas) no hay contexto de permisos y no se recorta.
+   */
+  const permisos = usePermissionsContextSafe();
+  const puedeEditar = Boolean(onEditar) && (permisos ? permisos.canAccess('contratos', 'edit') : true);
+  // QA-INQ-95 (E-19): «Crear su contrato» sólo con `contratos:create` (si no, el vacío lo dice sin botón).
+  const puedeCrearContrato = permisos ? permisos.canAccess('contratos', 'create') : true;
   const {
     persona,
     cargandoArriendos,
@@ -250,6 +310,7 @@ export function CuerpoDelCajon({
     cuenta,
     cargandoCuenta,
     errorCuenta,
+    cuentaSinPermiso,
     refDeCuenta,
     reintentar,
   } = detalle;
@@ -260,6 +321,12 @@ export function CuerpoDelCajon({
   const visibles = cobros.slice(0, TOPE_DE_COBROS);
   const contratoPrincipal = persona.arriendos[0]?.contractId;
   const sinArriendos = persona.arriendos.length === 0;
+  /*
+   * I-12 / I-22: la cuenta del portal, si la tiene. Lo que habla con un `User`
+   * (escribirle, el interruptor de WhatsApp) recibe SÓLO esto: la identidad de
+   * la lista puede ser `doc:…` y daba 400. Sin cuenta, el cajón lo DICE.
+   */
+  const idDeLaCuenta = cuentaDelPortal(persona);
   // El conteo de cobros emitidos no es cierto hasta que llegaron: una pill en
   // cero mientras carga es un número inventado.
   const cobrosLlegaron = !cargandoPagos && !errorPagos;
@@ -270,6 +337,35 @@ export function CuerpoDelCajon({
    */
   const cuentaConocida = cuenta !== null && cuenta.contratos > 0 && !cargandoCuenta;
   const deuda = cuentaConocida ? estadoDeLaDeuda(cuenta) : null;
+  /*
+   * E-09 (QA-INQ, 03-10): los intereses de mora van APARTE de lo vencido. Con
+   * lo vencido en cero y intereses sin pagar, la persona NO está «al día».
+   */
+  // CR-31 (COLA-FRONT, 04-10): sin plazo fijado no corre interés: no se dice
+  // aunque el back todavía mande un número.
+  const interesesSinPagar =
+    cuentaConocida && cuenta.plazoSinFijar !== true ? (cuenta.interesDeMora ?? 0) : 0;
+  const alDiaConIntereses = deuda?.tipo === 'AL_DIA' && interesesSinPagar > 0;
+  /* Y sin reglas de mora, a lo que está en cartera no se le causa interés: se dice (R-06). */
+  /*
+   * QA-CONT CR-31 (Nico, J-13): sin los días de plazo fijados no corre interés
+   * (`plazoSinFijar` del resumen). Va ANTES que «sin reglas de mora»: lo que
+   * falta es el plazo, y se arregla en otra pantalla.
+   */
+  // CR-31 (Nico, 03-10): sin plazo, lo vencido no entra a la cartera: el aviso va
+  // también con lo vencido (que ya no es «en cartera»).
+  const plazoSinFijar =
+    cuentaConocida &&
+    cuenta.plazoSinFijar === true &&
+    (deuda?.tipo === 'EN_CARTERA' || deuda?.tipo === 'VENCIDO_EN_PLAZO');
+  const sinReglasDeMora =
+    !plazoSinFijar && cuentaConocida && cuenta.sinReglasDeMora === true && deuda?.tipo === 'EN_CARTERA';
+  /*
+   * QA-INQ-95 (E-33 / F-29): más de 60 días en cartera = «En cobranza» (Nico,
+   * 26-09: no está «en riesgo», ya lo toma la cobranza). La marca sale de los
+   * MISMOS días de la franja (`enMora.dias` del estado de cuenta).
+   */
+  const enCobranza = deuda?.tipo === 'EN_CARTERA' && deuda.dias > DIAS_PARA_ESTAR_EN_COBRANZA;
   const enlaceAlEstadoDeCuenta = refDeCuenta
     ? `${rutaDelEstadoDeCuenta('inquilino', refDeCuenta)}?volver=${encodeURIComponent(
         '/panel/inmobiliaria/inquilinos',
@@ -278,32 +374,67 @@ export function CuerpoDelCajon({
 
   return (
     <>
-      <div className="flex-none border-b border-border px-6 py-5">
-        <div className="flex items-start gap-3 pr-14">
+      {/* Sin `title`: el título accesible lo pone el envoltorio (este cuerpo se
+          monta en un test sin el contexto del Sheet). */}
+      <SheetHeader>
+        {/* Con «Editar datos» y «Enviar mensaje», a 390 px no caben al lado del
+            nombre: las acciones bajan a su propio renglón en vez de apretarlo
+            letra por letra (I-28). */}
+        <div className="flex flex-wrap items-start gap-3">
           <span
             aria-hidden="true"
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary"
           >
             {inicialesDe(persona.nombre)}
           </span>
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-lg font-semibold text-fg">{persona.nombre}</h2>
-            <p className="mt-0.5 truncate text-xs text-fg-subtle">
+          <div className="min-w-0 flex-1 basis-[12rem]">
+            {/* UN solo encabezado con el nombre: el accesible es el
+                `SheetTitle` del envoltorio (un `h2`). Éste era otro `h2` con
+                el mismo texto. Y se ajusta en dos renglones: a 390 px se
+                cortaba en «Ana So…». */}
+            <p className="break-words text-lg font-semibold leading-snug text-fg" data-testid="inquilino-cajon-nombre">
+              {persona.nombre}
+            </p>
+            <p className="mt-0.5 text-xs text-fg-subtle">
               {sinArriendos
                 ? t('inquilinos.sinArriendo')
                 : persona.arriendos.length === 1
-                  ? t('inquilinos.conteoArriendoUno', { vigentes: vigentes.length })
+                  ? t('inquilinos.conteoArriendoUno', { vigentes: textoDeVigentes(t, vigentes.length) })
                   : t('inquilinos.conteoArriendos', {
                       n: persona.arriendos.length,
-                      vigentes: vigentes.length,
+                      vigentes: textoDeVigentes(t, vigentes.length),
                     })}
             </p>
           </div>
-          {/* Escribirle sin salir de la ficha. `tenantId` es su `User.id` cuando
-              tiene cuenta del portal; cuando no —se cargó con documento y sin
-              correo— el back responde `SIN_CUENTA` y el botón lo dice. */}
-          <div className="shrink-0">
-            <BotonEnviarMensaje counterpartId={persona.tenantId} />
+          {/* Escribirle sin salir de la ficha, por su CUENTA del portal. Sin
+              cuenta no hay dónde escribirle, y se dice (I-22, Nico: la cuenta
+              se crea desde el contrato; acá no se invita). */}
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {puedeEditar ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                hideArrow
+                onClick={() => onEditar?.(persona)}
+                data-testid="inquilino-editar"
+              >
+                <PencilSimple className="h-4 w-4" aria-hidden="true" />
+                {t(`${NS}.editarDatos`)}
+              </Button>
+            ) : null}
+            {idDeLaCuenta ? (
+              <BotonEnviarMensaje counterpartId={idDeLaCuenta} />
+            ) : (
+              <span
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-muted/40 px-2.5 py-1.5 text-sm text-fg-muted"
+                title={t(`${NS}.sinCuentaDelPortalPorQue`)}
+                data-testid="inquilino-sin-cuenta"
+              >
+                <UserCircleMinus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                {t(`${NS}.sinCuentaDelPortal`)}
+              </span>
+            )}
           </div>
         </div>
 
@@ -332,7 +463,8 @@ export function CuerpoDelCajon({
           {persona.documento ? (
             <DatoDeContacto
               icono={IdentificationCard}
-              valor={persona.documento}
+              // I-14: el NIT con su dígito de verificación (algoritmo DIAN).
+              valor={documentoParaMostrar(persona.documento, persona.tipoDocumento)}
               accion={t(`${NS}.documento`)}
               mono
             />
@@ -348,37 +480,43 @@ export function CuerpoDelCajon({
             </span>
           ) : null}
         </div>
-      </div>
+      </SheetHeader>
 
-      <div
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-6 py-5"
-        data-lenis-prevent
-      >
+      <SheetBody>
         {/* El permiso para escribirle por WhatsApp desde el chat (2026-09-12).
             Apagado por defecto: tener su teléfono no autoriza el canal. */}
-        <InterruptorDeWhatsapp personaId={persona.tenantId} className="mb-4" />
+        <InterruptorDeWhatsapp personaId={idDeLaCuenta} className="mb-4" />
         {sinArriendos ? (
           <div className="space-y-3">
             {arriendosIncompletos ? <Aviso texto={t(`${NS}.arriendosIncompletos`)} /> : null}
-            {cargandoArriendos ? (
-              <div className="flex items-center justify-center gap-2 py-16 text-sm text-fg-muted">
-                <Spinner size="sm" /> {t(`${NS}.cargandoArriendos`)}
-              </div>
-            ) : (
-              /* El vacío de esta persona es el caso común en una agencia recién
-                 migrada, así que dice lo que falta y ofrece la salida en vez de
-                 dejar tres ceros y un cartel gris. */
-              <EmptyState
-                icon={FileText}
-                title={t(`${NS}.sinArriendosTitulo`)}
-                description={t(`${NS}.sinContratos`)}
-                action={{
-                  label: t('inquilinos.crearSuContrato'),
-                  href: RUTA_DEL_CONTRATO_MANUAL,
-                }}
-                className="py-14"
-              />
-            )}
+            {/* Cargando → el vacío: se cruzan (fundido; el vacío trae su
+                propia subida). */}
+            <CrossFade swapKey={cargandoArriendos ? 'cargando' : 'vacio'} direction="none">
+              {cargandoArriendos ? (
+                <div className="flex items-center justify-center gap-2 py-16 text-sm text-fg-muted">
+                  <Spinner size="sm" /> {t(`${NS}.cargandoArriendos`)}
+                </div>
+              ) : (
+                /* El vacío de esta persona es el caso común en una agencia recién
+                   migrada, así que dice lo que falta y ofrece la salida en vez de
+                   dejar tres ceros y un cartel gris. */
+                <EmptyState
+                  icon={FileText}
+                  title={t(`${NS}.sinArriendosTitulo`)}
+                  description={t(`${NS}.sinContratos`)}
+                  action={
+                    puedeCrearContrato
+                      ? {
+                          label: t('inquilinos.crearSuContrato'),
+                          // I-29: con la persona ya elegida en el contrato manual.
+                          href: rutaDelContratoManualPara(persona),
+                        }
+                      : undefined
+                  }
+                  className="py-14"
+                />
+              )}
+            </CrossFade>
           </div>
         ) : (
           <div className="space-y-7">
@@ -386,7 +524,9 @@ export function CuerpoDelCajon({
                 Los dos números de plata salen del ESTADO DE CUENTA, no de los
                 cobros: la deuda nace con el contrato. */}
             <div className="space-y-3" data-testid="inquilino-cajon-deuda">
-              <dl className="grid grid-cols-3 divide-x divide-border">
+              {/* I-28: a 390 px las tres cifras se APILAN (una por renglón);
+                  en tres columnas angostas se cortaban en «$ 1.850…». */}
+              <dl className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 {/* Cuántos vigentes de cuántos ya lo dice la cabecera. */}
                 <Numero
                   etiqueta={t(`${NS}.canonVigente`)}
@@ -422,22 +562,45 @@ export function CuerpoDelCajon({
                         ? t(`${NS}.enCarteraUnDia`)
                         : t(`${NS}.enCartera`, { n: deuda.dias })
                       : deuda?.tipo === 'VENCIDO_EN_PLAZO'
-                        ? t(`${NS}.vencidoEnPlazo`)
-                        : deuda?.tipo === 'AL_DIA'
-                          ? t(`${NS}.alDia`)
-                          : undefined
+                        ? cuenta?.plazoSinFijar === true
+                          ? t(`${NS}.vencidaSinPlazo`)
+                          : t(`${NS}.vencidoEnPlazo`)
+                        : alDiaConIntereses
+                          ? t(`${NS}.interesesSinPagar`, { monto: formatCurrency(interesesSinPagar) })
+                          : deuda?.tipo === 'AL_DIA'
+                            ? t(`${NS}.alDia`)
+                            : undefined
                   }
                   detalleTono={
                     deuda?.tipo === 'EN_CARTERA'
                       ? 'alerta'
-                      : deuda?.tipo === 'VENCIDO_EN_PLAZO'
+                      : deuda?.tipo === 'VENCIDO_EN_PLAZO' || alDiaConIntereses
                         ? 'aviso'
                         : 'bien'
                   }
                 />
               </dl>
 
-              {errorCuenta ? (
+              {enCobranza ? (
+                <p className="flex flex-wrap items-center gap-2 text-sm text-fg-muted" data-testid="inquilino-en-cobranza">
+                  <Badge variant="destructive">{locale === 'en' ? 'In collections' : 'En cobranza'}</Badge>
+                  {locale === 'en'
+                    ? 'More than 60 days in arrears.'
+                    : 'Lleva más de 60 días en cartera.'}
+                </p>
+              ) : null}
+
+              {errorCuenta && cuentaSinPermiso ? (
+                /* QA-INQ-95 (F-17): un 403 no se arregla reintentando; se dice por qué. */
+                <p
+                  className="rounded-lg border border-border bg-surface-muted/50 px-4 py-3 text-sm text-fg-muted"
+                  data-testid="inquilino-cuenta-sin-permiso"
+                >
+                  {locale === 'en'
+                    ? 'Your role does not include seeing what this person owes. An administrator can enable it for you.'
+                    : 'Tu rol no incluye ver lo que debe esta persona. Un administrador te lo puede habilitar.'}
+                </p>
+              ) : errorCuenta ? (
                 <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface-muted/50 px-4 py-3">
                   <p className="text-sm text-danger" role="alert">
                     {t(`${NS}.errorCuenta`)}
@@ -450,6 +613,32 @@ export function CuerpoDelCajon({
                 /* Tiene arriendos pero ningún contrato responde por él: no se
                    sabe qué debe, y se dice en vez de pintar un cero. */
                 <Aviso texto={t(`${NS}.sinEstadoDeCuenta`)} />
+              ) : null}
+
+              {plazoSinFijar ? (
+                <p
+                  className="flex flex-wrap items-start gap-x-2 gap-y-1 rounded-lg border border-warning/40 bg-warning-soft/40 px-3 py-2 text-caption text-fg"
+                  data-testid="inquilino-plazo-sin-fijar"
+                >
+                  <Warning className="mt-px h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+                  <span className="min-w-0 flex-1 basis-[14rem]">{t(`${NS}.plazoSinFijar`)}</span>
+                  <Link href={RUTA_DEL_PLAZO} className="font-medium underline underline-offset-4">
+                    {t(`${NS}.fijarPlazo`)}
+                  </Link>
+                </p>
+              ) : null}
+
+              {sinReglasDeMora ? (
+                <p
+                  className="flex flex-wrap items-start gap-x-2 gap-y-1 rounded-lg border border-warning/40 bg-warning-soft/40 px-3 py-2 text-caption text-fg"
+                  data-testid="inquilino-sin-reglas-de-mora"
+                >
+                  <Warning className="mt-px h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+                  <span className="min-w-0 flex-1 basis-[14rem]">{t(`${NS}.sinReglasDeMora`)}</span>
+                  <Link href={RUTA_DE_REGLAS_DE_MORA} className="font-medium underline underline-offset-4">
+                    {t(`${NS}.configurarReglasDeMora`)}
+                  </Link>
+                </p>
               ) : null}
 
               {enlaceAlEstadoDeCuenta ? (
@@ -479,9 +668,9 @@ export function CuerpoDelCajon({
 
               {arriendosIncompletos ? <Aviso texto={t(`${NS}.arriendosIncompletos`)} /> : null}
 
-              <ul className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
+              <Stagger as="ul" className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
                 {persona.arriendos.map((a) => (
-                  <li key={a.leaseId} className="space-y-0.5 bg-surface py-1.5">
+                  <StaggerItem as="li" key={a.contractId} className="space-y-0.5 bg-surface py-1.5">
                     <RenglonDeArriendo arriendo={a} />
                     <Link
                       href={`/panel/inmobiliaria/contratos/${a.contractId}`}
@@ -490,9 +679,9 @@ export function CuerpoDelCajon({
                       {t(`${NS}.verContrato`)}
                       <ArrowSquareOut className="h-3 w-3" aria-hidden="true" />
                     </Link>
-                  </li>
+                  </StaggerItem>
                 ))}
-              </ul>
+              </Stagger>
             </Seccion>
 
             <div data-testid="inquilino-cajon-pagos">
@@ -510,81 +699,92 @@ export function CuerpoDelCajon({
                     {resumen.recordatorios > 0 && resumen.ultimoRecordatorio ? (
                       <span className="inline-flex items-center gap-1.5">
                         <Bell className="h-3.5 w-3.5" aria-hidden="true" />
-                        {t(`${NS}.recordatorios`, {
-                          n: resumen.recordatorios,
-                          fecha: formatDate(resumen.ultimoRecordatorio),
-                        })}
+                        {resumen.recordatorios === 1
+                          ? t(`${NS}.recordatoriosUno`, { fecha: formatDate(resumen.ultimoRecordatorio) })
+                          : t(`${NS}.recordatorios`, {
+                              n: resumen.recordatorios,
+                              fecha: formatDate(resumen.ultimoRecordatorio),
+                            })}
                       </span>
                     ) : null}
                   </div>
                 }
               >
-                {cargandoPagos ? (
-                  <div className="flex items-center gap-2 py-6 text-sm text-fg-muted">
-                    <Spinner size="sm" /> {t(`${NS}.cargandoPagos`)}
-                  </div>
-                ) : errorPagos ? (
-                  <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface-muted/50 px-4 py-3">
-                    <p className="text-sm text-danger" role="alert">
-                      {t(`${NS}.errorPagos`)}
-                    </p>
-                    <Button variant="outline" size="sm" hideArrow onClick={reintentar}>
-                      {t(`${NS}.reintentar`)}
-                    </Button>
-                  </div>
-                ) : cobros.length === 0 ? (
-                  /* 🔴 Sin cobros NO quiere decir sin deuda: el cobro es el
-                     documento con que se reclama, y la deuda ya está en la
-                     franja de arriba. El vacío lo dice y lleva al estado de
-                     cuenta, no a esperar un cobro. */
-                  <EmptyState
-                    icon={Receipt}
-                    title={t(`${NS}.sinCobrosTitulo`)}
-                    description={t(`${NS}.sinCobros`)}
-                    action={
-                      enlaceAlEstadoDeCuenta
-                        ? { label: t(`${NS}.verEstadoDeCuenta`), href: enlaceAlEstadoDeCuenta }
-                        : contratoPrincipal
-                          ? {
-                              label: t(`${NS}.verContrato`),
-                              href: `/panel/inmobiliaria/contratos/${contratoPrincipal}`,
-                            }
-                          : undefined
-                    }
-                    className="rounded-lg bg-surface-muted/40 py-10"
-                  />
-                ) : (
-                  <>
-                    <p className="text-xs text-fg-muted">{t(`${NS}.pagosDeSusContratos`)}</p>
-                    {pagosIncompletos ? <Aviso texto={t(`${NS}.pagosIncompletos`)} /> : null}
-                    <ul className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
-                      {visibles.map((c) => (
-                        <li key={c.id}>
-                          <FilaDePago cobro={c} />
-                        </li>
-                      ))}
-                    </ul>
-                    {cobros.length > visibles.length ? (
-                      <p className="text-xs text-fg-muted">
-                        {t(`${NS}.yMasCobros`, { n: cobros.length - visibles.length })}
+                {/* Cargando → los cobros (o el fallo, o el vacío): se cruzan. */}
+                <CrossFade
+                  swapKey={cargandoPagos ? 'cargando' : errorPagos ? 'fallo' : cobros.length === 0 ? 'vacio' : 'lista'}
+                  direction="none"
+                  className="space-y-2.5"
+                >
+                  {cargandoPagos ? (
+                    <div className="flex items-center gap-2 py-6 text-sm text-fg-muted">
+                      <Spinner size="sm" /> {t(`${NS}.cargandoPagos`)}
+                    </div>
+                  ) : errorPagos ? (
+                    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface-muted/50 px-4 py-3">
+                      <p className="text-sm text-danger" role="alert">
+                        {t(`${NS}.errorPagos`)}
                       </p>
-                    ) : null}
-                    {contratoPrincipal ? (
-                      <Link
-                        href={`/panel/inmobiliaria/contratos/${contratoPrincipal}`}
-                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                      >
-                        {t(`${NS}.verCobrosDelContrato`)}
-                        <ArrowSquareOut className="h-3 w-3" aria-hidden="true" />
-                      </Link>
-                    ) : null}
-                  </>
-                )}
+                      <Button variant="outline" size="sm" hideArrow onClick={reintentar}>
+                        {t(`${NS}.reintentar`)}
+                      </Button>
+                    </div>
+                  ) : cobros.length === 0 ? (
+                    /* 🔴 Sin cobros NO quiere decir sin deuda: el cobro es el
+                       documento con que se reclama, y la deuda ya está en la
+                       franja de arriba. El vacío lo dice y lleva al estado de
+                       cuenta, no a esperar un cobro. */
+                    <EmptyState
+                      icon={Receipt}
+                      title={t(`${NS}.sinCobrosTitulo`)}
+                      description={t(`${NS}.sinCobros`)}
+                      action={
+                        enlaceAlEstadoDeCuenta
+                          ? { label: t(`${NS}.verEstadoDeCuenta`), href: enlaceAlEstadoDeCuenta }
+                          : contratoPrincipal
+                            ? {
+                                label: t(`${NS}.verContrato`),
+                                href: `/panel/inmobiliaria/contratos/${contratoPrincipal}`,
+                              }
+                            : undefined
+                      }
+                      className="rounded-lg bg-surface-muted/40 py-10"
+                    />
+                  ) : (
+                    <>
+                      <p className="text-xs text-fg-muted">{t(`${NS}.pagosDeSusContratos`)}</p>
+                      {pagosIncompletos ? <Aviso texto={t(`${NS}.pagosIncompletos`)} /> : null}
+                      <Stagger as="ul" className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
+                        {visibles.map((c) => (
+                          <StaggerItem as="li" key={c.id}>
+                            <FilaDePago cobro={c} />
+                          </StaggerItem>
+                        ))}
+                      </Stagger>
+                      {cobros.length > visibles.length ? (
+                        <p className="text-xs text-fg-muted">
+                          {cobros.length - visibles.length === 1
+                            ? t(`${NS}.yMasCobrosUno`)
+                            : t(`${NS}.yMasCobros`, { n: cobros.length - visibles.length })}
+                        </p>
+                      ) : null}
+                      {contratoPrincipal ? (
+                        <Link
+                          href={`/panel/inmobiliaria/contratos/${contratoPrincipal}`}
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          {t(`${NS}.verCobrosDelContrato`)}
+                          <ArrowSquareOut className="h-3 w-3" aria-hidden="true" />
+                        </Link>
+                      ) : null}
+                    </>
+                  )}
+                </CrossFade>
               </Seccion>
             </div>
           </div>
         )}
-      </div>
+      </SheetBody>
     </>
   );
 }
@@ -633,41 +833,71 @@ function Seccion({
 function FilaDePago({ cobro }: { cobro: CobroConDesglose }) {
   const { t, formatCurrency, formatDate, locale } = useI18n();
   const tono = TONO_DEL_COBRO[cobro.status];
-  const debe = (cobro.pendingAmount ?? 0) > 0;
+  // QA-INQ-95 (I-09): un cobro sin cuota anterior a la fecha de cartera no es
+  // deuda de aquí: «Resta por pagar» no lo suma, así que tampoco se pinta su saldo.
+  const anterior = cobro.anteriorALaCartera === true;
+  const debe = !anterior && (cobro.pendingAmount ?? 0) > 0;
+  /*
+   * I-10 (QA-INQ, 03-10): una GRILLA, no un renglón que se acomoda. Antes el
+   * «Saldo» saltaba de renglón en unos meses y en otros se salía del borde, y
+   * los montos no quedaban uno debajo del otro. A la izquierda mes, estado y
+   * vencimiento; a la derecha, en columnas de ancho fijo, valor y saldo,
+   * alineados a la derecha. En el celular el valor y el saldo se apilan a la
+   * derecha y nada se sale del borde.
+   */
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-surface px-3 py-2.5">
-      <span className="w-24 shrink-0 text-sm font-medium text-fg">
-        {nombreDelMes(cobro.month, locale === 'en' ? 'en' : 'es', 'short')}
-      </span>
-
-      <Badge variant={tono?.variant ?? 'secondary'}>
-        {/* Un estado que el back agregue mañana se muestra crudo: mejor una
-            etiqueta rara que una fila que miente. */}
-        {tono ? t(tono.clave) : cobro.status}
-      </Badge>
-
-      {cobro.paidDate && !debe ? (
-        <span className="text-xs text-fg-muted">
-          {t(`${NS}.pagadoEl`, { fecha: formatDate(cobro.paidDate) })}
+    <div
+      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 bg-surface px-3 py-2.5 sm:grid-cols-[minmax(0,1fr)_17rem]"
+      data-testid="cobro-del-cajon"
+    >
+      <div className="grid min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-x-3 gap-y-1 sm:grid-cols-[5.5rem_minmax(0,1fr)]">
+        <span className="text-sm font-medium text-fg">
+          {nombreDelMes(cobro.month, locale === 'en' ? 'en' : 'es', 'short')}
         </span>
-      ) : (
-        <span className="text-xs text-fg-muted">
-          {t(`${NS}.vencimiento`, { fecha: formatDate(cobro.dueDate) })}
+        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          {anterior ? (
+            <Badge variant="secondary" data-testid="cobro-anterior-a-la-cartera">
+              {locale === 'en' ? 'Before the portfolio date' : 'Antes de la cartera'}
+            </Badge>
+          ) : (
+            <Badge variant={tono?.variant ?? 'secondary'}>
+              {/* Un estado que el back agregue mañana se muestra crudo: mejor una
+                  etiqueta rara que una fila que miente. */}
+              {tono ? t(tono.clave) : cobro.status}
+            </Badge>
+          )}
+          {anterior ? (
+            <span className="text-xs text-fg-muted">
+              {locale === 'en'
+                ? 'Not charged here: it is older than the contract’s portfolio date.'
+                : 'No se cobra aquí: es anterior a la fecha de cartera del contrato.'}
+            </span>
+          ) : cobro.paidDate && !debe ? (
+            <span className="text-xs text-fg-muted">
+              {t(`${NS}.pagadoEl`, { fecha: formatDate(cobro.paidDate) })}
+            </span>
+          ) : (
+            <span className="text-xs text-fg-muted">
+              {t(`${NS}.vencimiento`, { fecha: formatDate(cobro.dueDate) })}
+            </span>
+          )}
         </span>
-      )}
+      </div>
 
-      <span className="ml-auto whitespace-nowrap font-mono text-sm tabular-nums text-fg">
-        {/* `totalWithFees` incluye la mora ya causada; el total pelado
-            cobraría de menos justo en las filas que importan. */}
-        {formatCurrency(cobro.totalWithFees ?? cobro.totalAmount)}
-      </span>
-      {debe ? (
-        <span className="w-28 shrink-0 whitespace-nowrap text-right font-mono text-xs tabular-nums text-fg-muted">
-          {t(`${NS}.saldoDelCobro`, { monto: formatCurrency(cobro.pendingAmount) })}
+      <div className="flex flex-col items-end gap-0.5 sm:grid sm:grid-cols-[8rem_9rem] sm:items-center sm:gap-x-0">
+        <span className="whitespace-nowrap text-right font-mono text-sm tabular-nums text-fg">
+          {/* `totalWithFees` incluye la mora ya causada; el total pelado
+              cobraría de menos justo en las filas que importan. */}
+          {formatCurrency(cobro.totalWithFees ?? cobro.totalAmount)}
         </span>
-      ) : (
-        <span className="w-28 shrink-0" />
-      )}
+        {debe ? (
+          <span className="whitespace-nowrap text-right font-mono text-xs tabular-nums text-fg-muted">
+            {t(`${NS}.saldoDelCobro`, { monto: formatCurrency(cobro.pendingAmount) })}
+          </span>
+        ) : (
+          <span className="hidden sm:block" aria-hidden="true" />
+        )}
+      </div>
     </div>
   );
 }
@@ -688,11 +918,12 @@ function Numero({
   detalleTono?: 'neutro' | 'alerta' | 'aviso' | 'bien';
 }) {
   return (
-    <div className="min-w-0 px-4 first:pl-0 last:pr-0">
-      <dt className="truncate text-xs text-fg-muted">{etiqueta}</dt>
+    <div className="min-w-0 py-2.5 first:pt-0 last:pb-0 sm:px-4 sm:py-0 sm:first:pl-0 sm:last:pr-0">
+      <dt className="text-xs text-fg-muted">{etiqueta}</dt>
       <dd
         className={cn(
-          'mt-1 truncate font-mono text-lg font-semibold tabular-nums',
+          // I-28: una cifra de plata NUNCA se corta con «…»: no se puede leer cuánto debe.
+          'mt-1 whitespace-nowrap font-mono text-lg font-semibold tabular-nums',
           tono === 'alerta' ? 'text-danger' : tono === 'apagado' ? 'text-fg-subtle' : 'text-fg',
         )}
       >
@@ -701,7 +932,7 @@ function Numero({
       {detalle ? (
         <dd
           className={cn(
-            'mt-0.5 truncate text-xs',
+            'mt-0.5 text-xs',
             detalleTono === 'alerta'
               ? 'text-danger'
               : detalleTono === 'aviso'

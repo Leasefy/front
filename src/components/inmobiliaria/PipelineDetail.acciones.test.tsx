@@ -46,10 +46,11 @@ vi.mock('next/link', () => ({
 // Radix monta en portales y se apoya en APIs que happy-dom no tiene completas.
 // Se reemplaza SÓLO la carcasa: la lógica de MotivoDialog (el mínimo de
 // caracteres, el `preventDefault`, el reset del texto) es la real.
-vi.mock('@/components/ui/sheet', () => ({
+vi.mock('@/components/ui/sheet', async () => ({
+  // Las piezas del cajón (cabecera con título y acciones, cuerpo, pie) como DOM plano.
+  ...(await import('@/components/ui/sheet-test-stub')),
   Sheet: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   SheetContent: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
-  SheetHeader: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   SheetTitle: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
@@ -71,7 +72,9 @@ vi.mock('@/components/ui/alert-dialog', () => {
 });
 
 import { PipelineDetail } from './PipelineDetail';
+import { ApiError } from '@/lib/api/client';
 import type { PipelineItem } from '@/lib/types/inmobiliaria';
+import { AYUDA_DEL_MOTIVO_DE_PERDIDA } from '@/lib/pipeline/limites-del-pipeline';
 
 void React;
 
@@ -167,43 +170,80 @@ describe('PipelineDetail — mover de etapa', () => {
   });
 });
 
-describe('PipelineDetail — marcar como perdido', () => {
-  it('no marca nada hasta que se escribe un motivo, y lo manda al back', async () => {
+async function abrirPerdido() {
+  await act(async () => {
+    (container.querySelector('[data-testid="pipeline-marcar-perdido"]') as HTMLButtonElement).click();
+  });
+}
+async function escoger(motivo: string) {
+  const b = Array.from(document.querySelectorAll('[data-testid="motivo-de-perdida-opcion"]')).find(
+    (x) => x.textContent === motivo,
+  ) as HTMLButtonElement;
+  await act(async () => b.click());
+}
+async function detalle(texto: string) {
+  const area = document.querySelector('#motivo-detalle') as HTMLTextAreaElement;
+  const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!;
+  await act(async () => {
+    setter.call(area, texto);
+    area.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+}
+const confirmarPerdido = () => document.querySelector('[data-testid="motivo-de-perdida-confirmar"]') as HTMLButtonElement;
+
+describe('PipelineDetail — marcar como perdido (PL-17: motivos fijos)', () => {
+  it('no marca nada hasta escoger el motivo, y manda «motivo: detalle»', async () => {
     const onStageChange = vi.fn(() => Promise.resolve());
     montar(onStageChange as never);
-
-    await act(async () => {
-      (container.querySelector('[data-testid="pipeline-marcar-perdido"]') as HTMLButtonElement).click();
-    });
-
-    // El clic abre el diálogo; todavía no movió nada.
+    await abrirPerdido();
     expect(onStageChange).not.toHaveBeenCalled();
-    const confirmar = container.querySelector(
-      '[data-testid="motivo-confirmar"]',
-    ) as HTMLButtonElement;
-    expect(confirmar).not.toBeNull();
-    // Sin motivo suficiente el botón está apagado.
-    expect(confirmar.disabled).toBe(true);
+    expect(confirmarPerdido().disabled).toBe(true);
+    await escoger('Arrendó en otro lado');
+    await detalle('con otra inmobiliaria por el canon');
+    await act(async () => confirmarPerdido().click());
+    expect(onStageChange).toHaveBeenCalledWith('pi-1', 'lost', 'Arrendó en otro lado: con otra inmobiliaria por el canon');
+  });
 
-    const texto = container.querySelector('[data-testid="motivo-texto"]') as HTMLTextAreaElement;
-    const setter = Object.getOwnPropertyDescriptor(
-      window.HTMLTextAreaElement.prototype,
-      'value',
-    )!.set!;
-    await act(async () => {
-      setter.call(texto, 'Se fue con otra inmobiliaria por el canon');
-      texto.dispatchEvent(new Event('input', { bubbles: true }));
+  it('lo que dice la ayuda es cierto: un lead perdido muestra su motivo en «Razón de pérdida»', () => {
+    act(() => {
+      root.render(
+        <PipelineDetail
+          isOpen
+          onClose={() => {}}
+          item={{ ...ITEM, stage: 'lost', lostReason: 'Tomó otro apartamento' }}
+          onStageChange={vi.fn() as never}
+        />,
+      );
     });
+    expect(AYUDA_DEL_MOTIVO_DE_PERDIDA).toContain('«Razón de pérdida»');
+    expect(container.textContent).toContain('Razón de pérdida');
+    expect(container.textContent).toContain('Tomó otro apartamento');
+  });
 
-    await act(async () => {
-      (container.querySelector('[data-testid="motivo-confirmar"]') as HTMLButtonElement).click();
-    });
-
-    expect(onStageChange).toHaveBeenCalledWith(
-      'pi-1',
-      'lost',
-      'Se fue con otra inmobiliaria por el canon',
+  it('🔴 si el back rechaza el motivo, su frase va bajo el campo y el diálogo sigue abierto', async () => {
+    const frase = 'El motivo no puede ser sólo espacios.';
+    const onStageChange = vi.fn(() =>
+      Promise.reject(
+        new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+          statusCode: 400,
+          code: 'DATOS_INVALIDOS',
+          message: [frase],
+          campos: [{ campo: 'lostReason', regla: 'otro', mensaje: frase }],
+        }),
+      ),
     );
+    montar(onStageChange as never);
+    toastError.mockReset();
+    await abrirPerdido();
+    await escoger('Dejó de responder');
+    await act(async () => confirmarPerdido().click());
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(document.getElementById('motivo-de-perdida-error')?.textContent).toBe(frase);
+    expect(document.querySelector('[data-testid="motivo-de-perdida"]')).not.toBeNull();
+    expect(toastError).not.toHaveBeenCalled();
+    expect(toastInfo).not.toHaveBeenCalled();
   });
 });
 

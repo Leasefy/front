@@ -304,3 +304,86 @@ describe('<ResolucionMasiva> — progreso visible (§3.2.G2)', () => {
     expect(container.textContent).toContain('200 de 200 resueltas.')
   })
 })
+
+/*
+ * Sistema de errores (02-10-2026): un 400 con `campos` del back
+ * (`ResolverMasivoDto.propietario.<campo>`) va debajo de SU campo y le da el
+ * foco; la comisión se ataja en el cliente con la regla del back (0–100); un
+ * 5xx sale «de nuestro lado» con la referencia.
+ */
+describe('<ResolucionMasiva> — el error en su lugar', () => {
+  const ids = ['f-1', 'f-2']
+
+  async function aplicar() {
+    await act(async () => {
+      boton(`Aplicar a ${ids.length}`)?.click()
+      for (let i = 0; i < 5; i++) await new Promise((r) => setTimeout(r, 0))
+    })
+  }
+
+  it('🔴 un 400 en propietario.documento va debajo del documento, con foco', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    vi.mocked(contractsApi.migracion.resolverMasivo).mockRejectedValue(
+      new ApiError(400, ['El documento no es válido.'], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['El documento no es válido.'],
+        campos: [{ campo: 'propietario.documento', regla: 'formato', mensaje: 'El documento no es válido.' }],
+      }),
+    )
+    render({ ids, seleccionadas: [fila()], onListo: vi.fn() })
+    await elegirYCompletarPropietario()
+    await aplicar()
+
+    const input = document.getElementById('masiva-documento') as HTMLInputElement
+    expect(document.getElementById('masiva-documento-error')?.textContent).toBe('El documento no es válido.')
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(input)
+    // El aviso dice hasta dónde llegó, sin repetir lo que ya está en el campo.
+    const aviso = container.querySelector('[data-testid="error-masivo"]')?.textContent ?? ''
+    expect(aviso).toContain('Revisa lo marcado arriba')
+    expect(aviso).not.toContain('El documento no es válido.')
+  })
+
+  it('una comisión de 150 % se ataja con la frase, sin mandar nada', async () => {
+    vi.mocked(contractsApi.migracion.resolverMasivo).mockClear()
+    render({ ids, seleccionadas: [fila()], onListo: vi.fn() })
+    await elegirYCompletarPropietario()
+    const comision = document.getElementById('masiva-comisionPorcentaje') as HTMLInputElement
+    act(() => {
+      setNativeValue(comision, '150')
+    })
+    await aplicar()
+    expect(contractsApi.migracion.resolverMasivo).not.toHaveBeenCalled()
+    expect(document.getElementById('masiva-comisionPorcentaje-error')?.textContent).toBe(
+      'La comisión va de 0 a 100 %.',
+    )
+  })
+
+  it('🔴 un 5xx: de nuestro lado, con la referencia, sin «conexión»', async () => {
+    const { ApiError } = await import('@/lib/api/client')
+    vi.mocked(contractsApi.migracion.resolverMasivo).mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'ab12cd34',
+      }),
+    )
+    render({ ids, seleccionadas: [fila()], onListo: vi.fn() })
+    await elegirYCompletarPropietario()
+    await aplicar()
+    const aviso = container.querySelector('[data-testid="error-masivo"]')?.textContent ?? ''
+    expect(aviso).toContain('No pudimos aplicar el cambio: algo falló de nuestro lado')
+    expect(aviso).toContain('ab12cd34')
+    expect(aviso).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta: la conexión', async () => {
+    vi.mocked(contractsApi.migracion.resolverMasivo).mockRejectedValue(new TypeError('Failed to fetch'))
+    render({ ids, seleccionadas: [fila()], onListo: vi.fn() })
+    await elegirYCompletarPropietario()
+    await aplicar()
+    expect(container.querySelector('[data-testid="error-masivo"]')?.textContent).toMatch(/conexión/)
+  })
+})

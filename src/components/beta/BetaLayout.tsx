@@ -23,6 +23,15 @@ interface BetaLayoutProps {
    * la sidebar principal debe seguir existiendo).
    */
   variant?: 'fullscreen' | 'embedded';
+  /**
+   * 🔴 Ya hay un `<main>` afuera (ARREGLOS-4, 03-10-2026): el layout del panel
+   * de la inmobiliaria envuelve todo en el suyo —el del «Saltar al contenido»—,
+   * así que el chat abría un SEGUNDO landmark principal. Con esto el área del
+   * chat es un `<div>` con el mismo id (el «Saltar al chat» sigue llevando ahí).
+   * Lo pasan `/panel/inmobiliaria` y `/panel/inmobiliaria/beta/*`; el alias
+   * `/panel/beta` no cuelga de ese layout y conserva su `<main>`.
+   */
+  dentroDelPanel?: boolean;
 }
 
 /**
@@ -40,7 +49,7 @@ interface BetaLayoutProps {
  * BetaChatProvider wraps all children so chat state persists across
  * tab switches and page navigation within the Beta section.
  */
-export function BetaLayout({ children, basePath, variant = 'fullscreen' }: BetaLayoutProps) {
+export function BetaLayout({ children, basePath, variant = 'fullscreen', dentroDelPanel = false }: BetaLayoutProps) {
   const { t } = useI18n();
   const [activeTab, setTab] = useState<BetaTab>('conversations');
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -146,14 +155,20 @@ export function BetaLayout({ children, basePath, variant = 'fullscreen' }: BetaL
 
         {/* Main content area — error-isolated from sidebar */}
         <BetaErrorBoundary>
-          <main
-            id="beta-chat-main"
-            className="flex-1 overflow-y-auto"
-            role="main"
-            aria-label={t('beta.a11y.mainChat')}
-          >
-            {activeTab === 'settings' ? <PreferencesPanel /> : children}
-          </main>
+          {dentroDelPanel ? (
+            <div id="beta-chat-main" className="flex-1 overflow-y-auto">
+              {activeTab === 'settings' ? <PreferencesPanel /> : children}
+            </div>
+          ) : (
+            <main
+              id="beta-chat-main"
+              className="flex-1 overflow-y-auto"
+              role="main"
+              aria-label={t('beta.a11y.mainChat')}
+            >
+              {activeTab === 'settings' ? <PreferencesPanel /> : children}
+            </main>
+          )}
         </BetaErrorBoundary>
       </div>
     </BetaChatProvider>

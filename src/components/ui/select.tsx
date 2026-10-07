@@ -8,6 +8,7 @@ import {
 } from "@leasefy/cadence"
 
 import { cn } from "@/lib/utils"
+import { ariaDiceInvalido } from "./campo-invalido"
 
 /**
  * ADAPTER fino sobre el Select de @leasefy/cadence (misma API que Radix).
@@ -20,6 +21,9 @@ import { cn } from "@/lib/utils"
  *   Se conserva también max-h-96 (el DS recorta a max-h-72).
  * - SelectItem: touch target del producto — [@media(pointer:coarse)]:py-2.5
  *   (+h-auto porque el DS fija h-8) para ~44px en dispositivos táctiles.
+ * - 🔴 SelectTrigger con `aria-invalid` pinta el borde de error, como el Input
+ *   (ARREGLOS-4, 03-10-2026): el DS no tiene estado de error en el Select, así
+ *   que el adapter pone `data-invalid` y el mismo borde/anillo de peligro.
  * El resto se re-exporta tal cual del paquete.
  */
 
@@ -39,12 +43,18 @@ const SelectTrigger = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DSSelectTrigger
     ref={ref}
+    data-invalid={ariaDiceInvalido(props["aria-invalid"]) || undefined}
     className={cn(
       "h-11 px-4 text-sm",
       // focus → focus-visible (a11y producto): neutraliza el focus: del DS
       // y reaplica el ring de marca solo en focus-visible.
       "focus:border-border focus:ring-0",
       "focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring",
+      // error: el mismo borde y anillo de peligro que el Input del DS, también
+      // con foco y abierto.
+      "data-[invalid]:border-danger data-[invalid]:hover:border-danger data-[invalid]:focus:border-danger",
+      "data-[invalid]:focus-visible:border-danger data-[invalid]:focus-visible:ring-0 data-[invalid]:focus-visible:shadow-[0_0_0_3px_rgba(192,57,43,0.12)]",
+      "data-[invalid]:data-[state=open]:border-danger",
       className
     )}
     {...props}

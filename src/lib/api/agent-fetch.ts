@@ -35,9 +35,57 @@
  * con el backend. Nadie renueva por su cuenta; hay un solo renovador.
  */
 
-import { getAccessToken, esCodigoDeSesionMuerta } from './client'
+import { ApiError, getAccessToken, esCodigoDeSesionMuerta } from './client'
 import { agentAuthHeaders } from './agent-auth'
 import { sesionTerminada, terminarSesionSiMurio } from '@/lib/auth/session-terminal'
+import { esFalloDeRed } from '@/lib/conexion/leer-el-error'
+import { estadoDeConexion } from '@/lib/conexion/estado-de-conexion'
+import {
+  CODIGO_SERVICIO_NO_DISPONIBLE,
+  textoParaUnAviso,
+} from '@/lib/conexion/servicio-no-disponible'
+
+/**
+ * 🔴 03-10-2026 (pruebas en el navegador) · El micro caído es UNA parte de
+ * Leasefy (capa 2, servicio `asistente`), no la red de la persona.
+ *
+ * Con el micro apagado y el back sano, el `fetch` al micro no sale y su
+ * `TypeError` subía crudo: el Piloto, la Bandeja y la actividad decían «No
+ * pudimos conectarnos · Revisa tu conexión» a alguien con internet y con el
+ * resto del panel funcionando — justo el caso del 01-10 que dio origen a las
+ * caídas (`lib/conexion/`), cuyo diseño ya decía que las llamadas directas al
+ * micro son capa 2.
+ *
+ * Sólo se convierte cuando se puede afirmar que lo caído es el micro: el
+ * `fetch` no salió (nunca un `AbortError` ni otro error), el navegador dice que
+ * hay red y el back viene respondiendo (`estadoDeConexion() === 'bien'`). Sin
+ * red o con Leasefy entero caído, el `TypeError` sigue tal cual: ahí manda la
+ * franja de la capa 1.
+ */
+export function caidaDelAsistente(error: unknown): unknown {
+  if (!esFalloDeRed(error)) return error
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return error
+  if (estadoDeConexion() !== 'bien') return error
+  const message = textoParaUnAviso('asistente')
+  return new ApiError(503, message, CODIGO_SERVICIO_NO_DISPONIBLE, {
+    statusCode: 503,
+    code: CODIGO_SERVICIO_NO_DISPONIBLE,
+    servicio: 'asistente',
+    message,
+  })
+}
+
+/** El `fetch` de siempre, con la caída del micro dicha como capa 2. */
+async function pedirAlMicro(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  try {
+    return await globalThis.fetch(input, {
+      ...init,
+      headers: agentAuthHeaders(init?.headers),
+    })
+  } catch (error) {
+    throw caidaDelAsistente(error)
+  }
+}
 
 /**
  * Cuánto esperamos a que aparezca el token renovado antes de rendirnos.
@@ -100,10 +148,7 @@ export async function agentFetch(
   input: RequestInfo | URL,
   init?: RequestInit,
 ): Promise<Response> {
-  const res = await globalThis.fetch(input, {
-    ...init,
-    headers: agentAuthHeaders(init?.headers),
-  })
+  const res = await pedirAlMicro(input, init)
 
   if (res.status !== 401) return res
 
@@ -123,8 +168,5 @@ export async function agentFetch(
   // Sin token nuevo, reintentar sería mandar exactamente lo mismo.
   if (!tokenNuevo) return res
 
-  return globalThis.fetch(input, {
-    ...init,
-    headers: agentAuthHeaders(init?.headers),
-  })
+  return pedirAlMicro(input, init)
 }

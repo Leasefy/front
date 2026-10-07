@@ -36,6 +36,13 @@
  *     total real y se dice «Mostrando N de M» (hallazgo 6).
  *   · El toast dice lo que pasó («programé la llamada para mañana a las
  *     8:00»), no «listo» (hallazgo 2).
+ *
+ * ── El director (fase 1, 28-09-2026) ──────────────────────────────────────
+ *   · La fila que pidió el director dice su `porQue` y su meta
+ *     (`PorQueEnLaFila`), y va PRIMERO, de mayor a menor prioridad; después
+ *     el orden de siempre (`ordenarBandeja`, director-api-front.md).
+ *   · El `motivo` de la perilla se lee SIEMPRE que venga: se guardaba NOT
+ *     NULL y ninguna pantalla lo pintaba.
  */
 
 import { useCallback, useMemo, useState } from 'react'
@@ -56,7 +63,8 @@ import {
   type Icon,
   Bank,
 } from '@phosphor-icons/react'
-import { Chip } from '@leasefy/cadence'
+import { AnimatePresence } from 'framer-motion'
+import { Chip, StaggerItem } from '@leasefy/cadence'
 
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -65,9 +73,15 @@ import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { EsqueletoTarjetas } from '@/components/estado/EsqueletoTabla'
 import { useI18n } from '@/lib/i18n'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { relativeTime } from '@/components/inmobiliaria/ai/ColaHumana'
 import { formatCurrency } from '@/lib/format'
 import { accionPregunta, runInboxAccion, type InboxItem } from '@/lib/api/piloto'
+import { textosDelFallo } from './fallo-de-la-accion'
+import { normalizarDirectorDeLaAccion } from '@/lib/api/piloto-director'
+import { ordenarBandeja } from '@/lib/piloto/director'
+import { PorQueEnLaFila } from './PilotoDirectorPorQue'
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada'
 
 const POR_PAGINA = 10
 
@@ -125,7 +139,8 @@ export interface PilotoBandejaProps {
    */
   atrasadas?: number
   isLoading: boolean
-  error: string | null
+  /** El error entero (no su texto): `FalloDeCarga` dice qué pasó. `null` si no falló. */
+  error: unknown
   /** El micro no publicó el endpoint (404) o no se pudo consultar. */
   notAvailable?: boolean
   onRefetch: () => Promise<void>
@@ -159,11 +174,15 @@ export function PilotoBandeja({
     return [...cuenta.entries()].sort((a, b) => b[1] - a[1])
   }, [items])
 
-  /** Quien más espera, primero: la bandeja se lee de arriba hacia abajo. */
+  /**
+   * Lo que pidió el director primero (de mayor a menor prioridad); después,
+   * quien más espera: la bandeja se lee de arriba hacia abajo. El `director`
+   * se normaliza acá: uno a medias (sin `porQue`) cuenta como sin director.
+   */
   const visibles = useMemo(() => {
     const filtrados = fuenteFiltro ? items.filter((i) => i.fuente === fuenteFiltro) : items
-    return [...filtrados].sort(
-      (a, b) => new Date(a.desde).getTime() - new Date(b.desde).getTime(),
+    return ordenarBandeja(
+      filtrados.map((i) => ({ ...i, director: normalizarDirectorDeLaAccion(i.director) })),
     )
   }, [items, fuenteFiltro])
 
@@ -183,9 +202,10 @@ export function PilotoBandeja({
           )
           await onRefetch()
         } else {
-          toast.error(
-            t('inmobiliaria.piloto.bandeja.toastFail', { error: res.error ?? 'error' }),
-          )
+          // Lo que pasó, con la regla de oro: el `message` del micro en un 4xx,
+          // «de nuestro lado» con la referencia en un 5xx, la conexión sólo si
+          // el pedido no salió. Nunca «No se pudo: 403».
+          toast.error(mensajeParaLaPersona(res.fallo, textosDelFallo(item.accion.label)))
         }
       } finally {
         setEnVuelo(null)
@@ -319,14 +339,22 @@ export function PilotoBandeja({
         }
       >
         <ul role="list" className="divide-y divide-border">
+          {/* Movimiento: lo que llega a la bandeja entra (8 px) y lo que se resuelve SALE
+              acelerando, con los vecinos corriéndose (`StaggerItem`). Lo que ya estaba al
+              abrir la pantalla no se anima: esa entrada es del template. */}
+          <AnimatePresence initial={false}>
           {enPantalla.map((item) => {
             const meta = metaDe(item.fuente)
             const FuenteIcon = meta.icon
             const ocupado = enVuelo === item.id
             return (
-              <li
+              <StaggerItem
+                as="li"
                 key={item.id}
-                className="group relative flex items-start gap-3 px-5 py-4 transition-colors hover:bg-surface-hover"
+                // PI-30 (04-10-2026): a 390 px el botón («Marcar como atendido») le
+                // dejaba ancho 0 al título: no se leía QUÉ era la decisión y la
+                // fila no se podía tocar. En pantallas chicas el botón baja.
+                className="group relative flex flex-wrap items-start gap-3 px-5 py-4 transition-colors hover:bg-surface-hover sm:flex-nowrap"
               >
                 <span
                   className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-muted text-fg-muted"
@@ -348,7 +376,7 @@ export function PilotoBandeja({
                       className="line-clamp-2 text-left text-body-sm font-medium text-fg after:absolute after:inset-0 after:content-[''] hover:underline"
                       data-testid={`piloto-bandeja-fila-${item.id}`}
                     >
-                      {item.titulo}
+                      {conLaPlataPegada(item.titulo)}
                     </button>
                     <span
                       className={`ml-auto flex shrink-0 items-center gap-1 font-mono text-caption tabular-nums ${tonoDeEspera(item.desde)}`}
@@ -359,15 +387,22 @@ export function PilotoBandeja({
                     </span>
                   </div>
                   {/* El resumen ya trae el monto de HOY cuando lo hay (contactos
-                      retenidos): no se repite al lado. */}
-                  <p className="mt-1 line-clamp-2 text-caption text-fg-muted">
-                    {item.resumen}
-                    {typeof item.montoCop === 'number' && item.fuente !== 'retenido' && (
-                      <span className="ml-1 font-mono tabular-nums text-fg">
-                        · {formatCurrency(item.montoCop)}
-                      </span>
-                    )}
-                  </p>
+                      retenidos): no se repite al lado. 04-10 noche (hallazgo
+                      del orquestador): si el resumen ES el motivo, va una sola
+                      vez, con su «Por qué espera tu clic» de abajo. */}
+                  {!(item.motivo && item.resumen.trim() === item.motivo.trim()) && (
+                    <p className="mt-1 line-clamp-2 text-caption text-fg-muted" data-testid={`piloto-bandeja-resumen-${item.id}`}>
+                      {conLaPlataPegada(item.resumen)}
+                      {typeof item.montoCop === 'number' && item.fuente !== 'retenido' && (
+                        <span className="ml-1 font-mono tabular-nums text-fg">
+                          · {formatCurrency(item.montoCop)}
+                        </span>
+                      )}
+                    </p>
+                  )}
+                  {/* Fase 1 del director: su por qué y su meta, y el motivo
+                      de la perilla SIEMPRE que venga. */}
+                  <PorQueEnLaFila director={item.director} motivo={item.motivo} id={item.id} />
                   {item.accion?.permitida === false && item.accion.porQueNo && (
                     <p
                       className="mt-1 text-caption text-fg-subtle"
@@ -381,7 +416,7 @@ export function PilotoBandeja({
 
                 {/* `relative z-10`: por encima del área clicable de la fila,
                     para que la acción rápida no abra además el cajón. */}
-                <div className="relative z-10 flex shrink-0 items-center gap-1.5 self-center">
+                <div className="relative z-10 flex shrink-0 basis-full items-center gap-1.5 pl-11 sm:basis-auto sm:self-center sm:pl-0">
                   {item.accion ? (
                     <Button
                       size="sm"
@@ -417,9 +452,10 @@ export function PilotoBandeja({
                     </span>
                   )}
                 </div>
-              </li>
+              </StaggerItem>
             )
           })}
+          </AnimatePresence>
         </ul>
 
         {visibles.length > POR_PAGINA && (

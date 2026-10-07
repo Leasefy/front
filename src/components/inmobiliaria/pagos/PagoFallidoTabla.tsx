@@ -20,6 +20,7 @@
 
 import { useState } from 'react'
 import { toast } from '@/components/ui/toast'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 import {
   Button,
@@ -34,6 +35,7 @@ import {
 import { TablePagination } from '@/components/ui/pagination'
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination'
 import type { WorkItem, WorkItemAction } from '@/lib/api/work-item'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 // ── Clasificación de motivo ──────────────────────────────────────────────────
 // El backend no tipa el motivo del fallo; lo inferimos del texto del WorkItem
@@ -111,7 +113,7 @@ export function esPagoFallido(item: WorkItem): boolean {
 
 // ── Formateador ──────────────────────────────────────────────────────────────
 
-const copFormatter = new Intl.NumberFormat('es-CO', {
+const copFormatter = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,
@@ -127,7 +129,7 @@ export interface PagoFallidoTablaProps {
     item: WorkItem,
     action: WorkItemAction,
     body?: Record<string, unknown>,
-  ) => Promise<{ ok: boolean; error?: string }>
+  ) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   /** Abre el detalle del caso. */
   onOpen?: (item: WorkItem) => void
 }
@@ -160,7 +162,16 @@ function FilaFallido({
     const res = await onAction(item, accionReal)
     setBusy(false)
     if (res.ok) toast.success(`${accionReal.label} · listo`)
-    else toast.error(`No se pudo completar: ${res.error ?? 'error'}`)
+    // 02-10-2026 · Por el traductor, no el código crudo del micro («403»,
+    // «not_configured»): un 4xx dice qué pasó, un 5xx que fue nuestro con la
+    // referencia, y sólo sin respuesta se habla de la conexión.
+    else
+      toast.error(
+        mensajeParaLaPersona(res.fallo ?? null, {
+          porDefecto: `No se pudo completar «${accionReal.label}». Prueba de nuevo en un momento.`,
+          accion: `completar «${accionReal.label}»`,
+        }),
+      )
   }
 
   return (

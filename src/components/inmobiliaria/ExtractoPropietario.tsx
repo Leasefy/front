@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { toast } from '@/components/ui/toast';
-import { motion } from 'framer-motion';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import {
   Download,
   Printer,
@@ -25,11 +25,12 @@ import { Badge } from '@/components/ui/badge';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
-  TableBody,
+  TableBodyAnimado,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableRowAnimada,
   TableFooter,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
@@ -44,6 +45,8 @@ import { usePropietarios, useInmobiliariaConfig } from '@/lib/hooks/useInmobilia
 import { nombreDelMes } from '@/lib/utils/mes';
 import { baseDeLaLinea, baseDelExtracto, type BaseDelCanonDelExtracto } from '@/lib/propietarios/base-del-canon';
 import { BloqueDeDeducciones } from '@/components/inmobiliaria/deducciones/BloqueDeDeducciones';
+import { useDesbordeHorizontal } from '@/components/ui/use-desborde-horizontal';
+import { estadoDelGiroDeLaLinea, partesDelGiro } from '@/lib/propietarios/estado-del-giro';
 
 interface ExtractoPropietarioProps {
   extracto: ExtractoPropietarioType;
@@ -51,8 +54,33 @@ interface ExtractoPropietarioProps {
   onDownloadPDF?: () => void | Promise<void>;
   onPrint?: () => void;
   /** Manda el extracto al correo del propietario. Sin esto el botón no se muestra. */
-  onEmail?: () => void | Promise<void>;
+  onEmail?: () => void | boolean | Promise<void | boolean>;
+  /**
+   * `'afuera'`: el pie de acciones (Imprimir / Enviar / PDF) no se pinta acá
+   * porque quien lo hospeda lo pone en su propio pie fijo con
+   * `<AccionesDelExtracto>` (el diálogo de la ficha, P-23: el pie quedaba
+   * abajo del todo, detrás del scroll). Por defecto, adentro, como siempre.
+   */
+  acciones?: 'adentro' | 'afuera';
   className?: string;
+}
+
+/**
+ * 🔴 P-23 (QA-PROP, 03-10): en pantalla el número de cuenta va enmascarado,
+ * como en la ficha (`PropietarioBankInfo`): `****8912`. El PDF que se le manda
+ * al propietario es otro documento (lo arma el back).
+ */
+export function cuentaEnmascarada(numero: string): string {
+  const limpio = numero.trim();
+  if (limpio.startsWith('****') || limpio.length <= 4) return limpio;
+  return `****${limpio.slice(-4)}`;
+}
+
+/** El título suele SER la dirección: el subtítulo sólo sale si dice otra cosa. */
+function direccionSiEsOtra(titulo: string | null | undefined, direccion: string | null | undefined): string | null {
+  const d = (direccion ?? '').trim();
+  if (!d) return null;
+  return d.toLowerCase() === (titulo ?? '').trim().toLowerCase() ? null : d;
 }
 
 // Status label keys for i18n
@@ -191,6 +219,77 @@ const COLUMNA_DEL_CANON: Record<BaseDelCanonDelExtracto, string> = {
 };
 
 /**
+ * ── Propiedad y Neto se quedan quietos al correr la tabla (02-10-2026) ──────
+ *
+ * Nico (pregunta 18): la tabla mide ~1.170 px en un cajón de 1024 y el NETO
+ * —lo que el propietario recibe, lo único que viene a mirar— quedaba detrás
+ * del scroll lateral. Ahora la primera columna (de qué inmueble es la fila) y
+ * la última (cuánto le queda) son `position: sticky`; lo del medio se corre
+ * entre las dos.
+ *
+ *  · Fondo OPACO en la celda fija, el mismo de su zona (cuerpo, cabecera o
+ *    pie): si no, lo que pasa por debajo se lee encima. El tinte de la fila
+ *    (que es translúcido: `muted/30` al pasar el ratón, `muted/50` en la
+ *    cabecera y el pie) va en un `::before` DETRÁS del texto, así la celda
+ *    fija se tiñe igual que el resto de la fila.
+ *  · Un filete de sombra en el borde interior de cada columna fija, SÓLO
+ *    mientras hay contenido escondido de ese lado (se mide en el contenedor
+ *    que se corre: `useDesbordeHorizontal`). Entra y sale con `opacity` y los
+ *    tokens de movimiento; con movimiento reducido, sin transición.
+ *  · Las sombras de borde que pone `Table` se apagan acá, con
+ *    `sombrasDeBorde={false}`: en el borde de afuera ya no hay nada escondido
+ *    (lo tapa la columna fija); el filete interior es el que dice dónde sigue
+ *    la tabla.
+ *  · Al imprimir no hay columnas fijas ni filetes: el papel no se corre.
+ */
+const COLUMNA_FIJA = 'sticky z-[2] print:static';
+/** El ancho de la columna Propiedad: título y dirección (180 px) + el aire de la celda. */
+const ANCHO_PROPIEDAD = 'w-[13.25rem] min-w-[13.25rem]';
+const FONDO_DEL_CUERPO = 'bg-surface dark:bg-card';
+const FONDO_DE_CABECERA_Y_PIE = 'bg-bg dark:bg-surface-muted';
+const TINTE = 'before:pointer-events-none before:absolute before:inset-0 before:-z-10';
+const TINTE_DE_CABECERA_Y_PIE = `${TINTE} before:bg-muted/50`;
+const TINTE_DEL_CUERPO = `${TINTE} before:bg-muted/30 before:opacity-0 group-hover:before:opacity-100`;
+
+/** Las clases de una celda fija, según su lado y su zona. */
+function celdaFija(lado: 'izquierda' | 'derecha', zona: 'cuerpo' | 'cabecera-o-pie'): string {
+  return cn(
+    COLUMNA_FIJA,
+    lado === 'izquierda' ? 'left-0' : 'right-0',
+    zona === 'cuerpo' ? [FONDO_DEL_CUERPO, TINTE_DEL_CUERPO] : [FONDO_DE_CABECERA_Y_PIE, TINTE_DE_CABECERA_Y_PIE],
+  );
+}
+
+/**
+ * El filete de una columna fija: una sombra de 12 px pegada a su borde
+ * interior (a la derecha de Propiedad, a la izquierda de Neto). Visible sólo
+ * mientras queda tabla escondida de ese lado.
+ */
+function FileteDeColumnaFija({
+  columna,
+  visible,
+}: {
+  columna: 'propiedad' | 'neto';
+  visible: boolean;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      data-testid={`filete-${columna}`}
+      data-visible={visible ? 'true' : 'false'}
+      className={cn(
+        'pointer-events-none absolute inset-y-0 w-3 print:hidden',
+        'transition-opacity [transition-duration:var(--motion-duration-fast)] [transition-timing-function:var(--motion-ease-standard)] motion-reduce:transition-none',
+        columna === 'propiedad'
+          ? 'right-0 translate-x-full shadow-[inset_10px_0_8px_-8px_rgba(0,0,0,0.18)] dark:shadow-[inset_10px_0_8px_-8px_rgba(0,0,0,0.65)]'
+          : 'left-0 -translate-x-full shadow-[inset_-10px_0_8px_-8px_rgba(0,0,0,0.18)] dark:shadow-[inset_-10px_0_8px_-8px_rgba(0,0,0,0.65)]',
+        visible ? 'opacity-100' : 'opacity-0',
+      )}
+    />
+  );
+}
+
+/**
  * ExtractoPropietario - Owner statement view with printable styling
  * Shows property breakdown, commissions, and net amounts
  */
@@ -199,19 +298,34 @@ export function ExtractoPropietario({
   onDownloadPDF,
   onPrint,
   onEmail,
+  acciones = 'adentro',
   className,
 }: ExtractoPropietarioProps) {
   const { t, locale } = useI18n();
-  const [isDownloading, setIsDownloading] = React.useState(false);
-  const [isSendingEmail, setIsSendingEmail] = React.useState(false);
-
+  /*
+   * Qué queda escondido a cada lado de la tabla. `Table` pone su propio
+   * contenedor con scroll alrededor del `<table>`: se mide ESE (el padre de la
+   * tabla), que es el que se corre y contra el que se pegan las columnas fijas.
+   */
+  const desborde = useDesbordeHorizontal<HTMLElement>();
+  const refDeLaTabla = React.useCallback(
+    (tabla: HTMLTableElement | null) => {
+      desborde.ref.current = tabla?.parentElement ?? null;
+    },
+    [desborde.ref],
+  );
   // Get propietario details for bank info
   const { propietarios } = usePropietarios();
   // Con qué regla sale el canon: rotula la columna, el resumen y la nota de terceros.
   const base = baseDelExtracto(extracto);
-  const { config } = useInmobiliariaConfig();
-  // Real agency profile lives under the `agency` key of GET /inmobiliaria/config.
-  const agencyConfig = config?.agency;
+  // QA-PROP-95 (C-14, PR-16): la cabecera viene con el extracto (el contador no
+  // puede leer `GET /inmobiliaria/config`: le salía «NIT: » vacío y un 403).
+  // Sin ella (back viejo), la configuración, sólo si quien mira la puede leer.
+  const cabecera = extracto.inmobiliaria ?? null;
+  const { config } = useInmobiliariaConfig(!cabecera);
+  const agencyConfig = cabecera
+    ? { name: cabecera.nombre, nit: cabecera.nit ?? '', address: cabecera.direccion ?? '', city: cabecera.ciudad ?? '' }
+    : config?.agency;
   const propietario = React.useMemo(() => {
     return propietarios.find((p) => p.id === extracto.propietarioId);
   }, [extracto.propietarioId, propietarios]);
@@ -237,57 +351,8 @@ export function ExtractoPropietario({
     resetKey: `${extracto.propietarioId}|${extracto.month}`,
   });
 
-  // Handle PDF download — se espera al handler: el «PDF descargado» se dice
-  // cuando bajó, no cuando se apretó el botón.
-  const handleDownloadPDF = async () => {
-    if (!onDownloadPDF) return;
-    setIsDownloading(true);
-    try {
-      await onDownloadPDF();
-      toast.success(t('inmobiliaria.propietario.extracto.pdfDownloaded'), {
-        description: `${t('inmobiliaria.propietario.extracto.extractOf')} ${extracto.propietarioName} - ${formatMonthYear(extracto.month, locale)}`,
-      });
-    } catch (error) {
-      toast.error(t('inmobiliaria.propietario.extracto.pdfError'), {
-        description: error instanceof Error ? error.message : undefined,
-      });
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
-  // Handle print
-  const handlePrint = () => {
-    if (onPrint) {
-      onPrint();
-    } else {
-      window.print();
-    }
-  };
-
-  // Handle email — antes esperaba un segundo de mentira y decía «enviado»
-  // sin mandar nada. Ahora se espera al handler y se informa lo que pasó.
-  const handleEmail = async () => {
-    if (!onEmail) return;
-    setIsSendingEmail(true);
-    try {
-      await onEmail();
-      toast.success(t('inmobiliaria.propietario.extracto.emailSent'), {
-        description: `${t('inmobiliaria.propietario.extracto.emailSentTo')} ${propietario?.email || extracto.propietarioName}`,
-      });
-    } catch (error) {
-      toast.error(t('inmobiliaria.propietario.extracto.emailError'), {
-        description: error instanceof Error ? error.message : undefined,
-      });
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+    <div
       className={cn(
         /*
          * `min-w-0` NO es decorativo: dentro de un grid o un flex, un hijo no
@@ -383,7 +448,8 @@ export function ExtractoPropietario({
                 <>
                   <p className="text-foreground font-medium">{extracto.bankInfo.bankName ?? '—'}</p>
                   <p className="text-sm text-muted-foreground">
-                    {extracto.bankInfo.bankAccountType ?? ''}{extracto.bankInfo.bankAccountType ? ': ' : ''}{extracto.bankInfo.bankAccountNumber}
+                    {extracto.bankInfo.bankAccountType ?? ''}{extracto.bankInfo.bankAccountType ? ': ' : ''}
+                    <span className="font-mono tabular-nums">{cuentaEnmascarada(extracto.bankInfo.bankAccountNumber)}</span>
                   </p>
                   {extracto.bankInfo.bankAccountHolder && (
                     <p className="text-sm text-muted-foreground">{extracto.bankInfo.bankAccountHolder}</p>
@@ -404,57 +470,91 @@ export function ExtractoPropietario({
           {t('inmobiliaria.propietario.extracto.propertyDetail')}
         </div>
         {/* El marco y el scroll horizontal van en capas separadas: si el pie
-            viviera dentro del `overflow-x-auto`, se correría de lado con la
-            tabla en vez de quedarse quieto abajo. */}
+            viviera dentro del contenedor que se corre, se correría de lado con
+            la tabla en vez de quedarse quieto abajo. El scroll lo pone `Table`
+            (su propio contenedor): las columnas fijas se pegan a ése. */}
         <div className="rounded-md border border-border">
-          <div className="overflow-x-auto" data-lenis-prevent>
-            <Table>
+          <div data-lenis-prevent data-testid="extracto-tabla">
+            {/* P-23: celdas con 12 px de aire a los lados (no 16): con la
+                columna de IVA y la de conceptos la tabla pasaba 30 px del
+                diálogo. */}
+            <Table ref={refDeLaTabla} sombrasDeBorde={false} className="[&_td]:px-3 [&_th]:px-3">
               <TableHeader>
                 <TableRow className="hover:bg-transparent bg-muted/50">
-                  <TableHead className="w-[25%]">{t('inmobiliaria.propietario.extracto.thProperty')}</TableHead>
+                  <TableHead className={cn(ANCHO_PROPIEDAD, celdaFija('izquierda', 'cabecera-o-pie'))}>
+                    {t('inmobiliaria.propietario.extracto.thProperty')}
+                    <FileteDeColumnaFija columna="propiedad" visible={desborde.haciaLaIzquierda} />
+                  </TableHead>
                   <TableHead>{t('inmobiliaria.propietario.extracto.thTenant')}</TableHead>
                   <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thRent')}</TableHead>
                   <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thAdmin')}</TableHead>
                   <TableHead className="text-right" data-testid="extracto-columna-canon">{t(COLUMNA_DEL_CANON[base])}</TableHead>
                   <TableHead className="text-center">{t('inmobiliaria.propietario.extracto.thStatus')}</TableHead>
-                  <TableHead className="text-center">{t('inmobiliaria.propietario.extracto.thCommPct')}</TableHead>
+                  {/* P-23: el % va debajo de la comisión (una columna menos: la
+                      tabla no cabía en el diálogo y Neto, fija, tapaba esto). */}
                   <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thCommission')}</TableHead>
                   <TableHead className="text-right">Conceptos</TableHead>
-                  <TableHead className="text-right">{t('inmobiliaria.propietario.extracto.thNet')}</TableHead>
+                  <TableHead className={cn('text-right', celdaFija('derecha', 'cabecera-o-pie'))}>
+                    {t('inmobiliaria.propietario.extracto.thNet')}
+                    <FileteDeColumnaFija columna="neto" visible={desborde.haciaLaDerecha} />
+                  </TableHead>
                 </TableRow>
               </TableHeader>
-              <TableBody>
+              {/* Las líneas entran escalonadas con el techo de 320 ms (antes
+                  `index * 0.05` sin tope). Cada página es un cuerpo nuevo
+                  (`key`): las de la página nueva entran sin esperar a que se
+                  vayan las de la vieja (la tabla no crece mientras salen). */}
+              <TableBodyAnimado key={`${page}|${pageSize}`}>
                 {/*
                   Un extracto sin líneas se leía en blanco, y «este dueño no
                   tiene inmuebles» y «este mes no se movió nada» son dos cosas
                   distintas que hay que poder decirle. El back manda cuál es.
                 */}
-                {extracto.lineItems.length === 0 && extracto.sinMovimiento && (
-                  <TableRow>
-                    <TableCell colSpan={10} className="py-10 text-center text-fg-muted">
+                {extracto.lineItems.length === 0 &&
+                  !(extracto.cuotasSinRepartir?.length) &&
+                  extracto.sinMovimiento && (
+                  <TableRowAnimada key="sin-movimiento">
+                    <TableCell colSpan={9} className="py-10 text-center text-fg-muted">
                       {extracto.sinMovimiento.mensaje}
                     </TableCell>
-                  </TableRow>
+                  </TableRowAnimada>
                 )}
-                {lineasDeLaPagina.map((prop, index) => {
+                {/*
+                  C-06 (QA-CONT-95 r3): la cuota de un inmueble con varios
+                  dueños y con IVA o retenciones de un solo perfil no se
+                  reparte. Antes tumbaba el extracto entero; ahora sale en su
+                  fila, con el porqué en palabras, y el resto carga.
+                */}
+                {page === 1 &&
+                  (extracto.cuotasSinRepartir ?? []).map((c) => (
+                    <TableRowAnimada key={`sin-repartir-${c.cuotaId}`} data-testid="cuota-sin-repartir">
+                      <TableCell className={cn('font-medium', ANCHO_PROPIEDAD, celdaFija('izquierda', 'cuerpo'))}>
+                        <span className="text-foreground text-sm">{c.propertyTitle}</span>
+                      </TableCell>
+                      <TableCell colSpan={8} className="text-sm text-warning-700 dark:text-warning-100">
+                        {c.motivo}
+                      </TableCell>
+                    </TableRowAnimada>
+                  ))}
+                {lineasDeLaPagina.map((prop) => {
                   const estado = aCobroStatus(prop.status);
                   const StatusIcon = getStatusIcon(estado);
                   return (
-                    <motion.tr
+                    <TableRowAnimada
                       key={prop.cuotaId ?? prop.cobroId}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="hover:bg-muted/30"
+                      className="group border-b-0 hover:bg-muted/30"
                     >
-                      <TableCell className="font-medium">
+                      <TableCell className={cn('font-medium', ANCHO_PROPIEDAD, celdaFija('izquierda', 'cuerpo'))}>
+                        <FileteDeColumnaFija columna="propiedad" visible={desborde.haciaLaIzquierda} />
                         <div className="flex flex-col">
                           <span className="text-foreground text-sm truncate max-w-[180px]">
                             {prop.propertyTitle}
                           </span>
-                          <span className="text-xs text-muted-foreground truncate max-w-[180px]">
-                            {prop.propertyAddress}
-                          </span>
+                          {direccionSiEsOtra(prop.propertyTitle, prop.propertyAddress) && (
+                            <span className="text-xs text-muted-foreground truncate max-w-[180px]">
+                              {prop.propertyAddress}
+                            </span>
+                          )}
                           {/* Con varios dueños la plata de la fila es SU parte:
                               se dice cuánto, como en el PDF (2026-09-13). */}
                           {prop.participacionLabel ? (
@@ -462,7 +562,10 @@ export function ExtractoPropietario({
                               className="mt-1 w-fit rounded-full bg-primary-soft px-2 py-0.5 font-mono text-[11px] tabular-nums text-primary"
                               data-testid="participacion-en-el-extracto"
                             >
-                              {prop.participacionLabel} {t('inmobiliaria.propietario.extracto.delInmueble')}
+                              {/* E-10: el mes de una cesión dice sus días («15 de 30 días del mes»). */}
+                              {/días/.test(prop.participacionLabel)
+                                ? `${prop.participacionLabel} del mes (cesión)`
+                                : `${prop.participacionLabel} ${t('inmobiliaria.propietario.extracto.delInmueble')}`}
                             </span>
                           ) : null}
                         </div>
@@ -500,13 +603,11 @@ export function ExtractoPropietario({
                           {t(STATUS_LABEL_KEYS[estado])}
                         </span>
                       </TableCell>
-                      <TableCell className="text-center">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {prop.commissionPercent}%
-                        </span>
-                      </TableCell>
                       <TableCell className="text-right text-sm text-primary">
                         {formatCurrency(prop.commissionAmount)}
+                        <span className="block text-xs text-muted-foreground" data-testid="extracto-comision-pct">
+                          {prop.commissionPercent} %
+                        </span>
                       </TableCell>
                       <TableCell className="text-right text-sm">
                         {/* El IVA de la comisión va con lo que se le cobra y
@@ -517,18 +618,32 @@ export function ExtractoPropietario({
                           aCargo={prop.conceptosACargo + (prop.ivaComisionAmount ?? 0)}
                         />
                       </TableCell>
-                      <TableCell className="text-right text-sm font-semibold text-success">
+                      <TableCell
+                        className={cn('text-right text-sm font-semibold text-success', celdaFija('derecha', 'cuerpo'))}
+                      >
+                        <FileteDeColumnaFija columna="neto" visible={desborde.haciaLaDerecha} />
                         {formatCurrency(prop.netAmount)}
+                        {/* QA-PROP-95 C-10: en qué va el giro de esta línea. */}
+                        {estadoDelGiroDeLaLinea(prop) && (
+                          <span className="block text-xs font-normal text-muted-foreground" data-testid="estado-del-giro">
+                            {estadoDelGiroDeLaLinea(prop)}
+                          </span>
+                        )}
                       </TableCell>
-                    </motion.tr>
+                    </TableRowAnimada>
                   );
                 })}
-              </TableBody>
+              </TableBodyAnimado>
               <TableFooter>
-                <TableRow className="bg-muted/50 font-semibold">
-                  <TableCell colSpan={4} className="text-foreground">
-                    {t('inmobiliaria.propietario.extracto.total')} ({extracto.lineItems.length} {t('inmobiliaria.propietario.extracto.properties')})
+                {/* El rótulo del total va en la columna de Propiedad (fija) y no
+                    en una celda de cuatro columnas: una celda tan ancha, fija a
+                    la izquierda, taparía lo que se corre por debajo. */}
+                <TableRow className="bg-muted/50 hover:bg-muted/50 font-semibold">
+                  <TableCell className={cn('text-foreground', ANCHO_PROPIEDAD, celdaFija('izquierda', 'cabecera-o-pie'))}>
+                    <FileteDeColumnaFija columna="propiedad" visible={desborde.haciaLaIzquierda} />
+                    {t('inmobiliaria.propietario.extracto.total')} ({extracto.lineItems.length} {extracto.lineItems.length === 1 && locale === 'es' ? 'propiedad' : t('inmobiliaria.propietario.extracto.properties')})
                   </TableCell>
+                  <TableCell colSpan={3} />
                   <TableCell className="text-right text-foreground">
                     {formatCurrency(
                       extracto.totals.totalNet +
@@ -540,7 +655,6 @@ export function ExtractoPropietario({
                     )}
                   </TableCell>
                   <TableCell />
-                  <TableCell />
                   <TableCell className="text-right text-primary">
                     {formatCurrency(extracto.totals.totalCommission)}
                   </TableCell>
@@ -550,7 +664,8 @@ export function ExtractoPropietario({
                       aCargo={extracto.totals.totalConceptosACargo + (extracto.totals.totalIvaComision ?? 0)}
                     />
                   </TableCell>
-                  <TableCell className="text-right text-success">
+                  <TableCell className={cn('text-right text-success', celdaFija('derecha', 'cabecera-o-pie'))}>
+                    <FileteDeColumnaFija columna="neto" visible={desborde.haciaLaDerecha} />
                     {formatCurrency(extracto.totals.totalNet)}
                   </TableCell>
                 </TableRow>
@@ -659,6 +774,17 @@ export function ExtractoPropietario({
                     {formatCurrency(extracto.totals.totalNet)}
                   </span>
                 </div>
+                {/* QA-PROP-95 C-10: lo mismo que dice el PDF («De eso, ya girado…»). */}
+                {partesDelGiro(extracto.totals).length > 0 && (
+                  <div className="mt-2 space-y-1" data-testid="extracto-estado-del-giro">
+                    {partesDelGiro(extracto.totals).map((p) => (
+                      <div key={p.etiqueta} className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">{p.etiqueta}</span>
+                        <span className="text-xs tabular-nums text-foreground">{formatCurrency(p.valor)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               {extracto.totals.totalDeTerceros > 0 && (
                 /* Nombrar lo que entró y no es suyo. Sin esto, un propietario
@@ -693,8 +819,104 @@ export function ExtractoPropietario({
       )}
 
       {/* Actions Footer - Hide on print */}
-      <div className="p-6 bg-muted/30 print:hidden">
-        <div className="flex flex-wrap gap-3 justify-end">
+      {acciones === 'adentro' && (
+        <div className="p-6 bg-muted/30 print:hidden">
+          <AccionesDelExtracto
+            extracto={extracto}
+            onDownloadPDF={onDownloadPDF}
+            onPrint={onPrint}
+            onEmail={onEmail}
+          />
+        </div>
+      )}
+
+      {/* Print Footer */}
+      <div className="hidden print:block p-6 text-center text-xs text-muted-foreground border-t border-border">
+        <p>{agencyConfig?.name} - NIT {agencyConfig?.nit}</p>
+        <p>{[agencyConfig?.address, agencyConfig?.city].filter(Boolean).join(', ')}</p>
+        <p className="mt-2">{t('inmobiliaria.propietario.extracto.documentGenerated')} {formatDate(extracto.generatedAt, locale)}</p>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Imprimir · Enviar por email · Descargar PDF.
+ *
+ * Aparte del documento (P-23) para que el diálogo de la ficha lo ponga en su
+ * pie FIJO: dentro del documento quedaba al final, detrás del scroll. Cada
+ * acción espera a su handler y dice lo que de verdad pasó.
+ */
+export function AccionesDelExtracto({
+  extracto,
+  onDownloadPDF,
+  onPrint,
+  onEmail,
+  className,
+}: Pick<ExtractoPropietarioProps, 'extracto' | 'onDownloadPDF' | 'onPrint' | 'onEmail' | 'className'>) {
+  const { t, locale } = useI18n();
+  const [isDownloading, setIsDownloading] = React.useState(false);
+  const [isSendingEmail, setIsSendingEmail] = React.useState(false);
+  const { propietarios } = usePropietarios();
+  const propietario = React.useMemo(
+    () => propietarios.find((p) => p.id === extracto.propietarioId),
+    [extracto.propietarioId, propietarios],
+  );
+
+  // Handle PDF download — se espera al handler: el «PDF descargado» se dice
+  // cuando bajó, no cuando se apretó el botón.
+  const handleDownloadPDF = async () => {
+    if (!onDownloadPDF) return;
+    setIsDownloading(true);
+    try {
+      await onDownloadPDF();
+      toast.success(t('inmobiliaria.propietario.extracto.pdfDownloaded'), {
+        description: `${t('inmobiliaria.propietario.extracto.extractOf')} ${extracto.propietarioName} - ${formatMonthYear(extracto.month, locale)}`,
+      });
+    } catch (error) {
+      // Con la regla de oro: un 5xx «de nuestro lado» con la referencia, la
+      // red con la conexión; nunca el `message` crudo de un `Error`.
+      toast.error(t('inmobiliaria.propietario.extracto.pdfError'), {
+        description: mensajeParaLaPersona(error, { porDefecto: '', accion: 'armar el PDF' }) || undefined,
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Handle print
+  const handlePrint = () => {
+    if (onPrint) {
+      onPrint();
+    } else {
+      window.print();
+    }
+  };
+
+  // Handle email — antes esperaba un segundo de mentira y decía «enviado»
+  // sin mandar nada. Ahora se espera al handler y se informa lo que pasó.
+  const handleEmail = async () => {
+    // QA-PROP-95 (C-19): un segundo clic mientras sale no manda otro correo.
+    if (!onEmail || isSendingEmail) return;
+    setIsSendingEmail(true);
+    try {
+      // `false` = quien manda lo canceló en su confirmación: no se dice «enviado».
+      if ((await onEmail()) === false) return;
+      toast.success(t('inmobiliaria.propietario.extracto.emailSent'), {
+        description: `${t('inmobiliaria.propietario.extracto.emailSentTo')} ${propietario?.email || extracto.propietarioName}`,
+      });
+    } catch (error) {
+      toast.error(t('inmobiliaria.propietario.extracto.emailError'), {
+        description:
+          mensajeParaLaPersona(error, { porDefecto: '', accion: 'mandar el extracto por correo' }) || undefined,
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
+  return (
+        <div className={cn('flex flex-wrap gap-3 justify-end print:hidden', className)}>
           <Button
             variant="outline"
             onClick={handlePrint}
@@ -707,8 +929,11 @@ export function ExtractoPropietario({
             <Button
               variant="outline"
               onClick={handleEmail}
-              disabled={isSendingEmail || !propietario?.email}
-              title={!propietario?.email ? t('inmobiliaria.propietario.extracto.sinCorreo') : undefined}
+              // QA-PROP-95 (C-21): sólo se apaga si SABEMOS que no tiene correo. Con la
+              // lista de propietarios cargando o caída, se deja mandar (el back responde
+              // 422 si no tiene) en vez de decir «no tiene correo» sin saberlo.
+              disabled={isSendingEmail || (!!propietario && !propietario.email)}
+              title={propietario && !propietario.email ? t('inmobiliaria.propietario.extracto.sinCorreo') : undefined}
               className="gap-2"
               data-testid="extracto-enviar"
             >
@@ -746,15 +971,6 @@ export function ExtractoPropietario({
             </Button>
           )}
         </div>
-      </div>
-
-      {/* Print Footer */}
-      <div className="hidden print:block p-6 text-center text-xs text-muted-foreground border-t border-border">
-        <p>{agencyConfig?.name} - NIT {agencyConfig?.nit}</p>
-        <p>{[agencyConfig?.address, agencyConfig?.city].filter(Boolean).join(', ')}</p>
-        <p className="mt-2">{t('inmobiliaria.propietario.extracto.documentGenerated')} {formatDate(extracto.generatedAt, locale)}</p>
-      </div>
-    </motion.div>
   );
 }
 

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Presence, Stagger, StaggerItem } from '@leasefy/cadence';
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente';
 import {
   Check,
   Phone,
@@ -127,12 +128,10 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
   const priceDeviation = calculatePriceDeviation(quote.amount, analysis.avgPrice);
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
+    // La entrada, la salida y el corrimiento los pone el `StaggerItem` de la fila.
+    <div
       className={cn(
-        'flex-shrink-0 w-72 rounded-lg border transition-all',
+        'flex-shrink-0 w-72 rounded-lg border transition-colors duration-base',
         isSelected
           ? 'border-success/30 bg-success-soft/50'
           : 'border-border bg-card hover:border-primary/30'
@@ -228,7 +227,7 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
           <div className="h-2 rounded-full bg-muted overflow-hidden">
             <div
               className={cn(
-                'h-full rounded-full transition-all',
+                'h-full rounded-full transition-colors duration-base',
                 isLowestPrice
                   ? 'bg-success'
                   : priceDeviation > 10
@@ -258,7 +257,7 @@ function QuoteCard({ quote, analysis, isSelected, onSelect, t, locale }: QuoteCa
           </Button>
         ) : null}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -279,6 +278,8 @@ export function CotizacionComparator({
   const { t, locale } = useI18n();
   const typeInfo = getMantenimientoTypeInfo(solicitud.type);
   const analysis = useMemo(() => analyzeQuotes(solicitud.quotes), [solicitud.quotes]);
+  // Mientras la franja «Cotización elegida» se va, sigue diciendo cuál era.
+  const cotizacionElegida = useUltimoPresente(selectedQuoteId);
 
   // No quotes state
   if (solicitud.quotes.length === 0) {
@@ -323,7 +324,8 @@ export function CotizacionComparator({
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Clock className="w-4 h-4" />
-                  {quote.estimatedDays} {t('inmobiliaria.finance.quotes.days')}
+                  {/* SO-08: «1 día», no «1 días». */}
+                  {quote.estimatedDays === 1 ? '1 día' : `${quote.estimatedDays} ${t('inmobiliaria.finance.quotes.days')}`}
                 </span>
               </div>
             </div>
@@ -417,11 +419,12 @@ export function CotizacionComparator({
 
       {/* Quotes Horizontal Scroll */}
       <div className="relative">
-        <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-[#D5D1CA] dark:scrollbar-thumb-[#4D4A45] scrollbar-track-transparent">
-          <AnimatePresence mode="popLayout">
+        {/* Las cotizaciones entran escalonadas; una nueva se suma y las demás
+            se corren a su lugar. */}
+        <Stagger className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-[#D5D1CA] dark:scrollbar-thumb-[#4D4A45] scrollbar-track-transparent">
             {solicitud.quotes.map((quote) => (
+              <StaggerItem key={quote.id} className="flex shrink-0">
               <QuoteCard
-                key={quote.id}
                 quote={quote}
                 analysis={analysis}
                 isSelected={selectedQuoteId === quote.id}
@@ -429,9 +432,9 @@ export function CotizacionComparator({
                 t={t}
                 locale={locale}
               />
+              </StaggerItem>
             ))}
-          </AnimatePresence>
-        </div>
+        </Stagger>
         {/* Scroll indicator for mobile */}
         <div className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none">
           <div className="w-8 h-full bg-gradient-to-l from-background to-transparent" />
@@ -439,12 +442,10 @@ export function CotizacionComparator({
       </div>
 
       {/* Selected Quote CTA */}
-      {selectedQuoteId && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-lg bg-success-soft border border-success/30"
-        >
+      <Presence
+        show={Boolean(selectedQuoteId)}
+        className="p-4 rounded-lg bg-success-soft border border-success/30"
+      >
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-success-soft flex items-center justify-center">
@@ -455,9 +456,9 @@ export function CotizacionComparator({
                   {t('inmobiliaria.finance.quotes.quoteSelected')}
                 </p>
                 <p className="text-sm text-success">
-                  {solicitud.quotes.find((q) => q.id === selectedQuoteId)?.providerName} -{' '}
+                  {solicitud.quotes.find((q) => q.id === cotizacionElegida)?.providerName} -{' '}
                   {formatCurrency(
-                    solicitud.quotes.find((q) => q.id === selectedQuoteId)?.amount || 0
+                    solicitud.quotes.find((q) => q.id === cotizacionElegida)?.amount || 0
                   )}
                 </p>
               </div>
@@ -467,8 +468,7 @@ export function CotizacionComparator({
               <ArrowRight className="w-4 h-4" />
             </div>
           </div>
-        </motion.div>
-      )}
+      </Presence>
     </div>
   );
 }

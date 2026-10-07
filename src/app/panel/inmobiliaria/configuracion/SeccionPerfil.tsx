@@ -22,6 +22,8 @@ import {
 } from '@/components/inmobiliaria';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { agencyApi } from '@/lib/api/inmobiliaria.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { traeErroresPorCampo } from '@/lib/errores/errores-en-el-formulario';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
 import { EsqueletoDeSeccion, VacioDeSeccion } from './piezas';
 
@@ -56,21 +58,41 @@ export function SeccionPerfil() {
    * Guarda sólo los campos cambiados (`UpdateAgencyDto` del back). Relanza el
    * error para que el formulario se quede en modo edición y no se pierda lo
    * escrito.
+   *
+   * El toast sale del traductor (02-10-2026): un 400 dice qué dato está mal,
+   * un 5xx dice «de nuestro lado» con la referencia, y «conexión» sólo si no
+   * hubo respuesta. Antes era «Error al guardar configuración» con el texto
+   * crudo del back debajo.
+   *
+   * `pintaLosCampos`: el formulario que llama pinta los `campos` de un 400 en
+   * su sitio (los datos de la empresa). Entonces el toast queda para lo que no
+   * trae campos; si no, lo diría dos veces.
    */
-  const guardar = async (payload: UpdateAgencyPayload) => {
-    try {
-      await agencyApi.updateAgency(payload);
-      await refetch();
-      toast.success(t('inmobiliaria.config.toasts.configSaved'), {
-        description: t('inmobiliaria.config.toasts.configSavedDesc'),
-      });
-    } catch (error) {
-      toast.error('Error al guardar configuración', {
-        description: error instanceof Error ? error.message : undefined,
-      });
-      throw error;
-    }
-  };
+  const guardarCon =
+    ({ pintaLosCampos }: { pintaLosCampos: boolean }) =>
+    async (payload: UpdateAgencyPayload) => {
+      try {
+        await agencyApi.updateAgency(payload);
+        await refetch();
+        toast.success(t('inmobiliaria.config.toasts.configSaved'), {
+          description: t('inmobiliaria.config.toasts.configSavedDesc'),
+        });
+      } catch (error) {
+        if (!pintaLosCampos || !traeErroresPorCampo(error)) {
+          toast.error(
+            mensajeParaLaPersona(error, {
+              porDefecto: 'No pudimos guardar la configuración. Prueba de nuevo en un momento.',
+              accion: 'guardar la configuración',
+            }),
+          );
+        }
+        throw error;
+      }
+    };
+  const guardar = guardarCon({ pintaLosCampos: false });
+  const guardarLosDatosDeLaEmpresa = guardarCon({ pintaLosCampos: true });
+  // La renovación automática pinta el 400 del IPC bajo su campo (02-10-2026).
+  const guardarLaRenovacion = guardarCon({ pintaLosCampos: true });
 
   const faltan = agency ? datosQueFaltan(agency) : [];
 
@@ -101,14 +123,14 @@ export function SeccionPerfil() {
               </p>
             </div>
           )}
-          <ConfigPerfilAgencia agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
+          <ConfigPerfilAgencia agency={agency} onSave={guardarLosDatosDeLaEmpresa} canEdit={isAgencyAdmin} />
           {/* Justo después de los datos de la empresa: es una decisión del
               negocio que cambia un número de todas las pantallas. */}
           <ConfigTasaDeRecaudo agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
           <ConfigPenalidadDeTerminacion agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
           <ConfigCicloDeVidaDelContrato agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
           <ConfigExtractoMensual agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
-          <ConfigRenovacionAutomatica agency={agency} onSave={guardar} canEdit={isAgencyAdmin} />
+          <ConfigRenovacionAutomatica agency={agency} onSave={guardarLaRenovacion} canEdit={isAgencyAdmin} />
         </div>
       )}
     </EstadoDeDatos>

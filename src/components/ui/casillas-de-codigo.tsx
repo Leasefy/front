@@ -37,6 +37,12 @@ export interface CasillasDeCodigoProps {
   hayError?: boolean;
   /** Lo que lee un lector de pantalla sobre el grupo. */
   'aria-label': string;
+  /**
+   * El id del error (o de la ayuda) que describe el código, p. ej. el de su
+   * `<ErrorDelCampo>` (02-10-2026). Va en CADA casilla: es la que tiene el
+   * foco, y así el lector dice el error al volver a escribir.
+   */
+  'aria-describedby'?: string;
   autoFocus?: boolean;
   className?: string;
 }
@@ -57,6 +63,25 @@ export function CasillasDeCodigo({
     () => Array.from({ length: cuantas }, (_, i) => value[i] ?? ''),
     [value, cuantas],
   );
+
+  /*
+   * 🔴 Nico, 06-10-2026 16:23: al abrir /auth/mfa-verify el PRIMER cuadro tiene
+   * que quedar seleccionado, para escribir de una; también al volver a la
+   * pantalla y después de un código rechazado, con los cuadros limpios.
+   *
+   * El `autoFocus` de React no alcanzaba: enfoca UNA vez, al montar (y no
+   * siempre al hidratar lo que vino del servidor), y mientras se verifica las
+   * casillas están deshabilitadas, lo que les quita el foco; al volver a
+   * habilitarse (código rechazado, ya limpio) nadie lo devolvía y había que
+   * hacer clic. Con `autoFocus`, ahora se enfoca la primera casilla vacía al
+   * montar y cada vez que se vuelven a habilitar; `onFocus` la selecciona.
+   */
+  React.useEffect(() => {
+    if (!autoFocus || disabled) return;
+    refs.current[Math.min(value.length, cuantas - 1)]?.focus();
+    // Sólo al montar y al volver a habilitarse: no persigue cada tecla.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoFocus, disabled]);
 
   const poner = React.useCallback(
     (nuevo: string) => {
@@ -132,6 +157,7 @@ export function CasillasDeCodigo({
           // autorrelleno de iOS mete el código entero en cada una.
           autoComplete={i === 0 ? 'one-time-code' : 'off'}
           aria-label={`Dígito ${i + 1} de ${cuantas}`}
+          aria-describedby={resto['aria-describedby'] || undefined}
           maxLength={1}
           value={d}
           disabled={disabled}

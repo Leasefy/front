@@ -54,6 +54,16 @@ import { createPortal, preload } from 'react-dom';
 import Image, { getImageProps } from 'next/image';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import {
+  enterTransition,
+  exitTransition,
+  motionDistance,
+  motionDuration,
+  motionEase,
+  motionScale,
+  motionSpring,
+  motionStagger,
+} from '@leasefy/cadence';
+import {
   AirTrafficControl,
   ArrowLeft,
   ArrowRight,
@@ -650,7 +660,6 @@ export function TourDelPanel() {
 
   const idTitulo = 'tour-del-panel-titulo';
   const animar = !reducirMovimiento;
-  const duracion = animar ? 0.18 : 0;
   // El velo se oscurece con la tinta de la casa: en oscuro `--ink` ya es
   // `#0a0a0a`, así que el recorrido no aclara ni ensucia el tema.
   const velo = 'color-mix(in srgb, var(--ink) 62%, transparent)';
@@ -770,24 +779,32 @@ export function TourDelPanel() {
           aria-hidden
           data-testid="tour-foco"
           className="pointer-events-none absolute rounded-lg"
-          initial={false}
-          animate={{
+          // Movimiento: la caja se ubica con `top/left/width/height` en línea y
+          // el SALTO de una parada a la otra lo anima framer con `layout`
+          // (transform + corrección de escala del borde y la sombra), con el
+          // resorte de los indicadores. Nunca se animan `top/width` cuadro a
+          // cuadro. Con movimiento reducido, salta.
+          layout={animar}
+          transition={{ layout: animar ? motionSpring.snappy : { duration: 0 } }}
+          style={{
             top: recuadro.top - MARGEN,
             left: recuadro.left - MARGEN,
             width: recuadro.width + MARGEN * 2,
             height: recuadro.height + MARGEN * 2,
+            boxShadow: `0 0 0 9999px ${velo}`,
           }}
-          transition={animar ? { type: 'spring', stiffness: 380, damping: 36 } : { duration: 0 }}
-          style={{ boxShadow: `0 0 0 9999px ${velo}` }}
         >
           {/* El halo: un anillo con el primario que respira muy despacio. */}
           <motion.span
             aria-hidden
             className="absolute inset-0 rounded-lg"
             style={{ boxShadow: `0 0 0 2px hsl(var(--primary)), 0 0 0 8px hsl(var(--primary) / 0.18)` }}
+            layout={animar}
             animate={animar ? { opacity: [0.55, 1, 0.55] } : { opacity: 1 }}
             transition={
-              animar ? { duration: 2.4, repeat: Infinity, ease: 'easeInOut' } : { duration: 0 }
+              animar
+                ? { duration: motionDuration.ambient, repeat: Infinity, ease: motionEase.standard }
+                : { duration: 0 }
             }
           />
         </motion.div>
@@ -799,7 +816,7 @@ export function TourDelPanel() {
           className="absolute inset-0"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: animar ? 0.24 : 0 }}
+          transition={enterTransition(!animar, { duration: 'slow' })}
           style={{ backgroundColor: velo }}
         />
       )}
@@ -831,10 +848,19 @@ export function TourDelPanel() {
             tabIndex={-1}
             // Sólo lo que se ve: la tarjeta sube un poco y aparece. Con
             // «reducir movimiento» no se mueve nada.
-            initial={animar ? { opacity: 0, y: 10, scale: 0.98 } : false}
+            // Tokens de Cadence: entra subiendo 8 px desde el 96 % (base en una
+            // parada, slow en la bienvenida y el cierre); sale acelerando en
+            // 150 ms. `mode="wait"` se queda A PROPÓSITO: la tarjeta cambia de
+            // lugar (se ancla a otra parada) y es un `dialog` con el foco
+            // atrapado: dos a la vez se pisarían.
+            initial={animar ? { opacity: 0, y: motionDistance.sm, scale: motionScale.pop } : false}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={animar ? { opacity: 0, y: -6, scale: 0.98 } : { opacity: 0 }}
-            transition={{ duration: pantalla.tipo === 'paso' ? duracion : animar ? 0.32 : 0, ease: [0.22, 1, 0.36, 1] }}
+            exit={
+              animar
+                ? { opacity: 0, y: -motionDistance.xs, scale: motionScale.pop, transition: exitTransition(false) }
+                : { opacity: 0, transition: exitTransition(true) }
+            }
+            transition={enterTransition(!animar, { duration: pantalla.tipo === 'paso' ? 'base' : 'slow' })}
             style={ubicacion ? undefined : { width: ANCHO_CENTRADO, maxWidth: '100%' }}
             // La cáscara es la de los modales hechos a mano (`rounded-[20px]`,
             // DESIGN §17) y la elevación, la de las capas: `shadow-lg`.
@@ -918,9 +944,10 @@ export function TourDelPanel() {
                   {['punto1', 'punto2', 'punto3'].map((k, i) => (
                     <motion.li
                       key={k}
-                      initial={animar ? { opacity: 0, y: 6 } : false}
+                      initial={animar ? { opacity: 0, y: motionDistance.sm } : false}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: animar ? 0.12 + i * 0.07 : 0, duration: animar ? 0.24 : 0 }}
+                      // Escalonado con el paso del sistema (40 ms), después de la tarjeta.
+                      transition={enterTransition(!animar, { delay: motionDuration.fast + i * motionStagger.step })}
                       className="flex gap-3 text-body-sm text-fg-muted"
                     >
                       <span
@@ -999,7 +1026,7 @@ function ProgresoPorParadas({
           key={i}
           aria-hidden
           className={cn(
-            'h-1 flex-1 rounded-full transition-colors duration-200 motion-reduce:transition-none',
+            'h-1 flex-1 rounded-full transition-colors duration-base motion-reduce:transition-none',
             i < hechos ? 'bg-primary' : 'bg-border',
           )}
         />
@@ -1111,7 +1138,7 @@ function FotoDeMarca({
         className="absolute inset-0"
         initial={animar ? { scale: 1.06 } : false}
         animate={{ scale: 1 }}
-        transition={{ duration: animar ? 1.4 : 0, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: animar ? motionDuration.reveal : 0, ease: motionEase.enter }}
       >
         <Image
           src={src}

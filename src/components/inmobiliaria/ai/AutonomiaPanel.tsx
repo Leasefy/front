@@ -37,15 +37,18 @@
  * valor largo baja de renglón en vez de irse al horizonte.
  */
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import Link from 'next/link'
 import { Scales, CheckCircle } from '@phosphor-icons/react'
 
 import type { AgentAutonomiaResponse, AutonomiaModo } from '@/lib/api/agent-workspace'
 import { useI18n } from '@/lib/i18n'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { toast } from '@/components/ui/toast'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SinDatos } from '@/components/estado/SinDatos'
+import { CrossFade, MotionIndicator } from '@leasefy/cadence'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -81,7 +84,7 @@ export interface AutonomiaPanelProps {
    * La escritura real (PUT del modo). Sólo con esto el modo se vuelve un
    * control; sin esto se muestra como chip. Devuelve el error para el toast.
    */
-  onCambiarModo?: (modo: AutonomiaModo) => Promise<{ ok: boolean; error?: string }>
+  onCambiarModo?: (modo: AutonomiaModo) => Promise<{ ok: boolean; error?: string; fallo?: unknown }>
   /** Si la persona puede cambiarlo (administrador). Sin permiso: chip. */
   puedeCambiar?: boolean
   /** Hay un cambio en vuelo: el control se deshabilita. */
@@ -99,19 +102,30 @@ export function AutonomiaPanel({
 }: AutonomiaPanelProps) {
   const { t } = useI18n()
   const [porConfirmar, setPorConfirmar] = useState<AutonomiaModo | null>(null)
+  // El diálogo de confirmación sigue diciendo el modo mientras se cierra (si
+  // no, el título cambiaba al genérico en el mismo cuadro en que se iba).
+  const modoDelDialogo = useUltimoPresente(porConfirmar)
+  // La marca del modo elegido se desliza de una tarjeta a otra (`layoutId`
+  // único por panel: dos paneles en la misma página no se la roban).
+  const idDelGrupo = useId()
 
+  // Movimiento: cada estado en un `CrossFade` con su clave (cargando →
+  // panel, → fallo, → vacío); lo que ya estaba al montarse no se anima.
   if (isLoading) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="space-y-3" role="status" aria-label="Cargando" data-testid="autonomia-panel-loading">
         <div className="h-12 rounded-lg border border-border bg-surface-muted/40 animate-pulse" aria-hidden="true" />
         <div className="h-32 rounded-lg border border-border bg-surface-muted/40 animate-pulse" aria-hidden="true" />
         <span className="sr-only">Cargando…</span>
       </div>
+      </CrossFade>
     )
   }
 
   if (error) {
     return (
+      <CrossFade swapKey="fallo">
       <div data-testid="autonomia-panel-error">
         <FalloDeCarga
           error={error}
@@ -119,12 +133,14 @@ export function AutonomiaPanel({
           onReintentar={onReintentar}
         />
       </div>
+      </CrossFade>
     )
   }
 
   if (!data) {
     // 404 / notAvailable — el vacío de la casa, NOT an error banner.
     return (
+      <CrossFade swapKey="vacio">
       <div
         className="rounded-lg border border-border bg-surface overflow-hidden"
         data-testid="autonomia-panel-empty"
@@ -136,6 +152,7 @@ export function AutonomiaPanel({
           descripcion={t(`${NS}.emptyBody`)}
         />
       </div>
+      </CrossFade>
     )
   }
 
@@ -162,7 +179,14 @@ export function AutonomiaPanel({
     if (res.ok) {
       toast.success(`${t(`${NS}.modo.${modo}`)}: ${hintDe(modo) || t(`${NS}.grupoAria`)}`)
     } else {
-      toast.error(t(`${NS}.error`, { error: res.error ?? 'error' }))
+      // Antes decía «No se pudo cargar la configuración de autonomía: 403»: el
+      // texto de la CARGA con el status crudo, para un fallo al GUARDAR.
+      toast.error(
+        mensajeParaLaPersona(res.fallo, {
+          porDefecto: 'No se pudo cambiar la autonomía del agente.',
+          accion: 'cambiar la autonomía del agente',
+        }),
+      )
     }
   }
 
@@ -178,6 +202,7 @@ export function AutonomiaPanel({
   }
 
   return (
+    <CrossFade swapKey="panel">
     <div className="space-y-6" data-testid="autonomia-panel">
       {editable ? (
         // Una tarjeta por modo. Sigue siendo un grupo de radio (rol y teclado
@@ -201,12 +226,20 @@ export function AutonomiaPanel({
                   disabled={busy}
                   onClick={() => elegir(value)}
                   data-testid={`autonomia-modo-${value}`}
-                  className={`rounded-lg border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60 ${
+                  className={`relative isolate rounded-lg border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-60 ${
                     activo
-                      ? 'border-primary bg-primary-soft/50 ring-1 ring-primary/30'
+                      ? 'border-primary'
                       : 'border-border bg-surface hover:border-border-strong hover:bg-surface-muted/40'
                   }`}
                 >
+                  {/* El fondo y el anillo del modo elegido: viajan a la
+                      tarjeta nueva al cambiar de modo (`MotionIndicator`). */}
+                  {activo && (
+                    <MotionIndicator
+                      layoutId={`${idDelGrupo}-modo`}
+                      className="inset-0 -z-10 rounded-lg bg-primary-soft/50 ring-1 ring-primary/30"
+                    />
+                  )}
                   <span className="flex items-start justify-between gap-2">
                     <span className={`text-sm font-semibold ${activo ? 'text-primary' : 'text-fg'}`}>
                       {label}
@@ -341,16 +374,18 @@ export function AutonomiaPanel({
           if (!abierto) setPorConfirmar(null)
         }}
       >
-        <AlertDialogContent>
+        {/* «Automático» es una advertencia: el agente actúa sin pedir permiso.
+            Los demás modos son una confirmación. */}
+        <AlertDialogContent variant={modoDelDialogo === 'autonomo' ? 'warning' : 'confirm'}>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {porConfirmar
-                ? `¿Pasar a ${t(`${NS}.modo.${porConfirmar}`)}?`
+              {modoDelDialogo
+                ? `¿Pasar a ${t(`${NS}.modo.${modoDelDialogo}`)}?`
                 : t(`${NS}.grupoAria`)}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {porConfirmar ? hintDe(porConfirmar) : ''}
-              {porConfirmar === 'autonomo'
+              {modoDelDialogo ? hintDe(modoDelDialogo) : ''}
+              {modoDelDialogo === 'autonomo'
                 ? ' El agente va a actuar sin pedirte permiso dentro de los límites de abajo.'
                 : ''}
             </AlertDialogDescription>
@@ -365,11 +400,12 @@ export function AutonomiaPanel({
                 if (modo) void aplicar(modo)
               }}
             >
-              {porConfirmar ? `Sí, pasar a ${t(`${NS}.modo.${porConfirmar}`)}` : t('common.confirm')}
+              {modoDelDialogo ? `Sí, pasar a ${t(`${NS}.modo.${modoDelDialogo}`)}` : t('common.confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </CrossFade>
   )
 }

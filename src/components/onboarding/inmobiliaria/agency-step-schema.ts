@@ -7,6 +7,7 @@
  * source of truth for validation rules — same pattern as `ThresholdEditor`).
  */
 import { revisarNit } from '@/lib/onboarding/nit'
+import { errorDeCodigoPostal, errorDeDireccion, limpiarDireccion } from '@/lib/direccion/direccion'
 import { z } from 'zod'
 import type { OnboardingSessionAgencyRequest } from '@/lib/api/generated/agency'
 
@@ -79,9 +80,23 @@ const camposDelPaso = z.object({
   address: z.object({
     // `calle` (contract key) is surfaced to the user as "Dirección"; `ciudad`
     // as "Municipio". The keys stay as the agent contract defines them.
-    calle: z.string().trim().min(1, 'La dirección es obligatoria.'),
+    // La regla de la dirección vive en `@/lib/direccion` (la misma de
+    // Configuración → Perfil y del micro). Se manda limpia: NFC y un espacio.
+    calle: z
+      .string()
+      .transform(limpiarDireccion)
+      .pipe(
+        z
+          .string()
+          .min(1, 'La dirección es obligatoria.')
+          .superRefine((valor, ctx) => {
+            const mensaje = errorDeDireccion(valor)
+            if (mensaje) ctx.addIssue({ code: z.ZodIssueCode.custom, message: mensaje })
+          }),
+      ),
     ciudad: z.string().trim().min(1, 'El municipio es obligatorio.'),
     departamento: z.string().trim().min(1, 'El departamento es obligatorio.'),
+    // Opcional; el cruce del prefijo con el departamento va abajo.
     codigoPostal: z.string().trim().optional(),
   }),
   primaryContactEmail: z.string().trim().min(1, 'El correo es obligatorio.').email('Ingresa un correo válido.'),
@@ -94,6 +109,14 @@ const camposDelPaso = z.object({
 })
 
 export const agencyStepSchema = camposDelPaso.superRefine((valores, ctx) => {
+  // Seis dígitos, y los dos primeros del departamento elegido (código DANE).
+  const errorDelPostal = errorDeCodigoPostal(
+    valores.address.codigoPostal ?? '',
+    valores.address.departamento,
+  )
+  if (errorDelPostal) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['address', 'codigoPostal'], message: errorDelPostal })
+  }
   // Vacío ya lo dijo el `min(1)`; acá sólo el largo del número que sí escribió.
   if (!valores.primaryContactPhone) return
   const mensaje = errorDelTelefono(valores.primaryContactPhone, valores.primaryContactCountry)

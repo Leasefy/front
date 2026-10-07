@@ -348,6 +348,25 @@ describe('<CompleteStepForm>', () => {
 
     expect(container.querySelector('[data-testid="complete-step-missing"]')).toBeFalsy()
     expect(container.querySelector('[data-testid="complete-step-form"]')).toBeTruthy()
+    expect(container.querySelector('[data-testid="complete-step-error"]')).toBeFalsy()
+  })
+
+  // 02-10-2026 · Un 400 al crearla no llegaba a ningún lado: el botón se
+  // volvía a prender sin decir nada. Ahora se dice, con sus palabras.
+  it('🔴 un 400 al crear la inmobiliaria se dice bajo el botón, con lo que mandó el micro', () => {
+    const error = new OnboardingSessionError(
+      'validation',
+      400,
+      'Para crearla falta aceptar los Términos y Condiciones.',
+      undefined,
+      [],
+    )
+    render({ error })
+
+    const aviso = container.querySelector('[data-testid="complete-step-error"]')
+    expect(aviso?.getAttribute('role')).toBe('alert')
+    expect(aviso?.textContent).toBe('Para crearla falta aceptar los Términos y Condiciones.')
+    expect(container.querySelector('[data-testid="complete-step-finish"]')).toBeTruthy()
   })
 })
 

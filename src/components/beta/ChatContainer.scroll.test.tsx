@@ -60,6 +60,15 @@ vi.mock('./AssistantBubble', () => ({
 vi.mock('./MessageActions', () => ({ MessageActions: nada }));
 vi.mock('./AccionPropuestaCard', () => ({ AccionPropuestaCard: nada }));
 vi.mock('./DecisionCard', () => ({ DecisionCard: nada }));
+// El equipo (02-10): su modal pide la sesión; acá sólo importa dónde queda cada cosa.
+vi.mock('@/components/agentes/equipo-de-agentes-context', () => ({
+  EquipoDeAgentesProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  useEquipoDeAgentes: () => ({ abrir: () => {}, cerrar: () => {}, abierto: false, disponible: false }),
+}));
+vi.mock('./TurnoDelAsistente', () => ({ CabeceraDeLaRespuesta: nada, ResumenDelTurno: nada }));
+vi.mock('@/components/agentes/TurnoDelEquipo', () => ({ RazonamientoDelTurno: nada, PasosDelRazonamiento: nada }));
+// El pensamiento en vivo (02-10): acá sólo importa dónde queda cada cosa.
+vi.mock('./PensamientoDelTurno', () => ({ PensamientoDelTurno: nada, RelojDelTurno: nada, DespuesDeUnMomento: nada }));
 
 import { ChatContainer } from './ChatContainer';
 
@@ -232,6 +241,36 @@ describe('el scroll del turno', () => {
     act(() => (container.querySelector('[data-testid="ver-el-resto"]') as HTMLButtonElement).click());
     expect(hilo().scrollTop).toBeGreaterThan(antes);
     expect(hilo().scrollTop).toBeLessThanOrEqual(antes + ALTO);
+  });
+
+  /*
+   * 🔴 Nico (02-10-2026): «Ver el resto» flotaba sobre el hilo y tapaba una
+   * línea del pensamiento en vivo. Va en su PROPIA franja, entre el hilo y la
+   * caja de escribir (la franja tiene alto y el botón no flota), en TODOS los
+   * anchos: primero fue sólo el celular; en la noche, también el escritorio.
+   * Sin botón, la franja no ocupa nada. (Verificado en un navegador a 390 y a
+   * 1280 px: ninguna línea del hilo queda debajo del botón.)
+   */
+  it('🔴 «Ver el resto» va en su propia franja en todos los anchos, no encima del hilo', () => {
+    pintar();
+    const franja = () => container.querySelector('[data-testid="franja-ver-el-resto"]') as HTMLElement;
+    // Sin nada abajo: la franja no ocupa nada y no hay botón.
+    expect(franja().className).toMatch(/(^|\s)h-0(\s|$)/);
+    expect(container.querySelector('[data-testid="ver-el-resto"]')).toBeNull();
+
+    geo.fin = 3000;
+    contexto.messages = [...historia(), pregunta, respuesta('La ficha del contrato #24…')];
+    pintar();
+    const boton = container.querySelector('[data-testid="ver-el-resto"]') as HTMLElement;
+    expect(boton).not.toBeNull();
+    // La franja tiene alto (el hilo termina encima del botón)…
+    expect(franja().className).toMatch(/(^|\s)h-12(\s|$)/);
+    // …y en NINGÚN ancho vuelve a alto cero ni el botón flota sobre el borde
+    // del hilo: ni una clase responsiva que lo cambie desde `sm`/`md`/`lg`.
+    expect(franja().className).not.toMatch(/(^|\s)(sm|md|lg|xl|2xl):h-/);
+    expect(boton.parentElement?.className).not.toMatch(/(^|\s)(sm|md|lg|xl|2xl):(bottom|top|inset)-/);
+    // La franja no está DENTRO del hilo: no lo tapa.
+    expect(hilo().contains(franja())).toBe(false);
   });
 
   it('una conversación que se abre se muestra por el final, como siempre', () => {

@@ -19,14 +19,14 @@
  * the run reaches `completed`.
  *
  * Pattern: mirrors use-debtor-detail.ts (useState + useCallback fetch +
- * useVisibilityPolling) with the NEXT_PUBLIC_AGENT_URL + agentAuthHeaders +
+ * useVisibilityPolling) with the NEXT_PUBLIC_AGENT_URL + agentFetch +
  * agency.id null-guards (v2.1 visual smoke env workaround).
  */
 
 import { useCallback, useEffect, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import {
   deriveEstudioDecision,
@@ -82,9 +82,8 @@ export function useEstudioRun(runId: string): UseEstudioRunResult {
       return
     }
     try {
-      const res = await globalThis.fetch(
-        `${agentUrl}/tenant-scoring/${encodeURIComponent(runId)}`,
-        { headers: agentAuthHeaders() },
+      const res = await agentFetch(
+        `${agentUrl}/tenant-scoring/${encodeURIComponent(runId)}`
       )
       if (res.status === 404) {
         // Run foreign / missing — friendly "no disponible", NOT an error banner.

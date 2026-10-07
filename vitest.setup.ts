@@ -39,6 +39,7 @@
  */
 
 import { Storage } from 'happy-dom';
+import { MotionGlobalConfig } from 'framer-motion';
 
 /**
  * ¿El global ya tiene un storage usable?
@@ -65,3 +66,19 @@ for (const nombre of ['localStorage', 'sessionStorage'] as const) {
     enumerable: true,
   });
 }
+
+/**
+ * Animaciones de framer-motion: terminan al instante en las pruebas.
+ *
+ * Con el sistema de movimiento de Cadence (docs/DESIGN.md «Movimiento») los
+ * componentes base y las primitivas animan entradas, salidas y cambios. En
+ * happy-dom esas animaciones corren con temporizadores reales: un
+ * `AnimatePresence mode="wait"` deja el contenido nuevo sin montar hasta que
+ * el viejo termina de salir, y una prueba que busca el texto al toque falla
+ * sin que nada esté roto (ver la memoria «AnimatePresence wait en tests»).
+ *
+ * `skipAnimations` hace que toda animación de framer salte a su valor final:
+ * el estado de la UI es el mismo, sólo sin el viaje. Las pruebas que mockean
+ * `framer-motion` con un passthrough siguen igual (esto toca el módulo real).
+ */
+MotionGlobalConfig.skipAnimations = true;

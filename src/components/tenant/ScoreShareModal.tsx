@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Copy, Check, WhatsappLogo, EnvelopeSimple, Link as LinkIcon } from '@phosphor-icons/react';
 import {
   Dialog,
@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useI18n } from '@/lib/i18n';
-import { useLenis } from '@/components/providers/SmoothScroll';
 
 interface ScoreShareModalProps {
   open: boolean;
@@ -21,16 +20,9 @@ interface ScoreShareModalProps {
 
 export function ScoreShareModal({ open, onClose, verificationCode }: ScoreShareModalProps) {
   const { locale } = useI18n();
-  const lenis = useLenis();
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-
-  // Pause Lenis smooth scroll while the modal is open (DESIGN.md §8).
-  useEffect(() => {
-    if (open) lenis.stop();
-    else lenis.start();
-    return () => lenis.start();
-  }, [open, lenis]);
+  // Lenis lo frena la primitiva: SmoothScroll observa el diálogo abierto (DESIGN.md §17).
 
   const shareUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/verificar/${verificationCode}`;
   const shareMessage = locale === 'es'
@@ -63,7 +55,7 @@ export function ScoreShareModal({ open, onClose, verificationCode }: ScoreShareM
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent size="sm">
         <DialogHeader>
           <DialogTitle>
             {locale === 'es' ? 'Compartir evaluación' : 'Share evaluation'}
@@ -75,7 +67,7 @@ export function ScoreShareModal({ open, onClose, verificationCode }: ScoreShareM
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 mt-2">
+        <div className="space-y-4">
           {/* Verification Code */}
           <div>
             <p className="text-xs text-fg-muted mb-1.5">
@@ -83,7 +75,7 @@ export function ScoreShareModal({ open, onClose, verificationCode }: ScoreShareM
             </p>
             <button
               onClick={handleCopyCode}
-              className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-[14px] bg-surface-muted border border-border hover:border-border-strong transition-colors"
+              className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-[14px] bg-surface-hover border border-border hover:border-border-strong transition-colors"
             >
               <span className="font-mono tabular-nums text-lg font-semibold tracking-wider text-fg">
                 {verificationCode}
@@ -103,7 +95,7 @@ export function ScoreShareModal({ open, onClose, verificationCode }: ScoreShareM
             </p>
             <button
               onClick={handleCopyLink}
-              className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-[14px] bg-surface-muted border border-border hover:border-border-strong transition-colors"
+              className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-[14px] bg-surface-hover border border-border hover:border-border-strong transition-colors"
             >
               <span className="text-sm text-fg-muted truncate flex items-center gap-2">
                 <LinkIcon className="w-4 h-4 flex-shrink-0" />

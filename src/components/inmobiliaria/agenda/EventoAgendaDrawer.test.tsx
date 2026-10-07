@@ -17,13 +17,14 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const cancelarCita = vi.fn().mockResolvedValue(undefined);
 const rechazarCita = vi.fn().mockResolvedValue(undefined);
 const aceptarCita = vi.fn().mockResolvedValue(undefined);
+const actualizarTarea = vi.fn().mockResolvedValue(undefined);
 
 vi.mock('@/lib/api/agenda.service', () => ({
   agendaApi: {
     cancelarCita: (...a: unknown[]) => cancelarCita(...a),
     rechazarCita: (...a: unknown[]) => rechazarCita(...a),
     aceptarCita: (...a: unknown[]) => aceptarCita(...a),
-    actualizarTarea: vi.fn().mockResolvedValue(undefined),
+    actualizarTarea: (...a: unknown[]) => actualizarTarea(...a),
   },
 }));
 
@@ -42,10 +43,11 @@ vi.mock('next/link', () => ({
 }));
 
 // Los primitivos de Radix viven en un portal; acá interesa el contenido.
-vi.mock('@/components/ui/sheet', () => ({
+vi.mock('@/components/ui/sheet', async () => ({
+  // Las piezas del cajón (cabecera con título y acciones, cuerpo, pie) como DOM plano.
+  ...(await import('@/components/ui/sheet-test-stub')),
   Sheet: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
   SheetContent: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
-  SheetHeader: ({ children }: { children?: React.ReactNode }) => React.createElement('div', null, children),
   SheetTitle: ({ children }: { children?: React.ReactNode }) => React.createElement('h2', null, children),
   SheetDescription: ({ children }: { children?: React.ReactNode }) => React.createElement('p', null, children),
 }));
@@ -80,10 +82,14 @@ vi.mock('@phosphor-icons/react', () => ({
   Phone: () => null,
   VideoCamera: () => null,
   MapPin: () => null,
+  // El medallón de `MotivoDialog` (cancelar o rechazar es destructivo).
+  XCircle: () => null,
 }));
 
 import { EventoAgendaDrawer } from './EventoAgendaDrawer';
 import type { EventoAgenda } from '@/lib/api/agenda.types';
+import { toast } from 'sonner';
+import { ApiError } from '@/lib/api/client';
 
 function visita(extra: Partial<EventoAgenda> = {}): EventoAgenda {
   return {
@@ -106,9 +112,11 @@ function visita(extra: Partial<EventoAgenda> = {}): EventoAgenda {
 
 let container: HTMLDivElement;
 let root: Root;
-const onAccionVisita = vi.fn(async (_id: string, accion: () => Promise<void>) => {
-  await accion();
-});
+const onAccionVisita = vi.fn(
+  async (_id: string, accion: () => Promise<void>, _opciones?: { avisar?: boolean }): Promise<boolean | void> => {
+    await accion();
+  },
+);
 
 beforeEach(() => {
   cancelarCita.mockClear();
@@ -209,6 +217,38 @@ describe('<EventoAgendaDrawer> — acciones de una visita', () => {
   });
 });
 
+/**
+ * 🔴 Nico (02-10-2026): cada llamador de `MotivoDialog` dice dónde queda SU
+ * motivo. El back guarda el de la cancelación en `cancellationReason` y el del
+ * rechazo en `rejectionReason`; el aviso a quien pidió la visita no lo lleva,
+ * así que el ejemplo ya no promete «Lo va a leer quien esperaba la visita».
+ */
+describe('<EventoAgendaDrawer> — la ayuda del motivo dice dónde queda', () => {
+  const placeholder = () =>
+    container.querySelector<HTMLTextAreaElement>('[data-testid="motivo-texto"]')!.getAttribute('placeholder');
+
+  it('cancelar: «se guarda en la visita como el motivo de la cancelación»', () => {
+    pintar(visita());
+    clic('[data-testid="cita-cancelar"]');
+    expect(placeholder()).toBe('Cuenta qué pasó y por qué se cancela la visita.');
+    escribir('El propietario pidió reprogramar');
+    const dialogo = container.querySelector('[data-testid="motivo-dialog"]')!;
+    expect(dialogo.textContent).toContain('Se guarda en la visita como el motivo de la cancelación.');
+    expect(dialogo.textContent).not.toContain('historial de la visita');
+  });
+
+  it('rechazar: «se guarda en la visita como el motivo del rechazo»', () => {
+    pintar(visita({ estadoRaw: 'PENDING' }));
+    clic('[data-testid="cita-rechazar"]');
+    expect(placeholder()).toBe('Cuenta por qué no se puede hacer esta visita.');
+    escribir('No hay nadie para abrir el inmueble');
+    const dialogo = container.querySelector('[data-testid="motivo-dialog"]')!;
+    expect(dialogo.textContent).toContain('Se guarda en la visita como el motivo del rechazo.');
+    expect(dialogo.textContent).not.toContain('motivo de la cancelación');
+    expect(placeholder()).not.toContain('Lo va a leer');
+  });
+});
+
 describe('<EventoAgendaDrawer> — qué muestra', () => {
   it('en una visita el nombre va rotulado como quien visita, no como responsable', () => {
     pintar(visita());
@@ -302,5 +342,152 @@ describe('<EventoAgendaDrawer> — sin operaciones:edit (A3)', () => {
 
     expect(container.querySelector('[data-testid="cita-confirmar"]')).toBeTruthy();
     expect(container.querySelector('[data-testid="evento-sin-permiso"]')).toBeNull();
+  });
+});
+
+/**
+ * 02-10-2026 · Completar una tarea que el back rechaza: antes decía siempre
+ * «No se pudo actualizar la tarea», sin el porqué. Ahora el porqué va por el
+ * traductor: un 5xx «de nuestro lado» con su referencia, la conexión SÓLO sin
+ * respuesta.
+ */
+describe('<EventoAgendaDrawer> — el error de una tarea, por el traductor', () => {
+  const tarea = () =>
+    visita({ id: 'tarea-t1', tipo: 'tarea', estado: 'pendiente', estadoRaw: 'PENDIENTE', vinculoTipo: undefined, vinculoId: undefined });
+
+  async function completarCon(fallo: unknown) {
+    vi.mocked(toast.error).mockClear();
+    actualizarTarea.mockRejectedValueOnce(fallo);
+    pintar(tarea());
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="tarea-completar"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    return vi.mocked(toast.error).mock.calls[0]?.[1]?.description as string;
+  }
+
+  it('🔴 un 5xx dice que falló de nuestro lado, con la referencia', async () => {
+    const d = await completarCon(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    expect(d).toContain('de nuestro lado');
+    expect(d).toContain('ab12cd34');
+  });
+
+  it('🔴 sin respuesta (status 0) habla de la conexión', async () => {
+    expect(await completarCon(new ApiError(0, 'Failed to fetch'))).toMatch(/conexi[oó]n/i);
+  });
+
+  it('un 409 que explica se dice tal cual', async () => {
+    expect(await completarCon(new ApiError(409, 'Esa tarea ya estaba cancelada.'))).toBe(
+      'Esa tarea ya estaba cancelada.',
+    );
+  });
+});
+
+/**
+ * 02-10-2026 · Cancelar o rechazar con motivo que el back rechaza: el porqué
+ * va BAJO el campo del motivo (Nico: «no en un toast»), el diálogo sigue
+ * abierto con lo escrito, y la página no repite el aviso (`avisar: false`).
+ */
+describe('<EventoAgendaDrawer> — el rechazo del motivo, bajo el campo', () => {
+  /** Como la página: atrapa, y con `avisar: false` no hace toast. */
+  function comoLaPagina() {
+    onAccionVisita.mockImplementationOnce(async (_id, accion, opciones) => {
+      try {
+        await accion();
+        return true;
+      } catch {
+        if (opciones?.avisar !== false) toast.error('No se pudo actualizar la cita');
+        return false;
+      }
+    });
+  }
+
+  it('🔴 un 409 que explica sale bajo el campo, sin toast, y el diálogo sigue abierto', async () => {
+    vi.mocked(toast.error).mockClear();
+    cancelarCita.mockRejectedValueOnce(new ApiError(409, 'Esta visita ya estaba cancelada.'));
+    comoLaPagina();
+    pintar(visita());
+    clic('[data-testid="cita-cancelar"]');
+    escribir('El propietario pidió reprogramar');
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="motivo-confirmar"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(onAccionVisita.mock.calls.at(-1)?.[2]).toEqual({ avisar: false });
+    expect(document.getElementById('motivo-de-la-agenda-error')?.textContent).toBe(
+      'Esta visita ya estaba cancelada.',
+    );
+    expect(container.querySelector('[data-testid="motivo-dialog"]')).toBeTruthy();
+    expect(container.querySelector<HTMLTextAreaElement>('[data-testid="motivo-texto"]')!.value).toBe(
+      'El propietario pidió reprogramar',
+    );
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 400 con `campos` del motivo (`reason`) pinta SU frase', async () => {
+    const frase = 'El motivo puede tener hasta 500 caracteres.';
+    rechazarCita.mockRejectedValueOnce(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'reason', regla: 'longitud_maxima', mensaje: frase }],
+      }),
+    );
+    comoLaPagina();
+    pintar(visita({ estadoRaw: 'PENDING' }));
+    clic('[data-testid="cita-rechazar"]');
+    escribir('No hay nadie para abrir el inmueble');
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="motivo-confirmar"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(document.getElementById('motivo-de-la-agenda-error')?.textContent).toBe(frase);
+  });
+
+  it('🔴 un 5xx dice de nuestro lado con la referencia, bajo el campo', async () => {
+    cancelarCita.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'cd34ef56',
+      }),
+    );
+    comoLaPagina();
+    pintar(visita());
+    clic('[data-testid="cita-cancelar"]');
+    escribir('El propietario pidió reprogramar');
+    await act(async () => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="motivo-confirmar"]')!
+        .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    const texto = document.getElementById('motivo-de-la-agenda-error')?.textContent ?? '';
+    expect(texto).toContain('de nuestro lado');
+    expect(texto).toContain('cd34ef56');
+    expect(texto.toLowerCase()).not.toContain('conexión');
   });
 });

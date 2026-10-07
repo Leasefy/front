@@ -70,7 +70,15 @@ import {
   DropdownListItem,
   DropdownListTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import {
+  Table,
+  TableHeader,
+  TableBodyAnimado,
+  TableRow,
+  TableRowAnimada,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 import { TablePagination } from '@/components/ui/pagination'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { useTablePagination } from '@/lib/hooks/use-table-pagination'
@@ -84,7 +92,8 @@ import type { FilaDeLaCuotaDelMes } from '@/lib/api/cartera.types'
 import { cn } from '@/lib/utils'
 import { CLAVE_DE_MORA, interesPendiente } from '@/components/cartera/interes-de-mora'
 import { CuotaDelMesCajon } from './CuotaDelMesCajon'
-import { NOMBRE_DEL_CAJON, VARIANTE_DEL_CAJON, fechaLocal } from './cajon-de-la-cuota'
+import { fechaLocal, nombreDeLaFila, varianteDeLaFila } from './cajon-de-la-cuota'
+import { documentoDelCliente } from '@/components/estado-de-cuenta/filas';
 
 const VOLVER_A = '/panel/inmobiliaria/pagos'
 
@@ -114,6 +123,12 @@ export interface CuotasDelMesTablaProps {
    * tabla»). Dos bordes anidados a 1 px de distancia se leen como dos cajas.
    */
   sinMarco?: boolean
+  /**
+   * Qué se está mirando (la pestaña del cajón). Al cambiar, el cuerpo de la
+   * tabla se monta de nuevo y las filas nuevas entran escalonadas, sin esperar
+   * a que salgan las de antes. Buscar, en cambio, saca las que ya no están.
+   */
+  vista?: string
 }
 
 /** Las seis de datos más la del kebab. */
@@ -125,6 +140,7 @@ export function CuotasDelMesTabla({
   hayFiltros = false,
   onLimpiarFiltros,
   sinMarco = false,
+  vista = '',
 }: CuotasDelMesTablaProps) {
   const { locale, t } = useI18n()
   const idioma = locale === 'es' ? 'es' : 'en'
@@ -160,9 +176,14 @@ export function CuotasDelMesTabla({
             <TableHead className="w-10" />
           </TableRow>
         </TableHeader>
-        <TableBody>
+        {/* Movimiento (ola 2, 03-10-2026): las filas entran escalonadas (techo
+            de 320 ms); al buscar, la que ya no está sale en su lugar (`key` =
+            la cuota). Cambiar de pestaña, de mes o de página monta un cuerpo
+            nuevo: entran las nuevas y la tabla no crece mientras salen las
+            viejas. */}
+        <TableBodyAnimado key={`${mes}|${vista}|${page}|${pageSize}`}>
           {filas.length === 0 ? (
-            <TableRow>
+            <TableRowAnimada key="vacio">
               <TableCell colSpan={COLUMNAS} className="p-0">
                 {/*
                   🔴 El vacío NO puede decir «todavía no hay cobros»: con
@@ -178,10 +199,10 @@ export function CuotasDelMesTabla({
                   onLimpiarFiltros={hayFiltros ? onLimpiarFiltros : undefined}
                 />
               </TableCell>
-            </TableRow>
+            </TableRowAnimada>
           ) : (
             pageItems.map((f) => (
-              <TableRow
+              <TableRowAnimada
                 key={f.cuotaId}
                 data-testid="cuota-fila"
                 onClick={() => setAbierta(f)}
@@ -198,12 +219,22 @@ export function CuotasDelMesTabla({
                   }
                 }}
               >
+                {/* 🔴 PG-15 (QA de Pagos, 03-10-2026): un nombre largo («Inversiones y
+                    Construcciones del Valle de Aburrá Hermanos Restrepo Londoño
+                    S.A.S.») se llevaba 594 px y la tabla no cabía a 1440 px
+                    («se corre a los lados», con «Pagado / falta» cortado). El
+                    nombre va en hasta DOS renglones dentro de un ancho fijo, con
+                    el nombre entero al pasar el puntero. */}
                 <TableCell>
-                  <p className="truncate font-medium text-fg">
+                  <p
+                    className="line-clamp-2 max-w-[16rem] break-words font-medium text-fg"
+                    title={f.inquilino ?? undefined}
+                  >
                     {f.inquilino ?? 'Sin nombre en el contrato'}
                   </p>
-                  <p className="truncate text-caption text-fg-muted">
-                    {f.documento ? `CC ${f.documento}` : ''}
+                  <p className="max-w-[16rem] truncate text-caption text-fg-muted">
+                    {/* N-01 (QA-PAGOS-95): el tipo real o «NIT/CC», como el estado de cuenta; nunca un «CC» inventado. */}
+                    {documentoDelCliente(f) ?? ''}
                     {f.contrato ? rotuloDelContrato(f) : ''}
                   </p>
                 </TableCell>
@@ -252,8 +283,10 @@ export function CuotasDelMesTabla({
                     y lo vencido en plazo dice cuántos días le quedan. Son dos
                     hechos distintos y se escriben distinto.
                   */}
-                  <Badge variant={VARIANTE_DEL_CAJON[f.cajon]} className="mt-1">
-                    {f.enSiniestro ? 'En siniestro' : NOMBRE_DEL_CAJON[f.cajon]}
+                  {/* CR-31 y nota crédito: el rótulo con sus excepciones
+                      («Vencida» sin plazo fijado, «Saldada por nota crédito»). */}
+                  <Badge variant={varianteDeLaFila(f)} className="mt-1" data-testid="rotulo-de-la-cuota">
+                    {nombreDeLaFila(f)}
                   </Badge>
                   {f.cajon === 'CARTERA' && (
                     <p className="text-caption text-danger">
@@ -262,7 +295,9 @@ export function CuotasDelMesTabla({
                   )}
                   {f.cajon === 'VENCIDA_EN_PLAZO' && (
                     <p className="text-caption text-fg-muted">
-                      plazo de {f.diasDePlazo} {f.diasDePlazo === 1 ? 'día' : 'días'}
+                      {f.plazoSinFijar
+                        ? 'sin plazo fijado: no corre mora'
+                        : `plazo de ${f.diasDePlazo} ${f.diasDePlazo === 1 ? 'día' : 'días'}`}
                     </p>
                   )}
                 </TableCell>
@@ -311,10 +346,10 @@ export function CuotasDelMesTabla({
                     </DropdownListContent>
                   </DropdownList>
                 </TableCell>
-              </TableRow>
+              </TableRowAnimada>
             ))
           )}
-        </TableBody>
+        </TableBodyAnimado>
       </Table>
 
       {shouldPaginate && (

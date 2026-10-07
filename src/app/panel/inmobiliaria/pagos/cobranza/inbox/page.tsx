@@ -35,10 +35,13 @@ import Link from 'next/link'
 import { Tray, PhoneCall, Users } from '@phosphor-icons/react'
 
 import { PageGuard } from '@/components/auth/PageGuard'
+import { toast } from '@/components/ui'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { useI18n } from '@/lib/i18n'
 import { formatRelativeTime } from '@/lib/format'
 import { EmptyState } from '@/components/data-display/EmptyState'
-import { Chip, SegmentedControl } from '@leasefy/cadence'
+import { AnimatedNumber, Chip, Collapse, CrossFade, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
+import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import {
   InboxItemCard,
   InboxThreadPanel,
@@ -99,6 +102,14 @@ function InboxContent() {
    * atenderlo una persona (POST /cobranza/debtors/:debtorId/pause).
    */
   const [tomarControlDe, setTomarControlDe] = useState<string | null>(null)
+  // Los modales se montaban con `{x && <Modal open />}`: abrían suave y
+  // cerraban de golpe (se desmontaban). Con el último deudor presente siguen
+  // montados mientras se van, y salen con su animación.
+  const responderAVivo = useUltimoPresente(responderA)
+  const tomarControlDeVivo = useUltimoPresente(tomarControlDe)
+
+  /** El número tal cual se escribía antes: sin separador de miles. */
+  const enteroTalCual = (n: number) => String(Math.round(n))
 
   const recibido = (iso: string | null | undefined): string | null =>
     iso ? formatRelativeTime(iso, locale) : null
@@ -169,6 +180,15 @@ function InboxContent() {
     setMarcandoLeido(true)
     try {
       await markRead(openThreadId)
+    } catch (e) {
+      // Antes un try/finally sin catch: el rechazo quedaba sin atrapar y la
+      // pantalla no decía nada.
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos marcar la conversación como leída.',
+          accion: 'marcar la conversación como leída',
+        }),
+      )
     } finally {
       setMarcandoLeido(false)
     }
@@ -228,14 +248,18 @@ function InboxContent() {
 
       {/* Filtro de grupo (excluyente) + total */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <SegmentedControl<GrupoFiltro>
-          options={FILTRO_OPCIONES}
-          value={filtro}
-          onChange={setFiltro}
-          aria-label="Filtrar conversaciones por grupo"
-        />
+        {/* QA-IA-B (04-10-2026): a 390 px el control medía 709 px y corría la
+            página de lado (scrollWidth 733). Se desplaza dentro de su riel. */}
+        <div className="max-w-full overflow-x-auto" data-testid="inbox-filtro-riel">
+          <SegmentedControl<GrupoFiltro>
+            options={FILTRO_OPCIONES}
+            value={filtro}
+            onChange={setFiltro}
+            aria-label="Filtrar conversaciones por grupo"
+          />
+        </div>
         <span className="text-xs text-fg-muted tabular-nums shrink-0">
-          {visibles.length} de {total}
+          <AnimatedNumber value={visibles.length} format={enteroTalCual} /> de {total}
         </span>
       </div>
 
@@ -259,7 +283,9 @@ function InboxContent() {
               data-testid={`inbox-chip-${g}`}
             >
               {meta.label}
-              <span className="tabular-nums">{counts[g]}</span>
+              <span className="tabular-nums">
+                <AnimatedNumber value={counts[g]} format={enteroTalCual} />
+              </span>
             </Chip>
           )
         })}
@@ -267,9 +293,13 @@ function InboxContent() {
 
       {/* Lista de conversaciones (datos reales del endpoint). FAIL-SOFT: si el
           backend no está desplegado, `visibles` queda vacío → <EmptyState>. */}
+      {/* Con conversaciones ⇄ vacío: el uno sale y el otro entra. Filtrar o
+          paginar hace entrar las conversaciones escalonadas y salir las que
+          sobran; abrir una despliega su hilo con su altura (`Collapse`). */}
+      <CrossFade swapKey={visibles.length > 0 ? 'lista' : 'vacio'}>
       {visibles.length > 0 ? (
         <div className="max-w-3xl">
-          <div
+          <Stagger
             className="space-y-3"
             role="list"
             aria-label="Inbox de conversaciones"
@@ -277,7 +307,7 @@ function InboxContent() {
             {pageItems.map((it) => {
               const open = openThreadId === it.key
               return (
-                <div key={it.key} className="space-y-3" role="listitem">
+                <StaggerItem key={it.key} className="space-y-3" role="listitem">
                   <ul>
                     <InboxItemCard
                       item={it}
@@ -294,8 +324,7 @@ function InboxContent() {
                     />
                   </ul>
                   {/* Panel de conversación con los mensajes REALES del hilo. */}
-                  {open && (
-                    <div className="pl-1">
+                  <Collapse open={open} className="pl-1">
                       <InboxThreadPanel
                         messages={threadDetail?.messages ?? []}
                         isLoading={threadLoading}
@@ -307,12 +336,11 @@ function InboxContent() {
                           it.debtorId ? () => setResponderA(it.debtorId) : undefined
                         }
                       />
-                    </div>
-                  )}
-                </div>
+                  </Collapse>
+                </StaggerItem>
               )
             })}
-          </div>
+          </Stagger>
 
         {/* El pie va fuera del contenedor `role="list"`: un hijo que no es
             `listitem` rompe la lista para el lector de pantalla. */}
@@ -336,6 +364,7 @@ function InboxContent() {
           description="Cuando lleguen respuestas de tus inquilinos por WhatsApp, voz o correo, aparecerán aquí agrupadas por intención. Mientras tanto, encuentras las conversaciones en las llamadas y en el detalle de cada deudor."
         />
       )}
+      </CrossFade>
 
       {/* Cross-links explícitos a las superficies donde sí vive la conversación */}
       <section className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-3xl">
@@ -381,11 +410,11 @@ function InboxContent() {
         requiere tu aprobación explícita.
       </p>
 
-      {responderA && (
+      {responderAVivo && (
         <ManualWAModal
-          open
+          open={responderA !== null}
           onClose={() => setResponderA(null)}
-          debtorId={responderA}
+          debtorId={responderAVivo}
           debtorName=""
           prefill={{}}
           onSuccess={() => {
@@ -395,11 +424,11 @@ function InboxContent() {
         />
       )}
 
-      {tomarControlDe && (
+      {tomarControlDeVivo && (
         <PauseModal
-          open
+          open={tomarControlDe !== null}
           onClose={() => setTomarControlDe(null)}
-          debtorId={tomarControlDe}
+          debtorId={tomarControlDeVivo}
           debtorName=""
           onSuccess={() => {
             setTomarControlDe(null)

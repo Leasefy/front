@@ -72,7 +72,11 @@ export default function FirmarConsignacionPublicoPage() {
       setDatos(actualizado);
       toast.success('Firmaste el contrato de consignación.');
     } catch (err) {
-      toast.error('No se pudo firmar.', { description: mensajeDelFallo(err, '') });
+      // 02-10-2026: con un `porDefecto` de verdad (antes `''`: un fallo sin
+      // texto legible dejaba el toast sin descripción).
+      toast.error('No se pudo firmar.', {
+        description: mensajeDelFallo(err, 'Prueba de nuevo en un momento.'),
+      });
       // T-0109 contract.md §3.3 — relanzado para que SignatureForm reabra el
       // OTP en TOKEN_DE_FIRMA_INVALIDO/CODIGO_DE_FIRMA_REQUERIDO.
       throw err;

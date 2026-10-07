@@ -2,12 +2,15 @@
 
 import { useEffect, useState } from 'react'
 import { Controller, useFieldArray, useForm, type FieldPath } from 'react-hook-form'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { aplicarErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { borrarBorradorLocal, guardarBorradorLocal, leerBorradorLocal } from './borrador-local'
 import { ArrowRight, Check, Copy, EnvelopeSimple, Plus, Trash, WarningCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import type { InvitacionCreada } from './crear-invitaciones'
 import {
   MEMBER_ROLE_OPTIONS,
@@ -46,6 +49,12 @@ export interface MembersStepFormProps {
    * and can reject a payload the client-side zod schema accepted).
    */
   submitError?: string | null
+  /**
+   * 02-10-2026 · El 400 del micro, entero (`OnboardingSessionError` con los
+   * `campos` del sobre): `members.0.email` va al correo de la fila 1, con foco.
+   * Al aviso va SÓLO lo que no tiene campo. Si llega, manda sobre `submitError`.
+   */
+  errorDelServidor?: unknown
   /** Con esto puesto se muestra el resultado de las invitaciones en vez del formulario. */
   pendingInvites: PendingMembersInvites | null
   /** Con la sesión, lo escrito y no enviado vuelve al devolverse de paso (`borrador-local.ts`). */
@@ -54,11 +63,8 @@ export interface MembersStepFormProps {
   guardados?: MembersStepFormValues['members']
   /** La persona ya leyó el resultado y quiere seguir. */
   onContinueAfterInvites: () => void
-}
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null
-  return <p role="alert" className="mt-1.5 text-caption text-danger">{message}</p>
+  /** Vuelve a pedir SÓLO las invitaciones que fallaron. Sin esto no hay botón. */
+  onReintentarInvitaciones?: () => Promise<void>
 }
 
 function roleLabel(role: string | undefined): string {
@@ -68,11 +74,24 @@ function roleLabel(role: string | undefined): string {
 function MembersInviteLinksScreen({
   pendingInvites,
   onContinueAfterInvites,
+  onReintentarInvitaciones,
 }: {
   pendingInvites: PendingMembersInvites
   onContinueAfterInvites: () => void
+  onReintentarInvitaciones?: () => Promise<void>
 }) {
   const [copiado, setCopiado] = useState<string | null>(null)
+  const [reintentando, setReintentando] = useState(false)
+
+  const reintentar = async () => {
+    if (!onReintentarInvitaciones || reintentando) return
+    setReintentando(true)
+    try {
+      await onReintentarInvitaciones()
+    } finally {
+      setReintentando(false)
+    }
+  }
 
   const copiar = async (email: string, link: string) => {
     try {
@@ -87,8 +106,14 @@ function MembersInviteLinksScreen({
 
   const invitaciones = pendingInvites.invitaciones
   const conError = invitaciones.filter((i) => i.error !== null)
+  // Sin segundo factor de quien invita, «Inténtalo de nuevo ahora» mentiría:
+  // el back va a contestar lo mismo (ver `MOTIVO_SIN_SEGUNDO_FACTOR`).
+  const algunaSePuedeReintentar = conError.some((i) => i.reintentable !== false)
   const enviadas = invitaciones.filter((i) => i.error === null && i.correoEnviado)
   const sinCorreo = invitaciones.filter((i) => i.error === null && !i.correoEnviado)
+  // Un entorno de pruebas retiene los correos a propósito: no es una falla.
+  const sinCorreoPorPruebas =
+    sinCorreo.length > 0 && sinCorreo.every((i) => i.estadoDelCorreo === 'suppressed')
 
   return (
     <div
@@ -98,14 +123,18 @@ function MembersInviteLinksScreen({
       <div>
         {/* Sin marco propio: ya vive en la tarjeta del asistente. Y sin
             negrita, como todos los títulos (Nico, 30-09). */}
+        {/* Con todas rechazadas no se dice «enviadas» ni «quedaron creadas»:
+            no se creó ninguna (02-10-2026). Lo que pasó lo dice el aviso rojo. */}
         <h2 className="font-heading text-[20px] font-medium leading-tight tracking-[-0.015em] text-fg">
-          Invitaciones enviadas
+          {conError.length === invitaciones.length ? 'Invitaciones' : 'Invitaciones enviadas'}
         </h2>
-        <p className="text-body-sm text-fg-muted mt-1">
-          {enviadas.length > 0
-            ? 'Cada persona recibió un correo con su enlace para unirse a tu inmobiliaria.'
-            : 'Estas son las invitaciones que quedaron creadas.'}
-        </p>
+        {conError.length < invitaciones.length && (
+          <p className="text-body-sm text-fg-muted mt-1">
+            {enviadas.length > 0
+              ? 'Cada persona recibió un correo con su enlace para unirse a tu inmobiliaria.'
+              : 'Estas son las invitaciones que quedaron creadas.'}
+          </p>
+        )}
       </div>
 
       {/*
@@ -122,9 +151,13 @@ function MembersInviteLinksScreen({
           <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" />
           <div>
             <p className="text-sm font-medium text-warning">
-              {sinCorreo.length === 1
-                ? 'Una invitación quedó creada, pero el correo no salió.'
-                : `${sinCorreo.length} invitaciones quedaron creadas, pero el correo no salió.`}
+              {sinCorreoPorPruebas
+                ? sinCorreo.length === 1
+                  ? 'La invitación quedó creada. Este entorno es de pruebas y no manda correos.'
+                  : `${sinCorreo.length} invitaciones quedaron creadas. Este entorno es de pruebas y no manda correos.`
+                : sinCorreo.length === 1
+                  ? 'Una invitación quedó creada, pero el correo no salió.'
+                  : `${sinCorreo.length} invitaciones quedaron creadas, pero el correo no salió.`}
             </p>
             <p className="text-body-sm text-fg-muted mt-0.5">
               Copia el enlace y pásaselo tú. También puedes reenviarlo más tarde desde
@@ -134,7 +167,8 @@ function MembersInviteLinksScreen({
         </div>
       )}
 
-      {conError.length > 0 && (
+      {/* Tras «Reintentar» el aviso se va con su salida si ya no queda ninguna. */}
+      <Presence show={conError.length > 0} initial={false}>
         <div
           data-testid="members-invite-errors"
           className="rounded-md bg-danger-soft border border-border p-3 flex items-start gap-2"
@@ -147,18 +181,34 @@ function MembersInviteLinksScreen({
                 : `No pudimos invitar a ${conError.length} personas.`}
             </p>
             <p className="text-body-sm text-fg-muted mt-0.5">
-              Puedes intentarlo de nuevo desde Configuración → Equipo cuando termines el
-              registro.
+              {algunaSePuedeReintentar
+                ? 'Inténtalo de nuevo ahora, o más tarde desde Configuración → Equipo.'
+                : 'Puedes seguir con el registro: abajo de cada persona está qué falta para invitarla.'}
             </p>
+            {onReintentarInvitaciones && algunaSePuedeReintentar && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                hideArrow
+                className="mt-2"
+                onClick={reintentar}
+                disabled={reintentando}
+                data-testid="members-invite-retry"
+              >
+                {reintentando ? 'Reintentando...' : 'Reintentar'}
+              </Button>
+            )}
           </div>
         </div>
-      )}
+      </Presence>
 
-      <ul className="space-y-2">
+      {/* Las personas invitadas entran una tras otra al llegar a esta pantalla. */}
+      <Stagger as="ul" className="space-y-2" layout={false}>
         {invitaciones.map((invitacion) => {
           const copiadoAhora = copiado === invitacion.email
           return (
-            <li key={invitacion.email} data-testid={`invite-row-${invitacion.email}`} className="space-y-1.5">
+            <StaggerItem as="li" key={invitacion.email} data-testid={`invite-row-${invitacion.email}`} className="space-y-1.5">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium text-fg truncate">
                   {invitacion.nombre || invitacion.email}
@@ -187,20 +237,23 @@ function MembersInviteLinksScreen({
                   type="button"
                   onClick={() => copiar(invitacion.email, invitacion.enlace as string)}
                   data-testid={`invite-copy-${invitacion.email}`}
-                  className="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-surface-muted border border-border hover:border-border-strong transition-colors text-left"
+                  className="relative w-full flex items-center justify-between gap-3 px-3 py-2 rounded-md bg-surface-muted border border-border hover:border-border-strong transition-colors text-left"
                 >
                   <span className="truncate font-mono text-caption text-fg-muted">{invitacion.enlace}</span>
-                  {copiadoAhora ? (
-                    <Check className="w-4 h-4 text-success flex-shrink-0" />
-                  ) : (
-                    <Copy className="w-4 h-4 text-fg-muted flex-shrink-0" />
-                  )}
+                  {/* Copiar ↔ copiado: los dos íconos miden lo mismo y se cruzan en el lugar. */}
+                  <CrossFade swapKey={copiadoAhora ? 'copiado' : 'copiar'} mode="popLayout" className="flex shrink-0">
+                    {copiadoAhora ? (
+                      <Check className="w-4 h-4 text-success flex-shrink-0" />
+                    ) : (
+                      <Copy className="w-4 h-4 text-fg-muted flex-shrink-0" />
+                    )}
+                  </CrossFade>
                 </button>
               )}
-            </li>
+            </StaggerItem>
           )
         })}
-      </ul>
+      </Stagger>
 
       <Button
         type="button"
@@ -221,8 +274,10 @@ export function MembersStepForm({
   isSubmitting,
   onSubmit,
   submitError,
+  errorDelServidor,
   pendingInvites,
   onContinueAfterInvites,
+  onReintentarInvitaciones,
   sessionId,
   guardados,
 }: MembersStepFormProps) {
@@ -234,7 +289,9 @@ export function MembersStepForm({
     control,
     watch,
     setError,
-    formState: { errors },
+    setFocus,
+    getValues,
+    formState: { errors, isSubmitting: enviando },
   } = useForm<MembersStepFormValues>({
     // Lo escrito sin enviar manda; si no hay, lo que ya quedó guardado.
     defaultValues:
@@ -252,6 +309,39 @@ export function MembersStepForm({
     return () => sub.unsubscribe()
   }, [watch, sessionId])
 
+  // El 400 del micro: cada problema a su fila y campo; lo suelto, al aviso.
+  const [sueltosDelServidor, setSueltosDelServidor] = useState<string[]>([])
+  useEffect(() => {
+    if (!errorDelServidor) {
+      setSueltosDelServidor([])
+      return
+    }
+    // Lo que el micro valida de cada fila: el correo y el rol (`toMembersRequest`).
+    const campos = (getValues('members') ?? []).flatMap((_, i) => [
+      `members.${i}.email` as const,
+      `members.${i}.role` as const,
+    ])
+    const reparto = aplicarErroresDelServidor<FieldPath<MembersStepFormValues>>(
+      errorDelServidor,
+      { setError, setFocus },
+      {
+        campos,
+        toast: false,
+        accion: 'guardar tu equipo',
+        porDefecto: 'No pudimos guardar tu equipo. Revisa los correos e intenta de nuevo.',
+      },
+    )
+    setSueltosDelServidor(reparto.sueltos)
+    // Sólo cuando llega un error nuevo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [errorDelServidor])
+
+  const avisoDelFormulario =
+    errorDelServidor !== undefined ? sueltosDelServidor.join(' · ') || null : submitError
+  // El último aviso, para que no se vacíe mientras sale (`Presence`).
+  const [ultimoAviso, setUltimoAviso] = useState(avisoDelFormulario)
+  if (avisoDelFormulario && avisoDelFormulario !== ultimoAviso) setUltimoAviso(avisoDelFormulario)
+
   const submit = handleSubmit(async (values) => {
     const parsed = membersStepSchema.safeParse(values)
     if (!parsed.success) {
@@ -264,13 +354,21 @@ export function MembersStepForm({
     if (resultado && sessionId) borrarBorradorLocal(sessionId, 'members')
   })
 
-  if (pendingInvites) {
-    return (
-      <MembersInviteLinksScreen pendingInvites={pendingInvites} onContinueAfterInvites={onContinueAfterInvites} />
-    )
-  }
-
+  /*
+   * Formulario → «Invitaciones enviadas»: la pantalla de los enlaces entra
+   * por la derecha (`CrossFade` de pasos; el paso del asistente sigue siendo
+   * Miembros, así que el cambio lo anima esta pieza). `popLayout`: monta ya.
+   */
   return (
+    <div className="relative">
+    <CrossFade swapKey={pendingInvites ? 'enlaces' : 'formulario'} direction="forward" mode="popLayout">
+    {pendingInvites ? (
+      <MembersInviteLinksScreen
+        pendingInvites={pendingInvites}
+        onContinueAfterInvites={onContinueAfterInvites}
+        onReintentarInvitaciones={onReintentarInvitaciones}
+      />
+    ) : (
     <form noValidate onSubmit={submit} className="space-y-5" data-testid="members-step-form">
       {/* Sólo la instrucción: qué pasa al invitar (el correo con su enlace,
           qué define el rol) lo cuenta la columna informativa del marco. */}
@@ -286,15 +384,22 @@ export function MembersStepForm({
         Configuración → Equipo.
       </p>
 
-      <FieldError message={errors.members?.message} />
+      <ErrorDelCampo id="members-error" mensaje={errors.members?.message} />
 
       {/* Una tarjeta por persona, con cada campo rotulado. Antes eran tres
           controles sueltos sin rótulo y el selector del rol quedaba más alto
           que el correo: no se entendía qué iba en cada uno ni que las tres
           cosas eran de la misma persona (Nico, 2026-09-07). */}
-      <div className="space-y-4">
+      {/*
+        Cada persona entra subiendo 8 px al tocar «Agregar miembro» y se va
+        con su salida al quitarla (`Stagger`, `key` = el id de la fila). Sin
+        `layout` (un error bajo un campo cambia el alto de la tarjeta y la
+        estiraría) y salida «sync»: la tarjeta se funde en su lugar y después
+        se cierra el hueco, sin encimarse con la de abajo.
+      */}
+      <Stagger className="space-y-4" layout={false} presenceMode="sync">
         {fields.map((field, index) => (
-          <div
+          <StaggerItem
             key={field.id}
             data-testid={`member-row-${index}`}
             className="space-y-3 rounded-md border border-border bg-bg p-4"
@@ -331,9 +436,15 @@ export function MembersStepForm({
                   spellCheck={false}
                   placeholder="correo@inmobiliaria.com"
                   className="h-11"
+                  invalid={Boolean(errors.members?.[index]?.email)}
+                  aria-invalid={Boolean(errors.members?.[index]?.email) || undefined}
+                  aria-describedby={errors.members?.[index]?.email ? `members.${index}.email-error` : undefined}
                   {...register(`members.${index}.email` as const)}
                 />
-                <FieldError message={errors.members?.[index]?.email?.message} />
+                <ErrorDelCampo
+                  id={`members.${index}.email-error`}
+                  mensaje={errors.members?.[index]?.email?.message}
+                />
               </div>
 
               <div>
@@ -348,7 +459,10 @@ export function MembersStepForm({
                       {/* Misma altura que el correo de al lado, y el rótulo arriba
                           en los dos: así los controles quedan al mismo nivel. */}
                       <SelectTrigger
+                        ref={roleField.ref}
                         id={`members.${index}.role`}
+                        aria-invalid={Boolean(errors.members?.[index]?.role) || undefined}
+                        aria-describedby={errors.members?.[index]?.role ? `members.${index}.role-error` : undefined}
                         className="h-11 whitespace-nowrap [&>span]:truncate"
                       >
                         <SelectValue placeholder="Rol" />
@@ -362,6 +476,10 @@ export function MembersStepForm({
                       </SelectContent>
                     </Select>
                   )}
+                />
+                <ErrorDelCampo
+                  id={`members.${index}.role-error`}
+                  mensaje={errors.members?.[index]?.role?.message}
                 />
               </div>
             </div>
@@ -378,13 +496,19 @@ export function MembersStepForm({
                 autoComplete="name"
                 placeholder="Ej: Ana María Pérez"
                 className="h-11"
+                invalid={Boolean(errors.members?.[index]?.nombre)}
+                aria-invalid={Boolean(errors.members?.[index]?.nombre) || undefined}
+                aria-describedby={errors.members?.[index]?.nombre ? `members.${index}.nombre-error` : undefined}
                 {...register(`members.${index}.nombre` as const)}
               />
-              <FieldError message={errors.members?.[index]?.nombre?.message} />
+              <ErrorDelCampo
+                id={`members.${index}.nombre-error`}
+                mensaje={errors.members?.[index]?.nombre?.message}
+              />
             </div>
-          </div>
+          </StaggerItem>
         ))}
-      </div>
+      </Stagger>
 
       <Button
         type="button"
@@ -398,17 +522,25 @@ export function MembersStepForm({
         Agregar miembro
       </Button>
 
-      {submitError && (
+      <Presence show={Boolean(avisoDelFormulario)}>
         <div
           data-testid="members-step-form-error"
+          role="alert"
           className="rounded-md border border-danger/20 bg-danger-soft p-3"
         >
-          <p className="text-sm text-danger">{submitError}</p>
+          <p className="text-sm text-danger">{avisoDelFormulario || ultimoAviso}</p>
         </div>
-      )}
+      </Presence>
 
-      <Button type="submit" disabled={isSubmitting} hideArrow className="w-full">
-        {isSubmitting ? (
+      {/*
+        `enviando` cubre TODO el envío: el micro (`isSubmitting` del padre
+        vuelve a `false` apenas responde) y DESPUÉS las invitaciones del back,
+        una por una. Sin él, «Continuar» se volvía a prender en medio y un
+        segundo clic volvía a invitar a la misma persona (409 «ya existe una
+        invitación pendiente», 02-10-2026).
+      */}
+      <Button type="submit" disabled={isSubmitting || enviando} hideArrow className="w-full">
+        {isSubmitting || enviando ? (
           <>
             <Spinner size="xs" variant="current" />
             Guardando...
@@ -421,5 +553,8 @@ export function MembersStepForm({
         )}
       </Button>
     </form>
+    )}
+    </CrossFade>
+    </div>
   )
 }

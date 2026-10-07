@@ -7,7 +7,10 @@ import { ArrowLeft, Lifebuoy, Plus, Wrench, ArrowRight } from '@phosphor-icons/r
 import { lugarDeRegreso, rutaDeRegreso } from '@/lib/nav/ruta-de-regreso';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { SearchInput } from '@leasefy/cadence';
+import { AnimatedNumber, CrossFade, SearchInput } from '@leasefy/cadence';
+
+/** El número tal cual se escribía antes (`{n}`): sin separador de miles. */
+const enteroTalCual = (n: number) => String(Math.round(n));
 import {
   Select,
   SelectContent,
@@ -18,7 +21,7 @@ import {
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
 import { Spinner } from '@/components/ui/spinner';
-import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
+import { Table, TableHeader, TableBodyAnimado, TableRow, TableRowAnimada, TableHead, TableCell } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { PageGuard } from '@/components/auth/PageGuard';
@@ -43,9 +46,11 @@ import {
   ESTADO_BADGE,
   ESTADO_LABEL,
   SOLICITANTE_LABEL,
-  TIPO_LABEL,
+  inmuebleSinRepetir,
+  nombreDelTipo,
   textoSla,
 } from '@/components/inmobiliaria/pqrs/pqrs-reglas';
+import { AvisoDeVencidas } from '@/components/inmobiliaria/pqrs/AvisoDeVencidas';
 
 /** Resumen por estado del ciclo PQRS — color por estado (token semántico). */
 const RESUMEN_ITEMS: { key: string; dot: string; field: keyof typeof RESUMEN_PQRS_VACIO }[] = [
@@ -87,6 +92,9 @@ function PqrsContent() {
 
   const [data, setData] = useState<PqrsListResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // ¿Se vio la carga? Entonces las cifras del resumen que llegan cuentan desde 0.
+  const huboCarga = useRef(false);
+  if (isLoading) huboCarga.current = true;
   // El error entero, no un booleano: `FalloDeCarga` decide si reintentar sirve.
   const [error, setError] = useState<unknown>(null);
   const [nuevaOpen, setNuevaOpen] = useState(false);
@@ -201,6 +209,15 @@ function PqrsContent() {
       */}
       <BandejaDePropuestas onRadicada={load} />
 
+      {/* SO-25/SO-26: vencidas y por vencer, y a quién se le escalan. */}
+      {!isLoading && !error ? (
+        <AvisoDeVencidas
+          vencidas={resumen.vencidas ?? 0}
+          porVencer={resumen.porVencer ?? 0}
+          onVer={(estado) => setFiltros((f) => ({ ...f, estado }))}
+        />
+      ) : null}
+
       {/* Resumen por estado */}
       <section className="space-y-3">
         <SectionLabel>{t(k('resumenLabel'))}</SectionLabel>
@@ -214,6 +231,9 @@ function PqrsContent() {
               {/* Un 0 mientras carga o cuando la consulta falló afirma «no hay
                   ninguna», que no se sabe. Esqueleto mientras carga; raya y
                   motivo cuando falló. */}
+              {/* Hueco → cifra con un fundido; la cifra que llega después de
+                  cargar cuenta desde 0, y cuenta otra vez cuando cambia. */}
+              <CrossFade swapKey={isLoading ? 'cargando' : 'listo'}>
               {isLoading ? (
                 <div className="mt-2.5 h-7 w-10 rounded bg-surface-muted animate-pulse" aria-hidden="true" />
               ) : (
@@ -221,9 +241,18 @@ function PqrsContent() {
                   className="mt-1.5 text-2xl font-semibold tabular-nums text-fg"
                   data-testid="pqrs-resumen-valor"
                 >
-                  {error ? '—' : resumen[item.field]}
+                  {error ? (
+                    '—'
+                  ) : (
+                    <AnimatedNumber
+                      value={resumen[item.field]}
+                      from={huboCarga.current ? 0 : undefined}
+                      format={enteroTalCual}
+                    />
+                  )}
                 </p>
               )}
+              </CrossFade>
               {!isLoading && error ? (
                 <p className="text-caption text-fg-subtle">No se pudo traer</p>
               ) : null}
@@ -284,6 +313,8 @@ function PqrsContent() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todos">Todos los estados</SelectItem>
+              <SelectItem value="vencidas">Vencidas</SelectItem>
+              <SelectItem value="porVencer">Vencen en 2 días hábiles</SelectItem>
               {PQRS_ESTADOS.map((e) => (
                 <SelectItem key={e} value={e}>
                   {ESTADO_LABEL[e]}
@@ -321,9 +352,11 @@ function PqrsContent() {
                 ))}
               </TableRow>
             </TableHeader>
-            <TableBody>
+            {/* Buscar, filtrar, paginar o radicar: las filas entran
+                escalonadas y las que sobran salen. */}
+            <TableBodyAnimado>
               {solicitudes.length === 0 ? (
-                <TableRow>
+                <TableRowAnimada key="vacio">
                   <TableCell colSpan={COLUMNS.length} className="p-0">
                     {/* Filtrado a cero NO es «no hay solicitudes»: ofrecer
                         «Nueva solicitud» sobre un filtro que esconde 80 filas
@@ -343,12 +376,12 @@ function PqrsContent() {
                         : { crear: { label: t(k('new')), onClick: () => setNuevaOpen(true) } })}
                     />
                   </TableCell>
-                </TableRow>
+                </TableRowAnimada>
               ) : (
                 pageItems.map((p) => {
                   const sla = textoSla(p.slaVenceAt, p.estado);
                   return (
-                    <TableRow
+                    <TableRowAnimada
                       key={p.id}
                       className="cursor-pointer"
                       data-testid="pqrs-fila"
@@ -366,10 +399,10 @@ function PqrsContent() {
                         <p className="text-fg font-medium truncate">{p.solicitanteNombre}</p>
                         <p className="text-caption text-fg-muted">{SOLICITANTE_LABEL[p.solicitanteTipo]}</p>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-fg-muted">{TIPO_LABEL[p.tipo]}</TableCell>
+                      <TableCell className="whitespace-nowrap text-fg-muted">{nombreDelTipo(p)}</TableCell>
                       <TableCell className="max-w-[240px]">
                         <span className="text-fg-muted truncate block">
-                          {p.inmuebleLabel ?? t(k('sinInmueble'))}
+                          {inmuebleSinRepetir(p.inmuebleLabel) ?? t(k('sinInmueble'))}
                         </span>
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-fg-muted">
@@ -383,11 +416,11 @@ function PqrsContent() {
                       <TableCell className={cn('whitespace-nowrap tabular-nums', sla.vencido ? 'text-danger font-medium' : 'text-fg-muted')}>
                         {sla.texto}
                       </TableCell>
-                    </TableRow>
+                    </TableRowAnimada>
                   );
                 })
               )}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
 
           {shouldPaginate && (

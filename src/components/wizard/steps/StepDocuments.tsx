@@ -34,13 +34,13 @@ export function StepDocuments() {
         updateDocuments({ [field]: null });
         return true;
       }
-      try {
-        await applicationsApi.deleteDocument(existingApplicationId, remoteId);
-        updateDocuments({ [field]: null });
-        return true;
-      } catch {
-        return false;
-      }
+      // 🔴 02-10-2026 · «Los hooks no se tragan el error»: antes un fallo
+      // devolvía `false` y el documento se quedaba sin decir por qué. El
+      // error sube a `DocumentUpload`, que lo dice bajo el documento con el
+      // traductor de la plataforma.
+      await applicationsApi.deleteDocument(existingApplicationId, remoteId);
+      updateDocuments({ [field]: null });
+      return true;
     },
     [mode, existingApplicationId, application.status, updateDocuments]
   );

@@ -191,6 +191,7 @@ vi.mock('@/lib/hooks/useAgencyPlan', () => ({
 }))
 
 import ReportesPage from './page'
+import { ApiError } from '@/lib/api/client'
 
 let container: HTMLDivElement
 let root: Root
@@ -390,5 +391,49 @@ describe('«Reportes» — un reporte a la vez (Nico, 01-10)', () => {
     expect(abrirCentroDeProcesos).toHaveBeenCalledWith({ procesoId: 'proc-1' })
     expect(toast.loading).not.toHaveBeenCalled()
     expect(toast.success).not.toHaveBeenCalled()
+  })
+})
+
+/*
+ * 02-10-2026 · «Generar todos» con la regla de oro: el 403 conserva su texto
+ * propio; lo demás ya no es «Prueba de nuevo en un momento» para todo. Un 5xx
+ * dice «de nuestro lado» con la referencia; «conexión», sólo sin respuesta.
+ */
+describe('«Generar todos» — los fallos (02-10)', () => {
+  beforeEach(() => {
+    exportarReportes.mockReset()
+    toast.error.mockReset()
+  })
+
+  async function generarCon(error: unknown) {
+    exportarReportes.mockRejectedValue(error)
+    await montar()
+    await act(async () => { botonPorTexto('generar')!.click() })
+    await act(async () => { await Promise.resolve() })
+    const [titulo, opciones] = toast.error.mock.calls.at(-1) as [string, { description: string }]
+    return { titulo, descripcion: opciones.description }
+  }
+
+  it('🔴 un 5xx: «de nuestro lado» con la referencia', async () => {
+    const { titulo, descripcion } = await generarCon(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        referencia: 'ab12cd34',
+      }),
+    )
+    expect(titulo).toBe('No pudimos armar el archivo')
+    expect(descripcion).toContain('No pudimos armar el archivo de los reportes: algo falló de nuestro lado')
+    expect(descripcion).toContain('ab12cd34')
+  })
+
+  it('el 403 conserva su texto propio', async () => {
+    const { descripcion } = await generarCon(new ApiError(403, 'Esta acción es para administradores.'))
+    expect(descripcion).toBe('Tu rol no incluye descargar reportes.')
+  })
+
+  it('sin respuesta: ahí sí habla de la conexión', async () => {
+    const { descripcion } = await generarCon(new ApiError(0, 'Failed to fetch'))
+    expect(descripcion).toMatch(/conexi[oó]n/)
   })
 })

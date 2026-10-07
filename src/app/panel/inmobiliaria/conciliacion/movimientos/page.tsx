@@ -28,10 +28,12 @@
  * recibos) Y el rol del workspace (ADMIN|CONTADOR, alineado con el nav del
  * layout). `PageGuard` los combina con AND; `CONTADOR` tiene `cobros` de fábrica
  * —es su ruta de inicio— así que nadie que entraba antes queda afuera.
+ * IA95-34 (Nico, 05-10-2026): el auxiliar de cartera también entra
+ * (`ROLES_QUE_CONCILIAN`); lo que pide `cobros:edit` lo cierra cada botón.
  */
 
 import { PageGuard } from '@/components/auth/PageGuard';
-import { AGENCY_ROLES } from '@/lib/auth/agency-roles';
+import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos';
 import { SectionLabel } from '@/components/ui/section-label';
 import { ExtractoBancario } from '@/components/cobros/extracto-bancario/ExtractoBancario';
 import { ConciliacionDelAgente } from '@/components/inmobiliaria/ai/ConciliacionDelAgente';
@@ -63,7 +65,7 @@ function ConciliacionMovimientos() {
 
 export default function ConciliacionMovimientosPage() {
   return (
-    <PageGuard module="cobros" action="view" roles={[AGENCY_ROLES.ADMIN, AGENCY_ROLES.CONTADOR]}>
+    <PageGuard module="cobros" action="view" roles={[...ROLES_QUE_CONCILIAN]}>
       <ConciliacionMovimientos />
     </PageGuard>
   );

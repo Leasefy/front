@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import {
   SortAscending,
   SortDescending,
@@ -22,10 +21,11 @@ import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableFooter,
   TableHead,
   TableRow,
+  TableRowAnimada,
   TableCell,
 } from '@/components/ui/table';
 import {
@@ -41,6 +41,7 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import type { CobroAnulado } from '@/lib/api/inmobiliaria.service';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/types/inmobiliaria';
+import { mesEnTitulo } from '@/lib/utils/mes';
 
 type SortField = 'propertyTitle' | 'tenantName' | 'month' | 'totalAmount' | 'paidAmount' | 'pendingAmount' | 'status' | 'daysLate' | 'dueDate';
 type SortDirection = 'asc' | 'desc';
@@ -75,6 +76,12 @@ interface CobroTableProps {
    */
   onCobroAnulado?: (resultado: CobroAnulado) => void;
   showSummary?: boolean;
+  /**
+   * Qué página/mes/vista se está mirando. Al cambiar, el cuerpo se monta de
+   * nuevo y las filas entran escalonadas sin esperar a que salgan las de
+   * antes; buscar o filtrar, en cambio, saca las que ya no están.
+   */
+  clave?: string;
 }
 
 /**
@@ -87,11 +94,12 @@ export function CobroTable({
   onRegisterPayment,
   onCobroAnulado,
   showSummary = false,
+  clave,
 }: CobroTableProps) {
   const [cobroPorAnular, setCobroPorAnular] = useState<Cobro | null>(null);
   const { canAccess, isLoading: cargandoPermisos } = usePermissions();
   const puedeAnular = !cargandoPermisos && canAccess('cobros', 'edit');
-  const { t, formatDate, formatCurrency } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const puedeHacerRecibo = usePuedeHacerRecibo();
   const [sortField, setSortField] = useState<SortField>('dueDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -108,11 +116,9 @@ export function CobroTable({
   /**
    * Format month string (2026-02) to localized display (Feb 2026)
    */
-  const formatMonth = (month: string): string => {
-    const [year, monthNum] = month.split('-');
-    const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-    return formatDate(date, { month: 'short', year: 'numeric' });
-  };
+  // N-14 (QA-PAGOS-95): «Oct 2026» con mayúscula sólo al inicio. La clase
+  // `capitalize` subía cada palabra («Oct De 2026»).
+  const formatMonth = (month: string): string => mesEnTitulo(month, 'es', 'short');
 
   // Sort cobros
   const sortedCobros = useMemo(() => {
@@ -237,18 +243,18 @@ export function CobroTable({
             <TableHead className="w-12 p-4" />
           </TableRow>
         </TableHeader>
-        <TableBody>
-          {sortedCobros.map((cobro, index) => {
+        {/* Las filas entran escalonadas con el techo de 320 ms (antes
+            `index * 0.02` sin tope) y, al filtrar o cambiar de mes, las que
+            se van salen en su lugar (`key` = el id). */}
+        <TableBodyAnimado key={clave}>
+          {sortedCobros.map((cobro) => {
             const statusLabel = STATUS_LABELS[cobro.status];
 
             return (
-              <motion.tr
+              <TableRowAnimada
                 key={cobro.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.02 }}
                 onClick={() => onCobroClick?.(cobro)}
-                className="hover:bg-surface-hover cursor-pointer transition-colors"
+                className="border-b-0 hover:bg-surface-hover cursor-pointer transition-colors"
               >
                 {/* Property */}
                 <TableCell className="p-4">
@@ -307,7 +313,7 @@ export function CobroTable({
 
                 {/* Month */}
                 <TableCell className="p-4">
-                  <span className="text-fg capitalize">
+                  <span className="text-fg">
                     {formatMonth(cobro.month)}
                   </span>
                 </TableCell>
@@ -436,10 +442,10 @@ export function CobroTable({
                     </DropdownListContent>
                   </DropdownList>
                 </TableCell>
-              </motion.tr>
+              </TableRowAnimada>
             );
           })}
-        </TableBody>
+        </TableBodyAnimado>
 
         {/* Summary Row */}
         {showSummary && cobros.length > 0 && (

@@ -22,6 +22,7 @@ const { api } = vi.hoisted(() => ({
   api: {
     informe: (() => Promise.resolve(null)) as () => Promise<unknown>,
     configuracion: (() => Promise.resolve(null)) as () => Promise<unknown>,
+    guardar: (async () => undefined) as (cuerpo: unknown) => Promise<unknown>,
   },
 }))
 
@@ -35,7 +36,7 @@ vi.mock('@/lib/api/crm.service', async () => {
     leadsApi: {
       informePorOrigen: () => api.informe(),
       configuracion: () => api.configuracion(),
-      guardarConfiguracion: vi.fn(async () => undefined),
+      guardarConfiguracion: (cuerpo: unknown) => api.guardar(cuerpo),
     },
   }
 })
@@ -112,6 +113,7 @@ const $ = (sel: string) => contenedor.querySelector(sel)
 beforeEach(() => {
   api.informe = vi.fn(() => Promise.resolve(INFORME))
   api.configuracion = vi.fn(() => Promise.resolve(CONFIG))
+  api.guardar = vi.fn(async () => undefined)
   contenedor = document.createElement('div')
   document.body.appendChild(contenedor)
   root = createRoot(contenedor)
@@ -184,5 +186,90 @@ describe('OrigenesClient', () => {
     await pintar()
     expect($('[data-testid="informe-no-habilitado"]')).toBeNull()
     expect(contenedor.textContent).not.toContain('Próximamente: ')
+  })
+})
+
+/**
+ * 02-10-2026 · Guardar el plazo: antes no había `catch` (un 400 o un 500
+ * dejaban la pantalla callada, como si se hubiera guardado).
+ */
+async function escribirHoras(valor: string) {
+  const input = contenedor.querySelector<HTMLInputElement>('#horas-lead')!
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+  await act(async () => {
+    setter.call(input, valor)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+}
+
+async function guardar() {
+  await act(async () => {
+    contenedor.querySelector<HTMLButtonElement>('[data-testid="guardar-horas-lead"]')!.click()
+  })
+}
+
+const RANGO = 'El plazo para responder va de 1 a 720 horas.'
+
+describe('OrigenesClient — guardar el plazo, con su error en su campo', () => {
+  it('🔴 fuera de 1–720 lo dice antes de mandar, con la frase del back, y no guarda', async () => {
+    await pintar()
+    await escribirHoras('900')
+    expect($('#horas-lead-error')?.textContent).toBe(RANGO)
+    expect(contenedor.querySelector<HTMLButtonElement>('[data-testid="guardar-horas-lead"]')!.disabled).toBe(true)
+    expect(api.guardar).not.toHaveBeenCalled()
+  })
+
+  it('🔴 un 400 con campos pinta la frase bajo el campo y le da el foco', async () => {
+    api.guardar = vi.fn(() =>
+      Promise.reject(
+        new ApiError(400, [RANGO], 'DATOS_INVALIDOS', {
+          statusCode: 400,
+          code: 'DATOS_INVALIDOS',
+          message: [RANGO],
+          campos: [{ campo: 'horasParaResponderLead', regla: 'maximo', mensaje: RANGO }],
+        }),
+      ),
+    )
+    await pintar()
+    await escribirHoras('48')
+    await guardar()
+    const input = contenedor.querySelector<HTMLInputElement>('#horas-lead')!
+    expect($('#horas-lead-error')?.textContent).toBe(RANGO)
+    expect(input.getAttribute('aria-invalid')).toBe('true')
+    expect(document.activeElement).toBe(input)
+  })
+
+  it('🔴 un 5xx dice que es nuestro, con la referencia', async () => {
+    api.guardar = vi.fn(() =>
+      Promise.reject(
+        new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+          statusCode: 500,
+          code: 'ERROR_INTERNO',
+          message: 'Error interno del servidor',
+          referencia: '0a1b2c3d',
+        }),
+      ),
+    )
+    await pintar()
+    await escribirHoras('48')
+    await guardar()
+    const texto = $('#horas-lead-error')?.textContent ?? ''
+    expect(texto).toContain('de nuestro lado')
+    expect(texto).toContain('0a1b2c3d')
+  })
+
+  it('🔴 sin respuesta (status 0), la conexión', async () => {
+    api.guardar = vi.fn(() => Promise.reject(new ApiError(0, 'Failed to fetch')))
+    await pintar()
+    await escribirHoras('48')
+    await guardar()
+    expect($('#horas-lead-error')?.textContent?.toLowerCase()).toContain('conexión')
+  })
+
+  it('un plazo válido se manda como número', async () => {
+    await pintar()
+    await escribirHoras('48')
+    await guardar()
+    expect(api.guardar).toHaveBeenCalledWith({ horasParaResponderLead: 48 })
   })
 })

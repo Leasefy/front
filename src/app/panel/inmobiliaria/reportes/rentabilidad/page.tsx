@@ -25,7 +25,16 @@ import {
   Buildings,
   DownloadSimple,
 } from '@phosphor-icons/react';
-import { SegmentedControl, Stat, StatStrip } from '@leasefy/cadence';
+import { AnimatedNumber, SegmentedControl, Stat, StatStrip } from '@leasefy/cadence';
+
+/**
+ * Una cifra en plata que CUENTA cuando cambia (otro período, otra búsqueda); el
+ * texto final es el mismo `formatCurrency` de antes. `Stat` tipa `value` como
+ * texto pero lo pinta como hijo: el nodo se ve igual (mismo patrón que los
+ * `KpiCard` del pipeline).
+ */
+const plataQueCuenta = (valor: number) =>
+  (<AnimatedNumber value={valor} format={formatCurrency} />) as unknown as string;
 
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
@@ -38,20 +47,23 @@ import { SectionLabel } from '@/components/ui/section-label';
 import {
   Table,
   TableHeader,
-  TableBody,
+  TableBodyAnimado,
   TableFooter,
   TableRow,
+  TableRowAnimada,
   TableHead,
   TableCell,
 } from '@/components/ui/table';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { formatCurrency } from '@/lib/format';
 import { netoDelPropietario } from '@/lib/dinero/neto-del-propietario';
 import { apiClient, ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useRentabilidadReport } from '@/lib/hooks/useInmobiliaria';
 import { nombreDelArchivo, rutaDeExport, descargarBlob } from '@/lib/reportes/exportables';
 import {
@@ -161,7 +173,11 @@ function RentabilidadContent() {
         description:
           error instanceof ApiError && error.status === 403
             ? t('inmobiliaria.reportes.rentabilidad.downloadForbidden')
-            : t('inmobiliaria.reportes.rentabilidad.tryAgain'),
+            : // Con la regla de oro (02-10-2026): un 5xx con la referencia.
+              mensajeParaLaPersona(error, {
+                porDefecto: t('inmobiliaria.reportes.rentabilidad.tryAgain'),
+                accion: 'descargar la rentabilidad',
+              }),
       });
     } finally {
       setBajando(false);
@@ -277,19 +293,21 @@ function RentabilidadContent() {
               />
             </div>
           </div>
-          {errorDeRango ? (
-            <p id="rentabilidad-rango-error" role="alert" className="text-xs text-danger">
-              {errorDeRango}
-            </p>
-          ) : (
-            <p className="text-xs text-fg-muted" data-testid="rango-consultado">
-              {t('inmobiliaria.reportes.rentabilidad.period.showing', {
-                desde: etiquetaDelMes(consulta.desde, locale),
-                hasta: etiquetaDelMes(consulta.hasta, locale),
-                meses,
-              })}
-            </p>
-          )}
+          {/* El error del rango, bajo los dos campos, con su entrada suave: se
+              cruza con la línea de lo consultado (02-10-2026). */}
+          <ErrorDelCampo
+            id="rentabilidad-rango-error"
+            mensaje={errorDeRango}
+            pista={
+              <span data-testid="rango-consultado">
+                {t('inmobiliaria.reportes.rentabilidad.period.showing', {
+                  desde: etiquetaDelMes(consulta.desde, locale),
+                  hasta: etiquetaDelMes(consulta.hasta, locale),
+                  meses,
+                })}
+              </span>
+            }
+          />
         </div>
       </section>
 
@@ -323,13 +341,13 @@ function RentabilidadContent() {
           >
             <Stat
               label={t('inmobiliaria.reportes.rentabilidad.stats.expected')}
-              value={formatCurrency(totales.esperadoCop)}
+              value={plataQueCuenta(totales.esperadoCop)}
               delta={t('inmobiliaria.reportes.rentabilidad.stats.properties', { count: totales.inmuebles })}
               compact
             />
             <Stat
               label={t('inmobiliaria.reportes.rentabilidad.stats.collected')}
-              value={formatCurrency(totales.recaudadoCop)}
+              value={plataQueCuenta(totales.recaudadoCop)}
               delta={t('inmobiliaria.reportes.rentabilidad.stats.collectionRate', {
                 pct: totales.tasaDeRecaudoPct.toLocaleString(locale === 'en' ? 'en-US' : 'es-CO', {
                   maximumFractionDigits: 1,
@@ -341,7 +359,7 @@ function RentabilidadContent() {
             />
             <Stat
               label={t('inmobiliaria.reportes.rentabilidad.stats.commission')}
-              value={formatCurrency(totales.comisionCop)}
+              value={plataQueCuenta(totales.comisionCop)}
               compact
             />
             {/* 🔴 Decisión de negocio (Nico, 2026-09-15), CAMBIABLE: un neto
@@ -368,7 +386,7 @@ function RentabilidadContent() {
             />
             <Stat
               label={t('inmobiliaria.reportes.rentabilidad.stats.vacancyLoss')}
-              value={formatCurrency(totales.ingresoPerdidoPorVacanciaCop)}
+              value={plataQueCuenta(totales.ingresoPerdidoPorVacanciaCop)}
               deltaDirection={totales.ingresoPerdidoPorVacanciaCop > 0 ? 'down' : 'neutral'}
               compact
             />
@@ -455,7 +473,9 @@ function RentabilidadContent() {
               </TableRow>
             </TableHeader>
 
-            <TableBody>
+            {/* Otro período, ordenar o paginar: las filas entran escalonadas
+                y las que sobran salen (paginada: sin `layout`). */}
+            <TableBodyAnimado>
               {pageItems.map((f) => {
                 /* 🔴 El respaldo pasó de «tuvo cobro ese mes» a «tuvo CUOTA
                    ese mes» el 2026-09-16 (`RentabilidadOcupacionFuente`): una
@@ -470,7 +490,7 @@ function RentabilidadContent() {
                   { dias: f.diasVacantes },
                 )}`;
                 return (
-                  <TableRow
+                  <TableRowAnimada
                     key={f.consignacionId}
                     onClick={() => router.push(fichaDe(f))}
                     className="cursor-pointer transition-colors hover:bg-muted/40"
@@ -546,10 +566,10 @@ function RentabilidadContent() {
                         formatearPct(f.rentabilidadNetaAnualPct, locale)
                       )}
                     </TableCell>
-                  </TableRow>
+                  </TableRowAnimada>
                 );
               })}
-            </TableBody>
+            </TableBodyAnimado>
 
             {totales && (
               <TableFooter>

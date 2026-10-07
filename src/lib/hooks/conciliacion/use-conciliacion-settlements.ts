@@ -27,7 +27,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useAuth } from '@/lib/auth'
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { accionQueNoSalio, accionSinRespuesta } from '@/lib/hooks/ai/accion-del-micro'
 
 // ── API shapes (matched to conciliacion-settlements.ts backend route) ────────
 
@@ -77,13 +79,19 @@ export interface SettlementsFilters {
 
 export interface GenerateResult {
   ok: boolean
+  /** El código viejo (`not_configured`, el `error` del cuerpo o el status). NO es para la persona. */
   error?: string
+  /** El error entero para el traductor (`mensajeParaLaPersona`): el `ApiError` del micro o el de red tal cual. */
+  fallo?: unknown
   settlement?: ConciliacionSettlement
 }
 
 export interface ApproveResult {
   ok: boolean
+  /** El código viejo (`not_configured`, el `error` del cuerpo o el status). NO es para la persona. */
   error?: string
+  /** El error entero para el traductor (`mensajeParaLaPersona`): el `ApiError` del micro o el de red tal cual. */
+  fallo?: unknown
   settlement?: ConciliacionSettlement
 }
 
@@ -105,6 +113,13 @@ export interface UseConciliacionSettlementsResult {
   total: number
   isLoading: boolean
   error: string | null
+  /**
+   * El error ENTERO de la última lectura (ARREGLOS-7, ARREGLOS-4 Q1 A): el
+   * `ApiError` del micro (status, `code`, referencia) o el de `agentFetch` con
+   * el micro caído. Es lo que va a `FalloDeCarga`/`EstadoDeDatos`: con el texto
+   * de `error` la pantalla sólo podía decir «Fue un problema nuestro».
+   */
+  errorCrudo: unknown
   refetch: () => Promise<void>
   generateSettlement: (input: GenerateSettlementInput) => Promise<GenerateResult>
   approveSettlement: (
@@ -124,6 +139,7 @@ export function useConciliacionSettlements(
   const [total, setTotal] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [errorCrudo, setErrorCrudo] = useState<unknown>(null)
 
   /** Stale-response guard: each fetch aborts the previous one (agency switch race). */
   const abortRef = useRef<AbortController | null>(null)
@@ -152,11 +168,12 @@ export function useConciliacionSettlements(
     if (status) url.searchParams.set('status', status)
     if (page) url.searchParams.set('page', String(page))
     if (pageSize) url.searchParams.set('pageSize', String(pageSize))
+    /** El `ApiError` del micro cuando respondió que no; el texto de `error` sigue igual. */
+    let fallo: unknown = null
 
     try {
       setIsLoading(true)
-      const res = await globalThis.fetch(url.toString(), {
-        headers: agentAuthHeaders(),
+      const res = await agentFetch(url.toString(), {
         signal: controller.signal,
       })
       if (controller.signal.aborted) return
@@ -165,19 +182,25 @@ export function useConciliacionSettlements(
         setItems([])
         setTotal(0)
         setError(null)
+        setErrorCrudo(null)
         return
       }
-      if (!res.ok) throw new Error(`${res.status}`)
+      if (!res.ok) {
+        fallo = await falloDelMicro(res)
+        throw new Error(`${res.status}`)
+      }
       const json = (await res.json()) as ConciliacionSettlementsResponse
       setItems(json.items)
       setTotal(json.total)
       setError(null)
+      setErrorCrudo(null)
     } catch (err) {
       if (controller.signal.aborted) return
       // Degrade to empty list so the surface shows its EmptyState, never breaks.
       setItems([])
       setTotal(0)
       setError(err instanceof Error ? err.message : 'Failed to fetch settlements')
+      setErrorCrudo(fallo ?? err)
     } finally {
       if (!controller.signal.aborted) setIsLoading(false)
     }
@@ -201,23 +224,20 @@ export function useConciliacionSettlements(
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) return { ok: false, error: 'not_configured' }
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/conciliacion/settlements/generate`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify(input),
           },
         )
-        if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: body.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         const settlement = (await res.json()) as ConciliacionSettlement
         await fetchData()
         return { ok: true, settlement }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'generate_failed' }
+        return accionSinRespuesta(err, 'generate_failed')
       }
     },
     [agencyId, fetchData],
@@ -232,26 +252,23 @@ export function useConciliacionSettlements(
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) return { ok: false, error: 'not_configured' }
       try {
-        const res = await globalThis.fetch(
+        const res = await agentFetch(
           `${agentUrl}/api/agency/${agencyId}/conciliacion/settlements/${settlementId}/approve`,
           {
             method: 'POST',
-            headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+            headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
               targetStatus,
               ...(linkedPayoutId ? { linkedPayoutId } : {}),
             }),
           },
         )
-        if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string }
-          return { ok: false, error: body.error ?? `${res.status}` }
-        }
+        if (!res.ok) return await accionQueNoSalio(res)
         const settlement = (await res.json()) as ConciliacionSettlement
         await fetchData()
         return { ok: true, settlement }
       } catch (err) {
-        return { ok: false, error: err instanceof Error ? err.message : 'approve_failed' }
+        return accionSinRespuesta(err, 'approve_failed')
       }
     },
     [agencyId, fetchData],
@@ -262,6 +279,7 @@ export function useConciliacionSettlements(
     total,
     isLoading,
     error,
+    errorCrudo,
     refetch: fetchData,
     generateSettlement,
     approveSettlement,

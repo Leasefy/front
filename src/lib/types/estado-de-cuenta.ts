@@ -33,6 +33,8 @@
  * `CANCELADA` se lee «Cancelada» del lado del inquilino y «Pagada» del lado del
  * propietario: la palabra la pone el front, el estado es el mismo.
  */
+import type { SaldadaPorNota } from '@/lib/api/cartera.types';
+
 export type EstadoDeFila = 'CANCELADA' | 'PENDIENTE' | 'ANULADA' | 'ANTERIOR';
 
 /** El lado del contrato que mira este estado de cuenta. */
@@ -54,6 +56,12 @@ export interface DocumentoDePago {
     nit: string;
     siniestroReferencia: string | null;
   };
+  /**
+   * QA-MIGRACION-95 (CA-08): recibo migrado SIN el documento del inquilino que
+   * paga el mes porque se colgó del contrato por su número o por el código del
+   * inmueble. Ausente = por el documento.
+   */
+  asociadoPor?: 'numero_contrato' | 'codigo_inmueble';
 }
 
 /**
@@ -126,6 +134,26 @@ export interface FilaDelEstadoDeCuenta {
   cajon?: 'POR_VENCER' | 'VENCIDA_EN_PLAZO' | 'CARTERA' | 'SIN_DEUDA';
   /** Días de mora DESPUÉS del plazo. `0` mientras el plazo corre. */
   diasDeMora?: number;
+  /**
+   * 🔴 CR-31 (Nico, 03-10-2026): vencida, pero la inmobiliaria todavía no fijó
+   * sus días de plazo: NO es cartera ni va a la cobranza (cajón
+   * `VENCIDA_EN_PLAZO`, `diasDeMora: 0`). Se rotula «Vencida», no «Vencido, en
+   * plazo». Sólo llega (`true`) en ese caso.
+   */
+  plazoSinFijar?: true;
+  /**
+   * 🔴 Nico (03-10-2026): una nota crédito dejó la cuota en $0 sin pagos. La
+   * fila llega `CANCELADA` y `SIN_DEUDA`, y se lee «Saldada por nota crédito
+   * NC-12» (sin número si la nota todavía no lo tiene). Ausente en el resto.
+   */
+  saldadaPorNota?: SaldadaPorNota;
+  /**
+   * 🔴 CA-06 (Nico, 06-10-2026): en el estado de cuenta de UN propietario, la
+   * cuota de un inmueble en copropiedad que vino de la migración sin el % de
+   * cada dueño. Su parte no está definida: la plata llega en cero y se pinta
+   * «Sin definir · falta el porcentaje», sin «atrasado». Ausente en el resto.
+   */
+  sinPorcentaje?: true;
 }
 
 /**
@@ -178,6 +206,10 @@ export interface ContratoDelEstadoDeCuenta {
   rol: RolEnElContrato;
   inmueble: { direccion: string };
   vigente: boolean;
+  /** QA-PROP-95: VIGENTE · POR_EMPEZAR · TERMINADO · CANCELADO (back nuevo). */
+  estadoDelContrato?: 'VIGENTE' | 'POR_EMPEZAR' | 'TERMINADO' | 'CANCELADO';
+  /** `AAAA-MM-DD` del inicio. */
+  inicio?: string | null;
   secciones: {
     arriendos: FilaDelEstadoDeCuenta[];
     otrosConceptos: FilaDelEstadoDeCuenta[];
@@ -190,7 +222,32 @@ export interface ContratoDelEstadoDeCuenta {
    * INQUILINO; ausente o `null` en el del propietario y con un back anterior.
    */
   intereses?: InteresesDelContrato | null;
+  /**
+   * 🔴 Ola E (03-10-2026, Juan Camilo): el saldo a favor del inquilino en este
+   * contrato — el anticipo sin consumir y, al terminar, la devolución (cuenta
+   * por pagar + comprobante de egreso). Sólo del inquilino; ausente si no hay.
+   */
+  saldoAFavor?: SaldoAFavorDelContrato | null;
+  /**
+   * QA-MIGRACION-95 (CA-05): el inmueble es de varios dueños y este
+   * propietario tiene `suParteBps` (5000 = 50 %) entre `propietarios`. Sólo del
+   * propietario y en copropiedad; ausente con un dueño o con un back anterior.
+   * `suParteBps: null` = el mandato vino sin el porcentaje de cada dueño.
+   */
+  copropiedad?: { suParteBps: number | null; propietarios: number };
   cortes: PuntoDeQuiebre[];
+}
+
+export interface SaldoAFavorDelContrato {
+  anticipoSinConsumirCop: number;
+  devolucion: {
+    egresoId: string;
+    /** `PENDIENTE` | `EN_LOTE` | `PAGADO` | `ANULADO`. */
+    estado: string;
+    /** El número del comprobante de egreso, cuando ya salió la plata. */
+    numero: number | null;
+    valorCop: number;
+  } | null;
 }
 
 // ══ Intereses de mora ═══════════════════════════════════════════════════════
@@ -221,6 +278,11 @@ export interface FilaDeInteres {
   origen: 'COBRO' | 'CUOTA' | null;
   /** La cuota ya se pagó, pero se pagó cuando ya estaba en mora. */
   pagadaEnMora: boolean;
+  /**
+   * B-13 (QA-PAGOS-95 r2): lo que un administrador condonó de este interés
+   * (ya descontado de `liquidado` y `pendiente`). Ausente = nada.
+   */
+  condonado?: number;
 }
 
 export interface InteresesDelContrato {
@@ -237,7 +299,19 @@ export interface InteresesDelContrato {
    * Cuotas en mora que NO llevan interés, y por qué. `null` cuando no hay
    * ninguna. Un cero sin esto se leería «no hay mora».
    */
-  sinInteres: { cuotas: number; motivo: string; sinReglas: boolean } | null;
+  sinInteres: {
+    cuotas: number;
+    motivo: string;
+    sinReglas: boolean;
+    /** QA-CONT CR-31 (J-13): el motivo es que la inmobiliaria no fijó sus días de plazo. Ausente en un back anterior. */
+    plazoSinFijar?: boolean;
+  } | null;
+  /**
+   * 🔴 QA-CONT CR-31 (Nico, J-13): la inmobiliaria no ha fijado sus días de
+   * plazo, así que NO corre interés de mora en este contrato (con o sin
+   * cartera). Ausente = un back anterior (se lee como `false`).
+   */
+  plazoSinFijar?: boolean;
 }
 
 export interface TotalesDeInteres {
@@ -248,11 +322,18 @@ export interface TotalesDeInteres {
   restaPorPagarConIntereses: number;
   /** Algún contrato tiene mora sin interés porque la agencia no tiene reglas. */
   sinReglas: boolean;
+  /** QA-CONT CR-31: la inmobiliaria no fijó su plazo: no corre interés. Ausente en un back anterior. */
+  plazoSinFijar?: boolean;
 }
 
 export interface ClienteDelEstadoDeCuenta {
   nombre: string;
   documento: string | null;
+  /**
+   * El tipo del documento («CC», «NIT», «CE»…), para no decir «NIT/CC» (P-19,
+   * QA-PROP 03-10). Ausente = un back que todavía no lo manda.
+   */
+  tipoDocumento?: string | null;
   /** Con qué sombrero entra a este documento. La palabra la pone el front. */
   tipo: RolEnElContrato;
 }
@@ -287,6 +368,61 @@ export interface EstadoDeCuenta {
   intereses?: TotalesDeInteres | null;
   /** 🔴 D11: la deuda subrogada de todos los contratos. Ausente si no hay. */
   subrogacion?: Subrogacion | null;
+  /**
+   * 🔴 Sólo del PROPIETARIO (QA-PROP P-16, back 5731a4e2): lo próximo que se le
+   * gira, la suma del próximo mes de TODOS sus contratos (su parte) con el
+   * vencimiento del giro. La misma cuenta que `proximaCuota` del resumen de su
+   * ficha: la pantalla la lee de aquí en vez de tomar la primera fila. `null`
+   * = nada por vencer; ausente del lado del inquilino (o un back anterior).
+   */
+  proximaCuota?: { fecha: string; monto: number; contratos: number } | null;
+  /**
+   * 🔴 Sólo del PROPIETARIO: «Por girar» hasta el mes en curso, neto de sus
+   * deducciones, y los próximos giros aparte (Nico, 04-10-2026). La misma
+   * cifra del chat y de las pantallas de la inmobiliaria. Un back anterior no
+   * la manda: entonces se muestra `totales.restaPorPagar`, como antes.
+   */
+  porGirar?: PorGirarDelPropietario;
+  /**
+   * 🔴 SO-09 (QA 04-10): sólo del PROPIETARIO, cada descuento de sus giros
+   * (reparación, descuento manual, saldo en contra…). `porDescontarCop` es la
+   * MISMA cifra que `porGirar.deduccionesCop`. Un back anterior no lo manda.
+   */
+  deducciones?: DeduccionesDelEstadoDto | null;
+}
+
+/** SO-09: un descuento del propietario tal como lo manda el back. */
+export interface DeduccionDelEstado {
+  id: string;
+  origen: string;
+  concepto: string;
+  inmueble: string | null;
+  /** `AAAA-MM`. */
+  mes: string;
+  valorCop: number;
+  estado: 'PENDIENTE' | 'EN_LIQUIDACION' | 'APLICADA';
+  tieneSoporte: boolean;
+  soporteNombre: string | null;
+  fecha: string;
+  solicitudMantenimientoId: string | null;
+}
+
+export interface DeduccionesDelEstadoDto {
+  filas: DeduccionDelEstado[];
+  porDescontarCop: number;
+  aplicadasCop: number;
+}
+
+/** «Por girar» de UN propietario, como lo manda el back (`porGirarDeLasPartes`). */
+export interface PorGirarDelPropietario {
+  /** `AAAA-MM`: el mes en curso. */
+  hastaMes: string;
+  porGirarCop: number;
+  cuotas: number;
+  deduccionesCop: number;
+  proximosGirosCop: number;
+  /** `AAAA-MM`: el último mes de los próximos giros. */
+  proximosGirosHastaMes: string;
 }
 
 /**
@@ -361,10 +497,23 @@ export interface ResumenDelEstadoDeCuenta {
   restaPorPagar: number;
   /** Lo vencido y no pagado. */
   pendiente: number;
-  proximaCuota: { fecha: string; monto: number } | null;
+  /** Del lado del PROPIETARIO (P-16) es la suma del próximo mes de todos sus contratos; `contratos` dice de cuántos. */
+  proximaCuota: { fecha: string; monto: number; contratos?: number } | null;
   /** Días de mora de la cuota vencida más vieja y cuánto suma lo vencido. */
   enMora: { dias: number; monto: number } | null;
   contratos: number;
+  /**
+   * Los intereses de mora causados y sin pagar (E-09, QA-INQ 03-10). Van
+   * APARTE de `pendiente`: con lo vencido en cero y esto mayor, la persona no
+   * está «al día». Ausente = un back anterior.
+   */
+  interesDeMora?: number;
+  /** `true` cuando la inmobiliaria no tiene reglas de mora: lo vencido no causa interés. */
+  sinReglasDeMora?: boolean;
+  /** QA-CONT CR-31: la inmobiliaria no fijó sus días de plazo: `interesDeMora` es 0 por eso. Ausente en un back anterior. */
+  plazoSinFijar?: boolean;
+  /** 🔴 Sólo del PROPIETARIO: ver `EstadoDeCuenta.porGirar`. */
+  porGirar?: PorGirarDelPropietario;
 }
 
 /*
@@ -375,3 +524,22 @@ export interface ResumenDelEstadoDeCuenta {
  * mostrar de emitir y no llevaba intereses—. La única prefactura es la de
  * `GET /inmobiliaria/facturacion/por-generar`, en `facturacion-por-mes.service`.
  */
+
+/**
+ * QA-MIGRACION-95 — CA-04: un contrato vigente del inquilino que todavía no
+ * tiene arriendo en el portal (el migrado sin día de pago, o cuya cuenta nació
+ * después). Espejo de `ContratoDelPortalDto` del back. `diaDePago` `null` = el
+ * archivo no lo trajo: se dice «sin definir», nunca un número inventado.
+ */
+export interface ContratoDelPortal {
+  contratoId: string;
+  numero: string | null;
+  inmobiliaria: { id: string; nombre: string };
+  direccion: string | null;
+  ciudad: string | null;
+  desde: string | null;
+  hasta: string | null;
+  canonCop: number | null;
+  diaDePago: number | null;
+  estado: string;
+}

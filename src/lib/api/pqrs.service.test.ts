@@ -214,11 +214,64 @@ describe('pqrsApi.listMineConDisponibilidad', () => {
 
   it('404 (la ruta no existe): lista vacía y NO disponible', async () => {
     globalThis.fetch = mockFetch(404, { message: 'not found' });
-    expect(await pqrsApi.listMineConDisponibilidad()).toEqual({ items: [], disponible: false });
+    expect(await pqrsApi.listMineConDisponibilidad()).toEqual({ items: [], disponible: false, contratos: [] });
   });
 
   it('un 500 no se disfraza de «no disponible»: se propaga', async () => {
     globalThis.fetch = mockFetch(500, { message: 'boom' });
     await expect(pqrsApi.listMineConDisponibilidad()).rejects.toThrow();
+  });
+
+  /*
+   * 🔴 03-10-2026 (laboratorio E5): el back ya tiene `GET /pqrs/mine` y responde
+   * `{ solicitudes, sePuedeRadicar }`. Radicar (`POST /pqrs`) todavía NO existe:
+   * con la ruta de la lista viva, «Nueva solicitud» NO se puede prender, o la
+   * persona vuelve a llenar todo para enterarse al enviar.
+   */
+  it('la respuesta del back: sus solicitudes, y NO disponible mientras el back diga que no se puede radicar', async () => {
+    const SIN_PRIORIDAD: SolicitudPqrs = { ...ROW, prioridad: undefined, canal: undefined };
+    globalThis.fetch = mockFetch(200, { solicitudes: [SIN_PRIORIDAD], sePuedeRadicar: false });
+    const r = await pqrsApi.listMineConDisponibilidad();
+    expect(r.disponible).toBe(false);
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0].id).toBe('pqrs-1');
+  });
+
+  it('el día que el back diga que sí se puede radicar, se prende', async () => {
+    globalThis.fetch = mockFetch(200, { solicitudes: [], sePuedeRadicar: true });
+    expect(await pqrsApi.listMineConDisponibilidad()).toEqual({ items: [], disponible: true, contratos: [] });
+  });
+
+  /*
+   * ARREGLOS-2 (03-10-2026, Nico Q4 a): `POST /pqrs` existe y el back dice
+   * sobre qué contratos vigentes se puede radicar.
+   */
+  it('trae los contratos sobre los que se puede radicar (y descarta lo que no tiene forma)', async () => {
+    globalThis.fetch = mockFetch(200, {
+      solicitudes: [],
+      sePuedeRadicar: true,
+      contratosParaRadicar: [
+        { contratoId: 'c-1', inmueble: 'Apto 101' },
+        { contratoId: 7, inmueble: 'roto' },
+        null,
+      ],
+    });
+    expect(await pqrsApi.listMineConDisponibilidad()).toEqual({
+      items: [],
+      disponible: true,
+      contratos: [{ contratoId: 'c-1', inmueble: 'Apto 101' }],
+    });
+  });
+
+  it('listMine y getMine leen la lista dentro de la respuesta del back', async () => {
+    globalThis.fetch = mockFetch(200, { solicitudes: [ROW], sePuedeRadicar: false });
+    expect((await pqrsApi.listMine()).map((s) => s.id)).toEqual(['pqrs-1']);
+    globalThis.fetch = mockFetch(200, { solicitudes: [ROW], sePuedeRadicar: false });
+    expect((await pqrsApi.getMine('pqrs-1'))?.radicado).toBe('PQRS-2026-0001');
+  });
+
+  it('una respuesta que no es ni la lista ni la del back no se toma por una lista', async () => {
+    globalThis.fetch = mockFetch(200, { algo: 'raro' });
+    expect(await pqrsApi.listMineConDisponibilidad()).toEqual({ items: [], disponible: false, contratos: [] });
   });
 });

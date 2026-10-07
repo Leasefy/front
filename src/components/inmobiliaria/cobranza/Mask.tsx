@@ -10,6 +10,7 @@
 
 import * as React from 'react'
 import { type MouseEvent, type KeyboardEvent } from 'react'
+import { Appear, Presence } from '@leasefy/cadence'
 
 void React // keep React in scope under tsconfig "jsx": "preserve"
 
@@ -75,15 +76,21 @@ export function Mask({ field, value, onReveal, rawValue, countdownSeconds, class
           (className ?? '')
         }
       >
-        <span>{rawValue}</span>
-        {countdownSeconds != null && countdownSeconds > 0 && (
-          <span
-            aria-label={`tiempo restante ${formatCountdown(countdownSeconds)}`}
-            className="px-1 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-fg-muted"
-          >
-            {formatCountdown(countdownSeconds)}
-          </span>
-        )}
+        {/* Al revelarse, el dato entra con un fundido (sin desplazamiento: es
+            texto en línea, a veces dentro de una tabla). */}
+        <Appear as="span" direction="none">
+          {rawValue}
+        </Appear>
+        {/* La cuenta regresiva sale con un fundido al llegar a cero. */}
+        <Presence
+          as="span"
+          show={countdownSeconds != null && countdownSeconds > 0}
+          direction="none"
+          aria-label={`tiempo restante ${formatCountdown(countdownSeconds ?? 0)}`}
+          className="px-1 py-0.5 rounded text-[10px] font-medium bg-surface-muted text-fg-muted"
+        >
+          {formatCountdown(countdownSeconds ?? 0)}
+        </Presence>
       </span>
     )
   }

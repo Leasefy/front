@@ -1,8 +1,16 @@
 'use client';
 
+import { CrossFade } from '@leasefy/cadence';
 import { useEffect } from 'react';
-import { ArrowSquareOut, CheckCircle, Clock, WarningCircle } from '@phosphor-icons/react';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ArrowSquareOut, CheckCircle, Clock } from '@phosphor-icons/react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui';
 import { useLenis } from '@/components/providers/SmoothScroll';
@@ -106,38 +114,84 @@ export function AgencyCheckoutOverlay({
       onClose();
   };
 
+  /*
+   * Cada estado es una variante del modal canónico (DESIGN.md §17): el medallón
+   * dice el estado (éxito, error, espera) y el texto va en la cabecera. Lo
+   * no-descartable no cambia: en `processing` y `success` no hay ✕ ni pie, y
+   * `handleOpenChange` no los cierra con Esc ni con un clic afuera.
+   */
+  const variante =
+    state === 'success'
+      ? 'success'
+      : state === 'error'
+        ? 'error'
+        : state === 'awaiting' && awaitingTimedOut
+          ? 'warning'
+          : state === 'unchanged'
+            ? undefined
+            : 'info';
+  const icono =
+    state === 'processing' || (state === 'awaiting' && !awaitingTimedOut) ? (
+      <Spinner size="sm" variant="current" />
+    ) : state === 'awaiting' || state === 'scheduled' ? (
+      <Clock weight="bold" />
+    ) : state === 'unchanged' ? (
+      <CheckCircle weight="bold" />
+    ) : undefined;
+
+  const titulo =
+    state === 'success'
+      ? isPaid
+        ? '¡Pago confirmado!'
+        : 'Plan activado'
+      : state === 'awaiting'
+        ? awaitingTimedOut
+          ? 'Todavía no confirmamos tu pago'
+          : 'Esperando la confirmación de tu pago…'
+        : state === 'processing'
+          ? resuming
+            ? 'Recuperando tu pago…'
+            : isPaid
+              ? 'Generando el pago…'
+              : `Activando el plan ${planName}…`
+          : state === 'error'
+            ? 'No pudimos completar la operación'
+            : state === 'scheduled'
+              ? 'Cambio de plan programado'
+              : 'Ya tienes este plan';
+
+  const descripcion =
+    state === 'success'
+      ? 'Te llevamos al panel…'
+      : state === 'awaiting'
+        ? awaitingSubtitle(paymentUrl, awaitingTimedOut)
+        : state === 'processing'
+          ? 'Un momento, por favor.'
+          : state === 'error'
+            ? (error ?? 'Ocurrió un error. Intenta de nuevo.')
+            : state === 'scheduled'
+              ? scheduled?.pendingPlanEffectiveAt
+                ? `Tu plan cambiará a ${planName} el ${formatDate(scheduled.pendingPlanEffectiveAt)}. Hasta entonces, sigues con tu plan actual.`
+                : `Tu plan cambiará a ${planName} al final de tu período actual. Hasta entonces, sigues con tu plan actual.`
+              : 'No hicimos ningún cambio.';
+
+  const sinSalida = state === 'processing' || state === 'success';
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-sm" hideClose={state === 'processing' || state === 'success'}>
-        {/* Success */}
-        {state === 'success' && (
-          <div className="flex flex-col items-center text-center gap-2 py-2">
-            <CheckCircle className="w-12 h-12 text-success" weight="fill" />
-            <DialogTitle className="font-semibold text-fg">
-              {isPaid ? '¡Pago confirmado!' : 'Plan activado'}
-            </DialogTitle>
-            <DialogDescription className="text-sm text-fg-muted">
-              Te llevamos al panel…
-            </DialogDescription>
-          </div>
-        )}
+      <DialogContent size="sm" variant={variante} icon={icono} hideClose={sinSalida}>
+        {/* Procesando → listo / error / programado: el texto se cruza en su
+            lugar, sin un corte seco. */}
+        <CrossFade swapKey={state}>
+          <DialogHeader>
+            <DialogTitle>{titulo}</DialogTitle>
+            <DialogDescription>{descripcion}</DialogDescription>
+          </DialogHeader>
+        </CrossFade>
 
         {/* Awaiting payment — hosted Wompi tab */}
-        {state === 'awaiting' && (
-          <div className="flex flex-col items-center text-center gap-3 py-2">
-            {awaitingTimedOut ? (
-              <Clock className="w-12 h-12 text-warning" weight="fill" />
-            ) : (
-              <Spinner size="lg" variant="current" className="text-primary" />
-            )}
-            <DialogTitle className="font-medium text-fg">
-              {awaitingTimedOut
-                ? 'Todavía no confirmamos tu pago'
-                : 'Esperando la confirmación de tu pago…'}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-fg-muted">
-              {awaitingSubtitle(paymentUrl, awaitingTimedOut)}
-            </DialogDescription>
+        {state === 'awaiting' && (paymentUrl || pollError) && (
+          <div className="space-y-2 text-sm">
             {paymentUrl && (
               <a
                 href={paymentUrl}
@@ -145,97 +199,51 @@ export function AgencyCheckoutOverlay({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-xs font-medium text-primary underline underline-offset-2"
               >
-                <ArrowSquareOut className="w-3.5 h-3.5" />
+                <ArrowSquareOut className="w-3.5 h-3.5" aria-hidden="true" />
                 {popupBlocked
                   ? 'No se abrió la pestaña — abre el pago acá'
                   : '¿No ves la pestaña? Ábrela de nuevo'}
               </a>
             )}
             {pollError && <p className="text-xs text-fg-muted">{pollError}</p>}
-            <div className="flex items-center justify-center gap-2 mt-1">
-              <Button variant="ghost" size="sm" hideArrow onClick={onVerify}>
-                Ya pagué — Verificar estado
-              </Button>
-              <Button variant="ghost" size="sm" hideArrow onClick={onClose} className="text-fg-muted">
-                Salir sin pagar
-              </Button>
-            </div>
           </div>
         )}
 
-        {/* Processing — selectPlan / generating (or resume(): retrieving) the link */}
-        {state === 'processing' && (
-          <div className="flex flex-col items-center text-center gap-3 py-2">
-            <Spinner size="lg" variant="current" className="text-primary" />
-            <DialogTitle className="font-medium text-fg">
-              {resuming
-                ? 'Recuperando tu pago…'
-                : isPaid
-                  ? 'Generando el pago…'
-                  : `Activando el plan ${planName}…`}
-            </DialogTitle>
-            <DialogDescription className="text-xs text-fg-muted">
-              Un momento, por favor.
-            </DialogDescription>
-          </div>
-        )}
-
-        {/* Error */}
-        {state === 'error' && (
-          <div className="flex flex-col items-center text-center gap-3 py-2">
-            <WarningCircle className="w-12 h-12 text-danger" />
-            <DialogTitle className="font-semibold text-fg">
-              No pudimos completar la operación
-            </DialogTitle>
-            <DialogDescription className="text-sm text-fg-muted">
-              {error ?? 'Ocurrió un error. Intenta de nuevo.'}
-            </DialogDescription>
-            <Button variant="secondary" size="sm" hideArrow onClick={onClose} className="mt-1">
-              Volver a los planes
-            </Button>
-          </div>
-        )}
-
-        {/* Scheduled downgrade (T-0089) — a legitimate, non-error outcome: the
-            back scheduled the change for the current period's end, no charge. */}
-        {state === 'scheduled' && (
-          <div className="flex flex-col items-center text-center gap-3 py-2">
-            <Clock className="w-12 h-12 text-info" weight="fill" />
-            <DialogTitle className="font-semibold text-fg">
-              Cambio de plan programado
-            </DialogTitle>
-            <DialogDescription className="text-sm text-fg-muted">
-              {scheduled?.pendingPlanEffectiveAt
-                ? `Tu plan cambiará a ${planName} el ${formatDate(scheduled.pendingPlanEffectiveAt)}. Hasta entonces, seguís con tu plan actual.`
-                : `Tu plan cambiará a ${planName} al final de tu período actual. Hasta entonces, seguís con tu plan actual.`}
-            </DialogDescription>
-            <div className="flex items-center justify-center gap-2 mt-1">
-              {onUndo && (
-                <Button variant="ghost" size="sm" hideArrow onClick={onUndo} className="text-fg-muted">
-                  Deshacer
+        {!sinSalida && (
+          <DialogFooter>
+            {state === 'awaiting' && (
+              <>
+                <Button variant="outline" hideArrow onClick={onClose}>
+                  Salir sin pagar
                 </Button>
-              )}
-              <Button variant="secondary" size="sm" hideArrow onClick={onClose}>
-                Entendido
+                <Button hideArrow onClick={onVerify}>
+                  Ya pagué — Verificar estado
+                </Button>
+              </>
+            )}
+            {state === 'error' && (
+              <Button variant="outline" hideArrow onClick={onClose}>
+                Volver a los planes
               </Button>
-            </div>
-          </div>
-        )}
-
-        {/* No change (T-0089) — e.g. re-selecting the current tier. Not an error. */}
-        {state === 'unchanged' && (
-          <div className="flex flex-col items-center text-center gap-3 py-2">
-            <CheckCircle className="w-12 h-12 text-fg-muted" />
-            <DialogTitle className="font-semibold text-fg">
-              Ya tienes este plan
-            </DialogTitle>
-            <DialogDescription className="text-sm text-fg-muted">
-              No hicimos ningún cambio.
-            </DialogDescription>
-            <Button variant="secondary" size="sm" hideArrow onClick={onClose} className="mt-1">
-              Cerrar
-            </Button>
-          </div>
+            )}
+            {state === 'scheduled' && (
+              <>
+                {onUndo && (
+                  <Button variant="ghost" hideArrow onClick={onUndo}>
+                    Deshacer
+                  </Button>
+                )}
+                <Button variant="outline" hideArrow onClick={onClose}>
+                  Entendido
+                </Button>
+              </>
+            )}
+            {state === 'unchanged' && (
+              <Button variant="outline" hideArrow onClick={onClose}>
+                Cerrar
+              </Button>
+            )}
+          </DialogFooter>
         )}
       </DialogContent>
     </Dialog>

@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { AlertaAccionable } from '@/components/ui/alerta-accionable';
+// AVISO-TIPO-DOC (05-10-2026): los propietarios cuyo documento frena la factura por mandato.
+import { AvisoTipoDeDocumento } from '@/components/inmobiliaria/AvisoTipoDeDocumento';
 import {
   Buildings,
   Users,
@@ -21,6 +23,8 @@ import {
   FileText,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { AnimatedNumber, CrossFade } from '@leasefy/cadence';
+import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece';
 import { EmptyState } from '@/components/ui';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -40,6 +44,17 @@ import { SIN_MEDIR, anchoDeBarra, tasaMedida, textoDeTasa } from '@/lib/tasas';
 import { claveDelRotulo, fraseDeLasCifras, tasaDelTablero } from '@/lib/tasa-de-recaudo';
 import { formatCurrency, getPipelineStageInfo } from '@/lib/types/inmobiliaria';
 import type { PipelineItem, Agente } from '@/lib/types/inmobiliaria';
+
+/** El número tal cual se escribía antes (`{value}`): sin separador de miles. */
+const enteroTalCual = (n: number) => String(Math.round(n));
+
+/**
+ * La cifra de una tarjeta: si es un número, cuenta cuando cambia (al
+ * recargar); el texto final es el mismo de antes. Un texto queda igual.
+ */
+function Cifra({ value }: { value: string | number }) {
+  return typeof value === 'number' ? <AnimatedNumber value={value} format={enteroTalCual} /> : <>{value}</>;
+}
 
 /**
  * KPI Card Component
@@ -66,7 +81,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
       <Link
         href={href ?? '#'}
         className="group relative h-full rounded-lg p-5 flex flex-col overflow-hidden"
-        style={{ background: 'linear-gradient(150deg, #14130f 58%, #2a2824 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
+        style={{ background: 'linear-gradient(150deg, var(--ink) 58%, var(--ink-2) 135%)', boxShadow: '0 10px 30px -6px rgba(26,64,255,0.30)' }}
       >
         {/* Brand contour — single hairline tracing the roof profile (badge grammar) */}
         <div className="absolute -inset-x-1 top-[34%] h-[44%] text-ink-fg/[0.14] pointer-events-none">
@@ -79,7 +94,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
           </div>
         </div>
         <p className="font-heading text-[28px] font-semibold text-ink-fg tracking-tight tabular-nums leading-none mt-3">
-          {value}
+          <Cifra value={value} />
         </p>
         {subtitle && <p className="font-sans text-[12px] text-ink-fg/70 mt-1">{subtitle}</p>}
         <div className="flex-1 min-h-[8px]" />
@@ -114,7 +129,7 @@ function KPICard({ title, value, subtitle, trend, icon: Icon, href, brandHero }:
         </div>
       </div>
       <p className="mt-3 font-heading text-2xl font-semibold text-fg tracking-tight tabular-nums leading-none">
-        {value}
+        <Cifra value={value} />
       </p>
       {subtitle && (
         <p className="mt-1 text-xs text-fg-muted">{subtitle}</p>
@@ -172,7 +187,7 @@ function SecondaryStat({
           <Icon weight="duotone" className="h-4 w-4" />
         </div>
         <div className="min-w-0">
-          <p className="font-heading text-lg font-semibold text-fg tabular-nums leading-none">{value}</p>
+          <p className="font-heading text-lg font-semibold text-fg tabular-nums leading-none"><Cifra value={value} /></p>
           <MonoLabel className="mt-1 block">{label}</MonoLabel>
           {detalle && <p className="mt-1 text-xs text-fg-muted">{detalle}</p>}
         </div>
@@ -442,16 +457,23 @@ function ResumenDelNegocio() {
 
   // First load: distinguish "loading" from "empty agency" so the panel never
   // renders silent zeros while the KPIs are still in flight.
+  //
+  // Esqueleto → resumen (o → fallo): cada salida va en un `CrossFade` con su
+  // clave, así lo que llega después de cargar entra con su fundido. Lo que ya
+  // estaba al montarse (en caché) no se anima: la página entra con su template.
   if ((permLoading || kpisLoading) && !kpisData) {
     return (
       // Dentro del panel va el esqueleto, no el logo (Nico, 01-10: «el logo sólo en cargas de pantalla completa»).
-      <EsqueletoDePagina variante="dashboard" />
+      <CrossFade swapKey="esqueleto">
+        <EsqueletoDePagina variante="dashboard" />
+      </CrossFade>
     );
   }
 
   // Real failure (backend unreachable / server error) with no data to show.
   if (kpisError && !kpisData) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="p-6 lg:p-8">
         {/* `ErrorState` no distingue un 404 de un corte de red: ofrecía
             reintentar siempre y describía todo igual. `FalloDeCarga` lo decide
@@ -462,10 +484,12 @@ function ResumenDelNegocio() {
           onReintentar={refetchKpis}
         />
       </div>
+      </CrossFade>
     );
   }
 
   return (
+    <CrossFade swapKey="resumen">
     <div className="p-6 lg:p-8 space-y-8">
       {/* Header */}
       <div className="flex flex-col gap-1">
@@ -725,6 +749,9 @@ function ResumenDelNegocio() {
           data-testid="aviso-de-la-deuda"
         />
       ))}
+      {/* AVISO-TIPO-DOC: sólo para quien puede completarlo (administrador, o
+          contador que edita propietarios); se va solo con la última ficha. */}
+      <AvisoTipoDeDocumento />
       {pendingMaintenance.length > 0 && (
         <AlertaAccionable
           severidad="info"
@@ -796,8 +823,11 @@ function ResumenDelNegocio() {
             </span>
           </div>
           <div className="h-2 rounded-full bg-surface-muted overflow-hidden">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
+            {/* Crece desde la izquierda al aparecer (`scaleX`); el ancho es el
+                dato y ya no se anima (`transition-all` movía el layout). */}
+            <BarraQueCrece
+              eje="x"
+              className="h-full rounded-full bg-primary"
               // Topada al 100: con sobre-recaudo la barra se salía del riel.
               style={{ width: anchoDeBarra(tasaDeRecaudo) }}
             />
@@ -808,5 +838,6 @@ function ResumenDelNegocio() {
         </div>
       </div>
     </div>
+    </CrossFade>
   );
 }

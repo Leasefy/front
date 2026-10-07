@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { PROPERTY_TYPES } from '@/lib/types/publish';
 import { cn } from '@/lib/utils';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { ariaDelCampo, idDelCampo, idDelError } from '../campos-con-error';
 
 function useTextTwriter() {
   const [isTyping, setIsTyping] = useState(false);
@@ -50,7 +52,9 @@ function useTextTwriter() {
 }
 
 export function StepDescription() {
-  const { draft, updateDraft } = usePublish();
+  const { draft, updateDraft, erroresDelServidor } = usePublish();
+  const errorTitulo = erroresDelServidor.title;
+  const errorDescripcion = erroresDelServidor.description;
   const [generatingField, setGeneratingField] = useState<'title' | 'description' | null>(null);
   const titleTextTr = useTextTwriter();
   const descTextTr = useTextTwriter();
@@ -114,7 +118,7 @@ export function StepDescription() {
         {/* Title */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="title" className="flex items-center gap-2 text-fg">
+            <Label htmlFor={idDelCampo('title')} className="flex items-center gap-2 text-fg">
               <TextT className="w-4 h-4 text-fg-subtle" />
               Título del anuncio *
             </Label>
@@ -142,7 +146,8 @@ export function StepDescription() {
           </div>
           <div className="relative">
             <Input
-              id="title"
+              {...ariaDelCampo('title', errorTitulo)}
+              invalid={!!errorTitulo}
               type="text"
               placeholder="Apartamento moderno en Chapinero"
               value={draft.title}
@@ -157,6 +162,7 @@ export function StepDescription() {
               <span className="absolute right-3 top-1/2 -translate-y-1/2 w-0.5 h-4 bg-primary animate-pulse" />
             )}
           </div>
+          <ErrorDelCampo id={idDelError('title')} mensaje={errorTitulo} />
           <p className="text-xs text-fg-subtle text-right font-mono tabular-nums">
             {draft.title.length}/80 caracteres
           </p>
@@ -165,7 +171,7 @@ export function StepDescription() {
         {/* Description */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label htmlFor="description" className="flex items-center gap-2 text-fg">
+            <Label htmlFor={idDelCampo('description')} className="flex items-center gap-2 text-fg">
               <FileText className="w-4 h-4 text-fg-subtle" />
               Descripción *
             </Label>
@@ -193,7 +199,7 @@ export function StepDescription() {
           </div>
           <div className="relative">
             <Textarea
-              id="description"
+              {...ariaDelCampo('description', errorDescripcion)}
               placeholder="Describe las características únicas de tu inmueble, la zona, accesibilidad, y cualquier detalle relevante..."
               value={draft.description}
               onChange={(e) => { if (!descTextTr.isTyping) updateDraft({ description: e.target.value }); }}
@@ -201,6 +207,8 @@ export function StepDescription() {
               maxLength={1000}
               className={cn(
                 "resize-none",
+                // El adaptador de Textarea no pasa `invalid` al DS: el borde de error va por clase.
+                errorDescripcion && "border-danger focus-visible:border-danger focus-visible:shadow-[0_0_0_3px_rgba(192,57,43,0.12)]",
                 descTextTr.isTyping && "border-primary/40 bg-primary-soft/50"
               )}
               readOnly={descTextTr.isTyping}
@@ -209,6 +217,7 @@ export function StepDescription() {
               <span className="absolute right-3 bottom-3 w-0.5 h-4 bg-primary animate-pulse" />
             )}
           </div>
+          <ErrorDelCampo id={idDelError('description')} mensaje={errorDescripcion} />
           <p className="text-xs text-fg-subtle text-right font-mono tabular-nums">
             {draft.description.length}/1000 caracteres
           </p>

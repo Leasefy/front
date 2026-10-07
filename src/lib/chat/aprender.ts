@@ -22,7 +22,8 @@
  *  3. La agencia y la persona las pone el micro desde el token.
  */
 
-import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { agentFetch } from '@/lib/api/agent-fetch';
+import { falloDelMicro } from '@/lib/api/fallo-del-micro';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 
 export type OrigenDelAprendizaje = 'accion_deshecha' | 'ambiguedad' | 'definicion' | 'apodo';
@@ -122,7 +123,7 @@ export async function leerAprendizaje(
   const url = urlDeAprender(agencyId, turnoId, propuestaId);
   if (!url) return null;
   try {
-    const res = await fetch(url, { headers: agentAuthHeaders() });
+    const res = await agentFetch(url);
     const r = await leerJson<LecturaDelAprendizaje>(res);
     return r && Array.isArray(r.aprendizajes) ? r : null;
   } catch {
@@ -130,7 +131,16 @@ export async function leerAprendizaje(
   }
 }
 
-/** El administrador decide. `null` si no llegó. */
+/**
+ * El administrador decide. `null` si no hay a dónde mandarlo (sin micro, sin
+ * agencia, turno inválido) o la respuesta no se entiende.
+ *
+ * 🔴 (02-10-2026) Un fallo YA NO se traga: un no-OK lanza el fallo entero
+ * (`falloDelMicro`: status, `code`, cuerpo) y una red caída lanza su
+ * `TypeError`, para que la pantalla lo diga por el traductor. Antes todo era
+ * `null` y la pantalla decía «No pude guardarlo. Intenta de nuevo.» también al
+ * 403 `SOLO_ADMINISTRADOR`, donde reintentar no cambia nada.
+ */
 export async function decidirAprendizaje(
   agencyId: string | null | undefined,
   turnoId: string | null | undefined,
@@ -141,14 +151,11 @@ export async function decidirAprendizaje(
   // Llave por llave (ver la regla 2).
   const cuerpo: CuerpoDeLaDecision = { id: pedido.id, decision: pedido.decision };
   if (pedido.propuestaId) cuerpo.propuestaId = pedido.propuestaId;
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: agentAuthHeaders({ 'content-type': 'application/json' }),
-      body: JSON.stringify(cuerpo),
-    });
-    return await leerJson<ResultadoDelAprendizaje>(res);
-  } catch {
-    return null;
-  }
+  const res = await agentFetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(cuerpo),
+  });
+  if (!res.ok) throw await falloDelMicro(res);
+  return leerJson<ResultadoDelAprendizaje>(res);
 }

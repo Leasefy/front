@@ -38,6 +38,7 @@ import {
   completeOnboarding,
 } from '../api/onboarding-session.service'
 import { useOnboardingSession } from './use-onboarding-session'
+import { ApiError } from '../api/client'
 
 const resumeMock = resumeOnboarding as unknown as ReturnType<typeof vi.fn>
 const submitAgencyMock = submitAgency as unknown as ReturnType<typeof vi.fn>
@@ -324,3 +325,111 @@ describe('useOnboardingSession — non-envelope actions', () => {
     expect(hook.get().status).toBe('idle')
   })
 })
+
+/**
+ * 02-10-2026 · Un 4xx/5xx no se traga como `null`. Las acciones de cada paso
+ * resuelven `null` cuando el paso no salió (los formularios cuentan con que
+ * nunca lanzan), pero el error queda en `error` con su status y su cuerpo.
+ * Antes, uno que no llegara como `OnboardingSessionError` quedaba `unknown`,
+ * sin status, sin `campos` y con su texto crudo en inglés.
+ */
+describe('useOnboardingSession — el error llega entero (status + cuerpo)', () => {
+  const AGENCIA = {
+    legalName: 'Acme SAS',
+    nit: '900123456-1',
+    address: { calle: 'Cra 1', ciudad: 'Bogotá', departamento: 'Cundinamarca' },
+    primaryContactEmail: 'a@acme.co',
+    primaryContactPhone: '3001234567',
+    billingModel: 'standard' as const,
+  }
+
+  async function montarYEnviar(rechazo: unknown) {
+    resumeMock.mockResolvedValueOnce(RESUME_START)
+    submitAgencyMock.mockRejectedValueOnce(rechazo)
+    const hook = renderHook('sess_1')
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    let resultado: unknown = 'sin-llamar'
+    await act(async () => {
+      resultado = await hook.get().submitAgency(AGENCIA)
+    })
+    return { hook, resultado }
+  }
+
+  it('un 400 del micro: el paso resuelve null y el error queda con status, campos y cuerpo', async () => {
+    const campos = [{ campo: 'nit', regla: 'formato', mensaje: 'El NIT no tiene un formato válido.' }]
+    const { hook, resultado } = await montarYEnviar(
+      new OnboardingSessionError('validation', 400, 'El NIT no tiene un formato válido.', undefined, campos, {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        campos,
+      }),
+    )
+    expect(resultado).toBeNull()
+    expect(hook.get().status).toBe('error')
+    expect(hook.get().error).toMatchObject({ kind: 'validation', status: 400, campos })
+    expect(hook.get().error?.detalle).toMatchObject({ code: 'DATOS_INVALIDOS' })
+  })
+
+  it('🔴 un 400 que llega como ApiError ya no pierde el status ni los campos (antes: unknown, status null)', async () => {
+    const sobre = {
+      statusCode: 400,
+      code: 'DATOS_INVALIDOS',
+      message: ['La razón social no puede tener más de 200 caracteres.'],
+      campos: [{ campo: 'legalName', regla: 'maximo', mensaje: 'La razón social no puede tener más de 200 caracteres.' }],
+    }
+    const { hook } = await montarYEnviar(new ApiError(400, sobre.message, 'DATOS_INVALIDOS', sobre))
+    const error = hook.get().error
+    expect(error?.kind).toBe('validation')
+    expect(error?.status).toBe(400)
+    expect(error?.campos).toEqual(sobre.campos)
+    expect(error?.detalle).toMatchObject({ code: 'DATOS_INVALIDOS' })
+    expect(error?.message).toBe('La razón social no puede tener más de 200 caracteres.')
+    expect(submitAgencyMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('🔴 un 5xx que llega como ApiError dice «de nuestro lado» con la referencia y conserva el status', async () => {
+    const { hook } = await montarYEnviar(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        referencia: 'ab12cd34',
+      }),
+    )
+    const error = hook.get().error
+    expect(error?.status).toBe(500)
+    expect(error?.kind).toBe('unknown')
+    expect(error?.message).toMatch(/^No pudimos continuar con el registro: algo falló de nuestro lado/)
+    expect(error?.message).toContain('ab12cd34')
+    expect(error?.detalle).toMatchObject({ referencia: 'ab12cd34' })
+  })
+
+  it('🔴 un Error(«Internal error: …») no deja el texto crudo en inglés: es nuestro', async () => {
+    const { hook } = await montarYEnviar(new Error("Internal error: Cannot read properties of undefined (reading 'nit')"))
+    const error = hook.get().error
+    expect(error?.kind).toBe('unknown')
+    expect(error?.message).not.toMatch(/Internal error|Cannot read/)
+    expect(error?.message).toMatch(/de nuestro lado/)
+  })
+
+  it('sólo sin respuesta habla de la conexión (network, que se reintenta)', async () => {
+    vi.useFakeTimers()
+    resumeMock.mockResolvedValueOnce(RESUME_START)
+    submitAgencyMock.mockRejectedValue(new TypeError('Failed to fetch'))
+    const hook = renderHook('sess_1')
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0)
+    })
+    await act(async () => {
+      const envio = hook.get().submitAgency(AGENCIA)
+      await vi.advanceTimersByTimeAsync(1500)
+      await envio
+    })
+    expect(submitAgencyMock).toHaveBeenCalledTimes(3)
+    expect(hook.get().error?.kind).toBe('network')
+    expect(hook.get().error?.message).toMatch(/conexi[oó]n/i)
+  })
+})
+

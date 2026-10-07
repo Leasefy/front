@@ -83,6 +83,11 @@ const agencyPlansState: { value: { plans: unknown[]; isLoading: boolean; error?:
   value: { plans: [], isLoading: false, error: null },
 };
 
+// La campana de la inmobiliaria (QA 04-10) pide su propia bandeja agrupada;
+// estas pruebas miran la suscripción y el equipo, no la campana.
+vi.mock('@/components/notificaciones/CampanaDeLaInmobiliaria', () => ({
+  CampanaDeLaInmobiliaria: () => null,
+}));
 vi.mock('@/lib/hooks/useNotifications', () => ({
   useLandlordNotifications: () => ({
     notifications: [],
@@ -114,8 +119,20 @@ vi.mock('@/components/feedback/FeedbackCta', () => ({
   FeedbackCta: () => null,
 }));
 
+const permisos: { value: { isAdmin: boolean; canAccess: (m: string, a: string) => boolean } } = {
+  value: { isAdmin: true, canAccess: () => true },
+};
 vi.mock('@/lib/context/PermissionsContext', () => ({
-  usePermissionsContextSafe: () => ({ isAdmin: true, canAccess: () => true }),
+  usePermissionsContextSafe: () => permisos.value,
+}));
+
+// El modal se prueba en su propio archivo; acá sólo importa qué recibe.
+const { modalDelEquipo } = vi.hoisted(() => ({ modalDelEquipo: vi.fn() }));
+vi.mock('@/components/inmobiliaria/invitar-al-equipo/InvitarAlEquipo', () => ({
+  InvitarAlEquipo: (props: { open: boolean; puedeInvitar: boolean }) => {
+    modalDelEquipo(props);
+    return props.open ? <div data-testid="modal-del-equipo">{props.puedeInvitar ? 'puede invitar' : 'sólo mira'}</div> : null;
+  },
 }));
 
 vi.mock('@/lib/context/PanelPrefsContext', () => ({
@@ -136,6 +153,8 @@ let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  permisos.value = { isAdmin: true, canAccess: () => true };
+  modalDelEquipo.mockClear();
   subState.value = { subscription: null, error: null, refetch: vi.fn() };
   agencySubState.value = { currentPlanId: 'starter', error: null, refetch: vi.fn() };
   agencyPlansState.value = { plans: [], isLoading: false };
@@ -265,5 +284,145 @@ describe('PlanHeader — "Tu Suscripción" popover resolves the REAL agency plan
 
     const popover = container.querySelector('[data-testid="subscription-popover"]')!;
     expect(popover.textContent).not.toContain('Cambia a');
+  });
+});
+
+// ── «Invitar a tu equipo» (02-10-2026) ─────────────────────────────────────
+
+const PORCENTAJE_CATALOG = [
+  {
+    id: 'flex',
+    name: 'Porcentaje',
+    description: 'Plan de pago por uso',
+    pricingModel: 'usage' as const,
+    price: { monthly: 0, yearly: 0 },
+    evaluation: { price: 0, discount: 0, limit: null },
+    limits: { properties: -1, users: -1 },
+    features: ['Sin mensualidad'],
+    level: null,
+    isDefault: false,
+  },
+];
+
+const botonDelEquipo = () =>
+  Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((b) =>
+    (b.getAttribute('aria-label') ?? '').startsWith('Invitar a tu equipo'),
+  );
+
+describe('PlanHeader — «Invitar a tu equipo» abre un modal, no un popover', () => {
+  it('el administrador ve el botón y abre el modal pudiendo invitar', () => {
+    render();
+    const boton = botonDelEquipo();
+    expect(boton).toBeTruthy();
+    expect(boton!.getAttribute('aria-haspopup')).toBe('dialog');
+    expect(container.querySelector('[data-testid="modal-del-equipo"]')).toBeNull();
+
+    act(() => boton!.click());
+
+    expect(container.querySelector('[data-testid="modal-del-equipo"]')!.textContent).toBe('puede invitar');
+    // El formulario viejo (cuatro tarjetas de rol) ya no está en el encabezado.
+    expect(container.textContent).not.toContain('Enviar Invitación');
+    expect(container.textContent).not.toContain('Colabora con tu equipo');
+  });
+
+  it('quien ve el equipo sin ser administrador lo abre, pero sin poder invitar', () => {
+    permisos.value = { isAdmin: false, canAccess: (m, a) => m === 'configuracion' && a === 'view' };
+    render();
+    act(() => botonDelEquipo()!.click());
+    expect(container.querySelector('[data-testid="modal-del-equipo"]')!.textContent).toBe('sólo mira');
+  });
+
+  it('sin permiso para ver el equipo no hay botón ni modal', () => {
+    permisos.value = { isAdmin: false, canAccess: () => false };
+    render();
+    expect(botonDelEquipo()).toBeUndefined();
+    expect(modalDelEquipo).not.toHaveBeenCalled();
+  });
+});
+
+describe('PlanHeader — sin la pastilla del plan junto al avatar (Nico, 02-10-2026)', () => {
+  it('con el plan «Porcentaje» no sale la corona ni el nombre del plan junto al avatar', () => {
+    agencySubState.value = { currentPlanId: 'flex', error: null, refetch: vi.fn() };
+    agencyPlansState.value = { plans: PORCENTAJE_CATALOG, isLoading: false };
+    render();
+
+    const avatar = container.querySelector('[data-tour-target="perfil"]')!;
+    expect(avatar).toBeTruthy();
+    expect(avatar.textContent).not.toContain('Porcentaje');
+    expect(avatar.querySelector('[title^="Plan "]')).toBeNull();
+    // El plan sigue a un toque, en «Tu suscripción»: sólo dejó de mostrarse ahí.
+    const popover = container.querySelector('[data-testid="subscription-popover"]')!;
+    expect(popover.textContent).toContain('Porcentaje');
+  });
+});
+
+describe('«Tu suscripción» con su glow up (Nico, 03-10-2026)', () => {
+  const PORCENTAJE_1 = [
+    {
+      ...PORCENTAJE_CATALOG[0],
+      pricingModel: 'percentage' as const,
+      canonPercentage: 1,
+      features: ['Propiedades ilimitadas', 'Usuarios ilimitados', 'Evaluaciones IA ilimitadas incluidas', 'Scoring premium', 'Soporte dedicado'],
+    },
+  ];
+  const popover = () => container.querySelector<HTMLElement>('[data-testid="subscription-popover"]')!;
+
+  it('etiqueta en mono y en minúscula, la ✕ de la casa y nada de la franja gris', () => {
+    agencySubState.value = { currentPlanId: 'flex', error: null, refetch: vi.fn() };
+    agencyPlansState.value = { plans: PORCENTAJE_1, isLoading: false };
+    render();
+    const p = popover();
+    const titulo = p.querySelector('h3')!;
+    expect(titulo.textContent).toBe('Tu suscripción');
+    expect(titulo.className).toContain('font-mono');
+    const aspa = p.querySelector<HTMLButtonElement>('button[aria-label="common.close"]')!;
+    expect(aspa.className).toContain('rounded-full');
+    expect(aspa.className).toMatch(/\bborder\b/);
+    // `surface-muted` y `plan-primary` en oscuro son grises amarillentos sobre el negro.
+    // (El `active:bg-surface-muted` del botón secundario de Cadence es el de presionar: se vale.)
+    const fondos = Array.from(p.querySelectorAll('*')).flatMap((el) => Array.from(el.classList));
+    expect(fondos).not.toContain('bg-surface-muted');
+    expect(fondos).not.toContain('bg-plan-primary');
+  });
+
+  it('la loseta del plan va en cobalto y el porcentaje en mono', () => {
+    agencySubState.value = { currentPlanId: 'flex', error: null, refetch: vi.fn() };
+    agencyPlansState.value = { plans: PORCENTAJE_1, isLoading: false };
+    render();
+    const p = popover();
+    expect(p.textContent).toContain('Plan Porcentaje');
+    expect(p.textContent).toContain('1% del canon administrado');
+    expect(p.querySelector('.bg-primary-soft.text-primary')).not.toBeNull();
+    const cifra = Array.from(p.querySelectorAll('span')).find((s) => s.textContent === '1%')!;
+    expect(cifra.className).toContain('font-mono');
+  });
+
+  it('lo incluido es una lista con sus vistos, y dice cuántas cosas más trae el plan', () => {
+    agencySubState.value = { currentPlanId: 'flex', error: null, refetch: vi.fn() };
+    agencyPlansState.value = { plans: PORCENTAJE_1, isLoading: false };
+    render();
+    const lista = popover().querySelector('ul[aria-label="Lo que incluye tu plan"]')!;
+    const items = Array.from(lista.querySelectorAll('li')).map((li) => li.textContent);
+    expect(items).toEqual([
+      'Propiedades ilimitadas',
+      'Usuarios ilimitados',
+      'Evaluaciones IA ilimitadas incluidas',
+      'Scoring premium',
+      'y 1 más en tu plan',
+    ]);
+  });
+
+  it('las acciones son píldoras: «Gestionar suscripción» siempre; «Ver planes» fuera del plan más alto', () => {
+    agencySubState.value = { currentPlanId: 'pro-plus', error: null, refetch: vi.fn() };
+    agencyPlansState.value = { plans: PRO_PLUS_CATALOG, isLoading: false };
+    render();
+    const links = Array.from(popover().querySelectorAll('a'));
+    const ver = links.find((a) => a.textContent?.includes('Ver planes'))!;
+    const gestionar = links.find((a) => a.textContent?.includes('Gestionar suscripción'))!;
+    expect(ver.getAttribute('href')).toBe('/panel/inmobiliaria/upgrade');
+    expect(gestionar.getAttribute('href')).toBe('/panel/inmobiliaria/upgrade');
+    expect(ver.className).toContain('rounded-full');
+    expect(gestionar.className).toContain('rounded-full');
+    expect(popover().textContent).not.toContain('Ver Planes');
   });
 });

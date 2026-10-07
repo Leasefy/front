@@ -77,7 +77,21 @@ export function useMyApplications() {
     };
   }, []);
 
-  useRefrescoAutomatico(['applications', 'postulaciones'], fetchMine);
+  // El refresco automático (alguien modificó postulaciones) va SIN «cargando»: lo de la
+  // pantalla se queda y se reemplaza cuando llega lo nuevo. Con el «cargando»
+  // los números pasaban por «—» y volvían a contar desde cero, y parecía que la
+  // pantalla se caía (Nico, 05-10-2026, en Contratos). Si falla, se queda lo
+  // que había: el próximo cambio o la próxima visita lo vuelve a pedir.
+  const refrescarEnSilencio = useCallback(async () => {
+    try {
+      setApplications(await applicationsApi.getMine());
+      setError(null);
+      setErrorCrudo(null);
+    } catch {
+      /* se queda lo que había */
+    }
+  }, []);
+  useRefrescoAutomatico(['applications', 'postulaciones'], refrescarEnSilencio);
   return { applications, isLoading, error, errorCrudo, refetch: fetchMine };
 }
 
@@ -99,7 +113,7 @@ function isApplicationCompleted(
   status: TenantApplicationStatus,
   contract: Contract | undefined,
 ): boolean {
-  if (status === 'rejected' || status === 'withdrawn' || status === 'contract_failed') return true;
+  if (status === 'rejected' || status === 'withdrawn' || status === 'contract_failed' || status === 'no_adjudicado') return true;
   if (status === 'approved') {
     if (!contract) return false;
     return contract.status === 'active' || contract.status === 'expired';
@@ -156,7 +170,30 @@ export function useTenantApplications() {
     [applications, contractsByApp],
   );
 
-  useRefrescoAutomatico(['applications', 'postulaciones'], fetchMine);
+  // El refresco automático (alguien modificó postulaciones) va SIN «cargando»: lo de la
+  // pantalla se queda y se reemplaza cuando llega lo nuevo. Con el «cargando»
+  // los números pasaban por «—» y volvían a contar desde cero, y parecía que la
+  // pantalla se caía (Nico, 05-10-2026, en Contratos). Si falla, se queda lo
+  // que había: el próximo cambio o la próxima visita lo vuelve a pedir.
+  const refrescarEnSilencio = useCallback(async () => {
+    try {
+      const [apps, contracts] = await Promise.all([
+        applicationsApi.getMineForDisplay(),
+        contractsApi.getMine().catch(() => [] as Contract[]),
+      ]);
+      setApplications(apps);
+      const map: Record<string, Contract> = {};
+      for (const c of contracts) {
+        if (c.applicationId) map[c.applicationId] = c;
+      }
+      setContractsByApp(map);
+      setError(null);
+      setErrorCrudo(null);
+    } catch {
+      /* se queda lo que había */
+    }
+  }, []);
+  useRefrescoAutomatico(['applications', 'postulaciones'], refrescarEnSilencio);
   return { applications, active, completed, contractsByApp, isLoading, error, errorCrudo, refetch: fetchMine };
 }
 

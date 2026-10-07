@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useId, useRef, useState } from 'react';
+import { MotionIndicator, Stagger, StaggerItem } from '@leasefy/cadence';
 import type { Icon } from '@phosphor-icons/react';
 import { CaretDown, CaretLeft, CaretRight, Check } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
@@ -112,6 +113,14 @@ export interface BarraDePestanasProps {
   caras?: readonly CaraDeLaBarra[];
   /** Cómo se llama el conjunto de caras para un lector de pantalla. */
   carasAriaLabel?: string;
+  /**
+   * Sólo `nivel="secciones"`: la clave del juego de cards que se ve (módulo +
+   * cara). Si viene, las cards ENTRAN escalonadas (`Stagger`, 4 px) cada vez
+   * que la clave cambia — otro módulo, otra cara, la franja que vuelve
+   * después de una ficha—. Sin ella (la primera pintada del panel) se pintan
+   * quietas: esa entrada ya la pone el template de afuera.
+   */
+  escalonar?: string;
 }
 
 const PILDORA_IA = (
@@ -120,8 +129,17 @@ const PILDORA_IA = (
   </span>
 );
 
+/**
+ * Movimiento (sistema de Cadence): la marca de la activa —la card blanca de
+ * las secciones y el subrayado de las pestañas— es un `MotionIndicator` que se
+ * DESLIZA de la vieja a la nueva al navegar (la barra vive en el layout del
+ * panel, así que no se vuelve a montar). Con movimiento reducido salta. El
+ * `layoutId` sale de `useId()`: dos barras en la misma página no se roban la
+ * marca.
+ */
+
 /** Una sección del módulo: card chica dentro del rectángulo. */
-function CardDeSeccion({ item }: { item: PestanaDeBarra }) {
+function CardDeSeccion({ item, indicador }: { item: PestanaDeBarra; indicador: string }) {
   const IconoDeLaSeccion = item.icon;
   return (
     <Link
@@ -130,11 +148,18 @@ function CardDeSeccion({ item }: { item: PestanaDeBarra }) {
       data-activa={item.active ? 'true' : undefined}
       data-tour-target={item.dataTourTarget}
       className={cn(
-        'group relative flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-sm px-3 text-[13px] transition-colors duration-150',
+        'group relative isolate flex h-8 shrink-0 items-center gap-2 whitespace-nowrap rounded-sm px-3 text-[13px] transition-colors duration-fast',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-surface-muted',
-        item.active ? 'bg-surface font-medium text-fg shadow-sm' : 'text-fg-muted hover:bg-surface/60 hover:text-fg',
+        item.active ? 'font-medium text-fg' : 'text-fg-muted hover:bg-surface/60 hover:text-fg',
       )}
     >
+      {item.active && (
+        <MotionIndicator
+          layoutId={indicador}
+          data-indicador-de-la-activa=""
+          className="inset-0 -z-10 rounded-sm bg-surface shadow-sm"
+        />
+      )}
       <IconoDeLaSeccion
         className={cn('h-4 w-4', item.active ? 'text-primary' : 'text-fg-subtle group-hover:text-fg')}
         weight={item.active ? 'fill' : 'regular'}
@@ -146,7 +171,7 @@ function CardDeSeccion({ item }: { item: PestanaDeBarra }) {
 }
 
 /** Una función dentro de la sección: pestaña subrayada. */
-function PestanaDeProfundidad({ item }: { item: PestanaDeBarra }) {
+function PestanaDeProfundidad({ item, indicador }: { item: PestanaDeBarra; indicador: string }) {
   const IconoDeLaPestana = item.icon;
   return (
     <Link
@@ -165,12 +190,13 @@ function PestanaDeProfundidad({ item }: { item: PestanaDeBarra }) {
       />
       {item.label}
       {item.ia && PILDORA_IA}
-      <span
-        className={cn(
-          'absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary transition-opacity duration-150',
-          item.active ? 'opacity-100' : 'opacity-0',
-        )}
-      />
+      {item.active && (
+        <MotionIndicator
+          layoutId={indicador}
+          data-indicador-de-la-activa=""
+          className="inset-x-2 -bottom-px h-0.5 rounded-full bg-primary"
+        />
+      )}
     </Link>
   );
 }
@@ -334,7 +360,9 @@ export function BarraDePestanas({
   pathname,
   caras,
   carasAriaLabel,
+  escalonar,
 }: BarraDePestanasProps) {
+  const indicador = `${useId()}-activa`;
   const [scrollEl, setScrollEl] = useState<HTMLElement | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
   const [overflow, setOverflow] = useState({ start: false, end: false });
@@ -493,6 +521,27 @@ export function BarraDePestanas({
             // El rectángulo: UN riel hundido con las cards adentro. Con dos
             // caras, acá abajo van SÓLO las de la cara elegida — la elección
             // vive en el renglón de arriba, que es otro nivel.
+            escalonar !== undefined ? (
+              // Un juego de cards NUEVO (otro módulo, otra cara): entran en
+              // fila, 4 px y 40 ms entre una y otra (techo de 320 ms). La
+              // `key` lo vuelve a montar sólo cuando cambia el juego; pasar
+              // de una sección a otra del mismo módulo sólo desliza la marca.
+              <Stagger
+                key={escalonar}
+                distance="xs"
+                layout={false}
+                className="inline-flex shrink-0 items-center gap-0.5 rounded-[12px] bg-surface-muted p-1"
+              >
+                {items.map((item, i) => (
+                  <StaggerItem key={item.href} className="flex shrink-0 items-center">
+                    {item.sinCara === false && items[i - 1]?.sinCara === true && (
+                      <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-border" />
+                    )}
+                    <CardDeSeccion item={item} indicador={indicador} />
+                  </StaggerItem>
+                ))}
+              </Stagger>
+            ) : (
             <div className="inline-flex shrink-0 items-center gap-0.5 rounded-[12px] bg-surface-muted p-1">
               {items.map((item, i) => (
                 <Fragment key={item.href}>
@@ -503,12 +552,13 @@ export function BarraDePestanas({
                   {item.sinCara === false && items[i - 1]?.sinCara === true && (
                     <span aria-hidden="true" className="mx-1 h-5 w-px shrink-0 bg-border" />
                   )}
-                  <CardDeSeccion item={item} />
+                  <CardDeSeccion item={item} indicador={indicador} />
                 </Fragment>
               ))}
             </div>
+            )
           ) : (
-            items.map((item) => <PestanaDeProfundidad key={item.href} item={item} />)
+            items.map((item) => <PestanaDeProfundidad key={item.href} item={item} indicador={indicador} />)
           )}
         </nav>
       </div>

@@ -27,7 +27,13 @@ export interface UsePilotoInboxResult {
   total: number
   porPrioridad: { alta: number; media: number; baja: number }
   isLoading: boolean
-  error: string | null
+  /**
+   * El error ENTERO, no su texto (ARREGLOS-4, 03-10-2026): el `ApiError` del
+   * micro, el 503 «el asistente de Leasefy no está disponible» de
+   * `agentFetch`, el de red o el de «no contestó a tiempo». La pantalla lo dice
+   * con `FalloDeCarga` / `mensajeParaLaPersona`. `null` si no falló.
+   */
+  error: unknown
   /** Backend 404 — la bandeja aún no está publicada (no es un error). */
   notAvailable: boolean
   refetch: () => Promise<void>

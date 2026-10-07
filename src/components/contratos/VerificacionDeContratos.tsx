@@ -20,10 +20,12 @@
  */
 
 import { useCallback, useRef, useState } from "react";
+import { Presence } from "@leasefy/cadence";
 import { CheckCircle, Question, Warning } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { contractsApi } from "@/lib/api/contracts.service";
+import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
 import type { VeredictoDeFila } from "@/lib/api/contracts.service";
 import {
   verificarLoteCompleto,
@@ -75,16 +77,23 @@ export function VerificacionDeContratos({ lote, deLaActivacion, aviso }: Props) 
         { debeParar: () => pararRef.current },
       );
       setResultado(r);
-    } catch {
+    } catch (e) {
       /*
        * Un fallo del verificador NO puede leerse como «los contratos están
        * mal» ni como «están bien»: se dice que no se pudo comprobar y se
        * ofrece reintentar. Los contratos ya están migrados; esto sólo los
        * mira.
+       *
+       * Sistema de errores (02-10-2026): el motivo sale del traductor. Antes
+       * el texto era fijo para todo —un 409, un 5xx, la red— y la persona
+       * reintentaba igual aunque el problema no fuera de ella.
        */
-      setError(
-        "No pudimos contrastar los contratos contra el archivo. Los contratos que ya se activaron no cambiaron: vuelve a intentarlo.",
-      );
+      const motivo = mensajeParaLaPersona(e, {
+        porDefecto:
+          "No pudimos contrastar los contratos contra el archivo. Vuelve a intentarlo.",
+        accion: "contrastar los contratos contra el archivo",
+      });
+      setError(`${motivo} Los contratos que ya se activaron no cambiaron.`);
     } finally {
       setCorriendo(false);
       setProgreso(null);
@@ -146,11 +155,9 @@ export function VerificacionDeContratos({ lote, deLaActivacion, aviso }: Props) 
         </p>
       ) : null}
 
-      {error ? (
-        <p className="text-sm text-danger" data-testid="error-verificacion">
-          {error}
-        </p>
-      ) : null}
+      <Presence show={Boolean(error)} initial={false} distance="xs" as="p" className="text-sm text-danger" data-testid="error-verificacion" role="alert">
+        {error}
+      </Presence>
 
       {corriendo && progreso ? (
         <p className="text-sm text-muted-foreground" data-testid="progreso-verificacion">

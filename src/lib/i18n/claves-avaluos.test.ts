@@ -55,6 +55,15 @@ const CLAVES_SALA = [
   'col.creado',
   'firmaNota',
   'comoFunciona.title',
+  // El cajón de «¿Cómo funciona?» (05-10-2026): su título y su bajada.
+  'comoFunciona.titulo',
+  'comoFunciona.descripcion',
+  // «Descargar certificado» de las filas firmadas (05-10-2026, PROMESAS-Y-DIRECTOR).
+  'col.certificado',
+  'descargarCertificado',
+  'descargarCertificadoDe',
+  'descargandoCertificado',
+  'errorDescargar',
 ]
 
 /** Los cinco estados del ciclo de vida del certificado, tal como los expone el micro. */
@@ -62,11 +71,15 @@ const CLAVES_ESTADOS = ['borrador', 'enRevision', 'firmado', 'rechazado', 'entre
   (e) => `estados.${e}`,
 )
 
-/** Los cuatro pasos de «¿Cómo funciona?», título y descripción cada uno. */
-const CLAVES_PASOS = [1, 2, 3, 4].flatMap((n) => [
-  `comoFunciona.step${n}.title`,
-  `comoFunciona.step${n}.desc`,
-])
+/**
+ * Los cuatro pasos de «¿Cómo funciona?», título y descripción cada uno, y «Lo
+ * que haces tú» en los dos pasos que le piden algo a la persona (1 y 4).
+ */
+const CLAVES_PASOS = [
+  ...[1, 2, 3, 4].flatMap((n) => [`comoFunciona.step${n}.title`, `comoFunciona.step${n}.desc`]),
+  'comoFunciona.step1.tuParte',
+  'comoFunciona.step4.tuParte',
+]
 
 /** Lo que consumen la cola y la ficha del caso. */
 const CLAVES_COLA = [

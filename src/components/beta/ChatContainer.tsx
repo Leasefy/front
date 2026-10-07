@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { ArrowDown } from '@phosphor-icons/react';
-import { ChatDataCard } from '@leasefy/cadence';
+import { ChatDataCard, motionDistance, motionDuration, motionEase } from '@leasefy/cadence';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { sinTablasDeMarkdown, tieneTabla } from '@/lib/chat/bloques';
 import { mosaicosDelEstado } from '@/lib/chat/tarjeta-del-estado';
@@ -17,7 +18,6 @@ import { UserBubble } from './UserBubble';
 import { AssistantBubble } from './AssistantBubble';
 import { ChatInput } from './ChatInput';
 import { TypingIndicator } from './TypingIndicator';
-import { AgentActivityIndicator } from './AgentActivityIndicator';
 import { AgentTaskThread } from './AgentTaskThread';
 import { AgentTaskProgress } from './AgentTaskProgress';
 import { ResponseCard } from './ResponseCard';
@@ -28,17 +28,15 @@ import { WorkspaceView } from './WorkspaceView';
 import { AccionPropuestaCard } from './AccionPropuestaCard';
 import { DecisionCard } from './DecisionCard';
 import { ChatConversationBar } from './ChatConversationBar';
+import { CabeceraDeLaRespuesta, ResumenDelTurno } from './TurnoDelAsistente';
+import { DespuesDeUnMomento, PensamientoDelTurno, RelojDelTurno } from './PensamientoDelTurno';
+import { leerElTurno, type MensajeDelChat } from '@/lib/agentes/agente-que-habla';
+import { leerPensamientoGuardado } from '@/lib/chat/pensamiento';
+import { EquipoDeAgentesProvider, useEquipoDeAgentes } from '@/components/agentes/equipo-de-agentes-context';
+import { RazonamientoDelTurno } from '@/components/agentes/TurnoDelEquipo';
 
 interface ChatContainerProps {
   className?: string;
-}
-
-/**
- * Helper: format duration in ms to human string.
- */
-function formatDuration(ms: number): string {
-  if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
 }
 
 /**
@@ -68,14 +66,37 @@ function textoSinTablaRepetida(message: ChatMessage): string {
 }
 
 /**
- * ChatContainer - Main chat area with premium visual experience.
+ * ChatContainer — el chat: la llegada (estado 0) o la conversación.
  *
- * Empty state: BetaWelcome with animated prompt cards.
- * Active state: message list with ResponseCards + WorkspaceView.
- * Features: subtle dot grid background, floating input, glass morphism throughout.
+ * Desde el 02-10-2026 monta «El equipo» (`EquipoDeAgentesProvider`, commit
+ * `27a3b2b8`) alrededor de todo: el modal se abre desde la llegada, desde la
+ * cabecera de la conversación y desde el orbe de cada respuesta. Las
+ * ejecuciones de la conversación abierta alimentan su «En esta conversación».
  */
-export function ChatContainer({ className }: ChatContainerProps) {
+export function ChatContainer(props: ChatContainerProps) {
+  const { messages } = useBetaChatContext();
+  const ejecuciones = useMemo(() => messages.flatMap((m) => m.agentActivity?.agents ?? []), [messages]);
+  return (
+    <EquipoDeAgentesProvider ejecuciones={ejecuciones}>
+      <ConversacionDelChat {...props} />
+    </EquipoDeAgentesProvider>
+  );
+}
+
+/**
+ * La conversación (o la llegada). Cada respuesta del asistente lleva arriba la
+ * cabecera del turno —el orbe del orquestador, que ES quien responde— y, según
+ * el momento:
+ *   pensando / trabajando → el PENSAMIENTO EN VIVO (02-10-2026): cada paso del
+ *                micro mientras pasa, con el tiempo corriendo en la cabecera;
+ *   respondió  → el pensamiento plegado en «Cómo lo pensó» (que se abre en las
+ *                frases del micro y la delegación), el texto y las acciones.
+ * Con un micro viejo, que no cuenta su pensamiento, quedan de respaldo las
+ * frases de la espera, la tarjeta de los pasos y «Cómo lo pensó» debajo.
+ */
+function ConversacionDelChat({ className }: ChatContainerProps) {
   const { t } = useI18n();
+  const { abrir: abrirEquipo } = useEquipoDeAgentes();
   const {
     isLoading,
     messages,
@@ -86,7 +107,7 @@ export function ChatContainer({ className }: ChatContainerProps) {
     activeAgentBlock,
     isAgentsRunning,
     turnSteps,
-    retryAgent,
+    pensamiento,
     selectDecisionOption,
     confirmarAccionDelMensaje,
     cancelarAccionDelMensaje,
@@ -150,6 +171,17 @@ export function ChatContainer({ className }: ChatContainerProps) {
   const hasMessages = messages.length > 0;
   const isBusy = isThinking || isStreaming || isAgentsRunning;
 
+  // La lectura del turno que corre, para la franja del compositor (el orbe
+  // de quien trabaja y las delegaciones al desplegarla).
+  const ultimoDelAsistente = [...messages].reverse().find((m) => m.role === 'assistant') ?? null;
+  const turnoEnCurso = useMemo(
+    () =>
+      turnSteps.length > 0
+        ? leerElTurno({ mensaje: ultimoDelAsistente, pasos: turnSteps, enCurso: isBusy })
+        : null,
+    [turnSteps, ultimoDelAsistente, isBusy]
+  );
+
   if (isLoading) {
     return (
       <div className={cn('flex flex-col h-full', className)}>
@@ -171,16 +203,16 @@ export function ChatContainer({ className }: ChatContainerProps) {
   }
 
   return (
-    <div
-      className={cn('flex flex-col h-full', className)}
-    >
+    // `chat-grises`: en oscuro, los grises neutros del chat (Nico, 02-10:
+    // «unos grises como amarillos súper feos»); en claro no cambia nada.
+    <div className={cn('chat-grises flex flex-col h-full', className)}>
       {hasMessages ? (
         <>
-          {/* Barra de conversación — plantillas siempre alcanzables + terminar.
-              Sin esto, escribir el primer mensaje tapaba el estado-0 para
-              siempre: no había forma de volver a las plantillas ni de cerrar
-              la conversación y empezar otra (Nico, 2026-08-27). */}
-          <ChatConversationBar onSelectTemplate={sendMessage} />
+          {/* Barra de conversación — el equipo + terminar. Sin esto,
+              escribir el primer mensaje tapaba el estado-0 para siempre: no
+              había forma de cerrar la conversación y empezar otra (Nico,
+              2026-08-27). Las plantillas viven en el compositor (02-10). */}
+          <ChatConversationBar />
 
           {/* Messages area */}
           {/* data-lenis-prevent: Lenis hijacks wheel events globally; without it
@@ -202,16 +234,77 @@ export function ChatContainer({ className }: ChatContainerProps) {
                   index === messages.length - 1;
 
                 if (message.role === 'user') {
-                  // `data-pregunta`: el ancla del scroll del turno.
+                  // `data-pregunta`: el ancla del scroll del turno. La última
+                  // pregunta sube a su sitio al enviarla (`chat-sube`, la
+                  // `sa-rise` de la referencia; quieta con reducir movimiento).
                   return (
-                    <div key={message.id} data-pregunta={message.id}>
+                    <div
+                      key={message.id}
+                      data-pregunta={message.id}
+                      className={message.id === ultimaPregunta ? 'chat-sube' : undefined}
+                    >
                       <UserBubble message={message} />
                     </div>
                   );
                 }
 
-                // Completed agent activity stored on the message (from previous turns)
-                const storedActivity = message.agentActivity;
+                // ── La lectura del turno (02-10, el equipo) ─────────────────
+                // Quién habla (el orquestador), a quién le pasó el trabajo y lo
+                // que pensó. Pura: con los pasos en vivo si es el turno que
+                // corre; si no, con lo que guardó el mensaje (las viejas, «listo»).
+                const enCurso = isLastAssistant && isBusy;
+                const turno = leerElTurno({
+                  mensaje: message,
+                  pasos: isLastAssistant ? turnSteps : [],
+                  enCurso,
+                });
+                // ── El pensamiento (02-10) ───────────────────────────────────
+                // En vivo: el del turno que corre. Guardado: el del mensaje.
+                const enVivo = isLastAssistant && pensamiento && pensamiento.pasos.length > 0 ? pensamiento : null;
+                const guardado = enVivo ? null : leerPensamientoGuardado((message as MensajeDelChat & { pensamiento?: unknown }).pensamiento);
+                const pasosDelPensamiento = enVivo?.pasos ?? guardado?.pasos ?? [];
+                const vivo = Boolean(enVivo && enVivo.fin === null && enCurso);
+                // Con pensamiento (o con «Cómo lo pensó» del micro), todo va
+                // plegado ARRIBA de la respuesta; sin él, lo de siempre.
+                const conPensamiento = pasosDelPensamiento.length > 0 || Boolean(turno.razonamiento);
+                // Esperando el primer paso del turno (el micro nuevo lo manda en < 400 ms).
+                const esperandoElPrimerPaso =
+                  isLastAssistant && enCurso && Boolean(pensamiento) && pensamiento!.pasos.length === 0;
+
+                // El orbe del orquestador: primer hijo de TODAS las ramas, así
+                // React lo conserva al pasar de pensando → trabajando → respuesta.
+                const cabecera = (
+                  <CabeceraDeLaRespuesta
+                    turno={turno}
+                    tipo={message.status === 'complete' && !enCurso ? message.responseMeta?.type : null}
+                    onAbrirEquipo={abrirEquipo}
+                    derecha={
+                      vivo && enVivo ? <RelojDelTurno inicio={enVivo.inicio} fin={enVivo.fin} /> : null
+                    }
+                  />
+                );
+                // Ya respondió: la delegación en UNA línea (se abre en el detalle).
+                const resumenDelTurno = !enCurso ? (
+                  <ResumenDelTurno turno={turno} onAbrirEquipo={abrirEquipo} />
+                ) : null;
+                // El pensamiento: segundo hijo de todas las ramas (con su `key`),
+                // así la lista en vivo se pliega en «Cómo lo pensó» sin remontarse.
+                const pensamientoDelTurno = conPensamiento ? (
+                  <PensamientoDelTurno
+                    key="pensamiento"
+                    pasos={pasosDelPensamiento}
+                    vivo={vivo}
+                    duracionMs={
+                      enVivo ? (enVivo.fin !== null ? enVivo.fin - enVivo.inicio : null) : guardado?.duracionMs ?? null
+                    }
+                    razonamiento={turno.razonamiento}
+                    resumen={resumenDelTurno}
+                  />
+                ) : null;
+                // «Cómo lo pensó» de siempre, debajo: sólo sin el pensamiento plegado arriba.
+                const razonamiento = conPensamiento ? null : <RazonamientoDelTurno turno={turno} className="mt-3" />;
+                // La delegación en su línea: sin pensamiento (con él, va dentro de «Cómo lo pensó»).
+                const resumenSuelto = conPensamiento ? null : resumenDelTurno;
 
                 // "Estado de hoy" KPI glance — rendered under the reply when the
                 // backend (or mock) attached a snapshot to this turn.
@@ -239,33 +332,77 @@ export function ChatContainer({ className }: ChatContainerProps) {
                   <ChatDataCard tiles={mosaicosDelEstado(message.snapshot, t)} />
                 ) : null;
 
-                // For the last assistant message, use live activeAgentBlock if agents are running
-                const liveActivity = isLastAssistant ? activeAgentBlock : null;
+                const decision = message.decision ? (
+                  <DecisionCard
+                    decision={message.decision}
+                    onSelect={
+                      !message.decision.selectedOptionId
+                        ? (optionId) => selectDecisionOption(message.id, optionId)
+                        : undefined
+                    }
+                  />
+                ) : null;
+                const accion = message.accion ? (
+                  <AccionPropuestaCard
+                    propuesta={message.accion.propuesta}
+                    estado={message.accion.estado}
+                    resultado={message.accion.resultado}
+                    error={message.accion.error}
+                    onConfirmar={() => confirmarAccionDelMensaje(message.id)}
+                    onCancelar={() => cancelarAccionDelMensaje(message.id)}
+                  />
+                ) : null;
 
-                // During thinking phase, hide the placeholder assistant bubble
+                // `chat-respuesta`: el grupo que muestra las acciones (copiar,
+                // pulgares) al pasar el cursor; `data-turno`, para las pruebas.
+                const envoltura = 'chat-respuesta space-y-3';
+
+                // Pensando (antes del primer despacho): la cabecera dice «Ori
+                // está pensando» y debajo, las frases de la espera.
+                const indicadorDeEspera = (
+                  <TypingIndicator
+                    // El par pendiente (pregunta + placeholder) no es contexto leído.
+                    historyCount={Math.max(0, messages.length - 2)}
+                    snapshot={message.snapshot ?? null}
+                    actividad={turnSteps.find((p) => p.status === 'running' && p.actividad)?.actividad ?? null}
+                  />
+                );
                 if (isLastAssistant && isThinking) {
-                  return null;
-                }
-
-                // Agentes corriendo: la tarea EN el hilo, a la manera de Manus
-                // (filas planas; el paso activo gira y dice qué hace), en vez de
-                // la tarjeta con borde.
-                if (isLastAssistant && isAgentsRunning && turnSteps.length > 0) {
                   return (
-                    <div key={message.id} className="space-y-3 animate-fade-in">
-                      <AgentTaskThread steps={turnSteps} />
+                    <div key={message.id} className={envoltura} data-turno={message.id}>
+                      {cabecera}
+                      {pensamientoDelTurno ??
+                        (esperandoElPrimerPaso ? (
+                          // Un momento sin nada debajo de «Ori está pensando»; si el
+                          // micro no cuenta su pensamiento (uno viejo), las frases de siempre.
+                          <DespuesDeUnMomento key="espera">{indicadorDeEspera}</DespuesDeUnMomento>
+                        ) : (
+                          indicadorDeEspera
+                        ))}
                     </div>
                   );
                 }
 
-                // Completed message with responseMeta → render ResponseCard
-                if (
-                  message.status === 'complete' &&
-                  message.responseMeta &&
-                  !isLastAssistant
-                ) {
+                // Agentes corriendo: la tarjeta de los pasos EN el hilo, con
+                // cada especialista como delegación («Ori → Laura»).
+                if (isLastAssistant && isAgentsRunning && (turnSteps.length > 0 || pensamientoDelTurno)) {
                   return (
-                    <div key={message.id} className="space-y-3">
+                    <div key={message.id} className={envoltura} data-turno={message.id}>
+                      {cabecera}
+                      {pensamientoDelTurno ?? (
+                        <AgentTaskThread steps={turnSteps} turno={turno} onAbrirEquipo={abrirEquipo} />
+                      )}
+                    </div>
+                  );
+                }
+
+                // Completa con `responseMeta` (o la última que acaba de terminar).
+                if (message.status === 'complete' && message.responseMeta) {
+                  return (
+                    <div key={message.id} className={envoltura} data-turno={message.id}>
+                      {cabecera}
+                      {pensamientoDelTurno}
+                      {resumenSuelto}
                       {responseNeedsCard(message) ? (
                         <>
                           <ResponseCard
@@ -278,104 +415,30 @@ export function ChatContainer({ className }: ChatContainerProps) {
                             entidades={message.entidades}
                             turnoId={message.turnoId}
                             conAcciones={(message.acciones?.length ?? 0) > 0}
-                            className="animate-in fade-in duration-300 motion-reduce:animate-none"
+                            className="animate-in fade-in duration-slow motion-reduce:animate-none"
                           />
                           {/* Lo que ACTÚA en el hilo (23-09): acciones, «¿Lo hago?», resultado, datos. */}
                           <AccionesEnElHilo
                             message={message}
-                            className="animate-in fade-in duration-300 motion-reduce:animate-none"
+                            className="animate-in fade-in duration-slow motion-reduce:animate-none"
                           />
+                          {razonamiento}
                           {/* La tarjeta se quedaba SIN pulgares: justo las
                               respuestas con cifras son las que hay que poder
                               corregir (Nico, 13/09: «un pulgar en CADA
                               respuesta»). Mismas acciones que la burbuja. */}
-                          <MessageActions message={message} />
+                          <MessageActions message={message} siempreVisibles={isLastAssistant} />
                         </>
                       ) : (
-                        <AssistantBubble message={message} />
+                        <AssistantBubble
+                          message={message}
+                          antesDeLasAcciones={razonamiento}
+                          accionesSiempreVisibles={isLastAssistant}
+                        />
                       )}
                       {snapshotCard}
-                      {message.decision && (
-                        <DecisionCard
-                          decision={message.decision}
-                          onSelect={
-                            !message.decision.selectedOptionId
-                              ? (optionId) => selectDecisionOption(message.id, optionId)
-                              : undefined
-                          }
-                        />
-                      )}
-                      {message.accion && (
-                        <AccionPropuestaCard
-                          propuesta={message.accion.propuesta}
-                          estado={message.accion.estado}
-                          resultado={message.accion.resultado}
-                          error={message.accion.error}
-                          onConfirmar={() => confirmarAccionDelMensaje(message.id)}
-                          onCancelar={() => cancelarAccionDelMensaje(message.id)}
-                        />
-                      )}
-                    </div>
-                  );
-                }
-
-                // Last assistant message that just completed with responseMeta
-                if (
-                  isLastAssistant &&
-                  message.status === 'complete' &&
-                  message.responseMeta
-                ) {
-                  return (
-                    <div key={message.id} className="space-y-3">
-                      {responseNeedsCard(message) ? (
-                        <>
-                          <ResponseCard
-                            meta={message.responseMeta}
-                            content={textoSinTablaRepetida(message)}
-                            turnoId={message.turnoId}
-                          />
-                          <RespuestaConForma
-                            bloques={message.bloques}
-                            entidades={message.entidades}
-                            turnoId={message.turnoId}
-                            conAcciones={(message.acciones?.length ?? 0) > 0}
-                            className="animate-in fade-in duration-300 motion-reduce:animate-none"
-                          />
-                          {/* Lo que ACTÚA en el hilo (23-09): acciones, «¿Lo hago?», resultado, datos. */}
-                          <AccionesEnElHilo
-                            message={message}
-                            className="animate-in fade-in duration-300 motion-reduce:animate-none"
-                          />
-                          {/* La tarjeta se quedaba SIN pulgares: justo las
-                              respuestas con cifras son las que hay que poder
-                              corregir (Nico, 13/09: «un pulgar en CADA
-                              respuesta»). Mismas acciones que la burbuja. */}
-                          <MessageActions message={message} />
-                        </>
-                      ) : (
-                        <AssistantBubble message={message} />
-                      )}
-                      {snapshotCard}
-                      {message.decision && (
-                        <DecisionCard
-                          decision={message.decision}
-                          onSelect={
-                            !message.decision.selectedOptionId
-                              ? (optionId) => selectDecisionOption(message.id, optionId)
-                              : undefined
-                          }
-                        />
-                      )}
-                      {message.accion && (
-                        <AccionPropuestaCard
-                          propuesta={message.accion.propuesta}
-                          estado={message.accion.estado}
-                          resultado={message.accion.resultado}
-                          error={message.accion.error}
-                          onConfirmar={() => confirmarAccionDelMensaje(message.id)}
-                          onCancelar={() => cancelarAccionDelMensaje(message.id)}
-                        />
-                      )}
+                      {decision}
+                      {accion}
                     </div>
                   );
                 }
@@ -383,7 +446,9 @@ export function ChatContainer({ className }: ChatContainerProps) {
                 // Streaming state — card only if the response needs it; else plain text
                 if (isLastAssistant && isStreaming && message.responseMeta) {
                   return (
-                    <div key={message.id} className="space-y-3">
+                    <div key={message.id} className={envoltura} data-turno={message.id}>
+                      {cabecera}
+                      {pensamientoDelTurno}
                       {responseNeedsCard(message) ? (
                         <ResponseCard
                           meta={message.responseMeta}
@@ -396,75 +461,32 @@ export function ChatContainer({ className }: ChatContainerProps) {
                           }
                         />
                       ) : (
-                        <AssistantBubble
-                          message={message}
-                          streamingContent={streamingContent}
-                        />
+                        <AssistantBubble message={message} streamingContent={streamingContent} />
                       )}
                       {snapshotCard}
                     </div>
                   );
                 }
 
-                // Fallback: legacy AssistantBubble for messages without responseMeta
+                // Respaldo: un mensaje sin `responseMeta` (los viejos, el error,
+                // el que se está escribiendo sin metadatos). La delegación va en
+                // su línea, en lugar del viejo «N resultados · duración».
                 return (
-                  <div key={message.id} className="space-y-3">
-                    {/* Agent activity summary (collapsed) for older messages */}
-                    {(liveActivity || storedActivity) && (
-                      <div className="text-xs text-muted-foreground/60 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-success inline-block" />
-                        {(liveActivity || storedActivity)!.agents.length} {t('beta.agents.results').toLowerCase()}
-                        {' · '}
-                        {formatDuration(
-                          (liveActivity || storedActivity)!.agents.reduce(
-                            (sum, a) => sum + (a.durationMs ?? 0),
-                            0
-                          )
-                        )}
-                      </div>
-                    )}
-
-                    {/* Decision card */}
-                    {message.decision && (
-                      <DecisionCard
-                        decision={message.decision}
-                        onSelect={
-                          !message.decision.selectedOptionId
-                            ? (optionId) => selectDecisionOption(message.id, optionId)
-                            : undefined
-                        }
-                      />
-                    )}
-
-                    {message.accion && (
-                      <AccionPropuestaCard
-                        propuesta={message.accion.propuesta}
-                        estado={message.accion.estado}
-                        resultado={message.accion.resultado}
-                        error={message.accion.error}
-                        onConfirmar={() => confirmarAccionDelMensaje(message.id)}
-                        onCancelar={() => cancelarAccionDelMensaje(message.id)}
-                      />
-                    )}
-
-                    {/* Legacy assistant bubble */}
+                  <div key={message.id} className={envoltura} data-turno={message.id}>
+                    {cabecera}
+                    {pensamientoDelTurno}
+                    {message.status !== 'error' && resumenSuelto}
+                    {decision}
+                    {accion}
                     <AssistantBubble
                       message={message}
                       streamingContent={isLastAssistant && isStreaming ? streamingContent : undefined}
+                      antesDeLasAcciones={razonamiento}
+                      accionesSiempreVisibles={isLastAssistant}
                     />
                   </div>
                 );
               })}
-
-              {/* Typing indicator shown during the thinking delay */}
-              {isThinking && (
-                <TypingIndicator
-                  // El par pendiente (pregunta + placeholder) no es contexto leído.
-                  historyCount={Math.max(0, messages.length - 2)}
-                  snapshot={messages[messages.length - 1]?.snapshot ?? null}
-                  actividad={turnSteps.find((p) => p.status === 'running' && p.actividad)?.actividad ?? null}
-                />
-              )}
 
               {/* Fin del contenido: hasta acá se mide (el espacio va después). */}
               <div ref={scrollRef} data-fin-del-hilo />
@@ -474,25 +496,40 @@ export function ChatContainer({ className }: ChatContainerProps) {
             <div ref={espacioRef} aria-hidden data-espacio-del-hilo style={{ height: 0 }} />
           </div>
 
-          {/* «Ver el resto»: flota sobre el borde de abajo del hilo mientras
-              quede respuesta debajo. Una caja de alto cero pegada al hilo le da
-              dónde anclarse sin envolver el hilo (y fuera de su `aria-live`,
-              para que el lector de pantalla no lo anuncie en cada cambio). */}
-          <div className="relative h-0">
+          {/* «Ver el resto», mientras quede respuesta debajo. Va fuera del hilo
+              (y de su `aria-live`, para que el lector de pantalla no lo anuncie
+              en cada cambio).
+              🔴 En su PROPIA franja, entre el hilo y la caja de escribir, en
+              TODOS los anchos (Nico, 02-10-2026: primero el celular; en la
+              noche, también el escritorio). Flotando sobre el borde del hilo
+              tapaba una línea del pensamiento en vivo. La franja crece sólo
+              mientras hay botón: el hilo termina encima de él y ninguna línea
+              queda debajo. Sin botón, alto cero. */}
+          <div
+            className={cn('relative shrink-0', verResto ? 'h-12' : 'h-0')}
+            data-testid="franja-ver-el-resto"
+          >
             {verResto && (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                hideArrow
-                onClick={irAlResto}
-                // Discreto (contorno, chico) pero opaco: no se lee el texto de detrás.
-                className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 gap-1.5 bg-surface shadow-md"
-                data-testid="ver-el-resto"
+              <motion.div
+                initial={{ opacity: 0, y: motionDistance.xs }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: motionDuration.base, ease: motionEase.enter }}
+                className="pointer-events-none absolute inset-x-0 bottom-1.5 z-10 flex justify-center"
               >
-                {t('beta.enElChat.verElResto')}
-                <ArrowDown className="size-4" aria-hidden />
-              </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  hideArrow
+                  onClick={irAlResto}
+                  // Discreto (contorno, chico) pero opaco: no se lee el texto de detrás.
+                  className="pointer-events-auto gap-1.5 bg-surface shadow-md"
+                  data-testid="ver-el-resto"
+                >
+                  {t('beta.enElChat.verElResto')}
+                  <ArrowDown className="size-4" aria-hidden />
+                </Button>
+              </motion.div>
             )}
           </div>
 
@@ -502,16 +539,22 @@ export function ChatContainer({ className }: ChatContainerProps) {
           <ChatInput
             onSend={sendMessage}
             disabled={isBusy}
-            topSlot={turnSteps.length > 0 ? <AgentTaskProgress steps={turnSteps} /> : null}
+            topSlot={
+              turnSteps.length > 0 ? (
+                <AgentTaskProgress
+                  steps={turnSteps}
+                  turno={turnoEnCurso}
+                  pensamiento={pensamiento && pensamiento.pasos.length > 0 ? pensamiento : null}
+                  onAbrirEquipo={abrirEquipo}
+                />
+              ) : null
+            }
           />
         </>
       ) : (
         /* Empty state — Manus-style: greeting + hero input + pills, all centered */
         <div data-lenis-prevent className="relative flex-1 overflow-y-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <BetaWelcome
-            onPromptClick={sendMessage}
-            inputSlot={<ChatInput variant="hero" onSend={sendMessage} disabled={isBusy} />}
-          />
+          <BetaWelcome onPromptClick={sendMessage} />
         </div>
       )}
     </div>

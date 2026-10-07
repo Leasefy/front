@@ -1,14 +1,14 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { ArrowsClockwise, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { useBetaChatContext } from '@/lib/context/BetaChatContext';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { MessageActions } from './MessageActions';
-import { LeasefyMark } from './LeasefyMark';
-import { ChatOrb } from './ChatOrb';
 import { RespuestaConForma } from './RespuestaConForma';
 import { AccionesEnElHilo } from './AccionesEnElHilo';
 import { sinTablasDeMarkdown, tieneTabla } from '@/lib/chat/bloques';
@@ -17,21 +17,36 @@ interface AssistantBubbleProps {
   message: ChatMessage;
   /** Partial content during streaming (overrides message.content) */
   streamingContent?: string;
+  /**
+   * Lo que va después del texto y antes de las acciones (02-10: «Cómo lo
+   * pensó», `RazonamientoDelTurno`).
+   */
+  antesDeLasAcciones?: ReactNode;
+  /** Copiar, rehacer y los pulgares a la vista sin pasar el cursor (la última respuesta). */
+  accionesSiempreVisibles?: boolean;
   className?: string;
 }
 
 /**
- * AssistantBubble - Clean left-aligned assistant message.
- * Small icon + flowing text (no bubble container).
+ * AssistantBubble — el texto de una respuesta del asistente, sin burbuja.
  *
- * Las cuatro acciones de abajo (copiar · rehacer · pulgares) existían dibujadas
- * desde el rediseño, con `aria-label` y SIN un solo `onClick` (Nico,
- * 2026-08-27: «nada de esas acciones funciona, no tienen tooltips, toasts,
- * función real»). Viven ahora en `MessageActions`, compartidas con la tarjeta
- * (`ResponseCard`): antes una respuesta con cifras se pintaba como tarjeta y se
- * quedaba SIN pulgares, que son justo las que hay que poder corregir.
+ * Desde el 02-10-2026 la identidad (el orbe del orquestador y su nombre) va
+ * en la cabecera del turno (`CabeceraDeLaRespuesta`), arriba de esto: acá ya
+ * no hay avatar a la izquierda y el texto ocupa todo el ancho de lectura.
+ *
+ * Las cuatro acciones de abajo (copiar · rehacer · pulgares) viven en
+ * `MessageActions`, compartidas con la tarjeta (`ResponseCard`): antes una
+ * respuesta con cifras se pintaba como tarjeta y se quedaba SIN pulgares, que
+ * son justo las que hay que poder corregir (Nico, 2026-08-27 y 13-09).
  */
-export function AssistantBubble({ message, streamingContent, className }: AssistantBubbleProps) {
+export function AssistantBubble({
+  message,
+  streamingContent,
+  antesDeLasAcciones,
+  accionesSiempreVisibles = false,
+  className,
+}: AssistantBubbleProps) {
+  const { t } = useI18n();
   const { regenerateResponse, isThinking, isStreaming, isAgentsRunning } = useBetaChatContext();
   const isStreamingThis = message.status === 'streaming';
   const isSending = message.status === 'sending';
@@ -45,34 +60,31 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
   const conForma = message.status === 'complete';
 
   /*
-   * B1 — el turno que falló. Antes quedaba `complete`: el aviso se pintaba con
-   * la cara de una respuesta, con pulgares, y no había forma de volver a
-   * preguntar sin reescribir. «Reintentar» rehace ESE turno con el mismo
-   * texto (`regenerateResponse` recorta desde la pregunta y la reenvía).
+   * B1 — el turno que falló. «Reintentar» va DENTRO del aviso (Nico, 02-10:
+   * «integrado al mensaje cuando la respuesta fue un fallo, no suelto
+   * abajo»): rehace ESE turno con el mismo texto (`regenerateResponse` recorta
+   * desde la pregunta y la reenvía). Sin pulgares: no hay respuesta que juzgar.
    */
   if (message.status === 'error') {
     const ocupado = isThinking || isStreaming || isAgentsRunning;
     return (
-      <div className={cn('flex gap-3', className)} data-testid="burbuja-con-error">
-        <div className="flex-shrink-0 w-7 h-7 mt-0.5 rounded-full bg-danger-soft flex items-center justify-center">
-          <WarningCircle className="w-4 h-4 text-danger" weight="bold" aria-hidden="true" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div
-            role="alert"
-            className="rounded-lg border border-danger/30 bg-danger-soft px-4 py-3 text-sm leading-relaxed text-danger"
-          >
-            {message.content}
+      <div className={cn('min-w-0', className)} data-testid="burbuja-con-error">
+        <div className="chat-aviso-de-fallo flex flex-col gap-3 rounded-[18px] border border-danger/20 bg-danger-soft px-4 py-3 sm:flex-row sm:items-center">
+          <div role="alert" className="flex min-w-0 flex-1 items-start gap-2.5 text-[15px] leading-relaxed text-fg">
+            <WarningCircle className="mt-[3px] size-[18px] shrink-0 text-danger" weight="fill" aria-hidden="true" />
+            <span className="min-w-0">{message.content}</span>
           </div>
           <Button
+            type="button"
             variant="outline"
             size="sm"
-            className="mt-2 gap-1.5"
+            hideArrow
+            className="shrink-0 gap-1.5 self-start bg-surface sm:self-auto"
             disabled={ocupado}
             onClick={() => regenerateResponse(message.id)}
           >
             <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
-            Reintentar
+            {t('beta.actions.reintentar')}
           </Button>
         </div>
       </div>
@@ -80,61 +92,42 @@ export function AssistantBubble({ message, streamingContent, className }: Assist
   }
 
   return (
-    <div className={cn('flex gap-3', className)}>
-      {/* Avatar. Mientras la respuesta se está generando ES el orbe: hace de
-          identidad y de indicador de carga a la vez, y evita tener la marca
-          chica y un segundo indicador compitiendo por decir lo mismo. */}
-      {isSending || isStreamingThis ? (
-        <div className="flex-shrink-0 w-7 mt-0.5 flex items-start justify-center">
-          <ChatOrb size={28} className="-mt-[13px] -ml-[13px]" label="Generando respuesta" />
-        </div>
+    <div className={cn('min-w-0', className)}>
+      {isSending ? (
+        <span className="sr-only">{t('beta.chat.generando')}</span>
       ) : (
-        /* Avatar final = el monograma de marca tal como viene en
-           «Leasefy Monogram White on Blue.svg»: círculo azul #1A40FF con el
-           trazo blanco. Antes era un cuadrado gris con el trazo azul, más
-           chico (Nico, 2026-08-27: «un poquito más grande, círculo y no
-           cuadrado, con el nuevo logo»). 28px, el mismo diámetro que el orbe
-           mientras escribe, para que el cambio orbe→marca no salte. */
-        <div className="flex-shrink-0 w-7 h-7 mt-0.5 rounded-full bg-[#1A40FF] flex items-center justify-center">
-          <LeasefyMark className="w-4 h-auto text-white" />
-        </div>
+        <>
+          {/* El texto, sin burbuja ni recuadro: tipografía de lectura. */}
+          <div className="chat-lectura text-[16px] leading-[1.65] text-fg">
+            <MarkdownRenderer content={displayContent} isStreaming={isStreamingThis} />
+          </div>
+
+          {/* Lo que tiene FORMA (tabla, cifra, aviso, entidad) aparece cuando
+              el texto terminó de escribirse, con un fundido: el texto
+              presenta, la tarjeta muestra. */}
+          {conForma && (
+            <>
+              <RespuestaConForma
+                bloques={message.bloques}
+                entidades={message.entidades}
+                turnoId={message.turnoId}
+                conAcciones={(message.acciones?.length ?? 0) > 0}
+                className="mt-4 animate-in fade-in slide-in-from-bottom-1 duration-slow motion-reduce:animate-none"
+              />
+              {/* Lo que ACTÚA en el hilo (23-09, «todo en el chat»): lo que se
+                  puede hacer, «¿Lo hago?», el resultado y los datos que faltan. */}
+              <AccionesEnElHilo
+                message={message}
+                className="mt-4 animate-in fade-in slide-in-from-bottom-1 duration-slow motion-reduce:animate-none"
+              />
+            </>
+          )}
+
+          {conForma && antesDeLasAcciones}
+
+          <MessageActions message={message} siempreVisibles={accionesSiempreVisibles} />
+        </>
       )}
-
-      <div className="flex-1 min-w-0">
-        {isSending ? (
-          <span className="sr-only">Generando respuesta</span>
-        ) : (
-          <>
-            {/* Content — no bubble, just flowing text */}
-            <div className="text-[16px] leading-[1.6] text-foreground">
-              <MarkdownRenderer content={displayContent} isStreaming={isStreamingThis} />
-            </div>
-
-            {/* Lo que tiene FORMA (tabla, cifra, aviso, entidad) aparece cuando
-                el texto terminó de escribirse, con un fundido: el texto
-                presenta, la tarjeta muestra. */}
-            {conForma && (
-              <>
-                <RespuestaConForma
-                  bloques={message.bloques}
-                  entidades={message.entidades}
-                  turnoId={message.turnoId}
-                  conAcciones={(message.acciones?.length ?? 0) > 0}
-                  className="mt-4 animate-in fade-in slide-in-from-bottom-1 duration-300 motion-reduce:animate-none"
-                />
-                {/* Lo que ACTÚA en el hilo (23-09, «todo en el chat»): lo que se
-                    puede hacer, «¿Lo hago?», el resultado y los datos que faltan. */}
-                <AccionesEnElHilo
-                  message={message}
-                  className="mt-4 animate-in fade-in slide-in-from-bottom-1 duration-300 motion-reduce:animate-none"
-                />
-              </>
-            )}
-
-            <MessageActions message={message} />
-          </>
-        )}
-      </div>
     </div>
   );
 }

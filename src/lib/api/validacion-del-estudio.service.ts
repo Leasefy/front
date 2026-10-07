@@ -12,7 +12,8 @@
  * minutos», «ya te la reenviamos varias veces») y se muestran tal cual.
  */
 
-import { apiClient, ApiError } from '@/lib/api/client'
+import { apiClient } from '@/lib/api/client'
+import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 /**
  * - `preparando`: pagó, la validación todavía no sale.
@@ -35,19 +36,16 @@ export class ValidacionError extends Error {
 const NO_SE_PUDO_REVISAR = 'No pudimos revisar tu validación. Intenta de nuevo en un momento.'
 const NO_SE_PUDO_REENVIAR = 'No pudimos reenviar tu validación. Intenta de nuevo en unos minutos.'
 
-function mensajeDe(err: unknown, porDefecto: string): string {
-  if (err instanceof ApiError) {
-    if (err.status === 401 || err.status === 403) {
-      return 'Tu sesión expiró. Inicia sesión de nuevo para continuar.'
-    }
-    if (err.status === 0) {
-      return 'No pudimos conectarnos. Verifica tu conexión e intenta de nuevo.'
-    }
-    if ((err.status === 409 || err.status === 429) && err.message) {
-      return err.message
-    }
+/**
+ * El motivo, con la regla de oro del traductor (02-10-2026): «conexión» sólo
+ * sin respuesta; un 409/429 dice lo que escribió el back para la persona; un
+ * 5xx, que falló de nuestro lado, con la referencia. Un 401 es la sesión.
+ */
+function mensajeDe(err: unknown, accion: string, porDefecto: string): string {
+  if (leerFallo(err).tipo === 'sesion') {
+    return 'Tu sesión expiró. Inicia sesión de nuevo para continuar.'
   }
-  return porDefecto
+  return mensajeParaLaPersona(err, { accion, porDefecto })
 }
 
 /** «Ya la validé». */
@@ -59,7 +57,7 @@ export async function verificarValidacion(): Promise<EstadoDeLaValidacion> {
       {},
     )
   } catch (err) {
-    throw new ValidacionError(mensajeDe(err, NO_SE_PUDO_REVISAR))
+    throw new ValidacionError(mensajeDe(err, 'revisar tu validación', NO_SE_PUDO_REVISAR))
   }
   if (typeof respuesta?.estado === 'string' && ESTADOS.has(respuesta.estado)) {
     return respuesta.estado as EstadoDeLaValidacion
@@ -76,7 +74,7 @@ export async function reenviarValidacion(): Promise<{ reenviosRestantes: number 
       {},
     )
   } catch (err) {
-    throw new ValidacionError(mensajeDe(err, NO_SE_PUDO_REENVIAR))
+    throw new ValidacionError(mensajeDe(err, 'reenviar tu validación', NO_SE_PUDO_REENVIAR))
   }
   if (respuesta?.enviada === true) {
     return {

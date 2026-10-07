@@ -308,6 +308,27 @@ describe('la propuesta de la IA', () => {
     )
   })
 
+  // QA-CONT-95 r3 (EX-01): la nota del back para quien revisa se ve tal cual.
+  it('🔴 la nota de «sin mascotas» en vivienda se le muestra a quien revisa', async () => {
+    await montar()
+    await pedirPropuesta({
+      ...PROPUESTA,
+      estipulacionesEspeciales: 'El arrendatario declara que a la fecha no convive con animales de compañía.',
+      avisos: [
+        'En vivienda, prohibir mascotas no tiene efecto (Ley 1801 art. 117); quedó como constancia de lo que declaró el arrendatario.',
+      ],
+    })
+    expect(porTestId('plantilla-aviso-propuesta')?.textContent).toContain(
+      'En vivienda, prohibir mascotas no tiene efecto (Ley 1801 art. 117)',
+    )
+  })
+
+  it('sin avisos (o un back anterior) no se pinta ninguna nota', async () => {
+    await montar()
+    await pedirPropuesta()
+    expect(porTestId('plantilla-aviso-propuesta')).toBeNull()
+  })
+
   it('una cláusula que propuso la IA se puede QUITAR antes de generar, y ya no viaja', async () => {
     await montar()
     await pedirPropuesta()
@@ -544,5 +565,32 @@ describe('identificación del arrendatario', () => {
   it('sin la prop, el bloque no existe (manual con inquilino nuevo ya los pide arriba)', async () => {
     await montar({ modo: 'template' })
     expect(porTestId('plantilla-arrendatario')).toBeNull()
+  })
+})
+
+describe('🔴 ARREGLOS-4 · un campo requerido vacío no abre en rojo', () => {
+  it('sin `aria-invalid` ni borde de error', async () => {
+    post.mockImplementation((ruta: string) => {
+      if (ruta.endsWith('/preparar')) {
+        return Promise.resolve({
+          ...PREPARACION,
+          campos: [
+            { nombre: 'lugarDePago', etiqueta: 'Lugar de pago', tipo: 'texto', requerida: true, valor: '' },
+            { nombre: 'linderos', etiqueta: 'Linderos', tipo: 'parrafo', requerida: true, valor: '' },
+          ],
+        })
+      }
+      return Promise.resolve({})
+    })
+    await montar({ modo: 'template' })
+
+    for (const id of ['plantilla-campo-lugarDePago', 'plantilla-campo-linderos']) {
+      const campo = porTestId(id)
+      expect(campo, id).not.toBeNull()
+      // El adaptador pinta el borde rojo con `aria-invalid`: abrir el
+      // formulario no puede ser verlo ya en rojo.
+      expect(campo!.getAttribute('aria-invalid'), id).not.toBe('true')
+      expect(campo!.hasAttribute('data-invalid'), id).toBe(false)
+    }
   })
 })

@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Banner, Chip } from '@leasefy/cadence';
+import { Banner, Chip, Presence } from '@leasefy/cadence';
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { ApiError } from '@/lib/api/client';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import {
+  MENSAJE_NOMBRE_CORTO,
+  MIN_LARGO_NOMBRE_DEL_MEDIO,
+  TOPES_DEL_MEDIO,
+  erroresDeLargoDelMedio,
+} from '@/lib/configuracion/limites-de-los-medios-de-pago';
 import type {
   MedioDePago,
   NuevoMedioDePago,
@@ -46,6 +53,19 @@ export interface EditorDeMedioProps {
   /** Tiene que relanzar el error: el 400 del back se muestra acá adentro. */
   onGuardar: (valores: NuevoMedioDePago) => Promise<unknown>;
 }
+
+/** Los campos del formulario que pueden traer su propio error. */
+type CampoDelFormulario = 'nombre' | 'instrucciones' | CampoDelMedio;
+const CAMPOS_DEL_FORMULARIO: readonly CampoDelFormulario[] = [
+  'nombre',
+  'banco',
+  'tipoDeCuenta',
+  'numeroDeCuenta',
+  'titular',
+  'documentoTitular',
+  'enlace',
+  'instrucciones',
+];
 
 const VACIO: NuevoMedioDePago = {
   tipo: 'TRANSFERENCIA',
@@ -82,39 +102,72 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
   const [tocado, setTocado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [errorDelBack, setErrorDelBack] = useState<string | null>(null);
+  // Los errores por campo: los del largo (el espejo del back) y los `campos`
+  // de un 400 del servidor.
+  const [errores, setErrores] = useState<Partial<Record<CampoDelFormulario, string>>>({});
 
   useEffect(() => {
     if (!abierto) return;
     setValores(medio ? desdeMedio(medio) : { ...VACIO, ...(inicial ?? {}) });
     setTocado(false);
     setErrorDelBack(null);
+    setErrores({});
   }, [abierto, medio, inicial]);
 
-  const cambiar = <K extends keyof NuevoMedioDePago>(clave: K, valor: NuevoMedioDePago[K]) =>
+  const cambiar = <K extends keyof NuevoMedioDePago>(clave: K, valor: NuevoMedioDePago[K]) => {
     setValores((v) => ({ ...v, [clave]: valor }));
+    setErrores((previos) => {
+      if (!(clave in previos)) return previos;
+      const siguientes = { ...previos };
+      delete siguientes[clave as CampoDelFormulario];
+      return siguientes;
+    });
+  };
 
-  const sinNombre = valores.nombre.trim().length < 2;
+  const sinNombre = valores.nombre.trim().length < MIN_LARGO_NOMBRE_DEL_MEDIO;
   const faltante = faltanteDe(valores);
   const campos = CAMPOS_DEL_TIPO[valores.tipo];
+
+  const enfocar = (campo: CampoDelFormulario | undefined) => {
+    if (!campo) return;
+    requestAnimationFrame(() => document.getElementById(`medio-${campo}`)?.focus());
+  };
 
   const guardar = async (e: React.FormEvent) => {
     e.preventDefault();
     setTocado(true);
-    if (sinNombre || faltante) return;
+    // Lo que el back rechazaría por largo se ataja acá, con su frase.
+    const deLargo = erroresDeLargoDelMedio(valores);
+    if (Object.keys(deLargo).length > 0) {
+      setErrores(deLargo);
+      enfocar(CAMPOS_DEL_FORMULARIO.find((c) => c in deLargo));
+      return;
+    }
+    if (sinNombre || faltante) {
+      if (sinNombre) enfocar('nombre');
+      return;
+    }
     setGuardando(true);
     setErrorDelBack(null);
     try {
       await onGuardar(valores);
     } catch (error) {
-      setErrorDelBack(
-        error instanceof ApiError || error instanceof Error
-          ? error.message
-          : 'No se pudo guardar el medio de pago.',
-      );
+      // Un 400 con `campos` va a cada campo (foco en el primero); lo demás
+      // (un 409, un 5xx con su referencia, la red) va al aviso de abajo.
+      const reparto = repartirErroresDelServidor(error, {
+        campos: CAMPOS_DEL_FORMULARIO,
+        porDefecto: 'No se pudo guardar el medio de pago.',
+        accion: 'guardar el medio de pago',
+      });
+      setErrores(reparto.porCampo);
+      setErrorDelBack(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null);
+      enfocar(reparto.orden[0]);
     } finally {
       setGuardando(false);
     }
   };
+
+  const errorDelNombre = errores.nombre ?? (tocado && sinNombre ? MENSAJE_NOMBRE_CORTO : undefined);
 
   const campo = (nombre: CampoDelMedio) => {
     if (nombre === 'tipoDeCuenta') {
@@ -122,9 +175,10 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
         <div key={nombre} className="space-y-2">
           <Label>{etiquetaDelCampo(nombre, valores.tipo)}</Label>
           <div className="flex gap-2">
-            {(['AHORROS', 'CORRIENTE'] as const).map((t) => (
+            {(['AHORROS', 'CORRIENTE'] as const).map((t, i) => (
               <Chip
                 key={t}
+                id={i === 0 ? 'medio-tipoDeCuenta' : undefined}
                 selected={valores.tipoDeCuenta === t}
                 onClick={() => cambiar('tipoDeCuenta', t)}
                 data-testid={`tipo-de-cuenta-${t}`}
@@ -133,6 +187,7 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
               </Chip>
             ))}
           </div>
+          <ErrorDelCampo id="medio-tipoDeCuenta-error" mensaje={errores.tipoDeCuenta} className="mt-0" />
         </div>
       );
     }
@@ -149,14 +204,18 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
           onChange={(e) => cambiar(nombre, e.target.value)}
           inputMode={nombre === 'numeroDeCuenta' ? 'numeric' : undefined}
           placeholder={nombre === 'enlace' ? 'https://…' : undefined}
+          maxLength={TOPES_DEL_MEDIO[nombre].tope}
+          aria-invalid={Boolean(errores[nombre]) || undefined}
+          aria-describedby={`medio-${nombre}-error`}
         />
+        <ErrorDelCampo id={`medio-${nombre}-error`} mensaje={errores[nombre]} className="mt-0" />
       </div>
     );
   };
 
   return (
     <Dialog open={abierto} onOpenChange={(open) => !open && onCerrar()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>{medio ? 'Editar medio de pago' : 'Nuevo medio de pago'}</DialogTitle>
           <DialogDescription>
@@ -164,7 +223,9 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
           </DialogDescription>
         </DialogHeader>
 
-        <form id="form-medio-de-pago" onSubmit={guardar} className="space-y-5 px-6 py-5">
+        {/* El pie va FUERA del <form> (hijo directo del Content, fijo abajo); el
+            botón de guardar lo envía con `form=`. El cuerpo ya trae su margen. */}
+        <form id="form-medio-de-pago" onSubmit={guardar} className="space-y-5">
           <div className="space-y-2">
             <Label>Tipo</Label>
             <div className="flex flex-wrap gap-2">
@@ -192,9 +253,11 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
               value={valores.nombre}
               onChange={(e) => cambiar('nombre', e.target.value)}
               placeholder="Como lo va a leer el inquilino"
-              maxLength={80}
+              maxLength={TOPES_DEL_MEDIO.nombre.tope}
+              aria-invalid={Boolean(errorDelNombre) || undefined}
+              aria-describedby="medio-nombre-error"
             />
-            {tocado && sinNombre && <p className="text-xs text-danger">Ponele un nombre de al menos dos letras.</p>}
+            <ErrorDelCampo id="medio-nombre-error" mensaje={errorDelNombre} className="mt-0" />
           </div>
 
           {campos.muestra.length > 0 && <div className="grid gap-4 sm:grid-cols-2">{campos.muestra.map(campo)}</div>}
@@ -208,9 +271,12 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
               value={valores.instrucciones ?? ''}
               onChange={(e) => cambiar('instrucciones', e.target.value)}
               placeholder="Qué tiene que hacer el inquilino después de pagar: mandar el comprobante, poner la dirección…"
-              maxLength={500}
+              maxLength={TOPES_DEL_MEDIO.instrucciones.tope}
+              aria-invalid={Boolean(errores.instrucciones) || undefined}
+              aria-describedby="medio-instrucciones-error"
               rows={3}
             />
+            <ErrorDelCampo id="medio-instrucciones-error" mensaje={errores.instrucciones} className="mt-0" />
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -239,11 +305,11 @@ export function EditorDeMedio({ abierto, medio, inicial, onCerrar, onGuardar }: 
           </div>
 
           {tocado && faltante && <Banner variant="warning">{faltante}</Banner>}
-          {errorDelBack && (
-            <Banner variant="danger" data-testid="error-del-back">
+          <Presence show={!!errorDelBack}>
+            <Banner variant="danger" role="alert" data-testid="error-del-back">
               {errorDelBack}
             </Banner>
-          )}
+          </Presence>
         </form>
 
         <DialogFooter>

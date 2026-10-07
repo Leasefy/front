@@ -276,13 +276,19 @@ function BloqueTabla({ bloque, turnoId }: { bloque: Extract<BloqueDeRespuesta, {
           scroller anidado. Se fija `overflow-y: hidden`: la rueda vertical
           encima de la tabla mueve el chat; a lo ancho, en el teléfono, la tabla
           se desplaza dentro de su caja sin arrastrar la página (ni el gesto de
-          «atrás» del trackpad). */}
+          «atrás» del trackpad).
+          🔴 Sin pie, la tabla llega al borde de abajo de la caja: sus esquinas de
+          abajo llevan el radio de ADENTRO de la caja (14 px del ChatContentCard −
+          1 px de filete = 13 px). Con esquinas rectas, el blanco de la última fila
+          tapaba la curva y el filete de la caja (Nico, 05-10-2026: «no deja bien
+          el stroke»). La tabla de Cadence ya recorta con `overflow-hidden`, así
+          que el hover de la última fila también respeta la curva. */}
       <div
         data-desplazamiento-de-la-tabla
         className={cn(
           '-mx-4 [&>div]:rounded-none [&>div]:border-x-0 [&>div]:border-b-0',
           '[&>div>div]:overflow-y-hidden [&>div>div]:overscroll-x-contain',
-          ocultas === 0 && '-mb-4',
+          ocultas === 0 && '-mb-4 [&>div]:rounded-b-[13px]',
         )}
       >
         <Table>
@@ -337,7 +343,17 @@ function BloqueTabla({ bloque, turnoId }: { bloque: Extract<BloqueDeRespuesta, {
 
 // ── Tarjeta de entidad ──────────────────────────────────────────────────────
 
-/** El semáforo del contrato vigente: mora primero, después el vencimiento. */
+/** Lo vencido sin pagar (mora + lo vencido dentro del plazo), P-8. */
+export function vencidoSinPagar(c: ContratoDeEntidad['cartera']): number {
+  return c.estado === 'ok' ? c.carteraCop + (c.vencidaEnPlazoCop ?? 0) : 0;
+}
+
+/**
+ * El semáforo del contrato vigente: mora primero, después lo vencido sin
+ * pagar, después el vencimiento. «Al día» SÓLO cuando se leyó la cartera y no
+ * hay nada vencido (QA-CHAT 04-10: «contrato 13 · Al día» con $15.600.000
+ * vencidos y el plazo sin fijar; y «Al día» a un asesor que no ve la cartera).
+ */
 export function semaforoDelContrato(c: ContratoDeEntidad): {
   clave: string;
   vars?: Record<string, string | number>;
@@ -346,10 +362,14 @@ export function semaforoDelContrato(c: ContratoDeEntidad): {
   if (c.cartera.estado === 'ok' && c.cartera.carteraCop > 0) {
     return { clave: 'beta.forma.semaforo.mora', vars: { dias: c.cartera.diasDeMoraMaximo }, tono: 'critical' };
   }
+  if (vencidoSinPagar(c.cartera) > 0) {
+    return { clave: 'beta.forma.semaforo.vencidoSinPagar', tono: 'warning' };
+  }
   if (c.diasParaVencer !== null && c.diasParaVencer <= 90 && c.diasParaVencer >= 0) {
     return { clave: 'beta.forma.semaforo.vence', vars: { dias: c.diasParaVencer }, tono: 'warning' };
   }
   if (!c.vigente) return { clave: 'beta.forma.estado.vencido', tono: 'neutral' };
+  if (c.cartera.estado !== 'ok') return { clave: 'beta.forma.estado.activo', tono: 'neutral' };
   return { clave: 'beta.forma.semaforo.alDia', tono: 'success' };
 }
 
@@ -475,18 +495,20 @@ export function TarjetaDeEntidad({
                 <span className="font-body">{vigente.propietarios.map((p) => p.nombre).join(', ')}</span>
               </EntityField>
             )}
-            <EntityField label={t('beta.forma.cartera')}>
-              {vigente.cartera.estado === 'ok'
-                ? formatCurrency(vigente.cartera.carteraCop)
-                : t('beta.forma.sinCartera')}
-              {/* El interés de mora va AQUÍ, junto a la cartera: no como cifra
-                  suelta debajo de la tarjeta (Nico, 23-09, 23:47). */}
-              {vigente.cartera.estado === 'ok' && vigente.cartera.interesDeMoraCop > 0 && (
-                <span className="block font-body text-[14px] font-normal text-fg-muted">
-                  {t('beta.forma.masInteres', { monto: formatCurrency(vigente.cartera.interesDeMoraCop) })}
-                </span>
-              )}
-            </EntityField>
+            {vigente.cartera.estado !== 'sin_permiso' && (
+              <EntityField label={t(vencidoSinPagar(vigente.cartera) > 0 ? 'beta.forma.vencidoSinPagar' : 'beta.forma.cartera')}>
+                {vigente.cartera.estado === 'ok'
+                  ? formatCurrency(vencidoSinPagar(vigente.cartera))
+                  : t('beta.forma.sinCartera')}
+                {/* El interés de mora va AQUÍ, junto a la cartera: no como cifra
+                    suelta debajo de la tarjeta (Nico, 23-09, 23:47). */}
+                {vigente.cartera.estado === 'ok' && vigente.cartera.interesDeMoraCop > 0 && (
+                  <span className="block font-body text-[14px] font-normal text-fg-muted">
+                    {t('beta.forma.masInteres', { monto: formatCurrency(vigente.cartera.interesDeMoraCop) })}
+                  </span>
+                )}
+              </EntityField>
+            )}
             {vigente.cartera.estado === 'ok' && vigente.cartera.porVencerCop > 0 && (
               <EntityField label={t('beta.forma.restaDelContrato')}>
                 {formatCurrency(vigente.cartera.deudaTotalCop)}

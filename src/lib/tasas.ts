@@ -58,6 +58,25 @@ export function textoDeTasa(tasa: number | null, decimales = 1): string {
 }
 
 /**
+ * TB-04 (FALTANTES, 05-10-2026): una tasa como se escribe en Colombia,
+ * «12,5 %» (coma decimal y el espacio antes del signo, como `porcentajeLegible`
+ * y `formatParticipacion`), con un número fijo de decimales. `null` → raya.
+ * `conSigno` pone el «+» de una variación que sube. Pura.
+ */
+export function tasaEnPantalla(
+  tasa: number | null,
+  decimales = 1,
+  opciones: { conSigno?: boolean } = {},
+): string {
+  if (tasa === null || !Number.isFinite(tasa)) return SIN_MEDIR;
+  const texto = new Intl.NumberFormat('es-CO', {
+    minimumFractionDigits: decimales,
+    maximumFractionDigits: decimales,
+  }).format(tasa);
+  return `${opciones.conSigno && tasa > 0 ? '+' : ''}${texto} %`;
+}
+
+/**
  * El ancho de una barra de progreso para una tasa. Sin medición, cero ancho:
  * una barra vacía no afirma nada, y es lo único honesto que puede dibujar.
  */

@@ -36,6 +36,8 @@ vi.mock('@/components/providers/SmoothScroll', () => ({
   useLenis: () => ({ stop: vi.fn(), start: vi.fn() }),
 }))
 
+import { ApiError } from '@/lib/api/client'
+import { actaDelBack } from '@/lib/actas/acta-del-back'
 import {
   CerrarActaSinFirma,
   condicionesDelCierre,
@@ -66,9 +68,18 @@ async function montar(a: ActaEntrega) {
   })
 }
 
-const campos = () => Array.from(contenedor.querySelectorAll<HTMLInputElement>('input'))
+/**
+ * El diálogo es el `Dialog` del producto (Radix): se pinta en un portal sobre
+ * `document.body`, no dentro de `contenedor`. Se busca en el diálogo mismo.
+ */
+const dialogo = () => {
+  const d = document.querySelector<HTMLElement>('[role="dialog"]')
+  if (!d) throw new Error('El diálogo no está abierto')
+  return d
+}
+const campos = () => Array.from(dialogo().querySelectorAll<HTMLInputElement>('input'))
 const botonCerrar = () =>
-  Array.from(contenedor.querySelectorAll('button')).find(
+  Array.from(dialogo().querySelectorAll('button')).find(
     (b) => b.textContent?.trim() === 'Cerrar el acta',
   )
 
@@ -124,7 +135,7 @@ describe('Cerrar un acta sin la firma del inquilino', () => {
 
   it('A3 — las condiciones se ven ANTES de intentar', async () => {
     await montar(acta({ fotosPorEspacio: {} } as Partial<ActaEntrega>))
-    const lista = contenedor.querySelector('[data-testid="condiciones-del-cierre"]')
+    const lista = dialogo().querySelector('[data-testid="condiciones-del-cierre"]')
     expect(lista).not.toBeNull()
     expect(lista!.textContent).toContain('Faltan las fotos por espacio')
     // Y el formulario queda cerrado: no se pide un testigo que no va a servir.
@@ -132,7 +143,7 @@ describe('Cerrar un acta sin la firma del inquilino', () => {
     // un navegador real lo propaga a sus controles, pero happy-dom no refleja
     // eso en la propiedad `.disabled` de cada input.
     expect(
-      contenedor.querySelector('fieldset')?.hasAttribute('disabled'),
+      dialogo().querySelector('fieldset')?.hasAttribute('disabled'),
     ).toBe(true)
     expect(botonCerrar()!.hasAttribute('disabled')).toBe(true)
     expect(h.actasApi.cerrarSinFirma).not.toHaveBeenCalled()
@@ -157,14 +168,39 @@ describe('Cerrar un acta sin la firma del inquilino', () => {
     })
   })
 
+  it('🔴 A2c — la firma del asesor COMO LA GUARDA EL BACK (`signerRole`) cuenta (PRUEBAS-PAGOS, 03-10-2026)', () => {
+    // Antes el botón no aparecía nunca: el back no manda `party`.
+    const delBack = actaDelBack({
+      id: 'a-1',
+      type: 'DEVOLUCION',
+      status: 'PENDING_SIGNATURES',
+      signatures: [
+        { signerName: 'Luis', signerEmail: 'l@x.test', signerRole: 'asesor', signedAt: '2026-10-03T11:52:31.214Z' },
+      ],
+    })
+    expect(condicionesDelCierre(delBack)[1].cumple).toBe(true)
+    expect(sePuedeCerrarSinFirma(delBack)).toBe(true)
+  })
+
   it('A5 — sin el campo de fotos NO se bloquea: decide el back', () => {
     const vieja = acta({ fotosPorEspacio: undefined } as Partial<ActaEntrega>)
     expect(sePuedeCerrarSinFirma(vieja)).toBe(true)
+    // …y no afirma lo que no sabe.
+    expect(condicionesDelCierre(vieja)[2].texto).not.toBe('Hay fotos por espacio.')
+  })
+
+  it('🔴 A5b — `null` (la columna está y el acta no tiene fotos) es «faltan», no «hay» (PRUEBAS-PAGOS, 03-10-2026)', () => {
+    const sinFotos = acta({ fotosPorEspacio: null } as unknown as Partial<ActaEntrega>)
+    expect(condicionesDelCierre(sinFotos)[2]).toEqual({
+      cumple: false,
+      texto: 'Faltan las fotos por espacio: son la prueba de en qué estado se entregó.',
+    })
+    expect(sePuedeCerrarSinFirma(sinFotos)).toBe(false)
   })
 
   it('dice los 5 días para objetar, antes y después', async () => {
     await montar(acta())
-    expect(contenedor.textContent).toContain('5 días para objetar')
+    expect(dialogo().textContent).toContain('5 días para objetar')
 
     await escribir(campos()[0], 'Pedro Ruiz')
     await escribir(campos()[1], '71234567')
@@ -186,8 +222,121 @@ describe('Cerrar un acta sin la firma del inquilino', () => {
     await act(async () => {
       botonCerrar()!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
-    expect(contenedor.querySelector('[role="alert"]')?.textContent).toContain(
+    expect(dialogo().querySelector('[role="alert"]')?.textContent).toContain(
       'se cierra por el camino normal',
     )
+  })
+
+  async function cerrarConFallo(fallo: unknown) {
+    h.actasApi.cerrarSinFirma.mockRejectedValue(fallo)
+    await montar(acta())
+    await escribir(campos()[0], 'Pedro Ruiz')
+    await escribir(campos()[1], '71234567')
+    await act(async () => {
+      botonCerrar()!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  }
+
+  it('🔴 02-10 · un 400 con campos: el error bajo la cédula, con el foco en ella', async () => {
+    await cerrarConFallo(
+      new ApiError(400, ['La cédula del testigo debe tener al menos 5 caracteres.'], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: ['La cédula del testigo debe tener al menos 5 caracteres.'],
+        campos: [
+          {
+            campo: 'testigoDocumento',
+            regla: 'longitud_minima',
+            mensaje: 'La cédula del testigo debe tener al menos 5 caracteres.',
+          },
+        ],
+      }),
+    )
+    expect(dialogo().querySelector('#acta-testigoDocumento-error')?.textContent).toBe(
+      'La cédula del testigo debe tener al menos 5 caracteres.',
+    )
+    expect(document.activeElement).toBe(dialogo().querySelector('#acta-testigoDocumento'))
+  })
+
+  it('🔴 02-10 · un 5xx dice que falló de nuestro lado, con la referencia', async () => {
+    await cerrarConFallo(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    )
+    const aviso = dialogo().querySelector('[role="alert"]')?.textContent ?? ''
+    expect(aviso).toContain('de nuestro lado')
+    expect(aviso).toContain('ab12cd34')
+    expect(aviso).not.toMatch(/conexi[oó]n/i)
+  })
+
+  it('🔴 02-10 · sin respuesta (status 0) habla de la conexión', async () => {
+    await cerrarConFallo(new ApiError(0, 'Failed to fetch'))
+    expect(dialogo().querySelector('[role="alert"]')?.textContent).toMatch(/conexi[oó]n/i)
+  })
+
+  async function cerrarConCargo(cargoAparte: unknown) {
+    h.actasApi.cerrarSinFirma.mockResolvedValue({
+      ...acta({ status: 'completed' }),
+      cargoAparte,
+    })
+    await montar(acta())
+    await escribir(campos()[0], 'Pedro Ruiz')
+    await escribir(campos()[1], '71234567')
+    await act(async () => {
+      botonCerrar()!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+  }
+
+  it('🔴 02-10 · el cargo aparte que entró al estado de cuenta va en el MISMO aviso del cierre', async () => {
+    const mensaje = 'Se le cargaron $500.000 aparte al inquilino, en su cuota de 2026-10.'
+    await cerrarConCargo({ estado: 'CREADO', valorCop: 500_000, mensaje, cargoId: 'c-1', mes: '2026-10' })
+    expect(h.toast.success).toHaveBeenCalledTimes(1)
+    expect(h.toast.success).toHaveBeenCalledWith(expect.stringContaining('5 días para objetar'), {
+      description: mensaje,
+    })
+    expect(h.toast.warning).not.toHaveBeenCalled()
+  })
+
+  it('🔴 02-10 · sin cuotas sin pagar entra como CUOTA DE CIERRE: el MISMO aviso verde dice que entró así y cuándo vence', async () => {
+    // El mensaje literal del back (`cargoEnCuotaDeCierre`).
+    const mensaje =
+      'Se le cargaron $500.000 aparte al inquilino en una cuota de cierre del contrato, que vence el 15 de octubre de 2026: es lo que los descuentos pasan del depósito, y entra a la cobranza como cualquier cuota.'
+    await cerrarConCargo({
+      estado: 'CUOTA_DE_CIERRE',
+      valorCop: 500_000,
+      mensaje,
+      cargoId: 'c-1',
+      mes: '2026-11',
+      vence: '2026-10-15',
+    })
+    expect(h.toast.warning).not.toHaveBeenCalled()
+    expect(h.toast.success).toHaveBeenCalledTimes(1)
+    const [titulo, opciones] = h.toast.success.mock.calls[0] as [string, { description: string }]
+    expect(titulo).toContain('5 días para objetar')
+    expect(opciones.description).toContain('cuota de cierre')
+    expect(opciones.description).toContain('vence el 15 de octubre de 2026')
+  })
+
+  it('🔴 02-10 · sin la migración de la cuota de cierre: el aviso amarillo de siempre (hay que cargarlo a mano)', async () => {
+    const mensaje =
+      'El inquilino debe $500.000 más que el depósito, pero su contrato no tiene ninguna cuota sin pagar desde 2026-10: el cargo no tiene dónde entrar. Queda sólo mostrado en el acta: cárgalo a mano en su estado de cuenta.'
+    await cerrarConCargo({ estado: 'SIN_CUOTA_SIN_PAGAR', valorCop: 500_000, mensaje, cargoId: null, mes: null, vence: null })
+    expect(h.toast.success).not.toHaveBeenCalled()
+    expect(h.toast.warning).toHaveBeenCalledWith(expect.stringContaining('Acta cerrada'), {
+      description: mensaje,
+    })
+  })
+
+  it('🔴 02-10 · si el cargo NO entró (falta la migración), el aviso es de advertencia y dice por qué', async () => {
+    const mensaje = 'El inquilino debe $500.000 más que el depósito, pero esta base todavía no puede crear el cargo.'
+    await cerrarConCargo({ estado: 'SIN_MIGRACION', valorCop: 500_000, mensaje, cargoId: null, mes: null })
+    expect(h.toast.success).not.toHaveBeenCalled()
+    expect(h.toast.warning).toHaveBeenCalledWith(expect.stringContaining('Acta cerrada'), {
+      description: mensaje,
+    })
   })
 })

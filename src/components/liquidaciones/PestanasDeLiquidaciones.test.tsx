@@ -55,14 +55,17 @@ describe('PestanasDeLiquidaciones', () => {
     expect(host.querySelectorAll('a')).toHaveLength(2)
   })
 
-  it('en «Por aprobar» la marcada es esa, no la raíz', () => {
+  it('en «Facturas de proveedores» (antes «Por aprobar») la marcada es esa, no la raíz', () => {
     montarEn('/panel/inmobiliaria/pagos/liquidaciones/por-aprobar')
     const marcadas = Array.from(host.querySelectorAll('a[aria-current="page"]'))
     expect(marcadas).toHaveLength(1)
     expect(marcadas[0]!.getAttribute('href')).toBe('/panel/inmobiliaria/pagos/liquidaciones/por-aprobar')
     // El stub resuelve contra el es.json REAL: si faltara la clave saldría la
     // clave cruda en pantalla.
-    expect(marcadas[0]!.textContent).toContain('Por aprobar')
+    // PG-16 (03-10-2026): se llama como lo que es, la cola de las facturas de
+    // PROVEEDOR; «Por aprobar» al lado de Liquidaciones se leía «liquidaciones
+    // por aprobar».
+    expect(marcadas[0]!.textContent).toContain('Facturas de proveedores')
   })
 
   it('en la raíz la marcada es «Liquidaciones»', () => {

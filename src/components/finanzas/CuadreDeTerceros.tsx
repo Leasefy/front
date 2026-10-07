@@ -41,6 +41,14 @@ import { Label } from '@/components/ui/label';
 import { finanzasApi } from '@/lib/api/finanzas.service';
 import type { CuadreDeTerceros as Respuesta } from '@/lib/api/finanzas.types';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
+// PG-13 (QA-PAGOS-95): «hasta el 4 de octubre de 2026», nunca «hasta el 2026-10-04».
+import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
+
+/** N-14 (QA-PAGOS-95): «24 entradas», «1 garantía», nunca «entrada(s)». */
+function cuantos(n: number, uno: string, varios: string): string {
+  return `${n} ${n === 1 ? uno : varios}`;
+}
 
 /** `YYYY-MM-DD` de hoy en Bogotá: la misma cuenta que hace el back. */
 function hoyEnBogota(): string {
@@ -160,7 +168,10 @@ function Cuadre({ datos }: { datos: Respuesta }) {
     <div className="space-y-6">
       <Veredicto datos={datos} />
 
-      <Avisos avisos={avisosQueElVeredictoNoDijo(datos)} testId="cuadre-avisos" />
+      {/* CE-01 (QA-PAGOS-95): la plata de las frases del back, «$ X» con el espacio duro de la casa. */}
+      <Avisos avisos={avisosQueElVeredictoNoDijo(datos).map((a) => conLaPlataPegada(a))} testId="cuadre-avisos" />
+
+      {datos.renglones && datos.renglones.length > 0 ? <LaCuentaEnPalabras datos={datos} /> : null}
 
       <section className="space-y-4">
         <TituloDeBloque
@@ -172,7 +183,7 @@ function Cuadre({ datos }: { datos: Respuesta }) {
             id="recaudado-no-girado"
             etiqueta="Recaudado y no girado"
             valor={datos.recaudadoYNoGiradoCop}
-            definicion={`Lo que entró de inquilinos (${formatCurrency(datos.detalle.recaudadoCop)}) menos lo que salió a propietarios (${formatCurrency(datos.detalle.giradoCop)}). Adentro está tu comisión, que es plata tuya.`}
+            definicion={`Lo que entró de inquilinos (${formatCurrency(datos.detalle.recaudadoCop)}) menos lo que salió a propietarios (${formatCurrency(datos.detalle.giradoCop)}). Adentro está lo tuyo (comisión, su IVA, intereses y gastos)${datos.propioRetenidoCop !== undefined ? `: ${formatCurrency(datos.propioRetenidoCop)} que se restan para llegar a la plata de terceros` : ', que es plata tuya'}.`}
           />
           <Cifra
             id="anticipos"
@@ -184,13 +195,13 @@ function Cuadre({ datos }: { datos: Respuesta }) {
             id="garantias"
             etiqueta="Garantías de servicios"
             valor={datos.garantiasDeServiciosCop}
-            definicion={`El saldo vivo de ${datos.detalle.garantiasVivas} garantía(s). Es plata del inquilino hasta que se paga un servicio o se le devuelve.`}
+            definicion={`El saldo vivo de ${cuantos(datos.detalle.garantiasVivas, 'garantía', 'garantías')}. Es plata del inquilino hasta que se paga un servicio o se le devuelve.`}
           />
           <Cifra
             id="por-identificar"
             etiqueta="Partidas por identificar"
             valor={datos.partidasPorIdentificarCop}
-            definicion={`${datos.partidasPorIdentificar} entrada(s) del extracto que nadie asignó. Se quedan en el pasivo hasta que se les ponga inquilino y cuota: no se pasan a ingresos ni se devuelven solas.`}
+            definicion={`${cuantos(datos.partidasPorIdentificar, 'entrada', 'entradas')} del extracto que nadie asignó. Se quedan en el pasivo hasta que se les ponga inquilino y cuota: no se pasan a ingresos ni se devuelven solas.`}
             tono={datos.partidasPorIdentificar > 0 ? 'warning' : undefined}
           />
         </div>
@@ -206,14 +217,18 @@ function Cuadre({ datos }: { datos: Respuesta }) {
             id="saldo-banco"
             etiqueta="Saldo de la cuenta de recaudo"
             valor={datos.haySaldoDelBanco ? datos.saldoDeLaCuentaCop : null}
-            definicion={`La suma de los ${datos.detalle.movimientosDelExtracto} movimiento(s) del extracto hasta el ${datos.fecha}.`}
+            definicion={`La suma de ${datos.detalle.movimientosDelExtracto === 1 ? 'el' : 'los'} ${cuantos(datos.detalle.movimientosDelExtracto, 'movimiento', 'movimientos')} del extracto hasta el ${fechaLarga(datos.fecha)}.`}
             sinMedir="No hay extracto bancario cargado hasta esta fecha: cárgalo en Conciliación para poder cuadrar."
           />
           <Cifra
             id="plata-de-terceros"
             etiqueta="Plata de terceros"
             valor={datos.plataDeTercerosCop}
-            definicion="La suma de los cuatro términos de arriba: lo que NO es de la inmobiliaria y tiene que estar en esa cuenta."
+            definicion={
+              datos.propioRetenidoCop !== undefined
+                ? `Los cuatro términos de arriba menos lo tuyo que entró con los recaudos (${formatCurrency(datos.propioRetenidoCop)}): lo que NO es de la inmobiliaria y tiene que estar en esa cuenta.`
+                : 'La suma de los cuatro términos de arriba: lo que NO es de la inmobiliaria y tiene que estar en esa cuenta.'
+            }
           />
           <Cifra
             id="diferencia"
@@ -223,7 +238,9 @@ function Cuadre({ datos }: { datos: Respuesta }) {
               datos.diferenciaCop === 0
                 ? 'Cuadra exacto.'
                 : (datos.diferenciaCop ?? 0) > 0
-                  ? 'En el banco hay MÁS de lo que se le debe a terceros. Suele ser tu comisión, todavía sin trasladar.'
+                  ? datos.laDiferenciaEsLaComision
+                    ? 'En el banco hay MÁS de lo que se le debe a terceros, y es exactamente lo tuyo que todavía no trasladaste. No es un descuadre.'
+                    : 'En el banco hay MÁS de lo que se le debe a terceros. Suele ser lo tuyo, todavía sin trasladar.'
                   : 'En el banco hay MENOS de lo que se le debe a terceros.'
             }
             sinMedir="No se pudo cuadrar: falta el extracto del banco."
@@ -234,9 +251,13 @@ function Cuadre({ datos }: { datos: Respuesta }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <CifraDeTexto
               id="comision-referencia"
-              etiqueta="Tu comisión causada (referencia)"
+              etiqueta={datos.propioRetenidoCop !== undefined ? 'Lo tuyo que entró con lo cobrado' : 'Tu comisión causada (referencia)'}
               texto={formatCurrency(datos.comisionRetenidaCop)}
-              definicion="NO entra en la identidad: es plata tuya. Está acá porque es la explicación más común de una diferencia a favor."
+              definicion={
+                datos.propioRetenidoCop !== undefined
+                  ? 'Comisión + su IVA − retenciones de los meses ya cobrados, más los intereses y gastos de cobranza que se trasladan: la misma cuenta del traslado. Se resta de la plata de terceros.'
+                  : 'NO entra en la identidad: es plata tuya. Está acá porque es la explicación más común de una diferencia a favor.'
+              }
               pie={
                 datos.comisionTrasladadaCop > 0 ? (
                   <span>
@@ -251,12 +272,14 @@ function Cuadre({ datos }: { datos: Respuesta }) {
                 ahora lo dice, y el enlace lleva a proponerlo. */}
             <CifraDeTexto
               id="comision-en-la-cuenta"
-              etiqueta="Comisión sin trasladar"
+              etiqueta={datos.propioRetenidoCop !== undefined ? 'Lo tuyo sin trasladar' : 'Comisión sin trasladar'}
               texto={formatCurrency(datos.comisionEnLaCuentaCop)}
               definicion={
                 datos.laDiferenciaEsLaComision
                   ? 'La diferencia de arriba es EXACTAMENTE esto. No es un descuadre: es plata tuya que sigue en la cuenta de recaudo. Aprueba el traslado y el cuadre da cero.'
-                  : 'Lo que de tu comisión sigue en la cuenta de recaudo: causada menos trasladada.'
+                  : datos.propioRetenidoCop !== undefined
+                    ? 'Lo tuyo que sigue en la cuenta de recaudo: lo que entró menos lo que ya trasladaste. Es la diferencia esperada.'
+                    : 'Lo que de tu comisión sigue en la cuenta de recaudo: causada menos trasladada.'
               }
               tono={datos.laDiferenciaEsLaComision ? 'success' : undefined}
               pie={
@@ -288,13 +311,47 @@ function Cuadre({ datos }: { datos: Respuesta }) {
             {datos.explicaciones.map((e) => (
               <li key={e} className="flex gap-2">
                 <span aria-hidden="true">·</span>
-                <span>{e}</span>
+                <span>{conLaPlataPegada(e)}</span>
               </li>
             ))}
           </ul>
         </section>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * 🔴 N-38 (QA-PAGOS-95 r2): la cuenta en palabras, renglón por renglón, tal como
+ * la arma el back. Es lo que evita leer «falta plata» donde sólo hay un
+ * traslado hecho, o «sobra» donde sólo está lo tuyo sin trasladar.
+ */
+function LaCuentaEnPalabras({ datos }: { datos: Respuesta }) {
+  return (
+    <section className="space-y-3" data-testid="cuadre-renglones">
+      <TituloDeBloque
+        titulo="La cuenta, renglón por renglón"
+        explicacion="Qué es cada número, de dónde sale y qué significa la diferencia."
+      />
+      <ol className="divide-y divide-border rounded-lg border border-border bg-surface">
+        {(datos.renglones ?? []).map((r) => (
+          <li key={r.clave} className="flex flex-col gap-1 p-4 sm:flex-row sm:items-start sm:justify-between" data-testid={`renglon-${r.clave}`}>
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium text-fg">
+                <span className="mr-2 inline-block w-3 text-fg-muted" aria-hidden="true">
+                  {r.signo}
+                </span>
+                {r.etiqueta}
+              </p>
+              <p className="text-caption leading-relaxed text-fg-muted">{conLaPlataPegada(r.explicacion)}</p>
+            </div>
+            <p className="shrink-0 font-mono text-sm tabular-nums text-fg">
+              {r.valorCop === null ? '—' : formatCurrency(r.valorCop)}
+            </p>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
@@ -334,7 +391,7 @@ function Veredicto({ datos }: { datos: Respuesta }) {
         <div className="space-y-1">
           <p className="font-medium">No se pudo cuadrar</p>
           <p className="text-fg-muted">
-            No hay extracto bancario cargado hasta el {datos.fecha}, así que el saldo de la cuenta
+            No hay extracto bancario cargado hasta el {fechaLarga(datos.fecha)}, así que el saldo de la cuenta
             de recaudo es desconocido. Cárgalo en Conciliación.
           </p>
         </div>
@@ -354,7 +411,7 @@ function Veredicto({ datos }: { datos: Respuesta }) {
         <div className="space-y-1">
           <p className="font-medium">Cuadra exacto</p>
           <p className="text-fg-muted">
-            El saldo de la cuenta de recaudo es igual a la plata de terceros al {datos.fecha}.
+            El saldo de la cuenta de recaudo es igual a la plata de terceros al {fechaLarga(datos.fecha)}.
           </p>
         </div>
       </div>
@@ -374,8 +431,9 @@ function Veredicto({ datos }: { datos: Respuesta }) {
           En el banco hay {formatCurrency(datos.diferenciaCop ?? 0)} de más
         </p>
         <p className="text-fg-muted">
-          No falta plata de nadie. Lo normal es que sea tu comisión, que sigue en la cuenta de
-          recaudo hasta que la traslades. Abajo están las otras explicaciones.
+          {datos.laDiferenciaEsLaComision
+            ? 'No falta plata de nadie: es exactamente lo tuyo (comisión, su IVA, intereses y gastos de lo cobrado) que sigue en la cuenta de recaudo. Con el traslado a tu cuenta propia el cuadre da cero.'
+            : 'No falta plata de nadie. Lo normal es que sea lo tuyo, que sigue en la cuenta de recaudo hasta que lo traslades. Abajo están las otras explicaciones.'}
         </p>
       </div>
     </div>

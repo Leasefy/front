@@ -37,7 +37,7 @@ import {
 import { toast } from '@/components/ui/toast';
 import { nominaApi } from '@/lib/api/nomina.service';
 import type { NominaElectronica } from '@/lib/api/nomina.types';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { Avisos, TituloDeBloque } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
@@ -62,7 +62,7 @@ export function NominaElectronicaPanel() {
       }
       await estado.recargar();
     } catch (error) {
-      toast.error(mensajeDelFallo(error, 'No se pudo transmitir el documento.'));
+      toast.error(mensajeParaLaPersona(error, { porDefecto: 'No se pudo transmitir el documento.', accion: 'transmitir el documento' }));
     }
   };
 

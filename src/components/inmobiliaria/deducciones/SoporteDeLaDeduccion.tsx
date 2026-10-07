@@ -11,6 +11,7 @@ import { Paperclip } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { deduccionesApi } from '@/lib/api/deducciones.service';
 import { useI18n } from '@/lib/i18n';
 
@@ -38,7 +39,7 @@ export function SoporteDeLaDeduccion({
     } catch (error) {
       pestana?.close();
       toast.error(t('inmobiliaria.deducciones.noSeAbrioSoporte'), {
-        description: error instanceof Error ? error.message : undefined,
+        description: mensajeParaLaPersona(error, { porDefecto: '', accion: 'abrir el soporte' }) || undefined,
       });
     } finally {
       setAbriendo(false);

@@ -55,7 +55,8 @@ const COUNTS: ReviewQueueCounts = {
 const ITEMS: ReviewQueueItem[] = [
   {
     applicationId: 'app-1',
-    tenant: { id: 'ten-1', title: 'Juan Pérez' },
+    tenant: { id: 'ten-1', fullName: 'Juan Pérez' },
+    property: { id: 'prop-1', title: 'Carrera 35 # 8A-60 Apto 402' },
     documents: [
       {
         id: 'doc-pending',
@@ -145,6 +146,9 @@ describe('<DocumentReviewQueueView>', () => {
     expect(container.querySelectorAll('[data-testid="review-doc"]').length).toBe(2);
     expect(container.textContent).toContain('Juan Pérez');
     expect(container.textContent).toContain('cedula.pdf');
+    // QA-IA-A: con la forma REAL del back (`fullName`) la columna dice de
+    // quién es cada papel, y a qué inmueble se postuló.
+    expect(container.textContent).toContain('Carrera 35 # 8A-60 Apto 402');
   });
 
   it('el vacío deja ver los encabezados de columna: la tabla existe, los casos no', () => {

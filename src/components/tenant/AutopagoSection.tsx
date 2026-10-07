@@ -41,6 +41,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { errorDelTopeDelAutopago } from '@/lib/estudio/limites-del-estudio';
 import { EmptyState } from '@/components/ui/empty-state';
 import {
   autopagoApi,
@@ -88,6 +92,8 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
   const [anio, setAnio] = useState('');
   const [nombre, setNombre] = useState('');
   const [acepta, setAcepta] = useState(false);
+  /** Los errores del día y del tope: los del cliente y los que mandó el back. */
+  const [errores, setErrores] = useState<{ dia?: string; tope?: string }>({});
 
   useEffect(() => {
     if (topePropuesto > 0 && tope === '') setTope(String(topePropuesto));
@@ -116,14 +122,24 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
 
   const autorizar = useCallback(async () => {
     if (!contractId || !tokenizacion?.llavePublica || !tokenizacion.ambiente) return;
-    const topeNumero = Number(tope.replace(/[^\d]/g, ''));
-    if (!topeNumero) {
-      toast.error('Escribe hasta cuánto autorizas por mes.');
+    // 02-10-2026 · El mismo tope y la misma frase que el back
+    // (`tenant-payments/dto/limites-del-pago.ts`): lo que el back rechazaría
+    // se dice bajo su campo ANTES de tocar la tarjeta.
+    const diaNumero = Number(dia);
+    const errorDelDia =
+      Number.isInteger(diaNumero) && diaNumero >= 1 && diaNumero <= 28 ? undefined : 'Elige un día del 1 al 28.';
+    const errorDelTope = errorDelTopeDelAutopago(tope) ?? undefined;
+    if (errorDelDia || errorDelTope) {
+      setErrores({ dia: errorDelDia, tope: errorDelTope });
+      document.getElementById(errorDelDia ? 'autopago-dia' : 'autopago-tope')?.focus();
       return;
     }
+    const topeNumero = Number(tope.replace(/[^\d]/g, ''));
+    setErrores({});
     setTrabajando(true);
+    let token: string;
     try {
-      const token = await tokenizarTarjeta(
+      token = await tokenizarTarjeta(
         tokenizacion.llavePublica,
         tokenizacion.ambiente,
         {
@@ -134,11 +150,23 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
           nombreEnLaTarjeta: nombre,
         },
       );
+    } catch (e) {
+      // La pasarela rechazó la tarjeta: se dice SU motivo (si se lee); sin
+      // respuesta, la conexión. Nunca un volcado.
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos validar la tarjeta. Revisa el número, la fecha de vencimiento, el CVC y el nombre.',
+        }),
+      );
+      setTrabajando(false);
+      return;
+    }
+    try {
       const nuevo = await autopagoApi.activar({
         contractId,
         token,
         metodo: 'CARD',
-        diaDelMes: Number(dia),
+        diaDelMes: diaNumero,
         topeCop: topeNumero,
         // El texto que se autoriza va tal como lo mandó el servidor.
         autorizacionTexto: tokenizacion.textoDeAutorizacion,
@@ -154,11 +182,18 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
       setAcepta(false);
       toast.success('Cobro automático activado');
     } catch (e) {
-      toast.error(
-        e instanceof Error && e.message
-          ? e.message
-          : 'No pudimos activar el cobro automático.',
-      );
+      // 02-10-2026 · Lo que el back rechazó del día o del tope va bajo su
+      // campo; al toast sólo lo demás, con la regla de oro (antes: `e.message`).
+      const reparto = repartirErroresDelServidor<'dia' | 'tope'>(e, {
+        mapa: { diaDelMes: 'dia', topeCop: 'tope' },
+        campos: ['dia', 'tope'],
+        accion: 'activar el cobro automático',
+        porDefecto: 'No pudimos activar el cobro automático. Prueba de nuevo en un momento.',
+      });
+      setErrores(reparto.porCampo);
+      const primero = reparto.orden[0];
+      if (primero) document.getElementById(primero === 'dia' ? 'autopago-dia' : 'autopago-tope')?.focus();
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '));
     } finally {
       setTrabajando(false);
     }
@@ -172,7 +207,12 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
         setEstado(await autopagoApi.pausarOReactivar(contractId, activar));
         toast.success(activar ? 'Cobro automático activo' : 'Cobro automático pausado');
       } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'No se pudo cambiar.');
+        toast.error(
+          mensajeParaLaPersona(e, {
+            accion: activar ? 'reactivar el cobro automático' : 'pausar el cobro automático',
+            porDefecto: 'No se pudo cambiar.',
+          }),
+        );
       } finally {
         setTrabajando(false);
       }
@@ -187,7 +227,9 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
       setEstado(await autopagoApi.cancelar(contractId));
       toast.success('Cobro automático cancelado');
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'No se pudo cancelar.');
+      toast.error(
+        mensajeParaLaPersona(e, { accion: 'cancelar el cobro automático', porDefecto: 'No se pudo cancelar.' }),
+      );
     } finally {
       setTrabajando(false);
     }
@@ -202,7 +244,7 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
       else toast.error(r.motivo ?? 'No se pudo cobrar.');
       await cargar();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'No se pudo cobrar.');
+      toast.error(mensajeParaLaPersona(e, { accion: 'cobrar ahora', porDefecto: 'No se pudo cobrar.' }));
     } finally {
       setTrabajando(false);
     }
@@ -216,10 +258,10 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
   return (
     <section
       data-testid="autopago"
-      className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-[#1a1a1c] p-6 space-y-4"
+      className="rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-6 space-y-4"
     >
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-[#2a2a2c] flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 rounded-xl bg-surface-muted dark:bg-border flex items-center justify-center flex-shrink-0">
           <ArrowsClockwise className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
         </div>
         <div>
@@ -341,11 +383,19 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
                   id="autopago-dia"
                   inputMode="numeric"
                   value={dia}
-                  onChange={(e) => setDia(e.target.value.replace(/[^\d]/g, '').slice(0, 2))}
+                  onChange={(e) => {
+                    setDia(e.target.value.replace(/[^\d]/g, '').slice(0, 2));
+                    setErrores((prev) => ({ ...prev, dia: undefined }));
+                  }}
+                  aria-invalid={errores.dia ? true : undefined}
+                  aria-describedby="autopago-dia-error"
                 />
-                <span className="text-xs text-fg-subtle">
-                  Del 1 al 28. No hay 29, 30 ni 31 porque no todos los meses los tienen.
-                </span>
+                <ErrorDelCampo
+                  id="autopago-dia-error"
+                  mensaje={errores.dia}
+                  pista="Del 1 al 28. No hay 29, 30 ni 31 porque no todos los meses los tienen."
+                  className="mt-0"
+                />
               </label>
               <label className="space-y-1">
                 <span className="text-sm text-fg-muted dark:text-fg-subtle">
@@ -355,12 +405,19 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
                   id="autopago-tope"
                   inputMode="numeric"
                   value={tope}
-                  onChange={(e) => setTope(e.target.value.replace(/[^\d]/g, ''))}
+                  onChange={(e) => {
+                    setTope(e.target.value.replace(/[^\d]/g, ''));
+                    setErrores((prev) => ({ ...prev, tope: undefined }));
+                  }}
+                  aria-invalid={errores.tope ? true : undefined}
+                  aria-describedby="autopago-tope-error"
                 />
-                <span className="text-xs text-fg-subtle">
-                  Déjalo un poco por encima de tu canon: si un mes se cobra administración o un
-                  ajuste, un tope justo lo dejaría por fuera y no se cobraría nada.
-                </span>
+                <ErrorDelCampo
+                  id="autopago-tope-error"
+                  mensaje={errores.tope}
+                  pista="Déjalo un poco por encima de tu canon: si un mes se cobra administración o un ajuste, un tope justo lo dejaría por fuera y no se cobraría nada."
+                  className="mt-0"
+                />
               </label>
             </div>
 
@@ -407,7 +464,7 @@ export function AutopagoSection({ contractId, canonCop }: AutopagoSectionProps) 
               </label>
             </div>
 
-            <p className="flex items-start gap-2 rounded-lg bg-surface-muted dark:bg-[#2a2a2c] px-4 py-3 text-xs text-fg-muted dark:text-fg-subtle">
+            <p className="flex items-start gap-2 rounded-lg bg-surface-muted dark:bg-border px-4 py-3 text-xs text-fg-muted dark:text-fg-subtle">
               <Lock className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
                 Los datos de tu tarjeta viajan directo a la pasarela de pagos. No pasan por

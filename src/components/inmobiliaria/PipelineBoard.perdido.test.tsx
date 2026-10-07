@@ -17,13 +17,14 @@ import * as React from 'react';
 
 type Soltar = (e: { active: { id: string }; over: { id: string } | null }) => Promise<void> | void;
 
-const { dnd, toastInfo, toastSuccess } = vi.hoisted(() => ({
+const { dnd, toastInfo, toastSuccess, toastError } = vi.hoisted(() => ({
   dnd: {
     onDragEnd: undefined as Soltar | undefined,
     bloqueadas: new Map<string, boolean>(),
   },
   toastInfo: vi.fn(),
   toastSuccess: vi.fn(),
+  toastError: vi.fn(),
 }));
 
 vi.mock('@dnd-kit/core', () => ({
@@ -48,7 +49,7 @@ vi.mock('@/components/providers/SmoothScroll', () => ({
   useLenis: () => ({ stop: () => {}, start: () => {}, lenis: null }),
 }));
 vi.mock('@/components/ui/toast', () => ({
-  toast: { success: toastSuccess, info: toastInfo, error: vi.fn() },
+  toast: { success: toastSuccess, info: toastInfo, error: toastError },
 }));
 vi.mock('@/components/ui/alert-dialog', () => {
   const Pasa = ({ children }: { children?: React.ReactNode }) => <>{children}</>;
@@ -126,7 +127,7 @@ async function soltar(id: string, en: string) {
 }
 
 async function escribirMotivo(texto: string) {
-  const area = container.querySelector('[data-testid="motivo-texto"]') as HTMLTextAreaElement;
+  const area = document.querySelector('#motivo-detalle') as HTMLTextAreaElement;
   const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')!.set!;
   await act(async () => {
     setter.call(area, texto);
@@ -134,10 +135,20 @@ async function escribirMotivo(texto: string) {
   });
 }
 
-const dialogo = () => container.querySelector('[data-testid="motivo-dialog"]');
+async function escoger(motivo: string) {
+  const boton = Array.from(document.querySelectorAll('[data-testid="motivo-de-perdida-opcion"]')).find(
+    (b) => b.textContent === motivo,
+  ) as HTMLButtonElement;
+  await act(async () => {
+    boton.click();
+  });
+}
 
-describe('PipelineBoard — soltar en «Perdido» (P4)', () => {
-  it('no mueve nada: abre el diálogo del motivo', async () => {
+const dialogo = () => document.querySelector('[data-testid="motivo-de-perdida"]');
+const confirmar = () => document.querySelector('[data-testid="motivo-de-perdida-confirmar"]') as HTMLButtonElement;
+
+describe('PipelineBoard — soltar en «Perdido» (P4 + PL-17: motivos fijos)', () => {
+  it('no mueve nada: abre el diálogo con los motivos fijos', async () => {
     const onStageChange = vi.fn(() => Promise.resolve());
     montar(onStageChange);
 
@@ -145,35 +156,56 @@ describe('PipelineBoard — soltar en «Perdido» (P4)', () => {
 
     expect(onStageChange).not.toHaveBeenCalled();
     expect(dialogo()).not.toBeNull();
+    const opciones = Array.from(document.querySelectorAll('[data-testid="motivo-de-perdida-opcion"]')).map((b) => b.textContent);
+    expect(opciones).toContain('Dejó de responder');
+    expect(opciones).toContain('Otro');
+    // Sin motivo escogido no se puede confirmar.
+    expect(confirmar().disabled).toBe(true);
   });
 
-  it('con el motivo escrito lo manda al back, avisa y cierra', async () => {
+  it('PL-17: el motivo fijo (con su detalle) es lo que viaja, para poder contarlo', async () => {
     const onStageChange = vi.fn(() => Promise.resolve());
     montar(onStageChange);
 
     await soltar('abierto', 'lost');
-    await escribirMotivo('Se fue con otra inmobiliaria por el canon');
+    await escoger('Arrendó en otro lado');
+    await escribirMotivo('con otra inmobiliaria');
     await act(async () => {
-      (container.querySelector('[data-testid="motivo-confirmar"]') as HTMLButtonElement).click();
+      confirmar().click();
     });
 
-    expect(onStageChange).toHaveBeenCalledWith('abierto', 'lost', 'Se fue con otra inmobiliaria por el canon');
+    expect(onStageChange).toHaveBeenCalledWith('abierto', 'lost', 'Arrendó en otro lado: con otra inmobiliaria');
     expect(toastInfo).toHaveBeenCalled();
-    expect(dialogo()).toBeNull();
   });
 
-  it('si el back dice que no, no canta «perdido» y el diálogo sigue abierto', async () => {
+  it('«Otro» pide escribirlo', async () => {
+    const onStageChange = vi.fn(() => Promise.resolve());
+    montar(onStageChange);
+
+    await soltar('abierto', 'lost');
+    await escoger('Otro');
+    expect(confirmar().disabled).toBe(true);
+    await escribirMotivo('Se mudó de ciudad por trabajo');
+    expect(confirmar().disabled).toBe(false);
+  });
+
+  it('si el back dice que no, no canta «perdido» y el diálogo sigue abierto con el porqué', async () => {
     const onStageChange = vi.fn(() => Promise.reject(new Error('409')));
     montar(onStageChange);
 
     await soltar('abierto', 'lost');
-    await escribirMotivo('Se fue con otra inmobiliaria por el canon');
+    await escoger('Dejó de responder');
     await act(async () => {
-      (container.querySelector('[data-testid="motivo-confirmar"]') as HTMLButtonElement).click();
+      confirmar().click();
+    });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
     });
 
     expect(toastInfo).not.toHaveBeenCalled();
     expect(dialogo()).not.toBeNull();
+    expect(document.getElementById('motivo-de-perdida-error')?.textContent).toBeTruthy();
+    expect(toastError).not.toHaveBeenCalled();
   });
 
   it('soltar en otra etapa abierta sigue moviendo directo, sin diálogo', async () => {
@@ -184,6 +216,19 @@ describe('PipelineBoard — soltar en «Perdido» (P4)', () => {
 
     expect(onStageChange).toHaveBeenCalledWith('abierto', 'application');
     expect(dialogo()).toBeNull();
+  });
+
+  it('PL-16: soltar en «Visita programada» no mueve: pide agendar la visita', async () => {
+    const onStageChange = vi.fn(() => Promise.resolve());
+    const onPedirVisita = vi.fn();
+    act(() => {
+      root.render(
+        <PipelineBoard items={ITEMS} onItemClick={() => {}} onStageChange={onStageChange} onPedirVisita={onPedirVisita} />,
+      );
+    });
+    await soltar('abierto', 'visit_scheduled');
+    expect(onStageChange).not.toHaveBeenCalled();
+    expect(onPedirVisita).toHaveBeenCalledWith(expect.objectContaining({ id: 'abierto' }));
   });
 });
 

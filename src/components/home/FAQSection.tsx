@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { Appear, Collapse, CrossFade } from "@leasefy/cadence";
 import { Plus, X } from '@phosphor-icons/react';
 
 const faqs = [
@@ -50,11 +50,12 @@ export function FAQSection() {
       <div className="container-platform py-[80px] pb-[100px]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
           {/* Left - Header, Image & CTA */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+          {/* Las dos columnas llegan al hacer scroll, cada una desde su lado (`Appear inView`). */}
+          <Appear
+            inView
+            direction="right"
+            distance="md"
+            duration="slow"
             className="lg:sticky lg:top-32 self-start"
           >
             {/* Label with purple dot - 16px, -0.32px letter-spacing */}
@@ -92,22 +93,23 @@ export function FAQSection() {
               className="inline-flex items-center justify-center h-[35px] px-[22px] rounded-sm border border-border text-[15px] text-foreground tracking-[-0.15px] leading-[20px] hover:bg-black/5 transition-colors group/btn overflow-hidden"
             >
               <span className="relative overflow-hidden h-[20px]">
-                <span className="block transition-transform duration-300 group-hover/btn:-translate-y-full">
+                <span className="block transition-transform duration-slow ease-enter group-hover/btn:-translate-y-full">
                   Contáctanos
                 </span>
-                <span className="block absolute top-full transition-transform duration-300 group-hover/btn:-translate-y-full">
+                <span className="block absolute top-full transition-transform duration-slow ease-enter group-hover/btn:-translate-y-full">
                   Contáctanos
                 </span>
               </span>
             </a>
-          </motion.div>
+          </Appear>
 
           {/* Right - FAQ Accordion with fixed height to prevent layout shift */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+          <Appear
+            inView
+            direction="left"
+            distance="md"
+            duration="slow"
+            delay={0.1}
             className="min-h-[600px]"
           >
             {faqs.map((faq, index) => (
@@ -123,33 +125,27 @@ export function FAQSection() {
                   <span className="text-[24px] font-normal text-foreground tracking-[-0.96px] leading-[29.28px] pr-6">
                     {faq.question}
                   </span>
-                  <span className="flex-shrink-0 w-10 h-10 rounded-full border border-border flex items-center justify-center text-foreground group-hover:bg-black/5 transition-colors">
+                  <span className="relative flex-shrink-0 w-10 h-10 rounded-full border border-border flex items-center justify-center text-foreground group-hover:bg-black/5 transition-colors">
+                    {/* ✕ ↔ +: los dos íconos miden lo mismo y se cruzan en el lugar. */}
+                    <CrossFade swapKey={openIndex === index ? 'cerrar' : 'abrir'} mode="popLayout" className="flex">
                     {openIndex === index ? (
                       <X className="w-4 h-4" />
                     ) : (
                       <Plus className="w-4 h-4" />
                     )}
+                    </CrossFade>
                   </span>
                 </button>
-                <AnimatePresence>
-                  {openIndex === index && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                      className="overflow-hidden"
-                    >
+                {/* La respuesta se abre y se cierra con su altura (`Collapse`). */}
+                <Collapse open={openIndex === index}>
                       {/* Answer text - 18px, -0.72px letter-spacing, black/70% */}
                       <p className="text-[18px] tracking-[-0.72px] leading-[24px] text-foreground/70 pb-[24px] pr-12">
                         {faq.answer}
                       </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                </Collapse>
               </div>
             ))}
-          </motion.div>
+          </Appear>
         </div>
       </div>
     </section>

@@ -43,6 +43,8 @@ import type { ApplicationPrefillData, DocumentoReutilizable } from '@/lib/api/ap
 import type { ConsentTextResponse } from '@/lib/api/legal.service'
 import { DOCUMENT_TYPES } from '@/lib/types/application'
 import { identidadEfectiva } from '@/lib/tenant/prefill-a-postulacion'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { revisarReferencias } from '@/lib/inquilino/limites-de-la-postulacion'
 import type { Property } from '@/lib/types/property'
 
 /** Los tipos del back con el nombre que la persona reconoce. */
@@ -119,6 +121,12 @@ export function PostulacionDirecta({
 
   const postular = useCallback(async () => {
     if (!puedeEnviar) return
+    // Las referencias de la postulación anterior, con los topes del back.
+    const referenciasDeMas = revisarReferencias(prefill.references)
+    if (referenciasDeMas.length > 0) {
+      setError(`${referenciasDeMas.join(' · ')} Abre el formulario para revisarlas.`)
+      return
+    }
     setEnviando(true)
     setError(null)
 
@@ -162,7 +170,20 @@ export function PostulacionDirecta({
        * mandarla a la pantalla de "listo". La inmobiliaria no puede evaluar
        * sin cédula, y enterarse después es peor.
        */
-      const reuso = await applicationsApi.reuseDocuments(creada.id)
+      let reuso: Awaited<ReturnType<typeof applicationsApi.reuseDocuments>>
+      try {
+        reuso = await applicationsApi.reuseDocuments(creada.id)
+      } catch (e) {
+        // La postulación YA existe: no se dice «no pudimos enviar», se dice
+        // qué faltó y por qué (02-10-2026).
+        setError(
+          `Tu postulación quedó creada, pero no pudimos adjuntar tus documentos. ${mensajeParaLaPersona(e, {
+            accion: 'adjuntar tus documentos',
+          })} Abre el formulario para subirlos.`,
+        )
+        setEnviando(false)
+        return
+      }
       const adjuntos = new Set([
         ...reuso.copiados.map((d) => d.type),
         ...reuso.yaEstaban,
@@ -198,8 +219,15 @@ export function PostulacionDirecta({
         // no separate CTA-swap is built here.
         setError(e.message);
       } else {
+        // 🔴 02-10-2026 · Regla de oro: antes, `e.message` crudo (un 5xx en
+        // inglés o «Revisa tu conexión» sin serlo). Esta pantalla no tiene
+        // campos que editar: un 400 lista lo que el back rechazó y la salida
+        // es el formulario.
         setError(
-          e instanceof Error ? e.message : 'No pudimos enviar tu postulación. Intenta de nuevo.',
+          mensajeParaLaPersona(e, {
+            accion: 'enviar tu postulación',
+            porDefecto: 'No pudimos enviar tu postulación. Prueba de nuevo en un momento.',
+          }),
         )
       }
       setEnviando(false)
@@ -366,7 +394,10 @@ export function PostulacionDirecta({
             ) : null}
 
             {error ? (
-              <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3"
+              >
                 <Warning className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
                 <div className="space-y-2 text-sm text-foreground">
                   <p>{error}</p>

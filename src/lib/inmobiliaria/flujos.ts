@@ -181,12 +181,22 @@ export const flujoLabelKey = (k: FlujoKey) => `${I18N}.${k}.label`
 export const flujoDescKey = (k: FlujoKey) => `${I18N}.${k}.desc`
 export const grupoLabelKey = (g: GrupoFlujo) => `inmobiliaria.nuevo.grupos.${g}`
 
-/** Claves de la explicación que se muestra la primera vez. */
+/**
+ * Claves de la explicación que se muestra la primera vez (PRESENTACIONES,
+ * 05-10-2026: la explicación es `IntroHeroe`, con un ícono por paso —
+ * `components/inmobiliaria/intro-de-flujo/textos.ts` dice cuántos tiene cada
+ * flujo— y «Antes de empezar» como lista de chequeo).
+ */
 export const flujoIntro = (k: FlujoKey) => ({
   titulo: `${I18N}.${k}.intro.titulo`,
   resumen: `${I18N}.${k}.intro.resumen`,
-  pasos: [1, 2, 3].map((n) => `${I18N}.${k}.intro.paso${n}`),
-  necesitas: `${I18N}.${k}.intro.necesitas`,
+  /** El paso `n` (desde 1): su título y lo que pasa. */
+  paso: (n: number) => ({
+    titulo: `${I18N}.${k}.intro.pasos.p${n}.titulo`,
+    texto: `${I18N}.${k}.intro.pasos.p${n}.texto`,
+  }),
+  /** Lo `n` (desde 1) que conviene tener a mano. */
+  antes: (n: number) => `${I18N}.${k}.intro.antes.a${n}`,
 })
 
 /**

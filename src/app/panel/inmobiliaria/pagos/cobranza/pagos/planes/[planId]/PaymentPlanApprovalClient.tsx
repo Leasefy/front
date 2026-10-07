@@ -11,11 +11,17 @@
  *  - Inline Rechazar form: canned 6-reason dropdown + optional 500-char comment.
  *  - Inline Modificar form: range slider hard-capped at agency.maxDiscount.
  *  - Realtime: cartera_payments channel triggers a single refetch on every event.
+ *  - 🔴 «El inquilino aceptó» (03-10-2026, Nico S5 Q4, contra la recomendada):
+ *    el panel TAMBIÉN exige la aprobación de la inmobiliaria para aceptar en
+ *    nombre del inquilino. Sin aprobar, la pantalla lo explica y ofrece
+ *    «Aprobar primero»; si el micro igual responde 409 `ACUERDO_SIN_APROBAR`
+ *    (otra persona, otra pestaña), se dice lo mismo con la frase del servidor.
  */
 
 import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { CrossFade, Presence } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
@@ -39,12 +45,16 @@ import {
 } from '@/components/ui/table'
 import { Slider, NumberInput } from '@leasefy/cadence'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import {
+  CODIGO_ACUERDO_SIN_APROBAR,
   usePaymentPlanApproval,
   type RejectReasonSlug,
 } from '@/lib/hooks/cobranza/use-payment-plan-approval'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { usePaymentsFunnelRealtime } from '@/lib/hooks/cobranza/use-payments-funnel-realtime'
 import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 void React
 
@@ -57,7 +67,7 @@ const REJECT_REASONS: RejectReasonSlug[] = [
   'other',
 ]
 
-const copFormat = new Intl.NumberFormat('es-CO', {
+const copFormat = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,
@@ -68,8 +78,31 @@ function formatCop(value: number | null | undefined): string {
   return copFormat.format(value)
 }
 
+/** Hoy en Bogotá (`AAAA-MM-DD`): con `toISOString`, desde las 7 p. m. ya era mañana. */
 function todayIso(): string {
-  return new Date().toISOString().slice(0, 10)
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Bogota',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date())
+}
+
+const fechaDelDia = new Intl.DateTimeFormat('es-CO', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+})
+
+/**
+ * «3 de noviembre de 2026» de un `AAAA-MM-DD` (la cuota vence ese DÍA, sin
+ * hora). Antes la tabla mostraba el ISO crudo «2026-11-03T00:00:00.000Z».
+ */
+export function diaParaMostrar(dia: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dia)
+  if (!m) return dia || '—'
+  return fechaDelDia.format(new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]))))
 }
 
 interface Props {
@@ -90,8 +123,8 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
     approvePlan,
     rejectPlan,
     modifyPlan,
+    acceptPlan,
   } = usePaymentPlanApproval({ planId, canApprove })
-
   // Realtime — single refetch on each cartera_payments event for this plan.
   const onUpdate = useCallback(() => {
     void refetch()
@@ -111,6 +144,9 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
   const [actionLoading, setActionLoading] = useState<boolean>(false)
   const [wompiLink, setWompiLink] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  /** La frase del 409 `ACUERDO_SIN_APROBAR` cuando el servidor dijo que no. */
+  const [sinAprobarDelServidor, setSinAprobarDelServidor] = useState<string | null>(null)
+  const [aceptando, setAceptando] = useState<boolean>(false)
 
   // Sync wompiLink from plan (in case refetch picks up another operator's approve).
   useEffect(() => {
@@ -154,7 +190,12 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
   if (!plan) return null
 
   const maxDiscount = plan.agency.maxDiscount
-  const isPending = plan.status === 'offered' || plan.status === 'pending'
+  // Por decidir = ofrecido y SIN la aprobación de la inmobiliaria. Aprobado, ni
+  // aprobar otra vez ni rechazar ni modificar: el micro responde 409 a las tres
+  // (QA-IA-B, 04-10-2026: los tres botones seguían prendidos).
+  const isPending =
+    (plan.status === 'offered' || plan.status === 'pending') && !plan.operatorApprovedAt
+  const esPagoUnico = plan.proposed.cuotas === 0 && plan.proposed.totalDueCop > 0
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -180,7 +221,9 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
     try {
       const res = await approvePlan()
       if ('error' in res) {
-        setActionError(res.error)
+        setActionError(
+          mensajeDeLaAccion(res, { porDefecto: 'No pudimos aprobar el plan.', accion: 'aprobar el plan' }),
+        )
       } else {
         setWompiLink(res.wompiLink)
       }
@@ -199,15 +242,19 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
         reject_comment: rejectComment || undefined,
       })
       if ('error' in res) {
-        setActionError(res.error)
+        setActionError(
+          mensajeDeLaAccion(res, { porDefecto: 'No pudimos rechazar el plan.', accion: 'rechazar el plan' }),
+        )
       } else {
         setRechazarOpen(false)
         setRejectReason('')
         setRejectComment('')
         setToast(t('inmobiliaria.ai.cobranza.planes.rechazarForm.success'))
       }
-    } catch (err) {
-      setActionError(err instanceof Error ? err.message : 'reject failed')
+    } catch {
+      // El hook sólo tira si el motivo falta o no es de la lista (en inglés,
+      // para el programador): a la persona se le dice qué hacer.
+      setActionError('Elige un motivo de rechazo de la lista.')
     } finally {
       setActionLoading(false)
     }
@@ -228,9 +275,12 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
         // could not be rejected, so two plans may be active. Show a clear,
         // localized warning and pull canonical server state.
         setActionError(
-          res.error.startsWith('DUPLICATE_PLAN_RISK')
+          res.code === 'DUPLICATE_PLAN_RISK'
             ? t('inmobiliaria.ai.cobranza.planes.modificarForm.duplicateRisk')
-            : res.error,
+            : mensajeDeLaAccion(res, {
+                porDefecto: 'No pudimos enviar la contraoferta.',
+                accion: 'enviar la contraoferta',
+              }),
         )
         void refetch()
       } else {
@@ -252,6 +302,73 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
     : ''
 
   const actionsDisabled = !canApprove || !isPending || actionLoading
+
+  // 🔴 Aprobado = la marca del servidor (`operatorApprovedAt`; el hook la pone
+  // al aprobar acá y la quita si el servidor responde que no). El enlace de
+  // Wompi NO sirve de señal: la oferta ya trae uno antes de aprobar.
+  const estaAprobado = Boolean(plan.operatorApprovedAt)
+  // Espera la aceptación del inquilino: ofrecido (aprobado o no). `approved` es
+  // el estado local justo después de aprobar acá (el servidor sigue diciendo
+  // `offered` con la marca de aprobación).
+  const esperaAceptacion =
+    plan.status === 'offered' || plan.status === 'pending' || plan.status === 'approved'
+  const puedeRegistrarAceptacion = esperaAceptacion && estaAprobado && !sinAprobarDelServidor
+  /*
+   * 🔴 N-44 (QA-PAGOS-95 r3): un plan que ya no está por decidir (aprobado,
+   * vigente, cumplido, rechazado…) no ofrece «Aprobar · Rechazar · Modificar»
+   * apagados: dice en qué quedó. Antes el plan VIGENTE de Tomás seguía con los
+   * tres botones.
+   */
+  const estadoDelPlan =
+    plan.status === 'active'
+      ? t('inmobiliaria.ai.cobranza.planes.estado.vigente')
+      : plan.status === 'completed'
+        ? t('inmobiliaria.ai.cobranza.planes.estado.cumplido')
+        : plan.status === 'rejected'
+          ? t('inmobiliaria.ai.cobranza.planes.estado.rechazado')
+          : plan.status === 'cancelled'
+            ? t('inmobiliaria.ai.cobranza.planes.estado.cancelado')
+            : plan.status === 'defaulted'
+              ? t('inmobiliaria.ai.cobranza.planes.estado.incumplido')
+              : plan.status === 'counter_offered'
+                ? t('inmobiliaria.ai.cobranza.planes.estado.contraoferta')
+                : estaAprobado
+                  ? t('inmobiliaria.ai.cobranza.planes.estado.aprobado')
+                  : null
+
+  const handleAceptar = async (): Promise<void> => {
+    setAceptando(true)
+    setActionError(null)
+    try {
+      const res = await acceptPlan()
+      if ('error' in res) {
+        if (res.code === CODIGO_ACUERDO_SIN_APROBAR) {
+          setSinAprobarDelServidor(
+            mensajeParaLaPersona(res.fallo, {
+              porDefecto: t('inmobiliaria.ai.cobranza.planes.aceptacion.sinAprobar'),
+              accion: 'registrar la aceptación',
+            }),
+          )
+        } else {
+          setActionError(
+            mensajeDeLaAccion(res, {
+              porDefecto: 'No pudimos registrar la aceptación.',
+              accion: 'registrar la aceptación',
+            }),
+          )
+        }
+      } else {
+        setToast(t('inmobiliaria.ai.cobranza.planes.aceptacion.registrado'))
+      }
+    } finally {
+      setAceptando(false)
+    }
+  }
+
+  const handleAprobarPrimero = async (): Promise<void> => {
+    setSinAprobarDelServidor(null)
+    await handleAprobar()
+  }
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -317,7 +434,9 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
                 {t('inmobiliaria.ai.cobranza.planes.comparison.cuotas')}
               </TableCell>
               <TableCell className="px-4 py-3 font-medium text-fg">
-                {plan.proposed.cuotas}
+                {/* Un acuerdo de pago único no trae cuotas: «0 cuotas · $0 por
+                    cuota» parecía un acuerdo vacío (PRUEBAS-PAGOS, 03-10-2026). */}
+                {esPagoUnico ? t('inmobiliaria.ai.cobranza.planes.comparison.pagoUnico') : plan.proposed.cuotas}
               </TableCell>
               <TableCell className="px-4 py-3 text-fg-muted">—</TableCell>
             </TableRow>
@@ -326,7 +445,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
                 {t('inmobiliaria.ai.cobranza.planes.comparison.monto')}
               </TableCell>
               <TableCell className="px-4 py-3 font-medium text-fg">
-                {formatCop(plan.proposed.montoPorCuota)}
+                {formatCop(esPagoUnico ? plan.proposed.totalDueCop : plan.proposed.montoPorCuota)}
               </TableCell>
               <TableCell className="px-4 py-3 text-fg-muted">—</TableCell>
             </TableRow>
@@ -335,7 +454,7 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
                 {t('inmobiliaria.ai.cobranza.planes.comparison.fecha')}
               </TableCell>
               <TableCell className="px-4 py-3 font-medium text-fg">
-                {plan.proposed.fechaPrimerPago || '—'}
+                {plan.proposed.fechaPrimerPago ? diaParaMostrar(plan.proposed.fechaPrimerPago) : '—'}
               </TableCell>
               <TableCell className="px-4 py-3 text-fg-muted">—</TableCell>
             </TableRow>
@@ -364,7 +483,13 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
         </div>
       )}
 
-      {/* Action buttons */}
+      {/* Action buttons: sólo mientras está por decidir (N-44). */}
+      {!isPending && estadoDelPlan && (
+        <p role="status" data-testid="plan-estado" className="text-sm text-fg">
+          {estadoDelPlan}
+        </p>
+      )}
+      {isPending && (
       <div className="flex flex-wrap gap-2">
         <Button
           type="button"
@@ -399,21 +524,89 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
           {t('inmobiliaria.ai.cobranza.planes.modificar')}
         </Button>
       </div>
+      )}
 
-      {actionError && (
-        <div className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger">
+      {/* «El inquilino aceptó» — sólo con el plan aprobado (Nico, S5 Q4) */}
+      {/* «Primero apruébalo» ⇄ «Registrar que lo aceptó»: el uno se va y el
+          otro entra con el `CrossFade` del sistema (antes, `AnimatePresence
+          mode="wait"` con su propia receta). */}
+      {canApprove && esperaAceptacion && (
+        <CrossFade swapKey={puedeRegistrarAceptacion ? 'registrar-aceptacion' : 'aprobar-primero'}>
+          {puedeRegistrarAceptacion ? (
+            <section
+              data-testid="plan-registrar-aceptacion"
+              className="space-y-2 rounded-md border border-border bg-surface p-4"
+            >
+              <div className="text-sm font-medium text-fg">
+                {t('inmobiliaria.ai.cobranza.planes.aceptacion.titulo')}
+              </div>
+              <p className="text-sm text-fg-muted">
+                {t('inmobiliaria.ai.cobranza.planes.aceptacion.ayuda')}
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                data-testid="plan-registrar-aceptacion-boton"
+                onClick={() => void handleAceptar()}
+                disabled={aceptando || actionLoading}
+                isLoading={aceptando}
+                hideArrow
+              >
+                {t('inmobiliaria.ai.cobranza.planes.aceptacion.registrar')}
+              </Button>
+            </section>
+          ) : (
+            <section
+              role="status"
+              data-testid="plan-sin-aprobar"
+              className="space-y-2 rounded-md border border-warning/30 bg-warning-soft p-4"
+            >
+              <div className="text-sm font-medium text-warning">
+                {t('inmobiliaria.ai.cobranza.planes.aceptacion.sinAprobarTitulo')}
+              </div>
+              <p className="text-sm text-fg">
+                {sinAprobarDelServidor ?? t('inmobiliaria.ai.cobranza.planes.aceptacion.sinAprobar')}
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                data-testid="plan-aprobar-primero"
+                onClick={() => void handleAprobarPrimero()}
+                disabled={aprobarDisabled}
+                isLoading={actionLoading}
+                title={aprobarDisabledTitle || undefined}
+                hideArrow
+              >
+                {t('inmobiliaria.ai.cobranza.planes.aceptacion.aprobarPrimero')}
+              </Button>
+            </section>
+          )}
+        </CrossFade>
+      )}
+
+      {/* El error y el «listo» de una acción entran y salen con `Presence`. */}
+      <Presence
+        show={Boolean(actionError)}
+        role="alert"
+        data-testid="plan-accion-error"
+        className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
+      >
           {actionError}
-        </div>
-      )}
+      </Presence>
 
-      {toast && (
-        <div className="rounded-md border border-success/30 bg-success-soft px-3 py-2 text-sm text-success">
+      <Presence
+        show={Boolean(toast)}
+        className="rounded-md border border-success/30 bg-success-soft px-3 py-2 text-sm text-success"
+      >
           {toast}
-        </div>
-      )}
+      </Presence>
 
-      {/* Wompi link panel — populated after approve success */}
-      {wompiLink && (
+      {/* Wompi link panel — populated after approve success.
+          🔴 PRUEBAS-PAGOS (03-10-2026): sólo con el plan APROBADO. La oferta
+          ya trae su enlace antes de aprobar, y la tarjeta verde «Plan
+          aprobado» salía debajo de «Primero apruébalo» en un plan sin aprobar. */}
+      {wompiLink && estaAprobado && (
         <section className="rounded-md border border-success/30 bg-success-soft p-4">
           <div className="text-sm font-medium text-success">
             {t('inmobiliaria.ai.cobranza.planes.wompiLinkTitle')}

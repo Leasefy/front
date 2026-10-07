@@ -15,7 +15,8 @@
  */
 
 import * as React from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { Eye } from '@phosphor-icons/react'
 import { useI18n } from '@/lib/i18n'
 import { usePIIReveal } from '@/lib/hooks/cobranza/use-pii-reveal'
 import type { PIIFieldKey } from '@/lib/context/PIIRevealContext'
@@ -28,6 +29,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { Presence } from '@leasefy/cadence'
 
 void React
 
@@ -50,23 +52,20 @@ export function PIIRevealModal({ open, onClose, field, debtorName }: PIIRevealMo
   // The hook needs a stable field — when modal is closed we still need to
   // give it something. Default to cedula; the mint() only fires while open.
   const effectiveField: PIIFieldKey = field ?? 'cedula'
-  const { mint, isMinting, error } = usePIIReveal({ field: effectiveField })
-  const [localError, setLocalError] = useState<string | null>(null)
+  const { mint, isMinting, error, reset } = usePIIReveal({ field: effectiveField })
 
+  // Al abrir, no se arrastra el error de la vez anterior.
   useEffect(() => {
-    if (open) setLocalError(null)
-  }, [open])
+    if (open) reset()
+  }, [open, reset])
 
   const fieldLabel = field ? FIELD_LABEL_ES[field] : ''
 
   const handleConfirm = async () => {
-    setLocalError(null)
+    // Si no sale, el hook deja en `error` la frase del traductor (antes se
+    // leía un `error` viejo de este mismo render y se mostraba el status crudo).
     const ok = await mint()
-    if (ok) {
-      onClose()
-    } else {
-      setLocalError(error ?? t('inmobiliaria.ai.cobranza.detail.pii.errorGeneric'))
-    }
+    if (ok) onClose()
   }
 
   return (
@@ -74,7 +73,7 @@ export function PIIRevealModal({ open, onClose, field, debtorName }: PIIRevealMo
       open={open && field !== null}
       onOpenChange={(o) => { if (!o) onClose() }}
     >
-      <DialogContent className="max-w-md">
+      <DialogContent size="sm" variant="confirm" icon={<Eye weight="bold" />}>
         <DialogHeader>
           <DialogTitle>
             {t('inmobiliaria.ai.cobranza.detail.pii.modalTitle')}
@@ -89,9 +88,9 @@ export function PIIRevealModal({ open, onClose, field, debtorName }: PIIRevealMo
           {t('inmobiliaria.ai.cobranza.detail.pii.auditNote')}
         </p>
 
-        {(localError ?? error) && (
-          <p className="text-xs text-danger">{localError ?? error}</p>
-        )}
+        <Presence as="p" show={Boolean(error)} role="alert" className="text-xs text-danger" data-testid="pii-reveal-error">
+            {error}
+        </Presence>
 
         <DialogFooter className="gap-2">
           <Button

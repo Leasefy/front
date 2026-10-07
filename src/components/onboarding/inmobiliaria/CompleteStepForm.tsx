@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth/use-auth'
 import { ArrowRight, WarningCircle } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { CrossFade, Presence } from '@leasefy/cadence'
 import type { OnboardingSessionCompleteResponse, OnboardingSessionStepConflict } from '@/lib/api/generated/agency'
 import type { OnboardingSessionError } from '@/lib/api/onboarding-session.service'
 import type { OnboardingWizardStep } from '@/lib/hooks/use-onboarding-session'
@@ -18,7 +19,9 @@ export interface CompleteStepFormProps {
   isSubmitting: boolean
   onSubmit: () => Promise<OnboardingSessionCompleteResponse | null>
   /** Session-level error from the hook — passed as the full object (not just `.message`,
-   * like the other step forms) because this step branches on `.kind` and `.conflict`. */
+   * like the other step forms) because this step branches on `.kind` and `.conflict`.
+   * Un 400 (`validation`) se dice acá mismo, bajo el botón (02-10-2026): antes
+   * no llegaba y «Crear mi inmobiliaria» se volvía a prender sin decir nada. */
   error: OnboardingSessionError | null
   /** Navigates the wizard to a step other than `complete` — used by the missing-steps CTA. */
   onNavigateToStep: (step: OnboardingWizardStep) => void
@@ -166,6 +169,10 @@ export function CompleteStepForm({
   /** `/complete` salió bien: se celebra antes de ir al panel (Nico, 30-09). */
   const [creada, setCreada] = useState(false)
   const [redirecting, setRedirecting] = useState(false)
+  // El último error del micro, para que el aviso no se vacíe mientras sale.
+  const mensajeDelError = error?.kind === 'validation' ? error.message : null
+  const [ultimoError, setUltimoError] = useState(mensajeDelError)
+  if (mensajeDelError && mensajeDelError !== ultimoError) setUltimoError(mensajeDelError)
   const resumen = resumenDelRegistro(draft)
   const nombre = textoDelDraft(draft, 'legalName') ?? textoDelDraft(draft, 'proposedAgencyName')
 
@@ -239,7 +246,10 @@ export function CompleteStepForm({
     const missingStepKeys = missingSteps ?? (requiredStep ? [requiredStep] : [])
     const targetStep = missingSteps ? firstMissingStep(missingSteps) : requiredStep
 
+    // «Te faltan estos pasos» reemplaza al resumen cruzándose (el mismo
+    // `CrossFade` del otro `return`: cambia su `swapKey`).
     return (
+      <CrossFade swapKey="faltan">
       <div data-testid="complete-step-missing" className="space-y-4">
         <div className="flex items-start gap-2.5 rounded-md border border-warning/30 bg-warning-soft p-4">
           <WarningCircle className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" weight="fill" aria-hidden />
@@ -269,6 +279,7 @@ export function CompleteStepForm({
           </Button>
         )}
       </div>
+      </CrossFade>
     )
   }
 
@@ -278,6 +289,7 @@ export function CompleteStepForm({
     // inmobiliaria»). Acá queda lo que se revisa y el botón. La frase de
     // apertura sólo cuando no hay resumen: con resumen repetía el título
     // palabra por palabra (la misma frase no se dice dos veces).
+    <CrossFade swapKey="resumen">
     <div data-testid="complete-step-form" className="space-y-5">
       {resumen.length === 0 && (
         <p className="text-body-sm text-fg-muted">Confirma para crear tu inmobiliaria.</p>
@@ -327,9 +339,24 @@ export function CompleteStepForm({
         )}
       </Button>
 
+      {/* Lo que el micro rechazó al crearla (un 400): con sus palabras, ya
+          pasadas por el traductor en el servicio. */}
+      {/* Entra y sale con `Presence` (al reintentar, se va antes de la respuesta). */}
+      <Presence show={error?.kind === 'validation' && Boolean(error.message)}>
+        <div
+          role="alert"
+          data-testid="complete-step-error"
+          className="flex items-start gap-2.5 rounded-md border border-danger/20 bg-danger-soft p-3"
+        >
+          <WarningCircle className="mt-0.5 h-4 w-4 shrink-0 text-danger" weight="fill" aria-hidden />
+          <p className="text-body-sm text-danger">{error?.kind === 'validation' ? error.message : ultimoError}</p>
+        </div>
+      </Presence>
+
       {creada ? (
         <InmobiliariaCreada nombre={nombre} onIrAlPanel={() => void irAlPanel()} yendo={redirecting} />
       ) : null}
     </div>
+    </CrossFade>
   )
 }

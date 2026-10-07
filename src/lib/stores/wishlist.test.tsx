@@ -36,6 +36,7 @@ vi.mock('@/lib/api/wishlists.service', () => ({ wishlistsApi: api }))
 vi.mock('@/lib/i18n', () => ({ useOptionalI18n: () => undefined }))
 
 import { WishlistProvider, useWishlist } from './wishlist'
+import { ApiError } from '@/lib/api/client'
 
 let container: HTMLDivElement
 let root: Root
@@ -135,6 +136,36 @@ describe('favoritos — la señal al dar clic', () => {
 
     expect(store.isWishlisted('p1')).toBe(false)
     expect(toast.error).toHaveBeenCalledTimes(1)
+  })
+
+  // 02-10-2026 · Sistema de errores: el aviso dice QUÉ pasó.
+  it('🔴 un 5xx al guardar dice que fue nuestro, con la referencia, y no culpa a la conexión', async () => {
+    comoInquilino()
+    api.add.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
+    )
+    await montar()
+    await act(async () => {
+      store.toggleWishlist('p1')
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    const texto = String(toast.error.mock.calls[0][0])
+    expect(texto).toMatch(/^No pudimos guardarlo en tus favoritos: algo falló de nuestro lado/)
+    expect(texto).toContain('ab12cd34')
+    expect(texto).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta al quitar: ahí sí se habla de la conexión, y se repone', async () => {
+    comoInquilino()
+    api.getMine.mockResolvedValue(['p1'])
+    api.remove.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    await montar()
+    await act(async () => {
+      store.toggleWishlist('p1')
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    expect(store.isWishlisted('p1')).toBe(true)
+    expect(String(toast.error.mock.calls[0][0])).toMatch(/conexión/)
   })
 
   it('un clic manda UNA sola vez al back (los efectos ya no viven dentro del updater)', async () => {

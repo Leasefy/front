@@ -20,13 +20,30 @@
  * juez. Es la misma razón por la que el back lo exige.
  */
 
-import { useEffect, useState } from 'react';
-import { WarningCircle, CheckCircle, X } from '@phosphor-icons/react';
+import { useRef, useState } from 'react';
+import { WarningCircle, CheckCircle } from '@phosphor-icons/react';
+import { Presence } from '@leasefy/cadence';
 
 import { Button, Input } from '@/components/ui';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from '@/components/ui/toast';
-import { useLenis } from '@/components/providers/SmoothScroll';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import {
+  MAX_LARGO_DOCUMENTO_DEL_TESTIGO,
+  MAX_LARGO_NOMBRE_DEL_TESTIGO,
+  MIN_LARGO_DOCUMENTO_DEL_TESTIGO,
+  MIN_LARGO_NOMBRE_DEL_TESTIGO,
+} from '@/lib/actas/limites-del-acta';
 import { actasApi } from '@/lib/api/inmobiliaria.service';
+import { cargoAparteDelCierre, elCargoEntro } from '@/lib/actas/acta-del-back';
 import type { ActaEntrega } from '@/lib/types/inmobiliaria';
 
 /** Una condición del back, leída acá antes de que alguien intente. */
@@ -46,13 +63,18 @@ export function condicionesDelCierre(acta: ActaEntrega): CondicionDelCierre[] {
   const firmas = acta.signatures ?? [];
   const inquilinoFirmo = firmas.some((f) => f.party === 'tenant' && f.signedAt);
   const asesorFirmo = firmas.some((f) => f.party === 'agent' && f.signedAt);
-  // `fotosPorEspacio` lo agregó la migración del 18-09 y puede no viajar en
-  // actas viejas: `undefined` NO es «no hay fotos», es «no lo sé». Se deja pasar
-  // y que el back —que sí sabe— responda con su motivo.
+  // `fotosPorEspacio` lo agregó la migración del 18-09: sin la columna el back
+  // ni la manda (`undefined`), y eso NO es «no hay fotos», es «no lo sé». Se
+  // deja pasar y que el back —que sí sabe— responda con su motivo.
+  // 🔴 `null` SÍ es «no hay» (PRUEBAS-PAGOS, 03-10-2026): con la columna, el
+  // back manda `null` para el acta sin fotos y su cierre responde
+  // `ACTA_SIN_FOTOS_POR_ESPACIO`. Antes se leía como «no lo sé» y el diálogo
+  // decía «Hay fotos por espacio» encima del error «Faltan las fotos».
   const fotos = (acta as { fotosPorEspacio?: unknown }).fotosPorEspacio;
-  const hayFotos = fotos === undefined || fotos === null
+  const noSeSabe = fotos === undefined;
+  const hayFotos = noSeSabe
     ? true
-    : Object.keys(fotos as Record<string, unknown>).length > 0;
+    : fotos !== null && Object.keys(fotos as Record<string, unknown>).length > 0;
 
   return [
     {
@@ -69,9 +91,11 @@ export function condicionesDelCierre(acta: ActaEntrega): CondicionDelCierre[] {
     },
     {
       cumple: hayFotos,
-      texto: hayFotos
-        ? 'Hay fotos por espacio.'
-        : 'Faltan las fotos por espacio: son la prueba de en qué estado se entregó.',
+      texto: noSeSabe
+        ? 'Las fotos por espacio se revisan al cerrar.'
+        : hayFotos
+          ? 'Hay fotos por espacio.'
+          : 'Faltan las fotos por espacio: son la prueba de en qué estado se entregó.',
     },
   ];
 }
@@ -89,77 +113,84 @@ export function CerrarActaSinFirma({
   onCerrar: () => void;
   onCerrada: (acta: ActaEntrega) => void;
 }) {
-  const lenis = useLenis();
-  useEffect(() => {
-    lenis.stop();
-    return () => lenis.start();
-  }, [lenis]);
-
   const [nombre, setNombre] = useState('');
   const [documento, setDocumento] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [falla, setFalla] = useState<string | null>(null);
+  /** Lo que el back rechazó del testigo, por campo (`testigoNombre`, `testigoDocumento`). */
+  const [delServidor, setDelServidor] = useState<Partial<Record<CampoDelTestigo, string>>>({});
+  const formulario = useRef<HTMLFormElement>(null);
 
   const condiciones = condicionesDelCierre(acta);
   const listo = condiciones.every((c) => c.cumple);
-  const testigoCompleto = nombre.trim().length >= 3 && documento.trim().length >= 5;
+  const testigoCompleto =
+    nombre.trim().length >= MIN_LARGO_NOMBRE_DEL_TESTIGO &&
+    documento.trim().length >= MIN_LARGO_DOCUMENTO_DEL_TESTIGO;
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!listo || !testigoCompleto || guardando) return;
     setGuardando(true);
     setFalla(null);
+    setDelServidor({});
     try {
       const actualizada = await actasApi.cerrarSinFirma(acta.id, {
         testigoNombre: nombre.trim(),
         testigoDocumento: documento.trim(),
       });
-      toast.success(
-        'Acta cerrada. Se le manda copia al inquilino: tiene 5 días para objetar.',
-      );
+      const cerrada =
+        'Acta cerrada. Se le manda copia al inquilino: tiene 5 días para objetar.';
+      // 02-10-2026: lo que los descuentos pasan del depósito. Un solo aviso: el
+      // del cierre, con lo que pasó con el cargo abajo. En verde si entró a su
+      // estado de cuenta —en una cuota sin pagar o, si el contrato ya no tenía,
+      // en la CUOTA DE CIERRE, y el back dice cuándo vence—; en advertencia si
+      // NO entró: hay que cargarlo a mano.
+      const cargo = cargoAparteDelCierre(actualizada);
+      if (!cargo) toast.success(cerrada);
+      else if (elCargoEntro(cargo)) toast.success(cerrada, { description: cargo.mensaje });
+      else toast.warning(cerrada, { description: cargo.mensaje });
       onCerrada(actualizada);
     } catch (err) {
-      setFalla(mensajeDeError(err, 'No se pudo cerrar el acta'));
+      // 02-10-2026: lo del testigo va bajo su campo (con el foco); el aviso de
+      // abajo queda para el resto —los 409 del cierre (`EL_INQUILINO_SI_FIRMO`,
+      // `ACTA_SIN_FOTOS_POR_ESPACIO`…), un 5xx con su referencia, la red—, por
+      // el traductor y no con el mensaje crudo.
+      const reparto = repartirErroresDelServidor<CampoDelTestigo>(err, {
+        campos: ['testigoNombre', 'testigoDocumento'],
+        porDefecto: 'No se pudo cerrar el acta.',
+        accion: 'cerrar el acta',
+      });
+      setDelServidor(reparto.porCampo);
+      setFalla(reparto.sueltos.length ? reparto.sueltos.join(' · ') : null);
+      const primero = reparto.orden[0];
+      if (primero) formulario.current?.querySelector<HTMLElement>(`#acta-${primero}`)?.focus();
     } finally {
       setGuardando(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={guardando ? undefined : onCerrar}
-      />
-      <div
-        data-lenis-prevent
-        style={{ overscrollBehavior: 'contain' }}
-        className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-lg bg-background"
-      >
-        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-background px-6 py-4">
-          <h2 className="text-base font-semibold text-fg">
-            Cerrar sin la firma del inquilino
-          </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            hideArrow
-            onClick={onCerrar}
-            disabled={guardando}
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-
-        <form onSubmit={enviar} className="space-y-4 p-6">
-          <p className="text-sm text-fg-muted">
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        // Mientras se guarda no se sale (ni con Esc, ni con el velo, ni con la ✕).
+        if (!abierto && !guardando) onCerrar();
+      }}
+    >
+      <DialogContent size="sm">
+        <DialogHeader>
+          <DialogTitle>Cerrar sin la firma del inquilino</DialogTitle>
+          <DialogDescription>
             El acta queda cerrada con la firma del asesor y un testigo. Al
             inquilino se le manda copia y tiene{' '}
             <strong className="text-fg">5 días para objetar</strong>. Objetar no
             reabre el acta: deja escrito que no está de acuerdo.
-          </p>
+          </DialogDescription>
+        </DialogHeader>
 
+        {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
+            el botón de enviar lo apunta con `form=`. */}
+        <form id={ID_DEL_FORMULARIO} onSubmit={enviar} className="space-y-4" ref={formulario}>
           <ul className="space-y-2" data-testid="condiciones-del-cierre">
             {condiciones.map((c) => (
               <li key={c.texto} className="flex items-start gap-2 text-xs">
@@ -176,70 +207,84 @@ export function CerrarActaSinFirma({
           </ul>
 
           <fieldset disabled={!listo} className="space-y-3">
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-foreground">
+            <div>
+              <label htmlFor="acta-testigoNombre" className="mb-1 block text-xs font-medium text-foreground">
                 Nombre del testigo<span className="ml-0.5 text-danger">*</span>
-              </span>
+              </label>
               <Input
+                id="acta-testigoNombre"
+                aria-required="true"
                 value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-                maxLength={200}
+                onChange={(e) => {
+                  setNombre(e.target.value);
+                  setDelServidor((d) => ({ ...d, testigoNombre: undefined }));
+                }}
+                maxLength={MAX_LARGO_NOMBRE_DEL_TESTIGO}
                 placeholder="Quién presenció la entrega"
+                aria-invalid={delServidor.testigoNombre ? true : undefined}
+                aria-describedby={delServidor.testigoNombre ? 'acta-testigoNombre-error' : undefined}
               />
-            </label>
-            <label className="block">
-              <span className="mb-1 block text-xs font-medium text-foreground">
+              <ErrorDelCampo id="acta-testigoNombre-error" mensaje={delServidor.testigoNombre} />
+            </div>
+            <div>
+              <label htmlFor="acta-testigoDocumento" className="mb-1 block text-xs font-medium text-foreground">
                 Cédula del testigo<span className="ml-0.5 text-danger">*</span>
-              </span>
+              </label>
               <Input
+                id="acta-testigoDocumento"
+                aria-required="true"
                 value={documento}
-                onChange={(e) => setDocumento(e.target.value)}
-                maxLength={20}
+                onChange={(e) => {
+                  setDocumento(e.target.value);
+                  setDelServidor((d) => ({ ...d, testigoDocumento: undefined }));
+                }}
+                maxLength={MAX_LARGO_DOCUMENTO_DEL_TESTIGO}
                 placeholder="Sin cédula, «un testigo» es un nombre cualquiera"
+                aria-invalid={delServidor.testigoDocumento ? true : undefined}
+                aria-describedby={delServidor.testigoDocumento ? 'acta-testigoDocumento-error' : undefined}
               />
-            </label>
+              <ErrorDelCampo id="acta-testigoDocumento-error" mensaje={delServidor.testigoDocumento} />
+            </div>
           </fieldset>
 
-          {falla && (
-            <div
-              role="alert"
-              className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger"
-            >
-              {falla}
-            </div>
-          )}
-
-          <div className="flex gap-2 pt-1">
-            <Button
-              type="button"
-              variant="secondary"
-              hideArrow
-              onClick={onCerrar}
-              disabled={guardando}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              hideArrow
-              isLoading={guardando}
-              disabled={!listo || !testigoCompleto || guardando}
-              className="flex-1"
-            >
-              Cerrar el acta
-            </Button>
-          </div>
+          {/* Lo que el servidor rechazó sin campo: entra suave y sale al
+              volver a intentar. */}
+          <Presence
+            show={Boolean(falla)}
+            initial={false}
+            distance="xs"
+            role="alert"
+            className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-caption text-danger"
+          >
+            {falla}
+          </Presence>
         </form>
-      </div>
-    </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            hideArrow
+            onClick={onCerrar}
+            disabled={guardando}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={ID_DEL_FORMULARIO}
+            hideArrow
+            isLoading={guardando}
+            disabled={!listo || !testigoCompleto || guardando}
+          >
+            Cerrar el acta
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-function mensajeDeError(e: unknown, porDefecto: string): string {
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: unknown }).message;
-    if (typeof m === 'string' && m.trim()) return m;
-  }
-  return porDefecto;
-}
+const ID_DEL_FORMULARIO = 'form-cerrar-acta-sin-firma';
+
+type CampoDelTestigo = 'testigoNombre' | 'testigoDocumento';

@@ -531,6 +531,13 @@ describe('AuthProvider — agencyProbeInFlightRef is cleared on SIGNED_OUT', () 
     await act(async () => {
       await capturedHandler?.('SIGNED_IN', { ...SESSION, access_token: 'token-de-B' })
     })
+    // La sesión de B se aplica junto con su veredicto de MFA, en el
+    // `setTimeout(0)` de `alSoltarElLock` (QA 01-10-2026: nunca «adentro» sin
+    // saber si falta el código).
+    await act(async () => {
+      if (vi.isFakeTimers()) await vi.advanceTimersByTimeAsync(0)
+      else await new Promise((r) => setTimeout(r, 0))
+    })
     await flushPromises()
 
     // A fresh probe fired for B — proves the stale ref was cleared, not reused.
@@ -593,6 +600,13 @@ describe('AuthProvider — session generation guard (verify-3.md CRITICAL)', () 
     })
     await act(async () => {
       await capturedHandler?.('SIGNED_IN', { ...SESSION, access_token: 'token-de-B' })
+    })
+    // La sesión de B se aplica junto con su veredicto de MFA, en el
+    // `setTimeout(0)` de `alSoltarElLock` (QA 01-10-2026: nunca «adentro» sin
+    // saber si falta el código).
+    await act(async () => {
+      if (vi.isFakeTimers()) await vi.advanceTimersByTimeAsync(0)
+      else await new Promise((r) => setTimeout(r, 0))
     })
     await flushPromises()
     expect(ref.current?.agency).toEqual({ id: 'AGY-B', name: 'Agencia de B' })
@@ -661,6 +675,13 @@ describe('AuthProvider — session generation guard (verify-3.md CRITICAL)', () 
     })
     await act(async () => {
       await capturedHandler?.('SIGNED_IN', { ...SESSION, access_token: 'token-de-B' })
+    })
+    // La sesión de B se aplica junto con su veredicto de MFA, en el
+    // `setTimeout(0)` de `alSoltarElLock` (QA 01-10-2026: nunca «adentro» sin
+    // saber si falta el código).
+    await act(async () => {
+      if (vi.isFakeTimers()) await vi.advanceTimersByTimeAsync(0)
+      else await new Promise((r) => setTimeout(r, 0))
     })
     await flushPromises()
     expect(ref.current?.user?.id).toBe('user-2')
@@ -791,6 +812,13 @@ describe('AuthProvider — bootstrap seed generation guard (verify-5.md §3 CRIT
     await act(async () => {
       await capturedHandler?.('SIGNED_IN', { ...SESSION, access_token: 'token-de-B' })
     })
+    // La sesión de B se aplica junto con su veredicto de MFA, en el
+    // `setTimeout(0)` de `alSoltarElLock` (QA 01-10-2026: nunca «adentro» sin
+    // saber si falta el código).
+    await act(async () => {
+      if (vi.isFakeTimers()) await vi.advanceTimersByTimeAsync(0)
+      else await new Promise((r) => setTimeout(r, 0))
+    })
     await flushPromises()
 
     // NOW A's orphaned bootstrap finally resolves, late, with A's real data.
@@ -851,6 +879,13 @@ describe('AuthProvider — bootstrap seed generation guard (verify-5.md §3 CRIT
     )
     await act(async () => {
       await capturedHandler?.('SIGNED_IN', { ...SESSION, access_token: 'token-de-B' })
+    })
+    // La sesión de B se aplica junto con su veredicto de MFA, en el
+    // `setTimeout(0)` de `alSoltarElLock` (QA 01-10-2026: nunca «adentro» sin
+    // saber si falta el código).
+    await act(async () => {
+      if (vi.isFakeTimers()) await vi.advanceTimersByTimeAsync(0)
+      else await new Promise((r) => setTimeout(r, 0))
     })
     await flushPromises()
     expect(ref.current?.user?.id).toBe('user-2')

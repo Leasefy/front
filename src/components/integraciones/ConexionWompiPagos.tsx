@@ -19,7 +19,7 @@
  */
 
 import { useHidratado } from '@/lib/hooks/use-hidratado';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle, Copy, Plugs, WarningCircle } from '@phosphor-icons/react';
 import { Banner } from '@leasefy/cadence';
 
@@ -30,6 +30,9 @@ import { Label } from '@/components/ui/label';
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 import { Spinner } from '@/components/ui/spinner';
 import { toast } from '@/components/ui/toast';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { formatDateTime } from '@/lib/format';
@@ -79,7 +82,12 @@ export function ConexionWompiPagos() {
       setVista(await wompiPagosApi.verConexion());
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'No se pudo leer la conexión con Wompi.');
+      setError(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo leer la conexión con Wompi.',
+          accion: 'leer la conexión con Wompi',
+        }),
+      );
     } finally {
       setCargando(false);
     }
@@ -101,7 +109,10 @@ export function ConexionWompiPagos() {
         });
     } catch (e) {
       toast.error('No se pudo probar la conexión', {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeParaLaPersona(e, {
+          porDefecto: 'Prueba de nuevo en un momento.',
+          accion: 'probar la conexión',
+        }),
       });
     } finally {
       setProbando(false);
@@ -306,6 +317,15 @@ function Webhook({ conexion }: { conexion: NonNullable<VistaDeLaConexion['conexi
   );
 }
 
+/** Los campos del formulario de llaves, con el nombre que les da el back. */
+type CampoDeLasLlaves = 'apiKey' | 'usuarioPrincipalId' | 'secretoDeEventos';
+const CAMPOS_DE_LAS_LLAVES: readonly CampoDeLasLlaves[] = ['apiKey', 'usuarioPrincipalId', 'secretoDeEventos'];
+const ID_DEL_CAMPO: Record<CampoDeLasLlaves, string> = {
+  apiKey: 'wompi-api-key',
+  usuarioPrincipalId: 'wompi-usuario',
+  secretoDeEventos: 'wompi-secreto',
+};
+
 function FormularioDeLlaves({
   yaHayConexion,
   ambienteActual,
@@ -327,8 +347,18 @@ function FormularioDeLlaves({
   const [secreto, setSecreto] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Los `campos` de un 400 del back, cada uno bajo su campo.
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLasLlaves, string>>>({});
+  // El campo que el servidor marcó primero: recibe el foco cuando el
+  // formulario se vuelve a habilitar (mientras guarda, los campos están apagados).
+  const porEnfocar = useRef<CampoDeLasLlaves | null>(null);
 
   useEffect(() => setAmbiente(ambienteActual), [ambienteActual]);
+  useEffect(() => {
+    if (guardando || !porEnfocar.current) return;
+    document.getElementById(ID_DEL_CAMPO[porEnfocar.current])?.focus();
+    porEnfocar.current = null;
+  }, [guardando]);
 
   const guardar = async () => {
     if (!apiKey.trim() || !usuario.trim()) {
@@ -337,6 +367,7 @@ function FormularioDeLlaves({
     }
     setGuardando(true);
     setError(null);
+    setErrores({});
     try {
       const v = await wompiPagosApi.guardarConexion({
         ambiente,
@@ -356,7 +387,16 @@ function FormularioDeLlaves({
           description: v.conexion?.ultimoError ?? undefined,
         });
     } catch (e) {
-      setError(e instanceof Error && e.message ? e.message : 'No se pudieron guardar las llaves.');
+      // Un 400 con `campos` va a cada campo (con el foco en el primero); lo
+      // demás (un 409, un 5xx con su referencia, la red) va al aviso.
+      const reparto = repartirErroresDelServidor(e, {
+        campos: CAMPOS_DE_LAS_LLAVES,
+        porDefecto: 'No se pudieron guardar las llaves.',
+        accion: 'guardar las llaves',
+      });
+      setErrores(reparto.porCampo);
+      setError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null);
+      porEnfocar.current = reparto.orden[0] ?? null;
     } finally {
       setGuardando(false);
     }
@@ -420,7 +460,10 @@ function FormularioDeLlaves({
             onChange={(e) => setApiKey(e.target.value)}
             disabled={deshabilitado}
             className="font-mono"
+            aria-invalid={Boolean(errores.apiKey) || undefined}
+            aria-describedby="wompi-api-key-error"
           />
+          <ErrorDelCampo id="wompi-api-key-error" mensaje={errores.apiKey} className="mt-0" />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="wompi-usuario">ID de usuario principal</Label>
@@ -432,7 +475,10 @@ function FormularioDeLlaves({
             onChange={(e) => setUsuario(e.target.value)}
             disabled={deshabilitado}
             className="font-mono"
+            aria-invalid={Boolean(errores.usuarioPrincipalId) || undefined}
+            aria-describedby="wompi-usuario-error"
           />
+          <ErrorDelCampo id="wompi-usuario-error" mensaje={errores.usuarioPrincipalId} className="mt-0" />
         </div>
       </div>
       <div className="space-y-1.5">
@@ -446,7 +492,10 @@ function FormularioDeLlaves({
           disabled={deshabilitado}
           placeholder={tieneSecreto ? 'Déjalo vacío para conservar el que ya está' : 'Opcional'}
           className="font-mono"
+          aria-invalid={Boolean(errores.secretoDeEventos) || undefined}
+          aria-describedby="wompi-secreto-error"
         />
+        <ErrorDelCampo id="wompi-secreto-error" mensaje={errores.secretoDeEventos} className="mt-0" />
       </div>
       {error && <Banner variant="danger">{error}</Banner>}
       <div className="flex flex-wrap items-center gap-3">

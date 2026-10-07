@@ -59,6 +59,7 @@ vi.mock('@/components/ui/back-button', () => ({
 }))
 
 import ProveedoresPage from './page'
+import { ApiError } from '@/lib/api/client'
 
 const UNO = {
   id: 'p-1',
@@ -192,25 +193,145 @@ describe('Registro de proveedores', () => {
   })
 
   it('P4 — el 503 del back se muestra con SU motivo, no con un genérico', async () => {
-    h.api.desactivar.mockRejectedValue({
-      message:
+    h.api.desactivar.mockRejectedValue(
+      new ApiError(
+        503,
         'Falta la migración de proveedores: pídele a tu administrador que la aplique.',
-    })
+        'PROVEEDORES_NO_DISPONIBLES',
+      ),
+    )
     await montar()
     await clic(
       Array.from(contenedor.querySelectorAll('button')).find(
         (b) => b.textContent?.trim() === 'Desactivar',
       ),
     )
-    expect(h.toast.error).toHaveBeenCalledWith(
+    // El motivo del back, entero; el traductor le suma el código para soporte.
+    expect(h.toast.error.mock.calls[0]?.[0]).toBe('No se pudo desactivar el proveedor')
+    expect(h.toast.error.mock.calls[0]?.[1]?.description).toContain(
       'Falta la migración de proveedores: pídele a tu administrador que la aplique.',
     )
+  })
+
+  it('P4b · 02-10 — sin respuesta (status 0) habla de la conexión; un 5xx, de nuestro lado', async () => {
+    h.api.desactivar.mockRejectedValueOnce(new ApiError(0, 'Failed to fetch'))
+    await montar()
+    const desactivar = () =>
+      Array.from(contenedor.querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Desactivar')
+    await clic(desactivar())
+    expect(h.toast.error.mock.calls[0]?.[1]?.description).toMatch(/conexi[oó]n/i)
+
+    h.api.desactivar.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    )
+    await clic(desactivar())
+    const descripcion = h.toast.error.mock.calls[1]?.[1]?.description as string
+    expect(descripcion).toContain('de nuestro lado')
+    expect(descripcion).toContain('ab12cd34')
   })
 
   it('P5 — no ofrece calificar: la estrella se pone al cerrar el trabajo', async () => {
     await montar()
     expect(botones().some((t) => t?.toLowerCase().includes('calificar'))).toBe(false)
     expect(h.api.calificar).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * 🔴 02-10-2026 · Los dos modales de esta pantalla dejaron de ser cajas a mano
+ * y pasaron al `Dialog` de la casa (Radix): se pintan en un portal sobre
+ * `document.body`, no dentro de `contenedor`. El botón de guardar vive en el
+ * pie fijo —FUERA del <form>— y lo envía con `form=`.
+ */
+describe('Proveedores — los modales son el Dialog de la casa', () => {
+  const dialogo = () => {
+    const d = document.querySelector<HTMLElement>('[role="dialog"]')
+    if (!d) throw new Error('El diálogo no está abierto')
+    return d
+  }
+  const tituloDelDialogo = () =>
+    document.getElementById(dialogo().getAttribute('aria-labelledby') ?? '')?.textContent
+
+  it('M1 — registrar: el título va en la cabecera y «Registrar» envía desde el pie', async () => {
+    h.api.crear.mockResolvedValue({ ...UNO, id: 'p-9' })
+    await montar()
+    await clic(
+      Array.from(contenedor.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Registrar proveedor'),
+      ),
+    )
+    expect(tituloDelDialogo()).toBe('Registrar proveedor')
+
+    const [nombre, documento] = Array.from(dialogo().querySelectorAll<HTMLInputElement>('input'))
+    await escribir(nombre, 'Cerrajería La Llave')
+    await escribir(documento, '71234567')
+
+    const registrar = Array.from(dialogo().querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Registrar',
+    )!
+    expect(dialogo().querySelector('form')!.contains(registrar)).toBe(false)
+    await clic(registrar)
+    expect(h.api.crear).toHaveBeenCalledWith(
+      expect.objectContaining({ nombre: 'Cerrajería La Llave', documento: '71234567' }),
+    )
+  })
+
+  it('M3 · 02-10 — un 400 con campos: el error bajo SU campo y el foco en él; lo demás, abajo', async () => {
+    const vigencia = 'La fecha de vigencia debe estar entre el año 2000 y el 2100.'
+    h.api.crear.mockRejectedValue(
+      new ApiError(400, [vigencia], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [vigencia],
+        campos: [{ campo: 'documento', regla: 'longitud_maxima', mensaje: 'El documento puede tener hasta 20 caracteres.' }],
+      }),
+    )
+    await montar()
+    await clic(
+      Array.from(contenedor.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Registrar proveedor'),
+      ),
+    )
+    await escribir(dialogo().querySelector<HTMLInputElement>('#proveedor-nombre')!, 'Cerrajería La Llave')
+    await escribir(dialogo().querySelector<HTMLInputElement>('#proveedor-documento')!, '71234567')
+    await clic(Array.from(dialogo().querySelectorAll('button')).find((b) => b.textContent?.trim() === 'Registrar'))
+
+    expect(dialogo().querySelector('#proveedor-documento-error')?.textContent).toBe(
+      'El documento puede tener hasta 20 caracteres.',
+    )
+    expect(document.activeElement).toBe(dialogo().querySelector('#proveedor-documento'))
+    expect(dialogo().querySelector('[role="alert"].bg-danger-soft')).toBeNull()
+  })
+
+  it('M4 · 02-10 — una vigencia fuera de rango se dice antes de enviar, con la frase del back', async () => {
+    await montar()
+    await clic(
+      Array.from(contenedor.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Registrar proveedor'),
+      ),
+    )
+    await escribir(dialogo().querySelector<HTMLInputElement>('#proveedor-rutVigenteHasta')!, '1999-12-31')
+    expect(dialogo().querySelector('#proveedor-rutVigenteHasta-error')?.textContent).toBe(
+      'La fecha de vigencia debe estar entre el año 2000 y el 2100.',
+    )
+  })
+
+  it('M2 — el historial abre como diálogo, con el nombre del proveedor', async () => {
+    h.api.calificaciones.mockResolvedValue([])
+    await montar()
+    await clic(
+      Array.from(contenedor.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === 'Historial',
+      ),
+    )
+    expect(h.api.calificaciones).toHaveBeenCalledWith('p-1')
+    expect(tituloDelDialogo()).toBe('Cómo le ha ido a Plomería El Rayo')
+    expect(dialogo().textContent).toContain('Todavía no lo han calificado.')
   })
 })
 

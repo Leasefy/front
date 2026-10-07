@@ -1,10 +1,14 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { X, Envelope, Phone, MapPin, DotsThree } from '@phosphor-icons/react';
+import { Envelope, Phone, MapPin } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
-import { useLenis } from '@/components/providers/SmoothScroll';
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetFooter,
+  SheetHeader,
+} from '@/components/ui/sheet';
 import { PlanStatusBadge, PlanStatusType } from './PlanStatusBadge';
 import { PlanProgressBar } from './PlanProgressBar';
 import { PlanActivityTimeline, TimelineItem } from './PlanActivityTimeline';
@@ -60,12 +64,32 @@ export interface PlanDetailSheetProps {
   secondaryPanel?: SecondaryPanel;
 }
 
-const widthClasses = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-};
+/**
+ * El ancho viejo (sm/md/lg = 384/448/512 px) traducido a los tamaños del cajón
+ * flotante de Cadence (sm 400 · md 560 · lg 680).
+ */
+const sizeByWidth = {
+  sm: 'sm',
+  md: 'md',
+  lg: 'lg',
+} as const;
 
+/**
+ * Dónde se pone el panel secundario: a la izquierda del principal cuando caben
+ * los dos (`xl`), encima de él cuando no. 1rem = margen del cajón desde `lg`,
+ * 0.75rem = aire entre los dos.
+ */
+const secondaryOffset = {
+  sm: 'xl:right-[calc(1rem+400px+0.75rem)]',
+  md: 'xl:right-[calc(1rem+560px+0.75rem)]',
+  lg: 'xl:right-[calc(1rem+680px+0.75rem)]',
+} as const;
+
+/**
+ * Cajón de detalle del panel del propietario. Es el `Sheet` flotante del
+ * producto: Radix pone el portal, el foco, Esc y el bloqueo del scroll, y
+ * `SmoothScroll` frena Lenis mientras está abierto.
+ */
 export function PlanDetailSheet({
   open,
   onOpenChange,
@@ -82,89 +106,21 @@ export function PlanDetailSheet({
   width = 'md',
   secondaryPanel,
 }: PlanDetailSheetProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const lenis = useLenis();
-
-  // Stop Lenis smooth scroll when drawer opens to allow native scrolling inside
-  useEffect(() => {
-    if (open) {
-      lenis.stop();
-    } else {
-      lenis.start();
-    }
-    return () => {
-      lenis.start();
-    };
-  }, [open, lenis]);
-
-  // Handle escape key
-  useEffect(() => {
-    if (!open) return;
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onOpenChange(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [open, onOpenChange]);
-
-  if (!open) return null;
-
-  const content = (
-    <>
-      {/* Overlay */}
-      <div
-        className="fixed inset-0 z-50 bg-[#14130F]/40"
-        onClick={() => onOpenChange(false)}
-        aria-hidden="true"
-      />
-
-      {/* Panel */}
-      <div
-        className={cn(
-          'fixed inset-y-0 right-0 z-50 w-full bg-surface shadow-xl',
-          'flex flex-col',
-          'animate-in slide-in-from-right duration-300',
-          widthClasses[width],
-          className
-        )}
-        role="dialog"
-        aria-modal="true"
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent
+        side="right"
+        size={sizeByWidth[width]}
+        layout="manual"
+        className={className}
+        aria-describedby={undefined}
       >
-        {/* Header - Fixed */}
-        <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-plan-border">
-          <h2 className="text-lg font-semibold text-plan-primary">
-            Detalles
-          </h2>
-          <div className="flex items-center gap-2">
-            <button className="p-2 rounded-lg hover:bg-muted text-plan-secondary transition-colors">
-              <DotsThree className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => onOpenChange(false)}
-              className="p-2 rounded-sm hover:bg-muted text-plan-secondary transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
+        <SheetHeader title="Detalles" />
 
-        {/* Scrollable Content */}
-        <div
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto"
-          data-lenis-prevent
-          style={{
-            overscrollBehavior: 'contain',
-            WebkitOverflowScrolling: 'touch'
-          }}
-        >
+        <SheetBody className="p-0">
           {/* Profile Section */}
           {profile && (
-            <div className="px-6 py-5 border-b border-plan-border">
+            <div className="px-6 py-5 border-b border-border-faint">
               <div className="flex items-start gap-4">
                 {profile.avatar ? (
                   <img
@@ -201,7 +157,7 @@ export function PlanDetailSheet({
 
           {/* Contact Info */}
           {contact && (contact.email || contact.phone || contact.location) && (
-            <div className="px-6 py-4 border-b border-plan-border space-y-3">
+            <div className="px-6 py-4 border-b border-border-faint space-y-3">
               {contact.email && (
                 <a
                   href={`mailto:${contact.email}`}
@@ -231,7 +187,7 @@ export function PlanDetailSheet({
 
           {/* Progress Section */}
           {progress && (
-            <div className="px-6 py-4 border-b border-plan-border">
+            <div className="px-6 py-4 border-b border-border-faint">
               <p className="text-xs font-medium text-plan-secondary mb-2">
                 {progress.label || 'Progreso'}
               </p>
@@ -241,7 +197,7 @@ export function PlanDetailSheet({
 
           {/* Quick Actions */}
           {quickActions && quickActions.length > 0 && (
-            <div className="px-6 py-4 border-b border-plan-border">
+            <div className="px-6 py-4 border-b border-border-faint">
               <p className="text-xs font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
                 Acciones Rapidas
               </p>
@@ -251,12 +207,12 @@ export function PlanDetailSheet({
                     key={action.id}
                     onClick={action.onClick}
                     className={cn(
-                      'flex items-center justify-center gap-2 px-3 py-2 rounded-sm text-sm font-medium transition-colors',
+                      'flex items-center justify-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-colors',
                       action.variant === 'primary'
                         ? 'bg-primary text-primary-fg hover:bg-primary/90'
                         : action.variant === 'danger'
-                          ? 'bg-danger-soft text-danger hover:bg-danger-soft/80'
-                          : 'bg-muted text-plan-primary hover:bg-muted'
+                          ? 'bg-danger-soft text-danger hover:opacity-80'
+                          : 'bg-muted text-plan-primary hover:bg-surface-hover'
                     )}
                   >
                     {action.icon}
@@ -269,7 +225,7 @@ export function PlanDetailSheet({
 
           {/* Custom Sections */}
           {sections?.map(section => (
-            <div key={section.id} className="px-6 py-4 border-b border-plan-border">
+            <div key={section.id} className="px-6 py-4 border-b border-border-faint">
               <p className="text-xs font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
                 {section.title}
               </p>
@@ -279,7 +235,7 @@ export function PlanDetailSheet({
 
           {/* Activity Timeline */}
           {activity && activity.length > 0 && (
-            <div className="px-6 py-4 border-b border-plan-border">
+            <div className="px-6 py-4 border-b border-border-faint">
               <p className="text-xs font-normal text-plan-secondary font-mono uppercase tracking-wide mb-3">
                 Actividad
               </p>
@@ -299,7 +255,7 @@ export function PlanDetailSheet({
                   onChange={e => onNotesChange(e.target.value)}
                   placeholder="Agregar notas..."
                   className={cn(
-                    'w-full min-h-[100px] p-3 rounded-sm resize-none',
+                    'w-full min-h-[100px] p-3 rounded-md resize-none',
                     'bg-muted border border-plan-border',
                     'text-sm text-plan-primary placeholder:text-plan-muted',
                     'focus:outline-none focus:ring-2 focus:ring-plan-accent/50 focus:border-plan-accent',
@@ -313,59 +269,34 @@ export function PlanDetailSheet({
               )}
             </div>
           )}
-        </div>
+        </SheetBody>
 
-        {/* Footer Actions - Fixed */}
-        {footerActions && (
-          <div className="flex-none px-6 py-4 border-t border-plan-border bg-muted">
-            {footerActions}
-          </div>
-        )}
-      </div>
+        {footerActions && <SheetFooter>{footerActions}</SheetFooter>}
 
-      {/* Secondary Panel */}
-      {secondaryPanel?.open && (
-        <div
-          className={cn(
-            'fixed inset-y-0 z-50 w-full bg-surface shadow-xl',
-            'flex flex-col',
-            'animate-in slide-in-from-right duration-300',
-            widthClasses[width],
-            // Desktop: position to the left of main panel
-            'right-0 lg:right-[448px]'
-          )}
-        >
-          {/* Secondary Header */}
-          <div className="flex-none flex items-center justify-between px-6 py-4 border-b border-plan-border">
-            <h2 className="text-lg font-semibold text-plan-primary">
-              {secondaryPanel.title}
-            </h2>
-            <button
-              onClick={secondaryPanel.onClose}
-              className="p-2 rounded-sm hover:bg-muted text-plan-secondary transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Secondary Scrollable Content */}
-          <div
-            className="flex-1 overflow-y-auto px-6 py-4"
-            data-lenis-prevent
-            style={{
-              overscrollBehavior: 'contain',
-              WebkitOverflowScrolling: 'touch',
+        {/* Panel secundario: un sub-cajón. Va DENTRO del principal para que
+            Radix lo trate como capa hija — clic en el principal o Esc cierran
+            sólo el secundario. Sin velo propio: el principal sigue a la vista. */}
+        {secondaryPanel && (
+          <Sheet
+            open={secondaryPanel.open}
+            onOpenChange={(abierto) => {
+              if (!abierto) secondaryPanel.onClose();
             }}
           >
-            {secondaryPanel.content}
-          </div>
-        </div>
-      )}
-    </>
+            <SheetContent
+              side="right"
+              size={sizeByWidth[width]}
+              layout="manual"
+              overlayClassName="bg-transparent"
+              className={secondaryOffset[width]}
+              aria-describedby={undefined}
+            >
+              <SheetHeader title={secondaryPanel.title} />
+              <SheetBody>{secondaryPanel.content}</SheetBody>
+            </SheetContent>
+          </Sheet>
+        )}
+      </SheetContent>
+    </Sheet>
   );
-
-  // Use portal to render at document body level
-  if (typeof window === 'undefined') return null;
-
-  return createPortal(content, document.body);
 }

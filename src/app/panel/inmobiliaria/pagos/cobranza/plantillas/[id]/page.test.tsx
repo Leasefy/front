@@ -288,3 +288,135 @@ describe('TemplatePage (detail editor)', () => {
     expect(warningAlert).toBeTruthy()
   })
 })
+
+// ── Errores al guardar y publicar: la regla de oro (02-10-2026) ──────────────
+// Antes: el status crudo («400», «500») en el aviso, o «Intenta de nuevo». El
+// micro rechaza un cuerpo vacío con una frase en INGLÉS («body must be a
+// non-empty string»): eso se ataja antes de enviar.
+
+describe('TemplatePage — errores al guardar y publicar', () => {
+  let container: HTMLDivElement
+  let root: Root
+  let originalFetch: typeof globalThis.fetch
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    fetchCalls.length = 0
+    mockIsLoading = false
+    mockError = null
+    originalFetch = globalThis.fetch
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    root = createRoot(container)
+  })
+
+  afterEach(() => {
+    act(() => {
+      root.unmount()
+    })
+    container.remove()
+    globalThis.fetch = originalFetch
+  })
+
+  function responderAlPut(respuesta: () => Promise<unknown>) {
+    globalThis.fetch = vi.fn().mockImplementation((url: string, opts?: RequestInit) => {
+      fetchCalls.push({ url: String(url), method: opts?.method ?? 'GET' })
+      if (opts?.method === 'PUT') return respuesta()
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) })
+    }) as typeof globalThis.fetch
+  }
+
+  async function guardarBorrador(id = 'tpl-stage-1') {
+    const { default: TemplatePage } = await import('./page')
+    await act(async () => {
+      root.render(React.createElement(TemplatePage, { params: Promise.resolve({ id }) }))
+    })
+    const boton = await waitForEl(
+      () =>
+        Array.from(container.querySelectorAll('button')).find((b) =>
+          b.textContent?.includes('inmobiliaria.ai.templates.saveDraft'),
+        ) ?? null,
+    )
+    await act(async () => {
+      boton!.click()
+    })
+  }
+
+  async function avisoDeError(): Promise<string> {
+    const aviso = await waitForEl(() => container.querySelector('[data-testid="plantilla-error"]'))
+    return aviso?.textContent ?? ''
+  }
+
+  it('un cuerpo vacío se ataja antes de enviar, debajo del texto y en español', async () => {
+    mockTemplates = [
+      normalizeTemplate(agentItem({ id: 'tpl-vacia', body: '', body_draft: '', body_published: null })),
+    ]
+    responderAlPut(() => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) }))
+    await guardarBorrador('tpl-vacia')
+    expect(fetchCalls.filter((c) => c.method === 'PUT')).toHaveLength(0)
+    const area = container.querySelector<HTMLTextAreaElement>('#plantilla-cuerpo')!
+    expect(container.querySelector('#plantilla-cuerpo-error')?.textContent).toBe(
+      'Escribe el texto de la plantilla antes de guardarla.',
+    )
+    expect(document.activeElement).toBe(area)
+  })
+
+  it('un 400 con `campos` pinta el error debajo del texto y le da el foco', async () => {
+    mockTemplates = [STAGE_TEMPLATE, WA_TEMPLATE]
+    responderAlPut(() =>
+      Promise.resolve({
+        ok: false,
+        status: 400,
+        json: () =>
+          Promise.resolve({
+            statusCode: 400,
+            code: 'DATOS_INVALIDOS',
+            message: ['La plantilla usa una variable que no existe.'],
+            campos: [{ campo: 'body', regla: 'formato', mensaje: 'La plantilla usa una variable que no existe.' }],
+          }),
+      }),
+    )
+    await guardarBorrador()
+    const error = await waitForEl(() => container.querySelector('#plantilla-cuerpo-error')?.textContent)
+    expect(error).toBe('La plantilla usa una variable que no existe.')
+    expect(document.activeElement).toBe(container.querySelector('#plantilla-cuerpo'))
+  })
+
+  it('un 5xx dice «de nuestro lado» con la referencia, no «500»', async () => {
+    mockTemplates = [STAGE_TEMPLATE, WA_TEMPLATE]
+    responderAlPut(() =>
+      Promise.resolve({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ error: 'Internal Server Error', requestId: 'faceb00c-0000' }),
+      }),
+    )
+    await guardarBorrador()
+    const texto = await avisoDeError()
+    expect(texto).toContain('No pudimos guardar el borrador: algo falló de nuestro lado')
+    expect(texto).toContain('faceb00c')
+  })
+
+  // 🔴 03-10-2026: con el back respondiendo, un `fetch` al micro que no salió
+  // es el asistente caído (capa 2, `agent-fetch.ts`), no la red de la persona.
+  it('un `fetch` al micro que no salió, con el back sano, dice que el asistente no está disponible', async () => {
+    mockTemplates = [STAGE_TEMPLATE, WA_TEMPLATE]
+    responderAlPut(() => Promise.reject(new TypeError('Failed to fetch')))
+    await guardarBorrador()
+    const aviso = await avisoDeError()
+    expect(aviso).toMatch(/asistente de Leasefy no está disponible/)
+    expect(aviso).not.toMatch(/conexi[oó]n/i)
+  })
+
+  it('sin red en el navegador, un `fetch` que no salió (status 0) habla de la conexión', async () => {
+    const enLinea = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    try {
+      mockTemplates = [STAGE_TEMPLATE, WA_TEMPLATE]
+      responderAlPut(() => Promise.reject(new TypeError('Failed to fetch')))
+      await guardarBorrador()
+      expect(await avisoDeError()).toMatch(/conexi[oó]n/i)
+    } finally {
+      enLinea.mockRestore()
+    }
+  })
+})

@@ -209,7 +209,14 @@ export interface BalanceGeneral {
    * patrimonio lo hace el contador, no el sistema.
    */
   resultadoDelEjercicioCop: number;
-  /** `activo == pasivo + patrimonio + resultadoDelEjercicio`. */
+  /**
+   * 🔴 QA-CONTA CB-R14 (Nico, 03-10-2026): el resultado de años anteriores que
+   * sigue en las clases 4–7 porque falta el asiento de cierre de esos años. Se
+   * muestra aparte para que el balance cuadre; el cierre lo hace el contador.
+   * Ausente = un back anterior (se lee como 0).
+   */
+  resultadoDeEjerciciosAnterioresCop?: number;
+  /** `activo == pasivo + patrimonio + resultadoDelEjercicio (+ anteriores)`. */
   cuadra: boolean;
   diferenciaCop: number;
   /** La misma frase del P&G: el canon no es ingreso y por eso no está acá. */
@@ -332,6 +339,11 @@ export interface AuxiliarPorTercero {
   terceros: FilaDeTercero[];
   sinTercero: MovimientosSinTercero;
   cuadraConElLibro: boolean;
+  /**
+   * 🔴 QA-CONTA CB-18: lo que suma el libro con el mismo filtro, para decir
+   * contra qué cuadra (o cuánto falta). Ausente = un back anterior.
+   */
+  libro?: { debitosCop: number; creditosCop: number };
 }
 
 export const MAX_LIMITE_DE_TERCEROS = 200;

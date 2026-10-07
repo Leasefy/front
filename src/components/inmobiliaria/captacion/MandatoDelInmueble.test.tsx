@@ -14,7 +14,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
-const { api } = vi.hoisted(() => ({
+const { api, toastError } = vi.hoisted(() => ({
+  toastError: vi.fn(),
   api: {
     documentos: (() => Promise.resolve(null)) as () => Promise<unknown>,
     firmas: (() => Promise.resolve(null)) as () => Promise<unknown>,
@@ -48,11 +49,23 @@ vi.mock('@/lib/api/crm.service', async () => {
       firmas: () => api.firmas(),
       pedirFirmaElectronica: api.pedirFirma,
       mandatoFirmado: api.mandatoFirmado,
+      // La venta del inmueble (02-10-2026) vive en la misma tarjeta; tiene su
+      // propia prueba (`VentaDelInmueble.test.tsx`).
+      comisionesDeVenta: async () => ({ disponible: true, motivo: null, viva: null, anuladas: [] }),
     },
   }
 })
 
+vi.mock('@/lib/hooks/usePermissions', () => ({
+  usePermissions: () => ({ canAccess: () => true, isLoading: false }),
+}))
+
+vi.mock('@/components/ui/toast', () => ({
+  toast: { error: toastError, success: vi.fn(), info: vi.fn(), warning: vi.fn() },
+}))
+
 import { MandatoDelInmueble } from './MandatoDelInmueble'
+import { ApiError } from '@/lib/api/client'
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true
@@ -101,18 +114,32 @@ const DOCUMENTOS = {
 let root: Root | null = null
 let contenedor: HTMLDivElement
 
-async function pintar(puedeEditar = true) {
+async function pintar(puedeEditar = true, propietarioCorreo: string | null = 'jorge@correo.co') {
   await act(async () => {
     root!.render(
       <MandatoDelInmueble
         consignacionId="cons-1"
         propietarioNombre="Juan Pérez"
+        propietarioCorreo={propietarioCorreo}
+        direccionDelInmueble="Calle 45 # 70-12 Apto 301"
         puedeEditar={puedeEditar}
       />,
     )
   })
 }
 const $ = (sel: string) => contenedor.querySelector(sel)
+/** El cajón va en un portal: se busca en todo el documento. */
+const $$ = (sel: string) => document.querySelector<HTMLElement>(sel)
+async function clic(el: HTMLElement | null) {
+  await act(async () => {
+    el?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  })
+}
+/** «Crear enlace de firma» abre el cajón; «Mandar el enlace» lo manda. */
+async function pedirYConfirmar() {
+  await clic(contenedor.querySelector<HTMLElement>('[data-testid="pedir-firma"]'))
+  await clic($$('[data-testid="confirmar-enlace-de-firma"]'))
+}
 
 beforeEach(() => {
   api.documentos = vi.fn(() => Promise.resolve(DOCUMENTOS))
@@ -120,6 +147,7 @@ beforeEach(() => {
     Promise.resolve({ disponible: true, motivo: null, firmas: [] }),
   )
   api.pedirFirma.mockClear()
+  toastError.mockClear()
   contenedor = document.createElement('div')
   document.body.appendChild(contenedor)
   root = createRoot(contenedor)
@@ -146,6 +174,28 @@ describe('MandatoDelInmueble', () => {
     expect(giro).toContain('RUT')
   })
 
+  /*
+   * IN-14 (QA 04-10): a un inmueble que ya gira hace meses le decía «Antes del
+   * primer giro — Faltan 2». Si ya hubo giros, «Documentos que faltan» con el
+   * número, sin «antes del primer giro» en ninguna parte de la tarjeta.
+   */
+  it('🔴 IN-14: si ya hubo giros dice «Documentos que faltan», no «Antes del primer giro»', async () => {
+    api.documentos = vi.fn(() => Promise.resolve({ ...DOCUMENTOS, yaHuboGiros: true }))
+    await pintar()
+    const giro = $('[data-testid="puerta-giro"]')?.textContent ?? ''
+    expect(giro).toContain('Documentos que faltan')
+    expect(giro).toContain('RUT')
+    expect(giro).not.toContain('Faltan 1')
+    expect(contenedor.textContent).not.toMatch(/primer giro/i)
+  })
+
+  it('sin giros todavía sigue diciendo «Antes del primer giro» (back anterior sin el campo, igual)', async () => {
+    api.documentos = vi.fn(() => Promise.resolve({ ...DOCUMENTOS, yaHuboGiros: false }))
+    await pintar()
+    expect($('[data-testid="puerta-giro"]')?.textContent ?? '').toContain('Antes del primer giro')
+    expect($('[data-testid="puerta-giro"]')?.textContent ?? '').toContain('Faltan 1')
+  })
+
   it('el certificado muestra los días que le quedan, no «está»', async () => {
     await pintar()
     expect(
@@ -153,13 +203,27 @@ describe('MandatoDelInmueble', () => {
     ).toContain('3 días')
   })
 
+  it('🔴 IN-12: «Crear enlace de firma» NO manda nada: abre un cajón con el correo y el documento', async () => {
+    await pintar()
+    await clic(contenedor.querySelector<HTMLElement>('[data-testid="pedir-firma"]'))
+    expect(api.pedirFirma).not.toHaveBeenCalled()
+    expect($$('[data-testid="correo-destino"]')?.textContent).toBe('jorge@correo.co')
+    const cajon = document.body.textContent ?? ''
+    expect(cajon).toContain('Mandato de administración y arrendamiento de Calle 45 # 70-12 Apto 301')
+    await clic($$('[data-testid="confirmar-enlace-de-firma"]'))
+    expect(api.pedirFirma).toHaveBeenCalledTimes(1)
+  })
+
+  it('IN-12: sin correo en la ficha no deja mandar y dice por qué', async () => {
+    await pintar(true, null)
+    await clic(contenedor.querySelector<HTMLElement>('[data-testid="pedir-firma"]'))
+    expect($$('[data-testid="sin-correo-destino"]')).not.toBeNull()
+    expect($$('[data-testid="confirmar-enlace-de-firma"]')?.hasAttribute('disabled')).toBe(true)
+  })
+
   it('🔴 el enlace va al correo del propietario: la tarjeta dice a cuál y no muestra ningún enlace', async () => {
     await pintar()
-    await act(async () => {
-      contenedor
-        .querySelector<HTMLElement>('[data-testid="pedir-firma"]')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    await pedirYConfirmar()
     const aviso = $('[data-testid="enlace-de-firma"]')?.textContent ?? ''
     expect(aviso).toContain('Le enviamos el enlace a jor***@correo.co')
     expect(aviso).not.toContain('/mandato/firma/')
@@ -175,11 +239,7 @@ describe('MandatoDelInmueble', () => {
       enlaceDePrueba: 'http://localhost:3011/mandato/firma/tok',
     })
     await pintar()
-    await act(async () => {
-      contenedor
-        .querySelector<HTMLElement>('[data-testid="pedir-firma"]')
-        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
+    await pedirYConfirmar()
     expect(
       $('[data-testid="enlace-de-prueba"]')?.getAttribute('href'),
     ).toBe('http://localhost:3011/mandato/firma/tok')
@@ -268,5 +328,43 @@ describe('MandatoDelInmueble', () => {
     expect(aviso).not.toContain('20260918163000')
     expect(aviso).toContain('todavía no está disponible')
     expect($('[data-testid="fallo-de-carga"]')).toBeNull()
+  })
+})
+
+/**
+ * Sistema de errores, tanda 2 (02-10-2026): «Pedir la firma» ya pasaba por
+ * `errorEnCristiano`, que delega en el traductor. Esto lo deja fijado.
+ */
+describe('MandatoDelInmueble — el error al pedir la firma', () => {
+  async function pedirLaFirma() {
+    await pintar()
+    await pedirYConfirmar()
+    return String(toastError.mock.calls[0]?.[0] ?? '')
+  }
+
+  it('un 5xx dice «de nuestro lado» con la referencia', async () => {
+    api.pedirFirma.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor.', 'ERROR_INTERNO', {
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor.',
+        referencia: 'f1f2f3f4',
+      }),
+    )
+    const dicho = await pedirLaFirma()
+    expect(dicho).toMatch(/de nuestro lado/)
+    expect(dicho).toContain('f1f2f3f4')
+    expect(dicho).not.toMatch(/conexi[oó]n/)
+  })
+
+  it('sin respuesta habla de la conexión', async () => {
+    api.pedirFirma.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    expect(await pedirLaFirma()).toMatch(/conexión/)
+  })
+
+  it('un 409 del back se dice con sus palabras', async () => {
+    api.pedirFirma.mockRejectedValueOnce(
+      new ApiError(409, 'Ya hay una firma pendiente para este mandato.', 'FIRMA_PENDIENTE'),
+    )
+    expect(await pedirLaFirma()).toBe('Ya hay una firma pendiente para este mandato.')
   })
 })

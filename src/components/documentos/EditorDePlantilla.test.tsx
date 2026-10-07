@@ -42,6 +42,7 @@ vi.mock('@/components/ui/cajon', () => ({
   CajonCuerpo: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
+import { ApiError } from '@/lib/api/client';
 import { EditorDePlantilla } from './EditorDePlantilla';
 
 const CATALOGO = [
@@ -229,5 +230,48 @@ describe('editar una plantilla que ya existe', () => {
         description: 'El sistema no sabe con qué llenar {{valorDeLaMulta}}.',
       }),
     );
+  });
+
+  it('🔴 02-10 · un 400 con campos: el error bajo el nombre, con el foco, y sin aviso', async () => {
+    const frase = 'El nombre de la plantilla puede tener hasta 200 caracteres.';
+    h.api.editarPlantilla.mockRejectedValue(
+      new ApiError(400, [frase], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [frase],
+        campos: [{ campo: 'name', regla: 'longitud_maxima', mensaje: frase }],
+      }),
+    );
+    await montar(PROPIA);
+    await act(async () => {
+      (porTestId('plantilla-guardar') as HTMLButtonElement).click();
+    });
+    expect(document.getElementById('plantilla-nombre-error')?.textContent).toBe(frase);
+    expect(document.activeElement).toBe(porTestId('plantilla-nombre'));
+    expect(h.toast.error).not.toHaveBeenCalled();
+  });
+
+  it('🔴 02-10 · un 5xx dice que falló de nuestro lado, con la referencia; sin respuesta, la conexión', async () => {
+    h.api.editarPlantilla.mockRejectedValueOnce(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'ab12cd34',
+      }),
+    );
+    await montar(PROPIA);
+    await act(async () => {
+      (porTestId('plantilla-guardar') as HTMLButtonElement).click();
+    });
+    const de5xx = h.toast.error.mock.calls[0]?.[1]?.description as string;
+    expect(de5xx).toContain('de nuestro lado');
+    expect(de5xx).toContain('ab12cd34');
+
+    h.api.editarPlantilla.mockRejectedValueOnce(new ApiError(0, 'Failed to fetch'));
+    await act(async () => {
+      (porTestId('plantilla-guardar') as HTMLButtonElement).click();
+    });
+    expect(h.toast.error.mock.calls[1]?.[1]?.description).toMatch(/conexi[oó]n/i);
   });
 });

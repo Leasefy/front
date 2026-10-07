@@ -38,16 +38,27 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Banner } from '@leasefy/cadence';
 import { Sparkle, X } from '@phosphor-icons/react';
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import {
   Table,
-  TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
+  TableBodyAnimado,
+  TableRowAnimada,
 } from '@/components/ui/table';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -147,17 +158,31 @@ export function RubrosDelPyg() {
     );
   };
 
-  const quitar = (rubro: MapeoDeRubro, cuentaId: string) => {
+  /*
+   * CB-A-19 (QA-FACT-CONTA-95 r2): quitar una cuenta de un rubro pide
+   * confirmación. Antes la X la quitaba al instante y el real del rubro (y su
+   * comparación contra el presupuesto) cambiaba sin aviso.
+   */
+  const [porQuitar, setPorQuitar] = useState<{ rubro: MapeoDeRubro; cuentaId: string } | null>(null);
+  const quitar = (rubro: MapeoDeRubro, cuentaId: string) => setPorQuitar({ rubro, cuentaId });
+  const confirmarQuitar = async () => {
+    if (!porQuitar) return;
+    const { rubro, cuentaId } = porQuitar;
     const cuenta = rubro.cuentas.find((c) => c.id === cuentaId);
     const quedan = rubro.cuentas.filter((c) => c.id !== cuentaId).map((c) => c.id);
-    void guardarCuentas(
+    await guardarCuentas(
       rubro,
       quedan,
       quedan.length === 0
         ? `«${rubro.nombre}» quedó sin cuenta: su real del libro vuelve a «—».`
         : `«${rubro.nombre}» ya no incluye ${cuenta?.codigo ?? 'esa cuenta'}.`,
     );
+    setPorQuitar(null);
   };
+  const cuentaPorQuitar = porQuitar
+    ? porQuitar.rubro.cuentas.find((c) => c.id === porQuitar.cuentaId) ?? null
+    : null;
+  const quedaSinCuentas = porQuitar ? porQuitar.rubro.cuentas.length <= 1 : false;
 
   const sembrar = async () => {
     setSembrando(true);
@@ -272,13 +297,13 @@ export function RubrosDelPyg() {
                 <TableHead className="min-w-[240px]">Agregar una cuenta</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBodyAnimado>
               {mapeo.rubros.map((r) => {
                 const segundaLectura = explicacionDeLaSegundaLectura(r);
                 const mayores = cuentasMayores(r);
                 const ocupada = guardando.has(r.rubro);
                 return (
-                  <TableRow key={r.rubro} data-testid={`rubro-${r.rubro}`}>
+                  <TableRowAnimada key={r.rubro} data-testid={`rubro-${r.rubro}`}>
                     <TableCell className="max-w-[320px] align-top">
                       <p className="font-medium text-fg">{r.nombre}</p>
                       <p className="text-caption text-fg-muted">
@@ -387,13 +412,43 @@ export function RubrosDelPyg() {
                         </p>
                       ) : null}
                     </TableCell>
-                  </TableRow>
+                  </TableRowAnimada>
                 );
               })}
-            </TableBody>
+            </TableBodyAnimado>
           </Table>
         </div>
       </section>
+
+      <AlertDialog
+        open={porQuitar !== null}
+        onOpenChange={(v) => !v && !(porQuitar && guardando.has(porQuitar.rubro.rubro)) && setPorQuitar(null)}
+      >
+        <AlertDialogContent variant="destructive" data-testid="confirmar-quitar-cuenta-del-rubro">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ¿Quitar {cuentaPorQuitar?.codigo ?? 'esta cuenta'} de «{porQuitar?.rubro.nombre}»?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {quedaSinCuentas
+                ? `Es la única cuenta del rubro: su real del libro vuelve a «—» y la comparación contra el presupuesto deja de tener con qué medirse.`
+                : `El real del rubro deja de sumar ${cuentaPorQuitar ? `${cuentaPorQuitar.codigo} · ${cuentaPorQuitar.nombre}` : 'esa cuenta'}. El libro no cambia: sólo cambia qué se suma en este rubro.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Dejarla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmarQuitar();
+              }}
+              data-testid="confirmar-quitar-cuenta"
+            >
+              Quitarla
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

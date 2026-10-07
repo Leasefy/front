@@ -42,9 +42,10 @@ function ProgressBar({ value, variant }: ProgressBarProps) {
 
   return (
     <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+      {/* `transform` (translateX), no `width`: la barra entera corrida a su avance. */}
       <div
-        className={cn('h-full rounded-full transition-all duration-500', barColorClass)}
-        style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+        className={cn('h-full w-full rounded-full transition-transform duration-reveal ease-enter', barColorClass)}
+        style={{ transform: `translateX(${Math.min(100, Math.max(0, value)) - 100}%)` }}
       />
     </div>
   );

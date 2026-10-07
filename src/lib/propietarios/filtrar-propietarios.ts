@@ -23,6 +23,7 @@
  */
 
 import type { Propietario } from '@/lib/types/inmobiliaria';
+import { faltaDelDocumentoDelPropietario } from '@/lib/propietarios/falta-del-documento';
 
 export type CampoDeOrden =
   | 'name'
@@ -32,6 +33,13 @@ export type CampoDeOrden =
   | 'lastPaymentDate';
 export type SentidoDeOrden = 'asc' | 'desc';
 export type TipoDePropietario = 'all' | 'person' | 'company';
+/**
+ * AVISO-TIPO-DOC (05-10-2026): «lo que falta». `tipoDocumento` = los que tienen
+ * mandato y el documento frena su factura por mandato (sin número, sin tipo o
+ * el tipo por revisar), con la misma regla del freno. Llega por
+ * `?falta=tipo-de-documento` desde el aviso.
+ */
+export type FaltaDeLaLista = 'tipoDocumento' | null;
 
 export interface FiltrosDePropietarios {
   busqueda: string;
@@ -39,6 +47,8 @@ export interface FiltrosDePropietarios {
   soloConSaldo: boolean;
   campo: CampoDeOrden;
   sentido: SentidoDeOrden;
+  /** AVISO-TIPO-DOC: opcional, así los filtros armados a mano siguen valiendo. */
+  falta?: FaltaDeLaLista;
 }
 
 export const FILTROS_INICIALES: FiltrosDePropietarios = {
@@ -47,6 +57,7 @@ export const FILTROS_INICIALES: FiltrosDePropietarios = {
   soloConSaldo: false,
   campo: 'name',
   sentido: 'asc',
+  falta: null,
 };
 
 /** ¿Hay algo puesto que explique por qué la lista es más corta? El orden no cuenta. */
@@ -54,17 +65,58 @@ export function hayFiltros(filtros: FiltrosDePropietarios): boolean {
   return (
     filtros.busqueda.trim().length > 0 ||
     filtros.tipo !== 'all' ||
-    filtros.soloConSaldo
+    filtros.soloConSaldo ||
+    Boolean(filtros.falta)
   );
 }
 
 /**
- * `email`, `phone` y `documentNumber` llegan en `null` desde el back —un
- * propietario sin teléfono es normal, no un error— y `null.includes(...)`
- * revienta el render entero. Se normaliza acá, una vez.
+ * Sin tildes ni mayúsculas (P-07, QA de Propietarios 03-10): «usuga» tiene que
+ * encontrar a «Úsuga» y «munoz iniguez» a «Muñoz Íñiguez». La ñ también se
+ * aplana a n: quien busca desde un teclado sin ñ escribe «munoz».
  */
-function contiene(valor: string | null | undefined, aguja: string): boolean {
-  return (valor ?? '').toLowerCase().includes(aguja);
+export function sinTildes(texto: string): string {
+  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+}
+
+/** Lo que se escribe como un número (documento o teléfono): dígitos con puntos, espacios, guiones, `+` o paréntesis. */
+const SE_ESCRIBIO_UN_NUMERO = /^[\d\s.\-+()]+$/;
+
+const soloDigitos = (valor: string | null | undefined) => (valor ?? '').replace(/\D/g, '');
+
+/**
+ * ¿La búsqueda encuentra a este propietario?
+ *
+ * · Un NÚMERO (documento o teléfono) se compara sólo por sus dígitos:
+ *   «901.222.333» encuentra el NIT 901222333 y «310 555 0001» el teléfono
+ *   3105550001. Un NIT escrito con su dígito de verificación («901222333-9»)
+ *   también: lo que va antes del guion es el NIT. Un celular con «+57»
+ *   adelante encuentra al guardado sin indicativo.
+ * · Lo demás se busca POR PALABRAS, sin tildes ni mayúsculas, en el nombre, el
+ *   correo, el documento y el teléfono: cada palabra tiene que estar, en
+ *   cualquier orden («iniguez munoz» también la encuentra).
+ *
+ * `email`, `phone` y `documentNumber` llegan en `null` desde el back —un
+ * propietario sin teléfono es normal, no un error—: se tratan como vacíos.
+ */
+function laBusquedaLoEncuentra(p: Propietario, busqueda: string): boolean {
+  if (SE_ESCRIBIO_UN_NUMERO.test(busqueda)) {
+    const documento = soloDigitos(p.documentNumber);
+    const telefono = soloDigitos(p.phone);
+    const digitos = soloDigitos(busqueda);
+    const candidatos = [
+      digitos,
+      soloDigitos(busqueda.split('-')[0]),
+      // Un celular con el indicativo del país («+57 310…») contra uno guardado sin él.
+      digitos.replace(/^57(?=3\d{9}$)/, ''),
+    ].filter(Boolean);
+    if (candidatos.some((d) => documento.includes(d) || telefono.includes(d))) return true;
+  }
+  const texto = sinTildes([p.name, p.email, p.documentNumber, p.phone].filter(Boolean).join(' '));
+  return sinTildes(busqueda)
+    .split(/\s+/)
+    .filter(Boolean)
+    .every((palabra) => texto.includes(palabra));
 }
 
 /** Filtrar sin ordenar. Los conteos de los chips no necesitan el orden. */
@@ -74,21 +126,20 @@ function soloFiltrar(
 ): Propietario[] {
   let resultado = [...propietarios];
 
-  const aguja = filtros.busqueda.trim().toLowerCase();
+  const aguja = filtros.busqueda.trim();
   if (aguja) {
-    resultado = resultado.filter(
-      (p) =>
-        contiene(p.name, aguja) ||
-        contiene(p.email, aguja) ||
-        contiene(p.documentNumber, aguja) ||
-        contiene(p.phone, aguja),
-    );
+    resultado = resultado.filter((p) => laBusquedaLoEncuentra(p, aguja));
   }
 
   // `undefined > 0` es false, que es lo correcto, pero conviene decirlo en vez
   // de confiar en la coerción.
   if (filtros.soloConSaldo) {
     resultado = resultado.filter((p) => (p.pendingBalance ?? 0) > 0);
+  }
+
+  // AVISO-TIPO-DOC: los que el aviso cuenta (mandato + documento que frena).
+  if (filtros.falta === 'tipoDocumento') {
+    resultado = resultado.filter((p) => faltaDelDocumentoDelPropietario(p) !== null);
   }
 
   if (filtros.tipo === 'person') {
@@ -111,12 +162,15 @@ export function filtrarPropietarios(
     let bVal: string | number = b[filtros.campo] ?? '';
 
     if (typeof aVal === 'string') {
-      aVal = aVal.toLowerCase();
-      bVal = String(bVal ?? '').toLowerCase();
+      // QA-PROP-95 (A-20): orden del español — «Óscar» con la O y «Ñandú»
+      // después de la N. Con `<` sobre minúsculas las tildes iban tras la Z.
+      const orden = aVal.localeCompare(String(bVal ?? ''), 'es', { sensitivity: 'base' });
+      return filtros.sentido === 'asc' ? orden : -orden;
     }
 
-    if (aVal < bVal) return filtros.sentido === 'asc' ? -1 : 1;
-    if (aVal > bVal) return filtros.sentido === 'asc' ? 1 : -1;
+    const bNum = Number(bVal);
+    if (aVal < bNum) return filtros.sentido === 'asc' ? -1 : 1;
+    if (aVal > bNum) return filtros.sentido === 'asc' ? 1 : -1;
     return 0;
   });
 

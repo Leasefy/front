@@ -37,7 +37,7 @@ import { useSearchParams } from 'next/navigation';
 import { EnvelopeSimple, MagnifyingGlass } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
-import { Eyebrow } from '@leasefy/cadence';
+import { Eyebrow, CrossFade, Presence } from '@leasefy/cadence';
 import { Input } from '@/components/ui/input';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { SinDatos } from '@/components/estado/SinDatos';
@@ -216,49 +216,59 @@ function ColaDeCartas() {
             </div>
           </div>
 
-          {hayFiltros && (
-            <p
-              className="border-b border-border px-5 py-2 text-xs text-fg-muted"
-              data-testid="alcance-de-cartas"
+          <Presence
+            show={hayFiltros}
+            initial={false}
+            distance="xs"
+            as="p"
+            className="border-b border-border px-5 py-2 text-xs text-fg-muted"
+            data-testid="alcance-de-cartas"
+          >
+            {visibles.length} de {todas.length}{' '}
+            {todas.length === 1 ? 'carta' : 'cartas'}.{' '}
+            <button
+              type="button"
+              onClick={limpiar}
+              className="font-medium text-primary underline-offset-4 hover:underline"
+              data-testid="limpiar-filtros-cartas"
             >
-              {visibles.length} de {todas.length}{' '}
-              {todas.length === 1 ? 'carta' : 'cartas'}.{' '}
-              <button
-                type="button"
-                onClick={limpiar}
-                className="font-medium text-primary underline-offset-4 hover:underline"
-                data-testid="limpiar-filtros-cartas"
-              >
-                Quitar los filtros
-              </button>
-            </p>
-          )}
+              Quitar los filtros
+            </button>
+          </Presence>
 
-          {!datos ? (
-            <div className="p-5">
-              <EsqueletoTabla columnas={3} filas={5} />
-            </div>
-          ) : visibles.length === 0 ? (
-            <SinDatos
-              hayFiltros={hayFiltros}
-              queSon="cartas del incremento"
-              icono={EnvelopeSimple}
-              titulo="No hay ninguna carta pendiente"
-              descripcion={`Cada carta aparece sola ${datos.diasAntes} días antes del aniversario de su contrato.`}
-              onLimpiarFiltros={hayFiltros ? limpiar : undefined}
-            />
-          ) : (
-            <ul className="divide-y divide-border px-5" data-testid="cola-de-cartas">
-              {pageItems.map((c) => (
-                <Fila
-                  key={`${c.contractId}-${c.desde}`}
-                  carta={c}
-                  editable={puedeEditar && datos.disponible}
-                  onEnviada={cargar}
-                />
-              ))}
-            </ul>
-          )}
+          {/* Cargando → la cola (o el vacío): se cruzan. `popLayout`: lo nuevo
+              entra YA y lo viejo se va por encima. */}
+          <CrossFade
+            swapKey={!datos ? 'cargando' : visibles.length === 0 ? 'vacio' : 'lista'}
+            mode="popLayout"
+            direction="none"
+          >
+            {!datos ? (
+              <div className="p-5">
+                <EsqueletoTabla columnas={3} filas={5} />
+              </div>
+            ) : visibles.length === 0 ? (
+              <SinDatos
+                hayFiltros={hayFiltros}
+                queSon="cartas del incremento"
+                icono={EnvelopeSimple}
+                titulo="No hay ninguna carta pendiente"
+                descripcion={`Cada carta aparece sola ${datos.diasAntes} días antes del aniversario de su contrato.`}
+                onLimpiarFiltros={hayFiltros ? limpiar : undefined}
+              />
+            ) : (
+              <ul className="divide-y divide-border px-5" data-testid="cola-de-cartas">
+                {pageItems.map((c) => (
+                  <Fila
+                    key={`${c.contractId}-${c.desde}`}
+                    carta={c}
+                    editable={puedeEditar && datos.disponible}
+                    onEnviada={cargar}
+                  />
+                ))}
+              </ul>
+            )}
+          </CrossFade>
 
           {shouldPaginate && (
             <div className="border-t border-border px-5 py-3">

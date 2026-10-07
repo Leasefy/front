@@ -3,7 +3,16 @@
 import { forwardRef, useEffect, useRef, useState, type ReactNode } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { AnimatePresence, LayoutGroup, MotionConfig, motion, type Transition } from 'framer-motion'
+import { AnimatePresence, LayoutGroup, motion, type Transition } from 'framer-motion'
+import {
+  motionDistance,
+  motionDuration,
+  motionEase,
+  motionScale,
+  motionSpring,
+  motionStagger,
+  motionTransition,
+} from '@leasefy/cadence'
 import { ArrowRight, Check } from '@phosphor-icons/react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/lib/auth/use-auth'
@@ -11,12 +20,28 @@ import { useEnabledProfiles } from '@/lib/hooks/use-enabled-profiles'
 import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding'
 import { Spinner } from '@/components/ui/spinner'
 import { LeasefyLogotype } from '@/components/brand'
-import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
+import { SalirDelRegistro, type VolverDelRegistro } from '@/components/onboarding/SalirDelRegistro'
 import { saludo } from '@/lib/onboarding/saludo'
+import { desistirDelRegistroDeInmobiliaria } from '@/lib/api/onboarding-provisioning.service'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { PERFILES, type OpcionDePerfil, type ValorDePerfil } from './perfiles'
+import type { RegistroAMedias } from './PanelAntesDeComenzar'
 
-/** El resorte de las tarjetas al irse a la izquierda y al volver al centro. */
-const RESORTE: Transition = { type: 'spring', stiffness: 320, damping: 34, mass: 0.9 }
+/**
+ * El resorte de las tarjetas al irse a la izquierda y al volver al centro: el
+ * `soft` de Cadence (superficies que se acomodan, sin rebote).
+ */
+const RESORTE: Transition = motionSpring.soft
 
 /**
  * La línea de apoyo bajo la pregunta: saluda por el nombre cuando lo hay y
@@ -37,10 +62,22 @@ export interface EleccionDePerfilProps {
   abiertaAlInicio?: boolean
   /**
    * Lo que va a la derecha cuando se elige «Inmobiliaria». Recibe cómo
-   * cerrarse y cómo avisar que está «Abriendo tu registro…» (ahí las
-   * tarjetas se esconden y la carga queda sola, centrada).
+   * cerrarse, cómo avisar que está «Abriendo tu registro…» (ahí las
+   * tarjetas se esconden y la carga queda sola, centrada) y cómo avisar si
+   * todavía se puede cambiar de perfil (el «Salir» lo ofrece sólo entonces).
    */
-  panelDeInmobiliaria: (cerrar: () => void, alAbrirRegistro: (abriendo: boolean) => void) => ReactNode
+  panelDeInmobiliaria: (
+    cerrar: () => void,
+    alAbrirRegistro: (abriendo: boolean) => void,
+    alSaberSiPuedeCambiar: (puede: boolean) => void,
+    alSaberDelRegistroAMedias: (registro: RegistroAMedias | null) => void,
+  ) => ReactNode
+  /**
+   * El formulario se abrió desde el asistente para corregir los datos de la
+   * inmobiliaria: el «Salir» ofrece volver al asistente en vez de volver a
+   * elegir perfil (la inmobiliaria ya existe; cambiar de perfil no se puede).
+   */
+  volverAlAsistente?: () => void
 }
 
 /**
@@ -61,7 +98,11 @@ export interface EleccionDePerfilProps {
  * Se guarda en segundo plano y sin retener a nadie: si falla, a lo sumo la
  * próxima entrada vuelve a este selector (Nico, 2026-09-07).
  */
-export function EleccionDePerfil({ abiertaAlInicio = false, panelDeInmobiliaria }: EleccionDePerfilProps) {
+export function EleccionDePerfil({
+  abiertaAlInicio = false,
+  panelDeInmobiliaria,
+  volverAlAsistente,
+}: EleccionDePerfilProps) {
   const router = useRouter()
   const { user, elegirPerfil } = useAuth()
   // El admin puede apagar perfiles (/admin/registration-profiles). Falla
@@ -97,8 +138,14 @@ export function EleccionDePerfil({ abiertaAlInicio = false, panelDeInmobiliaria 
     estabaAbierta.current = abierta
   }, [abierta])
 
-  const elegir = (opcion: OpcionDePerfil) => {
-    if (abierta || yendoA) return
+  // La inmobiliaria a medias de esta persona, si la hay (lo dice el panel).
+  const [registroAMedias, setRegistroAMedias] = useState<RegistroAMedias | null>(null)
+  // El perfil que eligió con una inmobiliaria a medias: se pregunta antes.
+  const [porConfirmar, setPorConfirmar] = useState<OpcionDePerfil | null>(null)
+  const [dejandoDeLado, setDejandoDeLado] = useState(false)
+  const [errorAlDejar, setErrorAlDejar] = useState<string | null>(null)
+
+  const irAlPerfil = (opcion: OpcionDePerfil) => {
     void elegirPerfil(opcion.bandera).catch(() => undefined)
     if (opcion.valor === 'inmobiliaria') {
       setAbierta(true)
@@ -108,15 +155,85 @@ export function EleccionDePerfil({ abiertaAlInicio = false, panelDeInmobiliaria 
     router.push(rutaDeOnboarding(opcion.bandera))
   }
 
+  const elegir = (opcion: OpcionDePerfil) => {
+    if (abierta || yendoA) return
+    // Con una inmobiliaria a medias, otro perfil la deja de lado: se pregunta.
+    if (opcion.valor !== 'inmobiliaria' && registroAMedias) {
+      setErrorAlDejar(null)
+      setPorConfirmar(opcion)
+      return
+    }
+    irAlPerfil(opcion)
+  }
+
+  const dejarDeLadoYSeguir = async () => {
+    const opcion = porConfirmar
+    if (!opcion || dejandoDeLado) return
+    setDejandoDeLado(true)
+    setErrorAlDejar(null)
+    try {
+      await desistirDelRegistroDeInmobiliaria()
+      // El back le cambió el rol y le devolvió el onboarding pendiente: una
+      // carga completa arranca la sesión de cero con eso (permisos, agencia,
+      // guardas), en vez de remendar el contexto en caliente.
+      // Se espera poco: guardar el perfil elegido es cortesía (la ruta ya lo
+      // dice) y nunca puede dejar a nadie esperando aquí.
+      await Promise.race([
+        elegirPerfil(opcion.bandera).catch(() => undefined),
+        new Promise((resolver) => setTimeout(resolver, 1500)),
+      ])
+      setRegistroAMedias(null)
+      setYendoA(opcion.valor)
+      window.location.assign(rutaDeOnboarding(opcion.bandera))
+    } catch (error) {
+      // Nada se borró (el back se niega entero): se dice por qué y se queda aquí,
+      // con la regla de oro del traductor (02-10-2026): un 409 dice lo que mandó
+      // el back; un 5xx, que fue nuestro, con la referencia; la red, sólo sin respuesta.
+      setErrorAlDejar(
+        mensajeParaLaPersona(error, {
+          accion: 'dejar de lado el registro',
+          porDefecto: 'No pudimos dejar de lado el registro. Vuelve a intentarlo en un momento.',
+        }),
+      )
+    } finally {
+      setDejandoDeLado(false)
+    }
+  }
+
   const cerrar = () => setAbierta(false)
 
+  // Lo dice el panel: mientras no exista la inmobiliaria.
+  const [puedeCambiarDePerfil, setPuedeCambiarDePerfil] = useState(false)
+
+  /*
+   * Qué ofrece «Salir» además de salir, según dónde está la persona (Nico,
+   * 01-10-2026): corrigiendo desde el asistente, volver al asistente; con el
+   * formulario abierto y todavía sin inmobiliaria, volver a elegir perfil; con
+   * las tarjetas a la vista ya está eligiendo perfil, así que sólo salir.
+   */
+  const volver: VolverDelRegistro | undefined = volverAlAsistente
+    ? {
+        etiqueta: 'Volver al asistente',
+        descripcion: 'Puedes volver al asistente sin cambiar nada.',
+        onVolver: volverAlAsistente,
+      }
+    : abierta && puedeCambiarDePerfil && !abriendoRegistro
+      ? {
+          etiqueta: 'Volver a elegir tu perfil',
+          descripcion: 'Puedes volver a elegir tu perfil.',
+          onVolver: cerrar,
+        }
+      : undefined
+
   return (
-    <MotionConfig reducedMotion="user">
+    <>
+      {/* Sin `MotionConfig` propio: el `MotionProvider` del layout raíz ya
+          respeta el movimiento reducido en toda la app. */}
       <div className="flex min-h-screen flex-col bg-bg">
         <header className="flex items-center justify-between px-5 py-4 sm:px-8 sm:py-5">
           {/* El mismo logotipo que la sidebar del panel y el header de los pasos — el cuadrado azul no es la marca (Nico, 2026-09-07). */}
           <LeasefyLogotype className="h-6 w-auto" />
-          <SalirDelRegistro />
+          <SalirDelRegistro volver={volver} />
         </header>
 
         {/* flex-1 + justify-center: la escena se centra en el alto que sobra
@@ -129,10 +246,10 @@ export function EleccionDePerfil({ abiertaAlInicio = false, panelDeInmobiliaria 
                 <motion.div
                   key="bienvenida"
                   layout="position"
-                  initial={{ opacity: 0, y: -8 }}
+                  initial={{ opacity: 0, y: -motionDistance.sm }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.22 }}
+                  exit={{ opacity: 0, y: -motionDistance.sm, transition: motionTransition.exit }}
+                  transition={motionTransition.enter}
                   className="mx-auto max-w-xl pb-8 pt-4 text-center sm:pb-12 sm:pt-10"
                 >
                   {/* Los títulos de la casa: peso medio, nunca negrita, tracking cerrado (ver /auth). */}
@@ -208,12 +325,17 @@ export function EleccionDePerfil({ abiertaAlInicio = false, panelDeInmobiliaria 
                   <motion.section
                     key="panel"
                     aria-label="Antes de comenzar"
-                    initial={{ opacity: 0, x: 32 }}
-                    animate={{ opacity: 1, x: 0, transition: { ...RESORTE, delay: 0.08 } }}
-                    exit={{ opacity: 0, x: 32, transition: { duration: 0.16 } }}
+                    initial={{ opacity: 0, x: motionDistance.lg }}
+                    animate={{ opacity: 1, x: 0, transition: { ...RESORTE, delay: motionStagger.step * 2 } }}
+                    exit={{ opacity: 0, x: motionDistance.lg, transition: motionTransition.exit }}
                     className={cn('min-w-0', abriendoRegistro && 'mx-auto w-full max-w-md')}
                   >
-                    {panelDeInmobiliaria(cerrar, setAbriendoRegistro)}
+                    {panelDeInmobiliaria(
+                      cerrar,
+                      setAbriendoRegistro,
+                      setPuedeCambiarDePerfil,
+                      setRegistroAMedias,
+                    )}
                   </motion.section>
                 ) : null}
               </AnimatePresence>
@@ -221,7 +343,49 @@ export function EleccionDePerfil({ abiertaAlInicio = false, panelDeInmobiliaria 
           </LayoutGroup>
         </main>
       </div>
-    </MotionConfig>
+
+      {/* Otro perfil con una inmobiliaria a medias: se pregunta antes de
+          dejarla de lado (Nico, 01-10-2026). */}
+      <AlertDialog
+        open={porConfirmar !== null}
+        onOpenChange={(abrir) => {
+          if (!abrir && !dejandoDeLado) setPorConfirmar(null)
+        }}
+      >
+        <AlertDialogContent data-testid="dejar-de-lado-la-inmobiliaria">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ¿Dejamos de lado el registro de {registroAMedias?.razonSocial ?? 'tu inmobiliaria'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Empezaste a registrar {registroAMedias?.razonSocial ?? 'tu inmobiliaria'} como inmobiliaria. Si
+              sigues como {porConfirmar?.titulo.toLowerCase() ?? 'otro perfil'}, ese registro se borra con lo que
+              llenaste de la inmobiliaria. Tu cuenta sigue siendo la misma.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {errorAlDejar ? (
+            <p role="alert" className="px-6 pb-2 text-body-sm text-danger" data-testid="error-al-dejar-de-lado">
+              {errorAlDejar}
+            </p>
+          ) : null}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={dejandoDeLado}>Seguir con la inmobiliaria</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                // Que el diálogo no se cierre antes de saber si se pudo.
+                event.preventDefault()
+                void dejarDeLadoYSeguir()
+              }}
+              disabled={dejandoDeLado}
+            >
+              {dejandoDeLado
+                ? 'Dejándolo de lado...'
+                : `Sí, seguir como ${porConfirmar?.titulo.toLowerCase() ?? 'otro perfil'}`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 
@@ -254,7 +418,9 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
   { opcion, indice, elegida, yendo, deshabilitada, compacta, onElegir },
   ref,
 ) {
-  const entrada = 0.05 + indice * 0.08
+  // Llegan después de cargar los perfiles (no están en el HTML del servidor):
+  // una tras otra con el paso del escalonado del sistema y su techo.
+  const entrada = Math.min(indice * motionStagger.step, motionStagger.max)
   // La atenuación va en el `animate` de framer, no en una clase: framer deja
   // `opacity` como estilo inline y una clase `opacity-45` nunca le gana.
   const atenuada = deshabilitada && !elegida && !yendo
@@ -266,20 +432,20 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
       onClick={onElegir}
       disabled={deshabilitada}
       aria-busy={yendo || undefined}
-      initial={{ opacity: 0, y: 18 }}
+      initial={{ opacity: 0, y: motionDistance.md }}
       animate={{ opacity: atenuada ? 0.4 : 1, y: 0 }}
       transition={{
         ...RESORTE,
-        opacity: { duration: 0.4, delay: entrada },
-        y: { type: 'spring', stiffness: 260, damping: 30, delay: entrada },
+        opacity: { duration: motionDuration.slow, ease: motionEase.enter, delay: entrada },
+        y: { ...RESORTE, delay: entrada },
       }}
-      whileHover={deshabilitada ? undefined : { y: -4 }}
-      whileTap={deshabilitada ? undefined : { scale: 0.985 }}
+      whileHover={deshabilitada ? undefined : { y: -motionDistance.xs }}
+      whileTap={deshabilitada ? undefined : { scale: motionScale.press }}
       data-testid={`perfil-${opcion.valor}`}
       data-elegida={elegida || undefined}
       className={cn(
         'group relative flex w-full cursor-pointer flex-col overflow-hidden bg-surface text-left',
-        'transition-[box-shadow,opacity] duration-300',
+        'transition-[box-shadow,opacity] duration-slow ease-standard',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-bg',
         'disabled:cursor-default',
         compacta ? 'aspect-square rounded-lg' : 'aspect-[4/5] rounded-xl sm:aspect-[3/4]',
@@ -300,7 +466,9 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
           priority
           sizes="(min-width: 1024px) 460px, (min-width: 640px) 50vw, 100vw"
           className={cn(
-            'object-cover transition-[transform,filter] duration-700 ease-out motion-safe:group-enabled:group-hover:scale-[1.04]',
+            // Sólo `transform` se anima (el zoom lento del hover); el gris de la
+            // atenuada se pone de una mientras la tarjeta se funde.
+            'object-cover transition-transform duration-reveal ease-enter motion-safe:group-enabled:group-hover:scale-[1.04]',
             atenuada && 'grayscale-[0.5]',
           )}
           style={{ objectPosition: opcion.encuadre }}
@@ -312,7 +480,7 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
             aria-hidden
             className={cn(
               'pointer-events-none absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-black/35 px-3.5 py-1.5',
-              'text-[13px] font-medium text-white opacity-0 backdrop-blur-md transition-all duration-300',
+              'text-[13px] font-medium text-white opacity-0 backdrop-blur-md transition-[opacity,transform] duration-slow ease-enter',
               'motion-safe:translate-y-1 group-hover:opacity-100 group-focus-visible:opacity-100',
               'motion-safe:group-hover:translate-y-0 motion-safe:group-focus-visible:translate-y-0',
             )}
@@ -324,9 +492,9 @@ const TarjetaDePerfil = forwardRef<HTMLButtonElement, TarjetaDePerfilProps>(func
 
         {elegida || yendo ? (
           <motion.span
-            initial={{ scale: 0.6, opacity: 0 }}
+            initial={{ scale: motionScale.pop, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 28 }}
+            transition={motionSpring.bouncy}
             className={cn(
               'absolute right-4 top-4 flex size-8 items-center justify-center rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.25)]',
               yendo ? 'bg-surface text-primary' : 'bg-primary text-primary-fg',

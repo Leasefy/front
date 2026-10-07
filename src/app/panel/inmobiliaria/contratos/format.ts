@@ -9,9 +9,11 @@
  * Next.js valida en build que un `page.tsx` sólo exporte los nombres
  * reservados de la ruta.
  */
+
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 export function fmtCop(val: number | null | undefined): string {
   if (val == null) return '—';
-  return new Intl.NumberFormat('es-CO', {
+  return plataEnPantalla('es-CO', {
     style: 'currency',
     currency: 'COP',
     maximumFractionDigits: 0,

@@ -49,6 +49,7 @@ vi.mock('@/lib/supabase/client', () => ({ getSupabase: () => supabase }));
 vi.mock('@/lib/auth/use-auth', () => ({ useAuth: () => auth }));
 
 import { AccionesEnElHilo } from './AccionesEnElHilo';
+import { ApiError } from '@/lib/api/client';
 import type { ChatMessage } from '@/lib/types/beta-chat';
 import { leerTarjetaDeEjecucion, type TarjetaDeEjecucion } from '@/lib/chat/tarjetas-de-ejecucion';
 import {
@@ -298,6 +299,31 @@ describe('En curso', () => {
     pintar(mensaje(enCurso()));
     await flush();
     expect(boton('Cancelar')).toBeUndefined();
+  });
+
+  /**
+   * 02-10-2026 · Detener un proceso que falla lo dice el traductor, igual que
+   * el Centro de procesos del panel. Antes: «No pude cancelarlo: » + el texto
+   * crudo del error («Error interno del servidor», «Failed to fetch»).
+   */
+  it.each<[string, unknown, RegExp]>([
+    [
+      'un 5xx: «de nuestro lado» con la referencia',
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', { referencia: 'ab12cd34' }),
+      /^No pudimos detener el proceso: algo falló de nuestro lado.*ab12cd34/,
+    ],
+    ['un 409: lo que escribió el back', new ApiError(409, 'Ese proceso ya terminó.'), /^Ese proceso ya terminó\.$/],
+    ['la red caída: la conexión', new TypeError('Failed to fetch'), /conexi[oó]n/],
+    ['un 403 sin texto: lo de por defecto', new ApiError(403, ''), /^No pude detenerlo\. Prueba de nuevo en un momento\.$/],
+  ])('detener con %s', async (_caso, fallo, esperado) => {
+    procesos.ver.mockResolvedValue(proceso());
+    procesos.cancelar.mockRejectedValue(fallo);
+    pintar(mensaje(enCurso()));
+    await flush();
+    await act(async () => boton('Cancelar')!.click());
+    const aviso = tarjeta().querySelector('[role="alert"]')!;
+    expect(aviso.textContent).toMatch(esperado);
+    expect(aviso.textContent).not.toMatch(/Error interno del servidor|Failed to fetch|\b[1-5]\d\d\b/);
   });
 });
 

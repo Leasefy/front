@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef, createContext } from 'react';
 import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { CrossFade, motionDuration, motionEase } from '@leasefy/cadence';
 import {
   UploadSimple,
   MapPin,
@@ -16,6 +17,16 @@ import {
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { StepChooseMethod } from './steps/StepChooseMethod';
 import { StepUploadFile } from './steps/StepUploadFile';
 import { StepColumnMapping } from './steps/StepColumnMapping';
@@ -76,9 +87,18 @@ const INITIAL_STATE: ImportWizardState = {
   subidaRetomada: null,
 };
 
+/**
+ * Desde dónde se lanza la importación (decisión (b) de Nico, 06-10-2026): la
+ * Puesta en marcha es MIGRACIÓN y no va al centro de procesos (sus cargas se
+ * ven en el paso); desde Inmuebles sí va al centro. Sin decirlo = Puesta en marcha.
+ */
+export type OrigenDeLaImportacion = 'puesta-en-marcha' | 'inmuebles';
+
 export interface ImportStepProps {
   state: ImportWizardState;
   updateState: (partial: Partial<ImportWizardState>) => void;
+  /** Ver `OrigenDeLaImportacion`. */
+  origen?: OrigenDeLaImportacion;
   /** Adentro del muro de migración: qué hacer en vez de navegar al portafolio. */
   onSalir?: () => void;
   /**
@@ -137,7 +157,10 @@ export function ImportWizard({
   onContinuar,
   onOcupado,
   congelado = false,
+  origen = 'puesta-en-marcha',
 }: {
+  /** Ver `OrigenDeLaImportacion`: la página de Inmuebles pasa `inmuebles`. */
+  origen?: OrigenDeLaImportacion;
   onSalir?: () => void;
   onContinuar?: () => void;
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
@@ -153,6 +176,13 @@ export function ImportWizard({
   const router = useRouter();
   const { t } = useI18n();
   const [currentStep, setCurrentStep] = useState(1);
+  // ¿Se avanzó o se volvió? Lo lee el render en que `currentStep` cambió
+  // (la ref todavía tiene el paso anterior) y se actualiza después.
+  const pasoAnterior = useRef(currentStep);
+  const direccionDelPaso = currentStep >= pasoAnterior.current ? 'forward' : 'backward';
+  useEffect(() => {
+    pasoAnterior.current = currentStep;
+  }, [currentStep]);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [ranuraDelPie, setRanuraDelPie] = useState<HTMLDivElement | null>(null);
   const [ranuraSecundaria, setRanuraSecundaria] =
@@ -385,6 +415,7 @@ export function ImportWizard({
     const stepProps: ImportStepProps = {
       state: wizardState,
       updateState,
+      origen,
       onSalir,
       onContinuar,
       onOcupado: avisarOcupado,
@@ -469,7 +500,7 @@ export function ImportWizard({
               >
                 <div className="flex flex-col items-center gap-2 shrink-0">
                   <div className={cn(
-                    'w-12 h-12 rounded-full flex items-center justify-center transition-all',
+                    'w-12 h-12 rounded-full flex items-center justify-center transition-[color,background-color,box-shadow]',
                     status === 'completed'
                       ? 'bg-success text-white'
                       : status === 'current'
@@ -527,11 +558,12 @@ export function ImportWizard({
           </div>
           {/* Misma razón que los círculos: el riel se perdía contra el fondo. */}
           <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
+            {/* Avanza con `translateX` (sólo transform), no con el ancho. */}
             <motion.div
-              className="h-full bg-primary"
+              className="h-full w-full bg-primary"
               initial={false}
-              animate={{ width: `${(pasoMacro / PASOS_VISIBLES.length) * 100}%` }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              animate={{ x: `${(pasoMacro / PASOS_VISIBLES.length) * 100 - 100}%` }}
+              transition={{ duration: motionDuration.slow, ease: motionEase.standard }}
             />
           </div>
         </div>
@@ -562,21 +594,15 @@ export function ImportWizard({
               inert={congelado}
               className={congelado ? "cursor-progress" : undefined}
             >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentStep}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2 }}
-                >
+              {/* El paso nuevo entra por la derecha al avanzar y por la
+                  izquierda al volver (`CrossFade` con dirección). */}
+              <CrossFade swapKey={currentStep} direction={direccionDelPaso}>
                   <RanuraDelPieSecundaria.Provider value={ranuraSecundaria}>
                   <RanuraDelPie.Provider value={ranuraDelPie}>
                     {renderStepContent()}
                   </RanuraDelPie.Provider>
                   </RanuraDelPieSecundaria.Provider>
-                </motion.div>
-              </AnimatePresence>
+              </CrossFade>
             </div>
 
             {/*
@@ -597,7 +623,9 @@ export function ImportWizard({
           // —más redondo que la tarjeta— y en las dos esquinas de abajo asomaba
           // el fondo: dos medias lunas blancas. Si el radio de la tarjeta
           // cambia, éste cambia con ella.
-          <div className="px-6 py-4 rounded-b-lg border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex items-center justify-between">
+          // A 390 px los tres botones no caben en fila con `px-6`: el pie
+          // empujaba la página a 458 px (QA-MIG-A, MG-29). Se envuelve.
+          <div className="px-4 py-4 sm:px-6 rounded-b-lg border-t border-border-faint dark:border-border-strong bg-surface-muted dark:bg-bg flex flex-wrap items-center justify-between gap-2" data-testid="pie-del-asistente">
             {/* Cancel Button */}
             <Button
               type="button"
@@ -609,7 +637,7 @@ export function ImportWizard({
             </Button>
 
             {/* Navigation Buttons */}
-            <div className="flex items-center gap-3">
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
               {/* Acción que acompaña a «Siguiente» — la llena el paso. */}
               <div ref={setRanuraSecundaria} className="flex items-center" />
               {/* Con el lote ya en el servidor pasada la subida, «Anterior» no
@@ -635,7 +663,11 @@ export function ImportWizard({
                   hideArrow
                   onClick={confirmCancel}
                 >
-                  {t('inmobiliaria.import.portal.backToPortfolio')}
+                  {/* QA-MIGRACION-95 (IN-01): dentro del muro no hay portafolio;
+                      `onSalir` reinicia el asistente y el rótulo lo dice. */}
+                  {onSalir
+                    ? t('inmobiliaria.import.portal.otroMetodo')
+                    : t('inmobiliaria.import.portal.backToPortfolio')}
                 </Button>
               ) : currentStep < visibleSteps.length ? (
                 <Button
@@ -661,57 +693,32 @@ export function ImportWizard({
         )}
       </div>
 
-      {/* Cancel Confirmation Dialog */}
-      <AnimatePresence>
-        {showCancelDialog && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-            onClick={() => setShowCancelDialog(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md p-6 rounded-lg bg-surface dark:bg-bg border border-border dark:border-border-strong"
-            >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-warning-soft flex items-center justify-center">
-                  <X className="w-5 h-5 text-warning" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-fg dark:text-white">
-                    {t('inmobiliaria.import.wizard.cancelDialog.title')}
-                  </h3>
-                  <p className="text-sm text-fg-muted dark:text-fg-subtle">
-                    {t('inmobiliaria.import.wizard.cancelDialog.description')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-3">
-                <Button
-                  variant="outline"
-                  hideArrow
-                  onClick={() => setShowCancelDialog(false)}
-                >
-                  {t('inmobiliaria.import.wizard.cancelDialog.continueEditing')}
-                </Button>
-                <Button
-                  variant="destructive"
-                  hideArrow
-                  onClick={confirmCancel}
-                >
-                  {t('inmobiliaria.import.wizard.cancelDialog.yesCancel')}
-                </Button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Cancel Confirmation Dialog — lo que se pierde depende de si el lote
+          ya vive en el servidor (`loteRetomado` se escribe con la primera
+          tanda): desde ahí lo subido queda y se retoma desde «Tienes una carga
+          a medias»; antes, lo único que hay está en esta pantalla. */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent variant="destructive" icon={<X weight="bold" />}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t('inmobiliaria.import.wizard.cancelDialog.title')}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {wizardState.loteRetomado
+                ? t('inmobiliaria.import.wizard.cancelDialog.descriptionLoteGuardado')
+                : t('inmobiliaria.import.wizard.cancelDialog.description')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>
+              {t('inmobiliaria.import.wizard.cancelDialog.continueEditing')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancel}>
+              {t('inmobiliaria.import.wizard.cancelDialog.yesCancel')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

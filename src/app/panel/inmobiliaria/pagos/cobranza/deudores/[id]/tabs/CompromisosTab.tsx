@@ -25,6 +25,8 @@ import { useDebtorCompromisos } from '@/lib/hooks/cobranza/use-debtor-compromiso
 import { Button } from '@/components/ui'
 import { LlamadaDetalleSheet } from '@/components/inmobiliaria/cobranza/LlamadaDetalleSheet'
 import { channelLabel } from '@/lib/cobranza/call-vocab'
+import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
+import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 
 void React
 
@@ -76,7 +78,7 @@ function etiqueta(mapa: Record<string, string>, slug: string): string {
   return mapa[slug] ?? slug.replaceAll('_', ' ')
 }
 
-const COP = new Intl.NumberFormat('es-CO', {
+const COP = plataEnPantalla('es-CO', {
   style: 'currency',
   currency: 'COP',
   maximumFractionDigits: 0,
@@ -101,8 +103,12 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
   const { data, isLoading, error, refetch } = useDebtorCompromisos({ debtorId })
   const [llamadaAbierta, setLlamadaAbierta] = useState<string | null>(null)
 
+  // Movimiento: cada salida en un `CrossFade` con su clave (cargando →
+  // compromisos, → fallo, → vacío); cada lista entra escalonada y lo que
+  // cambia (una promesa nueva, un plan que se cumple) entra o sale.
   if (isLoading && !data) {
     return (
+      <CrossFade swapKey="cargando">
       <div className="space-y-2">
         {Array.from({ length: 3 }, (_, i) => (
           <div
@@ -111,11 +117,13 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
           />
         ))}
       </div>
+      </CrossFade>
     )
   }
 
   if (error) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="rounded-md border border-danger/30 bg-danger-soft p-4 flex items-center justify-between gap-4">
         <p className="text-sm text-danger">
           {t('inmobiliaria.ai.cobranza.detail.compromisos.error')}: {error}
@@ -130,6 +138,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
           {t('inmobiliaria.ai.cobranza.detail.compromisos.errorRetry')}
         </Button>
       </div>
+      </CrossFade>
     )
   }
 
@@ -145,6 +154,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
     legals.length === 0
   ) {
     return (
+      <CrossFade swapKey="vacio">
       <div className="rounded-md border border-dashed border-border p-8 text-center space-y-1">
         <p className="text-sm text-fg-muted">
           {t('inmobiliaria.ai.cobranza.detail.compromisos.empty')}
@@ -154,17 +164,19 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
           cartas del caso. Este todavía no tiene ninguno.
         </p>
       </div>
+      </CrossFade>
     )
   }
 
   return (
+    <CrossFade swapKey="compromisos">
     <div className="space-y-5">
       {promesas.length > 0 && (
         <section>
           <h3 className="text-sm font-semibold text-fg mb-2">
             Promesas de pago
           </h3>
-          <ul className="space-y-2">
+          <Stagger as="ul" className="space-y-2">
             {promesas.map((pp) => {
               const estado = PROMESA_ESTADO[pp.status] ?? {
                 label: pp.status.replaceAll('_', ' '),
@@ -175,7 +187,8 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                   ? diasDesde(pp.due_date)
                   : 0
               return (
-                <li
+                <StaggerItem
+                  as="li"
                   key={pp.id}
                   className="rounded-sm border border-border bg-surface p-3"
                   data-testid={`compromiso-promesa-${pp.id}`}
@@ -218,10 +231,10 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                       Ver la llamada donde la hizo
                     </Button>
                   )}
-                </li>
+                </StaggerItem>
               )
             })}
-          </ul>
+          </Stagger>
         </section>
       )}
 
@@ -230,9 +243,10 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
           <h3 className="text-sm font-semibold text-fg mb-2">
             {t('inmobiliaria.ai.cobranza.detail.compromisos.paymentPlans')}
           </h3>
-          <ul className="space-y-2">
+          <Stagger as="ul" className="space-y-2">
             {paymentPlans.map((p) => (
-              <li
+              <StaggerItem
+                as="li"
                 key={p.id}
                 className="rounded-sm border border-border bg-surface p-3"
               >
@@ -248,9 +262,9 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                   Ofrecido el {fecha(p.offered_at, locale)}
                   {p.payment_provider ? ` · ${p.payment_provider}` : ''}
                 </p>
-              </li>
+              </StaggerItem>
             ))}
-          </ul>
+          </Stagger>
         </section>
       )}
 
@@ -259,9 +273,10 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
           <h3 className="text-sm font-semibold text-fg mb-2">
             {t('inmobiliaria.ai.cobranza.detail.compromisos.insuranceClaims')}
           </h3>
-          <ul className="space-y-2">
+          <Stagger as="ul" className="space-y-2">
             {claims.map((c) => (
-              <li
+              <StaggerItem
+                as="li"
                 key={c.id}
                 className="rounded-sm border border-border bg-surface p-3"
               >
@@ -280,9 +295,9 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                     Póliza {c.policy_number}
                   </p>
                 )}
-              </li>
+              </StaggerItem>
             ))}
-          </ul>
+          </Stagger>
         </section>
       )}
 
@@ -291,9 +306,10 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
           <h3 className="text-sm font-semibold text-fg mb-2">
             {t('inmobiliaria.ai.cobranza.detail.compromisos.legalArtifacts')}
           </h3>
-          <ul className="space-y-2">
+          <Stagger as="ul" className="space-y-2">
             {legals.map((l) => (
-              <li
+              <StaggerItem
+                as="li"
                 key={l.id}
                 className="rounded-sm border border-border bg-surface p-3"
               >
@@ -308,9 +324,9 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                 <p className="text-xs text-fg-muted mt-0.5">
                   Generada el {fecha(l.generated_at, locale)}
                 </p>
-              </li>
+              </StaggerItem>
             ))}
-          </ul>
+          </Stagger>
         </section>
       )}
 
@@ -319,5 +335,6 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
         onClose={() => setLlamadaAbierta(null)}
       />
     </div>
+    </CrossFade>
   )
 }

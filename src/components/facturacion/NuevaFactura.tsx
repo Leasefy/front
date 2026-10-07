@@ -82,6 +82,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import Link from 'next/link'
 import {
   DownloadSimple,
   Info,
@@ -129,8 +130,10 @@ import {
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { SinDatos } from '@/components/estado/SinDatos'
 import { toast } from '@/components/ui/toast'
+import { confirmar } from '@/components/ui/confirmar'
 import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { useIsMobile } from '@/hooks/use-mobile'
 import {
   facturacionPorMesService,
   fechaLegible,
@@ -139,17 +142,55 @@ import {
   mesesParaElegir,
   topesParaElegir,
   type DestinatarioDeFactura,
+  type EstadoDeLaResolucion,
   type FacturaDelMes,
   type FacturasPorGenerar,
 } from '@/lib/api/facturacion-por-mes.service'
-import { SegmentedControl } from '@leasefy/cadence'
+import {
+  aQuienSeFactura,
+  avisosDeLaFila,
+  cuantos,
+  escenarioSinConfirmar,
+  estaAnulada,
+  estadoDeLaFila,
+  llevaIntereses,
+  moraDelMes,
+  motivoCorto,
+  numerosQueSalen,
+  porQueNoSeEmite,
+  rutaDelEscenario,
+  rutaDelMandante,
+  rutaDelInquilino,
+  frenaPorElDocumentoDelMandante,
+  sePuedeEmitirHoy,
+  seSugiere,
+  sinLaRutaDeFacturacion,
+} from '@/lib/facturacion/por-facturar'
+import { Collapse, SegmentedControl } from '@leasefy/cadence'
 import { PrefacturasDelRango, finDeAnio } from './PrefacturasDelRango'
+import { FacturasDeIntereses } from './FacturasDeIntereses'
+
+/**
+ * El rango de fechas que trae el nombre de un renglón migrado de Nui
+ * («Canon de arrendamiento. De 01-Oct-2026 hasta 31-Oct-2026»). En la fila y en
+ * la confirmación sobra: el período se dice aparte («Mes completo», «20 de 30
+ * días») y esas fechas no son las de la casa. El renglón entero sigue en el
+ * cajón, que es el documento.
+ */
+const RANGO_DE_NUI = /\.?\s*De \d{1,2}-[A-Za-zñÑ]{3,4}-\d{4} hasta \d{1,2}-[A-Za-zñÑ]{3,4}-\d{4}\.?/i
+/**
+ * QA-FACT-PROF (04-10): el período en palabras de las cuotas nuevas («. Del 1 al
+ * 31 de octubre de 2026»). Sin quitarlo, el diálogo decía «… Del 1 al 31 de
+ * octubre de 2026 de octubre de 2026».
+ */
+const RANGO_EN_PALABRAS =
+  /\.?\s*Del \d{1,2}(?: de [a-záéíóúñ]+(?: de \d{4})?)? al \d{1,2} de [a-záéíóúñ]+ de \d{4}\.?/i
 
 /** Lo que se lee de un renglón cuando la fila resume sus conceptos. */
 function conceptosLegibles(factura: FacturaDelMes): string {
   const nombres = factura.lineas
     .filter((l) => !l.resta)
-    .map((l) => l.nombre)
+    .map((l) => l.nombre.replace(RANGO_DE_NUI, '').replace(RANGO_EN_PALABRAS, '').trim() || l.nombre)
   if (nombres.length === 0) return '—'
   if (nombres.length <= 2) return nombres.join(' · ')
   return `${nombres.slice(0, 2).join(' · ')} +${nombres.length - 2}`
@@ -161,19 +202,19 @@ function moraDe(factura: FacturaDelMes): number {
 }
 
 /**
- * 🔴 EL INTERÉS DE MORA, CON SU ORIGEN.
+ * 🔴 EL INTERÉS DE MORA, CON SU ORIGEN — sólo si la factura de verdad lo lleva.
  *
- * Nico: «el interés sí se va cargando a la factura cada vez que se genera.»
- *
- * Que la fila diga de DÓNDE salió el número no es un detalle: `Del cobro` es un
- * valor que finanzas ya liquidó y quedó escrito, así que no se mueve; `Sobre la
- * cuota` es el mismo motor de mora corriendo HOY sobre una deuda que ningún
- * cobro reclamó, y por lo tanto CRECE cada día hasta que se emita. Quien mira
- * la pantalla decide distinto según cuál de las dos sea.
+ * Nico (03-10-2026): «intereses de mora → nunca en la factura del mes; sólo en
+ * la factura aparte cuando se pagan». Con el back de esa decisión la factura del
+ * mes ya no trae renglones de interés y esta línea no se pinta (la fila dice
+ * «En mora · N días» y el porqué va UNA vez arriba). Se conserva para un back
+ * anterior que todavía los mete en la factura: si van en el total, se dicen, y
+ * con su origen —`del cobro` es un valor ya escrito; `sobre la cuota` crece
+ * cada día hasta que se emita—.
  */
 function InteresDeMora({ factura }: { factura: FacturaDelMes }) {
   const mora = factura.mora
-  if (!mora || mora.recargosCop <= 0) return null
+  if (!mora || mora.recargosCop <= 0 || !llevaIntereses(factura)) return null
   const delCobro = mora.origen === 'COBRO'
   return (
     <p
@@ -185,8 +226,8 @@ function InteresDeMora({ factura }: { factura: FacturaDelMes }) {
           : 'Lo calcula el motor de mora sobre la cuota, con las reglas de esta inmobiliaria. Crece cada día hasta que la factura se emita.'
       }
     >
-      Mora {formatCurrency(mora.recargosCop)} · {mora.diasDeMora}{' '}
-      {mora.diasDeMora === 1 ? 'día' : 'días'} ·{' '}
+      Mora <span className="font-mono tabular-nums">{formatCurrency(mora.recargosCop)}</span> ·{' '}
+      {mora.diasDeMora} {mora.diasDeMora === 1 ? 'día' : 'días'} ·{' '}
       <span className={delCobro ? 'text-fg-subtle' : 'text-warning'}>
         {delCobro ? 'del cobro' : 'sobre la cuota'}
       </span>
@@ -195,10 +236,26 @@ function InteresDeMora({ factura }: { factura: FacturaDelMes }) {
 }
 
 /**
- * 🔴 «Impuestos sin confirmar»: esta factura sale SIN impuestos porque el
- * escenario tributario del contrato está DEDUCIDO o falta un dato. El motivo va
- * en el `title`, con las palabras que da el back — nunca se factura un impuesto
- * deducido, y esa decisión tiene que poder leerse sin salir de la tabla.
+ * «En mora · 3 días»: la marca de la fila. Por qué la factura no lleva
+ * intereses se dice UNA vez arriba de la tabla (FA-03: el mismo párrafo salía
+ * en las 30 filas).
+ */
+function EnMora({ factura }: { factura: FacturaDelMes }) {
+  const mora = factura.mora
+  const dias = mora?.diasDeMora ?? 0
+  if (!mora?.esCartera || llevaIntereses(factura) || dias <= 0) return null
+  return (
+    <p className="truncate text-caption text-fg-muted" data-testid={`en-mora-${factura.clave}`}>
+      En mora · <span className="font-mono tabular-nums">{dias}</span>{' '}
+      {dias === 1 ? 'día' : 'días'}
+    </p>
+  )
+}
+
+/**
+ * 🔴 «Impuestos sin confirmar»: el escenario tributario del contrato está
+ * DEDUCIDO o falta un dato. Nico (03-10-2026): así no se emite; se confirma en
+ * el contrato. El motivo va en el `title`, con las palabras que da el back.
  */
 function ImpuestosSinConfirmar({ factura }: { factura: FacturaDelMes }) {
   return (
@@ -228,6 +285,7 @@ interface TablaProps {
   /**
    * Emitir UNA fila, sin tocar la selección de las demás (Nico, 18-09:
    * «selecciono sólo una y no da el poder generar factura de sólo esa»).
+   * Antes de emitir se confirma a quién, cuánto y con qué número (FA-09).
    */
   onGenerarUna: (clave: string) => void
   /** Por qué no se puede emitir hoy (sin resolución de la DIAN). `null` = se puede. */
@@ -235,8 +293,6 @@ interface TablaProps {
   /**
    * 🔴 La fila abre el cajón con TODO (Nico, 22-09: «al dar clic se debería
    * abrir detalle de ese en un drawer y ahí quizás ver y accionar más cosas»).
-   * La tabla tiene once columnas y recorta el tercero, el inmueble y el
-   * concepto con «…»; el cajón no recorta nada.
    */
   onAbrirDetalle: (factura: FacturaDelMes) => void
   /**
@@ -248,17 +304,13 @@ interface TablaProps {
   accionesMasivas?: ReactNode
   /**
    * 🔴 Sin borde ni esquinas propias: la tabla es una PARTE de la tarjeta de
-   * la pantalla, no otra caja. Nico, 20-09, viendo el mes y la resolución
-   * flotando arriba: «¿por qué esto no está pegado a la tabla de cada uno,
-   * inquilino y propietario?». Dos bordes anidados a 1 px se leen como dos
-   * objetos, y el mes con el que se filtra la tabla no es otro objeto.
+   * la pantalla, no otra caja (Nico, 20-09).
    */
   sinMarco?: boolean
   /**
    * 🔴 Bajar el PDF de una fila EMITIDA desde la columna de estado (Nico, 22-09:
    * «dónde puedo descargar […] esa factura en sí […] y también ahí donde dice
-   * estado»). Sin esto la fila emitida mostraba «PRU-3 · interna N° 4» como
-   * texto, sin nada que abrir ni bajar.
+   * estado»).
    */
   onDescargarPdf?: (factura: FacturaDelMes) => void
   /** El `facturaId` que se está bajando, para no dejar apretar dos veces. */
@@ -287,9 +339,300 @@ function textoBuscableDe(f: FacturaDelMes): string {
 function normalizar(s: string): string {
   return s
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .trim()
+}
+
+/** El número que la inmobiliaria conoce (el Nui) y el nuestro rotulado. */
+function NumeroDelContrato({ factura }: { factura: FacturaDelMes }) {
+  return (
+    <span className="font-mono tabular-nums">
+      <span className="text-fg">{factura.numeroExterno ?? `#${factura.codigo ?? '—'}`}</span>
+      {factura.numeroExterno && factura.codigo !== null && (
+        <span className="text-fg-muted"> · Leasefy #{factura.codigo}</span>
+      )}
+    </span>
+  )
+}
+
+/**
+ * La plata de la fila en UNA columna (FA-04, QA-FACT 03-10): el total grande y,
+ * debajo, base e IVA y lo que el cliente retiene con su neto. En once columnas
+ * la tabla no cabía a 1.440 px y Retenciones y Total quedaban fuera de vista.
+ * 🔴 La retención no baja el total: baja el NETO, que es lo que se paga.
+ */
+function PlataDeLaFila({ factura }: { factura: FacturaDelMes }) {
+  return (
+    <div className="space-y-0.5 text-right">
+      <p className="whitespace-nowrap font-mono font-medium tabular-nums text-fg">
+        {formatCurrency(factura.totalCop)}
+      </p>
+      {/* 🔴 FA-04 (QA-FACT-CONTA-95, 05-10): un renglón corto por cifra. En dos
+          renglones largos («Base … · IVA …», «Retiene … · Neto …») la columna
+          medía 329 px y la tabla no cabía a 1.440: el valor quedaba debajo de
+          la columna del estado. */}
+      {(factura.ivaCop > 0 || factura.retencionesCop > 0) && (
+        <p className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted" data-testid={`base-${factura.clave}`}>
+          Base {formatCurrency(factura.baseCop)}
+        </p>
+      )}
+      {factura.ivaCop > 0 && (
+        <p className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted" data-testid={`iva-${factura.clave}`}>
+          IVA {formatCurrency(factura.ivaCop)}
+        </p>
+      )}
+      {factura.retencionesCop > 0 && (
+        <>
+          <p className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted" data-testid={`retiene-${factura.clave}`}>
+            Retiene −{formatCurrency(factura.retencionesCop)}
+          </p>
+          <p className="whitespace-nowrap font-mono text-caption tabular-nums text-fg-muted" data-testid={`neto-${factura.clave}`}>
+            Neto {formatCurrency(factura.netoCop)}
+          </p>
+        </>
+      )}
+      {factura.ivaCop > 0 &&
+        factura.impuestosSinConfirmar === false &&
+        factura.escenario && (
+          // FA-R27: «Escenario 3», no el código «E3».
+          <p className="text-caption text-fg-muted">
+            {/^E\d+$/.test(factura.escenario.codigo)
+              ? `Escenario ${factura.escenario.codigo.slice(1)}`
+              : factura.escenario.nombre}
+          </p>
+        )}
+      {factura.impuestosSinConfirmar && (
+        <p>
+          <ImpuestosSinConfirmar factura={factura} />
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** Lo que se factura, el inmueble, el período y lo que la fila tiene que decir. */
+function ConceptoDeLaFila({ factura }: { factura: FacturaDelMes }) {
+  const avisos = avisosDeLaFila(factura)
+  return (
+    <div className="min-w-0 space-y-0.5">
+      <p className="truncate text-fg" title={conceptosLegibles(factura)}>
+        {conceptosLegibles(factura)}
+      </p>
+      <p className="truncate text-caption text-fg-muted" title={factura.inmueble}>
+        {factura.inmueble}
+      </p>
+      <p className="truncate text-caption text-fg-muted">
+        {factura.diasFacturados === factura.diasDelMes
+          ? 'Mes completo'
+          : `${factura.diasFacturados} de ${factura.diasDelMes} días`}
+      </p>
+      {factura.deduccionAlEgresoCop > 0 && (
+        <p className="truncate text-caption text-fg-muted">
+          <span className="font-mono tabular-nums">{formatCurrency(factura.deduccionAlEgresoCop)}</span> van a
+          deducción del egreso, no a la factura
+        </p>
+      )}
+      <InteresDeMora factura={factura} />
+      <EnMora factura={factura} />
+      {/* 🔴 Lo que esta factura tiene que decir y no cabe en un número. El
+          aviso de «mora sin intereses» ya no va acá: es el mismo en todas las
+          filas y se dice UNA vez arriba (FA-03). */}
+      {avisos.length > 0 && (
+        <p
+          className="flex items-start gap-1 text-caption text-warning"
+          title={avisos.join(' ')}
+          data-testid={`aviso-${factura.clave}`}
+        >
+          <Warning className="mt-0.5 h-3 w-3 flex-shrink-0" weight="fill" />
+          <span className="line-clamp-2">{avisos.join(' ')}</span>
+        </p>
+      )}
+    </div>
+  )
+}
+
+interface EstadoProps {
+  factura: FacturaDelMes
+  ocupado: boolean
+  motivoParaNoEmitir: string | null
+  onGenerarUna: (clave: string) => void
+  onDescargarPdf?: (factura: FacturaDelMes) => void
+  descargando: string | null
+}
+
+/**
+ * La celda de estado: emitida (con su PDF), anulada, lo que la bloquea con su
+ * salida, o «Generar esta».
+ */
+function EstadoDeLaFactura({
+  factura,
+  ocupado,
+  motivoParaNoEmitir,
+  onGenerarUna,
+  onDescargarPdf,
+  descargando,
+}: EstadoProps) {
+  const estado = estadoDeLaFila(factura)
+  if (estado === 'emitida') {
+    /* 🔴 El estado dice que se EMITIÓ y con qué número, y al lado baja su PDF
+       (Nico, 22-09). La celda frena la propagación: el botón baja y no abre. */
+    return (
+      <div className="flex flex-col items-start gap-1.5">
+        <div className="flex items-center gap-1.5">
+          <Badge variant="success" data-testid={`emitida-${factura.clave}`}>
+            Emitida · {factura.numeroDian ?? `N° ${factura.numero}`}
+          </Badge>
+          {factura.facturaId && onDescargarPdf && (
+            <Button
+              size="icon"
+              variant="ghost"
+              hideArrow
+              className="h-8 w-8"
+              disabled={descargando !== null}
+              isLoading={descargando === factura.facturaId}
+              aria-label={`Descargar el PDF de la factura ${factura.numeroDian ?? factura.numero ?? ''}`.trim()}
+              title="Descargar el PDF"
+              onClick={() => onDescargarPdf(factura)}
+              data-testid={`descargar-pdf-${factura.clave}`}
+            >
+              <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          )}
+        </div>
+        {/* El número que vale ante la DIAN es el autorizado por la resolución;
+            el consecutivo interno queda debajo, para poder cruzarlo. */}
+        {factura.numeroDian && (
+          <span className="font-mono text-caption tabular-nums text-fg-muted">
+            interna N° {factura.numero}
+          </span>
+        )}
+      </div>
+    )
+  }
+  if (estado === 'anulada') {
+    /* 🔴 Una factura anulada con su nota crédito NO se ve como «Emitida»
+       (FA-11, Nico 03-10). */
+    return (
+      <Badge variant="secondary" data-testid={`anulada-${factura.clave}`} title={porQueNoSeEmite(factura) ?? undefined}>
+        {factura.saldadaPorNota
+          ? `Anulada con la nota crédito ${factura.saldadaPorNota.numero}`
+          : 'Anulada con nota crédito'}
+      </Badge>
+    )
+  }
+  if (estado === 'sin-escenario') {
+    /* 🔴 Nico (03-10): sin escenario confirmado no se emite. La fila lo dice y
+       lleva al contrato. */
+    return (
+      <div className="flex flex-col items-start gap-1">
+        <ImpuestosSinConfirmar factura={factura} />
+        <Link
+          href={rutaDelEscenario(factura)}
+          className="text-caption font-medium text-primary underline-offset-4 hover:underline"
+          data-testid={`confirmar-escenario-${factura.clave}`}
+        >
+          Confirmar en el contrato
+        </Link>
+      </div>
+    )
+  }
+  if (estado === 'espera-el-giro') {
+    return (
+      <span
+        className="text-caption text-fg-muted"
+        title={porQueNoSeEmite(factura) ?? undefined}
+        data-testid={`espera-el-giro-${factura.clave}`}
+      >
+        Se factura cuando se le gire
+      </span>
+    )
+  }
+  if (estado === 'todavia-no' && factura.codigoNoEmitible === 'INQUILINO_SIN_TIPO_DE_DOCUMENTO') {
+    /* 🔴 QA-FACT-CONTA-95 r2 (decisión de Nico 05-10, «la a»): sin el tipo de
+       documento GUARDADO del inquilino no se numera (nunca se adivina por el
+       largo). La fila lleva a la persona en Inquilinos, donde se completa. */
+    const ruta = rutaDelInquilino(factura)
+    return (
+      <div className="flex flex-col items-start gap-1" data-testid={`inquilino-sin-tipo-${factura.clave}`}>
+        <span className="text-caption text-fg-subtle" title={factura.motivoNoEmitible ?? undefined}>
+          {motivoCorto(factura)}
+        </span>
+        {ruta && (
+          <Link
+            href={ruta}
+            className="text-caption font-medium text-primary underline-offset-4 hover:underline"
+            data-testid={`completar-inquilino-${factura.clave}`}
+          >
+            Completar en el inquilino
+          </Link>
+        )}
+      </div>
+    )
+  }
+  if (estado === 'todavia-no' && frenaPorElDocumentoDelMandante(factura.codigoNoEmitible)) {
+    /* QA-FACT-PROF (04-10): la factura sale a nombre del propietario (mandato)
+       y la DIAN exige su tipo de documento. La fila lleva a su ficha.
+       QA-FACT-CONTA-95 · B-08 (05-10): el mismo aviso cuando la ficha dice
+       «CC» con un número que parece un NIT. */
+    const ruta = rutaDelMandante(factura)
+    return (
+      <div className="flex flex-col items-start gap-1" data-testid={`mandante-sin-tipo-${factura.clave}`}>
+        <span className="text-caption text-fg-subtle" title={factura.motivoNoEmitible ?? undefined}>
+          {motivoCorto(factura)}
+        </span>
+        {ruta && (
+          <Link
+            href={ruta}
+            className="text-caption font-medium text-primary underline-offset-4 hover:underline"
+            data-testid={`completar-mandante-${factura.clave}`}
+          >
+            Completar en el propietario
+          </Link>
+        )}
+      </div>
+    )
+  }
+  if (estado === 'todavia-no') {
+    /* 🔴 MOSTRAR NO ES EMITIR. El motivo va en el `title` con las palabras del
+       back: «Diciembre de 2026 todavía no empieza…». */
+    return (
+      <span
+        className="text-caption text-fg-subtle"
+        title={factura.motivoNoEmitible ?? undefined}
+        data-testid={`todavia-no-${factura.clave}`}
+      >
+        {motivoCorto(factura)}
+      </span>
+    )
+  }
+  const generada = factura.estado === 'GENERADA'
+  return (
+    <div className="flex flex-col items-start gap-1.5">
+      {/* CONSISTENCIA (04-10-2026): el botón decía «Generar esta» y abría
+          «¿Emitir la factura…?»; la fila GENERADA decía «Generada · sin
+          número». Las dos cosas son lo mismo: falta EMITIRLA (ahí toma su
+          número), y así se dice. */}
+      <span className="text-caption text-primary">
+        {generada ? 'Sin número todavía: falta emitirla' : 'Por emitir'}
+      </span>
+      {/* 🔴 «Selecciono sólo una y no da el poder generar factura de sólo esa»
+          (Nico, 18-09). Una factura, un clic —y su confirmación con el número
+          que va a llevar (FA-09)—, sin tocar la selección de las otras. Apagado
+          dice por qué: el mismo motivo del botón grande. */}
+      <Button
+        size="sm"
+        variant="outline"
+        hideArrow
+        disabled={ocupado || motivoParaNoEmitir !== null}
+        title={motivoParaNoEmitir ?? undefined}
+        onClick={() => onGenerarUna(factura.clave)}
+        data-testid={`generar-una-${factura.clave}`}
+      >
+        Emitir esta
+      </Button>
+    </div>
+  )
 }
 
 function TablaDeFacturas({
@@ -310,23 +653,27 @@ function TablaDeFacturas({
   descargando = null,
 }: TablaProps) {
   /*
+   * 🔴 FA-15 (QA-FACT, 03-10): a 390 px la tabla medía 1.416 px y se corría de
+   * lado: sólo se veían la casilla, el contrato y el estado. En el celular cada
+   * factura es una TARJETA con el cliente, el concepto, el total y su acción.
+   */
+  const esCelular = useIsMobile()
+  /*
    * 🔴 El buscador va DENTRO de la tabla (Nico, 18-09). Con 730 filas, querer
    * una factura y no poder llegar a su fila es lo mismo que no poder hacerla.
-   * Es local y no toca la selección: buscar ESCONDE filas, nunca desmarca —
-   * desmarcar 700 facturas sin querer, escribiendo en un campo, sería mucho
-   * peor que no tener buscador.
+   * Es local y no toca la selección: buscar ESCONDE filas, nunca desmarca.
    */
   const [busqueda, setBusqueda] = useState('')
   /*
-   * 🔴 QA de Nico, 22-09 («acá tampoco están teniendo en cuenta el IVA, ¡ojo
-   * con eso!»): las facturas cuyo contrato NO tiene el escenario tributario
-   * confirmado salen sin impuestos. La marca por fila existía, pero en 730
-   * filas nadie la ve antes de emitir. Se cuentan ARRIBA de la tabla, con la
-   * frase entera, y se pueden aislar para revisarlas una por una. Las ya
-   * emitidas no cuentan: ésas ya salieron.
+   * 🔴 Las facturas cuyo contrato NO tiene el escenario tributario confirmado.
+   * Nico (03-10-2026): no se emiten hasta confirmarlo. Se cuentan ARRIBA con la
+   * frase entera y se pueden aislar para revisarlas una por una.
    */
   const sinEscenario = useMemo(
-    () => filas.filter((f) => f.impuestosSinConfirmar && f.estado !== 'EMITIDA'),
+    () =>
+      filas.filter(
+        (f) => escenarioSinConfirmar(f) && f.estado !== 'EMITIDA' && !estaAnulada(f),
+      ),
     [filas],
   )
   const [soloSinEscenario, setSoloSinEscenario] = useState(false)
@@ -344,40 +691,69 @@ function TablaDeFacturas({
     })
 
   /*
-   * 🔴 Sólo lo que HOY se puede emitir entra a la selección. Una fila de un mes
-   * que todavía no empieza se ve y no se marca: el back la rechazaría con un
-   * 400, y una casilla que produce un error no es una opción, es una trampa.
+   * 🔴 Sólo lo que HOY se puede emitir entra a la selección: ni el mes que no
+   * empezó, ni la comisión que espera su giro, ni la factura sin escenario
+   * confirmado. Una casilla que produce un error no es una opción, es una trampa.
    */
   const porEmitir = useMemo(
-    () =>
-      visibles
-        .filter((f) => (f.estado === 'POR_EMITIR' || f.estado === 'GENERADA') && f.emitible)
-        .map((f) => f.clave),
+    () => visibles.filter(sePuedeEmitirHoy).map((f) => f.clave),
     [visibles],
   )
   const sinConfirmar = filas.filter((f) => f.impuestosSinConfirmar).length
-  // 🔴 La mora se totaliza aparte: es plata que la factura suma por encima de la
-  // cuota, y hasta la segunda vuelta de facturación NO se estaba cobrando.
-  const conMora = filas.filter((f) => moraDe(f) > 0)
+  // Un back anterior a la decisión del 03-10 todavía mete los recargos en la
+  // factura del mes: si van en el total, se totalizan aparte.
+  const conMora = filas.filter((f) => moraDe(f) > 0 && llevaIntereses(f))
   const moraCop = conMora.reduce((s, f) => s + moraDe(f), 0)
   /*
-   * 🔴 19-09-2026 (Nico) · Una columna que dice «—» en TODAS sus filas es
-   * ancho gastado en nada — y acá costaba caro: con IVA y Retenciones vacías
-   * la tabla no cabía, «Total» quedaba tapado por la columna anclada y Nico
-   * vio «TOT | ESTADO» partido al medio. Su palabra fue: «veo separadas cosas
-   * que no deberían estar separadas».
-   *
-   * Las dos columnas aparecen sólo si ALGUNA fila tiene algo que poner. Lo que
-   * no se pierde: los totales de IVA y retenciones siguen en el encabezado de
-   * la sección, y la marca «sin confirmar» —que es por fila y sí importa— se
-   * muda al lado de la base cuando la columna del IVA no está.
+   * 🔴 FA-03: «Esta cuota está en mora hace 3 días y la factura NO lleva
+   * intereses. La inmobiliaria no tiene reglas de mora activas…» salía en CADA
+   * fila (30 veces). Es lo mismo para todas: va UNA vez arriba.
    */
-  const hayIva = filas.some((f) => f.ivaCop > 0 || f.impuestosSinConfirmar)
-  const hayRetenciones = filas.some((f) => f.retencionesCop > 0)
+  const mora = useMemo(() => moraDelMes(filas), [filas])
+  const hayMoraSinIntereses = mora.enMora > 0 && conMora.length === 0
 
   const elegidas = porEmitir.filter((c) => seleccion.has(c))
   const todas = porEmitir.length > 0 && elegidas.length === porEmitir.length
   const algunas = elegidas.length > 0 && !todas
+
+  const casilla = (factura: FacturaDelMes) => {
+    const puede = sePuedeEmitirHoy(factura)
+    return (
+      <Checkbox
+        checked={puede && seleccion.has(factura.clave)}
+        disabled={!puede || ocupado}
+        onCheckedChange={() => onAlternarUna(factura.clave)}
+        aria-label={
+          factura.estado === 'EMITIDA'
+            ? 'Ya emitida'
+            : !puede
+              ? (porQueNoSeEmite(factura) ?? 'Todavía no se puede emitir')
+              : `Seleccionar la factura de ${aQuienSeFactura(factura)}`
+        }
+      />
+    )
+  }
+
+  const estado = (factura: FacturaDelMes) => (
+    <EstadoDeLaFactura
+      factura={factura}
+      ocupado={ocupado}
+      motivoParaNoEmitir={motivoParaNoEmitir}
+      onGenerarUna={onGenerarUna}
+      onDescargarPdf={onDescargarPdf}
+      descargando={descargando}
+    />
+  )
+
+  const vacioDeLaTabla = (
+    <SinDatos
+      hayFiltros={busqueda.trim() !== ''}
+      queSon={`facturas de ${titulo.toLowerCase()} este mes`}
+      icono={Receipt}
+      descripcion={descripcion}
+      onLimpiarFiltros={busqueda.trim() !== '' ? () => setBusqueda('') : undefined}
+    />
+  )
 
   return (
     <section
@@ -395,33 +771,37 @@ function TablaDeFacturas({
           <h3 className="text-body font-semibold text-fg">{titulo}</h3>
           <p className="text-caption text-fg-muted">{descripcion}</p>
         </div>
-        <div className="text-caption text-fg-muted tabular-nums sm:text-right">
-          {/* 🔴 Del MES entero, no de lo que el buscador dejó a la vista: el
-              alcance de la búsqueda se dice al lado del buscador. Si estas
-              cifras se movieran al escribir, nadie sabría cuál es el mes. */}
+        <div className="text-caption text-fg-muted sm:text-right">
+          {/* 🔴 Del MES entero, no de lo que el buscador dejó a la vista. */}
           <p className="whitespace-nowrap">
-            {filas.length} {filas.length === 1 ? 'factura' : 'facturas'} ·{' '}
-            {formatCurrency(filas.reduce((s, f) => s + f.totalCop, 0))}
+            <span className="font-mono tabular-nums">{filas.length}</span>{' '}
+            {filas.length === 1 ? 'factura' : 'facturas'} ·{' '}
+            <span className="font-mono tabular-nums">
+              {formatCurrency(filas.reduce((s, f) => s + f.totalCop, 0))}
+            </span>
           </p>
           <p className="whitespace-nowrap">
-            IVA {formatCurrency(filas.reduce((s, f) => s + f.ivaCop, 0))} ·
-            retenciones{' '}
-            {formatCurrency(filas.reduce((s, f) => s + f.retencionesCop, 0))}
+            IVA{' '}
+            <span className="font-mono tabular-nums">
+              {formatCurrency(filas.reduce((s, f) => s + f.ivaCop, 0))}
+            </span>{' '}
+            · retenciones{' '}
+            <span className="font-mono tabular-nums">
+              {formatCurrency(filas.reduce((s, f) => s + f.retencionesCop, 0))}
+            </span>
             {sinConfirmar > 0 && ` · ${sinConfirmar} sin confirmar`}
           </p>
           {conMora.length > 0 && (
             /* «Recargos», no «interés»: `recargosCop` suma el interés de mora
-               Y el gasto administrativo. En la agencia de QA (16-09) eran
-               $34.150.917: $1.360.917 de interés y $32.790.000 del gasto del
-               10 % sobre el canon. Rotulado «Interés de mora», el número era
-               25 veces el interés de verdad. */
+               Y el gasto administrativo. */
             <p
               className="whitespace-nowrap"
               data-testid={`facturacion-${testid}-mora`}
               title="Interés de mora y gasto administrativo, según las reglas de mora de la inmobiliaria."
             >
-              Recargos de mora {formatCurrency(moraCop)} en {conMora.length}{' '}
-              {conMora.length === 1 ? 'factura' : 'facturas'}
+              Recargos de mora{' '}
+              <span className="font-mono tabular-nums">{formatCurrency(moraCop)}</span> en{' '}
+              {conMora.length} {conMora.length === 1 ? 'factura' : 'facturas'}
             </p>
           )}
         </div>
@@ -443,9 +823,9 @@ function TablaDeFacturas({
                 {sinEscenario.length.toLocaleString('es-CO')}
               </span>{' '}
               {sinEscenario.length === 1
-                ? 'factura del mes saldría sin impuestos porque su contrato no tiene el escenario tributario confirmado.'
-                : 'facturas del mes saldrían sin impuestos porque su contrato no tiene el escenario tributario confirmado.'}{' '}
-              Ábrela para ir al contrato y confirmarlo antes de emitir.
+                ? 'factura del mes no se puede emitir: su contrato no tiene el escenario tributario confirmado y saldría sin los impuestos que lleva.'
+                : 'facturas del mes no se pueden emitir: su contrato no tiene el escenario tributario confirmado y saldrían sin los impuestos que llevan.'}{' '}
+              Confírmalo en el contrato con «Confirmar en el contrato».
             </span>
           </p>
           <Button
@@ -461,9 +841,25 @@ function TablaDeFacturas({
         </div>
       )}
 
+      {hayMoraSinIntereses && (
+        <div
+          className="flex items-start gap-2 border-b border-border bg-surface-muted px-4 py-3 text-sm text-fg"
+          data-testid={`facturacion-${testid}-mora-del-mes`}
+        >
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" weight="fill" aria-hidden="true" />
+          <p>
+            <span className="font-mono tabular-nums">{mora.enMora.toLocaleString('es-CO')}</span>{' '}
+            {mora.enMora === 1
+              ? 'cuota de este mes está en mora.'
+              : 'cuotas de este mes están en mora.'}{' '}
+            La factura del mes no lleva intereses: se facturan aparte, cuando se pagan.
+            {mora.motivos.map((m) => ` ${m}`).join('')}
+          </p>
+        </div>
+      )}
+
       {/* 🔴 El buscador, DENTRO de la tabla (Nico, 18-09). A su lado, cuántas
-          filas quedaron a la vista: las cifras de arriba siguen siendo las del
-          mes completo y los dos números tienen que poder conciliarse. */}
+          filas quedaron a la vista. */}
       <div className="flex flex-col gap-2 border-b border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-sm">
           <MagnifyingGlass
@@ -503,315 +899,182 @@ function TablaDeFacturas({
         </p>
       </div>
 
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10">
-                {/* 🔴 Con algo marcado, esta casilla LIMPIA (Nico, 18-09).
-                    Antes, estando en 726 de 730, apretarla subía a 730: para
-                    dejar una sola había que apretarla dos veces y adivinar el
-                    orden. Con búsqueda puesta sólo toca lo que se ve, que es
-                    lo que hace posible «marcar sólo estas». */}
-                <Checkbox
-                  checked={todas}
-                  indeterminate={algunas}
-                  disabled={ocupado || porEmitir.length === 0}
-                  onCheckedChange={() => onAlternarTodas(porEmitir)}
-                  aria-label={
-                    elegidas.length > 0
-                      ? `Quitar la selección de ${titulo.toLowerCase()}`
-                      : `Seleccionar todas las facturas de ${titulo.toLowerCase()}`
-                  }
-                  data-testid={`facturacion-${testid}-todas`}
-                />
-              </TableHead>
-              <TableHead className="whitespace-nowrap">Contrato</TableHead>
-              <TableHead className="whitespace-nowrap">Tercero</TableHead>
-              <TableHead className="whitespace-nowrap">Inmueble</TableHead>
-              <TableHead className="whitespace-nowrap">Concepto</TableHead>
-              <TableHead className="whitespace-nowrap text-right">Base</TableHead>
-              {hayIva && <TableHead className="whitespace-nowrap text-right">IVA</TableHead>}
-              {/* La retención NO se resta del total: la practica quien recibe
-                  la factura al pagar. Por eso está en su propia columna y no
-                  metida en el total. */}
-              {hayRetenciones && (
-                <TableHead className="whitespace-nowrap text-right">Retenciones</TableHead>
-              )}
-              <TableHead className="whitespace-nowrap text-right">Total</TableHead>
-              {/*
-                🔴 19-09 (medido en el navegador, no deducido): esta tabla mide
-                1.427 px dentro de un contenedor de 1.172, y «Estado» —donde
-                vive el botón «Generar esta»— caía en left:1584 con una pantalla
-                de 1512. O sea: **el botón de generar UNA factura, que es
-                exactamente lo que pidió Nico, estaba fuera de la pantalla** y
-                sólo aparecía si alguien adivinaba que la tabla se arrastra de
-                lado. Se ancla a la derecha para que la acción de la fila esté
-                siempre donde se la busca, se haya arrastrado o no.
-              */}
-              <TableHead className="sticky right-0 z-20 whitespace-nowrap border-l border-border bg-bg dark:bg-surface-muted">
-                Estado
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {pageItems.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8 + (hayIva ? 1 : 0) + (hayRetenciones ? 1 : 0)} className="p-0">
-                  <SinDatos
-                    hayFiltros={busqueda.trim() !== ''}
-                    queSon={`facturas de ${titulo.toLowerCase()} este mes`}
-                    icono={Receipt}
-                    descripcion={descripcion}
-                    onLimpiarFiltros={
-                      busqueda.trim() !== '' ? () => setBusqueda('') : undefined
-                    }
-                  />
-                </TableCell>
-              </TableRow>
-            ) : (
-              pageItems.map((factura) => {
-                const emitida = factura.estado === 'EMITIDA'
-                const bloqueada = !emitida && !factura.emitible
+      {esCelular ? (
+        /* 🔴 FA-15: una tarjeta por factura. La tarjeta abre el cajón; la
+           casilla marca y el botón emite (cada uno frena el clic). */
+        pageItems.length === 0 ? (
+          vacioDeLaTabla
+        ) : (
+          <>
+            <div className="flex items-center gap-3 border-b border-border px-4 py-2.5">
+              <Checkbox
+                checked={todas}
+                indeterminate={algunas}
+                disabled={ocupado || porEmitir.length === 0}
+                onCheckedChange={() => onAlternarTodas(porEmitir)}
+                aria-label={
+                  elegidas.length > 0
+                    ? `Quitar la selección de ${titulo.toLowerCase()}`
+                    : `Seleccionar todas las facturas de ${titulo.toLowerCase()}`
+                }
+                data-testid={`facturacion-${testid}-todas`}
+              />
+              <span className="text-caption text-fg-muted">
+                {elegidas.length > 0 ? 'Quitar la selección' : 'Marcar todas las que se pueden emitir'}
+              </span>
+            </div>
+            <ul className="divide-y divide-border" data-testid={`facturacion-${testid}-tarjetas`}>
+              {pageItems.map((factura) => {
+                const apagada = estadoDeLaFila(factura) !== 'por-emitir'
                 return (
-                  /* 🔴 La fila tiene DOS blancos: la casilla marca (y el botón
-                     del final emite), y todo el resto abre el cajón. Los dos
-                     controles frenan la propagación, o marcar una casilla
-                     abriría el cajón encima. */
-                  <TableRow
+                  <li
                     key={factura.clave}
                     data-testid={`factura-${factura.clave}`}
                     role="button"
                     tabIndex={0}
-                    aria-label={`Ver el detalle de la factura de ${factura.terceroNombre}`}
+                    aria-label={`Ver el detalle de la factura de ${aQuienSeFactura(factura)}`}
                     onClick={() => onAbrirDetalle(factura)}
                     onKeyDown={(e) => {
+                      if (e.target !== e.currentTarget) return
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault()
                         onAbrirDetalle(factura)
                       }
                     }}
                     className={cn(
-                      'cursor-pointer transition hover:bg-surface-muted/60',
-                      (emitida || bloqueada) && 'opacity-70',
+                      'flex cursor-pointer gap-3 px-4 py-3.5 transition hover:bg-surface-muted/60',
+                      apagada && 'opacity-70',
                     )}
                   >
-                    <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
-                      <Checkbox
-                        checked={
-                          !emitida && factura.emitible && seleccion.has(factura.clave)
+                    <span className="pt-0.5" onClick={(e) => e.stopPropagation()}>
+                      {casilla(factura)}
+                    </span>
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="min-w-0 break-words font-medium text-fg">
+                          {aQuienSeFactura(factura)}
+                        </p>
+                        <p className="shrink-0 font-mono font-medium tabular-nums text-fg">
+                          {formatCurrency(factura.totalCop)}
+                        </p>
+                      </div>
+                      <ConceptoDeLaFila factura={factura} />
+                      <div className="text-caption">
+                        <NumeroDelContrato factura={factura} />
+                      </div>
+                      <div onClick={(e) => e.stopPropagation()}>{estado(factura)}</div>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
+        )
+      ) : (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10">
+                  {/* 🔴 Con algo marcado, esta casilla LIMPIA (Nico, 18-09). Con
+                      búsqueda puesta sólo toca lo que se ve. */}
+                  <Checkbox
+                    checked={todas}
+                    indeterminate={algunas}
+                    disabled={ocupado || porEmitir.length === 0}
+                    onCheckedChange={() => onAlternarTodas(porEmitir)}
+                    aria-label={
+                      elegidas.length > 0
+                        ? `Quitar la selección de ${titulo.toLowerCase()}`
+                        : `Seleccionar todas las facturas de ${titulo.toLowerCase()}`
+                    }
+                    data-testid={`facturacion-${testid}-todas`}
+                  />
+                </TableHead>
+                {/* 🔴 FA-04 (QA-FACT, 03-10): cinco columnas, no once. El
+                    contrato va debajo del cliente; el inmueble y el período,
+                    debajo del concepto; base, IVA y retención, debajo del total.
+                    Así cabe entera a 1.440 px y nada queda fuera de vista. */}
+                <TableHead className="whitespace-nowrap">Cliente</TableHead>
+                <TableHead className="whitespace-nowrap">Concepto</TableHead>
+                <TableHead className="whitespace-nowrap text-right">Valor</TableHead>
+                {/* 🔴 19-09: la acción de la fila («Generar esta») tiene que estar
+                    siempre donde se la busca: la columna se ancla a la derecha. */}
+                <TableHead className="sticky right-0 z-20 whitespace-nowrap border-l border-border bg-bg dark:bg-surface-muted">
+                  Estado
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pageItems.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={5} className="p-0">
+                    {vacioDeLaTabla}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                pageItems.map((factura) => {
+                  const apagada =
+                    factura.estado === 'EMITIDA' || estadoDeLaFila(factura) !== 'por-emitir'
+                  return (
+                    /* 🔴 La fila tiene DOS blancos: la casilla marca (y el botón
+                       del final emite), y todo el resto abre el cajón. */
+                    <TableRow
+                      key={factura.clave}
+                      data-testid={`factura-${factura.clave}`}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Ver el detalle de la factura de ${aQuienSeFactura(factura)}`}
+                      onClick={() => onAbrirDetalle(factura)}
+                      onKeyDown={(e) => {
+                        if (e.target !== e.currentTarget) return
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          onAbrirDetalle(factura)
                         }
-                        disabled={emitida || bloqueada || ocupado}
-                        onCheckedChange={() => onAlternarUna(factura.clave)}
-                        aria-label={
-                          emitida
-                            ? 'Ya emitida'
-                            : bloqueada
-                              ? (factura.motivoNoEmitible ??
-                                'Todavía no se puede emitir')
-                              : `Seleccionar la factura de ${factura.terceroNombre}`
-                        }
-                      />
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap tabular-nums">
-                      {/* El número que la inmobiliaria conoce es el suyo (el
-                          Nui), no nuestro consecutivo. Se muestran los dos
-                          diciendo cuál es cuál. */}
-                      <span className="font-medium text-fg">
-                        {factura.numeroExterno ?? `#${factura.codigo ?? '—'}`}
-                      </span>
-                      {factura.numeroExterno && factura.codigo !== null && (
-                        <span className="text-fg-muted"> · Leasefy #{factura.codigo}</span>
+                      }}
+                      className={cn(
+                        'cursor-pointer transition hover:bg-surface-muted/60',
+                        apagada && 'opacity-70',
                       )}
-                    </TableCell>
-                    {/* 🔴 19-09: los anchos se midieron en el navegador. La
-                        tabla daba 1.428 px en un contenedor de 1.172 y
-                        sobraban 256, así que Retenciones y Total quedaban
-                        fuera de vista. Tercero, Inmueble y Concepto son las
-                        tres que crecen con el dato; se recortan, y el texto
-                        entero queda en el `title` —truncar algo que después no
-                        se puede leer es esconderlo. */}
-                    <TableCell className="max-w-[160px]">
-                      <p className="truncate text-fg" title={factura.terceroNombre}>
-                        {factura.terceroNombre}
-                      </p>
-                      {factura.terceroDocumento && (
-                        <p className="truncate text-caption text-fg-muted tabular-nums">
-                          {factura.terceroDocumento}
-                        </p>
-                      )}
-                    </TableCell>
-                    <TableCell className="max-w-[160px]">
-                      <p className="truncate text-fg-muted" title={factura.inmueble}>
-                        {factura.inmueble}
-                      </p>
-                    </TableCell>
-                    <TableCell className="max-w-[190px]">
-                      <p className="truncate text-fg-muted">
-                        {conceptosLegibles(factura)}
-                      </p>
-                      <p className="truncate text-caption text-fg-muted">
-                        {factura.diasFacturados === factura.diasDelMes
-                          ? 'Mes completo'
-                          : `${factura.diasFacturados} de ${factura.diasDelMes} días`}
-                      </p>
-                      {factura.deduccionAlEgresoCop > 0 && (
-                        <p className="truncate text-caption text-fg-muted">
-                          {formatCurrency(factura.deduccionAlEgresoCop)} van a
-                          deducción del egreso, no a la factura
-                        </p>
-                      )}
-                      <InteresDeMora factura={factura} />
-                      {/* 🔴 Lo que esta factura NO lleva y alguien tiene que
-                          saber: el interés de una cuota en mora que ningún cobro
-                          liquidó, o un desglose que hubo que cuadrar contra el
-                          estado de cuenta. Se dice acá porque perder plata en
-                          silencio es peor que una línea de más. */}
-                      {factura.avisos.length > 0 && (
-                        <p
-                          className="flex items-start gap-1 text-caption text-warning"
-                          title={factura.avisos.join(' ')}
-                          data-testid={`aviso-${factura.clave}`}
-                        >
-                          <Warning
-                            className="mt-0.5 h-3 w-3 flex-shrink-0"
-                            weight="fill"
-                          />
-                          <span className="line-clamp-2">
-                            {factura.avisos.join(' ')}
-                          </span>
-                        </p>
-                      )}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
-                      {formatCurrency(factura.baseCop)}
-                      {/* Sin columna de IVA, la marca de «sin confirmar» vive
-                          acá: es por fila y decide si esa factura sale con o
-                          sin impuestos. No se puede perder. */}
-                      {!hayIva && factura.impuestosSinConfirmar && (
-                        <span className="mt-0.5 block font-sans">
-                          <ImpuestosSinConfirmar factura={factura} />
-                        </span>
-                      )}
-                    </TableCell>
-                    {hayIva && (
-                      <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
-                        {/* 🔴 Un cero y un «sin confirmar» no son lo mismo, y la
-                            columna tiene que distinguirlos: la factura sin IVA
-                            por escenario confirmado dice «—»; la que no lo pudo
-                            calcular lleva la marca. */}
-                        {factura.ivaCop > 0 ? (
-                          formatCurrency(factura.ivaCop)
-                        ) : factura.impuestosSinConfirmar ? (
-                          <ImpuestosSinConfirmar factura={factura} />
-                        ) : (
-                          '—'
-                        )}
+                    >
+                      <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                        {casilla(factura)}
                       </TableCell>
-                    )}
-                    {hayRetenciones && (
-                      <TableCell className="whitespace-nowrap text-right tabular-nums text-fg-muted">
-                        {factura.retencionesCop > 0
-                          ? `−${formatCurrency(factura.retencionesCop)}`
-                          : '—'}
-                      </TableCell>
-                    )}
-                    <TableCell className="whitespace-nowrap text-right tabular-nums font-medium text-fg">
-                      {formatCurrency(factura.totalCop)}
-                      {factura.retencionesCop > 0 && (
-                        <p className="text-caption font-normal text-fg-muted">
-                          Neto {formatCurrency(factura.netoCop)}
+                      <TableCell className="w-[30%] min-w-[180px] max-w-[260px] align-top">
+                        {/* El nombre en dos renglones si hace falta, nunca «Ana So…». */}
+                        <p className="line-clamp-2 break-words text-fg" title={aQuienSeFactura(factura)}>
+                          {aQuienSeFactura(factura)}
                         </p>
-                      )}
-                      {factura.ivaCop > 0 &&
-                        factura.impuestosSinConfirmar === false &&
-                        factura.escenario && (
-                          <p className="text-caption font-normal text-fg-muted">
-                            {factura.escenario.codigo}
+                        {factura.terceroDocumento && (
+                          <p className="truncate font-mono text-caption tabular-nums text-fg-muted">
+                            {factura.terceroDocumento}
                           </p>
                         )}
-                    </TableCell>
-                    <TableCell
-                      className="sticky right-0 z-10 whitespace-nowrap border-l border-border bg-surface"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      {emitida ? (
-                        /* 🔴 El estado dice que se EMITIÓ y con qué número, y al
-                           lado baja su PDF (Nico, 22-09). La fila sigue
-                           abriendo el cajón; esta celda frena la propagación,
-                           así que el botón baja y no abre. */
-                        <div className="flex flex-col items-start gap-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <Badge variant="success" data-testid={`emitida-${factura.clave}`}>
-                              Emitida · {factura.numeroDian ?? `N° ${factura.numero}`}
-                            </Badge>
-                            {factura.facturaId && onDescargarPdf && (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                hideArrow
-                                className="h-8 w-8"
-                                disabled={descargando !== null}
-                                isLoading={descargando === factura.facturaId}
-                                aria-label={`Descargar el PDF de la factura ${factura.numeroDian ?? factura.numero ?? ''}`.trim()}
-                                title="Descargar el PDF"
-                                onClick={() => onDescargarPdf(factura)}
-                                data-testid={`descargar-pdf-${factura.clave}`}
-                              >
-                                <DownloadSimple className="h-4 w-4" aria-hidden="true" />
-                              </Button>
-                            )}
-                          </div>
-                          {/* El número que vale ante la DIAN es el autorizado
-                              por la resolución; el consecutivo interno queda
-                              debajo, para poder cruzarlo. */}
-                          {factura.numeroDian && (
-                            <span className="font-mono text-caption tabular-nums text-fg-muted">
-                              interna N° {factura.numero}
-                            </span>
-                          )}
-                        </div>
-                      ) : bloqueada ? (
-                        /* 🔴 MOSTRAR NO ES EMITIR. El motivo va en el `title` con
-                           las palabras del back: «Diciembre de 2026 todavía no
-                           empieza…». Una casilla apagada sin explicación es cómo
-                           alguien concluye que el sistema está roto. */
-                        <span
-                          className="text-caption text-fg-subtle"
-                          title={factura.motivoNoEmitible ?? undefined}
-                          data-testid={`todavia-no-${factura.clave}`}
-                        >
-                          Todavía no
-                        </span>
-                      ) : (
-                        <div className="flex flex-col items-start gap-1.5">
-                          <span className="text-caption text-primary">Por emitir</span>
-                          {/* 🔴 «Selecciono sólo una y no da el poder generar
-                              factura de sólo esa» (Nico, 18-09). Una factura,
-                              un clic, sin tocar la selección de las otras 729
-                              ni obligar a limpiarla primero. Apagado dice por
-                              qué: el mismo motivo del botón grande. */}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            hideArrow
-                            disabled={ocupado || motivoParaNoEmitir !== null}
-                            title={motivoParaNoEmitir ?? undefined}
-                            onClick={() => onGenerarUna(factura.clave)}
-                            data-testid={`generar-una-${factura.clave}`}
-                          >
-                            Generar esta
-                          </Button>
-                        </div>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                        <p className="truncate text-caption text-fg-muted">
+                          Contrato <NumeroDelContrato factura={factura} />
+                        </p>
+                      </TableCell>
+                      <TableCell className="min-w-[200px] max-w-[320px] align-top">
+                        <ConceptoDeLaFila factura={factura} />
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap align-top">
+                        <PlataDeLaFila factura={factura} />
+                      </TableCell>
+                      <TableCell
+                        className="sticky right-0 z-10 whitespace-nowrap border-l border-border bg-surface align-top"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {estado(factura)}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       {shouldPaginate && (
         <div className="border-t border-border px-4 py-3">
@@ -830,6 +1093,14 @@ function TablaDeFacturas({
     </section>
   )
 }
+
+/**
+ * CU-F-02 (QA-FACT-CONTA-95 r2): arriba de la lista de propietarios se dice que
+ * la comisión SALE AL GIRAR (FA-R13, Nico 03-10: «se factura al marcar pagado su
+ * giro»). Antes sólo cada fila decía «Se factura cuando se le gire».
+ */
+export const DESCRIPCION_DE_LAS_COMISIONES =
+  'La comisión de administración del mes sale al girar: se factura cuando el giro al propietario queda pagado (o con «Facturar ahora» al marcar pagado el lote). Lo que el propietario paga y no se factura va a deducción del egreso.'
 
 export interface NuevaFacturaProps {
   /**
@@ -865,6 +1136,8 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
   /** Qué tabla se está mirando. Sólo una a la vez. */
   const [aQuien, setAQuien] = useState<DestinatarioDeFactura>('INQUILINO')
   const [generando, setGenerando] = useState(false)
+  /** El «Ver más» del pie (FA-04 / FA-15): lo que explica, plegado. */
+  const [verMasDelPie, setVerMasDelPie] = useState(false)
 
   const meses = useMemo(() => mesesParaElegir(), [])
   /* Los topes se recalculan con el mes elegido: un tope anterior al mes sería
@@ -887,18 +1160,19 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
       })
       setDatos(r)
       /*
-       * Arranca seleccionado todo lo que se puede emitir HOY y es DEL MES
-       * elegido: el pedido es facturar el mes, no ir marcando 800 casillas.
-       * Los meses de más adelante se miran, no se marcan.
+       * Arranca seleccionado lo de INQUILINOS que se puede emitir HOY y es DEL
+       * MES elegido: el pedido es facturar el mes, no ir marcando 800
+       * casillas. Los meses de más adelante se miran, no se marcan.
+       *
+       * 🔴 Las comisiones de propietarios NO vienen marcadas (FA-R13, Nico
+       * 03-10: «se factura al marcar pagado su giro»), ni lo que tiene el
+       * escenario sin confirmar.
        */
       setSeleccionSugerida(true)
       setSeleccion(
         new Set(
           [...r.inquilinos, ...r.propietarios]
-            .filter(
-              (f) =>
-                f.mes === elMes && (f.estado === 'POR_EMITIR' || f.estado === 'GENERADA') && f.emitible,
-            )
+            .filter((f) => seSugiere(f, elMes))
             .map((f) => f.clave),
         ),
       )
@@ -975,10 +1249,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
 
   /** Las de la vista que HOY se pueden emitir: son las que llevan casilla. */
   const emitiblesDeLaVista = useMemo(
-    () =>
-      filasDeLaVista.filter(
-        (f) => (f.estado === 'POR_EMITIR' || f.estado === 'GENERADA') && f.emitible,
-      ),
+    () => filasDeLaVista.filter(sePuedeEmitirHoy),
     [filasDeLaVista],
   )
 
@@ -1020,12 +1291,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
    */
   const marcadasEnLaOtra = useMemo(() => {
     const otras = aQuien === 'INQUILINO' ? delMes.propietarios : delMes.inquilinos
-    return otras.filter(
-      (f) =>
-        seleccion.has(f.clave) &&
-        (f.estado === 'POR_EMITIR' || f.estado === 'GENERADA') &&
-        f.emitible,
-    ).length
+    return otras.filter((f) => seleccion.has(f.clave) && sePuedeEmitirHoy(f)).length
   }, [aQuien, delMes, seleccion])
 
   /*
@@ -1075,11 +1341,15 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
     const prestado: { soltar: (() => void) | null } = { soltar: null }
     try {
       // 🔴 El centro de procesos se hace presente (Nico, 22-09: «mandé a
-      // emitir y el centro ni se abrió»): se abre solo con esta emisión.
-      anunciarProceso({
-        titulo: `Emitiendo ${claves.length} ${claves.length === 1 ? 'factura' : 'facturas'}`,
-        tipoDeProceso: 'EMISION_DE_FACTURAS',
-      })
+      // emitir y el centro ni se abrió»): se abre solo con una emisión de
+      // VARIAS. Con UNA no (FA-10, QA-FACT 03-10: se montaba encima de la
+      // pantalla por una sola factura): basta el aviso con «Ver en el centro».
+      if (claves.length > 1) {
+        anunciarProceso({
+          titulo: `Emitiendo ${claves.length} facturas`,
+          tipoDeProceso: 'EMISION_DE_FACTURAS',
+        })
+      }
       const resultado = await generarPorTandas(
         mes,
         claves,
@@ -1120,6 +1390,18 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
       // El rango de la resolución no alcanzó para todas: se emitió lo que cabía
       // y lo demás NO se numeró. Es un aviso aparte, no un renglón del éxito.
       if (informe.sinNumero > 0 && informe.motivos[0]) toast.error(informe.motivos[0])
+      // QA-FACT: las que hoy no se pueden emitir no salieron, y se dice por qué.
+      if ((informe.bloqueadas ?? 0) > 0) {
+        toast.error(
+          `${cuantos(informe.bloqueadas ?? 0, 'factura no se emitió', 'facturas no se emitieron')}. ${informe.motivosDeBloqueo?.[0] ?? ''}`.trim(),
+        )
+      }
+      // FA-R10: lo numerado con una resolución de PRUEBA no se le entrega a nadie.
+      if (informe.noEntregadasPorPrueba && informe.noEntregadasPorPrueba > 0) {
+        toast.info(
+          `${cuantos(informe.noEntregadasPorPrueba, 'factura salió', 'facturas salieron')} con una resolución de prueba: no se le entregan a ningún cliente.`,
+        )
+      }
       if (corte === 'fallo') toast.error(mensajeDelFalloDeEmision(resultado.error))
 
       // Lo que salió tiene que verse como emitido, también después de un
@@ -1140,6 +1422,125 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
   }
 
   /**
+   * 🔴 FA-09 (QA-FACT, 03-10; Nico, la recomendada): emitir pide confirmación
+   * con A QUIÉN, CUÁNTO y CON QUÉ NÚMERO va a salir. «Generar esta» emitía con
+   * un clic una factura numerada (LABQA-1, Juliana $ 4.100.000) que no se
+   * deshace: sólo se anula con una nota crédito. Lo mismo el botón del pie.
+   */
+  async function pedirYGenerar(claves: string[]) {
+    if (claves.length === 0 || generando || motivoParaNoEmitir !== null) return
+    const todasLasFilas = [...delMes.inquilinos, ...delMes.propietarios]
+    const filas = claves
+      .map((c) => todasLasFilas.find((f) => f.clave === c))
+      .filter((f): f is FacturaDelMes => Boolean(f))
+    const totalCop = filas.reduce((s, f) => s + f.totalCop, 0)
+    const numeros = numerosQueSalen(resolucionDeLaVista, claves.length)
+    const irreversible =
+      'Una factura emitida no se borra: si algo está mal, se anula con una nota crédito.'
+    const una = filas.length === 1 ? filas[0] : null
+    const ok = await confirmar(
+      una
+        ? {
+            titulo: numeros ? `¿Emitir la factura ${numeros}?` : '¿Emitir esta factura?',
+            descripcion: (
+              <>
+                A nombre de <strong>{aQuienSeFactura(una)}</strong>
+                {una.terceroDocumento ? ` (${una.terceroDocumento})` : ''}, por{' '}
+                <span className="whitespace-nowrap font-mono tabular-nums">
+                  {formatCurrency(una.totalCop)}
+                </span>
+                : {conceptosLegibles(una)} de {mesLegible(una.mes)}. {irreversible}
+              </>
+            ),
+            accion: numeros ? `Emitir la ${numeros}` : 'Emitir la factura',
+          }
+        : {
+            titulo: `¿Emitir ${claves.length.toLocaleString('es-CO')} facturas ${
+              aQuien === 'INQUILINO' ? 'de inquilinos' : 'de propietarios'
+            } de ${mesLegible(mes)}?`,
+            descripcion: (
+              <>
+                Por{' '}
+                <span className="whitespace-nowrap font-mono tabular-nums">
+                  {formatCurrency(totalCop)}
+                </span>
+                {numeros ? `, numeradas de la ${numeros.replace(' a ', ' a la ')}` : ''}.
+                {numerosQueFaltan !== null
+                  ? ` La resolución sólo alcanza para ${resolucionDeLaVista?.disponibles.toLocaleString('es-CO')}: las demás van a fallar por rango agotado.`
+                  : ''}{' '}
+                {irreversible}
+              </>
+            ),
+            accion: `Emitir ${claves.length.toLocaleString('es-CO')} facturas`,
+          },
+    )
+    if (ok) await generar(claves)
+  }
+
+  /*
+   * 🔴 FA-R24 (QA-FACT, 03-10): la pestaña de Propietarios miraba la resolución
+   * del CANON (`datos.resolucion`). Las comisiones se numeran con la suya: la
+   * que manda el back (`resolucionDeLaComision`) o, con un back anterior, la de
+   * `GET /resolucion` (`porTipo`). Sin numeración por tipo, la general numera
+   * todo y es la misma.
+   */
+  const [comisionPorTipo, setComisionPorTipo] = useState<EstadoDeLaResolucion | null>(null)
+  useEffect(() => {
+    if (!datos || datos.resolucionDeLaComision !== undefined) return
+    let vivo = true
+    void (async () => {
+      try {
+        const r = await facturacionPorMesService.resoluciones()
+        const t = r.porTipoDisponible
+          ? r.porTipo.find((x) => x.tipo === 'COMISION_PROPIETARIO')
+          : undefined
+        if (!vivo) return
+        setComisionPorTipo(
+          t
+            ? {
+                puedeNumerar: t.puedeNumerar,
+                motivo: null,
+                explicacion: t.explicacion,
+                numero: t.resolucionNumero,
+                prefijo: t.prefijo,
+                desde: null,
+                hasta: null,
+                vigenteHasta: null,
+                disponibles: t.disponibles,
+                siguiente: t.siguiente,
+              }
+            : null,
+        )
+      } catch {
+        // Sin esa lectura queda la general: es lo que hacía la pantalla antes.
+      }
+    })()
+    return () => {
+      vivo = false
+    }
+  }, [datos])
+
+  const resolucionDeComision: EstadoDeLaResolucion | null = datos
+    ? (datos.resolucionDeLaComision ?? comisionPorTipo ?? datos.resolucion)
+    : null
+  /** La resolución con la que se numera la pestaña que se está mirando. */
+  const resolucionDeLaVista: EstadoDeLaResolucion | null = datos
+    ? aQuien === 'PROPIETARIO'
+      ? resolucionDeComision
+      : datos.resolucion
+    : null
+  /**
+   * Los números son UNA bolsa para las dos pestañas sólo si las dos numeran con
+   * la misma resolución; con una propia para las comisiones, cada una cuenta lo
+   * suyo.
+   */
+  const mismaBolsa =
+    datos !== null &&
+    resolucionDeComision !== null &&
+    resolucionDeComision.numero === datos.resolucion.numero &&
+    resolucionDeComision.prefijo === datos.resolucion.prefijo
+
+  /**
    * 🔴 Por qué HOY no se puede emitir nada, en las palabras del back.
    *
    * Sin resolución vigente el back devuelve 400, así que el botón se apaga
@@ -1150,9 +1551,9 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
    * salida puesta.
    */
   const motivoParaNoEmitir: string | null =
-    datos !== null && !datos.resolucion.puedeNumerar
-      ? (datos.resolucion.explicacion ??
-        'No hay una resolución de facturación vigente con la cual numerar.')
+    datos !== null && resolucionDeLaVista !== null && !resolucionDeLaVista.puedeNumerar
+      ? sinLaRutaDeFacturacion(resolucionDeLaVista.explicacion) ||
+        'No hay una resolución de facturación vigente con la cual numerar.'
       : null
 
   /*
@@ -1173,12 +1574,13 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
    * fallar sin importar en qué orden se emitan. Por eso el aviso cuenta las
    * DOS pestañas, aunque el botón emita una.
    */
-  const marcadasEnTotal = elegidas.length + marcadasEnLaOtra
+  const marcadasEnTotal = elegidas.length + (mismaBolsa ? marcadasEnLaOtra : 0)
   const numerosQueFaltan: number | null =
     datos !== null &&
-    datos.resolucion.puedeNumerar &&
-    marcadasEnTotal > datos.resolucion.disponibles
-      ? marcadasEnTotal - datos.resolucion.disponibles
+    resolucionDeLaVista !== null &&
+    resolucionDeLaVista.puedeNumerar &&
+    marcadasEnTotal > resolucionDeLaVista.disponibles
+      ? marcadasEnTotal - resolucionDeLaVista.disponibles
       : null
 
   const vacio =
@@ -1198,22 +1600,46 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
    * el pie vuelve adentro y todo lo que cuenta —las marcadas, la plata, el
    * botón— es de ESA tabla.
    */
+  /*
+   * 🔴 FA-04 / FA-15 (QA-FACT, 03-10-2026): el pie medía ~170 px a 1.440 (cinco
+   * renglones) y tapaba ~40 % de la pantalla a 390. Queda UNA línea con lo
+   * marcado y la acción; lo que explica (que es una sugerencia, cuántas quedan
+   * fuera y por qué, lo marcado en la otra pestaña) va en «Ver más». Lo que
+   * frena o va a fallar (sin resolución, rango corto) sigue a la vista, al lado
+   * del botón.
+   */
+  const hayDetallesDelPie =
+    (elegidas.length > 0 && seleccionSugerida) ||
+    yaEmitidas > 0 ||
+    noEmitibles > 0 ||
+    marcadasEnLaOtra > 0
   const pieDeAccionesMasivas = (
   <BarraDeAccionesMasivas
     variant="pie"
+    compacta
+    // Bajo `lg` la barra de navegación del celular (56 px + la zona segura)
+    // está fija abajo: el pie se pega ENCIMA de ella, no detrás (FA-15).
+    className="bottom-[calc(env(safe-area-inset-bottom)+3.5625rem)] lg:bottom-0"
     testid="facturacion-acciones"
     marcadas={elegidas.length}
     queSon={['factura', 'facturas']}
     monto={elegidas.length > 0 ? formatCurrency(totalElegido) : null}
     sugerida={seleccionSugerida}
-    deDonde={`${aQuien === 'INQUILINO' ? 'de inquilinos' : 'de propietarios'} de ${mesLegible(mes)} que se pueden emitir hoy`}
+    deDonde={aQuien === 'INQUILINO' ? 'de inquilinos' : 'de propietarios'}
     onQuitar={quitarSeleccion}
     ocupado={generando}
     cuandoNoHayNada={`No hay ninguna factura marcada ${
       aQuien === 'INQUILINO' ? 'de inquilinos' : 'de propietarios'
-    }. Marca las que quieras, o usa «Generar esta» en una fila.`}
+    }. Marca las que quieras, o usa «Emitir esta» en una fila.`}
     nota={
       <>
+        <Collapse open={verMasDelPie && hayDetallesDelPie} id="facturacion-acciones-detalle" className="space-y-0.5 pb-0.5">
+        {/* La preselección dice que es nuestra (Nico, 19-09). */}
+        {elegidas.length > 0 && seleccionSugerida && (
+          <p className="text-caption text-fg-muted" data-testid="facturacion-acciones-es-sugerencia">
+            Es una sugerencia de {mesLegible(mes)}: desmarca lo que no va, o quita la selección.
+          </p>
+        )}
         {/* 🔴 Por qué la preselección es más chica que la tabla. Sin este
             renglón, «730 facturas en el mes» arriba y «Preseleccionamos 729»
             abajo se leen como un error de la pantalla. */}
@@ -1248,6 +1674,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
             , que se emiten aparte.
           </p>
         )}
+        </Collapse>
         {/* 🔴 Por qué está apagado, AL LADO del botón y con la salida
             puesta. El mismo motivo vivía sólo en un banner arriba de
             todo: Nico apretó, no pasó nada, y lo leyó como «no da el
@@ -1262,13 +1689,15 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               data-testid="facturacion-rango-corto"
             >
               La resolución sólo tiene{' '}
-              {datos.resolucion.disponibles.toLocaleString('es-CO')}{' '}
-              {datos.resolucion.disponibles === 1 ? 'número' : 'números'} y
+              {(resolucionDeLaVista?.disponibles ?? 0).toLocaleString('es-CO')}{' '}
+              {resolucionDeLaVista?.disponibles === 1 ? 'número' : 'números'} y
               tienes {marcadasEnTotal.toLocaleString('es-CO')}{' '}
               {marcadasEnTotal === 1 ? 'marcada' : 'marcadas'}
-              {marcadasEnLaOtra > 0 ? ' entre las dos pestañas' : ''}: se
-              numeran las primeras y las{' '}
-              {numerosQueFaltan.toLocaleString('es-CO')} restantes van a fallar
+              {mismaBolsa && marcadasEnLaOtra > 0 ? ' entre las dos pestañas' : ''}: se
+              numeran las primeras y{' '}
+              {numerosQueFaltan === 1
+                ? 'la otra va a fallar'
+                : `las ${numerosQueFaltan.toLocaleString('es-CO')} restantes van a fallar`}{' '}
               por rango agotado.{' '}
               {onIrAResolucion && (
                 <button
@@ -1300,6 +1729,18 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
             )}
           </p>
         )}
+        {hayDetallesDelPie && (
+          <button
+            type="button"
+            onClick={() => setVerMasDelPie((v) => !v)}
+            aria-expanded={verMasDelPie}
+            aria-controls="facturacion-acciones-detalle"
+            className="text-caption font-medium text-primary underline-offset-4 hover:underline"
+            data-testid="facturacion-acciones-ver-mas"
+          >
+            {verMasDelPie ? 'Ver menos' : 'Ver más'}
+          </button>
+        )}
       </>
     }
   >
@@ -1310,10 +1751,11 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
         generando ||
         cargando ||
         // 🔴 Sin resolución vigente el back devuelve 400: apagar el
-        // botón dice lo mismo sin hacer perder la selección.
-        (datos !== null && !datos.resolucion.puedeNumerar)
+        // botón dice lo mismo sin hacer perder la selección. La de ESTA
+        // pestaña: las comisiones pueden tener su propia resolución (FA-R24).
+        motivoParaNoEmitir !== null
       }
-      onClick={() => void generar()}
+      onClick={() => void pedirYGenerar([...elegidas])}
       data-testid="facturacion-generar"
     >
       <Receipt className="h-4 w-4" weight="bold" />
@@ -1326,10 +1768,19 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
           // nadie escribiría: el botón dice qué hace y el pie de al
           // lado dice por qué está apagado.
           elegidas.length === 0
-          ? 'Generar facturas'
-          : `Generar ${elegidas.length} ${elegidas.length === 1 ? 'factura' : 'facturas'} ${
-              aQuien === 'INQUILINO' ? 'de inquilinos' : 'de propietarios'
-            }`}
+          ? 'Emitir facturas'
+          : (
+            // UN solo hijo de texto: el `Button` es flex con `gap`, y dos hijos
+            // sueltos se leían «Generar 25 facturas  de inquilinos» (doble espacio).
+            <span>
+              {`Emitir ${elegidas.length} ${elegidas.length === 1 ? 'factura' : 'facturas'}`}
+              {/* FA-15: a 390 px «de inquilinos» no cabe al lado de la ✕; la
+                  pestaña ya lo dice. */}
+              <span className="hidden sm:inline">
+                {` ${aQuien === 'INQUILINO' ? 'de inquilinos' : 'de propietarios'}`}
+              </span>
+            </span>
+          )}
     </Button>
   </BarraDeAccionesMasivas>
   )
@@ -1351,7 +1802,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
             weight="fill"
           />
           <p className="text-caption text-fg">
-            {datos.resolucion.explicacion ??
+            {sinLaRutaDeFacturacion(datos.resolucion.explicacion) ||
               'No hay una resolución de facturación vigente con la cual numerar.'}{' '}
             {onIrAResolucion && (
               <button
@@ -1475,12 +1926,21 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
             .
             {datos.resolucion.puedeNumerar && (
               <span data-testid="facturacion-siguiente-numero">
-                {' '}Se numeran con la resolución{' '}
+                {' '}
+                {mismaBolsa ? 'Se numeran' : 'El canon se numera'} con la resolución{' '}
                 <span className="font-mono text-fg">{datos.resolucion.numero}</span>: sigue la{' '}
                 <span className="font-mono text-fg">{datos.resolucion.siguiente}</span> y quedan{' '}
                 <span className="font-mono text-fg tabular-nums">{datos.resolucion.disponibles}</span>{' '}
                 {datos.resolucion.disponibles === 1 ? 'número' : 'números'} hasta el{' '}
                 {fechaLegible(datos.resolucion.vigenteHasta)}.
+              </span>
+            )}
+            {/* FA-R24: las comisiones con su propia resolución, dicha aparte. */}
+            {!mismaBolsa && resolucionDeComision?.puedeNumerar && (
+              <span data-testid="facturacion-siguiente-numero-comision">
+                {' '}Las comisiones, con la{' '}
+                <span className="font-mono text-fg">{resolucionDeComision.numero}</span>: sigue la{' '}
+                <span className="font-mono text-fg">{resolucionDeComision.siguiente}</span>.
               </span>
             )}
           </p>
@@ -1563,7 +2023,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               descripcion={
                 aQuien === 'INQUILINO'
                   ? 'El canon del período y los conceptos que se le facturan al inquilino.'
-                  : 'La comisión de administración del mes. Lo que el propietario paga y no se factura va a deducción del egreso.'
+                  : DESCRIPCION_DE_LAS_COMISIONES
               }
               filas={filasDeLaVista}
               seleccion={seleccion}
@@ -1571,7 +2031,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
               onAlternarTodas={alternarTodas}
               ocupado={generando}
               testid={aQuien === 'INQUILINO' ? 'inquilinos' : 'propietarios'}
-              onGenerarUna={(clave) => void generar([clave])}
+              onGenerarUna={(clave) => void pedirYGenerar([clave])}
               motivoParaNoEmitir={motivoParaNoEmitir}
               onAbrirDetalle={setDetalle}
               accionesMasivas={pieDeAccionesMasivas}
@@ -1586,12 +2046,16 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
             <CajonDeLaFactura
               factura={detalle}
               onCerrar={() => setDetalle(null)}
-              onGenerarUna={(clave) => void generar([clave])}
+              onGenerarUna={(clave) => void pedirYGenerar([clave])}
               motivoParaNoEmitir={motivoParaNoEmitir}
               ocupado={generando}
               onDescargarPdf={descargarPdf}
               descargando={descargando}
             />
+
+            {/* 🔴 Q6 (QA-FACT): los intereses que ya se pagaron, en su factura
+                aparte y con la resolución de «Otros». Sólo se pinta si hay. */}
+            {aQuien === 'INQUILINO' && <FacturasDeIntereses />}
 
             {/* Los contratos que tocan el mes y NO generan factura. Sin esto,
                 la diferencia entre «735 contratos» y «730 facturas» no tiene

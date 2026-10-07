@@ -22,6 +22,7 @@ import { SettingsModal } from '@/components/settings/SettingsModal';
 import { useI18n } from '@/lib/i18n';
 import { settingsApi } from '@/lib/api/settings.service';
 import { aFechaIso } from '@/lib/fechas-locales';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { TarjetaDeAjustes } from './piezas';
 
 interface Props {
@@ -68,8 +69,15 @@ export function SeccionDatosDeCuenta({ onboarding }: Props) {
       URL.revokeObjectURL(url);
       setAbierto(false);
       toast.success(es ? 'Descargamos tus datos' : 'Your data was downloaded');
-    } catch {
-      toast.error(es ? 'No pudimos preparar tus datos. Intenta de nuevo.' : 'We could not prepare your data. Try again.');
+    } catch (err) {
+      toast.error(
+        es
+          ? mensajeParaLaPersona(err, {
+              porDefecto: 'No pudimos preparar tus datos. Intenta de nuevo.',
+              accion: 'preparar tus datos',
+            })
+          : 'We could not prepare your data. Try again.',
+      );
     } finally {
       setDescargando(false);
     }
@@ -115,14 +123,30 @@ export function SeccionDatosDeCuenta({ onboarding }: Props) {
         ))}
       </TarjetaDeAjustes>
 
-      <SettingsModal open={abierto} onClose={() => setAbierto(false)} title={es ? 'Descargar mis datos' : 'Download my data'}>
+      <SettingsModal
+        open={abierto}
+        onClose={() => setAbierto(false)}
+        title={es ? 'Descargar mis datos' : 'Download my data'}
+        icon={<Download weight="bold" />}
+        description={
+          es
+            ? 'Te bajamos ahora mismo un archivo JSON con lo que Leasefy guarda de ti:'
+            : 'We will download a JSON file right now with what Leasefy stores about you:'
+        }
+        footer={
+          <>
+            <Button variant="outline" hideArrow onClick={() => setAbierto(false)} disabled={descargando}>
+              {es ? 'Cancelar' : 'Cancel'}
+            </Button>
+            <Button hideArrow isLoading={descargando} disabled={descargando} onClick={descargar} data-testid="descargar-datos">
+              {!descargando && <Download className="h-4 w-4" />}
+              {es ? 'Descargar' : 'Download'}
+            </Button>
+          </>
+        }
+      >
         <div className="space-y-4">
-          <p className="text-sm text-fg-muted">
-            {es
-              ? 'Te bajamos ahora mismo un archivo JSON con lo que Leasefy guarda de ti:'
-              : 'We will download a JSON file right now with what Leasefy stores about you:'}
-          </p>
-          <ul className="space-y-2 rounded-lg bg-surface-muted p-4">
+          <ul className="space-y-2 rounded-lg border border-border p-4">
             {(es
               ? ['Tu perfil y tus preferencias', 'Postulaciones y guardados', 'Contratos y arriendos', 'Pagos', 'Inmuebles publicados']
               : ['Your profile and preferences', 'Applications and saved properties', 'Contracts and leases', 'Payments', 'Listed properties']
@@ -135,15 +159,6 @@ export function SeccionDatosDeCuenta({ onboarding }: Props) {
               </li>
             ))}
           </ul>
-          <div className="flex gap-3 pt-2">
-            <Button variant="outline" hideArrow onClick={() => setAbierto(false)} className="flex-1">
-              {es ? 'Cancelar' : 'Cancel'}
-            </Button>
-            <Button hideArrow isLoading={descargando} disabled={descargando} onClick={descargar} className="flex-1" data-testid="descargar-datos">
-              {!descargando && <Download className="h-4 w-4" />}
-              {es ? 'Descargar' : 'Download'}
-            </Button>
-          </div>
         </div>
       </SettingsModal>
     </>

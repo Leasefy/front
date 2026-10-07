@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { mesEnTitulo } from '@/lib/utils/mes';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Collapse, Pressable, Stagger, StaggerItem } from '@leasefy/cadence';
 import {
   User,
   Bank,
@@ -25,6 +25,7 @@ import {
   getDispersionStatusLabel,
 } from '@/lib/types/inmobiliaria';
 import { ROTULO_DEL_CANON } from '@/lib/propietarios/base-del-canon';
+import { enmascarar } from '@/components/inmobiliaria/medios-de-pago/legible';
 
 interface DispersionCardProps {
   dispersion: Dispersion;
@@ -73,7 +74,9 @@ function formatBankAccount(
 
   const bankLabel = bankLabels[bank] || bank;
   const typeLabel = typeLabels[accountType] || accountType;
-  return `${bankLabel} · ${typeLabel} ${accountNumber}`;
+  // N-07 (QA-PAGOS-95): en la lista va enmascarada («•••• 4321»), como en
+  // Liquidaciones y en los lotes; completa sólo en el detalle, donde se copia.
+  return `${bankLabel} · ${typeLabel} ${enmascarar(accountNumber) ?? ''}`.trim();
 }
 
 /**
@@ -95,12 +98,12 @@ export function DispersionCard({
   // Compact variant - single row for list views
   if (compact) {
     return (
-      <motion.div
-        whileHover={{ scale: 1.005 }}
-        whileTap={{ scale: 0.995 }}
+      <Pressable
+        hover="scale"
+        press="sm"
         onClick={() => onViewDetail?.(dispersion)}
         className={cn(
-          'w-full flex items-center gap-4 p-4 rounded-lg border-l-4 border bg-surface dark:bg-card border-border dark:border-border-strong cursor-pointer transition-all duration-200 hover:',
+          'w-full flex items-center gap-4 p-4 rounded-lg border-l-4 border bg-surface dark:bg-card border-border dark:border-border-strong cursor-pointer transition-colors duration-base',
           borderColor
         )}
       >
@@ -136,16 +139,17 @@ export function DispersionCard({
         {dispersion.status === 'processing' && (
           <Spinner size="sm" className="shrink-0" />
         )}
-      </motion.div>
+      </Pressable>
     );
   }
 
   // Full card variant
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
+    <Pressable
+      hover="lift"
+      press="none"
       className={cn(
-        'w-full rounded-lg border-l-4 border bg-surface dark:bg-card overflow-hidden transition-all duration-200 group hover:',
+        'w-full rounded-lg border-l-4 border bg-surface dark:bg-card overflow-hidden transition-colors duration-base group',
         borderColor,
         'border-border dark:border-border-strong',
         onViewDetail && 'cursor-pointer'
@@ -240,8 +244,8 @@ export function DispersionCard({
 
       {/* Properties Summary */}
       <div className="px-5 py-4 bg-surface-muted">
-        {/* allowlist: collapsible disclosure toggle (count + caret) driving a framer-motion height
-            animation inside a clickable card — Cadence Accordion would replace the bespoke animation */}
+        {/* allowlist: collapsible disclosure toggle (count + caret) inside a clickable card; el
+            contenido se abre con `Collapse` de Cadence (antes animaba `height` a mano). */}
         <button
           type="button"
           onClick={(e) => {
@@ -261,23 +265,20 @@ export function DispersionCard({
           </div>
           <CaretDown
             className={cn(
-              'w-4 h-4 text-fg-subtle transition-transform',
+              'w-4 h-4 text-fg-subtle transition-transform duration-slow ease-emphasis',
               showProperties && 'rotate-180'
             )}
           />
         </button>
 
-        <AnimatePresence>
-          {showProperties && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden"
+        <Collapse open={showProperties}>
+          <Stagger
+            className="mt-3 space-y-2 border-t border-border dark:border-border-strong pt-3"
+            distance="xs"
+            layout={false}
             >
-              <div className="mt-3 space-y-2 border-t border-border dark:border-border-strong pt-3">
                 {dispersion.items.map((item) => (
-                  <div
+              <StaggerItem
                     key={item.cuotaId ?? item.cobroId}
                     className="flex items-center justify-between text-sm"
                   >
@@ -287,12 +288,10 @@ export function DispersionCard({
                     <span className="text-fg font-mono font-medium tabular-nums">
                       {formatCurrency(item.netAmount)}
                     </span>
-                  </div>
+              </StaggerItem>
                 ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          </Stagger>
+        </Collapse>
       </div>
 
       {/* Status Section */}
@@ -396,7 +395,7 @@ export function DispersionCard({
           </div>
         )}
       </div>
-    </motion.div>
+    </Pressable>
   );
 }
 

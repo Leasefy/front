@@ -7,7 +7,12 @@
  *   - GETs the plan detail + debtor header + agency policy on mount (and every
  *     30s as the polling fallback for Realtime).
  *   - Derives isMaxDiscountExceeded = (plan.proposed.discount > agency.maxDiscount).
- *   - Exposes approvePlan / rejectPlan / modifyPlan mutations.
+ *   - Exposes approvePlan / rejectPlan / modifyPlan / acceptPlan mutations.
+ *   - 🔴 acceptPlan (03-10-2026, Nico S5 Q4): «El inquilino aceptó» desde el
+ *     panel EXIGE que la inmobiliaria ya haya aprobado el plan
+ *     (`operatorApprovedAt`). El micro responde 409 `ACUERDO_SIN_APROBAR` si
+ *     no; el hook lo devuelve con ese `code` para que la pantalla ofrezca
+ *     aprobar primero.
  *
  * Pattern: useState + useEffect + setInterval(30_000) per Phase 29 inheritance
  * (no SWR). Null-guards on agencyId + NEXT_PUBLIC_AGENT_URL (v2.1 visual smoke
@@ -34,6 +39,7 @@ import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { useVisibilityPolling } from '@/lib/hooks/useVisibilityPolling'
 import type { components } from '@/lib/api/generated/agent'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
 
 // =============================================================================
 // Types
@@ -65,6 +71,11 @@ export interface PaymentPlanApprovalView {
   planId: string
   status: string
   offeredAt: string
+  /**
+   * Cuándo la inmobiliaria aprobó el plan; `null` = todavía no. Un micro
+   * anterior no lo manda y cuenta como `null` (03-10-2026).
+   */
+  operatorApprovedAt: string | null
   wompiLink: string | null
   proposed: {
     discount: number
@@ -96,20 +107,42 @@ export interface UsePaymentPlanApprovalOptions {
   canApprove?: boolean
 }
 
+/**
+ * Lo que devuelve una acción que no salió.
+ *
+ * `error` se conserva por compatibilidad (`approve 500`, `PERMISSION_DENIED`…)
+ * pero NO es para una persona. Para eso está `fallo`: el `ApiError` del micro
+ * (status, `code`, `message`, `campos`) o el error de la red tal cual, que la
+ * pantalla traduce con `mensajeParaLaPersona`. Sin `fallo`, la acción ni se
+ * intentó (sin permiso, sin agente, sin plan cargado) y `error` es su código.
+ * `code` lo pone el hook para un caso que la pantalla trata aparte
+ * (`DUPLICATE_PLAN_RISK`): se decide con él, nunca con el texto.
+ */
+export interface FalloDeLaAccion {
+  error: string
+  fallo?: unknown
+  code?: 'DUPLICATE_PLAN_RISK' | 'ACUERDO_SIN_APROBAR'
+}
+
+/** El 409 del micro cuando se acepta un plan que la inmobiliaria no aprobó. */
+export const CODIGO_ACUERDO_SIN_APROBAR = 'ACUERDO_SIN_APROBAR'
+
 export interface UsePaymentPlanApprovalResult {
   plan: PaymentPlanApprovalView | null
   isLoading: boolean
   error: string | null
   isMaxDiscountExceeded: boolean
   refetch: () => Promise<void>
-  approvePlan: () => Promise<{ wompiLink: string } | { error: string }>
+  approvePlan: () => Promise<{ wompiLink: string } | FalloDeLaAccion>
   rejectPlan: (input: {
     reject_reason: RejectReasonSlug | undefined
     reject_comment?: string
-  }) => Promise<{ ok: true } | { error: string }>
+  }) => Promise<{ ok: true } | FalloDeLaAccion>
   modifyPlan: (
     input: ModifyPlanInput,
-  ) => Promise<{ ok: true; newPlanId?: string } | { error: string; newPlanId?: string }>
+  ) => Promise<{ ok: true; newPlanId?: string } | (FalloDeLaAccion & { newPlanId?: string })>
+  /** «El inquilino aceptó»: offered → active. Exige el plan aprobado. */
+  acceptPlan: () => Promise<{ ok: true; acceptedAt: string } | FalloDeLaAccion>
 }
 
 // =============================================================================
@@ -124,16 +157,24 @@ function buildView(
   const installments = plan.installments ?? []
   const cuotas = installments.length
   const firstInstallment = installments[0]
+  // Aditivo en el micro (03-10-2026): los tipos generados todavía no lo traen.
+  const aprobadoEn = (plan as PlanDetail & { operatorApprovedAt?: string | null })
+    .operatorApprovedAt
   return {
     planId: plan.planId,
     status: plan.status,
     offeredAt: plan.offeredAt,
+    operatorApprovedAt: typeof aprobadoEn === 'string' && aprobadoEn ? aprobadoEn : null,
     wompiLink: plan.paymentUrl,
     proposed: {
       discount: Number(plan.discountAppliedPct ?? 0),
       cuotas,
       montoPorCuota: firstInstallment ? Number(firstInstallment.amountCop) : 0,
-      fechaPrimerPago: firstInstallment ? firstInstallment.dueDate : '',
+      // El micro manda la fecha de la cuota como medianoche UTC
+      // («2026-11-03T00:00:00.000Z»); se guarda el DÍA (`AAAA-MM-DD`): es lo
+      // que muestra la tabla y lo que acepta el `<input type="date">` de
+      // «Modificar» (con la hora, el campo quedaba vacío).
+      fechaPrimerPago: firstInstallment ? String(firstInstallment.dueDate).slice(0, 10) : '',
       totalDueCop: Number(plan.totalDueCop ?? 0),
     },
     agency: {
@@ -221,7 +262,7 @@ export function usePaymentPlanApproval(
   // ── Mutations ────────────────────────────────────────────────────────────
 
   const approvePlan = useCallback(async (): Promise<
-    { wompiLink: string } | { error: string }
+    { wompiLink: string } | FalloDeLaAccion
   > => {
     if (!canApproveRef.current) {
       return { error: 'PERMISSION_DENIED' }
@@ -245,16 +286,23 @@ export function usePaymentPlanApproval(
         },
       )
       if (!res.ok) {
-        return { error: `approve ${res.status}` }
+        return { error: `approve ${res.status}`, fallo: await falloDelMicro(res) }
       }
       const json = (await res.json()) as components['schemas']['PaymentPlanApproveResponse']
       // Optimistic local update — no second GET.
       setPlan((prev) =>
-        prev ? { ...prev, status: 'approved', wompiLink: json.wompiUrl } : prev,
+        prev
+          ? {
+              ...prev,
+              status: 'approved',
+              wompiLink: json.wompiUrl,
+              operatorApprovedAt: prev.operatorApprovedAt ?? new Date().toISOString(),
+            }
+          : prev,
       )
       return { wompiLink: json.wompiUrl }
     } catch (err) {
-      return { error: err instanceof Error ? err.message : 'approve failed' }
+      return { error: err instanceof Error ? err.message : 'approve failed', fallo: err }
     }
   }, [agencyId, planId, plan])
 
@@ -262,7 +310,7 @@ export function usePaymentPlanApproval(
     async (input: {
       reject_reason: RejectReasonSlug | undefined
       reject_comment?: string
-    }): Promise<{ ok: true } | { error: string }> => {
+    }): Promise<{ ok: true } | FalloDeLaAccion> => {
       if (!input.reject_reason) {
         throw new Error('reject_reason is required')
       }
@@ -289,11 +337,11 @@ export function usePaymentPlanApproval(
             }),
           },
         )
-        if (!res.ok) return { error: `reject ${res.status}` }
+        if (!res.ok) return { error: `reject ${res.status}`, fallo: await falloDelMicro(res) }
         setPlan((prev) => (prev ? { ...prev, status: 'rejected' } : prev))
         return { ok: true }
       } catch (err) {
-        return { error: err instanceof Error ? err.message : 'reject failed' }
+        return { error: err instanceof Error ? err.message : 'reject failed', fallo: err }
       }
     },
     [agencyId, planId, plan],
@@ -302,7 +350,7 @@ export function usePaymentPlanApproval(
   const modifyPlan = useCallback(
     async (
       input: ModifyPlanInput,
-    ): Promise<{ ok: true; newPlanId?: string } | { error: string; newPlanId?: string }> => {
+    ): Promise<{ ok: true; newPlanId?: string } | (FalloDeLaAccion & { newPlanId?: string })> => {
       const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
       if (!agentUrl || !agencyId) {
         return { error: 'ENV_OR_AGENCY_MISSING' }
@@ -333,7 +381,7 @@ export function usePaymentPlanApproval(
             }),
           },
         )
-        if (!offerRes.ok) return { error: `offer ${offerRes.status}` }
+        if (!offerRes.ok) return { error: `offer ${offerRes.status}`, fallo: await falloDelMicro(offerRes) }
         const offerJson = (await offerRes.json()) as { planId?: string }
 
         // Step 2 — POST /reject on the CURRENT planId. The typed enum has no
@@ -361,17 +409,52 @@ export function usePaymentPlanApproval(
           return {
             error: `DUPLICATE_PLAN_RISK: counter-offer ${offerJson.planId ?? '(created)'} exists but original ${planId} could not be rejected (reject ${rejectRes.status}). Both plans may be active — resolve manually.`,
             newPlanId: offerJson.planId,
+            code: 'DUPLICATE_PLAN_RISK',
+            fallo: await falloDelMicro(rejectRes),
           }
         }
 
         setPlan((prev) => (prev ? { ...prev, status: 'counter_offered' } : prev))
         return { ok: true, newPlanId: offerJson.planId }
       } catch (err) {
-        return { error: err instanceof Error ? err.message : 'modify failed' }
+        return { error: err instanceof Error ? err.message : 'modify failed', fallo: err }
       }
     },
     [agencyId, planId, plan],
   )
+
+  const acceptPlan = useCallback(async (): Promise<
+    { ok: true; acceptedAt: string } | FalloDeLaAccion
+  > => {
+    if (!canApproveRef.current) {
+      return { error: 'PERMISSION_DENIED' }
+    }
+    const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+    if (!agentUrl || !agencyId) {
+      return { error: 'ENV_OR_AGENCY_MISSING' }
+    }
+    if (!plan) return { error: 'NO_PLAN_LOADED' }
+    try {
+      const res = await fetchJson(
+        `${agentUrl}/api/agency/${agencyId}/cartera/payment-plans/${planId}/accept`,
+        { method: 'POST' },
+      )
+      if (!res.ok) {
+        const fallo = await falloDelMicro(res)
+        if (res.status === 409 && fallo.code === CODIGO_ACUERDO_SIN_APROBAR) {
+          // La verdad del servidor: no está aprobado (aunque la pantalla creyera que sí).
+          setPlan((prev) => (prev ? { ...prev, operatorApprovedAt: null } : prev))
+          return { error: `accept ${res.status}`, fallo, code: CODIGO_ACUERDO_SIN_APROBAR }
+        }
+        return { error: `accept ${res.status}`, fallo }
+      }
+      const json = (await res.json()) as { status?: string; acceptedAt?: string }
+      setPlan((prev) => (prev ? { ...prev, status: json.status ?? 'active' } : prev))
+      return { ok: true, acceptedAt: json.acceptedAt ?? new Date().toISOString() }
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : 'accept failed', fallo: err }
+    }
+  }, [agencyId, planId, plan])
 
   const isMaxDiscountExceeded =
     plan !== null && plan.proposed.discount > plan.agency.maxDiscount
@@ -385,5 +468,6 @@ export function usePaymentPlanApproval(
     approvePlan,
     rejectPlan,
     modifyPlan,
+    acceptPlan,
   }
 }

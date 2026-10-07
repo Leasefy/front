@@ -30,7 +30,7 @@ import {
   type ConfiguracionDelMandato,
   type Modalidad,
 } from '@/lib/api/mandato.service';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { PESOS, QUE_ES_LA_MODALIDAD, diaLegible } from '@/lib/mandato/textos';
 import { EsqueletoDeSeccion } from './piezas';
 
@@ -106,7 +106,9 @@ function ModalidadPorDefecto({
       });
       onGuardado(c);
     } catch (e) {
-      toast.error('No se pudo guardar.', { description: mensajeDelFallo(e, '') });
+      toast.error('No se pudo guardar.', {
+        description: mensajeParaLaPersona(e, { porDefecto: 'Prueba de nuevo en un momento.', accion: 'guardar la modalidad' }),
+      });
     } finally {
       setGuardando(false);
     }
@@ -194,7 +196,9 @@ function CobrosAlArrendar({
       setFilas(c.cobrosAlArrendar.map((x) => ({ ...x, clave: x.id })));
       onGuardado(c);
     } catch (e) {
-      toast.error('No se pudieron guardar los cobros.', { description: mensajeDelFallo(e, '') });
+      toast.error('No se pudieron guardar los cobros.', {
+        description: mensajeParaLaPersona(e, { porDefecto: 'Prueba de nuevo en un momento.', accion: 'guardar los cobros' }),
+      });
     } finally {
       setGuardando(false);
     }
@@ -304,7 +308,9 @@ function IvaDeLaComision({
       });
       onGuardado();
     } catch (e) {
-      toast.error('No se pudo guardar.', { description: mensajeDelFallo(e, '') });
+      toast.error('No se pudo guardar.', {
+        description: mensajeParaLaPersona(e, { porDefecto: 'Prueba de nuevo en un momento.', accion: 'guardar el perfil de IVA' }),
+      });
     } finally {
       setGuardando(false);
     }

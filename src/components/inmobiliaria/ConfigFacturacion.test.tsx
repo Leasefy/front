@@ -52,6 +52,7 @@ vi.mock('@/lib/hooks/useSubscription', () => ({
   useAgencyPlans: () => plansState.value,
 }))
 
+import { ApiError } from '@/lib/api/client'
 import { ConfigFacturacion } from './ConfigFacturacion'
 import type { AgencyBilling, BillingInvoice } from '@/lib/types/inmobiliaria'
 import type { AgencyPlan } from '@/lib/types/subscription'
@@ -178,17 +179,17 @@ describe('ConfigFacturacion — real subscription as source of truth', () => {
     expect(container.textContent).toContain('inmobiliaria.config.billing.planUnavailable')
   })
 
-  it('navigates to /upgrade on the upgrade button (no mock dialog)', async () => {
+  // 🔴 El plan lo cambia SÓLO Leasefy (Nico, 04-10-2026): pedirlo, no hacerlo.
+  it('«Pedir un cambio de plan» es un correo a Leasefy con el plan actual; no lleva al checkout', async () => {
     await render(BILLING)
-    const buttons = Array.from(container.querySelectorAll('button'))
-    const upgradeBtn = buttons.find((b) =>
-      b.textContent?.includes('inmobiliaria.config.billing.upgradePlan'),
+    const pedir = container.querySelector<HTMLAnchorElement>('[data-testid="pedir-cambio-de-plan"]')
+    expect(pedir?.getAttribute('href')).toMatch(/^mailto:hola@leasefy\.co\?subject=Cambio%20de%20plan/)
+    expect(decodeURIComponent(pedir?.getAttribute('href') ?? '')).toContain('Plan actual: Pro')
+    expect(container.textContent).not.toContain('inmobiliaria.config.billing.upgradePlan')
+    expect(container.querySelector('[data-testid="plan-solo-leasefy"]')?.textContent).toContain(
+      'Tu plan y su precio los define Leasefy',
     )
-    expect(upgradeBtn).toBeTruthy()
-    await act(async () => {
-      upgradeBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/upgrade')
+    expect(pushMock).not.toHaveBeenCalledWith('/panel/inmobiliaria/upgrade')
   })
 
   /*
@@ -283,58 +284,39 @@ describe('ConfigFacturacion — cancel at period end / pending change (T-0089)',
     expect(container.textContent).not.toMatch(/cancelaci[oó]n programada/i)
   })
 
-  it('"Deshacer" on the pending-change block calls cancelPendingChange and refetches', async () => {
-    const refetch = vi.fn()
+  it('🔴 con un cambio programado, deshacerlo también se PIDE a Leasefy (no llama al back)', async () => {
     subState.value = makeSub({
       state: {
         subscription: { currentPeriodEnd: '2026-03-01T00:00:00Z' },
         pendingPlanTier: 'starter',
         pendingPlanEffectiveAt: '2026-03-01T00:00:00Z',
       },
-      refetch,
     })
     plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
     await render(BILLING)
-    const undoBtn = findButton('Deshacer')
-    expect(undoBtn).toBeTruthy()
-    await act(async () => {
-      undoBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(mockCancelPendingChange).toHaveBeenCalledTimes(1)
-    expect(refetch).toHaveBeenCalled()
+    expect(findButton('Deshacer')).toBeFalsy()
+    expect(container.querySelector('[data-testid="pedir-deshacer"]')?.getAttribute('href')).toMatch(/^mailto:hola@leasefy\.co/)
+    expect(mockCancelPendingChange).not.toHaveBeenCalled()
   })
 
-  it('"Cancelar plan" opens a confirmation dialog, and confirming calls selectPlan with the default plan id', async () => {
+  it('🔴 «Pedir la cancelación» es un correo a Leasefy: ya no programa la baja directo', async () => {
     subState.value = makeSub({ currentPlanId: 'pro' })
     plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
     await render(BILLING)
-
-    const cancelTrigger = findButton('Cancelar plan')
-    expect(cancelTrigger).toBeTruthy()
-    await act(async () => {
-      cancelTrigger!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-
-    // The dialog explains what happens before charging ahead.
-    expect(document.body.textContent).toMatch(/Pro/)
-    expect(document.body.textContent).toMatch(/Starter/)
-
-    const confirmBtn = findButton('Sí, cancelar')
-    expect(confirmBtn).toBeTruthy()
-    await act(async () => {
-      confirmBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
-    })
-    expect(mockSelectPlan).toHaveBeenCalledWith('starter')
+    expect(findButton('Cancelar plan')).toBeFalsy()
+    const pedir = container.querySelector<HTMLAnchorElement>('[data-testid="pedir-cancelacion"]')
+    expect(pedir?.getAttribute('href')).toMatch(/^mailto:hola@leasefy\.co\?subject=Cancelaci%C3%B3n%20del%20plan/)
+    expect(mockSelectPlan).not.toHaveBeenCalled()
   })
 
-  it('hides "Cancelar plan" when the agency is already on the free/default plan', async () => {
+  it('no ofrece pedir la cancelación en el plan gratuito / por defecto', async () => {
     subState.value = makeSub({ currentPlanId: 'starter' })
     plansState.value = { plans: [STARTER_PLAN], isLoading: false }
     await render(BILLING)
-    expect(findButton('Cancelar plan')).toBeFalsy()
+    expect(container.querySelector('[data-testid="pedir-cancelacion"]')).toBeNull()
   })
 
-  it('hides "Cancelar plan" while a change is already pending', async () => {
+  it('ni mientras ya hay un cambio programado', async () => {
     subState.value = makeSub({
       currentPlanId: 'pro',
       state: {
@@ -345,6 +327,20 @@ describe('ConfigFacturacion — cancel at period end / pending change (T-0089)',
     })
     plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
     await render(BILLING)
-    expect(findButton('Cancelar plan')).toBeFalsy()
+    expect(container.querySelector('[data-testid="pedir-cancelacion"]')).toBeNull()
+  })
+
+  it('sin voseo: «Pasas a…»', async () => {
+    subState.value = makeSub({
+      state: {
+        subscription: { currentPeriodEnd: '2026-03-01T00:00:00Z' },
+        pendingPlanTier: 'starter',
+        pendingPlanEffectiveAt: '2026-03-01T00:00:00Z',
+      },
+    })
+    plansState.value = { plans: [PRO_PLAN, STARTER_PLAN], isLoading: false }
+    await render(BILLING)
+    expect(container.textContent).toContain('Pasas a')
+    expect(container.textContent).not.toContain('Pasás')
   })
 })

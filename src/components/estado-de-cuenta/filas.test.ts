@@ -17,6 +17,7 @@ import {
   cuantasFilas,
   cuantasFilasDelDocumento,
   estaVencida,
+  sinComprobantesDelSistemaAnterior,
   fechaLegible,
   hayFiltros,
   hoyLocal,
@@ -272,6 +273,8 @@ describe('estados', () => {
   });
 
   it('la del día de hoy todavía no venció', () => {
+    // PG-R10 (03-10-2026): el back (`armar-el-estado-de-cuenta.ts`) usa el
+    // mismo criterio, `vencimiento < hoy`: la fila y el resumen dicen lo mismo.
     const f = fila({ estado: 'PENDIENTE', fechaVencimiento: '2026-09-13' });
     expect(estaVencida(f, '2026-09-13')).toBe(false);
   });
@@ -282,8 +285,19 @@ describe('estados', () => {
     expect(pintaDelEstado('PENDIENTE', 'PROPIETARIO').texto).toBe('Pendiente');
   });
 
-  it('«Sistema anterior» es su propia palabra, no «Contrato terminado»', () => {
-    expect(pintaDelEstado('ANTERIOR', 'INQUILINO').texto).toBe('Sistema anterior');
+  it('«Del sistema anterior» es su propia palabra, no «Contrato terminado»', () => {
+    // PG-08 (Nico, 03-10-2026): «Del sistema anterior», tal cual (antes «Sistema anterior»).
+    expect(pintaDelEstado('ANTERIOR', 'INQUILINO').texto).toBe('Del sistema anterior');
+  });
+
+  it('🔴 PG-08: un mes del sistema anterior SIN comprobante migrado se marca; con él, no', () => {
+    expect(sinComprobantesDelSistemaAnterior(fila({ estado: 'ANTERIOR', documentoDePago: null }))).toBe(true);
+    expect(
+      sinComprobantesDelSistemaAnterior(
+        fila({ estado: 'ANTERIOR', documentoDePago: { numero: 'C-12', tipo: 'INGRESO', descripcion: 'Comprobante migrado' } }),
+      ),
+    ).toBe(false);
+    expect(sinComprobantesDelSistemaAnterior(fila({ estado: 'PENDIENTE', documentoDePago: null }))).toBe(false);
   });
 
   it('el rol tiene nombre en castellano', () => {

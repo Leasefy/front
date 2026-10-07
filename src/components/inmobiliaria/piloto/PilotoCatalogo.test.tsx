@@ -272,3 +272,16 @@ describe('la tabla es una tabla del panel', () => {
     expect(container.querySelector('[data-testid="esqueleto"]')).not.toBeNull()
   })
 })
+
+describe('PI-15 (Nico, 05-10-2026): un solo conteo de «procesos»', () => {
+  it('🔴 dice cuántos procesos tiene el Piloto (la perilla, el número de «¿Opera sola?»), aparte de sus tareas', () => {
+    render({ data: { ...DATA, procesosDelPiloto: 84 } })
+    expect(container.querySelector('[data-testid="catalogo-procesos-del-piloto"]')!.textContent).toBe(
+      'inmobiliaria.piloto.catalogo.procesosDelPiloto(84)',
+    )
+  })
+  it('un micro anterior (sin el número) no inventa ninguno', () => {
+    render({ data: DATA })
+    expect(container.querySelector('[data-testid="catalogo-procesos-del-piloto"]')).toBeNull()
+  })
+})

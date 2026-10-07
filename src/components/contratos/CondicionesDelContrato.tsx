@@ -18,7 +18,7 @@
  * Todo lo decide y lo cuenta el back (`/contracts/:id/condiciones`).
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Checkbox, Label, RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 import { AunNoDisponible } from './AunNoDisponible';
 
@@ -26,7 +26,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toast';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import { clasificarFallo } from '@/lib/errores/clasificar';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import {
+  MENSAJES_DEL_CONTRATO_VIGENTE,
+  topeDePesos,
+} from '@/lib/contratos/limites-del-contrato-vigente';
 import {
   copropiedadesApi,
   nitLegible,
@@ -37,9 +43,35 @@ import {
   type CondicionesDelContrato as Condiciones,
   type ModalidadDeAdministracion,
 } from '@/lib/api/ciclo-de-vida.service';
-import { mensajeDelFallo } from '@/lib/contratos/fallo-de-accion';
+import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 
-const PESOS = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+/** Los campos de `AceptarSeguroOpcionalDto` que este formulario muestra. */
+type CampoDelSeguro = 'aceptadoPor' | 'aceptadoEl' | 'primaCop';
+const CAMPOS_DEL_SEGURO: readonly CampoDelSeguro[] = ['aceptadoPor', 'aceptadoEl', 'primaCop'];
+const ID_DEL_SEGURO: Record<CampoDelSeguro, string> = {
+  aceptadoPor: 'seguro-quien',
+  aceptadoEl: 'seguro-cuando',
+  primaCop: 'seguro-prima',
+};
+
+/** Los campos de `PolizaDelContratoDto`. */
+type CampoDeLaPoliza = 'aseguradora' | 'numero' | 'cobertura' | 'vigenciaDesde' | 'vigenciaHasta';
+const CAMPOS_DE_LA_POLIZA: readonly CampoDeLaPoliza[] = [
+  'aseguradora',
+  'numero',
+  'vigenciaDesde',
+  'vigenciaHasta',
+  'cobertura',
+];
+const ID_DE_LA_POLIZA: Record<CampoDeLaPoliza, string> = {
+  aseguradora: 'poliza-aseguradora',
+  numero: 'poliza-numero',
+  vigenciaDesde: 'poliza-desde',
+  vigenciaHasta: 'poliza-hasta',
+  cobertura: 'poliza-cobertura',
+};
+
+const PESOS = plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
 const MODALIDADES: { valor: ModalidadDeAdministracion | ''; nombre: string; ayuda: string }[] = [
   { valor: '', nombre: 'Como hoy', ayuda: 'La administración del mandato, si tiene, se le cobra al inquilino aparte del canon.' },
@@ -56,6 +88,38 @@ const MODALIDADES: { valor: ModalidadDeAdministracion | ''; nombre: string; ayud
       'La inmobiliaria paga la administración y se la descuenta al propietario cada mes, después de la comisión. Si pasa lo que se le gira, se gira $0 y el resto sigue al mes siguiente.',
   },
 ];
+
+/** Lo que el back rechazó de cada campo, por el nombre del campo en su DTO. */
+type ErroresDelServidor = Partial<Record<string, string>>;
+
+/** ¿Se puede enfocar ya? Mientras guarda, el campo está apagado o ni existe. */
+function enfocable(el: HTMLElement | null): el is HTMLElement {
+  return !!el && !(el as HTMLInputElement).disabled && !el.closest('fieldset[disabled]');
+}
+
+/**
+ * El foco al primer campo con error, cuando ya se puede: al volver del back el
+ * bloque sigue apagado (`ocupado`) hasta el render siguiente, y `focus()` sobre
+ * un campo apagado o desmontado no hace nada. Se guarda y se aplica después
+ * del render en que el campo vuelve a estar habilitado.
+ */
+function useFocoAlPrimerError() {
+  const pendientes = useRef<string[] | null>(null);
+  useEffect(() => {
+    if (!pendientes.current) return;
+    for (const id of pendientes.current) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      if (!enfocable(el)) return;
+      el.focus();
+      pendientes.current = null;
+      return;
+    }
+  });
+  return (ids: string[]) => {
+    pendientes.current = ids.length ? ids : null;
+  };
+}
 
 function hoy(): string {
   const d = new Date();
@@ -80,13 +144,30 @@ export function CondicionesDelContrato({ contractId, puedeEditar }: { contractId
     void cargar();
   }, [cargar]);
 
-  const hacer = async (op: () => Promise<Condiciones>, exito: string) => {
+  /**
+   * Guarda y devuelve lo que el back rechazó POR CAMPO (para pintarlo debajo
+   * de su campo). Al toast va SÓLO lo que no tiene campo: un 409, un 503 sin la
+   * migración, un 5xx con su referencia o la red, por el traductor.
+   */
+  const hacer = async (
+    op: () => Promise<Condiciones>,
+    exito: string,
+    accion: string,
+    campos: readonly string[] = [],
+  ): Promise<ErroresDelServidor> => {
     setOcupado(true);
     try {
       setDatos(await op());
       toast.success(exito);
+      return {};
     } catch (e) {
-      toast.error('No se pudo guardar.', { description: mensajeDelFallo(e, 'Intenta de nuevo.') });
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos,
+        porDefecto: `No pudimos ${accion}.`,
+        accion,
+      });
+      if (sueltos.length) toast.error('No se pudo guardar.', { description: sueltos.join(' · ') });
+      return porCampo;
     } finally {
       setOcupado(false);
     }
@@ -105,33 +186,52 @@ export function CondicionesDelContrato({ contractId, puedeEditar }: { contractId
     <section className="space-y-5 rounded-lg border border-border bg-card p-5" data-testid="condiciones-del-contrato">
       <h3 className="text-base font-semibold">Condiciones del contrato</h3>
       <GastosDeCobranza datos={datos} editable={puedeEditar && !ocupado} onCambiar={(pacta) =>
-        void hacer(() => cicloDeVidaApi.fijarGastosDeCobranza(contractId, pacta), 'Gastos de cobranza guardados.')
+        void hacer(
+          () => cicloDeVidaApi.fijarGastosDeCobranza(contractId, pacta),
+          'Gastos de cobranza guardados.',
+          'guardar los gastos de cobranza',
+        )
       } />
       <SeguroOpcional
         datos={datos}
         editable={puedeEditar && !ocupado}
         onAceptar={(body) =>
-          void hacer(
+          hacer(
             () => cicloDeVidaApi.aceptarSeguroOpcional(contractId, body),
             'Seguro opcional aceptado: entra a las cuotas del inquilino.',
+            'registrar la aceptación del seguro',
+            CAMPOS_DEL_SEGURO,
           )
         }
         onRetirar={() =>
-          void hacer(() => cicloDeVidaApi.retirarSeguroOpcional(contractId), 'Seguro opcional retirado.')
+          void hacer(
+            () => cicloDeVidaApi.retirarSeguroOpcional(contractId),
+            'Seguro opcional retirado.',
+            'retirar el seguro',
+          )
         }
       />
       <Poliza
         datos={datos}
         editable={puedeEditar && !ocupado}
-        onGuardar={(body) => void hacer(() => cicloDeVidaApi.registrarPoliza(contractId, body), 'Póliza guardada.')}
+        onGuardar={(body) =>
+          hacer(
+            () => cicloDeVidaApi.registrarPoliza(contractId, body),
+            'Póliza guardada.',
+            'guardar la póliza',
+            CAMPOS_DE_LA_POLIZA,
+          )
+        }
       />
       <Administracion
         datos={datos}
         editable={puedeEditar && !ocupado}
         onGuardar={(body) =>
-          void hacer(
+          hacer(
             () => cicloDeVidaApi.fijarAdministracionDeLaCopropiedad(contractId, body),
             'Administración guardada. Las cuotas se recalculan.',
+            'guardar la administración',
+            ['valorCop'],
           )
         }
       />
@@ -185,7 +285,7 @@ function GastosDeCobranza({
         ))}
       </RadioGroup>
       {g.resuelto === false && (
-        <p className="text-caption text-plan-status-yellow" data-testid="gastos-no-pactados">
+        <p className="text-caption text-warning-700 dark:text-warning-100" data-testid="gastos-no-pactados">
           Este contrato no causa gastos de cobranza.
         </p>
       )}
@@ -213,7 +313,7 @@ function SeguroOpcional({
     aceptadoEl: string;
     primaCop?: number | null;
     pct?: number | null;
-  }) => void;
+  }) => Promise<ErroresDelServidor>;
   onRetirar: () => void;
 }) {
   const s = datos.seguroOpcional;
@@ -221,6 +321,28 @@ function SeguroOpcional({
   const [quien, setQuien] = useState('');
   const [cuando, setCuando] = useState(hoy());
   const [prima, setPrima] = useState(s.oferta ? String(s.oferta.primaCop) : '');
+  // El error de cada campo va debajo de ESE campo (del cliente o del back).
+  const [errores, setErrores] = useState<ErroresDelServidor>({});
+  const enfocar = useFocoAlPrimerError();
+
+  const aceptar = async () => {
+    const primaCop = Number(prima.replace(/\D/g, ''));
+    // El tope de la columna, con la frase del back, antes de mandar nada.
+    const tope = pctDelPlan === null ? topeDePesos(primaCop, MENSAJES_DEL_CONTRATO_VIGENTE.primaMaxima) : null;
+    if (tope) {
+      setErrores({ primaCop: tope });
+      enfocar([ID_DEL_SEGURO.primaCop]);
+      return;
+    }
+    setErrores({});
+    const delServidor = await onAceptar(
+      pctDelPlan === null
+        ? { aceptadoPor: quien.trim(), aceptadoEl: cuando, primaCop }
+        : { aceptadoPor: quien.trim(), aceptadoEl: cuando },
+    );
+    setErrores(delServidor);
+    enfocar(CAMPOS_DEL_SEGURO.filter((c) => delServidor[c]).map((c) => ID_DEL_SEGURO[c]));
+  };
   /** 🔴 El % del plan manda: con él la prima la calcula el back sobre el canon. */
   const pctDelPlan = s.oferta?.pct ?? null;
   return (
@@ -275,20 +397,64 @@ function SeguroOpcional({
                 <span>El inquilino aceptó expresamente el seguro opcional</span>
               </label>
               {casilla && (
-                <div className="flex flex-wrap items-end gap-2">
-                  <label className="text-caption">
-                    Quién aceptó
-                    <Input value={quien} onChange={(e) => setQuien(e.target.value)} className="mt-1 w-56" data-testid="seguro-quien" />
-                  </label>
-                  <label className="text-caption">
-                    Fecha
-                    <Input type="date" value={cuando} onChange={(e) => setCuando(e.target.value)} className="mt-1" />
-                  </label>
-                  {pctDelPlan === null ? (
+                <div className="flex flex-wrap items-start gap-2">
+                  <div>
                     <label className="text-caption">
-                      Prima mensual
-                      <Input inputMode="numeric" value={prima} onChange={(e) => setPrima(e.target.value)} className="mt-1 w-32" />
+                      Quién aceptó
+                      <Input
+                        id={ID_DEL_SEGURO.aceptadoPor}
+                        value={quien}
+                        maxLength={200}
+                        onChange={(e) => {
+                          setQuien(e.target.value);
+                          setErrores((prev) => ({ ...prev, aceptadoPor: undefined }));
+                        }}
+                        className="mt-1 w-56"
+                        data-testid="seguro-quien"
+                        aria-invalid={errores.aceptadoPor ? true : undefined}
+                        aria-describedby={`${ID_DEL_SEGURO.aceptadoPor}-error`}
+                      />
                     </label>
+                    <ErrorDelCampo id={`${ID_DEL_SEGURO.aceptadoPor}-error`} mensaje={errores.aceptadoPor} className="w-56" />
+                  </div>
+                  <div>
+                    <label className="text-caption">
+                      Fecha
+                      <Input
+                        id={ID_DEL_SEGURO.aceptadoEl}
+                        type="date"
+                        value={cuando}
+                        onChange={(e) => {
+                          setCuando(e.target.value);
+                          setErrores((prev) => ({ ...prev, aceptadoEl: undefined }));
+                        }}
+                        className="mt-1"
+                        aria-invalid={errores.aceptadoEl ? true : undefined}
+                        aria-describedby={`${ID_DEL_SEGURO.aceptadoEl}-error`}
+                      />
+                    </label>
+                    <ErrorDelCampo id={`${ID_DEL_SEGURO.aceptadoEl}-error`} mensaje={errores.aceptadoEl} />
+                  </div>
+                  {pctDelPlan === null ? (
+                    <div>
+                      <label className="text-caption">
+                        Prima mensual
+                        <Input
+                          id={ID_DEL_SEGURO.primaCop}
+                          inputMode="numeric"
+                          value={prima}
+                          onChange={(e) => {
+                            setPrima(e.target.value);
+                            setErrores((prev) => ({ ...prev, primaCop: undefined }));
+                          }}
+                          className="mt-1 w-32"
+                          data-testid="seguro-prima"
+                          aria-invalid={errores.primaCop ? true : undefined}
+                          aria-describedby={`${ID_DEL_SEGURO.primaCop}-error`}
+                        />
+                      </label>
+                      <ErrorDelCampo id={`${ID_DEL_SEGURO.primaCop}-error`} mensaje={errores.primaCop} className="max-w-xs" />
+                    </div>
                   ) : (
                     <p className="text-caption" data-testid="seguro-prima-por-porcentaje">
                       Prima: <strong>{PESOS.format(s.oferta?.primaCop ?? 0)}</strong> al mes ({pctDelPlan} % del
@@ -297,22 +463,13 @@ function SeguroOpcional({
                   )}
                   <Button
                     size="sm"
+                    className="mt-5"
                     disabled={
                       quien.trim().length < 3 ||
                       !cuando ||
                       (pctDelPlan === null && !(Number(prima.replace(/\D/g, '')) > 0))
                     }
-                    onClick={() =>
-                      onAceptar(
-                        pctDelPlan === null
-                          ? {
-                              aceptadoPor: quien.trim(),
-                              aceptadoEl: cuando,
-                              primaCop: Number(prima.replace(/\D/g, '')),
-                            }
-                          : { aceptadoPor: quien.trim(), aceptadoEl: cuando },
-                      )
-                    }
+                    onClick={() => void aceptar()}
                     data-testid="guardar-seguro"
                   >
                     Registrar la aceptación
@@ -347,7 +504,7 @@ function Poliza({
     cobertura: string | null;
     vigenciaDesde: string | null;
     vigenciaHasta: string | null;
-  }) => void;
+  }) => Promise<ErroresDelServidor>;
 }) {
   const p = datos.poliza;
   const [aseguradora, setAseguradora] = useState(p.aseguradora ?? '');
@@ -355,7 +512,37 @@ function Poliza({
   const [cobertura, setCobertura] = useState(p.cobertura ?? '');
   const [desde, setDesde] = useState(p.vigenciaDesde ?? '');
   const [hasta, setHasta] = useState(p.vigenciaHasta ?? '');
+  const [errores, setErrores] = useState<ErroresDelServidor>({});
+  const enfocar = useFocoAlPrimerError();
   const habil = editable && p.disponible;
+
+  /** Cada campo, con su error debajo y sin que el error viejo sobreviva a la corrección. */
+  const propsDelCampo = (campo: CampoDeLaPoliza) => ({
+    id: ID_DE_LA_POLIZA[campo],
+    'aria-invalid': errores[campo] ? true : undefined,
+    'aria-describedby': `${ID_DE_LA_POLIZA[campo]}-error`,
+  });
+  const limpiar = (campo: CampoDeLaPoliza) =>
+    setErrores((prev) => (prev[campo] ? { ...prev, [campo]: undefined } : prev));
+
+  const guardar = async () => {
+    // La regla del back (`registrarPoliza`), dicha debajo de «Hasta» antes de mandar.
+    if (desde && hasta && hasta < desde) {
+      setErrores({ vigenciaHasta: 'La vigencia de la póliza no puede terminar antes de empezar.' });
+      enfocar([ID_DE_LA_POLIZA.vigenciaHasta]);
+      return;
+    }
+    setErrores({});
+    const delServidor = await onGuardar({
+      aseguradora: aseguradora.trim() || null,
+      numero: numero.trim() || null,
+      cobertura: cobertura.trim() || null,
+      vigenciaDesde: desde || null,
+      vigenciaHasta: hasta || null,
+    });
+    setErrores(delServidor);
+    enfocar(CAMPOS_DE_LA_POLIZA.filter((c) => delServidor[c]).map((c) => ID_DE_LA_POLIZA[c]));
+  };
   return (
     <div className="space-y-2 border-t border-border pt-4 text-sm" data-testid="poliza-del-contrato">
       <p className="font-medium">Póliza o afianzadora del contrato</p>
@@ -379,67 +566,82 @@ function Poliza({
           verdad la necesita. */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="space-y-1.5">
-          <Label htmlFor="poliza-aseguradora">Aseguradora</Label>
+          <Label htmlFor={ID_DE_LA_POLIZA.aseguradora}>Aseguradora</Label>
           <Input
-            id="poliza-aseguradora"
+            {...propsDelCampo('aseguradora')}
             value={aseguradora}
-            onChange={(e) => setAseguradora(e.target.value)}
+            maxLength={160}
+            onChange={(e) => {
+              setAseguradora(e.target.value);
+              limpiar('aseguradora');
+            }}
             disabled={!habil}
           />
+          <ErrorDelCampo id={`${ID_DE_LA_POLIZA.aseguradora}-error`} mensaje={errores.aseguradora} className="mt-0" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="poliza-numero">Número</Label>
+          <Label htmlFor={ID_DE_LA_POLIZA.numero}>Número</Label>
           <Input
-            id="poliza-numero"
+            {...propsDelCampo('numero')}
             value={numero}
-            onChange={(e) => setNumero(e.target.value)}
+            maxLength={80}
+            onChange={(e) => {
+              setNumero(e.target.value);
+              limpiar('numero');
+            }}
             disabled={!habil}
           />
+          <ErrorDelCampo id={`${ID_DE_LA_POLIZA.numero}-error`} mensaje={errores.numero} className="mt-0" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="poliza-desde">Desde</Label>
+          <Label htmlFor={ID_DE_LA_POLIZA.vigenciaDesde}>Desde</Label>
           <Input
-            id="poliza-desde"
+            {...propsDelCampo('vigenciaDesde')}
             type="date"
             value={desde}
-            onChange={(e) => setDesde(e.target.value)}
+            onChange={(e) => {
+              setDesde(e.target.value);
+              limpiar('vigenciaDesde');
+            }}
             disabled={!habil}
           />
+          <ErrorDelCampo id={`${ID_DE_LA_POLIZA.vigenciaDesde}-error`} mensaje={errores.vigenciaDesde} className="mt-0" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="poliza-hasta">Hasta</Label>
+          <Label htmlFor={ID_DE_LA_POLIZA.vigenciaHasta}>Hasta</Label>
           <Input
-            id="poliza-hasta"
+            {...propsDelCampo('vigenciaHasta')}
             type="date"
             value={hasta}
-            onChange={(e) => setHasta(e.target.value)}
+            onChange={(e) => {
+              setHasta(e.target.value);
+              limpiar('vigenciaHasta');
+            }}
             disabled={!habil}
           />
+          <ErrorDelCampo id={`${ID_DE_LA_POLIZA.vigenciaHasta}-error`} mensaje={errores.vigenciaHasta} className="mt-0" />
         </div>
         <div className="space-y-1.5 sm:col-span-2 lg:col-span-4">
-          <Label htmlFor="poliza-cobertura">Cobertura</Label>
+          <Label htmlFor={ID_DE_LA_POLIZA.cobertura}>Cobertura</Label>
           <Input
-            id="poliza-cobertura"
+            {...propsDelCampo('cobertura')}
             value={cobertura}
-            onChange={(e) => setCobertura(e.target.value)}
+            maxLength={4000}
+            onChange={(e) => {
+              setCobertura(e.target.value);
+              limpiar('cobertura');
+            }}
             disabled={!habil}
             placeholder="Qué cubre y hasta cuánto"
           />
+          <ErrorDelCampo id={`${ID_DE_LA_POLIZA.cobertura}-error`} mensaje={errores.cobertura} className="mt-0" />
         </div>
       </div>
       {habil && (
         <Button
           size="sm"
           variant="outline"
-          onClick={() =>
-            onGuardar({
-              aseguradora: aseguradora.trim() || null,
-              numero: numero.trim() || null,
-              cobertura: cobertura.trim() || null,
-              vigenciaDesde: desde || null,
-              vigenciaHasta: hasta || null,
-            })
-          }
+          onClick={() => void guardar()}
           data-testid="guardar-poliza"
         >
           Guardar póliza
@@ -456,7 +658,10 @@ function Administracion({
 }: {
   datos: Condiciones;
   editable: boolean;
-  onGuardar: (body: { modalidad: ModalidadDeAdministracion | null; valorCop?: number | null }) => void;
+  onGuardar: (body: {
+    modalidad: ModalidadDeAdministracion | null;
+    valorCop?: number | null;
+  }) => Promise<ErroresDelServidor>;
 }) {
   const a = datos.administracion;
   /*
@@ -469,6 +674,29 @@ function Administracion({
   const habil = editable && a.disponible;
   const pagaLaInmobiliaria = modalidad === 'LA_PAGA_LA_INMOBILIARIA';
   const valorNum = Number(valor.replace(/\D/g, ''));
+  const [errorDelValor, setErrorDelValor] = useState<string | undefined>(undefined);
+  const enfocar = useFocoAlPrimerError();
+
+  const guardar = async () => {
+    // El tope de la columna, con la frase del back, antes de mandar nada.
+    const tope = pagaLaInmobiliaria
+      ? topeDePesos(valorNum, MENSAJES_DEL_CONTRATO_VIGENTE.administracionMaxima)
+      : null;
+    if (tope) {
+      setErrorDelValor(tope);
+      enfocar(['valor-administracion']);
+      return;
+    }
+    setErrorDelValor(undefined);
+    const delServidor = await onGuardar({
+      modalidad: modalidad === '' ? null : modalidad,
+      ...(pagaLaInmobiliaria ? { valorCop: valorNum } : {}),
+    });
+    if (delServidor.valorCop) {
+      setErrorDelValor(delServidor.valorCop);
+      enfocar(['valor-administracion']);
+    }
+  };
   return (
     <fieldset className="space-y-2 border-t border-border pt-4 text-sm" disabled={!habil} data-testid="administracion-de-la-copropiedad">
       <legend className="font-medium">Administración de la copropiedad</legend>
@@ -487,7 +715,7 @@ function Administracion({
         editable={editable}
       />
       {a.porRespaldo && (
-        <p className="text-caption text-plan-status-yellow" data-testid="administracion-por-respaldo">
+        <p className="text-caption text-warning-700 dark:text-warning-100" data-testid="administracion-por-respaldo">
           Este contrato viene del sistema anterior y cobra administración, así que hoy se trata como{' '}
           <strong>«la paga la inmobiliaria»</strong>: el inquilino no la paga aparte del canon y se le descuenta al
           propietario cada mes. No está guardado: elige una modalidad para dejarlo por escrito.
@@ -515,22 +743,32 @@ function Administracion({
         ))}
       </RadioGroup>
       {pagaLaInmobiliaria && (
-        <label className="block text-caption">
-          Valor mensual de la administración
-          <Input inputMode="numeric" value={valor} onChange={(e) => setValor(e.target.value)} className="mt-1 w-40" data-testid="valor-administracion" />
-        </label>
+        <div>
+          <label className="block text-caption" htmlFor="valor-administracion">
+            Valor mensual de la administración
+          </label>
+          <Input
+            id="valor-administracion"
+            inputMode="numeric"
+            value={valor}
+            onChange={(e) => {
+              setValor(e.target.value);
+              setErrorDelValor(undefined);
+            }}
+            className="mt-1 w-40"
+            data-testid="valor-administracion"
+            aria-invalid={errorDelValor ? true : undefined}
+            aria-describedby="valor-administracion-error"
+          />
+          <ErrorDelCampo id="valor-administracion-error" mensaje={errorDelValor} className="max-w-sm" />
+        </div>
       )}
       {habil && (
         <Button
           size="sm"
           variant="outline"
           disabled={pagaLaInmobiliaria && !(valorNum > 0)}
-          onClick={() =>
-            onGuardar({
-              modalidad: modalidad === '' ? null : modalidad,
-              ...(pagaLaInmobiliaria ? { valorCop: valorNum } : {}),
-            })
-          }
+          onClick={() => void guardar()}
           data-testid="guardar-administracion"
         >
           Guardar administración
@@ -618,7 +856,12 @@ function ACualCopropiedad({
           : 'Listo: de ahora en adelante la cuota de administración de este inmueble se asienta a nombre de esa copropiedad.',
       );
     } catch (e) {
-      toast.error(clasificarFallo(e).descripcion);
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos asignar la copropiedad.',
+          accion: 'asignar la copropiedad',
+        }),
+      );
     } finally {
       setGuardando(false);
     }
@@ -645,7 +888,7 @@ function ACualCopropiedad({
         ))}
       </select>
       {elegida === '' ? (
-        <p className="text-caption text-plan-status-yellow" data-testid="copropiedad-sin-declarar">
+        <p className="text-caption text-warning-700 dark:text-warning-100" data-testid="copropiedad-sin-declarar">
           Sin copropiedad, la cuota de administración entra al libro sin decir de quién es, y eso es
           lo que traba la exógena. Las copropiedades se registran en Contabilidad → Copropiedades.
         </p>

@@ -2,6 +2,7 @@
 
 import { MonoLabel } from '@leasefy/cadence'
 
+import { BarraQueCrece } from '@/components/inmobiliaria/reports/barra-que-crece'
 import { useI18n } from '@/lib/i18n'
 import { type CarteraStage, stageColorClasses, STAGE_LABELS_ES, STAGE_LABELS_EN } from '@/lib/cartera'
 
@@ -54,8 +55,11 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
         </p>
       </div>
 
-      {/* Horizontal bar — md+ */}
-      <div
+      {/* Horizontal bar — md+. Crece desde la izquierda al aparecer (sólo
+          `scaleX`); el ancho de cada etapa es el dato y ya no se anima
+          (`transition-all` recalculaba el layout en cada cuadro). */}
+      <BarraQueCrece
+        eje="x"
         className="hidden md:flex rounded-lg overflow-hidden h-10"
         role="img"
         aria-describedby="funnel-summary-table"
@@ -64,15 +68,16 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
         {stagesWithPct.map(({ stage, count, pct, colors, label }) => (
           <div
             key={stage}
-            className={`${colors.bg} flex items-center justify-center overflow-hidden transition-all`}
+            className={`${colors.bg} flex items-center justify-center overflow-hidden`}
             style={{ flexBasis: `${pct}%`, minWidth: pct > 0 ? '4px' : '0' }}
             title={`${label}: ${count} (${pct.toFixed(1)}%)`}
           />
         ))}
-      </div>
+      </BarraQueCrece>
 
-      {/* Vertical stacked — sm */}
-      <div
+      {/* Vertical stacked — sm (crece desde la izquierda, igual que la de md+) */}
+      <BarraQueCrece
+        eje="x"
         className="flex flex-col md:hidden rounded-lg overflow-hidden"
         role="img"
         aria-describedby="funnel-summary-table"
@@ -86,7 +91,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
             title={`${label}: ${count} (${pct.toFixed(1)}%)`}
           />
         ))}
-      </div>
+      </BarraQueCrece>
 
       {/* Legend */}
       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3">
@@ -106,7 +111,11 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
           aria-describedby. Cadence `Table` injects a visible scroll-wrapper
           <div> and drops <caption> (no DS equivalent), degrading the
           screen-reader fallback semantics with no visual benefit. Kept native. */}
-      <table className="sr-only" id="funnel-summary-table">
+      {/* QA-IA-B (04-10-2026): el `sr-only` va en un <div> y no en el <table>:
+          una tabla no se encoge a 1 px (`width` no le aplica) y a 390 px medía
+          395 px y corría la portada de Cobranza de lado (scrollWidth 439). */}
+      <div className="sr-only" data-testid="funnel-summary-envoltorio">
+      <table id="funnel-summary-table">
         <caption>{t('inmobiliaria.ai.cobranza.overview.funnel.tableCaption')}</caption>
         <thead>
           <tr>
@@ -125,6 +134,7 @@ export function CobranzaFunnelChart({ stages, isLoading = false }: CobranzaFunne
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

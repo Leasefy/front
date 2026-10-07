@@ -6,7 +6,8 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
-import { POST, sinCredenciales, violacionesDelCuerpo, TOPE_DEL_CUERPO } from './route'
+import { POST } from './route'
+import { sinCredenciales, violacionesDelCuerpo, TOPE_DEL_CUERPO } from '@/lib/seguridad/reporte-de-la-csp'
 import { _olvidarCuentas, POLITICAS_DE_LAS_RUTAS } from '@/lib/api/limite-de-la-ruta'
 
 const REPORTE_VIEJO = {

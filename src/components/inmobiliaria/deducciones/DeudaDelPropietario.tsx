@@ -20,6 +20,7 @@ import { Receipt } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { deduccionesApi } from '@/lib/api/deducciones.service';
 import { usePermissions } from '@/lib/hooks/usePermissions';
@@ -66,8 +67,11 @@ export function DeudaDelPropietario({ propietarioId }: { propietarioId: string }
       toast.success(t(k('generada'), { numero: cuenta.numero }));
       await cargar();
     } catch (e) {
+      // Con la regla de oro: lo que dijo el back si se lee, «de nuestro lado»
+      // con la referencia en un 5xx, la conexión sólo sin respuesta.
       toast.error(t(k('noSeGenero')), {
-        description: e instanceof Error ? e.message : undefined,
+        description:
+          mensajeParaLaPersona(e, { porDefecto: '', accion: 'generar la cuenta de cobro' }) || undefined,
       });
     } finally {
       setGenerando(false);

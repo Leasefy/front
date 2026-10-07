@@ -14,12 +14,16 @@
 
 import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
-import { ArrowSquareOut } from '@phosphor-icons/react'
+import { ArrowSquareOut, XCircle } from '@phosphor-icons/react'
 import { toast } from '@/components/ui/toast'
 
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
+import { falloDelMicro } from '@/lib/api/fallo-del-micro'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import { useArcoDetail } from '@/lib/hooks/cobranza/use-arco-detail'
 import { useArcoGate } from '@/lib/hooks/cobranza/use-arco-gate'
 import { SlaCountdownBadge } from '@/components/inmobiliaria/cobranza/SlaCountdownBadge'
@@ -43,14 +47,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 // Piezas que resuelve el design system: no rehacerlas a mano.
-import {
-  Card,
-  KeyValueList,
-  MonoLabel,
-  Timeline,
-  type KeyValueItem,
-  type TimelineEntry,
-} from '@leasefy/cadence'
+import { Card, CrossFade, KeyValueList, MonoLabel, Presence, Timeline, type KeyValueItem, type TimelineEntry } from '@leasefy/cadence'
 import type { ArcoDetailTimelineEntry } from '@/lib/hooks/cobranza/use-arco-detail'
 import type { ArcoRequestType } from '@/lib/hooks/cobranza/use-arco-requests'
 
@@ -306,6 +303,7 @@ interface ResolvePanelProps {
 function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: ResolvePanelProps) {
   const [isResolving, setIsResolving] = useState(false)
   const [isRejecting, setIsRejecting] = useState(false)
+  const [rejectOpen, setRejectOpen] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [resolveData, setResolveData] = useState<ResolvePayload>({})
 
@@ -320,13 +318,20 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(resolveData),
       })
-      if (!res.ok) throw new Error(String(res.status))
+      if (!res.ok) throw await falloDelMicro(res)
       toast.success(t('inmobiliaria.ai.arco.toast.resolved'))
       await detailRefetch()
-    } catch {
+    } catch (e) {
       // Una acción de cumplimiento que falla en silencio es peor que una que
       // no existe: el operador cree que respondió y el plazo sigue corriendo.
-      toast.error(t('inmobiliaria.ai.arco.error.resolve'))
+      // Antes decía «Verifica la conexión» ante cualquier fallo; ahora un 400
+      // dice qué falta, un 5xx que fue nuestro, y la conexión sólo sin respuesta.
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos guardar la resolución.',
+          accion: 'guardar la resolución',
+        }),
+      )
     } finally {
       setIsResolving(false)
     }
@@ -341,12 +346,18 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(rejectReason.trim() ? { reason: rejectReason.trim() } : {}),
       })
-      if (!res.ok) throw new Error(String(res.status))
+      if (!res.ok) throw await falloDelMicro(res)
       toast.success(t('inmobiliaria.ai.arco.toast.rejected'))
+      setRejectOpen(false)
       setRejectReason('')
       await detailRefetch()
-    } catch {
-      toast.error(t('inmobiliaria.ai.arco.error.reject'))
+    } catch (e) {
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos rechazar la solicitud.',
+          accion: 'rechazar la solicitud',
+        }),
+      )
     } finally {
       setIsRejecting(false)
     }
@@ -362,12 +373,12 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
         </h2>
 
         {/* Counsel gate inline Alert — D-36-05: NOT a redirect, NOT a toast */}
-        {gateBlocked && (
+        <Presence show={gateBlocked} direction="none" initial={false}>
           <Alert className="bg-warning-soft border border-warning/30 text-warning">
             <AlertTitle>{t('inmobiliaria.ai.arco.counselGate.title')}</AlertTitle>
             <AlertDescription>{t('inmobiliaria.ai.arco.counselGate.description')}</AlertDescription>
           </Alert>
-        )}
+        </Presence>
 
         <ResolveForm
           type={type}
@@ -382,13 +393,13 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
           apilados y con el mismo peso — un patrón de formulario móvil que en un
           panel de escritorio hace que rechazar pese igual que resolver. */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border px-5 py-4">
-        <AlertDialog>
+        <AlertDialog open={rejectOpen} onOpenChange={(o) => !isRejecting && setRejectOpen(o)}>
           <AlertDialogTrigger asChild>
             <Button variant="ghost" size="sm" hideArrow disabled={busy}>
               {t('inmobiliaria.ai.arco.reject')}
             </Button>
           </AlertDialogTrigger>
-          <AlertDialogContent>
+          <AlertDialogContent variant="destructive" icon={<XCircle weight="bold" />}>
             <AlertDialogHeader>
               <AlertDialogTitle>
                 {t('inmobiliaria.ai.arco.rejectDialog.title')}
@@ -415,8 +426,15 @@ function ResolvePanel({ requestId, type, gateBlocked, detailRefetch, t }: Resolv
             </div>
 
             <AlertDialogFooter>
-              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-              <AlertDialogAction onClick={() => void handleReject()} tone="danger">
+              <AlertDialogCancel disabled={isRejecting}>{t('common.cancel')}</AlertDialogCancel>
+              <AlertDialogAction
+                // Abierto mientras rechaza: si falla, el motivo escrito no se pierde.
+                onClick={(e) => {
+                  e.preventDefault()
+                  void handleReject()
+                }}
+                loading={isRejecting}
+              >
                 {t('inmobiliaria.ai.arco.rejectDialog.confirm')}
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -473,11 +491,16 @@ function TriageButton({
         headers: { 'Content-Type': 'application/json' },
         body: '{}',
       })
-      if (!res.ok) throw new Error(String(res.status))
+      if (!res.ok) throw await falloDelMicro(res)
       toast.success(t('inmobiliaria.ai.arco.toast.triaged'))
       await detailRefetch()
-    } catch {
-      toast.error(t('inmobiliaria.ai.arco.error.triage'))
+    } catch (e) {
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: t('inmobiliaria.ai.arco.error.triage'),
+          accion: 'tomar la solicitud',
+        }),
+      )
     } finally {
       setIsBusy(false)
     }
@@ -533,12 +556,24 @@ function ExtendDialog({
   const [days, setDays] = useState(String(maxDays))
   const [reason, setReason] = useState('')
   const [isBusy, setIsBusy] = useState(false)
+  /** El error de cada campo que mandó el micro en `campos` (un 400). */
+  const [erroresDelServidor, setErroresDelServidor] = useState<
+    Partial<Record<'days' | 'reason', string>>
+  >({})
 
   const NS = 'inmobiliaria.ai.arco.extend'
   // El back exige 20 caracteres: «ocupado» no es un motivo de demora.
   const reasonTooShort = reason.trim().length < 20
   const parsedDays = Number(days)
   const daysInvalid = !Number.isInteger(parsedDays) || parsedDays < 1 || parsedDays > maxDays
+  // El botón se apaga con datos que el micro no acepta; acá se dice por qué.
+  const errorDeLosDias = daysInvalid
+    ? `Escribe un número entero de días, de 1 a ${maxDays}.`
+    : erroresDelServidor.days
+  const errorDelMotivo =
+    reason.trim().length > 0 && reasonTooShort
+      ? 'El motivo necesita al menos 20 caracteres: se le copia tal cual al solicitante.'
+      : erroresDelServidor.reason
 
   const handleExtend = async () => {
     if (!actionBase || reasonTooShort || daysInvalid) return
@@ -549,20 +584,33 @@ function ExtendDialog({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ days: parsedDays, reason: reason.trim() }),
       })
-      if (!res.ok) throw new Error(String(res.status))
+      if (!res.ok) throw await falloDelMicro(res)
       toast.success(t(`${NS}.toastOk`))
       setOpen(false)
       setReason('')
+      setErroresDelServidor({})
       await detailRefetch()
-    } catch {
-      toast.error(t(`${NS}.toastError`))
+    } catch (e) {
+      // Un 400 con `campos` va a su campo; al toast, sólo lo suelto (un 5xx
+      // con la referencia, la red, el aviso al solicitante que no salió).
+      const reparto = repartirErroresDelServidor<'days' | 'reason'>(e, {
+        campos: ['days', 'reason'],
+        porDefecto: t(`${NS}.toastError`),
+        accion: 'extender el plazo',
+      })
+      setErroresDelServidor(reparto.porCampo)
+      const primero = reparto.orden[0]
+      if (primero) {
+        document.getElementById(primero === 'days' ? 'arco-extend-days' : 'arco-extend-reason')?.focus()
+      }
+      if (reparto.sueltos.length > 0) toast.error(reparto.sueltos.join(' · '))
     } finally {
       setIsBusy(false)
     }
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
+    <AlertDialog open={open} onOpenChange={(o) => !isBusy && setOpen(o)}>
       <AlertDialogTrigger asChild>
         <Button variant="outline" size="sm" hideArrow disabled={!actionBase}>
           {t(`${NS}.action`)}
@@ -587,9 +635,15 @@ function ExtendDialog({
               min={1}
               max={maxDays}
               value={days}
-              onChange={(e) => setDays(e.target.value)}
+              onChange={(e) => {
+                setDays(e.target.value)
+                setErroresDelServidor(({ days: _, ...resto }) => resto)
+              }}
               disabled={isBusy}
+              aria-invalid={errorDeLosDias ? true : undefined}
+              aria-describedby={errorDeLosDias ? 'arco-extend-days-error' : undefined}
             />
+            <ErrorDelCampo id="arco-extend-days-error" mensaje={errorDeLosDias} />
           </div>
           <div className="space-y-1.5">
             <label htmlFor="arco-extend-reason" className="text-xs font-medium text-fg-muted">
@@ -598,21 +652,31 @@ function ExtendDialog({
             <Textarea
               id="arco-extend-reason"
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={(e) => {
+                setReason(e.target.value)
+                setErroresDelServidor(({ reason: _, ...resto }) => resto)
+              }}
               maxLength={1000}
               disabled={isBusy}
               className="min-h-[88px]"
               placeholder={t(`${NS}.reasonPlaceholder`)}
+              aria-invalid={errorDelMotivo ? true : undefined}
+              aria-describedby={errorDelMotivo ? 'arco-extend-reason-error' : undefined}
             />
             {/* El motivo se le copia tal cual al solicitante en el correo. */}
-            <p className="text-caption text-fg-subtle">{t(`${NS}.reasonHint`)}</p>
+            <ErrorDelCampo
+              id="arco-extend-reason-error"
+              mensaje={errorDelMotivo}
+              pista={t(`${NS}.reasonHint`)}
+            />
           </div>
         </div>
 
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isBusy}>{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction
-            disabled={isBusy || reasonTooShort || daysInvalid}
+            disabled={reasonTooShort || daysInvalid}
+            loading={isBusy}
             onClick={(e) => {
               // El diálogo cierra solo al confirmar; acá lo controlamos nosotros
               // para no cerrarlo si el aviso al solicitante falla.
@@ -804,12 +868,21 @@ export default function ArcoDetailPage(props: ArcoDetailPageProps) {
   const gateBlocked = gateData?.blocked ?? true // fail-closed: blocked until gate confirms otherwise
 
   // Loading skeleton (Phase 38-05a: PageSkeleton primitive)
-  if (isLoading && !data) return <PageSkeleton variant="detail" />
+  // Movimiento: cada salida en un `CrossFade` con su clave (esqueleto →
+  // solicitud, → fallo); lo que ya estaba al montarse no se anima.
+  if (isLoading && !data) {
+    return (
+      <CrossFade swapKey="esqueleto">
+        <PageSkeleton variant="detail" />
+      </CrossFade>
+    )
+  }
 
 
   // Error state
   if (error) {
     return (
+      <CrossFade swapKey="fallo">
       <div className="p-4 md:p-6">
         <Alert variant="destructive">
           <AlertTitle>{t('common.error')}</AlertTitle>
@@ -826,6 +899,7 @@ export default function ArcoDetailPage(props: ArcoDetailPageProps) {
           </AlertDescription>
         </Alert>
       </div>
+      </CrossFade>
     )
   }
 
@@ -837,6 +911,7 @@ export default function ArcoDetailPage(props: ArcoDetailPageProps) {
   const timeline = data.timeline
 
   return (
+    <CrossFade swapKey="solicitud">
     <div className="p-4 md:p-6 space-y-6">
       {/* Volver: primitivo del DS (`backButtonVariants` de Cadence), no un
           Link con una flecha escrita a mano. */}
@@ -895,5 +970,6 @@ export default function ArcoDetailPage(props: ArcoDetailPageProps) {
         </div>
       </div>
     </div>
+    </CrossFade>
   )
 }

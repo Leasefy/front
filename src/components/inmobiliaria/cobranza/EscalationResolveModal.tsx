@@ -23,12 +23,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { WarningCircle, CheckCircle } from '@phosphor-icons/react'
-import { MonoLabel } from '@leasefy/cadence'
+import { Collapse, MonoLabel, Presence } from '@leasefy/cadence'
 
 import { useI18n } from '@/lib/i18n'
 import { useLenis } from '@/components/providers/SmoothScroll'
 import { Button, Textarea } from '@/components/ui'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
+import { mensajeDeLaAccion } from '@/lib/hooks/cobranza/mensaje-de-la-accion'
 import {
   Select,
   SelectContent,
@@ -61,7 +64,15 @@ interface EscalationResolveModalProps {
   onResolve: (
     id: string,
     body: { category: EscalationCategory; resolution_text: string },
-  ) => Promise<{ ok: boolean; status: number; cascaded_to_legal?: boolean }>
+  ) => Promise<{
+    ok: boolean
+    status: number
+    cascaded_to_legal?: boolean
+    /** El `ApiError` del micro o el error de la red (ver `use-escalations`). */
+    fallo?: unknown
+    /** Un código del hook cuando la acción ni salió. */
+    error?: string
+  }>
 }
 
 export function EscalationResolveModal({
@@ -78,6 +89,10 @@ export function EscalationResolveModal({
   const [ackLegal, setAckLegal] = useState<boolean>(false)
   const [submitting, setSubmitting] = useState<boolean>(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  /** El error de cada campo que mandó el micro en `campos` (un 400). */
+  const [erroresDelServidor, setErroresDelServidor] = useState<
+    Partial<Record<'category' | 'resolution_text', string>>
+  >({})
 
   // Lenis stop/start — Phase 31 invariant (DESIGN.md §8)
   useEffect(() => {
@@ -95,6 +110,7 @@ export function EscalationResolveModal({
       setText('')
       setAckLegal(false)
       setSubmitError(null)
+      setErroresDelServidor({})
     }
   }, [isOpen, escalationId])
 
@@ -116,6 +132,7 @@ export function EscalationResolveModal({
     (next: EscalationCategory) => {
       setCategory(next)
       setSubmitError(null)
+      setErroresDelServidor(({ category: _, ...resto }) => resto)
       setAckLegal(false)
       if (text.trim().length === 0) {
         const tpl = TEMPLATES.find((tp) => tp.id === next)
@@ -134,16 +151,45 @@ export function EscalationResolveModal({
       resolution_text: text.trim(),
     })
     setSubmitting(false)
+    setErroresDelServidor({})
     if (res.ok) {
       onClose()
     } else if (res.status === 403) {
+      // El 403 del micro no trae un `message` para la persona: se dice acá.
       setSubmitError(t('inmobiliaria.ai.cobranza.escalaciones.errors.forbidden'))
     } else if (res.status === 404 || res.status === 409) {
       setSubmitError(t('inmobiliaria.ai.cobranza.escalaciones.errors.notFound'))
+    } else if (res.fallo === undefined) {
+      setSubmitError(
+        mensajeDeLaAccion(res, {
+          porDefecto: 'No pudimos resolver la escalación.',
+          accion: 'resolver la escalación',
+        }),
+      )
     } else {
-      setSubmitError(`Error ${res.status}`)
+      // Un 400 con `campos` va a su campo; un 5xx dice «de nuestro lado» con
+      // la referencia; la red, la conexión. Antes: «Error 500».
+      const reparto = repartirErroresDelServidor<'category' | 'resolution_text'>(res.fallo, {
+        campos: ['category', 'resolution_text'],
+        porDefecto: 'No pudimos resolver la escalación.',
+        accion: 'resolver la escalación',
+      })
+      setErroresDelServidor(reparto.porCampo)
+      const primero = reparto.orden[0]
+      if (primero) {
+        document.getElementById(primero === 'category' ? 'resolve-category' : 'resolve-text')?.focus()
+      }
+      setSubmitError(reparto.sueltos.length > 0 ? reparto.sueltos.join(' · ') : null)
     }
   }, [escalationId, category, text, onResolve, onClose, t])
+
+  /** El error del texto: el largo (en cuanto se escribe) o lo que mandó el micro. */
+  const errorDelTexto =
+    textLen > 0 && tooShort
+      ? t('inmobiliaria.ai.cobranza.escalaciones.errors.tooShort')
+      : tooLong
+        ? t('inmobiliaria.ai.cobranza.escalaciones.errors.tooLong')
+        : erroresDelServidor.resolution_text
 
   return (
     <ResponsiveDialog
@@ -175,7 +221,13 @@ export function EscalationResolveModal({
             value={category || undefined}
             onValueChange={(v) => handleCategoryChange(v as EscalationCategory)}
           >
-            <SelectTrigger id="resolve-category" className="w-full">
+            <SelectTrigger
+              id="resolve-category"
+              aria-required="true"
+              className="w-full"
+              aria-invalid={erroresDelServidor.category ? true : undefined}
+              aria-describedby={erroresDelServidor.category ? 'resolve-category-error' : undefined}
+            >
               <SelectValue placeholder="—" />
             </SelectTrigger>
             <SelectContent>
@@ -186,10 +238,12 @@ export function EscalationResolveModal({
               ))}
             </SelectContent>
           </Select>
+          <ErrorDelCampo id="resolve-category-error" mensaje={erroresDelServidor.category} />
         </div>
 
         {/* Escalated-to-legal warning (rose banner per DESIGN.md §4) */}
-        {requiresLegalAck && (
+        {/* Aparece y se va con su altura al elegir (o dejar) «pasa a jurídico». */}
+        <Collapse open={requiresLegalAck}>
           <div className="rounded-lg bg-danger-soft border border-danger/30 p-3 flex items-start gap-2">
             <WarningCircle
               className="w-5 h-5 text-danger flex-shrink-0 mt-0.5"
@@ -207,11 +261,14 @@ export function EscalationResolveModal({
                   onCheckedChange={(c) => setAckLegal(c === true)}
                   data-testid="ack-legal-checkbox"
                 />
-                <span>Esto pasará el deudor a pre_judicial</span>
+                {/* La misma frase que declara el micro para la cola humana y el Piloto (02-10-2026). */}
+                <span>
+                  {t('inmobiliaria.ai.cobranza.escalaciones.resolveModal.escalatedToLegalAck')}
+                </span>
               </label>
             </div>
           </div>
-        )}
+        </Collapse>
 
         {/* Free-form textarea */}
         <div>
@@ -223,8 +280,14 @@ export function EscalationResolveModal({
           </label>
           <Textarea
             id="resolve-text"
+            aria-required="true"
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value)
+              setErroresDelServidor(({ resolution_text: _, ...resto }) => resto)
+            }}
+            aria-invalid={errorDelTexto ? true : undefined}
+            aria-describedby={errorDelTexto ? 'resolve-text-error' : undefined}
             rows={6}
             maxLength={RESOLUTION_TEXT_MAX + 50 /* allow over-typing then show error */}
             className="w-full leading-relaxed"
@@ -232,29 +295,23 @@ export function EscalationResolveModal({
               'inmobiliaria.ai.cobranza.escalaciones.resolveModal.textLabel',
             )}
           />
-          <div className="mt-1 flex items-center justify-between text-[11px]">
-            <span
-              className={
-                tooShort
-                  ? 'text-danger'
-                  : tooLong
-                    ? 'text-danger'
-                    : 'text-fg-subtle'
-              }
-            >
-              {tooShort
-                ? t('inmobiliaria.ai.cobranza.escalaciones.errors.tooShort')
-                : tooLong
-                  ? t('inmobiliaria.ai.cobranza.escalaciones.errors.tooLong')
-                  : ''}
-            </span>
-            <span className="text-fg-subtle tabular-nums font-mono">
+          <div className="mt-1 flex items-start justify-between gap-3 text-[11px]">
+            {/* Vacío, el mínimo es una pista; escrito y corto (o largo), un error. */}
+            <ErrorDelCampo
+              id="resolve-text-error"
+              mensaje={errorDelTexto}
+              pista={t('inmobiliaria.ai.cobranza.escalaciones.errors.tooShort')}
+              className="mt-0"
+            />
+            <span className="ml-auto shrink-0 text-fg-subtle tabular-nums font-mono">
               {textLen} / {RESOLUTION_TEXT_MAX}
             </span>
           </div>
         </div>
 
-        {submitError && <p className="text-xs text-danger">{submitError}</p>}
+        <Presence as="p" show={Boolean(submitError)} role="alert" className="text-xs text-danger" data-testid="escalacion-resolver-error">
+            {submitError}
+        </Presence>
 
         <ResponsiveDialogFooter className="gap-2">
           <Button

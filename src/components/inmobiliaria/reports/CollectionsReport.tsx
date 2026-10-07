@@ -11,6 +11,7 @@ import {
   Phone,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { BarraQueCrece } from './barra-que-crece';
 import { useI18n } from '@/lib/i18n';
 import { BASE_POR_DEFECTO, claveDelRotulo } from '@/lib/tasa-de-recaudo';
 import { Progress } from '@/components/ui/progress';
@@ -115,16 +116,17 @@ export function CollectionsReport({ data }: CollectionsReportProps) {
                 <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity font-medium whitespace-nowrap">
                   {textoDeTasa(m.moraRate)} mora
                 </span>
-                <div className="w-full min-h-0 flex-1 flex flex-col justify-end gap-px">
+                {/* La columna entera (mora arriba, recaudo abajo) crece desde la base. */}
+                <BarraQueCrece className="w-full min-h-0 flex-1 flex flex-col justify-end gap-px">
                   <div
-                    className="w-full bg-danger dark:bg-danger/60 rounded-t transition-all duration-300"
+                    className="w-full bg-danger dark:bg-danger/60 rounded-t"
                     style={{ height: `${latePct}%` }}
                   />
                   <div
-                    className="w-full bg-success dark:bg-success rounded-b transition-all duration-300"
+                    className="w-full bg-success dark:bg-success rounded-b"
                     style={{ height: `${collectedPct}%` }}
                   />
-                </div>
+                </BarraQueCrece>
                 <span className="text-[9px] text-muted-foreground leading-none truncate w-full text-center">
                   {m.month.split(' ')[0]}
                 </span>

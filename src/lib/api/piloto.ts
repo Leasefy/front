@@ -21,6 +21,8 @@
  */
 
 import { agentFetch } from './agent-fetch'
+import type { ApiError } from './client'
+import { falloDelMicro } from './fallo-del-micro'
 import { conBackoff } from './fetch-with-backoff'
 import type { AgenteId } from './work-item'
 
@@ -36,6 +38,13 @@ export interface ActivityItem {
   titulo: string
   detalle?: string
   href?: string
+  /**
+   * MANDO-DATOS (05-10-2026): quién lo hizo, como campo del micro (no del
+   * texto): `solo` = el Piloto o el agente sin una persona; `equipo` = otra
+   * persona del equipo; `tu` = quien mira. Sin nombre ni correo (ARREGLOS-4).
+   * Un micro anterior no lo manda.
+   */
+  quien?: 'solo' | 'equipo' | 'tu'
 }
 
 export interface PilotoActivityResponse {
@@ -50,14 +59,26 @@ export type PilotoPrioridad = 'alta' | 'media' | 'baja'
  * `AccionCampo` en el micro (`src/piloto/bandeja.ts`).
  */
 export interface AccionCampo {
-  /** Llave con la que el valor entra al cuerpo. */
+  /** Llave con la que el valor entra al cuerpo (una `confirmacion` no viaja). */
   id: string
   label: string
-  tipo: 'opcion' | 'multiple' | 'texto'
+  /**
+   * `confirmacion` (02-10-2026): una casilla que hay que marcar antes de
+   * ejecutar; es una compuerta del cliente y NUNCA viaja en el cuerpo. Un
+   * `tipo` que esta versión no conoce no se pinta ni viaja.
+   */
+  tipo: 'opcion' | 'multiple' | 'texto' | 'confirmacion'
   opciones?: Array<{ valor: string; label: string }>
+  /** Mientras el campo se vea (ver `visibleSi`). */
   requerido?: boolean
   placeholder?: string
+  /** Mínimo de caracteres de un `texto`, sin espacios a los lados. */
+  minLargo?: number
   maxLargo?: number
+  /** Sólo se ve —y sólo cuenta y viaja— cuando `campo` vale `valor`. */
+  visibleSi?: { campo: string; valor: string }
+  /** Sólo `confirmacion`: lo que se lee antes de marcar la casilla. */
+  aviso?: string
 }
 
 export interface InboxAccion {
@@ -97,6 +118,37 @@ export function accionPregunta(accion: InboxAccion): boolean {
   return (accion.campos?.length ?? 0) > 0 || Boolean(accion.confirmacion)
 }
 
+// ── El director (fase 1, 28-09-2026): lo que la Bandeja gana ───────────────
+//
+// Cambio ADITIVO de `director-api-front.md`: cada ítem que venga de
+// `acciones_del_piloto` gana `director` (cuando la fila la pidió el director) y
+// `motivo` (la frase de la perilla, que se guardaba NOT NULL y ninguna
+// pantalla pintaba). Los dos son opcionales: un micro anterior no los manda.
+
+/** La meta a la que apunta algo del director. */
+export interface MetaDelDirectorRef {
+  id: string
+  metrica: string
+  nombre: string
+}
+
+/** Una evidencia que el director cita. Sólo sale de la foto del día (I-5). */
+export interface EvidenciaDelDirector {
+  tipo: string
+  ref: string
+  texto: string
+  enlace: string | null
+}
+
+/** Por qué el director pidió esta fila de la Bandeja. */
+export interface DirectorDeLaAccion {
+  prioridad: number
+  porQue: string
+  evidencia: EvidenciaDelDirector[]
+  meta: MetaDelDirectorRef | null
+  alternativaDescartada: string | null
+}
+
 export interface InboxItem {
   id: string
   fuente: string
@@ -110,6 +162,10 @@ export interface InboxItem {
   desde: string
   href: string
   accion?: InboxAccion
+  /** La fila la pidió el director: su por qué, su evidencia y su meta. */
+  director?: DirectorDeLaAccion | null
+  /** La frase de la perilla: por qué esto espera un clic. Se muestra SIEMPRE que venga. */
+  motivo?: string
 }
 
 export interface PilotoInboxResponse {
@@ -149,8 +205,13 @@ export interface BriefingNumeros {
   pendientes?: number
   altas?: number
   llamadasHoy?: number
-  promesasHoy?: number
-  /** Plata recuperada por los agentes en el mes corriente (entero COP). */
+  /**
+   * Las promesas de pago CREADAS hoy. Un solo nombre en el micro y aquí
+   * (MANDO-DATOS, 05-10-2026): antes este tipo decía `promesasHoy`, que en el
+   * pulso son las que VENCEN hoy, y el micro siempre mandó éste.
+   */
+  promesasCreadasHoy?: number
+  /** Plata recuperada por los agentes en el mes corriente (pesos, al centavo). */
   recuperadoMesCop?: number
 }
 
@@ -183,11 +244,20 @@ export interface PilotoFetchResult<T> {
  */
 export const ERROR_SIN_RESPUESTA = 'timeout: el Piloto no contestó a tiempo'
 
-async function getJson<T>(
+/** La lectura GET del micro que usan todas las tarjetas del Piloto (también las del director). */
+/**
+ * 🟡 QA-PILOTO-95 r2 (06-10-2026): el tope de TODA lectura que no pide uno propio. Con el micro
+ * colgado (acepta y no contesta) la Bandeja, la actividad, las tendencias, el briefing y la flota no
+ * tenían tope y la Cabina se quedaba en esqueleto para siempre; ahora, pasado este tiempo, es el
+ * error «no contestó a tiempo» que cada tarjeta dice en palabras, con su «Intentar de nuevo».
+ */
+export const TOPE_DE_LECTURA_MS = 20_000
+
+export async function getJson<T>(
   path: string,
   signal?: AbortSignal,
-  /** Tope de espera (ms). Sin tope, una lectura colgada dejaba el esqueleto para siempre. */
-  topeMs?: number,
+  /** Tope de espera (ms). Sin tope propio vale `TOPE_DE_LECTURA_MS`: nunca un esqueleto eterno. */
+  topeMs: number = TOPE_DE_LECTURA_MS,
 ): Promise<PilotoFetchResult<T>> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) throw new Error('not_configured')
@@ -216,8 +286,31 @@ async function getJson<T>(
     if (reloj) clearTimeout(reloj)
   }
   if (res.status === 404) return { data: null, notAvailable: true }
-  if (!res.ok) throw new Error(`${res.status}`)
+  // El sobre entero (status, `code`, `message`, referencia) para el traductor:
+  // con un `Error('500')` la pantalla no sabía si era un 403, un 429 o un 5xx
+  // (ARREGLOS-4, 03-10-2026).
+  if (!res.ok) throw await falloDelMicro(res)
   return { data: (await res.json()) as T, notAvailable: false }
+}
+
+// ── Escrituras que no salen (02-10-2026, tanda 2 de errores, A6) ───────────
+
+/**
+ * Una escritura que no salió. `error` se conserva por compatibilidad (el
+ * `error` del cuerpo viejo o el status; NO es para la persona) y `fallo` lleva
+ * el error entero para el traductor: el `ApiError` de `falloDelMicro` (status,
+ * `code`, `message` del sobre y `campos`) o, si el pedido ni salió, el error
+ * de red tal cual (status 0 = conexión). La pantalla dice
+ * `mensajeParaLaPersona(r.fallo, …)`, nunca `r.error`.
+ */
+async function escrituraQueNoSalio(res: Response): Promise<{ ok: false; error: string; fallo: ApiError }> {
+  const fallo = await falloDelMicro(res)
+  const viejo = fallo.detalle?.error
+  return { ok: false, error: typeof viejo === 'string' && viejo ? viejo : `${res.status}`, fallo }
+}
+
+function escrituraSinRespuesta(err: unknown, codigo: string): { ok: false; error: string; fallo: unknown } {
+  return { ok: false, error: err instanceof Error ? err.message : codigo, fallo: err }
 }
 
 // ── Fetchers ────────────────────────────────────────────────────────────────
@@ -259,6 +352,11 @@ export interface PulsoEnCurso {
   /** ISO-8601 — desde cuándo está en curso. */
   desde?: string
   href?: string
+  /**
+   * MANDO-DATOS (05-10-2026): el agente detrás (id de la flota: `cobranza`,
+   * `retencion`…), como campo. Sin agente conocido no viene.
+   */
+  agente?: string
 }
 
 /** Un caso concreto detrás del número de una alerta. Su `id` abre el cajón. */
@@ -399,6 +497,9 @@ export interface PilotoDetalle {
   acciones: InboxAccion[]
   enlaces: DetalleEnlace[]
   nota?: string
+  /** Lo mismo que el ítem de la Bandeja (cambio aditivo del director). */
+  director?: DirectorDeLaAccion | null
+  motivo?: string
 }
 
 /**
@@ -415,6 +516,63 @@ export function fetchPilotoDetalle(
     `/api/agency/${agencyId}/ai-hub/detalle/${encodeURIComponent(itemId)}`,
     signal,
   )
+}
+
+// ── Tendencias del centro de mando (MANDO-DATOS, 05-10-2026) ────────────────
+
+/** Lo recuperado un día de Bogotá (la definición de «Recuperado este mes»). */
+export interface DiaRecuperado {
+  fecha: string
+  cop: number
+}
+
+export interface AccionesDelDia {
+  fecha: string
+  total: number
+  /** Lo que hicieron el Piloto o los agentes sin una persona. */
+  solos: number
+  /** Lo que hizo o decidió una persona del equipo. */
+  conPersona: number
+  porAgente: Array<{ agente: string; solos: number; conPersona: number }>
+}
+
+/**
+ * `GET …/ai-hub/tendencias`: cada pieza `null` si el micro no la pudo leer
+ * (o quien mira no ve la cobranza: lo recuperado y la mora).
+ */
+export interface PilotoTendencias {
+  /** Hoy en Bogotá: el último día de cada serie (va a medias). */
+  hoy: string
+  /** 30 días, todos (los que no tuvieron pagos, en 0). */
+  recuperado: { desde: string; hasta: string; dias: DiaRecuperado[] } | null
+  /** 14 días, con las MISMAS entradas de la Actividad. */
+  acciones: { desde: string; hasta: string; dias: AccionesDelDia[]; recortada: boolean } | null
+  /** Las horas ahorradas en 30 días (v2: medidas + estimadas). */
+  horas: {
+    desde: string
+    hasta: string
+    total: number | null
+    medidas: number
+    estimadas: number | null
+    llamadas: number
+    acciones: number | null
+    estimada: boolean
+    supuesto: string
+  } | null
+  /** La mora de más de 30 días por día (la `mora_30` del director, al momento). */
+  mora: {
+    desde: string
+    hasta: string
+    dias: Array<{ fecha: string; valor: number | null; saldoCop: number | null }>
+    definicion: string
+  } | null
+}
+
+export function fetchPilotoTendencias(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<PilotoTendencias>> {
+  return getJson<PilotoTendencias>(`/api/agency/${agencyId}/ai-hub/tendencias`, signal)
 }
 
 export function fetchPilotoBriefing(
@@ -435,7 +593,7 @@ export async function putPilotoAutonomia(
   // por agencia (2026-08-31); el micro valida — acá no se duplica el roster.
   agente: string,
   modo: AutonomiaModo,
-): Promise<{ ok: boolean; data?: PilotoAutonomiaPutResponse; error?: string }> {
+): Promise<{ ok: boolean; data?: PilotoAutonomiaPutResponse; error?: string; fallo?: unknown }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) return { ok: false, error: 'not_configured' }
   try {
@@ -447,13 +605,10 @@ export async function putPilotoAutonomia(
         body: JSON.stringify({ modo }),
       },
     )
-    if (!res.ok) {
-      const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-      return { ok: false, error: errBody.error ?? `${res.status}` }
-    }
+    if (!res.ok) return await escrituraQueNoSalio(res)
     return { ok: true, data: (await res.json()) as PilotoAutonomiaPutResponse }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'put_failed' }
+    return escrituraSinRespuesta(err, 'put_failed')
   }
 }
 
@@ -492,7 +647,7 @@ export async function putPilotoGobierno(
   agencyId: string,
   agente: string,
   habilitado: boolean,
-): Promise<{ ok: boolean; data?: PilotoGobiernoResponse; error?: string }> {
+): Promise<{ ok: boolean; data?: PilotoGobiernoResponse; error?: string; fallo?: unknown }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) return { ok: false, error: 'not_configured' }
   try {
@@ -504,13 +659,183 @@ export async function putPilotoGobierno(
         body: JSON.stringify({ habilitado }),
       },
     )
-    if (!res.ok) {
-      const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-      return { ok: false, error: errBody.error ?? `${res.status}` }
-    }
+    if (!res.ok) return await escrituraQueNoSalio(res)
     return { ok: true, data: (await res.json()) as PilotoGobiernoResponse }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'put_failed' }
+    return escrituraSinRespuesta(err, 'put_failed')
+  }
+}
+
+// ── La perilla PROPIA de un proceso (ola E, 03-10-2026) ─────────────────────
+//
+// Nico (C2-IA Q5): «perilla propia `conciliacion.alias`». Algunos procesos del
+// Piloto tienen su Manual / Copiloto / Automático aparte del de su agente
+// (hoy, conciliar por un alias confirmado). Sin elección: Copiloto.
+
+export interface ModoPropioDelProceso {
+  id: string
+  agente: string
+  nombre: string
+  queHace: string
+  nota: string | null
+  modo: AutonomiaModo
+  /** `piloto` = lo eligió un administrador; `default` = sin elección (Copiloto). */
+  origen: 'piloto' | 'default'
+  queHaceEnCadaModo: Record<AutonomiaModo, string>
+  cambiadoPor: string | null
+  cambiadoEn: string | null
+}
+
+export interface PilotoModosPropiosResponse {
+  procesos: ModoPropioDelProceso[]
+  puedeEditar: boolean
+  /** `false` = todavía no se puede guardar (falta una actualización de la base). */
+  guardable: boolean | null
+  porQueNo: string | null
+}
+
+/** Los procesos del Piloto con perilla propia y su modo. Un micro viejo responde 404: lista vacía. */
+export async function fetchPilotoModosPropios(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<{ ok: boolean; data?: PilotoModosPropiosResponse; error?: string }> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/piloto/modos-propios`, { signal })
+    if (res.status === 404) return { ok: true, data: { procesos: [], puedeEditar: false, guardable: null, porQueNo: null } }
+    if (!res.ok) return { ok: false, error: `${res.status}` }
+    return { ok: true, data: (await res.json()) as PilotoModosPropiosResponse }
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'fetch_failed' }
+  }
+}
+
+/** Cambia el modo de un proceso con perilla propia. Sólo un administrador. */
+export async function putPilotoModoPropio(
+  agencyId: string,
+  procesoId: string,
+  modo: AutonomiaModo,
+): Promise<{ ok: boolean; data?: ModoPropioDelProceso; error?: string; fallo?: unknown }> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(
+      `${agentUrl}/api/agency/${agencyId}/piloto/modos-propios/${encodeURIComponent(procesoId)}`,
+      {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ modo }),
+      },
+    )
+    if (!res.ok) return await escrituraQueNoSalio(res)
+    return { ok: true, data: (await res.json()) as ModoPropioDelProceso }
+  } catch (err) {
+    return escrituraSinRespuesta(err, 'put_failed')
+  }
+}
+
+// ── AUTONOMIA-POR-TIPO (04-10-2026): «Qué hace solo» ─────────────────────────
+//
+// Nico (31-08): «si la inmobiliaria eligió piloto automático, que se maneje
+// sola — según lo que haya escogido». Por defecto, lo que P-4 deja con clic
+// sigue con clic; un administrador puede escoger, tipo por tipo, que vaya solo
+// (con su código de ahora y una confirmación). Lo que nunca va solo, la
+// pantalla lo dice.
+
+export interface TipoQueVaSolo {
+  /** La llave de la elección (`gerente.renovacion_propuesta`). */
+  tipo: string
+  agente: string
+  procesos: string[]
+  nombre: string
+  queVaAPasar: string
+  aQuienLeLlega: string
+  condiciones: string[]
+  envio: 'cobranza' | 'aviso' | null
+  porDefecto: string
+  escogido: boolean
+  /** Quién lo escogió (su NOMBRE: decisión 18 del 05-10-2026; nunca el correo) y cuándo (ISO). */
+  escogidoPor: string | null
+  escogidoEn: string | null
+  /** ¿Hoy actuaría solo? (escogido, con el Piloto activo y su agente en Automático). */
+  actuaHoy: boolean
+  porQueNoActua: string | null
+}
+
+export interface LoQueNuncaVaSolo {
+  categoria: string
+  nombre: string
+  porQue: string
+  procesos: Array<{ id: string; agente: string; queHace: string }>
+}
+
+export interface LoQueNoPuedeIrSolo {
+  id: string
+  agente: string
+  queHace: string
+  porQue: string
+}
+
+export interface PilotoTiposQueVanSolosResponse {
+  tipos: TipoQueVaSolo[]
+  nunca: LoQueNuncaVaSolo[]
+  noPuedenIrSolos: LoQueNoPuedeIrSolo[]
+  puedeEditar: boolean
+  /** `false` = todavía no se puede guardar (falta una actualización de la base). */
+  guardable: boolean | null
+  porQueNo: string | null
+  pilotoActivo: boolean
+}
+
+/** «Qué hace solo». Un micro viejo responde 404: nada que escoger (todo pide el clic, como siempre). */
+export async function fetchPilotoTiposQueVanSolos(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<{ ok: boolean; data?: PilotoTiposQueVanSolosResponse; error?: string; fallo?: unknown }> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/piloto/tipos-que-van-solos`, { signal })
+    if (res.status === 404) {
+      return {
+        ok: true,
+        data: { tipos: [], nunca: [], noPuedenIrSolos: [], puedeEditar: false, guardable: null, porQueNo: null, pilotoActivo: false },
+      }
+    }
+    if (!res.ok) return await escrituraQueNoSalio(res)
+    return { ok: true, data: (await res.json()) as PilotoTiposQueVanSolosResponse }
+  } catch (err) {
+    return escrituraSinRespuesta(err, 'fetch_failed')
+  }
+}
+
+/** Escoge (`vaSolo: true`, pide el código de ahora) o quita que un tipo vaya solo. Sólo un administrador. */
+export async function putPilotoTipoQueVaSolo(
+  agencyId: string,
+  tipo: string,
+  vaSolo: boolean,
+): Promise<{
+  ok: boolean
+  data?: TipoQueVaSolo & { delegacion: { registrada: boolean; porQue: string | null } }
+  error?: string
+  fallo?: unknown
+}> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(
+      `${agentUrl}/api/agency/${agencyId}/piloto/tipos-que-van-solos/${encodeURIComponent(tipo)}`,
+      {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ vaSolo }),
+      },
+    )
+    if (!res.ok) return await escrituraQueNoSalio(res)
+    return { ok: true, data: (await res.json()) as TipoQueVaSolo & { delegacion: { registrada: boolean; porQue: string | null } } }
+  } catch (err) {
+    return escrituraSinRespuesta(err, 'put_failed')
   }
 }
 
@@ -528,7 +853,7 @@ export async function runInboxAccion(
    * si no hay campos, esto va vacío y el comportamiento es el de siempre.
    */
   valores?: Record<string, unknown>,
-): Promise<{ ok: boolean; error?: string; mensaje?: string; programadaPara?: string }> {
+): Promise<{ ok: boolean; error?: string; fallo?: unknown; mensaje?: string; programadaPara?: string }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) return { ok: false, error: 'not_configured' }
   const hayValores = valores !== undefined && Object.keys(valores).length > 0
@@ -546,10 +871,7 @@ export async function runInboxAccion(
           }
         : {}),
     })
-    if (!res.ok) {
-      const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-      return { ok: false, error: errBody.error ?? `${res.status}` }
-    }
+    if (!res.ok) return await escrituraQueNoSalio(res)
     // Lo que PASÓ, dicho por el micro («programé la llamada para mañana a las
     // 8:00»). Sin esto el toast decía «Aprobar y llamar · listo» aunque la
     // llamada no hubiera salido (auditoría del Piloto, hallazgo 2).
@@ -560,7 +882,7 @@ export async function runInboxAccion(
       ...(typeof cuerpoOk.programadaPara === 'string' ? { programadaPara: cuerpoOk.programadaPara } : {}),
     }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'accion_failed' }
+    return escrituraSinRespuesta(err, 'accion_failed')
   }
 }
 
@@ -598,8 +920,14 @@ export interface AgenteDeLaFlota {
 }
 
 export interface PilotoFlotaResponse {
-  /** `PILOTO_ENABLED` del micro: apagado, la flota no corre aunque tenga modo. */
+  /**
+   * PI-01 (04-10-2026): ¿el Piloto automático está activo PARA ESTA
+   * inmobiliaria? (el interruptor de Leasefy Y su activación). Apagado, la
+   * flota no actúa sola aunque tenga modo.
+   */
   activo: boolean
+  /** PI-01 (aditivo): por qué está o no activo, la prueba y la frase. Un micro viejo no lo manda. */
+  piloto?: Pick<PilotoActivoResponse, 'activo' | 'motivo' | 'frase' | 'prueba' | 'sinVencimiento' | 'maestro' | 'sePuedeActivar'>
   /** El modo de la mayoría de los agentes que actúan (empate → el más cauto). */
   modo: ModoDeLaFlota
   /** Los que actúan con OTRO modo: la píldora los nombra al abrirse. */
@@ -628,7 +956,7 @@ export interface PilotoFlotaPutResponse extends PilotoFlotaResponse {
 export async function putPilotoFlota(
   agencyId: string,
   modo: AutonomiaModo,
-): Promise<{ ok: boolean; data?: PilotoFlotaPutResponse; error?: string }> {
+): Promise<{ ok: boolean; data?: PilotoFlotaPutResponse; error?: string; fallo?: unknown }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) return { ok: false, error: 'not_configured' }
   try {
@@ -637,13 +965,10 @@ export async function putPilotoFlota(
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ modo }),
     })
-    if (!res.ok) {
-      const errBody = (await res.json().catch(() => ({}))) as { error?: string }
-      return { ok: false, error: errBody.error ?? `${res.status}` }
-    }
+    if (!res.ok) return await escrituraQueNoSalio(res)
     return { ok: true, data: (await res.json()) as PilotoFlotaPutResponse }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'put_failed' }
+    return escrituraSinRespuesta(err, 'put_failed')
   }
 }
 
@@ -770,6 +1095,8 @@ export interface PilotoCatalogoResponse {
   procesos: ProcesoDelCatalogo[]
   totales: { total: number; corriendo: number; conSenal: number; sinDato: number }
   porArea: Record<AreaDeProceso, number>
+  /** PI-15: los procesos del Piloto (la perilla), el mismo número de «¿Opera sola?». Un micro anterior no lo manda. */
+  procesosDelPiloto?: number
   activo: boolean
   tomadoAt: string
 }
@@ -803,6 +1130,10 @@ export type TipoDeFalta =
   | 'sin_cablear'
   | 'laura'
   | 'no_medido'
+  /** PI-01 (04-10-2026): el Piloto automático no está activo en esta inmobiliaria. */
+  | 'piloto_inactivo'
+  /** CR-31 y compañía: un dato de la operación que pone la inmobiliaria (con su enlace). */
+  | 'requisito'
 
 export interface FaltaParaAutomatico {
   /** Estable: la misma falta en dos agentes trae el mismo id. */
@@ -811,6 +1142,8 @@ export interface FaltaParaAutomatico {
   que: string
   quien: QuienLoArregla
   como: string
+  /** Dónde se arregla, si es una pantalla del panel (PILOTO-ACTIVO). */
+  enlace?: { href: string; texto: string }
 }
 
 export type EstadoDelProcesoEnAutomatico = 'opera_solo' | 'siempre_humano' | 'frenado' | 'apagado'
@@ -873,6 +1206,10 @@ export interface PilotoQueFaltaResponse {
   topes: { topeMontoCop: number; topeDestinatarios: number; graciaSegundos: number; porDefecto: boolean }
   agentes: AgenteEnAutomatico[]
   tomadoAt: string
+  /** PI-01 (aditivo): el Piloto de ESTA inmobiliaria. Un micro viejo no lo manda. */
+  piloto?: Pick<PilotoActivoResponse, 'activo' | 'motivo' | 'frase' | 'prueba' | 'sinVencimiento' | 'maestro'>
+  /** CR-31 y compañía (aditivo): lo que la inmobiliaria tiene que poner para que los agentes operen. */
+  requisitos?: RequisitoDeLaOperacion[]
 }
 
 export function fetchPilotoQueFalta(
@@ -942,7 +1279,7 @@ export type CambiosDePreferencias = Partial<Pick<PreferenciasDelPiloto, 'topeMon
 export async function putPilotoPreferencias(
   agencyId: string,
   cambios: CambiosDePreferencias,
-): Promise<{ ok: boolean; data?: PreferenciasDelPiloto; error?: string; code?: string }> {
+): Promise<{ ok: boolean; data?: PreferenciasDelPiloto; error?: string; code?: string; fallo?: unknown }> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
   if (!agentUrl) return { ok: false, error: 'not_configured' }
   try {
@@ -952,15 +1289,91 @@ export async function putPilotoPreferencias(
       body: JSON.stringify(cambios),
     })
     if (!res.ok) {
-      const cuerpo = (await res.json().catch(() => ({}))) as { error?: unknown; code?: unknown }
-      return {
-        ok: false,
-        error: typeof cuerpo.error === 'string' ? cuerpo.error : `${res.status}`,
-        ...(typeof cuerpo.code === 'string' ? { code: cuerpo.code } : {}),
-      }
+      const r = await escrituraQueNoSalio(res)
+      const code = r.fallo.detalle?.code
+      return { ...r, ...(typeof code === 'string' ? { code } : {}) }
     }
     return { ok: true, data: (await res.json()) as PreferenciasDelPiloto }
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : 'put_failed' }
+    return escrituraSinRespuesta(err, 'put_failed')
+  }
+}
+
+// ── El Piloto automático POR INMOBILIARIA (PI-01, PILOTO-ACTIVO, 04-10-2026) ─
+
+/** Por qué el Piloto está (o no) activo para la inmobiliaria. */
+export type MotivoDelPilotoActivo =
+  | 'activo'
+  | 'apagado_por_leasefy'
+  | 'sin_activar'
+  | 'apagado_por_la_inmobiliaria'
+  | 'prueba_terminada'
+  | 'no_se_pudo_leer'
+
+/** Lo que le falta a la operación para que el Piloto trabaje (CR-31 y compañía), con dónde se arregla. */
+export interface RequisitoDeLaOperacion {
+  id: string
+  agentes: string[]
+  que: string
+  como: string
+  enlace: { href: string; texto: string }
+}
+
+/** Espejo de `GET /api/agency/{agencyId}/piloto/activo` del micro (`agency-piloto-activo.ts`). */
+export interface PilotoActivoResponse {
+  activo: boolean
+  motivo: MotivoDelPilotoActivo
+  /** El interruptor maestro de Leasefy. */
+  maestro: boolean
+  activoDesde: string | null
+  /** La prueba de 30 días: `diasRestantes` 30 el primer día, 1 el último. */
+  prueba: { desde: string; hasta: string; diasRestantes: number; terminada: boolean } | null
+  /** El plan contratado (sin vencimiento; lo pone Leasefy). */
+  sinVencimiento: boolean
+  sePuedeActivar: boolean
+  /** `false` = a Leasefy le falta instalar una parte; `null` = no se pudo saber. */
+  guardable: boolean | null
+  /** Lo que se le dice a la inmobiliaria, en una o dos frases. */
+  frase: string
+  /** ¿Quien mira lo puede prender o apagar? (un administrador). */
+  puedeCambiarlo: boolean
+  diasDePrueba: number
+  /** Hasta cuándo iría la prueba si se prende HOY por primera vez. */
+  pruebaHastaSiSeActivaHoy: string | null
+  /** Los agentes que la inmobiliaria puso en Automático: actúan solos con el Piloto activo. */
+  enAutomatico: Array<{ agente: string; nombre: string }>
+  topes: { topeMontoCop: number; topeDestinatarios: number; graciaSegundos: number }
+  /** `null` = no se pudo comprobar. */
+  requisitos: RequisitoDeLaOperacion[] | null
+}
+
+export function fetchPilotoActivo(
+  agencyId: string,
+  signal?: AbortSignal,
+): Promise<PilotoFetchResult<PilotoActivoResponse>> {
+  return getJson<PilotoActivoResponse>(`/api/agency/${agencyId}/piloto/activo`, signal, 15_000)
+}
+
+/**
+ * Prende o apaga el Piloto de la inmobiliaria. Sólo un administrador; prenderlo
+ * pide el segundo factor de hace poco (`SEGUNDO_FACTOR_RECIENTE`: el diálogo
+ * pide las seis cifras ahí mismo). `fallo` es el error entero para el traductor.
+ */
+export async function putPilotoActivo(
+  agencyId: string,
+  activo: boolean,
+): Promise<{ ok: boolean; data?: PilotoActivoResponse; error?: string; fallo?: unknown }> {
+  const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL
+  if (!agentUrl) return { ok: false, error: 'not_configured' }
+  try {
+    const res = await agentFetch(`${agentUrl}/api/agency/${agencyId}/piloto/activo`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ activo }),
+    })
+    if (!res.ok) return await escrituraQueNoSalio(res)
+    return { ok: true, data: (await res.json()) as PilotoActivoResponse }
+  } catch (err) {
+    return escrituraSinRespuesta(err, 'put_failed')
   }
 }

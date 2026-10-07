@@ -3,13 +3,19 @@
 /**
  * Desde / hasta, en `AAAA-MM-DD`, que es lo que viaja al back (`RangoDto`).
  * Los dos opcionales: sin «desde» el informe arranca en el primer asiento.
+ *
+ * 🔴 CB-04 (QA de Contabilidad, 03-10-2026): eran dos `<input type="date">` del
+ * navegador que en el libro se cortaban («dd/mm/yy'»). Ahora son el selector de
+ * fecha del DS (`CampoDeDia`), con «Quitar la fecha» porque los dos son
+ * opcionales y el calendario sólo elige días.
  */
 
 import { useId } from 'react';
 
-import { Input } from '@/components/ui/input';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { Label } from '@/components/ui/label';
 import { rangoInvertido } from '@/lib/contabilidad/fechas';
+import { CampoDeDia } from './CampoDeDia';
 
 export interface RangoDeFechasProps {
   desde: string;
@@ -24,37 +30,44 @@ export function RangoDeFechas({ desde, hasta, onChange, disabled }: RangoDeFecha
 
   return (
     <div className="grid grid-cols-2 gap-3">
-      <div className="space-y-1.5">
+      <div className="min-w-0 space-y-1.5">
         <Label htmlFor={`${id}-desde`}>Desde</Label>
-        <Input
+        <CampoDeDia
           id={`${id}-desde`}
-          type="date"
           value={desde}
           max={hasta || undefined}
           disabled={disabled}
-          aria-invalid={invertido || undefined}
-          onChange={(e) => onChange({ desde: e.target.value, hasta })}
-          data-testid="rango-desde"
+          invalido={invertido}
+          describedBy={invertido ? `${id}-rango-error` : undefined}
+          onChange={(valor) => onChange({ desde: valor, hasta })}
+          placeholder="Sin fecha"
+          quitable
+          etiquetaDeQuitar="Quitar la fecha «desde»"
+          testid="rango-desde"
         />
       </div>
-      <div className="space-y-1.5">
+      <div className="min-w-0 space-y-1.5">
         <Label htmlFor={`${id}-hasta`}>Hasta</Label>
-        <Input
+        <CampoDeDia
           id={`${id}-hasta`}
-          type="date"
           value={hasta}
           min={desde || undefined}
           disabled={disabled}
-          aria-invalid={invertido || undefined}
-          onChange={(e) => onChange({ desde, hasta: e.target.value })}
-          data-testid="rango-hasta"
+          invalido={invertido}
+          describedBy={invertido ? `${id}-rango-error` : undefined}
+          onChange={(valor) => onChange({ desde, hasta: valor })}
+          placeholder="Sin fecha"
+          quitable
+          etiquetaDeQuitar="Quitar la fecha «hasta»"
+          testid="rango-hasta"
         />
       </div>
-      {invertido ? (
-        <p className="col-span-2 text-caption text-danger" role="alert">
-          «Desde» es posterior a «hasta».
-        </p>
-      ) : null}
+      {/* El error es de los DOS campos: los dos lo nombran en `aria-describedby`. */}
+      <ErrorDelCampo
+        id={`${id}-rango-error`}
+        className="col-span-2 mt-0"
+        mensaje={invertido ? '«Desde» es posterior a «hasta».' : null}
+      />
     </div>
   );
 }

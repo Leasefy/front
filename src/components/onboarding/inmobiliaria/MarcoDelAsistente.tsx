@@ -13,7 +13,7 @@
 
 import type { ReactNode } from 'react'
 import type { OnboardingWizardStep } from '@/lib/hooks/use-onboarding-session'
-import { SalirDelRegistro } from '@/components/onboarding/SalirDelRegistro'
+import { SalirDelRegistro, type VolverDelRegistro } from '@/components/onboarding/SalirDelRegistro'
 import { OnboardingInfoPanel, OnboardingStepTitle, OnboardingWizardLayout } from '@/components/onboarding/wizard'
 import { OnboardingWizardStepper } from './OnboardingWizardStepper'
 import { WIZARD_STEPS, wizardStepIndex } from './wizard-steps'
@@ -31,6 +31,8 @@ export interface MarcoDelAsistenteProps {
    * mostrar es un error de la sesión, no un paso.
    */
   sinEncabezado?: boolean
+  /** Lo que «Salir» ofrece además de salir: volver a los datos de la inmobiliaria. */
+  volver?: VolverDelRegistro
   children: ReactNode
 }
 
@@ -39,6 +41,7 @@ export function MarcoDelAsistente({
   pasoAlcanzado,
   onNavigateToStep,
   sinEncabezado = false,
+  volver,
   children,
 }: MarcoDelAsistenteProps) {
   const contenido = contenidoDelPaso(paso)
@@ -59,7 +62,7 @@ export function MarcoDelAsistente({
        * Ahora sí, y la promesa de volver donde quedaste la cumple el punto de
        * retorno del back.
        */
-      accionesDeCabecera={<SalirDelRegistro />}
+      accionesDeCabecera={<SalirDelRegistro volver={volver} />}
       pasos={
         // Un paso hecho devuelve a ese paso (Nico, 2026-09-07). Es el mismo
         // override que usa el CTA de «faltan pasos» de Confirmar: se limpia

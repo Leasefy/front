@@ -1,520 +1,306 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
-import { useI18n } from '@/lib/i18n';
-import { motion, AnimatePresence } from 'framer-motion';
+/**
+ * Desempeño IA (QA 04-10, IA-C-05).
+ *
+ * Antes era la «Analítica» vieja reciclada: «Métricas clave, tendencias y
+ * proyecciones de tu portafolio», sólo «evaluaciones» (0) y «Tiempo promedio
+ * < 1 min» con CERO evaluaciones — un dato sin base. No decía nada del
+ * desempeño de los agentes.
+ *
+ * Ahora: una tarjeta por agente con 2-3 cifras REALES de su propia actividad,
+ * tal como las calcula el micro (`GET …/ai-hub/agentes/:agente/overview`, la
+ * misma fuente de la «Sala» de cada agente) o el back (estudio de inquilinos,
+ * `GET /inmobiliaria/ai/metrics`). Sin actividad, «Sin actividad todavía» y no
+ * una fila de ceros. Nada estimado: fuera las «horas ahorradas» (evaluaciones
+ * × media hora) y el tiempo promedio.
+ *
+ * Lo que la pantalla vieja ya había sacado por mentiroso sigue afuera: exportar
+ * sin archivo, selector de período que no cambiaba nada, tendencias y metas
+ * inventadas.
+ */
+
+import type { ReactNode } from 'react';
+import { ChartLineUp } from '@phosphor-icons/react';
+import { Stagger, StaggerItem } from '@leasefy/cadence';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
-import {
-  ChartLineUp,
-  ChartBar,
-  TrendUp,
-  TrendDown,
-  Minus,
-  Percent,
-  Lightning,
-  Target,
-} from '@phosphor-icons/react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { SegmentedControl } from '@leasefy/cadence';
-import {
-  AnalyticsDashboard,
-} from '@/components/inmobiliaria';
-import {
-  useAiMetrics,
-} from '@/lib/hooks/useInmobiliaria';
-import type { AiMetricsResponse } from '@/lib/api/inmobiliaria.service';
-import type { AnalyticsData } from '@/lib/types/inmobiliaria';
+import { formatCurrency } from '@/lib/types/inmobiliaria';
+import { useAgentOverview } from '@/lib/hooks/ai/use-agent-overview';
+import { useAiMetrics } from '@/lib/hooks/useInmobiliaria';
+import type { AgentOverviewResponse, KpiFormat } from '@/lib/api/agent-workspace';
+import type { AgenteId } from '@/lib/api/work-item';
+import { fechaEnFrase } from '@/lib/api/facturacion-por-mes.service';
+import { useDesempenoDeLosAgentes, type DesempenoDelAgente } from '@/lib/hooks/ai/use-desempeno-de-los-agentes';
 
-// ============================================================================
-// Types
-// ============================================================================
+/** Los agentes que ya guardan su actividad en el micro, en el orden del menú. */
+const AGENTES_CON_SALA: { agente: AgenteId; nombre: string; hace: string }[] = [
+  { agente: 'cobranza', nombre: 'Cobranza', hace: 'Sigue a los inquilinos atrasados hasta que pagan.' },
+  { agente: 'pagos', nombre: 'Pagos', hace: 'Revisa los pagos que llegan y los deja listos para aplicar.' },
+  { agente: 'conciliacion', nombre: 'Conciliación', hace: 'Cruza el extracto del banco con los recibos.' },
+  { agente: 'matching', nombre: 'Matching', hace: 'Le busca otro inmueble al candidato que se quedó sin el suyo.' },
+  { agente: 'cotizador', nombre: 'Asegurabilidad', hace: 'Pide la aprobación de las aseguradoras para cada inquilino.' },
+];
 
-type AnalyticsView = 'dashboard';
-
-interface ViewConfig {
-  id: AnalyticsView;
-  label: string;
-  icon: React.ElementType;
+/** La plata como en la casa («$1.500.000»), el porcentaje con su espacio («66,7 %»). */
+function cifra(valor: number, formato: KpiFormat): string {
+  if (formato === 'cop') return formatCurrency(valor);
+  if (formato === 'percent') return `${(valor * 100).toLocaleString('es-CO', { maximumFractionDigits: 1 })} %`;
+  return valor.toLocaleString('es-CO');
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-// VIEWS and DATE_RANGES moved inside component for i18n support
-
-// ============================================================================
-// Hero KPI Card Component
-// ============================================================================
-
-interface HeroKPIProps {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  trend?: { direction: 'up' | 'down' | 'stable'; percentage: number };
-  target?: { value: number; current: number; label: string };
-  sparkline?: number[];
-  accentColor: 'indigo' | 'emerald' | 'amber' | 'violet';
-  onClick?: () => void;
-}
+const EN_CURSO = new Set(['detectado', 'sugerido', 'en_revision', 'aprobado', 'ejecutando']);
 
 /**
- * El avance hacia una meta, o `null` cuando no se puede calcular.
- *
- * Con la meta en 0 —una inmobiliaria recién creada, sin nada medido todavía— la
- * división daba `NaN`, y `Math.min(100, NaN)` sigue siendo `NaN`: la barra de
- * progreso recibía un valor inválido y React lo gritaba una vez por tarjeta.
- * Medido en la pantalla real: 32 errores de consola en una sola carga, más el
- * porcentaje impreso como «NaN%» al lado.
- *
- * Sin meta no hay avance que mostrar: quien llama pinta una raya y no dibuja la
- * barra. Cero por ciento sería mentira — no es que no se avanzó, es que todavía
- * no hay contra qué medir.
+ * 🔴 QA-IA-95 (05-10-2026): en la cobranza, «detectado» es la etapa S0
+ * (pre-vencimiento: el deudor ya no debe o todavía no vence). No es un caso en
+ * curso: Cobranza › Casos no lo cuenta (IA-B-27), y esta tarjeta decía «Casos
+ * en curso 19» con la pantalla de Casos vacía.
  */
-function porcentajeDeMeta(target: { current: number; value: number }): number | null {
-  if (!Number.isFinite(target.current) || !Number.isFinite(target.value)) return null;
-  if (target.value <= 0) return null;
-  return (target.current / target.value) * 100;
+const NO_ES_UN_CASO_EN_CURSO: Partial<Record<AgenteId, ReadonlySet<string>>> = {
+  cobranza: new Set(['detectado']),
+};
+
+/**
+ * Hasta tres cifras: primero los casos que tiene en curso (de su cola, si hay),
+ * después sus indicadores en el orden en que los manda el micro.
+ */
+function cifrasDelAgente(data: AgentOverviewResponse): { etiqueta: string; valor: string }[] {
+  const fuera = NO_ES_UN_CASO_EN_CURSO[data.agente as AgenteId];
+  const enCurso = data.pipeline
+    .filter((p) => EN_CURSO.has(p.estado) && !fuera?.has(p.estado))
+    .reduce((n, p) => n + p.count, 0);
+  const cifras = enCurso > 0 ? [{ etiqueta: 'Casos en curso', valor: enCurso.toLocaleString('es-CO') }] : [];
+  for (const k of data.kpis) cifras.push({ etiqueta: k.label, valor: cifra(k.value, k.format) });
+  return cifras.slice(0, 3);
 }
 
-function HeroKPICard({
-  icon: Icon,
-  label,
-  value,
-  trend,
-  target,
-  sparkline,
-  accentColor,
-  onClick,
-}: HeroKPIProps) {
-  // Tiles/borders = neutral (blue is actionable-only); progress bars keep brand tones (data).
-  const colorConfig = {
-    indigo: {
-      bg: 'bg-neutral-100 dark:bg-neutral-800',
-      icon: 'text-neutral-600 dark:text-neutral-300',
-      border: 'border-neutral-200 dark:border-neutral-700',
-      progress: 'bg-primary',
-      progressBg: 'bg-primary-soft',
-    },
-    emerald: {
-      bg: 'bg-neutral-100 dark:bg-neutral-800',
-      icon: 'text-neutral-600 dark:text-neutral-300',
-      border: 'border-neutral-200 dark:border-neutral-700',
-      progress: 'bg-success',
-      progressBg: 'bg-success-soft',
-    },
-    amber: {
-      bg: 'bg-neutral-100 dark:bg-neutral-800',
-      icon: 'text-neutral-600 dark:text-neutral-300',
-      border: 'border-neutral-200 dark:border-neutral-700',
-      progress: 'bg-warning',
-      progressBg: 'bg-warning-soft',
-    },
-    violet: {
-      bg: 'bg-neutral-100 dark:bg-neutral-800',
-      icon: 'text-neutral-600 dark:text-neutral-300',
-      border: 'border-neutral-200 dark:border-neutral-700',
-      progress: 'bg-primary',
-      progressBg: 'bg-neutral-100 dark:bg-neutral-800',
-    },
-  };
-
-  const colors = colorConfig[accentColor];
-
-  // Generate sparkline path
-  const sparklinePath = useMemo(() => {
-    if (!sparkline || sparkline.length < 2) return null;
-    const width = 80;
-    const height = 24;
-    const padding = 2;
-    const min = Math.min(...sparkline);
-    const max = Math.max(...sparkline);
-    const range = max - min || 1;
-
-    const points = sparkline.map((val, i) => {
-      const x = padding + (i / (sparkline.length - 1)) * (width - padding * 2);
-      const y = height - padding - ((val - min) / range) * (height - padding * 2);
-      return `${x},${y}`;
-    });
-
-    return `M ${points.join(' L ')}`;
-  }, [sparkline]);
-
-  const trendIsPositive = trend?.direction === 'up';
-  const trendIsNegative = trend?.direction === 'down';
-
-  // Un `<button>` sin `onClick` es una trampa: tiene cursor de mano, se eleva
-  // al pasar por encima, se hunde al hacer clic, entra en el recorrido del
-  // teclado y un lector de pantalla lo anuncia como botón. Las cuatro tarjetas
-  // de arriba nunca recibieron `onClick`. Si no hay a dónde ir, es un bloque.
-  const Contenedor = onClick ? motion.button : motion.div;
-
+/** Hubo actividad si alguna cifra o caso es distinto de cero. */
+function tieneActividad(data: AgentOverviewResponse | null): boolean {
+  if (!data) return false;
   return (
-    <Contenedor
-      {...(onClick
-        ? { onClick, whileHover: { y: -2 }, whileTap: { scale: 0.98 } }
-        : {})}
-      className={cn(
-        'w-full p-5 rounded-lg border bg-card text-left transition-all',
-        colors.border
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className={cn('w-11 h-11 rounded-xl flex items-center justify-center', colors.bg)}>
-          <Icon className={cn('w-5 h-5', colors.icon)} weight="duotone" />
-        </div>
-        {sparkline && sparklinePath && (
-          <svg width={80} height={24} className="opacity-60">
-            <path
-              d={sparklinePath}
-              fill="none"
-              stroke={trendIsPositive ? '#2C7A53' : trendIsNegative ? '#C4503B' : '#1A40FF'}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
-      </div>
-
-      {/* Value */}
-      <p className="text-2xl font-bold text-foreground mb-1">{value}</p>
-      <p className="text-sm text-muted-foreground mb-3">{label}</p>
-
-      {/* Trend & Target */}
-      <div className="flex items-center justify-between">
-        {trend && (
-          <Badge
-            variant={trendIsPositive ? 'success' : trendIsNegative ? 'destructive' : 'secondary'}
-          >
-            {trendIsPositive && <TrendUp className="w-3 h-3" weight="bold" />}
-            {trendIsNegative && <TrendDown className="w-3 h-3" weight="bold" />}
-            {!trendIsPositive && !trendIsNegative && <Minus className="w-3 h-3" />}
-            <span>{trend.percentage > 0 ? '+' : ''}{trend.percentage.toFixed(1)}%</span>
-          </Badge>
-        )}
-        {target && (
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Target className="w-3.5 h-3.5" />
-            <span>{porcentajeDeMeta(target) === null ? '—' : `${Math.round(porcentajeDeMeta(target)!)}%`} {target.label}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Target Progress Bar */}
-      {target && porcentajeDeMeta(target) !== null && (
-        <div className="mt-3">
-          <Progress
-            value={Math.min(100, porcentajeDeMeta(target)!)}
-            variant={accentColor === 'emerald' ? 'success' : accentColor === 'amber' ? 'warning' : 'default'}
-            size="xs"
-          />
-        </div>
-      )}
-    </Contenedor>
+    data.kpis.some((k) => k.value > 0) ||
+    data.pipeline.some((p) => p.count > 0) ||
+    data.feed.length > 0
   );
 }
 
-// ============================================================================
-// Main Component
-// ============================================================================
-
-// ============================================================================
-// AI metrics helpers
-// ============================================================================
-
-function parsePercentage(s: string): number {
-  return parseFloat(s.replace('%', '')) || 0;
+function Tarjeta({
+  nombre,
+  hace,
+  testId,
+  children,
+}: {
+  nombre: string;
+  hace: string;
+  testId: string;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      aria-label={nombre}
+      data-testid={testId}
+      className="flex h-full flex-col rounded-lg border border-border bg-surface p-4"
+    >
+      <h2 className="text-base font-semibold text-fg">{nombre}</h2>
+      <p className="mt-0.5 text-xs text-fg-muted">{hace}</p>
+      <div className="mt-4 flex-1">{children}</div>
+    </section>
+  );
 }
 
-function parseNumber(s: string): number {
-  return parseFloat(s.replace(/[^0-9.]/g, '')) || 0;
+function Cifras({ cifras }: { cifras: { etiqueta: string; valor: string }[] }) {
+  return (
+    <dl className="space-y-2">
+      {cifras.map((c) => (
+        <div key={c.etiqueta} className="flex items-baseline justify-between gap-3">
+          <dt className="text-sm text-fg-muted">{c.etiqueta}</dt>
+          <dd className="font-mono text-sm font-semibold text-fg tabular-nums">{c.valor}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+const SIN_ACTIVIDAD = <p className="text-sm text-fg-subtle">Sin actividad todavía.</p>;
+
+function TarjetaDeAgente({ agente, nombre, hace }: { agente: AgenteId; nombre: string; hace: string }) {
+  const { data, isLoading, errorCrudo, notAvailable, refetch } = useAgentOverview(agente);
+  let cuerpo: ReactNode;
+  if (isLoading && !data) {
+    cuerpo = <div className="h-16 rounded bg-surface-muted animate-pulse" aria-label="Cargando" />;
+  } else if (errorCrudo) {
+    cuerpo = (
+      <FalloDeCarga
+        error={errorCrudo}
+        queEs={`la actividad de ${nombre}`}
+        onReintentar={() => void refetch()}
+        enmarcado={false}
+      />
+    );
+  } else if (notAvailable || !tieneActividad(data)) {
+    cuerpo = SIN_ACTIVIDAD;
+  } else {
+    const ultima = data!.feed[0]?.occurredAt;
+    cuerpo = (
+      <>
+        <Cifras cifras={cifrasDelAgente(data!)} />
+        {ultima ? (
+          <p className="mt-3 text-xs text-fg-subtle">Última actividad: {fechaEnFrase(ultima)}</p>
+        ) : null}
+      </>
+    );
+  }
+  return (
+    <Tarjeta nombre={nombre} hace={hace} testId={`desempeno-${agente}`}>
+      {cuerpo}
+    </Tarjeta>
+  );
 }
 
 /**
- * Las métricas del agente, tal como llegan.
- *
- * 🔴 Sin `trend`. Antes cada tarjeta llevaba uno inventado —cinco `stable` con
- * 0 % y, en «Horas ahorradas», un `up` con 0 %— y la tarjeta lo pintaba como
- * insignia: una flecha verde de crecimiento sobre un delta que nadie midió.
- * `GET /inmobiliaria/ai/metrics` no devuelve el período anterior, así que no
- * hay tendencia que mostrar. `trend` es opcional y la tarjeta se calla.
- *
- * 🔴 Sin `target`. Las metas («< 3 min», «< 10 %», «95 %») eran constantes
- * escritas acá y se leían como objetivos de LA AGENCIA. Ninguna agencia las
- * configuró y no hay dónde configurarlas.
+ * 🔴 QA-IA-95 (05-10-2026, IA95-08): los agentes con manos (Fixi, Avali, Vidi, Niti, Imana, precio) no
+ * tenían tarjeta. Sus cifras son las acciones del Piloto de los últimos 30 días (`…/ai-hub/desempeno`).
  */
-function metricsToAnalyticsData(metrics: AiMetricsResponse): AnalyticsData {
-  return {
-    lastUpdated: new Date().toISOString(),
-    charts: [],
-    kpis: [
-      {
-        id: 'ai-evaluations',
-        label: 'Evaluaciones este mes',
-        value: metrics.scoring.evaluationsThisMonth,
-        formattedValue: String(metrics.scoring.evaluationsThisMonth),
-        sparkline: [],
-        category: 'operational',
-      },
-      {
-        id: 'ai-avg-time',
-        label: 'Tiempo promedio',
-        value: parseNumber(metrics.scoring.avgTimeMin),
-        formattedValue: metrics.scoring.avgTimeMin,
-        sparkline: [],
-        category: 'operational',
-      },
-      {
-        id: 'ai-escalation',
-        label: 'Evaluaciones que fallaron',
-        value: parsePercentage(metrics.scoring.escalationRate),
-        formattedValue: metrics.scoring.escalationRate,
-        sparkline: [],
-        category: 'performance',
-      },
-      {
-        id: 'ai-accuracy',
-        label: 'Evaluaciones completadas',
-        value: parsePercentage(metrics.scoring.accuracyRate),
-        formattedValue: metrics.scoring.accuracyRate,
-        sparkline: [],
-        category: 'performance',
-      },
-      {
-        id: 'ai-actions-week',
-        label: 'Acciones esta semana',
-        value: metrics.summary.actionsThisWeek,
-        formattedValue: String(metrics.summary.actionsThisWeek),
-        sparkline: [],
-        category: 'operational',
-      },
-      {
-        id: 'ai-hours-saved',
-        label: 'Horas ahorradas (estimadas)',
-        value: parseNumber(metrics.summary.hoursSavedThisMonth),
-        formattedValue: metrics.summary.hoursSavedThisMonth,
-        sparkline: [],
-        category: 'performance',
-      },
-    ],
-  };
+const QUE_HACE: Record<string, string> = {
+  mantenimiento: 'Clasifica cada solicitud de mantenimiento, pide cotizaciones y propone la mejor.',
+  aprobaciones: 'Le recuerda al propietario lo que tiene por aprobar y le pide escoger su inquilino.',
+  inspeccion: 'Agenda las inspecciones de entrada y salida y deja el acta en borrador.',
+  calidad: 'Corrige la ficha de los inmuebles publicados y avisa lo que falta.',
+  prospectos: 'Le responde al interesado nuevo y le agenda la visita con su asesor.',
+  avaluos: 'Le cuenta al propietario cuánto le cuesta la vacancia y lleva su pedido a la Bandeja.',
+};
+
+function cifrasDeLasAcciones(d: DesempenoDelAgente, dias: number, recortado: boolean): { etiqueta: string; valor: string }[] {
+  const n = (x: number) => (recortado ? `${x.toLocaleString('es-CO')} o más` : x.toLocaleString('es-CO'));
+  const filas: { etiqueta: string; valor: string; x: number }[] = [
+    { etiqueta: `Hechas en ${dias} días`, valor: n(d.hechas), x: d.hechas },
+    { etiqueta: 'Esperan tu decisión', valor: String(d.esperan), x: d.esperan },
+    { etiqueta: 'Programadas (con «Deshacer»)', valor: String(d.programadas), x: d.programadas },
+    { etiqueta: 'Fallaron', valor: n(d.fallidas), x: d.fallidas },
+    { etiqueta: 'Deshechas', valor: n(d.deshechas), x: d.deshechas },
+    { etiqueta: 'Descartadas', valor: n(d.descartadas), x: d.descartadas },
+  ];
+  return filas.filter((f) => f.x > 0).map(({ etiqueta, valor }) => ({ etiqueta, valor }));
 }
 
-// TODO: Backend - Implementar actualizaciones en tiempo real via WebSocket o SSE
-// Las métricas deben actualizarse automáticamente sin necesidad de refresh manual
+/** Una tarjeta por agente con manos; un micro sin la ruta deja la pantalla como antes. */
+function TarjetasDeLosAgentesConManos() {
+  const { data, isLoading, error, sinLaRuta, refetch } = useDesempenoDeLosAgentes();
+  if (sinLaRuta) return null;
+  if (isLoading && !data) {
+    return (
+      <StaggerItem key="con-manos-cargando">
+        <div className="h-24 rounded-lg bg-surface-muted animate-pulse" aria-label="Cargando" />
+      </StaggerItem>
+    );
+  }
+  if (error) {
+    return (
+      <StaggerItem key="con-manos-fallo">
+        <Tarjeta nombre="Agentes del Piloto" hace="Fixi, Avali, Vidi, Niti, Imana y el precio contra la vacancia." testId="desempeno-con-manos-fallo">
+          <FalloDeCarga error={error} queEs="lo que hicieron los agentes del Piloto" onReintentar={() => void refetch()} enmarcado={false} />
+        </Tarjeta>
+      </StaggerItem>
+    );
+  }
+  if (!data) return null;
+  if (!data.disponible) {
+    return (
+      <StaggerItem key="con-manos-sin-back">
+        <Tarjeta nombre="Agentes del Piloto" hace="Fixi, Avali, Vidi, Niti, Imana y el precio contra la vacancia." testId="desempeno-con-manos-sin-dato">
+          <p className="text-sm text-fg-subtle">No pudimos leer lo que hicieron: por ahora no tenemos cómo contarlo aquí.</p>
+        </Tarjeta>
+      </StaggerItem>
+    );
+  }
+  const yaTienenTarjeta = new Set<string>(AGENTES_CON_SALA.map((a) => a.agente));
+  return (
+    <>
+      {data.agentes
+        .filter((d) => !yaTienenTarjeta.has(d.agente))
+        .map((d) => {
+          const cifras = cifrasDeLasAcciones(d, data.dias, data.recortado);
+          return (
+            <StaggerItem key={`con-manos-${d.agente}`}>
+              <Tarjeta nombre={d.nombre} hace={QUE_HACE[d.agente] ?? 'Lo que el Piloto hizo con sus procesos.'} testId={`desempeno-${d.agente}`}>
+                {cifras.length > 0 ? <Cifras cifras={cifras} /> : SIN_ACTIVIDAD}
+              </Tarjeta>
+            </StaggerItem>
+          );
+        })}
+    </>
+  );
+}
 
-function AnalyticsContent() {
-  const { t } = useI18n();
-  const [activeView, setActiveView] = useState<AnalyticsView>('dashboard');
+/** Estudio de inquilinos: lo cuenta el back (`GET /inmobiliaria/ai/metrics`). */
+function TarjetaDeEstudio() {
+  const { metrics, isLoading, errorCrudo, refetch } = useAiMetrics();
+  const nombre = 'Estudio de inquilinos';
+  const hace = 'Evalúa a cada postulante con sus documentos.';
+  let cuerpo: ReactNode;
+  if (isLoading && !metrics) {
+    cuerpo = <div className="h-16 rounded bg-surface-muted animate-pulse" aria-label="Cargando" />;
+  } else if (errorCrudo) {
+    cuerpo = (
+      <FalloDeCarga error={errorCrudo} queEs="las evaluaciones" onReintentar={() => void refetch()} enmarcado={false} />
+    );
+  } else {
+    const evaluaciones = metrics?.scoring.evaluationsThisMonth ?? 0;
+    cuerpo =
+      evaluaciones > 0 ? (
+        <Cifras
+          cifras={[
+            { etiqueta: 'Evaluaciones este mes', valor: String(evaluaciones) },
+            // `accuracyRate` es completadas / total y `escalationRate`, fallidas / total.
+            { etiqueta: 'Evaluaciones completadas', valor: metrics?.scoring.accuracyRate ?? '—' },
+            { etiqueta: 'Evaluaciones que fallaron', valor: metrics?.scoring.escalationRate ?? '—' },
+          ]}
+        />
+      ) : (
+        SIN_ACTIVIDAD
+      );
+  }
+  return (
+    <Tarjeta nombre={nombre} hace={hace} testId="desempeno-estudio">
+      {cuerpo}
+    </Tarjeta>
+  );
+}
 
-  // API hooks — PageGuard guarantees this only mounts when analytics:view is granted
-  // `errorCrudo`, no el mensaje: `FalloDeCarga` clasifica por status.
-  const {
-    metrics,
-    isLoading: loadingMetrics,
-    errorCrudo: metricsError,
-    refetch: recargarMetricas,
-  } = useAiMetrics();
-  // Acá había un `useAiActivity(20)` del que sólo se leía `isLoading`: una
-  // petición por montaje cuyo resultado no se pintaba nunca, cuyo error se
-  // tragaba, y que además dejaba la pantalla en «Cargando…» esperándola.
-  const isLoading = loadingMetrics;
-  const analyticsError = metricsError;
-
-  // Map AI metrics → AnalyticsData for AnalyticsDashboard
-  const analyticsData = useMemo<AnalyticsData | null>(() => {
-    if (!metrics) return null;
-    return metricsToAnalyticsData(metrics);
-  }, [metrics]);
-
-  const VIEWS: ViewConfig[] = useMemo(() => [
-    { id: 'dashboard' as const, label: t('inmobiliaria.analytics.tabs.dashboard'), icon: ChartBar },
-  ], [t]);
-
-  // Hero KPI data from AI metrics
-  /**
-   * Los cuatro números de arriba. Sin `target`: las metas («95 %», «< 10 %»)
-   * eran constantes escritas acá, y la barra encima las medía al revés —para
-   * una tasa que conviene BAJA, `current / value` daba «500 % meta» y una
-   * barra llena cuando la cosa iba mal—. Ninguna agencia configuró esas metas
-   * y no hay dónde configurarlas.
-   */
-  const heroKPIs = useMemo(() => {
-    if (!metrics) {
-      return {
-        evaluations: { value: '—' },
-        accuracy: { value: '—' },
-        escalation: { value: '—' },
-        hoursSaved: { value: '—' },
-      };
-    }
-    return {
-      evaluations: { value: String(metrics.scoring.evaluationsThisMonth) },
-      accuracy: { value: metrics.scoring.accuracyRate },
-      escalation: { value: metrics.scoring.escalationRate },
-      hoursSaved: { value: metrics.summary.hoursSavedThisMonth },
-    };
-  }, [metrics]);
-
-  /*
-   * ── Los «insights» salieron ────────────────────────────────────────────
-   *
-   * Eran tres tarjetas fijas leídas de i18n. No miraban un solo dato:
-   *
-   *   «La ocupación subió 2.1% respecto al mes anterior»
-   *   «3 propiedades sin arrendar · Llevan más de 45 días disponibles»
-   *   «Estás al 94% de tu meta mensual de recaudo»
-   *
-   * Se le mostraban idénticas a cualquier inmobiliaria. En la agencia de
-   * pruebas —1 inmueble, $0 de recaudo, sin meta configurada— las tres eran
-   * falsas al mismo tiempo, arriba de unos KPI que decían 0. Y «Ver
-   * propiedades» abría un toast con su propia etiqueta: un botón que no lleva
-   * a ningún lado.
-   *
-   * Un insight que no se calcula de los datos no es un insight: es decoración
-   * que afirma cosas. Cuando el back exponga tendencia de ocupación, días en
-   * mercado y meta de recaudo, esto vuelve — calculado.
-   */
-
-  /*
-   * ── Los dos botones del encabezado salieron ───────────────────────────
-   *
-   * «Exportar PDF / Excel»: el handler entero era
-   *     toast.success('Exportando a PDF')
-   * Ni una petición. Nunca hubo archivo. `GET /inmobiliaria/ai/metrics` no
-   * tiene export, y `/reports/export` no sirve estas métricas (su catálogo son
-   * cartera, comisiones, vencimientos, flujo de caja, ocupación y
-   * rentabilidad).
-   *
-   * Selector de período (7d/30d/90d/1a): guardaba el estado, tiraba un
-   * «Período actualizado» y no cambiaba un solo número. `useAiMetrics()` no
-   * recibe parámetros, `aiApi.getMetrics()` tampoco, y la ruta del back menos:
-   * las métricas son siempre «este mes» y «esta semana».
-   *
-   * Los dos vuelven cuando exista con qué cumplirlos.
-   */
-
+function DesempenoContent() {
   return (
     <div className="p-4 md:p-6 space-y-6">
-      {/* Header */}
       <div className="space-y-1">
         <h1 className="text-h2 text-fg flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-muted">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-muted">
             <ChartLineUp className="h-5 w-5 text-fg-muted" weight="duotone" />
-          </div>
-          {t('inmobiliaria.analytics.title')}
+          </span>
+          Desempeño IA
         </h1>
         <p className="text-sm text-fg-muted max-w-2xl">
-          {t('inmobiliaria.analytics.subtitle')}
+          Lo que ha hecho cada agente, con las cifras de su propia actividad. Ninguna es una estimación.
         </p>
       </div>
 
-      {/* Hero KPIs - Executive Summary */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-      >
-        <HeroKPICard
-          icon={Lightning}
-          label="Evaluaciones este mes"
-          value={heroKPIs.evaluations.value}
-          accentColor="indigo"
-        />
-        {/* 🔴 «Tasa de precisión» no era precisión: el back calcula
-            `completadas / total` (`ai-insights.service.ts`), que es cuántas
-            evaluaciones terminaron, no cuántas acertaron —para eso haría falta
-            un resultado real contra el cual comparar, y no se guarda—. Igual
-            «Tasa de escalación», que es `fallidas / total`. Se llaman por lo
-            que miden. */}
-        <HeroKPICard
-          icon={Target}
-          label="Evaluaciones completadas"
-          value={heroKPIs.accuracy.value}
-          accentColor="emerald"
-        />
-        <HeroKPICard
-          icon={Percent}
-          label="Evaluaciones que fallaron"
-          value={heroKPIs.escalation.value}
-          accentColor="amber"
-        />
-        {/* Estimación, no medición: el back multiplica las evaluaciones
-            completadas por media hora. El rótulo lo dice. */}
-        <HeroKPICard
-          icon={ChartLineUp}
-          label="Horas ahorradas este mes (estimadas)"
-          value={heroKPIs.hoursSaved.value}
-          accentColor="violet"
-        />
-      </motion.div>
-
-      {/* Main Content Card */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="rounded-lg border border-border bg-card overflow-hidden"
-      >
-        {/* View Tabs */}
-        <div className="m-4 mb-0 w-fit">
-          <SegmentedControl<AnalyticsView>
-            value={activeView}
-            onChange={setActiveView}
-            options={VIEWS.map((view) => {
-              const Icon = view.icon;
-              return {
-                value: view.id,
-                ariaLabel: view.label,
-                label: (
-                  <span className="flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
-                    {view.label}
-                  </span>
-                ),
-              };
-            })}
-          />
-        </div>
-
-        {/* View Content */}
-        <div className="p-4">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeView}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              {activeView === 'dashboard' && (
-                <>
-                  {/* Antes acá salía `Unauthorized` en rojo: el mensaje crudo
-                      del backend, en inglés, suelto en el medio de la tarjeta,
-                      sin decir qué hacer. `FalloDeCarga` lo clasifica y ofrece
-                      reintentar cuando reintentar sirve. */}
-                  {isLoading && <p className="text-sm text-muted-foreground">{t('common.loading')}</p>}
-                  {!isLoading && Boolean(analyticsError) && (
-                    <FalloDeCarga
-                      error={analyticsError}
-                      queEs="las métricas del asistente"
-                      onReintentar={recargarMetricas}
-                      enmarcado={false}
-                    />
-                  )}
-                  {!analyticsError && analyticsData && <AnalyticsDashboard data={analyticsData} />}
-                </>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </motion.div>
+      <Stagger className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {AGENTES_CON_SALA.map((a) => (
+          <StaggerItem key={a.agente}>
+            <TarjetaDeAgente agente={a.agente} nombre={a.nombre} hace={a.hace} />
+          </StaggerItem>
+        ))}
+        <StaggerItem key="estudio">
+          <TarjetaDeEstudio />
+        </StaggerItem>
+        <TarjetasDeLosAgentesConManos />
+        <StaggerItem key="chat">
+          <Tarjeta nombre="Chat" hace="Responde las preguntas de tu equipo sobre la inmobiliaria." testId="desempeno-chat">
+            <p className="text-sm text-fg-subtle">
+              Todavía no llevamos la cuenta de las preguntas del chat para mostrarla aquí.
+            </p>
+          </Tarjeta>
+        </StaggerItem>
+      </Stagger>
     </div>
   );
 }
@@ -522,7 +308,7 @@ function AnalyticsContent() {
 export default function AnalyticsPage() {
   return (
     <PageGuard module="analytics">
-      <AnalyticsContent />
+      <DesempenoContent />
     </PageGuard>
   );
 }

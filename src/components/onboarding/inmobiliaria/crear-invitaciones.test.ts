@@ -1,6 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 
-import { crearInvitacionesDelEquipo } from './crear-invitaciones'
+import {
+  MOTIVO_SIN_SEGUNDO_FACTOR,
+  correosConInvitacion,
+  crearInvitacionesDelEquipo,
+} from './crear-invitaciones'
 import { buildMemberInviteLink } from './invite-link'
 
 /**
@@ -98,5 +102,137 @@ describe('crearInvitacionesDelEquipo', () => {
     const invitar = vi.fn()
     expect(await crearInvitacionesDelEquipo([], invitar)).toEqual([])
     expect(invitar).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * 🔴 01-10-2026 (Alexis): el back rechazó a una persona (el tope del plan), la
+ * persona volvió a Miembros, guardó, «le dio»… y nunca llegó el correo. «Quién
+ * ya está invitado» se sacaba del borrador del micro, que guarda el paso ANTES
+ * de que el back invite. Ahora lo dice el back.
+ */
+describe('correosConInvitacion', () => {
+  it('cuenta lo vigente y lo aceptado del BACK, en minúsculas', async () => {
+    const listar = vi.fn().mockResolvedValue([
+      { email: 'Alex.Dev+8@leasefy.co', status: 'invited' },
+      { email: 'duena@inmo.co', status: 'active' },
+      { email: 'se-fue@inmo.co', status: 'inactive' },
+    ])
+    const correos = await correosConInvitacion(listar)
+    expect(correos).toEqual(new Set(['alex.dev+8@leasefy.co', 'duena@inmo.co']))
+  })
+
+  it('quien el back rechazó NO está, aunque haya quedado en el borrador del paso', async () => {
+    const listar = vi.fn().mockResolvedValue([{ email: 'alex.dev+8@leasefy.co', status: 'invited' }])
+    const correos = await correosConInvitacion(listar)
+    expect(correos?.has('alex.dev+9@leasefy.co')).toBe(false)
+  })
+
+  it('si no se puede preguntar, devuelve null (y el llamador NO usa el borrador como respaldo)', async () => {
+    const listar = vi.fn().mockRejectedValue(new Error('network down'))
+    expect(await correosConInvitacion(listar)).toBeNull()
+  })
+})
+
+/**
+ * 🔴 02-10-2026 (Alexis): el fundador llega al asistente sin segundo factor y
+ * el back se lo exige al administrador para invitar (403
+ * `SEGUNDO_FACTOR_REQUERIDO`). Se dice qué falta, y no se ofrece reintentar.
+ */
+describe('crearInvitacionesDelEquipo — sin el segundo factor de quien invita', () => {
+  const sinSegundoFactor = Object.assign(
+    new Error('Tu rol exige segundo factor. Actívalo en Configuración → Seguridad y vuelve a entrar.'),
+    { status: 403, code: 'SEGUNDO_FACTOR_REQUERIDO' },
+  )
+
+  it('dice qué falta y que reintentar ahora no sirve', async () => {
+    const invitar = vi.fn().mockRejectedValue(sinSegundoFactor)
+    const [creada] = await crearInvitacionesDelEquipo(
+      [{ email: 'alex.dev+9@leasefy.co', nombre: '', role: 'VIEWER' }],
+      invitar,
+    )
+    expect(creada.error).toBe(MOTIVO_SIN_SEGUNDO_FACTOR)
+    expect(creada.reintentable).toBe(false)
+    expect(creada.enlace).toBeNull()
+  })
+
+  it('cualquier otro rechazo sigue siendo reintentable y con las palabras del back', async () => {
+    const invitar = vi.fn().mockRejectedValue(new Error('Alcanzaste el límite de agentes de tu plan.'))
+    const [creada] = await crearInvitacionesDelEquipo(
+      [{ email: 'alex.dev+8@leasefy.co', nombre: '', role: 'AGENTE' }],
+      invitar,
+    )
+    expect(creada.error).toBe('Alcanzaste el límite de agentes de tu plan.')
+    expect(creada.reintentable).toBeUndefined()
+  })
+})
+
+/**
+ * 02-10-2026 · El motivo de cada persona con la regla de oro del traductor, y
+ * «Reintentar» sólo cuando reintentar puede servir.
+ */
+describe('crearInvitacionesDelEquipo — la regla de oro en cada invitación', () => {
+  const UNA = [{ email: 'ana@acme.co', nombre: '', role: 'AGENTE' as const }]
+
+  function errorDelBack(status: number, cuerpo: Record<string, unknown>) {
+    return Object.assign(new Error(String(cuerpo.message ?? '')), {
+      name: 'ApiError',
+      status,
+      code: cuerpo.code,
+      detalle: cuerpo,
+    })
+  }
+
+  it('un 409 dice lo que mandó el back y no ofrece reintentar', async () => {
+    const invitar = vi.fn().mockRejectedValue(
+      errorDelBack(409, { statusCode: 409, code: 'YA_EXISTE', message: 'Ya existe una invitación pendiente para este correo.' }),
+    )
+    const [creada] = await crearInvitacionesDelEquipo(UNA, invitar)
+    expect(creada.error).toBe('Ya existe una invitación pendiente para este correo.')
+    expect(creada.reintentable).toBe(false)
+  })
+
+  it('el límite del plan (402) no es reintentable', async () => {
+    const invitar = vi.fn().mockRejectedValue(
+      errorDelBack(402, { statusCode: 402, code: 'LIMITE_DEL_PLAN', message: 'Alcanzaste el límite de agentes de tu plan.' }),
+    )
+    const [creada] = await crearInvitacionesDelEquipo(UNA, invitar)
+    expect(creada.error).toBe('Alcanzaste el límite de agentes de tu plan.')
+    expect(creada.reintentable).toBe(false)
+  })
+
+  it('🔴 un 5xx dice que fue nuestro, con la referencia, sin culpar a la conexión; se puede reintentar', async () => {
+    const invitar = vi.fn().mockRejectedValue(
+      errorDelBack(500, { statusCode: 500, code: 'ERROR_INTERNO', message: 'Error interno del servidor.', referencia: 'ab12cd34' }),
+    )
+    const [creada] = await crearInvitacionesDelEquipo(UNA, invitar)
+    expect(creada.error).toMatch(/^No pudimos invitar a esta persona: algo falló de nuestro lado/)
+    expect(creada.error).toContain('ab12cd34')
+    expect(creada.error).not.toMatch(/conexi[oó]n/)
+    expect(creada.reintentable).toBeUndefined()
+  })
+
+  it('sin respuesta (la red): habla de la conexión y se puede reintentar', async () => {
+    const invitar = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
+    const [creada] = await crearInvitacionesDelEquipo(UNA, invitar)
+    expect(creada.error).toMatch(/conexión/)
+    expect(creada.reintentable).toBeUndefined()
+  })
+})
+
+describe('crearInvitacionesDelEquipo — entorno de pruebas', () => {
+  it('un correo retenido por el entorno de pruebas queda sin enviar y con su enlace', async () => {
+    const invitar = vi.fn().mockResolvedValue({
+      emailDelivered: false,
+      emailStatus: 'suppressed',
+      invitationToken: 'tok-9',
+    })
+    const [creada] = await crearInvitacionesDelEquipo(
+      [{ email: 'alex.dev+9@leasefy.co', nombre: '', role: 'ADMIN' }],
+      invitar,
+    )
+    expect(creada.correoEnviado).toBe(false)
+    expect(creada.estadoDelCorreo).toBe('suppressed')
+    expect(creada.enlace).toContain('/invitacion/tok-9')
   })
 })

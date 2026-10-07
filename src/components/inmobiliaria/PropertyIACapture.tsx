@@ -12,6 +12,8 @@ import {
   X,
 } from '@phosphor-icons/react';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { erroresDelInmueble } from '@/lib/inmuebles/limites-del-inmueble';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { Spinner } from '@/components/ui/spinner';
@@ -284,8 +286,11 @@ export function PropertyIACapture() {
       setConfidence(res.confidence);
       setStep('review');
     } catch (err) {
+      // Por el traductor (sistema de errores, 02-10-2026): el micro responde
+      // el sobre del back (400 con `campos`, 500 con `referencia`, 429). Nunca
+      // `err.message` crudo.
       if (err instanceof PropertyExtractUnavailableError) setErrorMsg(t(k('errorUnavailable')));
-      else setErrorMsg(err instanceof Error ? err.message : t(k('errorGeneric')));
+      else setErrorMsg(mensajeParaLaPersona(err, { porDefecto: t(k('errorGeneric')), accion: 'leer la ficha' }));
       setStep('error');
     }
   };
@@ -311,8 +316,26 @@ export function PropertyIACapture() {
     );
   };
 
+  // Los topes del back (`limites-del-inmueble.ts`): lo que el servidor
+  // rechazaría se dice antes de mandar, con la misma frase.
+  const topes = form
+    ? erroresDelInmueble({
+        title: form.title,
+        address: form.address,
+        city: form.city,
+        neighborhood: form.neighborhood,
+        monthlyRent: form.monthlyRent === '' ? undefined : Number(form.monthlyRent),
+        adminFee: form.adminFee === '' ? undefined : Number(form.adminFee),
+        bedrooms: form.bedrooms === '' ? undefined : Number(form.bedrooms),
+        bathrooms: form.bathrooms === '' ? undefined : Number(form.bathrooms),
+        area: form.area === '' ? undefined : Number(form.area),
+      })
+    : {};
+  const avisoDeTopes = Object.values(topes).join(' · ');
+
   const isValid =
     !!form &&
+    !avisoDeTopes &&
     !!form.title &&
     !!form.description &&
     !!form.city &&
@@ -397,7 +420,9 @@ export function PropertyIACapture() {
       resetPropertyCreationSession(sesionDeCreacion);
       pasosHechos.current = { fotos: false, agente: false };
     } catch (err) {
-      const reason = err instanceof Error ? err.message : t(k('createError'));
+      // Un 400 dice qué campo (todos, en una línea), un 5xx «de nuestro lado»
+      // con la referencia, y «conexión» sólo sin respuesta.
+      const reason = mensajeParaLaPersona(err, { porDefecto: t(k('createError')), accion: 'crear el inmueble' });
       // The property exists: never say "nothing was created" (T-0141).
       setErrorMsg(
         sesionDeCreacion.property ? t(k('createdPending'), { reason }) : reason,
@@ -500,9 +525,9 @@ export function PropertyIACapture() {
           </div>
         </section>
 
-        {errorMsg && (
-          <div className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-danger text-sm">
-            {errorMsg}
+        {(errorMsg || avisoDeTopes) && (
+          <div role="alert" className="rounded-lg border border-danger/30 bg-danger-soft p-4 text-danger text-sm">
+            {errorMsg ?? avisoDeTopes}
           </div>
         )}
 
@@ -701,7 +726,8 @@ export function PropertyIACapture() {
         open={confirmarReextraccion}
         onOpenChange={(abierto) => !abierto && setConfirmarReextraccion(false)}
       >
-        <AlertDialogContent>
+        {/* Destructiva: volver a procesar pisa lo que editaste a mano. */}
+        <AlertDialogContent variant="destructive" icon={<ArrowClockwise weight="bold" />}>
           <AlertDialogHeader>
             <AlertDialogTitle>{t(k('confirmReextractTitle'))}</AlertDialogTitle>
             <AlertDialogDescription>{t(k('confirmReextract'))}</AlertDialogDescription>

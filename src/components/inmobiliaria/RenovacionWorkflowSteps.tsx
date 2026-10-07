@@ -11,7 +11,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Avatar, Callout, KeyValueList } from '@leasefy/cadence';
+import { AnimatedNumber, Avatar, Callout, KeyValueList } from '@leasefy/cadence';
 import {
   CheckCircle,
   Clock,
@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { MoneyInput } from '@/components/ui/money-input';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import {
   Dialog,
   DialogContent,
@@ -53,22 +54,41 @@ import {
   renovacionAceptada,
   textoDeActividad,
   topeConIpc,
+  AREAS_DE_LA_RENOVACION,
   variacionDelCanon,
 } from '@/lib/renovaciones/reglas';
+import { alCentavo } from '@/lib/plata/plata';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
 
 // ============================================================================
 // Piezas chicas
 // ============================================================================
 
+/**
+ * Los campos del cajón donde puede ir un error (02-10-2026): los de la
+ * propuesta, el contrato firmado, la nota del riel y el motivo de no renovar.
+ */
+export type CampoDelCajon = 'canon' | 'ipc' | 'admin' | 'mensaje' | 'archivo' | 'nota' | 'motivo';
+
+/** Lo que el campo nombra en `aria-describedby` cuando tiene error. */
+function ariaDelError(id: string, error?: string | null) {
+  return error
+    ? { 'aria-invalid': true as const, 'aria-describedby': `${id}-error` }
+    : {};
+}
+
 function Campo({
   id,
   etiqueta,
   ayuda,
+  error,
   children,
 }: {
   id: string;
   etiqueta: string;
   ayuda?: React.ReactNode;
+  /** El error bajo el campo: reemplaza la ayuda con un cruce y entra suave. */
+  error?: string | null;
   children: React.ReactNode;
 }) {
   return (
@@ -77,7 +97,7 @@ function Campo({
         {etiqueta}
       </Label>
       {children}
-      {ayuda ? <p className="text-xs text-fg-muted">{ayuda}</p> : null}
+      <ErrorDelCampo id={`${id}-error`} mensaje={error} pista={ayuda} className="mt-0" />
     </div>
   );
 }
@@ -160,6 +180,7 @@ export function PasoPropuesta({
   editado,
   respondible,
   hoy,
+  errores = {},
   onNewRentChange,
   onNewAdminFeeChange,
   onIpcRateChange,
@@ -176,6 +197,8 @@ export function PasoPropuesta({
   respondible: boolean;
   /** Qué día es hoy: decide si el IPC de la tabla sigue siendo el del año pasado. */
   hoy: Date;
+  /** El error de cada campo (el tope del back o lo que rechazó), bajo el campo. */
+  errores?: Partial<Record<'canon' | 'ipc' | 'admin' | 'mensaje', string | undefined>>;
   onNewRentChange: (value: number) => void;
   onNewAdminFeeChange: (value: number) => void;
   onIpcRateChange: (value: number | null) => void;
@@ -184,7 +207,13 @@ export function PasoPropuesta({
 }) {
   const { locale, formatCurrency, formatDate } = useI18n();
   const sugerido = ipcSugerido(hoy);
-  const tope = ipcRate != null && ipcRate > 0 ? topeConIpc(renovacion.currentRent, ipcRate) : null;
+  // «Centavos en todo» (C4): con las llaves de la renovación, el tope del IPC y
+  // el canon nuevo van al centavo (como el back); apagadas, al peso como hoy.
+  const renovacionConCentavos = usePlataConCentavos(AREAS_DE_LA_RENOVACION);
+  const tope =
+    ipcRate != null && ipcRate > 0
+      ? topeConIpc(renovacion.currentRent, ipcRate, { conCentavos: renovacionConCentavos })
+      : null;
   const variacion = variacionDelCanon(renovacion.currentRent, newRent);
   const superaElTope = tope != null && newRent > tope;
   const canal = canalDeEnvio(renovacion);
@@ -213,21 +242,24 @@ export function PasoPropuesta({
 
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,11rem)]">
-          <Campo id="renovacion-canon" etiqueta="Nuevo canon" ayuda={ayudaDelCanon}>
+          <Campo id="renovacion-canon" etiqueta="Nuevo canon" ayuda={ayudaDelCanon} error={errores.canon}>
             <MoneyInput
               id="renovacion-canon"
               data-testid="renovacion-canon"
+              {...ariaDelError('renovacion-canon', errores.canon)}
+              areas={AREAS_DE_LA_RENOVACION}
               value={newRent > 0 ? newRent : ''}
               onChange={(crudo) => onNewRentChange(Number(crudo) || 0)}
               placeholder={formatCurrency(renovacion.currentRent)}
               className="h-12 text-lg font-semibold"
             />
           </Campo>
-          <Campo id="renovacion-ipc" etiqueta="IPC del año anterior">
+          <Campo id="renovacion-ipc" etiqueta="IPC del año anterior" error={errores.ipc}>
             <div className="relative">
               <Input
                 id="renovacion-ipc"
                 data-testid="renovacion-ipc"
+                {...ariaDelError('renovacion-ipc', errores.ipc)}
                 type="number"
                 inputMode="decimal"
                 step="0.01"
@@ -271,7 +303,13 @@ export function PasoPropuesta({
               ) : (
                 <p className="text-fg-muted">
                   Con IPC de {formatearPct(ipcRate, locale)} el canon queda en{' '}
-                  <strong className="font-semibold text-fg">{formatCurrency(tope)}</strong>, el tope
+                  {/* Al cambiar el IPC, el tope cuenta hasta el nuevo. */}
+                  <strong className="font-semibold text-fg">
+                    <AnimatedNumber
+                      value={tope}
+                      format={(n) => formatCurrency(renovacionConCentavos ? alCentavo(n) : Math.round(n))}
+                    />
+                  </strong>, el tope
                   legal en vivienda.
                 </p>
               )}
@@ -330,10 +368,12 @@ export function PasoPropuesta({
               ? `Actual ${formatCurrency(currentAdminFee)}`
               : 'Déjalo vacío si el inmueble no paga administración.'
           }
+          error={errores.admin}
         >
           <MoneyInput
             id="renovacion-admin"
             data-testid="renovacion-admin"
+            {...ariaDelError('renovacion-admin', errores.admin)}
             value={newAdminFee > 0 ? newAdminFee : ''}
             onChange={(crudo) => onNewAdminFeeChange(Number(crudo) || 0)}
             placeholder="Sin administración"
@@ -398,12 +438,16 @@ export function PasoPropuesta({
         </div>
 
         <Textarea
+          id="renovacion-mensaje"
           data-testid="renovacion-mensaje"
+          aria-label="Mensaje al inquilino"
           value={message}
           onChange={(e) => onMessageChange(e.target.value)}
           rows={9}
           className="text-sm leading-relaxed"
+          {...ariaDelError('renovacion-mensaje', errores.mensaje)}
         />
+        <ErrorDelCampo id="renovacion-mensaje-error" mensaje={errores.mensaje} className="mt-0" />
         <AvisoDeCanal canal={canal} correo={renovacion.tenantEmail} respondible={respondible} />
       </div>
     </section>
@@ -517,6 +561,7 @@ export function PasoFirma({
   newRent,
   newAdminFee,
   archivo,
+  errorDelArchivo,
   onArchivo,
   onAbrirDocumento,
 }: {
@@ -524,6 +569,8 @@ export function PasoFirma({
   newRent: number;
   newAdminFee: number;
   archivo: File | null;
+  /** Por qué no subió (lo que dijo el back), bajo el archivo. */
+  errorDelArchivo?: string | null;
   onArchivo: (archivo: File | null) => void;
   onAbrirDocumento: () => void;
 }) {
@@ -586,9 +633,11 @@ export function PasoFirma({
           accept=".pdf,.jpg,.jpeg,.png"
           className="hidden"
           data-testid="firma-archivo"
+          {...ariaDelError('firma-archivo', errorDelArchivo)}
           onChange={(e) => onArchivo(e.target.files?.[0] ?? null)}
         />
       </label>
+      <ErrorDelCampo id="firma-archivo-error" mensaje={errorDelArchivo} className="mt-0" />
 
       <p className="text-xs text-fg-muted">
         Al registrar la firma, el contrato, la consignación y el inmueble quedan con el nuevo canon
@@ -675,13 +724,20 @@ export function RielDeActividad({
   renovacion,
   historial,
   agregandoNota,
+  errorDeLaNota,
+  onNotaCambia,
   onAddNote,
 }: {
   renovacion: Renovacion;
   /** null mientras se lee el detalle. */
   historial: RenovacionHistoryItem[] | null;
   agregandoNota: boolean;
-  onAddNote: (nota: string) => void | Promise<void>;
+  /** Por qué no se guardó la nota (lo que dijo el back), bajo el campo. */
+  errorDeLaNota?: string | null;
+  /** Al escribir: el error de la nota anterior ya no vale. */
+  onNotaCambia?: () => void;
+  /** `false` = no se guardó: la nota escrita se queda para corregirla. */
+  onAddNote: (nota: string) => boolean | void | Promise<boolean | void>;
 }) {
   const { locale, formatCurrency, formatDate } = useI18n();
   const [nota, setNota] = useState('');
@@ -696,8 +752,8 @@ export function RielDeActividad({
   const enviar = async () => {
     const texto = nota.trim();
     if (!texto) return;
-    await onAddNote(texto);
-    setNota('');
+    const salio = await onAddNote(texto);
+    if (salio !== false) setNota('');
   };
 
   return (
@@ -795,12 +851,19 @@ export function RielDeActividad({
           }}
         >
           <Textarea
+            id="riel-nota"
             data-testid="riel-nota"
+            aria-label="Nota"
             rows={2}
             placeholder="Escribe una nota…"
             value={nota}
-            onChange={(e) => setNota(e.target.value)}
+            onChange={(e) => {
+              setNota(e.target.value);
+              onNotaCambia?.();
+            }}
+            {...ariaDelError('riel-nota', errorDeLaNota)}
           />
+          <ErrorDelCampo id="riel-nota-error" mensaje={errorDeLaNota} className="mt-0" />
           <Button
             type="submit"
             size="sm"
@@ -826,18 +889,31 @@ export function RielDeActividad({
 export function DialogoNoRenovar({
   abierto,
   confirmando,
+  error,
+  onMotivoCambia,
   onCerrar,
   onConfirmar,
 }: {
   abierto: boolean;
   confirmando: boolean;
+  /** Por qué no se cerró (lo que dijo el back), bajo el motivo. */
+  error?: string | null;
+  /** Al escribir: el error del motivo anterior ya no vale. */
+  onMotivoCambia?: () => void;
   onCerrar: () => void;
   onConfirmar: (motivo: string) => void;
 }) {
   const [motivo, setMotivo] = useState('');
   return (
     <Dialog open={abierto} onOpenChange={(o) => !o && onCerrar()}>
-      <DialogContent className="sm:max-w-md" data-testid="dialogo-no-renovar">
+      {/* Destructiva: cierra la renovación. El ícono es el mismo del paso
+          «No se renueva» (no la papelera: no se borra nada). */}
+      <DialogContent
+        size="sm"
+        variant="destructive"
+        icon={<XCircle weight="bold" />}
+        data-testid="dialogo-no-renovar"
+      >
         <DialogHeader>
           <DialogTitle>No renovar este contrato</DialogTitle>
           <DialogDescription>
@@ -851,12 +927,17 @@ export function DialogoNoRenovar({
             data-testid="no-renovar-motivo"
             rows={3}
             value={motivo}
-            onChange={(e) => setMotivo(e.target.value)}
+            onChange={(e) => {
+              setMotivo(e.target.value);
+              onMotivoCambia?.();
+            }}
             placeholder="Por ejemplo: el inquilino se muda en diciembre."
+            {...ariaDelError('motivo-no-renovar', error)}
           />
+          <ErrorDelCampo id="motivo-no-renovar-error" mensaje={error} className="mt-0" />
         </div>
         <DialogFooter>
-          <Button type="button" variant="ghost" hideArrow onClick={onCerrar}>
+          <Button type="button" variant="outline" hideArrow onClick={onCerrar} disabled={confirmando}>
             Cancelar
           </Button>
           <Button

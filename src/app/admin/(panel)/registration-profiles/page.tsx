@@ -7,6 +7,7 @@ import { LoadingBlock, ErrorBlock } from '@/components/admin/screen/states'
 import { Pill } from '@/components/admin/Pill'
 import { useApiQuery } from '@/lib/admin/use-api-query'
 import { ApiError } from '@/lib/admin/api'
+import { mensajeDelAdmin } from '@/lib/admin/errores-del-admin'
 import {
   listRegistrationProfiles,
   setRegistrationProfileEnabled,
@@ -143,7 +144,7 @@ export default function RegistrationProfilesPage() {
         delete copy[row.key]
         return copy
       })
-      setActionError(err instanceof ApiError ? err.message : 'No se pudo guardar el cambio.')
+      setActionError(mensajeDelAdmin(err, { accion: 'guardar el cambio', porDefecto: 'No se pudo guardar el cambio.' }))
     } finally {
       setBusyKey(null)
     }

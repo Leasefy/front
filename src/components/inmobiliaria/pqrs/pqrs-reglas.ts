@@ -82,9 +82,11 @@ export const ESTADO_LABEL: Record<PqrsEstado, string> = {
 export const ESTADO_BADGE: Record<PqrsEstado, string> = {
   RECIBIDA: 'bg-primary/10 text-primary',
   ASIGNADA: 'bg-primary/10 text-primary',
-  EN_PROCESO: 'bg-warning-soft text-warning',
-  EN_COTIZACION: 'bg-warning-soft text-warning',
-  RESUELTA: 'bg-success-soft text-success',
+  // QA-CONT-95 I-09: el color de relleno como tinta no se lee (4,36:1 y 3,23:1);
+  // el tono de texto de la casa sí (-700 en claro, -100 en oscuro).
+  EN_PROCESO: 'bg-warning-soft text-warning-700 dark:text-warning-100',
+  EN_COTIZACION: 'bg-warning-soft text-warning-700 dark:text-warning-100',
+  RESUELTA: 'bg-success-soft text-success-700 dark:text-success-100',
   CERRADA: 'bg-surface-muted text-fg-muted',
 }
 
@@ -146,6 +148,8 @@ export interface PqrsFormulario {
   asignadoAUserId: string
   asunto: string
   descripcion: string
+  /** SO-24: «Reparación» o «Sugerencia» (con su tipo de la Ley 1755 detrás). */
+  subtipo?: 'REPARACION' | 'SUGERENCIA'
 }
 
 export const PQRS_FORMULARIO_VACIO: PqrsFormulario = {
@@ -188,4 +192,49 @@ export function validarPqrs(
   else if (asunto.length > ASUNTO_MAX) errores.asunto = `Máximo ${ASUNTO_MAX} caracteres.`
   if (form.descripcion.length > DESCRIPCION_MAX) errores.descripcion = `Máximo ${DESCRIPCION_MAX} caracteres.`
   return errores
+}
+
+// ── PQRS-FIX (04-10-2026) ────────────────────────────────────────────────────
+
+/** SO-24: «Reparación» y «Sugerencia» se ven con su nombre, no como su tipo de ley. */
+export const SUBTIPO_LABEL: Record<'REPARACION' | 'SUGERENCIA', string> = {
+  REPARACION: 'Reparación',
+  SUGERENCIA: 'Sugerencia',
+}
+
+/** El nombre que se muestra: el subtipo si lo hay, si no el tipo de la Ley 1755. */
+export function nombreDelTipo(p: { tipo: PqrsTipo; subtipo?: 'REPARACION' | 'SUGERENCIA' | null }): string {
+  return p.subtipo ? SUBTIPO_LABEL[p.subtipo] : TIPO_LABEL[p.tipo]
+}
+
+/**
+ * SO-19: el inmueble sin repetir la dirección cuando el título ES la dirección
+ * («Calle 45 # 70-12 Apto 301 · Calle 45 # 70-12 Apto 301» en las viejas).
+ */
+export function inmuebleSinRepetir(label: string | null | undefined): string | null {
+  if (!label) return null
+  const partes = label.split(' · ').map((x) => x.trim()).filter(Boolean)
+  return [...new Set(partes)].join(' · ') || null
+}
+
+/** Por dónde le llegó la respuesta (SO-04). */
+export const MEDIO_LABEL: Record<'PORTAL' | 'CORREO' | 'TELEFONO' | 'PRESENCIAL', string> = {
+  PORTAL: 'En su portal',
+  CORREO: 'Por correo',
+  TELEFONO: 'Por teléfono',
+  PRESENCIAL: 'En persona',
+}
+
+/** Cada paso del historial, en palabras. */
+export const EVENTO_LABEL: Record<string, string> = {
+  RADICADA: 'Radicada',
+  ASIGNADA: 'Asignada',
+  REASIGNADA: 'Reasignada',
+  EN_PROCESO: 'En proceso',
+  EN_COTIZACION: 'En cotización',
+  RESPUESTA: 'Respuesta al solicitante',
+  RESUELTA: 'Resuelta',
+  CERRADA: 'Cerrada',
+  ESCALADA: 'Escalada por plazo vencido',
+  ADJUNTO: 'Archivo adjunto',
 }

@@ -22,16 +22,26 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { Scroll, Plus, WarningCircle, CheckCircle, X } from '@phosphor-icons/react';
+import { CrossFade, Presence, Stagger, StaggerItem } from '@leasefy/cadence';
+import { Scroll, Plus, WarningCircle, CheckCircle } from '@phosphor-icons/react';
 
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button, Badge, Input } from '@/components/ui';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { EmptyState } from '@/components/ui/empty-state';
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla';
 import { usePermissions } from '@/lib/hooks/usePermissions';
-import { useLenis } from '@/components/providers/SmoothScroll';
 import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { cn } from '@/lib/utils';
 import {
   clausulasPropiasApi,
@@ -83,7 +93,12 @@ function ContenidoDeClausulas() {
       );
       await cargar();
     } catch (e) {
-      toast.error(mensajeDeError(e, 'No se pudo cambiar la cláusula'));
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No se pudo cambiar la cláusula.',
+          accion: 'cambiar la cláusula',
+        }),
+      );
     }
   };
 
@@ -165,17 +180,27 @@ function ContenidoDeClausulas() {
             </EmptyState>
           }
         >
-          <ul className="space-y-3">
+          {/* La cláusula nueva entra y las demás se acomodan (`key` = el id).
+              «No se ofrece» baja la opacidad con transición, sin saltar. */}
+          <Stagger as="ul" className="space-y-3">
             {(clausulas ?? []).map((c) => (
-              <li
+              <StaggerItem
+                as="li"
                 key={c.id}
                 data-testid="clausula"
                 className={cn(
                   'rounded-lg border bg-card p-4',
-                  c.activa ? 'border-border' : 'border-dashed border-border opacity-70',
+                  c.activa ? 'border-border' : 'border-dashed border-border',
                 )}
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
+                {/* La opacidad de «no se ofrece» va adentro: la entrada de la
+                    fila deja `opacity: 1` en línea y le ganaría a la clase. */}
+                <div
+                  className={cn(
+                    'flex flex-wrap items-start justify-between gap-3 transition-opacity duration-base',
+                    !c.activa && 'opacity-70',
+                  )}
+                >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium text-fg">{c.titulo}</p>
@@ -199,9 +224,9 @@ function ContenidoDeClausulas() {
                     </div>
                   )}
                 </div>
-              </li>
+              </StaggerItem>
             ))}
-          </ul>
+          </Stagger>
         </EstadoDeDatos>
       </div>
 
@@ -230,12 +255,6 @@ function EditorDeClausula({
   onCerrar: () => void;
   onGuardada: () => void;
 }) {
-  const lenis = useLenis();
-  useEffect(() => {
-    lenis.stop();
-    return () => lenis.start();
-  }, [lenis]);
-
   const [form, setForm] = useState<GuardarClausulaPropia>({
     titulo: clausula?.titulo ?? '',
     resumen: clausula?.resumen ?? '',
@@ -246,6 +265,18 @@ function EditorDeClausula({
   const [revisando, setRevisando] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [falla, setFalla] = useState<string | null>(null);
+  /** 02-10-2026 · Lo que el back rechazó por campo (`campos` del 400). */
+  const [errores, setErrores] = useState<Partial<Record<CampoDeLaClausula, string>>>({});
+
+  /** Cambia un campo y borra su error del servidor. */
+  const cambiar = (patch: Partial<GuardarClausulaPropia>) => {
+    setForm((f) => ({ ...f, ...patch }));
+    setErrores((e) => {
+      const resto = { ...e };
+      for (const k of Object.keys(patch)) delete resto[k as CampoDeLaClausula];
+      return resto;
+    });
+  };
 
   const completo =
     form.titulo.trim().length >= 3 &&
@@ -287,8 +318,7 @@ function EditorDeClausula({
   }, [form, completo]);
 
   const alternarPlantilla = (valor: PlantillaLegal) => {
-    setForm({
-      ...form,
+    cambiar({
       aplicaA: form.aplicaA.includes(valor)
         ? form.aplicaA.filter((v) => v !== valor)
         : [...form.aplicaA, valor],
@@ -300,6 +330,7 @@ function EditorDeClausula({
     if (!completo || guardando) return;
     setGuardando(true);
     setFalla(null);
+    setErrores({});
     try {
       if (clausula) {
         await clausulasPropiasApi.actualizar(clausula.id, form);
@@ -309,11 +340,24 @@ function EditorDeClausula({
       toast.success(clausula ? 'Cláusula actualizada' : 'Cláusula agregada');
       onGuardada();
     } catch (err) {
-      setFalla(mensajeDeError(err, 'No se pudo guardar la cláusula'));
+      /*
+       * 02-10-2026 · Un 400 con `campos` va bajo SU campo (y le da el foco);
+       * arriba sólo lo que no tiene dónde ir, con la regla de oro.
+       */
+      const reparto = repartirErroresDelServidor<CampoDeLaClausula>(err, {
+        campos: CAMPOS_DE_LA_CLAUSULA,
+        porDefecto: 'No se pudo guardar la cláusula.',
+        accion: 'guardar la cláusula',
+      });
+      setErrores(reparto.porCampo);
+      setFalla(reparto.sueltos.length ? reparto.sueltos.join(' · ') : null);
+      const primero = reparto.orden[0];
+      if (primero) document.getElementById(`clausula-${primero}`)?.focus();
       // El back manda sus motivos en el error: se muestran igual que los del
-      // validador en vivo, porque son los mismos.
-      const conMotivos = (err as { motivos?: MotivoDeRechazo[] })?.motivos;
-      if (Array.isArray(conMotivos)) setMotivos(conMotivos);
+      // validador en vivo, porque son los mismos. Un `ApiError` los guarda en
+      // `detalle` (antes se buscaban arriba y nunca aparecían).
+      const conMotivos = motivosDelError(err);
+      if (conMotivos) setMotivos(conMotivos);
     } finally {
       setGuardando(false);
     }
@@ -322,43 +366,37 @@ function EditorDeClausula({
   const rechazada = (motivos?.length ?? 0) > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={guardando ? undefined : onCerrar}
-      />
-      <div
-        data-lenis-prevent
-        style={{ overscrollBehavior: 'contain' }}
-        className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-background"
-      >
-        <div className="sticky top-0 flex items-center justify-between border-b border-border bg-background px-6 py-4">
-          <h2 className="text-base font-semibold text-fg">
+    <Dialog
+      open
+      onOpenChange={(abierto) => {
+        // Mientras se guarda no se sale (ni con Esc, ni con el velo, ni con la ✕).
+        if (!abierto && !guardando) onCerrar();
+      }}
+    >
+      <DialogContent size="lg" aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>
             {clausula ? `Editar «${clausula.titulo}»` : 'Escribir una cláusula'}
-          </h2>
-          <Button
-            variant="ghost"
-            size="icon"
-            hideArrow
-            onClick={onCerrar}
-            disabled={guardando}
-            aria-label="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={enviar} className="space-y-4 p-6">
+        {/* El pie vive FUERA del <form> (el DialogContent lo saca al pie fijo):
+            el botón de guardar lo apunta con `form=`. */}
+        <form id={ID_DEL_EDITOR} onSubmit={enviar} className="space-y-4">
           <label className="block">
             <span className="mb-1 block text-xs font-medium text-foreground">
               Título<span className="ml-0.5 text-danger">*</span>
             </span>
             <Input
+              id="clausula-titulo"
               value={form.titulo}
-              onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+              onChange={(e) => cambiar({ titulo: e.target.value })}
               maxLength={200}
               placeholder="Uso de zonas comunes"
+              aria-invalid={errores.titulo ? true : undefined}
+              aria-describedby={errores.titulo ? 'clausula-titulo-error' : undefined}
             />
+            <ErrorDelCampo id="clausula-titulo-error" mensaje={errores.titulo} />
           </label>
 
           <label className="block">
@@ -366,11 +404,15 @@ function EditorDeClausula({
               Una línea que la resuma<span className="ml-0.5 text-danger">*</span>
             </span>
             <Input
+              id="clausula-resumen"
               value={form.resumen}
-              onChange={(e) => setForm({ ...form, resumen: e.target.value })}
+              onChange={(e) => cambiar({ resumen: e.target.value })}
               maxLength={300}
               placeholder="Es lo que se ve en la lista al armar el contrato"
+              aria-invalid={errores.resumen ? true : undefined}
+              aria-describedby={errores.resumen ? 'clausula-resumen-error' : undefined}
             />
+            <ErrorDelCampo id="clausula-resumen-error" mensaje={errores.resumen} />
           </label>
 
           <fieldset>
@@ -398,6 +440,7 @@ function EditorDeClausula({
                 );
               })}
             </div>
+            <ErrorDelCampo id="clausula-aplicaA-error" mensaje={errores.aplicaA} />
           </fieldset>
 
           <label className="block">
@@ -405,86 +448,103 @@ function EditorDeClausula({
               El texto de la cláusula<span className="ml-0.5 text-danger">*</span>
             </span>
             <textarea
+              id="clausula-cuerpo"
               value={form.cuerpo}
-              onChange={(e) => setForm({ ...form, cuerpo: e.target.value })}
+              onChange={(e) => cambiar({ cuerpo: e.target.value })}
               rows={8}
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
               placeholder="Se imprime tal cual, al final del contrato."
+              aria-invalid={errores.cuerpo ? true : undefined}
+              aria-describedby={errores.cuerpo ? 'clausula-cuerpo-error' : undefined}
             />
+            <ErrorDelCampo id="clausula-cuerpo-error" mensaje={errores.cuerpo} />
           </label>
 
           {/* El veredicto del validador, con su norma. */}
           <div aria-live="polite" data-testid="veredicto">
-            {revisando && (
-              <p className="text-xs text-fg-muted">Revisando contra la ley…</p>
-            )}
-            {!revisando && motivos !== null && !rechazada && (
-              <p className="flex items-center gap-1.5 text-xs text-success">
-                <CheckCircle className="h-4 w-4" weight="fill" />
-                El validador no encontró nada que la ley prohíba.
-              </p>
-            )}
-            {!revisando && rechazada && (
-              <ul className="space-y-2" data-testid="motivos">
-                {motivos!.map((m) => (
-                  <li
-                    key={m.codigo + m.donde}
-                    className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2"
-                  >
-                    <p className="flex items-start gap-1.5 text-xs text-danger">
-                      <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" weight="fill" />
-                      <span>{m.mensaje}</span>
-                    </p>
-                    {/* La norma es lo que va a mirar un abogado. Se cita siempre. */}
-                    <p className="mt-1 pl-5 text-[11px] text-fg-muted">{m.norma}</p>
-                  </li>
-                ))}
-              </ul>
-            )}
+            {/* Revisando → lo que dijo el validador: se cruzan (`popLayout`:
+                el veredicto entra YA y «Revisando…» se va por encima). */}
+            <CrossFade
+              swapKey={revisando ? 'revisando' : rechazada ? 'rechazada' : motivos !== null ? 'limpia' : 'nada'}
+              mode="popLayout"
+              className="empty:hidden"
+            >
+              {revisando && (
+                <p className="text-xs text-fg-muted">Revisando contra la ley…</p>
+              )}
+              {!revisando && motivos !== null && !rechazada && (
+                <p className="flex items-center gap-1.5 text-xs text-success">
+                  <CheckCircle className="h-4 w-4" weight="fill" />
+                  El validador no encontró nada que la ley prohíba.
+                </p>
+              )}
+              {!revisando && rechazada && (
+                <ul className="space-y-2" data-testid="motivos">
+                  {motivos!.map((m) => (
+                    <li
+                      key={m.codigo + m.donde}
+                      className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2"
+                    >
+                      <p className="flex items-start gap-1.5 text-xs text-danger">
+                        <WarningCircle className="mt-0.5 h-4 w-4 shrink-0" weight="fill" />
+                        <span>{m.mensaje}</span>
+                      </p>
+                      {/* La norma es lo que va a mirar un abogado. Se cita siempre. */}
+                      <p className="mt-1 pl-5 text-[11px] text-fg-muted">{m.norma}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CrossFade>
           </div>
 
-          {falla && !rechazada && (
-            <div
-              role="alert"
-              className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger"
-            >
-              {falla}
-            </div>
-          )}
-
-          <div className="flex gap-2 pt-1">
-            <Button
-              type="button"
-              variant="secondary"
-              hideArrow
-              onClick={onCerrar}
-              disabled={guardando}
-              className="flex-1"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              hideArrow
-              isLoading={guardando}
-              disabled={!completo || rechazada || guardando}
-              className="flex-1"
-            >
-              {clausula ? 'Guardar' : 'Agregar'}
-            </Button>
-          </div>
+          <Presence
+            show={Boolean(falla) && !rechazada}
+            initial={false}
+            distance="xs"
+            role="alert"
+            className="rounded-md border border-danger/30 bg-danger-soft px-3 py-2 text-xs text-danger"
+          >
+            {falla}
+          </Presence>
         </form>
-      </div>
-    </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            hideArrow
+            onClick={onCerrar}
+            disabled={guardando}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form={ID_DEL_EDITOR}
+            hideArrow
+            isLoading={guardando}
+            disabled={!completo || rechazada || guardando}
+          >
+            {clausula ? 'Guardar' : 'Agregar'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-function mensajeDeError(e: unknown, porDefecto: string): string {
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: unknown }).message;
-    if (typeof m === 'string' && m.trim()) return m;
-  }
-  return porDefecto;
+const ID_DEL_EDITOR = 'form-editor-de-clausula';
+
+type CampoDeLaClausula = 'titulo' | 'resumen' | 'cuerpo' | 'aplicaA';
+const CAMPOS_DE_LA_CLAUSULA: readonly CampoDeLaClausula[] = ['titulo', 'resumen', 'cuerpo', 'aplicaA'];
+
+/** Los motivos del validador que trae un 400 del back (en `detalle` si es `ApiError`). */
+function motivosDelError(err: unknown): MotivoDeRechazo[] | null {
+  if (!err || typeof err !== 'object') return null;
+  const o = err as { motivos?: unknown; detalle?: { motivos?: unknown } };
+  const lista = Array.isArray(o.detalle?.motivos) ? o.detalle?.motivos : o.motivos;
+  return Array.isArray(lista) ? (lista as MotivoDeRechazo[]) : null;
 }
 
 export default function ClausulasPropiasPage() {

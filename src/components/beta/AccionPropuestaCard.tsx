@@ -180,7 +180,7 @@ export function AccionPropuestaCard({
 
       {estadoReal === 'vencida' && !resultado && (
         <p className="font-body text-[12.5px] leading-relaxed text-fg-muted">
-          Pedímela de nuevo y la preparo con los números de ahora.
+          Pídemela de nuevo y la preparo con los números de ahora.
         </p>
       )}
     </div>

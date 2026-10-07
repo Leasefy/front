@@ -15,6 +15,7 @@ vi.mock('next/navigation', () => ({
 }))
 
 import { SalirDelRegistro } from './SalirDelRegistro'
+import { AuthContext } from '@/lib/auth/auth-context'
 
 let container: HTMLDivElement
 let root: Root
@@ -95,6 +96,79 @@ describe('<SalirDelRegistro>', () => {
     )
     await act(async () => {
       confirmar[confirmar.length - 1].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    })
+
+    expect(replaceMock).toHaveBeenCalledWith('/auth')
+  })
+
+  // 02-10-2026 · Era un try/finally sin catch: el rechazo de `signOut` quedaba
+  // sin atrapar. Salir sigue llevando a /auth y no deja nada colgando.
+  it('si cerrar la sesión falla (la red), igual sale y no deja un rechazo sin atrapar', async () => {
+    const signOut = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'))
+    const sinAtrapar = vi.fn()
+    process.on('unhandledRejection', sinAtrapar)
+    act(() =>
+      root.render(
+        <AuthContext.Provider value={{ signOut } as unknown as React.ContextType<typeof AuthContext>}>
+          <SalirDelRegistro />
+        </AuthContext.Provider>,
+      ),
+    )
+    clickPorTexto('Salir')
+    const confirmar = Array.from(document.querySelectorAll('button')).filter(
+      (b) => b.textContent?.trim() === 'Salir',
+    )
+    await act(async () => {
+      confirmar[confirmar.length - 1].dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      await new Promise((r) => setTimeout(r, 0))
+    })
+    process.off('unhandledRejection', sinAtrapar)
+
+    expect(signOut).toHaveBeenCalledTimes(1)
+    expect(replaceMock).toHaveBeenCalledWith('/auth')
+    expect(sinAtrapar).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * Nico, 01-10-2026: «ese salir lo saca y lo deja en el login, y él necesita
+ * editar la razón social; ahí deberíamos tener dos opciones, el devolverse…
+ * y también la opción de salir por si se quiere salir del todo».
+ */
+describe('<SalirDelRegistro> con a dónde volver', () => {
+  const volver = (onVolver = vi.fn()) => ({
+    etiqueta: 'Volver a los datos de la inmobiliaria',
+    descripcion: 'Ahí corriges la razón social.',
+    onVolver,
+  })
+
+  it('ofrece volver Y salir del todo', () => {
+    act(() => root.render(<SalirDelRegistro volver={volver()} />))
+    clickPorTexto('Salir')
+
+    expect(document.body.textContent).toContain('¿Qué quieres hacer?')
+    expect(document.body.textContent).toContain('Volver a los datos de la inmobiliaria')
+    expect(document.body.textContent).toContain('Salir del registro')
+  })
+
+  it('volver lleva al paso y NO cierra la sesión', () => {
+    const onVolver = vi.fn()
+    act(() => root.render(<SalirDelRegistro volver={volver(onVolver)} />))
+    clickPorTexto('Salir')
+    clickPorTexto('Volver a los datos de la inmobiliaria')
+
+    expect(onVolver).toHaveBeenCalledTimes(1)
+    expect(replaceMock).not.toHaveBeenCalled()
+  })
+
+  it('«Salir del registro» sigue mandando a /auth', async () => {
+    act(() => root.render(<SalirDelRegistro volver={volver()} />))
+    clickPorTexto('Salir')
+    const salir = Array.from(document.querySelectorAll('button')).find(
+      (b) => b.textContent?.trim() === 'Salir del registro',
+    )!
+    await act(async () => {
+      salir.dispatchEvent(new MouseEvent('click', { bubbles: true }))
     })
 
     expect(replaceMock).toHaveBeenCalledWith('/auth')

@@ -37,12 +37,22 @@ afterEach(() => {
 const procesando = { lote: 'l-1', estado: 'PROCESANDO', total: 10, procesadas: 4 } as unknown as EstadoDeLoteInmuebles
 
 describe('<ProgresoDeLoteInmuebles>', () => {
-  it('🔴 no pinta el avance: ni barra ni «4 / 10»; «Ver en el centro de procesos» lo abre', () => {
+  it('🔴 desde la Puesta en marcha (migración) NO remite al centro de procesos: el avance se ve aquí (Nico, 06-10)', () => {
     act(() => root.render(<ProgresoDeLoteInmuebles estado={procesando} agotado={false} />))
-    expect(container.textContent).not.toMatch(/4\s*\/\s*10/)
-    expect(container.querySelector('.rounded-full.bg-primary')).toBeNull()
+    expect(container.querySelector('[data-testid="lote-inmuebles-ver-en-el-centro"]')).toBeNull()
+    expect(container.textContent).not.toContain('centro de procesos')
+    expect(container.textContent).toMatch(/4\s*de\s*10\s*filas revisadas/)
     expect(container.textContent).toContain('10 inmuebles')
     expect(container.textContent?.toLowerCase()).toContain('cerrar esta pestaña')
+  })
+
+  it('desde Inmuebles (decisión (b), 06-10) sí va al centro: «Ver en el centro de procesos» lo abre', () => {
+    act(() =>
+      root.render(
+        <ProgresoDeLoteInmuebles estado={{ ...procesando, origen: 'inmuebles' } as EstadoDeLoteInmuebles} agotado={false} />,
+      ),
+    )
+    expect(container.textContent).not.toMatch(/4\s*\/\s*10/)
     act(() => (container.querySelector('[data-testid="lote-inmuebles-ver-en-el-centro"]') as HTMLButtonElement).click())
     expect(abrir).toHaveBeenCalledTimes(1)
   })

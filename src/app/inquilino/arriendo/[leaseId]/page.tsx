@@ -4,9 +4,19 @@ import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  AnimatedNumber,
+  CrossFade,
+  Presence,
+  StaggerItem,
+  motionDuration,
+  motionEase,
+} from '@leasefy/cadence';
+import { useEntradaTrasCargar } from '@/components/portales/use-entrada-tras-cargar';
 import { MapPin, Calendar, FileText, Download, CreditCard, User, Phone, Envelope, Shield, House, Clock, CheckCircle, WarningCircle, ArrowUpRight, Receipt, Buildings, Wallet, TrendUp, Chat, XCircle, Prohibit, ArrowsClockwise } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { BackButton } from '@/components/ui/back-button';
 import { Button } from '@/components/ui/button';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
@@ -16,6 +26,12 @@ import {
   useMyPaymentRequests,
   useLeasePaymentInfo,
 } from '@/lib/hooks/useLeases';
+import { useEstadoDeCuentaDelPortal } from '@/lib/hooks/useResumenDelPortal';
+import { resumenDePagos } from '@/lib/estado-de-cuenta/resumen-de-pagos';
+import { hoyLocal } from '@/components/estado-de-cuenta/filas';
+import { amortizacionDe } from '@/components/estado-de-cuenta/resumen';
+import { fechaDeLaSolicitud } from '@/lib/pagos/fecha-de-la-solicitud';
+import { fraseDeLoVencido, diaDePagoLegible } from '@/lib/estado-de-cuenta/estado-general-del-portal';
 import { leasesApi } from '@/lib/api/leases.service';
 import { PAYMENT_METHODS } from '@/lib/constants/payment-methods';
 import { useI18n } from '@/lib/i18n';
@@ -23,6 +39,16 @@ import { PayRentModal } from '@/components/tenant/PayRentModal';
 import type { TenantPaymentRequestStatus } from '@/lib/api/tenant-payment-requests.types';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { NoVoyARenovar } from '@/components/inquilino/NoVoyARenovar';
+import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
+
+/**
+ * QA-INQ-95: el inicio y el fin del arriendo son DÍAS. `new Date('2025-11-01T00:00:00.000Z')`
+ * en Colombia es el 31 de octubre: «Mi arriendo» decía «31 de oct de 2025 → 30 de oct de 2026»
+ * de un contrato del 1 de noviembre al 31 de octubre. Un instante (con hora) sigue siendo instante.
+ */
+function diaDelArriendo(iso: string): Date {
+  return fechaDeVigencia(iso) ?? new Date(iso);
+}
 
 const MONTH_NAMES_ES = [
   'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
@@ -41,6 +67,12 @@ export default function LeaseDetailPage() {
   const { lease, isLoading: leaseLoading, errorCrudo: leaseError, refetch: refetchLease } = useLease(leaseId);
   const { getForLease, refetch: refetchRequests } = useMyPaymentRequests();
   const { info: paymentInfo, refetch: refetchPaymentInfo } = useLeasePaymentInfo(leaseId);
+  // UNA lectura del estado de cuenta: el estado de la cuenta y lo pagado de ESTE
+  // contrato salen de ahí (QA-INQ-95, PI-08: «Total pagado» sumaba solicitudes de
+  // pago aprobadas —también las de recibos anulados— y daba $10.840.670 donde el
+  // estado de cuenta dice $7.050.000).
+  const estadoDeCuenta = useEstadoDeCuentaDelPortal(true);
+  const resumenDeCuotas = estadoDeCuenta ? resumenDePagos(estadoDeCuenta, hoyLocal()) : null;
   const requests = getForLease(leaseId);
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [acceptingRenovacion, setAcceptingRenovacion] = useState(false);
@@ -51,6 +83,9 @@ export default function LeaseDetailPage() {
   // Si lease está activo y el período actual no tiene pago aprobado/pendiente,
   // o fue rechazado, el tenant puede pagar.
   const canPay = isActive && (periodStatus === 'NONE' || periodStatus === 'REJECTED' || !paymentInfo);
+
+  // Carga → contenido: el arriendo entra con 4 px sólo si se vio el esqueleto.
+  const entrada = useEntradaTrasCargar(leaseLoading);
 
   if (leaseLoading) {
     return (
@@ -82,11 +117,7 @@ export default function LeaseDetailPage() {
   if (!lease) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-        >
+        <motion.div {...entrada} className="text-center">
           <div className="w-20 h-20 rounded-full bg-surface-muted flex items-center justify-center mx-auto mb-6">
             <House className="w-10 h-10 text-fg-subtle" />
           </div>
@@ -107,7 +138,7 @@ export default function LeaseDetailPage() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return diaDelArriendo(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
@@ -115,7 +146,7 @@ export default function LeaseDetailPage() {
   };
 
   const formatFullDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString(locale === 'es' ? 'es-CL' : 'en-US', {
+    return diaDelArriendo(dateString).toLocaleDateString(locale === 'es' ? 'es-CO' : 'en-US', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
@@ -123,14 +154,14 @@ export default function LeaseDetailPage() {
   };
 
   const getDaysRemaining = (endDate: string) => {
-    const end = new Date(endDate);
+    const end = diaDelArriendo(endDate);
     const today = new Date();
     return Math.max(0, Math.ceil((end.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)));
   };
 
   const getLeaseProgress = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = diaDelArriendo(startDate);
+    const end = diaDelArriendo(endDate);
     const today = new Date();
     const totalDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
     const elapsedDays = (today.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
@@ -162,12 +193,26 @@ export default function LeaseDetailPage() {
 
   const daysRemaining = getDaysRemaining(lease.endDate);
   const leaseProgress = getLeaseProgress(lease.startDate, lease.endDate);
-  const approvedRequests = requests.filter(r => r.status === 'APPROVED');
-  const totalPaid = approvedRequests.reduce((sum, r) => sum + r.amount, 0);
+  const contratoDelEstado = estadoDeCuenta?.contratos.find((c) => c.id === lease.contractId) ?? null;
+  const amortizacion = contratoDelEstado ? amortizacionDe(contratoDelEstado) : null;
+  const totalPaid = amortizacion?.pagadoCop ?? 0;
+  // Qué bloque de renovación toca: cuando cambia (pidió renovar, avisó que
+  // no renueva), el viejo sale y el nuevo entra.
+  // D-19: el aviso puede vivir en el contrato (lo registró la inmobiliaria)
+  // aunque no haya renovación abierta.
+  const avisoNoRenovar = lease.avisoNoRenovar ?? lease.renovacion?.avisoNoRenovar ?? null;
+  const claveDeRenovacion = avisoNoRenovar
+    ? 'aviso'
+    : lease.renovacion
+      ? 'renovacion'
+      : lease.status === 'ending_soon'
+        ? 'termina'
+        : null;
 
   // Account-status card: drive label / icon / color from the real period status
   // (paymentInfo.currentPeriodStatus) instead of always showing "Al día".
   // Reuses the brand success/warning/danger convention used elsewhere in this view.
+  const lovencido = fraseDeLoVencido(resumenDeCuotas);
   const accountStatus = (() => {
     switch (periodStatus) {
       case 'PENDING_VALIDATION':
@@ -189,8 +234,20 @@ export default function LeaseDetailPage() {
           captionClass: 'text-danger',
         };
       case 'APPROVED':
+        // Con cuotas vencidas no se dice «Al día» (misma fuente que el estado de cuenta).
+        if (lovencido) {
+          return {
+            label: locale === 'es' ? 'Con saldo vencido' : 'Overdue balance',
+            icon: WarningCircle,
+            cardClass: 'bg-danger-soft border border-danger/30',
+            iconClass: 'text-danger',
+            captionClass: 'text-danger',
+          };
+        }
         return {
-          label: locale === 'es' ? 'Al día' : 'Up to date',
+          label: resumenDeCuotas
+            ? (locale === 'es' ? 'Al día' : 'Up to date')
+            : (locale === 'es' ? 'Pago del mes recibido' : 'This month received'),
           icon: CheckCircle,
           cardClass:
             'bg-success-soft border border-success/30',
@@ -199,6 +256,15 @@ export default function LeaseDetailPage() {
         };
       default:
         // 'NONE' or unknown → no confirmed/in-flight payment for the period.
+        if (lovencido) {
+          return {
+            label: locale === 'es' ? 'Con saldo vencido' : 'Overdue balance',
+            icon: WarningCircle,
+            cardClass: 'bg-danger-soft border border-danger/30',
+            iconClass: 'text-danger',
+            captionClass: 'text-danger',
+          };
+        }
         return {
           label: locale === 'es' ? 'Pago pendiente' : 'Payment pending',
           icon: WarningCircle,
@@ -222,8 +288,11 @@ export default function LeaseDetailPage() {
       await leasesApi.acceptRenovacion(leaseId);
       toast.success(locale === 'es' ? 'Renovación aceptada' : 'Renewal accepted');
       refetchLease();
-    } catch {
-      toast.error(locale === 'es' ? 'No se pudo aceptar la renovación' : 'Could not accept the renewal');
+    } catch (err) {
+      // 02-10-2026 · El motivo del back (o «fue nuestro» con la referencia), no un genérico.
+      toast.error(locale === 'es' ? 'No se pudo aceptar la renovación' : 'Could not accept the renewal', {
+        description: mensajeParaLaPersona(err, { accion: 'aceptar la renovación' }),
+      });
     } finally {
       setAcceptingRenovacion(false);
     }
@@ -239,10 +308,10 @@ export default function LeaseDetailPage() {
           : 'We let your agency know you want to renew',
       );
       refetchLease();
-    } catch {
-      toast.error(
-        locale === 'es' ? 'No se pudo enviar la solicitud' : 'Could not send the request',
-      );
+    } catch (err) {
+      toast.error(locale === 'es' ? 'No se pudo enviar la solicitud' : 'Could not send the request', {
+        description: mensajeParaLaPersona(err, { accion: 'pedir la renovación' }),
+      });
     } finally {
       setRequestingRenovacion(false);
     }
@@ -250,24 +319,15 @@ export default function LeaseDetailPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+      <motion.div {...entrada} className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
 
         {/* Back Button */}
-        <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="mb-6"
-        >
+        <div className="mb-6">
           <BackButton label={locale === 'es' ? 'Volver a mis arriendos' : 'Back to my rentals'} />
-        </motion.div>
+        </div>
 
         {/* Hero Section - Property Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="rounded-xl border border-border bg-surface overflow-hidden mb-8"
-        >
+        <div className="rounded-xl border border-border bg-surface overflow-hidden mb-8">
           <div className="flex flex-col lg:flex-row">
             {/* Property Image */}
             <div className="relative w-full lg:w-[400px] h-64 lg:h-auto flex-shrink-0">
@@ -325,7 +385,7 @@ export default function LeaseDetailPage() {
                 </div>
                 <div className="text-center sm:text-left">
                   <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Día de pago' : 'Payment day'}</p>
-                  <p className="text-lg font-semibold text-fg">{locale === 'es' ? 'Día' : 'Day'} {lease.paymentDay}</p>
+                  <p className="text-lg font-semibold text-fg">{diaDePagoLegible(lease.paymentDay) ?? (locale === 'es' ? 'Sin definir' : 'Not set')}</p>
                 </div>
                 <div className="text-center sm:text-left">
                   <p className="text-xs text-fg-subtle uppercase tracking-wider mb-1">{locale === 'es' ? 'Restante' : 'Remaining'}</p>
@@ -344,36 +404,43 @@ export default function LeaseDetailPage() {
                     {formatDate(lease.endDate)}
                   </span>
                 </div>
+                {/* La barra se llena con `transform` (translateX), no con
+                    `width`/`left`: el ancho animado recalculaba el layout en
+                    cada cuadro. Se revela desde 0 al llegar (`reveal`, curva de
+                    entrar), igual que una cifra que cuenta. */}
                 <div className="relative h-3 bg-surface-muted rounded-full overflow-hidden">
                   <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${leaseProgress}%` }}
-                    transition={{ duration: 1, ease: 'easeOut' }}
+                    initial={{ x: '-100%' }}
+                    animate={{ x: `${leaseProgress - 100}%` }}
+                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
                     className={cn(
-                      "h-full rounded-full",
+                      "h-full w-full rounded-full",
                       daysRemaining < 30 ? "bg-warning" : "bg-success"
                     )}
                   />
-                  {/* Progress Indicator Dot */}
+                  {/* Progress Indicator Dot — viaja en una capa del ancho de la
+                      barra que se corre `leaseProgress`% de su propio ancho. */}
                   <motion.div
-                    initial={{ left: 0 }}
-                    animate={{ left: `${leaseProgress}%` }}
-                    transition={{ duration: 1, ease: 'easeOut' }}
-                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2"
+                    initial={{ x: '0%' }}
+                    animate={{ x: `${leaseProgress}%` }}
+                    transition={{ duration: motionDuration.reveal, ease: motionEase.enter }}
+                    className="pointer-events-none absolute inset-0"
                   >
-                    <div className={cn(
-                      "w-5 h-5 rounded-full border-4 border-white",
-                      daysRemaining < 30 ? "bg-warning" : "bg-success"
-                    )} />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2">
+                      <div className={cn(
+                        "w-5 h-5 rounded-full border-4 border-white",
+                        daysRemaining < 30 ? "bg-warning" : "bg-success"
+                      )} />
+                    </div>
                   </motion.div>
                 </div>
                 <p className="text-xs text-fg-muted mt-2 text-center">
-                  {leaseProgress}% {locale === 'es' ? 'del contrato transcurrido' : 'of contract elapsed'}
+                  <AnimatedNumber value={leaseProgress} from={0} format={(n) => String(Math.round(n))} />% {locale === 'es' ? 'del contrato transcurrido' : 'of contract elapsed'}
                 </p>
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content - 2 columns */}
@@ -385,15 +452,14 @@ export default function LeaseDetailPage() {
                 cambia por el aviso: ofrecer «Aceptar renovación» al lado de
                 «avisaste que no vas a renovar» son dos pantallas distintas
                 peleando en el mismo lugar. */}
-            {lease.renovacion?.avisoNoRenovar ? (
+            {claveDeRenovacion && (
+            // Pedir la renovación o avisar que no cambia el bloque entero:
+            // el viejo sale y el nuevo entra (CrossFade), no un salto seco.
+            <CrossFade swapKey={claveDeRenovacion}>
+            {avisoNoRenovar ? (
               <NoVoyARenovar lease={lease} onCambio={refetchLease} />
             ) : lease.renovacion ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-                className="rounded-xl border border-primary/30 bg-primary-soft/40 p-6 lg:p-8"
-              >
+              <div className="rounded-xl border border-primary/30 bg-primary-soft/40 p-6 lg:p-8">
                 <div className="flex items-center gap-2 mb-2">
                   <ArrowsClockwise className="w-5 h-5 text-primary" />
                   <span className="text-sm font-medium text-primary">
@@ -444,14 +510,9 @@ export default function LeaseDetailPage() {
                     )}
                   </>
                 )}
-              </motion.div>
+              </div>
             ) : lease.status === 'ending_soon' ? (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-                className="rounded-xl border border-warning/30 bg-warning-soft p-6 lg:p-8"
-              >
+              <div className="rounded-xl border border-warning/30 bg-warning-soft p-6 lg:p-8">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center flex-shrink-0">
@@ -480,36 +541,41 @@ export default function LeaseDetailPage() {
                     {locale === 'es' ? 'Quiero renovar' : 'I want to renew'}
                   </Button>
                 </div>
-              </motion.div>
+              </div>
             ) : null}
+            </CrossFade>
+            )}
 
             {/* La otra mitad de la decisión. Va debajo y en voz baja —una línea,
                 sin tarjeta— porque no es lo que la mayoría viene a hacer; pero
                 tiene que estar SIEMPRE que haya contrato vivo, no sólo cuando
                 está por vencer: avisar con cinco meses es justo lo que la ley
                 premia, y esconderlo hasta el último mes empuja a avisar tarde. */}
-            {isActive && !lease.renovacion?.avisoNoRenovar ? (
+            {isActive && !avisoNoRenovar ? (
               <NoVoyARenovar lease={lease} onCambio={refetchLease} />
             ) : null}
 
             {/* Pay Rent CTA — visible cuando lease está activo y se puede pagar */}
-            {isActive && paymentInfo && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className={cn(
-                  'rounded-xl border p-6 lg:p-8',
-                  periodStatus === 'PENDING_VALIDATION'
-                    ? 'bg-warning-soft border-warning/30'
-                    : periodStatus === 'APPROVED'
-                      ? 'bg-success-soft border-success/30'
-                      : 'bg-primary-soft border-primary/30'
-                )}
-              >
+            {/* La info del período llega en su propia consulta: si llega
+                después del arriendo, la tarjeta entra; si ya estaba, no. */}
+            <Presence
+              show={Boolean(isActive && paymentInfo)}
+              initial={false}
+              className={cn(
+                'rounded-xl border p-6 lg:p-8 transition-colors duration-base',
+                periodStatus === 'PENDING_VALIDATION'
+                  ? 'bg-warning-soft border-warning/30'
+                  : periodStatus === 'APPROVED'
+                    ? 'bg-success-soft border-success/30'
+                    : 'bg-primary-soft border-primary/30'
+              )}
+            >
+              {paymentInfo && (
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
+                    {/* Pagar → «en verificación» → «confirmado»: la línea del
+                        estado se cruza con la nueva. */}
+                    <CrossFade swapKey={periodStatus ?? 'NONE'} className="flex items-center gap-2 mb-2">
                       {periodStatus === 'PENDING_VALIDATION' ? (
                         <>
                           <Clock className="w-4 h-4 text-warning" />
@@ -539,7 +605,7 @@ export default function LeaseDetailPage() {
                           </span>
                         </>
                       )}
-                    </div>
+                    </CrossFade>
                     <p className="text-4xl font-bold tracking-tight text-fg">
                       {formatCurrency(paymentInfo.monthlyRent)}
                     </p>
@@ -569,46 +635,43 @@ export default function LeaseDetailPage() {
                     </Button>
                   )}
                 </div>
-              </motion.div>
-            )}
+              )}
+            </Presence>
 
-            {/* Quick Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="grid grid-cols-2 sm:grid-cols-3 gap-4"
-            >
+            {/* Quick Stats — las cifras cuentan cuando cambian (un pago aprobado). */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               <div className="rounded-xl bg-surface-muted p-5">
                 <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-3">
                   <TrendUp className="w-5 h-5 text-success" />
                 </div>
-                <p className="text-2xl font-bold text-fg">{formatCurrency(totalPaid)}</p>
+                <p className="text-2xl font-bold text-fg">
+                  <AnimatedNumber value={totalPaid} format={(n) => formatCurrency(Math.round(n))} />
+                </p>
                 <p className="text-sm text-fg-muted mt-1">{locale === 'es' ? 'Total pagado' : 'Total paid'}</p>
               </div>
               <div className="rounded-xl bg-surface-muted p-5">
                 <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-3">
                   <Receipt className="w-5 h-5 text-primary" />
                 </div>
-                <p className="text-2xl font-bold text-fg">{approvedRequests.length}</p>
-                <p className="text-sm text-fg-muted mt-1">{locale === 'es' ? 'Pagos realizados' : 'Payments made'}</p>
+                <p className="text-2xl font-bold text-fg">
+                  <AnimatedNumber value={amortizacion?.pagadas ?? 0} />
+                  {amortizacion ? (
+                    <span className="text-base font-medium text-fg-muted"> {locale === 'es' ? 'de' : 'of'} {amortizacion.total}</span>
+                  ) : null}
+                </p>
+                <p className="text-sm text-fg-muted mt-1">{locale === 'es' ? 'Cuotas pagadas' : 'Installments paid'}</p>
               </div>
               <div className={cn('rounded-xl p-5 col-span-2 sm:col-span-1', accountStatus.cardClass)}>
                 <div className="w-10 h-10 rounded-xl bg-surface flex items-center justify-center mb-3">
                   <AccountStatusIcon className={cn('w-5 h-5', accountStatus.iconClass)} />
                 </div>
                 <p className="text-2xl font-bold text-fg">{accountStatus.label}</p>
-                <p className={cn('text-sm mt-1', accountStatus.captionClass)}>{locale === 'es' ? 'Estado de cuenta' : 'Account status'}</p>
+                <p className={cn('text-sm mt-1', accountStatus.captionClass)}>{lovencido ?? (locale === 'es' ? 'Estado de cuenta' : 'Account status')}</p>
               </div>
-            </motion.div>
+            </div>
 
             {/* Payment History */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="rounded-xl border border-border bg-surface overflow-hidden"
-            >
+            <div className="rounded-xl border border-border bg-surface overflow-hidden">
               <div className="flex items-center justify-between px-6 py-5 border-b border-border-faint">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
@@ -616,29 +679,27 @@ export default function LeaseDetailPage() {
                   </div>
                   <div>
                     <h2 className="font-semibold text-fg">{locale === 'es' ? 'Historial de Pagos' : 'Payment History'}</h2>
-                    <p className="text-sm text-fg-muted">{requests.length} {locale === 'es' ? 'transacciones' : 'transactions'}</p>
+                    <p className="text-sm text-fg-muted"><AnimatedNumber value={requests.length} /> {locale === 'es' ? 'transacciones' : 'transactions'}</p>
                   </div>
                 </div>
               </div>
 
+              {/* Vacío → primer pago: se cruzan. Lo que ya estaba al llegar no se
+                  anima (lo trae la entrada del contenido); un pago nuevo entra y
+                  los demás se corren. */}
+              <CrossFade swapKey={requests.length > 0 ? 'lista' : 'vacio'}>
               {requests.length > 0 ? (
-                <div className="divide-y divide-border">
-                  {requests.map((request, index) => {
+                <div className="relative divide-y divide-border">
+                  <AnimatePresence initial={false} mode="popLayout">
+                  {requests.map((request) => {
                     const statusInfo = getRequestStatusInfo(request.status);
                     const StatusIcon = statusInfo.icon;
-                    const dateText =
-                      request.status === 'APPROVED' && request.validatedAt
-                        ? `${locale === 'es' ? 'Aprobado el' : 'Approved on'} ${formatDate(request.validatedAt)}`
-                        : request.status === 'PENDING_VALIDATION'
-                          ? `${locale === 'es' ? 'Enviado el' : 'Submitted on'} ${formatDate(request.createdAt)}`
-                          : `${locale === 'es' ? 'Vence el' : 'Due on'} ${formatDate(request.dueDate)}`;
+                    // QA-INQ-95: la misma regla que «Pagos» (rechazado/cancelado no «vencen»).
+                    const dateText = fechaDeLaSolicitud(request, locale, formatDate);
 
                     return (
-                      <motion.div
+                      <StaggerItem
                         key={request.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.5 + index * 0.05 }}
                         className="flex items-center gap-4 px-6 py-4 hover:bg-surface-muted transition-colors"
                       >
                         <div className={cn(
@@ -680,9 +741,10 @@ export default function LeaseDetailPage() {
                             {formatCurrency(request.amount)}
                           </p>
                         </div>
-                      </motion.div>
+                      </StaggerItem>
                     );
                   })}
+                  </AnimatePresence>
                 </div>
               ) : (
                 <div className="py-16 text-center">
@@ -692,19 +754,15 @@ export default function LeaseDetailPage() {
                   <p className="text-fg-muted">{locale === 'es' ? 'No hay historial de pagos' : 'No payment history'}</p>
                 </div>
               )}
-            </motion.div>
+              </CrossFade>
+            </div>
           </div>
 
           {/* Sidebar */}
           <div className="space-y-6">
 
             {/* Contract Info Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="rounded-xl border border-border bg-surface overflow-hidden"
-            >
+            <div className="rounded-xl border border-border bg-surface overflow-hidden">
               <div className="flex items-center gap-3 px-6 py-5 border-b border-border-faint">
                 <div className="w-10 h-10 rounded-xl bg-primary-soft flex items-center justify-center">
                   <FileText className="w-5 h-5 text-primary" />
@@ -775,15 +833,10 @@ export default function LeaseDetailPage() {
                   )}
                 </div>
               </div>
-            </motion.div>
+            </div>
 
             {/* Landlord Contact Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="rounded-xl border border-border bg-surface overflow-hidden"
-            >
+            <div className="rounded-xl border border-border bg-surface overflow-hidden">
               <div className="flex items-center gap-3 px-6 py-5 border-b border-border-faint">
                 <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center">
                   <User className="w-5 h-5 text-fg-muted" />
@@ -827,15 +880,10 @@ export default function LeaseDetailPage() {
                   <ArrowUpRight className="w-4 h-4" />
                 </Link>
               </div>
-            </motion.div>
+            </div>
 
             {/* Payment Methods Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="rounded-xl border border-border bg-surface overflow-hidden"
-            >
+            <div className="rounded-xl border border-border bg-surface overflow-hidden">
               <div className="flex items-center gap-3 px-6 py-5 border-b border-border-faint">
                 <div className="w-10 h-10 rounded-xl bg-success-soft flex items-center justify-center">
                   <CreditCard className="w-5 h-5 text-success" />
@@ -861,11 +909,11 @@ export default function LeaseDetailPage() {
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </div>
 
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <PayRentModal
         open={payModalOpen}

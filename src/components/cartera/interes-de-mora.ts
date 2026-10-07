@@ -49,6 +49,10 @@ export const CLAVE_DE_MORA = {
 
 /** El interés de la fila, si el back lo mandó. */
 export function interesDe<T extends object>(fila: T): InteresDeMora | null {
+  // 🔴 CR-31 (COLA-FRONT, 04-10): una cuota vencida sin plazo fijado no corre
+  // interés. Si el back todavía manda uno (el liquidado de un cobro viejo), la
+  // fila no dice «+ $X de intereses» ni lo suma.
+  if ((fila as { plazoSinFijar?: boolean }).plazoSinFijar === true) return null;
   return (fila as ConInteres<T>).interes ?? null;
 }
 
@@ -65,6 +69,7 @@ export function totalConInteres<T extends object>(
   fila: T,
   capital: number,
 ): number {
+  if ((fila as { plazoSinFijar?: boolean }).plazoSinFijar === true) return capital;
   return (fila as ConInteres<T>).totalConInteresCop ?? capital + interesPendiente(fila);
 }
 

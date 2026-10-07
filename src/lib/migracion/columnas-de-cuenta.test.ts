@@ -82,3 +82,34 @@ describe('armarCuentas', () => {
     expect(c.nombre).toHaveLength(300);
   });
 });
+
+/* QA-MIG-B (04-10) — PUC de SIIGO, Helisa, Alegra y del Excel del contador. */
+describe('QA-MIG-B — columnas de otros sistemas', () => {
+  const campo = (encabezados: string[], col: string) =>
+    mapearColumnas(COLUMNAS_DE_CUENTA, encabezados).find((m) => m.columna === col)?.campo;
+
+  it('«Estado» es la columna de cuenta habilitada', () => {
+    expect(campo(['Código', 'Nombre', 'Estado'], 'Estado')).toBe('habilitado');
+  });
+
+  it('«Nat» y «D/C» son la naturaleza; «Transaccional» es si recibe movimientos', () => {
+    expect(campo(['Cuenta', 'Descripción', 'Nat'], 'Nat')).toBe('naturaleza');
+    expect(campo(['Cta', 'Nombre cuenta', 'D/C'], 'D/C')).toBe('naturaleza');
+    expect(campo(['Código', 'Nombre', 'Transaccional'], 'Transaccional')).toBe('imputable');
+  });
+
+  it('🔴 «Inactiva» o «I» llegan apagadas, y lo que no se entiende viaja CRUDO para que el back frene la fila', () => {
+    const mapeo = mapearColumnas(COLUMNAS_DE_CUENTA, ['Código', 'Nombre', 'Estado']);
+    const cuentas = armarCuentas(
+      [
+        { Código: '11100501', Nombre: 'Banco', Estado: 'Inactiva' },
+        { Código: '11100502', Nombre: 'Banco', Estado: 'I' },
+        { Código: '11100503', Nombre: 'Banco', Estado: 'NO' },
+        { Código: '11100504', Nombre: 'Banco', Estado: '' },
+        { Código: '11100505', Nombre: 'Banco', Estado: 'Congelada' },
+      ],
+      mapeo,
+    );
+    expect(cuentas.map((c) => c.habilitado)).toEqual([false, false, false, undefined, 'Congelada']);
+  });
+});

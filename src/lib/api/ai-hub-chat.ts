@@ -9,7 +9,7 @@
  *
  * The SSE transport is POST (the message is in the body), so we consume it with
  * fetch + a stream reader — NOT EventSource (GET-only). Auth = Supabase bearer
- * via agentAuthHeaders(); base URL = NEXT_PUBLIC_AGENT_URL.
+ * via agentFetch; base URL = NEXT_PUBLIC_AGENT_URL.
  *
  * Pure mappers (backend → the front `beta-chat` contract) + the SSE parser are
  * exported for unit testing without a browser/network.
@@ -35,14 +35,17 @@ import {
   type TarjetaDeEjecucion,
 } from '@/lib/chat/tarjetas-de-ejecucion';
 import { leerTarjetaDePlan, type TarjetaDePlan } from '@/lib/chat/plan-del-chat';
-import { agentAuthHeaders } from '@/lib/api/agent-auth';
+import { leerPasoDelPensamiento, type PasoDelPensamiento } from '@/lib/chat/pensamiento';
+import { agentFetch } from './agent-fetch';
 import { ApiError, errorDeDemasiadasSolicitudes } from '@/lib/api/client';
+import { falloDelMicro } from '@/lib/api/fallo-del-micro';
 import type { BackendAccionPropuesta } from '@/lib/api/ai-hub-acciones';
 import type {
   AgentType,
   AgentExecution,
   ResponseAction,
   DailyBriefing,
+  NumerosDelBriefing,
   BriefingSection,
   Reintentable,
 } from '@/lib/types/beta-chat';
@@ -130,6 +133,12 @@ export interface BackendDispatch {
   status: 'completed' | 'failed';
   summary: string;
   nextStep?: string;
+  /**
+   * El id del despacho (aditivo, micro `33d8607b`, 02-10-2026): el mismo de
+   * `dispatch_start.id` y `tool_step.dispatchId`. Con él dos despachos al mismo
+   * especialista en un turno no se confunden. Opcional: un micro viejo no lo manda.
+   */
+  id?: string;
 }
 
 export interface BackendSnapshot {
@@ -142,6 +151,12 @@ export interface BackendSnapshot {
   /** La cartera del ERP (Pagos → Cartera). Opcional: un micro viejo no la manda. */
   carteraCop?: number;
   contratosEnCartera?: number;
+  /**
+   * CH-02/CH-04 (CHAT-FIX 04-10): lo vencido sin pagar (mora + lo vencido dentro
+   * del plazo) y lo que falta por vencer. Opcional: un micro viejo no lo manda.
+   */
+  vencidoCop?: number;
+  porVencerCop?: number;
 }
 
 export interface BackendChatResponse {
@@ -271,6 +286,8 @@ export interface ChatStreamHandlers {
   onDispatchStart?: (
     agent: BackendDispatchAgent,
     taskDescription: string,
+    /** `id` del despacho (aditivo, 02-10-2026; un micro viejo no lo manda). */
+    extra?: { id?: string },
   ) => void;
   onDispatchResult?: (dispatch: BackendDispatch) => void;
   /** Called for each `action_proposal` SSE event (F5). */
@@ -280,7 +297,13 @@ export interface ChatStreamHandlers {
    * ejecutar, ya traducida a lenguaje de operador por el backend. Es lo que
    * llena el silencio entre `dispatch_start` y `dispatch_result`.
    */
-  onToolStep?: (step: { agent: BackendDispatchAgent; tool: string; label: string }) => void;
+  onToolStep?: (step: {
+    agent: BackendDispatchAgent;
+    tool: string;
+    label: string;
+    /** El despacho al que pertenece (aditivo, 02-10-2026; un micro viejo no lo manda). */
+    dispatchId?: string;
+  }) => void;
   /**
    * Un especialista propuso una acción vinculante que necesita el visto bueno
    * de una persona. Sin este manejador el evento se perdía en silencio: el
@@ -306,6 +329,14 @@ export interface ChatStreamHandlers {
    * (con su propio JWT) y, cuando termina, pide la tarjeta al día al micro.
    */
   onProcesoIniciado?: (evento: EventoProcesoIniciado) => void;
+  /**
+   * Un paso del PENSAMIENTO EN VIVO (evento aditivo `pensamiento`, 02-10-2026):
+   * lo que el micro hace ahora, con lo concreto de la pregunta y de los datos
+   * («Buscando “Juan Camilo López”…» → «2 coincidencias: …»). Un paso se
+   * actualiza con otro evento del mismo `id`. Un micro viejo no lo manda y el
+   * chat se queda con sus pasos de siempre (ver `src/lib/chat/pensamiento.ts`).
+   */
+  onPensamiento?: (paso: PasoDelPensamiento) => void;
   onDone?: (final: {
     responseText: string;
     suggestedActions: BackendSuggestedAction[];
@@ -343,6 +374,13 @@ export interface ChatStreamHandlers {
      * sin el modelo): es un DATO, se muestra de una, sin teclearlo (23-09).
      */
     camino?: string;
+    /**
+     * «Cómo lo pensó» (aditivo, micro `33d8607b`, 02-10-2026): las frases que
+     * arma el micro con lo que decidió, sin modelo. Va crudo: lo lee
+     * `leerRazonamiento` (`src/lib/agentes/agente-que-habla.ts`), que descarta
+     * lo mal formado. Un micro viejo no lo manda.
+     */
+    razonamiento?: unknown;
   }) => void;
   /**
    * Un fallo ANUNCIADO dentro del stream (evento `error`).
@@ -352,8 +390,16 @@ export interface ChatStreamHandlers {
    * panel leía cualquier corte como «no pude conectarme», incluida la cuenta
    * sin saldo, que es la única que se arregla recargando créditos (auditoría
    * 13-09, caso B2).
+   *
+   * `message` es el `error` del evento: el texto interno del micro (a veces en
+   * inglés), para diagnóstico y nunca para la persona. Si el evento trae el
+   * sobre (`message` en español, `referencia`), viajan en `meta.mensaje` y
+   * `meta.referencia` (02-10-2026).
    */
-  onError?: (message: string, meta?: { status?: number; code?: string }) => void;
+  onError?: (
+    message: string,
+    meta?: { status?: number; code?: string; mensaje?: string; referencia?: string },
+  ) => void;
 }
 
 /**
@@ -408,6 +454,7 @@ export function handleSSEEvent(
       handlers.onDispatchStart?.(
         obj.agent as BackendDispatchAgent,
         String(obj.taskDescription ?? ''),
+        typeof obj.id === 'string' && obj.id ? { id: obj.id } : {},
       );
       break;
     case 'dispatch_result':
@@ -435,6 +482,7 @@ export function handleSSEEvent(
           agent: obj.agent as BackendDispatchAgent,
           tool,
           label: typeof label === 'string' && label ? label : tool,
+          ...(typeof obj.dispatchId === 'string' && obj.dispatchId ? { dispatchId: obj.dispatchId } : {}),
         });
       }
       break;
@@ -477,6 +525,12 @@ export function handleSSEEvent(
       }
       break;
     }
+    case 'pensamiento': {
+      // Mal formado = no llegó: nunca un paso a medias.
+      const paso = leerPasoDelPensamiento(obj);
+      if (paso) handlers.onPensamiento?.(paso);
+      break;
+    }
     case 'proceso_iniciado': {
       // Sin sus dos ids no hay qué seguir: se ignora sin romper el stream.
       const evento = leerEventoProcesoIniciado(obj);
@@ -504,15 +558,24 @@ export function handleSSEEvent(
         // Aditivo (24-09, paquete H): un `done` sin plan (o de un micro viejo) → `null`.
         plan: leerTarjetaDePlan(obj.plan),
         ...(typeof obj.camino === 'string' && obj.camino ? { camino: obj.camino } : {}),
+        ...(obj.razonamiento !== undefined && obj.razonamiento !== null ? { razonamiento: obj.razonamiento } : {}),
       });
       break;
     }
-    case 'error':
+    case 'error': {
+      // El status puede venir como `status` (el evento de siempre) o como
+      // `statusCode` (el sobre). El `message` del sobre es lo único que se le
+      // puede mostrar a una persona; el `error` queda para diagnóstico.
+      const status =
+        typeof obj.status === 'number' ? obj.status : typeof obj.statusCode === 'number' ? obj.statusCode : undefined;
       handlers.onError?.(String(obj.error ?? 'stream error'), {
-        ...(typeof obj.status === 'number' ? { status: obj.status } : {}),
+        ...(status !== undefined ? { status } : {}),
         ...(typeof obj.code === 'string' ? { code: obj.code } : {}),
+        ...(typeof obj.message === 'string' && obj.message.trim() ? { mensaje: obj.message.trim() } : {}),
+        ...(typeof obj.referencia === 'string' && obj.referencia ? { referencia: obj.referencia } : {}),
       });
       break;
+    }
     default:
       break;
   }
@@ -528,8 +591,15 @@ export function handleSSEEvent(
  * créditos de IA) y un 429 terminaban en la burbuja como «no pude
  * conectarme», igual que un 500. Con `ApiError`, `clasificarFallo` los
  * distingue.
+ *
+ * 🔴 (02-10-2026) Y el texto del error es SÓLO el `message` del sobre (en
+ * español), como en `falloDelMicro`. Hasta acá, si el cuerpo no lo traía, el
+ * texto era el `error` del cuerpo viejo («Forbidden — …», en inglés) o
+ * «ai-hub chat 500» / «execute action 409» / «ai-hub approval 403», y el
+ * traductor lo mostraba tal cual: un 5xx sin `message` decía «ai-hub chat
+ * stream 500» en vez de «falló de nuestro lado» con la referencia.
  */
-async function falloDelAgente(res: Response, que: string): Promise<ApiError> {
+async function falloDelAgente(res: Response): Promise<ApiError> {
   // El 429 del micro (su limitador, o el `agents_limit` de NGINX) se dice
   // IGUAL que el del back: «Espera 45 segundos y vuelve a intentar», con el
   // número cuando viene en el cuerpo o en `Retry-After`. Antes pasaba el
@@ -537,24 +607,7 @@ async function falloDelAgente(res: Response, que: string): Promise<ApiError> {
   // decía «espera un momento» sin plazo, que invita a machacar el botón y
   // alarga el bloqueo (auditoría de seguridad 23-09).
   if (res.status === 429) return errorDeDemasiadasSolicitudes(res);
-  let cuerpo: Record<string, unknown> | undefined;
-  try {
-    const json: unknown = await res.json();
-    if (json && typeof json === 'object' && !Array.isArray(json)) {
-      cuerpo = json as Record<string, unknown>;
-    }
-  } catch {
-    // Sin cuerpo JSON (un proxy que devuelve HTML, por ejemplo): queda el status.
-  }
-  const crudo = cuerpo?.message ?? cuerpo?.error;
-  const mensaje =
-    typeof crudo === 'string'
-      ? crudo
-      : Array.isArray(crudo) && crudo.every((x) => typeof x === 'string')
-        ? (crudo as string[])
-        : `${que} ${res.status}`;
-  const code = typeof cuerpo?.code === 'string' ? cuerpo.code : undefined;
-  return new ApiError(res.status, mensaje, code, cuerpo);
+  return falloDelMicro(res);
 }
 
 function agentBaseUrl(): string {
@@ -587,13 +640,13 @@ export async function postChatTurn(args: {
   signal?: AbortSignal;
 }): Promise<BackendChatResponse> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat`;
-  const res = await fetch(url, {
+  const res = await agentFetch(url, {
     method: 'POST',
-    headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+    headers: { 'content-type': 'application/json' },
     body: buildBody(args.message, args.history, args.intencion),
     ...(args.signal ? { signal: args.signal } : {}),
   });
-  if (!res.ok) throw await falloDelAgente(res, 'ai-hub chat');
+  if (!res.ok) throw await falloDelAgente(res);
   return (await res.json()) as BackendChatResponse;
 }
 
@@ -611,12 +664,13 @@ export async function resolveChatApproval(args: {
   outcome: 'approved' | 'rejected';
 }): Promise<void> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/approvals/${encodeURIComponent(args.approvalId)}/resolve`;
-  const res = await fetch(url, {
+  const res = await agentFetch(url, {
     method: 'POST',
-    headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ outcome: args.outcome }),
   });
-  if (!res.ok) throw new Error(`ai-hub approval ${res.status}`);
+  // El fallo entero (status, `code`, cuerpo): la tarjeta lo dice por el traductor.
+  if (!res.ok) throw await falloDelAgente(res);
 }
 
 /**
@@ -640,13 +694,12 @@ export async function fetchEjecucion(args: {
   signal?: AbortSignal;
 }): Promise<TarjetaDeEjecucion | null> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/ejecuciones/${encodeURIComponent(args.ejecucionId)}`;
-  const res = await fetch(url, {
+  const res = await agentFetch(url, {
     method: 'GET',
-    headers: agentAuthHeaders(),
     ...(args.signal ? { signal: args.signal } : {}),
   });
   if (res.status === 404) return null;
-  if (!res.ok) throw await falloDelAgente(res, 'ai-hub chat ejecucion');
+  if (!res.ok) throw await falloDelAgente(res);
   const cuerpo: unknown = await res.json().catch(() => null);
   const tarjeta = cuerpo && typeof cuerpo === 'object' ? (cuerpo as Record<string, unknown>).tarjeta : null;
   return leerTarjetaDeEjecucion(tarjeta);
@@ -665,16 +718,16 @@ export async function streamChatTurn(args: {
   handlers: ChatStreamHandlers;
 }): Promise<void> {
   const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/chat/stream`;
-  const res = await fetch(url, {
+  const res = await agentFetch(url, {
     method: 'POST',
-    headers: agentAuthHeaders({
+    headers: {
       'content-type': 'application/json',
       accept: 'text/event-stream',
-    }),
+    },
     body: buildBody(args.message, args.history, args.intencion),
     ...(args.signal ? { signal: args.signal } : {}),
   });
-  if (!res.ok) throw await falloDelAgente(res, 'ai-hub chat stream');
+  if (!res.ok) throw await falloDelAgente(res);
   if (!res.body) throw new Error('ai-hub chat stream sin cuerpo');
 
   const reader = res.body.getReader();
@@ -709,8 +762,8 @@ export interface ExecuteActionArgs {
 }
 
 /**
- * Execute a confirmed action proposal. Throws on non-2xx (the caller keeps the
- * error on the message). La tarjeta F5 que lo pintaba (`ActionProposalCard`)
+ * Execute a confirmed action proposal. Throws an `ApiError` on non-2xx (the
+ * caller keeps the error on the message, dicho por el traductor). La tarjeta F5 que lo pintaba (`ActionProposalCard`)
  * se retiró el 24-09: ninguna pantalla la montaba; lo que el chat ejecuta hoy
  * se ve con `TarjetaDeEjecucion`.
  */
@@ -721,23 +774,16 @@ export async function executeAction(args: ExecuteActionArgs): Promise<unknown> {
     action: args.action,
   };
   if (args.reason) body.reason = args.reason;
-  const res = await fetch(url, {
+  const res = await agentFetch(url, {
     method: 'POST',
-    headers: agentAuthHeaders({ 'content-type': 'application/json' }),
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify(body),
     ...(args.signal ? { signal: args.signal } : {}),
   });
-  if (!res.ok) {
-    let message = `execute action ${res.status}`;
-    try {
-      const err = (await res.json()) as Record<string, unknown>;
-      if (typeof err.error === 'string') message = err.error;
-      else if (typeof err.message === 'string') message = err.message;
-    } catch {
-      // ignore parse error — use default message
-    }
-    throw new Error(message);
-  }
+  // 🔴 Antes: `new Error(err.error ?? err.message ?? 'execute action NNN')`:
+  // el `error` en inglés del cuerpo viejo, o «execute action 409», crudos en
+  // la tarjeta. Ahora el fallo entero; el texto lo pone el traductor.
+  if (!res.ok) throw await falloDelAgente(res);
   return res.json();
 }
 
@@ -884,11 +930,79 @@ export function sectionsFromSnapshot(snapshot: BackendSnapshot): BriefingSection
 }
 
 /**
+ * 🔴 La forma que de verdad devuelve el micro (`piloto/briefing.ts` →
+ * `armarBriefing`, desde el 24-09-2026): `{ fecha, saludo, resumen[],
+ * necesitanDeTi[], numeros, narrativa? }`. Este mapeo sólo entendía la forma
+ * vieja (`sections` / `snapshot`), así que con el micro de hoy devolvía `null`
+ * y `currentBriefing` nunca llegaba (encontrado el 02-10-2026 al rediseñar la
+ * llegada del chat). Las dos formas se siguen entendiendo.
+ */
+export interface BackendBriefingDelMicro {
+  fecha?: string;
+  saludo?: string;
+  resumen?: unknown[];
+  necesitanDeTi?: Array<{ titulo?: string; href?: string }>;
+  numeros?: Record<string, unknown>;
+  narrativa?: unknown[];
+}
+
+const CLAVES_DE_NUMEROS = ['pendientes', 'altas', 'llamadasHoy', 'promesasCreadasHoy', 'recuperadoMesCop'] as const;
+
+/** Sólo los números que llegaron como números finitos y no negativos. Nada se rellena. */
+export function leerNumerosDelBriefing(raw: unknown): NumerosDelBriefing | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as Record<string, unknown>;
+  const numeros: NumerosDelBriefing = {};
+  for (const clave of CLAVES_DE_NUMEROS) {
+    const v = r[clave];
+    if (typeof v === 'number' && Number.isFinite(v) && v >= 0) numeros[clave] = v;
+  }
+  return Object.keys(numeros).length > 0 ? numeros : null;
+}
+
+function esBriefingDelMicro(raw: Record<string, unknown>): boolean {
+  return 'numeros' in raw || 'saludo' in raw || Array.isArray(raw.resumen);
+}
+
+function mapBriefingDelMicro(briefing: BackendBriefingDelMicro): DailyBriefing | null {
+  const numeros = leerNumerosDelBriefing(briefing.numeros);
+  const lineas = [
+    ...(Array.isArray(briefing.resumen) ? briefing.resumen : []),
+    ...(Array.isArray(briefing.narrativa) ? briefing.narrativa : []),
+  ].filter((l): l is string => typeof l === 'string' && l.trim().length > 0);
+  if (!numeros && lineas.length === 0) return null;
+
+  // `fecha` es el día de Bogotá («2026-10-01»): a mediodía local para que no
+  // caiga en el día anterior por la zona horaria.
+  const fecha = typeof briefing.fecha === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(briefing.fecha) ? briefing.fecha : null;
+  const parsed = fecha ? new Date(`${fecha}T12:00:00`) : new Date();
+  const date = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
+  const saludo = typeof briefing.saludo === 'string' && briefing.saludo.trim() ? briefing.saludo.trim() : null;
+
+  return {
+    id: `brief_real_${fecha ?? date.toISOString().slice(0, 10)}`,
+    date,
+    greeting: saludo
+      ? `${saludo}, este es el resumen de tu inmobiliaria hoy.`
+      : `${greetingForHour(date)}, este es el resumen de tu inmobiliaria hoy.`,
+    overallSummary: lineas.join(' '),
+    // `necesitanDeTi` trae enlaces del panel (`href`): en el chat nada navega
+    // (`chat-sin-salidas`), así que no se convierten en secciones con botón.
+    sections: [],
+    isNew: true,
+    ...(numeros ? { numeros } : {}),
+  };
+}
+
+/**
  * Tolerant backend → `DailyBriefing` mapper. Returns `null` when the payload
  * has neither usable sections nor a snapshot (caller keeps the mock briefing).
  */
 export function mapBackendBriefing(raw: unknown): DailyBriefing | null {
   if (!raw || typeof raw !== 'object') return null;
+  if (esBriefingDelMicro(raw as Record<string, unknown>)) {
+    return mapBriefingDelMicro(raw as BackendBriefingDelMicro);
+  }
   const briefing = raw as BackendBriefing;
 
   const mappedSections = Array.isArray(briefing.sections)
@@ -938,9 +1052,8 @@ export async function fetchBriefing(args: {
 }): Promise<DailyBriefing | null> {
   try {
     const url = `${agentBaseUrl()}/api/agency/${args.agencyId}/ai-hub/briefing`;
-    const res = await fetch(url, {
+    const res = await agentFetch(url, {
       method: 'GET',
-      headers: agentAuthHeaders(),
       ...(args.signal ? { signal: args.signal } : {}),
     });
     if (!res.ok) return null;

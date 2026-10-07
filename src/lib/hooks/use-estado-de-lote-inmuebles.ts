@@ -18,13 +18,14 @@ import { useEffect, useState } from 'react'
 import { ApiError, asegurarSesionVigente } from '@/lib/api/client'
 import { inmueblesImportacionApi, type EstadoDeLoteInmuebles } from '@/lib/api/inmuebles-importacion.service'
 
-const INTERVALO_MS = 3_000
+export const INTERVALO_MS = 3_000
 /**
  * T-0130 — tras el primer minuto se sondea más espaciado: la revisión de un
  * lote grande son varios minutos y no hace falta preguntar cada 3 s.
  */
-const INTERVALO_LENTO_MS = 8_000
-const TECHO_MS = 30 * 60_000
+export const INTERVALO_LENTO_MS = 8_000
+/** T-0130 — subió de 10 a 30 minutos: la revisión de un lote grande tarda. */
+export const TECHO_MS = 30 * 60_000
 
 const ESTADOS_TERMINALES = new Set(['LISTO', 'FALLIDO'])
 
@@ -38,7 +39,7 @@ export function useEstadoDeLoteInmuebles(
   reinicio: number = 0,
 ): {
   estado: EstadoDeLoteInmuebles | null
-  /** Se llegó al techo de 10 minutos sin LISTO/FALLIDO — dejamos de sondear. */
+  /** Se llegó al techo (`TECHO_MS`, 30 minutos) sin LISTO/FALLIDO — dejamos de sondear. */
   agotado: boolean
 } {
   const [estado, setEstado] = useState<EstadoDeLoteInmuebles | null>(null)

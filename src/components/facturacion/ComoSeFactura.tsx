@@ -16,15 +16,22 @@ import { ParaEntenderMas } from '@/components/ui/para-entender-mas';
 export function ComoSeFactura() {
   return (
     <ParaEntenderMas etiqueta="Cómo se factura" variante="secundario">
+      {/* 🔴 QA-FACT (03-10-2026), con las decisiones de Nico de ese día: sin
+          escenario confirmado NO se emite (antes decía que se facturaba sin
+          impuestos), los intereses van en factura aparte cuando se pagan, la
+          comisión sale cuando se gira, y el proveedor tecnológico es UNO de
+          Leasefy para todas (decía «de la inmobiliaria», FA-R27). */}
       <p>
         Cada factura sale de la cuota del contrato: el mismo canon, el mismo
         prorrateo y los mismos impuestos que el cliente ve en su estado de
-        cuenta. Una cuota que se generó sin escenario tributario confirmado se
-        factura SIN impuestos y se marca «sin confirmar»: nunca se factura un
-        impuesto que nadie confirmó. La factura se numera con la resolución
-        vigente de la DIAN, pero todavía no se transmite electrónicamente (sin
-        CUFE ni validación): eso necesita el proveedor tecnológico de la
-        inmobiliaria.
+        cuenta. Un contrato sin el escenario tributario confirmado no se
+        factura hasta confirmarlo en el contrato: nunca sale una factura sin
+        los impuestos que de verdad lleva. La factura del mes no lleva
+        intereses de mora: se facturan aparte, cuando se pagan. La comisión
+        del propietario se factura cuando se le gira. Cada factura se numera
+        con la resolución vigente de la DIAN y Leasefy la transmite con su
+        proveedor tecnológico: en «Electrónica (DIAN)» ves si ya está validada
+        (con su CUFE) o qué le falta a tu inmobiliaria para transmitir.
       </p>
     </ParaEntenderMas>
   );

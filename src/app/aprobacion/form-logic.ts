@@ -5,6 +5,7 @@
  */
 
 import { errorTelefono, normalizarTelefono } from '@/lib/phone/countries'
+import { CANON_MAXIMO_COP, MAX_LARGO_CIUDAD, MENSAJES_DEL_ESTUDIO } from '@/lib/estudio/limites-del-estudio'
 
 export interface PreApprovalFormFields {
   nombres: string
@@ -76,6 +77,9 @@ export function validatePreApprovalForm(f: PreApprovalFormFields): PreApprovalFo
   if (!phoneE164) errors.phone = errorTelefono(f.phone) ?? 'Ingresa un celular válido.'
 
   if (!f.ciudad.trim()) errors.ciudad = 'Selecciona una ciudad.'
+  // La ciudad de la ficha entra tal cual (puede no estar en la lista): el
+  // back la topa en 100 caracteres (`pre_scoring_orders.ciudad`).
+  else if (f.ciudad.trim().length > MAX_LARGO_CIUDAD) errors.ciudad = MENSAJES_DEL_ESTUDIO.ciudadLarga
 
   /*
    * El canon es OBLIGATORIO: el back lo confirmó requerido en `POST
@@ -84,10 +88,15 @@ export function validatePreApprovalForm(f: PreApprovalFormFields): PreApprovalFo
    * todavía; esa idea (estudiarse primero y elegir después con el tope) sigue
    * viva, pero el back igual necesita un canon de referencia para el estudio.
    */
-  const canonCop = parseCanonCop(f.canon)
-  if (canonCop === null) {
+  // 🔴 02-10-2026: con el mismo tope y la misma frase que el back
+  // (`limites-del-estudio.ts`): un canon de once cifras no sale de acá.
+  const canonLeido = parseCanonCop(f.canon)
+  if (canonLeido === null) {
     errors.canon = 'Ingresa el canon mensual.'
+  } else if (canonLeido > CANON_MAXIMO_COP) {
+    errors.canon = MENSAJES_DEL_ESTUDIO.canonMaximo
   }
+  const canonCop = errors.canon ? null : canonLeido
 
   if (!TIPOS.has(f.tipoInmueble)) errors.tipoInmueble = 'Selecciona el tipo de inmueble.'
 

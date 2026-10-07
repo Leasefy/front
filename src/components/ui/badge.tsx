@@ -75,6 +75,22 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
  */
 const NEUTRAL_EN_OSCURO = "dark:bg-surface-muted dark:text-fg-muted"
 
+/**
+ * 🔴 QA-CONT-95 I-09 (04-10-2026) · LA TINTA DE `success` Y `warning` NO SE LEE.
+ *
+ * axe en la ficha del contrato: el chip «Activo» pinta `text-success`
+ * (#307E57) sobre `bg-success-soft` (#E8F4EA) = 4,36:1, y en oscuro sobre
+ * #12241A = 3,28:1; el de advertencia, #BF752B sobre #FBF1DD = 3,23:1. Texto de
+ * 13 px pide 4,5:1 (WCAG AA). El fondo suave está bien: lo que falla es usar
+ * el color de RELLENO como tinta. Se corrige acá, en el shim, con los tonos
+ * que la casa ya tiene para texto: `-700` en claro (7,2:1 y 5,8:1) y `-100` en
+ * oscuro (13:1). Un arreglo, todas las pastillas.
+ */
+const TINTA_LEGIBLE: Partial<Record<NonNullable<DSBadgeProps["variant"]>, string>> = {
+  success: "text-success-700 dark:text-success-100",
+  warning: "text-warning-700 dark:text-warning-100",
+}
+
 function Badge({ className, variant, ...props }: BadgeProps) {
   const resolved = variant ?? "default"
   return (
@@ -83,6 +99,7 @@ function Badge({ className, variant, ...props }: BadgeProps) {
       size="md"
       className={cn(
         VARIANT_MAP[resolved] === "neutral" && NEUTRAL_EN_OSCURO,
+        TINTA_LEGIBLE[VARIANT_MAP[resolved]],
         RISK_CLASSES[resolved],
         className,
       )}

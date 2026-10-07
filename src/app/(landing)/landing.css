@@ -1874,11 +1874,20 @@
   outline: 2px solid var(--landing-blue);
   outline-offset: 2px;
 }
+/* La píldora negra de la activa la pinta la marca deslizante
+   (`.landing-bp__tab-marca`, un `MotionIndicator`): al cambiar de categoría
+   viaja de una pestaña a la otra en vez de saltar. */
 .landing-scope .landing-bp__tab--on,
 .landing-scope .landing-bp__tab--on:hover {
-  background: var(--landing-ink);
-  border-color: var(--landing-ink);
+  background: transparent;
+  border-color: transparent;
   color: #fff;
+}
+.landing-scope .landing-bp__tab-marca {
+  inset: -1px;
+  z-index: -1;
+  border-radius: 999px;
+  background: var(--landing-ink);
 }
 
 /* -- medio: la foto del artículo -- */

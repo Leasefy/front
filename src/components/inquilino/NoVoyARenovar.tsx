@@ -37,11 +37,16 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
 import { leasesApi } from '@/lib/api/leases.service';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import type { Lease } from '@/lib/types/lease';
+import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
 
 /**
  * Los tres meses de preaviso, en días.
@@ -62,8 +67,10 @@ export function diasHastaElFin(fin: string, hoy = new Date()): number {
 }
 
 function fechaLarga(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '—';
+  // QA-INQ-95 r2: el fin del contrato es un DÍA (`…T00:00:00.000Z`): leído como
+  // instante, en Bogotá decía «termina el 30 de julio» de un contrato que vence el 31.
+  const d = fechaDeVigencia(iso);
+  if (!d || Number.isNaN(d.getTime())) return '—';
   return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
@@ -78,8 +85,11 @@ export function NoVoyARenovar({ lease, onCambio }: Props) {
   const [motivo, setMotivo] = useState('');
   const [guardando, setGuardando] = useState(false);
   const [retirando, setRetirando] = useState(false);
+  /** Lo que el back rechazó del motivo (un 400 con `campos`), bajo el campo. */
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
 
-  const aviso = lease.renovacion?.avisoNoRenovar ?? null;
+  // D-19: también el que vive en el contrato (lo registró la inmobiliaria).
+  const aviso = lease.avisoNoRenovar ?? lease.renovacion?.avisoNoRenovar ?? null;
   const dias = diasHastaElFin(lease.endDate);
   const aTiempo = dias >= DIAS_DE_PREAVISO;
 
@@ -99,9 +109,19 @@ export function NoVoyARenovar({ lease, onCambio }: Props) {
       setMotivo('');
       onCambio();
     } catch (e: unknown) {
-      toast.error('No pudimos registrar tu aviso', {
-        description: e instanceof Error ? e.message : undefined,
+      // 02-10-2026 · Lo que el back rechazó del motivo va bajo el motivo (con
+      // el foco); al toast sólo lo que no tiene campo, con la regla de oro.
+      const reparto = repartirErroresDelServidor<'motivo'>(e, {
+        campos: ['motivo'],
+        accion: 'registrar tu aviso',
       });
+      if (reparto.porCampo.motivo) {
+        setErrorDelMotivo(reparto.porCampo.motivo);
+        document.getElementById('motivo-no-renovar')?.focus();
+      }
+      if (reparto.sueltos.length > 0) {
+        toast.error('No pudimos registrar tu aviso', { description: reparto.sueltos.join(' · ') });
+      }
     } finally {
       setGuardando(false);
     }
@@ -115,7 +135,7 @@ export function NoVoyARenovar({ lease, onCambio }: Props) {
       onCambio();
     } catch (e: unknown) {
       toast.error('No pudimos retirar el aviso', {
-        description: e instanceof Error ? e.message : undefined,
+        description: mensajeParaLaPersona(e, { accion: 'retirar el aviso' }),
       });
     } finally {
       setRetirando(false);
@@ -198,12 +218,21 @@ export function NoVoyARenovar({ lease, onCambio }: Props) {
       </div>
 
       <Dialog open={abierto} onOpenChange={setAbierto}>
-        <DialogContent className="sm:max-w-lg">
+        {/* Destructiva: con el aviso el contrato deja de prorrogarse. El ícono
+            es el mismo de la tarjeta «Avisaste que no vas a renovar». */}
+        <DialogContent
+          size="md"
+          variant="destructive"
+          icon={<CalendarX weight="bold" />}
+          data-testid="dialogo-no-voy-a-renovar"
+        >
           <DialogHeader>
             <DialogTitle>Avisar que no vas a renovar</DialogTitle>
             <DialogDescription>
               Tu contrato termina el {fechaLarga(lease.endDate)}. Sin aviso se prorroga
-              solo; con tu aviso, no.
+              solo; con tu aviso, no: queda registrado con la fecha de hoy y tu
+              inmobiliaria lo ve. Si cambias de opinión, puedes retirarlo desde esta
+              misma pantalla.
             </DialogDescription>
           </DialogHeader>
 
@@ -238,40 +267,50 @@ export function NoVoyARenovar({ lease, onCambio }: Props) {
               <Textarea
                 id="motivo-no-renovar"
                 value={motivo}
-                onChange={(e) => setMotivo(e.target.value)}
+                onChange={(e) => {
+                  setMotivo(e.target.value);
+                  setErrorDelMotivo(null);
+                }}
                 rows={3}
                 maxLength={500}
                 placeholder="Me mudo de ciudad por trabajo, el canon se salió de mi presupuesto…"
                 data-testid="motivo-no-renovar"
+                aria-invalid={errorDelMotivo ? true : undefined}
+                aria-describedby="motivo-no-renovar-error"
               />
-              <p className="text-caption text-fg-subtle">
-                Lo lee tu inmobiliaria. Si es algo que se pueda arreglar, puede que te
-                propongan otra cosa.
-              </p>
-            </div>
-
-            <div className="flex justify-end gap-2 border-t border-border pt-4">
-              <Button
-                type="button"
-                variant="ghost"
-                hideArrow
-                onClick={() => setAbierto(false)}
-                disabled={guardando}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                hideArrow
-                onClick={() => void avisar()}
-                disabled={guardando || motivo.trim().length < 3}
-                title={motivo.trim().length < 3 ? 'Cuéntales por qué' : undefined}
-                data-testid="confirmar-no-renovar"
-              >
-                {guardando ? 'Avisando…' : 'Avisar que no renuevo'}
-              </Button>
+              {/* La ayuda y el error del back se cruzan (Cadence `FormError`). */}
+              <ErrorDelCampo
+                id="motivo-no-renovar-error"
+                mensaje={errorDelMotivo}
+                pista="Lo lee tu inmobiliaria. Si es algo que se pueda arreglar, puede que te propongan otra cosa."
+                className="mt-0"
+              />
             </div>
           </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              hideArrow
+              onClick={() => setAbierto(false)}
+              disabled={guardando}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              hideArrow
+              onClick={() => void avisar()}
+              disabled={guardando || motivo.trim().length < 3}
+              isLoading={guardando}
+              title={motivo.trim().length < 3 ? 'Cuéntales por qué' : undefined}
+              data-testid="confirmar-no-renovar"
+            >
+              {guardando ? 'Avisando…' : 'Avisar que no renuevo'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

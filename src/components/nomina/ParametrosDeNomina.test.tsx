@@ -431,3 +431,76 @@ describe('las tres formas de «no se puede»', () => {
     ).not.toContain('Víctor');
   });
 });
+
+/*
+ * Sistema de errores (02-10-2026): 🔁 el tope de las cifras del Estado del back
+ * se ataja antes de enviar, con su frase; lo que el back dice de un campo va
+ * bajo ese campo; un 5xx dice «de nuestro lado» con la referencia.
+ */
+describe('ParametrosDeNomina · errores en su campo', () => {
+  const campo = (id: string) => contenedor.querySelector<HTMLInputElement>(`#${id}`)!;
+  const guardarBoton = () =>
+    contenedor.querySelector<HTMLButtonElement>('[data-testid="guardar-parametros"]')!;
+
+  it('🔁 un salario mínimo con ceros de más se ataja antes de enviar, con la frase del back', async () => {
+    h.parametros.mockResolvedValue(sinCargar());
+    await montar();
+    await act(async () => {
+      escribir(campo('salarioMinimoCop'), '1423500000');
+    });
+    expect(contenedor.querySelector('#salarioMinimoCop-error')?.textContent).toBe(
+      'El salario mínimo no puede pasar de $20.000.000. Revisa que no sobren ceros.',
+    );
+    await act(async () => {
+      guardarBoton().click();
+    });
+    expect(h.guardar).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(campo('salarioMinimoCop'));
+  });
+
+  it('🔴 un 400 con `campos` pone el error bajo su factor', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const { toast } = await import('@/components/ui/toast');
+    const mensaje = 'Este dato no puede ser mayor que 10.000.';
+    h.parametros.mockResolvedValue(sinCargar());
+    h.guardar.mockRejectedValue(
+      new ApiError(400, [mensaje], 'DATOS_INVALIDOS', {
+        statusCode: 400,
+        code: 'DATOS_INVALIDOS',
+        message: [mensaje],
+        campos: [{ campo: 'senaBps', regla: 'maximo', mensaje }],
+      }),
+    );
+    await montar();
+    await act(async () => {
+      guardarBoton().click();
+    });
+
+    expect(campo('senaBps').getAttribute('aria-invalid')).toBe('true');
+    expect(contenedor.querySelector('#senaBps-error')?.textContent).toBe(mensaje);
+    expect(document.activeElement).toBe(campo('senaBps'));
+    expect(vi.mocked(toast.error)).not.toHaveBeenCalled();
+  });
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    const { toast } = await import('@/components/ui/toast');
+    h.parametros.mockResolvedValue(sinCargar());
+    h.guardar.mockRejectedValue(
+      new ApiError(500, 'Error interno del servidor', 'ERROR_INTERNO', {
+        statusCode: 500,
+        code: 'ERROR_INTERNO',
+        message: 'Error interno del servidor',
+        referencia: 'aaaa1111',
+      }),
+    );
+    await montar();
+    await act(async () => {
+      guardarBoton().click();
+    });
+
+    const texto = vi.mocked(toast.error).mock.calls.at(-1)![0] as string;
+    expect(texto).toMatch(/No pudimos guardar los parámetros: algo falló de nuestro lado/);
+    expect(texto).toContain('aaaa1111');
+  });
+});

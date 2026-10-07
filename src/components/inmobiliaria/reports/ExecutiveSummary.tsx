@@ -127,7 +127,7 @@ export function ExecutiveSummary({ data }: ExecutiveSummaryProps) {
                 strokeLinecap="round"
                 strokeDasharray={`${(data.healthScore / 100) * 327} 327`}
                 className={cn(
-                  'stroke-current transition-all duration-1000',
+                  'stroke-current transition-[stroke-dasharray] duration-reveal ease-enter',
                   healthConfig.ring
                 )}
               />

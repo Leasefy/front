@@ -32,19 +32,20 @@
  * exactamente lo que veníamos a evitar—; corrido a la izquierda se ve que el
  * caso sigue ahí, al lado, y que esto es una capa suya.
  *
- * Por eso `right` no es 0 sino el ancho del cajón padre (`sm:max-w-xl`, 36rem)
- * y el velo es transparente: un velo oscuro apagaría el caso que queremos
- * mantener a la vista. En teléfono no hay ancho para dos, así que ahí sí ocupa
- * todo.
+ * Por eso `right` no es 0 sino el margen del cajón flotante más su ancho
+ * (`1rem + 36rem`, desde `lg`), y el velo es transparente: un velo oscuro
+ * apagaría el caso que queremos mantener a la vista. Debajo de `lg` no hay
+ * ancho para dos, así que ahí se para encima del caso (02-10-2026, con los
+ * cajones flotantes).
  */
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowSquareOut, X } from '@phosphor-icons/react'
-import { IconButton } from '@leasefy/cadence'
+import { ArrowSquareOut } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
+import { Sheet, SheetBody, SheetContent, SheetFooter, SheetHeader } from '@/components/ui/sheet'
+import { cn } from '@/lib/utils'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { useAuth } from '@/lib/auth/use-auth'
 
@@ -101,37 +102,32 @@ export function PilotoDocumento({ artifactId, onClose, hrefCompleto }: PilotoDoc
     <Sheet open={artifactId !== null} onOpenChange={(abierto) => !abierto && onClose()}>
       <SheetContent
         side="right"
-        hideCloseButton
         /*
-         * `sm:!right-[36rem]` = el ancho del cajón padre. Va con `!` porque
-         * `side="right"` ya trae su propio `right-0` y las dos utilidades
-         * tienen la misma especificidad: sin la marca gana la que el bundler
-         * ponga última, que no se controla desde acá.
+         * Pegado al borde izquierdo del caso desde `lg`, donde caben los dos:
+         * `right` = margen del cajón flotante (1rem) + su ancho (36rem), y el
+         * ancho lo que quede hasta el margen izquierdo, con tope en 36rem.
+         * La costura va a ras (sin esquinas ni borde de este lado). Debajo de
+         * `lg` no hay ancho para dos: se para encima del caso, como siempre en
+         * el teléfono. Va con `!` porque `side="right"` ya trae su propio
+         * `right` y su radio.
          */
-        className="flex w-full flex-col gap-0 border-r border-border p-0 sm:!right-[36rem] sm:max-w-xl sm:!rounded-r-none"
+        className={cn(
+          // En el teléfono es una hoja desde abajo: alta, para que el visor
+          // del PDF tenga dónde estar (si no, toma el alto de su contenido).
+          'h-[92dvh] sm:h-auto sm:max-w-xl',
+          'lg:!right-[calc(1rem+36rem)] lg:max-w-[min(36rem,calc(100vw-38rem))] lg:!rounded-r-none lg:border-r-0',
+        )}
         /* Velo transparente: el caso de al lado tiene que seguir legible. */
         overlayClassName="bg-transparent"
+        // La ✕ de este panel cierra sólo el documento; se anuncia distinto a la del caso.
+        closeLabel="Cerrar el documento"
+        layout="manual"
         data-testid="piloto-documento"
       >
-        <SheetHeader className="shrink-0 space-y-1 border-b border-border px-6 py-4 text-left">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <SheetTitle className="text-h3 text-fg">El documento</SheetTitle>
-              <SheetDescription className="text-body-sm text-fg-muted">
-                Léelo antes de autorizar que salga.
-              </SheetDescription>
-            </div>
-            <IconButton
-              icon={<X weight="bold" className="h-4 w-4" />}
-              aria-label="Cerrar el documento"
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-            />
-          </div>
-        </SheetHeader>
+        <SheetHeader title="El documento" description="Léelo antes de autorizar que salga." />
 
-        <div className="min-h-0 flex-1 bg-surface-muted p-4">
+        {/* El visor no hace scroll propio: el PDF scrollea dentro del iframe. */}
+        <SheetBody className="flex flex-col bg-bg p-4 dark:bg-surface-hover">
           {faltaEntorno ? (
             <Mensaje
               titulo="No se puede abrir el documento acá"
@@ -145,7 +141,7 @@ export function PilotoDocumento({ artifactId, onClose, hrefCompleto }: PilotoDoc
             />
           ) : estado === 'cargando' ? (
             <div
-              className="h-full w-full animate-pulse rounded-lg border border-border bg-surface"
+              className="min-h-0 w-full flex-1 animate-pulse rounded-lg border border-border bg-surface"
               role="status"
               aria-label="Cargando el documento"
             />
@@ -154,26 +150,27 @@ export function PilotoDocumento({ artifactId, onClose, hrefCompleto }: PilotoDoc
               data-testid="piloto-documento-pdf"
               title="El documento de la carta"
               src={blobUrl ?? 'about:blank'}
-              className="h-full w-full rounded-lg border border-border bg-surface"
+              className="min-h-0 w-full flex-1 rounded-lg border border-border bg-surface"
             />
           )}
-        </div>
+        </SheetBody>
 
         {hrefCompleto && (
-          <footer className="shrink-0 border-t border-border bg-surface px-6 py-4">
-            {/* La primaria a la derecha, la secundaria a la izquierda. */}
-            <div className="flex flex-wrap items-center justify-end gap-2">
+          /* La primaria a la derecha, la secundaria a la izquierda. */
+          <SheetFooter
+            start={
               <Button variant="secondary" size="sm" hideArrow onClick={onClose}>
                 Volver al caso
               </Button>
-              <Button asChild size="sm" hideArrow>
-                <Link href={hrefCompleto} target="_blank" rel="noopener noreferrer">
-                  Ver la carta completa
-                  <ArrowSquareOut weight="bold" className="ml-1.5 h-3.5 w-3.5" aria-hidden="true" />
-                </Link>
-              </Button>
-            </div>
-          </footer>
+            }
+          >
+            <Button asChild size="sm" hideArrow>
+              <Link href={hrefCompleto} target="_blank" rel="noopener noreferrer">
+                Ver la carta completa
+                <ArrowSquareOut weight="bold" className="ml-1.5 h-3.5 w-3.5" aria-hidden="true" />
+              </Link>
+            </Button>
+          </SheetFooter>
         )}
       </SheetContent>
     </Sheet>

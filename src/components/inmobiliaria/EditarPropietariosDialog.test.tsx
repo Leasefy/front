@@ -257,3 +257,68 @@ describe('<EditarPropietariosDialog>', () => {
     expect(onGuardado).not.toHaveBeenCalled();
   });
 });
+
+describe('🔴 copropiedad migrada sin porcentaje (Nico, 04-10-2026: «vacío y giro bloqueado»)', () => {
+  const sinPorcentaje = () =>
+    consignacion({
+      participacionesDesconocidas: true,
+      // Las partes iguales PROVISIONALES que guarda el back.
+      copropietarios: [
+        { propietarioId: 'ana', participacionBps: 5000, propietario: { id: 'ana', name: 'Ana Gómez' } },
+        { propietarioId: 'beto', participacionBps: 5000, propietario: { id: 'beto', name: 'Beto Ruiz' } },
+      ] as Consignacion['copropietarios'],
+    });
+
+  it('los campos arrancan VACÍOS (no el 50 % provisional) y no se puede guardar sin escribirlos', async () => {
+    await render(sinPorcentaje());
+    expect(
+      document.body.querySelector('[data-testid="editar-propietarios-sin-porcentaje"]')?.textContent,
+    ).toContain('Falta el porcentaje de cada propietario');
+    const campo = document.body.querySelector<HTMLInputElement>('[aria-label="Porcentaje de Beto Ruiz"]')!;
+    expect(campo.value).toBe('');
+    expect(boton('editar-propietarios-guardar').disabled).toBe(true);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it('con el porcentaje escrito se guarda la lista completa (que suma 100 %) y el giro se desbloquea en el back', async () => {
+    updateMock.mockResolvedValue(consignacion({ participacionesDesconocidas: false }));
+    await render(sinPorcentaje());
+    const campo = document.body.querySelector<HTMLInputElement>('[aria-label="Porcentaje de Beto Ruiz"]')!;
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+      setter.call(campo, '40');
+      campo.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(boton('editar-propietarios-guardar').disabled).toBe(false);
+    await act(async () => {
+      boton('editar-propietarios-guardar').click();
+    });
+    expect(updateMock).toHaveBeenCalledWith('cons-1', {
+      copropietarios: [
+        { propietarioId: 'ana', participacionBps: 6000 },
+        { propietarioId: 'beto', participacionBps: 4000 },
+      ],
+    });
+  });
+
+  it('si de verdad es mitad y mitad (igual a lo provisional), se puede guardar igual: guardar es lo que desbloquea el giro', async () => {
+    updateMock.mockResolvedValue(consignacion({ participacionesDesconocidas: false }));
+    await render(sinPorcentaje());
+    const campo = document.body.querySelector<HTMLInputElement>('[aria-label="Porcentaje de Beto Ruiz"]')!;
+    await act(async () => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+      setter.call(campo, '50');
+      campo.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(boton('editar-propietarios-guardar').disabled).toBe(false);
+    await act(async () => {
+      boton('editar-propietarios-guardar').click();
+    });
+    expect(updateMock).toHaveBeenCalledWith('cons-1', {
+      copropietarios: [
+        { propietarioId: 'ana', participacionBps: 5000 },
+        { propietarioId: 'beto', participacionBps: 5000 },
+      ],
+    });
+  });
+});

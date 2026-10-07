@@ -245,8 +245,34 @@ describe('EstadoDeCuentaPDF', () => {
     // podría rastrear hasta un ingreso.
     expect(hoja).toContain('28518 · INGRESO');
     expect(hoja).toContain('Sin pago');
-    // Y la cuota que gestionó el sistema viejo se dice con esas palabras.
-    expect(hoja).toContain('Sistema anterior');
+    // Y la cuota que gestionó el sistema viejo se dice con esas palabras
+    // (PG-08, Nico 03-10-2026: «Del sistema anterior»; sin comprobante, lo dice).
+    expect(hoja).toContain('Del sistema anterior');
+    expect(hoja).toContain('Sin comprobantes cargados');
+  });
+
+  it('🔴 ola E: el saldo a favor del inquilino y su devolución salen aparte de los totales', () => {
+    const c = contrato({
+      vigente: false,
+      saldoAFavor: {
+        anticipoSinConsumirCop: 250_000,
+        devolucion: { egresoId: 'e-1', estado: 'PAGADO', numero: 31, valorCop: 400_000 },
+      },
+    });
+    const hojasConSaldo = paginasDe(EstadoDeCuentaPDF({ doc: estadoDeCuenta({ contratos: [c] }), hoy: HOY }));
+    const hoja = letraDe(hojasConSaldo[1]);
+    expect(hoja).toContain('Saldo a favor');
+    expect(hoja).toContain(formatCurrency(250_000));
+    expect(hoja).toContain(formatCurrency(400_000));
+    expect(hoja).toContain('31');
+    // Sin saldo ni devolución, nada.
+    const sinSaldo = paginasDe(
+      EstadoDeCuentaPDF({
+        doc: estadoDeCuenta({ contratos: [contrato({ saldoAFavor: { anticipoSinConsumirCop: 0, devolucion: null } })] }),
+        hoy: HOY,
+      }),
+    );
+    expect(letraDe(sinSaldo[1])).not.toContain('Saldo a favor');
   });
 
   it('el período se lee una vez, debajo del concepto y con raya imprimible', () => {

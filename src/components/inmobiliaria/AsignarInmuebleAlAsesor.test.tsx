@@ -21,7 +21,10 @@ import type { Consignacion } from '@/lib/types/inmobiliaria';
 void React;
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-vi.mock('@/components/ui/dialog', () => ({
+// Parcial: el barril `@/components/ui` (de donde salen Button e Input) carga
+// `responsive-dialog`, que lee `DialogTrigger`/`DialogClose` de este módulo.
+vi.mock('@/components/ui/dialog', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/components/ui/dialog')>()),
   Dialog: ({ open, children }: { open: boolean; children: React.ReactNode }) =>
     open ? <div>{children}</div> : null,
   DialogContent: ({ children, ...props }: { children: React.ReactNode }) => (
@@ -30,6 +33,7 @@ vi.mock('@/components/ui/dialog', () => ({
   DialogHeader: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogTitle: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   DialogDescription: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  DialogFooter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
 /* El doble respeta los tres finales que importan: cargando, vacío y con datos. */
@@ -204,5 +208,29 @@ describe('<AsignarInmuebleAlAsesor>', () => {
     expect(onAsignado).not.toHaveBeenCalled();
     expect(toast.success).not.toHaveBeenCalled();
     expect(toast.error).toHaveBeenCalled();
+  });
+
+  // 02-10-2026 · tanda 2 del sistema de errores (A6).
+  it('un 5xx dice «de nuestro lado» con la referencia, no el texto crudo', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    api.assignAgent.mockRejectedValue(
+      new ApiError(500, 'Internal server error', 'ERROR_INTERNO', { statusCode: 500, referencia: 'feedface' }),
+    );
+    await montar();
+    await pulsar('Apto 202');
+    const { description } = toast.error.mock.calls[0][1] as { description: string };
+    expect(description).toContain('No pudimos asignar el inmueble: algo falló de nuestro lado');
+    expect(description).toContain('feedface');
+  });
+
+  it('un 403 dice lo que mandó el back, no «la conexión»', async () => {
+    const { ApiError } = await import('@/lib/api/client');
+    api.assignAgent.mockRejectedValue(
+      new ApiError(403, 'Esta acción es sólo para un administrador de la inmobiliaria.', 'SIN_PERMISO'),
+    );
+    await montar();
+    await pulsar('Apto 202');
+    const { description } = toast.error.mock.calls[0][1] as { description: string };
+    expect(description).toBe('Esta acción es sólo para un administrador de la inmobiliaria.');
   });
 });

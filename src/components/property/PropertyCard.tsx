@@ -1,5 +1,6 @@
 'use client';
 
+import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -134,7 +135,7 @@ export function PropertyCard({
     <Link
       href={linkQuery ? `${basePath}/${id}?${linkQuery}` : `${basePath}/${id}`}
       className={cn(
-        'group block rounded-xl transition-all duration-300 ease-out',
+        'group block rounded-xl transition-shadow duration-slow ease-enter',
         isHighlighted && 'ring-2 ring-primary ring-offset-2',
         className
       )}
@@ -151,7 +152,7 @@ export function PropertyCard({
             alt={`${title} - ${i + 1}`}
             fill
             className={cn(
-              'object-cover transition-all duration-500 ease-out',
+              'object-cover transition-[opacity,transform] duration-reveal ease-enter',
               i === activeImage ? 'opacity-100' : 'opacity-0',
               isHovered && i === activeImage && 'scale-105'
             )}
@@ -170,7 +171,7 @@ export function PropertyCard({
         )}
 
         {/* Subtle bottom gradient for depth */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-reveal" />
 
         {/* Compass arrows — visible on hover when multiple images */}
         {allImages.length > 1 && (
@@ -186,7 +187,7 @@ export function PropertyCard({
                 'h-8 w-8 rounded-full',
                 'bg-white/80 hover:bg-white text-foreground/70 hover:text-foreground',
                 'backdrop-blur-sm',
-                'transition-all duration-300',
+                'transition-[opacity,transform,background-color,color] duration-slow ease-enter',
                 isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-2 pointer-events-none'
               )}
             />
@@ -201,7 +202,7 @@ export function PropertyCard({
                 'h-8 w-8 rounded-full',
                 'bg-white/80 hover:bg-white text-foreground/70 hover:text-foreground',
                 'backdrop-blur-sm',
-                'transition-all duration-300',
+                'transition-[opacity,transform,background-color,color] duration-slow ease-enter',
                 isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2 pointer-events-none'
               )}
             />
@@ -213,7 +214,7 @@ export function PropertyCard({
           <div
             className={cn(
               'absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5',
-              'transition-all duration-300',
+              'transition-[opacity,transform] duration-slow ease-enter',
               isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2 pointer-events-none'
             )}
           >
@@ -221,11 +222,13 @@ export function PropertyCard({
               <button
                 key={i}
                 onClick={(e) => handleDotClick(e, i)}
+                // El punto activo CRECE con `scale` (8 px), no con `width`/`height`:
+                // el tamaño animado recalculaba el layout de la fila en cada cuadro.
                 className={cn(
-                  'rounded-full transition-all duration-300',
+                  'w-2 h-2 rounded-full transition-[transform,background-color] duration-slow ease-enter',
                   i === activeImage
-                    ? 'w-2 h-2 bg-white'
-                    : 'w-1.5 h-1.5 bg-white/50 hover:bg-white/80'
+                    ? 'scale-100 bg-white'
+                    : 'scale-75 bg-white/50 hover:bg-white/80'
                 )}
                 aria-label={`Ver imagen ${i + 1}`}
               />
@@ -254,7 +257,7 @@ export function PropertyCard({
             className={cn(
               'absolute right-3 top-3 rounded-full p-2 z-10',
               'bg-white/15 backdrop-blur-xl border border-white/20',
-              'transition-all duration-300',
+              'transition-[background-color,color] duration-slow',
               'hover:bg-white/30',
               isWishlisted ? 'text-danger' : 'text-white/80'
             )}
@@ -286,7 +289,7 @@ export function PropertyCard({
 
         {/* Price overlay — bottom left, shows on hover (hidden when dots visible to avoid overlap) */}
         {allImages.length <= 1 && (
-          <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-1 group-hover:translate-y-0">
+          <div className="absolute bottom-3 left-3 opacity-0 group-hover:opacity-100 transition-[opacity,transform] duration-reveal ease-enter translate-y-1 group-hover:translate-y-0">
             <span className="text-[13px] font-semibold text-white bg-black/40 backdrop-blur-xl rounded-full px-3 py-1.5 font-mono tabular-nums">
               {displayPrice != null ? formatCurrency(displayPrice) : 'Sin dato'}
               {!isSaleListing && <span className="text-white/50 font-normal font-sans">/mes</span>}
@@ -301,12 +304,12 @@ export function PropertyCard({
         <div className="flex items-center gap-1.5 mb-1">
           <MapPin className="h-3.5 w-3.5 text-primary flex-shrink-0" strokeWidth={1.5} />
           <p className="text-[13px] text-muted-foreground truncate">
-            {neighborhood}, {city}
+            {barrioYCiudad(neighborhood, city)}
           </p>
         </div>
 
         {/* Title */}
-        <h3 className="text-[16px] font-heading font-semibold text-foreground tracking-[-0.02em] leading-snug truncate group-hover:text-primary transition-colors duration-200">
+        <h3 className="text-[16px] font-heading font-semibold text-foreground tracking-[-0.02em] leading-snug truncate group-hover:text-primary transition-colors duration-base">
           {title}
         </h3>
 

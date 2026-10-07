@@ -81,6 +81,7 @@
  */
 
 import * as React from 'react';
+import Link from 'next/link';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/toast';
 import {
@@ -88,8 +89,10 @@ import {
   Calendar,
   CreditCard,
   CurrencyCircleDollar,
+  DeviceMobile,
   DotsThree,
   FileText,
+  Link as LinkIcon,
   Money,
   Note,
   Receipt,
@@ -98,19 +101,19 @@ import {
 
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Cajon, CajonCabecera, CajonCuerpo, CajonPie } from '@/components/ui/cajon';
 import { Button } from '@/components/ui/button';
 import { Input, Textarea } from '@/components/ui';
 import { Spinner } from '@/components/ui/spinner';
-import { Banner, Chip, CurrencyInput } from '@leasefy/cadence';
+import { Appear, Banner, Chip } from '@leasefy/cadence';
 import { ApiError } from '@/lib/api/client';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
+import { MENSAJES_DEL_RECIBO, superaElTopeDelRecibo } from '@/lib/recaudo/limites-del-recibo';
+import { CampoDePlata } from '@/components/ui/campo-de-plata';
+import { AREAS_DE_LA_DEUDA } from '@/lib/plata/con-centavos';
+import { usePlataConCentavos } from '@/lib/plata/use-plata-con-centavos';
 import { generarIdempotencyKey } from '@/lib/contratos/idempotencia';
 import { SinDatos } from '@/components/estado/SinDatos';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
@@ -130,7 +133,17 @@ import {
 import { nombreDelMes } from '@/lib/utils/mes';
 import { useMediosDePago } from '@/lib/hooks/use-medios-de-pago';
 import { finanzasApi } from '@/lib/api/finanzas.service';
-import { sinLosApagados } from '@/lib/finanzas/medios';
+import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
+import type { MediosDeRecibo } from '@/lib/api/finanzas.types';
+import type { MediosDelRecibo } from '@/lib/api/recibos-de-caja.types';
+import { normalizarMedio } from '@/lib/finanzas/medios';
+import {
+  desdeElBack,
+  sinElEndpoint,
+  type OpcionDeMedio,
+} from '@/lib/recibos/medios-del-recibo';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { hrefDeSeccion } from '@/app/panel/inmobiliaria/configuracion/secciones';
 import {
   faltaElPagador,
   PAGA_EL_CLIENTE,
@@ -138,7 +151,6 @@ import {
   QuienPaga,
   type QuienPagaValor,
 } from './aseguradoras/QuienPaga';
-import { ICONO_DEL_TIPO } from './medios-de-pago/legible';
 import {
   AvisoSinConciliar,
   CarteraDelClientePanel,
@@ -151,76 +163,41 @@ import {
 } from './ReciboPorCliente';
 
 /**
- * Los medios de pago. `medio` viaja como `string` libre en el contrato del
- * back, así que estos son los valores que el front ya venía mandando como
- * `paymentMethod`: cambiarlos partiría el histórico en dos vocabularios.
+ * El ícono de cada medio, por su TIPO. Las opciones las arma
+ * `lib/recibos/medios-del-recibo.ts` (PG-01, 03-10-2026): las cuentas de la
+ * inmobiliaria MÁS los otros medios que tenga habilitados, nunca los apagados.
+ * Hasta ese día esta pantalla tenía su propia lista (`mediosParaElegir`) y, con
+ * una sola cuenta configurada, escondía todo lo demás —el efectivo, la
+ * tarjeta, PSE, Nequi…—: Nico, mirando el recibo, «aquí puede ser en efectivo
+ * también no? y más opciones».
  */
-const MEDIOS = [
-  { valor: 'transferencia', clave: 'recibos.form.medios.transferencia', icono: Bank },
-  { valor: 'efectivo', clave: 'recibos.form.medios.efectivo', icono: Money },
-  { valor: 'tarjeta', clave: 'recibos.form.medios.tarjeta', icono: CreditCard },
-  { valor: 'cheque', clave: 'recibos.form.medios.cheque', icono: FileText },
-  { valor: 'pse', clave: 'recibos.form.medios.pse', icono: Wallet },
-  { valor: 'otro', clave: 'recibos.form.medios.otro', icono: DotsThree },
-] as const;
+const ICONO_DEL_MEDIO: Record<string, typeof Bank> = {
+  TRANSFERENCIA: Bank,
+  CONSIGNACION: Bank,
+  EFECTIVO: Money,
+  TARJETA: CreditCard,
+  PSE: Wallet,
+  ENLACE_DE_PAGO: LinkIcon,
+  NEQUI: DeviceMobile,
+  DAVIPLATA: DeviceMobile,
+  CHEQUE: FileText,
+  OTRO: DotsThree,
+};
+
+function iconoDelMedio(opcion: OpcionDeMedio): typeof Bank {
+  return ICONO_DEL_MEDIO[normalizarMedio(opcion.codigo)] ?? DotsThree;
+}
+
+/**
+ * Espejo de `TOPE_DEL_AJUSTE_AL_PESO` del back (`recibos-de-caja/anticipo-del-contrato.ts`):
+ * un pago que supera toda la deuda por hasta $ 1.000 es un desfase, no saldo a favor.
+ */
+export const TOPE_DEL_AJUSTE_AL_PESO = 1_000;
 
 const ORIGEN_MINIMO = 5;
 
-/** El DTO del back acepta `medio` como texto libre de hasta 40 caracteres. */
-const LARGO_MAXIMO_DEL_MEDIO = 40;
-
 /** Los «saludos» topan en 380: el back le agrega el detalle del reparto. */
 const LARGO_MAXIMO_DE_SALUDOS = 380;
-
-/**
- * Los medios configurados por la inmobiliaria (activos), como chips. Si no
- * hay ninguno, la lista fija de arriba.
- *
- * 🔴 QA 22-09 (P0): el valor que viajaba era el NOMBRE del medio. «Efectivo en
- * la oficina» llegaba al back como `EFECTIVO_EN_LA_OFICINA`, que no está en la
- * lista de apagados, y el recibo en efectivo entraba aunque la regla de la
- * inmobiliaria diga «sólo transferencia y pasarela». Ahora:
- *   · lo que viaja en `medio` es el TIPO (`codigo`), que es lo que la regla
- *     juzga; el nombre que la persona de caja reconoce va en las notas;
- *   · los medios cuyo tipo la inmobiliaria APAGÓ no se ofrecen (`apagados`,
- *     de `GET /inmobiliaria/finanzas/medios`). Sin esa lista —no se pudo leer—
- *     no se filtra: el back rechaza igual lo apagado, con el motivo.
- * `valor` es sólo la identidad del chip: dos cuentas de transferencia son dos
- * chips con el mismo código.
- */
-export function mediosParaElegir(
-  configurados: { nombre: string; tipo: keyof typeof ICONO_DEL_TIPO; activo: boolean }[] | null | undefined,
-  apagados: readonly string[] = [],
-): {
-  valor: string;
-  codigo: string;
-  /** El nombre configurado, para las notas del recibo. `null` en la lista fija. */
-  nombre: string | null;
-  etiqueta: string | null;
-  clave: string | null;
-  icono: typeof Bank;
-}[] {
-  const activos = (configurados ?? []).filter((m) => m.activo);
-  if (activos.length === 0) {
-    return sinLosApagados(
-      MEDIOS.map((m) => ({ valor: m.valor, codigo: m.valor, nombre: null, etiqueta: null, clave: m.clave, icono: m.icono })),
-      (m) => m.codigo,
-      apagados,
-    );
-  }
-  return sinLosApagados(
-    activos.map((m) => ({
-      valor: `${m.tipo}|${m.nombre.trim()}`,
-      codigo: m.tipo,
-      nombre: m.nombre.trim().slice(0, LARGO_MAXIMO_DEL_MEDIO),
-      etiqueta: m.nombre,
-      clave: null,
-      icono: ICONO_DEL_TIPO[m.tipo] ?? DotsThree,
-    })),
-    (m) => m.codigo,
-    apagados,
-  );
-}
 
 /**
  * «octubre de 2026, noviembre de 2026 y parte de diciembre de 2026»: los meses
@@ -239,8 +216,46 @@ export function mesesEnPalabras(
   return `${nombres.slice(0, -1).join(', ')}${y}${nombres[nombres.length - 1]}`;
 }
 
-/** El pie del modal vive fuera del <form>; los enlaza el atributo `form`. */
+/** «septiembre de 2026 y octubre de 2026»: una lista como se dice. */
+export function listaEnPalabras(cosas: readonly string[], idioma: 'es' | 'en'): string {
+  if (cosas.length <= 1) return cosas.join('');
+  const y = idioma === 'en' ? ' and ' : ' y ';
+  return `${cosas.slice(0, -1).join(', ')}${y}${cosas[cosas.length - 1]}`;
+}
+
+/** El pie del cajón vive fuera del <form>; los enlaza el atributo `form`. */
 const ID_FORM = 'form-recibo-de-caja';
+
+/**
+ * Los campos del recibo que pueden traer un error del servidor (02-10-2026).
+ * El 400 `DATOS_INVALIDOS` trae `campos[]` con la ruta del cuerpo; acá se
+ * reparte cada uno a SU campo (`valorCop` → el monto, `notas` → los saludos).
+ */
+type CampoDelRecibo = 'monto' | 'medio' | 'fecha' | 'saludos';
+const CAMPOS_DEL_RECIBO: readonly CampoDelRecibo[] = ['monto', 'medio', 'fecha', 'saludos'];
+const CAMPO_DEL_SERVIDOR: Partial<Record<string, CampoDelRecibo | null>> = {
+  valorCop: 'monto',
+  medio: 'medio',
+  fecha: 'fecha',
+  notas: 'saludos',
+};
+/** El control que recibe el foco cuando el servidor señala ese campo. */
+const ID_DEL_CAMPO: Record<CampoDelRecibo, string> = {
+  monto: 'monto-recibo',
+  medio: 'medio-recibo',
+  fecha: 'fecha-recibo',
+  saludos: 'saludos-recibo',
+};
+/** Los 400 de la fecha que el back manda sin `campos` (`fecha-del-recibo.ts`). */
+const CODIGOS_DE_LA_FECHA = new Set(['FECHA_FUTURA', 'FECHA_NO_VALIDA']);
+
+function enfocarElCampo(campo: CampoDelRecibo | undefined) {
+  if (!campo || typeof document === 'undefined') return;
+  const el = document.getElementById(ID_DEL_CAMPO[campo]);
+  // El medio es un grupo de chips: el foco va al primero.
+  const destino = el && el.tagName === 'DIV' ? el.querySelector<HTMLElement>('button') : el;
+  destino?.focus();
+}
 
 export interface RegistrarPagoModalProps {
   isOpen: boolean;
@@ -274,29 +289,55 @@ export function RegistrarPagoModal({
 }: RegistrarPagoModalProps) {
   const { t, formatCurrency, locale } = useI18n();
   const idioma = locale === 'en' ? 'en' : 'es';
-  const { medios: mediosConfigurados } = useMediosDePago({ enabled: isOpen });
-  // Qué tipos apagó la inmobiliaria. Falla ABIERTO: sin la lista (sin permiso
-  // de configuración, red caída) no se filtra y el back decide.
-  const [apagados, setApagados] = React.useState<string[]>([]);
+  /*
+   * 🔴 PG-01 (03-10-2026): con qué se puede registrar el pago. Primero
+   * `GET /inmobiliaria/recibos-de-caja/medios` —lo puede leer quien hace el
+   * recibo (`cobros:create`)—; con un back anterior que no lo tiene, las
+   * cuentas de «Medios de pago» y el catálogo de Configuración, como antes.
+   * Falla ABIERTO: sin poder leer ninguno, la lista fija; el back rechaza igual
+   * lo apagado, con el motivo.
+   */
+  const [mediosDelBack, setMediosDelBack] = React.useState<MediosDelRecibo | null>(null);
+  const [sinElEndpointDeMedios, setSinElEndpointDeMedios] = React.useState(false);
+  const [catalogoDeMedios, setCatalogoDeMedios] = React.useState<MediosDeRecibo | null>(null);
+  const { medios: mediosConfigurados } = useMediosDePago({ enabled: isOpen && sinElEndpointDeMedios });
   React.useEffect(() => {
     if (!isOpen) return;
     let vivo = true;
-    finanzasApi
-      .medios()
-      .then((r) => {
-        if (vivo) setApagados(r.apagados ?? []);
-      })
-      .catch(() => {
-        if (vivo) setApagados([]);
-      });
+    void (async () => {
+      try {
+        const r = await recibosDeCajaApi.medios();
+        if (vivo) {
+          setMediosDelBack(r);
+          setSinElEndpointDeMedios(false);
+        }
+        return;
+      } catch {
+        if (!vivo) return;
+        setMediosDelBack(null);
+        setSinElEndpointDeMedios(true);
+      }
+      try {
+        const r = await finanzasApi.medios();
+        if (vivo) setCatalogoDeMedios(r);
+      } catch {
+        if (vivo) setCatalogoDeMedios(null);
+      }
+    })();
     return () => {
       vivo = false;
     };
   }, [isOpen]);
-  const opcionesDeMedio = React.useMemo(
-    () => mediosParaElegir(mediosConfigurados, apagados),
-    [mediosConfigurados, apagados],
+  const mediosParaElRecibo = React.useMemo(
+    () =>
+      mediosDelBack
+        ? desdeElBack(mediosDelBack)
+        : sinElEndpoint(mediosConfigurados, catalogoDeMedios),
+    [mediosDelBack, mediosConfigurados, catalogoDeMedios],
   );
+  const opcionesDeMedio = mediosParaElRecibo.opciones;
+  /** El interruptor de efectivo vive en Configuración, que es del administrador. */
+  const puedePrenderElEfectivo = usePermissionsContextSafe()?.isAdmin ?? false;
 
   /**
    * Hoy EN BOGOTÁ, no en UTC.
@@ -321,6 +362,12 @@ export function RegistrarPagoModal({
 
   const [tenantId, setTenantId] = React.useState<string | null>(null);
   const [monto, setMonto] = React.useState<number>(NaN);
+  /**
+   * «Centavos en todo» (C3-FRONT): el recibo es plata de la deuda. Con sus dos
+   * áreas prendidas el monto acepta centavos (coma decimal), viaja tal cual y
+   * el plan se reparte al centavo, como en el back. Apagadas, todo como hoy.
+   */
+  const deudaConCentavos = usePlataConCentavos(AREAS_DE_LA_DEUDA);
   /**
    * 🔴 QA 22-09: con un dedo de más el campo quedó en $7.480.366.500.000, el
    * diálogo dijo «superan TODA la deuda… quedan a su favor» y dejó pulsar
@@ -353,6 +400,22 @@ export function RegistrarPagoModal({
   /** El rótulo del banner de error: los 409 de configuración no son «no se emitió». */
   const [tituloDelError, setTituloDelError] = React.useState<string | null>(null);
   const [tocado, setTocado] = React.useState(false);
+  /**
+   * Lo que el servidor dijo de cada campo (02-10-2026). Se pinta bajo el campo
+   * y se va en cuanto la persona lo corrige: si no, el error del envío anterior
+   * seguiría señalando un dato que ya cambió.
+   */
+  const [erroresDelServidor, setErroresDelServidor] = React.useState<
+    Partial<Record<CampoDelRecibo, string>>
+  >({});
+  const olvidarDelServidor = React.useCallback((campo: CampoDelRecibo) => {
+    setErroresDelServidor((previos) => {
+      if (!(campo in previos)) return previos;
+      const { [campo]: _quitado, ...resto } = previos;
+      void _quitado;
+      return resto;
+    });
+  }, []);
 
   /*
    * 🔴 La fecha con la que se pide la VISTA PREVIA (2026-09-16). No es `fecha`
@@ -398,6 +461,8 @@ export function RegistrarPagoModal({
   const [origen, setOrigen] = React.useState('');
   const [enviandoConciliacion, setEnviandoConciliacion] = React.useState(false);
   const [errorDeConciliacion, setErrorDeConciliacion] = React.useState<string | null>(null);
+  /** El error del ORIGEN de la plata (el campo): el corto de la pantalla o el del back. */
+  const [errorDelOrigen, setErrorDelOrigen] = React.useState<string | null>(null);
 
   const cobroId = cobroDeEntrada?.id ?? null;
   const {
@@ -410,7 +475,7 @@ export function RegistrarPagoModal({
     cargaDeLaPersona,
     recargar,
   } = useCarteraDelCliente(tenantId, cobroId, isOpen, fechaDeLaVistaPrevia);
-  const plan = usePlanDeImputacion(cartera, monto);
+  const plan = usePlanDeImputacion(cartera, monto, deudaConCentavos, quienPaga.tipo === 'ASEGURADORA');
   const sinConciliar = React.useMemo(
     () => periodosSinConciliar(cartera, plan),
     [cartera, plan],
@@ -448,10 +513,33 @@ export function RegistrarPagoModal({
    */
   const puedeGuardarAFavor = cartera?.anticipoDisponible === true;
   const excedente = montoValido ? Math.max(0, monto - maximo) : 0;
+  /*
+   * A-15 (QA-PAGOS-95 r2): espejo de `separarAjusteAlPeso` del back
+   * (`TOPE_DEL_AJUSTE_AL_PESO`, Juan Camilo 16-09): lo que supera TODA la deuda
+   * por hasta $ 1.000, sin decir que es adelanto, es un desfase: el back lo
+   * lleva como ajuste al peso, no a favor. El cajón decía «quedan a su favor» y
+   * pedía confirmarlo; el recibo después decía otra cosa.
+   */
+  const esAjusteAlPeso =
+    excedente > 0 &&
+    excedente <= TOPE_DEL_AJUSTE_AL_PESO &&
+    forma === 'ABONAR_A_LAS_CUOTAS' &&
+    (cartera?.total ?? 0) > 0;
   // 🔴 D11: la plata de una aseguradora nunca queda a favor del inquilino.
-  const seExcede = excedente > 0 && (!puedeGuardarAFavor || quienPaga.tipo === 'ASEGURADORA');
+  const seExcede =
+    excedente > 0 && !esAjusteAlPeso && (!puedeGuardarAFavor || quienPaga.tipo === 'ASEGURADORA');
 
-  const errorDeMonto = !tocado
+  /*
+   * 🔴 El tope de la COLUMNA (02-10-2026): `recibos_de_caja.valor_cop` es int4.
+   * No es el tope inventado que el comentario de `aFavorConfirmado` descarta
+   * —pagar de más sigue siendo legítimo—: es lo que cabe en la base. Más allá,
+   * el back respondía un 500; ahora se ataja acá con la frase del back
+   * (`lib/recaudo/limites-del-recibo.ts`) y el back lo rechaza igual.
+   */
+  const superaElTope = superaElTopeDelRecibo(monto);
+  const errorDeMonto = superaElTope
+    ? MENSAJES_DEL_RECIBO.valorMaximo
+    : !tocado
     ? null
     : !Number.isFinite(monto) || monto === 0
       ? t('recibos.form.montoRequerido')
@@ -499,8 +587,9 @@ export function RegistrarPagoModal({
     // Sin deuda se puede recibir plata SÓLO si hay dónde guardarla a favor.
     (cartera.total > 0 || puedeGuardarAFavor) &&
     montoValido &&
+    !superaElTope &&
     !seExcede &&
-    (excedente === 0 || aFavorConfirmado === monto) &&
+    (excedente === 0 || esAjusteAlPeso || aFavorConfirmado === monto) &&
     medio !== '' &&
     !faltaElPagador(quienPaga) &&
     problemaDeLaFecha === null &&
@@ -544,10 +633,12 @@ export function RegistrarPagoModal({
       setQuienPaga(PAGA_EL_CLIENTE);
       setErrorDelBack(null);
       setTituloDelError(null);
+      setErroresDelServidor({});
       setTocado(false);
       setConciliando(null);
       setOrigen('');
       setErrorDeConciliacion(null);
+      setErrorDelOrigen(null);
       return;
     }
     if (origenDelMonto.current === 'vencido') {
@@ -570,10 +661,12 @@ export function RegistrarPagoModal({
     setQuienPaga(PAGA_EL_CLIENTE);
     setErrorDelBack(null);
     setTituloDelError(null);
+    setErroresDelServidor({});
     setTocado(false);
     setConciliando(null);
     setOrigen('');
     setErrorDeConciliacion(null);
+    setErrorDelOrigen(null);
     onClose();
   }, [hoy, onClose]);
 
@@ -593,7 +686,7 @@ export function RegistrarPagoModal({
        */
       const res = await onSubmit({
         ...(cobroId ? { cobroId } : { tenantId: tenantId! }),
-        valorCop: Math.round(monto),
+        valorCop: deudaConCentavos ? monto : Math.round(monto),
         fecha,
         // El TIPO, no el nombre: es lo que juzga la regla de medios (QA 22-09).
         medio: opcionElegida?.codigo ?? medio,
@@ -624,13 +717,32 @@ export function RegistrarPagoModal({
        */
       const facturas = res.facturas ?? [];
       const pendientesDeEmitir = facturas.filter((f) => f.estado === 'GENERADA');
+      /*
+       * 🔴 PG-12 (QA de Pagos, 03-10-2026): decía «Facturas de septiembre de
+       * 2026, octubre de 2026 al día: les quedan $2.500.000 por pagar» sobre un
+       * octubre que quedó DEBIENDO. «Al día» quería decir «actualizadas con el
+       * abono», pero se lee «pagadas». Ahora se dice cuáles quedaron pagadas y
+       * cuánto le queda a cada una de las que no.
+       */
+      const pagadas = facturas.filter((f) => f.saldoCop <= 0);
+      const conSaldo = facturas.filter((f) => f.saldoCop > 0);
+      const partesDeFacturas = [
+        pagadas.length === 0
+          ? null
+          : t(pagadas.length === 1 ? 'recibos.form.facturaPagada' : 'recibos.form.facturasPagadas', {
+              meses: listaEnPalabras(pagadas.map((f) => nombreDelMes(f.mes, idioma)), idioma),
+            }),
+        ...conSaldo.map((f) =>
+          t('recibos.form.facturaConSaldo', {
+            mes: nombreDelMes(f.mes, idioma),
+            saldo: formatCurrency(f.saldoCop),
+          }),
+        ),
+      ].filter(Boolean);
       const lineaDeFacturas =
         facturas.length === 0
           ? ''
-          : ` ${t('recibos.form.facturasDelPago', {
-              meses: facturas.map((f) => nombreDelMes(f.mes, idioma)).join(', '),
-              saldo: formatCurrency(facturas.reduce((s, f) => s + f.saldoCop, 0)),
-            })}${pendientesDeEmitir.length > 0 ? ` ${t('recibos.form.facturasSinEmitir')}` : ''}`;
+          : ` ${partesDeFacturas.join(' ')}${pendientesDeEmitir.length > 0 ? ` ${t('recibos.form.facturasSinEmitir')}` : ''}`;
       // Los intereses pagados con la factura del mes ya emitida: factura aparte.
       const deIntereses = facturas.flatMap((f) => f.facturasDeIntereses ?? []);
       const lineaDeIntereses =
@@ -683,7 +795,9 @@ export function RegistrarPagoModal({
         const trabado =
           typeof e.detalle?.cobroId === 'string' ? e.detalle.cobroId : sinConciliar[0]?.id;
         if (esPlataSinRecibo && trabado) {
-          setConciliando({ cobroId: trabado, mensaje: e.message });
+          // El texto del back trae la cifra que no cuadra; pasa por el
+          // traductor (02-10-2026) para que un volcado nunca llegue a caja.
+          setConciliando({ cobroId: trabado, mensaje: mensajeParaLaPersona(e, { porDefecto: '' }) });
           setErrorDelBack(null);
           return;
         }
@@ -715,13 +829,47 @@ export function RegistrarPagoModal({
             ? t('recibos.form.cuotaYCobroNoCuadran')
             : null,
       );
-      setErrorDelBack(e instanceof Error ? e.message : t('recibos.form.fallo'));
+      /*
+       * 02-10-2026 · Por el traductor, no `e.message` crudo. Los 409 de caja son
+       * largos (mes, inmueble, inquilino, cifras, qué hacer) y el traductor los
+       * descartaba por pasar de 300 caracteres; ya los deja pasar enteros. Lo
+       * que cambia es el resto: un 5xx dice que fue nuestro con la referencia
+       * (no «Error interno del servidor»), sin respuesta habla de la red, y un
+       * volcado o un HTML no llegan a la pantalla.
+       *
+       * Tanda 2 (02-10-2026) · Un 400 con `campos` va a SU campo, con el foco
+       * en el primero; al banner va sólo lo que no tiene campo. Los 400 de la
+       * fecha (`FECHA_FUTURA`, `FECHA_NO_VALIDA`) llegan sin `campos` pero son
+       * de un campo: van bajo la fecha.
+       */
+      const opciones = { porDefecto: 'Prueba de nuevo en un momento.', accion: 'registrar el pago' };
+      const reparto = repartirErroresDelServidor<CampoDelRecibo>(e, {
+        mapa: CAMPO_DEL_SERVIDOR,
+        campos: CAMPOS_DEL_RECIBO,
+        ...opciones,
+      });
+      const porCampo = { ...reparto.porCampo };
+      const orden = [...reparto.orden];
+      let sueltos = reparto.sueltos;
+      if (
+        e instanceof ApiError &&
+        reparto.delServidor.length === 0 &&
+        CODIGOS_DE_LA_FECHA.has(e.code ?? '')
+      ) {
+        porCampo.fecha = mensajeParaLaPersona(e, opciones);
+        orden.push('fecha');
+        sueltos = [];
+      }
+      setErroresDelServidor(porCampo);
+      setErrorDelBack(sueltos.length > 0 ? sueltos.join(' · ') : null);
+      enfocarElCampo(orden[0]);
     } finally {
       setEnviando(false);
     }
   }, [
     cerrar,
     cobroId,
+    deudaConCentavos,
     fecha,
     forma,
     formatCurrency,
@@ -744,9 +892,10 @@ export function RegistrarPagoModal({
     if (!conciliando || !onConciliar) return;
     const limpio = origen.trim();
     if (limpio.length < ORIGEN_MINIMO) {
-      setErrorDeConciliacion(t('recibos.conciliar.origenRequerido'));
+      setErrorDelOrigen(t('recibos.conciliar.origenRequerido'));
       return;
     }
+    setErrorDelOrigen(null);
     setEnviandoConciliacion(true);
     setErrorDeConciliacion(null);
     try {
@@ -762,7 +911,18 @@ export function RegistrarPagoModal({
       setOrigen('');
       await recargar();
     } catch (e) {
-      setErrorDeConciliacion(e instanceof Error ? e.message : t('recibos.conciliar.fallo'));
+      // 02-10-2026 · Un 400 sobre el origen va bajo el campo, con el foco; lo
+      // demás, al aviso, por el traductor.
+      const { porCampo, sueltos } = repartirErroresDelServidor(e, {
+        campos: ['origen'] as const,
+        porDefecto: t('recibos.conciliar.fallo'),
+        accion: 'conciliar el pago',
+      });
+      if (porCampo.origen) {
+        setErrorDelOrigen(porCampo.origen);
+        document.getElementById('origen-conciliacion')?.focus();
+      }
+      setErrorDeConciliacion(sueltos.length > 0 ? sueltos.join(' · ') : null);
     } finally {
       setEnviandoConciliacion(false);
     }
@@ -781,25 +941,34 @@ export function RegistrarPagoModal({
     cartera !== null && (cartera.total > 0 || cartera.anticipoDisponible === true);
 
   return (
-    <Dialog open={isOpen} onOpenChange={(abierto) => !abierto && cerrar()}>
-      <DialogContent className="max-h-[85vh] sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-primary" />
-            {t('recibos.form.titulo')}
-          </DialogTitle>
-          <DialogDescription>
-            {/* Sin nada vencido el encabezado deja de prometer un cobro y
-                nombra lo que de verdad se puede hacer: adelantar. */}
-            {!cartera
-              ? t('recibos.form.elegirClienteAyuda')
-              : sePuedeAdelantar
-                ? t('recibos.form.descripcionAdelanto')
-                : t('recibos.form.descripcion')}
-          </DialogDescription>
-        </DialogHeader>
+    /*
+      🔴 PG-18 (Nico, QA de Pagos 03-10-2026): «Hacer recibo de caja» es un
+      CAJÓN, no un modal — como «Nuevo propietario» y «Nuevo inquilino»: es un
+      formulario largo (la cartera, el plan, el monto, el medio, la fecha) y en
+      un modal centrado el pie se perdía detrás del scroll. Mismo contenido y
+      mismo comportamiento: cabecera fija, cuerpo que scrollea y el pie fijo
+      con «Emitir el recibo». En el celular sube como hoja desde abajo.
+    */
+    <Cajon
+      abierto={isOpen}
+      onOpenChange={(abierto) => !abierto && cerrar()}
+      tamano="md"
+      data-testid="cajon-recibo-de-caja"
+    >
+      <CajonCabecera
+        titulo={t('recibos.form.titulo')}
+        descripcion={
+          /* Sin nada vencido el encabezado deja de prometer un cobro y nombra
+             lo que de verdad se puede hacer: adelantar. */
+          !cartera
+            ? t('recibos.form.elegirClienteAyuda')
+            : sePuedeAdelantar
+              ? t('recibos.form.descripcionAdelanto')
+              : t('recibos.form.descripcion')
+        }
+      />
 
-        <>
+      <CajonCuerpo className="space-y-5">
           {/* 1. El cliente. Con cobro de entrada la persona ya está resuelta. */}
           {!cobroId && conciliando === null && (
             <ElegirCliente
@@ -843,28 +1012,33 @@ export function RegistrarPagoModal({
             ése fue el defecto que originó todo este cambio. El pie se dibuja
             igual, con «Cerrar»: sin eso el modal quedaba sin botones.
           */}
+          {/* Movimiento (ola 2, 03-10-2026): lo que llega después de elegir al
+              cliente —su cartera, el «no debe nada», la conciliación— ENTRA
+              con un fundido y 4 px en vez de aparecer de golpe. */}
           {conciliando === null && !cargando && cartera !== null && !hayCartera && (
-            <div data-testid="cliente-sin-deuda">
+            <Appear distance="xs" data-testid="cliente-sin-deuda">
               <SinDatos
                 queSon="cuotas pendientes"
                 icono={Receipt}
                 titulo={t('recibos.form.cartera.sinDeuda', { nombre: cartera.nombre })}
                 descripcion="No le queda ninguna cuota pendiente: ni vencida ni por vencer. Cuando su contrato genere la siguiente vas a poder recibírsela, incluso antes de que venza."
               />
-            </div>
+            </Appear>
           )}
 
           {/* Conciliar la plata vieja (409) */}
           {conciliando !== null && (
-            <div className="space-y-4" data-testid="panel-conciliacion">
+            <Appear distance="xs" className="space-y-4" data-testid="panel-conciliacion">
               <Banner variant="warning" title={t('recibos.conciliar.titulo')}>
                 {t('recibos.conciliar.porQue')}
               </Banner>
 
-              {/* El mensaje del back, tal cual: trae la cifra que no cuadra. */}
-              <p className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-foreground">
-                {conciliando.mensaje}
-              </p>
+              {/* El mensaje del back (por el traductor): trae la cifra que no cuadra. */}
+              {conciliando.mensaje && (
+                <p className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-foreground">
+                  {conciliando.mensaje}
+                </p>
+              )}
 
               <p className="text-sm text-fg-muted">{t('recibos.conciliar.queVaAPasar')}</p>
 
@@ -875,19 +1049,27 @@ export function RegistrarPagoModal({
                 <Textarea
                   id="origen-conciliacion"
                   rows={2}
+                  maxLength={300}
                   value={origen}
-                  onChange={(e) => setOrigen(e.target.value)}
+                  onChange={(e) => {
+                    setOrigen(e.target.value);
+                    setErrorDelOrigen(null);
+                  }}
                   placeholder={t('recibos.conciliar.origenPlaceholder')}
+                  aria-invalid={Boolean(errorDelOrigen) || undefined}
+                  aria-describedby="origen-conciliacion-error"
                   className="w-full resize-none"
                 />
+                <ErrorDelCampo id="origen-conciliacion-error" mensaje={errorDelOrigen} />
               </div>
 
               {errorDeConciliacion && <Banner variant="danger">{errorDeConciliacion}</Banner>}
-            </div>
+            </Appear>
           )}
 
           {/* 3. El recibo */}
           {conciliando === null && hayCartera && cartera && (
+            <Appear distance="xs">
             <form
               id={ID_FORM}
               className="space-y-6"
@@ -939,18 +1121,27 @@ export function RegistrarPagoModal({
                     </Button>
                   </div>
                 </div>
-                <CurrencyInput
+                {/* «Centavos en todo»: con las dos áreas de la deuda prendidas el
+                    monto acepta coma decimal; apagadas, el `CurrencyInput` de
+                    siempre (`CampoDePlata`). */}
+                <CampoDePlata
                   id="monto-recibo"
+                  areas={AREAS_DE_LA_DEUDA}
                   value={Number.isFinite(monto) ? monto : undefined}
                   onChange={(v) => {
                     // El campo avisa también al perder el foco, con el mismo
                     // valor: eso no es escribir un monto.
                     const mismo = v === monto || (Number.isNaN(v) && Number.isNaN(monto));
-                    if (!mismo) origenDelMonto.current = 'manual';
+                    if (!mismo) {
+                      origenDelMonto.current = 'manual';
+                      olvidarDelServidor('monto');
+                    }
                     setMonto(v);
                     setTocado(true);
                   }}
-                  invalid={Boolean(errorDeMonto)}
+                  invalid={Boolean(errorDeMonto ?? erroresDelServidor.monto)}
+                  aria-invalid={Boolean(errorDeMonto ?? erroresDelServidor.monto) || undefined}
+                  aria-describedby="monto-recibo-error"
                   className="h-12 text-lg font-semibold"
                 />
                 <p className="text-xs text-fg-muted">
@@ -972,24 +1163,41 @@ export function RegistrarPagoModal({
                 {/* Por encima de lo vencido la plata baja cuotas que todavía no
                     vencen. Es legítimo y es lo que el CEO pidió, pero tiene que
                     estar dicho ANTES de emitir, no descubrirse en el recibo. */}
-                {vencido > 0 && futuro > 0 && (
-                  <p className="text-xs text-fg-muted" data-testid="aviso-adelanto-monto">
+                {/* A-21 (QA-PAGOS-95 r2): lo de una aseguradora por encima de lo vencido no adelanta: queda pendiente. */}
+                {quienPaga.tipo === 'ASEGURADORA' && montoValido && monto > vencido && (
+                  <Appear as="p" direction="none" className="text-xs text-fg-muted" data-testid="aviso-pendiente-de-aplicar">
+                    {t('recibos.form.aseguradoraPendiente', {
+                      monto: formatCurrency(monto - vencido),
+                      vencido: formatCurrency(vencido),
+                    })}
+                  </Appear>
+                )}
+                {vencido > 0 && futuro > 0 && quienPaga.tipo !== 'ASEGURADORA' && (
+                  <Appear as="p" direction="none" className="text-xs text-fg-muted" data-testid="aviso-adelanto-monto">
                     {t('recibos.form.adelantoDesde', {
                       vencido: formatCurrency(vencido),
                       futuro: formatCurrency(futuro),
                     })}
-                  </p>
+                  </Appear>
                 )}
                 {/* Decir a dónde va el excedente ANTES de emitir: si no, la
                     plata «desaparece» de la cartera y nadie sabe dónde quedó. */}
-                {excedente > 0 && puedeGuardarAFavor && (
-                  <p className="text-xs text-fg-muted" data-testid="aviso-a-favor">
+                {esAjusteAlPeso && (
+                  <Appear as="p" direction="none" className="text-xs text-fg-muted" data-testid="aviso-ajuste-al-peso">
+                    {t('recibos.form.avisoAjusteAlPeso', {
+                      monto: formatCurrency(excedente),
+                      tope: formatCurrency(TOPE_DEL_AJUSTE_AL_PESO),
+                    })}
+                  </Appear>
+                )}
+                {excedente > 0 && !esAjusteAlPeso && puedeGuardarAFavor && (
+                  <Appear as="p" direction="none" className="text-xs text-fg-muted" data-testid="aviso-a-favor">
                     {formatCurrency(excedente)} superan TODA la deuda de {cartera?.nombre ?? 'el cliente'}
                     {' '}—vencida y futura— y quedan a su favor: se aplican solos a las cuotas que
                     vayan apareciendo, de la más vieja a la más nueva.
-                  </p>
+                  </Appear>
                 )}
-                {excedente > 0 && puedeGuardarAFavor && !seExcede && (
+                {excedente > 0 && !esAjusteAlPeso && puedeGuardarAFavor && !seExcede && (
                   <label className="flex items-start gap-2 text-sm text-fg" data-testid="confirmar-a-favor">
                     <Checkbox
                       className="mt-0.5"
@@ -1005,7 +1213,8 @@ export function RegistrarPagoModal({
                     </span>
                   </label>
                 )}
-                {errorDeMonto && <p className="text-xs text-destructive">{errorDeMonto}</p>}
+                {/* El de la pantalla (vacío, negativo, el tope) o el del servidor. */}
+                <ErrorDelCampo id="monto-recibo-error" mensaje={errorDeMonto ?? erroresDelServidor.monto} />
               </div>
 
               {/* 🔴 A dónde va la plata. El punto del cambio entero. */}
@@ -1062,7 +1271,7 @@ export function RegistrarPagoModal({
                           'w-full rounded-lg border p-3 text-left transition-colors',
                           forma === o.valor
                             ? 'border-primary bg-primary-soft'
-                            : 'border-border bg-surface hover:bg-surface-muted',
+                            : 'border-border bg-surface hover:bg-surface-hover',
                         )}
                         data-testid={`forma-${o.valor}`}
                       >
@@ -1082,24 +1291,82 @@ export function RegistrarPagoModal({
                 <span className="text-sm font-medium text-foreground">
                   {t('recibos.form.medioLabel')}
                 </span>
-                <div className="flex flex-wrap gap-2">
-                  {opcionesDeMedio.map((m) => {
-                    const Icono = m.icono;
+                {/*
+                  🔴 PG-01: las CUENTAS de la inmobiliaria (a cuál entró una
+                  transferencia o una consignación) y, aparte, los OTROS medios
+                  que tiene habilitados. Dos grupos con su rótulo: una lista
+                  sola mezclaba «Bancolombia ahorros» con «Tarjeta».
+                */}
+                <div
+                  id="medio-recibo"
+                  role="group"
+                  aria-label={t('recibos.form.medioLabel')}
+                  aria-describedby="medio-recibo-error"
+                  className="space-y-3"
+                >
+                  {(['CUENTA', 'OTRO'] as const).map((grupo) => {
+                    const delGrupo = opcionesDeMedio.filter((m) => m.grupo === grupo);
+                    if (delGrupo.length === 0) return null;
+                    const hayDosGrupos = opcionesDeMedio.some((m) => m.grupo !== grupo);
                     return (
-                      <Chip
-                        key={m.valor}
-                        selected={medio === m.valor}
-                        onClick={() => setMedio(m.valor)}
-                        icon={<Icono className="h-4 w-4" />}
-                      >
-                        {m.etiqueta ?? t(m.clave!)}
-                      </Chip>
+                      <div key={grupo} className="space-y-1.5" data-testid={`medios-${grupo.toLowerCase()}`}>
+                        {hayDosGrupos && (
+                          <p className="text-caption text-fg-muted">
+                            {t(grupo === 'CUENTA' ? 'recibos.form.medios.aUnaCuenta' : 'recibos.form.medios.otrosMedios')}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                          {delGrupo.map((m) => {
+                            const Icono = iconoDelMedio(m);
+                            return (
+                              <Chip
+                                key={m.valor}
+                                selected={medio === m.valor}
+                                onClick={() => {
+                                  setMedio(m.valor);
+                                  olvidarDelServidor('medio');
+                                }}
+                                icon={<Icono className="h-4 w-4" />}
+                              >
+                                {m.clave ? t(m.clave) : m.etiqueta}
+                                {m.detalle ? (
+                                  <span className="ml-1.5 font-mono text-caption tabular-nums text-fg-muted">
+                                    {m.detalle}
+                                  </span>
+                                ) : null}
+                              </Chip>
+                            );
+                          })}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
-                {tocado && !medio && (
-                  <p className="text-xs text-destructive">{t('recibos.form.medioRequerido')}</p>
-                )}
+                {/* Decisión de Nico: el efectivo sale SÓLO con su interruptor
+                    prendido. Apagado, se dice en una línea dónde prenderlo; el
+                    enlace, a quien puede prenderlo (Configuración es del
+                    administrador). */}
+                {mediosParaElRecibo.efectivoApagado ? (
+                  <p className="text-caption text-fg-muted" data-testid="efectivo-apagado">
+                    {mediosParaElRecibo.efectivoApagado}
+                    {puedePrenderElEfectivo ? (
+                      <>
+                        {' '}
+                        <Link
+                          href={hrefDeSeccion('medios-de-recibo')}
+                          className="font-medium text-primary underline-offset-4 hover:underline"
+                          data-testid="ir-a-medios-de-recibo"
+                        >
+                          {t('recibos.form.medios.irAMediosDeRecibo')}
+                        </Link>
+                      </>
+                    ) : null}
+                  </p>
+                ) : null}
+                <ErrorDelCampo
+                  id="medio-recibo-error"
+                  mensaje={tocado && !medio ? t('recibos.form.medioRequerido') : erroresDelServidor.medio}
+                />
               </div>
 
               {/* Qué día entró */}
@@ -1121,35 +1388,44 @@ export function RegistrarPagoModal({
                    */
                   max={hoy}
                   value={fecha}
-                  onChange={(e) => setFecha(e.target.value)}
+                  onChange={(e) => {
+                    setFecha(e.target.value);
+                    olvidarDelServidor('fecha');
+                  }}
                   aria-invalid={
                     (problemaDeLaFecha !== null && problemaDeLaFecha !== 'vacia') ||
                     errorDeLaFecha !== null ||
-                    (tocado && !fecha)
+                    (tocado && !fecha) ||
+                    Boolean(erroresDelServidor.fecha)
                   }
+                  aria-describedby="fecha-recibo-error"
                   className={cn(
                     'w-full',
                     (tocado && !fecha) ||
                       problemaDeLaFecha === 'futura' ||
-                      errorDeLaFecha !== null
+                      errorDeLaFecha !== null ||
+                      erroresDelServidor.fecha
                       ? 'border-destructive'
                       : '',
                   )}
                 />
-                {tocado && !fecha && (
-                  <p className="text-xs text-destructive">{t('recibos.form.fechaRequerida')}</p>
-                )}
-                {problemaDeLaFecha === 'futura' && (
-                  <p className="text-xs text-destructive" data-testid="fecha-futura">
-                    {t('recibos.form.fechaFutura')}
-                  </p>
-                )}
-                {/* El rechazo del back sobre ESTA fecha, tal cual: dice qué hacer. */}
-                {problemaDeLaFecha === null && errorDeLaFecha !== null && (
-                  <p className="text-xs text-destructive" data-testid="error-de-la-fecha">
-                    {errorDeLaFecha.mensaje || t('recibos.form.cartera.fallo')}
-                  </p>
-                )}
+                {/*
+                  Un solo lugar para lo que le pasa a la fecha, en orden: vacía,
+                  futura, el rechazo de la vista previa (tal cual: dice qué
+                  hacer) o el del envío.
+                */}
+                <ErrorDelCampo
+                  id="fecha-recibo-error"
+                  mensaje={
+                    tocado && !fecha
+                      ? t('recibos.form.fechaRequerida')
+                      : problemaDeLaFecha === 'futura'
+                        ? t('recibos.form.fechaFutura')
+                        : problemaDeLaFecha === null && errorDeLaFecha !== null
+                          ? errorDeLaFecha.mensaje || t('recibos.form.cartera.fallo')
+                          : erroresDelServidor.fecha
+                  }
+                />
                 {/*
                   Los números a la vista son de otro día mientras llega la
                   cartera nueva: se dice, y el botón espera.
@@ -1183,13 +1459,19 @@ export function RegistrarPagoModal({
                   rows={2}
                   maxLength={largoDeLosSaludos}
                   value={saludos}
-                  onChange={(e) => setSaludos(e.target.value)}
+                  onChange={(e) => {
+                    setSaludos(e.target.value);
+                    olvidarDelServidor('saludos');
+                  }}
                   placeholder={t('recibos.form.saludosPlaceholder')}
+                  aria-invalid={Boolean(erroresDelServidor.saludos) || undefined}
+                  aria-describedby="saludos-recibo-error"
                   className="w-full resize-none"
                 />
+                <ErrorDelCampo id="saludos-recibo-error" mensaje={erroresDelServidor.saludos} />
               </div>
 
-              {/* El rechazo del back, tal cual */}
+              {/* El rechazo del back, por el traductor */}
               {errorDelBack && (
                 <Banner
                   variant="danger"
@@ -1200,12 +1482,13 @@ export function RegistrarPagoModal({
                 </Banner>
               )}
             </form>
+            </Appear>
           )}
-        </>
+      </CajonCuerpo>
 
-        {/* Pie fijo: en un modal alto los botones no se pueden ir con el scroll. */}
+        {/* Pie fijo: en un cajón alto los botones no se pueden ir con el scroll. */}
         {(hayCartera || conciliando !== null || (!cargando && cartera !== null)) && (
-          <DialogFooter>
+          <CajonPie>
             {conciliando !== null ? (
               <>
                 <Button
@@ -1239,8 +1522,8 @@ export function RegistrarPagoModal({
                 <Button type="button" variant="outline" onClick={cerrar} disabled={enviando}>
                   {t('recibos.form.cancelar')}
                 </Button>
-                {/* `form=` porque el pie vive FUERA del <form>: el DialogContent
-                    reparte cabecera/cuerpo/pie y el pie no puede estar adentro. */}
+                {/* `form=` porque el pie vive FUERA del <form>: el cajón tiene
+                    cabecera/cuerpo/pie y el pie no puede estar adentro. */}
                 <Button
                   type="submit"
                   form={ID_FORM}
@@ -1253,10 +1536,9 @@ export function RegistrarPagoModal({
                 </Button>
               </>
             )}
-          </DialogFooter>
+          </CajonPie>
         )}
-      </DialogContent>
-    </Dialog>
+    </Cajon>
   );
 }
 

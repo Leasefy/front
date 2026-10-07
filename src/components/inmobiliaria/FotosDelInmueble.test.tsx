@@ -120,6 +120,39 @@ describe('FotosDelInmueble', () => {
   })
 })
 
+describe('FotosDelInmueble — el motivo de una foto que no sube (sistema de errores, 02-10-2026)', () => {
+  async function subirUna(error: unknown) {
+    api.getImages.mockResolvedValue([])
+    api.uploadImage.mockRejectedValueOnce(error)
+    await montar()
+    const input = container.querySelector<HTMLInputElement>('[data-testid="subida-fotos-input"]')!
+    Object.defineProperty(input, 'files', { value: [archivo('sala.jpg')], configurable: true })
+    await act(async () => {
+      input.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    await tick()
+    return toastMock.error.mock.calls[0][1].description as string
+  }
+
+  it('🔴 un 5xx dice «de nuestro lado» con la referencia, no «Error interno del servidor.»', async () => {
+    const motivo = await subirUna(
+      new ApiError(500, 'Error interno del servidor.', 'FOTO_NO_GUARDADA', { referencia: 'ab12cd34' }),
+    )
+    expect(motivo).toMatch(/^No pudimos subir «sala\.jpg»: algo falló de nuestro lado/)
+    expect(motivo).toContain('ab12cd34')
+  })
+
+  it('el rechazo del back (400) se dice tal cual', async () => {
+    const motivo = await subirUna(new ApiError(400, 'La foto pesa más de 5 MB. Súbela más liviana.', 'FOTO_MUY_PESADA'))
+    expect(motivo).toBe('La foto pesa más de 5 MB. Súbela más liviana.')
+  })
+
+  it('sin respuesta: la conexión', async () => {
+    const motivo = await subirUna(new TypeError('Failed to fetch'))
+    expect(motivo).toMatch(/conexión/)
+  })
+})
+
 describe('FotosDelInmueble — quitar y portada (Nico, 2026-09-03)', () => {
   const dosFotos = [
     { id: 'i1', url: 'https://cdn/1.jpg', order: 0 },

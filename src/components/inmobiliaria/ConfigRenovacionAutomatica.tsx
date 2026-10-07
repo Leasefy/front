@@ -4,14 +4,22 @@ import { useCallback, useEffect, useState } from 'react';
 import { ArrowsClockwise, Warning } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui';
+import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { Switch } from '@/components/ui/switch';
+import { toast } from '@/components/ui/toast';
 import { renovacionAutomaticaApi } from '@/lib/api/renovacion-automatica.service';
+import {
+  IPC_MAXIMO,
+  IPC_MINIMO,
+  MENSAJES_DEL_IPC,
+  loQueElBackDijoDelIpc,
+} from '@/lib/configuracion/limites-del-ipc';
 import type { AgencyProfile, UpdateAgencyPayload } from '@/lib/types/inmobiliaria';
 import { ConfigIpcPorAnio } from './ConfigIpcPorAnio';
 
-/** El mismo `@Min(0) @Max(30)` del DTO del back. */
-export const MIN_IPC = 0;
-export const MAX_IPC = 30;
+/** El mismo `@Min(0) @Max(100)` del DTO del back (`limites-del-ipc.ts`). */
+export const MIN_IPC = IPC_MINIMO;
+export const MAX_IPC = IPC_MAXIMO;
 
 /**
  * El IPC como lo escribe una persona en Colombia: «5,2» o «5.2». Devuelve
@@ -41,8 +49,9 @@ interface Props {
   agency: AgencyProfile;
   /**
    * Guarda SÓLO los campos cambiados por PUT /inmobiliaria/agency — el mismo
-   * handler del perfil (avisa con toast y refresca la agencia). Debe rechazar
-   * si falla, para que el interruptor vuelva a como estaba.
+   * handler del perfil (refresca la agencia). Debe rechazar si falla, para que
+   * el interruptor vuelva a como estaba. Un 400 con `campos` lo pinta esta
+   * sección (el IPC bajo su campo); lo demás lo avisa el padre.
    */
   onSave?: (payload: UpdateAgencyPayload) => Promise<void> | void;
   /** Sólo el ADMIN de la agencia: el back rechaza el PUT a los demás. */
@@ -81,15 +90,24 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
   useEffect(() => setPrendida(prendidaGuardada), [prendidaGuardada]);
   useEffect(() => setIpcTexto(escribirIpc(ipcGuardado)), [ipcGuardado]);
 
+  /**
+   * `'ok'` · `'campo'` (el back rechazó el IPC y su frase quedó bajo el campo)
+   * · `'fallo'` (403, 5xx, la red: el padre ya avisó).
+   */
   const guardar = useCallback(
-    async (payload: UpdateAgencyPayload) => {
+    async (payload: UpdateAgencyPayload): Promise<'ok' | 'campo' | 'fallo'> => {
       setGuardando(true);
       try {
         await onSave?.(payload);
-        return true;
-      } catch {
-        // El padre ya avisó con el mensaje del back (p. ej. 403).
-        return false;
+        return 'ok';
+      } catch (error) {
+        // Un 400 con campos: el IPC va BAJO su campo, con la frase del back;
+        // lo que esta sección no muestra, a un toast. Sin campos (403, 5xx,
+        // la red) el padre ya avisó.
+        const { delCampo, sueltos } = loQueElBackDijoDelIpc(error, 'ipcVigente');
+        if (delCampo) setErrorDeIpc(delCampo);
+        if (sueltos.length > 0) toast.error(sueltos.join(' · '));
+        return delCampo ? 'campo' : 'fallo';
       } finally {
         setGuardando(false);
       }
@@ -99,21 +117,28 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
 
   const cambiarPrendida = async (valor: boolean) => {
     setPrendida(valor);
-    const ok = await guardar({ renovacionAutomatica: valor });
-    if (!ok) setPrendida(prendidaGuardada);
+    const r = await guardar({ renovacionAutomatica: valor });
+    if (r !== 'ok') setPrendida(prendidaGuardada);
   };
 
+  /*
+   * 🔴 ARREGLOS-4 (03-10-2026, Nico eligió la A de PRUEBAS-RESTO Q3): un IPC
+   * que no se puede guardar deja ESCRITO lo que puso la persona, con el error
+   * debajo — como «Incrementos del canon». Antes el campo volvía al guardado y
+   * la frase quedaba hablando de un número que ya no se veía. Escribir otra
+   * cosa borra el error. Sólo un fallo sin frase del campo (403, 5xx, la red)
+   * vuelve al guardado: ahí no hay nada que corregir en lo escrito.
+   */
   const confirmarIpc = async () => {
     const valor = leerIpc(ipcTexto);
     if (valor === undefined) {
-      setErrorDeIpc(`Un porcentaje entre ${MIN_IPC} y ${MAX_IPC}, con hasta dos decimales.`);
-      setIpcTexto(escribirIpc(ipcGuardado));
+      setErrorDeIpc(MENSAJES_DEL_IPC.ipcVigente);
       return;
     }
     setErrorDeIpc(null);
     if (valor === ipcGuardado) return;
-    const ok = await guardar({ ipcVigente: valor });
-    if (!ok) setIpcTexto(escribirIpc(ipcGuardado));
+    const r = await guardar({ ipcVigente: valor });
+    if (r === 'fallo') setIpcTexto(escribirIpc(ipcGuardado));
   };
 
   // ── Qué pasaría hoy ────────────────────────────────────────────────────────
@@ -214,22 +239,26 @@ export function ConfigRenovacionAutomatica({ agency, onSave, canEdit = true }: P
           value={ipcTexto}
           disabled={!canEdit || guardando}
           aria-invalid={!!errorDeIpc}
-          aria-describedby="renovacion-ipc-ayuda"
-          onChange={(e) => setIpcTexto(e.target.value)}
+          aria-describedby="renovacion-ipc-ayuda-error"
+          onChange={(e) => {
+            setIpcTexto(e.target.value);
+            setErrorDeIpc(null);
+          }}
           onBlur={() => void confirmarIpc()}
           onKeyDown={(e) => {
             if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
           }}
           className={cn('w-28 tabular-nums', errorDeIpc && 'border-danger/30')}
         />
-        <p
-          id="renovacion-ipc-ayuda"
-          data-testid="renovacion-ipc-ayuda"
-          className={cn('text-xs', errorDeIpc ? 'text-danger' : 'text-muted-foreground')}
-        >
-          {errorDeIpc ??
-            'Se usa para el incremento del canon en cada renovación; si está vacío se usa el IPC de diciembre del año anterior de la tabla de Leasefy.'}
-        </p>
+        {/* El error de la casa: se cruza con la ayuda, sin saltar el alto. */}
+        <div data-testid="renovacion-ipc-ayuda">
+          <ErrorDelCampo
+            id="renovacion-ipc-ayuda-error"
+            mensaje={errorDeIpc}
+            pista="Se usa para el incremento del canon en cada renovación; si está vacío se usa el IPC de diciembre del año anterior de la tabla de Leasefy."
+            className="mt-0"
+          />
+        </div>
       </div>
 
       {/* N3: el IPC por año. El de arriba no tiene año y se queda viejo en silencio. */}

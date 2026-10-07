@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from '@/components/ui/toast';
+import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { documentReviewApi } from '@/lib/api/document-review.service';
 import type {
   ReviewQueueResponse,
@@ -44,6 +45,8 @@ export function DocumentReviewQueueClient() {
   const [pendingDocId, setPendingDocId] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<RejectTarget | null>(null);
   const [isRejecting, setIsRejecting] = useState(false);
+  // Lo que el back dijo del motivo del rechazo: va debajo del campo del cajón.
+  const [errorDelMotivo, setErrorDelMotivo] = useState<string | null>(null);
 
   const fetchQueue = useCallback(async () => {
     setIsLoading(true);
@@ -80,9 +83,18 @@ export function DocumentReviewQueueClient() {
         await fetchQueue();
         return true;
       } catch (err) {
-        toast.error(
-          err instanceof Error ? err.message : 'No pudimos actualizar el documento',
-        );
+        // Por el traductor (02-10-2026): antes se pintaba `err.message` crudo.
+        // Lo que el back dice del motivo va a su campo en el cajón; lo demás
+        // (un 409, un 5xx con su referencia, la red) a un toast.
+        const reparto = repartirErroresDelServidor(err, {
+          campos: ['rejectionReason'],
+          porDefecto: 'No pudimos actualizar el documento.',
+          accion: 'actualizar el documento',
+        });
+        const delMotivo = reparto.porCampo.rejectionReason;
+        if (delMotivo && status === 'REJECTED') setErrorDelMotivo(delMotivo);
+        const sueltos = delMotivo && status !== 'REJECTED' ? [delMotivo, ...reparto.sueltos] : reparto.sueltos;
+        if (sueltos.length) toast.error(sueltos.join(' · '));
         return false;
       } finally {
         setPendingDocId(null);
@@ -106,6 +118,7 @@ export function DocumentReviewQueueClient() {
   );
 
   const handleReject = useCallback((item: ReviewQueueItem, doc: ReviewQueueDocument) => {
+    setErrorDelMotivo(null);
     setRejectTarget({ applicationId: item.applicationId, doc });
   }, []);
 
@@ -147,6 +160,8 @@ export function DocumentReviewQueueClient() {
           if (!isRejecting) setRejectTarget(null);
         }}
         onConfirm={confirmReject}
+        error={errorDelMotivo}
+        onCambio={() => setErrorDelMotivo(null)}
       />
     </>
   );

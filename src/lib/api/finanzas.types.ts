@@ -61,6 +61,12 @@ export interface RecaudoDelTablero {
   delDiaCop: number;
   delMesCop: number;
   causadoDelMesCop: number;
+  /**
+   * N-06 (QA-PAGOS-95): el numerador del porcentaje, lo que entró a las cuotas
+   * DEL MES. No es `delMesCop` (la caja del mes, de cualquier período).
+   * Opcional: un back anterior no lo manda.
+   */
+  abonadoDelMesCop?: number;
   /** % del mes contra lo causado. `null` = no se midió (denominador 0). */
   tasaPct: number | null;
   /** Cómo la mide esta inmobiliaria: 'CAUSADO' | 'EMITIDO'. */
@@ -70,6 +76,8 @@ export interface RecaudoDelTablero {
     mes: string;
     recaudadoCop: number;
     causadoCop: number;
+    /** N-06: lo que entró a las cuotas de ESE mes (el numerador de su %). */
+    abonadoCop?: number;
     tasaPct: number | null;
   };
   /** Variación del recaudo contra el mes anterior, en %. `null` si no se puede. */
@@ -116,13 +124,34 @@ export interface CarteraDelTablero {
   totalCop: number;
   /** 1-30 · 31-60 · 61-90 · 90+ */
   tramos: TramoDeCartera[];
+  /** Lo que ya está en siniestro: va APARTE del total y de los tramos. */
   enSiniestroCop: number;
   /** Los 20 más grandes. */
   deudores: DeudorDelTablero[];
+  /**
+   * 🔴 CR-31: la inmobiliaria no ha fijado sus días de plazo, así que nada es
+   * cartera (la misma regla de la Cartera y la Deuda del mes). Un back
+   * anterior no lo manda.
+   */
+  plazoSinFijar?: boolean;
 }
 
 export interface PropietariosDelTablero {
+  /**
+   * 🔴 «Por girar» → UNA sola cifra: hasta el mes en curso, neta de
+   * deducciones (Nico, 04-10-2026). La misma de «Cartera → Por pagar»,
+   * Liquidaciones y el chat (`dispersiones/por-girar.ts` del back).
+   */
   porGirarCop: number;
+  /** `AAAA-MM`: el mes en curso. Un back anterior no lo manda. */
+  porGirarHastaMes?: string;
+  /** Lo de los meses siguientes, aparte. Un back anterior no lo manda. */
+  proximosGiros?: {
+    desdeMes: string;
+    hastaMes: string;
+    totalCop: number;
+    cuotas: number;
+  };
   /** Giros retenidos por cambio de cuenta o devueltos. */
   retenidoCop: number;
   enLotesPorAprobarCop: number;
@@ -380,6 +409,12 @@ export interface FilaDelCertificado {
   /** En cuántos períodos le retuvieron. */
   periodos: number;
   porMes: MesDelCertificado[];
+  /**
+   * CB-R17 (Nico, 03-10-2026): con copropietarios, UNA fila por copropietario
+   * con su parte. El porcentaje de esa parte (70 = 70 %). Opcional: lo agrega
+   * QA-CONTA-BACK; sin él, la fila es del propietario entero.
+   */
+  participacionPct?: number | null;
 }
 
 export interface CertificadoEmitido {
@@ -485,7 +520,48 @@ export interface GiroDevuelto {
   fechaDelNuevoGiro?: string | null;
   resueltoAt?: string | null;
   createdAt?: string;
+  /**
+   * 🔴 Ola E (03-10-2026). Todo opcional: un back anterior no lo manda.
+   * Cuándo se volvió a girar (lo cierra SOLO el pago del lote o «Marcar como
+   * girada») y la fecha con la que quedó el egreso.
+   */
+  regiradoAt?: string | null;
+  fechaDelEgreso?: string | null;
+  /** Cuándo se le avisó al propietario («Tu giro volvió»). */
+  avisadoAt?: string | null;
+  /** El motivo es de la cuenta: se regira cuando se corrija. */
+  exigeCorregirCuenta?: boolean;
+  /** Retenido: ni lote ni aprobación suelta hasta un cambio de cuenta aprobado. */
+  retenidoHastaCorregirLaCuenta?: boolean;
+  /** El cambio de cuenta pedido después de la devolución, si hay. */
+  cambioDeCuenta?: { id: string; estado: string; aprobadoAt: string | null } | null;
+  /** La entrada del extracto con la que volvió la plata, si se enlazó. */
+  lineaDelExtracto?: LineaDeLaDevolucion | null;
 }
+
+/** 🔴 Ola E: una línea del extracto (la entrada con la que volvió la plata). */
+export interface LineaDeLaDevolucion {
+  movimientoId: string;
+  /** `YYYY-MM-DD`. */
+  fecha: string;
+  valorCop: number;
+  descripcion: string;
+  /** Ya conciliada como la devolución de este giro. */
+  yaEnlazada?: boolean;
+}
+
+/** 🔴 Ola E: `GET giros-devueltos/lineas-del-extracto?dispersionId=`. */
+export interface LineasDeLaDevolucion {
+  /** `false` = falta la migración de las salidas: se registra sin la línea. */
+  disponible: boolean;
+  motivo: string | null;
+  lineas: LineaDeLaDevolucion[];
+}
+
+/** 🔴 Ola E: la reversa en el libro del giro devuelto. */
+export type ReversaDelGiroDevuelto =
+  | { generado: true; asientoId: string; numero: number; yaExistia: boolean }
+  | { generado: false; motivo: string };
 
 export interface GirosDevueltos extends PuedeFaltarLaMigracion {
   giros: GiroDevuelto[];
@@ -503,6 +579,13 @@ export interface QueHacerConLaDevolucion {
 export interface DevolucionRegistrada {
   giro: GiroDevuelto;
   queHacer: QueHacerConLaDevolucion;
+  /** 🔴 Ola E (opcionales: un back anterior no los manda). Qué pasó con el aviso. */
+  aviso?: { estado: 'ENVIADO' | 'SIMULADO' | 'SIN_CORREO' | 'FALLIDO' | 'NO_DISPONIBLE' };
+  /** La reversa en el libro (o por qué no hubo). */
+  asiento?: ReversaDelGiroDevuelto | null;
+  retenidoHastaCorregirLaCuenta?: boolean;
+  lineaDelExtracto?: LineaDeLaDevolucion | null;
+  bitacora?: { entradas: number };
 }
 
 export interface NuevaDevolucion {
@@ -514,6 +597,8 @@ export interface NuevaDevolucion {
   fechaDeLaDevolucion: string;
   /** 🔴 Obligatorio (23-09): el extracto o comprobante del banco. */
   soporte: File;
+  /** 🔴 Ola E: la entrada del extracto con la que volvió la plata (opcional). */
+  movimientoBancarioId?: string;
 }
 
 export interface Regiro {
@@ -567,6 +652,21 @@ export interface CuadreDeTerceros {
   faltaPlataDeTerceros: boolean;
   explicaciones: string[];
   avisos: string[];
+  /**
+   * 🔴 N-38 (QA-PAGOS-95 r2): lo PROPIO retenido (comisión + IVA − retenciones de
+   * lo cobrado, intereses y gastos según el traslado). Se RESTA de la plata de
+   * terceros; la diferencia esperada es lo propio que sigue en la cuenta.
+   * Opcional: un back anterior no lo manda (y la identidad es la de antes).
+   */
+  propioRetenidoCop?: number;
+  /** La cuenta en palabras, renglón por renglón (vacío con un back anterior). */
+  renglones?: {
+    clave: string;
+    signo: '+' | '−' | '=';
+    etiqueta: string;
+    valorCop: number | null;
+    explicacion: string;
+  }[];
   detalle: {
     recaudadoCop: number;
     giradoCop: number;
@@ -651,6 +751,21 @@ export interface FilaDelPresupuesto {
   cuentasDelRubro?: string[];
   /** `true` = hay real propio Y real del libro, y NO coinciden. */
   difiereDelLibro?: boolean;
+  /**
+   * CB-09 (Nico, 03-10-2026: la columna «Real» del presupuesto es la del
+   * LIBRO): el mismo mes del año anterior, leído del libro. En un rubro con
+   * fuente propia `anioAnteriorCop` viene de la operación; sin este campo, la
+   * pantalla no compara el libro de hoy con la operación del año pasado.
+   * Opcional: lo agrega QA-CONTA-BACK.
+   */
+  anioAnteriorDelLibroCop?: number | null;
+  /**
+   * QA-CONTA-BACK (26beefbc, Nico «El del libro»): con este campo, `realCop` YA
+   * es el del libro (también «contra el presupuesto», la variación y el año
+   * anterior) y esto es lo que dice la OPERACIÓN, como referencia. `null` = el
+   * rubro no tiene real propio. Opcional: un back anterior no lo manda.
+   */
+  realDeLaOperacionCop?: number | null;
 }
 
 export interface ComparacionDelPresupuesto {
@@ -671,6 +786,8 @@ export interface ComparacionDelPresupuesto {
 export interface NuevoPresupuesto {
   mes: string;
   rubro: string;
+  /** CB-30: con `rubro: 'otro'`, el nombre del rubro tal cual se va a ver. */
+  nombre?: string;
   valorCop: number;
   sedeId?: string;
   notas?: string;

@@ -135,6 +135,29 @@ describe('qué dice', () => {
     expect(q('sidebar-migracion-migrar')?.textContent).toBe('migracion.recordatorio.continuar');
   });
 
+  it('QA-MIGRACION-95 (MU-07): si el que falta es uno de los primeros, dice ESE paso, no «hechos + 1»', () => {
+    // Visto: 5 de 6 listos y Propietarios pendiente → decía «Paso 6 de 6 · Sigue
+    // con Propietarios». Propietarios es el paso 1.
+    pintar({
+      bloquea: false,
+      resuelta: 'omitida',
+      pasos: [
+        paso('propietarios', 'pendiente'),
+        paso('inquilinos', 'listo'),
+        paso('propiedades', 'listo'),
+        paso('contratos', 'listo'),
+        paso('puc', 'listo'),
+        paso('contables', 'listo'),
+      ],
+    });
+    expect(q('sidebar-migracion-paso')?.textContent).toBe('migracion.recordatorio.paso::{"n":1,"total":6}');
+    expect(q('sidebar-migracion-detalle')?.textContent).toBe(
+      'migracion.recordatorio.sigue::{"paso":"migracion.pasos.propietarios.corto"}',
+    );
+    const barra = container.querySelector('[role="progressbar"]');
+    expect(barra?.getAttribute('aria-valuenow')).toBe('5');
+  });
+
   it('un paso `no_disponible` no cuenta ni como hecho ni en el total', () => {
     const pasos = [...A_MEDIAS];
     pasos[5] = paso('contables', 'no_disponible');

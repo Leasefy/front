@@ -184,7 +184,9 @@ describe('AuthForm register — single-picker routing', () => {
   })
 
   it('🔴 correo que YA tiene cuenta: lo dice y ofrece entrar, no «Revisa tu correo» (Nico, 01-10)', async () => {
-    signUpWithEmailMock.mockRejectedValue(new Error('User already registered'))
+    signUpWithEmailMock.mockRejectedValue(
+      Object.assign(new Error('User already registered'), { code: 'user_already_exists' }),
+    )
     await submitRegister()
     expect(container.textContent).toContain('Ya hay una cuenta con este correo.')
     expect(container.textContent).not.toContain('Revisa tu correo')

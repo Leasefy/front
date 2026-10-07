@@ -13,16 +13,28 @@
  * ── What this module can and cannot do (A5, T-323 / SIC 001) ─────────────────
  * The policy matrix + `requiresHumanReview()` live ENTIRELY in `Leasefy/agent`.
  * This module NEVER approves, fixes terms, edits a discount, or checks policy. It
- * only READS/FORWARDS: list own approved plans, resolve one own plan, ask the
- * server for a cuota checkout URL, forward an accept (signature + OTP), and forward
- * an intent-only pre-mora request. The agent decides everything else.
+ * only READS/FORWARDS: list own plans, resolve one own plan, forward an accept
+ * (signature + OTP), and forward an intent-only pre-mora request. The agent decides
+ * everything else. «Pagar cuota» no pasa por acá: va por la ruta del servidor
+ * `/api/inquilino/acuerdos/wompi-session` (`components/tenant/PagarCuota.tsx`).
  *
- * ── Default-gated today ──────────────────────────────────────────────────────
- * The tenant-scoped (RLS) routes are provisional (Assumptions A1–A4) and NOT live
- * yet, so `[]` / `null` / `AcuerdoUnavailableError` is the EXPECTED result now — an
- * honest "Próximamente" (DESIGN.md §11), never a fabricated acuerdo, cuota,
- * acceptance, or checkout URL. Each provisional path is a one-line change when the
- * agent lands the route. Any other (non-not-live) error is rethrown.
+ * ── Qué está vivo (02-10-2026, «seguimiento 3» y «seguimiento 4») ───────────
+ * El back expone `/cartera/payment-plans/*` con el alcance del inquilino
+ * autenticado y se lo pide al micro por S2S (`back/src/acuerdos-de-pago/`):
+ *   - `GET /mine` — VIVO. El deudor es el documento del inquilino dentro de cada
+ *     inmobiliaria suya (exacto, o por dígitos si ninguno tiene letras); sin
+ *     deudor que calce la lista llega vacía (200 `[]`).
+ *   - `GET /:planId` — VIVO (lo usa `wompi-session` del lado del servidor).
+ *   - `POST /:planId/otp/send|verify` + `POST /:planId/accept` — VIVOS desde
+ *     «seguimiento 4»: firma + código de un solo uso (`AcuerdoAcceptPanel`).
+ *   - `POST /request` — VIVO desde «seguimiento 4»: la solicitud cae como caso
+ *     nuevo en la Bandeja del Piloto de la inmobiliaria, al día o no.
+ * «Todavía no» (`AcuerdoUnavailableError` → el «pronto» honesto, DESIGN.md §11)
+ * es SÓLO lo que el back dice con su `code`: `ACEPTAR_ACUERDO_NO_DISPONIBLE` /
+ * `SOLICITAR_ACUERDO_NO_DISPONIBLE` (un back sin la migración, o uno de antes).
+ * Cualquier otro error sube tal cual para que la pantalla diga qué pasó con el
+ * traductor: un 404 «no es tuyo», un 409 «te falta el documento», y «conexión»
+ * sólo si no hubo respuesta (antes un 404, un 403 o la red caída decían «pronto»).
  */
 
 import { apiClient, ApiError } from './client';
@@ -51,6 +63,24 @@ function isEndpointUnavailable(err: unknown): boolean {
 }
 
 /**
+ * Los `code` con que el back dice «todavía no se puede» (un back sin la
+ * migración responde 503 con estos; uno de antes de «seguimiento 4», 404).
+ */
+export const CODIGOS_DE_TODAVIA_NO = [
+  'ACEPTAR_ACUERDO_NO_DISPONIBLE',
+  'SOLICITAR_ACUERDO_NO_DISPONIBLE',
+] as const;
+
+/** ¿El back dijo «todavía no» con su `code`? Nunca se decide por el status solo. */
+export function esTodaviaNo(err: unknown): boolean {
+  return (
+    err instanceof ApiError &&
+    typeof err.code === 'string' &&
+    (CODIGOS_DE_TODAVIA_NO as readonly string[]).includes(err.code)
+  );
+}
+
+/**
  * Thrown by `accept` / `requestPremoraPlan` when the backend endpoint is not live.
  * Callers catch this to keep the UI on "Próximamente" — never to invent an
  * acceptance or a fabricated plan.
@@ -60,6 +90,32 @@ export class AcuerdoUnavailableError extends Error {
     super('acuerdo_unavailable');
     this.name = 'AcuerdoUnavailableError';
   }
+}
+
+// ---------------------------------------------------------------------------
+// ¿Se puede firmar? (03-10-2026)
+// ---------------------------------------------------------------------------
+
+/**
+ * Qué muestra el detalle del acuerdo en vez de (o además de) firmar:
+ *   - `aceptado`     → ya lo aceptó (el estado de verdad, con su fecha);
+ *   - `firmar`       → ofrecido Y aprobado por la inmobiliaria: se firma;
+ *   - `por-aprobar`  → ofrecido pero la inmobiliaria TODAVÍA no lo aprueba:
+ *                      no se firma y no se dice «ya fue aprobado» (Nico,
+ *                      03-10-2026; el back y el micro también lo exigen);
+ *   - `no-aceptable` → cancelado, roto o completado sin aceptar.
+ * Un back anterior que no manda `operatorApprovedAt` cuenta como «por aprobar».
+ */
+export type EstadoDeLaFirma = 'aceptado' | 'firmar' | 'por-aprobar' | 'no-aceptable';
+
+export function estadoDeLaFirma(
+  plan: Pick<AcuerdoDetail, 'status' | 'acceptedAt' | 'operatorApprovedAt'>,
+): EstadoDeLaFirma {
+  if (plan.acceptedAt) return 'aceptado';
+  if (plan.status !== 'offered') return 'no-aceptable';
+  return typeof plan.operatorApprovedAt === 'string' && plan.operatorApprovedAt.trim()
+    ? 'firmar'
+    : 'por-aprobar';
 }
 
 // ---------------------------------------------------------------------------
@@ -91,30 +147,6 @@ async function getMine(planId: string): Promise<AcuerdoDetail | null> {
 }
 
 /**
- * Asks the server for the hosted-checkout URL of a cuota (or the plan when no
- * `cuotaNumber` is given). The `paymentUrl` is SERVER-provided — the client never
- * builds a checkout amount. On not-live (404/403/0) returns `null` so the pay
- * affordance stays disabled ("Próximamente"), never a fabricated URL. Any other
- * error is rethrown. Provisional path (A4).
- */
-async function getCuotaPaymentUrl(
-  planId: string,
-  cuotaNumber?: number,
-): Promise<string | null> {
-  const path =
-    typeof cuotaNumber === 'number'
-      ? `/cartera/payment-plans/${planId}/installments/${cuotaNumber}/payment-url`
-      : `/cartera/payment-plans/${planId}/payment-url`;
-  try {
-    const res = await apiClient.get<{ paymentUrl: string }>(path);
-    return res.paymentUrl;
-  } catch (err) {
-    if (isEndpointUnavailable(err)) return null;
-    throw err;
-  }
-}
-
-/**
  * POST /cartera/payment-plans/:planId/accept — forwards the tenant's signature +
  * one-use OTP token. The AGENT performs the offered→active transition and runs
  * `requiresHumanReview()` for off-policy cases; the client never approves and never
@@ -132,28 +164,29 @@ async function accept(
       body,
     );
   } catch (err) {
-    if (isEndpointUnavailable(err)) throw new AcuerdoUnavailableError();
+    if (esTodaviaNo(err)) throw new AcuerdoUnavailableError();
     throw err;
   }
 }
 
 /**
  * POST /cartera/payment-plans/request — PROPOSES a pre-mora plan (intent only,
- * `{ leaseId }`). It feeds the agency approval pipeline; it never sets terms and the
+ * `{ leaseId, nota? }`; la nota viaja sólo si hay texto, sin espacios a los lados). It feeds the agency approval pipeline; it never sets terms and the
  * agent + agency compute and approve. On not-live (404/403/0) throws
  * `AcuerdoUnavailableError` so no fabricated plan is shown. Any other error is
  * rethrown. Provisional path (A3).
  */
 async function requestPremoraPlan(
   body: PremoraPlanRequestInput,
-): Promise<{ requestId: string }> {
+): Promise<{ requestId: string; yaExistia?: boolean }> {
   try {
-    return await apiClient.post<{ requestId: string }>(
+    const nota = body.nota?.trim();
+    return await apiClient.post<{ requestId: string; yaExistia?: boolean }>(
       '/cartera/payment-plans/request',
-      body,
+      { leaseId: body.leaseId, ...(nota ? { nota } : {}) },
     );
   } catch (err) {
-    if (isEndpointUnavailable(err)) throw new AcuerdoUnavailableError();
+    if (esTodaviaNo(err)) throw new AcuerdoUnavailableError();
     throw err;
   }
 }
@@ -161,7 +194,6 @@ async function requestPremoraPlan(
 export const acuerdosApi = {
   listMine,
   getMine,
-  getCuotaPaymentUrl,
   accept,
   requestPremoraPlan,
 };

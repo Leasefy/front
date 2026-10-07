@@ -7,6 +7,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { OTPVerification, type OtpAdapter } from './OTPVerification';
 import { SignaturePad } from './SignaturePad';
 import { Button } from '@/components/ui/button';
+import { Presence } from '@leasefy/cadence';
 import { debeReiniciarOtp } from '@/lib/contratos/otp-errors';
 
 // ============================================================================
@@ -58,7 +59,13 @@ export interface SignatureFormProps {
    * inventario del contrato (Nico, 2026-09-17) usa este mismo formulario —el
    * mismo trazo y el mismo OTP— con sus propias palabras.
    */
-  textos?: { firmado?: string; aceptacion?: string; boton?: string };
+  textos?: {
+    firmado?: string;
+    aceptacion?: string;
+    boton?: string;
+    /** La nota del código: «solo tú puedes firmar {queSeFirma}» (por defecto «este contrato»). */
+    queSeFirma?: string;
+  };
   /**
    * T-0109 — el transporte de envío/verificación de OTP inyectado, igual que
    * `OTPVerification.adapter`. Con `adapter`, `contractId`/`isLandlord` dejan
@@ -224,18 +231,20 @@ export function SignatureForm({
         <div className="rounded-lg border border-border bg-surface overflow-hidden">
           {/* Terms checkbox */}
           <label className={cn(
-            'flex cursor-pointer items-start gap-3 p-4 transition-all',
+            'flex cursor-pointer items-start gap-3 p-4 transition-colors',
             acceptedTerms
               ? 'bg-primary-soft/50'
               : 'hover:bg-surface-muted dark:hover:bg-ink'
           )}>
             <div className={cn(
-              'w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
+              'w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors duration-fast',
               acceptedTerms
                 ? 'bg-primary border-primary/30'
                 : 'border-border dark:border-border-strong'
             )}>
-              {acceptedTerms && <Check className="w-3 h-3 text-white" />}
+              <Presence show={acceptedTerms} initial={false} direction="none" as="span" className="inline-flex">
+                <Check className="w-3 h-3 text-white" />
+              </Presence>
             </div>
             <input
               type="checkbox"
@@ -250,7 +259,7 @@ export function SignatureForm({
                 ? 'text-fg'
                 : 'text-fg-muted'
             )}>
-              {textos?.aceptacion ?? 'Acepto los terminos del contrato incluyendo obligaciones, pagos y terminacion.'}
+              {textos?.aceptacion ?? 'Acepto los términos del contrato, incluidas sus obligaciones, los pagos y la terminación.'}
             </span>
           </label>
 
@@ -259,18 +268,20 @@ export function SignatureForm({
 
           {/* Legal checkbox */}
           <label className={cn(
-            'flex cursor-pointer items-start gap-3 p-4 transition-all',
+            'flex cursor-pointer items-start gap-3 p-4 transition-colors',
             acceptedLegal
               ? 'bg-primary-soft/50'
               : 'hover:bg-surface-muted dark:hover:bg-ink'
           )}>
             <div className={cn(
-              'w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
+              'w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors duration-fast',
               acceptedLegal
                 ? 'bg-primary border-primary/30'
                 : 'border-border dark:border-border-strong'
             )}>
-              {acceptedLegal && <Check className="w-3 h-3 text-white" />}
+              <Presence show={acceptedLegal} initial={false} direction="none" as="span" className="inline-flex">
+                <Check className="w-3 h-3 text-white" />
+              </Presence>
             </div>
             <input
               type="checkbox"
@@ -294,18 +305,20 @@ export function SignatureForm({
 
           {/* Data checkbox */}
           <label className={cn(
-            'flex cursor-pointer items-start gap-3 p-4 transition-all',
+            'flex cursor-pointer items-start gap-3 p-4 transition-colors',
             acceptedData
               ? 'bg-primary-soft/50'
               : 'hover:bg-surface-muted dark:hover:bg-ink'
           )}>
             <div className={cn(
-              'w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all',
+              'w-5 h-5 rounded-[6px] border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors duration-fast',
               acceptedData
                 ? 'bg-primary border-primary/30'
                 : 'border-border dark:border-border-strong'
             )}>
-              {acceptedData && <Check className="w-3 h-3 text-white" />}
+              <Presence show={acceptedData} initial={false} direction="none" as="span" className="inline-flex">
+                <Check className="w-3 h-3 text-white" />
+              </Presence>
             </div>
             <input
               type="checkbox"
@@ -365,6 +378,7 @@ export function SignatureForm({
         adapter={adapter}
         onVerified={handleOTPVerified}
         onCancel={handleOTPCancel}
+        queSeFirma={textos?.queSeFirma}
       />
     </>
   );

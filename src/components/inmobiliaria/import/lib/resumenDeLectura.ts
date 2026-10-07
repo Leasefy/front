@@ -53,6 +53,9 @@ export function resumenDeLecturaDeInmuebles(
   const conEstrato = cuenta((p) => p.stratum != null);
 
   const faltan = (con: number) => total - con;
+  // QA-MIGRACION-95 (MP-07): «1 fila no trae», nunca «1 filas no traen».
+  const filas = (n: number, una: string, varias: string) =>
+    n === 1 ? `1 fila ${una}` : `${n} filas ${varias}`;
 
   return {
     total,
@@ -63,7 +66,7 @@ export function resumenDeLecturaDeInmuebles(
         porque:
           conCodigo === total
             ? ''
-            : `${faltan(conCodigo)} filas no traen código. Es la llave con la que sus contratos nombran al inmueble: sin ella hay que cruzarlos por dirección.`,
+            : `${filas(faltan(conCodigo), 'no trae', 'no traen')} código. Es la llave con la que sus contratos nombran al inmueble: sin ella hay que cruzarlos por dirección.`,
       },
       {
         que: 'Dirección',
@@ -71,13 +74,13 @@ export function resumenDeLecturaDeInmuebles(
         porque:
           conDireccion === total
             ? ''
-            : `${faltan(conDireccion)} filas no traen dirección y no se pueden activar así.`,
+            : `${filas(faltan(conDireccion), 'no trae dirección y no se puede', 'no traen dirección y no se pueden')} activar así.`,
       },
       {
         que: 'Ciudad',
         con: conCiudad,
         porque:
-          conCiudad === total ? '' : `${faltan(conCiudad)} filas no traen municipio ni ciudad.`,
+          conCiudad === total ? '' : `${filas(faltan(conCiudad), 'no trae', 'no traen')} municipio ni ciudad.`,
       },
       {
         que: 'Propietario con documento',
@@ -85,9 +88,9 @@ export function resumenDeLecturaDeInmuebles(
         porque:
           conDocumento === total
             ? ''
-            : `${faltan(conDocumento)} filas quedan sin cédula ni NIT del dueño` +
+            : `${filas(faltan(conDocumento), 'queda', 'quedan')} sin cédula ni NIT del dueño` +
               (conNombreSolo > 0
-                ? ` (${conNombreSolo} traen sólo el nombre: se puede buscar por nombre exacto, pero dos personas se llaman igual).`
+                ? ` (${conNombreSolo} ${conNombreSolo === 1 ? 'trae' : 'traen'} sólo el nombre: se puede buscar por nombre exacto, pero dos personas se llaman igual).`
                 : '.'),
       },
       {
@@ -96,15 +99,20 @@ export function resumenDeLecturaDeInmuebles(
         porque:
           conPrecio === total
             ? ''
-            : `${faltan(conPrecio)} filas traen el precio en 0 o vacío. Se importan igual y se completan en la revisión.`,
+            : `${filas(faltan(conPrecio), 'trae', 'traen')} el precio en 0 o vacío. Se importan igual y se completan en la revisión.`,
       },
       {
         que: 'Estrato',
         con: conEstrato,
+        // QA-MIGRACION-95 (BN-39): sin la columna (o con todas vacías) no hay
+        // «estratos que no son un número»: no hay estrato. La fila no lo dice
+        // y la frase no puede afirmar qué traía.
         porque:
           conEstrato === total
             ? ''
-            : `${faltan(conEstrato)} filas traen un estrato que no es un número del 1 al 6 («No Estratificada», por ejemplo).`,
+            : conEstrato === 0
+              ? 'Ninguna fila trae el estrato: el archivo no lo tiene o viene vacío. No frena la importación.'
+              : `${filas(faltan(conEstrato), 'no trae', 'no traen')} un estrato del 1 al 6 (vacío, o un texto como «No Estratificada»).`,
       },
     ],
   };

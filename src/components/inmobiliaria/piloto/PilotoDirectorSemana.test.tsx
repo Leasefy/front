@@ -68,6 +68,22 @@ describe('PilotoDirectorSemana', () => {
     expect(container.textContent).not.toMatch(/US\$|USD/)
   })
 
+  // 🟡 QA-PILOTO-95 r2: la cifra decía «26 esperan tu clic» y la Bandeja mostraba 30. Con el total de
+  // la Bandeja (`enLaBandeja`, el mismo número que ella) la cifra es ésa y lo dice.
+  it('🔴 con el total de la Bandeja, la cifra es la de la Bandeja («te esperan en la Bandeja»)', () => {
+    const conBandeja = normalizarSemana({ ...INFORME, enLaBandeja: 30 })
+    expect(conBandeja.enLaBandeja).toBe(30)
+    render(lectura({ data: conBandeja }))
+    expect(q('piloto-director-semana-esperan')?.textContent).toContain('30')
+    expect(q('piloto-director-semana-esperan')?.textContent).toContain('inmobiliaria.piloto.director.semana.enLaBandeja')
+  })
+
+  it('sin el total de la Bandeja, dice qué cuenta («de esta semana esperan tu clic»)', () => {
+    expect(INFORME.enLaBandeja).toBeNull()
+    render(lectura())
+    expect(q('piloto-director-semana-esperan')?.textContent).toContain('inmobiliaria.piloto.director.semana.esperanClicDeLaSemana')
+  })
+
   it('las frases en orden; las de las metas con su marca', () => {
     render(lectura())
     const items = [...(q('piloto-director-semana-resumen')?.querySelectorAll('li') ?? [])]
@@ -89,6 +105,6 @@ describe('PilotoDirectorSemana', () => {
   })
 
   it('normalizarSemana: un micro que no manda el informe no rompe (todo vacío)', () => {
-    expect(normalizarSemana({})).toEqual({ encendido: false, desde: null, hasta: null, piloto: null, director: null, metas: [], gasto: null, resumen: [] })
+    expect(normalizarSemana({})).toEqual({ encendido: false, desde: null, hasta: null, piloto: null, enLaBandeja: null, director: null, metas: [], gasto: null, resumen: [] })
   })
 })

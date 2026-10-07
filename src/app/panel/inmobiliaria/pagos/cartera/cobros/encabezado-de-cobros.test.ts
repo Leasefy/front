@@ -4,8 +4,9 @@
  *   - «Extracto bancario» NO va acá: el extracto vive en Conciliación, que es
  *     otra sección. Un botón que salta de sección desde el encabezado de otra
  *     hace que las secciones dejen de significar algo.
- *   - «Configuración» es un engranaje sin texto y es lo PRIMERO del grupo: la
- *     acción que menos se usa es la que menos tiene que pesar.
+ *   - B-09/N-28 (QA-PAGOS-95 r2, 05-10-2026): el engranaje de «Configurar
+ *     recordatorios» salió (ofrecía avisos que contradicen J-12). En su lugar,
+ *     «Recordatorios» lleva a Cobranza › Recordatorios, que sí sigue J-12.
  *   - Después vienen «Reglas de mora» y el primario «Hacer recibo de caja».
  *
  * Se lee el archivo porque lo que se protege es la composición del
@@ -28,19 +29,19 @@ describe('el encabezado de Cobros', () => {
     expect(PAGINA).not.toContain('Extracto bancario')
   })
 
-  it('la configuración es un engranaje sin texto, con nombre accesible', () => {
-    expect(PAGINA).toMatch(/import \{[^}]*\bIconButton\b[^}]*\} from '@leasefy\/cadence'/)
-    expect(PAGINA).toContain('aria-label="Configuración de cobros"')
-    // Sin texto visible al lado del engranaje: era «Configuración» escrito.
-    expect(PAGINA).not.toContain("t('inmobiliaria.config.title')")
+  it('🔴 B-09/N-28: ya no configura recordatorios acá; lleva a Cobranza › Recordatorios', () => {
+    expect(PAGINA).not.toContain('aria-label="Configuración de cobros"')
+    expect(PAGINA).not.toContain('RecordatorioConfig')
+    expect(PAGINA).toContain("'/panel/inmobiliaria/pagos/cobranza/recordatorios'")
+    expect(PAGINA).toContain('data-testid="ir-a-recordatorios"')
   })
 
-  it('el orden es engranaje → Reglas de mora → Hacer recibo de caja', () => {
-    const engranaje = PAGINA.indexOf('aria-label="Configuración de cobros"')
-    const reglas = PAGINA.indexOf('Reglas de mora')
+  it('el orden es Recordatorios → Reglas de mora → Hacer recibo de caja', () => {
+    const recordatorios = PAGINA.indexOf('data-testid="ir-a-recordatorios"')
+    const reglas = PAGINA.indexOf('Reglas de mora</span>')
     const recibo = PAGINA.indexOf("t('recibos.hacer')")
-    expect(engranaje).toBeGreaterThan(-1)
-    expect(reglas).toBeGreaterThan(engranaje)
+    expect(recordatorios).toBeGreaterThan(-1)
+    expect(reglas).toBeGreaterThan(recordatorios)
     expect(recibo).toBeGreaterThan(reglas)
   })
 })

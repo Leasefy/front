@@ -223,6 +223,7 @@ export function CompletarSolicitudDialog({
             <MoneyInput
               id="cierre-costo-final"
               data-testid="cierre-costo-final"
+              aria-required="true"
               value={costo}
               onChange={(crudo) => {
                 setCosto(crudo);

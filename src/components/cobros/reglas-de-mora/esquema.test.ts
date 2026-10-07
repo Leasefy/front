@@ -149,14 +149,16 @@ describe('PLANTILLAS', () => {
     }
   });
 
-  it('interés diario: DIAS_DE_MORA día 1, INTERES_DIARIO 0,0667 sobre el canon', () => {
-    const p = PLANTILLAS.find((x) => x.id === 'interes-diario')!;
+  // PPF-05 (QA-PAGOS-95 r2; Nico, 05-10-2026): la sugerida es el 2 % MENSUAL
+  // a prorrata por día (exactamente 2 % en 30 días), no la diaria 0,0667 %.
+  it('interés mensual: DIAS_DE_MORA día 1, INTERES_MENSUAL 2 sobre el canon', () => {
+    const p = PLANTILLAS.find((x) => x.id === 'interes-mensual')!;
     expect(p.valores).toMatchObject({
       concepto: 'INTERES_DE_MORA',
       disparador: 'DIAS_DE_MORA',
       disparadorDia: 1,
-      formula: 'INTERES_DIARIO',
-      valor: 0.0667,
+      formula: 'INTERES_MENSUAL',
+      valor: 2,
       base: 'CANON',
     });
   });
@@ -239,7 +241,7 @@ describe('esquemaDeRegla — los topes de la columna, con la frase del back', ()
 
   it('un tope con ceros de más se frena en `topeCop`; el tope exacto pasa', () => {
     expect(erroresDe(valores({ topeCop: 2_000_000_001 })).topeCop).toBe(
-      'El tope no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
+      'El tope no puede pasar de $\u00a02.000.000.000. Revisa que no sobren ceros.',
     );
     expect(erroresDe(valores({ topeCop: 2_000_000_000 })).topeCop).toBeUndefined();
   });

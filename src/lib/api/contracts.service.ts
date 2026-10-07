@@ -4,7 +4,6 @@
  */
 
 import { apiClient, getAccessToken, ApiError } from './client';
-import { anunciarProceso } from './procesos.service';
 import type {
   BackendContract,
   CreateContractDto,
@@ -146,6 +145,12 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // compara textos y un 9% saldría mayor que un 10%.
     comisionPorcentaje: aNumero(bc.comisionPorcentaje),
     comisionDeConsignacion: aNumero(bc.comisionDeConsignacion),
+    // CO-28 (QA-MIGRACION-95): sin esto la ficha nunca se enteraba de que el
+    // contrato no tiene tabla de cuotas por la comisión (el mapeo es una lista
+    // cerrada). Ausente con un back anterior.
+    ...(bc.comisionSinDefinir !== undefined ? { comisionSinDefinir: bc.comisionSinDefinir === true } : {}),
+    ...(bc.sinTablaDeCuotas !== undefined ? { sinTablaDeCuotas: bc.sinTablaDeCuotas ?? null } : {}),
+    ...(bc.loQueTraiaElArchivo !== undefined ? { loQueTraiaElArchivo: bc.loQueTraiaElArchivo ?? null } : {}),
     /*
      * 🔴 QA-CONT-95 (B-30, CR-07): el back los manda en `GET /contracts/:id` y
      * acá se perdían. Sin la penalidad propia, «Cómo se cobra» decía «La de la
@@ -358,8 +363,8 @@ export const contractsApi = {
      * parecidos (N2).
      */
     async preparar(contratos: FilaAMigrar[], idempotencyKey?: string): Promise<EstadoDeLote> {
-      // La carga aparece en el centro de procesos del header (22-09).
-      anunciarProceso();
+      // 🔴 La migración NO va al centro de procesos (Nico, 01-10 y 06-10): la
+      // carga se ve en las cargas del paso «Contratos», no se anuncia en el centro.
       return apiClient.post<EstadoDeLote>('/contracts/migrar/preparar', {
         contratos,
         lote: undefined,
@@ -1071,6 +1076,14 @@ export interface FilaAMigrar {
   referenciaDeRecaudo?: string;
   endDate?: string;
   monthlyRent?: number;
+  /**
+   * EN-38 (QA-MIGRACION-95): la celda del canon tal cual, cuando trae centavos
+   * y la llave de los contratos está apagada. El canon no viaja: el back frena
+   * la fila con `canon_con_centavos`. No se redondea.
+   */
+  canonConCentavosDelArchivo?: string;
+  /** C14 (QA-MIGRACION-95): la fila de la hoja de Excel (con encabezado y títulos contados). */
+  filaDelArchivo?: number;
   deposit?: number;
   paymentDay?: number;
   /** Sin esto no se puede liquidar: vivienda va sin IVA, comercial con IVA. */
@@ -1155,9 +1168,13 @@ export type Faltante =
   | 'inmueble_codigo'
   | 'inmueble_ambiguo'
   | 'inmueble_ocupado'
+  /** QA-MIGRACION-95: el inmueble está publicado en venta. */
+  | 'inmueble_en_venta'
   | 'propietario'
   | 'inquilino_correo'
   | 'inquilino_nombre'
+  /** QA-MIGRACION-95: la celda del correo no es un correo usable. */
+  | 'inquilino_correo_invalido'
   /**
    * El documento del inquilino es de una cuenta que NO es de inquilino (un
    * agente, un propietario con cuenta). No se enlaza: alguien tiene que
@@ -1171,6 +1188,8 @@ export type Faltante =
   | 'consecutivo_repetido'
   | 'fechas'
   | 'canon'
+  /** EN-38: el canon del archivo trae centavos y la llave está apagada: no se redondea. */
+  | 'canon_con_centavos'
   | 'uso'
   | 'dia_de_pago'
   /** La fecha de cartera es anterior a la de inicio (regla 3, 16-09). */
@@ -1409,6 +1428,11 @@ export interface LoteAbierto {
   estado?: EstadoLoteMigracion;
   total?: number;
   creadoEn?: string;
+  /** QA-MIGRACION-95 (aditivos; un back viejo no los manda): avance y quién. */
+  procesadas?: number;
+  actualizadoEn?: string;
+  error?: string | null;
+  subidoPor?: string | null;
 }
 
 export interface PaginaDeFilas {
@@ -1731,6 +1755,11 @@ export interface ResumenActivacion {
   sinInmueble?: number;
   /** El modo con el que corrió la activación — para leer `sinInmueble`. */
   sparse?: boolean;
+  /**
+   * CO-28 (QA-MIGRACION-95): contratos activados vigentes que se quedan SIN
+   * tabla de cuotas porque nadie sabe la comisión. Ausente = ninguno.
+   */
+  sinComision?: { cuantos: number; motivo: string; contratos: string[] };
   /**
    * Filas cuyo consecutivo YA existía como contrato: se enlazaron al que ya
    * estaba, sin duplicar el histórico.

@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import type { User, AuthContextType, Agency, AgencyMemberRole, UserRole, MfaDestino, EstadoDelChequeoMfa } from './types'
+import type { User, AuthContextType, Agency, AgencyMemberRole, UserRole, MfaDestino, EstadoDelChequeoMfa, ConfirmacionDeLaSesion, VigenciaDeLaSesion } from './types'
 import { toFrontendRole } from './types'
 import { fetchAgencyProfile, agencyResultFromBootstrap, type AgencyFetchResult } from './agency-fetch'
 import { toast } from 'sonner'
@@ -20,6 +20,8 @@ import {
   purgarSesionLocal,
   registrarCierreDeSesion,
   haySesionGuardada,
+  sesionTerminada,
+  reabrirTrasUnIngresoNuevo,
 } from './session-terminal'
 import { claimSession } from '@/lib/api/session.service'
 import { revocarSesion } from './revocar-sesion'
@@ -37,6 +39,7 @@ import type { Session } from '@supabase/supabase-js'
 import { esCorreoYaRegistrado } from './correo'
 import { decodeAccessToken } from './jwt'
 import { conReintentos } from './con-reintentos'
+import { huellaDe, esLaMismaSesion, type HuellaDeSesion } from './misma-sesion'
 
 /**
  * Auth Context
@@ -191,6 +194,21 @@ const PROFILE_SELF_HEAL_DELAYS_MS = [0, 2000, 8000]
  *  `agencyMembershipChecked` false forever (which would hang the panel gate). */
 const AGENCY_PROBE_TIMEOUT_MS = 8000
 
+/**
+ * 🔴 LOGIN-BUCLE (Nico, 06-10-2026): cuánto se espera a confirmar una sesión
+ * GUARDADA antes de decir «No pudimos confirmar tu sesión» (con «Reintentar»).
+ * No suelta nada ni manda al login: sólo cambia lo que se ve mientras se sigue
+ * esperando. Holgado a propósito: con la máquina cargada el `claim` (tope 3 s),
+ * el bootstrap y el segundo factor pasan de 5 s sin que nada esté roto. Hasta
+ * LOGIN-BUCLE r2 cada carga los corría DOS veces seguidas (SIGNED_IN de
+ * `_recoverAndRefresh` y luego INITIAL_SESSION) y con un back de 7 s la sesión
+ * se confirmaba a los ~15 s; ahora es una vez (ver `arranqueDelSignedInRef`).
+ */
+export const TOPE_PARA_CONFIRMAR_LA_SESION_MS = 20_000
+
+/** Tope de la pregunta a Supabase de «Continuar» (`confirmarSesionVigente`). */
+const TOPE_DE_LA_VIGENCIA_MS = 8000
+
 /** Race a `fetchAgencyProfile` call against a timeout. On timeout, resolves as
  *  a transient failure (keep last state, self-heal retries) — never hangs. */
 export function fetchAgencyWithTimeout(
@@ -253,6 +271,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [sesionGuardadaAlCargar] = useState(haySesionGuardada)
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  /*
+   * 🔴 LOGIN-BUCLE (Nico, 06-10-2026). Lo que alimenta `confirmacionDeLaSesion`
+   * (ver types.ts). `sesionPorConfirmar` se pone en un efecto y no en el
+   * primer render: en el servidor no hay cookies, y pintar distinto en el
+   * cliente rompería la hidratación. `topeVencido` lo prende el reloj de
+   * `TOPE_PARA_CONFIRMAR_LA_SESION_MS`.
+   */
+  const [sesionPorConfirmar, setSesionPorConfirmar] = useState(false)
+  const [topeVencido, setTopeVencido] = useState(false)
+  useEffect(() => {
+    if (sesionGuardadaAlCargar) setSesionPorConfirmar(true)
+  }, [sesionGuardadaAlCargar])
+  // Espejo de `isLoading` para el reloj del tope (que se arma una sola vez).
+  const cargandoRef = useRef(true)
+  useEffect(() => {
+    cargandoRef.current = isLoading
+  }, [isLoading])
   const [mfaRequired, setMfaRequired] = useState(false)
   // T-0099 — see AuthState['mfaEnrollRequired'] in types.ts.
   const [mfaEnrollRequired, setMfaEnrollRequired] = useState(false)
@@ -856,6 +891,47 @@ export function AuthProvider({ children }: AuthProviderProps) {
     await checkMfaLevel(miGeneracion)
   }, [checkMfaLevel])
 
+  /**
+   * 🔴 LOGIN-BUCLE: «Reintentar» de una sesión `sin-confirmar`. Sin un evento
+   * de auth-js no hay a qué volver a preguntarle desde acá (su candado puede
+   * estar tomado: es una de las causas), así que se recarga la página, que
+   * vuelve a levantar auth-js desde cero. Ya no hay rebote al login: la carga
+   * nueva espera igual que ésta.
+   */
+  const reintentarConfirmarLaSesion = useCallback(() => {
+    if (typeof window !== 'undefined') window.location.reload()
+  }, [])
+
+  /**
+   * 🔴 LOGIN-BUCLE: ¿sigue viva la sesión guardada? Para «Continuar» de
+   * `SesionYaAbierta`. `getSession` la renueva si el token venció; si renovar
+   * falla DE VERDAD, auth-js la borra (y emite SIGNED_OUT) y acá se ve como
+   * «sin sesión y ya no guardada» = `muerta`. Sin respuesta a tiempo, o con la
+   * sesión todavía guardada (falló la red), es `sin-respuesta`: eso no se
+   * trata como muerta. Corre fuera de `onAuthStateChange`, así que puede pedir
+   * el candado de auth-js; el tope evita quedarse esperándolo.
+   */
+  const confirmarSesionVigente = useCallback(async (): Promise<VigenciaDeLaSesion> => {
+    const supabase = getSupabase()
+    if (!supabase) return 'sin-respuesta'
+    let reloj: ReturnType<typeof setTimeout> | undefined
+    try {
+      const resultado = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise<null>((resolve) => {
+          reloj = setTimeout(() => resolve(null), TOPE_DE_LA_VIGENCIA_MS)
+        }),
+      ])
+      if (!resultado) return 'sin-respuesta'
+      if (resultado.data?.session) return 'viva'
+      return haySesionGuardada() ? 'sin-respuesta' : 'muerta'
+    } catch {
+      return 'sin-respuesta'
+    } finally {
+      if (reloj) clearTimeout(reloj)
+    }
+  }, [])
+
   /* ------------------------------------------------------------------
    * 🔴 Self-heal del PERFIL degradado.
    *
@@ -1030,6 +1106,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const signInBootstrapWaiterRef = useRef<((user: User | null) => void) | null>(null)
 
+  /**
+   * 🔴 LOGIN-BUCLE r2: la sesión cuyo arranque (`claim` + bootstrap + segundo
+   * factor) lanzó el último SIGNED_IN, con su generación. El INITIAL_SESSION
+   * que auth-js emite justo después en la misma carga, para la misma sesión,
+   * lo reusa en vez de repetirlo (ver `misma-sesion.ts`).
+   */
+  const arranqueDelSignedInRef = useRef<{ huella: HuellaDeSesion; generacion: number } | null>(null)
+
   // Initialize auth on mount.
   // We rely exclusively on onAuthStateChange (which fires INITIAL_SESSION on setup)
   // to avoid calling getSession() in parallel, which triggers an AbortError from
@@ -1041,11 +1125,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Safety net: if no known auth event fires within 5s of mount, release the
     // loader so ProtectedRoute can decide what to do with whatever state we have.
     // Covers edge cases where Supabase never emits INITIAL_SESSION (some refresh flows).
+    //
+    // 🔴 LOGIN-BUCLE (Nico, 06-10-2026, 10:11): «cuando aparece eso de sigue con
+    // esta cuenta, uno le da continuar, dice verificando acceso y luego sale el
+    // login y luego vuelve a aparecer el de sigue con esta cuenta». Esta red
+    // soltaba el loader con `user = null` también cuando HABÍA una sesión
+    // guardada que todavía se estaba confirmando (el `claim`, el bootstrap y
+    // el segundo factor pasan de 5 s con la máquina cargada; hasta la r2 el
+    // bootstrap además corría dos veces —SIGNED_IN de `_recoverAndRefresh` y
+    // luego INITIAL_SESSION— dentro del candado entre pestañas). ProtectedRoute lo
+    // leía como «no hay sesión» y mandaba a /auth; allí la sesión aparecía
+    // segundos después («¿Sigues con esta cuenta?») y «Continuar» recargaba el
+    // panel: la misma carrera otra vez.
+    //
+    // «Todavía no sé» no es «no hay sesión». Con una sesión guardada (o un
+    // evento con sesión ya recibido) la red NO suelta nada: se sigue esperando
+    // y, pasado `TOPE_PARA_CONFIRMAR_LA_SESION_MS`, las pantallas protegidas
+    // dicen «No pudimos confirmar tu sesión» con «Reintentar». Sólo sin
+    // ninguna sesión a la vista (el visitante anónimo) se suelta como siempre.
     const safetyTimeout = setTimeout(() => {
       setIsLoading((prev) => {
-        if (prev) {
-          console.warn('[Auth] onAuthStateChange did not settle within 5s — releasing loader')
+        if (!prev) return prev
+        if (huboSesionRef.current) {
+          console.warn('[Auth] la sesión guardada tarda más de 5 s en confirmarse — se sigue esperando, no se suelta el loader')
+          return prev
         }
+        console.warn('[Auth] onAuthStateChange did not settle within 5s — releasing loader')
         return false
       })
       // NOTE: this 5s net releases isLoading ONLY. It must NOT touch
@@ -1056,6 +1161,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // ACTIVE result lands. The 8s-bounded probe is sufficient to guarantee no
       // infinite spinner.
     }, 5000)
+
+    // El tope de la sesión guardada (ver arriba): no suelta el loader, sólo
+    // cambia lo que se ve. Si la confirmación llega después, se entra solo.
+    const topeTimeout = setTimeout(() => {
+      if (huboSesionRef.current && cargandoRef.current) setTopeVencido(true)
+    }, TOPE_PARA_CONFIRMAR_LA_SESION_MS)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
@@ -1087,6 +1198,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }, 0)
         }
 
+        /**
+         * 🔴 LOGIN-BUCLE r2 (06-10-2026): la RED tampoco se espera adentro del
+         * callback. El `claim`, el bootstrap y `/users/me` no piden el lock (no
+         * son de auth-js), pero esperarlos acá lo dejaba tomado toda esa
+         * espera, y el lock es ENTRE PESTAÑAS (`cross-tab-lock.ts`): con un
+         * back lento cada pestaña frenaba la inicialización de las demás, y el
+         * INITIAL_SESSION de la propia carga salía recién cuando el bootstrap
+         * de su SIGNED_IN había terminado (medido: el segundo bootstrap
+         * arrancaba a los 7 s, justo cuando contestaba el primero).
+         *
+         * Ahora el callback hace sólo lo síncrono (la generación, el token, el
+         * chequeo de MFA en «pending») y devuelve: auth-js suelta el lock en el
+         * acto. Lo demás corre en esta tarea, que el callback NO espera. Por
+         * eso adentro de ella sí se puede llamar a auth-js (el chequeo de MFA):
+         * la regla del 2026-09-07 es por el callback ESPERADO, y todo lo que la
+         * tarea hace después de su primer `await` corre con el callback ya
+         * devuelto; un método de auth-js que pida el lock simplemente espera su
+         * turno, nadie lo espera a él. Las generaciones siguen
+         * descartando lo que llegue tarde de una sesión que ya terminó.
+         */
+        const fueraDelCandado = (tarea: () => Promise<void>) => {
+          void tarea().catch((err) => {
+            console.error('[Auth] el arranque de la sesión falló sin respuesta del back', err)
+          })
+        }
+
         if (event === 'INITIAL_SESSION') {
           if (!session) {
             // Sin sesión hay que decirlo EXPLÍCITAMENTE. `setAccessToken` es lo
@@ -1097,8 +1234,41 @@ export function AuthProvider({ children }: AuthProviderProps) {
             // caso en que este `else` es la primera noticia— eso eran ~4 s por
             // pantalla para terminar en un cartel de error equivocado.
             setAccessToken(null)
+            /*
+             * 🔴 LOGIN-BUCLE (06-10-2026): INITIAL_SESSION vacío NO siempre es
+             * «no hay sesión». Si el token venció y renovarlo falló por la red
+             * (un error que auth-js llama «reintentable»), auth-js avisa sin
+             * sesión pero NO la borra, y la renueva sola más tarde (su reloj, o
+             * al volver a la pestaña) con un TOKEN_REFRESHED. Cuando la sesión
+             * murió de verdad, auth-js la borra ANTES de este aviso
+             * (`_removeSession`, con su SIGNED_OUT), así que la cookie ya no
+             * está. Con la cookie todavía puesta, esto es «todavía no sé»: se
+             * sigue esperando (y el tope dice «No pudimos confirmar…»).
+             */
+            if (haySesionGuardada()) {
+              huboSesionRef.current = true
+              console.warn('[Auth] INITIAL_SESSION sin sesión con la sesión todavía guardada — no se pudo cargar; se espera a que auth-js la renueve')
+              return
+            }
           }
           if (session) {
+            /*
+             * 🔴 LOGIN-BUCLE r2: el SIGNED_IN de ESTA carga (el de
+             * `_recoverAndRefresh`, que auth-js emite mientras se inicializa)
+             * ya lanzó el `claim`, el bootstrap y el MFA de esta misma sesión,
+             * y esa tarea suelta el loader al terminar. Repetirlo era el doble
+             * de espera y de pedidos. No se toca la generación: subirla
+             * descartaría justo el arranque que está en vuelo.
+             */
+            const previo = arranqueDelSignedInRef.current
+            if (
+              previo &&
+              previo.generacion === sessionGenerationRef.current &&
+              esLaMismaSesion(previo.huella, huellaDe(session))
+            ) {
+              huboSesionRef.current = true
+              return
+            }
             // A NEW bootstrap starts: bump the session generation before
             // anything async runs, and capture it now. Every write below that
             // follows an `await` re-checks this — if a SIGNED_OUT (or another
@@ -1112,35 +1282,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
             huboSesionRef.current = true
             setAccessToken(session.access_token)
             empezarChequeoSiEsOtraSesion(session.access_token)
-            // Claim the active session BEFORE any other authenticated request.
-            await claimActiveSession(session.access_token, miGeneracion)
-            if (sessionGenerationRef.current !== miGeneracion) return
-            // T-0082 WU-2b: ONE call (GET /users/me/bootstrap) replaces
-            // fetchUser + the separate agency probe below.
-            const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(session, miGeneracion)
-            if (sessionGenerationRef.current !== miGeneracion) return
-            if (userData) userData.hasPassword = getHasPassword(session)
-            setUser(userData)
-            setNeedsOnboarding(needsOnb)
-            setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
-            // Apply the bootstrap's own membership verdict — no second
-            // request. Fire-and-forget ONLY as a fallback when the bootstrap
-            // failed wholesale (agencyResult null): the global loader must
-            // NOT wait on /inmobiliaria/agency latency (only the agency-route
-            // gate waits, on agencyMembershipChecked). Matches SIGNED_IN's
-            // ordering.
-            if (userData) {
-              if (agencyResult) {
-                applyAgencyFetchResult(agencyResult)
-                setAgencyMembershipChecked(true)
-              } else {
-                void probeAgencyMembership(session.access_token)
+            // La red, fuera del lock de auth-js: ver `fueraDelCandado`.
+            fueraDelCandado(async () => {
+              // Claim the active session BEFORE any other authenticated request.
+              await claimActiveSession(session.access_token, miGeneracion)
+              if (sessionGenerationRef.current !== miGeneracion) return
+              // T-0082 WU-2b: ONE call (GET /users/me/bootstrap) replaces
+              // fetchUser + the separate agency probe below.
+              const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(session, miGeneracion)
+              if (sessionGenerationRef.current !== miGeneracion) return
+              if (userData) userData.hasPassword = getHasPassword(session)
+              setUser(userData)
+              setNeedsOnboarding(needsOnb)
+              setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
+              // Apply the bootstrap's own membership verdict — no second
+              // request. Fire-and-forget ONLY as a fallback when the bootstrap
+              // failed wholesale (agencyResult null): the global loader must
+              // NOT wait on /inmobiliaria/agency latency (only the agency-route
+              // gate waits, on agencyMembershipChecked). Matches SIGNED_IN's
+              // ordering.
+              if (userData) {
+                if (agencyResult) {
+                  applyAgencyFetchResult(agencyResult)
+                  setAgencyMembershipChecked(true)
+                } else {
+                  void probeAgencyMembership(session.access_token)
+                }
               }
-            }
-            // El loader se suelta recién con el MFA resuelto (como siempre se
-            // quiso), pero fuera del callback — ver `alSoltarElLock`.
-            const yaHizoOnboarding = userData?.onboardingCompleted === true
-            alSoltarElLock(async () => {
+              // El loader se suelta recién con el MFA resuelto (como siempre se
+              // quiso). Esta tarea ya corre con el callback devuelto: el MFA se
+              // pregunta acá mismo, sin esperar otro turno (ver `fueraDelCandado`).
+              const yaHizoOnboarding = userData?.onboardingCompleted === true
               await checkMfaLevel(miGeneracion)
               if (sessionGenerationRef.current !== miGeneracion) return
               setIsLoading(false)
@@ -1152,6 +1324,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
           setIsLoading(false)
         } else if (event === 'SIGNED_IN' && session) {
+          // 🔴 LOGIN-BUCLE: una sesión nueva en la MISMA carga (entrar desde
+          // /auth después de que la anterior se declaró muerta ahí mismo) no
+          // puede quedar bloqueada por esa bandera: ver
+          // `reabrirTrasUnIngresoNuevo` en session-terminal.ts.
+          if (sesionTerminada()) reabrirTrasUnIngresoNuevo()
           // Same reasoning as INITIAL_SESSION above: a NEW bootstrap, a new
           // generation. See `sessionGenerationRef`'s doc comment.
           sessionGenerationRef.current += 1
@@ -1159,63 +1336,70 @@ export function AuthProvider({ children }: AuthProviderProps) {
           huboSesionRef.current = true
           setAccessToken(session.access_token)
           empezarChequeoSiEsOtraSesion(session.access_token)
-          // Claim the active session BEFORE any other authenticated request.
-          await claimActiveSession(session.access_token, miGeneracion)
-          if (sessionGenerationRef.current !== miGeneracion) return
-          // T-0082 WU-2b: ONE call (GET /users/me/bootstrap) replaces
-          // fetchUser + the separate agency probe below.
-          const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(session, miGeneracion)
-          if (sessionGenerationRef.current !== miGeneracion) return
-          if (userData) userData.hasPassword = getHasPassword(session)
-          /*
-           * 🔴 QA 01-10-2026: «se ingresó sin haber pedido el token». Quien
-           * entra desde el formulario llega acá con `isLoading` YA en false (el
-           * INITIAL_SESSION sin sesión lo soltó al cargar /auth). Si el usuario
-           * se pone antes del chequeo de MFA, hay un render con
-           * `isAuthenticated=true`, `isLoading=false` y `mfaRequired=false` (el
-           * valor por defecto, no el real): el efecto de AuthForm lo lee como
-           * «entró sin segundo factor» y navega al destino. El panel lo atajaba
-           * su ProtectedRoute; el selector de perfil y los onboardings de
-           * inquilino y propietario, no.
-           *
-           * Por eso el usuario, el onboarding y la membresía se ponen JUNTO con
-           * el veredicto del MFA, adentro de `alSoltarElLock`: nadie ve una
-           * sesión «adentro» sin saber todavía si le falta el código.
-           */
-          const aplicarSesion = () => {
-            setUser(userData)
-            setNeedsOnboarding(needsOnb)
-            setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
-            // Apply the bootstrap's own membership verdict — no second request.
-            // Fire-and-forget — the global loader does not wait on this either
-            // (only the agency-route gate waits, on agencyMembershipChecked).
-            if (userData) {
-              if (agencyResult) {
-                applyAgencyFetchResult(agencyResult)
-                setAgencyMembershipChecked(true)
-              } else {
-                void probeAgencyMembership(session.access_token)
+          // LOGIN-BUCLE r2: el INITIAL_SESSION que sigue en esta carga, si es
+          // de esta misma sesión, reusa este arranque.
+          arranqueDelSignedInRef.current = { huella: huellaDe(session), generacion: miGeneracion }
+          // La red, fuera del lock de auth-js: ver `fueraDelCandado`.
+          fueraDelCandado(async () => {
+            // Claim the active session BEFORE any other authenticated request.
+            await claimActiveSession(session.access_token, miGeneracion)
+            if (sessionGenerationRef.current !== miGeneracion) return
+            // T-0082 WU-2b: ONE call (GET /users/me/bootstrap) replaces
+            // fetchUser + the separate agency probe below.
+            const { user: userData, needsOnboarding: needsOnb, agencyResult } = await fetchBootstrap(session, miGeneracion)
+            if (sessionGenerationRef.current !== miGeneracion) return
+            if (userData) userData.hasPassword = getHasPassword(session)
+            /*
+             * 🔴 QA 01-10-2026: «se ingresó sin haber pedido el token». Quien
+             * entra desde el formulario llega acá con `isLoading` YA en false (el
+             * INITIAL_SESSION sin sesión lo soltó al cargar /auth). Si el usuario
+             * se pone antes del chequeo de MFA, hay un render con
+             * `isAuthenticated=true`, `isLoading=false` y `mfaRequired=false` (el
+             * valor por defecto, no el real): el efecto de AuthForm lo lee como
+             * «entró sin segundo factor» y navega al destino. El panel lo atajaba
+             * su ProtectedRoute; el selector de perfil y los onboardings de
+             * inquilino y propietario, no.
+             *
+             * Por eso el usuario, el onboarding y la membresía se ponen JUNTO con
+             * el veredicto del MFA, después de `checkMfaLevel` (antes, adentro de
+             * `alSoltarElLock`): nadie ve una sesión «adentro» sin saber todavía
+             * si le falta el código.
+             */
+            const aplicarSesion = () => {
+              setUser(userData)
+              setNeedsOnboarding(needsOnb)
+              setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
+              // Apply the bootstrap's own membership verdict — no second request.
+              // Fire-and-forget — the global loader does not wait on this either
+              // (only the agency-route gate waits, on agencyMembershipChecked).
+              if (userData) {
+                if (agencyResult) {
+                  applyAgencyFetchResult(agencyResult)
+                  setAgencyMembershipChecked(true)
+                } else {
+                  void probeAgencyMembership(session.access_token)
+                }
               }
             }
-          }
-          // SIGNED_IN también puede venir de adentro del lock (`setSession` en
-          // /auth/enlace, el canje del código): el MFA se chequea al soltarlo.
-          //
-          // T-0099: `isLoading` se suelta ACÁ ADENTRO, después del chequeo de
-          // MFA — no antes, como estaba (línea `setIsLoading(false)` seguía
-          // directo al `setUser`, sin esperar `checkMfaLevel`). Ese hueco de
-          // UN macrotask —el que separa el callback devuelto del
-          // `setTimeout(0)` de `alSoltarElLock`— era la ventana en la que
-          // ProtectedRoute veía `isLoading=false` + `mfaRequired=false`
-          // (todavía el default, no el valor real) y dejaba montar el panel
-          // de la inmobiliaria un tick antes de que el MFA check lo
-          // corrigiera y redirigiera a /auth/mfa-verify. En ese tick se
-          // disparaban TODOS los fetches protegidos del layout (config,
-          // members, subscription, migración…) con el token aal1 — el bug
-          // que reporta esta tarea. Alineado con INITIAL_SESSION, que ya
-          // soltaba el loader en este mismo punto.
-          const yaHizoOnboarding = userData?.onboardingCompleted === true
-          alSoltarElLock(async () => {
+            // SIGNED_IN también puede venir de adentro del lock (`setSession` en
+            // /auth/enlace, el canje del código). LOGIN-BUCLE r2: esta tarea ya
+            // corre con el callback devuelto, así que el MFA se pregunta acá
+            // mismo (antes iba a un `setTimeout(0)`; ver `fueraDelCandado`).
+            //
+            // T-0099: `isLoading` se suelta ACÁ ADENTRO, después del chequeo de
+            // MFA — no antes, como estaba (línea `setIsLoading(false)` seguía
+            // directo al `setUser`, sin esperar `checkMfaLevel`). Ese hueco de
+            // UN macrotask —el que separa el callback devuelto del
+            // `setTimeout(0)` de `alSoltarElLock`— era la ventana en la que
+            // ProtectedRoute veía `isLoading=false` + `mfaRequired=false`
+            // (todavía el default, no el valor real) y dejaba montar el panel
+            // de la inmobiliaria un tick antes de que el MFA check lo
+            // corrigiera y redirigiera a /auth/mfa-verify. En ese tick se
+            // disparaban TODOS los fetches protegidos del layout (config,
+            // members, subscription, migración…) con el token aal1 — el bug
+            // que reporta esta tarea. Alineado con INITIAL_SESSION, que ya
+            // soltaba el loader en este mismo punto.
+            const yaHizoOnboarding = userData?.onboardingCompleted === true
             await checkMfaLevel(miGeneracion)
             if (sessionGenerationRef.current === miGeneracion) {
               // Después del chequeo: cuando aparece el usuario, `mfaRequired`
@@ -1315,35 +1499,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // Puede ser el PRIMER evento de la carga (pestaña dormida): entonces
           // es una sesión que todavía nadie verificó.
           empezarChequeoSiEsOtraSesion(session.access_token)
-          const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
-          if (sessionGenerationRef.current !== miGeneracion) return
-          if (userData) userData.hasPassword = getHasPassword(session)
-          setUser(userData)
-          setNeedsOnboarding(needsOnb)
-          setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
-          // Probe agency membership for every authenticated user (coexistence).
-          // Fire-and-forget so the global loader isn't blocked by agency latency
-          // (the agency-route gate still waits on agencyMembershipChecked).
-          if (userData) {
-            void probeAgencyMembership(session.access_token)
-          }
-          // El refresco corre adentro del lock de auth-js: el MFA se chequea al
-          // soltarlo.
-          //
-          // T-0099: `isLoading` se suelta ACÁ ADENTRO, después del chequeo de
-          // MFA — antes se soltaba afuera, sin esperarlo (comentario
-          // "CRITICAL" de abajo, que documentaba la razón real de por qué el
-          // loader tenía que soltarse igual: TOKEN_REFRESHED puede ser el
-          // PRIMER evento de la carga, ej. una pestaña del panel dormida toda
-          // la noche cuyo access token venció — Supabase lo renueva solo
-          // ANTES de emitir INITIAL_SESSION). Esa es justo la ventana en la
-          // que este bug se ve: `isLoading` ya en false, `mfaRequired`
-          // todavía en su default `false` un tick antes de que el chequeo
-          // deferred lo corrigiera — tiempo de sobra para que ProtectedRoute
-          // montara el panel entero con el token aal1. Soltarlo acá adentro
-          // sigue cumpliendo la garantía original (el loader se suelta pase
-          // lo que pase, sin depender de otro evento) sin la ventana falsa.
-          alSoltarElLock(async () => {
+          // La red, fuera del lock de auth-js: ver `fueraDelCandado`.
+          fueraDelCandado(async () => {
+            const { user: userData, needsOnboarding: needsOnb } = await fetchUser(session)
+            if (sessionGenerationRef.current !== miGeneracion) return
+            if (userData) userData.hasPassword = getHasPassword(session)
+            setUser(userData)
+            setNeedsOnboarding(needsOnb)
+            setPerfilElegido(leerPerfilElegido(session.user?.user_metadata))
+            // Probe agency membership for every authenticated user (coexistence).
+            // Fire-and-forget so the global loader isn't blocked by agency latency
+            // (the agency-route gate still waits on agencyMembershipChecked).
+            if (userData) {
+              void probeAgencyMembership(session.access_token)
+            }
+            // LOGIN-BUCLE r2: el refresco ya no espera `/users/me` adentro del lock
+            // de auth-js (ver `fueraDelCandado`); el MFA se pregunta en esta misma
+            // tarea, que corre con el callback devuelto.
+            //
+            // T-0099: `isLoading` se suelta ACÁ ADENTRO, después del chequeo de
+            // MFA — antes se soltaba afuera, sin esperarlo (comentario
+            // "CRITICAL" de abajo, que documentaba la razón real de por qué el
+            // loader tenía que soltarse igual: TOKEN_REFRESHED puede ser el
+            // PRIMER evento de la carga, ej. una pestaña del panel dormida toda
+            // la noche cuyo access token venció — Supabase lo renueva solo
+            // ANTES de emitir INITIAL_SESSION). Esa es justo la ventana en la
+            // que este bug se ve: `isLoading` ya en false, `mfaRequired`
+            // todavía en su default `false` un tick antes de que el chequeo
+            // deferred lo corrigiera — tiempo de sobra para que ProtectedRoute
+            // montara el panel entero con el token aal1. Soltarlo acá adentro
+            // sigue cumpliendo la garantía original (el loader se suelta pase
+            // lo que pase, sin depender de otro evento) sin la ventana falsa.
             await checkMfaLevel(miGeneracion)
             if (sessionGenerationRef.current === miGeneracion) {
               setIsLoading(false)
@@ -1389,6 +1575,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     return () => {
       clearTimeout(safetyTimeout)
+      clearTimeout(topeTimeout)
       subscription.unsubscribe()
     }
   }, [fetchUser, fetchBootstrap, checkMfaLevel, probeAgencyMembership, applyAgencyFetchResult, claimActiveSession, empezarChequeoSiEsOtraSesion])
@@ -1717,6 +1904,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         ? persistedContext ?? 'personal'
         : 'personal'
 
+  // 🔴 LOGIN-BUCLE: sólo mientras se carga hay algo «por confirmar».
+  const confirmacionDeLaSesion: ConfirmacionDeLaSesion = !isLoading
+    ? 'no-aplica'
+    : topeVencido
+      ? 'sin-confirmar'
+      : sesionPorConfirmar
+        ? 'revisando'
+        : 'no-aplica'
+
   const value: AuthContextType = {
     user,
     isAuthenticated: !!user,
@@ -1725,6 +1921,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     mfaEnrollRequired,
     mfaCheckStatus,
     retryMfaCheck,
+    confirmacionDeLaSesion,
+    reintentarConfirmarLaSesion,
+    confirmarSesionVigente,
     needsOnboarding,
     perfilElegido,
     agency,

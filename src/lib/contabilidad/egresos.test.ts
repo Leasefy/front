@@ -60,7 +60,8 @@ const egreso = (extra: Partial<Egreso> = {}): Egreso => ({
 const lote = (
   estado: EstadoDelLoteDeEgreso,
   extra: Partial<LoteDeEgreso> = {},
-): Pick<LoteDeEgreso, 'estado' | 'cantidad' | 'creadoPorUserId' | 'pagadoAt' | 'formatoArchivo'> => ({
+): Pick<LoteDeEgreso, 'estado' | 'cantidad' | 'creadoPorUserId' | 'pagadoAt' | 'formatoArchivo'> &
+  Partial<Pick<LoteDeEgreso, 'segundaPersona'>> => ({
   estado,
   cantidad: 9,
   creadoPorUserId: 'u-armador',
@@ -207,6 +208,19 @@ describe('🔴 la doble firma', () => {
       // CB-07 (03-10-2026): sin el código interno «(P-4)» y de tú («lo armaste tú»).
       'Sólo lo que arma un administrador queda aprobado por él mismo',
     );
+  });
+
+  it('🔴 QA-PAGOS-95 (Nico, 05-10-2026): desde el monto de la segunda persona, ni el administrador aprueba lo que armó', () => {
+    const nota = 'El lote suma $3.400.000 y desde $1.000.000 lo aprueba una segunda persona (el monto que escogió tu inmobiliaria). Quien lo armó no lo puede aprobar, aunque sea administrador.';
+    const segundaPersona = { montoCop: 1_000_000, porDefecto: false, exige: true, hayOtra: true, nota };
+    const mio = permisosDelLote(lote('BORRADOR', { creadoPorUserId: 'u-yo', segundaPersona }), 'u-yo', true);
+    expect(mio.aprobar).toEqual({ puede: false, motivo: nota });
+    // El contador (otra persona) sí.
+    expect(permisosDelLote(lote('BORRADOR', { creadoPorUserId: 'u-otro', segundaPersona }), 'u-yo', false).aprobar.puede).toBe(true);
+    // Sin nadie más que lo apruebe (inmobiliaria de una sola persona), P-4 sigue.
+    expect(
+      permisosDelLote(lote('BORRADOR', { creadoPorUserId: 'u-yo', segundaPersona: { ...segundaPersona, hayOtra: false, nota: null } }), 'u-yo', true).aprobar.puede,
+    ).toBe(true);
   });
 
   it('sin saber quién soy NO se bloquea: el 409 del back es la autoridad', () => {

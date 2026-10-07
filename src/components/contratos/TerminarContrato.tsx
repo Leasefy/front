@@ -442,6 +442,41 @@ export function TerminarContrato({
               )}
             </div>
           )}
+          {/*
+           * 🔴 N-31 (QA-FACT-CONTA-95 r3, Nico 06-10-2026): las facturas ya
+           * emitidas que la terminación corrige con nota crédito, ANTES de
+           * confirmar. Q12: a quien no emite notas crédito se le dice que quedan
+           * listas para el administrador o el contador.
+           */}
+          {vista?.facturasQueSeCorrigen && vista.facturasQueSeCorrigen.length > 0 && (
+            <div
+              className="rounded-[14px] border border-border p-3 text-sm"
+              data-testid="facturas-que-se-corrigen"
+            >
+              <p className="font-medium">
+                {vista.facturasQueSeCorrigen.length === 1
+                  ? "Una factura ya emitida se corrige"
+                  : `${vista.facturasQueSeCorrigen.length} facturas ya emitidas se corrigen`}
+              </p>
+              <ul className="mt-1 space-y-1 text-muted-foreground">
+                {vista.facturasQueSeCorrigen.map((f) => (
+                  <li key={f.facturaId} data-testid="factura-que-se-corrige">
+                    <span className="font-medium text-foreground">
+                      {f.numeroDian} de {mesLegible(f.mes)}
+                    </span>
+                    {f.que === "ANULAR_Y_REHACER"
+                      ? ": se anula con una nota crédito y sale otra por los días que el contrato cubrió."
+                      : ": se anula con una nota crédito; el contrato ya no cubre ese mes."}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-caption text-muted-foreground" data-testid="quien-emite-las-notas">
+                {vista.lasNotasLasEmite === "TU"
+                  ? "Las notas crédito salen al terminar, a tu nombre. Lo pagado de más pasa al saldo a favor del inquilino."
+                  : "La nota crédito queda lista para que el administrador o el contador la emita desde Facturación → Notas."}
+              </p>
+            </div>
+          )}
           {vista?.garantiaDeServiciosPendiente && (
             <p
               className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"

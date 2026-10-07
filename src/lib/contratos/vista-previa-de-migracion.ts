@@ -356,6 +356,33 @@ export function resumenDeLectura(
   const conInquilino = cuenta(({ fila }) => (fila.inquilino.documento ?? '') !== '');
   const conCorreo = cuenta(({ fila }) => fila.inquilino.correo.trim() !== '');
   const conConsecutivo = cuenta(({ origen }) => Boolean(origen.consecutivo));
+  // QA-MIGRACION-95 (MP-07): «1 fila no trae», nunca «1 filas no traen».
+  const filasQue = (n: number, una: string, varias: string) =>
+    n === 1 ? `1 fila ${una}` : `${n} filas ${varias}`;
+  // QA-MIGRACION-95 (MP-07): «traen el propietario sin cédula» sólo de las
+  // filas que SÍ traen algo del propietario (C10 no tiene esa columna y la
+  // frase lo afirmaba de las 4). Sin nada, el back lo toma del mandato del
+  // inmueble al cruzarlo.
+  const columnasDelPropietario = mapeo
+    .filter((m) => m.campo?.startsWith('propietario'))
+    .map((m) => m.columna);
+  const sinDocumento = filas.filter((f, i) => !leidas[i].fila.propietario?.documento);
+  const conAlgoDelPropietario = sinDocumento.filter((f) =>
+    columnasDelPropietario.some((c) => String(f[c] ?? '').trim() !== ''),
+  ).length;
+  const sinNadaDelPropietario = sinDocumento.length - conAlgoDelPropietario;
+  const porqueDelPropietario = [
+    conAlgoDelPropietario > 0
+      ? `${filasQue(conAlgoDelPropietario, 'trae', 'traen')} el propietario sin cédula ni NIT: sin documento no hay ficha que resolver y el nombre solo crea homónimos.`
+      : '',
+    sinNadaDelPropietario === 0
+      ? ''
+      : columnasDelPropietario.length === 0
+        ? 'El archivo no trae el propietario: se toma del mandato de cada inmueble al cruzarlo.'
+        : `${filasQue(sinNadaDelPropietario, 'no trae propietario', 'no traen propietario')}: se toma del mandato de su inmueble al cruzarlo.`,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return {
     total,
@@ -366,16 +393,13 @@ export function resumenDeLectura(
         porque:
           conInmueble === total
             ? ''
-            : `${total - conInmueble} filas no traen ni código ni dirección del inmueble.` +
+            : `${filasQue(total - conInmueble, 'no trae', 'no traen')} ni código ni dirección del inmueble.` +
               ` (${conCodigo} traen código de origen, ${conDireccion} traen dirección.)`,
       },
       {
         que: 'Propietario con documento',
         con: conPropietario,
-        porque:
-          conPropietario === total
-            ? ''
-            : `${total - conPropietario} filas traen el propietario sin cédula ni NIT: sin documento no hay ficha que resolver y el nombre solo crea homónimos.`,
+        porque: conPropietario === total ? '' : porqueDelPropietario,
       },
       {
         que: 'Inquilino con documento',
@@ -383,7 +407,7 @@ export function resumenDeLectura(
         porque:
           conInquilino === total
             ? ''
-            : `${total - conInquilino} filas traen al inquilino sin documento.`,
+            : `${filasQue(total - conInquilino, 'trae', 'traen')} al inquilino sin documento.`,
       },
       {
         que: 'Inquilino con correo',
@@ -391,7 +415,7 @@ export function resumenDeLectura(
         porque:
           conCorreo === total
             ? ''
-            : `${total - conCorreo} filas no traen correo: esos inquilinos no reciben la invitación al portal hasta que alguien lo complete.`,
+            : `${filasQue(total - conCorreo, 'no trae', 'no traen')} correo: ${total - conCorreo === 1 ? 'ese inquilino no recibe' : 'esos inquilinos no reciben'} la invitación al portal hasta que alguien lo complete.`,
       },
       {
         que: 'Consecutivo del sistema anterior',
@@ -399,7 +423,7 @@ export function resumenDeLectura(
         porque:
           conConsecutivo === total
             ? ''
-            : `${total - conConsecutivo} filas no traen consecutivo: sin él no se les pueden colgar los documentos contables viejos.`,
+            : `${filasQue(total - conConsecutivo, 'no trae', 'no traen')} consecutivo: sin él no se les pueden colgar los documentos contables viejos.`,
       },
     ],
   };

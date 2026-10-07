@@ -1,13 +1,13 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
-import { mesEnTitulo } from '@/lib/utils/mes';
+import { mesEnTitulo, nombreDelMes } from '@/lib/utils/mes';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   CurrencyCircleDollar,
-  GearSix,
+  BellRinging,
   Scales,
   Table,
   SquaresFour,
@@ -17,6 +17,7 @@ import {
 } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePermissions } from '@/lib/hooks/usePermissions';
 import { TablePagination } from '@/components/ui/pagination';
 import { useTablePagination, PAGE_SIZE_OPTIONS } from '@/lib/hooks/use-table-pagination';
 import { Button } from '@/components/ui';
@@ -41,10 +42,8 @@ import {
   useCobroSummary,
   useConsignaciones,
   usePropietarios,
-  useInmobiliariaConfig,
   cobrosApi,
 } from '@/lib/hooks/useInmobiliaria';
-import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
 import { recibosDeCajaApi } from '@/lib/api/recibos-de-caja.service';
 import type {
@@ -57,14 +56,12 @@ import {
   CobroFilters,
   CobroTable,
   RegistrarPagoModal,
-  RecordatorioConfig,
   CobroDetail,
   type CobroFiltersState,
 } from '@/components/inmobiliaria';
 import { CobroCard } from '@/components/inmobiliaria/CobroCard';
 import { PestanasDeCartera } from '@/components/cartera/PestanasDeCartera';
 import { GenerarCobrosDialog } from '@/components/inmobiliaria/pagos/GenerarCobrosDialog';
-import { type RecordatorioConfigData } from '@/components/inmobiliaria/RecordatorioConfig';
 import {
   RUTA_DE_LA_MIGRACION,
   useCopyDeMigracionEnLista,
@@ -72,8 +69,18 @@ import {
 import { vacioPorMigracion } from '@/components/migracion/muro-reglas';
 import { loQueDijoElServidor } from '@/components/inmobiliaria/recordatorio-de-cobro';
 import { CobrosSinCuota } from '@/components/cartera/CobrosSinCuota';
+import { RecargosSinPlazo } from '@/components/cartera/RecargosSinPlazo';
 import { hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa';
 import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
+
+/**
+ * B-09/N-28 (QA-PAGOS-95 r2; main, con la recomendada): «Configurar
+ * recordatorios» salió de Cobros emitidos — ofrecía avisos 1/3/5/7 días antes y
+ * 1/3/7/15/30 después, contra J-12 (sólo el envío del día 1 y uno el último día
+ * del plazo). Los recordatorios se configuran y se mandan en Cobranza ›
+ * Recordatorios, que sí sigue J-12.
+ */
+const RUTA_DE_LOS_RECORDATORIOS = '/panel/inmobiliaria/pagos/cobranza/recordatorios';
 
 // View modes
 type ViewMode = 'table' | 'cards';
@@ -126,14 +133,25 @@ function CobrosContent() {
     refetch: refetchSummary,
   } = useCobroSummary(filters.month);
 
+  /*
+   * N-15 (QA-PAGOS-95): los filtros (inmuebles, propietarios) y los días de los
+   * recordatorios se piden SÓLO con su permiso. Al contador, al auxiliar de
+   * cartera y al de sólo lectura les llegaban 403 en cada visita; sin el dato,
+   * el filtro no se ofrece y los días quedan los de siempre.
+   */
+  const { canAccess: puedeVer, isLoading: permisosCargando } = usePermissions();
+  const conPermiso = (modulo: Parameters<typeof puedeVer>[0]) => !permisosCargando && puedeVer(modulo, 'view');
+
   // Fetch consignaciones for filters
-  const { consignaciones, isLoading: consignacionesLoading } = useConsignaciones();
+  const { consignaciones, isLoading: consignacionesLoading } = useConsignaciones(undefined, {
+    skip: !conPermiso('portafolio'),
+  });
 
   // Fetch propietarios for filters
-  const { propietarios, isLoading: propietariosLoading } = usePropietarios();
+  const { propietarios, isLoading: propietariosLoading } = usePropietarios(undefined, {
+    skip: !conPermiso('propietarios'),
+  });
 
-  // Fetch config for reminder defaults
-  const { config: inmobiliariaConfig, isLoading: configLoading } = useInmobiliariaConfig();
 
   // State for view mode.
   // `null` = no explicit user choice → default from viewport (cards under md).
@@ -150,7 +168,6 @@ function CobrosContent() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [paymentCobro, setPaymentCobro] = useState<Cobro | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
   /*
    * 🔴 «Generar los cobros» vive ACÁ desde el 2026-09-16, y es una acción
    * SECUNDARIA. Era el CTA principal de la portada de Pagos, y el CEO no
@@ -163,24 +180,6 @@ function CobrosContent() {
    * en la cartera». Esta pantalla ES la lista de esos documentos.
    */
   const [isGenerarOpen, setIsGenerarOpen] = useState(false);
-
-  // State for reminder config (initialized from API config)
-  const [reminderConfig, setReminderConfig] = useState<RecordatorioConfigData>({
-    daysBefore: inmobiliariaConfig?.agency?.reminderDaysBefore ?? [5],
-    daysAfter: inmobiliariaConfig?.agency?.reminderDaysAfter ?? [3],
-    channels: ['email', 'whatsapp'],
-  });
-
-  // Update reminder config when API config loads
-  useEffect(() => {
-    if (inmobiliariaConfig?.agency) {
-      setReminderConfig((prev) => ({
-        ...prev,
-        daysBefore: inmobiliariaConfig.agency.reminderDaysBefore ?? prev.daysBefore,
-        daysAfter: inmobiliariaConfig.agency.reminderDaysAfter ?? prev.daysAfter,
-      }));
-    }
-  }, [inmobiliariaConfig]);
 
   // Read status from URL query params
   useEffect(() => {
@@ -413,26 +412,6 @@ function CobrosContent() {
     setFilters(newFilters);
   }, []);
 
-  /**
-   * Guardar los recordatorios — de verdad.
-   *
-   * Esto era `setReminderConfig(config)` a secas mientras el cajón anunciaba
-   * «Configuración guardada»: ningún request. Los días viven en
-   * `agency.reminderDaysBefore/After` y se recargan al volver a entrar, así que
-   * lo editado se perdía y el back seguía mandando con lo viejo.
-   *
-   * Los CANALES no se mandan: el back no tiene dónde guardarlos
-   * (`UpdateAgencyDto` sólo acepta los dos arreglos de días). Mandarlos sería
-   * un 400 por `forbidNonWhitelisted`; el cajón lo dice en pantalla.
-   */
-  const handleConfigSave = useCallback(async (config: RecordatorioConfigData) => {
-    await agencyApi.updateAgency({
-      reminderDaysBefore: config.daysBefore,
-      reminderDaysAfter: config.daysAfter,
-    });
-    setReminderConfig(config);
-  }, []);
-
   // Handle detail modal close
   const handleDetailClose = useCallback(() => {
     setIsDetailOpen(false);
@@ -515,6 +494,12 @@ function CobrosContent() {
     `${monthDisplayYear}-${String(monthDisplayMonth).padStart(2, '0')}`,
     locale === 'en' ? 'en' : 'es',
   );
+  // N-14 (QA-PAGOS-95): dentro de una frase, el mes en minúscula
+  // («Generar los cobros de octubre de 2026»), como el diálogo.
+  const mesEnLaFrase = nombreDelMes(
+    `${monthDisplayYear}-${String(monthDisplayMonth).padStart(2, '0')}`,
+    locale === 'en' ? 'en' : 'es',
+  );
 
   return (
     <div className="p-4 md:p-6 space-y-6">
@@ -534,18 +519,17 @@ function CobrosContent() {
           className="flex flex-wrap items-center gap-2 sm:shrink-0"
           data-testid="acciones-de-cobros"
         >
-          {/* El engranaje va PRIMERO y sin texto: es la acción que menos se
-              usa y la que menos tiene que pesar (Nico, 2026-09-03). El
-              extracto bancario ya no se enlaza desde acá — vive en
-              Conciliación, que es otra sección. */}
-          <IconButton
-            variant="outline"
-            icon={<GearSix className="w-4 h-4" />}
-            aria-label="Configuración de cobros"
-            title="Configuración de cobros"
-            data-testid="configuracion-de-cobros"
-            onClick={() => setIsConfigOpen(true)}
-          />
+          {/* El extracto bancario ya no se enlaza desde acá — vive en
+              Conciliación, que es otra sección (Nico, 2026-09-03).
+              B-09/N-28 (QA-PAGOS-95 r2): el engranaje de «Configurar
+              recordatorios» salió; los recordatorios viven en Cobranza ›
+              Recordatorios (J-12) y de acá sólo se va allá. */}
+          <Button asChild variant="outline" hideArrow>
+            <Link href={RUTA_DE_LOS_RECORDATORIOS} data-testid="ir-a-recordatorios">
+              <BellRinging className="w-4 h-4" />
+              <span className="hidden sm:inline">Recordatorios</span>
+            </Link>
+          </Button>
           <Button asChild variant="secondary" hideArrow>
             <Link href="/panel/inmobiliaria/pagos/cartera/reglas-de-mora">
               <Scales className="w-4 h-4" />
@@ -555,16 +539,21 @@ function CobrosContent() {
           {/* Emitir el documento de cobro del mes que se está viendo. Es
               secundario a propósito: lo principal de esta plata es el recibo
               de caja, que no necesita ningún cobro para recibir. */}
-          <Button
-            variant="secondary"
-            hideArrow
-            onClick={() => setIsGenerarOpen(true)}
-            data-testid="abrir-generar-cobros"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Generar los cobros de {monthDisplay}</span>
-            <span className="sm:hidden">Generar cobros</span>
-          </Button>
+          {/* QA-PAGOS-95 (H-04): generar es `cobros:create`, como el recibo; al
+              de sólo lectura se le ofrecía prendido y el back respondía 403. */}
+          <span className="inline-flex" title={puedeHacerRecibo ? undefined : MOTIVO_SIN_PERMISO_DE_RECIBO}>
+            <Button
+              variant="secondary"
+              hideArrow
+              disabled={!puedeHacerRecibo}
+              onClick={() => setIsGenerarOpen(true)}
+              data-testid="abrir-generar-cobros"
+            >
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Generar los cobros de {mesEnLaFrase}</span>
+              <span className="sm:hidden">Generar cobros</span>
+            </Button>
+          </span>
           {/* Sin `cobros:create` queda a la vista y deshabilitado, con el
               porqué (C6): esconderlo se lee como «falta la función». */}
           <span
@@ -598,6 +587,10 @@ function CobrosContent() {
           void refetchSummary();
         }}
       />
+
+      {/* PPF-02b (QA-PAGOS-95 r2): los recargos escritos sin plazo fijado que
+          quedan (pagados o facturados) se revisan acá. */}
+      <RecargosSinPlazo />
 
       {/* Summary Section — la página ya no anima su propia entrada (la pone el
           `template.tsx`); se anima el CAMBIO: esqueleto → resumen → fallo. */}
@@ -865,13 +858,6 @@ function CobrosContent() {
         }}
       />
 
-      {/* Reminder Configuration Sheet */}
-      <RecordatorioConfig
-        isOpen={isConfigOpen}
-        onClose={() => setIsConfigOpen(false)}
-        config={reminderConfig}
-        onSave={handleConfigSave}
-      />
     </div>
   );
 }

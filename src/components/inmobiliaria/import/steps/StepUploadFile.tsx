@@ -36,6 +36,7 @@ import {
   fraseDeDondeSeLeyo,
 } from '@/lib/migracion/donde-esta-la-tabla';
 import { autoMapColumns } from '../lib/columnMapping';
+import { ElegirDondeEstaLaTabla } from '@/components/migracion/ElegirDondeEstaLaTabla';
 import type { ImportStepProps } from '../ImportWizard';
 
 /**
@@ -72,8 +73,11 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
   const [rowWarning, setRowWarning] = useState<string | null>(null);
 
   const [dondeSeLeyo, setDondeSeLeyo] = useState<string | null>(null);
+  /** QA-MIGRACION-95 (MP-06): la fila de los encabezados leída y las de arriba, para elegir otra. */
+  const [filaDeEncabezado, setFilaDeEncabezado] = useState<{ fila: number; primerasFilas: string[][] } | null>(null);
 
-  const processFile = useCallback(async (file: File, sheetName?: string) => {
+  /** `filaElegida`: la fila de los encabezados que eligió la persona (con `sheetName`). */
+  const processFile = useCallback(async (file: File, sheetName?: string, filaElegida?: number) => {
     setIsParsing(true);
     setParseError(null);
     setRowWarning(null);
@@ -89,15 +93,23 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
         autoMapColumns(celdas).filter((m) => m.targetField && m.confidence >= 0.9).length;
       let hoja = sheetName;
       let fila = 0;
+      setFilaDeEncabezado(null);
       try {
         const porHoja = await leerPrimerasFilasDeCadaHoja(file, 15);
         if (sheetName) {
-          fila = elegirFilaDeEncabezado(porHoja.find((h) => h.hoja === sheetName)?.filas ?? [], puntuar);
+          fila =
+            filaElegida ??
+            elegirFilaDeEncabezado(porHoja.find((h) => h.hoja === sheetName)?.filas ?? [], puntuar);
         } else {
           const donde = elegirDondeEstaLaTabla(porHoja, puntuar);
           hoja = donde.hoja;
           fila = donde.fila;
         }
+        const hojaLeida = hoja ?? porHoja[0]?.hoja;
+        setFilaDeEncabezado({
+          fila,
+          primerasFilas: porHoja.find((h) => h.hoja === hojaLeida)?.filas ?? [],
+        });
       } catch {
         // Si la exploración falla, se lee como siempre: A1 de la hoja pedida.
       }
@@ -189,6 +201,7 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
   const soltarArchivo = useCallback(() => {
     setParseError(null);
     setRowWarning(null);
+    setFilaDeEncabezado(null);
     updateState({
       file: null,
       fileName: '',
@@ -240,6 +253,24 @@ export function StepUploadFile({ state, updateState }: ImportStepProps) {
           </Select>
         </div>
       )}
+
+      {/* QA-MIGRACION-95 (MP-06): la hoja se elige arriba; la fila de los
+          encabezados, acá, por si se adivinó mal. */}
+      {state.file && filaDeEncabezado && !isParsing ? (
+        <ElegirDondeEstaLaTabla
+          soloLaFila
+          donde={{
+            hojas: state.sheetNames,
+            hoja: state.selectedSheet,
+            fila: filaDeEncabezado.fila,
+            primerasFilas: filaDeEncabezado.primerasFilas,
+          }}
+          onElegirHoja={handleSheetChange}
+          onElegirFila={(fila) => {
+            if (state.file) void processFile(state.file, state.selectedSheet, fila);
+          }}
+        />
+      ) : null}
 
       {hasFile && dondeSeLeyo ? (
         <p className="text-caption text-fg-muted" data-testid="donde-se-leyo">

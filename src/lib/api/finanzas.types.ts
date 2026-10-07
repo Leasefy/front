@@ -61,6 +61,12 @@ export interface RecaudoDelTablero {
   delDiaCop: number;
   delMesCop: number;
   causadoDelMesCop: number;
+  /**
+   * N-06 (QA-PAGOS-95): el numerador del porcentaje, lo que entró a las cuotas
+   * DEL MES. No es `delMesCop` (la caja del mes, de cualquier período).
+   * Opcional: un back anterior no lo manda.
+   */
+  abonadoDelMesCop?: number;
   /** % del mes contra lo causado. `null` = no se midió (denominador 0). */
   tasaPct: number | null;
   /** Cómo la mide esta inmobiliaria: 'CAUSADO' | 'EMITIDO'. */
@@ -70,6 +76,8 @@ export interface RecaudoDelTablero {
     mes: string;
     recaudadoCop: number;
     causadoCop: number;
+    /** N-06: lo que entró a las cuotas de ESE mes (el numerador de su %). */
+    abonadoCop?: number;
     tasaPct: number | null;
   };
   /** Variación del recaudo contra el mes anterior, en %. `null` si no se puede. */
@@ -644,6 +652,21 @@ export interface CuadreDeTerceros {
   faltaPlataDeTerceros: boolean;
   explicaciones: string[];
   avisos: string[];
+  /**
+   * 🔴 N-38 (QA-PAGOS-95 r2): lo PROPIO retenido (comisión + IVA − retenciones de
+   * lo cobrado, intereses y gastos según el traslado). Se RESTA de la plata de
+   * terceros; la diferencia esperada es lo propio que sigue en la cuenta.
+   * Opcional: un back anterior no lo manda (y la identidad es la de antes).
+   */
+  propioRetenidoCop?: number;
+  /** La cuenta en palabras, renglón por renglón (vacío con un back anterior). */
+  renglones?: {
+    clave: string;
+    signo: '+' | '−' | '=';
+    etiqueta: string;
+    valorCop: number | null;
+    explicacion: string;
+  }[];
   detalle: {
     recaudadoCop: number;
     giradoCop: number;

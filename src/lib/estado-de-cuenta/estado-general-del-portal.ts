@@ -12,6 +12,7 @@
  * pero SIGUE siendo deuda vencida y por eso no está «al día».
  */
 
+import { formatCurrency } from '@/lib/format';
 import type { ResumenDePagos } from './resumen-de-pagos';
 
 export type PeriodoDelPago = 'APPROVED' | 'PENDING_VALIDATION' | 'REJECTED' | 'NONE' | string | undefined | null;
@@ -24,8 +25,14 @@ export interface EstadoGeneral {
   tono: TonoDelEstado;
 }
 
+/**
+ * COLA-04 (QA-PAGOS-95, 05-10-2026): la plata con el formateador común
+ * («$ 6.050.000», espacio duro; centavos sólo si los trae y la llave está
+ * prendida), no con un `'$' + toLocaleString` propio que redondeaba y escribía
+ * «$6.050.000» al lado de las cifras de la misma pantalla.
+ */
 function pesos(n: number): string {
-  return '$' + Math.round(n).toLocaleString('es-CO');
+  return formatCurrency(n);
 }
 
 /** Frase corta con lo vencido, o `null` si no hay nada vencido. */

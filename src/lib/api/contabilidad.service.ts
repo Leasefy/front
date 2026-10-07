@@ -650,6 +650,12 @@ export interface BalanceDePrueba {
   filas: FilaDeBalance[];
   totalDebitosCop: number;
   totalCreditosCop: number;
+  /**
+   * QA-FACT-CONTA-95 r3 · CB-T-01: los saldos partidos en débito y crédito
+   * (en un libro sano, iguales). Un back viejo no los manda.
+   */
+  saldosAnteriores?: { debitoCop: number; creditoCop: number };
+  saldosFinales?: { debitoCop: number; creditoCop: number };
   cuadra: boolean;
   diferenciaCop: number;
 }

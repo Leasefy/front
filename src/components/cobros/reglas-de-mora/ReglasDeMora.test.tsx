@@ -300,13 +300,14 @@ describe('ReglasDeMora — la tabla', () => {
 describe('ReglasDeMora — el estado vacío y las plantillas', () => {
   it('ofrece las dos plantillas y «Usar esta regla» manda el cuerpo exacto de la plantilla', async () => {
     listarMock.mockResolvedValueOnce([]);
-    const interes = PLANTILLAS.find((p) => p.id === 'interes-diario')!;
+    // PPF-05 (QA-PAGOS-95 r2): la sugerida es el 2 % mensual.
+    const interes = PLANTILLAS.find((p) => p.id === 'interes-mensual')!;
     crearMock.mockResolvedValueOnce(regla({ id: 'r-nueva', nombre: interes.valores.nombre }));
     await montar();
 
     expect($('[data-testid="reglas-vacio"]').textContent).toContain('Todavía no hay reglas de mora');
-    expect($('[data-testid="plantilla-interes-diario"]').textContent).toContain(
-      'Interés diario después del plazo',
+    expect($('[data-testid="plantilla-interes-mensual"]').textContent).toContain(
+      'Interés del 2 % mensual después del plazo',
     );
     expect($('[data-testid="plantilla-gasto-administrativo"]').textContent).toContain(
       '10 % de gasto administrativo desde el 15',
@@ -322,11 +323,11 @@ describe('ReglasDeMora — el estado vacío y las plantillas', () => {
     expect(zona.textContent).toContain('Todavía no existen');
     // Las dos tarjetas cuelgan de la zona de sugerencias, no de la página.
     expect(zona.querySelectorAll('[data-testid^="plantilla-"]')).toHaveLength(2);
-    for (const id of ['interes-diario', 'gasto-administrativo']) {
+    for (const id of ['interes-mensual', 'gasto-administrativo']) {
       expect($(`[data-testid="plantilla-${id}"]`).textContent).toContain('Sugerencia');
     }
 
-    await clic(botonConTexto('Usar esta regla', $('[data-testid="plantilla-interes-diario"]')));
+    await clic(botonConTexto('Usar esta regla', $('[data-testid="plantilla-interes-mensual"]')));
 
     expect(crearMock).toHaveBeenCalledTimes(1);
     expect(crearMock).toHaveBeenCalledWith({
@@ -334,8 +335,8 @@ describe('ReglasDeMora — el estado vacío y las plantillas', () => {
       concepto: 'INTERES_DE_MORA',
       disparador: 'DIAS_DE_MORA',
       disparadorDia: 1,
-      formula: 'INTERES_DIARIO',
-      valor: 0.0667,
+      formula: 'INTERES_MENSUAL',
+      valor: 2,
       base: 'CANON',
       orden: 0,
     });
@@ -380,7 +381,7 @@ describe('ReglasDeMora — el estado vacío y las plantillas', () => {
     permisos.canAccess.mockImplementation((_m: string, accion: string) => accion === 'view');
     listarMock.mockResolvedValueOnce([]);
     await montar();
-    expect(document.querySelector('[data-testid="plantilla-interes-diario"]')).toBeNull();
+    expect(document.querySelector('[data-testid="plantilla-interes-mensual"]')).toBeNull();
     expect(Array.from(document.querySelectorAll('button')).some((b) => b.textContent?.includes('Crear una regla'))).toBe(false);
   });
 });
@@ -522,7 +523,7 @@ describe('ReglasDeMora — el editor', () => {
 
     expect(crearMock).not.toHaveBeenCalled();
     expect($('#regla-tope-error').textContent).toBe(
-      'El tope no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
+      'El tope no puede pasar de $\u00a02.000.000.000. Revisa que no sobren ceros.',
     );
   });
 
@@ -594,7 +595,7 @@ describe('ReglasDeMora — sugerencias con reglas ya creadas y el aviso del moto
 
     expect(document.querySelector('[data-testid="reglas-vacio"]')).toBeNull();
     const sugerencias = $('[data-testid="reglas-sugerencias"]');
-    expect(document.querySelector('[data-testid="plantilla-interes-diario"]')).toBeNull();
+    expect(document.querySelector('[data-testid="plantilla-interes-mensual"]')).toBeNull();
     expect(sugerencias.querySelector('[data-testid="plantilla-gasto-administrativo"]')).not.toBeNull();
 
     // La plantilla que falta NO se cuenta como regla ni entra a la tabla: hay

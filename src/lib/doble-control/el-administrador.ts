@@ -26,9 +26,11 @@ export interface MismoPaso {
   aprobadoEnElMismoPaso: boolean;
   /**
    * Si no: `NO_ES_ADMINISTRADOR` (lo de siempre), `FALTA_LA_MIGRACION` (es
-   * administrador, pero la base todavía no lo admite) o `null`.
+   * administrador, pero la base todavía no lo admite), `SOBRE_EL_MONTO` (el
+   * lote pasa el monto de la segunda persona: lo aprueba otra, decisión de
+   * Nico del 05-10-2026) o `null`.
    */
-  porQueNo: 'NO_ES_ADMINISTRADOR' | 'FALTA_LA_MIGRACION' | null;
+  porQueNo: 'NO_ES_ADMINISTRADOR' | 'FALTA_LA_MIGRACION' | 'SOBRE_EL_MONTO' | null;
   /** La frase del back, en tuteo. */
   nota: string;
 }

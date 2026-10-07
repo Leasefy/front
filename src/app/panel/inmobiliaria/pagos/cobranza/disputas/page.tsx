@@ -310,14 +310,20 @@ function DisputasContent() {
 
   // Filtro server-side por estado (el endpoint soporta ?status).
   const [filtro, setFiltro] = useState<EstadoFiltro>('todas')
-  const { disputes, isLoading, error, fallo, refetch, openDispute, resolveDispute } =
-    useDisputes(filtro === 'todas' ? {} : { status: filtro })
   // Abrir y resolver es `cobranza:intervene` en el micro (también la lista).
   // QA-IA-B (04-10-2026): al contador se le ofrecía «Abrir disputa» y la
   // lista decía «No pudimos cargar las disputas. 403».
-  const { canAccess } = usePermissionsContext()
+  // N-15 (QA-PAGOS-95): y la pedía igual: un 403 del micro en cada visita.
+  // Sin el permiso no se pide; el aviso es el mismo.
+  const { canAccess, isLoading: permisosCargando } = usePermissionsContext()
   const puedeActuar = canAccess('cobranza', 'intervene')
-  const sinPermiso = (fallo as { status?: number } | null)?.status === 403
+  const { disputes, isLoading, error, fallo, refetch, openDispute, resolveDispute } =
+    useDisputes({
+      ...(filtro === 'todas' ? {} : { status: filtro }),
+      activo: !permisosCargando && puedeActuar,
+    })
+  const sinPermiso =
+    (!permisosCargando && !puedeActuar) || (fallo as { status?: number } | null)?.status === 403
 
   useAutoRefresh(refetch)
 
@@ -327,7 +333,7 @@ function DisputasContent() {
   const [verDetalleEnMovil, setVerDetalleEnMovil] = useState(false)
 
   /** Falló la carga y no tenemos nada: no sabemos si hay o no. */
-  const hayError = error !== null && disputes.length === 0
+  const hayError = (error !== null && disputes.length === 0) || sinPermiso
 
   const seleccionada = useMemo(
     () => disputes.find((d) => d.id === seleccionadaId) ?? null,

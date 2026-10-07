@@ -136,6 +136,17 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
     porque:
       "Elegir por ti pegaría el contrato al inmueble equivocado, y quedaría perfecto.",
   },
+  // QA-MIGRACION-95 (06-10): un arriendo vigente no va sobre un inmueble en venta.
+  inmueble_en_venta: {
+    titulo: "Ese inmueble está en venta",
+    porque:
+      "Un contrato de arriendo vigente no se activa sobre un inmueble publicado en venta. Elige el inmueble correcto o, si de verdad se arrienda, cámbialo a arriendo en su ficha.",
+  },
+  inquilino_correo_invalido: {
+    titulo: "El correo del inquilino no se puede usar",
+    porque:
+      "El archivo trae algo que no es un correo válido (por ejemplo, con tildes o espacios). Corrígelo aquí: con él se invita al inquilino al portal.",
+  },
   inmueble_ocupado: {
     titulo: "Ese inmueble ya tiene un contrato vigente",
     porque:
@@ -174,6 +185,12 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
   canon: {
     titulo: "El canon está en cero",
     porque: "Un contrato que no cobra nada.",
+  },
+  // EN-38 (QA-MIGRACION-95): misma regla que la fila de inmuebles (NI-07).
+  canon_con_centavos: {
+    titulo: "El canon del archivo trae centavos",
+    porque:
+      "Tu plataforma todavía no guarda centavos y no se redondea por ti: escribe el canon al peso aquí, o pide que se activen los centavos.",
   },
   uso: {
     titulo: "Falta el uso del inmueble",
@@ -369,6 +386,15 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
                 campo={campo}
               />
             ) : null}
+            {f === "inmueble_en_venta" ? (
+              <ElegirInmueble
+                fila={fila}
+                ocupado={ocupado}
+                correr={correr}
+                campo={campo}
+                elInmuebleExiste
+              />
+            ) : null}
             {f === "inmueble_ocupado" ? (
               <InmuebleOcupado
                 fila={fila}
@@ -416,6 +442,23 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
                 />
               </div>
             ) : null}
+            {/* QA-MIGRACION-95: el correo del archivo no se puede usar; se corrige aquí. */}
+            {f === "inquilino_correo_invalido" ? (
+              <CampoSimple
+                {...campo("inquilinoCorreo")}
+                icono={Envelope}
+                etiqueta="Correo del inquilino"
+                tipo="email"
+                ocupado={ocupado}
+                onGuardar={(v) =>
+                  correr(() =>
+                    contractsApi.migracion.resolver(fila.id, {
+                      inquilinoCorreo: v,
+                    }),
+                  )
+                }
+              />
+            ) : null}
             {f === "inquilino_nombre" ? (
               <CampoSimple
                 {...campo("inquilinoNombre")}
@@ -452,7 +495,7 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
                 }
               />
             ) : null}
-            {f === "canon" ? (
+            {f === "canon" || f === "canon_con_centavos" ? (
               <CampoSimple
                 {...campo("monthlyRent")}
                 etiqueta="Canon mensual"
@@ -519,20 +562,34 @@ type PropsDelCampo = {
 
 type Correr = (a: () => Promise<FilaDeMigracion>) => Promise<void>;
 
+/** «9001»: sólo dígitos. Es un código del sistema anterior, no una dirección (CO-27). */
+export function pareceUnCodigo(d: string | null | undefined): boolean {
+  return /^\s*\d{1,12}\s*$/.test(d ?? "");
+}
+
 function ElegirInmueble({
   fila,
   ocupado,
   correr,
   campo,
+  elInmuebleExiste = false,
 }: {
   fila: FilaDeMigracion;
   ocupado: boolean;
   correr: Correr;
   campo: (nombre: string) => PropsDelCampo;
+  /**
+   * CO-27 (QA-MIGRACION-95, 06-10): la fila SÍ encontró su inmueble y está
+   * ocupado. Decir «sin inmueble… créalo» ahí era falso, y crearlo duplicaba
+   * el inmueble con la dirección del archivo (que puede ser sólo «9001»).
+   */
+  elInmuebleExiste?: boolean;
 }) {
   const [creando, setCreando] = useState(false);
   const [ciudad, setCiudad] = useState("");
   const direccion = fila.datos.direccion ?? "";
+  const esCodigo = pareceUnCodigo(direccion);
+  const sePuedeCrear = !elInmuebleExiste && !esCodigo;
   const dir = campo("address");
   const ciu = campo("city");
   const tip = campo("tipo");
@@ -552,10 +609,14 @@ function ElegirInmueble({
        * decía lo contrario. No hay tercer botón: es puramente informativo,
        * la fila se queda pendiente hasta que se le elija o cree el inmueble.
        */}
-      <p className="text-caption text-muted-foreground">
-        Sin inmueble el contrato no se activa: no tendría consignación ni
-        generaría cobros. Elige uno de los candidatos o créalo desde la
-        dirección del archivo.
+      <p className="text-caption text-muted-foreground" data-testid="elegir-inmueble-ayuda">
+        {elInmuebleExiste && fila.faltantes.includes("inmueble_en_venta")
+          ? "Si este contrato es de OTRO inmueble, elígelo aquí."
+          : elInmuebleExiste
+          ? "Si este contrato es de OTRO inmueble, elígelo aquí. Si es el mismo, confírmalo con «Sé que está ocupado, seguir igual»."
+          : esCodigo
+            ? `El archivo trae «${direccion.trim()}»: es un código, no una dirección. Elige el inmueble con ese código o cárgalo en el paso de Inmuebles.`
+            : "Sin inmueble el contrato no se activa: no tendría consignación ni generaría cobros. Elige uno de los candidatos o créalo desde la dirección del archivo."}
       </p>
       {fila.candidatos.length > 0 ? (
         <div className="space-y-1.5">
@@ -731,7 +792,7 @@ function ElegirInmueble({
             Crear inmueble
           </Button>
         </div>
-      ) : (
+      ) : sePuedeCrear ? (
         <Button
           variant="ghost"
           size="sm"
@@ -740,7 +801,7 @@ function ElegirInmueble({
         >
           El inmueble no está cargado — crearlo
         </Button>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -768,7 +829,7 @@ function InmuebleOcupado({
 }) {
   return (
     <div className="space-y-3">
-      <ElegirInmueble fila={fila} ocupado={ocupado} correr={correr} campo={campo} />
+      <ElegirInmueble fila={fila} ocupado={ocupado} correr={correr} campo={campo} elInmuebleExiste />
       <Button
         variant="outline"
         size="sm"

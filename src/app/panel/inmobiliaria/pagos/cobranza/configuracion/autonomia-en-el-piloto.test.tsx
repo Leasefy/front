@@ -80,10 +80,15 @@ describe('Cobranza › Configuración › Autonomía (QA-IA-95)', () => {
     expect(container.querySelector('[data-testid="autonomy-option-automatico_completo"]')).toBeNull()
   })
 
-  it('sin elección en el Piloto (la cobranza sigue el nivel), el nivel se ofrece como siempre', async () => {
+  it('sin elección en el Piloto, se ofrecen los TRES modos del Piloto, no los cuatro peldaños (N-13, QA-PAGOS-95 r2)', async () => {
     flota.origen = 'politica'
     await pintar()
     expect(container.querySelector('[data-testid="autonomia-en-el-piloto"]')).toBeNull()
-    expect(container.querySelector('[data-testid="autonomy-option-automatico_completo"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="autonomy-option-automatico_completo"]')).toBeNull()
+    expect(container.querySelector('[data-testid="autonomia-modo-sombra"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="autonomia-modo-copiloto"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="autonomia-modo-autonomo"]')).not.toBeNull()
+    // El peldaño de antes (automático completo) se dice con su modo: Automático.
+    expect(container.querySelector('[data-testid="autonomia-tres-modos"]')?.textContent).toContain('Automático')
   })
 })

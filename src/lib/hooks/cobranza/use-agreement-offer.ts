@@ -17,8 +17,10 @@
  * Ley 2300). El plan queda «Pendiente aprobación», tal como promete el aviso.
  *
  * Body (el backend valida `.strict()`): { agencyId, debtorId, callId,
- * stage, totalDueCop, interestsCop }. El motor calcula descuento/cuotas/
- * inicial según la política de la etapa.
+ * stage, totalDueCop, interestsCop, initialAmountCop?, installmentCount?,
+ * firstDueDate? }. Con lo pedido, el plan es ése si cabe en la política de la
+ * etapa (si no, 400 con `campos`); sin él, el motor calcula descuento/cuotas/
+ * inicial según la política (CB-05).
  */
 
 import { useCallback, useState } from 'react'
@@ -49,6 +51,17 @@ export interface OfferAgreementInput {
   stage: CarteraStage
   totalDueCop: number
   interestsCop: number
+  /**
+   * 🔴 CB-05 (QA-PAGOS-95 r2): lo que la persona escribió. Antes no viajaba y el
+   * micro guardaba lo de la política (o «pago único») aunque la vista previa
+   * mostrara otra cosa. El micro lo valida contra la política de la etapa: si
+   * no cabe, 400 con `campos` (cada uno bajo su campo).
+   */
+  initialAmountCop?: number
+  /** Cuotas después de la inicial (0 = pago único). */
+  installmentCount?: number
+  /** `AAAA-MM-DD`: vencimiento de la primera cuota. */
+  firstDueDate?: string
 }
 
 export interface UseAgreementOfferResult {
@@ -121,6 +134,9 @@ export function useAgreementOffer(): UseAgreementOfferResult {
               stage: input.stage,
               totalDueCop: input.totalDueCop,
               interestsCop: input.interestsCop,
+              ...(input.initialAmountCop !== undefined ? { initialAmountCop: input.initialAmountCop } : {}),
+              ...(input.installmentCount !== undefined ? { installmentCount: input.installmentCount } : {}),
+              ...(input.firstDueDate ? { firstDueDate: input.firstDueDate } : {}),
             }),
           },
         )

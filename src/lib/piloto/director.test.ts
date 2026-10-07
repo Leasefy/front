@@ -42,6 +42,19 @@ describe('la Bandeja sigue el orden del director', () => {
     expect(ordenarBandeja(items).map((i) => i.id)).toEqual(['b', 'a'])
   })
 
+  // 🟡 QA-PILOTO-95 r2: un envío en su gracia quedaba en la última página (era el más nuevo).
+  it('🔴 lo que tiene «Deshacer» con el tiempo corriendo va arriba de todo, aun del director', () => {
+    const deshacer = (path: string) => ({ label: 'Deshacer', method: 'POST', path, body: {}, tono: 'peligro' })
+    const items = [
+      item('viejo', '2026-09-01T10:00:00Z'),
+      item('dir-80', '2026-09-28T11:00:00Z', 80),
+      { id: 'gracia:1', desde: '2026-10-06T06:00:00Z', accion: deshacer('/api/agency/a/piloto/envios/1/deshacer') },
+      { id: 'acc:programada', desde: '2026-10-05T06:00:00Z', accion: deshacer('/api/agency/a/piloto/acciones/2/deshacer') },
+      { id: 'con-boton', desde: '2026-08-01T06:00:00Z', accion: { label: 'Aprobar', method: 'POST', path: '/api/agency/a/piloto/acciones/3/ejecutar' } },
+    ]
+    expect(ordenarBandeja(items).map((i) => i.id)).toEqual(['acc:programada', 'gracia:1', 'dir-80', 'con-boton', 'viejo'])
+  })
+
   it('no toca la lista que recibe', () => {
     const items = [item('b', '2026-09-02T10:00:00Z'), item('a', '2026-09-01T10:00:00Z')]
     ordenarBandeja(items)

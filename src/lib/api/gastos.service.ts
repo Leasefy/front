@@ -46,6 +46,8 @@
  */
 
 import { apiClient, ApiError } from './client';
+import type { MismoPaso } from '@/lib/doble-control/el-administrador';
+import type { SegundaPersonaEnLaPantalla } from '@/lib/dispersiones/segunda-persona-por-monto';
 import { soloClaves } from './contabilidad.service';
 
 const BASE = '/inmobiliaria/contabilidad';
@@ -739,6 +741,13 @@ export interface LoteDeEgreso {
   anuladoAt: string | null;
   motivoDeLaAnulacion: string | null;
   egresos: Egreso[];
+  /**
+   * 🔴 Decisión de Nico (05-10-2026): el lote que espera aprobación y pasa el
+   * monto de la segunda persona no lo aprueba quien lo armó, aunque sea
+   * administrador. Sólo en el listado; `null` = ya no espera aprobación;
+   * ausente = back anterior (el 409 es la autoridad).
+   */
+  segundaPersona?: SegundaPersonaEnLaPantalla | null;
 }
 
 export interface ListaDeLotes {
@@ -985,8 +994,8 @@ export const gastosApi = {
     },
 
     /** Escritura. Los egresos pasan de `PENDIENTE` a `EN_LOTE`. */
-    async crear(lote: LoteNuevo): Promise<LoteDeEgreso> {
-      return apiClient.post<LoteDeEgreso>(
+    async crear(lote: LoteNuevo): Promise<LoteDeEgreso & { mismoPaso?: MismoPaso }> {
+      return apiClient.post<LoteDeEgreso & { mismoPaso?: MismoPaso }>(
         `${BASE}/egresos/lotes`,
         soloClaves(lote, CLAVES_DE_CREAR_LOTE),
       );

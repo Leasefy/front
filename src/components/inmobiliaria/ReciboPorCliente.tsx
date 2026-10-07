@@ -802,15 +802,24 @@ export function usePlanDeImputacion(
   cartera: CarteraDelCliente | null,
   monto: number,
   conCentavos = false,
+  /**
+   * A-21 (QA-PAGOS-95 r2): la plata de una ASEGURADORA (siniestro) sólo paga
+   * lo vencido — así la imputa el back (`soloVencido`) y lo de más queda
+   * pendiente de aplicar—. El plan decía «Noviembre · Adelanto» y otra deuda
+   * restante que la del recibo que salía.
+   */
+  soloVencido = false,
 ): Imputacion {
   return React.useMemo(
     () =>
       imputarPago(
-        cartera ? deudasDeLaCartera(cartera.cuotas) : [],
+        cartera
+          ? deudasDeLaCartera(soloVencido ? cartera.cuotas.filter((c) => c.vencida !== false) : cartera.cuotas)
+          : [],
         conCentavos ? monto : Math.round(monto),
         { conCentavos },
       ),
-    [cartera, monto, conCentavos],
+    [cartera, monto, conCentavos, soloVencido],
   );
 }
 

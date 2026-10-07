@@ -25,6 +25,8 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { EsqueletoDePagina } from '@/components/estado/EsqueletoDePagina';
 import { fechaDeVigencia } from '@/lib/contratos/fecha-de-vigencia';
 import { NoVoyARenovar } from '@/components/inquilino/NoVoyARenovar';
+import { ContratosSinArriendo } from '@/components/inquilino/ContratosSinArriendo';
+import { useContratosDelPortal } from '@/lib/hooks/use-contratos-del-portal';
 
 /**
  * QA-INQ-95: el inicio y el fin del arriendo son DÍAS. `new Date('2025-11-01T00:00:00.000Z')`
@@ -59,6 +61,10 @@ export default function ArriendoPage() {
 
   const activeLeases = isOnboardingComplete ? getActive() : [];
   const primaryLease = activeLeases[0];
+  // QA-MIGRACION-95 — CA-04 (Nico, (a)): los contratos migrados sin arriendo
+  // (sin día de pago en el archivo), por la identidad de la sesión.
+  const { contratos: contratosSinArriendo, cargando: cargandoContratos } = useContratosDelPortal(isOnboardingComplete === true);
+  const cuantosContratos = activeLeases.length + contratosSinArriendo.length;
 
   // Estado del período actual — misma fuente única que pagos/page.tsx.
   const { info: paymentInfo } = useLeasePaymentInfo(primaryLease?.id ?? null);
@@ -243,11 +249,11 @@ export default function ArriendoPage() {
           {/* Sin contratos no va el encabezado: "Contratos activos · 0
               contratos" arriba de "No tienes arriendos activos" dice lo mismo
               dos veces, y la segunda ya lo dice mejor. */}
-          {activeLeases.length > 0 && (
+          {cuantosContratos > 0 && (
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-fg">{locale === 'es' ? 'Contratos activos' : 'Active contracts'}</h2>
               <span className="text-sm text-fg-muted">
-                {activeLeases.length} {locale === 'es' ? (activeLeases.length !== 1 ? 'contratos' : 'contrato') : (activeLeases.length !== 1 ? 'contracts' : 'contract')}
+                {cuantosContratos} {locale === 'es' ? (cuantosContratos !== 1 ? 'contratos' : 'contrato') : (cuantosContratos !== 1 ? 'contracts' : 'contract')}
               </span>
             </div>
           )}
@@ -446,7 +452,7 @@ export default function ArriendoPage() {
                 );
               })}
             </div>
-          ) : (
+          ) : contratosSinArriendo.length > 0 || cargandoContratos ? null : (
             <EmptyState
               icon={House}
               title="No tienes arriendos activos"
@@ -457,6 +463,12 @@ export default function ArriendoPage() {
               action={{ label: 'Ver propiedades para mí', href: '/inquilino/para-ti' }}
             />
           )}
+          {/* QA-MIGRACION-95 — CA-04: los contratos que la inmobiliaria cargó sin arriendo. */}
+          {contratosSinArriendo.length > 0 ? (
+            <div className={activeLeases.length > 0 ? 'mt-4' : undefined}>
+              <ContratosSinArriendo contratos={contratosSinArriendo} />
+            </div>
+          ) : null}
         </section>
 
       </motion.div>

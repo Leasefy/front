@@ -300,7 +300,10 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
       toast.success(
         armado?.estado === 'APROBADO'
           ? `Lote armado y aprobado con ${cuantos}. ${APROBADO_POR_TI}: sin código y en el mismo paso. Ya se puede bajar el archivo para el banco.`
-          : `Lote armado con ${cuantos}. Lo tiene que aprobar otra persona.`,
+          : armado?.mismoPaso?.porQueNo === 'SOBRE_EL_MONTO'
+            ? // 🔴 Decisión de Nico (05-10-2026): desde el monto, otra persona.
+              `Lote armado con ${cuantos}. ${armado.mismoPaso.nota}`
+            : `Lote armado con ${cuantos}. Lo tiene que aprobar otra persona.`,
       );
       setElegidos(new Set());
       setConceptoDelLote('');

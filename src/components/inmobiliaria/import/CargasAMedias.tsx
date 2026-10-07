@@ -35,6 +35,7 @@ import {
   type EstadoDeLoteInmuebles,
 } from '@/lib/api/inmuebles-importacion.service';
 import { describirCargaAbierta, ubicacionCompleta } from './lib/describirCargaAbierta';
+import { lineaDeLaCarga } from '@/components/migracion/datos-de-la-carga';
 import { leerClaveDeCarga, olvidarClaveDeCarga } from './lib/claveDeCarga';
 import { mensajeDeCarga } from './lib/mensajeDeCarga';
 
@@ -133,6 +134,7 @@ export function CargasAMedias({
               className="flex flex-wrap items-center justify-between gap-3"
               data-testid={`carga-terminada-${l.lote}`}
             >
+              <div className="min-w-0 space-y-0.5">
               <p className="min-w-0 text-sm text-fg">
                 {d.cuando ? <span className="font-medium">{d.cuando}</span> : null}
                 {d.cuando ? ' · ' : null}
@@ -146,6 +148,8 @@ export function CargasAMedias({
                   </span>
                 ) : null}
               </p>
+              <DatosDeLaCarga l={l} terminada />
+              </div>
               <div className="flex flex-wrap items-center gap-2">
                 {d.fallidas > 0 && d.puedeReintentar ? (
                   <Button
@@ -210,6 +214,7 @@ export function CargasAMedias({
                   {d.avance}
                 </span>
               </p>
+              <DatosDeLaCarga l={l} terminada={falla} enCurso={!falla && (d.queHacer === 'creando' || d.queHacer === 'procesando')} />
               <p className="text-sm text-fg-muted">
                 {d.etapa === 'subiendo' ? (
                   sinClave ? (
@@ -356,5 +361,28 @@ export function CargasAMedias({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  );
+}
+
+/**
+ * Quién subió la carga, cuándo y cuánto lleva o tardó (QA-MIGRACION-95, 06-10):
+ * la migración salió del centro de procesos, que era donde se veía.
+ */
+function DatosDeLaCarga({ l, terminada, enCurso }: { l: EstadoDeLoteInmuebles; terminada?: boolean; enCurso?: boolean }) {
+  const linea = lineaDeLaCarga({
+    subidoPor: l.subidoPor,
+    creadoEn: l.creadoEn,
+    actualizadoEn: l.actualizadoEn,
+    terminada,
+    enCurso,
+    // Inmuebles: `actualizadoEn` es el último toque (la persona revisa y crea
+    // cuando quiere), no el fin del trabajo: «tardó» contaría su espera.
+    duracionConfiable: false,
+  });
+  if (!linea) return null;
+  return (
+    <p className="text-caption text-fg-subtle" data-testid={`datos-de-la-carga-${l.lote}`}>
+      {linea}
+    </p>
   );
 }

@@ -90,7 +90,7 @@ import {
   erroresDelReglaje,
   type CampoDelReglaje,
 } from '@/lib/hooks/cobranza/limites-de-cobranza'
-import { decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata'
+import { ESPACIO_DE_LA_PLATA, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata'
 // QA-IA-95 (05-10-2026): el mes en palabras («octubre de 2026»), no «2026-10».
 import { nombreDelMes } from '@/lib/recaudo/meses'
 
@@ -99,11 +99,11 @@ const CANALES: { value: CanalDeCobranza; label: string }[] = [
   { value: 'WHATSAPP', label: 'WhatsApp' },
 ]
 
-/** P8 a («centavos en todo»): los centavos sólo si los hay. */
+/** P8 a («centavos en todo»): los centavos sólo si los hay. CE-01 (QA-PAGOS-95 r2): «$ » con espacio duro. */
 function pesos(valor: number): string {
   return seMuestranLosCentavos(valor)
-    ? `$${valor.toLocaleString('es-CO', decimalesEnPantalla(valor))}`
-    : `$${Math.round(valor).toLocaleString('es-CO')}`
+    ? `$${ESPACIO_DE_LA_PLATA}${valor.toLocaleString('es-CO', decimalesEnPantalla(valor))}`
+    : `$${ESPACIO_DE_LA_PLATA}${Math.round(valor).toLocaleString('es-CO')}`
 }
 
 /** `2026-10-04` → `sábado, 4 de octubre`. Sin husos: es un día del calendario. */

@@ -250,7 +250,8 @@ export interface AmortizacionDelContrato {
 export function amortizacionDe(
   contrato: ContratoDelEstadoDeCuenta,
 ): AmortizacionDelContrato {
-  const filas = contrato.secciones.arriendos.filter((f) => f.estado !== 'ANULADA');
+  // CA-06: una parte sin definir (falta el % de cada dueño) no es una cuota suya todavía.
+  const filas = contrato.secciones.arriendos.filter((f) => f.estado !== 'ANULADA' && !f.sinPorcentaje);
   const pagadasFilas = filas.filter((f) => f.estado === 'CANCELADA');
 
   // La PLATA se suma fila por fila (un abono parcial es plata que entró).

@@ -32,7 +32,16 @@ import { agentFetch } from '@/lib/api/agent-fetch';
 import { cn } from '@/lib/utils';
 import { Button, Spinner } from '@/components/ui';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
+import { BackButton } from '@/components/ui/back-button';
 import { plataEnPantalla } from '@/lib/plata/escribir-plata';
+
+/**
+ * COLA-03 (QA-PAGOS-95, 05-10-2026): la vuelta es la de las demás fichas
+ * (`BackButton`, también en el fallo a pantalla completa) y lleva a donde vive
+ * la factura del proveedor —la pestaña «Facturas de proveedores» de
+ * Liquidaciones (PG-16)—, no a las liquidaciones de los propietarios.
+ */
+const LISTA_DE_FACTURAS = '/panel/inmobiliaria/pagos/liquidaciones/por-aprobar';
 
 // ---------------------------------------------------------------------------
 // AP Bill shape (mirrors ap-bills-source.ts)
@@ -210,7 +219,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
   if (error) {
     return (
       <div className="p-6 lg:p-8 space-y-4">
-        <BackNav t={t} k={k} />
+        <BackButton variant="subtle" href={LISTA_DE_FACTURAS} label={t(k('backToList'))} />
         <FalloDeCarga error={error} queEs="la factura" />
       </div>
     );
@@ -218,7 +227,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
   if (sinAgente) {
     return (
       <div className="p-6 lg:p-8 space-y-4">
-        <BackNav t={t} k={k} />
+        <BackButton variant="subtle" href={LISTA_DE_FACTURAS} label={t(k('backToList'))} />
         <div
           role="alert"
           className="flex items-start gap-3 rounded-lg border border-danger/30 bg-danger-soft p-4"
@@ -237,7 +246,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
   if (!bill) {
     return (
       <div className="p-6 lg:p-8 space-y-4">
-        <BackNav t={t} k={k} />
+        <BackButton variant="subtle" href={LISTA_DE_FACTURAS} label={t(k('backToList'))} />
         <div className="max-w-sm mx-auto text-center py-16 space-y-4">
           <div className="w-16 h-16 mx-auto rounded-full bg-surface-muted flex items-center justify-center">
             <Receipt className="w-8 h-8 text-fg-subtle" />
@@ -251,7 +260,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
             </p>
           </div>
           <Button asChild hideArrow>
-            <Link href="/panel/inmobiliaria/pagos/liquidaciones">
+            <Link href={LISTA_DE_FACTURAS}>
               <CaretLeft className="w-4 h-4" />
               {t(k('backToList'))}
             </Link>
@@ -270,7 +279,7 @@ function ApBillDetailContent({ billId }: { billId: string }) {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Back nav */}
-      <BackNav t={t} k={k} />
+      <BackButton variant="subtle" href={LISTA_DE_FACTURAS} label={t(k('backToList'))} />
 
       {/* Header */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -402,29 +411,6 @@ function ApBillDetailContent({ billId }: { billId: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Small shared back-nav (avoids duplication across states)
-// ---------------------------------------------------------------------------
-
-function BackNav({
-  t,
-  k,
-}: {
-  t: (key: string) => string;
-  k: (s: string) => string;
-}) {
-  return (
-    <nav>
-      <Link
-        href="/panel/inmobiliaria/pagos/liquidaciones"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-      >
-        <CaretLeft className="w-4 h-4" />
-        {t(k('backToList'))}
-      </Link>
-    </nav>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Default export wrapped in PageGuard
 // ---------------------------------------------------------------------------

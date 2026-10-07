@@ -123,6 +123,7 @@ import {
   loApruebaElQueLoArmo,
   notaDelLote,
 } from '@/lib/doble-control/el-administrador';
+import { laApruebaOtraPorElMonto } from '@/lib/dispersiones/segunda-persona-por-monto';
 
 type Dialogo =
   | 'pedirAprobacion'
@@ -400,7 +401,13 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
    * confirma a sí mismo. «Pedir aprobación» se lo deja aprobado en ese paso y
    * «Aprobar» no le pide código (lo hace el back). El botón no se le apaga.
    */
-  const loApruebaAlPedir = loApruebaElQueLoArmo(lote, yo, isAdmin);
+  /*
+   * 🔴 Decisión de Nico (05-10-2026): desde el monto de la segunda persona, P-4
+   * no vale: ni el administrador aprueba lo que armó (el back lo dice en
+   * `segundaPersona`). Entonces el botón vuelve a ser «Pedir aprobación».
+   */
+  const sobreElMonto = laApruebaOtraPorElMonto(vista.segundaPersona);
+  const loApruebaAlPedir = loApruebaElQueLoArmo(lote, yo, isAdmin) && !sobreElMonto;
   /** Lo armó y lo aprobó la misma persona (sólo un administrador, P-4). */
   const notaP4 = notaDelLote(lote, yo);
   /*
@@ -469,12 +476,21 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           {t('inmobiliaria.dispersiones.giroDevuelto.noApruebasLoQueDevolviste')}
         </Banner>
       )}
-      {lote.estado === 'ESPERANDO_APROBACION' && soyElCreador && !loApruebaAlPedir && !bloqueado && (
+      {lote.estado === 'ESPERANDO_APROBACION' && soyElCreador && !loApruebaAlPedir && !sobreElMonto && !bloqueado && (
         <Banner variant="info" title="Tú armaste este lote">
           La aprobación la tiene que dar otra persona con permiso de edición sobre dispersiones.
           Es el segundo par de ojos: quien arma un giro no lo aprueba.
         </Banner>
       )}
+      {(lote.estado === 'BORRADOR' || lote.estado === 'ESPERANDO_APROBACION') &&
+        soyElCreador &&
+        sobreElMonto &&
+        !bloqueado && (
+          <Banner variant="info" title="Lo aprueba una segunda persona" data-testid="segunda-persona-por-monto">
+            {vista.segundaPersona?.nota}
+            {lote.estado === 'BORRADOR' ? ' Con «Pedir aprobación» le llega el código.' : ''}
+          </Banner>
+        )}
       {(lote.estado === 'BORRADOR' || lote.estado === 'ESPERANDO_APROBACION') &&
         loApruebaAlPedir &&
         !bloqueado && (
@@ -541,7 +557,9 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
               disabled={(soyElCreador && !loApruebaAlPedir) || registreUnaDevolucion || bloqueado}
               title={
                 soyElCreador && !loApruebaAlPedir
-                  ? 'Quien arma el lote no puede aprobarlo'
+                  ? sobreElMonto
+                    ? (vista.segundaPersona?.nota ?? 'Quien arma el lote no puede aprobarlo')
+                    : 'Quien arma el lote no puede aprobarlo'
                   : registreUnaDevolucion
                     ? t('inmobiliaria.dispersiones.giroDevuelto.noApruebasLoQueDevolviste')
                     : undefined
@@ -841,7 +859,8 @@ export function DetalleDelLote({ id, guardar = guardarArchivo }: DetalleDelLoteP
           )}
         </div>
         <p className="text-xs text-fg-muted">
-          Armado por {nombreDe(lote.creadoPorUserId, vista.creadoPorNombre)} · {lote.items.length}{' '}
+          {/* QA-PAGOS-95: «Armado por ti», no «Armado por Tú». */}
+          Armado por {soyElCreador ? 'ti' : nombreDe(lote.creadoPorUserId, vista.creadoPorNombre)} · {lote.items.length}{' '}
           {lote.items.length === 1 ? 'pago' : 'pagos'} en total.
         </p>
       </section>

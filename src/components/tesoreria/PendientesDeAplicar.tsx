@@ -97,7 +97,8 @@ export function PendientesDeAplicarPanel() {
     try {
       await tesoreriaApi.aplicarPendiente(item.pendiente.id, item.aplicableCop);
       toast.success(
-        `${formatCurrency(item.aplicableCop)} aplicados a la deuda vencida de ${item.pendiente.nombre}.`,
+        // «S.A.S.» no termina en «S.A.S..» (QA-PAGOS-95 r2).
+        `${formatCurrency(item.aplicableCop)} aplicados a la deuda vencida de ${item.pendiente.nombre}`.replace(/\.?$/, '.'),
       );
       await cargar();
     } catch (error) {

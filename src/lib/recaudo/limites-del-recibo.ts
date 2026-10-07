@@ -17,7 +17,7 @@ export const MOTIVO_DE_ANULAR_MINIMO = 5
 export const MOTIVO_DE_ANULAR_MAXIMO = 300
 
 export const MENSAJES_DEL_RECIBO = {
-  valorMaximo: 'El valor del pago no puede pasar de $2.000.000.000. Revisa que no sobren ceros.',
+  valorMaximo: 'El valor del pago no puede pasar de $\u00a02.000.000.000. Revisa que no sobren ceros.',
   motivoCorto: 'Escribe el motivo de la anulación (al menos 5 caracteres).',
   motivoLargo: 'El motivo de la anulación puede tener hasta 300 caracteres.',
 } as const

@@ -27,6 +27,23 @@ export type MfaDestino = 'enroll' | 'verify' | 'none'
  */
 export type EstadoDelChequeoMfa = 'pending' | 'verified' | 'failed'
 
+/**
+ * 🔴 LOGIN-BUCLE (Nico, 06-10-2026): ¿hay una sesión guardada que todavía no
+ * se pudo confirmar? «Todavía no sé» NUNCA es «no hay sesión»: mientras dure,
+ * `isLoading` sigue en true y nadie manda al login.
+ *  - `no-aplica`: no hay nada por confirmar (ya se resolvió, o no había sesión
+ *    guardada al cargar).
+ *  - `revisando`: hay una sesión guardada y se está confirmando (Supabase,
+ *    `GET /users/me/bootstrap`, el segundo factor).
+ *  - `sin-confirmar`: pasó el tope y sigue sin respuesta. Las pantallas
+ *    protegidas muestran «No pudimos confirmar tu sesión» con «Reintentar»; se
+ *    sigue esperando debajo y, si la respuesta llega, se entra solo.
+ */
+export type ConfirmacionDeLaSesion = 'no-aplica' | 'revisando' | 'sin-confirmar'
+
+/** Lo que dice Supabase de la sesión guardada al apretar «Continuar». */
+export type VigenciaDeLaSesion = 'viva' | 'muerta' | 'sin-respuesta'
+
 export type UserRole = 'tenant' | 'landlord' | 'agency'
 
 /** Backend role enum (matches Prisma/NestJS) */
@@ -223,6 +240,12 @@ export interface AuthState {
    */
   mfaCheckStatus?: EstadoDelChequeoMfa
   /**
+   * Ver `ConfirmacionDeLaSesion`. Opcional por lo mismo que `mfaCheckStatus`:
+   * `AuthProvider` siempre lo pone; un doble de prueba sin él se lee como
+   * 'no-aplica' (lo de siempre).
+   */
+  confirmacionDeLaSesion?: ConfirmacionDeLaSesion
+  /**
    * True when Supabase Auth has a valid JWT but the backend returned 401
    * "User not found" — meaning the user hasn't completed onboarding yet.
    * Callers should redirect to /onboarding/seleccionar-rol when this is true.
@@ -280,6 +303,19 @@ export interface AuthContextType extends AuthState {
   setMfaVerified: () => void
   /** Vuelve a preguntar por el segundo factor después de un `failed`. Opcional por lo mismo que `mfaCheckStatus`. */
   retryMfaCheck?: () => Promise<void>
+  /**
+   * «Reintentar» de una sesión `sin-confirmar` (ver `ConfirmacionDeLaSesion`):
+   * recarga la página, que vuelve a levantar auth-js desde cero. Opcional por
+   * lo mismo que `mfaCheckStatus`.
+   */
+  reintentarConfirmarLaSesion?: () => void
+  /**
+   * Pregunta a Supabase si la sesión guardada sigue viva (la renueva si el
+   * token venció). `muerta` = no hay sesión y ya no queda guardada: renovar
+   * falló de verdad. Lo usa «Continuar» de `SesionYaAbierta`. Opcional por lo
+   * mismo que `mfaCheckStatus`.
+   */
+  confirmarSesionVigente?: () => Promise<VigenciaDeLaSesion>
   /** Set agency context (called after registration or login for agency members) */
   setAgency: (agency: Agency | null, role: AgencyMemberRole | null) => void
   /** Manually retry fetching the agency membership (e.g. an error card's

@@ -188,6 +188,12 @@ function iconoDelMedio(opcion: OpcionDeMedio): typeof Bank {
   return ICONO_DEL_MEDIO[normalizarMedio(opcion.codigo)] ?? DotsThree;
 }
 
+/**
+ * Espejo de `TOPE_DEL_AJUSTE_AL_PESO` del back (`recibos-de-caja/anticipo-del-contrato.ts`):
+ * un pago que supera toda la deuda por hasta $ 1.000 es un desfase, no saldo a favor.
+ */
+export const TOPE_DEL_AJUSTE_AL_PESO = 1_000;
+
 const ORIGEN_MINIMO = 5;
 
 /** Los «saludos» topan en 380: el back le agrega el detalle del reparto. */
@@ -469,7 +475,7 @@ export function RegistrarPagoModal({
     cargaDeLaPersona,
     recargar,
   } = useCarteraDelCliente(tenantId, cobroId, isOpen, fechaDeLaVistaPrevia);
-  const plan = usePlanDeImputacion(cartera, monto, deudaConCentavos);
+  const plan = usePlanDeImputacion(cartera, monto, deudaConCentavos, quienPaga.tipo === 'ASEGURADORA');
   const sinConciliar = React.useMemo(
     () => periodosSinConciliar(cartera, plan),
     [cartera, plan],
@@ -507,8 +513,21 @@ export function RegistrarPagoModal({
    */
   const puedeGuardarAFavor = cartera?.anticipoDisponible === true;
   const excedente = montoValido ? Math.max(0, monto - maximo) : 0;
+  /*
+   * A-15 (QA-PAGOS-95 r2): espejo de `separarAjusteAlPeso` del back
+   * (`TOPE_DEL_AJUSTE_AL_PESO`, Juan Camilo 16-09): lo que supera TODA la deuda
+   * por hasta $ 1.000, sin decir que es adelanto, es un desfase: el back lo
+   * lleva como ajuste al peso, no a favor. El cajón decía «quedan a su favor» y
+   * pedía confirmarlo; el recibo después decía otra cosa.
+   */
+  const esAjusteAlPeso =
+    excedente > 0 &&
+    excedente <= TOPE_DEL_AJUSTE_AL_PESO &&
+    forma === 'ABONAR_A_LAS_CUOTAS' &&
+    (cartera?.total ?? 0) > 0;
   // 🔴 D11: la plata de una aseguradora nunca queda a favor del inquilino.
-  const seExcede = excedente > 0 && (!puedeGuardarAFavor || quienPaga.tipo === 'ASEGURADORA');
+  const seExcede =
+    excedente > 0 && !esAjusteAlPeso && (!puedeGuardarAFavor || quienPaga.tipo === 'ASEGURADORA');
 
   /*
    * 🔴 El tope de la COLUMNA (02-10-2026): `recibos_de_caja.valor_cop` es int4.
@@ -570,7 +589,7 @@ export function RegistrarPagoModal({
     montoValido &&
     !superaElTope &&
     !seExcede &&
-    (excedente === 0 || aFavorConfirmado === monto) &&
+    (excedente === 0 || esAjusteAlPeso || aFavorConfirmado === monto) &&
     medio !== '' &&
     !faltaElPagador(quienPaga) &&
     problemaDeLaFecha === null &&
@@ -1144,7 +1163,16 @@ export function RegistrarPagoModal({
                 {/* Por encima de lo vencido la plata baja cuotas que todavía no
                     vencen. Es legítimo y es lo que el CEO pidió, pero tiene que
                     estar dicho ANTES de emitir, no descubrirse en el recibo. */}
-                {vencido > 0 && futuro > 0 && (
+                {/* A-21 (QA-PAGOS-95 r2): lo de una aseguradora por encima de lo vencido no adelanta: queda pendiente. */}
+                {quienPaga.tipo === 'ASEGURADORA' && montoValido && monto > vencido && (
+                  <Appear as="p" direction="none" className="text-xs text-fg-muted" data-testid="aviso-pendiente-de-aplicar">
+                    {t('recibos.form.aseguradoraPendiente', {
+                      monto: formatCurrency(monto - vencido),
+                      vencido: formatCurrency(vencido),
+                    })}
+                  </Appear>
+                )}
+                {vencido > 0 && futuro > 0 && quienPaga.tipo !== 'ASEGURADORA' && (
                   <Appear as="p" direction="none" className="text-xs text-fg-muted" data-testid="aviso-adelanto-monto">
                     {t('recibos.form.adelantoDesde', {
                       vencido: formatCurrency(vencido),
@@ -1154,14 +1182,22 @@ export function RegistrarPagoModal({
                 )}
                 {/* Decir a dónde va el excedente ANTES de emitir: si no, la
                     plata «desaparece» de la cartera y nadie sabe dónde quedó. */}
-                {excedente > 0 && puedeGuardarAFavor && (
+                {esAjusteAlPeso && (
+                  <Appear as="p" direction="none" className="text-xs text-fg-muted" data-testid="aviso-ajuste-al-peso">
+                    {t('recibos.form.avisoAjusteAlPeso', {
+                      monto: formatCurrency(excedente),
+                      tope: formatCurrency(TOPE_DEL_AJUSTE_AL_PESO),
+                    })}
+                  </Appear>
+                )}
+                {excedente > 0 && !esAjusteAlPeso && puedeGuardarAFavor && (
                   <Appear as="p" direction="none" className="text-xs text-fg-muted" data-testid="aviso-a-favor">
                     {formatCurrency(excedente)} superan TODA la deuda de {cartera?.nombre ?? 'el cliente'}
                     {' '}—vencida y futura— y quedan a su favor: se aplican solos a las cuotas que
                     vayan apareciendo, de la más vieja a la más nueva.
                   </Appear>
                 )}
-                {excedente > 0 && puedeGuardarAFavor && !seExcede && (
+                {excedente > 0 && !esAjusteAlPeso && puedeGuardarAFavor && !seExcede && (
                   <label className="flex items-start gap-2 text-sm text-fg" data-testid="confirmar-a-favor">
                     <Checkbox
                       className="mt-0.5"

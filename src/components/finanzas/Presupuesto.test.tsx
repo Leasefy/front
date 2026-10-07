@@ -337,7 +337,7 @@ describe('cargar el presupuesto · errores en su campo', () => {
   it('🔁 un valor con ceros de más se ataja antes de enviar, con la frase del back', async () => {
     await abrirYEscribir('120000000000');
     expect(document.getElementById('presupuesto-valor-error')?.textContent).toBe(
-      'El valor presupuestado no puede pasar de $2.000.000.000 (ni de -$2.000.000.000). Revisa que no sobren ceros.',
+      'El valor presupuestado no puede pasar de $\u00a02.000.000.000 (ni de -$\u00a02.000.000.000). Revisa que no sobren ceros.',
     );
     await guardar();
     expect(h.guardar).not.toHaveBeenCalled();

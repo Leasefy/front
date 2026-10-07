@@ -185,11 +185,15 @@ function useApiData<T>(
 // Propietarios
 // ============================================================================
 
-export function usePropietarios(params?: Parameters<typeof propietariosApi.getAll>[0]) {
+export function usePropietarios(
+  params?: Parameters<typeof propietariosApi.getAll>[0],
+  /** `skip`: no pedir (quien no tiene `propietarios:view`: el back respondería 403). */
+  options?: { skip?: boolean },
+) {
   const { data, ...rest } = useApiData(
     () => propietariosApi.getAll(params),
-    [params?.search, params?.city, params?.page],
-    false,
+    [params?.search, params?.city, params?.page, options?.skip],
+    options?.skip ?? false,
     0,
     ['propietarios'],
   );

@@ -78,6 +78,8 @@ export async function aplicarLoteDeTerceros(
     // completas desde Inquilinos» ni cuántos venían sin correo.
     acumulado.incompletas = (acumulado.incompletas ?? 0) + (tanda.incompletas ?? 0);
     acumulado.sinCorreo = (acumulado.sinCorreo ?? 0) + (tanda.sinCorreo ?? 0);
+    // QA-MIGRACION-95: las que ya estaban no son «creadas».
+    acumulado.yaEstaban = (acumulado.yaEstaban ?? 0) + (tanda.yaEstaban ?? 0);
     acumulado.resultados.push(...(tanda.resultados as ResultadoDeFila[]));
     acumulado.restantes = tanda.restantes ?? 0;
 
@@ -103,4 +105,13 @@ export class AplicacionInterrumpida extends Error {
     super(causa instanceof Error ? causa.message : 'No pudimos crear las fichas.');
     this.name = 'AplicacionInterrumpida';
   }
+}
+
+/**
+ * QA-MIGRACION-95 (06-10): cuántas fichas NACIERON de verdad en la aplicación.
+ * Re-subir el mismo archivo enlaza a las personas que ya estaban (el back no
+ * duplica) y el informe decía «8 creadas» de 8 que ya existían.
+ */
+export function creadasDeVerdad(a: Pick<ResumenDeAplicacion, 'aplicadas' | 'yaEstaban'>): number {
+  return Math.max(0, a.aplicadas - (a.yaEstaban ?? 0));
 }

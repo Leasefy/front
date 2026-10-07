@@ -471,16 +471,19 @@ function TesoreriaContent() {
                 >
                   {resumen.map((row, i) => (
                     <div key={row.labelKey}>
-                      <div className="flex items-center justify-between text-sm">
+                      {/* CE-07 (QA-PAGOS-95): a 1440 con seis pasos el «−» se iba
+                          a una línea y la cifra a otra («Comisión- admin $ …»). El
+                          rótulo se parte; el signo y la cifra, nunca. */}
+                      <div className="flex items-center justify-between gap-2 text-sm">
                         <span
-                          className="text-muted-foreground"
+                          className="min-w-0 text-muted-foreground"
                           data-testid={i === 0 ? 'tesoreria-rotulo-canon' : undefined}
                         >
                           {t(k(row.labelKey))}
                         </span>
                         {/* Al cambiar de mes, las cifras cuentan desde las del
                             mes anterior (`AnimatedNumber`). */}
-                        <span className={cn('font-mono tabular-nums', row.tone)}>
+                        <span className={cn('shrink-0 whitespace-nowrap font-mono tabular-nums', row.tone)} data-testid="tesoreria-cifra-del-paso">
                           {row.sign}
                           <AnimatedNumber value={row.value} format={formatCurrency} />
                         </span>
@@ -510,16 +513,16 @@ function TesoreriaContent() {
                     </span>
                   </div>
                   {deduccionesDelMes > 0 && (
-                    <div className="flex items-center justify-between text-sm" data-testid="tesoreria-deducciones-total">
+                    <div className="flex items-center justify-between gap-2 text-sm" data-testid="tesoreria-deducciones-total">
                       <span className="text-muted-foreground">{t(k('fDeducciones'))}</span>
-                      <span className="font-mono tabular-nums text-danger">−{formatCurrency(deduccionesDelMes)}</span>
+                      <span className="shrink-0 whitespace-nowrap font-mono tabular-nums text-danger">−{formatCurrency(deduccionesDelMes)}</span>
                     </div>
                   )}
                   {conDeducciones && (aGirarDelMes !== neto || enContraDelMes > 0) && (
                     <>
-                      <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between gap-2 text-sm">
                         <span className="font-semibold text-fg">{t(k('fAGirar'))}</span>
-                        <span className="font-mono font-semibold tabular-nums text-success" data-testid="tesoreria-a-girar-total">
+                        <span className="shrink-0 whitespace-nowrap font-mono font-semibold tabular-nums text-success" data-testid="tesoreria-a-girar-total">
                           <AnimatedNumber value={aGirarDelMes} format={formatCurrency} />
                         </span>
                       </div>

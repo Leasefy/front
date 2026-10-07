@@ -97,6 +97,24 @@ export interface VistaPreviaDeTerminacion {
   penalidadMaxima?: TopeDeLaPenalidad | null;
   /** D10: lo que falta de la garantía de servicios para recibir el inmueble. */
   garantiaDeServiciosPendiente?: string | null;
+  /**
+   * 🔴 N-31 (QA-FACT-CONTA-95 r3, Nico 06-10-2026): las facturas YA EMITIDAS
+   * que la terminación corrige con nota crédito. `ANULAR_Y_REHACER` = la del
+   * mes del fin se anula y sale otra por los días vividos; `ANULAR` = el mes ya
+   * no se cubre. Un back viejo no lo manda.
+   */
+  facturasQueSeCorrigen?: FacturaQueSeCorrigeAlTerminar[];
+  /** Q12: `TU` = la nota sale al terminar; `ADMIN_O_CONTADOR` = queda lista para que ellos la emitan. */
+  lasNotasLasEmite?: "TU" | "ADMIN_O_CONTADOR";
+}
+
+export interface FacturaQueSeCorrigeAlTerminar {
+  facturaId: string;
+  /** `2026-10`. */
+  mes: string;
+  /** `LABQA-7`. */
+  numeroDian: string;
+  que: "ANULAR_Y_REHACER" | "ANULAR";
 }
 
 export interface ResultadoDeTerminacion {

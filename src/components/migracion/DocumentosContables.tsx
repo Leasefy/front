@@ -608,8 +608,9 @@ function ResumenDeDocumentos({
             {acumulado.porDocumento.toLocaleString("es-CO")}
           </span>{" "}
           <span className="text-fg-muted">
-            quedaron colgados de un contrato por el documento del tercero (el
-            «REF» del concepto).
+            {/* QA-MIGRACION-95: con uno, en singular («1 quedó colgado…»). */}
+            {acumulado.porDocumento === 1 ? "quedó colgado" : "quedaron colgados"} de un
+            contrato por el documento del tercero (el «REF» del concepto).
           </span>
         </p>
         <p className="text-fg">
@@ -643,9 +644,9 @@ function ResumenDeDocumentos({
             {acumulado.soloInmueble.toLocaleString("es-CO")}
           </span>{" "}
           <span className="text-fg-muted">
-            quedaron colgados SÓLO de su inmueble: el concepto dice el código,
-            pero ese día el inmueble no tenía contrato vigente. No tienen
-            inquilino, pero salen en la ficha del inmueble.
+            {acumulado.soloInmueble === 1
+              ? "quedó colgado SÓLO de su inmueble: el concepto dice el código, pero ese día el inmueble no tenía contrato vigente. No tiene inquilino, pero sale en la ficha del inmueble."
+              : "quedaron colgados SÓLO de su inmueble: el concepto dice el código, pero ese día el inmueble no tenía contrato vigente. No tienen inquilino, pero salen en la ficha del inmueble."}
           </span>
         </p>
         <p className="text-fg">
@@ -653,10 +654,9 @@ function ResumenDeDocumentos({
             {acumulado.sinContrato.toLocaleString("es-CO")}
           </span>{" "}
           <span className="text-fg-muted">
-            quedaron SIN contrato: el concepto no nombra a ningún tercero,
-            contrato ni inmueble de tu agencia que se pueda resolver sin
-            adivinar. Se guardan igual, con su concepto, y se pueden buscar; lo
-            que no se hace es inventarles un contrato.
+            {acumulado.sinContrato === 1
+              ? "quedó SIN contrato: el concepto no nombra a ningún tercero, contrato ni inmueble de tu agencia que se pueda resolver sin adivinar. Se guarda igual, con su concepto, y se puede buscar; lo que no se hace es inventarle un contrato."
+              : "quedaron SIN contrato: el concepto no nombra a ningún tercero, contrato ni inmueble de tu agencia que se pueda resolver sin adivinar. Se guardan igual, con su concepto, y se pueden buscar; lo que no se hace es inventarles un contrato."}
           </span>
         </p>
       </div>

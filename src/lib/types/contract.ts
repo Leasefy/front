@@ -401,6 +401,12 @@ export interface PropietarioDelContrato {
 }
 
 export interface PropietariosDelContrato {
+  /**
+   * CO-15 (QA-MIGRACION-95): el archivo de la migración no traía el
+   * porcentaje de cada dueño; cada uno dice «Falta el porcentaje» y no lleva
+   * su parte del canon. Ausente con un back anterior.
+   */
+  participacionesDesconocidas?: boolean;
   propietarios: PropietarioDelContrato[];
   sumaBps: number;
   /** `false` = hay que corregir el mandato; la ficha lo dice en voz alta. */
@@ -674,6 +680,23 @@ export interface Contract {
    * desacuerdo cuando las dos no coinciden, en vez de elegir un número.
    */
   comisionDeConsignacion?: number | null;
+  /**
+   * CO-28 (QA-MIGRACION-95): el mandato del inmueble dice que el archivo de
+   * inmuebles no traía la comisión (`comisionDesconocida`). Ausente con un
+   * back anterior.
+   */
+  comisionSinDefinir?: boolean;
+  /**
+   * CO-28: por qué este contrato no tiene tabla de cuotas (nadie sabe la
+   * comisión), tal cual lo dice el generador del back; `null` si no aplica.
+   */
+  sinTablaDeCuotas?: string | null;
+  /**
+   * NI-05 (QA-MIGRACION-95): qué traía el archivo de un contrato migrado
+   * (depósito, periodicidad), leído de la fila de la migración. `null`/ausente
+   * = no se sabe (nativo, back anterior): se muestra como siempre.
+   */
+  loQueTraiaElArchivo?: { traiaDeposito: boolean; traiaPeriodicidad: boolean } | null;
   /**
    * El propietario de verdad: la ficha de la consignación del inmueble.
    * `landlordName` en un contrato de inmobiliaria es el usuario que lo creó

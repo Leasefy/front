@@ -23,6 +23,9 @@ let root: Root
 let hrefAsignados: string[]
 
 beforeEach(() => {
+  // «Continuar» deja una marca de rebote en sessionStorage (LOGIN-BUCLE): cada
+  // caso arranca como una pestaña nueva.
+  sessionStorage.clear()
   segundoFactor.mfaRequired = false
   segundoFactor.mfaEnrollRequired = false
   hrefAsignados = []

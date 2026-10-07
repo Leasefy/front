@@ -134,9 +134,12 @@ import type { CajonDeLaCuota, FilaDeLaCuotaDelMes } from '@/lib/api/cartera.type
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { useI18n } from '@/lib/i18n'
 import { CLAVE_DE_MORA, RUTA_DE_REGLAS_DE_MORA, sumarIntereses } from '@/components/cartera/interes-de-mora'
-import { mesEnTitulo } from '@/lib/utils/mes'
+import { mesEnTitulo, nombreDelMes } from '@/lib/utils/mes'
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa'
 import { cn } from '@/lib/utils'
+
+/** A-04: el mismo destino de «Fijar los días de plazo» de toda la app (foco en el campo). */
+const RUTA_PARA_FIJAR_EL_PLAZO = '/panel/inmobiliaria/configuracion/perfil#perfil-diasDePlazo'
 
 const numberFormatter = new Intl.NumberFormat('es-CO')
 
@@ -411,6 +414,9 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
   // PG-R18: los 12 de atrás y hasta el mes en curso + 3.
   const opciones = useMemo(() => mesesRecientes(12, new Date(), MESES_HACIA_ADELANTE), [])
   const titulo = mesEnTitulo(mes)
+  // N-02 (QA-PAGOS-95): dentro de una frase el mes va en minúscula («que se
+  // deben en octubre de 2026»); `titulo` es para etiquetas sueltas.
+  const enFrase = nombreDelMes(mes)
 
   const todas = useMemo(() => datos?.filas ?? [], [datos])
   const visibles = useMemo(
@@ -528,7 +534,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
         <EstadoDeDatos
           cargando={cargando && !datos}
           error={error}
-          queEs={`la deuda de ${titulo}`}
+          queEs={`la deuda de ${enFrase}`}
           onReintentar={recargar}
           esqueleto={<EsqueletoTabla columnas={6} filas={6} />}
         >
@@ -548,7 +554,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
               onClick={() => setCajon('MES')}
               queMuestra={`Ver las ${numberFormatter.format(t?.cuotas ?? 0)} cuotas del mes en la tabla`}
             />{' '}
-            que se deben en {titulo} —{numberFormatter.format(t?.cuotas ?? 0)}{' '}
+            que se deben en {enFrase} —{numberFormatter.format(t?.cuotas ?? 0)}{' '}
             {(t?.cuotas ?? 0) === 1 ? 'cuota' : 'cuotas'} de{' '}
             {numberFormatter.format(t?.inquilinos ?? 0)}{' '}
             {(t?.inquilinos ?? 0) === 1 ? 'inquilino' : 'inquilinos'}— ya entraron{' '}
@@ -605,6 +611,18 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
                     <li key={aviso}>{aviso}</li>
                   ))}
                 </ul>
+                {/* 🔴 A-04 (QA-PAGOS-95): «Fíjalos en Configuración → Perfil» sin
+                    enlace dejaba a la persona buscando; el mismo enlace que el
+                    Tablero y el estado de cuenta, con el foco en el campo. */}
+                {hayVencidasSinPlazo ? (
+                  <Link
+                    href={RUTA_PARA_FIJAR_EL_PLAZO}
+                    className="mr-4 inline-block font-medium underline underline-offset-4"
+                    data-testid="mes-fijar-el-plazo"
+                  >
+                    Fijar los días de plazo
+                  </Link>
+                ) : null}
                 {/* Sin reglas de mora el interés sale en cero y NO porque no haya
                     mora: se lleva a donde se arregla. */}
                 {datos?.sinReglasDeMora ? (
@@ -762,7 +780,7 @@ export function DeudaDelMesPanel({ mesInicial }: DeudaDelMesPanelProps) {
             <p className="text-xs text-fg-muted" data-testid="alcance-de-la-tabla">
               {numberFormatter.format(visibles.length)} de{' '}
               {numberFormatter.format(todas.length)}{' '}
-              {todas.length === 1 ? 'cuota' : 'cuotas'} de {titulo}.
+              {todas.length === 1 ? 'cuota' : 'cuotas'} de {enFrase}.
               {/* «Quitar el filtro» entra con el primer filtro y se va al
                   quitarlo. */}
               <Presence as="span" show={hayFiltros} initial={false} direction="none">

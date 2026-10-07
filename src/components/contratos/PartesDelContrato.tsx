@@ -523,6 +523,20 @@ function Propietarios({
         ) : null}
       </div>
 
+      {contract.propietariosDelContrato?.participacionesDesconocidas ? (
+        /* CO-15 (QA-MIGRACION-95): el 50/50 guardado es el provisional; la
+           regla de Nico (04-10) es decirlo y no girar. */
+        <p
+          className="flex items-start gap-1.5 text-caption text-warning"
+          data-testid="participaciones-desconocidas"
+        >
+          <Warning className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+          <span>
+            El archivo de la migración no decía cuánto es de cada dueño: el giro de este inmueble
+            no sale hasta que pongas el porcentaje en la ficha del inmueble.
+          </span>
+        </p>
+      ) : null}
       {!sumanCien ? (
         /* Nunca se esconde: con participaciones torcidas el back NO reparte el
            canon, y una lista sin el aviso se lee como si estuviera bien. */

@@ -75,6 +75,14 @@ const PISTA_DEL_TERCER_DECIMAL = 'Hasta dos decimales';
  */
 export function soloNumero(texto: string, moneda: Moneda = 'COP', conCentavos = false): string {
   const { decimales } = formatoDe(moneda, conCentavos);
+  // 🔴 CE-04 (QA-PAGOS-95): sin centavos, «1.000.000,50» se volvía 100.000.050
+  // (la coma se borraba y los centavos quedaban como pesos: cien veces más).
+  // Una coma con UNO o DOS dígitos al final son centavos en Colombia: se frenan
+  // (quedan los pesos) y la pista lo dice. Con tres dígitos sigue siendo
+  // agrupación, como siempre («1,500» = mil quinientos).
+  if (decimales === 0 && moneda === 'COP' && traiaCentavosSinLlave(texto)) {
+    return texto.slice(0, texto.lastIndexOf(',')).replace(/\D/g, '');
+  }
   if (decimales === 0) return texto.replace(/\D/g, '');
   if (moneda === 'COP') {
     // El punto agrupa en COP: se descarta con todo lo que no sea dígito o coma.
@@ -105,6 +113,14 @@ export function agrupar(crudo: string, moneda: Moneda = 'COP', conCentavos = fal
 function separadorDecimal(locale: string): string {
   return (1.1).toLocaleString(locale).charAt(1);
 }
+
+/** ¿Se escribieron centavos («,5» o «,50» al final) donde la plata va en pesos enteros? */
+export function traiaCentavosSinLlave(texto: string): boolean {
+  return /,\s*\d{1,2}\s*$/.test(texto);
+}
+
+/** Lo que dice la pista cuando se frenan centavos con la llave apagada. */
+export const PISTA_SIN_CENTAVOS = 'Este valor va en pesos enteros, sin centavos';
 
 /** ¿El texto escrito en COP con centavos traía más decimales de los que caben? (para la pista). */
 function traiaDecimalesDeMas(texto: string): boolean {
@@ -162,6 +178,15 @@ export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(function
   const i18n = useOptionalI18n();
   /** ¿El último cambio traía un decimal de más? Prende la pista. */
   const [decimalFrenado, setDecimalFrenado] = useState(false);
+  /** ¿El último cambio traía centavos con la llave apagada? (CE-04). Prende su pista. */
+  const [centavosFrenados, setCentavosFrenados] = useState(false);
+  /**
+   * CE-04 al TECLEAR: la coma se descarta en el acto (el texto se reagrupa sin
+   * ella), así que los dígitos que vienen después caían en los pesos: «1.500»
+   * + «,» + «75» terminaba en 150.075. Después de una coma, los dígitos que se
+   * agregan al final son centavos: se frenan hasta que la persona borre.
+   */
+  const comaFrenada = useRef(false);
   const refInterna = useRef<HTMLInputElement | null>(null);
   /**
    * Dígitos antes del cursor: lo único estable cuando el texto se reagrupa.
@@ -186,10 +211,30 @@ export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(function
         el.value.slice(0, cursor).match(conCentavos ? /[\d,]/g : /[\d]/g) ?? []
       ).length;
       if (conCentavos) setDecimalFrenado(traiaDecimalesDeMas(el.value));
+      else if (moneda === 'COP') {
+        const digitos = el.value.replace(/\D/g, '');
+        const antes = crudo.replace(/\D/g, '');
+        const alFinal = cursor >= el.value.length;
+        if (
+          comaFrenada.current &&
+          alFinal &&
+          !el.value.includes(',') &&
+          digitos.length > antes.length &&
+          digitos.startsWith(antes)
+        ) {
+          // Centavos tecleados después de la coma: se frenan (nada cambia).
+          setCentavosFrenados(true);
+          onChange(crudo);
+          return;
+        }
+        const coma = /,\s*$/.test(el.value) || traiaCentavosSinLlave(el.value);
+        comaFrenada.current = coma;
+        setCentavosFrenados(coma);
+      }
       const signo = conSigno && /^\s*[-−]/.test(el.value) ? '-' : '';
       onChange(signo + soloNumero(el.value, moneda, conCentavos));
     },
-    [onChange, moneda, conSigno, conCentavos],
+    [onChange, moneda, conSigno, conCentavos, crudo],
   );
 
   // Reponer el cursor después de que React repinta el texto agrupado.
@@ -263,6 +308,22 @@ export const MoneyInput = forwardRef<HTMLInputElement, MoneyInputProps>(function
               className="rounded-full bg-surface-muted px-2 py-0.5 text-sm text-fg-muted"
             >
               {pista}
+            </span>
+          </Presence>
+        </span>
+      )}
+      {/* CE-04: sin la llave, los centavos escritos se frenan y se dice (en el mismo lugar). */}
+      {!conCentavos && moneda === 'COP' && (
+        <span
+          aria-live="polite"
+          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2"
+        >
+          <Presence show={centavosFrenados} as="span" direction="left" distance="xs" className="block">
+            <span
+              data-testid="pista-sin-centavos"
+              className="rounded-full bg-surface-muted px-2 py-0.5 text-sm text-fg-muted"
+            >
+              {PISTA_SIN_CENTAVOS}
             </span>
           </Presence>
         </span>

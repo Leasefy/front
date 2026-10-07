@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useRanuraViva } from "@/components/migracion/ranura-viva";
+import { useMigracion } from "@/components/migracion/migracion-context";
 import { BarraDeTrabajo } from "@/components/migracion/BarraDeTrabajo";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -133,6 +134,7 @@ export function fraseDeLaComision(
 export function StepConfirmImport({
   state,
   updateState,
+  origen = 'puesta-en-marcha',
   onSalir,
   onContinuar,
   onOcupado,
@@ -191,6 +193,8 @@ export function StepConfirmImport({
    * `/inmuebles/importar`, donde no hay muro y nada se congela.
    */
   const ranuraViva = useRanuraViva();
+  // IN-18: el muro (si la carga corre dentro de él), para avisarle del final.
+  const migracion = useMigracion();
 
   /*
    * ── Fase 1: subir el archivo por tandas, y ubicar las direcciones ─────────
@@ -669,7 +673,17 @@ export function StepConfirmImport({
         const e = await inmueblesImportacionApi.estadoDeLote(lote);
         if (!vigente) return;
         setEstadoManual(e);
-        if (e.fase !== "CREANDO" || e.estado === "FALLIDO") return;
+        if (e.fase !== "CREANDO" || e.estado === "FALLIDO") {
+          /*
+           * IN-18 (QA-MIGRACION-95, 06-10): crear corre en el SERVIDOR y no
+           * cuenta como «ocupado», así que el muro no se enteraba del final:
+           * tras «¡Importación completada!» seguía con el paso sin marcar
+           * («2 de 6 listos», «Cuando termines este paso vas a poder seguir»)
+           * hasta su refresco de 60 s. Se le pide que vuelva a preguntar.
+           */
+          void migracion?.recargar();
+          return;
+        }
       } catch (err) {
         // Sin sesión no hay a quién preguntarle; el resto es un corte pasajero.
         if (esSesionMuerta(err)) return;
@@ -691,7 +705,7 @@ export function StepConfirmImport({
       vigente = false;
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [lote, creandoActivo, updateState, onSalir, router]);
+  }, [lote, creandoActivo, updateState, onSalir, router, migracion]);
 
   /* Lo que ya se creó o falló, según el lote (nunca según lo que hay en pantalla). */
   const creacion = estadoLote?.creacion ?? null;
@@ -814,7 +828,7 @@ export function StepConfirmImport({
         desdeInicial,
         huella,
         enviar: (tanda, k, opciones) =>
-          inmueblesImportacionApi.preparar(tanda, k, opciones),
+          inmueblesImportacionApi.preparar(tanda, k, opciones, origen),
         antesDeCada: asegurarSesionVigente,
         debeParar: () => detenerSubidaRef.current,
         alAvanzar: (p) => {
@@ -919,10 +933,10 @@ export function StepConfirmImport({
          */
         const notas = [
           r.enElMunicipio > 0
-            ? `${r.enElMunicipio} quedan en el centro de su municipio, porque la dirección es una referencia («detrás de la escuela») o no apareció`
+            ? `${r.enElMunicipio} ${r.enElMunicipio === 1 ? "queda" : "quedan"} en el centro de su municipio, porque la dirección es una referencia («detrás de la escuela») o no apareció`
             : null,
           r.sinUbicar > 0
-            ? `${r.sinUbicar} quedan sin punto en el mapa: no pudimos ubicar ni su municipio`
+            ? `${r.sinUbicar} ${r.sinUbicar === 1 ? "queda" : "quedan"} sin punto en el mapa: no pudimos ubicar ni su municipio`
             : null,
         ].filter(Boolean);
         if (notas.length > 0) {
@@ -2441,8 +2455,10 @@ function ResumenDeLoQueSeLeyo({ inmuebles }: { inmuebles: ImportProperty[] }) {
       data-testid="resumen-de-lectura-inmuebles"
     >
       <h3 className="text-sm font-semibold text-fg">
-        Qué trae el archivo, de sus {resumen.total}{" "}
-        {resumen.total === 1 ? "fila" : "filas"}
+        {/* MP-07 (QA-MIGRACION-95): «de sus 1 fila» con un solo inmueble. */}
+        {resumen.total === 1
+          ? "Qué trae el archivo, de su única fila"
+          : `Qué trae el archivo, de sus ${resumen.total} filas`}
       </h3>
       <p className="mt-0.5 text-xs text-fg-muted">
         Esto es lo que se pudo LEER. A qué propietario y a qué contrato queda

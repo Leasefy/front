@@ -160,12 +160,27 @@ function ConsignacionDetailContent() {
   // Fetch data
   // `errorCrudo`, no `error`: sin el status `FalloDeCarga` no distingue un 404
   // —donde reintentar es mentir— de un 500 o de la red caída (F1).
+  /*
+   * Fuera de la migración (QA-MIGRACION-95, pedido de main, 06-10): quien sólo
+   * tiene el id del INMUEBLE (la ficha del contrato, el cajón del candidato)
+   * entra con `?por=inmueble`. Así se busca el mandato por el inmueble, sin el
+   * `GET /consignaciones/<id del inmueble>` que daba 404 en cada ficha, y
+   * después la URL pasa a la del mandato (la que usan Editar, Candidatos, el
+   * acta…).
+   */
+  const parametrosDeEntrada = useSearchParams();
+  const entraPorInmueble = parametrosDeEntrada.get('por') === 'inmueble';
   const {
     consignacion: fetchedConsignacion,
     isLoading: cargandoConsignacion,
     errorCrudo: errorConsignacion,
     refetch: reintentarConsignacion,
-  } = useConsignacion(consignacionId);
+  } = useConsignacion(consignacionId, { porInmueble: entraPorInmueble });
+  useEffect(() => {
+    if (entraPorInmueble && fetchedConsignacion?.id && fetchedConsignacion.id !== consignacionId) {
+      router.replace(`/panel/inmobiliaria/inmuebles/${fetchedConsignacion.id}`, { scroll: false });
+    }
+  }, [entraPorInmueble, fetchedConsignacion?.id, consignacionId, router]);
 
   /*
    * 🔴 Abrir la ficha YA estando sin señal.

@@ -36,6 +36,7 @@ import type {
   LoteDeEgreso,
 } from '@/lib/api/gastos.service';
 import { diaLegible } from './fechas';
+import { laApruebaOtraPorElMonto } from '@/lib/dispersiones/segunda-persona-por-monto';
 
 /** Los egresos que se pueden meter en un lote nuevo. */
 export function egresosArmables(egresos: readonly Egreso[]): Egreso[] {
@@ -96,7 +97,8 @@ export function permisosDelLote(
   lote: Pick<
     LoteDeEgreso,
     'estado' | 'cantidad' | 'creadoPorUserId' | 'pagadoAt' | 'formatoArchivo'
-  >,
+  > &
+    Partial<Pick<LoteDeEgreso, 'segundaPersona'>>,
   usuarioId?: string | null,
   /** P-4: quien mira es administrador (lo suyo lo aprueba él, en un paso). */
   esAdministrador = false,
@@ -134,7 +136,17 @@ export function permisosDelLote(
           ? no(
               'Este lote lo armaste tú: lo tiene que aprobar otra persona. Es plata que sale del banco y la aprobación es la segunda firma. Sólo lo que arma un administrador queda aprobado por él mismo.',
             )
-          : SI
+          : /*
+             * 🔴 Decisión de Nico (05-10-2026): desde el monto de la segunda
+             * persona, ni el administrador aprueba lo que armó. Lo dice el
+             * back en el listado (`segundaPersona`); sin el campo, el 409.
+             */
+            usuarioId &&
+              lote.creadoPorUserId &&
+              usuarioId === lote.creadoPorUserId &&
+              laApruebaOtraPorElMonto(lote.segundaPersona)
+            ? no(lote.segundaPersona?.nota ?? 'Este lote pasa el monto de la segunda persona: lo tiene que aprobar otra persona.')
+            : SI
       : no(`Este lote ${EN_ESTADO[estado]}.`);
 
   const puedeArchivo =

@@ -205,8 +205,18 @@ export function CobroDetail({
   }, [isOpen, stopLenis, startLenis]);
 
   // Get related data
-  const { propietarios } = usePropietarios();
-  const { consignaciones } = useConsignaciones();
+  /*
+   * H-02 / N-15 (QA-PAGOS-95, 05-10-2026): el detalle vive montado en Cobros
+   * emitidos aunque esté cerrado, y pedía los mandatos y los propietarios sin
+   * mirar el permiso: al contador (sin `portafolio:view`) le llegaba un 403 de
+   * `/inmobiliaria/consignaciones` en cada visita. Sólo con el permiso; sin él,
+   * la ficha sale sin la foto ni el enlace del inmueble (el back los negaría).
+   */
+  const permisos = usePermissionsContextSafe();
+  const puedeVerElModulo = (modulo: string) =>
+    permisos ? !permisos.isLoading && (permisos.isAdmin || permisos.canAccess(modulo, 'view')) : true;
+  const { propietarios } = usePropietarios(undefined, { skip: !puedeVerElModulo('propietarios') });
+  const { consignaciones } = useConsignaciones(undefined, { skip: !puedeVerElModulo('portafolio') });
 
   const propietario = React.useMemo(() => {
     if (!cobro) return null;
@@ -473,7 +483,10 @@ export function CobroDetail({
               </div>
               <div>
                 <p className="text-sm font-medium text-foreground">
-                  {t('inmobiliaria.cobros.detail.remindersCount', { count: cobro.remindersSent })}
+                  {/* PGR-16 (QA-PAGOS-95 r2): «1 recordatorio enviado», nunca «recordatorio(s)». */}
+                  {cobro.remindersSent === 1
+                    ? t('inmobiliaria.cobros.detail.remindersCountOne')
+                    : t('inmobiliaria.cobros.detail.remindersCount', { count: cobro.remindersSent })}
                 </p>
                 {cobro.lastReminderDate && (
                   <p className="text-xs text-muted-foreground">

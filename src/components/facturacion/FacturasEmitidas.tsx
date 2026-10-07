@@ -248,21 +248,28 @@ export function FacturasEmitidas({ mes, vista }: Props) {
    */
   async function emitirNota(
     factura: { numeroDian: string | null; numero?: number | null },
-    nota: { id: string; valorCop: number; deCobroAnulado?: boolean },
+    nota: { id: string; valorCop: number; deCobroAnulado?: boolean; delFinDelContrato?: boolean },
   ) {
     if (emitiendoNota) return
     const ok = await confirmar({
       titulo: `¿Emitir la nota crédito de la factura ${factura.numeroDian ?? `N.º ${factura.numero ?? ''}`}?`,
-      descripcion: nota.deCobroAnulado
-        ? `Por ${formatCurrency(nota.valorCop)}. Es la de un cobro anulado: queda con su número, la deuda sigue y el mes vuelve a «Por facturar». Una nota emitida no se borra.`
-        : `Por ${formatCurrency(nota.valorCop)}. Queda con su número y no se borra.`,
+      descripcion: nota.delFinDelContrato
+        ? // N-31 (QA-FACT-CONTA-95 r3): la que dejó lista la terminación del contrato.
+          `Por ${formatCurrency(nota.valorCop)}. Es la del fin del contrato: anula la factura y, si el contrato cubrió parte del mes, sale otra por esos días. La deuda no cambia: lo pagado de más ya está en el saldo a favor. Una nota emitida no se borra.`
+        : nota.deCobroAnulado
+          ? `Por ${formatCurrency(nota.valorCop)}. Es la de un cobro anulado: queda con su número, la deuda sigue y el mes vuelve a «Por facturar». Una nota emitida no se borra.`
+          : `Por ${formatCurrency(nota.valorCop)}. Queda con su número y no se borra.`,
       accion: 'Emitir la nota crédito',
     })
     if (!ok) return
     setEmitiendoNota(nota.id)
     try {
       const r = await facturacionPorMesService.emitirNotaGenerada(nota.id)
-      toast.success(`Nota crédito ${r.numeroDeLaNota} emitida`)
+      toast.success(
+        nota.delFinDelContrato && r.explicacion
+          ? r.explicacion
+          : `Nota crédito ${r.numeroDeLaNota} emitida`,
+      )
       await cargar()
     } catch (e) {
       toast.error(

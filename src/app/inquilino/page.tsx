@@ -15,6 +15,7 @@ import { useTimeGreeting } from '@/lib/hooks/use-time-greeting';
 import { useEvaluation } from '@/lib/hooks/useEvaluation';
 import { useTenantApplications } from '@/lib/hooks/useApplications';
 import { useLeases } from '@/lib/hooks/useLeases';
+import { useContratosDelPortal } from '@/lib/hooks/use-contratos-del-portal';
 import { useEstadoDeCuentaDelPortal } from '@/lib/hooks/useResumenDelPortal';
 import { proximoPagoDelPortal } from '@/lib/estado-de-cuenta/proximo-pago-del-portal';
 import { hoyLocal } from '@/components/estado-de-cuenta/filas';
@@ -143,9 +144,6 @@ export default function InquilinoPage() {
   } = useLeases();
 
   const activeLeases = getActiveLeases();
-  const primaryLease: { id: string; propertyName: string } | null = activeLeases[0]
-    ? { id: activeLeases[0].id, propertyName: activeLeases[0].propertyTitle }
-    : null;
 
   /*
    * Vista previa de su catálogo. Se piden más de las que se muestran porque
@@ -206,10 +204,15 @@ export default function InquilinoPage() {
     !errorPostulaciones &&
     !errorArriendos;
   const { openCasesCount } = useTenantCases({ skip: !dashboardWillRender });
+  // QA-MIGRACION-95 — CA-04 (Nico, (a)): el inquilino migrado sin arriendo (el
+  // archivo no traía día de pago) tiene contratos vigentes igual: el inicio no
+  // lo trata como alguien que busca dónde vivir.
+  const { contratos: contratosSinArriendo } = useContratosDelPortal(dashboardWillRender);
+  const cuantosArriendos = activeLeases.length + contratosSinArriendo.length;
   // «Próximo pago» sale del estado de cuenta, la misma cuenta que «Pagos» y «Mi
   // arriendo» (QA-INQ-95: venía de `/tenant-payments/mine`, armado con el día
   // pactado y el canon entero del modelo viejo).
-  const estadoDeCuenta = useEstadoDeCuentaDelPortal(dashboardWillRender && activeLeases.length > 0);
+  const estadoDeCuenta = useEstadoDeCuentaDelPortal(dashboardWillRender && cuantosArriendos > 0);
   const nextPayment = estadoDeCuenta ? proximoPagoDelPortal(estadoDeCuenta, hoyLocal()) : null;
 
   // Loading state — wait for auth + real data so the "new user" banner doesn't flash
@@ -263,7 +266,7 @@ export default function InquilinoPage() {
    * Un fallo no es una ausencia. Los hooks siempre expusieron `error`; la
    * pantalla lo ignoraba.
    */
-  const isNewUser = activeLeases.length === 0 && activeApplications.length === 0;
+  const isNewUser = cuantosArriendos === 0 && activeApplications.length === 0;
 
   // Casos abiertos — conteo REAL (proyección de las fuentes ya cargadas; ver
   // use-tenant-cases). La tarjeta sólo aparece cuando cuenta algo (>0), igual
@@ -346,9 +349,9 @@ export default function InquilinoPage() {
                 <House className="w-5 h-5 text-fg-muted dark:text-fg-subtle" />
               </div>
               <p className="text-xs text-fg-muted dark:text-fg-subtle mb-1">{locale === 'es' ? 'Arriendos' : 'Rentals'}</p>
-              <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">{activeLeases.length}</p>
+              <p className="text-2xl font-bold text-fg dark:text-white group-hover:text-primary transition-colors">{cuantosArriendos}</p>
               <p className="text-[10px] text-fg-subtle dark:text-fg-muted mt-1">
-                {activeLeases.length === 0
+                {cuantosArriendos === 0
                   ? (locale === 'es' ? 'Sin arriendos activos' : 'No active rentals')
                   : (locale === 'es' ? 'Contratos vigentes' : 'Active contracts')}
               </p>
@@ -389,7 +392,7 @@ export default function InquilinoPage() {
           )}
 
           {/* Next Payment or CTA */}
-          {nextPayment && primaryLease ? (
+          {nextPayment && cuantosArriendos > 0 ? (
             <Link href="/inquilino/pagos" className="group">
               <div className="h-full rounded-xl border border-border dark:border-border-strong bg-surface dark:bg-surface-muted p-5 hover:bg-surface-muted dark:hover:bg-border transition-colors">
                 <div className="w-10 h-10 rounded-xl bg-surface dark:bg-border flex items-center justify-center mb-3">

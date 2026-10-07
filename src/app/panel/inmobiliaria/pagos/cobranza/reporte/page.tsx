@@ -50,6 +50,26 @@ import {
 } from '@/components/ui/table'
 import { MonoLabel } from '@leasefy/cadence'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { sinDeudores } from '@/lib/cobranza/reporte-sin-deudores'
+
+/**
+ * N-11 (QA-PAGOS-95, 05-10-2026): el reporte decía «PKR», «100.0%» y
+ * «2026-10-04». En Colombia: «100,0 %» y el día en palabras.
+ */
+function porcentajeLegible(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return '—'
+  return `${n.toLocaleString('es-CO', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} %`
+}
+
+function diaDelReporte(dia: string, locale: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return dia
+  return new Date(`${dia}T00:00:00Z`).toLocaleDateString(locale.startsWith('es') ? 'es-CO' : 'en-US', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+}
 
 const COP_FORMATTER = plataEnPantalla('es-CO', {
   style: 'currency',
@@ -108,6 +128,12 @@ function ReporteViewerContent() {
 
   const pkrValue = useMemo(() => {
     if (!data) return null
+    /*
+     * CB-12 (QA-PAGOS-95 r2; main, con la recomendada): sin un solo deudor el
+     * «% recuperado» no sale de nada (el micro divide por cero y dice 100 %).
+     * Sin deudores se dice «—», no una cifra.
+     */
+    if (sinDeudores(data)) return null
     return data.summary.pkr_pct ?? data.summary.pkr_7d_pct ?? null
   }, [data])
 
@@ -166,7 +192,7 @@ function ReporteViewerContent() {
           </h1>
           {data?.report_date && (
             <p className="mt-1 text-xs font-mono tabular-nums text-muted-foreground">
-              {data.report_date}
+              {diaDelReporte(data.report_date, locale)}
               {data.computed_at && (
                 <span className="ml-2 text-muted-foreground/70">
                   · {new Date(data.computed_at).toLocaleString(locale)}
@@ -203,13 +229,13 @@ function ReporteViewerContent() {
           {/* 1. KPI tile row */}
           <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <KpiTile
-              label={t('inmobiliaria.ai.cobranza.reporte.kpis.pkr')}
-              value={pkrValue != null ? `${pkrValue.toFixed(1)}%` : '—'}
+              label={locale.startsWith('es') ? '% recuperado' : t('inmobiliaria.ai.cobranza.reporte.kpis.pkr')}
+              value={porcentajeLegible(pkrValue)}
               alert={pkrValue != null && pkrValue < pkrAlertBelow}
             />
             <KpiTile
               label={t('inmobiliaria.ai.cobranza.reporte.kpis.morosidad')}
-              value={morosidadValue != null ? `${morosidadValue.toFixed(1)}%` : '—'}
+              value={porcentajeLegible(morosidadValue)}
               alert={morosidadValue != null && morosidadValue > morosidadAlertAbove}
             />
             <KpiTile
@@ -361,7 +387,7 @@ function ReporteViewerContent() {
                         {locale.startsWith('es') ? 'Fecha' : 'Date'}
                       </TableHead>
                       <TableHead className="text-right">
-                        PKR
+                        {locale.startsWith('es') ? '% recuperado' : 'Recovered %'}
                       </TableHead>
                       <TableHead className="text-right">
                         {locale.startsWith('es') ? 'Morosidad' : 'Delinquency'}
@@ -377,15 +403,13 @@ function ReporteViewerContent() {
                       return (
                         <TableRowAnimada key={entry.report_date} className="border-b border-border last:border-0">
                           <TableCell className="px-3 py-2 font-mono tabular-nums text-foreground">
-                            {entry.report_date}
+                            {diaDelReporte(entry.report_date, locale)}
                           </TableCell>
                           <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
-                            {pkr != null ? `${pkr.toFixed(1)}%` : '—'}
+                            {porcentajeLegible(pkr)}
                           </TableCell>
                           <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
-                            {entry.summary.indice_morosidad_pct != null
-                              ? `${entry.summary.indice_morosidad_pct.toFixed(1)}%`
-                              : '—'}
+                            {porcentajeLegible(entry.summary.indice_morosidad_pct)}
                           </TableCell>
                           <TableCell className="px-3 py-2 text-right font-mono tabular-nums text-foreground">
                             {entry.summary.calls_outside_window_count ?? '—'}

@@ -83,7 +83,9 @@ export type Faltante =
   /** Varios dueños y los porcentajes (o la plata) no cuadran. */
   | 'reparto'
   /** MG-36: el mismo código viene en otra fila del archivo con otros datos. */
-  | 'codigo_repetido';
+  | 'codigo_repetido'
+  /** EN-38 / NI-07 (QA-MIGRACION-95): cifra con centavos con la llave apagada. */
+  | 'plata_con_centavos';
 
 /**
  * Un dueño de `propietarios[]`. Espejo de `PropietarioDelInmuebleDto` del
@@ -285,6 +287,10 @@ export interface EstadoDeLoteInmuebles {
   actualizadoEn?: string;
   /** T-0131 — `null` antes del primer «Crear todas»; ausente = back anterior. */
   creacion?: CreacionDeLote | null;
+  /** QA-MIGRACION-95 · quién subió la carga (ausente = back anterior). */
+  subidoPor?: string | null;
+  /** Desde dónde se lanzó: la Puesta en marcha (fuera del centro de procesos) o Inmuebles (ausente = Puesta en marcha). */
+  origen?: 'puesta-en-marcha' | 'inmuebles';
 }
 
 /**
@@ -536,11 +542,18 @@ export const inmueblesImportacionApi = {
     inmuebles: ImportarInmuebleDto[],
     idempotencyKey?: string,
     tanda?: OpcionesDeTanda,
+    origen: 'puesta-en-marcha' | 'inmuebles' = 'puesta-en-marcha',
   ): Promise<EstadoDeLoteInmuebles> {
-    // La carga aparece en el centro de procesos del header (22-09). Por tandas,
-    // sólo se anuncia con la primera: las demás son el mismo proceso.
-    if (!tanda || tanda.desde === 0) anunciarProceso();
-    return apiClient.post<EstadoDeLoteInmuebles>(`${BASE}/preparar`, {
+    /*
+     * Decisión (b) de Nico (06-10-2026): sólo la importación lanzada desde
+     * Inmuebles va al centro de procesos (y se anuncia con la primera tanda).
+     * La de la Puesta en marcha es migración: NO va al centro (Nico, 01-10 y
+     * 06-10); sus cargas se ven en el paso. Sin `?origen` el back la trata
+     * como Puesta en marcha.
+     */
+    const desdeInmuebles = origen === 'inmuebles';
+    if (desdeInmuebles && (!tanda || tanda.desde === 0)) anunciarProceso();
+    return apiClient.post<EstadoDeLoteInmuebles>(`${BASE}/preparar${desdeInmuebles ? '?origen=inmuebles' : ''}`, {
       inmuebles,
       ...(idempotencyKey ? { idempotencyKey } : {}),
       /*

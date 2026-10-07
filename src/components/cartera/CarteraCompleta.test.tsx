@@ -241,6 +241,37 @@ afterEach(() => {
 })
 
 describe('CarteraCompleta', () => {
+  /*
+   * 🔴 COLA-01 (QA-PAGOS-95, 05-10-2026): a 390 px la franja en dos columnas
+   * dejaba ≈147 px a cada cifra y una de diez dígitos («$ 2.535.172.123» ≈
+   * 216 px en text-2xl mono) se cortaba (la franja es overflow-hidden). happy-dom
+   * no calcula layout: se fijan las clases, como en `cobros-a-390.test.tsx`.
+   */
+  it('🔴 COLA-01: a 390 px las cifras de la franja van una debajo de otra y las fichas de edad caben', () => {
+    conReporte(reporte())
+    montar()
+    const franja = $('[data-testid="resumen-de-cartera"]').className.split(/\s+/)
+    expect(franja).toContain('grid-cols-1')
+    expect(franja).toContain('sm:grid-cols-2')
+    expect(franja).not.toContain('grid-cols-2')
+    for (const ficha of todos('[data-testid="tramos-de-la-cartera"] button')) {
+      const cifra = ficha.querySelectorAll('p')[1]
+      const clases = cifra.className.split(/\s+/)
+      expect(clases).toContain('text-base')
+      expect(clases).toContain('sm:text-lg')
+      expect(clases).not.toContain('text-lg')
+    }
+  })
+
+  it('🔴 COLA-01 a 1440: con 5 o 6 fichas en fila la cifra baja de tamaño (en text-2xl se montaba sobre la de al lado)', () => {
+    conReporte(reporte())
+    montar()
+    const cifra = $('[data-testid="cifra-deuda-total"]').className.split(/\s+/)
+    expect(cifra.some((c) => c === 'lg:text-base' || c === 'lg:text-xl')).toBe(true)
+    expect(cifra).toContain('2xl:text-2xl')
+    expect(cifra).toContain('text-2xl')
+  })
+
   it('🔴 la franja separa deuda, por vencer, vencido en plazo y cartera', () => {
     conReporte(reporte())
     montar()

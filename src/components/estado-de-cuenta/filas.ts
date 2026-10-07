@@ -487,6 +487,8 @@ export function estaVencida(
   hoy: string,
 ): boolean {
   if (fila.estado !== 'PENDIENTE') return false;
+  // CA-06: una parte sin definir (falta el % de cada dueño) no está atrasada.
+  if (fila.sinPorcentaje) return false;
   return fila.fechaVencimiento.slice(0, 10) < hoy;
 }
 

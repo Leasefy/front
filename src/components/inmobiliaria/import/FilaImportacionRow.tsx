@@ -33,6 +33,7 @@ import {
   nombreDelCampoInmueble,
   valorDelCampoInmueble,
   esPosibleDuplicado,
+  fraseDeLaPlataConCentavos,
 } from './lib/faltantesInmuebles';
 import {
   formularioDesde,
@@ -295,6 +296,14 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
             Usar de todos modos
           </Button>
         </div>
+      )}
+
+      {/* EN-38 / NI-07 (QA-MIGRACION-95): la cifra con centavos se dice desde la
+          revisión, con la misma frase que al crear. */}
+      {fila.faltantes.includes('plata_con_centavos') && fraseDeLaPlataConCentavos(fila.datos) && (
+        <p className="rounded-md bg-warning-soft border border-border p-3 text-sm text-warning" data-testid="plata-con-centavos">
+          {fraseDeLaPlataConCentavos(fila.datos)}
+        </p>
       )}
 
       {/* MG-36 — el mismo código en otra fila del archivo, con otros datos.

@@ -102,6 +102,26 @@ export function textoDeLaVariacion(variacionPct: number | null): string {
   return tasaEnPantalla(variacionPct, 1, { conSigno: true });
 }
 
+/**
+ * 🔴 N-06 (QA-PAGOS-95, 05-10-2026): «% recaudado 9,7 %» al lado de «Entró en
+ * el mes $ 31.191.000» y «Se debe del mes $ 162.341.531» no se podía rehacer
+ * (31,2 ÷ 162,3 = 19,2 %): el porcentaje mide lo que entró a las cuotas DEL
+ * MES, no la caja del mes. Con el numerador del back, la tarjeta dice cuánto
+ * de cuánto y por qué no es lo de «Entró en el mes».
+ */
+export function definicionDeLaTasa(
+  recaudo: Tablero['recaudo'],
+  mes: string,
+  base: string,
+): string {
+  if (recaudo.abonadoDelMesCop == null) return `Qué parte de ${base} llegó. ${recaudo.rotulo}`;
+  const deQue = recaudo.base === 'EMITIDO' ? 'de los cobros emitidos de' : 'de las cuotas de';
+  return (
+    `${formatCurrency(recaudo.abonadoDelMesCop)} de ${formatCurrency(recaudo.causadoDelMesCop)} ` +
+    `${deQue} ${nombreDelMes(mes)} ya entraron. No es lo de «Entró en el mes»: ése cuenta también lo que se pagó de otros meses.`
+  );
+}
+
 export function TableroFinancieroPanel() {
   const [mes, setMes] = useState(() => mesActual());
   const [sedeId, setSedeId] = useState('');
@@ -247,11 +267,12 @@ function BloqueDeRecaudo({ tablero }: { tablero: Tablero }) {
           id="tasa-de-recaudo"
           etiqueta="% recaudado"
           texto={tasaEnPantalla(recaudo.tasaPct)}
-          definicion={`Qué parte de ${base} llegó. ${recaudo.rotulo}`}
+          definicion={definicionDeLaTasa(recaudo, tablero.mes, base)}
           pie={
             <span data-testid="comparacion-mes-anterior">
               {conMayusculaInicial(nombreDelMes(recaudo.mesAnterior.mes))}:{' '}
-              {formatCurrency(recaudo.mesAnterior.recaudadoCop)} de{' '}
+              {/* N-06: con el numerador del back, el mismo con que se sacó su %. */}
+              {formatCurrency(recaudo.mesAnterior.abonadoCop ?? recaudo.mesAnterior.recaudadoCop)} de{' '}
               {formatCurrency(recaudo.mesAnterior.causadoCop)} ({tasaEnPantalla(recaudo.mesAnterior.tasaPct)}
               ). Variación del recaudo:{' '}
               <span data-testid="variacion-del-recaudo">{textoDeLaVariacion(recaudo.variacionPct)}</span>

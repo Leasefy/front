@@ -118,6 +118,11 @@ export interface MapeoDeColumna {
   certeza: CertezaDeMapeo | null;
   /** La persona lo corrigió a mano — no es el resultado del auto-mapeo. */
   isManual?: boolean;
+  /**
+   * CO-18 (QA-MIGRACION-95): la columna se reconoce pero NO se migra (el
+   * codeudor), y por qué. Se muestra en vez del «—».
+   */
+  noSeMigra?: string;
 }
 
 /* ── Normalización ────────────────────────────────────────────────────────── */
@@ -208,6 +213,22 @@ const ALIAS: Record<string, string> = {
   // Administración
   admon: "administracion",
   admin: "administracion",
+  /*
+   * EN-31 (QA-MIGRACION-95, 06-10-2026): un export en inglés. Sólo palabras
+   * que dicen lo mismo que su par en español; lo que no está aquí sigue
+   * quedando para mapear a mano. `id` NO (ver arriba): en una columna de
+   * persona se lee como su documento en `CAMPO_POR_ROL_Y_ATRIBUTO`.
+   */
+  rent: "renta",
+  monthly: "mensual",
+  deposit: "deposito",
+  phone: "telefono",
+  mobile: "celular",
+  cell: "celular",
+  name: "nombre",
+  lease: "contrato",
+  start: "inicio",
+  end: "fin",
 };
 
 /** Palabras de relleno: no cambian el significado de un encabezado. */
@@ -364,6 +385,8 @@ const CAMPO_POR_ROL_Y_ATRIBUTO: Record<
     telefono: "inquilinoTelefono",
     celular: "inquilinoTelefono",
     documento: "inquilinoDocumento",
+    // EN-31: «Tenant ID» es el documento del inquilino (sólo junto a un rol).
+    id: "inquilinoDocumento",
   },
   [ROL_PROPIETARIO]: {
     nombre: "propietarioNombre",
@@ -371,6 +394,7 @@ const CAMPO_POR_ROL_Y_ATRIBUTO: Record<
     telefono: "propietarioTelefono",
     celular: "propietarioTelefono",
     documento: "propietarioDocumento",
+    id: "propietarioDocumento",
   },
 };
 
@@ -974,6 +998,10 @@ function empatePorDiccionario(canon: string, nombraPersona: boolean): Empate | n
  * teléfono del propietario—, y un número sin explicación no se puede revisar:
  * la persona sólo puede confiar o no confiar.
  */
+/** CO-18: por qué una columna de codeudor queda sin campo. */
+export const NO_SE_MIGRA_EL_CODEUDOR =
+  "el codeudor no se migra con el contrato: se agrega después en la ficha del contrato (Codeudores)";
+
 export function mapearColumnas(encabezados: string[]): MapeoDeColumna[] {
   const canones = encabezados.map(canonizar);
 
@@ -1026,6 +1054,12 @@ export function mapearColumnas(encabezados: string[]): MapeoDeColumna[] {
         puntaje: 3,
         debil: false,
       };
+    }
+
+    // CO-18 (QA-MIGRACION-95, 06-10): una columna de CODEUDOR se ignoraba
+    // con un «—» mudo. Se dice que no se migra y dónde se agrega.
+    if (["codeudor", "coodeudor", "fiador"].some((t) => tokensUtiles(canon).includes(t))) {
+      return { ...sinCampo, noSeMigra: NO_SE_MIGRA_EL_CODEUDOR };
     }
 
     const persona = empatePorPersona(canon);

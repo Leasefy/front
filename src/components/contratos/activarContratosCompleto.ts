@@ -73,6 +73,11 @@ export async function activarContratosCompleto(
   let actualizadas = 0;
   let porRevisarAMano = 0;
   let llamadas = 0;
+  // CO-28: los que quedan sin tabla por la comisión, de TODAS las tandas
+  // (`ultimo` es sólo la última; esto no se puede perder entre vueltas).
+  let sinComision: ResumenActivacion['sinComision'];
+  // CO-20: los que ya estaban migrados (mismo consecutivo), de TODAS las tandas.
+  let yaMigradas = 0;
 
   for (;;) {
     const r = await activar();
@@ -84,6 +89,14 @@ export async function activarContratosCompleto(
     // inventado: la pantalla no pinta la línea si el total queda en cero.
     actualizadas += r.actualizadas ?? 0;
     porRevisarAMano += r.porRevisarAMano ?? 0;
+    yaMigradas += r.yaMigradas ?? 0;
+    if (r.sinComision && r.sinComision.cuantos > 0) {
+      sinComision = {
+        cuantos: (sinComision?.cuantos ?? 0) + r.sinComision.cuantos,
+        motivo: r.sinComision.motivo,
+        contratos: [...(sinComision?.contratos ?? []), ...r.sinComision.contratos].slice(0, 50),
+      };
+    }
 
     const progreso: ProgresoDeContratos = {
       hechas,
@@ -100,7 +113,11 @@ export async function activarContratosCompleto(
       extra: Partial<Pick<ResultadoDeContratos, 'detenidoPorPersona' | 'detenidoSinAvance' | 'detenidoPorLimite'>>,
     ): ResultadoDeContratos => ({
       ...progreso,
-      ultimo: r,
+      ultimo: {
+        ...r,
+        ...(sinComision ? { sinComision } : {}),
+        ...(yaMigradas > 0 ? { yaMigradas } : {}),
+      },
       detenidoPorPersona: false,
       detenidoSinAvance: false,
       detenidoPorLimite: false,

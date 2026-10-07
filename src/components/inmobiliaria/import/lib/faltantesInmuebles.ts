@@ -23,7 +23,9 @@ export type FaltanteInmueble =
   | 'fecha_consignacion'
   | 'posible_duplicado'
   | 'reparto'
-  | 'codigo_repetido';
+  | 'codigo_repetido'
+  /** EN-38 / NI-07 (QA-MIGRACION-95): una cifra trae centavos y la llave está apagada. */
+  | 'plata_con_centavos';
 
 const ETIQUETAS: Record<FaltanteInmueble, string> = {
   titulo: 'título',
@@ -40,6 +42,7 @@ const ETIQUETAS: Record<FaltanteInmueble, string> = {
   fecha_consignacion: 'fecha de consignación',
   posible_duplicado: 'posible duplicado — revisar antes de continuar',
   codigo_repetido: 'código repetido en el archivo',
+  plata_con_centavos: 'una cifra con centavos (tu plataforma todavía no guarda centavos: escríbela al peso; no se redondea por ti)',
   reparto: 'reparto entre los dueños (los porcentajes o la plata no cuadran; corrige el archivo o quita esa columna del mapeo para que queden en partes iguales)',
 };
 
@@ -57,7 +60,7 @@ export function etiquetaDeFaltante(faltante: string): string {
  * en el archivo, el reparto que no cuadra) no llevan «Sin»: «Sin el código
  * viene otra vez…» no se entiende (MIG-C, 04-10).
  */
-const NO_SON_UN_DATO_QUE_FALTA = new Set(['posible_duplicado', 'codigo_repetido', 'precio_inconsistente', 'reparto']);
+const NO_SON_UN_DATO_QUE_FALTA = new Set(['posible_duplicado', 'codigo_repetido', 'precio_inconsistente', 'reparto', 'plata_con_centavos']);
 export function etiquetaDelGrupoDeFaltante(faltante: string): string {
   const etiqueta = etiquetaDeFaltante(faltante);
   if (!NO_SON_UN_DATO_QUE_FALTA.has(faltante)) return `Sin ${etiqueta}`;
@@ -172,4 +175,31 @@ export function valorDelCampoInmueble(campo: string, texto: string): string {
     }
   }
   return t.length > 60 ? `${t.slice(0, 60)}…` : t;
+}
+
+/**
+ * EN-38 / NI-07 (QA-MIGRACION-95, 06-10-2026): la frase de la fila con una
+ * cifra con centavos y la llave apagada — la MISMA que dice el back al crear
+ * (`plataConCentavosSinLlave`), para que la revisión no diga «lista» y la
+ * creación después falle.
+ */
+export function fraseDeLaPlataConCentavos(datos: {
+  monthlyRent?: number | null
+  salePrice?: number | null
+  adminFee?: number | null
+  deposit?: number | null
+}): string | null {
+  const columnas: ReadonlyArray<[keyof typeof datos, string, string]> = [
+    ['monthlyRent', 'El canon', 'el canon'],
+    ['salePrice', 'El precio de venta', 'el precio de venta'],
+    ['adminFee', 'La administración', 'la administración'],
+    ['deposit', 'El depósito', 'el depósito'],
+  ]
+  for (const [campo, etiqueta, minuscula] of columnas) {
+    const v = datos[campo]
+    if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0 || Number.isInteger(v)) continue
+    const cifra = v.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    return `${etiqueta} del archivo trae centavos ($ ${cifra}) y tu plataforma todavía no guarda centavos: escribe ${minuscula} al peso en la fila, o pide que se activen los centavos. No se redondea por ti.`
+  }
+  return null
 }

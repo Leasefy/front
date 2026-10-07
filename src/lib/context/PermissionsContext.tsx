@@ -27,6 +27,21 @@ type AgentPermissions = AgentModulePermissions;
  */
 export type AgentAccessStatus = 'resolviendo' | 'resuelto' | 'sin-verificar';
 
+/**
+ * H-09 (QA-PAGOS-95 r2; main, con la recomendada): lo mismo para los permisos
+ * del BACK. `sin-verificar` = `GET /inmobiliaria/agency/my-permissions` no
+ * contestó (red, 5xx): «no se pudo saber», que NO es «no». Un 401/403/404 sí
+ * es un no (`resuelto` con `permissions` en null).
+ */
+export type PermisosDelBack = 'resolviendo' | 'resuelto' | 'sin-verificar';
+
+/** ¿El fallo de `my-permissions` fue «no se pudo saber» (sin respuesta o 5xx)? */
+export function falloSinRespuesta(error: unknown): boolean {
+  const status = (error as { status?: unknown } | null)?.status;
+  if (typeof status !== 'number') return true; // un fetch que no salió
+  return status === 0 || status >= 500;
+}
+
 interface PermissionsContextValue {
   permissions: MemberPermissionsResponse | null;
   isLoading: boolean;
@@ -37,6 +52,8 @@ interface PermissionsContextValue {
    * dice que no pudimos verificar y se ofrece reintentar.
    */
   agentAccessStatus: AgentAccessStatus;
+  /** H-09: si los permisos del back se pudieron saber. Ver `PermisosDelBack`. */
+  permisosDelBack: PermisosDelBack;
   error: string | null;
   canAccess: (module: string, action: string) => boolean;
   /**
@@ -67,6 +84,13 @@ interface PermissionsContextValue {
 
 const PermissionsContext = createContext<PermissionsContextValue | null>(null);
 
+/**
+ * 🟡 QA-PILOTO-95 r2 (06-10-2026): el tope de `my-permissions` del micro. Sin tope, con el micro
+ * colgado (acepta y no contesta) `isLoading` no bajaba nunca y el panel entero se quedaba en
+ * esqueleto. Al vencer se sigue con los permisos del back y el agente queda `sin-verificar`.
+ */
+export const TOPE_DE_LOS_PERMISOS_DEL_MICRO_MS = 10_000;
+
 async function fetchAgentPermissions(agencyId: string): Promise<AgentPermissions | null> {
   const agentUrl = process.env.NEXT_PUBLIC_AGENT_URL;
   if (!agentUrl) return null;
@@ -81,11 +105,18 @@ async function fetchAgentPermissions(agencyId: string): Promise<AgentPermissions
   const headers: Record<string, string> = token
     ? { Authorization: `Bearer ${token}` }
     : {};
-  const res = await fetch(`${agentUrl}/api/agency/${agencyId}/my-permissions`, {
-    headers,
-  });
-  if (!res.ok) return null;
-  return (await res.json()) as AgentPermissions;
+  const tope = new AbortController();
+  const reloj = setTimeout(() => tope.abort(), TOPE_DE_LOS_PERMISOS_DEL_MICRO_MS);
+  try {
+    const res = await fetch(`${agentUrl}/api/agency/${agencyId}/my-permissions`, {
+      headers,
+      signal: tope.signal,
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as AgentPermissions;
+  } finally {
+    clearTimeout(reloj);
+  }
 }
 
 /**
@@ -120,6 +151,8 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [agentPerms, setAgentPerms] = useState<AgentPermissions | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  /** H-09: el último `my-permissions` falló sin respuesta o con 5xx. */
+  const [backSinRespuesta, setBackSinRespuesta] = useState(false);
   /**
    * Para QUÉ agencia terminó el último fetch. `undefined` = todavía ninguno.
    *
@@ -149,16 +182,21 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       // Promise.all and null out agent permissions (cobranza/cotizador access),
       // and an agent-service outage must not block the legacy modules. Each
       // call fails independently to null.
+      let falloDelBack: unknown = null;
       const [legacy, agent] = await Promise.all([
         seededPermissions !== null
           ? Promise.resolve(seededPermissions)
           : apiClient
               .get<MemberPermissionsResponse>('/inmobiliaria/agency/my-permissions')
-              .catch(() => null),
+              .catch((e: unknown) => {
+                falloDelBack = e;
+                return null;
+              }),
         agencyId ? fetchAgentPermissions(agencyId).catch(() => null) : Promise.resolve(null),
       ]);
       setPermissions(legacy);
       setAgentPerms(agent);
+      setBackSinRespuesta(!legacy && falloDelBack !== null && falloSinRespuesta(falloDelBack));
       if (!legacy) setError('No se pudieron cargar los permisos de la agencia');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error fetching permissions';
@@ -205,6 +243,12 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       : agencyId === null
         ? 'resolviendo' // la sonda todavía no asentó: no sabemos, no negamos
         : 'sin-verificar'; // había a quién preguntar y el agente no contestó
+
+  const permisosDelBack: PermisosDelBack = !cicloAlDia
+    ? 'resolviendo'
+    : backSinRespuesta
+      ? 'sin-verificar'
+      : 'resuelto';
 
   /**
    * Compat con `feat/recorrido-inmobiliaria`, que ya expone este flag con la
@@ -265,6 +309,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       permissions,
       isLoading,
       agentAccessStatus,
+      permisosDelBack,
       agentPermsResolved,
       error,
       canAccess,
@@ -280,6 +325,7 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       permissions,
       isLoading,
       agentAccessStatus,
+      permisosDelBack,
       agentPermsResolved,
       error,
       canAccess,

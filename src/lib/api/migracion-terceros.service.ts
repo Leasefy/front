@@ -364,6 +364,10 @@ export interface ResultadoDeFila {
   pasaARevisar?: true;
   /** T-0128 · se creó incompleta: qué datos quedan por completar. */
   datosPendientes?: ('tipoDocumento' | 'documento')[];
+  /** La fila venía sin correo (el back lo manda por fila; QA-MIGRACION-95). */
+  sinCorreo?: boolean;
+  /** QA-MIGRACION-95 · la persona ya estaba en Leasefy: se enlazó, no se creó. Un back viejo no lo manda. */
+  yaExistia?: true;
 }
 
 export interface ResumenDeAplicacion {
@@ -382,6 +386,11 @@ export interface ResumenDeAplicacion {
    * les cargue el correo (2026-09-07). Un back viejo no lo manda.
    */
   sinCorreo?: number;
+  /**
+   * QA-MIGRACION-95 · cuántas de las `aplicadas` ya estaban en Leasefy (se
+   * enlazaron, no se crearon). Un back viejo no lo manda: ausente = 0.
+   */
+  yaEstaban?: number;
   resultados: ResultadoDeFila[];
   /**
    * Cuántas filas listas quedaron sin intentarse en esta llamada: mientras

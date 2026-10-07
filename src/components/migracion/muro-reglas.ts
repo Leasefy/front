@@ -236,6 +236,32 @@ export const MODULO_DEL_PASO: Record<IdDePasoDeMigracion, string> = {
   contables: 'configuracion',
 };
 
+/**
+ * QA-MIGRACION-95 (06-10): los pasos que el back abre por ROL y no por módulo.
+ * El plan de cuentas y los registros contables pasan por
+ * `ContabilidadEscrituraGuard` (administrador o contador) y sus páginas sueltas
+ * por `PageGuard roles={[ADMIN, CONTADOR]}`. Medidos con `configuracion`, el
+ * contador —que es quien conoce el plan— leía «este paso lo tiene que hacer un
+ * administrador».
+ */
+const ROLES_DEL_PASO: Partial<Record<IdDePasoDeMigracion, readonly string[]>> = {
+  puc: ['ADMIN', 'CONTADOR'],
+  contables: ['ADMIN', 'CONTADOR'],
+};
+
+/** ¿Este usuario puede hacer el paso? Por rol donde el back decide por rol; si no, por módulo. */
+export function puedeHacerElPaso(
+  pasoId: IdDePasoDeMigracion,
+  { canAccess, agencyRole }: { canAccess: (modulo: string, accion: 'view' | 'create') => boolean; agencyRole: string | null | undefined },
+): boolean {
+  const roles = ROLES_DEL_PASO[pasoId];
+  if (roles && agencyRole) return roles.includes(agencyRole);
+  // QA-MIGRACION-95 (RO-04): con `create`, el permiso con que el back deja
+  // preparar, aplicar, activar y descartar. Con `view`, el visor recibía el
+  // asistente de inmuebles y la subida de contratos y se estrellaba en un 403.
+  return canAccess(MODULO_DEL_PASO[pasoId], 'create');
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // El veredicto: qué quedó asociado y qué no
 // ══════════════════════════════════════════════════════════════════════════
@@ -420,7 +446,7 @@ export interface FilaMirada {
   faltantes?: readonly string[];
 }
 
-const FALTANTES_DE_DATOS = ['fechas', 'cartera_antes_del_inicio', 'canon', 'uso', 'dia_de_pago'];
+const FALTANTES_DE_DATOS = ['fechas', 'cartera_antes_del_inicio', 'canon', 'canon_con_centavos', 'uso', 'dia_de_pago'];
 
 /**
  * 🔴 No se mira UN solo camino.

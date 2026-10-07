@@ -22,7 +22,7 @@ export const LARGO_MAXIMO_DEL_RUBRO = 40;
 export const MENSAJES_DE_FINANZAS = {
   presupuestoEntero: 'El valor presupuestado va en pesos enteros, sin decimales.',
   presupuestoFueraDeRango:
-    'El valor presupuestado no puede pasar de $2.000.000.000 (ni de -$2.000.000.000). Revisa que no sobren ceros.',
+    'El valor presupuestado no puede pasar de $\u00a02.000.000.000 (ni de -$\u00a02.000.000.000). Revisa que no sobren ceros.',
   usuraMinima: 'La tasa de usura tiene que ser mayor que cero.',
   usuraMaxima:
     'La tasa de usura no puede pasar del 500 % efectivo anual. Revisa que no sobren ceros.',

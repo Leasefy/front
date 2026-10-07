@@ -50,15 +50,15 @@ const base: EstadoDeLote = {
  * obligatorio, no cosmético.
  */
 describe('<ProgresoDeLote>', () => {
-  it('🔴 23-09: NO pinta el avance (ni barra ni «4 / 10»): lo manda al centro de procesos', () => {
-    // Nico: «ya tenemos centro de procesos, todas las cargas déjalas que
-    // sucedan allí y deja la pantalla quieta».
+  it('🔴 06-10 (Nico): la migración NO va al centro de procesos — el avance se ve aquí, sin remitir al centro', () => {
+    // Nico, 01-10: «todo al centro de procesos, menos migración»; 06-10, con
+    // captura: la Puesta en marcha tiene SUS cargas. (Antes, 23-09, esta
+    // tarjeta remitía al centro y no pintaba el avance; QA-MIGRACION-95.)
     render({ estado: base, agotado: false })
-    expect(container.querySelector('[data-testid="lote-progreso-indeterminado"]')).toBeNull()
-    expect(container.querySelector('[role="progressbar"], .rounded-full.bg-primary')).toBeNull()
-    expect(container.textContent).not.toMatch(/4\s*\/\s*10/)
-    expect(container.textContent).toContain('centro de procesos')
-    expect(container.querySelector('[data-testid="lote-ver-en-el-centro"]')).not.toBeNull()
+    expect(container.querySelector('[data-testid="lote-ver-en-el-centro"]')).toBeNull()
+    expect(container.textContent).not.toContain('centro de procesos')
+    expect(container.querySelector('[data-testid="lote-avance"]')).not.toBeNull()
+    expect(container.textContent).toMatch(/4\s*de\s*10\s*filas revisadas/)
   })
 
   it('nunca renderiza la lista de trabajo — sólo progreso', () => {

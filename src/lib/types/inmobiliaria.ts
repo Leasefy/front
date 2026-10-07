@@ -813,6 +813,12 @@ export interface CobroSummary {
    * su fórmula. `collectionRate` es su `pct`: la pantalla ya no la divide.
    */
   tasaDeRecaudo: TasaDeRecaudo | null;
+  /**
+   * 🔴 N-22 (QA-PAGOS-95, CR-31): la inmobiliaria no ha fijado sus días de
+   * plazo, así que lo vencido NO es mora (los cobros conservan su `LATE`).
+   * Opcional: un back anterior no lo manda (= como siempre).
+   */
+  plazoSinFijar?: boolean;
 }
 
 // ============================================================================

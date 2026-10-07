@@ -50,7 +50,7 @@ import {
   type ConsignacionConContratoVencido,
   type ResultadoDeLaGeneracion,
 } from '@/lib/api/inmobiliaria.service'
-import { mesEnTitulo } from '@/lib/utils/mes'
+import { mesEnTitulo, nombreDelMes } from '@/lib/utils/mes'
 import { useI18n } from '@/lib/i18n'
 
 /**
@@ -202,7 +202,11 @@ export function GenerarCobrosDialog({
     null,
   )
 
-  const titulo = mesEnTitulo(mes)
+  // El valor suelto de «Mes sobre el que se genera» va con mayúscula inicial;
+  // dentro de una frase (título, botón, avisos) el mes va en minúscula:
+  // «Generar los cobros de octubre de 2026» (N-14, QA-PAGOS-95).
+  const mesSuelto = mesEnTitulo(mes)
+  const titulo = nombreDelMes(mes)
 
   async function confirmar() {
     setEnviando(true)
@@ -331,7 +335,7 @@ export function GenerarCobrosDialog({
                   {t('inmobiliaria.ai.pagos_home.resumen.generar.mesLabel')}
                 </dt>
                 <dd className="text-sm font-semibold text-fg" data-testid="generar-mes">
-                  {titulo}
+                  {mesSuelto}
                 </dd>
               </div>
               <div className="flex items-baseline justify-between gap-4 px-4 py-3">

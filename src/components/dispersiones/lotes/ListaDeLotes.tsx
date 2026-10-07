@@ -514,7 +514,8 @@ function ArmarLoteDialog({
         // El banco desde el que se gira: el archivo del lote sale en su formato.
         origen: banco.origen ?? undefined,
       });
-      const partes = [`${lote.cantidad} pagos por ${formatCurrency(lote.totalCop)}`];
+      // QA-PAGOS-95: «1 pago», no «1 pagos».
+      const partes = [`${lote.cantidad} ${lote.cantidad === 1 ? 'pago' : 'pagos'} por ${formatCurrency(lote.totalCop)}`];
       if (excluidos.length > 0) {
         partes.push(
           `${excluidos.length} ${excluidos.length === 1 ? 'excluido' : 'excluidos'} por datos bancarios incompletos`,
@@ -541,6 +542,8 @@ function ArmarLoteDialog({
       );
       // Administrador, pero la base todavía no lo admite: que no crea que quedó aprobado.
       if (mismoPaso?.porQueNo === 'FALTA_LA_MIGRACION') toast.warning(mismoPaso.nota);
+      // 🔴 Decisión de Nico (05-10-2026): pasa el monto, lo aprueba otra persona.
+      if (mismoPaso?.porQueNo === 'SOBRE_EL_MONTO') toast.info(mismoPaso.nota);
       // 🔴 Pagos que ya salieron en el archivo de un lote anulado (23-09): el
       // detalle del lote lo muestra con nombres; acá se avisa de una vez.
       const yaSalieron = salieronEnUnArchivoAnulado?.length ?? 0;
@@ -566,7 +569,7 @@ function ArmarLoteDialog({
             Elige desde qué banco giras, a quién le pagas y cuánto. Se congelan las dispersiones con los
             datos bancarios de hoy; todavía no se gira nada.
             {isAdmin &&
-              ' Como eres administrador, queda aprobado al armarlo, sin código (P-4): en la bitácora queda que fuiste la misma persona.'}
+              ' Como eres administrador, queda aprobado al armarlo, sin código (P-4): en la bitácora queda que fuiste la misma persona. Salvo que pase el monto del segundo aprobador (Configuración → Perfil → Dispersiones): ese lote lo aprueba otra persona.'}
           </DialogDescription>
         </DialogHeader>
         {/* Sin scroll ni relleno propios: el cuerpo del modal ya scrollea

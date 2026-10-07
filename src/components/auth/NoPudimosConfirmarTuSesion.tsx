@@ -31,7 +31,7 @@ interface Props {
 }
 
 export function NoPudimosConfirmarTuSesion({ variante = 'pantalla', children }: Props) {
-  const { retryMfaCheck } = useAuth()
+  const { retryMfaCheck, confirmacionDeLaSesion, reintentarConfirmarLaSesion } = useAuth()
   const conexion = useEstadoDeConexion()
   const [reintentando, setReintentando] = useState(false)
   const vivo = useRef(true)
@@ -44,7 +44,20 @@ export function NoPudimosConfirmarTuSesion({ variante = 'pantalla', children }: 
 
   const enCurso = useRef(false)
   const reintentar = useCallback(async () => {
-    if (enCurso.current || !retryMfaCheck) return
+    if (enCurso.current) return
+    /*
+     * 🔴 LOGIN-BUCLE (06-10-2026): la misma pantalla sirve cuando lo que no se
+     * pudo confirmar es la SESIÓN guardada (no el segundo factor). Ahí no hay
+     * chequeo que repetir: se recarga para volver a levantar auth-js. El botón
+     * queda cargando hasta que la página se va.
+     */
+    if (confirmacionDeLaSesion === 'sin-confirmar' && reintentarConfirmarLaSesion) {
+      enCurso.current = true
+      setReintentando(true)
+      reintentarConfirmarLaSesion()
+      return
+    }
+    if (!retryMfaCheck) return
     enCurso.current = true
     setReintentando(true)
     try {
@@ -53,7 +66,7 @@ export function NoPudimosConfirmarTuSesion({ variante = 'pantalla', children }: 
       enCurso.current = false
       if (vivo.current) setReintentando(false)
     }
-  }, [retryMfaCheck])
+  }, [retryMfaCheck, confirmacionDeLaSesion, reintentarConfirmarLaSesion])
 
   // Volvió la conexión: se reintenta sola, sin esperar el clic.
   const conexionAnterior = useRef(conexion)

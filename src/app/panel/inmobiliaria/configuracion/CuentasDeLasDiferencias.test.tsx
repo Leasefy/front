@@ -122,7 +122,7 @@ describe('las cuentas de las diferencias', () => {
     api.porAsentar.mockResolvedValueOnce({ total: 3, valorCop: 125_000 }).mockResolvedValue({ total: 0, valorCop: 0 });
     api.reprocesar.mockResolvedValue({ asentadas: 3, sinAsentar: 0, motivos: [] });
     await montar();
-    expect($('[data-testid="diferencias-por-asentar"]')?.textContent).toContain('3 diferencias aprobadas ($125.000)');
+    expect($('[data-testid="diferencias-por-asentar"]')?.textContent).toContain('3 diferencias aprobadas ($\u00a0125.000)');
     await act(async () => {
       $('[data-testid="asentar-las-pendientes"]')!.click();
     });
@@ -176,10 +176,10 @@ describe('🔴 «Asentarlas» también reprocesa las salidas', () => {
       gastosDelBanco: { conciliados: 2, totalCop: 14_500, yaNoSonSeguros: 0 },
     });
     await montar();
-    expect($('[data-testid="gastos-del-extracto"]')?.textContent).toContain('2 gastos del banco ($14.500)');
+    expect($('[data-testid="gastos-del-extracto"]')?.textContent).toContain('2 gastos del banco ($\u00a014.500)');
     await act(async () => $('[data-testid="asentar-las-pendientes"]')!.click());
     expect(api.reprocesar).not.toHaveBeenCalled();
-    expect($('[data-testid="dialogo-asentarlas"]')?.textContent).toContain('Se asienta 1 diferencia aprobada ($4.000)');
+    expect($('[data-testid="dialogo-asentarlas"]')?.textContent).toContain('Se asienta 1 diferencia aprobada ($\u00a04.000)');
     expect($('[data-testid="dialogo-asentarlas"]')?.textContent).toContain('GMF 4X1000');
     // 🔴 (03-10-2026) la fecha de cada gasto en palabras, como el resto del panel (no «2026-09-14»).
     expect($('[data-testid="dialogo-asentarlas"]')?.textContent).not.toContain('2026-09-14');
@@ -189,7 +189,7 @@ describe('🔴 «Asentarlas» también reprocesa las salidas', () => {
     await act(async () => {});
     expect(api.reprocesar).toHaveBeenCalledWith(GASTOS);
     expect(toastMock.success).toHaveBeenCalledWith(
-      'Se conciliaron 2 gastos del banco del extracto ($14.500). Se asentaron 3 diferencias.',
+      'Se conciliaron 2 gastos del banco del extracto ($\u00a014.500). Se asentaron 3 diferencias.',
     );
   });
 

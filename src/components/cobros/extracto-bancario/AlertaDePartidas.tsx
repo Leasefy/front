@@ -13,6 +13,7 @@ import { WarningCircle } from '@phosphor-icons/react';
 import { cierreDeConciliacionApi, type AlertaDePartidas as Alerta } from '@/lib/api/cierre-de-conciliacion';
 import { useAparecer } from './cuentas-del-extracto';
 import { pesos } from './cierre-del-mes';
+import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
 
 export function AlertaDePartidas({ version = 0 }: { version?: number }) {
   const aparecer = useAparecer();
@@ -42,7 +43,7 @@ export function AlertaDePartidas({ version = 0 }: { version?: number }) {
         >
           <WarningCircle className="h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
           <div className="space-y-1">
-            <p className="text-body-sm font-medium text-fg">{alerta.frase}</p>
+            <p className="text-body-sm font-medium text-fg">{conLaPlataPegada(alerta.frase)}</p>
             <p className="text-caption text-fg-muted">
               {alerta.rangos.map((r) => `${r.nombre}: ${r.n} (${pesos(r.valorAbsolutoCop)})`).join(' · ')}
             </p>

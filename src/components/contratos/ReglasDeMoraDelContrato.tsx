@@ -298,6 +298,8 @@ function FilaDeRegla({
 
 function etiquetaDelValor(formula: ReglaDeMoraDelContrato['regla']['formula']): string {
   switch (formula) {
+    case 'INTERES_MENSUAL':
+      return 'Tasa mensual (%)'
     case 'INTERES_DIARIO':
       return 'Tasa diaria (%)'
     case 'PORCENTAJE_DE_LA_BASE':

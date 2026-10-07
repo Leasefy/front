@@ -78,6 +78,12 @@ const mockAutonomyState = {
 const patchPolicy = vi.fn().mockResolvedValue(undefined)
 const refetchPolicy = vi.fn().mockResolvedValue(undefined)
 const saveAutonomy = vi.fn().mockResolvedValue(undefined)
+// N-13 (QA-PAGOS-95 r2): la autonomía se guarda como modo del Piloto.
+const { putPiloto } = vi.hoisted(() => ({ putPiloto: vi.fn() }))
+vi.mock('@/lib/api/piloto', async (orig) => ({
+  ...(await orig<typeof import('@/lib/api/piloto')>()),
+  putPilotoAutonomia: (...a: unknown[]) => putPiloto(...a),
+}))
 const refetchAutonomy = vi.fn().mockResolvedValue(undefined)
 
 // ---------------------------------------------------------------------------
@@ -157,6 +163,7 @@ beforeEach(() => {
   patchPolicy.mockClear().mockResolvedValue(undefined)
   refetchPolicy.mockClear()
   saveAutonomy.mockClear().mockResolvedValue(undefined)
+  putPiloto.mockReset().mockResolvedValue({ ok: true, data: {} })
   refetchAutonomy.mockClear()
 })
 
@@ -171,6 +178,19 @@ afterEach(() => {
 function render() {
   act(() => {
     root.render(<CobranzaConfiguracionPage />)
+  })
+}
+
+/** Con la sesión de una inmobiliaria (los modos del Piloto se guardan por agencia). */
+async function renderConAgencia() {
+  const { AuthContext } = await import('@/lib/auth/auth-context')
+  const auth = { agency: { id: 'ag-1', name: 'Inmobiliaria' } } as unknown as React.ContextType<typeof AuthContext>
+  act(() => {
+    root.render(
+      <AuthContext.Provider value={auth}>
+        <CobranzaConfiguracionPage />
+      </AuthContext.Provider>,
+    )
   })
 }
 
@@ -292,18 +312,22 @@ describe('<CobranzaConfiguracionPage> — el modelo de cobro es de sólo lectura
 })
 
 describe('<CobranzaConfiguracionPage> — autonomy save (PUT /cobranza/autonomy)', () => {
-  it('calls saveAutonomy with the selected level', async () => {
-    render()
+  // N-13 (QA-PAGOS-95 r2; decisión de Nico 17-09): los TRES modos del Piloto;
+  // elegir uno lo guarda en el Piloto, no en el nivel de cuatro peldaños.
+  it('elegir «Copiloto» lo guarda en el Piloto (PUT …/agentes/cobranza/autonomia)', async () => {
+    await renderConAgencia()
     const radios = Array.from(
       document.querySelectorAll('input[type="radio"], [role="radio"]'),
     ) as HTMLElement[]
-    const target = radios.find((r) => r.getAttribute('value') === 'aprobar')
+    expect(radios.some((r) => r.getAttribute('value') === 'aprobar')).toBe(false)
+    const target = radios.find((r) => r.getAttribute('value') === 'copiloto')
     expect(target).toBeTruthy()
     await act(async () => {
       target!.click()
       await new Promise((r) => setTimeout(r, 0))
     })
-    expect(saveAutonomy).toHaveBeenCalledWith('aprobar')
+    expect(putPiloto).toHaveBeenCalledWith('ag-1', 'cobranza', 'copiloto')
+    expect(saveAutonomy).not.toHaveBeenCalled()
   })
 })
 
@@ -350,19 +374,20 @@ describe('<CobranzaConfiguracionPage> — errores al guardar', () => {
 
   it('la autonomía: un 5xx dice «de nuestro lado» con la referencia, sin culpar a la conexión', async () => {
     const { ApiError } = await import('@/lib/api/client')
-    saveAutonomy.mockRejectedValue(
-      new ApiError(500, '', 'internal_error', { error: 'internal_error', requestId: '9f8e7d6c-0000-4000-8000-000000000000' }),
-    )
-    render()
+    putPiloto.mockResolvedValue({
+      ok: false,
+      fallo: new ApiError(500, '', 'internal_error', { error: 'internal_error', requestId: '9f8e7d6c-0000-4000-8000-000000000000' }),
+    })
+    await renderConAgencia()
     const radios = Array.from(
       document.querySelectorAll('input[type="radio"], [role="radio"]'),
     ) as HTMLElement[]
     await act(async () => {
-      radios.find((r) => r.getAttribute('value') === 'aprobar')!.click()
+      radios.find((r) => r.getAttribute('value') === 'copiloto')!.click()
       await new Promise((r) => setTimeout(r, 0))
     })
     const texto = byTestId('autonomia-save-error')?.textContent ?? ''
-    expect(texto).toContain('No pudimos guardar el nivel de autonomía: algo falló de nuestro lado')
+    expect(texto).toContain('No pudimos guardar el modo de la cobranza: algo falló de nuestro lado')
     expect(texto).toContain('9f8e7d6c')
     expect(texto).not.toMatch(/conexi[oó]n|Intenta de nuevo/i)
   })

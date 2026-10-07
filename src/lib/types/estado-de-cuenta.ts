@@ -56,6 +56,12 @@ export interface DocumentoDePago {
     nit: string;
     siniestroReferencia: string | null;
   };
+  /**
+   * QA-MIGRACION-95 (CA-08): recibo migrado SIN el documento del inquilino que
+   * paga el mes porque se colgó del contrato por su número o por el código del
+   * inmueble. Ausente = por el documento.
+   */
+  asociadoPor?: 'numero_contrato' | 'codigo_inmueble';
 }
 
 /**
@@ -141,6 +147,13 @@ export interface FilaDelEstadoDeCuenta {
    * NC-12» (sin número si la nota todavía no lo tiene). Ausente en el resto.
    */
   saldadaPorNota?: SaldadaPorNota;
+  /**
+   * 🔴 CA-06 (Nico, 06-10-2026): en el estado de cuenta de UN propietario, la
+   * cuota de un inmueble en copropiedad que vino de la migración sin el % de
+   * cada dueño. Su parte no está definida: la plata llega en cero y se pinta
+   * «Sin definir · falta el porcentaje», sin «atrasado». Ausente en el resto.
+   */
+  sinPorcentaje?: true;
 }
 
 /**
@@ -215,6 +228,13 @@ export interface ContratoDelEstadoDeCuenta {
    * por pagar + comprobante de egreso). Sólo del inquilino; ausente si no hay.
    */
   saldoAFavor?: SaldoAFavorDelContrato | null;
+  /**
+   * QA-MIGRACION-95 (CA-05): el inmueble es de varios dueños y este
+   * propietario tiene `suParteBps` (5000 = 50 %) entre `propietarios`. Sólo del
+   * propietario y en copropiedad; ausente con un dueño o con un back anterior.
+   * `suParteBps: null` = el mandato vino sin el porcentaje de cada dueño.
+   */
+  copropiedad?: { suParteBps: number | null; propietarios: number };
   cortes: PuntoDeQuiebre[];
 }
 
@@ -258,6 +278,11 @@ export interface FilaDeInteres {
   origen: 'COBRO' | 'CUOTA' | null;
   /** La cuota ya se pagó, pero se pagó cuando ya estaba en mora. */
   pagadaEnMora: boolean;
+  /**
+   * B-13 (QA-PAGOS-95 r2): lo que un administrador condonó de este interés
+   * (ya descontado de `liquidado` y `pendiente`). Ausente = nada.
+   */
+  condonado?: number;
 }
 
 export interface InteresesDelContrato {
@@ -499,3 +524,22 @@ export interface ResumenDelEstadoDeCuenta {
  * mostrar de emitir y no llevaba intereses—. La única prefactura es la de
  * `GET /inmobiliaria/facturacion/por-generar`, en `facturacion-por-mes.service`.
  */
+
+/**
+ * QA-MIGRACION-95 — CA-04: un contrato vigente del inquilino que todavía no
+ * tiene arriendo en el portal (el migrado sin día de pago, o cuya cuenta nació
+ * después). Espejo de `ContratoDelPortalDto` del back. `diaDePago` `null` = el
+ * archivo no lo trajo: se dice «sin definir», nunca un número inventado.
+ */
+export interface ContratoDelPortal {
+  contratoId: string;
+  numero: string | null;
+  inmobiliaria: { id: string; nombre: string };
+  direccion: string | null;
+  ciudad: string | null;
+  desde: string | null;
+  hasta: string | null;
+  canonCop: number | null;
+  diaDePago: number | null;
+  estado: string;
+}

@@ -181,6 +181,17 @@ describe('Liquidaciones pide y pinta la plata real del mes', () => {
     expect(texto()).toContain('Marcela Ochoa');
   });
 
+  it('🔴 CE-07 (QA-PAGOS-95): en el resumen del mes el signo y la cifra van juntos (no se parten de línea)', async () => {
+    preview.mockResolvedValue(vistaPrevia());
+    await montar();
+    const cifras = Array.from(host.querySelectorAll('[data-testid="tesoreria-cifra-del-paso"]'));
+    expect(cifras.length).toBeGreaterThan(0);
+    for (const c of cifras) {
+      expect(c.className).toContain('whitespace-nowrap');
+      expect(c.className).toContain('shrink-0');
+    }
+  });
+
   it('AL REVÉS: el canon de ejemplo ($2.500.000) ya no aparece en ninguna parte', async () => {
     preview.mockResolvedValue(vistaPrevia());
     await montar();

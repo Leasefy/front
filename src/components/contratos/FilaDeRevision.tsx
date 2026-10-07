@@ -39,8 +39,19 @@ import { useEffect, useRef, useState } from "react";
 import { Presence } from "@leasefy/cadence";
 import { CheckCircle, Warning } from "@phosphor-icons/react";
 
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PercentInput } from "@/components/ui/percent-input";
 import { formatCurrency } from "@/lib/format";
@@ -97,8 +108,6 @@ export function FilaDeRevision({
 }: FilaDeRevisionProps) {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  /** La confirmación de «Descartar esta fila» va en la propia fila, no en un diálogo del navegador. */
-  const [confirmandoDescarte, setConfirmandoDescarte] = useState(false);
   /** Lo que el back dijo del propietario o de la comisión, debajo de cada uno. */
   const [errorPorCampo, setErrorPorCampo] = useState<
     Partial<Record<CampoDeLaFila, string>>
@@ -221,21 +230,6 @@ export function FilaDeRevision({
          */
         comisionPorcentaje:
           fila.comisionPorcentaje ?? fila.datos.comisionPorcentaje ?? 0,
-      };
-    });
-  }
-
-  async function descartarFila() {
-    await correr(async () => {
-      const descartada = await contractsApi.migracion.descartar(fila.id);
-      setConfirmandoDescarte(false);
-      // El back devuelve la fila cruda, sin lo que arma el listado: se
-      // conserva lo que la tarjeta ya mostraba para que no parpadee.
-      return {
-        ...descartada,
-        propietario: fila.propietario,
-        asociacion: fila.asociacion,
-        comisionPorcentaje: fila.comisionPorcentaje,
       };
     });
   }
@@ -413,57 +407,90 @@ export function FilaDeRevision({
       ) : null}
 
       {/*
-        Una fila que no se va a traer (vacía, repetida, de otro cliente) se
-        descarta acá mismo: sin esto la única salida era arreglar el archivo y
-        volver a subirlo. No se borra, queda el rastro; deja de contar como
-        pendiente.
+        CO-21 (QA-MIGRACION-95, 06-10): una fila que no va (un contrato que no
+        se quiere migrar, una fila de prueba) no tenía salida: sólo «Descartar
+        este lote», que se lleva también las demás. El back ya tenía
+        `DELETE migrar/filas/:id`; faltaba el botón, con su confirmación.
       */}
       {editable ? (
-        <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
-          {confirmandoDescarte ? (
-            <>
-              <p
-                className="mr-auto text-caption text-muted-foreground"
-                data-testid="confirmar-descarte-fila"
-              >
-                ¿Descartar esta fila? No se importará; queda el rastro y se
-                puede ver como descartada.
-              </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                hideArrow
-                disabled={guardando}
-                onClick={() => setConfirmandoDescarte(false)}
-              >
-                Conservar
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                hideArrow
-                disabled={guardando}
-                data-testid="confirmar-descartar-fila"
-                onClick={() => void descartarFila()}
-              >
-                {guardando ? "Descartando..." : "Sí, descartar"}
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="ghost"
-              size="sm"
-              hideArrow
-              disabled={guardando}
-              data-testid="descartar-fila"
-              onClick={() => setConfirmandoDescarte(true)}
-            >
-              Descartar esta fila
-            </Button>
-          )}
-        </div>
+        <DescartarLaFila
+          fila={fila}
+          onDescartada={(f) => {
+            onActualizada({ ...fila, ...f });
+            onCambio();
+          }}
+        />
       ) : null}
     </Card>
+  );
+}
+
+function DescartarLaFila({
+  fila,
+  onDescartada,
+}: {
+  fila: FilaDeMigracion;
+  onDescartada: (f: FilaDeMigracion) => void;
+}) {
+  const [abierto, setAbierto] = useState(false);
+  const [descartando, setDescartando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <div className="flex justify-end">
+      <Button
+        variant="ghost"
+        size="sm"
+        hideArrow
+        onClick={() => setAbierto(true)}
+        data-testid={`descartar-fila-${fila.fila}`}
+      >
+        Descartar esta fila
+      </Button>
+      <AlertDialog open={abierto} onOpenChange={(v) => !descartando && setAbierto(v)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Descartar la fila {fila.fila + 2}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              El contrato de {fila.datos.inquilino?.nombre || "esta fila"} no se va a crear. Las
+              demás filas del lote siguen igual. Si te equivocas, vuelve a subir el archivo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {error ? (
+            <p className="text-caption text-destructive" role="alert">
+              {error}
+            </p>
+          ) : null}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={descartando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={descartando}
+              onClick={(e) => {
+                e.preventDefault();
+                setDescartando(true);
+                setError(null);
+                contractsApi.migracion
+                  .descartar(fila.id)
+                  .then((f) => {
+                    setAbierto(false);
+                    onDescartada(f);
+                  })
+                  .catch((err: unknown) =>
+                    setError(
+                      mensajeParaLaPersona(err, {
+                        porDefecto: "No pudimos descartar la fila.",
+                        accion: "descartar la fila",
+                      }),
+                    ),
+                  )
+                  .finally(() => setDescartando(false));
+              }}
+            >
+              {descartando ? "Descartando..." : "Descartar esta fila"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }
 

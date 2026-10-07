@@ -1,10 +1,22 @@
 import { formatCurrency } from '@/lib/format';
 
-/** La fecha del movimiento viene como día UTC (`@db.Date`): se muestra en UTC para no correrla. */
+/**
+ * La fecha del movimiento viene como día UTC (`@db.Date`, «2026-10-04» o
+ * «2026-10-04T00:00:00.000Z»): se muestra en UTC para no correrla. Un INSTANTE
+ * (cuándo se cargó el extracto, cuándo se armó o aprobó un lote) se muestra en
+ * el día de Bogotá: en UTC, lo cargado a las 22:30 del 4 decía «5 de oct»
+ * (N-08, QA-PAGOS-95).
+ */
 export function diaLegible(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  const esUnDia = /^\d{4}-\d{2}-\d{2}(T00:00:00(\.0+)?Z)?$/.test(iso);
+  return d.toLocaleDateString('es-CO', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: esUnDia ? 'UTC' : 'America/Bogota',
+  });
 }
 
 export function plata(n: number): string {

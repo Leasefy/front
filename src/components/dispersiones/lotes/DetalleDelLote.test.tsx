@@ -545,6 +545,39 @@ describe('<DetalleDelLote> — P-4: el administrador no se confirma a sí mismo'
   });
 });
 
+describe('<DetalleDelLote> — QA-PAGOS-95: desde el monto, una segunda persona (Nico, 05-10-2026)', () => {
+  const NOTA =
+    'El lote suma $7.011.000 y desde $5.000.000 lo aprueba una segunda persona (el monto que escogió tu inmobiliaria). Quien lo armó no lo puede aprobar, aunque sea administrador.';
+  const sobreElMonto = { montoCop: 5_000_000, porDefecto: false, exige: true, hayOtra: true, nota: NOTA };
+
+  it('🔴 el administrador que armó un borrador sobre el monto: «Pedir aprobación», no «Aprobar», y el porqué', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = true;
+    await render(vista(lote(), { segundaPersona: sobreElMonto }));
+    expect(acciones()).toEqual(['Pedir aprobación', 'Anular']);
+    expect(container.querySelector('[data-testid="lo-apruebas-tu"]')).toBeNull();
+    expect(container.querySelector('[data-testid="segunda-persona-por-monto"]')?.textContent).toContain(NOTA);
+    expect(container.textContent).toContain('Armado por ti');
+  });
+
+  it('🔴 esperando aprobación: a él «Aprobar» se le apaga con la frase; a otra persona no', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = true;
+    await render(vista(lote({ estado: 'ESPERANDO_APROBACION', codigoHash: 'hash', codigoExpiraAt: '2026-09-01T15:10:00.000Z' }), { segundaPersona: sobreElMonto }));
+    expect(boton('Aprobar').disabled).toBe(true);
+    expect(boton('Aprobar').title).toBe(NOTA);
+    expect(container.textContent).not.toContain('Tú armaste este lote');
+  });
+
+  it('bajo el monto (o back anterior sin el campo) P-4 sigue: «Aprobar» en un paso', async () => {
+    usuarioActual = 'u-creador';
+    soyAdmin = true;
+    await render(vista(lote(), { segundaPersona: { ...sobreElMonto, exige: false, nota: null } }));
+    expect(acciones()).toEqual(['Aprobar', 'Anular']);
+    expect(container.querySelector('[data-testid="segunda-persona-por-monto"]')).toBeNull();
+  });
+});
+
 describe('<DetalleDelLote> — el archivo', () => {
   const ARCHIVO_SIN_VERIFICAR = {
     nombreArchivo: `lote-2026-08-bancolombia_pab-SIN-VERIFICAR-${ID.slice(0, 8)}.txt`,

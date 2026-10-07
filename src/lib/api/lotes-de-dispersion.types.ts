@@ -9,6 +9,7 @@
  */
 
 import type { MismoPaso } from '@/lib/doble-control/el-administrador';
+import type { SegundaPersonaEnLaPantalla } from '@/lib/dispersiones/segunda-persona-por-monto';
 
 /** En qué punto está el lote. Es el enum `EstadoDelLote` del back. */
 export type EstadoDelLote =
@@ -350,6 +351,12 @@ export interface VistaDelLote {
    */
   creadoPorNombre?: string | null;
   aprobadoPorNombre?: string | null;
+  /**
+   * 🔴 Decisión de Nico (05-10-2026): si el lote pasa el monto de la segunda
+   * persona, quien lo armó no lo aprueba aunque sea administrador. `null` = ya
+   * no espera aprobación; ausente = back anterior (el 403 es la autoridad).
+   */
+  segundaPersona?: SegundaPersonaEnLaPantalla | null;
 }
 
 export interface LoteArmado {

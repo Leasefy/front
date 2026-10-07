@@ -41,6 +41,7 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import type { CobroAnulado } from '@/lib/api/inmobiliaria.service';
 import type { Cobro, CobroStatus } from '@/lib/types/inmobiliaria';
 import { formatCurrency as formatCurrencyUtil } from '@/lib/types/inmobiliaria';
+import { mesEnTitulo } from '@/lib/utils/mes';
 
 type SortField = 'propertyTitle' | 'tenantName' | 'month' | 'totalAmount' | 'paidAmount' | 'pendingAmount' | 'status' | 'daysLate' | 'dueDate';
 type SortDirection = 'asc' | 'desc';
@@ -98,7 +99,7 @@ export function CobroTable({
   const [cobroPorAnular, setCobroPorAnular] = useState<Cobro | null>(null);
   const { canAccess, isLoading: cargandoPermisos } = usePermissions();
   const puedeAnular = !cargandoPermisos && canAccess('cobros', 'edit');
-  const { t, formatDate, formatCurrency } = useI18n();
+  const { t, formatCurrency } = useI18n();
   const puedeHacerRecibo = usePuedeHacerRecibo();
   const [sortField, setSortField] = useState<SortField>('dueDate');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -115,11 +116,9 @@ export function CobroTable({
   /**
    * Format month string (2026-02) to localized display (Feb 2026)
    */
-  const formatMonth = (month: string): string => {
-    const [year, monthNum] = month.split('-');
-    const date = new Date(parseInt(year), parseInt(monthNum) - 1, 1);
-    return formatDate(date, { month: 'short', year: 'numeric' });
-  };
+  // N-14 (QA-PAGOS-95): «Oct 2026» con mayúscula sólo al inicio. La clase
+  // `capitalize` subía cada palabra («Oct De 2026»).
+  const formatMonth = (month: string): string => mesEnTitulo(month, 'es', 'short');
 
   // Sort cobros
   const sortedCobros = useMemo(() => {
@@ -314,7 +313,7 @@ export function CobroTable({
 
                 {/* Month */}
                 <TableCell className="p-4">
-                  <span className="text-fg capitalize">
+                  <span className="text-fg">
                     {formatMonth(cobro.month)}
                   </span>
                 </TableCell>

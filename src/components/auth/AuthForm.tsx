@@ -74,7 +74,8 @@ function GoogleIcon({ className }: { className?: string }) {
 /**
  * «Al continuar, aceptas…» — debajo del botón principal y no al pie de la
  * pantalla (Nico, 2026-09-03): lo que uno acepta se lee junto a lo que uno
- * aprieta. Va en los dos formularios que crean o abren una sesión.
+ * aprieta. Sólo al CREAR la cuenta (Nico, 07-10): quien inicia sesión ya los
+ * aceptó al registrarse.
  */
 function NotaLegal() {
   return (
@@ -1199,8 +1200,6 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
                 </Button>
               </fieldset>
             </form>
-
-            <NotaLegal />
 
             <p className="mt-6 border-t border-border/70 pt-5 text-[13px] text-fg-subtle">
               ¿Todavía no tienes cuenta?{' '}

@@ -163,6 +163,11 @@ const DECLARADOS: readonly string[] = [
   'actasApi.objetar',
   'agencyApi.declineInvitation',
   'agencyApi.getOnboardingStatus',
+  // 06-10 · Es de develop (7a9d5627): el «Deshacer» del cambio de plan programado
+  // lo llamaban ConfigFacturacion y /upgrade. Nico (04-10): el plan lo cambia SÓLO
+  // Leasefy, y «Deshacer» pasó a ser un pedido por correo (bbf37c26, ce282973). No se
+  // borra: el método y su ruta son de Víctor.
+  'agencySubscriptionApi.cancelPendingChange',
   'agencySubscriptionApi.chargePseCheckout',
   'agentesApi.getLeaderboard',
   // Los dos quedaron BIEN (22-09: pedían la métrica por la cadena de
@@ -226,6 +231,10 @@ const DECLARADOS: readonly string[] = [
   'postulacionesApi.revisarCierre',
   'propertiesApi.getAssigned',
   'propertiesApi.removeAgent',
+  // 06-10 · Es de develop (c14de11a): «Enviar ahora» del extracto mensual pasó al
+  // centro de procesos (`enviarExtractosDelMesEnElCentro`, QA-PROP-95 r2, 3235ae78).
+  // No se borra: develop todavía lo llama desde ConfigExtractoMensual.
+  'propietariosApi.enviarExtractosDelMes',
   'pseCheckoutApi.getRequestStatus',
   'pseCheckoutApi.verifyRequest',
   'recibosDeCajaApi.anticipos',

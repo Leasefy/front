@@ -219,7 +219,7 @@ export function ProtectedRoute({ children, allowedRoles, blockedAgencyRoles, all
     /*
      * 🔴 LOGIN-BUCLE (Nico, 06-10-2026): con una sesión guardada que no se
      * confirma, `isLoading` sigue en true —el efecto de arriba no decide nada,
-     * y por eso ya no hay `router.replace('/auth…')` por un «todavía no sé»—.
+     * y por eso ya no se reemplaza la ruta por la de `/auth` por un «todavía no sé»—.
      * Pasado el tope se dice la verdad, con «Reintentar» y una salida a otra
      * cuenta que la persona elige; debajo se sigue esperando y, si la
      * confirmación llega, el panel se monta solo.

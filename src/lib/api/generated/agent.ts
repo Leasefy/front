@@ -11102,18 +11102,7 @@ export interface components {
             /** @enum {boolean} */
             ok: true;
             providerMessageId: string | null;
-        };
-        CobranzaWaSendBody: {
-            template_id: string;
-            variables: {
-                [key: string]: string;
-            };
-        };
-        CobranzaManualCallOk: {
-            /** @enum {boolean} */
-            ok: true;
-            callId: string;
-            stub?: boolean;
+            simulado?: boolean;
         };
         CobranzaManualCallBloqueada: {
             error: string;
@@ -11126,6 +11115,20 @@ export interface components {
             campos?: components["schemas"]["SobreDeErrorCampo"][];
             referencia?: string;
             servicio?: string;
+        };
+        CobranzaWaSendBody: {
+            template_id: string;
+            variables: {
+                [key: string]: string;
+            };
+            fueraDelHorarioConfirmado?: boolean;
+            omitir_tope_de_frecuencia?: boolean;
+        };
+        CobranzaManualCallOk: {
+            /** @enum {boolean} */
+            ok: true;
+            callId: string;
+            stub?: boolean;
         };
         CobranzaManualCallBody: {
             reason: string;
@@ -13597,6 +13600,7 @@ export interface components {
                 esperanClic: number;
                 fallidas: number;
             } | null;
+            enLaBandeja?: number | null;
             director: {
                 planes: number;
                 conLaIa: number;
@@ -14057,6 +14061,9 @@ export interface components {
             stage: components["schemas"]["CarteraStage"];
             totalDueCop: number;
             interestsCop: number;
+            initialAmountCop?: number;
+            installmentCount?: number;
+            firstDueDate?: string;
         };
         CarteraPaymentPlanDetailResponse: {
             /** Format: uuid */
@@ -20124,6 +20131,15 @@ export interface operations {
                     "application/json": components["schemas"]["CobranzaInterventionError"];
                 };
             };
+            /** @description Una valla de la Ley 2300 frenó el envío: opt-out del canal (siempre), fuera del horario sin confirmar (`FUERA_DEL_HORARIO_DE_LEY`) o el tope de frecuencia sin override */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaManualCallBloqueada"];
+                };
+            };
             /** @description Audit-first write failed */
             500: {
                 headers: {
@@ -22302,6 +22318,10 @@ export interface operations {
                         casesEscalated: number | null;
                         moraReducedPct: number | null;
                         moraWindowDays: number;
+                        moraDesdePct?: number | null;
+                        moraHastaPct?: number | null;
+                        moraDesdeDia?: string | null;
+                        moraSinCarteraHoy?: boolean;
                         generatedAt: string;
                     };
                 };

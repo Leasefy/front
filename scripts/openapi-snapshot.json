@@ -8119,52 +8119,14 @@
               "string",
               "null"
             ]
-          }
-        },
-        "required": [
-          "ok",
-          "providerMessageId"
-        ]
-      },
-      "CobranzaWaSendBody": {
-        "type": "object",
-        "properties": {
-          "template_id": {
-            "type": "string",
-            "minLength": 1
           },
-          "variables": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "template_id",
-          "variables"
-        ],
-        "additionalProperties": false
-      },
-      "CobranzaManualCallOk": {
-        "type": "object",
-        "properties": {
-          "ok": {
-            "type": "boolean",
-            "enum": [
-              true
-            ]
-          },
-          "callId": {
-            "type": "string"
-          },
-          "stub": {
+          "simulado": {
             "type": "boolean"
           }
         },
         "required": [
           "ok",
-          "callId"
+          "providerMessageId"
         ]
       },
       "CobranzaManualCallBloqueada": {
@@ -8220,6 +8182,53 @@
           "error",
           "valla",
           "motivo"
+        ]
+      },
+      "CobranzaWaSendBody": {
+        "type": "object",
+        "properties": {
+          "template_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "variables": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "fueraDelHorarioConfirmado": {
+            "type": "boolean"
+          },
+          "omitir_tope_de_frecuencia": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "template_id",
+          "variables"
+        ],
+        "additionalProperties": false
+      },
+      "CobranzaManualCallOk": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "callId": {
+            "type": "string"
+          },
+          "stub": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "callId"
         ]
       },
       "CobranzaManualCallBody": {
@@ -18891,6 +18900,12 @@
               "fallidas"
             ]
           },
+          "enLaBandeja": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
           "director": {
             "type": [
               "object",
@@ -20905,6 +20920,19 @@
           "interestsCop": {
             "type": "number",
             "minimum": 0
+          },
+          "initialAmountCop": {
+            "type": "number",
+            "minimum": 0
+          },
+          "installmentCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4
+          },
+          "firstDueDate": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
           }
         },
         "required": [
@@ -41881,6 +41909,16 @@
               }
             }
           },
+          "409": {
+            "description": "Una valla de la Ley 2300 frenó el envío: opt-out del canal (siempre), fuera del horario sin confirmar (`FUERA_DEL_HORARIO_DE_LEY`) o el tope de frecuencia sin override",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CobranzaManualCallBloqueada"
+                }
+              }
+            }
+          },
           "500": {
             "description": "Audit-first write failed",
             "content": {
@@ -45885,6 +45923,27 @@
                         "moraWindowDays": {
                           "type": "integer",
                           "exclusiveMinimum": 0
+                        },
+                        "moraDesdePct": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "moraHastaPct": {
+                          "type": [
+                            "number",
+                            "null"
+                          ]
+                        },
+                        "moraDesdeDia": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        },
+                        "moraSinCarteraHoy": {
+                          "type": "boolean"
                         },
                         "generatedAt": {
                           "type": "string"

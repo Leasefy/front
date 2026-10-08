@@ -1,4 +1,4 @@
-import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
 
 import { PageGuard } from '@/components/auth/PageGuard'
 
@@ -11,14 +11,16 @@ import { PortalesClient } from './PortalesClient'
  *
  * Cuelga de `portafolio`, igual que el interruptor de publicación de la ficha.
  */
-export default function PortalesPage() {
+export default async function PortalesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
+  // La pestaña «Calidad» se fue a «Agentes IA» (Nico, 08-10): el enlace viejo lleva allá.
+  if ((await searchParams).pestana === 'calidad') redirect('/panel/inmobiliaria/inmuebles/calidad-de-publicaciones')
   return (
     <PageGuard module="portafolio">
-      {/* `PortalesClient` lee `?pestana=` con `useSearchParams`: sin este
-          límite, Next no puede prerenderizar la ruta. */}
-      <Suspense fallback={null}>
-        <PortalesClient />
-      </Suspense>
+      <PortalesClient />
     </PageGuard>
   )
 }

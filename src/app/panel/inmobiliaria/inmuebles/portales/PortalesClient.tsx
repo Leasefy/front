@@ -56,8 +56,8 @@
  * cambia de estado solo.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
 import {
   CloudArrowUp,
@@ -72,7 +72,6 @@ import {
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
-import { CalidadDeLasPublicaciones } from '@/components/inmobiliaria/calidad/CalidadDeLasPublicaciones'
 import { ParaEntenderMas } from '@/components/ui/para-entender-mas'
 import { PasosExplicados, type PasoExplicado } from '@/components/ui/pasos-explicados'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -102,7 +101,6 @@ import {
   Label,
   Textarea,
 } from '@/components/ui'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   publicacionApi,
   type EstadoDePublicacion,
@@ -115,7 +113,6 @@ import { EL_CATALOGO_DE_LEASEFY, marcaDelPortal } from '@/lib/portales/marca'
 import { comoSeConecta } from '@/lib/portales/como-se-conecta'
 import { useConsignaciones } from '@/lib/hooks/useInmobiliaria'
 import { usePermissions } from '@/lib/hooks/usePermissions'
-import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 /** Cómo se lee cada estado, y con qué tono. */
@@ -1004,38 +1001,7 @@ function ComoFunciona() {
 // La pantalla
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Las dos pestañas: la de siempre y la de Niti · calidad (26-09-2026). */
-type Pestana = 'publicar' | 'calidad'
-
-/**
- * La pestaña vive en la URL (`?pestana=calidad`) para poder enlazarla desde la
- * Bandeja o compartirla. Sin parámetro —o con uno que no es pestaña— es
- * «Publicar», y elegir «Publicar» QUITA el parámetro: la URL de siempre no
- * cambia para quien sólo viene a publicar.
- */
-const PARAMETRO_DE_PESTANA = 'pestana'
-const pestanaDe = (valor: string | null): Pestana => (valor === 'calidad' ? 'calidad' : 'publicar')
-
 export function PortalesClient() {
-  const { t } = useI18n()
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const deLaUrl = pestanaDe(searchParams.get(PARAMETRO_DE_PESTANA))
-  const [pestana, setPestana] = useState<Pestana>(deLaUrl)
-  // Atrás/adelante del navegador cambia la URL sin pasar por el clic.
-  useEffect(() => setPestana(deLaUrl), [deLaUrl])
-
-  function elegirPestana(valor: string) {
-    const siguiente = pestanaDe(valor)
-    setPestana(siguiente)
-    const params = new URLSearchParams(searchParams.toString())
-    if (siguiente === 'calidad') params.set(PARAMETRO_DE_PESTANA, 'calidad')
-    else params.delete(PARAMETRO_DE_PESTANA)
-    const q = params.toString()
-    // `replace`: cambiar de pestaña no recarga ni llena el historial.
-    router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false })
-  }
   const cuentas = useCrm(() => publicacionApi.cuentas(), [], ['portafolio'])
   const tablero = useCrm(() => publicacionApi.tablero(), [], ['portafolio'])
   const { consignaciones, isLoading: cargandoInmuebles } = useConsignaciones()
@@ -1149,6 +1115,16 @@ export function PortalesClient() {
             </span>
             .
           </p>
+          {/* Calidad vive sólo en «Agentes IA» (Nico, 08-10): acá queda el camino. */}
+          <p className="text-sm">
+            <Link
+              href="/panel/inmobiliaria/inmuebles/calidad-de-publicaciones"
+              className="font-medium text-primary hover:underline"
+              data-testid="enlace-a-calidad"
+            >
+              Ver la calidad de tus avisos (Niti)
+            </Link>
+          </p>
         </div>
         <ParaEntenderMas
           etiqueta="Cómo se publica un inmueble"
@@ -1161,29 +1137,6 @@ export function PortalesClient() {
         </ParaEntenderMas>
       </header>
 
-      {/* «Publicar» es todo lo que esta pantalla era; «Calidad» es Niti ·
-          calidad (`niti-spec.md`, decisión 7): junto a donde ya se publica.
-          Pestañas subrayadas porque cambian el contenido de la página
-          (DESIGN §15); el contenido inactivo no se monta. */}
-      <Tabs
-        value={pestana}
-        onValueChange={elegirPestana}
-        className="space-y-6"
-      >
-        <TabsList
-          variant="underline"
-          aria-label={t('inmobiliaria.calidad.pestanas.aria')}
-          className="justify-start"
-        >
-          <TabsTrigger value="publicar" data-testid="pestana-publicar">
-            {t('inmobiliaria.calidad.pestanas.publicar')}
-          </TabsTrigger>
-          <TabsTrigger value="calidad" data-testid="pestana-calidad">
-            {t('inmobiliaria.calidad.pestanas.calidad')}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="publicar" className="mt-0 space-y-6">
       {/* ── 1 · Las cuentas ──────────────────────────────────────────────── */}
       <Card>
         <CardHeader>
@@ -1372,12 +1325,6 @@ export function PortalesClient() {
           )}
         </CardContent>
       </Card>
-        </TabsContent>
-
-        <TabsContent value="calidad" className="mt-0">
-          <CalidadDeLasPublicaciones />
-        </TabsContent>
-      </Tabs>
 
       {cuentaAbierta ? (
         <DialogoDeCuenta

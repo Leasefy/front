@@ -4,7 +4,7 @@ import RevisionesClient from './RevisionesClient'
 
 export const metadata: Metadata = {
   title: 'Por aprobar · Retención',
-  description: 'Revisa las decisiones que tomó sola Retención.',
+  description: 'Lo que Vinci dejó esperando tu clic (T-323).',
 }
 
 export default function RevisionesPage() {

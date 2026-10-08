@@ -59,7 +59,7 @@ export function RiesgoEnLaRenovacion({
         <p className="text-sm font-semibold text-fg">Riesgo de que se vaya · Vinci</p>
         <p className="text-caption text-fg-muted">
           {riesgo
-            ? `Con las señales del ERP (mora de las cuotas, PQRS, mantenimientos, fin, incremento, giros). En riesgo desde ${riesgo.umbral}/100${riesgo.medidoEn ? `; medido ${fechaYHora(riesgo.medidoEn)}` : ''}.`
+            ? `Con las señales del ERP (mora de las cuotas, PQRS, mantenimientos, fin, incremento, giros). En riesgo desde ${riesgo.umbral}/100${riesgo.medidoEn ? ` (medido ${fechaYHora(riesgo.medidoEn)})` : ''}.`
             : 'No se pudo medir ahora (Vinci apagado o sin respuesta). La renovación sigue igual.'}
         </p>
       </div>

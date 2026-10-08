@@ -93,7 +93,7 @@ describe('las frases del tablero', () => {
         enRiesgo: { inquilinos: 8, propietarios: 1 },
         casos: [],
       }),
-    ).toMatch(/^Vinci ve 8 inquilinos y 1 propietario en riesgo \(umbral 60\/100\) entre 739 contratos vigentes; medido .* \(el barrido de la mañana\)\.$/)
+    ).toMatch(/^Vinci ve 8 inquilinos y 1 propietario en riesgo \(umbral 60\/100\) entre 739 contratos vigentes; medido .* \(el último barrido\)\.$/)
   })
 
   it('lo retenido: contratos, propietarios, canon conservado y los que se fueron', () => {

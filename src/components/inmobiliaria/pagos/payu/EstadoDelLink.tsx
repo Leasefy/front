@@ -69,7 +69,9 @@ function vencioHaceMasDe3Dias(fechaDeVencimiento: string): boolean {
  * cuota la pantalla les decía «Payu todavía no le ha escrito». Manda `enMora`
  * del back (la misma regla que usa Payu); sin el campo (back viejo), la fecha.
  */
-function detalleSinLink(link: LinkDePagoDeCuota): 'ninguno' | 'enMora' | 'enMoraPorOtra' {
+function detalleSinLink(link: LinkDePagoDeCuota): 'ninguno' | 'enMora' | 'enMoraPorOtra' | 'pagada' {
+  // Ya paga (QA 08-10): ni «no le ha escrito» ni «en mora».
+  if (link.pagada) return 'pagada';
   const vencida = vencioHaceMasDe3Dias(link.fechaDeVencimiento);
   const enMora = link.enMora ?? vencida;
   if (!enMora) return 'ninguno';
@@ -96,7 +98,8 @@ export function EstadoDelLink({ link }: { link: LinkDePagoDeCuota }) {
 
   return (
     <div className="min-w-0 space-y-1.5">
-      <PastillaDelLink estado={estado} />
+      {/* Sin link pero ya paga: la pastilla dice «Pagado» (QA 08-10). */}
+      <PastillaDelLink estado={estado === 'ninguno' && link.pagada ? 'pagado' : estado} />
       {estado !== 'ninguno' && (
         <ul
           aria-label={t('inmobiliaria.cobros.linksDePago.hitos.titulo')}

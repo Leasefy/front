@@ -191,6 +191,8 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
           { ...ninguno, cuotaId: 'c-vencida', fechaDeVencimiento: '2026-10-01', enMora: true },
           // El back dice que no: manda el back, no la fecha.
           { ...ninguno, cuotaId: 'c-al-dia', fechaDeVencimiento: '2026-10-10', enMora: false },
+          // QA 08-10: CANCELADA sin link, en $ 0. No le falta nada: está paga.
+          { ...ninguno, cuotaId: 'c-paga', fechaDeVencimiento: '2026-10-01', montoCop: 0, enMora: false, pagada: true },
         ]),
       );
       await montar(<LinksDePago mes="2026-10" />);
@@ -199,6 +201,10 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
       expect(fila('c-debe-otra')?.textContent).not.toContain('todavía no le ha escrito');
       expect(fila('c-vencida')?.textContent).toContain('Venció hace más de 3 días sin pagar');
       expect(fila('c-al-dia')?.textContent).toContain('Cobri todavía no le ha escrito por esta cuota.');
+      expect(fila('c-paga')?.textContent).toContain('Ya está paga');
+      expect(fila('c-paga')?.textContent).not.toContain('todavía no le ha escrito');
+      expect(fila('c-paga')?.textContent).not.toContain('Venció hace más de 3 días');
+      expect(fila('c-paga')?.querySelector('[data-testid="estado-del-link"]')?.getAttribute('data-estado')).toBe('pagado');
     } finally {
       vi.useRealTimers();
     }

@@ -2978,6 +2978,7 @@
           "ninguno": "Cobri todavía no le ha escrito por esta cuota.",
           "enMora": "Venció hace más de 3 días sin pagar: Cobri ya no escribe por esta cuota, la lleva cobranza.",
           "enMoraPorOtra": "El inquilino debe una cuota anterior en mora: mientras tanto Cobri no le escribe, la lleva cobranza.",
+          "pagada": "Ya está paga: Cobri no tiene nada que cobrar por esta cuota.",
           "vencido": "El link venció sin pago. Cobri ya no escribe por esta cuota: la sigue cobranza.",
           "fallido": "El inquilino intentó pagar y la pasarela no aprobó el pago."
         },

@@ -2943,6 +2943,7 @@
           "ninguno": "Cobri has not written about this installment yet.",
           "enMora": "More than 3 days overdue: Cobri no longer writes about this installment; collections takes it.",
           "enMoraPorOtra": "The tenant owes an earlier overdue installment: until then Cobri does not write to them; collections takes it.",
+          "pagada": "Already paid: Cobri has nothing to collect for this installment.",
           "vencido": "The link expired unpaid. Cobri no longer writes about this installment: collections takes it from here.",
           "fallido": "The tenant tried to pay and the payment gateway did not approve it."
         },

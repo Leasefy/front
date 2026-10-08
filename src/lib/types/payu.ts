@@ -65,6 +65,12 @@ export interface LinkDePagoDeCuota {
    * todavía no venció. Sin el campo, se mira sólo la fecha de la cuota.
    */
   enMora?: boolean;
+  /**
+   * OPCIONAL (QA en el navegador, 08-10; un back viejo no lo manda): la cuota
+   * ya no debe nada (CANCELADA o saldo en cero). Sin link, la fila dice que
+   * está paga en vez de «Cobri todavía no le ha escrito».
+   */
+  pagada?: boolean;
 }
 
 export interface PaginaDeLinksDePago {

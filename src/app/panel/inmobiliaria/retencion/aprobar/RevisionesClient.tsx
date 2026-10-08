@@ -1,495 +1,310 @@
 'use client'
 
-import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
-import { useMemo, useState } from 'react'
+/**
+ * Por aprobar · Vinci — lo que Vinci dejó esperando a una persona, DICIENDO
+ * QUÉ ES (26-09-2026):
+ *   · «Vinci propone…» (Manual) → «Hacerlo» abre el plan y le escribe;
+ *   · «Mensaje listo…» (Copiloto) → «Enviar» (en horario de ley; se puede
+ *     deshacer desde la Bandeja del Piloto mientras no salga);
+ *   · «Oferta por aprobar» → sólo el administrador;
+ *   · «El mensaje no salió» → el porqué, y «Enterado».
+ * Antes: «propietario notificado» para un correo INTERNO al responsable, y
+ * un «Confirmar» igual para todo.
+ *
+ * 29-09-2026 · glow-up: la cabecera del panel; la lista en una tarjeta con un
+ * ícono de dominio por fila (mensaje, propuesta, oferta, aviso); el mensaje
+ * que saldría en un pozo, tal cual. La llave de envío apagada se dice UNA vez
+ * arriba: antes cada mensaje listo repetía la misma frase del micro debajo.
+ */
+import { useState } from 'react'
 import Link from 'next/link'
+import type { Icon } from '@phosphor-icons/react'
 import {
-  MagnifyingGlass,
-  ClipboardText,
-  Scales,
-  PauseCircle,
-  BellRinging,
-  Gavel,
+  ChatText,
   CheckCircle,
-  ArrowUUpLeft,
-  ArrowFatLineUp,
-  type Icon as PhosphorIcon,
+  CurrencyCircleDollar,
+  EnvelopeSimple,
+  Lightbulb,
+  ListChecks,
+  WarningCircle,
 } from '@phosphor-icons/react'
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
-import { EmptyState } from '@/components/ui/empty-state'
-import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
-import { Input } from '@/components/ui/input'
-import {
-  Table,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableBodyAnimado,
-  TableRowAnimada,
-} from '@/components/ui/table'
 import { toast } from '@/components/ui/toast'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { AlertaAccionable } from '@/components/ui/alerta-accionable'
+import { SinDatos } from '@/components/estado/SinDatos'
+import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
+import { usePermissionsContext } from '@/lib/context/PermissionsContext'
+import { useAuth } from '@/lib/auth'
+import { ErrorDeVinci, esRetencionApagada, hacerlo, resolverOferta, revisarDecision } from '@/lib/api/retencion'
+import { useDecisionesDeVinci } from '@/lib/hooks/retencion/use-vinci'
+import { NOMBRE_DE_LA_OFERTA, QUE_ES_CADA_DECISION, QUIEN, detalleEnPalabras, fechaYHora } from '@/components/retencion/vinci'
+import { CabeceraDeVinci, TarjetaDeVinci } from '@/components/retencion/piezas'
+import type { DecisionDeVinci, DetalleDeLaOferta, Poblacion } from '@/lib/types/retencion'
 import { casoDeRetencion } from '@/lib/nav/rutas-de-retencion'
+import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
-import { TablePagination } from '@/components/ui/pagination'
-import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
-import { useDecisiones, useReviewDecision } from '@/lib/hooks/retencion/use-decisiones'
-import type {
-  AutonomousDecision,
-  DecisionType,
-  ReviewOutcome,
-} from '@/lib/types/retencion'
 
-// ── Tabs: controlan el filtro de servidor reviewableOnly ──
-type Tab = 'pendientes' | 'todas'
+const texto = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null)
 
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'pendientes', label: 'Pendientes de revisión' },
-  { key: 'todas', label: 'Todas' },
-]
+/** La frase del micro cuando la llave de envío está apagada: ya se dice arriba, una vez. */
+const ES_LA_LLAVE_APAGADA = /env[ií]o de vinci est[aá] apagado/i
 
-// ── Chips por tipo de decisión (filtro de cliente) ──
-type Chip = DecisionType | 'todos'
-
-const CHIPS: { key: Chip; label: string }[] = [
-  { key: 'todos', label: 'Todas' },
-  { key: 'plan_created', label: 'Plan creado' },
-  { key: 'escalated_legal', label: 'Escalado a legal' },
-  { key: 'parked_review', label: 'Pausado para revisión' },
-  { key: 'notified', label: 'Notificación' },
-]
-
-// ── Mapas finitos con FALLBACK neutro (un valor fuera del mapa NO crashea) ──
-
-interface DecisionMeta {
-  label: string
-  icon: PhosphorIcon
-  badge: string
+const ICONO_DE_CADA_DECISION: Record<string, Icon> = {
+  propuesta: Lightbulb,
+  mensaje_listo: ChatText,
+  mensaje_no_salio: WarningCircle,
+  oferta: CurrencyCircleDollar,
+  notified: EnvelopeSimple,
 }
 
-const DECISION_META: Record<DecisionType, DecisionMeta> = {
-  plan_created: {
-    label: 'Plan creado',
-    icon: ClipboardText,
-    // El curso normal de la decisión: el rose original era el acento del
-    // módulo de retención, no un estado → tinte de marca.
-    badge: 'bg-primary-soft text-primary',
-  },
-  escalated_legal: {
-    label: 'Escalado a legal',
-    icon: Scales,
-    badge: 'bg-warning-soft text-warning',
-  },
-  parked_review: {
-    // Un escalón por debajo de «Escalado a legal»: mismo ámbar, sobre el
-    // tinte neutro en vez del tinte de atención. Cadence no tiene un quinto
-    // matiz, y dos píldoras idénticas para dos decisiones distintas se leen
-    // como un error (mismo criterio que stateBadgeClasses en BandejaClient).
-    label: 'Pausado para revisión',
-    icon: PauseCircle,
-    badge: 'bg-surface-muted text-warning',
-  },
-  notified: {
-    label: 'Notificación',
-    icon: BellRinging,
-    badge: 'bg-info-soft text-info',
-  },
+function nombreDe(d: DecisionDeVinci): string {
+  const p = d.payload ?? {}
+  return texto(p.nombre) ?? texto((p.mensaje as Record<string, unknown> | undefined)?.nombre) ?? 'una persona sin nombre registrado'
 }
 
-const DECISION_FALLBACK: DecisionMeta = {
-  label: 'Decisión',
-  icon: ClipboardText,
-  badge: 'bg-surface-muted text-fg-muted',
+function textoDelMensaje(d: DecisionDeVinci): string | null {
+  const p = d.payload ?? {}
+  return texto((p.mensaje as Record<string, unknown> | undefined)?.texto) ?? texto(p.texto)
 }
 
-function decisionMeta(type: DecisionType): DecisionMeta {
-  return DECISION_META[type] ?? DECISION_FALLBACK
+function porQue(d: DecisionDeVinci): string | null {
+  const senales = Array.isArray(d.payload?.senales) ? (d.payload!.senales as Array<{ texto?: unknown; puntos?: unknown }>) : []
+  const partes = senales
+    .slice(0, 3)
+    .map((s) => (typeof s.texto === 'string' ? `${s.texto} (+${String(s.puntos)})` : null))
+    .filter(Boolean)
+  const puntaje = typeof d.payload?.puntaje === 'number' ? `${d.payload.puntaje}/100` : null
+  return [puntaje, partes.join('; ')].filter(Boolean).join(': ') || null
 }
 
-interface OutcomeMeta {
-  label: string
-  badge: string
-}
+function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: boolean; onListo: () => Promise<void> }) {
+  const { agency } = useAuth()
+  const { isAdmin } = usePermissionsContext()
+  const [ocupado, setOcupado] = useState<string | null>(null)
+  const [aceptada, setAceptada] = useState(false)
+  const p = d.payload ?? {}
 
-const OUTCOME_META: Record<ReviewOutcome, OutcomeMeta> = {
-  upheld: {
-    label: 'Confirmada',
-    badge: 'bg-success-soft text-success',
-  },
-  overridden: {
-    // Acá el rose SÍ era estado: la decisión del agente estuvo mal.
-    label: 'Revertida',
-    badge: 'bg-danger-soft text-danger',
-  },
-  escalated: {
-    label: 'Escalada',
-    badge: 'bg-warning-soft text-warning',
-  },
-}
-
-const OUTCOME_FALLBACK: OutcomeMeta = {
-  label: 'Revisada',
-  badge: 'bg-surface-muted text-fg-muted',
-}
-
-function outcomeMeta(outcome: ReviewOutcome): OutcomeMeta {
-  return OUTCOME_META[outcome] ?? OUTCOME_FALLBACK
-}
-
-// ── Acciones disponibles para una decisión sin revisar ──
-interface ActionMeta {
-  outcome: ReviewOutcome
-  label: string
-  variant: 'default' | 'outline' | 'destructive'
-  icon: PhosphorIcon
-  /** Clase del modal de confirmación (DESIGN.md §17). Ninguna destruye nada. */
-  dialogVariant: 'confirm' | 'warning'
-  confirmTitle: string
-  confirmBody: string
-}
-
-const ACTIONS: ActionMeta[] = [
-  {
-    outcome: 'upheld',
-    label: 'Confirmar',
-    variant: 'default',
-    icon: CheckCircle,
-    dialogVariant: 'confirm',
-    confirmTitle: '¿Confirmar la decisión de Retención?',
-    confirmBody: 'La decisión queda registrada como correcta. Esto la marca como revisada y no se podrá cambiar.',
-  },
-  {
-    outcome: 'overridden',
-    label: 'Revertir',
-    variant: 'outline',
-    icon: ArrowUUpLeft,
-    // Sigue, pero con riesgo: el caso vuelve a manos del equipo.
-    dialogVariant: 'warning',
-    confirmTitle: '¿Revertir la decisión de Retención?',
-    confirmBody: 'Marcas la decisión como incorrecta. El equipo deberá retomar el caso manualmente.',
-  },
-  {
-    outcome: 'escalated',
-    label: 'Escalar',
-    variant: 'destructive',
-    icon: ArrowFatLineUp,
-    dialogVariant: 'confirm',
-    confirmTitle: '¿Escalar esta decisión?',
-    confirmBody: 'Elevas el caso para revisión humana de mayor nivel. Quedará registrado como escalado.',
-  },
-]
-
-function formatDate(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
-interface PendingAction {
-  decision: AutonomousDecision
-  action: ActionMeta
-}
-
-export default function RevisionesClient() {
-  const [tab, setTab] = useState<Tab>('pendientes')
-  const [chip, setChip] = useState<Chip>('todos')
-  const [search, setSearch] = useState('')
-  const [pending, setPending] = useState<PendingAction | null>(null)
-
-  const { data, isLoading, error, apagado, refetch } = useDecisiones({
-    reviewableOnly: tab === 'pendientes',
-  })
-  const { review, isReviewing } = useReviewDecision()
-
-  const rows = useMemo(() => {
-    const all = data?.decisions ?? []
-    const q = search.trim().toLowerCase()
-    return all
-      .filter((d) => (chip === 'todos' ? true : d.decisionType === chip))
-      .filter((d) =>
-        q
-          ? d.ownerId.toLowerCase().includes(q) || d.caseId.toLowerCase().includes(q)
-          : true,
-      )
-  }, [data, chip, search])
-
-  // Paginación — la cola de revisión es una lista de registros que crece con
-  // cada decisión autónoma de Retención, no un detalle fijo. `resetKey` lleva los
-  // tres filtros (pestaña, chip de tipo y búsqueda) para no dejar al usuario
-  // mirando una página vacía después de filtrar.
-  const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
-    useTablePagination(rows, { resetKey: `${tab}|${chip}|${search}` })
-
-  const onConfirm = async () => {
-    if (!pending) return
-    const { decision, action } = pending
-    setPending(null)
+  const correr = async (clave: string, f: () => Promise<unknown>, ok: (r: unknown) => string) => {
+    if (!agency?.id) return
+    setOcupado(clave)
     try {
-      const result = await review(decision.id, action.outcome)
-      if (result.alreadyReviewed) {
-        toast.warning('Otra persona ya revisó esta decisión')
+      const r = await f()
+      toast.success(ok(r))
+      await onListo()
+    } catch (e) {
+      if (e instanceof ErrorDeVinci && e.code === 'ENVIO_APAGADO') {
+        toast.message('El envío de Vinci está apagado', {
+          description: 'El mensaje sigue listo: escríbele tú y márcalo con «Ya lo contacté».',
+        })
       } else {
-        toast.success('Revisión registrada')
+        toast.error('No se pudo', { description: mensajeParaLaPersona(e) })
       }
-      await refetch()
-    } catch (err) {
-      // 02-10-2026: el micro responde `Error(status)`; el traductor lo lee
-      // (un 5xx es nuestro; sólo sin respuesta se habla de conexión).
-      toast.error(
-        mensajeParaLaPersona(err, {
-          porDefecto: 'No se pudo registrar la revisión.',
-          accion: 'registrar la revisión',
-        }),
-      )
+    } finally {
+      setOcupado(null)
     }
   }
 
+  const confirmar = (label: string, outcome: 'upheld' | 'overridden' = 'upheld') => (
+    <Button
+      type="button"
+      size="sm"
+      variant={outcome === 'upheld' ? 'outline' : 'ghost'}
+      hideArrow
+      isLoading={ocupado === `rev:${outcome}`}
+      onClick={() => void correr(`rev:${outcome}`, () => revisarDecision(agency!.id, d.id, outcome), () => 'Listo.')}
+    >
+      {label}
+    </Button>
+  )
+
+  let titulo = QUE_ES_CADA_DECISION[d.decisionType] ?? d.decisionType
+  let subtitulo: string | null = null
+  let acciones: React.ReactNode = confirmar('Confirmar')
+  if (d.decisionType === 'propuesta') {
+    titulo = `Vinci propone retener a ${nombreDe(d)}`
+    acciones = (
+      <>
+        <Button
+          type="button"
+          size="sm"
+          hideArrow
+          isLoading={ocupado === 'hacer'}
+          onClick={() => void correr('hacer', () => hacerlo(agency!.id, d.id), (r) => (r as { mensaje: string }).mensaje)}
+        >
+          Hacerlo
+        </Button>
+        {confirmar('Descartar', 'overridden')}
+      </>
+    )
+  } else if (d.decisionType === 'mensaje_listo') {
+    titulo = `Mensaje de Vinci listo para ${nombreDe(d)}`
+    // Sin la llave de envío, «Enviar» no haría nada: sólo «Ya lo contacté».
+    acciones =
+      p.sinContacto === true || envioApagado ? (
+        confirmar('Ya lo contacté')
+      ) : (
+        <>
+          <Button
+            type="button"
+            size="sm"
+            hideArrow
+            isLoading={ocupado === 'hacer'}
+            onClick={() => void correr('hacer', () => hacerlo(agency!.id, d.id), (r) => (r as { mensaje: string }).mensaje)}
+          >
+            Enviar
+          </Button>
+          {confirmar('Ya lo contacté')}
+        </>
+      )
+  } else if (d.decisionType === 'mensaje_no_salio') {
+    titulo = `El mensaje de Vinci a ${nombreDe(d)} no salió`
+    acciones = confirmar('Enterado')
+  } else if (d.decisionType === 'oferta') {
+    const tipo = texto(p.tipo)
+    const nombre = texto(p.nombre)
+    titulo = `Oferta por aprobar: ${tipo && NOMBRE_DE_LA_OFERTA[tipo as keyof typeof NOMBRE_DE_LA_OFERTA] ? NOMBRE_DE_LA_OFERTA[tipo as keyof typeof NOMBRE_DE_LA_OFERTA] : 'retención'}`
+    const poblacion = p.poblacion === 'inquilino' || p.poblacion === 'propietario' ? QUIEN[p.poblacion as Poblacion] : null
+    const detalle = p.detalle && typeof p.detalle === 'object' ? detalleEnPalabras(p.detalle as DetalleDeLaOferta) : ''
+    subtitulo = [poblacion ? (nombre ? `${poblacion}: ${nombre}` : poblacion) : nombre, detalle || null].filter(Boolean).join(' · ') || null
+    const incremento = p.tipo === 'congelar_incremento' || p.tipo === 'bajar_incremento'
+    acciones = isAdmin ? (
+      <>
+        {incremento ? (
+          <div className="flex items-center gap-2">
+            <Checkbox id={`vinci-aceptada-${d.id}`} checked={aceptada} onCheckedChange={(v) => setAceptada(v === true)} />
+            <label htmlFor={`vinci-aceptada-${d.id}`} className="cursor-pointer text-sm text-fg">
+              El propietario ya aceptó
+            </label>
+          </div>
+        ) : null}
+        <Button
+          type="button"
+          size="sm"
+          hideArrow
+          isLoading={ocupado === 'aprobar'}
+          onClick={() =>
+            void correr('aprobar', () => resolverOferta(agency!.id, d.id, 'aprobar', incremento ? { aceptadaPorElPropietario: aceptada } : {}), () => 'Aprobada: Vinci ya la puede ofrecer.')
+          }
+        >
+          Aprobar
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          hideArrow
+          isLoading={ocupado === 'rechazar'}
+          onClick={() => void correr('rechazar', () => resolverOferta(agency!.id, d.id, 'rechazar'), () => 'Rechazada.')}
+        >
+          Rechazar
+        </Button>
+      </>
+    ) : (
+      <span className="text-caption text-fg-muted">Cuesta plata: sólo el administrador la aprueba.</span>
+    )
+  } else if (d.decisionType === 'notified') {
+    // 🔴 Fue un correo INTERNO al responsable. Nunca «propietario notificado».
+    acciones = confirmar('Enterado')
+  }
+
+  const Icono = ICONO_DE_CADA_DECISION[d.decisionType] ?? ListChecks
+  const mensaje = textoDelMensaje(d)
+  const razon = d.decisionType === 'mensaje_no_salio' ? texto(p.mensaje) : null
+  const motivoCrudo = texto(p.motivo)
+  // La llave apagada ya se dijo arriba, una vez: no se repite en cada fila.
+  const motivo = motivoCrudo && envioApagado && ES_LA_LLAVE_APAGADA.test(motivoCrudo) ? null : motivoCrudo
+  const causa = porQue(d)
   return (
-    <div className="p-6 lg:p-8 space-y-5">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-fg">
-          Cola de revisión de decisiones
-        </h1>
-        <p className="text-sm text-fg-muted">
-          Decisiones que Retención tomó sola, listas para confirmar, revertir o escalar.
-        </p>
-      </header>
-
-      {/* 🔴 IA-C-01: apagada no hay decisiones (antes, unas inventadas). */}
-      {apagado ? <RetencionApagada /> : (<>
-
-      {/* Tabs — mismo patrón que la bandeja de riesgos: pill sólida cuando
-          está activa, pill blanca con hairline cuando no. */}
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filtros de revisión">
-        {TABS.map((t) => {
-          const active = tab === t.key
-          return (
-            <Button
-              key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              size="sm"
-              hideArrow
-              variant={active ? 'default' : 'secondary'}
-              onClick={() => setTab(t.key)}
-            >
-              {t.label}
-            </Button>
-          )
-        })}
+    <li className="flex gap-4 px-5 py-5" data-testid="vinci-por-aprobar">
+      <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-muted sm:flex">
+        <Icono className="h-[18px] w-[18px] text-fg-muted" weight="duotone" aria-hidden="true" />
       </div>
-
-      {/* Chips por tipo de decisión (filtro de cliente) — un peso menos que
-          las pestañas de arriba: la activa se levanta (pill con borde) y la
-          inactiva queda plana, para que las dos filas no se confundan. */}
-      <div className="flex flex-wrap gap-2" aria-label="Filtrar por tipo de decisión">
-        {CHIPS.map((c) => {
-          const active = chip === c.key
-          return (
-            <Button
-              key={c.key}
-              type="button"
-              size="sm"
-              hideArrow
-              variant={active ? 'secondary' : 'ghost'}
-              onClick={() => setChip(c.key)}
-            >
-              {c.label}
-            </Button>
-          )
-        })}
+      <div className="min-w-0 flex-1 space-y-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-fg">{titulo}</p>
+            {subtitulo ? <p className="mt-0.5 text-sm text-fg-muted">{subtitulo}</p> : null}
+            <p className="mt-0.5 text-caption text-fg-muted">
+              {fechaYHora(d.createdAt)}
+              {' · '}
+              <Link href={casoDeRetencion(d.caseId)} className="text-primary hover:underline">
+                ver el caso
+              </Link>
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">{acciones}</div>
+        </div>
+        {causa ? <p className="text-sm text-fg-muted">{causa}</p> : null}
+        {mensaje ? (
+          <blockquote className="whitespace-pre-line rounded-md bg-surface-muted px-4 py-3 text-sm leading-relaxed text-fg">{mensaje}</blockquote>
+        ) : null}
+        {razon ? <p className="text-sm text-fg">{razon}</p> : null}
+        {motivo && !razon ? <p className="text-caption text-fg-muted">{motivo}</p> : null}
       </div>
+    </li>
+  )
+}
 
-      {/* Search */}
-      <div className="relative max-w-sm">
-        <MagnifyingGlass size={16} className="absolute left-3 top-1/2 -translate-y-1/2 z-10 text-fg-subtle" />
-        <Input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por propietario o caso…"
-          className="pl-9"
-        />
-      </div>
-
-      {/* Table — cargando → falló → vacío → datos. Antes el vacío se evaluaba
-          sin mirar el error: con la cola caída decía «No hay decisiones en
-          este filtro» y el fallo quedaba abajo, en rojo y sin reintentar. */}
+export default function RevisionesClient() {
+  const { data: cola, isLoading, error, refetch } = useDecisionesDeVinci({ reviewableOnly: true, limit: 100 })
+  const data = cola?.decisiones
+  const envioApagado = cola?.envioHabilitado === false
+  const n = data?.length ?? 0
+  return (
+    <div className="space-y-6 p-6 lg:p-8">
+      <CabeceraDeVinci
+        titulo="Por aprobar"
+        descripcion="Lo que Vinci dejó esperando tu clic: propuestas, mensajes listos, ofertas que cuestan plata y mensajes que no salieron."
+      />
+      {/* 🔴 IA-C-01 (QA 04-10): apagada no hay decisiones que mostrar, ni se pinta el texto del micro. */}
+      {esRetencionApagada(error) ? (
+        <RetencionApagada />
+      ) : (
       <EstadoDeDatos
         cargando={isLoading && !data}
         error={error}
-        vacio={rows.length === 0}
-        queEs="la cola de revisión"
-        onReintentar={refetch}
-        esqueleto={
-          <div className="space-y-2" data-testid="revisiones-cargando">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-14 rounded-lg bg-surface-muted animate-pulse" />
-            ))}
+        vacio={n === 0}
+        queEs="lo que espera tu aprobación"
+        onReintentar={() => refetch()}
+        principal
+        cuandoVacio={
+          <div className="rounded-lg border border-border bg-card">
+            <SinDatos
+              queSon="decisiones por aprobar"
+              icono={CheckCircle}
+              titulo="Nada esperando tu clic"
+              descripcion="Cuando Vinci deje un mensaje listo, una propuesta o una oferta que cueste plata, aparece acá."
+            />
           </div>
         }
-        cuandoVacio={
-          <EmptyState
-            icon={Gavel}
-            title="No hay decisiones en este filtro."
-            description="Prueba con otra pestaña, con otro tipo de decisión o cambia lo que escribiste en la búsqueda."
-          />
-        }
       >
-        <div className="overflow-x-auto rounded-lg border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Caso</TableHead>
-                <TableHead>Tier</TableHead>
-                <TableHead className="hidden md:table-cell">Creada</TableHead>
-                <TableHead>Revisión</TableHead>
-                <TableHead numeric>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            {/* La decisión que se revisa o se filtra sale y las demás suben
-                (`key` = el id); las que llegan entran escalonadas. */}
-            <TableBodyAnimado>
-              {pageItems.map((d) => {
-                const meta = decisionMeta(d.decisionType)
-                const DecisionIcon = meta.icon
-                const reviewed = d.reviewedBy !== null
-                const canReview = d.reviewable && !reviewed
-                return (
-                  <TableRowAnimada key={d.id}>
-                    <TableCell>
-                      <span
-                        className={
-                          'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium ' +
-                          meta.badge
-                        }
-                      >
-                        <DecisionIcon size={14} weight="duotone" />
-                        {meta.label}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Link
-                        href={casoDeRetencion(d.caseId)}
-                        className="font-medium text-primary hover:underline whitespace-nowrap"
-                      >
-                        {d.ownerId}
-                      </Link>
-                    </TableCell>
-                    <TableCell>
-                      <span className="inline-flex h-6 min-w-[2rem] items-center justify-center rounded-md bg-surface-muted px-2 text-xs font-semibold text-fg-muted">
-                        T{d.tier}
-                      </span>
-                    </TableCell>
-                    <TableCell muted className="hidden md:table-cell whitespace-nowrap">
-                      {formatDate(d.createdAt)}
-                    </TableCell>
-                    <TableCell>
-                      {reviewed ? (
-                        <div className="flex flex-col gap-0.5">
-                          <span
-                            className={
-                              'inline-flex w-fit items-center px-2 py-0.5 rounded-full text-xs font-medium ' +
-                              outcomeMeta(d.reviewOutcome ?? 'upheld').badge
-                            }
-                          >
-                            {outcomeMeta(d.reviewOutcome ?? 'upheld').label}
-                          </span>
-                          <span className="text-xs text-fg-subtle">
-                            por {d.reviewedBy}
-                            {d.reviewedAt ? ` · ${formatDate(d.reviewedAt)}` : ''}
-                          </span>
-                        </div>
-                      ) : canReview ? (
-                        <span className="text-xs text-fg-subtle">Pendiente</span>
-                      ) : (
-                        <span className="text-xs text-fg-subtle">No revisable</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {canReview ? (
-                        <div className="flex flex-wrap justify-end gap-2">
-                          {ACTIONS.map((a) => {
-                            const ActionIcon = a.icon
-                            return (
-                              <Button
-                                key={a.outcome}
-                                type="button"
-                                size="sm"
-                                variant={a.variant}
-                                hideArrow
-                                disabled={isReviewing}
-                                onClick={() => setPending({ decision: d, action: a })}
-                              >
-                                <ActionIcon size={14} weight="duotone" />
-                                {a.label}
-                              </Button>
-                            )
-                          })}
-                        </div>
-                      ) : (
-                        <span className="flex justify-end text-xs text-fg-subtle">—</span>
-                      )}
-                    </TableCell>
-                  </TableRowAnimada>
-                )
-              })}
-            </TableBodyAnimado>
-          </Table>
-
-          {/* Pie de tabla del design system: cuántas decisiones hay, cuántas
-              se muestran y cuántas filas por página. */}
-          {shouldPaginate && (
-            <div className="border-t border-border px-4 py-3">
-              <TablePagination
-                total={total}
-                page={page}
-                pageSize={pageSize}
-                pageSizeOptions={PAGE_SIZE_OPTIONS}
-                onPageChange={setPage}
-                onPageSizeChange={setPageSize}
-              />
-            </div>
-          )}
+        <div className="space-y-4">
+          {envioApagado ? (
+            <AlertaAccionable
+              severidad="info"
+              titulo="El envío de Vinci está apagado en esta plataforma."
+              data-testid="vinci-envio-apagado"
+            >
+              Cada mensaje está listo para que se lo mandes tú; después márcalo con «Ya lo contacté».
+            </AlertaAccionable>
+          ) : null}
+          <TarjetaDeVinci
+            id="vinci-cola"
+            icono={ListChecks}
+            titulo="Esperando tu clic"
+            descripcion={`${n} ${n === 1 ? 'decisión' : 'decisiones'} de Vinci.`}
+            cuerpo={false}
+          >
+            <ul className="divide-y divide-border-faint">
+              {(data ?? []).map((d) => (
+                <Fila key={d.id} d={d} envioApagado={envioApagado} onListo={refetch} />
+              ))}
+            </ul>
+          </TarjetaDeVinci>
         </div>
       </EstadoDeDatos>
-      </>)}
-
-      {/* Confirmación de revisión */}
-      <AlertDialog open={pending !== null} onOpenChange={(o) => !o && setPending(null)}>
-        <AlertDialogContent
-          variant={pending?.action.dialogVariant ?? 'confirm'}
-          icon={
-            pending && pending.action.dialogVariant === 'confirm' ? (
-              <pending.action.icon weight="bold" />
-            ) : undefined
-          }
-        >
-          <AlertDialogHeader>
-            <AlertDialogTitle>{pending?.action.confirmTitle}</AlertDialogTitle>
-            <AlertDialogDescription>{pending?.action.confirmBody}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isReviewing}>Cancelar</AlertDialogCancel>
-            {/* Cobalto en las tres: ninguna destruye nada (antes «Escalar» salía rojo). */}
-            <AlertDialogAction loading={isReviewing} onClick={onConfirm}>
-              {pending?.action.label}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      )}
     </div>
   )
 }

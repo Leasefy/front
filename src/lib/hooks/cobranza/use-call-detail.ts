@@ -128,9 +128,10 @@ export interface CallStateTraceRow {
 /**
  * Desglose de costo, tipado DESDE el contrato — no a mano.
  *
- * `platformUsd` (la tarifa del proveedor de voz) suele ser el componente más
- * grande; en la llamada real que verifiqué, 0.0812 de 0.1405. Repartirlo entre
- * las otras categorías haría que las partes no sumen el total.
+ * `platformCop` (la tarifa del proveedor de voz) suele ser el componente más
+ * grande. Repartirlo entre las otras categorías haría que las partes no sumen
+ * el total. Desde el 04-10-2026 el micro lo manda en pesos (`*Cop`), no en
+ * dólares.
  */
 export type CallCostBreakdown = CallDetailApiResponse['costBreakdown']
 

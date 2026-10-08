@@ -43,7 +43,7 @@ export interface ConAccesoProps {
   miembros: AgencyUser[];
   cargando: boolean;
   error: unknown;
-  onReintentar: () => unknown;
+  onReintentar: () => void | Promise<unknown>;
   correoPropio?: string;
   puedeInvitar: boolean;
   /** Lo que se sabe de invitaciones hechas o reenviadas en esta visita. */

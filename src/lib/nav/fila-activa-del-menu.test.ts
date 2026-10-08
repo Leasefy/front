@@ -14,7 +14,7 @@ const P = '/panel/inmobiliaria'
 
 const MENU: FilaDelMenu[] = [
   { href: `${P}/piloto` },
-  { href: P, exact: true },
+  { href: P, exact: true, tambienEn: [`${P}/beta`] },
   { href: '#sec-agentes', kind: 'section' },
   { href: `${P}/pagos/cobranza` },
   { href: `${P}/reportes/ia`, exact: true },
@@ -58,6 +58,13 @@ describe('hrefDeLaFilaActiva', () => {
     const conDeshabilitada: FilaDelMenu[] = [...MENU, { href: `${P}/pagos/cobranza/deudores`, disabled: true }]
     expect(hrefDeLaFilaActiva(conDeshabilitada, `${P}/pagos/cobranza/deudores`)).toBe(`${P}/pagos/cobranza`)
     expect(hrefDeLaFilaActiva(MENU, '#sec-agentes')).toBeNull()
+  })
+
+  it('🔴 el chat en /beta marca la fila del chat; la raíz exacta no se come las subrutas', () => {
+    expect(hrefDeLaFilaActiva(MENU, `${P}/beta`)).toBe(P)
+    expect(hrefDeLaFilaActiva(MENU, `${P}/beta/algo`)).toBe(P)
+    expect(hrefDeLaFilaActiva(MENU, `${P}/betados`)).toBeNull()
+    expect(hrefDeLaFilaActiva(MENU, `${P}/pagos`)).toBe(`${P}/pagos`)
   })
 
   it('null cuando nada calza, o sin ruta', () => {

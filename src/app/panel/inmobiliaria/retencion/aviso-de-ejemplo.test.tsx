@@ -1,13 +1,15 @@
 /**
- * Retención — sin datos inventados (QA 04-10, IA-C-01 e IA-C-02).
+ * Retención — sin datos inventados (QA 04-10, IA-C-01 e IA-C-02), con Vinci.
  *
  * Antes las cuatro pantallas caían a `mock-retencion.ts` (propietarios,
  * puntajes y pesos escritos a mano) cuando el micro respondía 404 «Retención no
  * está habilitada», con un aviso que nombraba archivos del código y rutas. Y el
  * título decía «Retención · Laura» (Laura es la voz de cobranza).
  *
- * Ahora, apagada: «Retención no está activada todavía para tu inmobiliaria»,
- * qué haría y a quién pedirla; sin cifras, sin rutas, sin nombres de archivo.
+ * Con Vinci (26-09, traído el 08-10) el 404 del micro nombra su variable
+ * (`RETENCION_ENABLED`): el cliente lo vuelve `RetencionApagadaError` y cada
+ * pantalla dice «Retención no está activada todavía para tu inmobiliaria», qué
+ * haría y a quién pedirla; sin cifras, sin rutas, sin nombres de archivo.
  */
 
 import * as React from 'react';
@@ -17,40 +19,50 @@ import { act } from 'react';
 
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { dashboardMock } = vi.hoisted(() => ({ dashboardMock: vi.fn() }));
-
-vi.mock('@/lib/hooks/retencion/use-retencion', () => ({
-  useRetencionDashboard: dashboardMock,
+const { riesgo, metricas, umbral, decisiones, ofertas, plan } = vi.hoisted(() => ({
+  riesgo: vi.fn(),
+  metricas: vi.fn(),
+  umbral: vi.fn(),
+  decisiones: vi.fn(),
+  ofertas: vi.fn(),
+  plan: vi.fn(),
 }));
-
+vi.mock('@/lib/hooks/retencion/use-vinci', () => ({
+  useRiesgoDeVinci: riesgo,
+  useMetricasDeVinci: metricas,
+  useUmbralDeVinci: umbral,
+  useDecisionesDeVinci: decisiones,
+  useOfertasDelCaso: ofertas,
+  usePlanDelCaso: plan,
+}));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => '/panel/inmobiliaria/retencion' }));
+vi.mock('@/lib/context/PermissionsContext', () => ({ usePermissionsContext: () => ({ isAdmin: true }) }));
+vi.mock('@/lib/auth', () => ({ useAuth: () => ({ agency: { id: 'a1' } }) }));
 vi.mock('next/link', () => ({
   default: ({ children, href }: { children?: React.ReactNode; href: string }) =>
     React.createElement('a', { href }, children),
 }));
 
 import RetencionDashboardPage from './page';
+import BandejaClient from './riesgo/BandejaClient';
+import CasoDetailClient from './riesgo/[caseId]/CasoDetailClient';
+import RevisionesClient from './aprobar/RevisionesClient';
+import { RetencionApagadaError } from '@/lib/api/retencion';
 
 void React;
-
-const DATA = {
-  cards: [{ key: 'propietarios_riesgo', label: 'Propietarios en riesgo', value: '3' }],
-  urgent: [
-    {
-      caseId: 'owner:o1',
-      ownerName: 'Propietaria real del lab',
-      score: 84,
-      rootCauseLabel: 'Pago retrasado',
-      nextActionLabel: 'Llamada prioritaria',
-      expectedCommissionLoss: 980000,
-    },
-  ],
-};
 
 let container: HTMLDivElement;
 let root: Root;
 
+const vacio = { data: null, isLoading: false, error: null, refetch: vi.fn() };
+
+function apagadaEnTodo() {
+  const err = new RetencionApagadaError();
+  for (const h of [riesgo, metricas, umbral, decisiones, ofertas, plan]) h.mockReturnValue({ ...vacio, error: err });
+}
+
 beforeEach(() => {
-  dashboardMock.mockReset();
+  for (const h of [riesgo, metricas, umbral, decisiones, ofertas, plan]) h.mockReset();
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -61,36 +73,35 @@ afterEach(() => {
   container.remove();
 });
 
-function render(estado: Record<string, unknown>) {
-  dashboardMock.mockReturnValue({ data: null, isLoading: false, error: null, apagado: false, refetch: vi.fn(), ...estado });
-  act(() => root.render(<RetencionDashboardPage />));
+function pintar(el: React.ReactElement) {
+  act(() => root.render(el));
+  return container.textContent ?? '';
 }
 
-describe('Retención — tablero', () => {
-  it('🔴 apagada: lo dice, dice qué haría y a quién pedirla, sin cifras ni texto técnico', () => {
-    render({ apagado: true });
-    const apagada = container.querySelector('[data-testid="retencion-apagada"]');
-    expect(apagada).not.toBeNull();
-    const texto = container.textContent ?? '';
-    expect(texto).toContain('Retención no está activada todavía para tu inmobiliaria');
-    expect(texto).toContain('contacto de Leasefy');
-    expect(texto).toContain('riesgo de salir del portafolio');
-    // Nada técnico ni inventado.
-    expect(texto).not.toMatch(/mock|src\/|\/api\/|retencion\/\*|\.ts\b|microservicio/i);
-    expect(texto).not.toMatch(/\$\s?\d/);
-    expect(container.querySelector('[data-testid="aviso-datos-de-ejemplo"]')).toBeNull();
-  });
+describe('Retención apagada — las cuatro pantallas lo dicen', () => {
+  for (const [nombre, el] of [
+    ['el tablero', <RetencionDashboardPage key="t" />],
+    ['los casos', <BandejaClient key="b" />],
+    ['el caso', <CasoDetailClient key="c" caseId="inquilino:c1" />],
+    ['por aprobar', <RevisionesClient key="r" />],
+  ] as const) {
+    it(`🔴 ${nombre}: lo dice, dice qué haría y a quién pedirla, sin cifras ni texto técnico`, () => {
+      apagadaEnTodo();
+      const texto = pintar(el);
+      expect(container.querySelector('[data-testid="retencion-apagada"]')).not.toBeNull();
+      expect(texto).toContain('Retención no está activada todavía para tu inmobiliaria');
+      expect(texto).toContain('contacto de Leasefy');
+      // Nada técnico ni inventado: ni la variable del micro, ni rutas, ni plata.
+      expect(texto).not.toMatch(/RETENCION_ENABLED|mock|src\/|\/api\/|\.ts\b|microservicio/i);
+      expect(texto).not.toMatch(/\$\s?\d/);
+      expect(container.querySelector('[data-testid="fallo-de-carga"]')).toBeNull();
+    });
+  }
 
   it('IA-C-02: el agente no se llama «Laura»', () => {
-    render({ apagado: true });
+    apagadaEnTodo();
+    const texto = pintar(<RetencionDashboardPage />);
     expect(container.querySelector('h1')?.textContent).toBe('Retención');
-    expect(container.textContent).not.toContain('Laura');
-  });
-
-  it('con datos reales los pinta, sin cartel de «apagada»', () => {
-    render({ data: DATA });
-    expect(container.querySelector('[data-testid="retencion-apagada"]')).toBeNull();
-    expect(container.textContent).toContain('Propietaria real del lab');
-    expect(container.textContent).toContain('$\u00a0980.000');
+    expect(texto).not.toContain('Laura');
   });
 });

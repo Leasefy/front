@@ -1,7 +1,8 @@
 /**
  * 🔴 Decisión 1 del 05-10-2026 (FALTANTES): la política v4.0 y los términos
- * v2.1 se aceptan UNA vez al próximo ingreso, con lo que cambió; sin aceptar
- * no se sigue; sin bucles ni pantallas negadas.
+ * v2.1 se aceptan UNA vez, con lo que cambió; sin aceptar no se sigue; sin
+ * bucles ni pantallas negadas. Y desde el 08-10 (Nico): sólo en el HOME, con
+ * todo lo demás hecho.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
@@ -9,8 +10,13 @@ import { act } from 'react';
 
 const { api, sesion, ruta } = vi.hoisted(() => ({
   api: { estado: vi.fn(), aceptar: vi.fn() },
-  sesion: { user: { id: 'u-1' } as { id: string } | null, signOut: vi.fn(async () => undefined) },
-  ruta: { actual: '/panel/inmobiliaria' },
+  sesion: {
+    user: { id: 'u-1', role: 'agency' } as { id: string; role: string } | null,
+    signOut: vi.fn(async () => undefined),
+    activeContext: 'agency' as const,
+    agencyRole: 'ADMIN' as const,
+  },
+  ruta: { actual: '/panel/inmobiliaria/piloto' },
 }));
 vi.mock('@/lib/api/aceptaciones-legales.service', async (original) => ({
   ...(await original<typeof import('@/lib/api/aceptaciones-legales.service')>()),
@@ -21,6 +27,7 @@ vi.mock('next/navigation', () => ({ usePathname: () => ruta.actual }));
 
 import { AceptarLegalesAlEntrar } from './AceptarLegalesAlEntrar';
 import { rutaSinVentanaLegal } from '@/lib/api/aceptaciones-legales.service';
+import { LATIDO_MS, LATIDOS_EN_CALMA } from '@/lib/legal/cuando-sale-la-ventana-legal';
 
 const PIDE = {
   disponible: true,
@@ -32,21 +39,26 @@ const PIDE = {
 
 let host: HTMLDivElement;
 let root: Root;
-const esperar = () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+/** Lo que tarda en salir: la respuesta del back y los latidos en calma. */
+const esperar = () => act(async () => { await vi.advanceTimersByTimeAsync(LATIDO_MS * (LATIDOS_EN_CALMA + 1)); });
 const ventana = () => document.querySelector('[data-testid="aceptar-legales"]');
 
 beforeEach(() => {
+  vi.useFakeTimers();
   host = document.createElement('div');
   document.body.appendChild(host);
   root = createRoot(host);
   api.estado.mockReset();
   api.aceptar.mockReset();
-  sesion.user = { id: 'u-1' };
-  ruta.actual = '/panel/inmobiliaria';
+  sesion.user = { id: 'u-1', role: 'agency' };
+  sesion.activeContext = 'agency';
+  ruta.actual = '/panel/inmobiliaria/piloto';
 });
 afterEach(() => {
   act(() => root.unmount());
   host.remove();
+  document.documentElement.removeAttribute('data-recorrido-pendiente');
+  vi.useRealTimers();
 });
 
 describe('AceptarLegalesAlEntrar', () => {
@@ -81,7 +93,7 @@ describe('AceptarLegalesAlEntrar', () => {
     await esperar();
     expect(ventana()).toBeNull();
 
-    ruta.actual = '/panel/inmobiliaria';
+    ruta.actual = '/panel/inmobiliaria/piloto';
     api.estado.mockResolvedValue({ ...PIDE, disponible: false });
     await act(async () => root.render(<AceptarLegalesAlEntrar key="2" />));
     await esperar();
@@ -104,6 +116,37 @@ describe('AceptarLegalesAlEntrar', () => {
     await act(async () => root.render(<AceptarLegalesAlEntrar />));
     await esperar();
     expect(ventana()).toBeNull();
+  });
+
+  it('🔴 no sale encima de «¿Cómo vas a usar Leasefy?» ni fuera del home (Nico, 08-10)', async () => {
+    api.estado.mockResolvedValue(PIDE);
+    for (const [i, otra] of ['/onboarding/seleccionar-rol', '/panel/inmobiliaria', '/panel/inmobiliaria/contratos'].entries()) {
+      ruta.actual = otra;
+      await act(async () => root.render(<AceptarLegalesAlEntrar key={`fuera-${i}`} />));
+      await esperar();
+      expect(ventana()).toBeNull();
+    }
+  });
+
+  it('el home de cada rol: el inquilino en /inquilino, el propietario en /panel', async () => {
+    api.estado.mockResolvedValue(PIDE);
+    sesion.activeContext = 'personal' as never;
+    sesion.user = { id: 'u-2', role: 'tenant' };
+    ruta.actual = '/inquilino';
+    await act(async () => root.render(<AceptarLegalesAlEntrar key="inquilino" />));
+    await esperar();
+    expect(ventana()).not.toBeNull();
+  });
+
+  it('🔴 espera al recorrido del panel: sale cuando ya no falta', async () => {
+    api.estado.mockResolvedValue(PIDE);
+    document.documentElement.setAttribute('data-recorrido-pendiente', '');
+    await act(async () => root.render(<AceptarLegalesAlEntrar />));
+    await esperar();
+    expect(ventana()).toBeNull();
+    document.documentElement.removeAttribute('data-recorrido-pendiente');
+    await esperar();
+    expect(ventana()).not.toBeNull();
   });
 
   it('las rutas sin la ventana', () => {

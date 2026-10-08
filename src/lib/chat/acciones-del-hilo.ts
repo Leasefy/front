@@ -36,8 +36,26 @@ export type TipoDeFicha =
   | 'postulante'
   | 'contrato'
   | 'inmueble'
-  | 'propietario';
+  | 'propietario'
+  | 'agencia'
+  | 'factura'
+  | 'factura_de_proveedor'
+  | 'lote_de_egresos'
+  | 'pqrs'
+  | 'mantenimiento'
+  | 'cita'
+  | 'acta'
+  | 'lead';
 
+/**
+ * 🔴 07-10: el MISMO orden y la misma lista que `TIPOS_DE_FICHA` del micro
+ * (`ai-hub/en-el-chat/intencion.ts`). Faltaban la inmobiliaria y los
+ * documentos que el micro sumó desde el 24-09 (factura, lote de egresos, PQRS,
+ * mantenimiento, cita, acta, lead): sus formularios y botones llegaban en el
+ * `done` y se descartaban aquí sin decir nada. El chat respondía «…necesito
+ * estos datos:» y no aparecía ningún campo («arma la nómina», «anula el
+ * egreso», «responde la PQRS 45»…).
+ */
 const TIPOS_DE_FICHA: TipoDeFicha[] = [
   'persona',
   'inquilino',
@@ -47,6 +65,15 @@ const TIPOS_DE_FICHA: TipoDeFicha[] = [
   'contrato',
   'inmueble',
   'propietario',
+  'agencia',
+  'factura',
+  'factura_de_proveedor',
+  'lote_de_egresos',
+  'pqrs',
+  'mantenimiento',
+  'cita',
+  'acta',
+  'lead',
 ];
 
 export interface EntidadDeLaIntencion {
@@ -379,6 +406,8 @@ export function textoDelFormulario(f: FormularioEnElHilo, valores: Record<string
       const v = (valores[c.clave] ?? '').trim();
       if (!v) return null;
       if (c.tipo === 'opcion') return c.opciones.find((o) => o.valor === v)?.etiqueta ?? v;
+      // 07-10: «5 de octubre de 2026», no «2026-10-05», en lo que la persona «dijo».
+      if (c.tipo === 'fecha' && /^\d{4}-\d{2}-\d{2}$/.test(v)) return fechaCivilLarga(v);
       if (c.tipo === 'moneda') {
         const n = Number(v.replace(/[^\d]/g, ''));
         return Number.isFinite(n) && n > 0 ? `$${n.toLocaleString('es-CO')}` : v;

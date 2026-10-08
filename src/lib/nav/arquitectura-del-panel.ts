@@ -44,6 +44,7 @@ import {
   ArrowsLeftRight,
   HourglassMedium,
   HeartStraight,
+  SealCheck,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import { ROLES_QUE_CONCILIAN, ROLES_QUE_VEN_LOS_BANCOS, SIN_EL_AUXILIAR_DE_CARTERA } from './el-auxiliar-de-cartera-no-ve-los-bancos';
@@ -357,6 +358,13 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // Venía de Inmuebles (`scope: 'comercial'` heredado). Gate `avaluos` con
       // el fallback ABSENT = ALLOWED (agent-module-access.ts).
       { key: 'avaluos', labelKey: 'inmobiliaria.ai.nav.avaluos', href: r('/inmuebles/avaluos'), icon: Scales, module: 'avaluos', scope: 'comercial', agente: 'avaluos' },
+      // 29-09-2026 (Nico: «no los veo en la sección de agentes para poder
+      // probarlos»). Niti · calidad de las publicaciones: su propia ruta con el
+      // componente de la pestaña «Calidad» de Portales (que salió del menú el
+      // 22-09 y sigue viva). Mismo `module`/`scope` que Portales e Inmuebles:
+      // no abre ninguna puerta nueva. Niti no tiene módulo de plan propio, así
+      // que con esta fila la sección se ve para quien tenga `portafolio`.
+      { key: 'calidad-publicaciones', labelKey: 'inmobiliaria.nav.calidadPublicaciones', href: r('/inmuebles/calidad-de-publicaciones'), icon: SealCheck, module: 'portafolio', scope: 'comercial' },
       // Venían de Postulaciones (`scope: 'comercial'` heredado), en el orden en
       // que se recorre un candidato.
       { key: 'matching', labelKey: 'inmobiliaria.ai.nav.matching', href: r('/postulaciones/matching'), icon: GitMerge, module: 'matching', scope: 'comercial', agente: 'matching' },

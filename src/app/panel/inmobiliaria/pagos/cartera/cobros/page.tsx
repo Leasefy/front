@@ -72,6 +72,7 @@ import { CobrosSinCuota } from '@/components/cartera/CobrosSinCuota';
 import { RecargosSinPlazo } from '@/components/cartera/RecargosSinPlazo';
 import { hoyEnColombia } from '@/lib/fechas/fecha-de-la-casa';
 import { useMigracionConDeuda } from '@/lib/hooks/use-migracion-con-deuda';
+import { LinksDePago } from '@/components/inmobiliaria/pagos/payu/LinksDePago';
 
 /**
  * B-09/N-28 (QA-PAGOS-95 r2; main, con la recomendada): «Configurar
@@ -825,6 +826,14 @@ function CobrosContent() {
           </div>
         )}
       </div>
+
+      {/*
+        Payu (26-09-2026): el estado del link de pago de CADA CUOTA. Va aparte
+        y con su propio mes y estado porque la tabla de arriba es de COBROS —el
+        documento— y un cobro no trae su cuota. Sin «Enviar link»: los manda
+        el cron del back (decisión de Nico).
+      */}
+      <LinksDePago />
 
       {/* Cobro Detail Modal */}
       <CobroDetail

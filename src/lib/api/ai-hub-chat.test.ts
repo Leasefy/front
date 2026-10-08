@@ -58,8 +58,9 @@ describe('suggestedActionToResponseAction', () => {
     );
     expect(a.intencion).toEqual({ accion: 'ver', entidad: { tipo: 'contrato', id: '24' } });
     // Una intención mal formada se descarta: el botón manda sólo su texto.
+    // (07-10: «agencia» ya es un tipo de ficha del micro; uno que no existe, no.)
     const b = suggestedActionToResponseAction(
-      { label: 'x', target: 'pagos', intencion: { accion: 'ver', entidad: { tipo: 'agencia', id: 'otra' } } },
+      { label: 'x', target: 'pagos', intencion: { accion: 'ver', entidad: { tipo: 'banco', id: 'otra' } } },
       0,
     );
     expect(b.intencion).toBeUndefined();

@@ -1045,6 +1045,7 @@
       "rentabilidad": "Rentabilidad",
       "desempenoIa": "Desempeño IA",
       "agenteDePagos": "Agente de pagos",
+      "calidadPublicaciones": "Calidad",
       "agentesIa": "Agentes IA",
       "automatizacionIa": "Automatización IA",
       "riesgo": "Riesgo",
@@ -2957,6 +2958,53 @@
         "vigentes": "Vigentes",
         "anulados": "Anulados",
         "sinAnulados": "No hay cobros anulados en este mes."
+      },
+      "linksDePago": {
+        "titulo": "Links de pago (Cobri)",
+        "descripcion": "Cada cuota del mes con el estado de su link de pago y los avisos que Cobri ya mandó. Los links salen solos, 3 días antes del vencimiento, el día y 3 días después; no se mandan a pedido.",
+        "mesAnterior": "Mes anterior",
+        "mesSiguiente": "Mes siguiente",
+        "mesTope": "Más adelante todavía no hay avisos de Cobri.",
+        "filtroEstado": "Estado del link",
+        "todos": "Todos los estados",
+        "estado": {
+          "ninguno": "Sin link",
+          "enviado": "Enviado",
+          "pagado": "Pagado",
+          "vencido": "Vencido",
+          "fallido": "Pago fallido"
+        },
+        "detalle": {
+          "ninguno": "Cobri todavía no le ha escrito por esta cuota.",
+          "enMora": "Venció hace más de 3 días sin pagar: Cobri ya no escribe por esta cuota, la lleva cobranza.",
+          "enMoraPorOtra": "El inquilino debe una cuota anterior en mora: mientras tanto Cobri no le escribe, la lleva cobranza.",
+          "pagada": "Ya está paga: Cobri no tiene nada que cobrar por esta cuota.",
+          "vencido": "El link venció sin pago. Cobri ya no escribe por esta cuota: la sigue cobranza.",
+          "fallido": "El inquilino intentó pagar y la pasarela no aprobó el pago."
+        },
+        "pagadoEl": "Pagado el {{fecha}}",
+        "ultimoAviso": "Último aviso: {{fecha}}",
+        "hitos": {
+          "titulo": "Avisos de Cobri",
+          "antes": "3 días antes",
+          "dia": "El día",
+          "despues": "3 días después",
+          "enviado": "enviado",
+          "sinEnviar": "sin enviar"
+        },
+        "columnas": {
+          "cuota": "Inquilino y contrato",
+          "vence": "Vence",
+          "valor": "Valor",
+          "link": "Link de pago"
+        },
+        "contrato": "Contrato {{numero}}",
+        "verLink": "Ver el link",
+        "verLinkAria": "Ver el link de pago de {{inquilino}} (se abre en otra pestaña)",
+        "conteoUno": "1 cuota",
+        "conteoVarios": "{{total}} cuotas",
+        "vacioTitulo": "No hay cuotas que venzan en {{mes}}",
+        "vacioDescripcion": "Cobri trabaja sobre las cuotas de los contratos: cuando un contrato tenga cuota en este mes, aparece acá con el estado de su link."
       }
     },
     "dispersiones": {
@@ -8651,7 +8699,7 @@
           "cobranza": "Cobranza",
           "cotizador": "Asegurabilidad",
           "conciliacion": "Conciliación",
-          "pagos": "Cobros con link de pago",
+          "pagos": "Cobri · cobros a inquilinos",
           "estudio": "Evaluación de candidatos",
           "matching": "Matching",
           "avaluos": "Avalúos",
@@ -8659,7 +8707,7 @@
           "equipo": "Tu equipo",
           "piloto": "Piloto automático",
           "retencion": "Retención",
-          "calidad": "Calidad de publicación",
+          "calidad": "Niti · calidad",
           "prospectos": "Prospectos",
           "aprobaciones": "Aprobaciones del propietario",
           "mantenimiento": "Mantenimiento",
@@ -11101,6 +11149,99 @@
       "anularPagado": "Un egreso pagado no se anula: la plata ya salió del banco y el comprobante tiene número. Si la devolvieron, regístralo como ingreso con tu contador; si la fecha está mal, cámbiala desde el egreso.",
       "anularAnulado": "Este egreso ya está anulado.",
       "anulado": "Egreso anulado. Vuelve a quedar sin pagar."
+    },
+    "recaudo": {
+      "comparativa": {
+        "queEs": "la comparación con el mes anterior",
+        "fecha": "{{dia}} de {{mes}}",
+        "vs": {
+          "cambio": "{{pct}} vs. el {{fecha}}",
+          "igual": "Igual que el {{fecha}}",
+          "subio": "Subió",
+          "bajo": "Bajó",
+          "sinComparacion": "Sin comparación con {{mes}}",
+          "noSePudoLeer": "Comparación con el mes anterior: no se pudo leer",
+          "aEsaFecha": "Al día {{dia}}: {{valor}}"
+        },
+        "diaADia": {
+          "titulo": "Día a día: {{mes}} contra {{mesAnterior}}",
+          "descripcionEnCurso": "Lo que llegó por recibos de caja, acumulado por día del mes. {{mesAnterior}} va entero; {{mes}}, hasta hoy (día {{dia}}).",
+          "descripcionCerrado": "Lo que llegó por recibos de caja, acumulado por día del mes, con los dos meses enteros.",
+          "resumen": "Al día {{dia}} de {{mes}} llegaron {{actual}}; al día {{diaAnterior}} de {{mesAnterior}} habían llegado {{anterior}}.",
+          "sinRecibos": "Ningún recibo de caja en {{mes}} ni en {{mesAnterior}}: no hay líneas que dibujar. Cuando se registre un pago, aparece acá.",
+          "dia": "Día {{dia}}"
+        },
+        "proyeccion": {
+          "titulo": "Proyección del cierre",
+          "tituloCerrado": "Cierre del mes",
+          "sinDatos": "Sin datos",
+          "formula": "Llegó {{llego}} + por vencer {{porVencer}} × {{tasa}} (lo que se pagó dentro del mes en {{meses}}) = {{cierre}}.",
+          "rango": "Entre {{min}} y {{max}}: según el mes, se pagó entre {{peor}} y {{mejor}} de lo que vencía.",
+          "historiaCorta": "Con {{n}} de {{pedidos}} meses de historia: los demás no tenían deuda.",
+          "sinHistoria": "Ninguno de los {{pedidos}} meses anteriores tenía deuda, así que no hay tasa de pago que medir y no se proyecta.",
+          "sinHistoriaCifras": "Hasta hoy llegó {{llego}} y faltan por vencer {{porVencer}}.",
+          "cerrado": "{{mes}} ya cerró: lo que llegó es el cierre."
+        }
+      }
+    },
+    "calidad": {
+      "pestanas": {
+        "aria": "Publicar o revisar la calidad",
+        "publicar": "Publicar",
+        "calidad": "Calidad"
+      },
+      "seccion": "Agentes IA",
+      "titulo": "Calidad de publicaciones · Niti",
+      "listaAria": "Inmuebles auditados, de peor a mejor",
+      "descripcion": "Revisa tus inmuebles con la misma regla de «mínimo para publicar» de Portales, le suma lo suyo y propone arreglos. En Automático arregla sola la ficha con lo que ya tiene (con tu tiempo para deshacerlo); despublicar o publicar en un portal siempre espera tu clic. Nunca le escribe al propietario.",
+      "ultimaPasada": "Última pasada: {{fecha}}",
+      "sinPasada": "Todavía no ha hecho su primera pasada.",
+      "queEsResumen": "el resumen de Niti",
+      "queEsLista": "los inmuebles auditados",
+      "queSon": "inmuebles auditados",
+      "puntajePromedio": "Puntaje promedio",
+      "porArreglar": "Con algo por arreglar",
+      "porArreglarDe": "de {{total}}",
+      "fotosIA": "Fotos con IA este mes",
+      "fotosIARevisadas": "revisadas",
+      "fotosIAGasto": "Gasto estimado {{gasto}} de {{tope}}",
+      "apagadoTitulo": "Lo prende el equipo técnico de Leasefy",
+      "apagadoDescripcion": "Mientras tanto no audita tus inmuebles ni propone arreglos. Cuando lo prendan, aquí verás tus inmuebles de peor a mejor: qué les falta para publicar, sus problemas y las fotos que señala.",
+      "errorPasadaTitulo": "La última pasada de Niti falló",
+      "filtroAria": "Filtrar los inmuebles auditados",
+      "filtro": {
+        "todos": "Todos",
+        "con_problemas": "Con algo por arreglar",
+        "posible_tomado": "Posible tomado",
+        "fotos": "Fotos señaladas"
+      },
+      "conteoUno": "1 inmueble",
+      "conteoVarios": "{{total}} inmuebles",
+      "vacioTitulo": "Niti todavía no ha auditado ningún inmueble",
+      "vacioDescripcion": "Revisa los publicados, los que están por publicar y los arrendados con preaviso. Cuando termine su pasada, aparecen aquí de peor a mejor.",
+      "motivo": {
+        "publicado": "Publicado",
+        "por_publicar": "Por publicar",
+        "arrendado_con_preaviso": "Arrendado con preaviso"
+      },
+      "negocio": {
+        "arriendo": "Arriendo",
+        "venta": "Venta"
+      },
+      "puntajeAria": "Puntaje {{n}} de 100",
+      "posibleTomado": "Posible tomado",
+      "posibleTomadoDetalle": "Está publicado, pero arrendado sin preaviso: el aviso ofrece algo que no está disponible.",
+      "queFalta": "Qué falta para publicar",
+      "problemas": "Problemas",
+      "fotos": "Fotos señaladas",
+      "propuestas": "Propuestas de Niti",
+      "abrirFicha": "Abrir ficha",
+      "aprobarYAplicar": "Aprobar y aplicar",
+      "despublicar": "Despublicar",
+      "marcarHecha": "Marcar como hecha",
+      "rechazar": "Rechazar",
+      "decisionSinMensaje": "Listo.",
+      "decisionFallo": "No se pudo guardar la decisión: {{error}}"
     }
   },
   "validation": {

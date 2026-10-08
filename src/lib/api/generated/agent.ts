@@ -3542,6 +3542,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/cobranza/llamar-la-mora": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Programa una llamada de Laura por cada deudor en mora (el marcador aplica la Ley 2300) */
+        post: operations["llamarLaMoraCobranza"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/cobranza/escalations": {
         parameters: {
             query?: never;
@@ -4488,6 +4505,27 @@ export interface paths {
          * @description Persists the per-agency cadence-calendar override to AgencyPolicy.cadenceConfig. Send `cadenceConfig: null` to clear the override (cron reverts to the hardcoded default). The body is validated with the SAME schema the orchestrator applies. Writes an audit_log row in the same transaction. OWNER/ADMIN only (cobranza:approve). T-323: configuring the plan never sends anything.
          */
         put: operations["putCobranzaCadenceConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/cobranza/ajustes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Los ajustes de la cobranza (días de gracia de la promesa, experimentos) */
+        get: operations["getCobranzaAjustes"];
+        /**
+         * Cambia los ajustes de la cobranza (cobranza:approve)
+         * @description Cambia sólo lo que viene. Queda en la bitácora (cobranza.ajustes.updated). No manda nada a nadie: las promesas que venzan desde ahí se cierran con los días nuevos.
+         */
+        put: operations["putCobranzaAjustes"];
         post?: never;
         delete?: never;
         options?: never;
@@ -7422,6 +7460,127 @@ export interface paths {
         /** Asigna un responsable a un rol (OWNER/ADMIN). */
         put: operations["putRetencionResponsable"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/riesgo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vinci — quién está en riesgo (propietarios e inquilinos), con qué señal sumó cuánto */
+        get: operations["getVinciRiesgo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/umbral": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vinci — el umbral de riesgo (60 por defecto) y el tope del descuento en la comisión. Sólo el administrador. */
+        get: operations["getVinciUmbral"];
+        /** Vinci — cambia el umbral (0–100) o el tope del descuento. Sólo el administrador. */
+        put: operations["putVinciUmbral"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/metricas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vinci — contratos retenidos, propietarios que se quedaron y canon conservado */
+        get: operations["getVinciMetricas"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/casos/{caseId}/ofertas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Vinci — las ofertas de un caso y su aprobación */
+        get: operations["getVinciOfertas"];
+        put?: never;
+        /** Vinci — proponer una oferta. Si la propone el administrador, queda aprobada en el mismo paso (P-4). */
+        post: operations["postVinciOferta"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/ofertas/{ofertaId}/aprobar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Vinci — aprobar una oferta que cuesta plata. Sólo el administrador. */
+        post: operations["postVinciOfertaAprobar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/ofertas/{ofertaId}/rechazar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Vinci — rechazar una oferta que cuesta plata. Sólo el administrador. */
+        post: operations["postVinciOfertaRechazar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/retencion/decisions/{decisionId}/hacerlo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Vinci — el clic de la Bandeja: abrir el plan propuesto y/o mandar el mensaje listo (en horario de ley, deshacible) */
+        post: operations["postVinciHacerlo"];
         delete?: never;
         options?: never;
         head?: never;
@@ -11164,6 +11323,16 @@ export interface components {
             documento?: string;
             motivo?: string;
         };
+        LlamarLaMoraOk: {
+            programadas: number;
+            sinTelefono: number;
+            enMora: number;
+            tope: number;
+            frase: string;
+        };
+        LlamarLaMoraBody: {
+            motivo?: string;
+        };
         CobranzaEscalationCard: {
             id: string;
             debtor_id: string;
@@ -11581,6 +11750,14 @@ export interface components {
             derivedStatus: "activa" | "incumplida" | "parcial" | "por_vencer" | "cumplida";
             createdAt: string;
             resolvedAt: string | null;
+            cierre: {
+                /** @enum {string} */
+                resultado: "cumplida" | "incumplida";
+                pagado: number;
+                hasta: string;
+                diasDeGracia: number;
+                cerradaAt: string;
+            } | null;
         };
         CobranzaPromisesListResponse: {
             items: components["schemas"]["CobranzaPromiseItem"][];
@@ -11877,6 +12054,8 @@ export interface components {
                 disputeStatus: string | null;
                 escalationStatus: string | null;
                 escalationUrgency: string | null;
+                /** @enum {string|null} */
+                promiseCierre?: "cumplida" | "incumplida" | null;
             };
             generatedAt: string;
         };
@@ -11987,6 +12166,21 @@ export interface components {
         };
         CobranzaCadencePutBody: {
             cadenceConfig: components["schemas"]["CobranzaCadenceConfig"];
+        };
+        CobranzaAjustes: {
+            disponible: boolean;
+            diasDeGraciaDeLaPromesa: number;
+            experimentosPrendidos: boolean;
+            porDefecto: boolean;
+            actualizadoPor: string | null;
+            actualizadoAt: string | null;
+        };
+        CobranzaAjustesError: {
+            error: string;
+        };
+        CobranzaAjustesCambio: {
+            diasDeGraciaDeLaPromesa?: number;
+            experimentosPrendidos?: boolean;
         };
         CobranzaAcuerdoGeneral: {
             /** Format: uuid */
@@ -12236,7 +12430,7 @@ export interface components {
         AiHubChatPendingApproval: {
             id: string;
             /** @enum {string} */
-            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director";
+            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion";
             actionType: string;
             title: string;
             description: string;
@@ -12256,7 +12450,7 @@ export interface components {
         AiHubChatDispatch: {
             id?: string;
             /** @enum {string} */
-            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director";
+            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion";
             taskDescription: string;
             /** @enum {string} */
             status: "completed" | "failed";
@@ -12306,7 +12500,7 @@ export interface components {
             snapshot: components["schemas"]["AiHubChatSnapshot"];
             razonamiento?: {
                 /** @enum {string} */
-                agente?: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director";
+                agente?: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion";
                 texto: string;
             }[];
             generatedAt: string;
@@ -12344,7 +12538,7 @@ export interface components {
             kind: "routing" | "approval" | "feedback";
             pattern: {
                 /** @enum {string|null} */
-                agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | null;
+                agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | null;
                 tags: string[];
             };
             recommendation: string;
@@ -14823,10 +15017,14 @@ export interface components {
             reviewedBy: string | null;
             reviewedAt: string | null;
             reviewOutcome: string | null;
+            payload?: {
+                [key: string]: unknown;
+            };
             createdAt: string;
         };
         RetencionDecisionsList: {
             decisions: components["schemas"]["RetencionDecisionRow"][];
+            envioHabilitado?: boolean;
         };
         RetencionDecisionReviewResult: {
             decision: components["schemas"]["RetencionDecisionRow"];
@@ -14896,6 +15094,148 @@ export interface components {
             name?: string | null;
             /** Format: email */
             email?: string | null;
+        };
+        VinciSenal: {
+            clave: string;
+            texto: string;
+            puntos: number;
+        };
+        VinciOfertaSugerida: {
+            /** @enum {string} */
+            tipo: "llamada_del_asesor" | "visita_del_asesor" | "resolver_pendiente" | "congelar_incremento" | "bajar_incremento" | "descuento_comision";
+            nombre: string;
+            porque: string;
+            cuestaPlata: boolean;
+            quienAprueba: string | null;
+        };
+        VinciOferta: {
+            id: string;
+            caseId: string;
+            /** @enum {string} */
+            poblacion: "inquilino" | "propietario";
+            /** @enum {string} */
+            tipo: "llamada_del_asesor" | "visita_del_asesor" | "resolver_pendiente" | "congelar_incremento" | "bajar_incremento" | "descuento_comision";
+            nombre: string;
+            detalle: {
+                [key: string]: unknown;
+            };
+            cuestaPlata: boolean;
+            /** @enum {string} */
+            estado: "por_aprobar" | "aprobada" | "rechazada";
+            propuestaPor: string | null;
+            resueltaPor: string | null;
+            resueltaEn: string | null;
+            mismaPersona: boolean;
+            creadaEn: string;
+        };
+        VinciPlanDelCaso: {
+            id: string;
+            estado: string;
+            objetivo: string;
+            tareasAbiertas: number;
+            resultado: string | null;
+        } | null;
+        VinciCaso: {
+            caseId: string;
+            /** @enum {string} */
+            poblacion: "inquilino" | "propietario";
+            nombre: string | null;
+            puntaje: number;
+            suma: number;
+            umbral: number;
+            enRiesgo: boolean;
+            enCobranza?: boolean;
+            senales: components["schemas"]["VinciSenal"][];
+            contratos: {
+                contratoId: string;
+                numero: string;
+                inmueble: string | null;
+                canonCop: number;
+                fechaDeFin: string | null;
+                diasParaVencer: number | null;
+            }[];
+            canonEnJuegoCop: number;
+            tieneTelefono: boolean;
+            tieneCorreo: boolean;
+            ofertasSugeridas: components["schemas"]["VinciOfertaSugerida"][];
+            ofertas: components["schemas"]["VinciOferta"][];
+            plan: components["schemas"]["VinciPlanDelCaso"];
+        };
+        VinciRiesgo: {
+            disponible: boolean;
+            faltan: string[];
+            notas: string[];
+            leidoEn: string;
+            deLoGuardado: boolean;
+            umbral: number;
+            /** @enum {string|null} */
+            modo: "sombra" | "copiloto" | "autonomo" | null;
+            envioHabilitado: boolean;
+            contratosLeidos: number;
+            propietariosLeidos: number;
+            enRiesgo: {
+                inquilinos: number;
+                propietarios: number;
+            };
+            enCobranza?: number;
+            casos: components["schemas"]["VinciCaso"][];
+        };
+        VinciError: {
+            error: string;
+            code?: string;
+        };
+        VinciUmbral: {
+            umbral: number;
+            umbralPorDefecto: number;
+            topeDescuentoComisionPct: number;
+            diasEntreMensajesInquilino: number;
+            diasEntreMensajesPropietario: number;
+            guardable: boolean;
+            actualizadaEn: string | null;
+        };
+        VinciCambioDeUmbral: {
+            umbral?: number;
+            topeDescuentoComisionPct?: number;
+            diasEntreMensajesInquilino?: number;
+            diasEntreMensajesPropietario?: number;
+        };
+        VinciMetricas: {
+            enGestion: {
+                inquilinos: number;
+                propietarios: number;
+            };
+            contratosRetenidos: number;
+            propietariosQueSeQuedaron: number;
+            inmueblesRetenidos: number;
+            canonConservadoCop: number;
+            perdidos: {
+                inquilinos: number;
+                propietarios: number;
+                canonPerdidoCop: number;
+            };
+            tasaDeRetencion: number | null;
+        };
+        VinciPropuestaDeOferta: {
+            /** @enum {string} */
+            tipo: "llamada_del_asesor" | "visita_del_asesor" | "resolver_pendiente" | "congelar_incremento" | "bajar_incremento" | "descuento_comision";
+            /** @default {} */
+            detalle: {
+                descuentoPct?: number;
+                meses?: number;
+                incrementoPct?: number;
+                aceptadaPorElPropietario?: boolean;
+                nota?: string;
+            };
+        };
+        VinciAprobacionDeOferta: {
+            aceptadaPorElPropietario?: boolean | ("si" | "no");
+        };
+        VinciResultadoDelClic: {
+            /** @enum {string} */
+            estado: "programado" | "mensaje_listo";
+            mensaje: string;
+            graciaId?: string;
+            ejecutarEn?: string;
         };
         InspeccionIngestErrorEntry: {
             index: number;
@@ -20323,7 +20663,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Resultado del pedido: retenida en la bandeja, programada (Automático), ya pendiente, sin mora, excluida por una valla, o no disponible */
+            /** @description Resultado del pedido: retenida en la bandeja (Manual), programada (Copiloto o Automático, con quien la pidió como aprobador), ya pendiente, sin mora, excluida por una valla, o no disponible */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -20339,6 +20679,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+            /** @description Database unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaInterventionError"];
+                };
+            };
+        };
+    };
+    llamarLaMoraCobranza: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LlamarLaMoraBody"];
+            };
+        };
+        responses: {
+            /** @description Llamadas programadas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LlamarLaMoraOk"];
                 };
             };
             /** @description Forbidden */
@@ -23740,6 +24124,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CobranzaCadenceError"];
+                };
+            };
+        };
+    };
+    getCobranzaAjustes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los ajustes (o los de por defecto) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAjustes"];
+                };
+            };
+            /** @description Sin cobranza:view */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAjustesError"];
+                };
+            };
+            /** @description Sin base */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAjustesError"];
+                };
+            };
+        };
+    };
+    putCobranzaAjustes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CobranzaAjustesCambio"];
+            };
+        };
+        responses: {
+            /** @description Los ajustes guardados */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAjustes"];
+                };
+            };
+            /** @description Datos inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAjustesError"];
+                };
+            };
+            /** @description Sin cobranza:approve */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAjustesError"];
+                };
+            };
+            /** @description Sin base o sin la migración */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CobranzaAjustesError"];
                 };
             };
         };
@@ -33199,6 +33676,465 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RetencionError"];
+                };
+            };
+        };
+    };
+    getVinciRiesgo: {
+        parameters: {
+            query?: {
+                poblacion?: "inquilino" | "propietario";
+                soloEnRiesgo?: "true" | "false";
+                fresco?: "true" | "false";
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Casos */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciRiesgo"];
+                };
+            };
+            /** @description Vinci apagado o no existe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Base no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+        };
+    };
+    getVinciUmbral: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Umbral */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciUmbral"];
+                };
+            };
+            /** @description Vinci apagado o no existe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Base no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+        };
+    };
+    putVinciUmbral: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["VinciCambioDeUmbral"];
+            };
+        };
+        responses: {
+            /** @description Guardado */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciUmbral"];
+                };
+            };
+            /** @description Vinci apagado o no existe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Sin la migración de la config */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Base no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+        };
+    };
+    getVinciMetricas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Métricas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciMetricas"];
+                };
+            };
+            /** @description Vinci apagado o no existe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Base no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+        };
+    };
+    getVinciOfertas: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Ofertas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        ofertas: components["schemas"]["VinciOferta"][];
+                    };
+                };
+            };
+            /** @description Vinci apagado o no existe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Base no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+        };
+    };
+    postVinciOferta: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                caseId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["VinciPropuestaDeOferta"];
+            };
+        };
+        responses: {
+            /** @description Registrada */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciOferta"];
+                };
+            };
+            /** @description Oferta inválida (tope, población, falta el sí del propietario) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Vinci apagado o no existe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description El inquilino pasó a cobranza (más de 60 días de mora): no se le ofrece nada */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Base no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+        };
+    };
+    postVinciOfertaAprobar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                ofertaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["VinciAprobacionDeOferta"];
+            };
+        };
+        responses: {
+            /** @description Resuelta */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciOferta"];
+                };
+            };
+            /** @description No se puede aprobar así */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Vinci apagado o no existe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Ya estaba resuelta */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Base no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+        };
+    };
+    postVinciOfertaRechazar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                ofertaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["VinciAprobacionDeOferta"];
+            };
+        };
+        responses: {
+            /** @description Resuelta */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciOferta"];
+                };
+            };
+            /** @description No se puede aprobar así */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Vinci apagado o no existe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Ya estaba resuelta */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Base no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+        };
+    };
+    postVinciHacerlo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                decisionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Hecho */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciResultadoDelClic"];
+                };
+            };
+            /** @description Vinci apagado o no existe */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Ya resuelta, o el envío de Vinci está apagado */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
+                };
+            };
+            /** @description Base no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VinciError"];
                 };
             };
         };

@@ -39,6 +39,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import type { Renovacion, RenovacionHistoryItem } from '@/lib/types/inmobiliaria';
+import { RiesgoEnLaRenovacion } from '@/components/retencion/RiesgoEnLaRenovacion';
 import { getUrgencyColor } from '@/lib/types/inmobiliaria';
 import { URL_IPC_DANE } from '@/lib/constants/inmobiliaria-data';
 import {
@@ -229,6 +230,8 @@ export function PasoPropuesta({
 
   return (
     <section className="space-y-6" data-testid="paso-propuesta">
+      {/* P-7: el riesgo de que se vaya va DENTRO de la propuesta, antes del precio. */}
+      <RiesgoEnLaRenovacion riesgo={renovacion.riesgoDeRetencion} contractId={renovacion.contractId} />
       {yaEnviada ? (
         <Callout
           icon={<CheckCircle className="h-5 w-5 text-success" weight="fill" aria-hidden="true" />}

@@ -26,6 +26,24 @@ vi.mock('@/components/auth/PageGuard', () => ({ PageGuard: ({ children }: { chil
 vi.mock('@/lib/hooks/cobranza/use-agency-policy', () => ({
   useAgencyPolicy: () => ({ data: null, isLoading: false, error: null, notProvisioned: true, refetch: vi.fn(), patchPolicy: vi.fn() }),
 }))
+// Promesas de pago (07-10-2026): su propia prueba vive junto al componente.
+vi.mock('@/lib/hooks/cobranza/use-ajustes-de-la-cobranza', () => ({
+  useAjustesDeLaCobranza: () => ({
+    data: {
+      disponible: true,
+      diasDeGraciaDeLaPromesa: 7,
+      experimentosPrendidos: true,
+      porDefecto: true,
+      actualizadoPor: null,
+      actualizadoAt: null,
+    },
+    isLoading: false,
+    fallo: null,
+    refetch: vi.fn(),
+    guardar: vi.fn(),
+  }),
+}))
+
 vi.mock('@/lib/hooks/cobranza/use-autonomy', () => ({
   useAutonomy: () => ({
     data: { agencyId: 'ag-1', autonomyLevel: 'automatico_completo', requiresHumanApproval: false, isDefault: false },

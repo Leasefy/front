@@ -257,7 +257,7 @@ describe('los datos que faltan, en el hilo', () => {
     });
     act(() => boton('Listo, sigue')!.click());
     expect(contexto.sendMessage).toHaveBeenCalledWith(
-      'Registrar el aviso de no renovación: Se va a vivir a otra ciudad · 2026-09-23',
+      'Registrar el aviso de no renovación: Se va a vivir a otra ciudad · 23 de septiembre de 2026',
       {
         intencion: {
           accion: 'avisar_no_renovacion',

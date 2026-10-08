@@ -39,6 +39,8 @@ import { Button, Spinner } from '@/components/ui'
 import { AnimatedNumber, CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useUltimoPresente } from '@/lib/hooks/use-ultimo-presente'
 import { usePromises } from '@/lib/hooks/cobranza/use-promises'
+import { fraseDelCierre } from '@/lib/cobranza/promesas-de-pago'
+import { useI18n } from '@/lib/i18n'
 import { TablePagination } from '@/components/ui/pagination'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { ManualWAModal } from '@/components/inmobiliaria/cobranza/intervention/ManualWAModal'
@@ -93,6 +95,7 @@ function PromesasContent() {
   // y la PII enmascarada; pedimos sin filtro de estado para filtrar client-side
   // por estado derivado (el SegmentedControl). limit alto = una sola página.
   const { promises, isLoading, error, refetch } = usePromises({ limit: 200 })
+  const { formatCurrency } = useI18n()
 
   useAutoRefresh(refetch)
 
@@ -116,9 +119,11 @@ function PromesasContent() {
       canal: p.channel,
       mensajeOriginal: p.conditions,
       seguimiento: null,
-      resultado: null,
+      // El cierre contra los recibos del back (07-10-2026): «Incumplida: pagó
+      // $X de $Y hasta el D…». Sin cierre todavía, nada.
+      resultado: p.cierre ? fraseDelCierre(p.cierre, p.amount, (n) => formatCurrency(n)) : null,
     }))
-  }, [promises])
+  }, [promises, formatCurrency])
 
   const incumplidas = useMemo(
     () => promesas.filter((p) => p.estado === 'incumplida'),

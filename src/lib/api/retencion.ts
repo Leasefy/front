@@ -1,47 +1,58 @@
 /**
- * Cliente del agente de Retención. Llama
- * `${NEXT_PUBLIC_AGENT_URL}/api/agency/:agencyId/retencion/*` con bearer
- * (`agentFetch`).
+ * Cliente de Vinci (retención). Llama al micro
+ * `${NEXT_PUBLIC_AGENT_URL}/api/agency/:agencyId/retencion/*` con `agentFetch`
+ * (el bearer y el reintento cuando el token se renueva).
  *
- * 🔴 Sin datos inventados (QA 04-10, IA-C-01). Antes, ante cualquier fallo
- * —también el 404 «Retención no está habilitada» del micro, que es lo normal
- * mientras `RETENCION_ENABLED` no esté en `true`— caía a `mock-retencion.ts`
- * y la pantalla mostraba propietarios, puntajes y pesos escritos a mano.
- * Ahora:
- *  · 404 «no está habilitada» (o sin micro configurado) → `apagado: true`,
- *    `data: null`: la pantalla dice que Retención no está activada.
- *  · cualquier otro fallo → se lanza el `ApiError` de `falloDelMicro` y la
- *    pantalla lo dice con `EstadoDeDatos` (con reintentar).
- * `mock-retencion.ts` queda sólo para pruebas.
+ * 🔴 26-09-2026 — SIN DATOS DE EJEMPLO. Este cliente caía a un mock
+ * (`mock-retencion.ts`) ante cualquier error, 404 o flag apagado, y la
+ * pantalla decía «las rutas no están montadas» aunque sí lo estaban. Ahora
+ * un error es un error (con su código y su frase) y la pantalla lo dice.
+ *
+ * 🔴 Con las reglas de bugs-nico-1 (QA 04-10, IA-C-01; tanda 2 de errores):
+ *  · el 404 «no está habilitado» del micro (o sin micro configurado) es
+ *    `RetencionApagadaError`: la pantalla pinta `RetencionApagada` («no está
+ *    activada todavía»), nunca el texto del micro, que nombra su variable;
+ *  · cualquier otro fallo es un `ErrorDeVinci`, que es un `ApiError`: lo lee
+ *    `EstadoDeDatos` (con reintentar) y el traductor de errores.
  */
-import { agentFetch } from './agent-fetch'
-import { falloDelMicro } from './fallo-del-micro'
+import { ApiError } from '@/lib/api/client'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import type {
-  BandejaResult,
-  BandejaTab,
-  CaseBundle,
-  DecisionsResult,
-  PatchDecisionResult,
-  RetencionDashboard,
+  ColaDeVinci,
+  DecisionDeVinci,
+  DetalleDeLaOferta,
+  MetricasDeVinci,
+  OfertaDeVinci,
+  PlanConTareas,
+  ResultadoDelClic,
   ReviewOutcome,
+  RiesgoDeVinci,
+  TipoDeOferta,
+  UmbralDeVinci,
 } from '@/lib/types/retencion'
 
-export interface Fetched<T> {
-  /** `null` sólo cuando `apagado`. */
-  data: T | null
-  /** true = Retención no está activada (el micro responde 404 «no está habilitada»). */
-  apagado: boolean
+/** Un fallo de Vinci con el código HTTP, el `code` y la frase que devolvió el micro. */
+export class ErrorDeVinci extends ApiError {
+  constructor(status: number, mensaje: string, code: string | null = null, cuerpo?: Record<string, unknown>) {
+    super(status, mensaje, code ?? undefined, cuerpo)
+    this.name = 'ErrorDeVinci'
+  }
 }
 
-/** El micro apaga TODAS las rutas de Retención con 404 `{ error: 'Retención no está habilitada' }`. */
-export class RetencionApagadaError extends Error {
+/** Vinci (Retención) no está activado para esta inmobiliaria: lo prende Leasefy. */
+export class RetencionApagadaError extends ErrorDeVinci {
   constructor() {
-    super('Retención no está activada')
+    super(404, 'Retención no está activada todavía para tu inmobiliaria.', 'RETENCION_NO_HABILITADA')
     this.name = 'RetencionApagadaError'
   }
 }
 
-export function esRetencionApagada(status: number, cuerpo: unknown): boolean {
+export function esRetencionApagada(err: unknown): err is RetencionApagadaError {
+  return err instanceof RetencionApagadaError
+}
+
+/** El micro apaga todas las rutas de Vinci con un 404 «… no está habilitado …». */
+export function esCuerpoDeRetencionApagada(status: number, cuerpo: unknown): boolean {
   if (status !== 404 || !cuerpo || typeof cuerpo !== 'object') return false
   const c = cuerpo as Record<string, unknown>
   if (c.code === 'RETENCION_NO_HABILITADA') return true
@@ -49,134 +60,141 @@ export function esRetencionApagada(status: number, cuerpo: unknown): boolean {
   return /no est[aá] habilitad/i.test(texto)
 }
 
-function agentBase(agencyId: string): string | null {
+function base(agencyId: string): string {
   const url = process.env.NEXT_PUBLIC_AGENT_URL
-  if (!url) return null
-  return `${url}/api/agency/${agencyId}/retencion`
+  // Sin micro configurado no hay Vinci: es lo mismo que apagado.
+  if (!url) throw new RetencionApagadaError()
+  return `${url}/api/agency/${encodeURIComponent(agencyId)}/retencion`
 }
 
-/** Lee la respuesta: datos, «apagada» (lanza `RetencionApagadaError`) o el fallo del micro. */
-async function leer<T>(res: Response): Promise<T> {
-  if (res.ok) return (await res.json()) as T
-  if (res.status === 404) {
-    const copia = res.clone()
-    let cuerpo: unknown = null
-    try {
-      cuerpo = await copia.json()
-    } catch {
-      cuerpo = null
-    }
-    if (esRetencionApagada(res.status, cuerpo)) throw new RetencionApagadaError()
+/** La frase para una persona: el `message` del sobre, o el `error` del cuerpo viejo si es una frase. */
+function fraseDelCuerpo(cuerpo: Record<string, unknown> | null, status: number): string {
+  const m = cuerpo?.message
+  if (Array.isArray(m) && m.length) return m.map(String).join(' ')
+  if (typeof m === 'string' && m.trim()) return m
+  const e = cuerpo?.error
+  if (typeof e === 'string' && /\s/.test(e.trim())) return e
+  return `El agente respondió ${status}.`
+}
+
+async function pedir<T>(url: string, init: RequestInit = {}): Promise<T> {
+  const res = await agentFetch(url, {
+    ...init,
+    headers: init.body ? { 'content-type': 'application/json' } : undefined,
+  })
+  if (!res.ok) {
+    const leido = (await res.json().catch(() => null)) as unknown
+    const cuerpo = leido && typeof leido === 'object' && !Array.isArray(leido) ? (leido as Record<string, unknown>) : null
+    if (esCuerpoDeRetencionApagada(res.status, cuerpo)) throw new RetencionApagadaError()
+    const code = typeof cuerpo?.code === 'string' ? cuerpo.code : null
+    throw new ErrorDeVinci(res.status, fraseDelCuerpo(cuerpo, res.status), code, cuerpo ?? undefined)
   }
-  throw await falloDelMicro(res)
+  return (await res.json()) as T
 }
 
-async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
-  return leer<T>(await agentFetch(path, { signal }))
+export function fetchRiesgo(agencyId: string, opts: { fresco?: boolean } = {}, signal?: AbortSignal): Promise<RiesgoDeVinci> {
+  return pedir<RiesgoDeVinci>(`${base(agencyId)}/riesgo${opts.fresco ? '?fresco=true' : ''}`, { signal })
 }
 
-async function conApagado<T>(pedir: () => Promise<T>): Promise<Fetched<T>> {
-  try {
-    return { data: await pedir(), apagado: false }
-  } catch (err) {
-    if (err instanceof RetencionApagadaError) return { data: null, apagado: true }
-    throw err
-  }
+export function fetchMetricas(agencyId: string, signal?: AbortSignal): Promise<MetricasDeVinci> {
+  return pedir<MetricasDeVinci>(`${base(agencyId)}/metricas`, { signal })
 }
 
-export async function fetchDashboard(
+/** Sólo el administrador: a otros roles el micro les responde 403. */
+export function fetchUmbral(agencyId: string, signal?: AbortSignal): Promise<UmbralDeVinci> {
+  return pedir<UmbralDeVinci>(`${base(agencyId)}/umbral`, { signal })
+}
+
+export function guardarUmbral(
   agencyId: string,
-  signal?: AbortSignal,
-): Promise<Fetched<RetencionDashboard>> {
-  const base = agentBase(agencyId)
-  if (!base) return { data: null, apagado: true }
-  return conApagado(() => getJson<RetencionDashboard>(`${base}/dashboard`, signal))
+  cambio: {
+    umbral?: number
+    topeDescuentoComisionPct?: number
+    diasEntreMensajesInquilino?: number
+    diasEntreMensajesPropietario?: number
+  },
+): Promise<UmbralDeVinci> {
+  return pedir<UmbralDeVinci>(`${base(agencyId)}/umbral`, { method: 'PUT', body: JSON.stringify(cambio) })
 }
 
-export async function fetchBandeja(
-  agencyId: string,
-  tab: BandejaTab | 'todos' = 'todos',
-  signal?: AbortSignal,
-): Promise<Fetched<BandejaResult>> {
-  const base = agentBase(agencyId)
-  if (!base) return { data: null, apagado: true }
-  const qs = tab && tab !== 'todos' ? `?tab=${encodeURIComponent(tab)}` : ''
-  return conApagado(() => getJson<BandejaResult>(`${base}/bandeja${qs}`, signal))
+export async function fetchOfertas(agencyId: string, caseId: string, signal?: AbortSignal): Promise<OfertaDeVinci[]> {
+  const r = await pedir<{ ofertas: OfertaDeVinci[] }>(`${base(agencyId)}/casos/${encodeURIComponent(caseId)}/ofertas`, { signal })
+  return r.ofertas
 }
 
-/**
- * Bundle de un caso: perfil + plan propuesto + guardrails + borrador de mensaje.
- * El backend expone estos como rutas separadas; aquí se ensamblan en paralelo.
- * Un fallo se lanza (la pantalla lo dice); Retención apagada → `apagado`.
- */
-export async function fetchCaseBundle(
+export function proponerOferta(
   agencyId: string,
   caseId: string,
-  signal?: AbortSignal,
-): Promise<Fetched<CaseBundle>> {
-  const base = agentBase(agencyId)
-  if (!base) return { data: null, apagado: true }
-  const enc = encodeURIComponent(caseId)
-  const ownerId = caseId.startsWith('owner:') ? caseId.slice('owner:'.length) : caseId
-  return conApagado(async () => {
-    const [profile, plan, guard, message] = await Promise.all([
-      getJson<CaseBundle['profile']>(`${base}/propietarios/${encodeURIComponent(ownerId)}/perfil`, signal),
-      getJson<CaseBundle['plan']>(`${base}/casos/${enc}/plan-propuesto`, signal).catch((e: unknown) => {
-        // Sin plan propuesto el caso se ve igual; apagada, no.
-        if (e instanceof RetencionApagadaError) throw e
-        return null
-      }),
-      getJson<CaseBundle['guard']>(`${base}/casos/${enc}/guardrails`, signal),
-      getJson<CaseBundle['message']>(`${base}/casos/${enc}/mensaje`, signal),
-    ])
-    return { caseId, profile, plan, guard, message }
+  oferta: { tipo: TipoDeOferta; detalle: DetalleDeLaOferta },
+): Promise<OfertaDeVinci> {
+  return pedir<OfertaDeVinci>(`${base(agencyId)}/casos/${encodeURIComponent(caseId)}/ofertas`, {
+    method: 'POST',
+    body: JSON.stringify(oferta),
   })
 }
 
-export interface FetchDecisionsOpts {
-  reviewableOnly?: boolean
-  caseId?: string
-  limit?: number
-}
-
-/**
- * Cola de revisión de decisiones autónomas (T-323). `base` ya incluye
- * `/retencion`, así que la ruta final es `${base}/decisions`.
- */
-export async function fetchDecisions(
+export function resolverOferta(
   agencyId: string,
-  opts: FetchDecisionsOpts = {},
-  signal?: AbortSignal,
-): Promise<Fetched<DecisionsResult>> {
-  const base = agentBase(agencyId)
-  if (!base) return { data: null, apagado: true }
-  const params = new URLSearchParams()
-  if (opts.reviewableOnly) params.set('reviewableOnly', 'true')
-  if (opts.caseId) params.set('caseId', opts.caseId)
-  if (typeof opts.limit === 'number') params.set('limit', String(opts.limit))
-  const qs = params.toString()
-  return conApagado(() => getJson<DecisionsResult>(`${base}/decisions${qs ? `?${qs}` : ''}`, signal))
-}
-
-/**
- * Revisa una decisión autónoma. `PATCH ${base}/decisions/:id`. Un fallo se
- * LANZA (antes «revisaba» una decisión inventada y decía «Revisión registrada»).
- * `agentFetch` agrega el bearer encima de `content-type` (construye `new Headers(extra)`
- * y luego setea Authorization — no se pierde) y reintenta una vez ante un 401.
- */
-export async function patchDecisionReview(
-  agencyId: string,
-  decisionId: string,
-  body: { reviewOutcome: ReviewOutcome; reviewedBy?: string },
-  signal?: AbortSignal,
-): Promise<PatchDecisionResult> {
-  const base = agentBase(agencyId)
-  if (!base) throw new RetencionApagadaError()
-  const res = await agentFetch(`${base}/decisions/${encodeURIComponent(decisionId)}`, {
-    method: 'PATCH',
-    headers: { 'content-type': 'application/json' },
+  ofertaId: string,
+  accion: 'aprobar' | 'rechazar',
+  body: { aceptadaPorElPropietario?: boolean } = {},
+): Promise<OfertaDeVinci> {
+  return pedir<OfertaDeVinci>(`${base(agencyId)}/ofertas/${encodeURIComponent(ofertaId)}/${accion}`, {
+    method: 'POST',
     body: JSON.stringify(body),
-    signal,
   })
-  return leer<PatchDecisionResult>(res)
+}
+
+export async function fetchDecisiones(
+  agencyId: string,
+  opts: { reviewableOnly?: boolean; caseId?: string; limit?: number } = {},
+  signal?: AbortSignal,
+): Promise<ColaDeVinci> {
+  const q = new URLSearchParams()
+  if (opts.reviewableOnly) q.set('reviewableOnly', 'true')
+  if (opts.caseId) q.set('caseId', opts.caseId)
+  if (typeof opts.limit === 'number') q.set('limit', String(opts.limit))
+  const qs = q.toString()
+  const r = await pedir<{ decisions: DecisionDeVinci[]; envioHabilitado?: boolean }>(`${base(agencyId)}/decisions${qs ? `?${qs}` : ''}`, { signal })
+  return { decisiones: r.decisions, envioHabilitado: typeof r.envioHabilitado === 'boolean' ? r.envioHabilitado : null }
+}
+
+export function revisarDecision(agencyId: string, decisionId: string, reviewOutcome: ReviewOutcome): Promise<unknown> {
+  return pedir(`${base(agencyId)}/decisions/${encodeURIComponent(decisionId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ reviewOutcome }),
+  })
+}
+
+/** El clic de «Hacerlo» / «Enviar»: abre el plan propuesto y/o programa el mensaje (deshacible). */
+export function hacerlo(agencyId: string, decisionId: string): Promise<ResultadoDelClic> {
+  return pedir<ResultadoDelClic>(`${base(agencyId)}/decisions/${encodeURIComponent(decisionId)}/hacerlo`, { method: 'POST' })
+}
+
+export function fetchPlan(agencyId: string, planId: string, signal?: AbortSignal): Promise<PlanConTareas> {
+  return pedir<PlanConTareas>(`${base(agencyId)}/planes/${encodeURIComponent(planId)}`, { signal })
+}
+
+/** Cerrar el plan a mano: «se quedó» (logrado) o «se fue» (perdido), con el resultado. */
+export function cerrarPlan(
+  agencyId: string,
+  planId: string,
+  cierre: { status: 'logrado' | 'perdido' | 'activo'; actualResult?: string },
+): Promise<PlanConTareas> {
+  return pedir<PlanConTareas>(`${base(agencyId)}/planes/${encodeURIComponent(planId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(cierre),
+  })
+}
+
+export function actualizarTarea(
+  agencyId: string,
+  planId: string,
+  taskId: string,
+  cambio: { status: 'pendiente' | 'en_progreso' | 'completada' | 'cancelada'; result?: string },
+): Promise<unknown> {
+  return pedir(`${base(agencyId)}/planes/${encodeURIComponent(planId)}/tareas/${encodeURIComponent(taskId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(cambio),
+  })
 }

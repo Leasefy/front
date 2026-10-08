@@ -11,6 +11,10 @@
  *      LECTURA desde el 04-10-2026 (Nico: «sólo Leasefy lo cambia desde
  *      /admin»); CRM y ERP siguen editables.
  *   ② Autonomía    → GET/PUT   /api/agency/:id/cobranza/autonomy  (useAutonomy)
+ *   · Promesas de pago → GET/PUT /api/agency/:id/cobranza/ajustes
+ *      (DiasDeGraciaDeLaPromesa, 07-10-2026): los días de gracia de la promesa.
+ *   · Formas de ofrecer el acuerdo → el mismo ajustes (FormasDeOfrecerElAcuerdo,
+ *      07-10-2026): el interruptor para salir del A/B de cómo Laura ofrece el acuerdo.
  *   ③ Horario y frecuencia → informativo fijo (Ley 2300), sin inputs.
  *   ④ Reporte diario → enlaces + el switch de WhatsApp (mismo PATCH de policy).
  *
@@ -54,6 +58,8 @@ import { modoDelNivel } from '@/lib/cobranza/modo-del-nivel'
 import { AuthContext } from '@/lib/auth/auth-context'
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { CobranzaConfiguracionSkeleton } from '@/components/skeleton/panel/CobranzaConfiguracionSkeleton'
+import { DiasDeGraciaDeLaPromesa } from '@/components/inmobiliaria/cobranza/DiasDeGraciaDeLaPromesa'
+import { FormasDeOfrecerElAcuerdo } from '@/components/inmobiliaria/cobranza/FormasDeOfrecerElAcuerdo'
 import { Button } from '@/components/ui/button'
 import {
   Select,
@@ -727,6 +733,15 @@ function CobranzaConfiguracionContent() {
           </>
         )}
       </section>
+
+      {/* Promesas de pago (07-10-2026): los días de gracia con que el agente
+          cierra cada promesa contra los pagos del back. Cambiarlo pide
+          cobranza:approve, lo mismo que el micro. */}
+      <DiasDeGraciaDeLaPromesa puedeCambiar={canAccess('cobranza', 'approve')} />
+
+      {/* Formas de ofrecer el acuerdo (07-10-2026, Nico: «la que no quiera lo
+          apaga»): sale del A/B de Leasefy; la ganadora aprobada aplica igual. */}
+      <FormasDeOfrecerElAcuerdo puedeCambiar={canAccess('cobranza', 'approve')} />
 
       {/* ③ Cadencia de contacto — SACADA del panel (ver nota al pie).
           Cuándo y por qué canal contacta el agente lo afinamos nosotros, no la

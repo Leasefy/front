@@ -220,7 +220,8 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
     // inicio ahora es el Piloto. Se llama por lo que es (Nico, 2026-08-31).
     // `exact` para que no quede resaltado en cada subruta.
     // CF-01 (decisión 12, 05-10-2026): también el auxiliar de cartera; su chat contesta sólo de cartera (micro).
-    { label: t('inmobiliaria.nav.chat'),         href: '/panel/inmobiliaria',              icon: ChatsCircle,   exact: true, module: null, dataTourTarget: 'sidebar-chat' },
+    // `/beta` es el mismo chat: ahí también queda marcada esta fila (08-10-2026).
+    { label: t('inmobiliaria.nav.chat'),         href: '/panel/inmobiliaria',              icon: ChatsCircle,   exact: true, tambienEn: ['/panel/inmobiliaria/beta'], module: null, dataTourTarget: 'sidebar-chat' },
 
     // ── LOS MÓDULOS ── los agentes arriba, y después el ciclo de vida del contrato.
     //

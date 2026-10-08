@@ -1045,6 +1045,7 @@
       "rentabilidad": "Profitability",
       "desempenoIa": "AI performance",
       "agenteDePagos": "Payments agent",
+      "calidadPublicaciones": "Quality",
       "agentesIa": "AI agents",
       "automatizacionIa": "AI automation",
       "riesgo": "Risk",
@@ -2922,6 +2923,53 @@
         "vigentes": "Active",
         "anulados": "Voided",
         "sinAnulados": "There are no voided charges this month."
+      },
+      "linksDePago": {
+        "titulo": "Payment links (Cobri)",
+        "descripcion": "Every installment of the month with the status of its payment link and the reminders Cobri already sent. Links go out on their own, 3 days before the due date, on the day and 3 days after; they are not sent on request.",
+        "mesAnterior": "Previous month",
+        "mesSiguiente": "Next month",
+        "mesTope": "There are no Cobri reminders further ahead yet.",
+        "filtroEstado": "Link status",
+        "todos": "All statuses",
+        "estado": {
+          "ninguno": "No link",
+          "enviado": "Sent",
+          "pagado": "Paid",
+          "vencido": "Expired",
+          "fallido": "Payment failed"
+        },
+        "detalle": {
+          "ninguno": "Cobri has not written about this installment yet.",
+          "enMora": "More than 3 days overdue: Cobri no longer writes about this installment; collections takes it.",
+          "enMoraPorOtra": "The tenant owes an earlier overdue installment: until then Cobri does not write to them; collections takes it.",
+          "pagada": "Already paid: Cobri has nothing to collect for this installment.",
+          "vencido": "The link expired unpaid. Cobri no longer writes about this installment: collections takes it from here.",
+          "fallido": "The tenant tried to pay and the payment gateway did not approve it."
+        },
+        "pagadoEl": "Paid on {{fecha}}",
+        "ultimoAviso": "Last reminder: {{fecha}}",
+        "hitos": {
+          "titulo": "Cobri reminders",
+          "antes": "3 days before",
+          "dia": "On the day",
+          "despues": "3 days after",
+          "enviado": "sent",
+          "sinEnviar": "not sent"
+        },
+        "columnas": {
+          "cuota": "Tenant and contract",
+          "vence": "Due",
+          "valor": "Amount",
+          "link": "Payment link"
+        },
+        "contrato": "Contract {{numero}}",
+        "verLink": "View the link",
+        "verLinkAria": "View {{inquilino}}'s payment link (opens in a new tab)",
+        "conteoUno": "1 installment",
+        "conteoVarios": "{{total}} installments",
+        "vacioTitulo": "No installments due in {{mes}}",
+        "vacioDescripcion": "Cobri works on contract installments: when a contract has an installment this month, it shows up here with the status of its link."
       }
     },
     "dispersiones": {
@@ -8616,14 +8664,14 @@
           "cobranza": "Collections",
           "cotizador": "Insurability",
           "conciliacion": "Reconciliation",
-          "pagos": "Payment-link collections",
+          "pagos": "Cobri · tenant collections",
           "estudio": "Candidate evaluation",
           "matching": "Matching",
           "avaluos": "Appraisals",
           "gerente": "Manager",
           "piloto": "Autopilot",
           "retencion": "Retention",
-          "calidad": "Listing quality",
+          "calidad": "Niti · quality",
           "prospectos": "Prospects",
           "aprobaciones": "Owner approvals",
           "mantenimiento": "Maintenance",
@@ -11065,6 +11113,99 @@
       "anularPagado": "A paid disbursement cannot be cancelled: the money already left the bank and the voucher is numbered. If it was returned, record it as income with your accountant; if the date is wrong, change it from the disbursement.",
       "anularAnulado": "This disbursement is already cancelled.",
       "anulado": "Disbursement cancelled. It is unpaid again."
+    },
+    "recaudo": {
+      "comparativa": {
+        "queEs": "the comparison with the previous month",
+        "fecha": "{{mes}} {{dia}}",
+        "vs": {
+          "cambio": "{{pct}} vs. {{fecha}}",
+          "igual": "Same as {{fecha}}",
+          "subio": "Up",
+          "bajo": "Down",
+          "sinComparacion": "No comparison with {{mes}}",
+          "noSePudoLeer": "Comparison with the previous month: could not be read",
+          "aEsaFecha": "On day {{dia}}: {{valor}}"
+        },
+        "diaADia": {
+          "titulo": "Day by day: {{mes}} vs. {{mesAnterior}}",
+          "descripcionEnCurso": "What came in through cash receipts, accumulated by day of the month. {{mesAnterior}} is shown in full; {{mes}}, up to today (day {{dia}}).",
+          "descripcionCerrado": "What came in through cash receipts, accumulated by day of the month, with both months in full.",
+          "resumen": "By day {{dia}} of {{mes}}, {{actual}} came in; by day {{diaAnterior}} of {{mesAnterior}}, {{anterior}} had come in.",
+          "sinRecibos": "No cash receipts in {{mes}} or {{mesAnterior}}: there are no lines to draw. Once a payment is recorded, it shows up here.",
+          "dia": "Day {{dia}}"
+        },
+        "proyeccion": {
+          "titulo": "Month-end projection",
+          "tituloCerrado": "Month close",
+          "sinDatos": "No data",
+          "formula": "Came in {{llego}} + still to fall due {{porVencer}} × {{tasa}} (what was paid within the month in {{meses}}) = {{cierre}}.",
+          "rango": "Between {{min}} and {{max}}: depending on the month, between {{peor}} and {{mejor}} of what fell due was paid.",
+          "historiaCorta": "With {{n}} of {{pedidos}} months of history: the others had no debt.",
+          "sinHistoria": "None of the previous {{pedidos}} months had debt, so there is no payment rate to measure and no projection.",
+          "sinHistoriaCifras": "So far {{llego}} came in and {{porVencer}} is still to fall due.",
+          "cerrado": "{{mes}} is closed: what came in is the close."
+        }
+      }
+    },
+    "calidad": {
+      "pestanas": {
+        "aria": "Publish or review quality",
+        "publicar": "Publish",
+        "calidad": "Quality"
+      },
+      "seccion": "AI agents",
+      "titulo": "Listing quality · Niti",
+      "listaAria": "Audited properties, from worst to best",
+      "descripcion": "Reviews your properties with the same «minimum to publish» rule as Portals, adds its own checks and suggests fixes. In Automatic it fixes the listing on its own with what it already has (with time for you to undo it); unpublishing or publishing on a portal always waits for your click. It never writes to the owner.",
+      "ultimaPasada": "Last run: {{fecha}}",
+      "sinPasada": "It hasn't done its first run yet.",
+      "queEsResumen": "the Niti summary",
+      "queEsLista": "the audited properties",
+      "queSon": "audited properties",
+      "puntajePromedio": "Average score",
+      "porArreglar": "Something to fix",
+      "porArreglarDe": "of {{total}}",
+      "fotosIA": "AI photo checks this month",
+      "fotosIARevisadas": "reviewed",
+      "fotosIAGasto": "Estimated spend {{gasto}} of {{tope}}",
+      "apagadoTitulo": "Leasefy's technical team turns it on",
+      "apagadoDescripcion": "Until then it doesn't audit your properties or suggest fixes. Once it's on, you'll see your properties here from worst to best: what they need before publishing, their issues and the photos it flags.",
+      "errorPasadaTitulo": "Niti's last run failed",
+      "filtroAria": "Filter audited properties",
+      "filtro": {
+        "todos": "All",
+        "con_problemas": "Something to fix",
+        "posible_tomado": "Possibly taken",
+        "fotos": "Flagged photos"
+      },
+      "conteoUno": "1 property",
+      "conteoVarios": "{{total}} properties",
+      "vacioTitulo": "Niti hasn't audited any property yet",
+      "vacioDescripcion": "It reviews published properties, those about to be published and rented ones with notice. When its run ends, they show up here from worst to best.",
+      "motivo": {
+        "publicado": "Published",
+        "por_publicar": "To publish",
+        "arrendado_con_preaviso": "Rented with notice"
+      },
+      "negocio": {
+        "arriendo": "Rent",
+        "venta": "Sale"
+      },
+      "puntajeAria": "Score {{n}} out of 100",
+      "posibleTomado": "Possibly taken",
+      "posibleTomadoDetalle": "It is published but rented without notice: the listing offers something that isn't available.",
+      "queFalta": "Missing to publish",
+      "problemas": "Issues",
+      "fotos": "Flagged photos",
+      "propuestas": "Niti's suggestions",
+      "abrirFicha": "Open property",
+      "aprobarYAplicar": "Approve and apply",
+      "despublicar": "Unpublish",
+      "marcarHecha": "Mark as done",
+      "rechazar": "Reject",
+      "decisionSinMensaje": "Done.",
+      "decisionFallo": "Could not save the decision: {{error}}"
     }
   },
   "validation": {

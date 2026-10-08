@@ -15,6 +15,7 @@
 import Link from 'next/link'
 import { DesgloseDelPuntaje, POR_QUE_EN_COBRANZA, PuntajeDeVinci, fechaYHora } from '@/components/retencion/vinci'
 import type { CasoEnLaRenovacion, RiesgoDeRetencion } from '@/lib/types/retencion'
+import { casoDeRetencion } from '@/lib/nav/rutas-de-retencion'
 
 function Caso({ titulo, caso }: { titulo: string; caso: CasoEnLaRenovacion | null }) {
   return (
@@ -72,7 +73,7 @@ export function RiesgoEnLaRenovacion({
       ) : null}
       {riesgo && contractId && riesgo.inquilino ? (
         <Link
-          href={`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(`inquilino:${contractId}`)}`}
+          href={casoDeRetencion(`inquilino:${contractId}`)}
           className="text-sm font-medium text-primary hover:underline"
         >
           Ver el caso en Retención

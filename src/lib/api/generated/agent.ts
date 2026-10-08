@@ -8362,15 +8362,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/agency/{agencyId}/calidad/publicaciones": {
+    "/api/agency/{agencyId}/calidad/resumen": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Cola de calidad de publicaciones (worst-first). */
-        get: operations["listCalidadPublicaciones"];
+        /** Niti · calidad: resumen de la última pasada (siempre 200; activo=false si está apagado). */
+        get: operations["getCalidadResumen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/calidad/inmuebles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Niti · calidad: los inmuebles de peor a mejor puntaje, con qué falta, problemas, fotos y propuestas. */
+        get: operations["listCalidadInmuebles"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8386,7 +8403,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Cola de propuestas de corrección. */
+        /** Niti · calidad: propuestas y tareas (por defecto, las que esperan decisión). */
         get: operations["listCalidadPropuestas"];
         put?: never;
         post?: never;
@@ -8405,25 +8422,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Aprobar o rechazar una propuesta (aprobación humana). */
+        /** Niti · calidad: aprobar (aplica o marca hecha) o rechazar una propuesta. */
         post: operations["decideCalidadPropuesta"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/calidad/estado": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Resumen de calidad + propuestas por estado. */
-        get: operations["getCalidadEstado"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8437,28 +8437,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Config de calidad efectiva de la agencia. */
+        /** Niti · calidad: configuración efectiva de la agencia (la regla D-01 no se configura acá). */
         get: operations["getCalidadConfig"];
-        /** Calibrar umbrales de calidad de la agencia. */
+        /** Niti · calidad: calibrar los extras (precio, comparables, descripción) y el tope de IA de la agencia. */
         put: operations["putCalidadConfig"];
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/agency/{agencyId}/calidad/propietario/respuesta": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Ingesta la respuesta del propietario (disponibilidad / cambios). */
-        post: operations["ingestCalidadPropietario"];
         delete?: never;
         options?: never;
         head?: never;
@@ -15998,43 +15981,90 @@ export interface components {
         ProspectosPrioridadError: {
             error: string;
         };
-        CalidadPublicacionResponse: {
-            cola: {
-                consignacionId: string;
-                qualityScore: number | null;
-                issues: {
-                    code: string;
-                    severity: string;
-                    campo?: string;
-                    detalle: string;
-                }[];
-                lastAuditedAt: string | null;
+        CalidadResumen: {
+            activo: boolean;
+            nombre: string;
+            ultimaPasada: string | null;
+            errorDeLaUltimaPasada: string | null;
+            inmueblesAuditados: number;
+            conProblemas: number;
+            puntajePromedio: number | null;
+            fotosIA: {
+                activo: boolean;
+                revisadasEsteMes: number;
+                gastoEstimadoUsdEsteMes: number;
+                topeUsdMes: number;
+            };
+        };
+        CalidadInmueble: {
+            propertyId: string;
+            codigo: number | null;
+            titulo: string | null;
+            barrio: string | null;
+            ciudad: string | null;
+            /** @enum {string} */
+            tipoDeNegocio: "arriendo" | "venta";
+            motivo: string;
+            puntaje: number;
+            posibleTomado: boolean;
+            falta: {
+                campo: string;
+                que: string;
             }[];
+            problemas: {
+                codigo: string;
+                severidad: string;
+                texto: string;
+            }[];
+            fotosSenaladas: {
+                fotoId: string;
+                url: string;
+                motivo: string;
+            }[];
+            propuestas: {
+                id: string;
+                tipo: string;
+                texto: string;
+                accion: string;
+            }[];
+            auditadoEn: string | null;
+            href: string;
+        };
+        CalidadInmuebles: {
+            items: components["schemas"]["CalidadInmueble"][];
             total: number;
-            generatedAt: string;
+            page: number;
+            limit: number;
         };
         CalidadPublicacionError: {
             error: string;
+            mensaje: string;
         };
         CalidadPropuesta: {
             id: string;
-            consignacionId: string;
-            issueCode: string;
+            propertyId: string | null;
+            tipo: string | null;
             accion: string;
-            campo: string | null;
+            texto: string | null;
             estado: string;
+            estadoEnPalabras: string;
+            motivo: string | null;
             createdAt: string | null;
         };
         CalidadV2Error: {
             error: string;
+            mensaje: string;
+        };
+        CalidadDecision: {
+            id: string;
+            estado: string;
+            mensaje: string;
         };
         CalidadConfig: {
-            requiredFields?: string[];
-            minPhotos?: number;
             priceTolerancePct?: number;
-            staleListingDays?: number;
-            ownerContactCadenceDays?: number;
-            channelPriceTolerancePct?: number;
+            minComparables?: number;
+            descripcionMinima?: number;
+            visionTopeUsdMes?: number | null;
         };
         MantenimientoKpis: {
             ticketsAbiertos: number;
@@ -36669,10 +36699,34 @@ export interface operations {
             };
         };
     };
-    listCalidadPublicaciones: {
+    getCalidadResumen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Resumen */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalidadResumen"];
+                };
+            };
+        };
+    };
+    listCalidadInmuebles: {
         parameters: {
             query?: {
+                page?: number;
                 limit?: number;
+                filtro?: "todos" | "con_problemas" | "posible_tomado" | "fotos";
             };
             header?: never;
             path: {
@@ -36682,26 +36736,17 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Cola de calidad */
+            /** @description Inmuebles */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CalidadPublicacionResponse"];
+                    "application/json": components["schemas"]["CalidadInmuebles"];
                 };
             };
-            /** @description Feature no habilitada */
+            /** @description Niti apagado para esta inmobiliaria */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CalidadPublicacionError"];
-                };
-            };
-            /** @description DB no disponible */
-            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -36714,7 +36759,7 @@ export interface operations {
     listCalidadPropuestas: {
         parameters: {
             query?: {
-                estado?: string;
+                estado?: "propuesta" | "aplicada" | "fallida" | "rechazada" | "resuelta" | "hecha";
                 limit?: number;
             };
             header?: never;
@@ -36737,7 +36782,7 @@ export interface operations {
                     };
                 };
             };
-            /** @description Feature no habilitada */
+            /** @description Niti apagado */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -36767,20 +36812,25 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Resultado */
+            /** @description Decidida (aplicada, fallida, rechazada, hecha o de vuelta a propuesta) */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        ok: boolean;
-                        estado?: string;
-                        reason?: string;
-                    };
+                    "application/json": components["schemas"]["CalidadDecision"];
                 };
             };
-            /** @description Feature no habilitada */
+            /** @description No se sabe quién aprueba */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalidadV2Error"];
+                };
+            };
+            /** @description No existe en esta inmobiliaria, o Niti apagado */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -36789,42 +36839,26 @@ export interface operations {
                     "application/json": components["schemas"]["CalidadV2Error"];
                 };
             };
-        };
-    };
-    getCalidadEstado: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Resumen */
-            200: {
+            /** @description Ya no espera decisión */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        totalAudited: number;
-                        avgScore: number | null;
-                        criticos: number;
-                        posibleTomado: number;
-                        porCodigo: {
-                            [key: string]: number;
-                        };
-                        propuestasPorEstado: {
-                            [key: string]: number;
-                        };
-                        generatedAt: string;
-                    };
+                    "application/json": components["schemas"]["CalidadV2Error"];
                 };
             };
-            /** @description Feature no habilitada */
-            404: {
+            /** @description El back no respondió */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalidadV2Error"];
+                };
+            };
+            /** @description El micro no está conectado al back */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -36854,7 +36888,7 @@ export interface operations {
                     "application/json": components["schemas"]["CalidadConfig"];
                 };
             };
-            /** @description Feature no habilitada */
+            /** @description Niti apagado */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -36889,52 +36923,7 @@ export interface operations {
                     "application/json": components["schemas"]["CalidadConfig"];
                 };
             };
-            /** @description Feature no habilitada */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CalidadV2Error"];
-                };
-            };
-        };
-    };
-    ingestCalidadPropietario: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": {
-                    /** Format: uuid */
-                    consignacionId: string;
-                    /** @enum {string} */
-                    status?: "available" | "rented" | "unknown";
-                    changesRequirePhotos?: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description Ingerido */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        updated: boolean;
-                        proposedPause: boolean;
-                        tasksEmitted: number;
-                    };
-                };
-            };
-            /** @description Feature no habilitada */
+            /** @description Niti apagado */
             404: {
                 headers: {
                     [name: string]: unknown;

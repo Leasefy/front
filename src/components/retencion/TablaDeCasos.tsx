@@ -15,8 +15,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatCurrency } from '@/lib/format'
 import { PuntajeDeVinci, QUIEN } from '@/components/retencion/vinci'
 import type { CasoDeVinci, PlanDelCaso } from '@/lib/types/retencion'
+import { casoDeRetencion } from '@/lib/nav/rutas-de-retencion'
 
-export const hrefDelCaso = (caseId: string) => `/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(caseId)}`
+export const hrefDelCaso = (caseId: string) => casoDeRetencion(caseId)
 
 /** El estado del plan en palabras (el micro manda `activo` | `logrado` | `perdido` | `cancelado`). */
 export const ESTADO_DEL_PLAN: Record<string, string> = {

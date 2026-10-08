@@ -53,6 +53,9 @@ import {
 } from '@/components/retencion/vinci'
 import { CabeceraDeVinci, FranjaDeVinci, TarjetaDeVinci } from '@/components/retencion/piezas'
 import type { CasoDeVinci, OfertaDeVinci, Poblacion, TipoDeOferta } from '@/lib/types/retencion'
+import { RETENCION_RIESGO } from '@/lib/nav/rutas-de-retencion'
+import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
+import { esRetencionApagada } from '@/lib/api/retencion'
 
 const OFERTAS_POR_POBLACION: Record<Poblacion, TipoDeOferta[]> = {
   inquilino: ['llamada_del_asesor', 'visita_del_asesor', 'resolver_pendiente', 'congelar_incremento', 'bajar_incremento'],
@@ -428,12 +431,22 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
   const caso = data?.casos.find((c) => c.caseId === caseId) ?? null
   const fin = caso ? finMasCercano(caso) : null
 
+  // 🔴 IA-C-01 (QA 04-10): apagada no hay caso; se dice, con la salida a la lista.
+  if (esRetencionApagada(error)) {
+    return (
+      <div className="mx-auto max-w-7xl space-y-5 p-6 lg:p-8">
+        <VolverALaLista href={RETENCION_RIESGO} label="Volver a los casos" />
+        <RetencionApagada />
+      </div>
+    )
+  }
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-6 lg:p-8">
       <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="el caso" onReintentar={() => refetch()} principal>
         {data && !caso ? (
           <>
-            <VolverALaLista href="/panel/inmobiliaria/contratos/riesgo" label="Volver a los casos" />
+            <VolverALaLista href={RETENCION_RIESGO} label="Volver a los casos" />
             <div className="rounded-lg border border-border bg-card">
               <SinDatos
                 queSon="casos"
@@ -447,7 +460,7 @@ export default function CasoDetailClient({ caseId }: { caseId: string }) {
         {caso ? (
           <div className="space-y-6">
             <CabeceraDeVinci
-              antes={<VolverALaLista href="/panel/inmobiliaria/contratos/riesgo" label="Volver a los casos" className="mb-3" />}
+              antes={<VolverALaLista href={RETENCION_RIESGO} label="Volver a los casos" className="mb-3" />}
               titulo={
                 <span className="flex flex-wrap items-center gap-3">
                   {caso.nombre ?? 'Sin nombre registrado'}

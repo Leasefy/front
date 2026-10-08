@@ -84,7 +84,7 @@ export interface InvitarAlEquipoProps {
   cargando: boolean;
   error: unknown;
   /** Devuelve la promesa del reintento: «Intentar de nuevo» queda ocupado mientras dura. */
-  onReintentar: () => unknown;
+  onReintentar: () => void | Promise<unknown>;
   /** Recargar el equipo después de invitar, reenviar o cancelar. */
   onCambio: () => unknown;
   /** Sólo el administrador invita (`agenciaQueAdministra` en el back). */

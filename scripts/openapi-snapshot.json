@@ -165,7 +165,7 @@
     },
     {
       "name": "calidad-publicacion",
-      "description": "Niti · calidad (calidad de publicación): auditoría de fichas publicadas, propuestas de corrección con decisión humana, estado y configuración por agencia, e ingreso de la respuesta del propietario. Flag: CALIDAD_PUBLICACION_ENABLED."
+      "description": "Niti · calidad: resumen y lista de la pestaña Calidad (Inmuebles › Portales), propuestas que se aplican con el clic de una persona (el back aplica con aprobadoPor) y configuración por agencia. Interruptor por agencia: CALIDAD_PUBLICACION_ENABLED."
     },
     {
       "name": "portal-propietario",
@@ -28219,74 +28219,260 @@
           "error"
         ]
       },
-      "CalidadPublicacionResponse": {
+      "CalidadResumen": {
         "type": "object",
         "properties": {
-          "cola": {
+          "activo": {
+            "type": "boolean"
+          },
+          "nombre": {
+            "type": "string"
+          },
+          "ultimaPasada": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "errorDeLaUltimaPasada": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "inmueblesAuditados": {
+            "type": "integer"
+          },
+          "conProblemas": {
+            "type": "integer"
+          },
+          "puntajePromedio": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "fotosIA": {
+            "type": "object",
+            "properties": {
+              "activo": {
+                "type": "boolean"
+              },
+              "revisadasEsteMes": {
+                "type": "integer"
+              },
+              "gastoEstimadoUsdEsteMes": {
+                "type": "number"
+              },
+              "topeUsdMes": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "activo",
+              "revisadasEsteMes",
+              "gastoEstimadoUsdEsteMes",
+              "topeUsdMes"
+            ]
+          }
+        },
+        "required": [
+          "activo",
+          "nombre",
+          "ultimaPasada",
+          "errorDeLaUltimaPasada",
+          "inmueblesAuditados",
+          "conProblemas",
+          "puntajePromedio",
+          "fotosIA"
+        ]
+      },
+      "CalidadInmueble": {
+        "type": "object",
+        "properties": {
+          "propertyId": {
+            "type": "string"
+          },
+          "codigo": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "titulo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "barrio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ciudad": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tipoDeNegocio": {
+            "type": "string",
+            "enum": [
+              "arriendo",
+              "venta"
+            ]
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "puntaje": {
+            "type": "integer"
+          },
+          "posibleTomado": {
+            "type": "boolean"
+          },
+          "falta": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "consignacionId": {
+                "campo": {
                   "type": "string"
                 },
-                "qualityScore": {
-                  "type": [
-                    "number",
-                    "null"
-                  ]
-                },
-                "issues": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "code": {
-                        "type": "string"
-                      },
-                      "severity": {
-                        "type": "string"
-                      },
-                      "campo": {
-                        "type": "string"
-                      },
-                      "detalle": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "code",
-                      "severity",
-                      "detalle"
-                    ]
-                  }
-                },
-                "lastAuditedAt": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
+                "que": {
+                  "type": "string"
                 }
               },
               "required": [
-                "consignacionId",
-                "qualityScore",
-                "issues",
-                "lastAuditedAt"
+                "campo",
+                "que"
               ]
+            }
+          },
+          "problemas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "codigo": {
+                  "type": "string"
+                },
+                "severidad": {
+                  "type": "string"
+                },
+                "texto": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "codigo",
+                "severidad",
+                "texto"
+              ]
+            }
+          },
+          "fotosSenaladas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fotoId": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "motivo": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "fotoId",
+                "url",
+                "motivo"
+              ]
+            }
+          },
+          "propuestas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "tipo": {
+                  "type": "string"
+                },
+                "texto": {
+                  "type": "string"
+                },
+                "accion": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "tipo",
+                "texto",
+                "accion"
+              ]
+            }
+          },
+          "auditadoEn": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "href": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "propertyId",
+          "codigo",
+          "titulo",
+          "barrio",
+          "ciudad",
+          "tipoDeNegocio",
+          "motivo",
+          "puntaje",
+          "posibleTomado",
+          "falta",
+          "problemas",
+          "fotosSenaladas",
+          "propuestas",
+          "auditadoEn",
+          "href"
+        ]
+      },
+      "CalidadInmuebles": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CalidadInmueble"
             }
           },
           "total": {
             "type": "integer"
           },
-          "generatedAt": {
-            "type": "string"
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
           }
         },
         "required": [
-          "cola",
+          "items",
           "total",
-          "generatedAt"
+          "page",
+          "limit"
         ]
       },
       "CalidadPublicacionError": {
@@ -28294,10 +28480,14 @@
         "properties": {
           "error": {
             "type": "string"
+          },
+          "mensaje": {
+            "type": "string"
           }
         },
         "required": [
-          "error"
+          "error",
+          "mensaje"
         ]
       },
       "CalidadPropuesta": {
@@ -28306,16 +28496,22 @@
           "id": {
             "type": "string"
           },
-          "consignacionId": {
-            "type": "string"
+          "propertyId": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
-          "issueCode": {
-            "type": "string"
+          "tipo": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "accion": {
             "type": "string"
           },
-          "campo": {
+          "texto": {
             "type": [
               "string",
               "null"
@@ -28323,6 +28519,15 @@
           },
           "estado": {
             "type": "string"
+          },
+          "estadoEnPalabras": {
+            "type": "string"
+          },
+          "motivo": {
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "createdAt": {
             "type": [
@@ -28333,11 +28538,13 @@
         },
         "required": [
           "id",
-          "consignacionId",
-          "issueCode",
+          "propertyId",
+          "tipo",
           "accion",
-          "campo",
+          "texto",
           "estado",
+          "estadoEnPalabras",
+          "motivo",
           "createdAt"
         ]
       },
@@ -28346,35 +28553,56 @@
         "properties": {
           "error": {
             "type": "string"
+          },
+          "mensaje": {
+            "type": "string"
           }
         },
         "required": [
-          "error"
+          "error",
+          "mensaje"
+        ]
+      },
+      "CalidadDecision": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string"
+          },
+          "mensaje": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "estado",
+          "mensaje"
         ]
       },
       "CalidadConfig": {
         "type": "object",
         "properties": {
-          "requiredFields": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "minPhotos": {
-            "type": "number"
-          },
           "priceTolerancePct": {
-            "type": "number"
+            "type": "number",
+            "exclusiveMinimum": 0
           },
-          "staleListingDays": {
-            "type": "number"
+          "minComparables": {
+            "type": "integer",
+            "minimum": 1
           },
-          "ownerContactCadenceDays": {
-            "type": "number"
+          "descripcionMinima": {
+            "type": "integer",
+            "minimum": 0
           },
-          "channelPriceTolerancePct": {
-            "type": "number"
+          "visionTopeUsdMes": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
           }
         }
       },
@@ -74699,10 +74927,49 @@
         }
       }
     },
-    "/api/agency/{agencyId}/calidad/publicaciones": {
+    "/api/agency/{agencyId}/calidad/resumen": {
       "get": {
-        "operationId": "listCalidadPublicaciones",
-        "summary": "Cola de calidad de publicaciones (worst-first).",
+        "operationId": "getCalidadResumen",
+        "summary": "Niti · calidad: resumen de la última pasada (siempre 200; activo=false si está apagado).",
+        "tags": [
+          "agency",
+          "calidad-publicacion"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "example": "11111111-1111-4111-8111-111111111111"
+            },
+            "required": true,
+            "name": "agencyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resumen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalidadResumen"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agency/{agencyId}/calidad/inmuebles": {
+      "get": {
+        "operationId": "listCalidadInmuebles",
+        "summary": "Niti · calidad: los inmuebles de peor a mejor puntaje, con qué falta, problemas, fotos y propuestas.",
         "tags": [
           "agency",
           "calidad-publicacion"
@@ -74727,37 +74994,52 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
-              "maximum": 500,
-              "default": 100
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
             },
             "required": false,
             "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "todos",
+                "con_problemas",
+                "posible_tomado",
+                "fotos"
+              ],
+              "default": "todos"
+            },
+            "required": false,
+            "name": "filtro",
             "in": "query"
           }
         ],
         "responses": {
           "200": {
-            "description": "Cola de calidad",
+            "description": "Inmuebles",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CalidadPublicacionResponse"
+                  "$ref": "#/components/schemas/CalidadInmuebles"
                 }
               }
             }
           },
           "404": {
-            "description": "Feature no habilitada",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CalidadPublicacionError"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "DB no disponible",
+            "description": "Niti apagado para esta inmobiliaria",
             "content": {
               "application/json": {
                 "schema": {
@@ -74772,7 +75054,7 @@
     "/api/agency/{agencyId}/calidad/propuestas": {
       "get": {
         "operationId": "listCalidadPropuestas",
-        "summary": "Cola de propuestas de corrección.",
+        "summary": "Niti · calidad: propuestas y tareas (por defecto, las que esperan decisión).",
         "tags": [
           "agency",
           "calidad-publicacion"
@@ -74795,7 +75077,16 @@
           },
           {
             "schema": {
-              "type": "string"
+              "type": "string",
+              "enum": [
+                "propuesta",
+                "aplicada",
+                "fallida",
+                "rechazada",
+                "resuelta",
+                "hecha"
+              ],
+              "default": "propuesta"
             },
             "required": false,
             "name": "estado",
@@ -74840,7 +75131,7 @@
             }
           },
           "404": {
-            "description": "Feature no habilitada",
+            "description": "Niti apagado",
             "content": {
               "application/json": {
                 "schema": {
@@ -74855,7 +75146,7 @@
     "/api/agency/{agencyId}/calidad/propuestas/{correctionId}/decision": {
       "post": {
         "operationId": "decideCalidadPropuesta",
-        "summary": "Aprobar o rechazar una propuesta (aprobación humana).",
+        "summary": "Niti · calidad: aprobar (aplica o marca hecha) o rechazar una propuesta.",
         "tags": [
           "agency",
           "calidad-publicacion"
@@ -74909,31 +75200,17 @@
         },
         "responses": {
           "200": {
-            "description": "Resultado",
+            "description": "Decidida (aplicada, fallida, rechazada, hecha o de vuelta a propuesta)",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "ok": {
-                      "type": "boolean"
-                    },
-                    "estado": {
-                      "type": "string"
-                    },
-                    "reason": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "ok"
-                  ]
+                  "$ref": "#/components/schemas/CalidadDecision"
                 }
               }
             }
           },
-          "404": {
-            "description": "Feature no habilitada",
+          "401": {
+            "description": "No se sabe quién aprueba",
             "content": {
               "application/json": {
                 "schema": {
@@ -74941,89 +75218,39 @@
                 }
               }
             }
-          }
-        }
-      }
-    },
-    "/api/agency/{agencyId}/calidad/estado": {
-      "get": {
-        "operationId": "getCalidadEstado",
-        "summary": "Resumen de calidad + propuestas por estado.",
-        "tags": [
-          "agency",
-          "calidad-publicacion"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "example": "11111111-1111-4111-8111-111111111111"
-            },
-            "required": true,
-            "name": "agencyId",
-            "in": "path"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Resumen",
+          },
+          "404": {
+            "description": "No existe en esta inmobiliaria, o Niti apagado",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "totalAudited": {
-                      "type": "integer"
-                    },
-                    "avgScore": {
-                      "type": [
-                        "number",
-                        "null"
-                      ]
-                    },
-                    "criticos": {
-                      "type": "integer"
-                    },
-                    "posibleTomado": {
-                      "type": "integer"
-                    },
-                    "porCodigo": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "number"
-                      }
-                    },
-                    "propuestasPorEstado": {
-                      "type": "object",
-                      "additionalProperties": {
-                        "type": "number"
-                      }
-                    },
-                    "generatedAt": {
-                      "type": "string"
-                    }
-                  },
-                  "required": [
-                    "totalAudited",
-                    "avgScore",
-                    "criticos",
-                    "posibleTomado",
-                    "porCodigo",
-                    "propuestasPorEstado",
-                    "generatedAt"
-                  ]
+                  "$ref": "#/components/schemas/CalidadV2Error"
                 }
               }
             }
           },
-          "404": {
-            "description": "Feature no habilitada",
+          "409": {
+            "description": "Ya no espera decisión",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalidadV2Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "El back no respondió",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalidadV2Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "El micro no está conectado al back",
             "content": {
               "application/json": {
                 "schema": {
@@ -75038,7 +75265,7 @@
     "/api/agency/{agencyId}/calidad/config": {
       "get": {
         "operationId": "getCalidadConfig",
-        "summary": "Config de calidad efectiva de la agencia.",
+        "summary": "Niti · calidad: configuración efectiva de la agencia (la regla D-01 no se configura acá).",
         "tags": [
           "agency",
           "calidad-publicacion"
@@ -75072,7 +75299,7 @@
             }
           },
           "404": {
-            "description": "Feature no habilitada",
+            "description": "Niti apagado",
             "content": {
               "application/json": {
                 "schema": {
@@ -75085,7 +75312,7 @@
       },
       "put": {
         "operationId": "putCalidadConfig",
-        "summary": "Calibrar umbrales de calidad de la agencia.",
+        "summary": "Niti · calidad: calibrar los extras (precio, comparables, descripción) y el tope de IA de la agencia.",
         "tags": [
           "agency",
           "calidad-publicacion"
@@ -75128,101 +75355,7 @@
             }
           },
           "404": {
-            "description": "Feature no habilitada",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CalidadV2Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/agency/{agencyId}/calidad/propietario/respuesta": {
-      "post": {
-        "operationId": "ingestCalidadPropietario",
-        "summary": "Ingesta la respuesta del propietario (disponibilidad / cambios).",
-        "tags": [
-          "agency",
-          "calidad-publicacion"
-        ],
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "format": "uuid",
-              "example": "11111111-1111-4111-8111-111111111111"
-            },
-            "required": true,
-            "name": "agencyId",
-            "in": "path"
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "consignacionId": {
-                    "type": "string",
-                    "format": "uuid"
-                  },
-                  "status": {
-                    "type": "string",
-                    "enum": [
-                      "available",
-                      "rented",
-                      "unknown"
-                    ]
-                  },
-                  "changesRequirePhotos": {
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "consignacionId"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Ingerido",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "updated": {
-                      "type": "boolean"
-                    },
-                    "proposedPause": {
-                      "type": "boolean"
-                    },
-                    "tasksEmitted": {
-                      "type": "integer"
-                    }
-                  },
-                  "required": [
-                    "updated",
-                    "proposedPause",
-                    "tasksEmitted"
-                  ]
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Feature no habilitada",
+            "description": "Niti apagado",
             "content": {
               "application/json": {
                 "schema": {

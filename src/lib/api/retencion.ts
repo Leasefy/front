@@ -1,15 +1,22 @@
 /**
  * Cliente de Vinci (retención). Llama al micro
- * `${NEXT_PUBLIC_AGENT_URL}/api/agency/:agencyId/retencion/*` con el bearer
- * (`agentAuthHeaders`).
+ * `${NEXT_PUBLIC_AGENT_URL}/api/agency/:agencyId/retencion/*` con `agentFetch`
+ * (el bearer y el reintento cuando el token se renueva).
  *
  * 🔴 26-09-2026 — SIN DATOS DE EJEMPLO. Este cliente caía a un mock
  * (`mock-retencion.ts`) ante cualquier error, 404 o flag apagado, y la
  * pantalla decía «las rutas no están montadas» aunque sí lo estaban. Ahora
- * un error es un error (con su código y su frase) y la pantalla lo dice; un
- * 404 con Vinci apagado se lee como «Vinci no está encendido», no como datos.
+ * un error es un error (con su código y su frase) y la pantalla lo dice.
+ *
+ * 🔴 Con las reglas de bugs-nico-1 (QA 04-10, IA-C-01; tanda 2 de errores):
+ *  · el 404 «no está habilitado» del micro (o sin micro configurado) es
+ *    `RetencionApagadaError`: la pantalla pinta `RetencionApagada` («no está
+ *    activada todavía»), nunca el texto del micro, que nombra su variable;
+ *  · cualquier otro fallo es un `ErrorDeVinci`, que es un `ApiError`: lo lee
+ *    `EstadoDeDatos` (con reintentar) y el traductor de errores.
  */
-import { agentAuthHeaders } from '@/lib/api/agent-auth'
+import { ApiError } from '@/lib/api/client'
+import { agentFetch } from '@/lib/api/agent-fetch'
 import type {
   ColaDeVinci,
   DecisionDeVinci,
@@ -24,32 +31,63 @@ import type {
   UmbralDeVinci,
 } from '@/lib/types/retencion'
 
-/** Un fallo de Vinci con el código HTTP y la frase que devolvió el micro. */
-export class ErrorDeVinci extends Error {
-  constructor(
-    readonly status: number,
-    mensaje: string,
-    readonly code: string | null = null,
-  ) {
-    super(mensaje)
+/** Un fallo de Vinci con el código HTTP, el `code` y la frase que devolvió el micro. */
+export class ErrorDeVinci extends ApiError {
+  constructor(status: number, mensaje: string, code: string | null = null, cuerpo?: Record<string, unknown>) {
+    super(status, mensaje, code ?? undefined, cuerpo)
     this.name = 'ErrorDeVinci'
   }
 }
 
+/** Vinci (Retención) no está activado para esta inmobiliaria: lo prende Leasefy. */
+export class RetencionApagadaError extends ErrorDeVinci {
+  constructor() {
+    super(404, 'Retención no está activada todavía para tu inmobiliaria.', 'RETENCION_NO_HABILITADA')
+    this.name = 'RetencionApagadaError'
+  }
+}
+
+export function esRetencionApagada(err: unknown): err is RetencionApagadaError {
+  return err instanceof RetencionApagadaError
+}
+
+/** El micro apaga todas las rutas de Vinci con un 404 «… no está habilitado …». */
+export function esCuerpoDeRetencionApagada(status: number, cuerpo: unknown): boolean {
+  if (status !== 404 || !cuerpo || typeof cuerpo !== 'object') return false
+  const c = cuerpo as Record<string, unknown>
+  if (c.code === 'RETENCION_NO_HABILITADA') return true
+  const texto = [c.error, c.message].filter((x): x is string => typeof x === 'string').join(' ')
+  return /no est[aá] habilitad/i.test(texto)
+}
+
 function base(agencyId: string): string {
   const url = process.env.NEXT_PUBLIC_AGENT_URL
-  if (!url) throw new ErrorDeVinci(0, 'El panel no tiene configurada la dirección del agente (NEXT_PUBLIC_AGENT_URL).')
+  // Sin micro configurado no hay Vinci: es lo mismo que apagado.
+  if (!url) throw new RetencionApagadaError()
   return `${url}/api/agency/${encodeURIComponent(agencyId)}/retencion`
 }
 
+/** La frase para una persona: el `message` del sobre, o el `error` del cuerpo viejo si es una frase. */
+function fraseDelCuerpo(cuerpo: Record<string, unknown> | null, status: number): string {
+  const m = cuerpo?.message
+  if (Array.isArray(m) && m.length) return m.map(String).join(' ')
+  if (typeof m === 'string' && m.trim()) return m
+  const e = cuerpo?.error
+  if (typeof e === 'string' && /\s/.test(e.trim())) return e
+  return `El agente respondió ${status}.`
+}
+
 async function pedir<T>(url: string, init: RequestInit = {}): Promise<T> {
-  const res = await globalThis.fetch(url, {
+  const res = await agentFetch(url, {
     ...init,
-    headers: agentAuthHeaders(init.body ? { 'content-type': 'application/json' } : undefined),
+    headers: init.body ? { 'content-type': 'application/json' } : undefined,
   })
   if (!res.ok) {
-    const cuerpo = (await res.json().catch(() => null)) as { error?: string; code?: string } | null
-    throw new ErrorDeVinci(res.status, cuerpo?.error ?? `El agente respondió ${res.status}.`, cuerpo?.code ?? null)
+    const leido = (await res.json().catch(() => null)) as unknown
+    const cuerpo = leido && typeof leido === 'object' && !Array.isArray(leido) ? (leido as Record<string, unknown>) : null
+    if (esCuerpoDeRetencionApagada(res.status, cuerpo)) throw new RetencionApagadaError()
+    const code = typeof cuerpo?.code === 'string' ? cuerpo.code : null
+    throw new ErrorDeVinci(res.status, fraseDelCuerpo(cuerpo, res.status), code, cuerpo ?? undefined)
   }
   return (await res.json()) as T
 }

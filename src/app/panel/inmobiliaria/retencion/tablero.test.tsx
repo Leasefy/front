@@ -152,7 +152,7 @@ describe('tablero de Vinci', () => {
     act(() => root.render(<RetencionDashboardPage />))
     const aviso = container.querySelector('[data-testid="vinci-por-aprobar-aviso"]')
     expect(aviso?.textContent).toContain('2 decisiones de Vinci esperan tu clic.')
-    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/contratos/aprobar')
+    expect(aviso?.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/retencion/aprobar')
   })
 
   it('el umbral lo edita sólo el administrador', () => {

@@ -48,6 +48,9 @@ import { NOMBRE_DEL_MODO, QUE_HACE_EN_CADA_MODO, fechaYHora } from '@/components
 import { CabeceraDeVinci, FranjaDeVinci, TarjetaDeVinci } from '@/components/retencion/piezas'
 import { TablaDeCasos } from '@/components/retencion/TablaDeCasos'
 import type { MetricasDeVinci, RiesgoDeVinci } from '@/lib/types/retencion'
+import { RETENCION_APROBAR, RETENCION_RIESGO } from '@/lib/nav/rutas-de-retencion'
+import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
+import { esRetencionApagada } from '@/lib/api/retencion'
 
 const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`
 
@@ -269,6 +272,17 @@ export default function RetencionDashboardPage() {
   const lr = m ? retenidos(m) : null
   const conCobranza = typeof r?.enCobranza === 'number'
 
+  // 🔴 IA-C-01 (QA 04-10): apagada no hay tablero —antes caía a uno inventado—
+  // ni se pinta el texto del micro (nombra su variable): se dice qué haría.
+  if (esRetencionApagada(riesgo.error)) {
+    return (
+      <div className="space-y-6 p-6 lg:p-8">
+        <CabeceraDeVinci titulo="Retención" />
+        <RetencionApagada />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6 p-6 lg:p-8">
       <CabeceraDeVinci
@@ -341,7 +355,7 @@ export default function RetencionDashboardPage() {
         <AlertaAccionable
           severidad="info"
           titulo={`${plural(pendientes, 'decisión de Vinci espera', 'decisiones de Vinci esperan')} tu clic.`}
-          accion={{ label: 'Revisarlas', href: '/panel/inmobiliaria/contratos/aprobar' }}
+          accion={{ label: 'Revisarlas', href: RETENCION_APROBAR }}
           data-testid="vinci-por-aprobar-aviso"
         >
           Propuestas, mensajes listos y ofertas que cuestan plata: nada sale sin ti.
@@ -360,7 +374,7 @@ export default function RetencionDashboardPage() {
           }
           accion={
             <Button asChild variant="secondary" size="sm" hideArrow>
-              <Link href="/panel/inmobiliaria/contratos/riesgo">Ver todos los casos</Link>
+              <Link href={RETENCION_RIESGO}>Ver todos los casos</Link>
             </Button>
           }
           cuerpo={false}

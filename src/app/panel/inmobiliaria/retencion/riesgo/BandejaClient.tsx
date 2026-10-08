@@ -25,6 +25,8 @@ import { fechaYHora } from '@/components/retencion/vinci'
 import { CabeceraDeVinci, TarjetaDeVinci } from '@/components/retencion/piezas'
 import { TablaDeCasos } from '@/components/retencion/TablaDeCasos'
 import type { Poblacion } from '@/lib/types/retencion'
+import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
+import { esRetencionApagada } from '@/lib/api/retencion'
 
 type Filtro = Poblacion | 'todos'
 
@@ -51,6 +53,16 @@ export default function BandejaClient() {
     (data?.casos ?? []).filter((c) => (p === 'todos' || c.poblacion === p) && (soloEnRiesgo ? c.enRiesgo : true)).length
   // Los que el filtro «Sólo los que pasan el umbral» esconde: por debajo del umbral o en cobranza.
   const escondidos = (data?.casos ?? []).filter((c) => (filtro === 'todos' || c.poblacion === filtro) && !c.enRiesgo).length
+
+  // 🔴 IA-C-01 (QA 04-10): apagada no hay casos que mostrar (antes, unos inventados).
+  if (esRetencionApagada(error)) {
+    return (
+      <div className="space-y-6 p-6 lg:p-8">
+        <CabeceraDeVinci titulo="Casos en riesgo" />
+        <RetencionApagada />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6 p-6 lg:p-8">

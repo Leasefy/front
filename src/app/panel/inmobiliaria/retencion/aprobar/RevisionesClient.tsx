@@ -36,11 +36,13 @@ import { SinDatos } from '@/components/estado/SinDatos'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useAuth } from '@/lib/auth'
-import { ErrorDeVinci, hacerlo, resolverOferta, revisarDecision } from '@/lib/api/retencion'
+import { ErrorDeVinci, esRetencionApagada, hacerlo, resolverOferta, revisarDecision } from '@/lib/api/retencion'
 import { useDecisionesDeVinci } from '@/lib/hooks/retencion/use-vinci'
 import { NOMBRE_DE_LA_OFERTA, QUE_ES_CADA_DECISION, QUIEN, detalleEnPalabras, fechaYHora } from '@/components/retencion/vinci'
 import { CabeceraDeVinci, TarjetaDeVinci } from '@/components/retencion/piezas'
 import type { DecisionDeVinci, DetalleDeLaOferta, Poblacion } from '@/lib/types/retencion'
+import { casoDeRetencion } from '@/lib/nav/rutas-de-retencion'
+import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
 
 const texto = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null)
 
@@ -225,7 +227,7 @@ function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: 
             <p className="mt-0.5 text-caption text-fg-muted">
               {fechaYHora(d.createdAt)}
               {' · '}
-              <Link href={`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(d.caseId)}`} className="text-primary hover:underline">
+              <Link href={casoDeRetencion(d.caseId)} className="text-primary hover:underline">
                 ver el caso
               </Link>
             </p>
@@ -254,6 +256,10 @@ export default function RevisionesClient() {
         titulo="Por aprobar"
         descripcion="Lo que Vinci dejó esperando tu clic: propuestas, mensajes listos, ofertas que cuestan plata y mensajes que no salieron."
       />
+      {/* 🔴 IA-C-01 (QA 04-10): apagada no hay decisiones que mostrar, ni se pinta el texto del micro. */}
+      {esRetencionApagada(error) ? (
+        <RetencionApagada />
+      ) : (
       <EstadoDeDatos
         cargando={isLoading && !data}
         error={error}
@@ -297,6 +303,7 @@ export default function RevisionesClient() {
           </TarjetaDeVinci>
         </div>
       </EstadoDeDatos>
+      )}
     </div>
   )
 }

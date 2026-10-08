@@ -99,7 +99,9 @@ export function contarDoce(): { total: number; porArchivo: Map<string, number> }
 // 02-10 tarde: 2606 con la tanda 2 de errores (los errores de campo hechos a
 // mano pasaron a `ErrorDelCampo`).
 // 03-10 (ola E, E1): 2524 — los dos avisos de 12 px de «Giros devueltos» pasaron a `text-caption`.
-const CUANTOS_HABIA = 2533;
+// 08-10: 2504 con Retención (Vinci) rehecha sobre las rutas reales, traída de
+// cambios-nico-10: el tablero, la bandeja y el caso viejos se fueron y lo nuevo va en 13 y 14.
+const CUANTOS_HABIA = 2504;
 
 describe('🔴 el contenido no se lee en 12 píxeles', () => {
   it('no entran `text-xs` nuevos', () => {

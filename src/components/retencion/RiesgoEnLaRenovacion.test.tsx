@@ -65,7 +65,7 @@ describe('el riesgo de Vinci en la propuesta de renovación (P-7)', () => {
     expect(t).toContain('Vinci sugiere: congelar el incremento (el propietario la acepta y el administrador la aprueba)')
     // El propietario sin señales se dice, no se esconde.
     expect(t).toContain('Sin señales de que se vaya.')
-    expect(container.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/contratos/riesgo/inquilino%3Ac1')
+    expect(container.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/retencion/riesgo/inquilino%3Ac1')
   })
 
   it('Nico (26-09): el moroso de más de 60 días sale «En cobranza», no «En riesgo», y dice que Vinci no lo retiene', () => {

@@ -11116,6 +11116,9 @@
         "publicar": "Publish",
         "calidad": "Quality"
       },
+      "seccion": "AI agents",
+      "titulo": "Listing quality · Niti",
+      "listaAria": "Audited properties, from worst to best",
       "descripcion": "Reviews your properties with the same «minimum to publish» rule as Portals, adds its own checks and suggests fixes. No change goes out without a person's click.",
       "ultimaPasada": "Last run: {{fecha}}",
       "sinPasada": "It hasn't done its first run yet.",
@@ -11128,8 +11131,8 @@
       "fotosIA": "AI photo checks this month",
       "fotosIARevisadas": "reviewed",
       "fotosIAGasto": "Estimated spend {{gasto}} of {{tope}}",
-      "apagadoTitulo": "Niti is off for this agency",
-      "apagadoDescripcion": "It doesn't audit your properties or suggest fixes. The technical team turns it on.",
+      "apagadoTitulo": "Leasefy's technical team turns it on",
+      "apagadoDescripcion": "Until then it doesn't audit your properties or suggest fixes. Once it's on, you'll see your properties here from worst to best: what they need before publishing, their issues and the photos it flags.",
       "errorPasadaTitulo": "Niti's last run failed",
       "filtroAria": "Filter audited properties",
       "filtro": {

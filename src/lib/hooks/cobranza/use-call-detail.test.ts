@@ -48,11 +48,11 @@ function apiResponse(over: Partial<CallDetailApiResponse> = {}): CallDetailApiRe
     hasTranscript: true,
     stateTrace: [],
     costBreakdown: {
-      llmUsd: 0,
-      voiceUsd: 0,
-      platformUsd: 0,
-      whatsappUsd: 0,
-      totalUsd: 0,
+      llmCop: 0,
+      voiceCop: 0,
+      platformCop: 0,
+      whatsappCop: 0,
+      totalCop: 0,
     },
     generatedAt: '2026-08-08T20:00:00.000Z',
     ...over,
@@ -64,7 +64,7 @@ describe('normalizeCallDetail', () => {
     const out = normalizeCallDetail(apiResponse())
     // `durationSeconds`, no `durationSec`; `cost`, no `costBreakdown`.
     expect(out.durationSeconds).toBe(214)
-    expect(out.cost.totalUsd).toBe(0)
+    expect(out.cost.totalCop).toBe(0)
     expect(out.debtorNameMasked).toBe('Gl•••ona')
   })
 

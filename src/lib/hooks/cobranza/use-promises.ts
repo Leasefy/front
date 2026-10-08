@@ -31,6 +31,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { agentAuthHeaders } from '@/lib/api/agent-auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { useAuth } from '@/lib/auth'
+import type { CierreDeLaPromesa } from '@/lib/cobranza/promesas-de-pago'
 
 // ── Shapes (espejo del contrato del backend) ─────────────────────────────────
 
@@ -61,6 +62,11 @@ export interface CobranzaPromiseItem {
   derivedStatus: PromiseDerivedStatus
   createdAt: string
   resolvedAt: string | null
+  /**
+   * El cierre contra los recibos del back (07-10-2026), o null si todavía no se
+   * cerró (un micro anterior no lo manda: se lee como null).
+   */
+  cierre?: CierreDeLaPromesa | null
 }
 
 export interface CobranzaPromisesResponse {

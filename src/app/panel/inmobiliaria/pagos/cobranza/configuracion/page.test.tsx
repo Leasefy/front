@@ -135,6 +135,24 @@ vi.mock('@/lib/hooks/cobranza/use-autonomy', () => ({
   }),
 }))
 
+// Promesas de pago (07-10-2026): su propia prueba vive junto al componente.
+vi.mock('@/lib/hooks/cobranza/use-ajustes-de-la-cobranza', () => ({
+  useAjustesDeLaCobranza: () => ({
+    data: {
+      disponible: true,
+      diasDeGraciaDeLaPromesa: 7,
+      experimentosPrendidos: true,
+      porDefecto: true,
+      actualizadoPor: null,
+      actualizadoAt: null,
+    },
+    isLoading: false,
+    fallo: null,
+    refetch: vi.fn(),
+    guardar: vi.fn(),
+  }),
+}))
+
 import CobranzaConfiguracionPage from './page'
 
 // ---------------------------------------------------------------------------
@@ -207,6 +225,12 @@ describe('<CobranzaConfiguracionPage> — layout', () => {
     expect(byTestId('section-comercial')).toBeTruthy()
     expect(byTestId('section-autonomia')).toBeTruthy()
     expect(byTestId('section-horario')).toBeTruthy()
+  })
+
+  it('monta «Promesas de pago» con los días de gracia', () => {
+    render()
+    expect(byTestId('section-promesas')).toBeTruthy()
+    expect((byTestId('dias-de-gracia-de-la-promesa') as HTMLInputElement).value).toBe('7')
   })
 
   it('ya no monta la cadencia de contacto', () => {

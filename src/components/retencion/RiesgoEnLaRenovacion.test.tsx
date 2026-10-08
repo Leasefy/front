@@ -68,6 +68,25 @@ describe('el riesgo de Vinci en la propuesta de renovación (P-7)', () => {
     expect(container.querySelector('a')?.getAttribute('href')).toBe('/panel/inmobiliaria/contratos/riesgo/inquilino%3Ac1')
   })
 
+  it('Nico (26-09): el moroso de más de 60 días sale «En cobranza», no «En riesgo», y dice que Vinci no lo retiene', () => {
+    const moroso: RiesgoDeRetencion = {
+      ...RIESGO,
+      inquilino: {
+        puntaje: 60,
+        umbral: 60,
+        enRiesgo: false,
+        enCobranza: true,
+        senales: [{ clave: 'mora', texto: '262 días de mora ($46.800.000 vencido)', puntos: 40 }],
+        ofertaSugerida: null,
+      },
+    }
+    act(() => root.render(<RiesgoEnLaRenovacion riesgo={moroso} contractId="c1" />))
+    const marcaDelInquilino = container.querySelector('[data-testid="vinci-puntaje"]')?.textContent ?? ''
+    expect(marcaDelInquilino).toContain('En cobranza')
+    expect(marcaDelInquilino).not.toContain('En riesgo')
+    expect(container.textContent).toContain('Más de 60 días de mora: lo lleva cobranza y Vinci no lo retiene.')
+  })
+
   it('sin medición lo dice (y la renovación sigue); con un back anterior no pinta nada', () => {
     act(() => root.render(<RiesgoEnLaRenovacion riesgo={null} />))
     expect(container.textContent).toContain('No se pudo medir ahora')
@@ -94,6 +113,26 @@ describe('las frases del tablero', () => {
         casos: [],
       }),
     ).toMatch(/^Vinci ve 8 inquilinos y 1 propietario en riesgo \(umbral 60\/100\) entre 739 contratos vigentes; medido .* \(el último barrido\)\.$/)
+  })
+
+  it('los que pasaron a cobranza se cuentan aparte (Nico, 26-09)', () => {
+    expect(
+      fraseDelRiesgo({
+        disponible: true,
+        faltan: [],
+        notas: [],
+        leidoEn: '2026-09-28T12:00:00.000Z',
+        deLoGuardado: true,
+        umbral: 60,
+        modo: 'copiloto',
+        envioHabilitado: false,
+        contratosLeidos: 105,
+        propietariosLeidos: 50,
+        enRiesgo: { inquilinos: 0, propietarios: 0 },
+        enCobranza: 8,
+        casos: [],
+      }),
+    ).toMatch(/; 8 inquilinos pasan de 60 días de mora: ésos no se retienen, los lleva cobranza\.$/)
   })
 
   it('lo retenido: contratos, propietarios, canon conservado y los que se fueron', () => {

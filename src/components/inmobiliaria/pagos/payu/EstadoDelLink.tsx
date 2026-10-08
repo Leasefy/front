@@ -51,6 +51,17 @@ export function PastillaDelLink({ estado }: { estado: EstadoDelLinkDePago }) {
   );
 }
 
+/**
+ * «En mora escribe sólo Laura» (Nico, 26-09): una cuota que pasó su «3 días
+ * después» ya no es de Payu. Se compara el día de hoy en Bogotá.
+ */
+function yaEnMora(fechaDeVencimiento: string): boolean {
+  const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Bogota' }).format(new Date());
+  const limite = new Date(`${fechaDeVencimiento}T00:00:00Z`);
+  limite.setUTCDate(limite.getUTCDate() + 3);
+  return hoy > limite.toISOString().slice(0, 10);
+}
+
 export function EstadoDelLink({ link }: { link: LinkDePagoDeCuota }) {
   const { t, locale } = useI18n();
   const { estado } = link;
@@ -62,7 +73,7 @@ export function EstadoDelLink({ link }: { link: LinkDePagoDeCuota }) {
       : estado === 'enviado' && link.ultimoEnvioEn
         ? t('inmobiliaria.cobros.linksDePago.ultimoAviso', { fecha: instanteEnBogota(link.ultimoEnvioEn, locale) })
         : estado === 'ninguno'
-          ? t('inmobiliaria.cobros.linksDePago.detalle.ninguno')
+          ? t(`inmobiliaria.cobros.linksDePago.detalle.${yaEnMora(link.fechaDeVencimiento) ? 'enMora' : 'ninguno'}`)
           : estado === 'vencido'
             ? t('inmobiliaria.cobros.linksDePago.detalle.vencido')
             : estado === 'fallido'

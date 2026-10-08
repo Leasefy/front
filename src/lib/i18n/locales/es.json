@@ -2975,6 +2975,7 @@
         },
         "detalle": {
           "ninguno": "Payu todavía no le ha escrito por esta cuota.",
+          "enMora": "Venció hace más de 3 días sin pagar: Payu ya no escribe por esta cuota, la lleva cobranza.",
           "vencido": "El link venció sin pago. Payu ya no escribe por esta cuota: la sigue cobranza.",
           "fallido": "El inquilino intentó pagar y la pasarela no aprobó el pago."
         },

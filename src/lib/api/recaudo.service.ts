@@ -3,7 +3,7 @@
  */
 
 import { apiClient } from '@/lib/api/client';
-import type { PuntoDeLaSerie, ResumenDeRecaudo } from './recaudo.types';
+import type { ComparativaDelMes, PuntoDeLaSerie, ResumenDeRecaudo } from './recaudo.types';
 
 const BASE = '/inmobiliaria/recaudo';
 
@@ -17,6 +17,13 @@ export const recaudoApi = {
   serie(meses: number, hasta: string): Promise<PuntoDeLaSerie[]> {
     return apiClient.get<PuntoDeLaSerie[]>(
       `${BASE}/serie?meses=${encodeURIComponent(String(meses))}&hasta=${encodeURIComponent(hasta)}`,
+    );
+  },
+
+  /** El mes contra el anterior a la misma fecha, el día a día y la proyección del cierre. */
+  comparativa(month: string): Promise<ComparativaDelMes> {
+    return apiClient.get<ComparativaDelMes>(
+      `${BASE}/comparativa?month=${encodeURIComponent(month)}`,
     );
   },
 };

@@ -381,6 +381,18 @@ export function TourDelPanel() {
   const activo = tourDismissed === false;
 
   /*
+   * La ventana de la política y los términos sale DESPUÉS del recorrido (Nico,
+   * 08-10-2026: «en el home luego de que ya tenga todo check»). Vive en el
+   * layout raíz, sin este contexto: lo sabe por esta marca en `<html>`
+   * (`lib/legal/cuando-sale-la-ventana-legal.ts`).
+   */
+  useEffect(() => {
+    if (!activo) return;
+    document.documentElement.setAttribute('data-recorrido-pendiente', '');
+    return () => document.documentElement.removeAttribute('data-recorrido-pendiente');
+  }, [activo]);
+
+  /*
    * 🔴 EL LATIDO: qué hay delante, medido cada `LATIDO` mientras el recorrido
    * está pendiente (y también con él abierto, para pausarlo).
    *

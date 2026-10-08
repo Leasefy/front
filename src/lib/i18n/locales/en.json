@@ -11108,6 +11108,62 @@
       "anularPagado": "A paid disbursement cannot be cancelled: the money already left the bank and the voucher is numbered. If it was returned, record it as income with your accountant; if the date is wrong, change it from the disbursement.",
       "anularAnulado": "This disbursement is already cancelled.",
       "anulado": "Disbursement cancelled. It is unpaid again."
+    },
+    "calidad": {
+      "pestanas": {
+        "aria": "Publish or review quality",
+        "publicar": "Publish",
+        "calidad": "Quality"
+      },
+      "descripcion": "Reviews your properties with the same «minimum to publish» rule as Portals, adds its own checks and suggests fixes. No change goes out without a person's click.",
+      "ultimaPasada": "Last run: {{fecha}}",
+      "sinPasada": "It hasn't done its first run yet.",
+      "queEsResumen": "the Niti summary",
+      "queEsLista": "the audited properties",
+      "queSon": "audited properties",
+      "puntajePromedio": "Average score",
+      "porArreglar": "Something to fix",
+      "porArreglarDe": "of {{total}}",
+      "fotosIA": "AI photo checks this month",
+      "fotosIARevisadas": "reviewed",
+      "fotosIAGasto": "Estimated spend {{gasto}} of {{tope}}",
+      "apagadoTitulo": "Niti is off for this agency",
+      "apagadoDescripcion": "It doesn't audit your properties or suggest fixes. The technical team turns it on.",
+      "errorPasadaTitulo": "Niti's last run failed",
+      "filtroAria": "Filter audited properties",
+      "filtro": {
+        "todos": "All",
+        "con_problemas": "Something to fix",
+        "posible_tomado": "Possibly taken",
+        "fotos": "Flagged photos"
+      },
+      "conteoUno": "1 property",
+      "conteoVarios": "{{total}} properties",
+      "vacioTitulo": "Niti hasn't audited any property yet",
+      "vacioDescripcion": "It reviews published properties, those about to be published and rented ones with notice. When its run ends, they show up here from worst to best.",
+      "motivo": {
+        "publicado": "Published",
+        "por_publicar": "To publish",
+        "arrendado_con_preaviso": "Rented with notice"
+      },
+      "negocio": {
+        "arriendo": "Rent",
+        "venta": "Sale"
+      },
+      "puntajeAria": "Score {{n}} out of 100",
+      "posibleTomado": "Possibly taken",
+      "posibleTomadoDetalle": "It is published but rented without notice: the listing offers something that isn't available.",
+      "queFalta": "Missing to publish",
+      "problemas": "Issues",
+      "fotos": "Flagged photos",
+      "propuestas": "Niti's suggestions",
+      "abrirFicha": "Open property",
+      "aprobarYAplicar": "Approve and apply",
+      "despublicar": "Unpublish",
+      "marcarHecha": "Mark as done",
+      "rechazar": "Reject",
+      "decisionSinMensaje": "Done.",
+      "decisionFallo": "Could not save the decision: {{error}}"
     }
   },
   "validation": {

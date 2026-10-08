@@ -51,6 +51,7 @@ import type { MetricasDeVinci, RiesgoDeVinci } from '@/lib/types/retencion'
 import { RETENCION_APROBAR, RETENCION_RIESGO } from '@/lib/nav/rutas-de-retencion'
 import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
 import { esRetencionApagada } from '@/lib/api/retencion'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`
 
@@ -133,7 +134,7 @@ function Umbral() {
       setDiasProp('')
       await refetch()
     } catch (e) {
-      toast.error('No se pudo guardar', { description: e instanceof Error ? e.message : undefined })
+      toast.error('No se pudo guardar', { description: mensajeParaLaPersona(e) })
     } finally {
       setGuardando(false)
     }

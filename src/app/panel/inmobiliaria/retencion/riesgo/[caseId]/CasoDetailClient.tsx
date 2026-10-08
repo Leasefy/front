@@ -56,6 +56,7 @@ import type { CasoDeVinci, OfertaDeVinci, Poblacion, TipoDeOferta } from '@/lib/
 import { RETENCION_RIESGO } from '@/lib/nav/rutas-de-retencion'
 import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
 import { esRetencionApagada } from '@/lib/api/retencion'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 const OFERTAS_POR_POBLACION: Record<Poblacion, TipoDeOferta[]> = {
   inquilino: ['llamada_del_asesor', 'visita_del_asesor', 'resolver_pendiente', 'congelar_incremento', 'bajar_incremento'],
@@ -95,7 +96,7 @@ function Ofertas({ caso }: { caso: CasoDeVinci }) {
       toast.success(ok)
       await refetch()
     } catch (e) {
-      toast.error('No se pudo', { description: e instanceof Error ? e.message : undefined })
+      toast.error('No se pudo', { description: mensajeParaLaPersona(e) })
     } finally {
       setOcupado(null)
     }
@@ -290,7 +291,7 @@ function Plan({ caso }: { caso: CasoDeVinci }) {
       toast.success(ok)
       await refetch()
     } catch (e) {
-      toast.error('No se pudo', { description: e instanceof Error ? e.message : undefined })
+      toast.error('No se pudo', { description: mensajeParaLaPersona(e) })
     } finally {
       setOcupado(null)
     }

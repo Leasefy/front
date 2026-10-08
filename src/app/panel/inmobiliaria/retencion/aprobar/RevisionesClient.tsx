@@ -43,6 +43,7 @@ import { CabeceraDeVinci, TarjetaDeVinci } from '@/components/retencion/piezas'
 import type { DecisionDeVinci, DetalleDeLaOferta, Poblacion } from '@/lib/types/retencion'
 import { casoDeRetencion } from '@/lib/nav/rutas-de-retencion'
 import { RetencionApagada } from '@/components/inmobiliaria/retencion/RetencionApagada'
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 
 const texto = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v : null)
 
@@ -97,7 +98,7 @@ function Fila({ d, envioApagado, onListo }: { d: DecisionDeVinci; envioApagado: 
           description: 'El mensaje sigue listo: escríbele tú y márcalo con «Ya lo contacté».',
         })
       } else {
-        toast.error('No se pudo', { description: e instanceof Error ? e.message : undefined })
+        toast.error('No se pudo', { description: mensajeParaLaPersona(e) })
       }
     } finally {
       setOcupado(null)

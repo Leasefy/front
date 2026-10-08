@@ -56,8 +56,11 @@ function useLectura<T>(clave: string, leer: () => Promise<T>): Lectura<T> {
 
   useEffect(() => {
     void recargar();
+    // Al cambiar de filtros o desmontar, lo que esté en vuelo ya no escribe.
+    // Es un contador, no un nodo: leerlo en la limpieza es justo lo que se quiere.
+    const contador = ultimo;
     return () => {
-      ultimo.current++;
+      contador.current++;
     };
   }, [recargar]);
 

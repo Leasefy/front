@@ -2957,6 +2957,50 @@
         "vigentes": "Vigentes",
         "anulados": "Anulados",
         "sinAnulados": "No hay cobros anulados en este mes."
+      },
+      "linksDePago": {
+        "titulo": "Links de pago (Payu)",
+        "descripcion": "Cada cuota del mes con el estado de su link de pago y los avisos que Payu ya mandó. Los links salen solos, 3 días antes del vencimiento, el día y 3 días después; no se mandan a pedido.",
+        "mesAnterior": "Mes anterior",
+        "mesSiguiente": "Mes siguiente",
+        "mesTope": "Más adelante todavía no hay avisos de Payu.",
+        "filtroEstado": "Estado del link",
+        "todos": "Todos los estados",
+        "estado": {
+          "ninguno": "Sin link",
+          "enviado": "Enviado",
+          "pagado": "Pagado",
+          "vencido": "Vencido",
+          "fallido": "Pago fallido"
+        },
+        "detalle": {
+          "ninguno": "Payu todavía no le ha escrito por esta cuota.",
+          "vencido": "El link venció sin pago. Payu ya no escribe por esta cuota: la sigue cobranza.",
+          "fallido": "El inquilino intentó pagar y la pasarela no aprobó el pago."
+        },
+        "pagadoEl": "Pagado el {{fecha}}",
+        "ultimoAviso": "Último aviso: {{fecha}}",
+        "hitos": {
+          "titulo": "Avisos de Payu",
+          "antes": "3 días antes",
+          "dia": "El día",
+          "despues": "3 días después",
+          "enviado": "enviado",
+          "sinEnviar": "sin enviar"
+        },
+        "columnas": {
+          "cuota": "Inquilino y contrato",
+          "vence": "Vence",
+          "valor": "Valor",
+          "link": "Link de pago"
+        },
+        "contrato": "Contrato {{numero}}",
+        "verLink": "Ver el link",
+        "verLinkAria": "Ver el link de pago de {{inquilino}} (se abre en otra pestaña)",
+        "conteoUno": "1 cuota",
+        "conteoVarios": "{{total}} cuotas",
+        "vacioTitulo": "No hay cuotas que venzan en {{mes}}",
+        "vacioDescripcion": "Payu trabaja sobre las cuotas de los contratos: cuando un contrato tenga cuota en este mes, aparece acá con el estado de su link."
       }
     },
     "dispersiones": {

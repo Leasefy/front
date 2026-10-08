@@ -91,6 +91,9 @@ describe('Por aprobar · Vinci', () => {
     expect(botones).not.toContain('Enviar')
     expect(botones).toContain('Ya lo contacté')
     expect(container.textContent).toMatch(/envío de Vinci está apagado/)
+    // 29-09: la llave apagada se dice UNA vez, arriba; la fila no repite el motivo del micro.
+    expect(container.textContent?.match(/envío de Vinci está apagado/gi)?.length).toBe(1)
+    expect(container.querySelector('[data-testid="vinci-envio-apagado"]')).not.toBeNull()
   })
 
   it('una oferta que cuesta plata: sólo el administrador ve «Aprobar»', () => {

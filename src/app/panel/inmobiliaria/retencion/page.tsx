@@ -3,27 +3,90 @@
 /**
  * Retención · Vinci — el tablero.
  *
- * 26-09-2026 (decisiones de Nico sobre Vinci): el tablero mostraba un
- * portafolio de EJEMPLO con el aviso «las rutas no están montadas» —las rutas
- * sí estaban—. Ahora lee las rutas reales del micro: quién está en riesgo con
- * las señales del ERP (propietarios E inquilinos), lo que Vinci ya retuvo, y
- * el umbral que decide quién entra (sólo el administrador lo cambia).
+ * 26-09-2026 (decisiones de Nico sobre Vinci): lee las rutas reales del micro
+ * —quién está en riesgo con las señales del ERP (propietarios E inquilinos),
+ * lo que Vinci ya retuvo, y el umbral que decide quién entra (sólo el
+ * administrador lo cambia)—; nada de portafolios de ejemplo.
+ *
+ * 29-09-2026 · glow-up (Nico: «mira eso como se ve de horrible»). Se arma con
+ * el patrón de Contratos y Cobranza:
+ *   1. la cabecera del panel (Eyebrow, `h1` en `text-h2`, una línea) con
+ *      «Medir ahora» a la derecha;
+ *   2. los números en la franja del DS (`StatStrip`), DENTRO de una tarjeta
+ *      cuyo pie dice en qué modo está Vinci, si el envío está apagado y
+ *      cuándo midió. Antes eran dos frases largas y una tarjeta «Lo retenido»
+ *      con una tercera; los mismos datos, ahora se leen de un vistazo;
+ *   3. lo que espera tu clic (sólo si hay algo), que antes no tenía ningún
+ *      camino desde acá hacia «Por aprobar»;
+ *   4. lo más urgente con el patrón de tablas del panel;
+ *   5. el umbral (sólo el administrador), con el valor por defecto debajo de
+ *      cada campo en vez de un párrafo.
  */
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowsClockwise, CaretRight, HeartStraight, Warning } from '@phosphor-icons/react'
+import { ArrowsClockwise, HeartStraight, SlidersHorizontal, Warning } from '@phosphor-icons/react'
+import { Stat } from '@leasefy/cadence'
 import { toast } from '@/components/ui/toast'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { EmptyState } from '@/components/ui/empty-state'
+import { AlertaAccionable } from '@/components/ui/alerta-accionable'
+import { SinDatos } from '@/components/estado/SinDatos'
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { useAuth } from '@/lib/auth'
+import { formatCurrency } from '@/lib/format'
 import { guardarUmbral } from '@/lib/api/retencion'
-import { useMetricasDeVinci, useRiesgoDeVinci, useUmbralDeVinci } from '@/lib/hooks/retencion/use-vinci'
-import { NOMBRE_DEL_MODO, PuntajeDeVinci, QUE_HACE_EN_CADA_MODO, QUIEN } from '@/components/retencion/vinci'
-import { fraseDeLasMetricas, fraseDelRiesgo } from '@/components/retencion/frases'
+import {
+  useDecisionesDeVinci,
+  useMetricasDeVinci,
+  useRiesgoDeVinci,
+  useUmbralDeVinci,
+} from '@/lib/hooks/retencion/use-vinci'
+import { NOMBRE_DEL_MODO, QUE_HACE_EN_CADA_MODO, fechaYHora } from '@/components/retencion/vinci'
+import { CabeceraDeVinci, FranjaDeVinci, TarjetaDeVinci } from '@/components/retencion/piezas'
+import { TablaDeCasos } from '@/components/retencion/TablaDeCasos'
+import type { MetricasDeVinci, RiesgoDeVinci } from '@/lib/types/retencion'
+
+const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`
+
+/** Un campo del umbral con su valor por defecto debajo. */
+function CampoDelUmbral({
+  id,
+  label,
+  valor,
+  onCambio,
+  min,
+  max,
+  porDefecto,
+}: {
+  id: string
+  label: string
+  valor: string
+  onCambio: (v: string) => void
+  min: number
+  max: number
+  porDefecto: string
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={id}>{label}</Label>
+      <Input
+        id={id}
+        data-testid={id}
+        type="number"
+        min={min}
+        max={max}
+        step={1}
+        className="font-mono"
+        value={valor}
+        onChange={(e) => onCambio(e.target.value)}
+      />
+      <p className="text-caption text-fg-muted">{porDefecto}</p>
+    </div>
+  )
+}
 
 function Umbral() {
   const { data, isLoading, error, refetch } = useUmbralDeVinci(true)
@@ -74,79 +137,113 @@ function Umbral() {
   }
 
   return (
-    <section aria-label="Umbral de Vinci" className="rounded-lg border border-border bg-surface p-5">
-      <h2 className="text-base font-semibold text-fg">Umbral de riesgo</h2>
-      <p className="mt-1 text-sm text-fg-muted">
-        Desde este puntaje un propietario o un inquilino entra en riesgo (60 por defecto), el tope del descuento en la
-        comisión (20 % por defecto) y cada cuántos días Vinci le puede volver a escribir a la misma persona (7 al
-        inquilino, 15 al propietario). Sólo el administrador lo cambia.
-      </p>
+    <TarjetaDeVinci
+      id="vinci-umbral"
+      icono={SlidersHorizontal}
+      titulo="Umbral de riesgo"
+      descripcion="Desde qué puntaje alguien entra en riesgo, el tope del descuento en la comisión y cada cuánto Vinci le puede volver a escribir a la misma persona. Sólo el administrador lo cambia."
+    >
       <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="el umbral de Vinci" onReintentar={() => refetch()}>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,11rem))_auto] lg:items-end">
-          <div className="space-y-1.5">
-            <Label htmlFor="vinci-umbral">Umbral (0–100)</Label>
-            <Input
-              id="vinci-umbral"
-              data-testid="vinci-umbral"
-              type="number"
-              min={0}
-              max={100}
-              step={1}
-              className="font-mono"
-              value={valorUmbral}
-              onChange={(e) => setUmbral(e.target.value)}
-            />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] lg:items-start">
+          <CampoDelUmbral
+            id="vinci-umbral"
+            label="Umbral (0–100)"
+            valor={valorUmbral}
+            onCambio={setUmbral}
+            min={0}
+            max={100}
+            porDefecto={`${data?.umbralPorDefecto ?? 60} por defecto`}
+          />
+          <CampoDelUmbral
+            id="vinci-tope"
+            label="Tope del descuento (%)"
+            valor={valorTope}
+            onCambio={setTope}
+            min={0}
+            max={100}
+            porDefecto="De la comisión · 20 % por defecto"
+          />
+          <CampoDelUmbral
+            id="vinci-dias-inquilino"
+            label="Días entre mensajes al inquilino"
+            valor={valorDiasInq}
+            onCambio={setDiasInq}
+            min={1}
+            max={365}
+            porDefecto="7 por defecto"
+          />
+          <CampoDelUmbral
+            id="vinci-dias-propietario"
+            label="Días entre mensajes al propietario"
+            valor={valorDiasProp}
+            onCambio={setDiasProp}
+            min={1}
+            max={365}
+            porDefecto="15 por defecto"
+          />
+          {/* Alineado con los campos, no con sus ayudas: la etiqueta mide lo mismo. */}
+          <div className="flex lg:pt-[26px]">
+            <Button
+              type="button"
+              className="w-full lg:w-auto"
+              onClick={() => void guardar()}
+              isLoading={guardando}
+              disabled={!data?.guardable}
+              hideArrow
+            >
+              Guardar
+            </Button>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="vinci-tope">Tope del descuento (% de la comisión)</Label>
-            <Input
-              id="vinci-tope"
-              type="number"
-              min={0}
-              max={100}
-              step={1}
-              className="font-mono"
-              value={valorTope}
-              onChange={(e) => setTope(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="vinci-dias-inquilino">Días entre mensajes al inquilino</Label>
-            <Input
-              id="vinci-dias-inquilino"
-              data-testid="vinci-dias-inquilino"
-              type="number"
-              min={1}
-              max={365}
-              step={1}
-              className="font-mono"
-              value={valorDiasInq}
-              onChange={(e) => setDiasInq(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="vinci-dias-propietario">Días entre mensajes al propietario</Label>
-            <Input
-              id="vinci-dias-propietario"
-              data-testid="vinci-dias-propietario"
-              type="number"
-              min={1}
-              max={365}
-              step={1}
-              className="font-mono"
-              value={valorDiasProp}
-              onChange={(e) => setDiasProp(e.target.value)}
-            />
-          </div>
-          <Button type="button" onClick={() => void guardar()} isLoading={guardando} disabled={!data?.guardable} hideArrow>
-            Guardar
-          </Button>
         </div>
         {data && !data.guardable ? (
-          <p className="mt-2 text-caption text-fg-muted">Falta la tabla de configuración de Vinci en esta base: no se puede guardar.</p>
+          <p className="mt-3 text-caption text-fg-muted">Falta la tabla de configuración de Vinci en esta base: no se puede guardar.</p>
         ) : null}
       </EstadoDeDatos>
-    </section>
+    </TarjetaDeVinci>
+  )
+}
+
+/** Lo retenido, en dos líneas: la cifra y lo que la acompaña. */
+function retenidos(m: MetricasDeVinci): { valor: string; delta: string } {
+  const n = m.contratosRetenidos + m.propietariosQueSeQuedaron
+  const perdidos = m.perdidos.inquilinos + m.perdidos.propietarios
+  if (n === 0 && perdidos === 0) return { valor: '0', delta: 'Ningún caso cerrado todavía' }
+  const partes = [
+    m.tasaDeRetencion !== null ? `${Math.round(m.tasaDeRetencion * 100)} % de los cerrados` : null,
+    `${formatCurrency(m.canonConservadoCop)} al mes`,
+    perdidos > 0 ? `${perdidos === 1 ? 'se fue 1' : `se fueron ${perdidos}`}` : null,
+  ]
+  return { valor: String(n), delta: partes.filter(Boolean).join(' · ') }
+}
+
+/** El pie de la tarjeta de números: el modo, la llave de envío y cuándo midió. */
+function PieDelResumen({ r }: { r: RiesgoDeVinci }) {
+  // Con la llave apagada, el «además escribe solo» de Automático sería falso:
+  // lo reemplaza la línea de la llave.
+  const queHace = r.modo && !(r.modo === 'autonomo' && !r.envioHabilitado) ? QUE_HACE_EN_CADA_MODO[r.modo] : null
+  return (
+    <div className="space-y-1.5 border-t border-border bg-surface-muted/40 px-5 py-3 text-sm text-fg-muted">
+      {r.modo ? (
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <Badge variant="secondary">{NOMBRE_DEL_MODO[r.modo]}</Badge>
+          {queHace ? <span>{queHace}</span> : null}
+          {!r.envioHabilitado ? (
+            <span data-testid="vinci-envio-apagado">
+              El envío de Vinci está apagado en esta plataforma: los mensajes quedan listos para que los mandes tú.
+            </span>
+          ) : null}
+        </p>
+      ) : !r.envioHabilitado ? (
+        <p data-testid="vinci-envio-apagado">
+          El envío de Vinci está apagado en esta plataforma: los mensajes quedan listos para que los mandes tú.
+        </p>
+      ) : null}
+      <p className="text-caption" data-testid="vinci-medido">
+        {r.deLoGuardado ? `Medido ${fechaYHora(r.leidoEn)} (el último barrido)` : `Medido ahora (${fechaYHora(r.leidoEn)})`} entre{' '}
+        {plural(r.contratosLeidos, 'contrato vigente', 'contratos vigentes')} y{' '}
+        {plural(r.propietariosLeidos, 'propietario', 'propietarios')}. En riesgo desde {r.umbral}/100.
+      </p>
+    </div>
   )
 }
 
@@ -154,19 +251,44 @@ export default function RetencionDashboardPage() {
   const [fresco, setFresco] = useState(false)
   const riesgo = useRiesgoDeVinci(fresco)
   const metricas = useMetricasDeVinci()
+  const cola = useDecisionesDeVinci({ reviewableOnly: true, limit: 100 })
   const { isAdmin } = usePermissionsContext()
   const r = riesgo.data
-  const urgentes = (r?.casos ?? []).filter((c) => c.enRiesgo).slice(0, 8)
+  const m = metricas.data
+  const pendientes = cola.data?.decisiones.length ?? 0
+  // «Lo más urgente» es lo que dice: los de puntaje más alto primero.
+  const urgentes = useMemo(
+    () =>
+      (r?.casos ?? [])
+        .filter((c) => c.enRiesgo)
+        .sort((a, b) => b.puntaje - a.puntaje)
+        .slice(0, 8),
+    [r],
+  )
+  const sinMetricas = metricas.isLoading || Boolean(metricas.error) || !m
+  const lr = m ? retenidos(m) : null
+  const conCobranza = typeof r?.enCobranza === 'number'
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-fg">Retención · Vinci</h1>
-        <p className="text-sm text-fg-muted">
-          Mide con las señales del ERP —mora de las cuotas, PQRS, mantenimientos, fin del contrato, incremento, giros atrasados—
-          quién se puede ir: el propietario que saca su inmueble o el inquilino que no renueva.
-        </p>
-      </header>
+      <CabeceraDeVinci
+        titulo="Retención"
+        descripcion="Vinci lee las señales del ERP —mora, PQRS, mantenimientos, fin del contrato, incremento, giros atrasados— y te dice quién se puede ir: el propietario que saca su inmueble o el inquilino que no renueva."
+        acciones={
+          r ? (
+            <Button
+              type="button"
+              variant="secondary"
+              hideArrow
+              isLoading={riesgo.isLoading && fresco}
+              onClick={() => (fresco ? void riesgo.refetch() : setFresco(true))}
+            >
+              <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
+              Medir ahora
+            </Button>
+          ) : null
+        }
+      />
 
       <EstadoDeDatos
         cargando={riesgo.isLoading && !r}
@@ -175,105 +297,94 @@ export default function RetencionDashboardPage() {
         onReintentar={() => riesgo.refetch()}
         principal
       >
-        {r ? (
-          <section aria-label="Resumen" className="space-y-3">
-            {!r.disponible ? (
-              <div className="flex items-start gap-3 rounded-lg border border-warning/40 bg-warning-soft px-4 py-3" role="status">
-                <Warning className="mt-0.5 h-5 w-5 shrink-0 text-warning" weight="fill" aria-hidden="true" />
-                <p className="text-sm text-fg">
-                  Vinci no puede medir todavía: faltan datos del ERP ({r.faltan.join(', ')}). No muestra casos inventados.
-                </p>
-              </div>
-            ) : (
-              <p className="text-body text-fg" data-testid="vinci-frase">
-                {fraseDelRiesgo(r)}
-              </p>
-            )}
-            <div className="flex flex-wrap items-center gap-3">
-              {r.modo ? (
-                <p className="text-sm text-fg-muted">
-                  Piloto en <span className="font-medium text-fg">{NOMBRE_DEL_MODO[r.modo]}</span>. {QUE_HACE_EN_CADA_MODO[r.modo]}
-                </p>
+        {r && !r.disponible ? (
+          <AlertaAccionable
+            severidad="warning"
+            titulo="Vinci no puede medir todavía."
+            data-testid="vinci-no-disponible"
+          >
+            Faltan datos del ERP ({r.faltan.join(', ')}). No muestra casos inventados.
+          </AlertaAccionable>
+        ) : null}
+        {r?.disponible ? (
+          <section aria-label="Resumen de retención" className="overflow-hidden rounded-lg border border-border bg-card">
+            <FranjaDeVinci columnas={conCobranza ? 4 : 3} data-testid="vinci-resumen">
+              <Stat
+                compact
+                label="En riesgo"
+                value={String(r.enRiesgo.inquilinos + r.enRiesgo.propietarios)}
+                delta={`${plural(r.enRiesgo.inquilinos, 'inquilino', 'inquilinos')} · ${plural(r.enRiesgo.propietarios, 'propietario', 'propietarios')}`}
+              />
+              {conCobranza ? (
+                <Stat compact label="En cobranza" value={String(r.enCobranza)} delta="Más de 60 días de mora: no se retienen" />
               ) : null}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                hideArrow
-                isLoading={riesgo.isLoading && fresco}
-                onClick={() => (fresco ? void riesgo.refetch() : setFresco(true))}
-              >
-                <ArrowsClockwise className="h-4 w-4" aria-hidden="true" />
-                Medir ahora
-              </Button>
-            </div>
-            {!r.envioHabilitado ? (
-              <p className="text-caption text-fg-muted" data-testid="vinci-envio-apagado">
-                El envío de Vinci está apagado en esta plataforma: aun en Automático, deja el mensaje listo para que lo mandes tú.
-              </p>
-            ) : null}
+              <Stat
+                compact
+                label="En gestión"
+                value={sinMetricas ? '—' : String(m!.enGestion.inquilinos + m!.enGestion.propietarios)}
+                delta={metricas.error ? 'No se pudo traer' : 'Planes de retención abiertos'}
+              />
+              <Stat
+                compact
+                label="Retenidos"
+                value={sinMetricas || !lr ? '—' : lr.valor}
+                delta={metricas.error ? 'No se pudo traer' : (lr?.delta ?? undefined)}
+              />
+            </FranjaDeVinci>
+            <PieDelResumen r={r} />
           </section>
         ) : null}
       </EstadoDeDatos>
 
-      <section aria-label="Lo que Vinci retuvo" className="rounded-lg border border-border bg-surface p-5">
-        <h2 className="text-base font-semibold text-fg">Lo retenido</h2>
-        <EstadoDeDatos
-          cargando={metricas.isLoading && !metricas.data}
-          error={metricas.error}
-          queEs="lo que Vinci retuvo"
-          onReintentar={() => metricas.refetch()}
+      {/* Sólo si hay algo: una alerta que dice «nada» no se lee. */}
+      {pendientes > 0 ? (
+        <AlertaAccionable
+          severidad="info"
+          titulo={`${plural(pendientes, 'decisión de Vinci espera', 'decisiones de Vinci esperan')} tu clic.`}
+          accion={{ label: 'Revisarlas', href: '/panel/inmobiliaria/contratos/aprobar' }}
+          data-testid="vinci-por-aprobar-aviso"
         >
-          {metricas.data ? (
-            <p className="mt-2 text-sm text-fg" data-testid="vinci-metricas">
-              {fraseDeLasMetricas(metricas.data)}
-            </p>
-          ) : null}
-        </EstadoDeDatos>
-      </section>
+          Propuestas, mensajes listos y ofertas que cuestan plata: nada sale sin ti.
+        </AlertaAccionable>
+      ) : null}
+
+      {r?.disponible ? (
+        <TarjetaDeVinci
+          id="vinci-urgentes"
+          icono={Warning}
+          titulo="Lo más urgente"
+          descripcion={
+            urgentes.length > 0
+              ? 'Los de puntaje más alto. Toca uno para ver por qué, qué ofrecerle y el plan.'
+              : 'Los que pasan el umbral, del puntaje más alto al más bajo.'
+          }
+          accion={
+            <Button asChild variant="secondary" size="sm" hideArrow>
+              <Link href="/panel/inmobiliaria/contratos/riesgo">Ver todos los casos</Link>
+            </Button>
+          }
+          cuerpo={false}
+        >
+          <TablaDeCasos
+            casos={urgentes}
+            vacio={
+              <SinDatos
+                queSon="casos en riesgo"
+                icono={HeartStraight}
+                titulo="Nadie pasa el umbral hoy"
+                descripcion={
+                  r.enCobranza
+                    ? `Con las señales del ERP de hoy, ningún propietario ni inquilino llega a ${r.umbral}/100. Los ${plural(r.enCobranza, 'inquilino', 'inquilinos')} con más de 60 días de mora los lleva cobranza.`
+                    : `Con las señales del ERP de hoy, ningún propietario ni inquilino llega a ${r.umbral}/100.`
+                }
+              />
+            }
+          />
+        </TarjetaDeVinci>
+      ) : null}
 
       {isAdmin ? <Umbral /> : null}
 
-      {r?.disponible ? (
-        <section aria-label="Lo más urgente">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-fg">Lo más urgente</h2>
-            <Link href="/panel/inmobiliaria/contratos/riesgo" className="text-sm font-medium text-primary hover:underline">
-              Ver todos los casos
-            </Link>
-          </div>
-          <div className="divide-y divide-border-faint overflow-hidden rounded-lg border border-border">
-            {urgentes.map((c) => (
-              <Link
-                key={c.caseId}
-                href={`/panel/inmobiliaria/contratos/riesgo/${encodeURIComponent(c.caseId)}`}
-                className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-surface-hover"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-fg">
-                    {c.nombre ?? 'Sin nombre registrado'} <span className="text-fg-muted">· {QUIEN[c.poblacion]}</span>
-                  </p>
-                  <p className="truncate text-caption text-fg-muted">
-                    {c.senales
-                      .slice(0, 2)
-                      .map((s) => `${s.texto} (+${s.puntos})`)
-                      .join(' · ')}
-                  </p>
-                </div>
-                <PuntajeDeVinci puntaje={c.puntaje} enRiesgo={c.enRiesgo} enCobranza={c.enCobranza} />
-                <CaretRight size={16} className="shrink-0 text-fg-subtle" />
-              </Link>
-            ))}
-            {urgentes.length === 0 ? (
-              <EmptyState
-                icon={HeartStraight}
-                title="Nadie pasa el umbral hoy."
-                description="Con las señales del ERP de hoy, ningún propietario ni inquilino llega al umbral de riesgo."
-              />
-            ) : null}
-          </div>
-        </section>
-      ) : null}
     </div>
   )
 }

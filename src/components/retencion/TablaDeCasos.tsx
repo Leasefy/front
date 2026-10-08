@@ -29,7 +29,9 @@ export const ESTADO_DEL_PLAN: Record<string, string> = {
 export function planEnPalabras(plan: PlanDelCaso | null): string {
   if (!plan) return 'Sin plan'
   const estado = ESTADO_DEL_PLAN[plan.estado] ?? plan.estado
-  return plan.tareasAbiertas > 0
+  // Las tareas abiertas sólo cuentan con el plan vivo: «Plan cancelado · 2
+  // tareas abiertas» (visto en QA) se contradecía.
+  return plan.estado === 'activo' && plan.tareasAbiertas > 0
     ? `${estado} · ${plan.tareasAbiertas} ${plan.tareasAbiertas === 1 ? 'tarea abierta' : 'tareas abiertas'}`
     : estado
 }
@@ -60,11 +62,11 @@ export function TablaDeCasos({
     <Table data-testid="vinci-casos">
       <TableHeader>
         <TableRow>
-          <TableHead className="pl-5">Quién</TableHead>
-          <TableHead>Riesgo</TableHead>
-          <TableHead className="hidden md:table-cell">Por qué</TableHead>
-          <TableHead className="hidden text-right sm:table-cell">Canon en juego</TableHead>
-          {conPlan ? <TableHead className="hidden lg:table-cell">Plan</TableHead> : null}
+          <TableHead className="whitespace-nowrap pl-5">Quién</TableHead>
+          <TableHead className="hidden whitespace-nowrap sm:table-cell">Riesgo</TableHead>
+          <TableHead className="hidden whitespace-nowrap md:table-cell">Por qué</TableHead>
+          <TableHead className="hidden whitespace-nowrap text-right sm:table-cell">Canon en juego</TableHead>
+          {conPlan ? <TableHead className="hidden whitespace-nowrap lg:table-cell">Plan</TableHead> : null}
           <TableHead className="w-10 pr-5">
             <span className="sr-only">Abrir</span>
           </TableHead>
@@ -88,8 +90,13 @@ export function TablaDeCasos({
                   {c.nombre ?? 'Sin nombre registrado'}
                 </Link>
                 <p className="mt-0.5 text-caption text-fg-muted">{quienEsElCaso(c)}</p>
+                {/* En el teléfono el riesgo va debajo del nombre: como columna
+                    propia le dejaba al nombre una palabra por renglón. */}
+                <div className="mt-2 sm:hidden">
+                  <PuntajeDeVinci puntaje={c.puntaje} enRiesgo={c.enRiesgo} enCobranza={c.enCobranza} />
+                </div>
               </TableCell>
-              <TableCell className="py-4">
+              <TableCell className="hidden py-4 sm:table-cell">
                 <PuntajeDeVinci puntaje={c.puntaje} enRiesgo={c.enRiesgo} enCobranza={c.enCobranza} />
               </TableCell>
               <TableCell className="hidden max-w-md py-4 text-sm text-fg-muted md:table-cell">

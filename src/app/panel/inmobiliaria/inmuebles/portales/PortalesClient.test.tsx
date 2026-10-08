@@ -73,6 +73,13 @@ vi.mock('@/components/providers/SmoothScroll', () => ({
   useLenis: () => ({ stop: vi.fn(), start: vi.fn() }),
 }))
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'))
+// La pestaña vive en la URL (`?pestana=calidad`): el router es un doble.
+const nav = vi.hoisted(() => ({ busqueda: '', replace: vi.fn() }))
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: nav.replace, push: vi.fn(), refresh: vi.fn() }),
+  usePathname: () => '/panel/inmobiliaria/inmuebles/portales',
+  useSearchParams: () => new URLSearchParams(nav.busqueda),
+}))
 // La pestaña «Calidad» tiene sus propias pruebas (CalidadDeLasPublicaciones.test.tsx):
 // acá sólo importa que se monte al elegirla, y que no se monte antes.
 vi.mock('@/components/inmobiliaria/calidad/CalidadDeLasPublicaciones', () => ({
@@ -168,6 +175,7 @@ async function clic(el: Element | null) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  nav.busqueda = ''
   h.canAccess.mockReturnValue(true)
   h.consignaciones.mockReturnValue({ consignaciones: [] })
   h.api.cuentas.mockResolvedValue({
@@ -728,5 +736,54 @@ describe('P8 · pestañas Publicar y Calidad', () => {
     expect(calidad?.getAttribute('aria-selected')).toBe('true')
     expect(contenedor.querySelector('[data-testid="pestana-calidad-montada"]')).not.toBeNull()
     expect(contenedor.querySelector('[data-testid="tabla-publicaciones"]')).toBeNull()
+  })
+})
+
+/*
+ * P9 — La pestaña está en la URL: `?pestana=calidad` abre directo Calidad (así
+ *      se puede enlazar desde la Bandeja o compartir), cambiar de pestaña la
+ *      reescribe con `router.replace` sin recargar, y sin parámetro es
+ *      «Publicar» —que tampoco lo escribe: la URL de siempre sigue igual—.
+ */
+describe('P9 · la pestaña en la URL', () => {
+  const RUTA = '/panel/inmobiliaria/inmuebles/portales'
+  const elegir = async (testid: string) => {
+    await act(async () => {
+      contenedor
+        .querySelector(`[data-testid="${testid}"]`)
+        ?.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }))
+    })
+  }
+
+  it('?pestana=calidad abre directo la pestaña Calidad', async () => {
+    nav.busqueda = 'pestana=calidad'
+    await montar()
+    expect(contenedor.querySelector('[data-testid="pestana-calidad"]')?.getAttribute('aria-selected')).toBe('true')
+    expect(contenedor.querySelector('[data-testid="pestana-calidad-montada"]')).not.toBeNull()
+    expect(contenedor.querySelector('[data-testid="tabla-publicaciones"]')).toBeNull()
+    expect(nav.replace).not.toHaveBeenCalled()
+  })
+
+  it('un valor que no es una pestaña se lee como «Publicar»', async () => {
+    nav.busqueda = 'pestana=otra'
+    await montar()
+    expect(contenedor.querySelector('[data-testid="pestana-publicar"]')?.getAttribute('aria-selected')).toBe('true')
+  })
+
+  it('sin parámetro entra en «Publicar» y no toca la URL', async () => {
+    await montar()
+    expect(contenedor.querySelector('[data-testid="pestana-publicar"]')?.getAttribute('aria-selected')).toBe('true')
+    expect(nav.replace).not.toHaveBeenCalled()
+  })
+
+  it('cambiar de pestaña reescribe la URL con replace (sin recargar); volver a Publicar quita el parámetro', async () => {
+    nav.busqueda = 'foco=1'
+    await montar()
+    await elegir('pestana-calidad')
+    expect(nav.replace).toHaveBeenLastCalledWith(`${RUTA}?foco=1&pestana=calidad`, { scroll: false })
+
+    nav.busqueda = 'foco=1&pestana=calidad'
+    await elegir('pestana-publicar')
+    expect(nav.replace).toHaveBeenLastCalledWith(`${RUTA}?foco=1`, { scroll: false })
   })
 })

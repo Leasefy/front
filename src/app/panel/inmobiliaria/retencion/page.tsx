@@ -12,7 +12,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowsClockwise, CaretRight, HeartStraight, Warning } from '@phosphor-icons/react'
-import { toast } from 'sonner'
+import { toast } from '@/components/ui/toast'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -81,7 +81,7 @@ function Umbral() {
         comisión (20 % por defecto) y cada cuántos días Vinci le puede volver a escribir a la misma persona (7 al
         inquilino, 15 al propietario). Sólo el administrador lo cambia.
       </p>
-      <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="el umbral de Vinci" onReintentar={() => void refetch()}>
+      <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="el umbral de Vinci" onReintentar={() => refetch()}>
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,11rem))_auto] lg:items-end">
           <div className="space-y-1.5">
             <Label htmlFor="vinci-umbral">Umbral (0–100)</Label>
@@ -172,7 +172,7 @@ export default function RetencionDashboardPage() {
         cargando={riesgo.isLoading && !r}
         error={riesgo.error}
         queEs="el riesgo de retención"
-        onReintentar={() => void riesgo.refetch()}
+        onReintentar={() => riesgo.refetch()}
         principal
       >
         {r ? (
@@ -222,7 +222,7 @@ export default function RetencionDashboardPage() {
           cargando={metricas.isLoading && !metricas.data}
           error={metricas.error}
           queEs="lo que Vinci retuvo"
-          onReintentar={() => void metricas.refetch()}
+          onReintentar={() => metricas.refetch()}
         >
           {metricas.data ? (
             <p className="mt-2 text-sm text-fg" data-testid="vinci-metricas">

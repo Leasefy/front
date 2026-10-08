@@ -24,12 +24,31 @@ export interface FilaDelMenu {
   kind?: 'section';
   /** Una fila deshabilitada no navega: no puede ser «dónde estás». */
   disabled?: boolean;
+  /**
+   * Otras rutas que son esta misma fila (por prefijo, con borde de segmento).
+   * El chat vive en la raíz (`exact`) y también en `/beta`: sin esto, en
+   * `/panel/inmobiliaria/beta` no quedaba marcada ninguna fila (08-10-2026).
+   */
+  tambienEn?: readonly string[];
 }
 
-/** ¿La fila calza con la ruta? Exacta, o por prefijo con borde de segmento. */
+function calzaPorPrefijo(prefijo: string, pathname: string): boolean {
+  return pathname === prefijo || pathname.startsWith(`${prefijo}/`);
+}
+
+/** Lo largo de lo que calzó (el href o una de `tambienEn`), o null si nada calza. */
+function largoDelCalce(fila: FilaDelMenu, pathname: string): number | null {
+  let largo: number | null = null;
+  if (fila.exact ? pathname === fila.href : calzaPorPrefijo(fila.href, pathname)) largo = fila.href.length;
+  for (const otra of fila.tambienEn ?? []) {
+    if (calzaPorPrefijo(otra, pathname) && (largo === null || otra.length > largo)) largo = otra.length;
+  }
+  return largo;
+}
+
+/** ¿La fila calza con la ruta? Exacta, o por prefijo con borde de segmento (también en `tambienEn`). */
 export function calzaConLaRuta(fila: FilaDelMenu, pathname: string): boolean {
-  if (fila.exact) return pathname === fila.href;
-  return pathname === fila.href || pathname.startsWith(`${fila.href}/`);
+  return largoDelCalce(fila, pathname) !== null;
 }
 
 /**
@@ -42,10 +61,13 @@ export function hrefDeLaFilaActiva(
 ): string | null {
   const ruta = (pathname ?? '').split('?')[0] ?? '';
   let activa: string | null = null;
+  let largoDeLaActiva = -1;
   for (const fila of filas) {
     if (fila.kind === 'section' || fila.disabled) continue;
-    if (!calzaConLaRuta(fila, ruta)) continue;
-    if (activa === null || fila.href.length > activa.length) activa = fila.href;
+    const largo = largoDelCalce(fila, ruta);
+    if (largo === null || largo <= largoDeLaActiva) continue;
+    activa = fila.href;
+    largoDeLaActiva = largo;
   }
   return activa;
 }

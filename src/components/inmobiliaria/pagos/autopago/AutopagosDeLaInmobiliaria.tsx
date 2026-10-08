@@ -196,7 +196,7 @@ export function AutopagosDeLaInmobiliaria() {
       cargando={cargando && !data}
       error={error}
       queEs="los autopagos"
-      onReintentar={() => void recargar()}
+      onReintentar={recargar}
       principal
       esqueleto={<EsqueletoTabla filas={4} columnas={5} />}
     >

@@ -46,6 +46,7 @@ import {
   relojDeLaCuenta,
   riesgosNombrados,
   segundosQueFaltan,
+  textoLegible,
   vistaPreviaLegible,
 } from './tarjetas-de-ejecucion';
 
@@ -157,8 +158,8 @@ describe('la intención de un botón', () => {
       entidad: { tipo: 'contrato', id: CONTRATO_24 },
       datos: { valor: 1_550_000, medio: 'transferencia' },
     });
-    // Una entidad que la ficha no conoce no es una intención.
-    expect(leerIntencionDelBoton({ accion: 'registrar_pago', entidad: { tipo: 'factura', id: 'x' } })).toBeNull();
+    // Una entidad que la ficha no conoce no es una intención (la factura sí: el micro la tiene desde el 24-09).
+    expect(leerIntencionDelBoton({ accion: 'registrar_pago', entidad: { tipo: 'banco', id: 'x' } })).toBeNull();
   });
 });
 
@@ -222,7 +223,7 @@ describe('la vista previa, legible', () => {
     expect(v.tablas).toHaveLength(1);
     expect(v.tablas[0].titulo).toBe('Cuotas');
     expect(v.tablas[0].columnas.map((c) => [c.titulo, c.formato])).toEqual([
-      ['Numero', 'numero'],
+      ['Número', 'numero'],
       ['Vence', 'fecha'],
       ['Valor', 'moneda'],
     ]);
@@ -245,5 +246,36 @@ describe('la vista previa, legible', () => {
   it('etiquetas en español a partir de la clave', () => {
     expect(etiquetaDeLaClave('fechaDeInicio')).toBe('Fecha de inicio');
     expect(etiquetaDeLaClave('canon_nuevo')).toBe('Canon nuevo');
+    // 07-10: la vista previa del egreso decía «Neto cop», «Reteica cop», «Created at».
+    expect(etiquetaDeLaClave('netoCop')).toBe('Neto');
+    expect(etiquetaDeLaClave('valor_cop')).toBe('Valor');
+    expect(etiquetaDeLaClave('reteicaCop')).toBe('ReteICA');
+    expect(etiquetaDeLaClave('ivaCop')).toBe('IVA');
+    expect(etiquetaDeLaClave('retefuenteCop')).toBe('Retefuente');
+    expect(etiquetaDeLaClave('createdAt')).toBe('Creado');
+    expect(etiquetaDeLaClave('numeroDeCuenta')).toBe('Número de cuenta');
+    expect(etiquetaDeLaClave('comisionCop')).toBe('Comisión');
+    expect(etiquetaDeLaClave('copropiedad')).toBe('Copropiedad');
+    expect(etiquetaDeLaClave('dianaRestrepo')).toBe('Diana restrepo');
+    expect(etiquetaDeLaClave('nitDelPropietario')).toBe('NIT del propietario');
+    expect(etiquetaDeLaClave('cop')).toBe('Cop');
+  });
+
+  it('un estado del ERP se lee como palabra; las siglas cortas y lo demás, tal cual', () => {
+    expect(textoLegible('PENDIENTE')).toBe('Pendiente');
+    expect(textoLegible('EN_LOTE')).toBe('En lote');
+    expect(textoLegible('DIAN')).toBe('DIAN');
+    expect(textoLegible('CE-4')).toBe('CE-4');
+    expect(textoLegible('Bancolombia')).toBe('Bancolombia');
+    expect(textoLegible('PAB-LAB-0710')).toBe('PAB-LAB-0710');
+  });
+
+  it('las marcas de la base (actualizado, borrado) no se muestran', () => {
+    const v = vistaPreviaLegible({ netoCop: 300_000, createdAt: '2026-10-07T10:00:00Z', updatedAt: '2026-10-07T10:00:00Z', banco: { deletedAt: null, nombre: 'Bancolombia' } });
+    expect(v.datos.map((d) => [d.etiqueta, d.formato])).toEqual([
+      ['Neto', 'moneda'],
+      ['Creado', 'fecha'],
+      ['Banco · nombre', 'texto'],
+    ]);
   });
 });

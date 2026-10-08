@@ -34,6 +34,7 @@ import {
   relojDeLaCuenta,
   riesgosNombrados,
   segundosQueFaltan,
+  textoLegible,
   vistaPreviaLegible,
   type BotonDeLaTarjeta,
   type DatoDeLaVistaPrevia,
@@ -335,7 +336,7 @@ function valorLegible(
     case 'booleano':
       return v === true ? t('beta.enElChat.tarjeta.vistaPrevia.si') : t('beta.enElChat.tarjeta.vistaPrevia.no');
     default:
-      return String(v);
+      return typeof v === 'string' ? textoLegible(v) : String(v);
   }
 }
 

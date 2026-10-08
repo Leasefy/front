@@ -518,16 +518,91 @@ const CLAVE_DE_PLATA =
 const CLAVE_DE_PLATA_EXACTA = /^iva|Iva|_iva|Cop$|_cop$|^cop$/;
 const esClaveDePlata = (clave: string) => CLAVE_DE_PLATA.test(clave) || CLAVE_DE_PLATA_EXACTA.test(clave);
 const CLAVE_DE_ID = /^(id|uuid)$|Id$|_id$|^(agencyId|tenantId|userId)$/;
+/**
+ * 07-10: las marcas de la base que no le dicen nada a la persona («Updated
+ * at», «Deleted at» salían en la vista previa del egreso a anular).
+ */
+const CLAVE_DE_BITACORA = /^(updatedAt|updated_at|deletedAt|deleted_at|version)$/;
 const MAX_COLUMNAS = 5;
 
-/** «fechaDeInicio» → «Fecha de inicio»; «canon_nuevo» → «Canon nuevo». */
+/** Las claves del ERP en inglés que se cuelan en una vista previa. */
+const NOMBRE_DE_LA_CLAVE: Readonly<Record<string, string>> = {
+  createdAt: 'Creado',
+  created_at: 'Creado',
+  status: 'Estado',
+  amount: 'Valor',
+  name: 'Nombre',
+  email: 'Correo',
+  phone: 'Celular',
+  address: 'Dirección',
+  notes: 'Notas',
+  reason: 'Motivo',
+};
+/** Las palabras que una clave escribe sin tilde («numeroDeCuenta»). */
+const CON_TILDE: Readonly<Record<string, string>> = {
+  numero: 'número',
+  direccion: 'dirección',
+  telefono: 'teléfono',
+  comision: 'comisión',
+  retencion: 'retención',
+  codigo: 'código',
+  razon: 'razón',
+  periodo: 'período',
+  credito: 'crédito',
+  debito: 'débito',
+  dias: 'días',
+  informacion: 'información',
+  descripcion: 'descripción',
+  ultimo: 'último',
+  ultima: 'última',
+  liquidacion: 'liquidación',
+  conciliacion: 'conciliación',
+  facturacion: 'facturación',
+};
+/** Siglas que se escriben en mayúsculas dentro de la etiqueta. */
+const SIGLAS: ReadonlyArray<[RegExp, string]> = [
+  [/\breteica\b/g, 'ReteICA'],
+  [/\breteiva\b/g, 'ReteIVA'],
+  [/\biva\b/g, 'IVA'],
+  [/\bnit\b/g, 'NIT'],
+  [/\bica\b/g, 'ICA'],
+  [/\bpqrs\b/g, 'PQRS'],
+  [/\bdian\b/g, 'DIAN'],
+];
+
+/**
+ * «fechaDeInicio» → «Fecha de inicio»; «canon_nuevo» → «Canon nuevo».
+ * 07-10: la plata ya sale con su «$», así que el «Cop» del nombre se cae
+ * («netoCop» → «Neto», no «Neto cop»), y las siglas van en mayúsculas.
+ */
 export function etiquetaDeLaClave(clave: string): string {
-  const palabras = clave
+  if (NOMBRE_DE_LA_CLAVE[clave]) return NOMBRE_DE_LA_CLAVE[clave];
+  let palabras = clave
+    .replace(/(?<=[a-záéíóúñ0-9])Cop$|_cop$/, '')
     .replace(/[_-]+/g, ' ')
     .replace(/([a-záéíóúñ0-9])([A-ZÁÉÍÓÚÑ])/g, '$1 $2')
     .trim()
     .toLowerCase();
-  return palabras ? palabras.charAt(0).toUpperCase() + palabras.slice(1) : clave;
+  if (!palabras) return clave;
+  palabras = palabras
+    .split(' ')
+    .map((p) => CON_TILDE[p] ?? p)
+    .join(' ');
+  palabras = palabras.charAt(0).toUpperCase() + palabras.slice(1);
+  for (const [re, sigla] of SIGLAS) palabras = palabras.replace(re, sigla).replace(new RegExp(`^${sigla}\\b`, 'i'), sigla);
+  return palabras;
+}
+
+/**
+ * 07-10: un estado del ERP («PENDIENTE», «EN_LOTE») se lee como palabra
+ * («Pendiente», «En lote»). Sólo lo que parece un código: todo en mayúsculas,
+ * sin cifras, con guion bajo o de 5 letras o más (las siglas cortas —DIAN,
+ * PQRS, NIT— se quedan como están).
+ */
+export function textoLegible(v: string): string {
+  if (!/^[A-ZÁÉÍÓÚÑ]+(?:_[A-ZÁÉÍÓÚÑ]+)*$/.test(v) || (!v.includes('_') && v.length < 5)) return v;
+  const palabras = v.replace(/_+/g, ' ').toLowerCase();
+  return palabras.charAt(0).toUpperCase() + palabras.slice(1);
 }
 
 function formatoDe(clave: string, valor: unknown): FormatoDeDato | null {
@@ -555,7 +630,7 @@ function tablaDe(clave: string, lista: unknown[]): TablaDeLaVistaPrevia | null {
   for (const o of objetos.slice(0, 20)) {
     for (const [k, v] of Object.entries(o)) {
       if (columnas.length >= MAX_COLUMNAS) break;
-      if (CLAVE_DE_ID.test(k) || columnas.some((c) => c.clave === k)) continue;
+      if (CLAVE_DE_ID.test(k) || CLAVE_DE_BITACORA.test(k) || columnas.some((c) => c.clave === k)) continue;
       const formato = formatoDe(k, v);
       if (formato) columnas.push({ clave: k, titulo: etiquetaDeLaClave(k), formato });
     }
@@ -585,7 +660,8 @@ export function vistaPreviaLegible(datos: unknown): VistaPreviaLegible {
     return salida;
   }
   const agregarDato = (clave: string, etiqueta: string, v: unknown) => {
-    if (CLAVE_DE_ID.test(clave.split('.').pop() ?? clave)) return;
+    const ultima = clave.split('.').pop() ?? clave;
+    if (CLAVE_DE_ID.test(ultima) || CLAVE_DE_BITACORA.test(ultima)) return;
     const formato = formatoDe(clave, v);
     if (formato && esEscalar(v)) salida.datos.push({ clave, etiqueta, valor: v, formato });
   };

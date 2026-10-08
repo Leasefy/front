@@ -58,6 +58,13 @@ export interface LinkDePagoDeCuota {
   pagadoEn: string | null;
   /** El checkout de la pasarela. `null` si no hay link. */
   paymentUrl: string | null;
+  /**
+   * OPCIONAL (QA 26-09; un back viejo no lo manda): Payu no escribe por esta
+   * cuota porque el contrato ya está en mora — su cuota MÁS VIEJA con saldo
+   * pasó vencimiento + 3. Puede venir en `true` en una cuota que por sí sola
+   * todavía no venció. Sin el campo, se mira sólo la fecha de la cuota.
+   */
+  enMora?: boolean;
 }
 
 export interface PaginaDeLinksDePago {

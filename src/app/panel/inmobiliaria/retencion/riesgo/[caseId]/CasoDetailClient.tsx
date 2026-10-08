@@ -297,9 +297,13 @@ function Plan({ caso }: { caso: CasoDeVinci }) {
     <TarjetaDeVinci
       id="vinci-plan"
       icono={ListChecks}
-      titulo="Plan"
+      titulo={
+        <span className="flex flex-wrap items-center gap-2">
+          Plan
+          {estado ? <Badge variant={CHIP_DEL_PLAN[estado]?.variant ?? 'secondary'}>{CHIP_DEL_PLAN[estado]?.label ?? estado}</Badge> : null}
+        </span>
+      }
       descripcion={data ? data.plan.objective : undefined}
-      accion={estado ? <Badge variant={CHIP_DEL_PLAN[estado]?.variant ?? 'secondary'}>{CHIP_DEL_PLAN[estado]?.label ?? estado}</Badge> : null}
     >
       <EstadoDeDatos cargando={isLoading && !data} error={error} queEs="el plan" onReintentar={() => refetch()}>
         {data ? (
@@ -381,7 +385,8 @@ function Historial({ caseId }: { caseId: string }) {
           <ol className="divide-y divide-border-faint">
             {data.map((d) => (
               <li key={d.id} className="px-5 py-3 text-sm text-fg">
-                <p className="font-mono text-caption tabular-nums text-fg-muted">{fechaYHora(d.createdAt)}</p>
+                {/* Sin mono ni `tabular-nums`: la fecha lleva coma y el ancho fijo la separaba («sept ,  5:10»). */}
+                <p className="text-caption text-fg-muted">{fechaYHora(d.createdAt)}</p>
                 <p className="mt-0.5">{QUE_ES_CADA_DECISION[d.decisionType] ?? d.decisionType}</p>
                 {typeof d.payload?.texto === 'string' ? <p className="mt-1 text-fg-muted">«{d.payload.texto}»</p> : null}
                 {d.decisionType === 'mensaje_no_salio' && typeof d.payload?.mensaje === 'string' ? (

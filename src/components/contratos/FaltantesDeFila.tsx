@@ -209,7 +209,7 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
   reparto_del_canon: {
     titulo: "La plata por dueño no cuadra",
     porque:
-      "«Valor Canon» reparte el canon entre los dueños y la lista no coincide con ellos o no suma el canon. No se inventa un 50/50: corrige la celda en el archivo y vuelve a subirlo, o quita esa columna del mapeo para que queden en partes iguales y lo ajustas en el mandato del inmueble.",
+      "«Valor Canon» reparte el canon entre los dueños y la lista no coincide con ellos o no suma el canon. No se inventa un 50/50: define abajo cuánto es de cada dueño, sin volver a subir el archivo.",
   },
 };
 
@@ -519,6 +519,9 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
                 correr={correr}
                 campo={campo}
               />
+            ) : null}
+            {f === "reparto_del_canon" ? (
+              <RepartoEditable fila={fila} ocupado={ocupado} correr={correr} />
             ) : null}
             {f === "dia_de_pago" ? (
               <CampoSimple
@@ -1183,6 +1186,143 @@ function DocumentoDelInquilino({
       >
         Quitar el documento y resolver por correo
       </Button>
+    </div>
+  );
+}
+
+/** Pesos enteros desde lo que se teclea («2.558.800», «2558800»); `null` si no es un monto. */
+function pesosDeTexto(texto: string): number | null {
+  const limpio = texto.replace(/[\s.$]/g, "");
+  if (!/^\d+$/.test(limpio)) return null;
+  const n = Number(limpio);
+  return Number.isSafeInteger(n) ? n : null;
+}
+
+/** Reparte `canon` en `n` partes enteras; el resto de pesos va al primer dueño. */
+export function partesIguales(canon: number, n: number): number[] {
+  const base = Math.floor(canon / n);
+  const resto = canon - base * n;
+  return Array.from({ length: n }, (_, i) => (i === 0 ? base + resto : base));
+}
+
+/**
+ * Corregir la plata por dueño en la app. Un campo por dueño, con lo que dijo el
+ * archivo de punto de partida; sólo se guarda cuando la suma es EXACTAMENTE el
+ * canon de la fila (que no se toca). Un dueño en $0 sale del reparto.
+ */
+function RepartoEditable({
+  fila,
+  ocupado,
+  correr,
+}: {
+  fila: FilaDeMigracion;
+  ocupado: boolean;
+  correr: (a: () => Promise<FilaDeMigracion>) => Promise<void>;
+}) {
+  const duenos = fila.asociacion?.propietario?.reparto?.duenos ?? [];
+  const canon = fila.datos.monthlyRent;
+  const [valores, setValores] = useState<string[]>(() =>
+    duenos.map((d) => (typeof d.canon === "number" ? String(d.canon) : "")),
+  );
+
+  if (duenos.length < 2 || !canon || canon <= 0) return null;
+
+  const montos = valores.map(pesosDeTexto);
+  const completo = montos.every((m) => m !== null);
+  const suma = montos.reduce<number>((a, m) => a + (m ?? 0), 0);
+  const diferencia = canon - suma;
+  const cuadra = completo && diferencia === 0;
+  const nombreDe = (i: number) =>
+    duenos[i].nombre || duenos[i].documento || `Dueño ${i + 1}`;
+
+  return (
+    <div className="space-y-2" data-testid="editor-de-reparto">
+      <div className="space-y-1.5">
+        {duenos.map((d, i) => (
+          <div key={i} className="flex flex-wrap items-center gap-2">
+            <label
+              className="min-w-[160px] flex-1 text-caption text-muted-foreground"
+              htmlFor={`reparto-${fila.id}-${i}`}
+            >
+              {nombreDe(i)}
+            </label>
+            <Input
+              id={`reparto-${fila.id}-${i}`}
+              inputMode="numeric"
+              className="max-w-[180px]"
+              value={valores[i] ?? ""}
+              disabled={ocupado}
+              data-testid={`reparto-dueno-${i}`}
+              onChange={(e) =>
+                setValores((v) => v.map((x, j) => (j === i ? e.target.value : x)))
+              }
+            />
+          </div>
+        ))}
+      </div>
+
+      <p
+        className={`text-caption ${cuadra ? "text-foreground" : "text-warning"}`}
+        data-testid="reparto-suma"
+      >
+        Suma {formatCurrency(suma)} de {formatCurrency(canon)}
+        {!completo
+          ? " — escribe un monto entero en cada dueño."
+          : diferencia > 0
+            ? ` — faltan ${formatCurrency(diferencia)}.`
+            : diferencia < 0
+              ? ` — sobran ${formatCurrency(-diferencia)}.`
+              : " — cuadra."}
+      </p>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          hideArrow
+          disabled={ocupado}
+          data-testid="reparto-partes-iguales"
+          onClick={() =>
+            setValores(partesIguales(canon, duenos.length).map(String))
+          }
+        >
+          Partes iguales
+        </Button>
+        {duenos.map((_, i) => (
+          <Button
+            key={i}
+            variant="outline"
+            size="sm"
+            hideArrow
+            disabled={ocupado}
+            data-testid={`reparto-todo-a-${i}`}
+            onClick={() =>
+              setValores(duenos.map((__, j) => (j === i ? String(canon) : "0")))
+            }
+          >
+            Todo a {nombreDe(i)}
+          </Button>
+        ))}
+        <Button
+          size="sm"
+          hideArrow
+          disabled={ocupado || !cuadra}
+          data-testid="reparto-guardar"
+          onClick={() =>
+            void correr(() =>
+              contractsApi.migracion.corregirReparto(
+                fila.id,
+                montos as number[],
+              ),
+            )
+          }
+        >
+          Guardar reparto
+        </Button>
+      </div>
+      <p className="text-caption text-muted-foreground">
+        Un dueño en $0 sale del reparto de este contrato.
+      </p>
     </div>
   );
 }

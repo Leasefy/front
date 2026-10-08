@@ -41,6 +41,13 @@ activity feed, execution panel).
   idempotente; sin worker, la ficha dice «El mapa no cargó» con «Abrir en Google Maps»); todo `<Map>` importa
   `src/components/map/trabajador-de-maplibre.ts` o el mapa sale gris. Gráficas: recharts. Scroll: lenis.
 - Auth: Supabase (`@supabase/ssr`) + MFA TOTP. Push: Firebase FCM.
+- Cadence (`@leasefy/cadence`, `file:../cadence`): el CI y Vercel clonan el repo hermano `Leasefy/cadence` antes de
+  instalar. La rama o tag a clonar sale de `.cadence-ref` (raíz de `front/`, una sola línea); sin el archivo se
+  usa `main`. Lo actualiza quien cambia la versión de Cadence que la rama necesita, en el mismo commit que el
+  lockfile; mientras una rama fije un ref, `main` de Cadence no gobierna sus builds. Hoy apunta a `main`
+  (Cadence 1.2.3, que ya incluye `bugs-nico-1`).
+  Una rama fijada nunca se borra mientras una rama de front la fije: primero se actualiza `.cadence-ref`
+  (incidente 2026-10-07: el build de Main fallo con clone exit 128).
 
 ## Estructura
 
@@ -374,6 +381,45 @@ La «Revisión con IA» (espera inventada de 2 s) se eliminó.
   aparta `valorQueNoCabe` al crear con su cifra y su campo.
 - `inmueblesImportacionApi.activar` y `activarLoteCompleto` se retiraron del front (el back conserva `activar` por compatibilidad).
 - `useAvisoAlSalir` sigue SÓLO mientras se sube o se ubica (y con un archivo leído sin subir).
+
+## Procesos de migración reanudables (T-0135)
+
+Regla del dueño: todo proceso de migración guarda por lotes; un corte nunca obliga a empezar de 0, y lo que falta lo dice
+el SERVIDOR (no `localStorage` ni la memoria de la pestaña). El back es la misma unidad (WU-1).
+
+- **`ResolucionMasiva`** (contratos): con `lote`, antes de aplicar pregunta `GET migrar/filas/ids?faltante=` y sólo manda
+  las seleccionadas que aún no tienen el dato (excluye ACTIVADO/DESCARTADO); repite hasta que no queden. Progreso
+  «Aplicando X/N» con el N del servidor, `useAvisoAlSalir` mientras corre. En la lista, el panel «Lo que todavía falta
+  resolver en bloque» (de `resumen.porMotivo.uso|propietario`) ofrece «Seguir con las N que faltan»: selecciona sólo esas y
+  abre la acción en su modo (`modoInicial`).
+- **Propietario del archivo**: `consignarDesdeElArchivo` lee `fila.datos.propietario` (guardado en `preparar`), ya no un
+  `useRef` con el archivo; continúa con las filas sin propietario aunque se recargue o se vuelva otro día.
+- **`CrearInmueblesFaltantes`**: tandas de 25 (`limite` + cursor `despuesDeFila`/`siguienteFila`), avance a la vista,
+  `useAvisoAlSalir`; si se corta, el botón pasa a «Continuar» y el conteo del servidor dice cuántas faltan. Se conserva el
+  resultado agrupado de T-0134.
+- **`DocumentosContables`**: cada lote de `migrar` manda `lote` (nombre+peso del archivo, o el de la carga que se continúa)
+  + `totalDelArchivo` (lo que contó la revisión) + `desde`. `CargasDeComprobantesAbiertas` lista las cargas a medias con
+  «Continuar» (pide el MISMO archivo y no reenvía el prefijo ya procesado) y «Descartar». Rutas nuevas:
+  `GET/POST …/migracion/documentos/cargas[/descartar]` (`rutas-del-back.json` regenerado).
+- **Orden de despliegue**: el back primero (`lote`/`totalDelArchivo`/`desde`/`faltante`/`limite` pasan por
+  `forbidNonWhitelisted`; contra un back anterior, esas claves son un 400). Sin tests por decisión del dueño: ver el
+  `WU-1-report.md` de la tarea.
+
+## Arrendatario desde la postulación (T-0145)
+
+«Crear contrato → Usar plantilla» ya no se traba en el art. 3.º literal a). Contrato congelado en
+`.orchestration/tasks/T-0145-arrendatario-desde-la-postulacion/contract.md`; el back es WU-1.
+
+- **Borrador** (`BorradorDeContrato`): `applicationId` (postulación) o `tenantId` (manual, inquilino existente);
+  el back resuelve al arrendatario y completa sólo los `arrendatario*` vacíos, lo que el front mande gana. Contra
+  un back anterior las dos claves se ignoran.
+- **`tenantId` sólo si es UUID** (`esUuid`, `src/lib/contratos/arrendatario.ts`): la lista de «inquilino existente» puede
+  traer llaves `doc:…`; con esas se manda lo que la lista sabe (`SeleccionDeInquilino.datos`) como `arrendatario*`.
+- **«Candidato:»**: `GET /landlord/applications/:id` NO trae `tenantName` (es de la tarjeta de la lista); el nombre está
+  en `tenant.firstName/lastName` (`nombreDelCandidato`). Sin nombre, «Sin nombre registrado», nunca vacío.
+- **Identificación editable** (`ArmarContratoDesdePlantilla`, prop `arrendatario`): nombre, tipo y número de documento,
+  siempre visibles y prellenados; pasan a obligatorios (`Label required`, `aria-required`) cuando el validador reporta
+  `ARTICULO_3_INCOMPLETO` literal a). El tipo sólo viaja si hay documento escrito. Con inquilino NUEVO tecleado no se pinta.
 
 ## Conciliación, Fase 1: la cuenta, los saldos y la pasarela (02-10-2026)
 

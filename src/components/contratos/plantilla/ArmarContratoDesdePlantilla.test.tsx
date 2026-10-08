@@ -30,7 +30,10 @@ import type {
   PropuestaDeLaIa,
 } from '@/lib/api/contratos-plantilla.service'
 import { useContratoDesdePlantilla } from '@/lib/contratos/useContratoDesdePlantilla'
-import { ArmarContratoDesdePlantilla } from './ArmarContratoDesdePlantilla'
+import {
+  ArmarContratoDesdePlantilla,
+  type IdentificacionDelArrendatario,
+} from './ArmarContratoDesdePlantilla'
 
 // ─── Datos ───────────────────────────────────────────────────────────────────
 
@@ -440,6 +443,128 @@ describe('un PDF armado deja de valer cuando cambia lo impreso', () => {
 
     expect(porTestId('plantilla-quedo-viejo')).not.toBeNull()
     expect(porTestId('plantilla-contrato-listo')).toBeNull()
+  })
+})
+
+// ─── Identificación del arrendatario (T-0145) ────────────────────────────────
+
+function escribir(el: HTMLInputElement, valor: string) {
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+  act(() => {
+    setter.call(el, valor)
+    el.dispatchEvent(new Event('input', { bubbles: true }))
+  })
+}
+
+function ArnesConArrendatario({ nombreInicial = 'Ana Pérez' }: { nombreInicial?: string }) {
+  const [ident, setIdent] = React.useState<IdentificacionDelArrendatario>({
+    nombre: nombreInicial,
+    tipoDocumento: 'CC',
+    documento: '',
+  })
+  const borrador: BorradorDeContrato = {
+    ...BORRADOR,
+    applicationId: 'a-1',
+    arrendatarioNombre: ident.nombre || undefined,
+    arrendatarioDocumento: ident.documento || undefined,
+    arrendatarioTipoDocumento: ident.documento ? ident.tipoDocumento : undefined,
+  }
+  const estado = useContratoDesdePlantilla(borrador)
+  return (
+    <ArmarContratoDesdePlantilla
+      modo="template"
+      estado={estado}
+      arrendatario={{ ...ident, onCambio: (c) => setIdent((v) => ({ ...v, ...c })) }}
+    />
+  )
+}
+
+const ART3_A = {
+  codigo: 'ARTICULO_3_INCOMPLETO',
+  donde: 'art. 3 literal a',
+  mensaje: 'Falta el contenido mínimo del literal a) del artículo 3.º: arrendatarioDocumento.',
+  norma: 'Ley 820 de 2003, artículo 3.º',
+}
+
+describe('identificación del arrendatario', () => {
+  async function montarConArrendatario() {
+    await act(async () => {
+      raiz.render(<ArnesConArrendatario />)
+    })
+    await esperarPreparacion()
+  }
+
+  it('ofrece nombre, tipo y número de documento, con el nombre ya conocido', async () => {
+    await montarConArrendatario()
+    expect(porTestId('plantilla-arrendatario')).not.toBeNull()
+    expect((porTestId('plantilla-arrendatario-nombre') as HTMLInputElement).value).toBe('Ana Pérez')
+    expect((porTestId('plantilla-arrendatario-documento') as HTMLInputElement).value).toBe('')
+    expect(porTestId('plantilla-arrendatario-tipo')).not.toBeNull()
+  })
+
+  it('no marca nada como obligatorio hasta que el validador lo pide', async () => {
+    await montarConArrendatario()
+    expect(porTestId('plantilla-arrendatario')!.textContent).not.toContain('*')
+    expect(
+      porTestId('plantilla-arrendatario-documento')!.getAttribute('aria-required'),
+    ).toBeNull()
+  })
+
+  it('si el validador reporta el literal a) del art. 3, marca los campos como obligatorios', async () => {
+    await montarConArrendatario()
+    post.mockImplementation((ruta: string) => {
+      if (ruta.endsWith('/preparar')) return Promise.resolve(PREPARACION)
+      return Promise.reject(
+        new ApiError(400, 'No se puede emitir', 'CONTRATO_NO_VALIDO', { motivos: [ART3_A] }),
+      )
+    })
+    clic(porTestId('plantilla-generar'))
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    const bloque = porTestId('plantilla-arrendatario')!
+    expect(bloque.textContent).toContain('*')
+    const doc = porTestId('plantilla-arrendatario-documento')!
+    expect(doc.getAttribute('aria-required')).toBe('true')
+    // Está vacío y es obligatorio: queda marcado inválido.
+    expect(doc.getAttribute('aria-invalid')).toBe('true')
+    // El motivo sigue a la vista, completo.
+    expect(porTestId('plantilla-motivos')!.textContent).toContain(ART3_A.norma)
+  })
+
+  it('lo que se escribe viaja como arrendatario* en el siguiente generar', async () => {
+    await montarConArrendatario()
+    escribir(porTestId('plantilla-arrendatario-documento') as HTMLInputElement, '79123456')
+    await esperarPreparacion()
+
+    post.mockClear()
+    post.mockImplementation((ruta: string) => {
+      if (ruta.endsWith('/preparar')) return Promise.resolve(PREPARACION)
+      return Promise.resolve({
+        uploadedPdfPath: 'contracts/uploads/u-1/1.pdf',
+        contractOrigin: 'UPLOADED_PDF',
+        codigo: 'CONTRATO_VIVIENDA',
+        uso: 'VIVIENDA',
+        nombreSugerido: 'Contrato — Calle 100',
+        clausulas: [],
+      })
+    })
+    clic(porTestId('plantilla-generar'))
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    const cuerpo = cuerposDe('/generar')[0]
+    expect(cuerpo.arrendatarioNombre).toBe('Ana Pérez')
+    expect(cuerpo.arrendatarioDocumento).toBe('79123456')
+    expect(cuerpo.arrendatarioTipoDocumento).toBe('CC')
+    expect(cuerpo.applicationId).toBe('a-1')
+  })
+
+  it('sin la prop, el bloque no existe (manual con inquilino nuevo ya los pide arriba)', async () => {
+    await montar({ modo: 'template' })
+    expect(porTestId('plantilla-arrendatario')).toBeNull()
   })
 })
 

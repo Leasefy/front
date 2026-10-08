@@ -1,6 +1,5 @@
 'use client';
 
-import { nombreDelCandidato } from '@/lib/contratos/nombre-del-candidato';
 import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/contratos/modo-de-cobro'
 import { useState, useCallback, useMemo, useEffect, useRef, useId } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -103,7 +102,15 @@ import {
   terminosDeCobro,
   validarDiasDePlazo,
 } from '@/lib/contratos/terminos-de-cobro';
-import { ArmarContratoDesdePlantilla } from '@/components/contratos/plantilla/ArmarContratoDesdePlantilla';
+import {
+  ArmarContratoDesdePlantilla,
+  type IdentificacionDelArrendatario,
+} from '@/components/contratos/plantilla/ArmarContratoDesdePlantilla';
+import {
+  NOMBRE_DEL_CANDIDATO_SIN_REGISTRAR,
+  esUuid,
+  nombreDelCandidato,
+} from '@/lib/contratos/arrendatario';
 import { useContratoDesdePlantilla } from '@/lib/contratos/useContratoDesdePlantilla';
 import type {
   BorradorDeContrato,
@@ -229,6 +236,14 @@ function NuevoContratoContent() {
   // Los «falta esto» del bloque manual recién después de tocarlo: una pantalla
   // que abre en rojo antes de que la persona haga nada regaña por adelantado.
   const [partesTocadas, setPartesTocadas] = useState(false);
+  /*
+   * T-0145 — lo que la agencia corrigió de la identificación del arrendatario
+   * en la sección de la plantilla. Sólo guarda lo EDITADO: lo que no se tocó
+   * sigue saliendo de la postulación, y si ésta cambia el nombre cambia con ella.
+   */
+  const [identificacionEditada, setIdentificacionEditada] = useState<
+    Partial<IdentificacionDelArrendatario>
+  >({});
   /*
    * QA-INQ I-30 (regla de ARREGLOS-4 Q2): un campo VACÍO no se pinta rojo
    * antes de que la persona haga algo. Su error sale al dejar el campo; lo que
@@ -513,27 +528,86 @@ function NuevoContratoContent() {
    * crea tienen que decir lo mismo. El hook vuelve a preparar cuando esto
    * cambia, y marca como viejo cualquier PDF armado antes del cambio.
    */
+  const inquilinoNuevo = esManual && partes.inquilino.modo === 'nuevo' ? partes.inquilino : null;
+  const existente = esManual && partes.inquilino.modo === 'existente' ? partes.inquilino : null;
+  /*
+   * 🔴 `tenantId` sólo viaja si es un UUID: el back lo valida con `@IsUUID` y la
+   * lista de inquilinos puede traer llaves `doc:…`. Con una de esas el inquilino
+   * se describe con lo que la lista sabe de él (`datos`), como `arrendatario*`.
+   */
+  const tenantIdReal = existente && esUuid(existente.tenantId) ? existente.tenantId : null;
+  /*
+   * Lo que se sabe del inquilino existente: lo que trajo la selección (`datos`)
+   * o, si llegó por `?inquilino=` y no pasó por la lista, la persona que
+   * `PartesDelContratoManual` encontró (QA-CONT-95: sin su nombre y documento la
+   * plantilla nunca armaba).
+   */
+  const datosDelExistente = existente?.datos;
+  const datosDeLaLista = useMemo(
+    () =>
+      datosDelExistente ??
+      (existente && personaDelInquilino
+        ? {
+            nombre: personaDelInquilino.nombre,
+            documento: personaDelInquilino.documento ?? '',
+            correo: personaDelInquilino.correo ?? '',
+            telefono: personaDelInquilino.telefono ?? '',
+          }
+        : null),
+    // `existente` sólo decide si hay a quién describir.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [datosDelExistente, Boolean(existente), personaDelInquilino],
+  );
+  const mandarDatosDeLaLista = Boolean(existente && !tenantIdReal && datosDeLaLista);
+  const nombreConocido = esManual
+    ? datosDeLaLista?.nombre.trim() || null
+    : nombreDelCandidato(application);
+  const documentoConocido = datosDeLaLista?.documento.trim() ?? '';
+  // Con un inquilino nuevo tecleado arriba, esos datos mandan y el bloque de la
+  // plantilla no se pinta (sería pedir lo mismo dos veces).
+  const mostrarIdentificacion = !inquilinoNuevo;
+  const identificacion: IdentificacionDelArrendatario = {
+    nombre: identificacionEditada.nombre ?? nombreConocido ?? '',
+    tipoDocumento: identificacionEditada.tipoDocumento ?? 'CC',
+    documento: identificacionEditada.documento ?? documentoConocido,
+  };
+
   const borrador = useMemo<BorradorDeContrato>(() => {
     const canon = Number(form.monthlyRent);
     const dia = Number(form.paymentDay);
-    /*
-     * 🔴 QA-CONT-95: también la persona de «Ya es inquilino» (antes sólo la
-     * «Nueva»): sin su nombre y documento la plantilla nunca armaba.
-     */
-    const inquilino = !esManual
-      ? null
-      : partes.inquilino.modo === 'nuevo'
-        ? partes.inquilino
-        : personaDelInquilino;
-    const texto = (v: string | null | undefined) => (v ?? '').trim() || undefined;
+    // Lo que se ve en la identificación: lo editado, o lo conocido.
+    const documentoEscrito = (identificacionEditada.documento ?? documentoConocido).trim();
+    const nombreEscrito = (identificacionEditada.nombre ?? nombreConocido ?? '').trim();
+    // Con un `tenantId` real el back completa desde el perfil: sólo viaja lo que
+    // la agencia corrigió. Sin él (postulación con nombre conocido, llave
+    // sintética) viaja lo que se sabe.
+    const soloCorregido = Boolean(tenantIdReal);
     return {
       consignacionId: consignacionElegida ?? undefined,
       propertyId: (esManual ? partes.propertyId : property?.id) || undefined,
+      // T-0145: el backend resuelve al arrendatario desde la postulación o desde
+      // el inquilino existente; lo que se mande abajo sólo lo corrige.
+      applicationId: (!esManual && applicationId) || undefined,
+      tenantId: tenantIdReal ?? undefined,
       uso: uso || undefined,
-      arrendatarioNombre: texto(inquilino?.nombre) || application?.tenantName || undefined,
-      arrendatarioDocumento: texto(inquilino?.documento),
-      arrendatarioEmail: texto(inquilino?.correo),
-      arrendatarioTelefono: texto(inquilino?.telefono),
+      arrendatarioNombre: inquilinoNuevo
+        ? inquilinoNuevo.nombre.trim() || undefined
+        : (soloCorregido ? identificacionEditada.nombre?.trim() : nombreEscrito) || undefined,
+      arrendatarioDocumento: inquilinoNuevo
+        ? inquilinoNuevo.documento.trim() || undefined
+        : (soloCorregido ? identificacionEditada.documento?.trim() : documentoEscrito) || undefined,
+      // Sin documento escrito no se manda el tipo: así el backend usa el del
+      // perfil del inquilino en vez de pisarlo con un «CC» por defecto.
+      arrendatarioTipoDocumento:
+        !inquilinoNuevo && (soloCorregido ? identificacionEditada.documento?.trim() : documentoEscrito)
+          ? (identificacionEditada.tipoDocumento ?? 'CC')
+          : undefined,
+      arrendatarioEmail:
+        (inquilinoNuevo?.correo.trim() || (mandarDatosDeLaLista ? datosDeLaLista?.correo.trim() : '')) ||
+        undefined,
+      arrendatarioTelefono:
+        (inquilinoNuevo?.telefono.trim() || (mandarDatosDeLaLista ? datosDeLaLista?.telefono.trim() : '')) ||
+        undefined,
       canonMensual: Number.isFinite(canon) && canon > 0 ? canon : undefined,
       diaDePago: Number.isFinite(dia) && dia >= 1 && dia <= 31 ? dia : undefined,
       fechaInicio: form.startDate || undefined,
@@ -547,7 +621,14 @@ function NuevoContratoContent() {
     esManual,
     partes,
     property?.id,
-    application?.tenantName,
+    applicationId,
+    nombreConocido,
+    documentoConocido,
+    tenantIdReal,
+    mandarDatosDeLaLista,
+    datosDeLaLista,
+    inquilinoNuevo,
+    identificacionEditada,
     consignacionElegida,
     uso,
     personaDelInquilino,
@@ -1009,7 +1090,10 @@ function NuevoContratoContent() {
           </p>
         ) : (
           <p className="text-sm text-muted-foreground mt-1">
-            Candidato: <span className="font-medium text-foreground">{nombreDelCandidato(application)}</span>
+            Candidato:{' '}
+            <span className="font-medium text-foreground">
+              {nombreConocido ?? NOMBRE_DEL_CANDIDATO_SIN_REGISTRAR}
+            </span>
             {property && (
               <> · Propiedad: <span className="font-medium text-foreground">{property.title}</span></>
             )}
@@ -1038,6 +1122,10 @@ function NuevoContratoContent() {
                 setErrorDeInmueble(null);
                 setErrorSinCanon(null);
               }
+              // Otro inquilino: lo corregido a mano era de la persona anterior.
+              const antes = partes.inquilino.modo === 'existente' ? partes.inquilino.tenantId : '';
+              const ahora = v.inquilino.modo === 'existente' ? v.inquilino.tenantId : '';
+              if (antes !== ahora) setIdentificacionEditada({});
               setPartes(v);
             }}
             errores={{
@@ -1197,6 +1285,15 @@ function NuevoContratoContent() {
             <ArmarContratoDesdePlantilla
               modo={form.mode === 'generate' ? 'generate' : 'template'}
               estado={plantilla}
+              arrendatario={
+                mostrarIdentificacion
+                  ? {
+                      ...identificacion,
+                      onCambio: (cambio) =>
+                        setIdentificacionEditada((previa) => ({ ...previa, ...cambio })),
+                    }
+                  : undefined
+              }
             />
           )}
 

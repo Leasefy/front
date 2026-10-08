@@ -54,11 +54,12 @@ jobs:
       # vitest fail to resolve them. --ignore-scripts skips esbuild's postinstall
       # (blocked by pnpm's default build-script policy) — safe here since we only
       # consume cadence's prebuilt dist, never build it in this workflow.
+      # The cadence ref comes from `.cadence-ref` (falls back to `main` when absent).
       # Requires a `CADENCE_REPO_TOKEN` secret with read access to Leasefy/cadence
       # (the default GITHUB_TOKEN is scoped to `front` only and cannot read it).
       - name: Provide @leasefy/cadence (sibling design-system repo)
         run: |
-          git clone --depth 1 --branch main \
+          git clone --depth 1 --branch "$(cat .cadence-ref 2>/dev/null || echo main)" \
             "https://x-access-token:${{ secrets.CADENCE_REPO_TOKEN }}@github.com/Leasefy/cadence.git" \
             ../cadence
           pnpm --dir ../cadence install --frozen-lockfile --ignore-scripts
@@ -123,7 +124,7 @@ jobs:
       # repo, real runtime deps not bundled in dist/). Needs CADENCE_REPO_TOKEN.
       - name: Provide @leasefy/cadence (sibling design-system repo)
         run: |
-          git clone --depth 1 --branch main \
+          git clone --depth 1 --branch "$(cat .cadence-ref 2>/dev/null || echo main)" \
             "https://x-access-token:${{ secrets.CADENCE_REPO_TOKEN }}@github.com/Leasefy/cadence.git" \
             ../cadence
           pnpm --dir ../cadence install --frozen-lockfile --ignore-scripts

@@ -427,10 +427,52 @@ export const contractsApi = {
      * traer el `datos` JSON completo de cada fila. `lote` es obligatorio: un
      * volcado de ids de toda la agencia no es un flujo de trabajo.
      */
-    async idsDeFilas(lote: string, estado?: EstadoMigracion): Promise<IdsDeFilas> {
+    async idsDeFilas(
+      lote: string,
+      estado?: EstadoMigracion,
+      /**
+       * T-0135 — sólo las filas a las que TODAVÍA les falta ese dato (código de
+       * `faltantes`: `uso`, `propietario`…), sin las ACTIVADO ni DESCARTADO.
+       * Es lo que hace reanudable una acción masiva: tras un corte, las ya
+       * resueltas dejan de coincidir.
+       */
+      faltante?: string,
+    ): Promise<IdsDeFilas> {
       const q = new URLSearchParams({ lote });
       if (estado) q.set('estado', estado);
+      if (faltante) q.set('faltante', faltante);
       return apiClient.get<IdsDeFilas>(`/contracts/migrar/filas/ids?${q.toString()}`);
+    },
+
+    /**
+     * T-0138 — qué problemas tienen de verdad las filas seleccionadas (sin las
+     * ACTIVADO ni DESCARTADO). Con `ids` cuenta esa selección; sin ellos, todo
+     * el lote. POST por el tamaño: una selección de todo el lote son miles de ids.
+     */
+    async faltantesDeLaSeleccion(
+      lote: string,
+      ids?: string[],
+    ): Promise<FaltantesDeLaSeleccion> {
+      return apiClient.post<FaltantesDeLaSeleccion>('/contracts/migrar/filas/faltantes', {
+        lote,
+        ...(ids ? { ids } : {}),
+      });
+    },
+
+    /**
+     * T-0138 — repartir el canon en partes iguales (el resto al primer dueño)
+     * en las filas que todavía tienen `reparto_del_canon`. Tandas de ≤ 200.
+     */
+    async repartirEnPartesIguales(ids: string[]): Promise<ResultadoMasivo> {
+      return apiClient.post<ResultadoMasivo>(
+        '/contracts/migrar/filas/repartir-en-partes-iguales',
+        { ids },
+      );
+    },
+
+    /** T-0138 — descartar varias filas sin borrar su rastro. Tandas de ≤ 200. */
+    async descartarFilas(ids: string[]): Promise<ResultadoMasivo> {
+      return apiClient.post<ResultadoMasivo>('/contracts/migrar/filas/descartar', { ids });
     },
 
     async resumen(lote?: string): Promise<ResumenLote> {
@@ -519,12 +561,18 @@ export const contractsApi = {
     async crearInmueblesFaltantes(
       seleccion: { lote: string } | { ids: string[] },
       ciudad?: string,
+      /**
+       * T-0135 — por tandas: `limite` filas sin inmueble a partir de
+       * `despuesDeFila` (la `siguienteFila` de la tanda anterior). Sin esto,
+       * todo el lote de una vez, como siempre.
+       */
+      tanda?: { limite: number; despuesDeFila?: number },
       /** Para las filas cuya dirección no dice el tipo (QA-MIG-A, MG-34). */
       tipo?: string,
     ): Promise<ResultadoInmueblesFaltantes> {
       return apiClient.post<ResultadoInmueblesFaltantes>(
         '/contracts/migrar/inmuebles-faltantes',
-        { ...seleccion, ciudad: ciudad?.trim() || undefined, ...(tipo ? { tipo } : {}) },
+        { ...seleccion, ciudad: ciudad?.trim() || undefined, ...tanda, ...(tipo ? { tipo } : {}) },
       );
     },
 
@@ -561,6 +609,21 @@ export const contractsApi = {
       return apiClient.patch<FilaDeMigracion>(
         `/contracts/migrar/filas/${id}/propietario`,
         cambios,
+      );
+    },
+
+    /**
+     * Corregir cuánto del canon es de cada dueño, sin volver a subir el
+     * archivo. `canonPorDueno` va en el orden de `asociacion.propietario.reparto.duenos`
+     * y debe sumar exactamente el canon de la fila.
+     */
+    async corregirReparto(
+      id: string,
+      canonPorDueno: number[],
+    ): Promise<FilaDeMigracion> {
+      return apiClient.patch<FilaDeMigracion>(
+        `/contracts/migrar/filas/${id}/reparto`,
+        { canonPorDueno },
       );
     },
 
@@ -1417,6 +1480,22 @@ export interface ResultadoInmueblesFaltantes {
   consignados: number;
   omitidas: Array<{ id: string; fila: number; motivo: string }>;
   fallidas: Array<{ id: string; fila: number; motivo: string }>;
+  /**
+   * T-0135 — sólo con `limite`: el cursor (`despuesDeFila`) de la próxima
+   * tanda, o `null` cuando ya no quedan filas por mirar. Ausente = llamada
+   * de una sola vez (o un back anterior).
+   */
+  siguienteFila?: number | null;
+}
+
+/** T-0138 — `POST migrar/filas/faltantes`: los problemas de la selección, con su conteo. */
+export interface FaltantesDeLaSeleccion {
+  /** Filas vivas de la selección (sin activadas ni descartadas): las que «Descartar» alcanza. */
+  descartables: number;
+  /** De ésas, cuántas tienen al menos un problema. */
+  conProblema: number;
+  /** Filas que frena cada código de `faltantes`; una llave ausente es cero. */
+  porMotivo: Partial<Record<string, number>>;
 }
 
 export interface ResultadoMasivo {
@@ -1450,6 +1529,13 @@ export interface ResumenLote {
    * acá ni inferirla del nombre del flag.
    */
   activables: number;
+  /**
+   * Cuántas filas PENDIENTES frena cada motivo (código de `faltantes`: `uso`,
+   * `propietario`, `inmueble`…). Sólo viajan los que frenan algo: una llave
+   * ausente es cero. T-0135 lo usa para decir, al retomar el lote, «a 84 les
+   * falta el uso» con el número del servidor. Un back viejo no lo manda.
+   */
+  porMotivo?: Record<string, number>;
   /**
    * Contratos migrados ACTIVOS sin inmueble (2026-09-02): se activaron con
    * el modo sparse del back prendido y no tienen consignación — no generan

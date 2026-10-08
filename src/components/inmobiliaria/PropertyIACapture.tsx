@@ -40,6 +40,11 @@ import { usePermissions } from '@/lib/hooks/usePermissions';
 import { useAuth } from '@/lib/auth/use-auth';
 import { propertiesApi, createPublishedWithDraftFallback } from '@/lib/api/properties.service';
 import { uploadPropertyPhotos } from '@/lib/api/property-photos';
+import {
+  newPropertyCreationSession,
+  createPropertyOnce,
+  resetPropertyCreationSession,
+} from '@/lib/api/property-creation-session';
 import { PropertyLocationField, type PropertyLocationValue } from '@/components/publicar/PropertyLocationField';
 import { COLOMBIAN_CITIES } from '@/lib/types/property';
 import type { PropertyType } from '@/lib/types/property';
@@ -144,6 +149,9 @@ export function PropertyIACapture() {
   const [confirmarReextraccion, setConfirmarReextraccion] = useState(false);
   const [form, setForm] = useState<ReviewForm | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  // T-0141: one Idempotency-Key per ficha; a created property is never created twice.
+  const [sesionDeCreacion] = useState(() => newPropertyCreationSession());
+  const pasosHechos = useRef({ fotos: false, agente: false });
   // Tracks manual edits so re-extracting (which overwrites the form) can confirm first.
   const formEditedRef = useRef(false);
 
@@ -266,6 +274,9 @@ export function PropertyIACapture() {
 
   const extraer = async () => {
     if (!audioBlob) return;
+    // A new extraction is an explicit "start over": the next ficha gets a new key.
+    resetPropertyCreationSession(sesionDeCreacion);
+    pasosHechos.current = { fotos: false, agente: false };
     setStep('extracting');
     setErrorMsg(null);
     try {
@@ -362,7 +373,13 @@ export function PropertyIACapture() {
 
       // Publish on create (marketplace contract); on the plan-limit 403 the
       // helper retries once as DRAFT so the reviewed ficha is never lost.
-      const { property, publishBlocked } = await createPublishedWithDraftFallback(payload);
+      // `createPropertyOnce` skips the POST when a previous attempt already created it.
+      let publishBlocked = false;
+      const property = await createPropertyOnce(sesionDeCreacion, async (idempotencyKey) => {
+        const res = await createPublishedWithDraftFallback(payload, { idempotencyKey });
+        publishBlocked = res.publishBlocked;
+        return res.property;
+      });
 
       if (publishBlocked) {
         toast.warning(t(k('planLimitDraft')));
@@ -370,8 +387,9 @@ export function PropertyIACapture() {
 
       // The property exists from here on: photo/assign failures must never be
       // surfaced as a creation error (a retry would duplicate the property).
-      if (photos.length > 0) {
+      if (photos.length > 0 && !pasosHechos.current.fotos) {
         const { failed } = await uploadPropertyPhotos(property.id, photos);
+        pasosHechos.current.fotos = true;
         if (failed.length > 0) {
           toast.warning(
             t(k('photosUploadPartial'), {
@@ -385,7 +403,8 @@ export function PropertyIACapture() {
       if (isAdmin && form.title /* admin self-skip handled by manual page */) {
         // mirror /nueva: agents auto-assign themselves; admins assign later from the list
       }
-      if (!isAdmin && user?.email) {
+      if (!isAdmin && user?.email && !pasosHechos.current.agente) {
+        pasosHechos.current.agente = true;
         try {
           await propertiesApi.assignAgent(property.id, user.email);
         } catch {
@@ -398,10 +417,16 @@ export function PropertyIACapture() {
 
       toast.success(t(k('created')));
       router.push('/panel/inmobiliaria/inmuebles');
+      resetPropertyCreationSession(sesionDeCreacion);
+      pasosHechos.current = { fotos: false, agente: false };
     } catch (err) {
-      // Nada quedó creado. Un 400 dice qué campo (todos, en una línea), un 5xx
-      // «de nuestro lado» con la referencia, y «conexión» sólo sin respuesta.
-      setErrorMsg(mensajeParaLaPersona(err, { porDefecto: t(k('createError')), accion: 'crear el inmueble' }));
+      // Un 400 dice qué campo (todos, en una línea), un 5xx «de nuestro lado»
+      // con la referencia, y «conexión» sólo sin respuesta.
+      const reason = mensajeParaLaPersona(err, { porDefecto: t(k('createError')), accion: 'crear el inmueble' });
+      // The property exists: never say "nothing was created" (T-0141).
+      setErrorMsg(
+        sesionDeCreacion.property ? t(k('createdPending'), { reason }) : reason,
+      );
     } finally {
       setIsCreating(false);
     }

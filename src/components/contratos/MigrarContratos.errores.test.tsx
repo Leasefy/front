@@ -238,7 +238,13 @@ function filaDeMigracion(n: number): FilaDeMigracion {
     id: `f-${n}`,
     lote: 'lote-1',
     fila: n,
-    datos: { direccion: `Calle ${10 + n}`, inquilino: { nombre: `Inquilino ${n}`, correo: 'a@x.co' } },
+    // T-0135: the owner the file named is stored server-side (`datos.propietario`) and comes
+    // back with the rows; the automatic consignment reads it from there, not from the file.
+    datos: {
+      direccion: `Calle ${10 + n}`,
+      inquilino: { nombre: `Inquilino ${n}`, correo: 'a@x.co' },
+      propietario: { nombre: `Dueño ${n}`, documento: String(71_000_000 + n) },
+    },
     propertyId: 'prop-1',
     propietarioId: null,
     tenantId: null,

@@ -394,6 +394,11 @@ export function FilaDeRevision({
             onActualizada({
               ...f,
               propietario: fila.propietario,
+              asociacion:
+                f.asociacion ??
+                (f.datos as { _asociacion?: FilaDeMigracion["asociacion"] })
+                  ._asociacion ??
+                fila.asociacion,
               comisionPorcentaje: fila.comisionPorcentaje,
             });
             onCambio();

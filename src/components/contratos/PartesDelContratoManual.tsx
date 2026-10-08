@@ -33,8 +33,25 @@ import { cuentaDelPortal } from '@/lib/api/inquilinos.service'
 import type { Consignacion } from '@/lib/types/inmobiliaria'
 import { etiquetaDeInmueble } from './VincularInmueble'
 
+/** Lo que la lista sabe del inquilino elegido (T-0145). */
+export interface DatosDelInquilino {
+  nombre: string
+  documento: string
+  correo: string
+  telefono: string
+}
+
 export type SeleccionDeInquilino =
-  | { modo: 'existente'; tenantId: string }
+  | {
+      modo: 'existente'
+      tenantId: string
+      /**
+       * Para armar el contrato cuando `tenantId` no es un UUID (una llave
+       * `doc:…` de quien no tiene cuenta ni ficha): ahí no se manda el id, se
+       * mandan estos datos.
+       */
+      datos?: DatosDelInquilino
+    }
   | { modo: 'nuevo'; nombre: string; documento: string; correo: string; telefono: string }
 
 export interface PersonaDelInquilino {
@@ -325,7 +342,26 @@ export function PartesDelContratoManual({ valor, onCambio, onInmuebleElegido, er
           <div className="space-y-1.5">
             <Combobox
               value={valor.inquilino.tenantId || undefined}
-              onChange={(id) => onCambio({ ...valor, inquilino: { modo: 'existente', tenantId: id ?? '' } })}
+              onChange={(id) => {
+                const elegido = inquilinos.find((q) => q.tenantId === id)
+                onCambio({
+                  ...valor,
+                  inquilino: {
+                    modo: 'existente',
+                    tenantId: id ?? '',
+                    ...(elegido
+                      ? {
+                          datos: {
+                            nombre: elegido.nombre,
+                            documento: elegido.documento ?? '',
+                            correo: elegido.email ?? '',
+                            telefono: elegido.telefono ?? '',
+                          },
+                        }
+                      : {}),
+                  },
+                })
+              }}
               options={opcionesInquilino}
               placeholder={cargandoInquilinos ? 'Cargando inquilinos…' : 'Busca por nombre, correo o teléfono'}
               searchPlaceholder="Nombre, correo o teléfono"

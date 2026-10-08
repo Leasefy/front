@@ -3,6 +3,11 @@
 import { createContext, useContext, useState, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { PropertyDraft, PUBLISH_STEPS, initialPropertyDraft } from '@/lib/types/publish';
 import { propertiesApi } from '@/lib/api/properties.service';
+import {
+  newPropertyCreationSession,
+  createPropertyOnce,
+  resetPropertyCreationSession,
+} from '@/lib/api/property-creation-session';
 import { resolvePropertyCoordinates } from '@/lib/constants/map';
 import { ubicarDireccion } from '@/lib/inmuebles/ubicar-direccion';
 import { toast } from '@/components/ui/toast';
@@ -113,6 +118,9 @@ export function PublishProvider({ children }: { children: ReactNode }) {
   const [erroresDelServidor, setErroresDelServidor] = useState<Partial<Record<CampoDelBorrador, string>>>({});
   const [fotosQueNoSubieron, setFotosQueNoSubieron] = useState<FotoQueNoSubio[]>([]);
   const photoFilesRef = useRef<File[]>([]);
+  // T-0141: one Idempotency-Key per publish session; the created property id is kept for retries.
+  const [sesionDeCreacion] = useState(() => newPropertyCreationSession());
+  const fotosSubidasRef = useRef(false);
   const [photoFiles, setPhotoFiles] = useState<File[]>([]);
 
   const totalSteps = PUBLISH_STEPS.length;
@@ -286,7 +294,8 @@ export function PublishProvider({ children }: { children: ReactNode }) {
               lng: u.lng,
             }));
 
-      const created = await propertiesApi.create({
+      const created = await createPropertyOnce(sesionDeCreacion, (idempotencyKey) =>
+        propertiesApi.create({
         title: draft.title,
         description: draft.description,
         type: draft.type,
@@ -307,28 +316,32 @@ export function PublishProvider({ children }: { children: ReactNode }) {
         stratum: draft.stratum || undefined,
         yearBuilt: draft.yearBuilt || undefined,
         amenities: draft.amenities.length > 0 ? draft.amenities : undefined,
-      });
+        }, { idempotencyKey }),
+      );
 
-      // 2. Upload photos sequentially
+      // 2. Upload photos sequentially (once: a retry never re-uploads them)
       //
       // 🔴 Antes una foto que fallaba sólo iba a la consola: el inmueble salía
       // publicado con menos fotos y nadie se enteraba. Ahora cada fallo queda
       // con su motivo (por el traductor) y se avisa; el inmueble ya existe, así
       // que no se aborta nada.
-      const files = photoFilesRef.current;
       const fallidas: FotoQueNoSubio[] = [];
-      for (const file of files) {
-        try {
-          await propertiesApi.uploadImage(created.id, file);
-        } catch (e) {
-          // Continue uploading remaining photos even if one fails
-          fallidas.push({
-            nombre: file.name,
-            motivo: mensajeParaLaPersona(e, {
-              porDefecto: `No pudimos subir «${file.name}».`,
-              accion: `subir «${file.name}»`,
-            }),
-          });
+      if (!fotosSubidasRef.current) {
+        fotosSubidasRef.current = true;
+        const files = photoFilesRef.current;
+        for (const file of files) {
+          try {
+            await propertiesApi.uploadImage(created.id, file);
+          } catch (e) {
+            // Continue uploading remaining photos even if one fails
+            fallidas.push({
+              nombre: file.name,
+              motivo: mensajeParaLaPersona(e, {
+                porDefecto: `No pudimos subir «${file.name}».`,
+                accion: `subir «${file.name}»`,
+              }),
+            });
+          }
         }
       }
       if (fallidas.length > 0) {
@@ -352,11 +365,19 @@ export function PublishProvider({ children }: { children: ReactNode }) {
         porDefecto: 'No pudimos publicar el inmueble. Prueba de nuevo en un momento.',
         accion: 'publicar el inmueble',
       });
-      mostrarErrores(reparto.porCampo, reparto.sueltos);
+      // The property exists: say so instead of "nothing was created" (T-0141).
+      const sueltos = sesionDeCreacion.property
+        ? [
+            `La propiedad ya quedó guardada y no se creará otra. Vuelve a enviar para completar lo que falta.${
+              reparto.sueltos.length > 0 ? ` Detalle: ${reparto.sueltos.join(' · ')}` : ''
+            }`,
+          ]
+        : reparto.sueltos;
+      mostrarErrores(reparto.porCampo, sueltos);
     } finally {
       setIsSubmitting(false);
     }
-  }, [draft, mostrarErrores]);
+  }, [draft, mostrarErrores, sesionDeCreacion]);
 
   const resetDraft = useCallback(() => {
     setDraft(initialPropertyDraft);
@@ -365,12 +386,15 @@ export function PublishProvider({ children }: { children: ReactNode }) {
     setSubmissionError(null);
     setCreatedPropertyId(null);
     setIsComplete(false);
+    // Explicit "start over": the next publication gets a new key.
+    resetPropertyCreationSession(sesionDeCreacion);
+    fotosSubidasRef.current = false;
     setErroresDelServidor({});
     setFotosQueNoSubieron([]);
     // Clean up blob URLs
     photoFilesRef.current = [];
     setPhotoFiles([]);
-  }, []);
+  }, [sesionDeCreacion]);
 
   const value: PublishContextTextT = {
     draft,

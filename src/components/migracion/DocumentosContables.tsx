@@ -26,6 +26,15 @@
  * `leerCsvEnTrozos` va por pedazos de 1 MB, arma lotes de 5.000 —el tope del
  * back— y entre lote y lote le devuelve el turno al navegador: la barra
  * avanza y «Cancelar» responde.
+ *
+ * ── Reanudable (T-0135) ────────────────────────────────────────────────────
+ *
+ * Cada lote de `migrar` lleva `lote` + `totalDelArchivo` + `desde`, y el back
+ * guarda cuántos comprobantes del PRINCIPIO del archivo ya procesó. Si la
+ * pestaña se cierra o se cae la red, `CargasDeComprobantesAbiertas` lista la
+ * carga con «Continuar» (pide el MISMO archivo) y «Descartar». Al continuar, el
+ * recorrido no vuelve a mandar el prefijo ya procesado. Subir el mismo archivo
+ * dos veces nunca duplica: cada comprobante se identifica por su contenido.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -46,6 +55,7 @@ import {
 import {
   contabilidadApi,
   MAX_DOCUMENTOS_POR_LOTE,
+  type CargaAbierta,
   type DocumentoMigrado,
   type RevisionDeDocumentos,
 } from "@/lib/api/contabilidad.service";
@@ -58,6 +68,7 @@ import {
   type MapeoDeColumna,
 } from "@/lib/migracion/columnas-de-tercero";
 
+import { CargasDeComprobantesAbiertas } from "./CargasDeComprobantesAbiertas";
 import { ComprobantesSinContrato } from "./ComprobantesSinContrato";
 import { mensajeDeContabilidad } from "./contabilidad-errores";
 import { fraseDelArchivoVacio, leerTablaDelArchivo } from "./encabezado-del-archivo";
@@ -134,6 +145,28 @@ function sumar(
 
 type Fase = "elegir" | "leyendo" | "revisado" | "migrando" | "listo";
 
+/** El back acepta hasta 60 caracteres de lote. */
+const LARGO_DE_LOTE = 60;
+
+/**
+ * El nombre de la carga de ESTE archivo: el mismo archivo da el mismo lote, así
+ * que subirlo otra vez (tras un corte) continúa la carga en vez de abrir otra.
+ * Nombre + peso: dos archivos distintos con el mismo nombre rara vez pesan lo
+ * mismo, y si pesan igual los comprobantes igual no se duplican.
+ */
+function loteDelArchivo(archivo: File): string {
+  const base = archivo.name
+    .replace(/\.[^.]+$/, "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const cola = `-${archivo.size}`;
+  const cabeza = `comprobantes-${base || "archivo"}`;
+  return `${cabeza.slice(0, LARGO_DE_LOTE - cola.length)}${cola}`;
+}
+
 export function DocumentosContables({
   onOcupado,
 }: {
@@ -151,6 +184,12 @@ export function DocumentosContables({
   /** Sube cada vez que termina una migración: lo guardado cambió. */
   const [migraciones, setMigraciones] = useState(0);
   const cancelar = useRef(false);
+  /** Cuántos comprobantes armó la revisión del archivo entero: el `totalDelArchivo` de la carga. */
+  const totalDelArchivo = useRef(0);
+  /** T-0135 — la carga a medias que la persona eligió continuar: se pide el MISMO archivo. */
+  const [continuar, setContinuar] = useState<CargaAbierta | null>(null);
+  /** Cuántos comprobantes se saltó este recorrido porque el servidor ya los tenía. */
+  const [saltados, setSaltados] = useState(0);
 
   const ocupado = fase === "leyendo" || fase === "migrando";
   useEffect(() => {
@@ -185,6 +224,29 @@ export function DocumentosContables({
 
       let acc = acumuladoVacio();
       let mapeoDelArchivo: MapeoDeColumna[] = mapeo;
+      setSaltados(0);
+
+      /*
+       * T-0135 — el seguimiento de la carga sólo existe al migrar y sólo si la
+       * revisión ya contó el archivo entero. `inicio` es el prefijo que el
+       * servidor ya procesó con ESTE mismo total: lo anterior no se vuelve a
+       * mandar. Si el total cambió (otro archivo), se empieza de cero y la
+       * idempotencia por contenido evita duplicados igual.
+       */
+      const lote = continuar?.lote ?? loteDelArchivo(elArchivo);
+      const total = totalDelArchivo.current;
+      let inicio = 0;
+      if (modo === "migrar" && total > 0) {
+        try {
+          const abiertas = await contabilidadApi.migracion.documentos.cargas();
+          const previa = abiertas.find((c) => c.lote === lote);
+          if (previa && previa.esperados === total) inicio = previa.procesados;
+        } catch {
+          // Sin saber el avance se manda todo: es más lento, nunca incorrecto.
+        }
+      }
+      let enviados = 0;
+      let saltadosAcc = 0;
 
       try {
         if (esPlanilla(elArchivo.name)) {
@@ -230,23 +292,44 @@ export function DocumentosContables({
             setLeidas(hastaAhora);
             const documentos: DocumentoMigrado[] = armarDocumentos(filas, mapeoDelArchivo);
             if (documentos.length === 0) return;
-            const r =
-              modo === "revisar"
-                ? await contabilidadApi.migracion.documentos.revisar(documentos)
-                : await contabilidadApi.migracion.documentos.migrar(documentos);
+            const antes = enviados;
+            enviados += documentos.length;
+            if (modo === "revisar") {
+              const r = await contabilidadApi.migracion.documentos.revisar(documentos);
+              acc = sumar(acc, r);
+              setAcumulado(acc);
+              return;
+            }
+            const saltar = Math.max(0, Math.min(documentos.length, inicio - antes));
+            if (saltar > 0) {
+              saltadosAcc += saltar;
+              setSaltados(saltadosAcc);
+            }
+            const aMandar = documentos.slice(saltar);
+            if (aMandar.length === 0) return;
+            const r = await contabilidadApi.migracion.documentos.migrar(
+              aMandar,
+              total > 0 ? { lote, totalDelArchivo: total, desde: antes + saltar } : undefined,
+            );
             acc = sumar(acc, r);
             setAcumulado(acc);
           },
         });
+        if (modo === "revisar") totalDelArchivo.current = enviados;
         setLeidas(resultado.filas);
         setFase(modo === "revisar" ? "revisado" : "listo");
-        if (modo === "migrar") setMigraciones((v) => v + 1);
+        if (modo === "migrar") {
+          setMigraciones((v) => v + 1);
+          setContinuar(null);
+        }
       } catch (e) {
         setError(
           `${mensajeDeContabilidad(e, "No pudimos procesar el archivo.")} ` +
-            `Lo que ya entró NO se duplica al reintentar: cada comprobante se ` +
-            `identifica por su número, su fecha, su concepto y sus montos, así ` +
-            `que dos facturas distintas con el mismo número entran las dos.`,
+            `Tu avance quedó guardado: vuelve a elegir el mismo archivo (o pulsa «Continuar» ` +
+            `en la carga que aparece abajo) y seguimos desde donde quedó. Lo que ya entró NO ` +
+            `se duplica al reintentar: cada comprobante se identifica por su número, su ` +
+            `fecha, su concepto y sus montos, así que dos facturas distintas con el mismo ` +
+            `número entran las dos.`,
         );
         // Se conserva lo acumulado: cortar a la mitad y mostrar 0 escondería
         // los 40.000 que sí entraron.
@@ -254,7 +337,7 @@ export function DocumentosContables({
         if (modo === "migrar") setMigraciones((v) => v + 1);
       }
     },
-    [mapeo],
+    [mapeo, continuar],
   );
 
   const onDrop = useCallback(
@@ -268,6 +351,7 @@ export function DocumentosContables({
       setMapeo([]);
       setError(null);
       setFase("elegir");
+      totalDelArchivo.current = 0;
       void recorrer(elegido, "revisar");
     },
     [recorrer],
@@ -290,6 +374,7 @@ export function DocumentosContables({
     setAcumulado(null);
     setError(null);
     setFase("elegir");
+    totalDelArchivo.current = 0;
   }, []);
 
   return (
@@ -317,6 +402,44 @@ export function DocumentosContables({
           </p>
         </div>
       </div>
+
+      {/* T-0135 — las cargas que quedaron a medias, con «Continuar» y «Descartar».
+          Arriba del cargador: quien volvió tras un corte tiene que verlas sin buscarlas. */}
+      {!ocupado ? (
+        <CargasDeComprobantesAbiertas
+          version={migraciones}
+          ocupado={ocupado}
+          onContinuar={(c) => {
+            setContinuar(c);
+            setError(null);
+          }}
+        />
+      ) : null}
+
+      {continuar && !archivo ? (
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-info-soft p-3"
+          data-testid="documentos-continuar"
+        >
+          <div className="flex items-start gap-2">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-info" />
+            <p className="text-sm text-fg">
+              Para continuar «{continuar.lote}» ({continuar.procesados.toLocaleString("es-CO")} de{" "}
+              {continuar.esperados.toLocaleString("es-CO")} comprobantes ya cargados), elige{" "}
+              <strong>el mismo archivo</strong>. Seguimos desde donde quedó.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            hideArrow
+            onClick={() => setContinuar(null)}
+            data-testid="documentos-continuar-cancelar"
+          >
+            Cancelar
+          </Button>
+        </div>
+      ) : null}
 
       {archivo ? (
         <TarjetaDeArchivo
@@ -367,8 +490,14 @@ export function DocumentosContables({
         >
           <p className="text-sm text-fg">
             {fase === "leyendo" ? "Revisando" : "Migrando"}{" "}
-            <span className="font-mono tabular-nums">{leidas.toLocaleString("es-CO")}</span>{" "}
-            comprobantes…
+            <span className="font-mono tabular-nums">{leidas.toLocaleString("es-CO")}</span>
+            {fase === "migrando" && totalDelArchivo.current > 0
+              ? ` de ${totalDelArchivo.current.toLocaleString("es-CO")}`
+              : ""}{" "}
+            comprobantes… Tu avance se va guardando.
+            {saltados > 0
+              ? ` Los primeros ${saltados.toLocaleString("es-CO")} ya estaban cargados: seguimos desde ahí.`
+              : ""}
           </p>
           <Button
             size="sm"

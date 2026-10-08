@@ -113,8 +113,8 @@ describe('Autopago — cobro automático apagado en el servidor', () => {
     expect(f?.textContent).toContain('#43');
     expect(f?.textContent).toContain('Apartamento 101');
     expect(f?.textContent).toContain('Marta Gómez');
-    expect(f?.textContent).toContain('$ 2.000.000');
-    expect(f?.textContent).toContain('$ 1.500.000');
+    expect(f?.textContent).toContain('$\u00a02.000.000');
+    expect(f?.textContent).toContain('$\u00a01.500.000');
   });
 });
 

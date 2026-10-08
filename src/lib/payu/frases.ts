@@ -10,7 +10,7 @@ import { formatCurrency } from '@/lib/format'
 import { nombreDelMes } from '@/lib/recaudo/meses'
 import type { ResumenDeLinksDePago } from '@/lib/types/payu'
 
-export const PAYU_APAGADO = 'Payu está apagado en el servidor: lo prende Leasefy.'
+export const PAYU_APAGADO = 'Cobri está apagado en el servidor: lo prende Leasefy.'
 
 const cuotas = (n: number) => `${n} ${n === 1 ? 'cuota' : 'cuotas'}`
 
@@ -38,12 +38,12 @@ export function fraseDelMesDePayu(r: ResumenDeLinksDePago): string {
       : `${PAYU_APAGADO} Mientras estuvo prendido ${loQueMando(r, mes)}`
   }
 
-  if (r.cuotas === 0) return `Payu está prendido, pero ${mes} no tiene cuotas por cobrar.`
+  if (r.cuotas === 0) return `Cobri está prendido, pero ${mes} no tiene cuotas por cobrar.`
 
   if (r.linksEnviados === 0) {
     const cuales = r.cuotas === 1 ? 'la cuota' : `las ${r.cuotas} cuotas`
-    return `Payu está prendido y todavía no ha mandado links de ${cuales} de ${mes}: el primer aviso de cada cuota sale 3 días antes de su vencimiento.`
+    return `Cobri está prendido y todavía no ha mandado links de ${cuales} de ${mes}: el primer aviso de cada cuota sale 3 días antes de su vencimiento.`
   }
 
-  return `En ${mes} Payu ${loQueMando(r, null)}`
+  return `En ${mes} Cobri ${loQueMando(r, null)}`
 }

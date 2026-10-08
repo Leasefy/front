@@ -11190,7 +11190,7 @@
       "seccion": "Agentes IA",
       "titulo": "Calidad de publicaciones · Niti",
       "listaAria": "Inmuebles auditados, de peor a mejor",
-      "descripcion": "Revisa tus inmuebles con la misma regla de «mínimo para publicar» de Portales, le suma lo suyo y propone arreglos. Ningún cambio sale sin el clic de una persona.",
+      "descripcion": "Revisa tus inmuebles con la misma regla de «mínimo para publicar» de Portales, le suma lo suyo y propone arreglos. En Automático arregla sola la ficha con lo que ya tiene (con tu tiempo para deshacerlo); despublicar o publicar en un portal siempre espera tu clic. Nunca le escribe al propietario.",
       "ultimaPasada": "Última pasada: {{fecha}}",
       "sinPasada": "Todavía no ha hecho su primera pasada.",
       "queEsResumen": "el resumen de Niti",

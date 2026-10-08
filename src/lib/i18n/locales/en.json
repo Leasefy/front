@@ -11154,7 +11154,7 @@
       "seccion": "AI agents",
       "titulo": "Listing quality · Niti",
       "listaAria": "Audited properties, from worst to best",
-      "descripcion": "Reviews your properties with the same «minimum to publish» rule as Portals, adds its own checks and suggests fixes. No change goes out without a person's click.",
+      "descripcion": "Reviews your properties with the same «minimum to publish» rule as Portals, adds its own checks and suggests fixes. In Automatic it fixes the listing on its own with what it already has (with time for you to undo it); unpublishing or publishing on a portal always waits for your click. It never writes to the owner.",
       "ultimaPasada": "Last run: {{fecha}}",
       "sinPasada": "It hasn't done its first run yet.",
       "queEsResumen": "the Niti summary",

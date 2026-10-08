@@ -31,6 +31,12 @@ vi.mock('@/lib/context/PermissionsContext', () => ({
   }),
 }))
 
+// La sección de Cobri tiene sus propias lecturas y su prueba (`CobriEsteMes.test.tsx`):
+// acá sólo importa que esté, entre los pasos y el equipo.
+vi.mock('./CobriEsteMes', () => ({
+  CobriEsteMes: () => React.createElement('section', { 'data-testid': 'cobri-este-mes' }),
+}))
+
 import { AgenteDePagos } from './AgenteDePagos'
 import type { AgenteDePagosLectura } from '@/lib/hooks/use-agente-de-pagos'
 import type { GobiernoItem } from '@/lib/api/piloto'
@@ -188,5 +194,15 @@ describe('AgenteDePagos — el día que el backend exista, se prende sola', () =
     expect(q('[data-testid="estado-del-equipo"]')?.getAttribute('data-estado')).toBe('apagado-para-tu-inmobiliaria')
     expect(estadoDe('leasefy')).toBe('hecho')
     expect(estadoDe('inmobiliaria')).toBe('falta')
+  })
+
+  it('Cobri (08-10): su sección va entre lo que necesita el equipo y quién es quién', () => {
+    render(lectura({}))
+    const cobri = q('[data-testid="cobri-este-mes"]')
+    expect(cobri).not.toBeNull()
+    const pasos = q('[data-testid="paso-leasefy"]')
+    const equipo = q('[data-testid="especialista-gabriela"]')
+    expect(pasos!.compareDocumentPosition(cobri!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(cobri!.compareDocumentPosition(equipo!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   })
 })

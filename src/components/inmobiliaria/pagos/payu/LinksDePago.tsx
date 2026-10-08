@@ -51,9 +51,17 @@ export interface LinksDePagoProps {
   onCambiarMes?: (mes: string) => void;
   /** Lo que va entre la barra y la tabla: en «Agente de pagos», la frase del mes. */
   resumen?: ReactNode;
+  /**
+   * En «Agente de pagos» la pantalla ya es de Cobri y ya dijo cuándo escribe:
+   * ahí la tarjeta se titula por lo que muestra y va sin bajada (`null`), para
+   * no repetir la cadencia dos veces en la misma pantalla. Sin estos props,
+   * el título y la bajada de siempre (Cartera › Cobros emitidos).
+   */
+  titulo?: string;
+  descripcion?: string | null;
 }
 
-export function LinksDePago({ mes: mesDeAfuera, onCambiarMes, resumen }: LinksDePagoProps) {
+export function LinksDePago({ mes: mesDeAfuera, onCambiarMes, resumen, titulo, descripcion }: LinksDePagoProps) {
   const { t, locale } = useI18n();
   const idDelTitulo = useId();
   const esMovil = useIsMobile();
@@ -89,9 +97,13 @@ export function LinksDePago({ mes: mesDeAfuera, onCambiarMes, resumen }: LinksDe
     >
       <header className="space-y-1 border-b border-border px-4 py-3">
         <h2 id={idDelTitulo} className="text-subtitle text-fg">
-          {t('inmobiliaria.cobros.linksDePago.titulo')}
+          {titulo ?? t('inmobiliaria.cobros.linksDePago.titulo')}
         </h2>
-        <p className="max-w-3xl text-body-sm text-fg-muted">{t('inmobiliaria.cobros.linksDePago.descripcion')}</p>
+        {descripcion === null ? null : (
+          <p className="max-w-3xl text-body-sm text-fg-muted">
+            {descripcion ?? t('inmobiliaria.cobros.linksDePago.descripcion')}
+          </p>
+        )}
       </header>
 
       {/* A 390 px la barra se parte en líneas: mes arriba, conteo y estado abajo. */}

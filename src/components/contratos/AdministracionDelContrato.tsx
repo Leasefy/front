@@ -15,7 +15,7 @@
 
 import { NO_SE_PRORRATEA, PREGUNTA_DEL_PRORRATEO, SI_SE_PRORRATEA } from '@/lib/contratos/modo-de-cobro'
 import { Presence } from '@leasefy/cadence'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Receipt, WarningCircle } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -80,14 +80,24 @@ interface Props {
   contract: Contract
   puedeEditar: boolean
   onActualizado: (c: Contract) => void
+  /**
+   * (08-10-2026, Nico) Cada vez que sube, abre «Corregir» como si se hubiera
+   * apretado el botón: lo usa el bloque del escenario tributario para llevar a
+   * donde se declara lo que falta. `0` o ausente = nadie lo pidió.
+   */
+  pedidoDeCorregir?: number
 }
 
 export function AdministracionDelContrato({
   contract,
   puedeEditar,
   onActualizado,
+  pedidoDeCorregir = 0,
 }: Props) {
   const [editando, setEditando] = useState(false)
+  useEffect(() => {
+    if (pedidoDeCorregir > 0 && puedeEditar) setEditando(true)
+  }, [pedidoDeCorregir, puedeEditar])
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   // El error de un campo va debajo de ESE campo, en lugar de su ayuda gris.

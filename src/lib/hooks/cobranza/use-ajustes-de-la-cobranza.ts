@@ -12,8 +12,8 @@
  * micro, el GET trae los de por defecto con `disponible: false` y el PUT es un
  * 503 `FALTA_UNA_MIGRACION`.
  *
- * `experimentosPrendidos` existe en el contrato, pero la pantalla todavía no lo
- * muestra: no hay experimentos que prender (nada de botones muertos).
+ * `experimentosPrendidos` (prendido por defecto): si Laura entra al A/B de cómo
+ * ofrece el acuerdo; lo cambia `FormasDeOfrecerElAcuerdo`.
  */
 
 import { useCallback, useEffect, useState } from 'react'

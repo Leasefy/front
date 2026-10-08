@@ -125,8 +125,9 @@ export function ExperimentoDeLaura() {
 
       {e.startedAt && (
         <p className="text-xs text-fg-muted">
+          {/* Sin punto final: la hora ya termina en «a. m.» / «p. m.». */}
           Empezó el {fmtDateTime(e.startedAt)}
-          {e.endedAt ? ` · terminó el ${fmtDateTime(e.endedAt)}` : ''}.
+          {e.endedAt ? ` · terminó el ${fmtDateTime(e.endedAt)}` : ''}
         </p>
       )}
 
@@ -226,7 +227,7 @@ export function ExperimentoDeLaura() {
             <div className="flex items-center gap-2">
               <input
                 id="cuotas-de-b"
-                className="input w-20 font-mono"
+                className="input max-w-[5rem] font-mono"
                 inputMode="numeric"
                 value={cuotas}
                 aria-invalid={cuotasLeidas === null ? true : undefined}

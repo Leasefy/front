@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { MagnifyingGlass, Bell, CaretDown, Lightning, List, UserPlus, User, Gear, SignOut, Question, CreditCard, Check, Crown, Minus, X, House, Clock, Heart, Compass, Receipt, Lifebuoy, Handshake } from '@phosphor-icons/react';
 import { SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
+import { botonDelEncabezadoActivo } from '@/lib/nav/boton-del-encabezado';
 import { useAuth } from '@/lib/auth';
 import { getUserHomeRoute } from '@/lib/auth/role-routes';
 import { type ActiveContext } from '@/lib/auth/active-context';
@@ -107,6 +108,8 @@ export function PlanHeader({
   const { user, logout, agency, hasActiveAgencyMembership, activeContext, setActiveContext } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  // La pantalla que abrió un botón de esta barra lo deja marcado (08-10-2026).
+  const botonActivo = botonDelEncabezadoActivo(pathname);
   const { t, locale } = useI18n();
   // Context switcher navigation: persist the chosen context, then route.
   const handleSwitchContext = (ctx: ActiveContext) => {
@@ -904,7 +907,11 @@ export function PlanHeader({
               <button
                     type="button"
                     aria-label={locale === 'es' ? 'Notificaciones' : 'Notifications'}
-                    className="relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors"
+                    aria-current={botonActivo === 'notificaciones' ? 'page' : undefined}
+                    className={cn(
+                      'relative inline-flex items-center justify-center p-2 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11 text-fg-muted hover:text-fg hover:bg-surface-muted rounded-xl transition-colors',
+                      botonActivo === 'notificaciones' && 'bg-[color:var(--menu-activa)] text-[color:var(--menu-activa-tinta)] hover:bg-[color:var(--menu-activa)] hover:text-[color:var(--menu-activa-tinta)]',
+                    )}
                   >
                 <Bell className="w-5 h-5 stroke-[1.5px]" />
                 {/* Un plazo ARCO vencido pinta el punto en rojo: es la única
@@ -1121,9 +1128,14 @@ export function PlanHeader({
                 // Anclaje del recorrido guiado del panel (`TourDelPanel`): acá
                 // viven perfil, configuración y el enlace que vuelve a lanzarlo.
                 data-tour-target="perfil"
+                // En Mi perfil y en Configuración el avatar queda marcado: de ahí se abren.
+                aria-current={botonActivo === 'cuenta' ? 'page' : undefined}
                 // A 390 px sólo el avatar: la flecha se va a partir de `sm`.
                 // El plan sigue a un toque, en el rayo de «Tu suscripción».
-                className="flex items-center gap-2 py-1.5 pl-1.5 pr-1.5 sm:pr-2.5 rounded-lg bg-surface-muted hover:bg-border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className={cn(
+                  'flex items-center gap-2 py-1.5 pl-1.5 pr-1.5 sm:pr-2.5 rounded-lg bg-surface-muted hover:bg-border transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+                  botonActivo === 'cuenta' && 'bg-[color:var(--menu-activa)] hover:bg-[color:var(--menu-activa)]',
+                )}
               >
                 {/* Avatar */}
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-ink flex items-center justify-center">

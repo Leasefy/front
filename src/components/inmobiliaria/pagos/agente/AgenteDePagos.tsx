@@ -13,6 +13,8 @@
  *      Sala que se retiró, ocho indicadores en rayas. Si la consulta falla, lo
  *      dice el paso «Su tablero publicado» con su «Volver a consultar»: un
  *      solo lugar para el mismo aviso, no dos carteles.
+ *   2b. Cobri este mes (08-10-2026, de cambios-nico-10): la frase del mes, cuándo
+ *      escribe y el link de cada cuota (`CobriEsteMes`), con el resumen del back.
  *   3. Quién es quién: los seis del equipo, qué hace cada uno y en qué
  *      pantalla del panel se ve su trabajo. Esas pantallas ya existen y
  *      funcionan sin el equipo; acá se ENLAZAN, no se repiten.
@@ -34,6 +36,7 @@ import {
   XCircle,
 } from '@phosphor-icons/react'
 
+import { CobriEsteMes } from '@/components/inmobiliaria/pagos/agente/CobriEsteMes'
 import { SectionLabel } from '@/components/ui/section-label'
 import { Button } from '@/components/ui/button'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
@@ -224,6 +227,11 @@ export function AgenteDePagos({ lectura }: { lectura: AgenteDePagosLectura }) {
           })}
         </ol>
       </section>
+
+      {/* Cobri (08-10, de cambios-nico-10): lo que el equipo ya hace de verdad,
+          con el resumen del back. Va antes del tablero del micro, que todavía
+          no se publica. */}
+      <CobriEsteMes />
 
       {tablero.estado === 'listo' && resumen && (
         <section aria-labelledby="que-esta-haciendo" className="space-y-4" data-testid="tablero-del-equipo">

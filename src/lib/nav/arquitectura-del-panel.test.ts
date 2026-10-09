@@ -71,7 +71,9 @@ const pantallas = modulos.flatMap((m) => pestanasDelModulo(m));
  * C-19 (03-10-2026) viven en `retencion/…`.
  */
 function tienePagina(href: string): boolean {
-  const segmentos = href.replace(PANEL, '').split('/').filter(Boolean);
+  // La consulta (`?pestana=calidad`) no es parte de la ruta: el navegador la
+  // manda a la misma page.tsx.
+  const segmentos = href.replace(PANEL, '').split(/[?#]/)[0]!.split('/').filter(Boolean);
   const buscar = (dir: string, i: number): boolean => {
     if (i === segmentos.length) return existsSync(join(dir, 'page.tsx'));
     if (!existsSync(dir)) return false;
@@ -206,7 +208,7 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 26 módulos en 5 grupos con nombre (+ Inicio y Chat = 28 filas)', () => {
+  it('el sidebar tiene 27 módulos en 5 grupos con nombre (+ Inicio y Chat = 29 filas)', () => {
     // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
     // entra por el menú del perfil. Eran 17 hasta que «Cobros» y «Pagos» se
     // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). Eran 16 en 4
@@ -238,7 +240,10 @@ describe('arquitectura del panel — sidebar', () => {
     // el riel, así que colgarla de ahí la volvería inalcanzable.
     // Eran 25 hasta que Retención se mudó a «Agentes IA» (QA-CONT C-19,
     // 03-10-2026, Nico: «Moverlas a Agentes IA con navegación»).
-    expect(modulos).toHaveLength(26);
+    // 08-10-2026: 27 con Calidad de publicaciones (Niti), traída de
+    // cambios-nico-10 (29-09, Nico: «no los veo en la sección de agentes para
+    // poder probarlos»).
+    expect(modulos).toHaveLength(27);
   });
 
   it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
@@ -782,6 +787,8 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
   it('trae lo que funciona hoy en el orden de los módulos de donde vino; después el equipo de pagos y Desempeño IA', () => {
     expect(agentes.modulos.map((m) => m.key)).toEqual([
       'avaluos',
+      // Niti · calidad (29-09-2026, traída el 08-10): encuadre de Inmuebles.
+      'calidad-publicaciones',
       'matching',
       'asegurabilidad',
       'cobranza',
@@ -799,6 +806,7 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
     // sin mover nada (ver el test del módulo dueño, abajo).
     expect(agentes.modulos.map((m) => m.href.replace(PANEL, ''))).toEqual([
       '/inmuebles/avaluos',
+      '/inmuebles/calidad-de-publicaciones',
       '/postulaciones/matching',
       '/postulaciones/asegurabilidad',
       '/pagos/cobranza',
@@ -888,9 +896,11 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
       filterAgencyNav(filasDelSidebar(t, ctx), ctx)
         .map((f) => f.href.replace(PANEL, ''))
         .filter((h) => agentes.modulos.some((m) => m.href === `${PANEL}${h}`));
-    // El comercial no ve finanzas —no veía Cobranza dentro de Pagos—.
+    // El comercial no ve finanzas —no veía Cobranza dentro de Pagos—. Ve
+    // Calidad (encuadre de Inmuebles) porque ya veía ese módulo (29-09-2026).
     expect(visibles({ canAccess: () => true, isAdmin: false, agencyRole: AGENCY_ROLES.AGENTE })).toEqual([
       '/inmuebles/avaluos',
+      '/inmuebles/calidad-de-publicaciones',
       '/postulaciones/matching',
       '/postulaciones/asegurabilidad',
       '/reportes/ia',
@@ -918,8 +928,11 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
     // Los agentes son del plan Flex: sin plan, el micro no concede sus
     // módulos y `canAccess` los niega. Sin ninguna fila, la cabecera no se
     // queda sola (`filterAgencyNav` borra la cabecera vacía).
+    // Sin `portafolio`: desde el 29-09-2026 «Calidad de publicaciones» (Niti)
+    // cuelga de ese módulo —no tiene uno de plan propio—, así que con él la
+    // sección ya no queda vacía.
     const sinAgentes: NavFilterContext = {
-      canAccess: (m) => ['portafolio', 'pipeline', 'contratos'].includes(m),
+      canAccess: (m) => ['pipeline', 'contratos'].includes(m),
       isAdmin: false,
       agencyRole: AGENCY_ROLES.AGENTE,
     };

@@ -97,7 +97,10 @@ export interface Promesa {
   mensajeOriginal: string | null
   /** Nota de seguimiento (no expuesto hoy → null). */
   seguimiento: string | null
-  /** Resultado conciliado (no expuesto hoy → null). */
+  /**
+   * El cierre contra los recibos del back, en una frase («Incumplida: pagó $X
+   * de $Y hasta el D…»), o null si la promesa todavía no se cerró.
+   */
   resultado: string | null
 }
 
@@ -205,6 +208,12 @@ export function PromesaCard({ promesa }: { promesa: Promesa }) {
               {fechaPrometidaStr}
             </span>
           </div>
+          {/* El cierre contra los pagos se ve sin abrir la tarjeta. */}
+          {promesa.resultado && (
+            <p className="text-caption text-fg-muted leading-relaxed" data-testid={`promesa-cierre-${promesa.key}`}>
+              {promesa.resultado}
+            </p>
+          )}
         </div>
         <CaretDown
           className={`w-4 h-4 shrink-0 text-fg-muted transition-transform ${

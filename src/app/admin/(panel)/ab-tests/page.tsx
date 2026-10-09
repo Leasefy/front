@@ -8,6 +8,7 @@ import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pagination } from '@/components/admin/screen/Pagination'
 import { useClientPagination } from '@/lib/admin/use-client-pagination'
 import { Pill } from '@/components/admin/Pill'
+import { ExperimentoDeLaura } from '@/components/admin/ExperimentoDeLaura'
 
 const PAGE_SIZE = 50
 import type { PillTone } from '@/lib/admin/types'
@@ -94,6 +95,10 @@ export default function AbTestsPage() {
             : 'Experimentos activos ordenados running > paused > otros.'
         }
       />
+
+      {/* 07-10-2026 (Nico): el experimento de cómo Laura ofrece el acuerdo;
+          aquí Leasefy lo empieza, lo pausa y aprueba la ganadora para todas. */}
+      <ExperimentoDeLaura />
 
       <DataTable
         columns={columns}

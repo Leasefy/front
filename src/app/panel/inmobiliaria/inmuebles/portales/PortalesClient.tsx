@@ -57,6 +57,7 @@
  */
 
 import { useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { motivoEnCristiano } from '@/lib/errores/en-cristiano';
 import {
   CloudArrowUp,
@@ -1113,6 +1114,16 @@ export function PortalesClient() {
               todavía no publicamos solos en ninguno
             </span>
             .
+          </p>
+          {/* Calidad vive sólo en «Agentes IA» (Nico, 08-10): acá queda el camino. */}
+          <p className="text-sm">
+            <Link
+              href="/panel/inmobiliaria/inmuebles/calidad-de-publicaciones"
+              className="font-medium text-primary hover:underline"
+              data-testid="enlace-a-calidad"
+            >
+              Ver la calidad de tus avisos (Niti)
+            </Link>
           </p>
         </div>
         <ParaEntenderMas

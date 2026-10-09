@@ -14,6 +14,7 @@ import {
   leerIntencion,
   leerResultado,
   respuestaDeLaPropuesta,
+  textoDelFormulario,
   tipoDeFichaDeLaEntidad,
 } from './acciones-del-hilo';
 
@@ -26,7 +27,11 @@ describe('la intención', () => {
       entidad: { tipo: 'contrato', id: '24' },
     });
     expect(leerIntencion({ accion: 'confirmar', propuestaId: 'p' })).toEqual({ accion: 'confirmar', propuestaId: 'p' });
-    expect(leerIntencion({ accion: 'ver', entidad: { tipo: 'agencia', id: 'x' } })).toBeNull();
+    expect(leerIntencion({ accion: 'ver', entidad: { tipo: 'banco', id: 'x' } })).toBeNull();
+    expect(leerIntencion({ accion: 'armar_nomina_del_mes', entidad: { tipo: 'agencia', id: UUID } })).toEqual({
+      accion: 'armar_nomina_del_mes',
+      entidad: { tipo: 'agencia', id: UUID },
+    });
     expect(leerIntencion({ accion: 'confirmar' })).toBeNull();
     expect(leerIntencion(null)).toBeNull();
   });
@@ -83,6 +88,59 @@ describe('las piezas del `done`', () => {
         campos: [{ clave: 'valorCop', tipo: 'moneda', requerido: true }, { clave: 'mal clave', tipo: 'texto' }],
       })?.campos.map((c) => c.clave),
     ).toEqual(['valorCop']);
+  });
+
+  /*
+   * 🔴 07-10: los MISMOS tipos de ficha que el micro (`TIPOS_DE_FICHA` de
+   * `ai-hub/en-el-chat/intencion.ts`). Faltaba la inmobiliaria y los documentos:
+   * el formulario de «arma la nómina» llegaba y se descartaba, y el chat se
+   * quedaba en «…necesito estos datos:» sin ningún campo.
+   */
+  it.each([
+    'persona',
+    'inquilino',
+    'coarrendatario',
+    'codeudor',
+    'postulante',
+    'contrato',
+    'inmueble',
+    'propietario',
+    'agencia',
+    'factura',
+    'factura_de_proveedor',
+    'lote_de_egresos',
+    'pqrs',
+    'mantenimiento',
+    'cita',
+    'acta',
+    'lead',
+  ])('el formulario y los botones de una ficha «%s» llegan al hilo', (tipo) => {
+    const entidad = { tipo, id: UUID };
+    expect(
+      leerFormulario({
+        accion: 'armar_nomina_del_mes',
+        entidad,
+        titulo: 'Armar la nómina del mes',
+        campos: [{ clave: 'mes', tipo: 'opcion', requerido: true, opciones: [{ valor: '2026-10', etiqueta: 'Octubre de 2026' }] }],
+      }),
+    ).toMatchObject({ entidad, campos: [{ clave: 'mes', opciones: [{ valor: '2026-10', etiqueta: 'Octubre de 2026' }] }] });
+    expect(leerAcciones([{ id: 'una_accion', titulo: 'Una acción', entidad, disponible: true }])).toHaveLength(1);
+  });
+
+  it('lo que la persona «dijo» al llenar el formulario: la opción por su nombre, la plata y la fecha en palabras', () => {
+    const f = leerFormulario({
+      accion: 'registrar_novedad_de_nomina',
+      entidad: { tipo: 'agencia', id: UUID },
+      titulo: 'Registrar una novedad de nómina',
+      campos: [
+        { clave: 'tipo', tipo: 'opcion', requerido: true, opciones: [{ valor: 'BONIFICACION', etiqueta: 'Bonificación — en pesos' }] },
+        { clave: 'desde', tipo: 'fecha', requerido: true },
+        { clave: 'valorCop', tipo: 'moneda', requerido: false },
+      ],
+    })!;
+    expect(textoDelFormulario(f, { tipo: 'BONIFICACION', desde: '2026-10-05', valorCop: '150000' })).toBe(
+      'Registrar una novedad de nómina: Bonificación — en pesos · 5 de octubre de 2026 · $150.000',
+    );
   });
 
   it('una propuesta está contestada cuando un mensaje POSTERIOR de la persona la nombra', () => {

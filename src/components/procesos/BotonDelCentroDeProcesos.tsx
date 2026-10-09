@@ -19,6 +19,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { ArrowUpRight, Queue } from '@phosphor-icons/react'
 
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -27,6 +28,7 @@ import { toast } from '@/components/ui/toast'
 import { alEventoDelCentro } from '@/lib/api/procesos.service'
 import type { ListaDeProcesos } from '@/lib/api/procesos.types'
 import { cn } from '@/lib/utils'
+import { botonDelEncabezadoActivo } from '@/lib/nav/boton-del-encabezado'
 import { AnimatedNumber, Presence, Stagger, StaggerItem } from '@leasefy/cadence'
 import { FilaDeProceso } from './FilaDeProceso'
 import { DetalleDelProceso } from './DetalleDelProceso'
@@ -86,6 +88,8 @@ export function BotonDelCentroDeProcesos() {
     setDetalle(p)
   }
   const centro = useCentroDeProcesos({ limite: TOPE })
+  /** En el Centro de procesos el botón queda marcado: de aquí se llega (08-10-2026). */
+  const aqui = botonDelEncabezadoActivo(usePathname()) === 'procesos'
   const data = centro.data
   const activos = data?.activos ?? 0
   /** La lista al momento del anuncio: lo que no esté ahí nació después. */
@@ -186,7 +190,11 @@ export function BotonDelCentroDeProcesos() {
           title={etiqueta}
           data-testid="centro-de-procesos-boton"
           data-activos={activos}
-          className="relative ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11"
+          aria-current={aqui ? 'page' : undefined}
+          className={cn(
+            'relative ml-1 inline-flex h-9 w-9 items-center justify-center rounded-xl text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-11',
+            aqui && 'bg-[color:var(--menu-activa)] text-[color:var(--menu-activa-tinta)] hover:bg-[color:var(--menu-activa)] hover:text-[color:var(--menu-activa-tinta)]',
+          )}
         >
           <Queue className={cn('h-5 w-5', activos > 0 && 'text-primary')} aria-hidden="true" />
           {/* El anillo y el contador aparecen con un fundido al lanzar el

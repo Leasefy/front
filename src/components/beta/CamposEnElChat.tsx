@@ -73,12 +73,19 @@ export function CamposEnElChat({
               <SelectorDeMes mes={valores[c.clave] || mesActual()} onCambiar={(m) => onCambiar(c.clave, m)} testId={id} />
             ) : c.tipo === 'opcion' ? (
               <Select value={valores[c.clave] ?? ''} onValueChange={(v) => onCambiar(c.clave, v)} disabled={deshabilitados}>
-                <SelectTrigger id={id} aria-label={c.etiqueta}>
+                {/*
+                 * 07-10: las opciones del chat pueden ser frases largas («Incapacidad por
+                 * enfermedad general — con las fechas desde y hasta (pide soporte…)», un
+                 * egreso con su beneficiario y su valor). A 390 px la lista se salía por la
+                 * derecha y cortaba el texto: la lista no pasa del ancho de la pantalla, cada
+                 * opción se parte en renglones y lo escogido se lee alineado a la izquierda.
+                 */}
+                <SelectTrigger id={id} aria-label={c.etiqueta} className="h-auto min-h-11 py-2 text-left">
                   <SelectValue placeholder={t('beta.enElChat.formulario.elige')} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-w-[min(40rem,calc(100vw-2rem))]">
                   {c.opciones.map((o) => (
-                    <SelectItem key={o.valor} value={o.valor}>
+                    <SelectItem key={o.valor} value={o.valor} className="h-auto min-h-8 whitespace-normal py-1.5 leading-snug">
                       {o.etiqueta}
                     </SelectItem>
                   ))}

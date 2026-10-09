@@ -6,6 +6,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { useAuth } from '@/lib/auth/use-auth';
+import { getUserHomeRoute } from '@/lib/auth/role-routes';
+import {
+  esElHome,
+  hayAlgoAntesDeLaVentanaLegal,
+  LATIDO_MS,
+  LATIDOS_EN_CALMA,
+} from '@/lib/legal/cuando-sale-la-ventana-legal';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { VERSION_POLITICA_DE_TRATAMIENTO, VERSION_TERMINOS } from '@/lib/legal/versiones';
 import {
@@ -27,17 +34,27 @@ import {
  *     (hay que poder leerlas: los enlaces abren en otra pestaña), ni en el
  *     inicio de sesión ni en las firmas por enlace; y si el back no puede
  *     guardarla (`disponible: false`) o no responde, NO se muestra.
+ *   · 🔴 Sólo en el HOME y con todo lo demás hecho (Nico, 08-10-2026: «debe
+ *     aparecer es en el home luego de que ya tenga todo check»). Salía encima
+ *     de «¿Cómo vas a usar Leasefy?» recién creada la cuenta. Ahora espera a
+ *     la puesta en marcha, a cualquier otro diálogo y al recorrido del panel
+ *     (`lib/legal/cuando-sale-la-ventana-legal.ts`), y una vez abierta se
+ *     queda hasta «Acepto» o «Salir».
  *
  * Un solo montaje, en el layout raíz dentro de `AuthProvider`.
  */
 export function AceptarLegalesAlEntrar() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, activeContext, agencyRole } = useAuth();
   const ruta = usePathname();
   const [estado, setEstado] = useState<EstadoDeLasAceptaciones | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Nada delante durante `LATIDOS_EN_CALMA` latidos seguidos. Abierta, ya no se vuelve a mirar. */
+  const [enCalma, setEnCalma] = useState(false);
   const userId = user?.id ?? null;
   const fuera = rutaSinVentanaLegal(ruta);
+  const enElHome = !fuera && Boolean(user) && esElHome(ruta, getUserHomeRoute(user, activeContext, agencyRole));
+  const pide = Boolean(userId && estado?.disponible && estado.debeAceptar);
 
   useEffect(() => {
     setEstado(null);
@@ -53,7 +70,28 @@ export function AceptarLegalesAlEntrar() {
     };
   }, [userId]);
 
-  const abierta = Boolean(userId && !fuera && estado?.disponible && estado.debeAceptar);
+  useEffect(() => {
+    if (!pide || !enElHome) {
+      setEnCalma(false);
+      return;
+    }
+    if (enCalma) return;
+    let seguidos = 0;
+    const latido = setInterval(() => {
+      if (hayAlgoAntesDeLaVentanaLegal((sel) => document.querySelector(sel) !== null)) {
+        seguidos = 0;
+        return;
+      }
+      seguidos += 1;
+      if (seguidos >= LATIDOS_EN_CALMA) {
+        clearInterval(latido);
+        setEnCalma(true);
+      }
+    }, LATIDO_MS);
+    return () => clearInterval(latido);
+  }, [pide, enElHome, enCalma]);
+
+  const abierta = pide && enElHome && enCalma;
 
   const aceptar = async () => {
     if (enviando) return;

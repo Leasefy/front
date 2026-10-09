@@ -125,6 +125,8 @@ export interface NavItem {
   href: string;
   icon: Icon;
   exact?: boolean;
+  /** Otras rutas que son esta misma fila (ver `FilaDelMenu.tambienEn`). */
+  tambienEn?: readonly string[];
   disabled?: boolean;
   badge?: number;
   children?: NavItem[];

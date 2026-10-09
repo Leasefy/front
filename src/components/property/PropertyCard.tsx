@@ -4,12 +4,13 @@ import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, MapPin, CaretLeft, CaretRight } from '@phosphor-icons/react';
+import { Heart, MapPin, CaretLeft, CaretRight, Check, ShieldCheck } from '@phosphor-icons/react';
 import { IconButton } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 import { AdministradoPor } from '@/components/property/AdministradoPor';
 import { formatCurrency, formatArea } from '@/lib/format';
+import { costoMensual, sinDeposito } from '@/lib/marketplace/busqueda';
 import type { Property } from '@/lib/types/property';
 import type { QualificationResult } from '@/lib/scoring/propertyMatching';
 
@@ -26,6 +27,11 @@ export interface PropertyCardProps {
   basePath?: string;
   /** Query extra en el link (p.ej. `from=para-ti`) para que el detalle sepa de dónde vino. */
   linkQuery?: string;
+  /**
+   * Por qué sale en la lista (marketplace, 09-10-2026): lo pedido que cumple y
+   * lo que el inmueble no dice. Sin búsqueda no se pinta nada.
+   */
+  explicacion?: { cumple: string[]; sinDato: string[] } | null;
 }
 
 export function PropertyCard({
@@ -39,6 +45,7 @@ export function PropertyCard({
   className,
   basePath = '/propiedades',
   linkQuery,
+  explicacion,
 }: PropertyCardProps) {
   const {
     id,
@@ -65,6 +72,9 @@ export function PropertyCard({
   // never `formatCurrency(null)` (silently "$ 0", C6).
   const isSaleListing = listingType === 'sale';
   const displayPrice = isSaleListing ? salePrice : monthlyRent;
+  // Lo que cuesta al mes de verdad y si la ley prohíbe el depósito (Ley 820).
+  const costo = costoMensual(property);
+  const vivienda = sinDeposito(property);
 
   const [activeImage, setActiveImage] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -328,6 +338,13 @@ export function PropertyCard({
             <span className="text-[13px] font-normal text-muted-foreground ml-1 font-sans">/mes</span>
           )}
         </p>
+        {/* Lo que se paga de verdad: canon + administración. Sólo si la hay. */}
+        {costo && costo.administracion > 0 && (
+          <p className="mt-1.5 text-[12.5px] text-fg-muted" data-testid="costo-mensual">
+            Con administración:{' '}
+            <span className="font-mono tabular-nums text-fg">{formatCurrency(costo.total)}</span> al mes
+          </p>
+        )}
 
         {/* Features — clean chips */}
         <div
@@ -345,16 +362,39 @@ export function PropertyCard({
             <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M3 12h18M3 12v6a2 2 0 002 2h14a2 2 0 002-2v-6M3 12V8a4 4 0 014-4h1a3 3 0 013 3v5" />
             </svg>
-            {bedrooms} hab
+            {bedrooms ?? '—'} hab
           </span>
           <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70 bg-surface-muted border border-border rounded-full px-2.5 py-1.5 font-mono tabular-nums">
             <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
               <path d="M4 12h16a2 2 0 012 2v2a4 4 0 01-4 4H6a4 4 0 01-4-4v-2a2 2 0 012-2z" />
               <path d="M6 12V5a2 2 0 012-2h8a2 2 0 012 2v7" />
             </svg>
-            {bathrooms} baño{bathrooms !== 1 ? 's' : ''}
+            {bathrooms ?? '—'} baño{bathrooms !== 1 ? 's' : ''}
           </span>
         </div>
+
+        {/* Lo que pesa al decidir: sin depósito (ley) y por qué sale en la lista. */}
+        {(vivienda || (explicacion && explicacion.cumple.length > 0)) && (
+          <div className="mt-3 space-y-1.5 border-t border-border pt-3 text-[12.5px] leading-snug">
+            {vivienda && (
+              <p className="flex items-start gap-1.5 text-fg-muted" data-testid="sin-deposito">
+                <ShieldCheck className="mt-[1px] h-3.5 w-3.5 shrink-0 text-success" aria-hidden />
+                <span>Sin depósito: en vivienda la ley no permite pedirlo</span>
+              </p>
+            )}
+            {explicacion && explicacion.cumple.length > 0 && (
+              <p className="flex items-start gap-1.5 text-fg-muted" data-testid="por-que-sale">
+                <Check className="mt-[1px] h-3.5 w-3.5 shrink-0 text-primary" weight="bold" aria-hidden />
+                <span className="line-clamp-2">
+                  Cumple: {explicacion.cumple.join(' · ')}
+                  {explicacion.sinDato.length > 0 && (
+                    <span className="text-fg-subtle"> · No dice: {explicacion.sinDato.join(', ')}</span>
+                  )}
+                </span>
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </Link>
   );

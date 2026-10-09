@@ -40,6 +40,8 @@ vi.mock('@phosphor-icons/react', () => ({
   MapPin: () => null,
   CaretLeft: () => null,
   CaretRight: () => null,
+  Check: () => null,
+  ShieldCheck: () => null,
 }))
 
 import { PropertyCard } from './PropertyCard'

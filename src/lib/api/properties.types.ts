@@ -3,6 +3,8 @@
  * Reflects the exact shape of Prisma/NestJS responses
  */
 
+import type { FiltrosEntendidos } from '@/lib/marketplace/busqueda';
+
 export interface BackendPropertyImage {
   id: string;
   propertyId: string;
@@ -155,6 +157,12 @@ export interface PaginationMeta {
    * no dice si el metraje se tuvo en cuenta o se ignoró.
    */
   interpretacion?: Record<string, string>;
+  /**
+   * Lo mismo que `interpretacion`, como FILTROS (marketplace, 09-10-2026): lo
+   * que el texto puso y de verdad se aplicó. El marketplace lo vuelve pastillas
+   * editables y lo escribe en la URL (`src/lib/marketplace/busqueda.ts`).
+   */
+  filtrosEntendidos?: FiltrosEntendidos;
   total: number;
   page: number;
   limit: number;
@@ -180,7 +188,7 @@ export interface PropertyFiltersParams {
   minArea?: number;
   maxArea?: number;
   floor?: number;
-  propertyType?: 'APARTMENT' | 'HOUSE' | 'STUDIO' | 'ROOM';
+  propertyType?: 'APARTMENT' | 'HOUSE' | 'STUDIO' | 'ROOM' | 'COMMERCIAL' | 'OFFICE' | 'WAREHOUSE';
   amenities?: string[];
   searchQuery?: string;
   naturalQuery?: string;

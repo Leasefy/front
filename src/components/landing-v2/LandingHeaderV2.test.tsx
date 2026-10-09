@@ -58,7 +58,7 @@ describe('LandingHeaderV2', () => {
   it('trae los mismos enlaces del nav de la landing', () => {
     montar({ fxExterno: true })
     const rutas = [...container.querySelectorAll('nav.main a')].map((a) => a.getAttribute('href'))
-    expect(rutas).toEqual(['#producto', '/propiedades', '/avaluo', '/blog', '/contacto'])
+    expect(rutas).toEqual(['#producto', '/propiedades', '/publicar', '/avaluo', '/blog', '/contacto'])
   })
 
   describe('dónde estás', () => {
@@ -180,10 +180,10 @@ describe('LandingHeaderV2', () => {
       expect(numeros).toEqual(['01', '02', '03', '04', '05', '06'])
     })
 
-    it('para el resto, el menu movil conserva sus 07', () => {
+    it('para el resto, el menu movil trae 08 (con «Publicar inmueble», 09-10-2026)', () => {
       montar({ fxExterno: true })
       const numeros = [...container.querySelectorAll('#mmenu nav a .n')].map((n) => n.textContent)
-      expect(numeros).toEqual(['01', '02', '03', '04', '05', '06', '07'])
+      expect(numeros).toEqual(['01', '02', '03', '04', '05', '06', '07', '08'])
     })
   })
 
@@ -244,7 +244,7 @@ describe('LandingHeaderV2', () => {
       // suave del home las siga atendiendo.
       montar()
       const rutas = [...container.querySelectorAll('nav.main a')].map((a) => a.getAttribute('href'))
-      expect(rutas).toEqual(['/#producto', '/propiedades', '/avaluo', '/blog', '/contacto'])
+      expect(rutas).toEqual(['/#producto', '/propiedades', '/publicar', '/avaluo', '/blog', '/contacto'])
       const planes = [...container.querySelectorAll('.hcta a')].map((a) => a.getAttribute('href'))
       expect(planes).toContain('/#planes')
       const movil = [...container.querySelectorAll('#mmenu nav a')].map((a) => a.getAttribute('href'))

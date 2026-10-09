@@ -34,8 +34,9 @@ import { PasosDelRazonamiento } from '@/components/agentes/TurnoDelEquipo';
  *       Revisando las 14 filas de contratos…                   ← lo que hace ahora
  *
  * Cuando llega la respuesta, la lista se PLIEGA sin salto en «Cómo lo pensó»,
- * que al abrirse muestra las frases de `done.razonamiento` (con el orbe y el
- * nombre de cada especialista) y la delegación del turno.
+ * que al abrirse muestra EXACTAMENTE las mismas líneas que pasaron (Nico,
+ * 09-10-2026: «que se vea exactamente lo que pasó») y la delegación del turno.
+ * Las frases de `done.razonamiento` quedan para las respuestas sin pasos.
  *
  * Sobrio, con la tipografía y los grises del chat: sin cajas, un riel fino que
  * une los pasos, el especialista con su orbe. Movimiento con Framer y los tokens
@@ -302,23 +303,18 @@ export function PensamientoDelTurno({
           />
         </button>
         <Collapse open={abierto} id={id} className="pb-1 pl-1 pt-2.5">
-          {razonamiento && razonamiento.length > 0 ? (
-            <PasosDelRazonamiento pasos={razonamiento} />
-          ) : (
-            <ol className="m-0 list-none space-y-2 p-0">
-              {pasos.map((p) => (
-                <li key={p.id} className="flex items-start gap-2.5 font-body text-[13.5px] leading-[1.55] text-fg-muted">
-                  <span aria-hidden className="mt-[3px] flex size-4 shrink-0 items-center justify-center">
-                    <Glifo paso={p} agente={p.fase === 'despacho' ? agenteDelDespacho(p.agente) : null} />
-                  </span>
-                  <span className="min-w-0">
-                    {conNombreDelEquipo(p.texto, p.agente, t)}
-                    {p.resultado ? `: ${conNombreDelEquipo(p.resultado.texto, p.agente, t)}` : ''}
-                  </span>
-                </li>
+          {/* Abierto: EXACTAMENTE las líneas que pasaron en vivo (Nico, 09-10),
+              con su riel, el orbe de cada especialista y lo que trajo. Las
+              frases del micro sólo cuando no hay pasos (una respuesta vieja). */}
+          {pasos.length > 0 ? (
+            <ol className="m-0 list-none p-0" data-testid="pensamiento-abierto">
+              {pasos.map((p, i) => (
+                <FilaDelPaso key={p.id} paso={p} ultima={i === pasos.length - 1} />
               ))}
             </ol>
-          )}
+          ) : razonamiento && razonamiento.length > 0 ? (
+            <PasosDelRazonamiento pasos={razonamiento} />
+          ) : null}
           {resumen ? <div className="mt-3">{resumen}</div> : null}
         </Collapse>
       </Collapse>

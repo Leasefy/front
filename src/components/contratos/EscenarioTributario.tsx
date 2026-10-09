@@ -28,6 +28,7 @@
  */
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Scales, WarningCircle, Info } from '@phosphor-icons/react'
 
 import { Button } from '@/components/ui/button'
@@ -47,6 +48,14 @@ interface Props {
   puedeEditar?: boolean
   /** Después de confirmar: la ficha vuelve a leer el contrato. */
   onConfirmado?: () => void
+  /**
+   * (08-10-2026, Nico) Abre «Cómo se cobra → Corregir», donde se declaran el
+   * uso del inmueble, el IVA del propietario y el perfil del inquilino. Sin
+   * él, el botón «Confirmar» no se muestra.
+   */
+  onConfirmarEnElContrato?: () => void
+  /** La ficha del propietario (con su regreso): lo suyo se declara allá. */
+  fichaDelPropietario?: string | null
 }
 
 /** A quién le pega cada línea, en palabras de recibo. */
@@ -66,7 +75,13 @@ function porcentaje(n: number): string {
   return `${n.toLocaleString('es-CO', { maximumFractionDigits: 2 })} %`
 }
 
-export function EscenarioTributario({ contract, puedeEditar = false, onConfirmado }: Props) {
+export function EscenarioTributario({
+  contract,
+  puedeEditar = false,
+  onConfirmado,
+  onConfirmarEnElContrato,
+  fichaDelPropietario = null,
+}: Props) {
   const escenario = contract.escenarioTributario
 
   return (
@@ -100,6 +115,8 @@ export function EscenarioTributario({ contract, puedeEditar = false, onConfirmad
           contractId={contract.id}
           puedeEditar={puedeEditar}
           onConfirmado={onConfirmado}
+          onConfirmarEnElContrato={onConfirmarEnElContrato}
+          fichaDelPropietario={fichaDelPropietario}
         />
       )}
     </section>
@@ -111,12 +128,48 @@ function Contenido({
   contractId,
   puedeEditar,
   onConfirmado,
+  onConfirmarEnElContrato,
+  fichaDelPropietario,
 }: {
   escenario: EscenarioTributarioDelContrato
   contractId?: string
   puedeEditar: boolean
   onConfirmado?: () => void
+  onConfirmarEnElContrato?: () => void
+  fichaDelPropietario: string | null
 }) {
+  /*
+   * (08-10-2026, Nico: «un botón que lleve a donde se completa») Confirmar es
+   * declarar lo que hoy se deduce: el uso, el IVA del propietario y el perfil
+   * del inquilino en «Cómo se cobra»; la retención sobre la comisión, sólo en
+   * la ficha del propietario.
+   */
+  const loDelPropietario =
+    escenario.ejes.retencionSobreLaComision.origen === 'DEDUCIDO' ||
+    escenario.ejes.retencionSobreLaComision.valor === null
+  const llevaAConfirmar = puedeEditar ? (
+    <div className="flex flex-wrap items-center gap-2 pt-1" data-testid="escenario-llevar-a-confirmar">
+      {onConfirmarEnElContrato ? (
+        <Button
+          size="sm"
+          hideArrow
+          onClick={onConfirmarEnElContrato}
+          data-testid="escenario-confirmar-en-el-contrato"
+        >
+          Confirmar en «Cómo se cobra»
+        </Button>
+      ) : null}
+      {loDelPropietario && fichaDelPropietario ? (
+        <Link
+          href={fichaDelPropietario}
+          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+          data-testid="escenario-perfil-del-propietario"
+        >
+          Completar el perfil tributario del propietario
+        </Link>
+      ) : null}
+    </div>
+  ) : null
   const sinDefinir = escenario.codigo === 'SIN_DEFINIR'
   // El motivo del archivo ya va en su propio bloque, con el texto del archivo
   // al lado: en la lista de lo que falta sería la misma frase dos veces.
@@ -303,6 +356,7 @@ function Contenido({
                 </span>
                 , acá mismo en la ficha. Si es del propietario, va en su ficha.
               </p>
+              {llevaAConfirmar}
             </div>
           </div>
         </div>
@@ -331,6 +385,7 @@ function Contenido({
                   <li key={d}>{d}</li>
                 ))}
               </ul>
+              {llevaAConfirmar}
             </div>
           </div>
         </div>

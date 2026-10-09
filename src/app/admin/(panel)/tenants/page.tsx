@@ -9,6 +9,7 @@ import { DataTable, type Column } from '@/components/admin/screen/DataTable'
 import { Pagination } from '@/components/admin/screen/Pagination'
 import { useClientPagination } from '@/lib/admin/use-client-pagination'
 import { Pill } from '@/components/admin/Pill'
+import { RegistrosSinAsistente } from '@/components/admin/RegistrosSinAsistente'
 
 const PAGE_SIZE = 50
 
@@ -102,6 +103,9 @@ export default function TenantsPage() {
         title="Inmobiliarias"
         description="Todas las agencias registradas en la plataforma. Click en una fila para ver el detalle."
       />
+
+      {/* (08-10-2026, Nico) Lo que quedó en «No pudimos abrir tu registro», con su motivo. */}
+      <RegistrosSinAsistente />
 
       <DataTable
         columns={columns}

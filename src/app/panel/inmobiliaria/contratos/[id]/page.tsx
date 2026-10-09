@@ -185,6 +185,8 @@ function ContratoDetalleContent() {
   const canInviteTenant = canAccess('contratos', 'create');
 
   const [actionError, setActionError] = useState<string | null>(null);
+  // (08-10-2026) El bloque del escenario abre «Cómo se cobra → Corregir».
+  const [pedidoDeCorregir, setPedidoDeCorregir] = useState(0);
   // T-0129 — 409 INMUEBLE_SIN_CANON al activar: se explica con el enlace a editar el inmueble.
   const [errorSinCanon, setErrorSinCanon] = useState<unknown>(null);
   /** Activar sin inventario actualizado del inmueble: se dice con su enlace. */
@@ -693,6 +695,7 @@ function ContratoDetalleContent() {
             contract={contract}
             puedeEditar={canEditContracts && contract.status !== 'cancelled'}
             onActualizado={(c) => setContract((anterior) => fundirContrato(anterior, c))}
+            pedidoDeCorregir={pedidoDeCorregir}
           />
 
           {/* Cómo se llama la situación tributaria que forman las dos partes y
@@ -706,6 +709,16 @@ function ContratoDetalleContent() {
             // del propietario, quien edita contratos confirma cuál rige.
             puedeEditar={canEditContracts && contract.status !== 'cancelled'}
             onConfirmado={() => void refetch()}
+            // (08-10-2026, Nico) «Confirmar» lleva a donde se declara.
+            onConfirmarEnElContrato={() => setPedidoDeCorregir((n) => n + 1)}
+            fichaDelPropietario={
+              contract.propietarioDeLaConsignacion?.id
+                ? conRegreso(
+                    `/panel/inmobiliaria/propietarios/${contract.propietarioDeLaConsignacion.id}`,
+                    `/panel/inmobiliaria/contratos/${contract.id}`,
+                  )
+                : null
+            }
           />
 
           {/* Paso 11: quién respalda este arriendo. Si no está, se dice — un

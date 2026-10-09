@@ -106,25 +106,37 @@ describe('plegado en «Cómo lo pensó»', () => {
     { agente: 'pagos', texto: 'Lo que trajo: 3 con saldo pendiente.' },
   ];
 
-  it('una línea con los pasos y el tiempo, cerrada; al abrirla, las frases del micro con el orbe y el nombre', () => {
-    pintar(<PensamientoDelTurno pasos={PASOS} vivo={false} duracionMs={8_400} razonamiento={RAZONAMIENTO} />);
+  it('una línea con los pasos y el tiempo, cerrada; al abrirla, EXACTAMENTE las líneas que pasaron en vivo (Nico, 09-10)', () => {
+    const pasos = PASOS.map((p) => (p.estado === 'en_curso' ? { ...p, estado: 'listo' as const, actividad: undefined } : p));
+    pintar(<PensamientoDelTurno pasos={pasos} vivo={false} duracionMs={8_400} razonamiento={RAZONAMIENTO} />);
     expect(q('paso-del-pensamiento')).toHaveLength(0);
     const boton = q('como-lo-penso')[0] as HTMLButtonElement;
     expect(boton.textContent).toContain('Cómo lo pensó');
     expect(boton.textContent).toContain('3 pasos');
     expect(boton.textContent).toContain('8,4 s');
     expect(boton.getAttribute('aria-expanded')).toBe('false');
-    expect(container.textContent).not.toContain('Era la pregunta de un dato puntual');
     act(() => boton.click());
+    // Las mismas filas que en vivo, en el mismo orden, con su resultado y el riel.
+    const filas = q('paso-del-pensamiento');
+    expect(filas).toHaveLength(3);
+    expect(filas[0]!.textContent).toContain('Contratos que vencen entre el 1 y el 30 de noviembre de 2026');
+    expect(filas[1]!.textContent).toContain('Tu cartera al 2 de octubre');
+    expect(filas[1]!.textContent).toContain('en 31 clientes');
+    // El especialista con su nombre del equipo y su orbe.
+    expect(filas[2]!.getAttribute('data-fase')).toBe('despacho');
+    expect(filas[2]!.textContent).toContain('Le pido a Cobri');
+    expect(q('pensamiento-abierto')).toHaveLength(1);
+    // Con pasos, las frases del micro no reemplazan lo que pasó.
+    expect(container.textContent).not.toContain('Era la pregunta de un dato puntual');
+    expect(q('pasos-del-razonamiento')).toHaveLength(0);
+  });
+
+  it('una respuesta vieja, sin pasos, se abre en las frases del micro con el orbe y el nombre', () => {
+    pintar(<PensamientoDelTurno pasos={[]} vivo={false} razonamiento={RAZONAMIENTO} />);
+    act(() => (q('como-lo-penso')[0] as HTMLButtonElement).click());
     expect(container.textContent).toContain('Era la pregunta de un dato puntual de tu operación.');
     expect(container.textContent).toContain('Le pasé la consulta a Cobri, que orienta sobre cobros.');
     expect(container.querySelector('[data-testid="pasos-del-razonamiento"] [data-agente="pagos"]')).not.toBeNull();
-  });
-
-  it('sin el razonamiento del micro, se abre en los pasos que vio', () => {
-    pintar(<PensamientoDelTurno pasos={PASOS.slice(0, 2)} vivo={false} duracionMs={1_200} />);
-    act(() => (q('como-lo-penso')[0] as HTMLButtonElement).click());
-    expect(container.textContent).toContain('Tu cartera al 2 de octubre: $48.600.000 en 31 clientes');
   });
 
   it('sin pasos ni razonamiento no pinta nada (nunca se rellena)', () => {

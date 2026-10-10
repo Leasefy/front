@@ -1,5 +1,8 @@
 'use client';
 
+import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas';
+import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla';
+import { PqrsMarcadas } from '@/components/pqrs/PqrsMarcadas';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -143,6 +146,9 @@ function PqrsContent() {
   const solicitudes = useMemo(() => filtrarPqrs(todas, filtros), [todas, filtros]);
   const { pageItems, total, page, pageSize, setPage, setPageSize, shouldPaginate } =
     useTablePagination(solicitudes);
+  // Acciones masivas (Nico, 10-10-2026). Con otro filtro, lo marcado se suelta.
+  const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas(JSON.stringify(filtros));
+  const pqrsMarcadas = useMemo(() => todas.filter((p) => marcadas.has(p.id)), [todas, marcadas]);
 
   // Mover de estado o reasignar devuelve la fila entera: se reemplaza en su
   // lugar y se recarga el resumen de fondo, sin borrar la tabla.
@@ -345,6 +351,9 @@ function PqrsContent() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10 pl-4 pr-0">
+                  <CasillaDeLaPagina ids={pageItems.map((p) => p.id)} marcadas={marcadas} onMarcar={marcar} queSon="solicitudes" />
+                </TableHead>
                 {COLUMNS.map((c) => (
                   <TableHead key={c} className="whitespace-nowrap">
                     {t(k(c))}
@@ -357,7 +366,7 @@ function PqrsContent() {
             <TableBodyAnimado>
               {solicitudes.length === 0 ? (
                 <TableRowAnimada key="vacio">
-                  <TableCell colSpan={COLUMNS.length} className="p-0">
+                  <TableCell colSpan={COLUMNS.length + 1} className="p-0">
                     {/* Filtrado a cero NO es «no hay solicitudes»: ofrecer
                         «Nueva solicitud» sobre un filtro que esconde 80 filas
                         es mandar a radicar una que ya existe. */}
@@ -394,6 +403,9 @@ function PqrsContent() {
                         }
                       }}
                     >
+                      <TableCell className="w-10 pl-4 pr-0" onKeyDown={(e) => e.stopPropagation()}>
+                        <CasillaDeLaFila id={p.id} nombre={`la solicitud ${p.radicado}`} marcadas={marcadas} onMarcar={marcar} />
+                      </TableCell>
                       <TableCell className="whitespace-nowrap font-mono text-fg">{p.radicado}</TableCell>
                       <TableCell className="max-w-[220px]">
                         <p className="text-fg font-medium truncate">{p.solicitanteNombre}</p>
@@ -422,6 +434,17 @@ function PqrsContent() {
               )}
             </TableBodyAnimado>
           </Table>
+
+          {/* Acciones masivas: el pie de la MISMA tabla donde se marca. */}
+          {todas.length > 0 && (
+            <PqrsMarcadas
+              marcadas={pqrsMarcadas}
+              onQuitar={quitarLaSeleccion}
+              onCambiaron={() => {
+                pqrsApi.listar().then(setData).catch(() => undefined);
+              }}
+            />
+          )}
 
           {shouldPaginate && (
             <div className="border-t border-border px-4 py-3">

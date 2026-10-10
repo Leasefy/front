@@ -1,5 +1,6 @@
 'use client';
 
+import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla';
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import {
   MagnifyingGlass,
@@ -143,6 +144,12 @@ interface PropietarioTableProps {
    * vista de tarjetas: antes las tarjetas no tenían cómo buscar ni filtrar.
    */
   soloBarra?: boolean;
+  /**
+   * Acciones masivas (Nico, 10-10-2026): con esto la tabla pinta las casillas.
+   * Lo marcado y lo que se hace con ello lo lleva la página.
+   */
+  marcadas?: ReadonlySet<string>;
+  onMarcar?: (ids: readonly string[], si: boolean) => void;
 }
 
 /**
@@ -162,6 +169,8 @@ export function PropietarioTable({
   onExport,
   plataOculta = false,
   soloBarra = false,
+  marcadas,
+  onMarcar,
 }: PropietarioTableProps) {
   const { t, locale } = useI18n();
   /*
@@ -379,6 +388,16 @@ export function PropietarioTable({
         <Table className={cn('min-w-[800px]', esCelular && 'hidden')}>
           <TableHeader>
             <TableRow className="border-b border-border bg-muted/30">
+              {marcadas && onMarcar && (
+                <TableHead className="w-10 py-4 pl-4 pr-0">
+                  <CasillaDeLaPagina
+                    ids={filteredPropietarios.map((p) => p.id)}
+                    marcadas={marcadas}
+                    onMarcar={onMarcar}
+                    queSon="propietarios"
+                  />
+                </TableHead>
+              )}
               <SortableHeader field="name">{t('inmobiliaria.propietario.table.owner')}</SortableHeader>
               <SortableHeader field="propertyCount">{t('inmobiliaria.propietario.table.properties')}</SortableHeader>
               <SortableHeader field="totalMonthlyRent">{t('inmobiliaria.propietario.table.monthlyRent')}</SortableHeader>
@@ -401,6 +420,16 @@ export function PropietarioTable({
                   onClick={() => onView(propietario)}
                   className="border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors"
                 >
+                  {marcadas && onMarcar && (
+                    <TableCell className="w-10 py-4 pl-4 pr-0">
+                      <CasillaDeLaFila
+                        id={propietario.id}
+                        nombre={propietario.name}
+                        marcadas={marcadas}
+                        onMarcar={onMarcar}
+                      />
+                    </TableCell>
+                  )}
                   {/* Propietario */}
                   <TableCell className="p-4">
                     <div className="flex items-center gap-3">

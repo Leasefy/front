@@ -1,5 +1,6 @@
 'use client';
 
+import { CuantoCuestaVivirAqui } from '@/components/property/CuantoCuestaVivirAqui'
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 import { useState, useCallback, useEffect, useMemo } from 'react';
 import Link from 'next/link';
@@ -431,6 +432,9 @@ export function PropertyDetailView({
               </div>
 
               {/* Pie: quién lo publicó y cuándo se actualizó. */}
+              {/* Nico, 10-10-2026: cuánto cuesta vivir aquí, con los servicios estimados. */}
+              <CuantoCuestaVivirAqui propertyId={propertyId} />
+
               <p className="mt-12 border-t border-border pt-6 text-[13px] text-fg-subtle" data-testid="pie-de-la-ficha">
                 {property.agencyName ? `Publicado por ${property.agencyName}` : 'Publicado en Leasefy'}
                 {property.updatedAt && ` · Actualizado el ${new Date(property.updatedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}`}

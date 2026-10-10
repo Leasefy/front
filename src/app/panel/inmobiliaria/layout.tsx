@@ -1,5 +1,6 @@
 'use client';
 
+import { InvitacionAMejorarElPlan } from '@/components/plan/InvitacionAMejorarElPlan';
 import { useMemo, useEffect } from 'react';
 import { usePathname /* , useRouter */ } from 'next/navigation';
 import { ChatsCircle, AirTrafficControl } from '@phosphor-icons/react';
@@ -376,6 +377,9 @@ function InmobiliariaLayoutInner({ children }: { children: React.ReactNode }) {
             <SeccionesDelModulo />
             <CabeceraDelAgente />
             {children}
+            {/* Nico, 10-10-2026: el plan gratuito recibe una invitación por
+                función (solo invita, nunca cierra nada); sólo el administrador. */}
+            <InvitacionAMejorarElPlan activa={!subIndeterminate && !isPaidPlan && agencyRole === 'ADMIN'} />
           </main>
         </div>
 

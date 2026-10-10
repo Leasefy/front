@@ -126,6 +126,20 @@ export interface Inquilino {
  * WhatsApp) recibía eso y respondía 400. Con `tieneCuentaDelPortal` manda el
  * back; sin él, sólo un uuid sin prefijo pasa por cuenta.
  */
+/**
+ * Con qué se le pide el estado de cuenta a la persona (I-12): su cuenta, o
+ * —si la lista trae una identidad sintética (`doc:…`, `correo:…`)— su
+ * documento, que es lo que acepta `estado-de-cuenta/inquilino/:ref`. Sin
+ * ninguno de los dos, `null`: no hay a quién pedírselo. La ficha
+ * (`use-inquilino-detalle`) y las acciones masivas usan esta MISMA regla.
+ */
+export function referenciaDelEstadoDeCuenta(
+  persona: Pick<Inquilino, 'tenantId' | 'documento'>,
+): string | null {
+  if (!persona.tenantId.includes(':')) return persona.tenantId;
+  return persona.documento?.trim() || null;
+}
+
 export function cuentaDelPortal(persona: Pick<Inquilino, 'tenantId' | 'tieneCuentaDelPortal'>): string | null {
   if (persona.tieneCuentaDelPortal === false) return null;
   if (persona.tieneCuentaDelPortal === true) return persona.tenantId;

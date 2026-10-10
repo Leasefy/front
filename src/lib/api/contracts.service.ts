@@ -804,6 +804,17 @@ export const contractsApi = {
   },
 
   /**
+   * POST /contracts/invitar-inquilino/en-el-centro → 202 `{ procesoId }`.
+   * Acciones masivas (10-10-2026): «Invitar al portal» de cada contrato
+   * marcado, en UNA petición que el back recorre en el centro de procesos.
+   */
+  async invitarInquilinosEnElCentro(contractIds: readonly string[]): Promise<{ procesoId: string }> {
+    return apiClient.post<{ procesoId: string }>('/contracts/invitar-inquilino/en-el-centro', {
+      contractIds: [...contractIds],
+    });
+  },
+
+  /**
    * 🔴 QA-CONT CR-08 — `GET /contracts/:id/invitacion-del-inquilino`: en qué
    * está la invitación al portal del inquilino del contrato y qué botón le
    * toca («Invitar al portal», «Reenviar invitación» o ninguno).

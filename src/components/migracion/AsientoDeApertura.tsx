@@ -65,6 +65,7 @@ import { CampoDePlata } from "@/components/ui/campo-de-plata";
 
 import { mensajeDeContabilidad } from "./contabilidad-errores";
 import { TerceroDeApertura } from "./TerceroDeApertura";
+import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
 
 /** Sentinel: Radix `Select` no admite `value=""`. */
 const SIN_CUENTA = "__sin_cuenta__";
@@ -306,12 +307,11 @@ export function AsientoDeApertura({
           >
             Fecha de corte
           </label>
-          <Input
+          <CampoDeDia
             id="apertura-fecha"
-            type="date"
             value={fecha}
-            onChange={(e) => cambiarFecha(e.target.value)}
-            data-testid="apertura-fecha"
+            onChange={(v) => cambiarFecha(v)}
+            testid="apertura-fecha"
           />
         </div>
         <div className="space-y-1">

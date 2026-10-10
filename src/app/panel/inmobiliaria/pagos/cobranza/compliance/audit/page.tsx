@@ -59,6 +59,7 @@ import {
 } from '@/lib/hooks/cobranza/use-audit-log'
 import { inmobiliariaConfigApi } from '@/lib/api/inmobiliaria.service'
 import type { AgencyUser } from '@/lib/types/inmobiliaria'
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
 
 // D-34-08 + 34-04 (extended): audit action enum dropdown values.
 // Plan note: free-text override allowed for forward compat. Implemented via
@@ -335,22 +336,22 @@ function AuditContent() {
             {t('inmobiliaria.ai.cobranza.compliance.filters.dateRange')}
           </MonoLabel>
           <div className="flex gap-1">
-            <Input
-              type="date"
+            <CampoDeDia
+              id="auditoria-desde"
               value={from}
+              onChange={(v) => setFrom(v)}
               max={to}
-              onChange={(e) => setFrom(e.target.value)}
+              placeholder="Desde"
               className="flex-1 font-mono"
-              aria-label="from"
             />
-            <Input
-              type="date"
+            <CampoDeDia
+              id="auditoria-hasta"
               value={to}
+              onChange={(v) => setTo(v)}
               min={from}
               max={todayYmd()}
-              onChange={(e) => setTo(e.target.value)}
+              placeholder="Hasta"
               className="flex-1 font-mono"
-              aria-label="to"
             />
           </div>
         </div>

@@ -63,6 +63,7 @@ import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formular
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { formatCurrency } from '@/lib/format'
 import { useCrm } from '@/lib/hooks/use-crm'
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
 
 type Comprador = 'EL_INQUILINO' | 'UN_TERCERO'
 type CampoDeLaVenta = 'fechaDeLaEscritura' | 'precioDeVentaCop'
@@ -343,17 +344,16 @@ export function RegistrarLaVenta({
                 <label htmlFor="venta-fechaDeLaEscritura" className="mb-1 block text-caption font-medium text-foreground">
                   Fecha de la escritura<span className="ml-0.5 text-danger">*</span>
                 </label>
-                <Input
+                <CampoDeDia
                   id="venta-fechaDeLaEscritura"
-                  aria-required="true"
-                  type="date"
+                  requerido
                   value={fecha}
-                  onChange={(e) => {
-                    setFecha(e.target.value)
+                  onChange={(v) => {
+                    setFecha(v)
                     setErrores((x) => ({ ...x, fechaDeLaEscritura: undefined }))
                   }}
-                  aria-invalid={errores.fechaDeLaEscritura ? true : undefined}
-                  aria-describedby={errores.fechaDeLaEscritura ? 'venta-fechaDeLaEscritura-error' : undefined}
+                  invalido={Boolean(errores.fechaDeLaEscritura)}
+                  describedBy={errores.fechaDeLaEscritura ? 'venta-fechaDeLaEscritura-error' : undefined}
                 />
                 <ErrorDelCampo id="venta-fechaDeLaEscritura-error" mensaje={errores.fechaDeLaEscritura} />
               </div>

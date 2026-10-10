@@ -100,6 +100,7 @@ import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { AMENITIES_OPTIONS } from '@/lib/types/publish';
 import { COLOMBIAN_DEPARTMENTS, type Consignacion } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_CITIES, type Property, type PropertyType } from '@/lib/types/property';
+import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 export interface ConsignacionEditFormProps {
   abierto: boolean;
@@ -1127,13 +1128,12 @@ export function ConsignacionEditForm({
                       </div>
                     </InputWrapper>
                     <InputWrapper label={tf('consignedAt')} helper={tf('consignedAtHelper')} error={errores.consignedAt} campo="consignedAt">
-                      <Input
-                        {...a11y('consignedAt')}
-                        type="date"
-                        name="consignedAt"
+                      <CampoDeDia
+                        {...ariaDelCampoDeDia(a11y('consignedAt'))}
                         value={valores.consignedAt}
-                        onChange={campo('consignedAt')}
-                        data-testid="editar-consignedAt"
+                        onChange={(v) => poner('consignedAt', v)}
+                        quitable
+                        testid="editar-consignedAt"
                       />
                     </InputWrapper>
                   </>
@@ -1213,28 +1213,23 @@ export function ConsignacionEditForm({
                   </>
                 )}
                 <InputWrapper label={tf('contractStartDate')} required error={errores.contractDate} campo="contractDate">
-                  <Input
-                    {...a11y('contractDate')}
-                    aria-required="true"
-                    type="date"
-                    name="contractDate"
-                    disabled={camposDelMandatoInactivos}
+                  <CampoDeDia
+                    {...ariaDelCampoDeDia(a11y('contractDate'))}
+                    requerido
                     value={valores.contractDate}
-                    onChange={campo('contractDate')}
-                    className={cn(errores.contractDate && 'border-danger/30')}
-                    data-testid="editar-contractDate"
+                    onChange={(v) => poner('contractDate', v)}
+                    disabled={camposDelMandatoInactivos}
+                    testid="editar-contractDate"
                   />
                 </InputWrapper>
                 <InputWrapper label={tf('contractEndDate')} helper={t('common.optional')} error={errores.contractEndDate} campo="contractEndDate">
-                  <Input
-                    {...a11y('contractEndDate')}
-                    type="date"
-                    name="contractEndDate"
-                    disabled={camposDelMandatoInactivos}
+                  <CampoDeDia
+                    {...ariaDelCampoDeDia(a11y('contractEndDate'))}
                     value={valores.contractEndDate}
-                    onChange={campo('contractEndDate')}
-                    className={cn(errores.contractEndDate && 'border-danger/30')}
-                    data-testid="editar-contractEndDate"
+                    onChange={(v) => poner('contractEndDate', v)}
+                    disabled={camposDelMandatoInactivos}
+                    quitable
+                    testid="editar-contractEndDate"
                   />
                 </InputWrapper>
               </div>

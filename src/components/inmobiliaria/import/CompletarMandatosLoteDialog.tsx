@@ -33,6 +33,7 @@ import {
   type AsignacionFila,
   type PropietarioNuevo,
 } from './MandatosPorInmueble';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 /**
  * The end-of-import mandate modal — T-0030 WU-3, Slice A (R1), extended by
@@ -318,11 +319,10 @@ function CuerpoDelLote({
             ? t('inmobiliaria.import.confirm.mandateBatch.contractDateLabel')
             : t('inmobiliaria.import.confirm.mandateBatch.porInmueble.fechaLabel')}
         </label>
-        <Input
+        <CampoDeDia
           id="mandatos-lote-fecha"
-          type="date"
           value={contractDate}
-          onChange={(e) => setContractDate(e.target.value)}
+          onChange={(v) => setContractDate(v)}
         />
         {modo === 'unoPorUno' && (
           <p className="mt-1 text-xs text-fg-muted">

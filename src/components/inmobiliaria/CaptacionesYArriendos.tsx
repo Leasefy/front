@@ -17,10 +17,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { Buildings, Handshake, Users } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
-import { Input } from '@/components/ui/input';
 import { agentesApi } from '@/lib/api/inmobiliaria.service';
 import type { CaptacionesYArriendos as Datos } from '@/lib/types/inmobiliaria';
 import { diaLegible } from '@/lib/mandato/textos';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 export function CaptacionesYArriendos({
   /** Sólo este asesor (su ficha). Sin él, todo el equipo. */
@@ -72,21 +72,21 @@ export function CaptacionesYArriendos({
         <div className="flex items-end gap-2">
           <label className="text-xs text-muted-foreground">
             Desde
-            <Input
-              type="date"
+            <CampoDeDia
+              id="captaciones-y-arriendos-fecha-1"
               value={desde}
+              onChange={(v) => setDesde(v)}
               max={hasta}
-              onChange={(e) => setDesde(e.target.value)}
               className="mt-1"
             />
           </label>
           <label className="text-xs text-muted-foreground">
             Hasta
-            <Input
-              type="date"
+            <CampoDeDia
+              id="captaciones-y-arriendos-fecha-2"
               value={hasta}
+              onChange={(v) => setHasta(v)}
               min={desde}
-              onChange={(e) => setHasta(e.target.value)}
               className="mt-1"
             />
           </label>

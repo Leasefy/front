@@ -8,6 +8,7 @@ import { mesActual } from '@/lib/recaudo/meses';
 import { useI18n } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import type { CampoDelFormulario } from '@/lib/chat/acciones-del-hilo';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 /**
  * CamposEnElChat — los datos que el micro pide EN el hilo, con el control de
@@ -68,7 +69,12 @@ export function CamposEnElChat({
                 onChange={(v) => onCambiar(c.clave, Number.isFinite(v) ? String(v) : '')}
               />
             ) : c.tipo === 'fecha' ? (
-              <Input id={id} type="date" disabled={deshabilitados} value={valores[c.clave] ?? ''} onChange={(e) => onCambiar(c.clave, e.target.value)} />
+              <CampoDeDia
+                id={id}
+                value={valores[c.clave] ?? ''}
+                onChange={(v) => onCambiar(c.clave, v)}
+                disabled={deshabilitados}
+              />
             ) : c.tipo === 'mes' ? (
               <SelectorDeMes mes={valores[c.clave] || mesActual()} onCambiar={(m) => onCambiar(c.clave, m)} testId={id} />
             ) : c.tipo === 'opcion' ? (

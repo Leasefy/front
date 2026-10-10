@@ -36,7 +36,6 @@ import { CheckCircle, WarningOctagon } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { Avisos, Cifra, CifraDeTexto, TituloDeBloque } from '@/components/finanzas/piezas';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { finanzasApi } from '@/lib/api/finanzas.service';
 import type { CuadreDeTerceros as Respuesta } from '@/lib/api/finanzas.types';
@@ -44,6 +43,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 // PG-13 (QA-PAGOS-95): «hasta el 4 de octubre de 2026», nunca «hasta el 2026-10-04».
 import { fechaLarga } from '@/lib/fechas/fecha-de-la-casa';
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 /** N-14 (QA-PAGOS-95): «24 entradas», «1 garantía», nunca «entrada(s)». */
 function cuantos(n: number, uno: string, varios: string): string {
@@ -82,14 +82,13 @@ export function CuadreDeTercerosPanel() {
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="cuadre-fecha">Día</Label>
-          <Input
+          <CampoDeDia
             id="cuadre-fecha"
-            type="date"
             value={fecha}
+            onChange={(v) => setFecha(v)}
             max={hoyEnBogota()}
-            onChange={(e) => setFecha(e.target.value)}
             className="w-44"
-            data-testid="cuadre-fecha"
+            testid="cuadre-fecha"
           />
         </div>
       </div>

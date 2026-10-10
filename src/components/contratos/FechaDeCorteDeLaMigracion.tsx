@@ -19,7 +19,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Presence } from "@leasefy/cadence";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
 import { leerFallo, mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
 import { errorDeLaFechaDeCorte } from "@/components/migracion/limites-de-la-migracion";
@@ -27,6 +26,7 @@ import {
   contractsApi,
   type FechaDeCorteDeLaMigracion as Estado,
 } from "@/lib/api/contracts.service";
+import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
 
 const MESES = [
   "enero",
@@ -176,19 +176,17 @@ export function FechaDeCorteDeLaMigracion({ onCambio }: Props) {
             >
               Fecha de corte
             </label>
-            <Input
+            <CampoDeDia
               id={idDelCampo}
-              type="date"
               value={borrador}
-              aria-invalid={errorDeLaFecha ? true : undefined}
-              invalid={Boolean(errorDeLaFecha)}
-              aria-describedby={errorDeLaFecha ? `${idDelCampo}-error` : undefined}
-              onChange={(e) => {
-                setBorrador(e.target.value);
+              onChange={(v) => {
+                setBorrador(v);
                 setErrorDeLaFecha(null);
               }}
+              invalido={Boolean(Boolean(errorDeLaFecha))}
+              describedBy={errorDeLaFecha ? `${idDelCampo}-error` : undefined}
               className="w-44"
-              data-testid="fecha-de-corte-input"
+              testid="fecha-de-corte-input"
             />
           </div>
           <Button

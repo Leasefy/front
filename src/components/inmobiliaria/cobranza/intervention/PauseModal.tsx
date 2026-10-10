@@ -18,7 +18,6 @@ import { erroresDeLaIntervencion, errorDelMotivo } from './error-de-la-intervenc
 import { useI18n } from '@/lib/i18n'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
@@ -29,6 +28,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import { Presence } from '@leasefy/cadence'
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
 
 void React
 
@@ -171,17 +171,16 @@ export function PauseModal({
                 <span className="text-xs font-medium text-fg-subtle">
                   {t('inmobiliaria.ai.cobranza.detail.acciones.pause.untilLabel')}
                 </span>
-                <Input
+                <CampoDeDia
                   id="pausa-hasta"
-                  type="date"
                   value={pausedUntil}
-                  onChange={(e) => {
-                    setPausedUntil(e.target.value)
+                  onChange={(v) => {
+                    setPausedUntil(v)
                     setErrores(({ paused_until: _, ...resto }) => resto)
                   }}
+                  invalido={Boolean(errores.paused_until)}
+                  describedBy={errores.paused_until ? 'pausa-hasta-error' : undefined}
                   className="mt-1 w-full"
-                  aria-invalid={errores.paused_until ? true : undefined}
-                  aria-describedby={errores.paused_until ? 'pausa-hasta-error' : undefined}
                 />
                 <ErrorDelCampo id="pausa-hasta-error" mensaje={errores.paused_until} />
               </label>

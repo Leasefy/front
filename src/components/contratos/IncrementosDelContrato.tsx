@@ -34,6 +34,7 @@ import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formular
 import { errorDelPorcentajeDelIncremento } from "@/lib/contratos/limites-del-contrato-vigente";
 import { plataEnPantalla } from "@/lib/plata/escribir-plata";
 import { diaLegible } from '@/lib/mandato/textos';
+import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
 
 const PESOS = plataEnPantalla("es-CO", {
   style: "currency",
@@ -544,17 +545,16 @@ function Aniversario({
               </label>
               <label className="text-caption">
                 Fecha
-                <Input
+                <CampoDeDia
                   id={ids.fecha}
-                  type="date"
                   value={fecha}
-                  onChange={(e) => {
-                    setFecha(e.target.value);
+                  onChange={(v) => {
+                    setFecha(v);
                     limpiar("fecha");
                   }}
+                  invalido={Boolean(errores.fecha)}
+                  describedBy={`${ids.fecha}-error`}
                   className="mt-1"
-                  aria-invalid={errores.fecha ? true : undefined}
-                  aria-describedby={`${ids.fecha}-error`}
                 />
                 <ErrorDelCampo id={`${ids.fecha}-error`} mensaje={errores.fecha} />
               </label>

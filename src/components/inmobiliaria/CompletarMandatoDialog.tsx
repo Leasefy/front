@@ -37,6 +37,7 @@ import { esSinRespuesta, mensajeParaLaPersona } from '@/lib/errores/traductor-de
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { errorAlGuardarPropietario } from '@/lib/propietarios/errores-del-propietario';
 import { errorDeLaFechaDelMandato } from '@/lib/inmuebles/limites-del-inmueble';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 /**
  * The wire body for `POST /inmobiliaria/consignaciones` when completing a
@@ -370,7 +371,7 @@ function CuerpoDelMandato({
   /** Lo que el back no aceptó, en su campo (comisión, fecha). Editarlo lo borra. */
   const [errorEnCampo, setErrorEnCampo] = useState<Partial<Record<CampoDelMandato, string>>>({});
   const comisionRef = useRef<HTMLInputElement>(null);
-  const fechaRef = useRef<HTMLInputElement>(null);
+  const fechaRef = useRef<HTMLButtonElement>(null);
   // Se entró desde la ficha de un propietario: ya sabemos de quién es.
   const [cambiandoDueno, setCambiandoDueno] = useState(false);
   // Los dueños de más. Vacío = un solo dueño, la forma de siempre.
@@ -681,17 +682,16 @@ function CuerpoDelMandato({
             <label htmlFor="mandato-fecha" className="block text-sm font-medium text-fg-muted mb-2">
               {t('inmobiliaria.consignaciones.mandateDialog.contractDateLabel')}
             </label>
-            <Input
+            <CampoDeDia
               ref={fechaRef}
               id="mandato-fecha"
-              aria-invalid={errorDeLaFecha ? true : undefined}
-              aria-describedby={errorDeLaFecha ? 'mandato-fecha-error' : undefined}
-              type="date"
               value={contractDate}
-              onChange={(e) => {
-                setContractDate(e.target.value);
+              onChange={(v) => {
+                setContractDate(v);
                 setErrorEnCampo((prev) => ({ ...prev, contractDate: undefined }));
               }}
+              invalido={Boolean(errorDeLaFecha)}
+              describedBy={errorDeLaFecha ? 'mandato-fecha-error' : undefined}
             />
             <ErrorDelCampo id="mandato-fecha-error" mensaje={errorDeLaFecha} />
           </div>

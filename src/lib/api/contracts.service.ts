@@ -1219,7 +1219,11 @@ export type Faltante =
    * canon. No se inventa un 50/50: se corrige el archivo o se quita esa
    * columna del mapeo (partes iguales) y se ajusta en el mandato.
    */
-  | 'reparto_del_canon';
+  | 'reparto_del_canon'
+  /** Después de activar: lo guardado no coincide con el archivo. Nada se corrigió solo. */
+  | 'verificacion_difiere'
+  /** La red del back: un código que nadie mapeó. */
+  | 'otros';
 
 export interface InmuebleCandidato {
   id: string;

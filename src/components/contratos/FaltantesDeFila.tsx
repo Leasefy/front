@@ -105,7 +105,10 @@ export function explicacionDe(
       porque: 'El archivo no lo trae o no se pudo leer como pesos (por ejemplo «2.1M»). Escríbelo acá.',
     }
   }
-  return EXPLICACION[faltante]
+  return EXPLICACION[faltante] ?? {
+    titulo: 'Falta un dato que esta versión todavía no sabe nombrar',
+    porque: `Código interno: ${faltante}. Abre la fila en el archivo y revisa sus datos; si no ves qué falta, avísanos con ese código.`,
+  }
 }
 
 export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
@@ -140,7 +143,7 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
   inmueble_en_venta: {
     titulo: "Ese inmueble está en venta",
     porque:
-      "Un contrato de arriendo vigente no se activa sobre un inmueble publicado en venta. Elige el inmueble correcto o, si de verdad se arrienda, cámbialo a arriendo en su ficha.",
+      "Un contrato de arriendo vigente no se activa sobre un inmueble publicado en venta. Elige el inmueble correcto o, si de verdad se arrienda, cámbialo a arriendo en su ficha y pulsa «Volver a cruzar con lo ya cargado» arriba.",
   },
   inquilino_correo_invalido: {
     titulo: "El correo del inquilino no se puede usar",
@@ -167,11 +170,14 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
     porque:
       "Con el documento basta para saber quién es; el correo sirve para invitarlo al portal. Escribe uno de los dos.",
   },
-  inquilino_nombre: { titulo: "Falta el nombre del inquilino", porque: "" },
+  inquilino_nombre: {
+    titulo: "Falta el nombre del inquilino",
+    porque: "Sin nombre no se puede crear la cuenta ni el contrato. Escríbelo acá.",
+  },
   consecutivo_repetido: {
     titulo: "Ese consecutivo viene en más de una fila del archivo",
     porque:
-      "Dos filas con el mismo número serían dos contratos con el mismo número. Deja una sola: descarta la otra fila o corrige el consecutivo en el archivo.",
+      "Dos filas con el mismo número serían dos contratos con el mismo número. Deja una sola: descarta la que sobra aquí abajo (busca el consecutivo en el archivo para saber cuál es la buena) y pulsa «Volver a cruzar con lo ya cargado» arriba para liberar la que se queda.",
   },
   inquilino_documento_ajeno: {
     titulo: "Ese documento es de una cuenta que no es de inquilino",
@@ -211,6 +217,17 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
     porque:
       "«Valor Canon» reparte el canon entre los dueños y la lista no coincide con ellos o no suma el canon. No se inventa un 50/50: define abajo cuánto es de cada dueño, sin volver a subir el archivo.",
   },
+  // El back lo pone DESPUÉS de activar: el contrato ya existe.
+  verificacion_difiere: {
+    titulo: "Lo guardado no coincide con el archivo",
+    porque:
+      "La doble verificación encontró que lo que quedó guardado no es lo que el archivo decía. El contrato ya existe y nada se corrigió solo: abre su detalle, compara el campo que difiere con el archivo y corrígelo ahí.",
+  },
+  otros: {
+    titulo: "Falta un dato que esta versión todavía no sabe nombrar",
+    porque:
+      "Abre la fila en el archivo y revisa sus datos; si no ves qué falta, avísanos.",
+  },
 };
 
 /**
@@ -233,6 +250,9 @@ export function celdaDelFaltante(
     codigoInmueble?: unknown;
     externalId?: unknown;
     inquilino?: { nombre?: unknown; correo?: unknown; documento?: unknown };
+    canonConCentavosDelArchivo?: unknown;
+    startDate?: unknown;
+    fechaDeCartera?: unknown;
   } | null;
   const texto = (v: unknown) => {
     const t = String(v ?? '').trim();
@@ -252,6 +272,19 @@ export function celdaDelFaltante(
           ? `código ${String(datos.codigoInmueble)} · ${String(datos.direccion ?? '')}`
           : datos?.direccion,
       );
+    // El inmueble SÍ se encontró: la fila dice cuál era la dirección del archivo.
+    case 'inmueble_en_venta':
+    case 'inmueble_ocupado':
+      return texto(datos?.direccion);
+    case 'canon_con_centavos':
+      return texto(datos?.canonConCentavosDelArchivo);
+    case 'cartera_antes_del_inicio': {
+      const dia = (v: unknown) => String(v ?? '').slice(0, 10);
+      return datos?.fechaDeCartera && datos?.startDate
+        ? texto(`cartera ${dia(datos.fechaDeCartera)} · inicio ${dia(datos.startDate)}`)
+        : null;
+    }
+    case 'inquilino_correo_invalido':
     case 'inquilino_correo':
       return texto(datos?.inquilino?.correo);
     case 'inquilino_nombre':
@@ -522,6 +555,18 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
             ) : null}
             {f === "reparto_del_canon" ? (
               <RepartoEditable fila={fila} ocupado={ocupado} correr={correr} />
+            ) : null}
+            {f === "consecutivo_repetido" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
+                disabled={ocupado}
+                data-testid="descartar-fila-repetida"
+                onClick={() => void correr(() => contractsApi.migracion.descartar(fila.id))}
+              >
+                Descartar esta fila
+              </Button>
             ) : null}
             {f === "dia_de_pago" ? (
               <CampoSimple
@@ -1225,7 +1270,14 @@ function RepartoEditable({
     duenos.map((d) => (typeof d.canon === "number" ? String(d.canon) : "")),
   );
 
-  if (duenos.length < 2 || !canon || canon <= 0) return null;
+  if (duenos.length < 2 || !canon || canon <= 0)
+    return (
+      <p className="text-caption text-warning" data-testid="reparto-sin-lista">
+        Esta fila no trae la lista de dueños para repartir acá. Corrige «Valor Canon» en el archivo y
+        súbelo de nuevo, o quita esa columna del mapeo: el contrato entra sin el porcentaje de cada
+        dueño y lo pones en el mandato. Después pulsa «Volver a cruzar con lo ya cargado».
+      </p>
+    );
 
   const montos = valores.map(pesosDeTexto);
   const completo = montos.every((m) => m !== null);

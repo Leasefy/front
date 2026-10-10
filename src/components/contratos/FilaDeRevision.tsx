@@ -292,7 +292,7 @@ export function FilaDeRevision({
       <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
         <div>
           <p className="mb-1 text-caption text-muted-foreground">Propietario</p>
-          {sinInmueble ? (
+          {sinInmueble && descartada ? null : sinInmueble ? (
             /*
              * La consignación es del INMUEBLE. Sin inmueble resuelto no hay a
              * qué consignar, y ofrecer el selector sería ofrecer un botón que

@@ -27,6 +27,16 @@ const { getAllCandidatesMock, pushMock, canAccessMock, refresco } = vi.hoisted((
   refresco: { fn: null as null | (() => unknown) },
 }))
 
+// Acciones masivas (10-10-2026): `@leasefy/cadence` está simulado, así que la
+// casilla y la barra van con dobles sencillos.
+vi.mock('@/components/masivas/CasillasDeLaTabla', () => ({
+  CasillaDeLaPagina: () => null,
+  CasillaDeLaFila: () => null,
+}))
+vi.mock('@/components/inmobiliaria/PostulacionesMarcadas', () => ({
+  PostulacionesMarcadas: () => null,
+}))
+
 vi.mock('@/components/auth/PageGuard', () => ({
   PageGuard: ({ module, children }: { module?: string; children?: React.ReactNode }) =>
     React.createElement('div', { 'data-testid': 'page-guard', 'data-module': module }, children),

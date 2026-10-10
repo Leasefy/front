@@ -345,6 +345,7 @@ congelado en `.orchestration/tasks/T-0130-migracion-inmuebles-reanudable/contrac
   salen de `GET lotes/:lote/por-ubicar` de a 50 y cada tanda se guarda con `PATCH lotes/:lote/ubicaciones`.
   Un corte pierde a lo sumo 50; reanuda sola sin el archivo. «Continuar sin ubicar en el mapa» =
   `reintentar { omitirUbicacion: true }`. La página debe quedar abierta mientras se ubica.
+- **Dirección normalizada (T-0159)**: `ubicarDireccion` prueba hasta tres consultas, de mejor a peor y con la misma verificación (nombre, luego distancia): la dirección canónica de `lib/inmuebles/normalizar-direccion-co.ts` («CR 55 N 53 A - 35 TO 1 AP 2201» -> «Carrera 55 # 53 A - 35, Municipio, Depto, Colombia»), la limpia de siempre y la cruda. Lo que no se puede parsear (nombres de edificio, referencias) sigue el camino de antes. Re-ubicar las filas que quedaron en MUNICIPIO NO se puede hacer sólo desde el front: `por-ubicar` y `PATCH ubicaciones` del back sólo tocan filas `PENDIENTE`.
 - **Aviso al cerrar** (`useAvisoAlSalir`): sólo mientras se sube o se ubica (`StepConfirmImport`) y con un archivo
   leído sin subir (`ImportWizard`). Activar y la revisión son reanudables y ya no lo piden.
 - **Tarjeta «Tienes una carga a medias»** (`CargasAMedias.tsx` + `use-cargas-abiertas-de-inmuebles.ts`): en

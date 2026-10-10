@@ -212,7 +212,8 @@ export function ResolucionMasiva({
    * exacto de TODA la selección llega en `resultado.omitidas`, después de
    * aplicar.
    */
-  const sinInmueble = seleccionadas.filter((f) => !f.propertyId).length
+  // Una fila DESCARTADA sin inmueble (T-0156) no cuenta: está ignorada, no pendiente.
+  const sinInmueble = seleccionadas.filter((f) => !f.propertyId && f.estado !== 'DESCARTADO').length
 
   /**
    * Las filas a las que hay que aplicarle el cambio AHORA: las seleccionadas

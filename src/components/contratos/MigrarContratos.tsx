@@ -127,6 +127,7 @@ import { FilaDeRevision } from "./FilaDeRevision";
 import { propietariosApi } from "@/lib/api/inmobiliaria.service";
 import type { Propietario } from "@/lib/types/inmobiliaria";
 import { ResolucionMasiva } from "./ResolucionMasiva";
+import { PendientesPorMotivo } from "./PendientesPorMotivo";
 import { CrearInmueblesFaltantes } from "./CrearInmueblesFaltantes";
 import { AlertaAccionable } from "@/components/ui/alerta-accionable";
 import { TarjetaDeArchivo } from "@/components/migracion/TarjetaDeArchivo";
@@ -2259,12 +2260,12 @@ function ListaDeTrabajo({
    * T-0135 — «Seguir con las N que faltan»: qué acción en bloque se retoma. Se
    * pasa a `ResolucionMasiva` (con `key`) para que abra ya en ese modo.
    */
-  const [modoMasivo, setModoMasivo] = useState<"uso" | "propietario" | null>(
-    null,
-  );
+  const [modoMasivo, setModoMasivo] = useState<
+    "uso" | "propietario" | "reparto" | null
+  >(null);
   const [versionMasivo, setVersionMasivo] = useState(0);
   const [seleccionandoFaltantes, setSeleccionandoFaltantes] = useState<
-    "uso" | "propietario" | null
+    "uso" | "propietario" | "reparto_del_canon" | null
   >(null);
   // Lo que todavía falta, con el número DEL SERVIDOR (`porMotivo` cuenta las
   // filas PENDIENTES con ese faltante: las ya resueltas, activadas o
@@ -2286,7 +2287,9 @@ function ListaDeTrabajo({
    * vuelven) y abre la acción en su modo. El estado sale del servidor, no de
    * la memoria de esta pestaña: sirve igual tras cerrar y volver.
    */
-  async function seguirConLasQueFaltan(faltante: "uso" | "propietario") {
+  async function seguirConLasQueFaltan(
+    faltante: "uso" | "propietario" | "reparto_del_canon",
+  ) {
     setSeleccionandoFaltantes(faltante);
     setNotaSeleccion(null);
     try {
@@ -2299,12 +2302,14 @@ function ListaDeTrabajo({
         setNotaSeleccion(
           faltante === "uso"
             ? "A ninguna fila le falta el uso: no hay nada que seguir."
-            : "A ninguna fila le falta el propietario: no hay nada que seguir.",
+            : faltante === "reparto_del_canon"
+              ? "Ninguna fila tiene ya problema de reparto: no hay nada que seguir."
+              : "A ninguna fila le falta el propietario: no hay nada que seguir.",
         );
         return;
       }
       onSeleccionCambia(new Set(r.ids));
-      setModoMasivo(faltante);
+      setModoMasivo(faltante === "reparto_del_canon" ? "reparto" : faltante);
       setVersionMasivo((v) => v + 1);
       setNotaSeleccion(
         r.truncado
@@ -2362,6 +2367,18 @@ function ListaDeTrabajo({
           />
           <Dato etiqueta="Ya activados" valor={resumen.activados} />
         </div>
+
+        {resumen.descartados > 0 ? (
+          <p
+            className="text-caption text-muted-foreground"
+            data-testid="resumen-descartadas"
+          >
+            {resumen.descartados}{" "}
+            {resumen.descartados === 1 ? "fila descartada" : "filas descartadas"}
+            : no cuentan como pendientes ni generan cobros (por ejemplo, las de
+            un inmueble que descartaste en la importación de inmuebles).
+          </p>
+        ) : null}
 
         {/*
          * A qué quedó pegado el lote, y POR QUÉ CAMINO. «2.851 listas» no dice
@@ -3067,6 +3084,17 @@ function ListaDeTrabajo({
           ) : null}
         </div>
       ) : null}
+
+      <PendientesPorMotivo
+        porMotivo={resumen.porMotivo}
+        seleccionando={seleccionandoFaltantes}
+        onSeguir={(c) => void seguirConLasQueFaltan(c as "reparto_del_canon")}
+        onCrearInmuebles={() =>
+          document
+            .getElementById("crear-inmuebles-faltantes")
+            ?.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+      />
 
       {notaSeleccion ? (
         <p

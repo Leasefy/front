@@ -272,6 +272,7 @@ function render(
     onSalir?: () => void;
     onContinuar?: () => void;
     onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
+    onPasoVisible?: (paso: 1 | 2 | 3 | 4) => void;
     /** El nodo que el muro dibuja FUERA del `inert`. `null` = sin muro. */
     ranuraViva?: HTMLElement | null;
     /** El pie del asistente, a la derecha de «Anterior». */
@@ -410,6 +411,43 @@ describe('<StepConfirmImport> — subir el archivo (preparar por tandas, T-0130)
     render(baseState());
     await clic(boton(BOTON_SUBIR_UNO));
     expect(updateState).toHaveBeenCalledWith(expect.objectContaining({ loteRetomado: 'lote-9' }));
+  });
+
+  it('T-0152: si el servidor devuelve una carga ya abierta del mismo archivo, lo dice y sigue en su paso real', async () => {
+    // El archivo ya se había subido y la carga está revisando: no se abre otra ni se vuelve al paso 1.
+    api.preparar.mockResolvedValue(
+      lote({ lote: 'lote-viejo', estado: 'PROCESANDO', fase: 'REVISANDO', total: 1, procesadas: 0, adjuntadoAExistente: true }),
+    );
+    const onPasoVisible = vi.fn();
+    render(baseState(), { onPasoVisible });
+    await clic(boton(BOTON_SUBIR_UNO));
+
+    expect(porTestId('aviso-carga-existente')?.textContent).toContain(
+      'Ya hay una importación de este archivo en curso — seguimos desde donde va',
+    );
+    expect(updateState).toHaveBeenCalledWith(expect.objectContaining({ loteRetomado: 'lote-viejo' }));
+    // El paso visible sale de la fase del servidor (revisar = 3), no del 1 de «subir».
+    expect(onPasoVisible).toHaveBeenLastCalledWith(3);
+  });
+
+  it('T-0152: sin `adjuntadoAExistente` (back anterior), un lote distinto al esperado en plena subida también avisa', async () => {
+    // Primera tanda abre el lote A; la segunda responde con el B (el back unificó con una carga previa).
+    const tandas = Array.from({ length: 501 }, (_, i) => makeProperty({ _rowIndex: i, propertyAddress: `Calle ${i}` }));
+    api.preparar
+      .mockResolvedValueOnce(lote({ lote: 'lote-A', estado: 'ENCOLADO', fase: 'RECIBIENDO', total: 501, recibidas: 500, siguienteDesde: 500 }))
+      .mockResolvedValueOnce(lote({ lote: 'lote-B', estado: 'PROCESANDO', fase: 'REVISANDO', total: 501, procesadas: 10 }));
+    render(baseState({ properties: tandas }));
+    await clic(boton('Subir 501 inmuebles y ubicar direcciones'));
+
+    expect(porTestId('aviso-carga-existente')).toBeTruthy();
+    expect(updateState).toHaveBeenLastCalledWith(expect.objectContaining({ loteRetomado: 'lote-B' }));
+  });
+
+  it('T-0152: una carga nueva (sin la bandera) no muestra el aviso', async () => {
+    recibido();
+    render(baseState());
+    await clic(boton(BOTON_SUBIR_UNO));
+    expect(porTestId('aviso-carga-existente')).toBeNull();
   });
 
   it('un 400 dice qué está mal y no se reintenta solo', async () => {

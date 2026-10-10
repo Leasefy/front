@@ -87,6 +87,7 @@ import {
   type NotaCreditoDeLaFactura,
   type NotaDelMes,
 } from '@/lib/api/facturacion-por-mes.service'
+import { parteDeLaFactura } from '@/lib/facturacion/por-facturar'
 import { descargarBlob } from '@/lib/reportes/exportables'
 // QA-FACT-CONTA-95 (FA-R28): las frases del back traen «$500.000»; la sección escribe «$ 500.000».
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada'
@@ -109,6 +110,23 @@ export const MOTIVO_MINIMO = 10
 
 export function motivoSuficiente(motivo: string): boolean {
   return motivo.trim().length >= MOTIVO_MINIMO
+}
+
+/**
+ * T-0163: la parte de la factura de un inquilino cuando el contrato la divide
+ * entre varios («· 50 %»). Sin reparto, un 100 % o un back anterior: nada.
+ */
+function ParteDeLaFactura({ f }: { f: FacturaEmitida }) {
+  const parte = parteDeLaFactura(f.participacionBps)
+  if (!parte) return null
+  return (
+    <span
+      className="ml-1 font-normal text-fg-muted"
+      data-testid={`parte-de-la-factura-${f.numero}`}
+    >
+      · {parte} %
+    </span>
+  )
 }
 
 interface Props {
@@ -558,7 +576,10 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                 <li key={f.id} className="space-y-2 py-3.5" data-testid={`factura-${f.numero}`}>
                   <div className="flex items-start justify-between gap-3">
                     {/* El nombre en dos renglones si hace falta, nunca «Ana So…». */}
-                    <p className="min-w-0 break-words font-medium text-fg">{f.terceroNombre}</p>
+                    <p className="min-w-0 break-words font-medium text-fg">
+                      {f.terceroNombre}
+                      <ParteDeLaFactura f={f} />
+                    </p>
                     <p className="shrink-0 font-mono font-medium tabular-nums text-fg">
                       {formatCurrency(f.totalCop)}
                     </p>
@@ -688,7 +709,10 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                     {estadoAnteLaDian(f)}
                   </TableCell>
                   <TableCell>
-                    <span className="block">{f.terceroNombre}</span>
+                    <span className="block">
+                      {f.terceroNombre}
+                      <ParteDeLaFactura f={f} />
+                    </span>
                     <span className="text-caption text-fg-muted">
                       {f.destinatario === 'INQUILINO'
                         ? 'Inquilino'

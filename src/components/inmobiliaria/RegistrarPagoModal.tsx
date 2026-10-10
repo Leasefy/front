@@ -80,6 +80,7 @@
  * agregar el input de vuelta; no hay nada más que deshacer.
  */
 
+import { resumenDeLasFacturasDelPago } from '@/lib/facturacion/facturas-del-pago';
 import * as React from 'react';
 import Link from 'next/link';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -724,13 +725,17 @@ export function RegistrarPagoModal({
        * abono», pero se lee «pagadas». Ahora se dice cuáles quedaron pagadas y
        * cuánto le queda a cada una de las que no.
        */
-      const pagadas = facturas.filter((f) => f.saldoCop <= 0);
-      const conSaldo = facturas.filter((f) => f.saldoCop > 0);
+      /*
+       * T-0163: con la factura dividida entre los inquilinos, un mes trae una
+       * entrada por inquilino. El aviso habla de MESES: se juntan por mes (un
+       * mes está pagado cuando TODAS sus partes lo están; el saldo es la suma).
+       */
+      const { pagados: pagadas, conSaldo } = resumenDeLasFacturasDelPago(facturas);
       const partesDeFacturas = [
         pagadas.length === 0
           ? null
           : t(pagadas.length === 1 ? 'recibos.form.facturaPagada' : 'recibos.form.facturasPagadas', {
-              meses: listaEnPalabras(pagadas.map((f) => nombreDelMes(f.mes, idioma)), idioma),
+              meses: listaEnPalabras(pagadas.map((mes) => nombreDelMes(mes, idioma)), idioma),
             }),
         ...conSaldo.map((f) =>
           t('recibos.form.facturaConSaldo', {

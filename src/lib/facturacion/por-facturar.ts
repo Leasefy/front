@@ -145,6 +145,17 @@ export function motivoCorto(f: FacturaDelMes): string {
       return 'Falta el documento del propietario'
     case 'INQUILINO_SIN_TIPO_DE_DOCUMENTO':
       return 'Falta el tipo de documento del inquilino'
+    // T-0163: la factura dividida entre los inquilinos se emite entera o no se emite.
+    case 'INQUILINOS_PERFIL_TRIBUTARIO_DISTINTO':
+      return 'Perfiles tributarios distintos'
+    case 'DIVISION_BLOQUEADA_POR_OTRO_INQUILINO':
+      return 'Espera la factura de otro inquilino'
+    case 'DIVISION_SIN_MIGRACION':
+      return 'Falta una actualización'
+    case 'DIVISION_CON_CESION_DEL_INQUILINO':
+      return 'Cesión en un contrato dividido'
+    case 'DIVISION_NO_CUADRA':
+      return 'El reparto no cuadra'
     default:
       return 'Todavía no'
   }
@@ -186,6 +197,14 @@ export function rutaDelInquilino(f: Pick<FacturaDelMes, 'terceroDocumento'>): st
   return `/panel/inmobiliaria/inquilinos?persona=${encodeURIComponent(`doc:${doc}`)}&volver=${encodeURIComponent(volver)}`
 }
 
+/**
+ * T-0163: las partes del contrato (donde se completa el tipo de documento de un
+ * coarrendatario y se define el reparto de la factura).
+ */
+export function rutaDeLasPartesDelContrato(f: Pick<FacturaDelMes, 'contractId'>): string {
+  return `/panel/inmobiliaria/contratos/${f.contractId}#partes-del-contrato`
+}
+
 /** La ruta del contrato, en la sección del escenario tributario. */
 export function rutaDelEscenario(f: Pick<FacturaDelMes, 'contractId'>): string {
   return `/panel/inmobiliaria/contratos/${f.contractId}#escenario-tributario`
@@ -199,15 +218,74 @@ export function porcentajeDeLaParte(bps: number): string {
 }
 
 /**
+ * La parte de la factura en palabras: «70», «33,33»; `null` si no hay reparto
+ * (sin parte, un back anterior, o el 100 %, que no se dice).
+ */
+export function parteDeLaFactura(bps: number | null | undefined): string | null {
+  return typeof bps === 'number' && bps > 0 && bps < 10_000 ? porcentajeDeLaParte(bps) : null
+}
+
+/**
  * 🔴 Copropiedad (Nico, 03-10): una factura de comisión por copropietario con
  * su parte. «Jorge Restrepo · 70 %». El 100 % no se dice.
+ *
+ * T-0163: igual del lado del inquilino, cuando el contrato divide su factura
+ * entre varios: «Ana Gómez · 50 %».
  */
-export function aQuienSeFactura(f: FacturaDelMes): string {
+export function aQuienSeFactura(f: Pick<FacturaDelMes, 'terceroNombre' | 'participacionBps'>): string {
   const bps = f.participacionBps
   if (typeof bps === 'number' && bps > 0 && bps < 10_000) {
     return `${f.terceroNombre} · ${porcentajeDeLaParte(bps)} %`
   }
   return f.terceroNombre
+}
+
+// ── Un mes dividido entre los inquilinos del contrato (T-0163) ──────────────
+
+/** La fila es parte de un mes dividido: el back le pone su `participacionBps` (la de un mes sin dividir va en `null`). */
+function esParteDeUnMesDividido(f: FacturaDelMes): boolean {
+  return f.destinatario === 'INQUILINO' && typeof f.participacionBps === 'number'
+}
+
+/**
+ * Las filas del lado inquilino del MISMO contrato y mes (la propia incluida),
+ * en el orden de la lista: el back las manda juntas, el titular primero. Todas
+ * comparten la cuota, así que se emiten juntas o no se emiten.
+ *
+ * Sólo cuenta como «dividido» lo que el back marca con su parte
+ * (`participacionBps` numérico): un mes sin dividir, y cualquier respuesta de un
+ * back anterior, devuelve sólo la propia, como hasta hoy.
+ *
+ * `clave` es opaca: no se parte ni se lee, se compara entera.
+ */
+export function hermanasDeLaFila(f: FacturaDelMes, filas: readonly FacturaDelMes[]): FacturaDelMes[] {
+  if (!esParteDeUnMesDividido(f)) return [f]
+  const hermanas = filas.filter(
+    (o) => esParteDeUnMesDividido(o) && o.contractId === f.contractId && o.mes === f.mes,
+  )
+  return hermanas.length > 1 && hermanas.some((o) => o.clave === f.clave) ? hermanas : [f]
+}
+
+/**
+ * Marcar una factura de un mes dividido marca a las demás: la factura de un
+ * contrato sale junta para todos sus inquilinos. Es comodidad —el back también
+ * expande al emitir—, no la regla. Las hermanas que hoy no se pueden emitir no
+ * entran a la selección.
+ */
+export function expandirALasHermanas(
+  claves: Iterable<string>,
+  filas: readonly FacturaDelMes[],
+): Set<string> {
+  const salida = new Set<string>()
+  for (const clave of claves) {
+    salida.add(clave)
+    const fila = filas.find((f) => f.clave === clave)
+    if (!fila) continue
+    for (const h of hermanasDeLaFila(fila, filas)) {
+      if (sePuedeEmitirHoy(h)) salida.add(h.clave)
+    }
+  }
+  return salida
 }
 
 // ── La mora: una vez arriba, no en cada fila (FA-03) ─────────────────────────

@@ -2910,6 +2910,8 @@
         "anulado": "Charge voided. What the tenant owes did not change.",
         "conNotaGenerada": "The credit note for its invoice was generated, unnumbered: it is pending issuance.",
         "conNotaPrevia": "Its invoice already had a credit note: no new one was created.",
+        "conNotasGeneradas": "The credit notes for its {{n}} invoices (one per tenant) were generated, unnumbered: they are pending issuance.",
+        "conNotasPrevias": "Its invoices already had credit notes: no new ones were created.",
         "errores": {
           "COBRO_CON_RECIBOS": "This charge has active cash receipts. Void the receipts first and try again.",
           "COBRO_YA_ANULADO": "This charge was already voided. Refresh the list.",

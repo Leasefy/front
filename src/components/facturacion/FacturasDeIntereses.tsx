@@ -27,7 +27,7 @@ import {
   mesLegible,
   type InteresesPorEmitir,
 } from '@/lib/api/facturacion-por-mes.service'
-import { cuantos, numerosQueSalen, sinLaRutaDeFacturacion } from '@/lib/facturacion/por-facturar'
+import { aQuienSeFactura, cuantos, numerosQueSalen, sinLaRutaDeFacturacion } from '@/lib/facturacion/por-facturar'
 
 export interface FacturasDeInteresesProps {
   /** Se llama después de emitir, para que «Por facturar» relea lo suyo. */
@@ -147,7 +147,7 @@ export function FacturasDeIntereses({ onEmitidas }: FacturasDeInteresesProps) {
             data-testid={`interes-${f.id}`}
           >
             <div className="min-w-0">
-              <p className="break-words text-fg">{f.terceroNombre}</p>
+              <p className="break-words text-fg">{aQuienSeFactura(f)}</p>
               <p className="text-caption text-fg-muted">
                 Intereses de {mesLegible(f.mes)}
                 {f.codigoDelContrato !== null && (

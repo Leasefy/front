@@ -2945,6 +2945,8 @@
         "anulado": "Cobro anulado. Lo que debe el inquilino no cambió.",
         "conNotaGenerada": "Se generó la nota crédito de su factura, sin número: queda pendiente de emitir.",
         "conNotaPrevia": "Su factura ya tenía nota crédito: no se creó otra.",
+        "conNotasGeneradas": "Se generaron las notas crédito de sus {{n}} facturas (una por inquilino), sin número: quedan pendientes de emitir.",
+        "conNotasPrevias": "Sus facturas ya tenían nota crédito: no se crearon otras.",
         "errores": {
           "COBRO_CON_RECIBOS": "Este cobro tiene recibos de caja vigentes. Anula primero los recibos y vuelve a intentarlo.",
           "COBRO_YA_ANULADO": "Este cobro ya estaba anulado. Actualiza la lista.",

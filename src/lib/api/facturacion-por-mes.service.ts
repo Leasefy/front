@@ -190,6 +190,13 @@ export interface FacturaDelMes {
    */
   participacionBps?: number | null
   /**
+   * T-0163: la fila de un COARRENDATARIO en un mes dividido entre los inquilinos
+   * (su `ContratoInquilino.id`). `null` = la fila del titular o un mes sin
+   * dividir; ausente con un back anterior (se lee como `null`). Con
+   * `participacionBps` en el lado del inquilino dice su parte de la factura.
+   */
+  contratoInquilinoId?: string | null
+  /**
    * Lo que los recibos ya abonaron a la factura y su saldo, al día con cada
    * pago. `null` mientras no hay factura (POR_EMITIR) o si la base no tiene
    * la migración de facturas generadas. Puede faltar en un back viejo.
@@ -264,6 +271,16 @@ export type CodigoNoEmitible =
    * numera; nunca se adivina por el largo del número.
    */
   | 'INQUILINO_SIN_TIPO_DE_DOCUMENTO'
+  /**
+   * T-0163 (factura dividida entre los inquilinos del contrato). El back puede
+   * mandar cualquier otro código: la pantalla lo trata como «no se emite» y
+   * muestra `motivoNoEmitible`, que siempre viene lleno.
+   */
+  | 'INQUILINOS_PERFIL_TRIBUTARIO_DISTINTO'
+  | 'DIVISION_BLOQUEADA_POR_OTRO_INQUILINO'
+  | 'DIVISION_SIN_MIGRACION'
+  | 'DIVISION_CON_CESION_DEL_INQUILINO'
+  | 'DIVISION_NO_CUADRA'
 
 export interface ContratoOmitido {
   contractId: string
@@ -649,6 +666,9 @@ export interface NotaCreditoDeLaFactura {
 
 export interface FacturaEmitida {
   id: string
+  /** T-0163: la parte de un inquilino en un mes dividido. Ausentes en un back anterior (= `null`). */
+  contratoInquilinoId?: string | null
+  participacionBps?: number | null
   numero: number
   /** Con prefijo (`FE-1042`). `null` = se emitió sin resolución cargada. */
   numeroDian: string | null
@@ -740,6 +760,9 @@ export interface NotasDelMes {
  */
 export interface FacturaDeIntereses {
   id: string
+  /** T-0163: de qué inquilino es esta parte de los intereses. Ausentes en un back anterior (= `null`). */
+  contratoInquilinoId?: string | null
+  participacionBps?: number | null
   clave: string
   contractId: string
   codigoDelContrato: number | null

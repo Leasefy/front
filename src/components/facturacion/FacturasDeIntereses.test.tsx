@@ -156,3 +156,32 @@ describe('FacturasDeIntereses (Q6)', () => {
     expect(emitirIntereses).not.toHaveBeenCalled();
   });
 });
+
+describe('FacturasDeIntereses · un contrato con varios inquilinos (T-0163)', () => {
+  it('una fila por inquilino, con su parte, y las dos se pueden emitir', async () => {
+    interesesPorEmitir.mockResolvedValue({
+      disponible: true,
+      resolucion: RESOLUCION,
+      facturas: [
+        { ...factura('fi-1', 20_500), terceroNombre: 'Titular Uno', participacionBps: 5000, contratoInquilinoId: null },
+        { ...factura('fi-2', 20_500), terceroNombre: 'Coarrendatario Dos', participacionBps: 5000, contratoInquilinoId: 'ci-1' },
+      ],
+      explicacion: null,
+    });
+    await montar();
+    expect(q('[data-testid="interes-fi-1"]')!.textContent).toContain('Titular Uno · 50 %');
+    expect(q('[data-testid="interes-fi-2"]')!.textContent).toContain('Coarrendatario Dos · 50 %');
+  });
+
+  it('sin reparto (o un back anterior) sólo el nombre', async () => {
+    interesesPorEmitir.mockResolvedValue({
+      disponible: true,
+      resolucion: RESOLUCION,
+      facturas: [factura('fi-1', 41_000)],
+      explicacion: null,
+    });
+    await montar();
+    expect(q('[data-testid="interes-fi-1"]')!.textContent).toContain('Carlos Arrendatario');
+    expect(q('[data-testid="interes-fi-1"]')!.textContent).not.toContain('%');
+  });
+});

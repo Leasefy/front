@@ -114,9 +114,17 @@ export function AnularCobroDialog({ cobro, onOpenChange, onAnulado }: AnularCobr
     setErrorGeneral(null);
     try {
       const resultado = await cobrosApi.anular(cobro.id, motivo.trim());
-      const detalle = resultado.factura
-        ? t(k(resultado.factura.notaCreditoGenerada ? 'conNotaGenerada' : 'conNotaPrevia'))
-        : undefined;
+      // T-0163: con la factura dividida entre los inquilinos son varias notas, una por factura.
+      const partes = resultado.facturas ?? [];
+      const generadas = partes.filter((p) => p.notaCreditoGenerada).length;
+      const detalle =
+        partes.length > 1
+          ? generadas > 0
+            ? t(k('conNotasGeneradas'), { n: partes.length })
+            : t(k('conNotasPrevias'))
+          : resultado.factura
+            ? t(k(resultado.factura.notaCreditoGenerada ? 'conNotaGenerada' : 'conNotaPrevia'))
+            : undefined;
       toast.success(t(k('anulado')), detalle ? { description: detalle } : undefined);
       onAnulado(resultado);
       onOpenChange(false);

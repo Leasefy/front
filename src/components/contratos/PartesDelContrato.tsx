@@ -125,7 +125,7 @@ export function PartesDelContrato({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" id="partes-del-contrato">
       <Propietarios contract={contract} puedeEditar={puedeEditar} onActualizado={onActualizado} />
 
       <div className="space-y-2 border-t border-border pt-3 first:border-0 first:pt-0">

@@ -1375,6 +1375,17 @@ export interface CobroAnulado {
     notaCreditoId: string | null;
     notaCreditoGenerada: boolean;
   } | null;
+  /**
+   * T-0163: con la factura dividida entre los inquilinos, TODAS las facturas
+   * del cobro (una por inquilino); `factura` es la primera. Ausente con un back
+   * anterior o con una sola factura.
+   */
+  facturas?: Array<{
+    facturaId: string;
+    estado: 'GENERADA' | 'EMITIDA';
+    notaCreditoId: string | null;
+    notaCreditoGenerada: boolean;
+  }>;
 }
 
 // ============================================================================

@@ -1369,6 +1369,17 @@ export const cobrosApi = {
   },
 
   /**
+   * POST /inmobiliaria/cobros/recordatorios/en-el-centro → 202 `{ procesoId }`.
+   * Acciones masivas (10-10-2026): el recordatorio de varios cobros en UNA
+   * petición que el back recorre en el centro de procesos.
+   */
+  async recordatoriosEnElCentro(cobroIds: readonly string[]): Promise<{ procesoId: string }> {
+    return apiClient.post<{ procesoId: string }>(`${BASE}/cobros/recordatorios/en-el-centro`, {
+      cobroIds: [...cobroIds],
+    });
+  },
+
+  /**
    * Anula un cobro con motivo (nunca lo borra). La deuda de la cuota no
    * cambia; si tenía factura, el back genera su nota crédito sin número.
    * Errores con `code`: COBRO_CON_RECIBOS · COBRO_YA_ANULADO ·

@@ -1,4 +1,6 @@
 'use client';
+import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas';
+import { CobrosMarcados } from '@/components/inmobiliaria/CobrosMarcados';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { mesEnTitulo, nombreDelMes } from '@/lib/utils/mes';
 
@@ -141,6 +143,10 @@ function CobrosContent() {
    * el filtro no se ofrece y los días quedan los de siempre.
    */
   const { canAccess: puedeVer, isLoading: permisosCargando } = usePermissions();
+  // Acciones masivas (Nico, 10-10-2026). Con otro mes, filtro o vista, lo marcado se suelta.
+  const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas(
+    `${JSON.stringify(filters)}|${verAnulados}`,
+  );
   const conPermiso = (modulo: Parameters<typeof puedeVer>[0]) => !permisosCargando && puedeVer(modulo, 'view');
 
   // Fetch consignaciones for filters
@@ -734,6 +740,7 @@ function CobrosContent() {
             />
           ) : paginatedCobros.length > 0 ? (
             viewMode === 'table' ? (
+              <>
               <CobroTable
                 cobros={paginatedCobros}
                 clave={`${filters.month}|${verAnulados}|${page}|${pageSize}`}
@@ -742,7 +749,20 @@ function CobrosContent() {
                 // Un cobro anulado sale de la lista: se vuelve a leer del back.
                 onCobroAnulado={verAnulados ? undefined : () => void refetchCobros()}
                 showSummary
+                marcadas={verAnulados ? undefined : marcadas}
+                onMarcar={verAnulados ? undefined : marcar}
               />
+              {/* Acciones masivas: el pie de la MISMA tabla donde se marca. */}
+              {!verAnulados && (
+                <CobrosMarcados
+                  marcados={(apiCobros ?? []).filter((c) => marcadas.has(c.id))}
+                  onQuitar={quitarLaSeleccion}
+                  puedeRecordar={puedeVer('cobros', 'edit')}
+                  puedeAnular={puedeVer('cobros', 'edit')}
+                  onAnulados={() => void refetchCobros()}
+                />
+              )}
+              </>
             ) : (
               <Stagger
                 key={`${filters.month}|${verAnulados}|${page}|${pageSize}`}

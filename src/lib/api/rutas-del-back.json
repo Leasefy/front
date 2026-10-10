@@ -2,7 +2,7 @@
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
   "cuando": "2026-10-10",
-  "cuantas": 1465,
+  "cuantas": 1466,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -998,6 +998,7 @@
     "POST /inmobiliaria/cobros/:id/payment",
     "POST /inmobiliaria/cobros/generate",
     "POST /inmobiliaria/cobros/generate-one",
+    "POST /inmobiliaria/cobros/recordatorios/en-el-centro",
     "POST /inmobiliaria/conciliacion-bancaria/aseguradoras/relaciones",
     "POST /inmobiliaria/conciliacion-bancaria/cierres",
     "POST /inmobiliaria/conciliacion-bancaria/cierres/:id/reabrir",

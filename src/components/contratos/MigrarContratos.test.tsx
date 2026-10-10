@@ -156,6 +156,8 @@ const ENCABEZADOS_MINIMOS = [
   'Fecha de terminación',
   'Canon',
   'Día de pago',
+  // T-0153 §3.4: sin SI/NO la fila no sale; la agencia lo define en la vista previa.
+  'Prorrateado',
 ]
 
 function filaMinima(i = 0): Record<string, unknown> {
@@ -167,6 +169,7 @@ function filaMinima(i = 0): Record<string, unknown> {
     'Fecha de terminación': '2027-01-01',
     Canon: '1800000',
     'Día de pago': '5',
+    Prorrateado: 'SI',
   }
 }
 
@@ -2032,7 +2035,13 @@ describe('<MigrarContratos> — vista previa honesta antes de guardar', () => {
       [{ ...filaMinima(), Ciudad: 'Bogotá' }],
     )
 
-    expect(container.querySelector('[data-testid="dudosa-Ciudad"]')).toBeTruthy()
+    const marca = container.querySelector('[data-testid="dudosa-Ciudad"]')
+    expect(marca).toBeTruthy()
+    // Es una advertencia, no un botón: nota accesible, sin caja de chip.
+    expect(marca?.getAttribute('role')).toBe('note')
+    expect(marca?.textContent).toContain('Advertencia:')
+    expect(marca?.textContent).toContain('Revisa que esta columna sea la correcta')
+    expect(marca?.className).not.toMatch(/rounded|border|bg-/)
     expect(
       container.querySelector('[data-testid="mapeos-dudosos"]')?.textContent,
     ).toContain('«Ciudad»')

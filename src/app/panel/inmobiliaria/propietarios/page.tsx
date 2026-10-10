@@ -1,4 +1,6 @@
 'use client';
+import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas';
+import { PropietariosMarcados } from '@/components/inmobiliaria/PropietariosMarcados';
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useEffect, useRef, useId } from 'react';
@@ -257,6 +259,12 @@ function PropietariosContent() {
   const puedeCrear = canAccess('propietarios', 'create');
   const puedeEditar = canAccess('propietarios', 'edit');
   const puedeEliminar = canAccess('propietarios', 'delete');
+  // Acciones masivas (Nico, 10-10-2026). Con otros filtros, lo marcado se suelta.
+  const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas(JSON.stringify(filtros));
+  const propietariosMarcados = useMemo(
+    () => propietarios.filter((p) => marcadas.has(p.id)),
+    [propietarios, marcadas],
+  );
 
   /*
    * Esta pantalla no tiene filtros, así que un vacío es siempre «no hay
@@ -820,6 +828,7 @@ function PropietariosContent() {
                 }
               />
             ) : viewMode === 'table' ? (
+              <>
               <PropietarioTable
                 propietarios={paginationData.paginatedItems}
                 totalFiltrado={paginationData.totalItems}
@@ -836,7 +845,17 @@ function PropietariosContent() {
                 onDelete={handleDelete}
                 onExport={handleExport}
                 plataOculta={plataOculta}
+                marcadas={marcadas}
+                onMarcar={marcar}
               />
+              {/* Acciones masivas: el pie de la MISMA tabla donde se marca. */}
+              <PropietariosMarcados
+                marcados={propietariosMarcados}
+                onQuitar={quitarLaSeleccion}
+                puedeMandarExtracto={canAccess('dispersiones', 'edit')}
+                puedeInvitar={puedeEditar}
+              />
+              </>
             ) : (
               <>
               {/* QA-PROP-95 (A-28): la vista de tarjetas también busca y filtra:

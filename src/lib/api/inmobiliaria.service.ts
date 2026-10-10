@@ -475,10 +475,26 @@ export const propietariosApi = {
    * POST /inmobiliaria/propietarios/extractos/enviar-mes/en-el-centro → 202 `{ procesoId }`.
    * QA-PROP-95 C-42: el mismo envío, en el centro de procesos (avance y «Detener»).
    */
-  async enviarExtractosDelMesEnElCentro(month: string, soloSinEnviar = true): Promise<{ procesoId: string }> {
+  async enviarExtractosDelMesEnElCentro(
+    month: string,
+    soloSinEnviar = true,
+    /** Acciones masivas (10-10-2026): sólo a estos, tengan o no movimientos ese mes. */
+    propietarioIds?: readonly string[],
+  ): Promise<{ procesoId: string }> {
     return apiClient.post<{ procesoId: string }>(`${BASE}/propietarios/extractos/enviar-mes/en-el-centro`, {
       month,
       soloSinEnviar,
+      ...(propietarioIds ? { propietarioIds: [...propietarioIds] } : {}),
+    });
+  },
+
+  /**
+   * POST /inmobiliaria/propietarios/invitar-al-portal/en-el-centro → 202 `{ procesoId }`.
+   * Acciones masivas (10-10-2026): la invitación de la ficha a los marcados, en el centro.
+   */
+  async invitarAlPortalEnElCentro(propietarioIds: readonly string[]): Promise<{ procesoId: string }> {
+    return apiClient.post<{ procesoId: string }>(`${BASE}/propietarios/invitar-al-portal/en-el-centro`, {
+      propietarioIds: [...propietarioIds],
     });
   },
 

@@ -168,6 +168,28 @@ export const estadoDeCuentaApi = {
   },
 
   /**
+   * Acciones masivas (10-10-2026): el mismo envío a varios clientes, en UNA
+   * petición que el back recorre en el centro de procesos
+   * (`POST :tipo/compartir/:canal/en-el-centro` → 202 `{ procesoId }`). El
+   * nombre sólo va para el resumen y el CSV del centro.
+   */
+  enviarEnBloque(
+    tipo: 'inquilino' | 'propietario',
+    canal: 'CORREO' | 'WHATSAPP',
+    /** `documento`: la otra referencia, por si con `id` no la encuentra (I-12, como la ficha). */
+    clientes: readonly { id: string; nombre: string; documento?: string | null }[],
+  ): Promise<{ procesoId: string }> {
+    const camino = canal === 'CORREO' ? 'correo' : 'whatsapp';
+    return apiClient.post<{ procesoId: string }>(`${BASE}/${tipo}/compartir/${camino}/en-el-centro`, {
+      clientes: clientes.map((c) => ({
+        id: c.id,
+        nombre: c.nombre.slice(0, 200),
+        ...(c.documento?.trim() ? { documento: c.documento.trim().slice(0, 200) } : {}),
+      })),
+    });
+  },
+
+  /**
    * Crea (o renueva) el enlace público y firmado para mandárselo al cliente.
    *
    * `POST` y no `GET` a propósito: emite un token nuevo con vencimiento, que es

@@ -41,6 +41,7 @@
  * paga, que es lo contrario de lo que pasa.
  */
 
+import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -333,6 +334,12 @@ export interface InquilinosTableProps {
    */
   orden?: OrdenDeInquilinos;
   onOrdenar?: (orden: OrdenDeInquilinos) => void;
+  /**
+   * Acciones masivas (Nico, 10-10-2026): con esto la tabla pinta las casillas
+   * (por `tenantId`). Lo marcado y lo que se hace con ello lo lleva la página.
+   */
+  marcadas?: ReadonlySet<string>;
+  onMarcar?: (ids: readonly string[], si: boolean) => void;
 }
 
 /**
@@ -345,7 +352,7 @@ function usePuedeCrearContrato(): boolean {
   return permisos ? permisos.canAccess('contratos', 'create') : true;
 }
 
-export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar }: InquilinosTableProps) {
+export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar, marcadas, onMarcar }: InquilinosTableProps) {
   const { t } = useI18n();
   const [ordenPropio, setOrdenPropio] = useState<OrdenDeInquilinos>({ campo: 'nombre', sentido: 'asc' });
   const { campo, sentido } = orden ?? ordenPropio;
@@ -409,6 +416,16 @@ export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar }: Inqui
       <Table className="min-w-[760px]" data-testid="inquilinos-tabla">
         <TableHeader>
           <TableRow className="border-b border-border bg-muted/30">
+            {marcadas && onMarcar && (
+              <TableHead className="w-10 py-4 pl-4 pr-0">
+                <CasillaDeLaPagina
+                  ids={ordenados.map((p) => p.tenantId)}
+                  marcadas={marcadas}
+                  onMarcar={onMarcar}
+                  queSon="inquilinos"
+                />
+              </TableHead>
+            )}
             <TableHead className="w-10 p-4" />
             <Ordenable campo="nombre">{t('inquilinos.tabla.inquilino')}</Ordenable>
             <TableHead className="p-4 text-left">{t('inquilinos.tabla.telefono')}</TableHead>
@@ -424,6 +441,16 @@ export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar }: Inqui
           {ordenados.map((persona) => (
             <FilaDeInquilino
               key={persona.tenantId}
+              casilla={
+                marcadas && onMarcar ? (
+                  <CasillaDeLaFila
+                    id={persona.tenantId}
+                    nombre={persona.nombre}
+                    marcadas={marcadas}
+                    onMarcar={onMarcar}
+                  />
+                ) : undefined
+              }
               persona={persona}
               desplegada={desplegados.has(persona.tenantId)}
               onAlternar={() => alternar(persona.tenantId)}
@@ -437,11 +464,14 @@ export function InquilinosTable({ inquilinos, onAbrir, orden, onOrdenar }: Inqui
 }
 
 function FilaDeInquilino({
+  casilla,
   persona,
   desplegada,
   onAlternar,
   onAbrir,
 }: {
+  /** La casilla de las acciones masivas, si la tabla las tiene. */
+  casilla?: React.ReactNode;
   persona: Inquilino;
   desplegada: boolean;
   onAlternar: () => void;
@@ -468,6 +498,7 @@ function FilaDeInquilino({
         data-testid="inquilino-fila"
         data-tenant-id={persona.tenantId}
       >
+        {casilla !== undefined && <TableCell className="w-10 py-4 pl-4 pr-0 align-middle">{casilla}</TableCell>}
         {/* Desplegar: sólo tiene sentido con más de un arriendo. */}
         <TableCell className="p-4 align-middle">
           {varios ? (
@@ -634,7 +665,7 @@ function FilaDeInquilino({
           entrada de las filas); al contraer se va de una. */}
       {varios && desplegada && (
         <TableRowAnimada data-testid="inquilino-arriendos">
-          <TableCell colSpan={7} className="bg-surface-muted/50 p-4">
+          <TableCell colSpan={casilla !== undefined ? 8 : 7} className="bg-surface-muted/50 p-4">
             <ul className="space-y-2">
               {persona.arriendos.map((a) => (
                 /* 🔴 La llave es el CONTRATO, no el `Lease`: desde el 20-09

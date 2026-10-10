@@ -37,6 +37,8 @@ const DONDE_SE_ARREGLA: Record<string, string> = {
   consecutivo_repetido: "Se descarta la fila que sobra y se vuelve a cruzar.",
   cartera_antes_del_inicio:
     "Sólo se arregla en el archivo: corrige la fecha y vuelve a subirlo.",
+  reparto_de_inquilinos:
+    "Sólo se arregla en el archivo: corrige la celda y vuelve a subirlo, o descarta la fila.",
   verificacion_difiere: "Se revisa en el detalle del contrato ya creado.",
   otros: "Se revisa en cada fila.",
 };

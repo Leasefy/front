@@ -148,6 +148,8 @@ import {
 } from '@/lib/api/facturacion-por-mes.service'
 import {
   aQuienSeFactura,
+  expandirALasHermanas,
+  hermanasDeLaFila,
   avisosDeLaFila,
   cuantos,
   escenarioSinConfirmar,
@@ -160,6 +162,7 @@ import {
   porQueNoSeEmite,
   rutaDelEscenario,
   rutaDelMandante,
+  rutaDeLasPartesDelContrato,
   rutaDelInquilino,
   frenaPorElDocumentoDelMandante,
   sePuedeEmitirHoy,
@@ -411,6 +414,21 @@ function PlataDeLaFila({ factura }: { factura: FacturaDelMes }) {
   )
 }
 
+/**
+ * T-0163: las facturas de los inquilinos de un contrato salen juntas: o se
+ * emiten todas o ninguna. Va una vez por contrato y mes, en su primera fila.
+ */
+function AvisoDeFacturaJunta({ factura }: { factura: FacturaDelMes }) {
+  return (
+    <p
+      className="text-caption text-fg-muted"
+      data-testid={`factura-junta-${factura.contractId}-${factura.mes}`}
+    >
+      La factura de este contrato se emite junta para todos los inquilinos.
+    </p>
+  )
+}
+
 /** Lo que se factura, el inmueble, el período y lo que la fila tiene que decir. */
 function ConceptoDeLaFila({ factura }: { factura: FacturaDelMes }) {
   const avisos = avisosDeLaFila(factura)
@@ -548,6 +566,28 @@ function EstadoDeLaFactura({
       </span>
     )
   }
+  if (
+    estado === 'todavia-no' &&
+    factura.codigoNoEmitible === 'INQUILINO_SIN_TIPO_DE_DOCUMENTO' &&
+    factura.contratoInquilinoId
+  ) {
+    /* T-0163: la factura de un COARRENDATARIO. Su tipo de documento vive en las
+       partes del contrato (no en Inquilinos, que sólo conoce al titular). */
+    return (
+      <div className="flex flex-col items-start gap-1" data-testid={`inquilino-sin-tipo-${factura.clave}`}>
+        <span className="text-caption text-fg-subtle" title={factura.motivoNoEmitible ?? undefined}>
+          {motivoCorto(factura)}
+        </span>
+        <Link
+          href={rutaDeLasPartesDelContrato(factura)}
+          className="text-caption font-medium text-primary underline-offset-4 hover:underline"
+          data-testid={`completar-en-el-contrato-${factura.clave}`}
+        >
+          Completar en el contrato
+        </Link>
+      </div>
+    )
+  }
   if (estado === 'todavia-no' && factura.codigoNoEmitible === 'INQUILINO_SIN_TIPO_DE_DOCUMENTO') {
     /* 🔴 QA-FACT-CONTA-95 r2 (decisión de Nico 05-10, «la a»): sin el tipo de
        documento GUARDADO del inquilino no se numera (nunca se adivina por el
@@ -658,6 +698,16 @@ function TablaDeFacturas({
    * factura es una TARJETA con el cliente, el concepto, el total y su acción.
    */
   const esCelular = useIsMobile()
+
+  /**
+   * T-0163: un mes de un contrato con varios inquilinos son N filas pegadas, una
+   * por inquilino. Se marcan con una raya a la izquierda y el aviso de que salen
+   * juntas va UNA vez, en la primera. `null` = fila suelta (lo de siempre).
+   */
+  const grupoDe = (factura: FacturaDelMes): { primera: boolean } | null => {
+    const hermanas = hermanasDeLaFila(factura, filas)
+    return hermanas.length > 1 ? { primera: hermanas[0].clave === factura.clave } : null
+  }
   /*
    * 🔴 El buscador va DENTRO de la tabla (Nico, 18-09). Con 730 filas, querer
    * una factura y no poder llegar a su fila es lo mismo que no poder hacerla.
@@ -926,6 +976,7 @@ function TablaDeFacturas({
             <ul className="divide-y divide-border" data-testid={`facturacion-${testid}-tarjetas`}>
               {pageItems.map((factura) => {
                 const apagada = estadoDeLaFila(factura) !== 'por-emitir'
+                const grupo = grupoDe(factura)
                 return (
                   <li
                     key={factura.clave}
@@ -944,6 +995,7 @@ function TablaDeFacturas({
                     className={cn(
                       'flex cursor-pointer gap-3 px-4 py-3.5 transition hover:bg-surface-muted/60',
                       apagada && 'opacity-70',
+                      grupo && 'border-l-2 border-l-primary/50',
                     )}
                   >
                     <span className="pt-0.5" onClick={(e) => e.stopPropagation()}>
@@ -962,6 +1014,7 @@ function TablaDeFacturas({
                       <div className="text-caption">
                         <NumeroDelContrato factura={factura} />
                       </div>
+                      {grupo?.primera ? <AvisoDeFacturaJunta factura={factura} /> : null}
                       <div onClick={(e) => e.stopPropagation()}>{estado(factura)}</div>
                     </div>
                   </li>
@@ -1016,6 +1069,7 @@ function TablaDeFacturas({
                 pageItems.map((factura) => {
                   const apagada =
                     factura.estado === 'EMITIDA' || estadoDeLaFila(factura) !== 'por-emitir'
+                  const grupo = grupoDe(factura)
                   return (
                     /* 🔴 La fila tiene DOS blancos: la casilla marca (y el botón
                        del final emite), y todo el resto abre el cajón. */
@@ -1038,7 +1092,10 @@ function TablaDeFacturas({
                         apagada && 'opacity-70',
                       )}
                     >
-                      <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                      <TableCell
+                        className={cn('w-10', grupo && 'border-l-2 border-l-primary/50')}
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         {casilla(factura)}
                       </TableCell>
                       <TableCell className="w-[30%] min-w-[180px] max-w-[260px] align-top">
@@ -1054,6 +1111,7 @@ function TablaDeFacturas({
                         <p className="truncate text-caption text-fg-muted">
                           Contrato <NumeroDelContrato factura={factura} />
                         </p>
+                        {grupo?.primera ? <AvisoDeFacturaJunta factura={factura} /> : null}
                       </TableCell>
                       <TableCell className="min-w-[200px] max-w-[320px] align-top">
                         <ConceptoDeLaFila factura={factura} />
@@ -1188,12 +1246,27 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
     void cargar(mes, hasta)
   }, [cargar, mes, hasta])
 
+  /**
+   * T-0163: un mes de un contrato con varios inquilinos sale en una factura por
+   * inquilino y se emite junto: marcar o desmarcar una mueve a las demás. Es
+   * comodidad de la pantalla; el back también expande al emitir.
+   */
+  const filasDelListado = useMemo(
+    () => (datos ? [...datos.inquilinos, ...datos.propietarios] : []),
+    [datos],
+  )
+
   const alternarUna = (clave: string) => {
     setSeleccionSugerida(false)
     setSeleccion((previa) => {
       const siguiente = new Set(previa)
-      if (siguiente.has(clave)) siguiente.delete(clave)
-      else siguiente.add(clave)
+      const fila = filasDelListado.find((f) => f.clave === clave)
+      const grupo = fila ? hermanasDeLaFila(fila, filasDelListado).map((f) => f.clave) : [clave]
+      if (siguiente.has(clave)) {
+        for (const c of grupo) siguiente.delete(c)
+      } else {
+        for (const c of expandirALasHermanas([clave], filasDelListado)) siguiente.add(c)
+      }
       return siguiente
     })
   }
@@ -1216,7 +1289,7 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
       if (claves.some((c) => siguiente.has(c))) {
         for (const c of claves) siguiente.delete(c)
       } else {
-        for (const c of claves) siguiente.add(c)
+        for (const c of expandirALasHermanas(claves, filasDelListado)) siguiente.add(c)
       }
       return siguiente
     })
@@ -1427,9 +1500,17 @@ export function NuevaFactura({ onIrAResolucion }: NuevaFacturaProps = {}) {
    * un clic una factura numerada (LABQA-1, Juliana $ 4.100.000) que no se
    * deshace: sólo se anula con una nota crédito. Lo mismo el botón del pie.
    */
-  async function pedirYGenerar(claves: string[]) {
-    if (claves.length === 0 || generando || motivoParaNoEmitir !== null) return
+  async function pedirYGenerar(pedidas: string[]) {
+    if (pedidas.length === 0 || generando || motivoParaNoEmitir !== null) return
     const todasLasFilas = [...delMes.inquilinos, ...delMes.propietarios]
+    // T-0163: «emitir esta» en un mes dividido emite a todos los inquilinos de ese
+    // contrato: la confirmación tiene que decir cuántas facturas son de verdad.
+    const expandidas = expandirALasHermanas(pedidas, todasLasFilas)
+    const claves = [
+      // En el orden del listado (el titular primero), que es el que numera el back.
+      ...todasLasFilas.map((f) => f.clave).filter((c) => expandidas.has(c)),
+      ...pedidas.filter((c) => !todasLasFilas.some((f) => f.clave === c)),
+    ]
     const filas = claves
       .map((c) => todasLasFilas.find((f) => f.clave === c))
       .filter((f): f is FacturaDelMes => Boolean(f))

@@ -239,3 +239,41 @@ describe('FacturasEmitidas · el sistema de errores (02-10)', () => {
     expect(vi.mocked(toast.error).mock.calls[0]?.[0]).toMatch(/conexi[oó]n/);
   });
 });
+
+/*
+ * T-0163: un contrato con varios inquilinos emite una factura por inquilino,
+ * cada una por su parte: mismo contrato y mes, distinto id. Datos inventados.
+ */
+describe('FacturasEmitidas · una factura por inquilino (T-0163)', () => {
+  const titular = () =>
+    factura({ id: 'f-10', numero: 10, terceroNombre: 'Titular Uno', participacionBps: 5000, contratoInquilinoId: null });
+  const coarrendatario = () =>
+    factura({
+      id: 'f-11',
+      numero: 11,
+      numeroDian: 'FE-1043',
+      terceroNombre: 'Coarrendatario Dos',
+      terceroDocumento: '222',
+      participacionBps: 5000,
+      contratoInquilinoId: 'ci-1',
+    });
+
+  it('las dos se listan, cada una con su nombre y su parte', async () => {
+    await pintar({ mes: '2026-09', anulacionDisponible: true, facturas: [titular(), coarrendatario()] });
+    expect(q('[data-testid="factura-10"]')!.textContent).toContain('Titular Uno');
+    expect(q('[data-testid="parte-de-la-factura-10"]')!.textContent).toContain('50 %');
+    expect(q('[data-testid="factura-11"]')!.textContent).toContain('Coarrendatario Dos');
+    expect(q('[data-testid="parte-de-la-factura-11"]')!.textContent).toContain('50 %');
+  });
+
+  it('una factura sin reparto, o de un back anterior, no lleva porcentaje', async () => {
+    await pintar({ mes: '2026-09', anulacionDisponible: true, facturas: [factura(), factura({ id: 'f-2', numero: 4, participacionBps: null })] });
+    expect(q('[data-testid="parte-de-la-factura-3"]')).toBeNull();
+    expect(q('[data-testid="parte-de-la-factura-4"]')).toBeNull();
+  });
+
+  it('el 100 % no se dice', async () => {
+    await pintar({ mes: '2026-09', anulacionDisponible: true, facturas: [factura({ participacionBps: 10000 })] });
+    expect(q('[data-testid="parte-de-la-factura-3"]')).toBeNull();
+  });
+});

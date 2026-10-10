@@ -1958,15 +1958,30 @@ export function MigrarContratos({
             </AlertaAccionable>
           ) : null}
 
-          {preparadas.fundidas > 0 ? (
+          {preparadas.fundidas - preparadas.fundidasPorInquilinos > 0 ? (
             <AlertaAccionable
               severidad="info"
               data-testid="aviso-filas-fundidas"
-              titulo={`${preparadas.fundidas} ${preparadas.fundidas === 1 ? "fila se unió" : "filas se unieron"} al contrato de su copropietario`}
+              titulo={`${preparadas.fundidas - preparadas.fundidasPorInquilinos} ${preparadas.fundidas - preparadas.fundidasPorInquilinos === 1 ? "fila se unió" : "filas se unieron"} al contrato de su copropietario`}
             >
               Cuando un contrato trae una fila por propietario, se arma un solo
               contrato con el reparto del canon. Las filas que no coinciden en
               todo quedan separadas.
+            </AlertaAccionable>
+          ) : null}
+
+          {/* T-0163: «una fila por inquilino» = un contrato con varios
+              inquilinos; la factura se divide entre ellos. */}
+          {preparadas.fundidasPorInquilinos > 0 ? (
+            <AlertaAccionable
+              severidad="info"
+              data-testid="aviso-filas-fundidas-inquilinos"
+              titulo={`${preparadas.fundidasPorInquilinos} ${preparadas.fundidasPorInquilinos === 1 ? "fila se unió" : "filas se unieron"} al contrato de sus inquilinos`}
+            >
+              Cuando un contrato trae una fila por inquilino, se arma un solo
+              contrato con varios inquilinos y la factura se divide entre ellos
+              según la parte del canon de cada uno. Las filas que no coinciden
+              en todo quedan separadas.
             </AlertaAccionable>
           ) : null}
 

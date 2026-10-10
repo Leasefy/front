@@ -218,6 +218,12 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
     porque:
       "«Valor Canon» reparte el canon entre los dueños y la lista no coincide con ellos o no suma el canon. No se inventa un 50/50: define abajo cuánto es de cada dueño, sin volver a subir el archivo.",
   },
+  // T-0163: varios inquilinos con «Valor Canon». Sin editor: lo derivó el back.
+  reparto_de_inquilinos: {
+    titulo: "La plata por inquilino no cuadra",
+    porque:
+      "«Valor Canon» reparte el canon entre los inquilinos y la lista no coincide con ellos o no suma el canon. Corrige la celda en el archivo y vuelve a subirlo, o descarta la fila: no se inventa un reparto.",
+  },
   // El back lo pone DESPUÉS de activar: el contrato ya existe.
   verificacion_difiere: {
     titulo: "Lo guardado no coincide con el archivo",
@@ -302,6 +308,9 @@ export function celdaDelFaltante(
       const motivo = fila.asociacion?.propietario?.reparto?.problema ?? null;
       return texto([plata, motivo].filter(Boolean).join(' — '));
     }
+    // T-0163: el motivo exacto que dio el back al derivar el reparto de los inquilinos.
+    case 'reparto_de_inquilinos':
+      return texto(fila.asociacion?.inquilino?.repartoDeInquilinos?.problema);
     // El consecutivo del sistema anterior, tal cual vino: es lo que hay que
     // buscar en el archivo para decidir cuál de las filas gemelas se queda.
     case 'consecutivo_repetido':
@@ -556,6 +565,18 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
             ) : null}
             {f === "reparto_del_canon" ? (
               <RepartoEditable fila={fila} ocupado={ocupado} correr={correr} />
+            ) : null}
+            {f === "reparto_de_inquilinos" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
+                disabled={ocupado}
+                data-testid="descartar-fila-sin-reparto"
+                onClick={() => void correr(() => contractsApi.migracion.descartar(fila.id))}
+              >
+                Descartar esta fila
+              </Button>
             ) : null}
             {f === "consecutivo_repetido" ? (
               <Button

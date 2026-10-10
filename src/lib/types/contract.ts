@@ -429,7 +429,20 @@ export interface InquilinoDelContrato {
   email: string | null;
   telefono: string | null;
   esPrincipal: boolean;
+  /**
+   * T-0163: su parte de la factura en puntos básicos (10.000 = 100 %); `null` =
+   * el contrato no reparte (toda la factura va al titular).
+   *
+   * Opcional A PROPÓSITO: la clave AUSENTE significa «back anterior» y esconde
+   * la sección «Reparto de la factura». Un back nuevo la manda siempre.
+   */
+  participacionBps?: number | null;
+  /** T-0163: tipo de documento de la persona (el del titular es el del contrato). Ausente = back anterior. */
+  tipoDocumento?: TipoDeDocumentoDelInquilino | null;
 }
+
+/** Los tipos de documento que acepta el back para un inquilino (`PropietarioDocumentType`). */
+export type TipoDeDocumentoDelInquilino = 'CC' | 'CE' | 'TI' | 'NIT' | 'PASSPORT' | 'PPT';
 
 /**
  * El escenario tributario del contrato: cómo se LLAMA la situación que forman

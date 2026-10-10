@@ -29,6 +29,7 @@
 import { describe, expect, it } from 'vitest'
 import { mapearColumnas } from './columnas-de-contrato'
 import { armarFilaAMigrar } from './armar-fila'
+import { prepararFilasParaMigrar } from './preparar-filas-para-migrar'
 
 /**
  * El encabezado real de Contracts.csv, en su orden. Escrito acá y no
@@ -80,6 +81,7 @@ const CLAVES_DEL_DTO = new Set([
   'propietarios',
   'canonPorPropietario',
   'inquilinos',
+  'canonPorInquilino',
   'escenarioOrigen',
   'estadoOrigen',
   'fechaTerminacion',
@@ -258,5 +260,69 @@ describe('lo que el archivo NO trae no viaja en blanco', () => {
     })
     expect(payload).not.toHaveProperty('propietarios')
     expect(payload).not.toHaveProperty('inquilinos')
+  })
+})
+
+/*
+ * T-0163 §3.5: «una fila por inquilino» se funde en UN contrato. Lo único
+ * nuevo en el cable es `canonPorInquilino`; el reparto en % lo deriva el back
+ * y el front NUNCA manda `participacionBps` ni `tipoDocumento` de inquilinos.
+ */
+describe('una fila por inquilino -> un contrato con canonPorInquilino', () => {
+  const ENCABEZADO = [
+    'Consecutivo contrato',
+    'Total Canon Contrato',
+    'Consecutivo detalle',
+    'Nro. Propiedad',
+    'Dirección Propiedad',
+    'Documento Propietario',
+    'Nombre Propietario',
+    'Documento Inquilino',
+    'Nombre Inquilino',
+    'Email inquilino',
+    'Valor canon',
+    'Fecha inicio',
+    'Fecha fin',
+    'Fecha Cartera',
+    'Prorrateado',
+  ]
+  const base = {
+    'Consecutivo contrato': 1149,
+    'Total Canon Contrato': 2521008,
+    'Nro. Propiedad': 7,
+    'Dirección Propiedad': 'Calle Falsa 123',
+    'Documento Propietario': 111,
+    'Nombre Propietario': 'Dueña Uno',
+    'Valor canon': 1260504,
+    'Fecha inicio': '2025-01-10',
+    'Fecha fin': '2026-01-09',
+    'Fecha Cartera': '2025-01-15',
+    Prorrateado: 'SI',
+  }
+  const filas = [
+    { ...base, 'Consecutivo detalle': 1, 'Documento Inquilino': 222, 'Nombre Inquilino': 'Inquilino A', 'Email inquilino': 'a@example.test' },
+    { ...base, 'Consecutivo detalle': 2, 'Documento Inquilino': 333, 'Nombre Inquilino': 'Inquilino B', 'Email inquilino': 'b@example.test' },
+  ]
+  const r = prepararFilasParaMigrar(filas, mapearColumnas(ENCABEZADO), {}, new Map())
+  const payload = JSON.parse(JSON.stringify(r.aMigrar[0])) as Record<string, unknown>
+
+  it('manda canonPorInquilino alineado con inquilinos, y esa clave existe en el DTO', () => {
+    expect(r.aMigrar).toHaveLength(1)
+    expect(payload.canonPorInquilino).toEqual([1260504, 1260504])
+    expect(payload.monthlyRent).toBe(2521008)
+    expect((payload.inquilinos as unknown[]).length).toBe(2)
+    expect(CLAVES_DEL_DTO.has('canonPorInquilino')).toBe(true)
+  })
+
+  it('jamás manda participacionBps ni tipoDocumento de los inquilinos', () => {
+    for (const t of payload.inquilinos as Array<Record<string, unknown>>) {
+      expect(Object.keys(t).filter((k) => !CLAVES_DEL_TERCERO.has(k))).toEqual([])
+      expect(t).not.toHaveProperty('participacionBps')
+      expect(t).not.toHaveProperty('tipoDocumento')
+    }
+  })
+
+  it('una fila normal no lleva canonPorInquilino', () => {
+    expect(loQueViaja(FILA)).not.toHaveProperty('canonPorInquilino')
   })
 })

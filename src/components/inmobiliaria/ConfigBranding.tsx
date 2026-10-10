@@ -67,6 +67,8 @@ const EMPTY_SOCIALS: Record<keyof AgencySocials, string> = {
   x: '',
   tiktok: '',
   whatsapp: '',
+  // YouTube se edita en «Tu página en Leasefy» (marketplace, 09-10-2026).
+  youtube: '',
 };
 
 /**

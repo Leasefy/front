@@ -1,5 +1,6 @@
 'use client';
 
+import { Switch } from '@/components/ui/switch';
 import { useState, useMemo } from 'react';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
@@ -24,6 +25,7 @@ import {
   Car,
   Tree,
   WarningCircle,
+  ImageSquare,
 } from '@phosphor-icons/react';
 import type { Icon as IconoDePhosphor } from '@phosphor-icons/react';
 import { llevaHabitaciones, descripcionValida, DESCRIPCION_MINIMA, DESCRIPCION_MAXIMA } from '@/lib/inmuebles/reglas-del-paso-del-inmueble';
@@ -48,10 +50,12 @@ import type { FilaCopropietario } from './CopropietariosField';
 import { AgenteSelector } from './AgenteSelector';
 import { PropertyLocationField, type PropertyLocationValue } from '@/components/publicar/PropertyLocationField';
 import { PropertyPhotoPicker } from './PropertyPhotoPicker';
+import { LARGO_MAXIMO_DEL_ENLACE, MENSAJE_DEL_VIDEO, videoInvalido } from '@/lib/marketplace/video';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { idDelCampoDelAsistente, topesDelPasoDelInmueble } from '@/lib/inmuebles/errores-del-asistente';
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 
+import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 // ============================================================================
 // Shared Types
 // ============================================================================
@@ -104,6 +108,18 @@ export interface WizardFormData extends ConsignacionFormData {
    * by this task). Defaults to today, same as `contractStartDate`.
    */
   consignedAt: string;
+  /**
+   * El enlace del video que la inmobiliaria ya subió a Instagram, TikTok,
+   * YouTube o Facebook (marketplace, 09-10-2026). Opcional; la misma regla
+   * que «Editar» y `/publicar` (`lib/marketplace/video.ts`).
+   */
+  videoUrl?: string;
+  /**
+   * 🔴 «Publicar en el marketplace» (Nico, 10-10-2026): ENCENDIDO por defecto
+   * (ausente = sí). Apagado, el inmueble queda en el portafolio y no sale en
+   * el marketplace hasta que alguien lo elija en Inmuebles.
+   */
+  publicarEnElMarketplace?: boolean;
 }
 
 export interface StepProps {
@@ -649,11 +665,10 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
           <label htmlFor={idDelCampoDelAsistente('consignedAt')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.consignedAtLabel')}
           </label>
-          <Input
-            type="date"
+          <CampoDeDia
+            {...ariaDelCampoDeDia(aria('consignedAt', errors.consignedAt))}
             value={formData.consignedAt || ''}
-            onChange={(e) => updateFormData({ consignedAt: e.target.value })}
-            {...aria('consignedAt', errors.consignedAt)}
+            onChange={(v) => updateFormData({ consignedAt: v })}
             className={cn('w-full sm:w-64', errors.consignedAt && 'border-danger/30')}
           />
           <ErrorDelCampo
@@ -663,6 +678,11 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
           />
         </div>
       </div>
+      {/* Nico, 09-10-2026: «no veo la opción de subirle imágenes o videos»: dónde van. */}
+      <p className="flex items-start gap-2 rounded-lg bg-surface-muted px-3 py-2.5 text-caption text-fg-muted" data-testid="donde-van-las-fotos">
+        <ImageSquare className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        {t('inmobiliaria.consignaciones.wizard.step2.dondeVanLasFotos')}
+      </p>
     </div>
   );
 }
@@ -862,8 +882,9 @@ export function StepAssignAgent({ formData, updateFormData, agentes }: StepProps
 // Step 5: Acta de Entrega (Inventory)
 // ============================================================================
 
-export function StepActaEntrega({ formData, updateFormData }: StepProps) {
+export function StepActaEntrega({ formData, updateFormData, erroresDelServidor }: StepProps) {
   const { t } = useI18n();
+  const errorDelVideo = erroresDelServidor?.videoUrl ?? (videoInvalido(formData.videoUrl) ? MENSAJE_DEL_VIDEO : undefined);
   const inventoryItems = formData.inventoryItems || [];
   // T-0042 (ledger.md §2/§3) — a sale listing has no acta de entrega: this
   // step renders photos-only for it. The rent path is unchanged (inventory
@@ -1054,6 +1075,57 @@ export function StepActaEntrega({ formData, updateFormData }: StepProps) {
         <PropertyPhotoPicker
           photos={formData.photos ?? []}
           onChange={(photos) => updateFormData({ photos })}
+        />
+      </div>
+
+      {/* El video del inmueble (marketplace, 09-10-2026), el mismo campo de «Editar». */}
+      <div className="space-y-1.5">
+        <label htmlFor={idDelCampoDelAsistente('videoUrl')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
+          {t('inmobiliaria.consignaciones.editForm.videoUrl')}{' '}
+          <span className="font-normal text-fg-muted">{t('inmobiliaria.consignaciones.wizard.step5.optional')}</span>
+        </label>
+        <Input
+          id={idDelCampoDelAsistente('videoUrl')}
+          type="url"
+          inputMode="url"
+          value={formData.videoUrl ?? ''}
+          onChange={(e) => updateFormData({ videoUrl: e.target.value })}
+          placeholder="https://www.instagram.com/reel/…"
+          maxLength={LARGO_MAXIMO_DEL_ENLACE}
+          aria-invalid={errorDelVideo ? true : undefined}
+          aria-describedby={`${idDelCampoDelAsistente('videoUrl')}-${errorDelVideo ? 'error' : 'ayuda'}`}
+          className={cn('w-full', errorDelVideo && 'border-danger/30')}
+          data-testid="asistente-videoUrl"
+        />
+        {errorDelVideo ? (
+          <ErrorDelCampo id={`${idDelCampoDelAsistente('videoUrl')}-error`} mensaje={errorDelVideo} />
+        ) : (
+          <p id={`${idDelCampoDelAsistente("videoUrl")}-ayuda`} className="text-caption text-fg-muted">
+            {t('inmobiliaria.consignaciones.editForm.videoUrlHelper')}
+          </p>
+        )}
+      </div>
+
+      {/* 🔴 «Publicar en el marketplace» (Nico, 10-10-2026): encendido por defecto. */}
+      <div
+        className="flex items-start justify-between gap-4 rounded-lg border border-border bg-surface p-3"
+        data-testid="asistente-publicar-en-el-marketplace"
+      >
+        <div className="space-y-0.5">
+          <label htmlFor={idDelCampoDelAsistente('publicarEnElMarketplace')} className="block text-sm font-medium text-fg">
+            Publicar en el marketplace
+          </label>
+          <p className="text-caption text-fg-muted">
+            {formData.publicarEnElMarketplace === false
+              ? 'Queda en tu portafolio sin salir en el marketplace. Lo publicas cuando quieras desde Inmuebles.'
+              : 'Sale en el marketplace de Leasefy cuando esté disponible.'}
+          </p>
+        </div>
+        <Switch
+          id={idDelCampoDelAsistente('publicarEnElMarketplace')}
+          checked={formData.publicarEnElMarketplace !== false}
+          onCheckedChange={(v) => updateFormData({ publicarEnElMarketplace: v })}
+          aria-label="Publicar en el marketplace"
         />
       </div>
 

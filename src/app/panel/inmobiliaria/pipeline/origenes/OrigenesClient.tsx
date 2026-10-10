@@ -52,6 +52,7 @@ import {
   PLAZO_PARA_RESPONDER_MINIMO_HORAS,
   revisarPlazoParaResponder,
 } from '@/lib/pipeline/limites-del-lead'
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 /** El primer día del mes en curso, en `YYYY-MM-DD`. */
 function primeroDelMes(): string {
@@ -215,24 +216,22 @@ export function OrigenesClient() {
           <div className="flex flex-wrap items-end gap-3">
             <div className="space-y-1">
               <Label htmlFor="desde">Desde</Label>
-              <Input
+              <CampoDeDia
                 id="desde"
-                type="date"
                 value={desde}
-                onChange={(e) => setDesde(e.target.value)}
+                onChange={(v) => setDesde(v)}
                 className="w-40"
-                data-testid="filtro-desde"
+                testid="filtro-desde"
               />
             </div>
             <div className="space-y-1">
               <Label htmlFor="hasta">Hasta</Label>
-              <Input
+              <CampoDeDia
                 id="hasta"
-                type="date"
                 value={hasta}
-                onChange={(e) => setHasta(e.target.value)}
+                onChange={(v) => setHasta(v)}
                 className="w-40"
-                data-testid="filtro-hasta"
+                testid="filtro-hasta"
               />
             </div>
           </div>

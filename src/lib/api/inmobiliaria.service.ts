@@ -475,10 +475,26 @@ export const propietariosApi = {
    * POST /inmobiliaria/propietarios/extractos/enviar-mes/en-el-centro → 202 `{ procesoId }`.
    * QA-PROP-95 C-42: el mismo envío, en el centro de procesos (avance y «Detener»).
    */
-  async enviarExtractosDelMesEnElCentro(month: string, soloSinEnviar = true): Promise<{ procesoId: string }> {
+  async enviarExtractosDelMesEnElCentro(
+    month: string,
+    soloSinEnviar = true,
+    /** Acciones masivas (10-10-2026): sólo a estos, tengan o no movimientos ese mes. */
+    propietarioIds?: readonly string[],
+  ): Promise<{ procesoId: string }> {
     return apiClient.post<{ procesoId: string }>(`${BASE}/propietarios/extractos/enviar-mes/en-el-centro`, {
       month,
       soloSinEnviar,
+      ...(propietarioIds ? { propietarioIds: [...propietarioIds] } : {}),
+    });
+  },
+
+  /**
+   * POST /inmobiliaria/propietarios/invitar-al-portal/en-el-centro → 202 `{ procesoId }`.
+   * Acciones masivas (10-10-2026): la invitación de la ficha a los marcados, en el centro.
+   */
+  async invitarAlPortalEnElCentro(propietarioIds: readonly string[]): Promise<{ procesoId: string }> {
+    return apiClient.post<{ procesoId: string }>(`${BASE}/propietarios/invitar-al-portal/en-el-centro`, {
+      propietarioIds: [...propietarioIds],
     });
   },
 
@@ -1350,6 +1366,17 @@ export const cobrosApi = {
     return apiClient.put<{ enviado?: boolean; canal?: string | null; motivo?: string | null } | null>(
       `${BASE}/cobros/${id}/send-reminder`,
     );
+  },
+
+  /**
+   * POST /inmobiliaria/cobros/recordatorios/en-el-centro → 202 `{ procesoId }`.
+   * Acciones masivas (10-10-2026): el recordatorio de varios cobros en UNA
+   * petición que el back recorre en el centro de procesos.
+   */
+  async recordatoriosEnElCentro(cobroIds: readonly string[]): Promise<{ procesoId: string }> {
+    return apiClient.post<{ procesoId: string }>(`${BASE}/cobros/recordatorios/en-el-centro`, {
+      cobroIds: [...cobroIds],
+    });
   },
 
   /**
@@ -2543,6 +2570,35 @@ export const agencyApi = {
    */
   async updateAgency(data: UpdateAgencyPayload): Promise<AgencyProfile> {
     return apiClient.put<AgencyProfile>(`${BASE}/agency`, data);
+  },
+
+  /**
+   * POST /inmobiliaria/agency/portada
+   * La portada de su página en el marketplace (09-10-2026). Igual que el logo:
+   * multipart, campo `file`; jpeg/png/webp, hasta 8 MB.
+   */
+  async uploadAgencyPortada(file: File): Promise<{ portadaUrl: string }> {
+    const token = getAccessToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    let res: Response;
+    try {
+      res = await fetch(`${BACKEND_URL}${BASE}/agency/portada`, { method: 'POST', headers, body: formData });
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
+      throw new ApiError(0, `No pudimos conectarnos al servidor. ${raw}`);
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(
+        res.status,
+        (body as { message?: string }).message || `Error al subir la portada (${res.status})`,
+        (body as { code?: string }).code,
+      );
+    }
+    return res.json();
   },
 
   /**

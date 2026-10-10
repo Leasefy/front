@@ -1,15 +1,14 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { CaretDown, X } from '@phosphor-icons/react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { CaretDown, Sparkle, X } from '@phosphor-icons/react';
 import { Chip, Eyebrow } from '@leasefy/cadence';
 
 import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/layout/Navbar';
 import { PropertyGrid } from '@/components/property/PropertyGrid';
 import { AISearchInput } from '@/components/property/AISearchInput';
-import { LoQueEntendimos } from '@/components/property/LoQueEntendimos';
 import dynamic from 'next/dynamic';
 import { MapToggle } from '@/components/map';
 import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
@@ -18,8 +17,24 @@ import { useWishlist } from '@/lib/hooks/useWishlist';
 import { useProperties } from '@/lib/hooks/useProperties';
 import { useAprobacion } from '@/lib/hooks/use-aprobacion';
 import { cn } from '@/lib/utils';
-import type { PropertyFiltersParams } from '@/lib/api/properties.types';
+import {
+  absorber,
+  escribirBusqueda,
+  filtrosDeLaApi,
+  hayBusqueda,
+  leerBusqueda,
+  pastillas as pastillasDe,
+  porQueTeLoMuestro,
+  quitarPastilla,
+  tituloDeLaBusqueda,
+  type Busqueda,
+  type TipoDeLaApi,
+} from '@/lib/marketplace/busqueda';
+import { CIUDADES_DEL_FILTRO } from '@/lib/marketplace/sugerencias';
+import { conNombres } from '@/lib/marketplace/con-nombres';
 import type { Property } from '@/lib/types/property';
+
+export { sugerenciasDelCatalogo, type Sugerencia } from '@/lib/marketplace/sugerencias';
 
 // Lazy-load the map (maplibre) so its chunk is only fetched when the map panel
 // is actually mounted. ssr:false because PropertyMap touches `window`.
@@ -35,62 +50,30 @@ const SORT_OPTIONS = [
   { value: 'newest', label: 'Más reciente' },
 ];
 
-const CITIES = ['Bogotá', 'Medellín', 'Cali', 'Barranquilla', 'Cartagena'];
-const BEDROOMS = ['1', '2', '3', '4+'];
-const PROPERTY_TYPES = [
-  { value: 'apartment', label: 'Apartamento' },
-  { value: 'house', label: 'Casa' },
-  { value: 'studio', label: 'Estudio' },
+const OPERACIONES = [
+  { value: 'arriendo', label: 'En arriendo' },
+  { value: 'venta', label: 'En venta' },
 ];
-/**
- * Ejemplos de búsqueda, sacados del catálogo real.
- *
- * Enseñan que se puede escribir como se habla y, con un clic, ya hay
- * resultados. La primera versión era una lista fija —«2 alcobas en Laureles
- * hasta $3M»— y sonaba muy bien: devolvía CERO contra el inventario real. Un
- * ejemplo que termina en vacío enseña lo contrario de lo que quiere enseñar.
- *
- * Por eso se arman con lo que hay: las combinaciones tipo × ciudad × negocio
- * más repetidas del catálogo sin filtrar. Y al clickear no dependen sólo del
- * parser de lenguaje natural: además de escribir el texto ponen las píldoras
- * de ciudad y tipo, que en el back mandan sobre lo interpretado
- * (`filters.x ?? parsed.x`). Así el ejemplo siempre aterriza.
- *
- * Sólo tipos y ciudades que las píldoras saben mostrar: una ciudad que no
- * está en `CITIES` filtraría con la píldora diciendo «Ciudad», y eso miente.
- */
-export type Sugerencia = { texto: string; city: string; type: string };
-
-const TIPO_LABEL: Record<string, string> = { apartment: 'Apartamento', house: 'Casa', studio: 'Estudio' };
-
-export function sugerenciasDelCatalogo(propiedades: Property[]): Sugerencia[] {
-  const conteo = new Map<string, { n: number; s: Sugerencia }>();
-  for (const p of propiedades) {
-    const tipo = TIPO_LABEL[p.type];
-    if (!tipo || !CITIES.includes(p.city)) continue;
-    const venta = p.listingType === 'sale';
-    const clave = `${p.type}|${p.city}|${venta}`;
-    const previo = conteo.get(clave);
-    if (previo) {
-      previo.n += 1;
-      continue;
-    }
-    conteo.set(clave, {
-      n: 1,
-      s: { texto: `${tipo}${venta ? ' en venta' : ''} en ${p.city}`, city: p.city, type: p.type },
-    });
-  }
-  return [...conteo.values()]
-    .sort((a, b) => b.n - a.n || a.s.texto.localeCompare(b.s.texto, 'es'))
-    .slice(0, 4)
-    .map((x) => x.s);
-}
-
-const PRICE_RANGES = [
-  { value: '0-1500000', label: 'Hasta $1.5M' },
-  { value: '1500000-2500000', label: '$1.5M - $2.5M' },
-  { value: '2500000-4000000', label: '$2.5M - $4M' },
-  { value: '4000000-99999999', label: 'Más de $4M' },
+const HABITACIONES = ['1', '2', '3', '4', '5'];
+const TIPOS: { value: TipoDeLaApi; label: string }[] = [
+  { value: 'APARTMENT', label: 'Apartamento' },
+  { value: 'HOUSE', label: 'Casa' },
+  { value: 'STUDIO', label: 'Apartaestudio' },
+  { value: 'COMMERCIAL', label: 'Local' },
+  { value: 'OFFICE', label: 'Oficina' },
+];
+/** Rangos de canon (arriendo) y de precio (venta): son ejes distintos. */
+const RANGOS_DE_CANON = [
+  { value: '0-1500000', label: 'Hasta $1,5 M' },
+  { value: '1500000-2500000', label: '$1,5 M – $2,5 M' },
+  { value: '2500000-4000000', label: '$2,5 M – $4 M' },
+  { value: '4000000-', label: 'Más de $4 M' },
+];
+const RANGOS_DE_VENTA = [
+  { value: '0-300000000', label: 'Hasta $300 M' },
+  { value: '300000000-600000000', label: '$300 M – $600 M' },
+  { value: '600000000-1000000000', label: '$600 M – $1.000 M' },
+  { value: '1000000000-', label: 'Más de $1.000 M' },
 ];
 
 interface PropertySearchViewProps {
@@ -108,13 +91,24 @@ interface PropertySearchViewProps {
   basePath?: string;
 }
 
+/** Quita las claves en `undefined`: una búsqueda limpia da una URL limpia. */
+function limpia(b: Busqueda): Busqueda {
+  return Object.fromEntries(Object.entries(b).filter(([, v]) => v !== undefined)) as Busqueda;
+}
+
 /**
- * Reusable property search view.
- * Used by /propiedades (public, with Navbar) and /inquilino/explorar (embedded in tenant layout).
+ * La búsqueda del marketplace (Nico, 09-10-2026: «el mejor marketplace
+ * posible»). La DIRECCIÓN es la búsqueda (`src/lib/marketplace/busqueda.ts`):
+ * lo que se escribe con IA se vuelve pastillas que se quitan con una ×, los
+ * filtros de siempre («sin IA») escriben en la misma búsqueda, y una búsqueda
+ * compartida muestra exactamente lo mismo. Cada tarjeta dice por qué sale.
+ *
+ * La usan /propiedades (pública) e /inquilino/explorar (embebida).
  */
 export function PropertySearchView({ embedded = false, sinNavbar = false, basePath }: PropertySearchViewProps) {
   const searchParams = useSearchParams();
-  const heroQuery = searchParams.get('q');
+  const router = useRouter();
+  const pathname = usePathname();
   const { user } = useAuth();
   const { aprobacion, vigente: aprobacionVigente } = useAprobacion();
   /**
@@ -124,56 +118,45 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
    * Anónimo SÍ la ve: es el caso principal, quien llega por el link del asesor.
    */
   const mostrarAprobacion = !user || user.role === 'tenant';
+
+  // ── La búsqueda vive en la URL ──
+  const claveDeLaUrl = searchParams.toString();
+  const busqueda = useMemo(() => leerBusqueda(new URLSearchParams(claveDeLaUrl)), [claveDeLaUrl]);
+
+  const cambiar = useCallback(
+    (b: Busqueda) => {
+      const qs = escribirBusqueda(limpia(b));
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [router, pathname],
+  );
+
+  const apiFilters = useMemo(() => filtrosDeLaApi(busqueda), [busqueda]);
+  const { properties: apiProperties, meta, isLoading: isInitialLoading } = useProperties(apiFilters);
+  const entendidos = busqueda.q ? meta?.filtrosEntendidos ?? null : null;
+  // La búsqueda entera, con lo entendido ya como filtros: lo que dicen los menús.
+  const vigente = useMemo(() => absorber(busqueda, entendidos), [busqueda, entendidos]);
+  const pastillas = useMemo(
+    () => conNombres(pastillasDe(busqueda, entendidos), apiProperties),
+    [busqueda, entendidos, apiProperties],
+  );
+
+  const [texto, setTexto] = useState(busqueda.q ?? '');
+  const [refinar, setRefinar] = useState('');
+  useEffect(() => setTexto(busqueda.q ?? ''), [busqueda.q]);
+
   const [showMap, setShowMap] = useState(false);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [hoveredPropertyId, setHoveredPropertyId] = useState<string | null>(null);
-  const [aiSearchQuery, setAiSearchQuery] = useState(heroQuery || '');
-  // The natural-language query actually applied to the fetch. Feeding it into
-  // apiFilters (below) lets the backend NL parser filter the MAIN grid — one
-  // source of truth — instead of an isolated preview panel.
-  const [appliedQuery, setAppliedQuery] = useState(heroQuery || '');
   const [mapKey, setMapKey] = useState(0);
   // On desktop the map panel is part of the split-view (always visible via lg:block),
   // so it should mount there; on mobile it only exists when the user toggles the map.
   const [isDesktop, setIsDesktop] = useState(false);
   const [sortBy, setSortBy] = useState('recommended');
   const [showSortList, setShowSortList] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const propertyRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
-  // Filter state
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [selectedCity, setSelectedCity] = useState<string | null>(null);
-  const [selectedBedrooms, setSelectedBedrooms] = useState<string | null>(null);
-  const [selectedType, setSelectedType] = useState<string | null>(null);
-  const [selectedPrice, setSelectedPrice] = useState<string | null>(null);
-
-  // Build API filters from UI state
-  const apiFilters = useMemo<PropertyFiltersParams>(() => {
-    const filters: PropertyFiltersParams = { limit: 100 };
-    // Natural-language query goes to the backend parser (city/type/price/…).
-    // Explicit pills below still win via the backend's `filters.x ?? parsed.x`.
-    if (appliedQuery.trim()) filters.naturalQuery = appliedQuery.trim();
-    if (selectedCity) filters.city = selectedCity;
-    if (selectedBedrooms) {
-      if (selectedBedrooms !== '4+') {
-        filters.bedrooms = parseInt(selectedBedrooms);
-      }
-    }
-    if (selectedType) {
-      filters.propertyType = selectedType.toUpperCase() as PropertyFiltersParams['propertyType'];
-    }
-    if (selectedPrice) {
-      const [min, max] = selectedPrice.split('-').map(Number);
-      filters.minPrice = min;
-      filters.maxPrice = max;
-    }
-    return filters;
-  }, [appliedQuery, selectedCity, selectedBedrooms, selectedType, selectedPrice]);
-
-  // Fetch properties from API
-  const { properties: apiProperties, meta, isLoading: isInitialLoading } = useProperties(apiFilters);
-
-  // Use wishlist hook
   const { isWishlisted, toggleWishlist } = useWishlist();
 
   // Force map reload on mount
@@ -193,37 +176,39 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
     return () => mq.removeEventListener('change', update);
   }, []);
 
-  // Apply the natural-language query to the MAIN fetch. Bumping appliedQuery
-  // rebuilds apiFilters → useProperties refetches → the backend parses the text
-  // and returns the filtered list straight into the grid below.
-  const handleAiSearch = useCallback((query: string) => {
-    setAppliedQuery(query.trim());
-  }, []);
+  // ── Acciones sobre la búsqueda ──
+  /** Una búsqueda nueva con IA: reemplaza la de antes. */
+  const buscarConIA = useCallback(
+    (q: string) => {
+      const limpio = q.trim();
+      if (!limpio) return;
+      cambiar({ q: limpio });
+    },
+    [cambiar],
+  );
+  /** Refinar: lo que ya está se queda y el texto nuevo se suma. */
+  const refinarConTexto = useCallback(
+    (q: string) => {
+      const limpio = q.trim();
+      if (!limpio) return;
+      cambiar({ ...absorber(busqueda, entendidos), q: limpio });
+      setRefinar('');
+    },
+    [busqueda, entendidos, cambiar],
+  );
+  /** Un filtro de los de siempre: escribe en la misma búsqueda. */
+  const poner = useCallback(
+    (cambios: Partial<Busqueda>) => cambiar({ ...absorber(busqueda, entendidos), ...cambios }),
+    [busqueda, entendidos, cambiar],
+  );
 
-  // Una sugerencia llena el campo, pone las píldoras Y busca: es lo que la
-  // persona haría a mano, con la garantía de que aterriza.
-  const buscarSugerencia = useCallback((s: Sugerencia) => {
-    setAiSearchQuery(s.texto);
-    setAppliedQuery(s.texto);
-    setSelectedCity(s.city);
-    setSelectedType(s.type);
-  }, []);
-
-  // Client-side: handle 4+ bedrooms filter and sorting
+  // Orden: en el cliente, sobre lo que trajo el back.
   const filteredProperties = useMemo(() => {
-    let result = [...apiProperties];
-
-    if (selectedBedrooms === '4+') {
-      // Un inmueble sin dato de habitaciones NO entra: filtrar por «4 o más»
-      // y devolver uno del que no sabemos nada es responder otra pregunta.
-      result = result.filter(p => (p.bedrooms ?? 0) >= 4);
-    }
-
+    const result = [...apiProperties];
     // T-0038 §3.2.2/§3.2.4 — the catalog mixes RENT and SALE listings (§3.7:
     // no server-side default). "Price" means whichever price applies to
     // that listing; `?? 0` only orders the comparator and is never rendered.
     const effectivePrice = (p: Property) => (p.listingType === 'sale' ? p.salePrice : p.monthlyRent) ?? 0;
-
     result.sort((a, b) => {
       switch (sortBy) {
         case 'price_asc':
@@ -236,9 +221,8 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
           return 0;
       }
     });
-
     return result;
-  }, [apiProperties, selectedBedrooms, sortBy]);
+  }, [apiProperties, sortBy]);
 
   // Properties with valid coordinates for the map
   const mappableProperties = useMemo(
@@ -250,32 +234,20 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
     [filteredProperties]
   );
 
-  const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'Recomendado';
-  const hasActiveFilters = selectedCity || selectedBedrooms || selectedType || selectedPrice;
-
-  // Se calculan con el catálogo SIN filtrar y se quedan: al clickear una, la
-  // lista filtrada se achica y sin esto los ejemplos se irían con ella.
-  const [sugerencias, setSugerencias] = useState<Sugerencia[]>([]);
-  useEffect(() => {
-    if (appliedQuery || hasActiveFilters || apiProperties.length === 0) return;
-    setSugerencias(sugerenciasDelCatalogo(apiProperties));
-  }, [apiProperties, appliedQuery, hasActiveFilters]);
-
-  const clearAllFilters = () => {
-    setSelectedCity(null);
-    setSelectedBedrooms(null);
-    setSelectedType(null);
-    setSelectedPrice(null);
-  };
-
-  const handleWishlistToggle = useCallback(
-    (id: string) => {
-      toggleWishlist(id);
-    },
-    [toggleWishlist]
+  const explicar = useCallback(
+    (p: Property) => (hayBusqueda(busqueda) ? porQueTeLoMuestro(p, busqueda, entendidos) : null),
+    [busqueda, entendidos],
   );
 
-  // Handle property selection from map
+  const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'Recomendado';
+  const total = meta?.total ?? filteredProperties.length;
+  const deLaInmobiliaria = busqueda.inmobiliaria ? apiProperties.find((p) => p.agencyName)?.agencyName : null;
+  const titulo = deLaInmobiliaria
+    ? `${tituloDeLaBusqueda(vigente)} de ${deLaInmobiliaria}`
+    : hayBusqueda(vigente)
+      ? tituloDeLaBusqueda(vigente)
+      : 'Busca como le hablarías a un asesor';
+
   const handlePropertySelect = useCallback((id: string) => {
     setSelectedPropertyId(id);
     propertyRefs.current[id]?.scrollIntoView({
@@ -306,6 +278,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
         selected={!!selectedValue}
         onClick={() => setActiveFilter(activeFilter === id ? null : id)}
         className="whitespace-nowrap"
+        aria-expanded={activeFilter === id}
       >
         <span className="inline-flex items-center gap-1.5">
           {options.find(o => o.value === selectedValue)?.label || label}
@@ -315,7 +288,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
       {activeFilter === id && (
         <>
           <div className="fixed inset-0 z-[100]" onClick={() => setActiveFilter(null)} />
-          <div className="absolute left-0 top-full mt-1 py-1 bg-surface border border-border rounded-md shadow-md z-[110] min-w-[140px]">
+          <div className="absolute left-0 top-full mt-1 py-1 bg-surface border border-border rounded-md shadow-md z-[110] min-w-[160px]">
             {options.map((option) => (
               <Button
                 key={option.value}
@@ -337,6 +310,12 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
       )}
     </div>
   );
+
+  const rangos = vigente.operacion === 'venta' ? RANGOS_DE_VENTA : RANGOS_DE_CANON;
+  const rangoVigente =
+    vigente.desde !== undefined || vigente.hasta !== undefined
+      ? `${vigente.desde ?? 0}-${vigente.hasta ?? ''}`
+      : null;
 
   // ── Layout ──
   return (
@@ -362,29 +341,15 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
             showMap && 'hidden lg:block'
           )}
         >
-          {/* Hero query banner */}
-          {heroQuery && (
-            <div className="bg-black/5 dark:bg-white/5 border-b border-border px-4 md:px-6 py-3">
-              <p className="text-sm text-muted-foreground">
-                Resultados basados en: <span className="font-medium text-foreground">&laquo;{heroQuery}&raquo;</span>
-              </p>
-            </div>
-          )}
-
-          {/* Búsqueda inteligente.
-              Rediseñada el 2026-09-06 (Nico: «hay que hacer un glow up de esta
-              sección de buscar inmueble»). Antes: un título de una línea y una
-              caja de 260 px casi vacía. Ahora un encabezado corto que dice
-              cómo buscar, la barra de una fila del DS y ejemplos que buscan
-              con un clic. */}
+          {/* La búsqueda: qué se busca, el campo con IA y las pastillas. */}
           <div className="bg-surface border-b border-border">
-            <div className={cn('px-4 md:px-6', embedded ? 'pt-5 pb-5' : 'pt-8 pb-7 md:pt-10')}>
+            <div className={cn('px-4 md:px-6', embedded ? 'pt-5 pb-5' : 'pt-8 pb-6 md:pt-10')}>
               <Eyebrow accent className="mb-3">
                 Buscar inmueble
                 <span className="text-fg-subtle">
                   {' · '}
-                  <span className="font-mono tabular-nums">{isInitialLoading ? '…' : filteredProperties.length}</span>
-                  {' disponibles'}
+                  <span className="font-mono tabular-nums">{isInitialLoading ? '…' : total}</span>
+                  {total === 1 ? ' disponible' : ' disponibles'}
                 </span>
               </Eyebrow>
               <h1
@@ -392,38 +357,68 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
                   'font-heading font-semibold tracking-[-0.02em] text-fg text-balance',
                   embedded ? 'text-xl' : 'text-2xl md:text-[28px] leading-tight',
                 )}
+                data-testid="titulo-de-la-busqueda"
               >
-                Busca como le hablarías a un asesor
+                {titulo}
               </h1>
-              <p className="mt-1.5 text-sm text-fg-muted max-w-[52ch]">
-                Ciudad, barrio, presupuesto, mascotas… escríbelo y lo entendemos.
-              </p>
 
               <AISearchInput
                 className="mt-5"
-                value={aiSearchQuery}
-                onChange={setAiSearchQuery}
-                onMagnifyingGlass={handleAiSearch}
+                value={texto}
+                onChange={setTexto}
+                onMagnifyingGlass={buscarConIA}
                 onClear={() => {
-                  setAiSearchQuery('');
-                  setAppliedQuery('');
+                  setTexto('');
+                  cambiar({});
                 }}
                 isMagnifyingGlassing={isInitialLoading}
               />
 
-              {/* Lo que el buscador sacó del texto. Va acá, pegado al campo,
-                  porque es la respuesta a «¿me entendiste?». */}
-              <LoQueEntendimos interpretacion={meta?.interpretacion} className="mt-3" />
-
-              {/* Sin búsqueda aplicada, los ejemplos. Con una, ya no hacen falta
-                  y estorbarían lo que el buscador entendió. */}
-              {!appliedQuery && sugerencias.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2" data-testid="search-suggestions">
-                  {sugerencias.map((s) => (
-                    <Chip key={s.texto} onClick={() => buscarSugerencia(s)} className="whitespace-nowrap">
-                      {s.texto}
-                    </Chip>
+              {/* Las pastillas: lo que se está buscando. Las que salieron del
+                  texto llevan la chispa de lo que es IA. Una × las quita. */}
+              {pastillas.length > 0 && (
+                <div className="mt-4 flex flex-wrap items-center gap-2" data-testid="pastillas-de-la-busqueda">
+                  {/* Un contenedor con su botón de quitar aparte: la pastilla de
+                      Cadence ya es un <button> y la × adentro sería un botón
+                      dentro de otro (HTML inválido, error de hidratación). */}
+                  {pastillas.map((p) => (
+                    <span
+                      key={p.clave}
+                      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-primary/30 bg-primary/10 py-1 pl-3 pr-1 text-sm text-fg"
+                      data-testid="pastilla"
+                    >
+                      {p.entendida && <Sparkle className="h-3.5 w-3.5 text-primary" weight="fill" aria-hidden />}
+                      {p.entendida && <span className="sr-only">Entendido de lo que escribiste: </span>}
+                      {p.etiqueta}
+                      <button
+                        type="button"
+                        onClick={() => cambiar(quitarPastilla(busqueda, entendidos, p.clave))}
+                        aria-label={`Quitar ${p.etiqueta}`}
+                        className="inline-flex h-6 w-6 items-center justify-center rounded-full text-fg-muted transition-colors hover:bg-primary/15 hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <X className="h-3 w-3" weight="bold" aria-hidden />
+                      </button>
+                    </span>
                   ))}
+                  <form
+                    className="flex min-w-[220px] flex-1 items-center"
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      refinarConTexto(refinar);
+                    }}
+                  >
+                    <label htmlFor="refinar-busqueda" className="sr-only">
+                      Agregar algo a la búsqueda
+                    </label>
+                    <input
+                      id="refinar-busqueda"
+                      value={refinar}
+                      onChange={(e) => setRefinar(e.target.value)}
+                      placeholder="Agrega: con balcón, hasta 3 millones…"
+                      className="w-full rounded-full border border-dashed border-border bg-transparent px-3.5 py-1.5 text-sm text-fg placeholder:text-fg-subtle focus:border-primary focus:outline-none"
+                      data-testid="refinar-busqueda"
+                    />
+                  </form>
                 </div>
               )}
             </div>
@@ -432,7 +427,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
           {/* Filtros + conteo + orden. Pegajosos bajo el header: la grilla es
               larga y el filtro tiene que estar a mano sin volver arriba. En
               modo embebido el panel scrollea solo, así que se pegan a su
-              propio borde. */}
+              propio borde. Son la búsqueda «sin IA»: escriben en la misma URL. */}
           <div
             className={cn(
               'sticky z-20 border-b border-border bg-background/95 backdrop-blur-[2px]',
@@ -440,41 +435,41 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
             )}
           >
             <div className="px-4 md:px-6 py-3 flex flex-wrap items-center gap-2">
+              {renderFilterDropdown('operacion', 'Arriendo o venta', vigente.operacion ?? null, OPERACIONES, (v) =>
+                poner({ operacion: (v as Busqueda['operacion']) ?? undefined, desde: undefined, hasta: undefined }),
+              )}
               {renderFilterDropdown(
                 'city',
                 'Ciudad',
-                selectedCity,
-                CITIES.map(c => ({ value: c, label: c })),
-                setSelectedCity
+                vigente.ciudad ?? null,
+                [...new Set([...(vigente.ciudad ? [vigente.ciudad] : []), ...CIUDADES_DEL_FILTRO])].map((c) => ({ value: c, label: c })),
+                (v) => poner({ ciudad: v ?? undefined, barrio: undefined }),
+              )}
+              {renderFilterDropdown('type', 'Tipo', vigente.tipo ?? null, TIPOS, (v) =>
+                poner({ tipo: (v as TipoDeLaApi) ?? undefined }),
               )}
               {renderFilterDropdown(
                 'bedrooms',
                 'Habitaciones',
-                selectedBedrooms,
-                BEDROOMS.map(b => ({ value: b, label: `${b} habitacion${b !== '1' ? 'es' : ''}` })),
-                setSelectedBedrooms
+                vigente.habitaciones !== undefined ? String(vigente.habitaciones) : null,
+                HABITACIONES.map((b) => ({ value: b, label: `${b} habitaci${b === '1' ? 'ón' : 'ones'}` })),
+                (v) => poner({ habitaciones: v ? Number(v) : undefined }),
               )}
-              {renderFilterDropdown(
-                'type',
-                'Tipo',
-                selectedType,
-                PROPERTY_TYPES,
-                setSelectedType
-              )}
-              {renderFilterDropdown(
-                'price',
-                'Precio',
-                selectedPrice,
-                PRICE_RANGES,
-                setSelectedPrice
-              )}
+              {renderFilterDropdown('price', vigente.operacion === 'venta' ? 'Precio' : 'Canon', rangoVigente, rangos, (v) => {
+                if (!v) return poner({ desde: undefined, hasta: undefined });
+                const [min, max] = v.split('-');
+                poner({ desde: Number(min) || undefined, hasta: max ? Number(max) : undefined });
+              })}
 
-              {hasActiveFilters && (
+              {hayBusqueda(busqueda) && (
                 <Button
                   variant="ghost"
                   size="sm"
                   hideArrow
-                  onClick={clearAllFilters}
+                  onClick={() => {
+                    setTexto('');
+                    cambiar({});
+                  }}
                   className="gap-1 text-fg-muted hover:text-fg"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -485,7 +480,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
               {/* Conteo + orden, a la derecha de la misma fila. */}
               <div className="ml-auto flex items-center gap-3">
                 <p className="text-sm text-fg-muted whitespace-nowrap">
-                  <span className="font-mono tabular-nums font-medium text-fg">{filteredProperties.length}</span> propiedades
+                  <span className="font-mono tabular-nums font-medium text-fg">{total}</span> {total === 1 ? 'propiedad' : 'propiedades'}
                 </p>
                 <div className="relative">
                   <Button
@@ -549,13 +544,14 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
             <PropertyGrid
               properties={filteredProperties}
               isWishlisted={isWishlisted}
-              onWishlistToggle={handleWishlistToggle}
+              onWishlistToggle={toggleWishlist}
               isLoading={isInitialLoading}
               hoveredPropertyId={hoveredPropertyId}
               onPropertyHover={setHoveredPropertyId}
               propertyRefCallback={propertyRefCallback}
               basePath={basePath}
               aprobacion={mostrarAprobacion && aprobacionVigente ? aprobacion : null}
+              explicar={explicar}
             />
           </div>
         </div>

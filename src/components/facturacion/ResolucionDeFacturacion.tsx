@@ -51,6 +51,7 @@
  * la resolución.
  */
 
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useCallback, useEffect, useState } from 'react'
 import { Certificate, DotsThreeVertical, Prohibit, SealWarning } from '@phosphor-icons/react'
 
@@ -390,7 +391,7 @@ export function ResolucionDeFacturacion({
                                 />
                               </Button>
                             </DropdownListTrigger>
-                            <DropdownListContent align="end" className="w-52">
+                            <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
                               <DropdownListItem
                                 onSelect={() => setEnDetalle(r.id)}
                                 data-testid={`detalle-${r.id}`}

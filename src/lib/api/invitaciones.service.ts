@@ -99,7 +99,14 @@ export const invitacionesApi = {
     return apiClient.get<{ asunto: string; html: string; vigencia: string }>(`/inmobiliaria/invitaciones/vista-previa${q}`);
   },
 
-  async enviar(opciones: { userIds?: string[]; limite?: number } = {}): Promise<ResultadoDeTanda> {
+  async enviar(
+    opciones: {
+      userIds?: string[];
+      limite?: number;
+      /** Con `userIds`: sólo a quien sigue pendiente (acciones masivas, 10-10-2026). */
+      soloPendientes?: boolean;
+    } = {},
+  ): Promise<ResultadoDeTanda> {
     return apiClient.post<ResultadoDeTanda>('/inmobiliaria/invitaciones/enviar', opciones);
   },
 };

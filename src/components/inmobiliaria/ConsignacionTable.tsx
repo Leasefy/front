@@ -24,6 +24,7 @@ import {
   Car,
   Mountains,
   CloudArrowDown,
+  EyeSlash,
 } from '@phosphor-icons/react';
 import { IconButton } from '@leasefy/cadence';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,8 @@ import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import {
   Table,
   TableHeader,
@@ -99,6 +102,18 @@ interface ConsignacionTableProps {
   onCompletarMandato?: (inmueble: InmuebleSinConsignacion) => void;
   /** COMERCIAL (04-10-2026): días de vacancia y mandato que se vence, por consignación. */
   comercialPorConsignacion?: Record<string, VacanciaYMandato>;
+  /**
+   * 🔴 «Publicado en el marketplace», por `propertyId` (Nico, 10-10-2026: «en
+   * las opciones debería tener la opción de subir al marketplace o quitarlo»,
+   * «y que sea masiva también»). Con esto el menú de la fila ofrece publicarlo
+   * o quitarlo y la tabla deja elegir varios. `null`/ausente (sin la
+   * migración, o no se pudo leer): no se ofrece nada de esto.
+   */
+  publicadoPorInmueble?: Readonly<Record<string, boolean>> | null;
+  onCambiarPublicacion?: (propertyIds: string[], publicar: boolean) => void;
+  /** Los inmuebles elegidos (por `propertyId`) para publicar o quitar varios a la vez. */
+  elegidos?: ReadonlySet<string>;
+  onElegir?: (propertyIds: string[], elegir: boolean) => void;
 }
 
 // Property type icons. Total lookup vía `getPropertyIcon` — nunca indexar
@@ -178,6 +193,10 @@ export function ConsignacionTable({
   onPrepararSinSenal,
   onCompletarMandato,
   comercialPorConsignacion,
+  publicadoPorInmueble,
+  onCambiarPublicacion,
+  elegidos,
+  onElegir,
 }: ConsignacionTableProps) {
   const { t } = useI18n();
   /*
@@ -202,6 +221,16 @@ export function ConsignacionTable({
    * encuentra al mover el componente a otra pantalla.
    */
   const puedeVerPortafolio = canAccess('portafolio', 'view');
+  /**
+   * Publicar o quitar del marketplace pide `portafolio:edit`, lo mismo que el
+   * back (`POST /inmobiliaria/inmuebles/marketplace`). Sólo los inmuebles que
+   * vinieron en la lista del marketplace tienen esa marca que cambiar.
+   */
+  const publicadoDe = (row: PortafolioRow): boolean | undefined =>
+    puedeEditar && row.propertyId && publicadoPorInmueble
+      ? publicadoPorInmueble[row.propertyId]
+      : undefined;
+  const sePuedeElegir = !!(onElegir && elegidos && puedeEditar && publicadoPorInmueble);
   const [sortField, setSortField] = useState<SortField>('propertyTitle');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -263,6 +292,14 @@ export function ConsignacionTable({
     return result;
   }, [consignaciones, sortField, sortDirection]);
 
+  // La casilla de arriba elige o suelta los de ESTA página que se pueden publicar.
+  const elegiblesDeLaPagina: string[] = sePuedeElegir
+    ? sortedConsignaciones.flatMap((r) =>
+        r.propertyId && publicadoDe(r) !== undefined ? [r.propertyId] : [],
+      )
+    : [];
+  const elegidosDeLaPagina = elegiblesDeLaPagina.filter((id) => elegidos?.has(id)).length;
+
   const handleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -322,6 +359,29 @@ export function ConsignacionTable({
               hasta que ese endpoint también lo exponga (gap reportado, no un
               bug de esta unidad de trabajo).
             */}
+            {sePuedeElegir && (
+              <TableHead className="w-10 py-4 pl-4 pr-0">
+                {elegiblesDeLaPagina.length > 0 && (
+                  <Checkbox
+                    checked={
+                      elegidosDeLaPagina === 0
+                        ? false
+                        : elegidosDeLaPagina === elegiblesDeLaPagina.length
+                          ? true
+                          : 'indeterminate'
+                    }
+                    onCheckedChange={() =>
+                      onElegir?.(
+                        elegiblesDeLaPagina,
+                        elegidosDeLaPagina < elegiblesDeLaPagina.length,
+                      )
+                    }
+                    aria-label="Elegir los inmuebles de esta página"
+                    data-testid="elegir-la-pagina"
+                  />
+                )}
+              </TableHead>
+            )}
             <TableHead className="text-left p-4 w-16">
               {t('inmobiliaria.consignaciones.table.code')}
             </TableHead>
@@ -392,12 +452,44 @@ export function ConsignacionTable({
             // ya lo mandaba (Nico lo vio en su tabla, 2026-09-02).
             const propertyCode = row.kind === 'sinMandato' ? row.code : (row.propertyCode ?? undefined);
 
+            const publicado = publicadoDe(row);
+            const opcionDelMarketplace =
+              onCambiarPublicacion && publicado !== undefined && row.propertyId ? (
+                <DropdownListItem
+                  className="gap-3"
+                  data-testid={publicado ? 'quitar-del-marketplace' : 'publicar-en-el-marketplace'}
+                  onClick={() => onCambiarPublicacion([row.propertyId as string], !publicado)}
+                >
+                  {publicado ? <EyeSlash className="w-4 h-4" /> : <Storefront className="w-4 h-4" />}
+                  <span className="text-sm">
+                    {t(
+                      publicado
+                        ? 'inmobiliaria.inmuebles.acciones.quitarDelMarketplace'
+                        : 'inmobiliaria.inmuebles.acciones.publicarEnElMarketplace',
+                    )}
+                  </span>
+                </DropdownListItem>
+              ) : null;
+
             return (
               <TableRowAnimada
                 key={rowKey}
                 onClick={() => (row.kind === 'consignacion' ? onView(row) : handleCompletarMandato())}
                 className="border-b last:border-b border-border/50 hover:bg-muted/50 cursor-pointer transition-colors"
               >
+                {sePuedeElegir && (
+                  <TableCell className="w-10 py-4 pl-4 pr-0" onClick={(e) => e.stopPropagation()}>
+                    {row.propertyId && publicado !== undefined && (
+                      <Checkbox
+                        checked={elegidos?.has(row.propertyId) ?? false}
+                        onCheckedChange={(v) => onElegir?.([row.propertyId as string], v === true)}
+                        aria-label={`Elegir ${row.propertyTitle}`}
+                        data-testid="elegir-inmueble"
+                      />
+                    )}
+                  </TableCell>
+                )}
+
                 {/* Code (T-0038 §3.2.5) */}
                 <TableCell className="p-4">
                   <span className="font-mono tabular-nums text-fg-muted text-sm">
@@ -614,7 +706,7 @@ export function ConsignacionTable({
                 <TableCell className="p-4" onClick={(e) => e.stopPropagation()}>
                   {/* Sin mandato la única acción es completarlo: sin permiso
                       para crearlo, un menú vacío no es una acción. */}
-                  {(row.kind === 'consignacion' || puedeCrearMandato) && (
+                  {(row.kind === 'consignacion' || puedeCrearMandato || opcionDelMarketplace) && (
                   <DropdownList
                     open={openMenuId === rowKey}
                     onOpenChange={(o) => setOpenMenuId(o ? rowKey : null)}
@@ -627,7 +719,9 @@ export function ConsignacionTable({
                         aria-label="Acciones"
                       />
                     </DropdownListTrigger>
-                    <DropdownListContent align="end" className="w-40">
+                    {/* El ancho de todos los menús de acciones (Nico, 10-10-2026):
+                        a 10rem «Preparar para trabajar sin señal» partía en tres renglones. */}
+                    <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
                       {row.kind === 'consignacion' ? (
                         <>
                           <DropdownListItem
@@ -680,6 +774,7 @@ export function ConsignacionTable({
                               </span>
                             </DropdownListItem>
                           )}
+                          {opcionDelMarketplace}
                           {onPrepararSinSenal && puedeVerPortafolio && (
                             <DropdownListItem
                               className="gap-3"
@@ -707,16 +802,22 @@ export function ConsignacionTable({
                         // Sin mandato: nada consignación-keyed — no hay `id`
                         // de consignación al que navegar (contract.md T-0030
                         // §3.2 lo omite a propósito). La única acción posible
-                        // es completar el mandato.
-                        <DropdownListItem
-                          className="gap-3"
-                          onClick={handleCompletarMandato}
-                        >
-                          <WarningCircle className="w-4 h-4" />
-                          <span className="text-sm">
-                            {t('inmobiliaria.consignaciones.table.missingMandate')}
-                          </span>
-                        </DropdownListItem>
+                        // es completar el mandato (y, con la marca, publicarlo
+                        // o quitarlo del marketplace: es del inmueble).
+                        <>
+                          {puedeCrearMandato && (
+                            <DropdownListItem
+                              className="gap-3"
+                              onClick={handleCompletarMandato}
+                            >
+                              <WarningCircle className="w-4 h-4" />
+                              <span className="text-sm">
+                                {t('inmobiliaria.consignaciones.table.missingMandate')}
+                              </span>
+                            </DropdownListItem>
+                          )}
+                          {opcionDelMarketplace}
+                        </>
                       )}
                     </DropdownListContent>
                   </DropdownList>

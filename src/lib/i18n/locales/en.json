@@ -1867,6 +1867,8 @@
       "tabs": {
         "perfil": "Profile",
         "perfilDesc": "Company details, the owner's monthly statement and automatic renewal",
+        "tuPagina": "Your Leasefy page",
+        "tuPaginaDesc": "Your short name, cover and social links: your website is your Leasefy profile",
         "branding": "Branding",
         "brandingDesc": "Logo, colors, and visual style",
         "equipo": "Members and roles",
@@ -3670,6 +3672,8 @@
         "captura": "Capture with AI",
         "candidatos": "Candidates",
         "verAviso": "View public listing",
+        "publicarEnElMarketplace": "Publish on the marketplace",
+        "quitarDelMarketplace": "Remove from the marketplace",
         "eliminar": "Remove from portfolio"
       },
       "ubicacion": {
@@ -4223,6 +4227,8 @@
         "selectDepartment": "Choose a department",
         "neighborhood": "Neighborhood",
         "externalId": "Agency code",
+        "videoUrl": "Property video",
+        "videoUrlHelper": "Paste the link to the video you posted on Instagram, TikTok, YouTube or Facebook. In the Leasefy search it opens on that network.",
         "externalIdHelper": "The code this property has in your previous system. It is what links it to its migrated contracts.",
         "bedrooms": "Bedrooms",
         "bathrooms": "Bathrooms",
@@ -4399,7 +4405,7 @@
           "property": "Property",
           "commission": "Commission",
           "agent": "Agent",
-          "inventory": "Inventory",
+          "inventory": "Photos & inventory",
           "photos": "Photos",
           "confirm": "Confirm"
         },
@@ -4445,6 +4451,7 @@
           "subtitle": "Pick one or more owners, or create a new one"
         },
         "step2": {
+          "dondeVanLasFotos": "Photos and the property video are uploaded in the «Photos & inventory» step; you can pick several photos at once.",
           "title": "Property Data",
           "subtitle": "Enter the basic property information",
           "propertyTypeLabel": "Property type",
@@ -4524,6 +4531,7 @@
           "additionalNotes": "Additional notes...",
           "emptyInventory": "No items in inventory",
           "addFirstItem": "Add first item",
+          "optional": "(optional)",
           "photosTitle": "Property photos",
           "generalNotes": "General observations",
           "generalNotesPlaceholder": "General condition of the property, additional details...",
@@ -13339,7 +13347,8 @@
       "porPagar": "Owed to owners",
       "cobrosEmitidos": "Issued charges",
       "juridico": "Legal collection",
-      "castigada": "Written off"
+      "castigada": "Written off",
+      "saldoAnterior": "Previous balance"
     },
     "interes": {
       "columnaIntereses": "Interest",

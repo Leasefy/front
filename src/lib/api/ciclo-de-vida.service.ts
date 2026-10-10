@@ -11,7 +11,7 @@ import { apiClient, ApiError, getAccessToken } from './client';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
 /** Un multipart al back, con el mismo manejo de error que `apiClient`. */
-async function enviarFormulario<T>(ruta: string, formulario: FormData): Promise<T> {
+export async function enviarFormulario<T>(ruta: string, formulario: FormData): Promise<T> {
   const token = getAccessToken();
   let respuesta: Response;
   try {

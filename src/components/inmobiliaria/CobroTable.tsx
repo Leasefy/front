@@ -1,5 +1,7 @@
 'use client';
 
+import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla';
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useState, useMemo } from 'react';
 import {
   SortAscending,
@@ -77,6 +79,12 @@ interface CobroTableProps {
   onCobroAnulado?: (resultado: CobroAnulado) => void;
   showSummary?: boolean;
   /**
+   * Acciones masivas (Nico, 10-10-2026): con esto la tabla pinta las casillas.
+   * Lo marcado y lo que se hace con ello lo lleva la página.
+   */
+  marcadas?: ReadonlySet<string>;
+  onMarcar?: (ids: readonly string[], si: boolean) => void;
+  /**
    * Qué página/mes/vista se está mirando. Al cambiar, el cuerpo se monta de
    * nuevo y las filas entran escalonadas sin esperar a que salgan las de
    * antes; buscar o filtrar, en cambio, saca las que ya no están.
@@ -89,6 +97,8 @@ interface CobroTableProps {
  * Includes sorting, row actions, and optional summary row
  */
 export function CobroTable({
+  marcadas,
+  onMarcar,
   cobros,
   onCobroClick,
   onRegisterPayment,
@@ -232,6 +242,16 @@ export function CobroTable({
       <Table className="min-w-[1000px]">
         <TableHeader>
           <TableRow className="border-b border-border">
+            {marcadas && onMarcar && (
+              <TableHead className="w-10 py-4 pl-4 pr-0">
+                <CasillaDeLaPagina
+                  ids={sortedCobros.map((c) => c.id)}
+                  marcadas={marcadas}
+                  onMarcar={onMarcar}
+                  queSon="cobros"
+                />
+              </TableHead>
+            )}
             <SortableHeader field="propertyTitle">{t('inmobiliaria.cobros.table.property')}</SortableHeader>
             <SortableHeader field="tenantName">{t('inmobiliaria.cobros.table.tenant')}</SortableHeader>
             <SortableHeader field="month">{t('inmobiliaria.cobros.table.month')}</SortableHeader>
@@ -256,6 +276,16 @@ export function CobroTable({
                 onClick={() => onCobroClick?.(cobro)}
                 className="border-b-0 hover:bg-surface-hover cursor-pointer transition-colors"
               >
+                {marcadas && onMarcar && (
+                  <TableCell className="w-10 py-4 pl-4 pr-0">
+                    <CasillaDeLaFila
+                      id={cobro.id}
+                      nombre={`el cobro de ${cobro.tenantName || 'sin inquilino'}`}
+                      marcadas={marcadas}
+                      onMarcar={onMarcar}
+                    />
+                  </TableCell>
+                )}
                 {/* Property */}
                 <TableCell className="p-4">
                   <div className="flex items-center gap-3">
@@ -397,7 +427,7 @@ export function CobroTable({
                         aria-label="Acciones"
                       />
                     </DropdownListTrigger>
-                    <DropdownListContent align="end" className={cn(puedeHacerRecibo ? 'w-44' : 'w-60')}>
+                    <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
                       <DropdownListItem onSelect={() => onCobroClick?.(cobro)}>
                         <Eye className="w-4 h-4" />
                         <span className="text-sm">{t('inmobiliaria.cobros.table.viewDetail')}</span>
@@ -451,7 +481,7 @@ export function CobroTable({
         {showSummary && cobros.length > 0 && (
           <TableFooter>
             <TableRow className="bg-surface-muted border-t border-border">
-              <TableCell colSpan={3} className="p-4">
+              <TableCell colSpan={marcadas && onMarcar ? 4 : 3} className="p-4">
                 <span className="font-semibold text-fg">
                   {t('inmobiliaria.cobros.table.totalSummary', { count: cobros.length })}
                 </span>

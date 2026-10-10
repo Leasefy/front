@@ -804,6 +804,17 @@ export const contractsApi = {
   },
 
   /**
+   * POST /contracts/invitar-inquilino/en-el-centro → 202 `{ procesoId }`.
+   * Acciones masivas (10-10-2026): «Invitar al portal» de cada contrato
+   * marcado, en UNA petición que el back recorre en el centro de procesos.
+   */
+  async invitarInquilinosEnElCentro(contractIds: readonly string[]): Promise<{ procesoId: string }> {
+    return apiClient.post<{ procesoId: string }>('/contracts/invitar-inquilino/en-el-centro', {
+      contractIds: [...contractIds],
+    });
+  },
+
+  /**
    * 🔴 QA-CONT CR-08 — `GET /contracts/:id/invitacion-del-inquilino`: en qué
    * está la invitación al portal del inquilino del contrato y qué botón le
    * toca («Invitar al portal», «Reenviar invitación» o ninguno).
@@ -1129,6 +1140,13 @@ export interface FilaAMigrar {
   /** C14 (QA-MIGRACION-95): la fila de la hoja de Excel (con encabezado y títulos contados). */
   filaDelArchivo?: number;
   deposit?: number;
+  /**
+   * 🔴 «Saldo» (Nico, 10-10-2026): lo que el inquilino debía en el sistema
+   * anterior a la fecha de corte, tal cual (con su signo y sus centavos).
+   * Entra a la cartera como «Saldo del sistema anterior». Ausente = el archivo
+   * no lo trae.
+   */
+  saldoInicial?: number;
   paymentDay?: number;
   /** Sin esto no se puede liquidar: vivienda va sin IVA, comercial con IVA. */
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL';

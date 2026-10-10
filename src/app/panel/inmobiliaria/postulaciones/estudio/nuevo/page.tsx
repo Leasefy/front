@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/select'
 import { Switch } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
 
 const NS = 'inmobiliaria.ai.estudio'
 
@@ -215,11 +216,11 @@ function EstudioNuevo() {
               <label htmlFor="fechaInicio" className={LABEL_CLASSES}>
                 {tf(`${NS}.nuevo.inmueble.fechaInicio`, 'Fecha tentativa de inicio')}
               </label>
-              <Input
+              <CampoDeDia
                 id="fechaInicio"
-                type="date"
                 value={form.fechaInicio}
-                onChange={(e) => set('fechaInicio', e.target.value)}              />
+                onChange={(v) => set('fechaInicio', v)}
+              />
             </div>
 
             <div>

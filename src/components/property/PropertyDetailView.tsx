@@ -1,17 +1,17 @@
 'use client';
 
+import { CuantoCuestaVivirAqui } from '@/components/property/CuantoCuestaVivirAqui'
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Bed, Bathtub, ArrowsOut, Buildings, CaretRight, ArrowSquareOut, ArrowLeft } from '@phosphor-icons/react';
+import { MapPin, Bed, Bathtub, ArrowsOut, CaretRight, ArrowSquareOut, ArrowLeft, Play } from '@phosphor-icons/react';
 
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { tieneCoordenadas } from '@/components/map/coordenadas';
 import { PhotoGalleryModal } from '@/components/property/PhotoGalleryModal';
-import { PropertyAccordion } from '@/components/property/PropertyAccordion';
 import { StickyCTA, MobileStickyCTA } from '@/components/property/StickyCTA';
 import { useWishlist } from '@/lib/hooks/useWishlist';
 import { useProperty } from '@/lib/hooks/useProperties';
@@ -21,6 +21,22 @@ import { superaReferencia, referenciaCanon } from '@/lib/api/aprobacion.service'
 import { SobreTopeAlert } from '@/components/tenant/TopeAprobadoBanner';
 import { TePodemosArrendar } from '@/components/property/TePodemosArrendar';
 import { AdministradoPor } from '@/components/property/AdministradoPor';
+import { PortadaSinFotos } from '@/components/property/PortadaSinFotos';
+import { videoDelInmueble } from '@/lib/marketplace/video';
+import { useTarjetasDeInmobiliarias } from '@/lib/marketplace/use-inmobiliarias';
+import {
+  CostosDelArriendo,
+  DatosClave,
+  Descripcion,
+  LoEspecial,
+  MasDeLaInmobiliaria,
+  MosaicoDeFotos,
+  OfrecidoPor,
+  publicadoHace,
+  SimilaresCerca,
+  SobreLaInmobiliaria,
+  TotalAlMes,
+} from '@/components/property/ficha/PiezasDeLaFicha';
 import { formatCurrency, formatArea } from '@/lib/format';
 
 // MapLibre toca `window`: sin SSR, con un esqueleto de la misma altura.
@@ -140,6 +156,9 @@ export function PropertyDetailView({
 
   // Fetch property from API
   const { property, isLoading: propertyLoading, error: propertyError } = useProperty(propertyId);
+  // La inmobiliaria que lo ofrece: su sello, «% la recomienda» y su página.
+  const inmobiliarias = useTarjetasDeInmobiliarias(useMemo(() => [property?.agencyId], [property?.agencyId]));
+  const inmobiliaria = property?.agencyId ? inmobiliarias.get(property.agencyId) : undefined;
 
   // Aprobación del inquilino: si esta propiedad supera su tope aprobado, se lo
   // avisamos acá igual que en el catálogo (mismo `superaReferencia`). Sin
@@ -260,7 +279,8 @@ export function PropertyDetailView({
           </div>
         </div>
 
-        {/* Hero Image Grid - Premium style with rounded corners */}
+        {/* Las fotos en mosaico: se acomoda a cuántas hay, nunca un hueco gris
+            (Nico, 09-10-2026, ficha «perfecta» con el plano de Redfin/Zillow). */}
         <section className="pt-4 md:pt-6">
           <div className="container-platform">
             {property.images.length === 0 ? (
@@ -268,101 +288,28 @@ export function PropertyDetailView({
                  un espacio acotado y con marca, no una imagen rota en un hero
                  de 65vh en blanco (Nico, 2026-09-02). */
               <div
-                className="flex h-[220px] md:h-[280px] flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border bg-surface-muted text-center"
+                className="relative flex h-[240px] md:h-[320px] flex-col items-center justify-start overflow-hidden rounded-xl pt-8 text-center md:pt-10"
                 data-testid="hero-sin-fotos"
                 role="img"
                 aria-label={`Sin fotos de ${property.title}`}
               >
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <Buildings className="h-8 w-8" weight="duotone" />
-                </div>
-                <p className="text-[15px] font-medium text-foreground">Todavía no hay fotos de este inmueble</p>
-                <p className="text-[13px] text-muted-foreground">
+                <PortadaSinFotos tipo={property.type} semilla={property.id} sinLeyenda />
+                <p className="relative text-[15px] font-medium text-foreground">Todavía no hay fotos de este inmueble</p>
+                <p className="relative mt-1 text-[13px] text-muted-foreground">
                   Pídelas por el chat o agenda una visita para conocerlo.
                 </p>
               </div>
-            ) : property.images.length === 1 ? (
-              <button
-                onClick={() => openGallery(0)}
-                aria-label={`Ver galeria de imagenes de ${property.title}`}
-                className="relative block h-[45vh] w-full overflow-hidden rounded-xl md:h-[55vh] cursor-pointer group"
-              >
-                <Image
-                  src={property.images[0]}
-                  alt={property.title}
-                  fill
-                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
-                  sizes="100vw"
-                  priority
-                />
-              </button>
             ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3 h-[45vh] md:h-[65vh]">
-              {/* Main large image */}
-              <button
-                onClick={() => openGallery(0)}
-                aria-label={`Ver galeria de imagenes de ${property.title}`}
-                className="md:col-span-2 relative overflow-hidden rounded-xl cursor-pointer group"
-              >
-                <Image
-                  src={property.images[0]}
-                  alt={property.title}
-                  fill
-                  className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
-                  sizes="(max-width: 768px) 100vw, 66vw"
-                  priority
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
-              </button>
-              {/* Side images stack */}
-              <div className="hidden md:grid grid-rows-2 gap-2 md:gap-3">
-                {property.images[1] && (
-                  <button
-                    onClick={() => openGallery(1)}
-                    aria-label="Ver imagen 2 en galeria"
-                    className="relative overflow-hidden rounded-xl cursor-pointer group"
-                  >
-                    <Image
-                      src={property.images[1]}
-                      alt={`${property.title} - 2`}
-                      fill
-                      className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
-                      sizes="33vw"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
-                  </button>
-                )}
-                {property.images[2] ? (
-                  <button
-                    onClick={() => openGallery(2)}
-                    aria-label="Ver imagen 3 en galeria"
-                    className="relative overflow-hidden rounded-xl cursor-pointer group"
-                  >
-                    <Image
-                      src={property.images[2]}
-                      alt={`${property.title} - 3`}
-                      fill
-                      className="object-cover transition-transform duration-reveal ease-enter group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
-                    {/* Show all images button */}
-                    {property.images.length > 3 && (
-                      <span
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openGallery(0);
-                        }}
-                        className="absolute bottom-4 right-4 px-4 py-2.5 bg-white/95 backdrop-blur-sm text-foreground text-[13px] font-medium rounded-xl hover:bg-white transition-colors"
-                      >
-                        Ver {property.images.length} fotos
-                      </span>
-                    )}
-                  </button>
-                ) : (
-                  <div className="relative overflow-hidden rounded-xl bg-surface-muted" />
-                )}
-              </div>
-            </div>
+              <MosaicoDeFotos
+                fotos={property.images}
+                titulo={property.title}
+                video={videoDelInmueble(property)}
+                etiquetas={[
+                  property.listingType === 'sale' ? 'En venta' : 'En arriendo',
+                  ...(typeLabels[property.type] ? [typeLabels[property.type]] : []),
+                ]}
+                onAbrir={openGallery}
+              />
             )}
           </div>
         </section>
@@ -374,45 +321,25 @@ export function PropertyDetailView({
             <div className="lg:col-span-7">
               {/* Header */}
               <div className="mb-8">
-                {/* Location with primary color */}
-                <div className="flex items-center gap-2 mb-3">
-                  <MapPin className="w-4 h-4 text-primary" strokeWidth={1.5} />
-                  <span className="text-[14px] text-muted-foreground">{barrioYCiudad(property.neighborhood, property.city)}</span>
+                <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="inline-flex items-center gap-1.5">
+                    <MapPin className="w-4 h-4 text-primary" strokeWidth={1.5} />
+                    <span className="text-[14px] text-muted-foreground">{barrioYCiudad(property.neighborhood, property.city)}</span>
+                  </span>
+                  {publicadoHace(property.createdAt) && (
+                    <span className="text-[13px] text-fg-subtle">· {publicadoHace(property.createdAt)}</span>
+                  )}
                 </div>
 
-                {/* Title - using font-heading */}
                 <h1 className="text-[clamp(1.75rem,4vw,2.5rem)] font-heading font-semibold text-foreground tracking-[-0.02em] leading-[1.15]">
                   {property.title}
                 </h1>
 
-                {/* Price - More prominent */}
-                {/*
-                  T-0038 §3.2.3/§3.2.4 — a SALE listing shows `salePrice`, no
-                  "/mes" suffix, and no admin-fee line (contract explicitly
-                  forbids an "Administración: $0" row on a sale listing).
-                  Never `formatCurrency(null)` — it silently renders "$ 0" (C6).
-                */}
-                {property.listingType === 'sale' ? (
-                  <div className="mt-5 flex items-baseline gap-2">
-                    <span className="text-[32px] md:text-[38px] font-mono tabular-nums font-bold text-foreground tracking-[-0.03em]">
-                      {property.salePrice != null ? formatCurrency(property.salePrice) : 'Sin dato'}
-                    </span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="mt-5 flex items-baseline gap-2">
-                      <span className="text-[32px] md:text-[38px] font-mono tabular-nums font-bold text-foreground tracking-[-0.03em]">
-                        {property.monthlyRent != null ? formatCurrency(property.monthlyRent) : 'Sin dato'}
-                      </span>
-                      <span className="text-[15px] text-muted-foreground">/mes</span>
-                    </div>
-                    {property.adminFee > 0 && (
-                      <p className="text-[13px] text-muted-foreground mt-1">
-                        + <span className="font-mono tabular-nums">{formatCurrency(property.adminFee)}</span> de administración
-                      </p>
-                    )}
-                  </>
-                )}
+                {/* El total al mes (canon + administración), los datos clave y
+                    quién lo ofrece: todo sin bajar. */}
+                <TotalAlMes p={property} />
+                <DatosClave p={property} />
+                <OfrecidoPor p={property} t={inmobiliaria} />
               </div>
 
               {/* Aviso "supera tu tope" + salida por codeudor (mismo criterio
@@ -460,85 +387,13 @@ export function PropertyDetailView({
                 Vuelve cuando haya visitas de verdad que contar.
               */}
 
-              {/* Stats Row - Premium card style */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
-                <div className="bg-surface-muted border border-border rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <ArrowsOut className="w-4 h-4 text-primary" strokeWidth={1.5} />
-                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Área</span>
-                  </div>
-                  <p className="text-[20px] font-mono tabular-nums font-bold text-foreground">{formatArea(property.area)}</p>
-                </div>
-                <div className="bg-surface-muted border border-border rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Bed className="w-4 h-4 text-primary" strokeWidth={1.5} />
-                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Habitaciones</span>
-                  </div>
-                  <p className="text-[20px] font-mono tabular-nums font-bold text-foreground">{property.bedrooms}</p>
-                </div>
-                <div className="bg-surface-muted border border-border rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Bathtub className="w-4 h-4 text-primary" strokeWidth={1.5} />
-                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Baños</span>
-                  </div>
-                  <p className="text-[20px] font-mono tabular-nums font-bold text-foreground">{property.bathrooms}</p>
-                </div>
-                <div className="bg-surface-muted border border-border rounded-xl p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Buildings className="w-4 h-4 text-primary" strokeWidth={1.5} />
-                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Tipo</span>
-                  </div>
-                  <p className="text-[20px] font-heading font-bold text-foreground">{typeLabels[property.type]}</p>
-                </div>
-              </div>
+              <LoEspecial p={property} />
+              <Descripcion texto={property.description} />
+              <CostosDelArriendo p={property} />
 
-              {/* Description */}
-              <div className="mb-10">
-                <h2 className="text-[13px] font-semibold text-foreground uppercase tracking-wide mb-4">Descripción</h2>
-                <p className="text-[15px] text-foreground/70 leading-relaxed">
-                  {property.description}
-                </p>
-              </div>
-
-              {/* Accordion Sections - Using reusable PropertyAccordion */}
-              <PropertyAccordion
-                property={property}
-                defaultOpen={['details', 'amenities']}
-              />
-
-              {/* Gallery Section */}
-              {property.images.length > 1 && (
-                <div className="mt-12">
-                  <h2 className="text-[13px] font-semibold text-foreground uppercase tracking-wide mb-4">Galería</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {property.images.slice(0, 6).map((image, index) => (
-                      <button
-                        key={index}
-                        onClick={() => openGallery(index)}
-                        aria-label={`Ver imagen ${index + 1} en galeria`}
-                        className="relative aspect-[4/3] overflow-hidden rounded-xl group cursor-pointer"
-                      >
-                        <Image
-                          src={image}
-                          alt={`${property.title} - ${index + 1}`}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-reveal ease-enter"
-                          sizes="(max-width: 768px) 50vw, 33vw"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-slow" />
-                      </button>
-                    ))}
-                  </div>
-                  {property.images.length > 6 && (
-                    <button
-                      onClick={() => openGallery(0)}
-                      className="mt-4 text-[13px] font-medium text-primary hover:text-primary/80 transition-colors"
-                    >
-                      Ver todas las fotos ({property.images.length}) →
-                    </button>
-                  )}
-                </div>
-              )}
+              {/* El acordeón viejo (detalles, ubicación, comodidades, costos y
+                  políticas) repetía lo de arriba y decía «Depósito 1 mes» bajo
+                  «Sin depósito» (QA del marketplace, 10-10-2026): fuera. */}
 
               {/* Map / Location. Con coordenadas reales va el mapa (mismo
                   componente que la ficha del panel); sin ellas queda la
@@ -576,44 +431,19 @@ export function PropertyDetailView({
                 )}
               </div>
 
-              {/* Offering agency attribution + compact "Síguenos" social row.
-                  Icons are the agency's when a logged-in viewer's agency has
-                  socials, otherwise Leasefy's — so the row always shows. */}
-              {displaySocialLinks.length > 0 && (
-                <div className="mt-12 pt-8 border-t border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
-                    {property.agencyName && (
-                      <AdministradoPor
-                        tamano={28}
-                        administrador={{
-                          agencyId: property.agencyId ?? null,
-                          nombre: property.agencyName,
-                          logoUrl: property.agencyLogoUrl ?? null,
-                        }}
-                      />
-                    )}
-                    <p className="text-[13px] font-medium text-foreground mt-0.5">Síguenos</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {displaySocialLinks.map((network) => (
-                      <a
-                        key={network.key}
-                        href={network.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={network.label}
-                        className="text-muted-foreground hover:text-primary transition-colors"
-                      >
-                        {network.icon}
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Pie: quién lo publicó y cuándo se actualizó. */}
+              {/* Nico, 10-10-2026: cuánto cuesta vivir aquí, con los servicios estimados. */}
+              <CuantoCuestaVivirAqui propertyId={propertyId} />
+
+              <p className="mt-12 border-t border-border pt-6 text-[13px] text-fg-subtle" data-testid="pie-de-la-ficha">
+                {property.agencyName ? `Publicado por ${property.agencyName}` : 'Publicado en Leasefy'}
+                {property.updatedAt && ` · Actualizado el ${new Date(property.updatedAt).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}`}
+              </p>
             </div>
 
-            {/* Right Column - Sticky CTA */}
-            <div className="lg:col-span-5 hidden lg:block">
+            {/* Right Column - Sticky CTA. En el celular también se ve (debajo de la
+                ficha): ahí se agenda la visita; «Visita» de la barra lleva hasta acá. */}
+            <div className="lg:col-span-5">
               <StickyCTA
                 propertyId={property.id}
                 arrendado={property.status === 'rented'}
@@ -622,6 +452,7 @@ export function PropertyDetailView({
                     ? { agencyId: property.agencyId ?? null, nombre: property.agencyName, logoUrl: property.agencyLogoUrl ?? null }
                     : null
                 }
+                sobreLaInmobiliaria={inmobiliaria ? <SobreLaInmobiliaria t={inmobiliaria} /> : undefined}
                 price={property.monthlyRent ?? 0}
                 adminFee={property.adminFee}
                 isWishlisted={isWishlisted(property.id)}
@@ -632,6 +463,9 @@ export function PropertyDetailView({
               />
             </div>
           </div>
+
+          <MasDeLaInmobiliaria p={property} t={inmobiliaria} />
+          <SimilaresCerca p={property} />
         </section>
       </div>
 

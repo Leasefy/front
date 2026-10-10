@@ -21,6 +21,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Checkbox, Label, RadioGroup, RadioGroupItem } from '@leasefy/cadence';
 import { AunNoDisponible } from './AunNoDisponible';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -418,21 +419,20 @@ function SeguroOpcional({
                     <ErrorDelCampo id={`${ID_DEL_SEGURO.aceptadoPor}-error`} mensaje={errores.aceptadoPor} className="w-56" />
                   </div>
                   <div>
-                    <label className="text-caption">
+                    <label htmlFor={ID_DEL_SEGURO.aceptadoEl} className="text-caption">
                       Fecha
-                      <Input
-                        id={ID_DEL_SEGURO.aceptadoEl}
-                        type="date"
-                        value={cuando}
-                        onChange={(e) => {
-                          setCuando(e.target.value);
-                          setErrores((prev) => ({ ...prev, aceptadoEl: undefined }));
-                        }}
-                        className="mt-1"
-                        aria-invalid={errores.aceptadoEl ? true : undefined}
-                        aria-describedby={`${ID_DEL_SEGURO.aceptadoEl}-error`}
-                      />
                     </label>
+                    <CampoDeDia
+                      id={ID_DEL_SEGURO.aceptadoEl}
+                      value={cuando}
+                      onChange={(v) => {
+                        setCuando(v);
+                        setErrores((prev) => ({ ...prev, aceptadoEl: undefined }));
+                      }}
+                      invalido={Boolean(errores.aceptadoEl)}
+                      describedBy={`${ID_DEL_SEGURO.aceptadoEl}-error`}
+                      className="mt-1 w-48"
+                    />
                     <ErrorDelCampo id={`${ID_DEL_SEGURO.aceptadoEl}-error`} mensaje={errores.aceptadoEl} />
                   </div>
                   {pctDelPlan === null ? (
@@ -595,28 +595,30 @@ function Poliza({
         </div>
         <div className="space-y-1.5">
           <Label htmlFor={ID_DE_LA_POLIZA.vigenciaDesde}>Desde</Label>
-          <Input
-            {...propsDelCampo('vigenciaDesde')}
-            type="date"
+          <CampoDeDia
+            id={ID_DE_LA_POLIZA.vigenciaDesde}
             value={desde}
-            onChange={(e) => {
-              setDesde(e.target.value);
+            onChange={(v) => {
+              setDesde(v);
               limpiar('vigenciaDesde');
             }}
+            invalido={Boolean(errores.vigenciaDesde)}
+            describedBy={`${ID_DE_LA_POLIZA.vigenciaDesde}-error`}
             disabled={!habil}
           />
           <ErrorDelCampo id={`${ID_DE_LA_POLIZA.vigenciaDesde}-error`} mensaje={errores.vigenciaDesde} className="mt-0" />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor={ID_DE_LA_POLIZA.vigenciaHasta}>Hasta</Label>
-          <Input
-            {...propsDelCampo('vigenciaHasta')}
-            type="date"
+          <CampoDeDia
+            id={ID_DE_LA_POLIZA.vigenciaHasta}
             value={hasta}
-            onChange={(e) => {
-              setHasta(e.target.value);
+            onChange={(v) => {
+              setHasta(v);
               limpiar('vigenciaHasta');
             }}
+            invalido={Boolean(errores.vigenciaHasta)}
+            describedBy={`${ID_DE_LA_POLIZA.vigenciaHasta}-error`}
             disabled={!habil}
           />
           <ErrorDelCampo id={`${ID_DE_LA_POLIZA.vigenciaHasta}-error`} mensaje={errores.vigenciaHasta} className="mt-0" />

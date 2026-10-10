@@ -17,6 +17,7 @@
  * hueco de las filas es el que cambia de estado.
  */
 
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useState } from 'react'
 import { ArrowCounterClockwise, Buildings, DotsThreeVertical } from '@phosphor-icons/react'
 
@@ -288,7 +289,7 @@ function CarrierTableRow({ row, canConfigure, onSaveOverride, onResetOverride }:
                 <DotsThreeVertical className="h-4 w-4" weight="bold" aria-hidden="true" />
               </Button>
             </DropdownListTrigger>
-            <DropdownListContent className="w-40" align="end">
+            <DropdownListContent className={ANCHO_DEL_MENU_DE_ACCIONES} align="end">
               <DropdownListItem onClick={handleEdit}>
                 {t('inmobiliaria.ai.cotizador.aseguradoras.table.actionEdit')}
               </DropdownListItem>

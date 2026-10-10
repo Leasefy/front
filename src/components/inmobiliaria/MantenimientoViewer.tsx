@@ -1,5 +1,6 @@
 'use client';
 
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import Link from 'next/link';
 import { useState, useMemo } from 'react';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
@@ -631,7 +632,7 @@ export function MantenimientoViewer({
                       data-testid="mantenimiento-detalle-menu"
                     />
                   </DropdownListTrigger>
-                  <DropdownListContent align="end" className="w-56">
+                  <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
                     {accionesDelMenu.map((accion) => (
                       <DropdownListItem
                         key={accion.id}

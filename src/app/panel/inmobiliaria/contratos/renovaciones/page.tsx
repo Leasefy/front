@@ -1,5 +1,8 @@
 'use client';
 
+import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas';
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
+import { RenovacionesMarcadas } from '@/components/inmobiliaria/RenovacionesMarcadas';
 import { useState, useCallback } from 'react';
 import { toast } from '@/components/ui/toast';
 import { Eyebrow } from '@leasefy/cadence';
@@ -84,6 +87,10 @@ function RenovacionesContent() {
     );
   }, [refetch]);
 
+  const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas();
+  const permisosDeRenovaciones = usePermissionsContextSafe();
+  const puedeProponerEnBloque = permisosDeRenovaciones ? permisosDeRenovaciones.canAccess('operaciones', 'edit') : true;
+
   return (
     <div className="p-6 lg:p-8 space-y-6">
       {/* Encabezado — el mismo de Contratos (eyebrow + título + qué es). */}
@@ -131,7 +138,17 @@ function RenovacionesContent() {
         error={error}
         onReintentar={refetch}
         onAbrir={openWorkflow}
+        marcadas={puedeProponerEnBloque ? marcadas : undefined}
+        onMarcar={puedeProponerEnBloque ? marcar : undefined}
       />
+      {/* Acciones masivas (Nico, 10-10-2026): la propuesta con el IPC a varias. */}
+      {puedeProponerEnBloque && renovaciones.length > 0 && (
+        <RenovacionesMarcadas
+          marcadas={renovaciones.filter((r) => marcadas.has(r.id))}
+          onQuitar={quitarLaSeleccion}
+          onCambiaron={() => void recargarRenovaciones()}
+        />
+      )}
 
       {/* Renovacion Workflow Sheet */}
       {selectedRenovacion && (

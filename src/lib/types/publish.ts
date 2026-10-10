@@ -167,6 +167,11 @@ export interface PropertyDraft {
 
   // Step 5: Photos
   photos: string[];
+  /**
+   * El enlace al video del inmueble en Instagram, TikTok, YouTube o Facebook
+   * (marketplace, Nico 09-10-2026). Opcional; vacío = sin video.
+   */
+  videoUrl?: string;
 
   // Step 6: Pricing
   monthlyRent: number;
@@ -268,6 +273,7 @@ export const initialPropertyDraft: PropertyDraft = {
   yearBuilt: 2020,
   amenities: [],
   photos: [],
+  videoUrl: '',
   monthlyRent: 0,
   adminFee: 0,
   deposit: 0,

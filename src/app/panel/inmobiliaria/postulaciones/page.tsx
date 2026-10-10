@@ -1,5 +1,8 @@
 'use client'
 
+import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas'
+import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla'
+import { PostulacionesMarcadas } from '@/components/inmobiliaria/PostulacionesMarcadas'
 import { useCallback, useEffect, useId, useMemo, useState } from 'react'
 import {
   ClipboardText,
@@ -200,6 +203,8 @@ function PostulacionesContenido() {
    */
   const { canAccess } = usePermissions()
   const puedeDecidir = canAccess('portafolio', 'edit')
+  // Acciones masivas (Nico, 10-10-2026).
+  const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas()
 
   /** MANOS-2 (04-10-2026): la lista corta que armó matching, por postulación. */
   const [listaCorta, setListaCorta] = useState<Map<string, PuestoEnLaListaCorta>>(() => new Map())
@@ -452,9 +457,15 @@ function PostulacionesContenido() {
                 }
               />
             ) : (
+              <>
               <Table>
                 <TableHeader>
                   <TableRow>
+                    {puedeDecidir && (
+                      <TableHead className="w-10 pl-4 pr-0">
+                        <CasillaDeLaPagina ids={pageItems.map((p) => p.id)} marcadas={marcadas} onMarcar={marcar} queSon="postulaciones" />
+                      </TableHead>
+                    )}
                     <TableHead>Candidato</TableHead>
                     <TableHead>Propiedad</TableHead>
                     <TableHead>Estado</TableHead>
@@ -491,6 +502,11 @@ function PostulacionesContenido() {
                           abrirCandidato(c)
                         }}
                       >
+                        {puedeDecidir && (
+                          <TableCell className="w-10 pl-4 pr-0" onKeyDown={(e) => e.stopPropagation()}>
+                            <CasillaDeLaFila id={c.id} nombre={`la postulación de ${c.tenantName}`} marcadas={marcadas} onMarcar={marcar} />
+                          </TableCell>
+                        )}
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-primary-soft flex items-center justify-center shrink-0">
@@ -548,6 +564,14 @@ function PostulacionesContenido() {
                   })}
                 </TableBodyAnimado>
               </Table>
+              {puedeDecidir && (
+                <PostulacionesMarcadas
+                  marcadas={items.filter((p) => marcadas.has(p.id))}
+                  onQuitar={quitarLaSeleccion}
+                  onCambiaron={() => void load()}
+                />
+              )}
+              </>
             )}
 
             {/* Pie: sólo si hay más de una página. */}

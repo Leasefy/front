@@ -44,6 +44,7 @@ import type {
   FacturaItem,
 } from '@/lib/api/ap.types';
 import { plataEnPantalla } from '@/lib/plata/escribir-plata';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 interface FacturaProveedorIACaptureProps {
   agencyId: string;
@@ -650,27 +651,25 @@ export function FacturaProveedorIACapture({ agencyId, onRegistrada, onCancel }: 
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-emision">{t(k('emisionLabel'))}</Label>
-                <Input
+                <CampoDeDia
                   id="factura-emision"
-                  type="date"
                   value={form.issuedAt}
-                  onChange={(e) => set('issuedAt', e.target.value)}
-                  aria-invalid={Boolean(erroresForm.issuedAt)}
-                  aria-describedby="factura-emision-error"
-                  data-testid="factura-emision"
+                  onChange={(v) => set('issuedAt', v)}
+                  invalido={Boolean(Boolean(erroresForm.issuedAt))}
+                  describedBy="factura-emision-error"
+                  testid="factura-emision"
                 />
                 <ErrorDelCampo id="factura-emision-error" mensaje={erroresForm.issuedAt} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="factura-vencimiento">{t(k('vencimientoLabel'))}</Label>
-                <Input
+                <CampoDeDia
                   id="factura-vencimiento"
-                  type="date"
                   value={form.dueDate}
-                  onChange={(e) => set('dueDate', e.target.value)}
-                  aria-invalid={Boolean(erroresForm.dueDate)}
-                  aria-describedby="factura-vencimiento-error"
-                  data-testid="factura-vencimiento"
+                  onChange={(v) => set('dueDate', v)}
+                  invalido={Boolean(Boolean(erroresForm.dueDate))}
+                  describedBy="factura-vencimiento-error"
+                  testid="factura-vencimiento"
                 />
                 {/* La pista (la IA no leyó el vencimiento) y el error se cruzan. */}
                 <ErrorDelCampo

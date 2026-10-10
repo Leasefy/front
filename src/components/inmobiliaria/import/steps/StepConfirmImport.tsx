@@ -11,6 +11,7 @@ import { createPortal } from "react-dom";
 import { useRanuraViva } from "@/components/migracion/ranura-viva";
 import { useMigracion } from "@/components/migracion/migracion-context";
 import { BarraDeTrabajo } from "@/components/migracion/BarraDeTrabajo";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle,
@@ -52,6 +53,7 @@ import {
   olvidarClaveEnCurso,
 } from "../lib/claveDeCarga";
 import { huellaDelArchivo } from "../lib/huellaDelArchivo";
+import { fraseDeLasFotosQueNoBajaron } from "../lib/fotosQueNoBajaron";
 import { mensajeDeCarga, MENSAJE_SESION_TERMINADA, esSesionMuerta } from "../lib/mensajeDeCarga";
 import { traeErroresPorCampo } from "@/lib/errores/errores-en-el-formulario";
 import { generarIdempotencyKey } from "../lib/idempotencia";
@@ -75,6 +77,7 @@ import { FilaImportacionRow } from "../FilaImportacionRow";
 import { LoteInmueblesMasivo } from "../LoteInmueblesMasivo";
 import { ProgresoDeLoteInmuebles } from "../ProgresoDeLoteInmuebles";
 import { useEstadoDeLoteInmuebles } from "@/lib/hooks/use-estado-de-lote-inmuebles";
+import { CualesPublicas } from "@/components/inmobiliaria/import/CualesPublicas";
 import {
   inmueblesImportacionApi,
   type FilaDeImportacion,
@@ -1508,6 +1511,18 @@ function StepConfirmImportCuerpo({
               {detalleDeReusados(creacion)}
             </p>
           ) : null}
+          {fraseDeLasFotosQueNoBajaron(creacion) ? (
+            <p className="text-sm text-warning" data-testid="aviso-fotos-por-enlace">
+              {fraseDeLasFotosQueNoBajaron(creacion)}{" "}
+              <Link href="/panel/inmobiliaria/inmuebles/importar?que=fotos" className="underline underline-offset-2">
+                Subirlas en un ZIP
+              </Link>
+            </p>
+          ) : null}
+          {/* 🔴 (10-10-2026, Nico) «Nada sale hasta que lo elijan». */}
+          <div className="flex justify-center">
+            <CualesPublicas lote={lote} />
+          </div>
           {(resumenLote?.pendientes ?? 0) > 0 && (
             <div className="space-y-2" data-testid="quedan-por-revisar">
               <p className="text-sm text-warning">

@@ -30,6 +30,9 @@
  *     el concepto con el `Select` del DS.
  */
 
+import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas'
+import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla'
+import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DownloadSimple, MagnifyingGlass, Prohibit, Receipt, SealWarning } from '@phosphor-icons/react'
 import { RadioGroup, RadioGroupItem } from '@leasefy/cadence'
@@ -471,7 +474,10 @@ export function FacturasEmitidas({ mes, vista }: Props) {
    * «Por facturar». En escritorio sigue la tabla.
    */
   const esCelular = useIsMobile()
-  const { descargarUna, descargando } = useDescargarFacturas()
+  const { descargarUna, descargarLote, descargando } = useDescargarFacturas()
+  // Acciones masivas (Nico, 10-10-2026): marcar ventas y bajar sus PDF en un ZIP.
+  const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas(`${vista}`)
+  const conPdfMarcadas = facturas.filter((f) => marcadas.has(f.id) && f.numeroDian)
   /*
    * 🔴 «Notas» lista TODAS las notas crédito de cada factura, no una sola.
    * Desde el 17-09 una factura puede tener varias PARCIALES además de la total,
@@ -655,11 +661,20 @@ export function FacturasEmitidas({ mes, vista }: Props) {
             ))}
           </ul>
         ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
               {vista === 'ventas' ? (
                 <>
+                  <TableHead className="w-10 pl-4 pr-0">
+                    <CasillaDeLaPagina
+                      ids={paginado.pageItems.filter((f) => f.numeroDian).map((f) => f.id)}
+                      marcadas={marcadas}
+                      onMarcar={marcar}
+                      queSon="facturas"
+                    />
+                  </TableHead>
                   <TableHead>Número</TableHead>
                   <TableHead>DIAN</TableHead>
                   <TableHead>Cliente</TableHead>
@@ -689,7 +704,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
           <TableBody>
             {vista === 'ventas' && ventas.length === 0 && facturas.length > 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="p-0">
+                <TableCell colSpan={7} className="p-0">
                   <SinDatos
                     hayFiltros
                     queSon="facturas emitidas"
@@ -702,6 +717,11 @@ export function FacturasEmitidas({ mes, vista }: Props) {
             {(vista === 'ventas' ? paginado.pageItems : facturas).map((f) =>
               vista === 'ventas' ? (
                 <TableRow key={f.id} data-testid={`factura-${f.numero}`}>
+                  <TableCell className="w-10 pl-4 pr-0">
+                    {f.numeroDian ? (
+                      <CasillaDeLaFila id={f.id} nombre={`la factura ${f.numeroDian}`} marcadas={marcadas} onMarcar={marcar} />
+                    ) : null}
+                  </TableCell>
                   <TableCell className="font-mono tabular-nums">{f.numero}</TableCell>
                   <TableCell className="whitespace-nowrap font-mono tabular-nums">
                     {f.numeroDian ?? '—'}
@@ -864,6 +884,36 @@ export function FacturasEmitidas({ mes, vista }: Props) {
               })}
           </TableBody>
         </Table>
+        {/* Acciones masivas: el pie de la MISMA tabla donde se marca (sólo ventas con número). */}
+        {vista === 'ventas' && ventas.some((f) => f.numeroDian) && (
+          <BarraDeAccionesMasivas
+            variant="pie"
+            testid="facturas-marcadas"
+            className="max-md:hidden"
+            marcadas={conPdfMarcadas.length}
+            queSon={['factura', 'factura' + 's']}
+            onQuitar={quitarLaSeleccion}
+            ocupado={descargando !== null}
+            cuandoNoHayNada="Marca facturas para bajar sus PDF en un ZIP."
+          >
+            <Button
+              size="sm"
+              hideArrow
+              disabled={descargando !== null || conPdfMarcadas.length === 0}
+              onClick={() =>
+                void descargarLote(
+                  conPdfMarcadas.map((f) => ({ facturaId: f.id, numero: f.numeroDian })),
+                  `facturas-${conPdfMarcadas.length}`,
+                ).then(() => quitarLaSeleccion())
+              }
+              data-testid="zip-de-las-marcadas"
+            >
+              <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+              Bajar los PDF en un ZIP
+            </Button>
+          </BarraDeAccionesMasivas>
+        )}
+        </>
         )}
         {vista === 'ventas' && paginado.shouldPaginate && (
           <div className="border-t border-border pt-3">

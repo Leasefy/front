@@ -264,6 +264,12 @@ describe('colisiones que meten el dato de otra persona u otro contrato', () => {
     expect(autoMapColumns(['Fecha de Consignación'])[0].targetField).toBe('consignedAt');
   });
 
+  it('«Video» y «Enlace del video» van al video del inmueble (marketplace, 09-10)', () => {
+    expect(autoMapColumns(['Video'])[0].targetField).toBe('videoUrl');
+    expect(autoMapColumns(['Enlace del video'])[0].targetField).toBe('videoUrl');
+    expect(autoMapColumns(['Link del video'])[0].targetField).toBe('videoUrl');
+  });
+
   it('«Garantía» y «Póliza» no se mapean a nada', () => {
     expect(autoMapColumns(['Garantía'])[0].targetField).toBeNull();
     expect(autoMapColumns(['Póliza'])[0].targetField).toBeNull();

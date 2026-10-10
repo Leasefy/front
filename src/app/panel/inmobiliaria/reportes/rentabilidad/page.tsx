@@ -41,7 +41,6 @@ import { useI18n } from '@/lib/i18n';
 import { BASE_POR_DEFECTO, claveDelRotulo } from '@/lib/tasa-de-recaudo';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SectionLabel } from '@/components/ui/section-label';
 import {
@@ -87,6 +86,7 @@ import {
   type OrdenDeRentabilidad as Orden,
 } from '@/lib/reportes/rentabilidad-orden';
 import type { RentabilidadFila } from '@/lib/types/inmobiliaria';
+import { CampoDeMes } from '@/components/ui/campo-de-mes';
 
 // ── Formato ──────────────────────────────────────────────────────────────────
 
@@ -268,28 +268,26 @@ function RentabilidadContent() {
               <Label htmlFor="rentabilidad-desde" className="text-xs">
                 {t('inmobiliaria.reportes.rentabilidad.period.from')}
               </Label>
-              <Input
+              <CampoDeMes
                 id="rentabilidad-desde"
-                type="month"
                 value={rango.desde}
-                onChange={(e) => cambiarMes('desde', e.target.value)}
-                className="h-10 w-40 font-mono"
-                aria-invalid={Boolean(errorDeRango)}
-                aria-describedby={errorDeRango ? 'rentabilidad-rango-error' : undefined}
+                onChange={(v) => cambiarMes('desde', v)}
+                invalido={Boolean(Boolean(errorDeRango))}
+                describedBy={errorDeRango ? 'rentabilidad-rango-error' : undefined}
+                className="h-10 w-52"
               />
             </div>
             <div className="space-y-1">
               <Label htmlFor="rentabilidad-hasta" className="text-xs">
                 {t('inmobiliaria.reportes.rentabilidad.period.to')}
               </Label>
-              <Input
+              <CampoDeMes
                 id="rentabilidad-hasta"
-                type="month"
                 value={rango.hasta}
-                onChange={(e) => cambiarMes('hasta', e.target.value)}
-                className="h-10 w-40 font-mono"
-                aria-invalid={Boolean(errorDeRango)}
-                aria-describedby={errorDeRango ? 'rentabilidad-rango-error' : undefined}
+                onChange={(v) => cambiarMes('hasta', v)}
+                invalido={Boolean(Boolean(errorDeRango))}
+                describedBy={errorDeRango ? 'rentabilidad-rango-error' : undefined}
+                className="h-10 w-52"
               />
             </div>
           </div>

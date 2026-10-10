@@ -85,6 +85,7 @@
  * no tienen con qué identificarse y no llevan enlace.
  */
 
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useId, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Appear, MotionIndicator, Presence } from '@leasefy/cadence'
@@ -833,7 +834,7 @@ function FilasDelInquilino({
                 <DotsThreeVertical className="h-4 w-4" weight="bold" aria-hidden="true" />
               </Button>
             </DropdownListTrigger>
-            <DropdownListContent align="end" className="w-56">
+            <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
               <DropdownListItem onClick={onAbrirDetalle}>
                 Ver todo lo que debe
               </DropdownListItem>

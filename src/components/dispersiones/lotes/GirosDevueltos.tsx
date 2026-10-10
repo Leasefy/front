@@ -84,6 +84,7 @@ import { leerFallo, mensajeParaLaPersona } from '@/lib/errores/traductor-de-erro
 import { diaLegible } from '@/lib/mandato/textos';
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { useI18n } from '@/lib/i18n';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 /**
  * El fallo en palabras y, si es el 503 de la migración, quién la aplica.
@@ -495,11 +496,10 @@ export function MarcarDevueltoDialog({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="fecha-devolucion">Fecha de la devolución</Label>
-              <Input
+              <CampoDeDia
                 id="fecha-devolucion"
-                type="date"
                 value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
+                onChange={(v) => setFecha(v)}
               />
               <p className="text-xs text-fg-muted">
                 La del extracto, no la de hoy: de ella depende la fecha del egreso.
@@ -690,11 +690,10 @@ export function RegirarDialog({
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="fecha-del-nuevo-giro">Fecha del nuevo giro</Label>
-              <Input
+              <CampoDeDia
                 id="fecha-del-nuevo-giro"
-                type="date"
                 value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
+                onChange={(v) => setFecha(v)}
               />
               <p className="text-xs text-fg-muted">
                 {/* QA 23-09: pintaba «2026-09-23T00:00:00.000Z». Es una fecha

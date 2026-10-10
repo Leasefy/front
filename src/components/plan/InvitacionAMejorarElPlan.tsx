@@ -91,10 +91,10 @@ export const INVITACIONES: readonly Invitacion[] = [
     clave: 'cobranza',
     rutas: [`${P}/pagos/cobranza`],
     icono: PhoneCall,
-    eyebrow: 'Laura, la cobranza',
-    titulo: 'Laura cobra por ti',
+    eyebrow: 'Cobranza con IA',
+    titulo: 'Cobramos por ti con IA',
     subtitulo:
-      'Laura llama y escribe a los inquilinos en mora, negocia acuerdos de pago y te avisa cuando pagan. Tu equipo se dedica a lo que no se puede automatizar.',
+      'Nuestra IA llama y escribe a los inquilinos en mora, negocia acuerdos de pago y te avisa cuando pagan. Tu equipo se dedica a lo que no se puede automatizar.',
     beneficios: [
       'Llamadas y WhatsApp con el tono de tu inmobiliaria',
       'Acuerdos de pago con fecha y seguimiento',

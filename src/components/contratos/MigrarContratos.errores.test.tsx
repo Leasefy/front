@@ -186,6 +186,7 @@ const ENCABEZADOS = [
   'Fecha de terminación',
   'Canon',
   'Día de pago',
+  'Prorrateado',
   'Nombre del arrendador',
   'Documento del arrendador',
 ]
@@ -200,6 +201,7 @@ function filaDelArchivo(i: number): { _rowIndex: number; [columna: string]: unkn
     'Fecha de terminación': '2027-01-01',
     Canon: '1800000',
     'Día de pago': '5',
+    Prorrateado: 'SI',
     'Nombre del arrendador': `Dueño ${i}`,
     'Documento del arrendador': String(71_000_000 + i),
   }

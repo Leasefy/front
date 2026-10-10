@@ -686,6 +686,8 @@ export interface Contract {
    * back anterior.
    */
   comisionSinDefinir?: boolean;
+  /** T-0153 (A2): `true` propietario, `false` inmobiliaria, `null` = la configuración de la inmobiliaria. */
+  trasladaGmfAlPropietario?: boolean | null;
   /**
    * CO-28: por qué este contrato no tiene tabla de cuotas (nadie sabe la
    * comisión), tal cual lo dice el generador del back; `null` si no aplica.

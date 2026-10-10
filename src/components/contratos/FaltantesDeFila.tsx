@@ -197,9 +197,9 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
     porque: "Decide el IVA: vivienda está excluida y comercial no.",
   },
   dia_de_pago: {
-    titulo: "Falta el día de pago",
+    titulo: "El día de pago del archivo no es válido",
     porque:
-      "Sin él no se puede programar el cobro ni los recordatorios de vencimiento.",
+      "Es opcional: si lo dejas vacío se usa la fecha de cartera. Si lo escribes, va del 1 al 28.",
   },
   cartera_antes_del_inicio: {
     titulo: "La fecha de cartera es anterior al inicio",
@@ -526,7 +526,7 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
             {f === "dia_de_pago" ? (
               <CampoSimple
                 {...campo("paymentDay")}
-                etiqueta="Día de pago (1-28)"
+                etiqueta="Día de pago (1-28). Si lo dejas vacío se usa la fecha de cartera."
                 tipo="number"
                 ocupado={ocupado}
                 // Antes un 30 no hacía nada y no decía por qué.

@@ -15,6 +15,7 @@ import {
   type DatosDeOrigenDeContrato,
 } from './armar-fila'
 import { comoEntero, hayValor, valorDe } from './leer-celdas'
+import { diaDePagoDelArchivo } from './dia-de-pago-del-archivo'
 import {
   faltantesEsenciales,
   REQUISITOS_ESENCIALES,
@@ -57,6 +58,8 @@ const ORDEN: CampoDeContrato[] = [
   'fechaDeCartera',
   'fechaFin',
   'prorrateado',
+  'renovacionAutomatica',
+  'impuestosAsumidos',
   'diasDePlazo',
   'canon',
   'canonTotal',
@@ -65,6 +68,8 @@ const ORDEN: CampoDeContrato[] = [
   'uso',
   'periodicidad',
   'comision',
+  'valorComision',
+  'consecutivoDetalle',
   'propietarioNombre',
   'propietarioDocumento',
   'propietarioCorreo',
@@ -157,18 +162,51 @@ function valorLegible(
     case 'fechaInicio':
       return f.startDate ?? null
     // Desde cuándo se COBRA. Sin ella el motor usa la de inicio.
-    case 'fechaDeCartera':
-      return f.fechaDeCartera ?? null
+    case 'fechaDeCartera': {
+      if (f.fechaDeCartera === undefined) return null
+      // T-0153 §7.3: la fecha MÁS la regla que resultaría. Sólo se muestra: el
+      // back es quien la calcula (misma regla, `dia-de-pago-del-archivo`).
+      const estado = origen.prorrateo.estado
+      if (estado === 'sinDecidir') {
+        return `${f.fechaDeCartera} · falta definir si se prorratea el primer mes`
+      }
+      if (estado === 'si') {
+        return `${f.fechaDeCartera} · se cobra el 1 de cada mes; primer cobro prorrateado desde esa fecha`
+      }
+      const dia = diaDePagoDelArchivo({
+        paymentDay: f.paymentDay,
+        fechaDeCartera: f.fechaDeCartera,
+        startDate: f.startDate,
+        prorratear: false,
+      })
+      return dia === null ? f.fechaDeCartera : `${f.fechaDeCartera} · corte el día ${dia} de cada mes`
+    }
     case 'fechaFin':
       return f.endDate ?? null
     // Con prorrateo el primer mes cobra sólo los días ocupados desde la fecha
     // de cartera; sin él, el mes completo.
     case 'prorrateado':
-      return f.prorratearPrimerMes === undefined
-        ? null
-        : f.prorratearPrimerMes
-          ? 'Sí'
-          : 'No'
+      // §3.4: vacío, ausente o ilegible NO es un «No»: la agencia lo define.
+      if (origen.prorrateo.estado === 'sinDecidir') {
+        return origen.prorrateo.texto
+          ? `Falta definir («${origen.prorrateo.texto}»)`
+          : 'Falta definir'
+      }
+      return f.prorratearPrimerMes ? 'Sí' : 'No'
+    case 'renovacionAutomatica':
+      if (f.noSeProrroga === undefined) return null
+      return f.noSeProrroga
+        ? 'Se prorroga al vencer: No (al vencer queda en alerta y no se generan cuotas)'
+        : 'Se prorroga al vencer: Sí'
+    case 'impuestosAsumidos':
+      if (f.trasladaGmfAlPropietario === undefined) return null
+      return f.trasladaGmfAlPropietario
+        ? '4x1000 del giro: lo asume el propietario'
+        : '4x1000 del giro: lo asume la inmobiliaria'
+    case 'valorComision':
+      return origen.valorComision === undefined ? null : formatCurrency(origen.valorComision)
+    case 'consecutivoDetalle':
+      return origen.consecutivoDetalle ?? null
     case 'diasDePlazo':
       return f.diasDePlazo === undefined
         ? null
@@ -219,6 +257,54 @@ export function vistaPreviaDeFilas(
     campo,
     valores: muestra.map(({ fila, origen }) => valorLegible(campo, fila, origen)),
   }))
+}
+
+/** Una fila cuya «Valor comisión» no cuadra con canon x % (T-0153 §4.4). */
+export interface ComisionQueNoCuadra {
+  /** Posición en `filas`. */
+  indice: number
+  /** La fila que ve la persona en Excel. */
+  filaDelArchivo: number
+  valorDelArchivo: number
+  esperado: number
+  porcentaje: number
+}
+
+/**
+ * Cruza «Valor comisión» contra canon x %/100. Avisa, no bloquea, y el monto
+ * NUNCA viaja: lo que se manda es el porcentaje. En las filas de un contrato
+ * con varios dueños la comisión puede venir sobre la parte o sobre el total;
+ * cualquiera de las dos cuadra.
+ */
+export function comisionQueNoCuadra(
+  filas: Array<Record<string, unknown>>,
+  mapeo: MapeoDeColumna[],
+  tolerancia = 1,
+): ComisionQueNoCuadra[] {
+  if (!mapeo.some((m) => m.campo === 'valorComision') || !mapeo.some((m) => m.campo === 'comision')) {
+    return []
+  }
+  const avisos: ComisionQueNoCuadra[] = []
+  filas.forEach((cruda, indice) => {
+    const { fila, origen } = leerFilaDelArchivo(cruda, mapeo)
+    const pct = fila.comisionPorcentaje
+    const valor = origen.valorComision
+    if (pct === undefined || valor === undefined) return
+    const bases = [origen.canonDeLaFila, origen.canonTotal, fila.monthlyRent].filter(
+      (b): b is number => b !== undefined,
+    )
+    if (bases.length === 0) return
+    if (bases.some((b) => Math.abs(valor - (b * pct) / 100) <= tolerancia)) return
+    const hoja = cruda._rowIndex
+    avisos.push({
+      indice,
+      filaDelArchivo: typeof hoja === 'number' && Number.isInteger(hoja) && hoja >= 1 ? hoja + 1 : indice + 2,
+      valorDelArchivo: valor,
+      esperado: Math.round(((origen.canonDeLaFila ?? fila.monthlyRent ?? bases[0]) * pct) / 100),
+      porcentaje: pct,
+    })
+  })
+  return avisos
 }
 
 /** Si esta fila trae el requisito esencial, ya interpretada. */

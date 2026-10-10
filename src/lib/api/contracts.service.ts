@@ -149,6 +149,7 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // contrato no tiene tabla de cuotas por la comisión (el mapeo es una lista
     // cerrada). Ausente con un back anterior.
     ...(bc.comisionSinDefinir !== undefined ? { comisionSinDefinir: bc.comisionSinDefinir === true } : {}),
+    ...(bc.trasladaGmfAlPropietario !== undefined ? { trasladaGmfAlPropietario: bc.trasladaGmfAlPropietario } : {}),
     ...(bc.sinTablaDeCuotas !== undefined ? { sinTablaDeCuotas: bc.sinTablaDeCuotas ?? null } : {}),
     ...(bc.loQueTraiaElArchivo !== undefined ? { loQueTraiaElArchivo: bc.loQueTraiaElArchivo ?? null } : {}),
     /*
@@ -1091,9 +1092,22 @@ export interface FilaAMigrar {
   /**
    * «Prorrateado» del archivo. Con prorrateo el primer mes cobra sólo los
    * días desde la fecha de cartera —y el último, los días ocupados—; sin él,
-   * el mes completo cada día de cartera. Ausente = sin prorrateo.
+   * el mes completo cada día de cartera. T-0153: el front SIEMPRE lo manda
+   * explícito (del archivo o elegido por la agencia en la vista previa).
    */
   prorratearPrimerMes?: boolean;
+  /**
+   * T-0153 (A1) «Renovación automática», ya invertido: `true` = al vencer
+   * queda en alerta y no se generan cuotas. Ausente = rige la prórroga legal.
+   * Un back anterior rechaza esta clave: desplegar el back primero.
+   */
+  noSeProrroga?: boolean;
+  /**
+   * T-0153 (A2) «Impuestos asumidos»: `true` = el propietario asume el 4x1000
+   * del giro de este contrato; `false` = la inmobiliaria. Ausente = rige la
+   * configuración de la inmobiliaria. Back antes que front.
+   */
+  trasladaGmfAlPropietario?: boolean;
   /** «Días de Plazo»: gracia antes de la mora. Ausente = el de la agencia. */
   diasDePlazo?: number;
   periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';

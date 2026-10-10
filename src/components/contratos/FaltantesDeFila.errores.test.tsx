@@ -191,6 +191,14 @@ describe('el canon de una fila', () => {
 })
 
 describe('el día de pago', () => {
+  it('T-0153: ya no dice que FALTA; dice que el del archivo no es válido y que es opcional', () => {
+    pintar(['dia_de_pago'])
+    const texto = document.body.textContent ?? ''
+    expect(texto).toContain('El día de pago del archivo no es válido')
+    expect(texto).toContain('se usa la fecha de cartera')
+    expect(texto).not.toContain('Falta el día de pago')
+  })
+
   it('🔴 un 30 ya no se pierde en silencio: dice el rango y no viaja', async () => {
     pintar(['dia_de_pago'])
     const id = idDelCampo('f-1', 'paymentDay')

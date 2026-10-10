@@ -107,7 +107,9 @@ export type CampoDeContrato =
   | "valorComision"
   | "renovacionAutomatica"
   /** A2: «Impuestos asumidos» -> `trasladaGmfAlPropietario` (SI = el propietario asume el 4x1000 del giro). */
-  | "impuestosAsumidos";
+  | "impuestosAsumidos"
+  /** A3: «Tipo de interés» -> `tipoDeInteres` (PRORRATEADO = por día de mora, COMPLETO = monto fijo). */
+  | "tipoDeInteres";
 
 /**
  * Qué tan seguro está el auto-mapeo de una columna.
@@ -865,6 +867,10 @@ const DICCIONARIO: Array<{ campo: CampoDeContrato; terminos: string[] }> = [
     ],
   },
   {
+    campo: "tipoDeInteres",
+    terminos: ["tipo de interes", "tipo interes", "interes"],
+  },
+  {
     campo: "consecutivoContrato",
     terminos: [
       "consecutivo del contrato",
@@ -982,6 +988,7 @@ const TERMINOS_DUDOSOS = new Set([
   "ciudad",
   "municipio",
   "city",
+  "interes",
   "renta",
   "mensualidad",
   "destino",
@@ -1082,10 +1089,9 @@ export const NO_SE_MIGRA_TODAVIA = [
     terminos: [
       "cobro de intereses",
       "cobro de interes",
-      "tipo de interes",
-      "tipo de intereses",
     ],
-    texto: "no se migra todavía: se reconoce la columna pero aún no tiene destino en el contrato",
+    // A3: «siempre se cobra interés»; esta columna nunca apaga la mora.
+    texto: "Siempre se cobra interés de mora (no se migra)",
   },
 ].map((r) => ({ ...r, terminos: r.terminos.map(canonizar) }));
 

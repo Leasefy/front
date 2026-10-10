@@ -94,6 +94,12 @@ describe('prorrateado y renovación en la vista previa', () => {
     expect(valor('impuestosAsumidos', fila({ 'Impuestos asumidos': 'NO' }), m)).toBe('4x1000 del giro: lo asume la inmobiliaria')
     expect(valor('impuestosAsumidos', fila({ 'Impuestos asumidos': '' }), m)).toBeNull()
   })
+  it('tipo de interés -> interés de mora por día o monto fijo', () => {
+    const m = mapearColumnas([...ENCABEZADO, 'Tipo de interés'])
+    expect(valor('tipoDeInteres', fila({ 'Tipo de interés': 'Interés prorrateado' }), m)).toBe('Interés de mora: por día de mora')
+    expect(valor('tipoDeInteres', fila({ 'Tipo de interés': 'Interés completo' }), m)).toBe('Interés de mora: monto fijo')
+    expect(valor('tipoDeInteres', fila({ 'Tipo de interés': '' }), m)).toBeNull()
+  })
   it('valor de la comisión se muestra como plata', () => {
     expect(valor('valorComision', fila())).toBe('$ 75.000')
   })

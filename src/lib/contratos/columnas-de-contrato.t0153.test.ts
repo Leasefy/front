@@ -76,6 +76,7 @@ describe('T-0153: el encabezado real de «contratos por detalles»', () => {
     ['Prorrateado', 'prorrateado'],
     ['Renovación automática', 'renovacionAutomatica'],
     ['Impuestos asumidos', 'impuestosAsumidos'],
+    ['Tipo de interés', 'tipoDeInteres'],
     ['Observaciones', 'observaciones'],
     ['Estado', 'estadoContrato'],
   ])('«%s» -> %s', (columna, campo) => {
@@ -87,7 +88,7 @@ describe('T-0153: el encabezado real de «contratos por detalles»', () => {
     expect(de('Codeudores').noSeMigra).toBe(NO_SE_MIGRA_EL_CODEUDOR)
   })
 
-  it.each(['Total arrendamiento', 'Cobro de Intereses', 'Tipo de interés'])(
+  it.each(['Total arrendamiento', 'Cobro de Intereses'])(
     '«%s» se reconoce y dice por qué no se migra',
     (columna) => {
       expect(de(columna).campo).toBeNull()
@@ -130,6 +131,17 @@ describe('T-0153: alias nuevos (§4.1)', () => {
     '«%s» es el 4x1000 del giro (A2)',
     (h) => expect(campoDe(h)).toBe('impuestosAsumidos'),
   )
+
+  it.each(['Tipo de interés', 'Tipo de interes', 'Tipo interes', 'Interés'])(
+    '«%s» es el tipo de interés (A3)',
+    (h) => expect(campoDe(h)).toBe('tipoDeInteres'),
+  )
+
+  it('«Cobro de Intereses» se reconoce y dice que siempre se cobra', () => {
+    const m = mapearColumnas(['Cobro de Intereses'])[0]
+    expect(m.campo).toBeNull()
+    expect(m.noSeMigra).toBe('Siempre se cobra interés de mora (no se migra)')
+  })
 
   it.each(['Codeudores', 'Coodeudores', 'Fiadores'])('«%s» no se migra', (h) => {
     const m = mapearColumnas([h])[0]

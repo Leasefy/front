@@ -146,6 +146,22 @@ export function prorrateadoNoReconocido(v: unknown): boolean {
 }
 
 /**
+ * T-0153 (A3): «Tipo de interés». «Interés prorrateado» / «por día» ->
+ * `PRORRATEADO` (se cobra por día de mora); «Interés completo» / «fijo» ->
+ * `COMPLETO` (monto fijo sin importar los días). Otra cosa: `undefined`.
+ */
+export function tipoDeInteresDeCelda(v: unknown): 'PRORRATEADO' | 'COMPLETO' | undefined {
+  if (!hayValor(v)) return undefined
+  const t = String(v)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+  if (/prorrate|por dia|diario/.test(t)) return 'PRORRATEADO'
+  if (/complet|fijo/.test(t)) return 'COMPLETO'
+  return undefined
+}
+
+/**
  * T-0153 (A1): «Renovación automática» -> `noSeProrroga`, ya INVERTIDO. NO ->
  * `true` (al vencer queda en alerta y no se generan cuotas); SI -> `false`;
  * vacío o no reconocido -> `undefined` (la clave ni viaja: rige la prórroga
@@ -439,6 +455,7 @@ export function leerFilaDelArchivo(
           : { estado: 'sinDecidir' }
   const noSeProrroga = noSeProrrogaDeCelda(v('renovacionAutomatica'))
   const trasladaGmf = siONoDeCelda(v('impuestosAsumidos'))
+  const tipoDeInteres = tipoDeInteresDeCelda(v('tipoDeInteres'))
 
   const filaAMigrar: FilaAMigrar = {
     // Estructuralmente obligatorios en el DTO — nunca se omiten, aunque
@@ -485,6 +502,8 @@ export function leerFilaDelArchivo(
     ...(noSeProrroga !== undefined ? { noSeProrroga } : {}),
     // T-0153 (A2): «Impuestos asumidos» SI/NO; si no, la clave no existe.
     ...(trasladaGmf !== undefined ? { trasladaGmfAlPropietario: trasladaGmf } : {}),
+    // T-0153 (A3): sólo con un tipo reconocido; si no, la clave no existe.
+    ...(tipoDeInteres !== undefined ? { tipoDeInteres } : {}),
     diasDePlazo: diasDePlazoDeCelda(v('diasDePlazo')),
     // «0» es una comisión real (0% existe); «10%» y «10,5» son humanos; 110
     // no es un porcentaje. `Number(v) || undefined` convertía el 0 en «no hay

@@ -49,7 +49,7 @@ function fundirGrupo<T extends FilaLeida>(grupo: T[]): T | null {
     if (!todosIguales(grupo.map((l) => l.fila[campo]))) return null
   }
   // Lo que el contrato dice una vez no puede contradecirse entre sus filas.
-  for (const campo of ['prorratearPrimerMes', 'noSeProrroga', 'trasladaGmfAlPropietario', 'comisionPorcentaje', 'diasDePlazo'] as const) {
+  for (const campo of ['prorratearPrimerMes', 'noSeProrroga', 'trasladaGmfAlPropietario', 'tipoDeInteres', 'comisionPorcentaje', 'diasDePlazo'] as const) {
     if (!todosIguales(grupo.map((l) => l.fila[campo]))) return null
   }
   if (!todosIguales(grupo.map((l) => l.origen.prorrateo.estado))) return null

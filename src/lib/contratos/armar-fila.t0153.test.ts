@@ -31,6 +31,7 @@ const ENCABEZADO = [
   'Prorrateado',
   'Renovación automática',
   'Impuestos asumidos',
+  'Tipo de interés',
 ]
 const mapeo = mapearColumnas(ENCABEZADO)
 
@@ -144,6 +145,27 @@ describe('Impuestos asumidos -> trasladaGmfAlPropietario (contrato A2)', () => {
   it('vacío o no reconocido: la CLAVE no viaja', () => {
     expect('trasladaGmfAlPropietario' in clave('')).toBe(false)
     expect('trasladaGmfAlPropietario' in clave('quizá')).toBe(false)
+  })
+})
+
+describe('Tipo de interés -> tipoDeInteres (contrato A3)', () => {
+  const viaja = (celda: unknown) =>
+    JSON.parse(JSON.stringify(armarFilaAMigrar(fila({ 'Tipo de interés': celda }), mapeo)))
+
+  it.each([
+    ['Interés prorrateado', 'PRORRATEADO'],
+    ['prorrateado', 'PRORRATEADO'],
+    ['Por día', 'PRORRATEADO'],
+    ['Interés completo', 'COMPLETO'],
+    ['completo', 'COMPLETO'],
+    ['Fijo', 'COMPLETO'],
+  ])('«%s» -> %s', (celda, esperado) => {
+    expect(viaja(celda).tipoDeInteres).toBe(esperado)
+  })
+
+  it('vacío o no reconocido: la CLAVE no viaja', () => {
+    expect('tipoDeInteres' in viaja('')).toBe(false)
+    expect('tipoDeInteres' in viaja('otro')).toBe(false)
   })
 })
 

@@ -1108,6 +1108,12 @@ export interface FilaAMigrar {
    * configuración de la inmobiliaria. Back antes que front.
    */
   trasladaGmfAlPropietario?: boolean;
+  /**
+   * T-0153 (A3) «Tipo de interés»: `PRORRATEADO` = interés de mora por día;
+   * `COMPLETO` = monto fijo. Ausente = rigen las reglas de la inmobiliaria.
+   * Back antes que front.
+   */
+  tipoDeInteres?: 'PRORRATEADO' | 'COMPLETO';
   /** «Días de Plazo»: gracia antes de la mora. Ausente = el de la agencia. */
   diasDePlazo?: number;
   periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
@@ -1760,6 +1766,12 @@ export interface ResumenActivacion {
    * todavía no manda este campo no puede afirmar un conteo que no tiene.
    */
   porInvitar?: number;
+  /**
+   * T-0153 (A3): avisos NO bloqueantes del back, por código. El único que se
+   * lee hoy es `regla_de_interes_no_configurada`: el archivo pedía un tipo de
+   * interés y la inmobiliaria no tiene esa regla. Ausente ⇒ nada que mostrar.
+   */
+  avisos?: Array<{ codigo: string; cuantos?: number }>;
   /**
    * 2026-09-02 — las filas sin inmueble de ESTA corrida. Con `sparse`
    * prendido en el back: cuántas se ACTIVARON sin inmueble (contratos que no

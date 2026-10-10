@@ -110,6 +110,7 @@ import {
   prepararFilasParaMigrar,
 } from "@/lib/contratos/preparar-filas-para-migrar";
 import { ProrrateoPorDefinir } from "./ProrrateoPorDefinir";
+import { AvisoDeReglaDeInteres } from "./AvisoDeReglaDeInteres";
 import { documentoComoLlave } from "@/lib/contratos/leer-celdas";
 import { motivoDeFilaConCanonPorConfirmar } from "@/lib/inmuebles/canon-por-confirmar";
 import { generarIdempotencyKey } from "@/lib/contratos/idempotencia";
@@ -189,6 +190,7 @@ const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   valorComision: "Valor de la comisión (sólo se cruza con canon x %)",
   renovacionAutomatica: "Renovación automática",
   impuestosAsumidos: "Impuestos asumidos (4x1000 del giro)",
+  tipoDeInteres: "Tipo de interés (por día de mora / monto fijo)",
 };
 
 /** Todos los campos posibles, para ofrecerlos en el selector de remapeo. */
@@ -2662,6 +2664,7 @@ function ListaDeTrabajo({
               cobrado. Revísa{actualizados.porRevisarAMano === 1 ? "lo" : "los"} desde la ficha del contrato.
             </p>
           ) : null}
+          <AvisoDeReglaDeInteres avisos={activacion.avisos} />
           {activacion.porInvitar ? (
             <p
               className="text-sm text-muted-foreground"

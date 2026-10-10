@@ -60,6 +60,7 @@ const ORDEN: CampoDeContrato[] = [
   'prorrateado',
   'renovacionAutomatica',
   'impuestosAsumidos',
+  'tipoDeInteres',
   'diasDePlazo',
   'canon',
   'canonTotal',
@@ -203,6 +204,11 @@ function valorLegible(
       return f.trasladaGmfAlPropietario
         ? '4x1000 del giro: lo asume el propietario'
         : '4x1000 del giro: lo asume la inmobiliaria'
+    case 'tipoDeInteres':
+      if (f.tipoDeInteres === undefined) return null
+      return f.tipoDeInteres === 'PRORRATEADO'
+        ? 'Interés de mora: por día de mora'
+        : 'Interés de mora: monto fijo'
     case 'valorComision':
       return origen.valorComision === undefined ? null : formatCurrency(origen.valorComision)
     case 'consecutivoDetalle':

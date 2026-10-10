@@ -144,6 +144,8 @@ const NOMBRES_DE_CAMPO: Record<string, string> = {
   urbanizacion: 'urbanización',
   llavesEn: 'llaves en',
   creadaPor: 'creado por',
+  videoUrl: 'video',
+  fotos: 'fotos',
   comisionPorcentaje: 'comisión',
 };
 

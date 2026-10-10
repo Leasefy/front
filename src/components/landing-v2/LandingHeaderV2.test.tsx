@@ -22,7 +22,8 @@ const authState: {
   isLoading: boolean
   user: { role: string } | null
   activeContext: string | null
-} = { isAuthenticated: false, isLoading: false, user: null, activeContext: null }
+  agencyRole?: string | null
+} = { isAuthenticated: false, isLoading: false, user: null, activeContext: null, agencyRole: null }
 
 vi.mock('@/lib/auth/use-auth', () => ({
   useAuth: () => authState,
@@ -38,6 +39,7 @@ beforeEach(() => {
   authState.isLoading = false
   authState.user = null
   authState.activeContext = null
+  authState.agencyRole = null
   container = document.createElement('div')
   document.body.appendChild(container)
   root = createRoot(container)
@@ -58,7 +60,7 @@ describe('LandingHeaderV2', () => {
   it('trae los mismos enlaces del nav de la landing', () => {
     montar({ fxExterno: true })
     const rutas = [...container.querySelectorAll('nav.main a')].map((a) => a.getAttribute('href'))
-    expect(rutas).toEqual(['#producto', '/propiedades', '/avaluo', '/blog', '/contacto'])
+    expect(rutas).toEqual(['#producto', '/propiedades', '/publicar', '/avaluo', '/blog', '/contacto'])
   })
 
   describe('dónde estás', () => {
@@ -171,19 +173,39 @@ describe('LandingHeaderV2', () => {
       expect(container.querySelector('nav.main a[href="/propiedades"]')).not.toBeNull()
     })
 
-    it('al esconderlo, el menu movil sigue numerado 01..06 sin huecos', () => {
+    it('al esconderlo, el menu movil sigue numerado 01..07 sin huecos', () => {
       // Los numeros del menu movil son parte del diseno, no decoracion: si
-      // desaparece el 01 y queda 02..07, el menu se lee roto.
+      // desaparece el 01 y queda 02..08, el menu se lee roto.
       entrarComo('agency')
       montar({ fxExterno: true })
       const numeros = [...container.querySelectorAll('#mmenu nav a .n')].map((n) => n.textContent)
-      expect(numeros).toEqual(['01', '02', '03', '04', '05', '06'])
+      expect(numeros).toEqual(['01', '02', '03', '04', '05', '06', '07'])
     })
 
-    it('para el resto, el menu movil conserva sus 07', () => {
+    it('la inmobiliaria SÍ ve «Publicar inmueble», y la lleva a publicar desde su panel (Nico, 09-10)', () => {
+      entrarComo('agency')
+      montar({ fxExterno: true })
+      const enlace = container.querySelector('nav.main a[data-nav="publicar"]')
+      expect(enlace?.getAttribute('href')).toBe('/panel/inmobiliaria/inmuebles/nuevo')
+      expect([...container.querySelectorAll('#mmenu nav a')].some((a) => a.getAttribute('href') === '/panel/inmobiliaria/inmuebles/nuevo')).toBe(true)
+    })
+
+    it('su contador o una cuenta de sólo lectura no publican: no se les ofrece', () => {
+      entrarComo('agency')
+      authState.agencyRole = 'CONTADOR'
+      montar({ fxExterno: true })
+      expect(container.querySelector('nav.main a[data-nav="publicar"]')).toBeNull()
+    })
+
+    it('sin sesión, «Publicar inmueble» va al asistente de /publicar', () => {
+      montar({ fxExterno: true })
+      expect(container.querySelector('nav.main a[data-nav="publicar"]')?.getAttribute('href')).toBe('/publicar')
+    })
+
+    it('para el resto, el menu movil trae 08 (con «Publicar inmueble», 09-10-2026)', () => {
       montar({ fxExterno: true })
       const numeros = [...container.querySelectorAll('#mmenu nav a .n')].map((n) => n.textContent)
-      expect(numeros).toEqual(['01', '02', '03', '04', '05', '06', '07'])
+      expect(numeros).toEqual(['01', '02', '03', '04', '05', '06', '07', '08'])
     })
   })
 
@@ -244,7 +266,7 @@ describe('LandingHeaderV2', () => {
       // suave del home las siga atendiendo.
       montar()
       const rutas = [...container.querySelectorAll('nav.main a')].map((a) => a.getAttribute('href'))
-      expect(rutas).toEqual(['/#producto', '/propiedades', '/avaluo', '/blog', '/contacto'])
+      expect(rutas).toEqual(['/#producto', '/propiedades', '/publicar', '/avaluo', '/blog', '/contacto'])
       const planes = [...container.querySelectorAll('.hcta a')].map((a) => a.getAttribute('href'))
       expect(planes).toContain('/#planes')
       const movil = [...container.querySelectorAll('#mmenu nav a')].map((a) => a.getAttribute('href'))

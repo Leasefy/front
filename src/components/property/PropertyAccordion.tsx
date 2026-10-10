@@ -1,6 +1,7 @@
 'use client';
 
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
+import { sinDeposito } from '@/lib/marketplace/busqueda';
 import {
   Accordion,
   AccordionContent,
@@ -30,7 +31,13 @@ export function PropertyAccordion({
     apartment: 'Apartamento',
     house: 'Casa',
     studio: 'Estudio',
-    room: 'Habitacion',
+    room: 'Habitación',
+    // Sin estos, la etiqueta salía en inglés («COMMERCIAL»; QA del marketplace, 10-10-2026).
+    commercial: 'Local',
+    office: 'Oficina',
+    warehouse: 'Bodega',
+    parking: 'Parqueadero',
+    land: 'Lote',
   };
 
   return (
@@ -84,9 +91,6 @@ export function PropertyAccordion({
             </p>
             <p className="text-[14px] text-foreground/80">
               Dirección: {property.address}
-            </p>
-            <p className="text-[13px] text-muted-foreground leading-relaxed">
-              Excelente ubicación con acceso a transporte público, comercio y servicios.
             </p>
           </div>
         </AccordionContent>
@@ -150,12 +154,17 @@ export function PropertyAccordion({
                     </span>
                   </div>
                 )}
-                <div className="flex justify-between text-[14px]">
-                  <span className="text-muted-foreground">Depósito (único)</span>
-                  <span className="text-foreground font-semibold font-mono tabular-nums">
-                    {formatCurrency(property.deposit)}
-                  </span>
-                </div>
+                {/* En vivienda la ley no permite pedir depósito (Ley 820, art. 16). */}
+                {sinDeposito(property) ? (
+                  <p className="text-[13px] text-muted-foreground">Sin depósito: en vivienda la ley no permite pedirlo.</p>
+                ) : property.deposit > 0 ? (
+                  <div className="flex justify-between text-[14px]">
+                    <span className="text-muted-foreground">Depósito (único)</span>
+                    <span className="text-foreground font-semibold font-mono tabular-nums">
+                      {formatCurrency(property.deposit)}
+                    </span>
+                  </div>
+                ) : null}
                 <div className="pt-3 border-t border-border">
                   <div className="flex justify-between text-[14px]">
                     <span className="text-foreground font-semibold">Total mensual</span>
@@ -191,18 +200,10 @@ export function PropertyAccordion({
                 ? 'Se aceptan mascotas'
                 : 'No se aceptan mascotas'}
             </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-muted border border-border rounded-full text-[12px] text-foreground/80">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/50" />
-              Contrato mínimo 12 meses
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-muted border border-border rounded-full text-[12px] text-foreground/80">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/50" />
-              Depósito 1 mes
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--success-50))] text-[hsl(var(--success-700))] border border-[hsl(var(--success-100))] rounded-full text-[12px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--success-500))]" />
-              Sin codeudor
-            </span>
+            {/* «Contrato mínimo 12 meses», «Depósito 1 mes» y «Sin codeudor» iban
+                fijos para TODOS los inmuebles (QA del marketplace, 10-10-2026):
+                ningún dato los respaldaba y el depósito contradecía la ley en
+                vivienda. Sólo queda lo que el inmueble dice de verdad. */}
           </div>
         </AccordionContent>
       </AccordionItem>

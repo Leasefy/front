@@ -1,5 +1,6 @@
 'use client';
 
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useState, useMemo } from 'react';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
 import {
@@ -385,7 +386,7 @@ function MantenimientoCard({
               aria-label={t('inmobiliaria.mantenimiento.viewDetail')}
             />
           </DropdownListTrigger>
-          <DropdownListContent align="end" className="w-48">
+          <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
             <DropdownListItem className="gap-3" onClick={() => onViewDetails?.()}>
               <Eye className="w-4 h-4" />
               <span className="text-sm">{t('inmobiliaria.mantenimiento.viewDetail')}</span>

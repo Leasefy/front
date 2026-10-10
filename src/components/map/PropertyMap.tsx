@@ -132,12 +132,51 @@ export function PropertyMap({
   }, [hoveredPropertyId, properties, zoom]);
 
   // Handle map load - ensure bounds are set after map is ready
+  /*
+   * El mapa se acerca a lo que salió, no muestra Colombia entera (marketplace,
+   * Nico 09-10-2026): al cargar, sin animación; cuando cambia lo que hay (otra
+   * búsqueda), con un vuelo corto. Uno solo, a nivel de barrio.
+   */
+  const cargadoRef = useRef(false);
+  const encuadrar = useCallback(
+    (animar: boolean) => {
+      const map = mapRef.current;
+      if (!map) return;
+      const ubicados = properties.filter((p) => tieneCoordenadas(p.latitude, p.longitude));
+      if (ubicados.length === 0) return;
+      const lats = ubicados.map((p) => p.latitude as number);
+      const lngs = ubicados.map((p) => p.longitude as number);
+      const duracion = animar ? 600 : 0;
+      if (ubicados.length === 1) {
+        map.flyTo({ center: [lngs[0], lats[0]], zoom: ZOOM_LEVELS.neighborhood, duration: duracion });
+        return;
+      }
+      map.fitBounds(
+        [
+          [Math.min(...lngs), Math.min(...lats)],
+          [Math.max(...lngs), Math.max(...lats)],
+        ],
+        { padding: 64, maxZoom: ZOOM_LEVELS.neighborhood, duration: duracion },
+      );
+    },
+    [properties],
+  );
+
+  const idsKey = properties.map((p) => p.id).join(',');
+  useEffect(() => {
+    if (cargadoRef.current) encuadrar(true);
+    // Sólo cuando cambia QUÉ inmuebles hay, no en cada render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idsKey]);
+
   const handleMapLoad = useCallback(() => {
+    cargadoRef.current = true;
+    encuadrar(false);
     // Small delay to ensure map is fully initialized
     setTimeout(() => {
       updateMapState();
     }, 100);
-  }, [updateMapState]);
+  }, [updateMapState, encuadrar]);
 
   return (
     <div className={cn('relative w-full h-full', className)}>

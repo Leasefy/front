@@ -1,5 +1,6 @@
 'use client';
 
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowClockwise, Copy, DotsThree, Trash } from '@phosphor-icons/react';
@@ -171,7 +172,7 @@ function TarjetaDePersona({
                 )}
               </Button>
             </DropdownListTrigger>
-            <DropdownListContent align="end" className="w-60">
+            <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
               {deEstaVisita?.enlace && (
                 <DropdownListItem onSelect={() => onCopiarEnlace(miembro)} className="gap-2">
                   <Copy className="size-4" aria-hidden="true" />

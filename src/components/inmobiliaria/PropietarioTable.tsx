@@ -1,5 +1,6 @@
 'use client';
 
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import {
   MagnifyingGlass,
   Funnel,
@@ -573,7 +574,7 @@ function MenuDeLaFila({
       {/* El menú vive en un portal, pero sus clics suben por el árbol de React
           hasta la fila, que abre la ficha: «Editar» y «Eliminar» navegaban
           en vez de abrir su diálogo. Mismo corte que en RenovacionesTable. */}
-      <DropdownListContent align="end" className="w-48" onClick={(e) => e.stopPropagation()}>
+      <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES} onClick={(e) => e.stopPropagation()}>
         <DropdownListItem onSelect={() => onView(propietario)}>
           <Eye className="w-4 h-4" />
           <span className="text-sm">{t('inmobiliaria.propietario.table.viewDetail')}</span>

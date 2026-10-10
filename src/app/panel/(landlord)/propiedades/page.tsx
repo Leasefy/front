@@ -1,5 +1,6 @@
 'use client';
 
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
@@ -268,7 +269,7 @@ export default function PropiedadesPage() {
                               aria-label={t('landlord.properties.moreOptions')}
                             />
                           </DropdownListTrigger>
-                          <DropdownListContent align="end" className="w-40 rounded-lg">
+                          <DropdownListContent align="end" className={cn(ANCHO_DEL_MENU_DE_ACCIONES, "rounded-lg")}>
                             <DropdownListItem asChild className="rounded-md">
                               <Link href={`/panel/${property.id}`}>
                                 <Eye className="w-4 h-4 mr-2" />
@@ -423,7 +424,7 @@ export default function PropiedadesPage() {
                             aria-label={t('landlord.properties.moreOptions')}
                           />
                         </DropdownListTrigger>
-                        <DropdownListContent align="end" className="w-40 rounded-lg">
+                        <DropdownListContent align="end" className={cn(ANCHO_DEL_MENU_DE_ACCIONES, "rounded-lg")}>
                           <DropdownListItem asChild className="rounded-md">
                             <Link href={`/panel/${property.id}`}>
                               <Eye className="w-4 h-4 mr-2" />

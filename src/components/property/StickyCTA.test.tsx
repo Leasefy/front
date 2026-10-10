@@ -276,6 +276,27 @@ describe('<StickyCTA> — RENT listing (regression)', () => {
   })
 })
 
+describe('<MobileStickyCTA> — «Visita» en el celular (QA del marketplace, 10-10-2026)', () => {
+  it('🔴 ya no es un botón muerto: abre «Agendar visita» en la tarjeta de la ficha', () => {
+    act(() => {
+      root.render(
+        <>
+          <StickyCTA propertyId="p1" price={1500000} />
+          <MobileStickyCTA propertyId="p1" price={1500000} />
+        </>,
+      )
+    })
+    expect(container.textContent).not.toContain('Tipo de visita')
+    const visita = container.querySelector<HTMLButtonElement>('[data-testid="mobile-visita"]')
+    expect(visita).not.toBeNull()
+    act(() => {
+      visita!.click()
+    })
+    expect(container.querySelector('[aria-label="Tipo de visita"]')).not.toBeNull()
+    expect(pushMock).not.toHaveBeenCalled()
+  })
+})
+
 // ============================================================================
 // Compartir — Nico (2026-09-04): «el de compartir ¿qué hace? porque toast
 // ninguno de los dos da».

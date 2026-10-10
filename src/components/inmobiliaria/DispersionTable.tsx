@@ -1,5 +1,6 @@
 'use client';
 
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useState, useMemo } from 'react';
 import {
   SortAscending,
@@ -408,7 +409,7 @@ export function DispersionTable({
                         aria-label="Acciones"
                       />
                     </DropdownListTrigger>
-                    <DropdownListContent align="end" className="w-48">
+                    <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
                       <DropdownListItem onSelect={() => onViewDetail?.(dispersion)}>
                         <Eye className="w-4 h-4" />
                         <span className="text-sm">{t('inmobiliaria.dispersiones.tableView.viewDetail')}</span>

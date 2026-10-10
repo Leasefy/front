@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * Las seis lecturas de la cartera, como pantallas hermanas.
+ * Las siete lecturas de la cartera, como pantallas hermanas.
  *
  * Nico (2026-09-12): «Ver la cartera: los cobros pendientes de los inquilinos
  * y los pagos pendientes, dividido por CONCEPTO. […] Y cuánto le debe la
@@ -16,6 +16,7 @@
  *   · Cobros emitidos  — los DOCUMENTOS con los que se reclamó una parte.
  *   · Cobro jurídico   — lo que ya no se cobra con una llamada (17-09-2026).
  *   · Castigada        — la que se dejó de perseguir (21-09-2026).
+ *   · Saldo anterior   — lo que traían del sistema anterior (10-10-2026).
  *
  * 🔴 «Cobros emitidos» entró acá el 2026-09-15 y no es una mudanza cosmética.
  * Era el módulo «Cobros» del sidebar, con su propia fila. La deuda NACE CON EL
@@ -36,7 +37,15 @@
  * Cartera. `PESTANAS_DE_CARTERA` sigue exportada — hay tests que la leen.
  */
 
-import { CalendarBlank, CurrencyCircleDollar, Gavel, HandCoins, Receipt, Scales } from '@phosphor-icons/react'
+import {
+  CalendarBlank,
+  ClockCounterClockwise,
+  CurrencyCircleDollar,
+  Gavel,
+  HandCoins,
+  Receipt,
+  Scales,
+} from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
 import { RielDePestanas, type PestanaDelRiel } from '@/components/inmobiliaria/RielDePestanas'
@@ -58,6 +67,11 @@ export const PESTANAS_DE_CARTERA: readonly PestanaDelRiel[] = [
    * ponerla en la lista de a quién llamar.
    */
   { href: `${RAIZ}/castigada`, labelKey: 'cartera.pestanas.castigada', icon: Scales },
+  /*
+   * 🔴 (10-10-2026, Nico) El saldo que los inquilinos traían del sistema
+   * anterior: lo que ya entró no se gira solo, finanzas decide.
+   */
+  { href: `${RAIZ}/saldo-anterior`, labelKey: 'cartera.pestanas.saldoAnterior', icon: ClockCounterClockwise },
 ]
 
 export function PestanasDeCartera() {

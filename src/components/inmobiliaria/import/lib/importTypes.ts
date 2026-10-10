@@ -116,6 +116,14 @@ export interface ImportProperty {
   urbanizacion?: string;
   llavesEn?: string;
   creadaPor?: string;
+  /**
+   * El enlace del video del inmueble (marketplace, 09-10-2026). Viaja como
+   * viene: el back lo guarda sólo si es de Instagram, TikTok, YouTube o
+   * Facebook y, si no, el inmueble queda sin video (no frena la fila).
+   */
+  videoUrl?: string;
+  /** Los enlaces de sus fotos, tal como vienen en la celda (separados por coma o espacio). */
+  fotos?: string;
   suggestions: AISuggestion[];
   selected: boolean;
   hasErrors: boolean;
@@ -206,4 +214,6 @@ export const TARGET_FIELDS = [
   { key: 'urbanizacion', label: 'Urbanización / conjunto', required: false },
   { key: 'llavesEn', label: 'Llaves en', required: false },
   { key: 'creadaPor', label: 'Creada por', required: false },
+  { key: 'videoUrl', label: 'Video (Instagram, TikTok, YouTube o Facebook)', required: false },
+  { key: 'fotos', label: 'Fotos (enlaces de Drive, Dropbox o tu web)', required: false },
 ] as const;

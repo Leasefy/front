@@ -2535,6 +2535,35 @@ export const agencyApi = {
   },
 
   /**
+   * POST /inmobiliaria/agency/portada
+   * La portada de su página en el marketplace (09-10-2026). Igual que el logo:
+   * multipart, campo `file`; jpeg/png/webp, hasta 8 MB.
+   */
+  async uploadAgencyPortada(file: File): Promise<{ portadaUrl: string }> {
+    const token = getAccessToken();
+    const formData = new FormData();
+    formData.append('file', file);
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    let res: Response;
+    try {
+      res = await fetch(`${BACKEND_URL}${BASE}/agency/portada`, { method: 'POST', headers, body: formData });
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
+      throw new ApiError(0, `No pudimos conectarnos al servidor. ${raw}`);
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(
+        res.status,
+        (body as { message?: string }).message || `Error al subir la portada (${res.status})`,
+        (body as { code?: string }).code,
+      );
+    }
+    return res.json();
+  },
+
+  /**
    * POST /inmobiliaria/agency/logo
    * Uploads the agency logo (multipart, field `file`; jpeg/png/webp, max 5MB).
    * Uses fetch directly for FormData — same pattern as propertiesApi.uploadImage.

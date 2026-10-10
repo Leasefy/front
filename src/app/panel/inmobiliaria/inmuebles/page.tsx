@@ -1,7 +1,7 @@
 'use client';
 import { PageGuard } from '@/components/auth/PageGuard';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Buildings,
@@ -59,6 +59,9 @@ import { ConsignacionCard } from '@/components/inmobiliaria/ConsignacionCard';
 import { InmuebleSinMandatoCard } from '@/components/inmobiliaria/InmuebleSinMandatoCard';
 import { ConsignacionTable } from '@/components/inmobiliaria/ConsignacionTable';
 import { DisponiblesSinSenal } from '@/components/inmobiliaria/DisponiblesSinSenal';
+import { AvisoDeNoPublicados } from '@/components/inmobiliaria/marketplace/AvisoDeNoPublicados';
+import { MarketplaceDeLosMarcados } from '@/components/inmobiliaria/marketplace/MarketplaceDeLosMarcados';
+import { usePublicacionEnElMarketplace } from '@/lib/hooks/use-publicacion-en-el-marketplace';
 import { cajonDelInmueble, contarPorCajon } from '@/lib/inmobiliaria/cajon-del-inmueble';
 import { coincideConLaBusqueda } from '@/lib/inmuebles/buscar-en-el-portafolio';
 import { ConsignacionFilters, ConsignacionFiltersState } from '@/components/inmobiliaria/ConsignacionFilters';
@@ -358,6 +361,41 @@ function PortafolioContent() {
     setFilters(newFilters);
   }, []);
 
+  // ── Publicar o quitar del marketplace, uno o varios (Nico, 10-10-2026) ──
+  const publicacion = usePublicacionEnElMarketplace();
+  const publicadoPorInmueble = useMemo(
+    () =>
+      publicacion.porInmueble
+        ? Object.fromEntries(
+            Object.values(publicacion.porInmueble).map((i) => [i.id, i.publicado]),
+          )
+        : null,
+    [publicacion.porInmueble],
+  );
+  const [marcados, setMarcados] = useState<ReadonlySet<string>>(new Set());
+  const marcar = useCallback((ids: string[], marcar: boolean) => {
+    setMarcados((antes) => {
+      const s = new Set(antes);
+      for (const id of ids) {
+        if (marcar) s.add(id);
+        else s.delete(id);
+      }
+      return s;
+    });
+  }, []);
+  // Con otros filtros, lo marcado que ya no se ve no se toca sin verlo.
+  const llaveDeLosFiltros = JSON.stringify(filters);
+  useEffect(() => {
+    setMarcados(new Set());
+  }, [llaveDeLosFiltros]);
+  const cambiarPublicacion = useCallback(
+    async (ids: string[], publicar: boolean) => {
+      const ok = await publicacion.cambiar(ids, publicar);
+      if (ok) marcar(ids, false);
+    },
+    [publicacion.cambiar, marcar],
+  );
+
   // Handlers
   const handleView = useCallback((consignacion: Consignacion) => {
     router.push(`/panel/inmobiliaria/inmuebles/${consignacion.id}`);
@@ -531,6 +569,10 @@ function PortafolioContent() {
           No aparece hasta que hay al menos uno preparado. */}
       <DisponiblesSinSenal aviso={avisoSinSenal} />
 
+      {/* 🔴 (10-10-2026, Nico) Lo que no sale en el marketplace y elegir
+          cuáles publicar. No se pinta si no hay nada por decidir. */}
+      <AvisoDeNoPublicados version={publicacion.version} alCambiar={publicacion.recargar} />
+
       {/*
         Aviso no bloqueante (contract.md T-0030 §3.3 — "Degrade, do not
         blank"): la segunda fuente falló pero la principal andaba bien. El
@@ -691,6 +733,7 @@ function PortafolioContent() {
             ) : (
               <>
                 {paginatedConsignaciones.length > 0 ? (
+                  <>
                   <ConsignacionTable
                     consignaciones={paginatedConsignaciones}
                     propietariosMap={propietariosMap}
@@ -704,7 +747,23 @@ function PortafolioContent() {
                     onEliminar={abrirEliminar}
                     onCompletarMandato={setMandatoFor}
                     comercialPorConsignacion={comercialPorConsignacion}
+                    publicadoPorInmueble={publicadoPorInmueble}
+                    onCambiarPublicacion={(ids, publicar) => void cambiarPublicacion(ids, publicar)}
+                    elegidos={marcados}
+                    onElegir={marcar}
                   />
+                  {/* Publicar o quitar varios a la vez: el pie de la MISMA
+                      tabla donde se marcan (sólo con la marca y con permiso). */}
+                  {publicacion.porInmueble && puedeElMiembro('portafolio', 'edit') && (
+                    <MarketplaceDeLosMarcados
+                      marcados={marcados}
+                      porInmueble={publicacion.porInmueble}
+                      cambiando={publicacion.cambiando}
+                      onCambiar={(ids, publicar) => void cambiarPublicacion(ids, publicar)}
+                      onQuitarLaSeleccion={() => setMarcados(new Set())}
+                    />
+                  )}
+                  </>
                 ) : (
                   <SinDatos
                     hayFiltros={elVacioEsPorLosFiltros}

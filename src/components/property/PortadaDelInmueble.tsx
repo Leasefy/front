@@ -1,9 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import { House } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
+import { PortadaSinFotos } from './PortadaSinFotos';
 
 /**
  * La primera foto que se puede pintar, o `null` si no hay ninguna.
@@ -20,7 +20,8 @@ export function primeraFoto(property: {
 }
 
 interface PortadaDelInmuebleProps {
-  property: Parameters<typeof primeraFoto>[0];
+  /** Con `id` y `type`, la portada sin fotos tiene su dibujo y su color. */
+  property: Parameters<typeof primeraFoto>[0] & { id?: string | null; type?: string | null };
   alt: string;
   sizes?: string;
   priority?: boolean;
@@ -28,6 +29,8 @@ interface PortadaDelInmuebleProps {
   className?: string;
   /** Miniatura: sólo el ícono, sin el texto «Sin fotos». */
   compacta?: boolean;
+  /** Quien la usa pinta el precio abajo, encima: sin fotos, el dibujo le deja ese espacio. */
+  conPrecioEncima?: boolean;
 }
 
 /**
@@ -45,18 +48,13 @@ export function PortadaDelInmueble({
   priority,
   className,
   compacta = false,
+  conPrecioEncima = false,
 }: PortadaDelInmuebleProps) {
   const src = primeraFoto(property);
 
   if (!src) {
     return (
-      <div
-        data-testid="inmueble-sin-fotos"
-        className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-surface-muted text-fg-subtle"
-      >
-        <House size={compacta ? 18 : 28} aria-hidden />
-        {compacta ? <span className="sr-only">Sin fotos</span> : <span className="text-xs font-medium">Sin fotos</span>}
-      </div>
+      <PortadaSinFotos tipo={property.type} semilla={property.id} compacta={compacta} espacioAbajo={conPrecioEncima} />
     );
   }
 

@@ -1,5 +1,6 @@
 'use client';
 
+import { PreguntaDeLaRecomendacion } from '@/components/marketplace/inmobiliaria/PreguntaDeLaRecomendacion';
 import { useState, useEffect, useMemo } from 'react';
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { PortadaDelInmueble, primeraFoto } from '@/components/property/PortadaDelInmueble';
@@ -291,6 +292,10 @@ export default function InquilinoPage() {
               palabra, la tarjeta que viene justo debajo. Dos felicitaciones
               seguidas por el mismo hecho. Queda una. */}
         </header>
+
+        {/* «¿Recomendarías a tu inmobiliaria?» (marketplace, 09-10-2026): a
+            los 3 meses del contrato y al terminar, hasta que vote. */}
+        <PreguntaDeLaRecomendacion className="mb-8" />
 
         {/*
           Lo primero del home es la aprobación, y reemplaza al viejo

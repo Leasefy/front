@@ -36,6 +36,7 @@ export const MAPA_DEL_INMUEBLE: Record<string, CampoDelAsistente | null> = {
   bedrooms: 'bedrooms',
   bathrooms: 'bathrooms',
   area: 'area',
+  videoUrl: 'videoUrl',
 }
 
 /** `POST /inmobiliaria/consignaciones` (`CreateConsignacionDto`) → el asistente. */
@@ -72,6 +73,7 @@ export const PASO_DEL_CAMPO: Partial<Record<CampoDelAsistente, number>> = {
   commissionPercent: 3,
   saleCommissionPercent: 3,
   minimumTerm: 3,
+  videoUrl: 5,
 }
 
 export const CAMPOS_CON_LUGAR = Object.keys(PASO_DEL_CAMPO) as CampoDelAsistente[]

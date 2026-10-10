@@ -97,6 +97,12 @@ export interface Property {
   monthlyRent: number | null;
   /** T-0129 — el canon está por confirmar: se muestra «Por confirmar», nunca «$0». */
   canonPorConfirmar?: boolean;
+  /**
+   * 🔴 PORTFOLIO (10-10-2026): publicado en el marketplace, aparte de
+   * disponible. `null` = la base todavía no tiene la migración (todo lo
+   * disponible sale, como antes). Ausente en las rutas públicas.
+   */
+  publicadoEnMarketplace?: boolean | null;
   adminFee: number;
   deposit: number;
   /**
@@ -141,6 +147,8 @@ export interface Property {
   parkingSpaces?: number;
   stratum?: number;
   yearBuilt?: number;
+  /** El enlace del video en Instagram, TikTok, YouTube o Facebook; `null` = sin video. */
+  videoUrl?: string | null;
 
   // Amenities
   amenities: PropertyAmenity[];

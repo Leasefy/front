@@ -198,6 +198,15 @@ describe('con la columna: los reconocidos siguen, los demás esperan', () => {
 
 describe('copropietarios y comisión', () => {
   const CON = [...BASE, 'Prorrateado']
+  it('T-0158: una fila repetida del archivo se une y la vista previa lo dice', async () => {
+    await subir(CON, [fila(1, { Prorrateado: 'SI' }), fila(1, { Prorrateado: 'SI' })])
+    expect(q('aviso-filas-repetidas')?.textContent).toContain('1 fila repetida del archivo se unió')
+    expect(q('aviso-filas-fundidas')).toBeNull()
+    await revisar()
+    const [enviadas] = vi.mocked(contractsApi.migracion.preparar).mock.calls[0]
+    expect(enviadas).toHaveLength(1)
+  })
+
   it('dos filas del mismo contrato se unen en una', async () => {
     await subir(CON, [
       fila(1, { Prorrateado: 'SI', 'Valor canon': 600000, 'Valor comisión': 45000 }),

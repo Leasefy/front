@@ -104,6 +104,22 @@ describe('prepararFilasParaMigrar', () => {
     expect(con.posiciones).toEqual([0, 1])
   })
 
+  it('T-0158: copias exactas del mismo contrato se unen y se cuentan aparte de los copropietarios', () => {
+    const filas = [fila(4), fila(4, { _rowIndex: 9 }), fila(5)]
+    const r = prepararFilasParaMigrar(filas, mapeo, {}, sinDecisiones)
+    expect(r.repetidas).toBe(1)
+    expect(r.fundidas).toBe(0)
+    expect(r.aMigrar).toHaveLength(2)
+    expect(r.posiciones).toEqual([0, 2])
+  })
+
+  it('T-0158: co-inquilinos (otro documento de inquilino) no se unen', () => {
+    const filas = [fila(4), fila(4, { 'Documento Inquilino': 999, 'Nombre Inquilino': 'Otro' })]
+    const r = prepararFilasParaMigrar(filas, mapeo, {}, sinDecisiones)
+    expect(r.repetidas).toBe(0)
+    expect(r.aMigrar).toHaveLength(2)
+  })
+
   it('conLaMismaDecision aplica un valor a TODAS las elegidas y a ninguna más', () => {
     const antes = new Map<number, boolean>([[5, false]])
     const despues = conLaMismaDecision(antes, [1, 2, 3], true)

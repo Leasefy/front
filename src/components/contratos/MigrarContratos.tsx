@@ -1969,6 +1969,19 @@ export function MigrarContratos({
             </AlertaAccionable>
           ) : null}
 
+          {preparadas.repetidas > 0 ? (
+            <p
+              className="text-caption text-muted-foreground"
+              data-testid="aviso-filas-repetidas"
+            >
+              {preparadas.repetidas}{" "}
+              {preparadas.repetidas === 1
+                ? "fila repetida del archivo se unió"
+                : "filas repetidas del archivo se unieron"}
+              .
+            </p>
+          ) : null}
+
           {filas.length > 0 ? (
             <ProrrateoPorDefinir
               porDefinir={preparadas.porDefinir}

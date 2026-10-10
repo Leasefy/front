@@ -106,6 +106,7 @@ import {
   ArmarContratoDesdePlantilla,
   type IdentificacionDelArrendatario,
 } from '@/components/contratos/plantilla/ArmarContratoDesdePlantilla';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 import {
   NOMBRE_DEL_CANDIDATO_SIN_REGISTRAR,
   esUuid,
@@ -1391,19 +1392,21 @@ function NuevoContratoContent() {
           <h2 className="text-base font-semibold text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" onBlur={alDejarUnCampo}>
             <Field id={idDelCampoDelContrato('startDate')} label="Fecha de inicio" error={errorDe('startDate')}>
-              <Input
-                type="date"
-                {...ariaDelCampoDelContrato('startDate', errorDe('startDate'))}
+              <CampoDeDia
+                id={idDelCampoDelContrato('startDate')}
                 value={form.startDate}
-                onChange={(e) => updateForm('startDate', e.target.value)}
+                onChange={(v) => updateForm('startDate', v)}
+                invalido={Boolean(errorDe('startDate'))}
+                describedBy={errorDe('startDate') ? `${idDelCampoDelContrato('startDate')}-error` : undefined}
               />
             </Field>
             <Field id={idDelCampoDelContrato('endDate')} label="Fecha de fin" error={errorDe('endDate')}>
-              <Input
-                type="date"
-                {...ariaDelCampoDelContrato('endDate', errorDe('endDate'))}
+              <CampoDeDia
+                id={idDelCampoDelContrato('endDate')}
                 value={form.endDate}
-                onChange={(e) => updateForm('endDate', e.target.value)}
+                onChange={(v) => updateForm('endDate', v)}
+                invalido={Boolean(errorDe('endDate'))}
+                describedBy={errorDe('endDate') ? `${idDelCampoDelContrato('endDate')}-error` : undefined}
               />
             </Field>
             {/* QA-CONT-95 C-16 (`fecha-de-cartera.md`): dos fechas, la de inicio y
@@ -1414,14 +1417,17 @@ function NuevoContratoContent() {
               error={errorDe('fechaDeCartera')}
               hint="El día en que recibe el inmueble. Vacío = desde la fecha de inicio."
             >
-              <Input
-                type="date"
-                {...ariaDelCampoDelContrato('fechaDeCartera', errorDe('fechaDeCartera'))}
+              <CampoDeDia
+                id={idDelCampoDelContrato('fechaDeCartera')}
                 value={form.fechaDeCartera}
+                onChange={(v) => updateForm('fechaDeCartera', v)}
                 min={form.startDate || undefined}
                 max={form.endDate || undefined}
-                onChange={(e) => updateForm('fechaDeCartera', e.target.value)}
-                data-testid="fecha-de-cartera"
+                invalido={Boolean(errorDe('fechaDeCartera'))}
+                describedBy={errorDe('fechaDeCartera') ? `${idDelCampoDelContrato('fechaDeCartera')}-error` : undefined}
+                quitable
+                etiquetaDeQuitar="Quitar la fecha desde la que se cobra"
+                testid="fecha-de-cartera"
               />
             </Field>
             {/* El monto se agrupa DENTRO del campo. La ayudita de abajo repetía

@@ -44,6 +44,7 @@ import {
   erroresDeLasFechas,
 } from "@/components/migracion/limites-de-la-migracion";
 import { usePlataConCentavos } from "@/lib/plata/use-plata-con-centavos";
+import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
 
 /**
  * Los campos de esta fila que tienen dónde pintar su error, con el nombre que
@@ -1119,18 +1120,16 @@ function Fechas({
         <label htmlFor={cInicio.id} className="text-caption text-muted-foreground">
           Inicio
         </label>
-        <Input
+        <CampoDeDia
           id={cInicio.id}
-          type="date"
           value={inicio}
-          aria-invalid={mensajeDeInicio ? true : undefined}
-          invalid={Boolean(mensajeDeInicio)}
-          aria-describedby={mensajeDeInicio ? `${cInicio.id}-error` : undefined}
-          onChange={(e) => {
-            setInicio(e.target.value);
+          onChange={(v) => {
+            setInicio(v);
             setLocales({});
             cInicio.onEditar();
           }}
+          invalido={Boolean(Boolean(mensajeDeInicio))}
+          describedBy={mensajeDeInicio ? `${cInicio.id}-error` : undefined}
         />
         <ErrorDelCampo id={`${cInicio.id}-error`} mensaje={mensajeDeInicio} />
       </div>
@@ -1138,18 +1137,16 @@ function Fechas({
         <label htmlFor={cFin.id} className="text-caption text-muted-foreground">
           Fin
         </label>
-        <Input
+        <CampoDeDia
           id={cFin.id}
-          type="date"
           value={fin}
-          aria-invalid={mensajeDeFin ? true : undefined}
-          invalid={Boolean(mensajeDeFin)}
-          aria-describedby={mensajeDeFin ? `${cFin.id}-error` : undefined}
-          onChange={(e) => {
-            setFin(e.target.value);
+          onChange={(v) => {
+            setFin(v);
             setLocales({});
             cFin.onEditar();
           }}
+          invalido={Boolean(Boolean(mensajeDeFin))}
+          describedBy={mensajeDeFin ? `${cFin.id}-error` : undefined}
         />
         <ErrorDelCampo id={`${cFin.id}-error`} mensaje={mensajeDeFin} />
       </div>

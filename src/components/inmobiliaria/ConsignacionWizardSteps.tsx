@@ -55,6 +55,7 @@ import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { idDelCampoDelAsistente, topesDelPasoDelInmueble } from '@/lib/inmuebles/errores-del-asistente';
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
 
+import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 // ============================================================================
 // Shared Types
 // ============================================================================
@@ -664,11 +665,10 @@ export function StepPropertyData({ formData, updateFormData, erroresDelServidor 
           <label htmlFor={idDelCampoDelAsistente('consignedAt')} className="block text-sm font-medium text-fg dark:text-fg-subtle">
             {t('inmobiliaria.consignaciones.wizard.step2.consignedAtLabel')}
           </label>
-          <Input
-            type="date"
+          <CampoDeDia
+            {...ariaDelCampoDeDia(aria('consignedAt', errors.consignedAt))}
             value={formData.consignedAt || ''}
-            onChange={(e) => updateFormData({ consignedAt: e.target.value })}
-            {...aria('consignedAt', errors.consignedAt)}
+            onChange={(v) => updateFormData({ consignedAt: v })}
             className={cn('w-full sm:w-64', errors.consignedAt && 'border-danger/30')}
           />
           <ErrorDelCampo

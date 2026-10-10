@@ -161,6 +161,7 @@ import {
   useCarteraDelCliente,
   usePlanDeImputacion,
 } from './ReciboPorCliente';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 /**
  * El ícono de cada medio, por su TIPO. Las opciones las arma
@@ -1378,9 +1379,9 @@ export function RegistrarPagoModal({
                   <Calendar className="h-4 w-4 text-fg-muted" />
                   {t('recibos.form.fechaLabel')}
                 </label>
-                <Input
+                <CampoDeDia
                   id="fecha-recibo"
-                  type="date"
+                  requerido
                   /*
                    * Sólo techo (`hoy`). El piso que puso R4 (auditoría 13-09)
                    * se quitó el 2026-09-16: el recibo lleva la fecha en la que
@@ -1388,17 +1389,17 @@ export function RegistrarPagoModal({
                    */
                   max={hoy}
                   value={fecha}
-                  onChange={(e) => {
-                    setFecha(e.target.value);
+                  onChange={(v) => {
+                    setFecha(v);
                     olvidarDelServidor('fecha');
                   }}
-                  aria-invalid={
+                  invalido={
                     (problemaDeLaFecha !== null && problemaDeLaFecha !== 'vacia') ||
                     errorDeLaFecha !== null ||
                     (tocado && !fecha) ||
                     Boolean(erroresDelServidor.fecha)
                   }
-                  aria-describedby="fecha-recibo-error"
+                  describedBy="fecha-recibo-error"
                   className={cn(
                     'w-full',
                     (tocado && !fecha) ||

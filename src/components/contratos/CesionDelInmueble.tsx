@@ -38,7 +38,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/toast";
@@ -52,6 +51,7 @@ import type { Propietario } from "@/lib/types/inmobiliaria";
 // QA-CONT C-10: la fecha larga de la casa, nunca el ISO crudo.
 import { diaLegible } from "@/lib/mandato/textos";
 import { hoyEnColombia } from "@/lib/fechas/fecha-de-la-casa";
+import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
 
 /** 100 % en puntos básicos, el mismo lenguaje del mandato. */
 const BPS_TOTAL = 10000;
@@ -175,17 +175,16 @@ export function CesionDelInmueble({
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="desde">Desde qué día es del nuevo dueño</Label>
-            <Input
+            <CampoDeDia
               id="desde"
-              type="date"
               value={desde}
-              onChange={(e) => {
-                setDesde(e.target.value);
+              onChange={(v) => {
+                setDesde(v);
                 setErrores((prev) => ({ ...prev, desde: undefined }));
               }}
-              data-testid="cesion-desde"
-              aria-invalid={errores.desde ? true : undefined}
-              aria-describedby="desde-error"
+              invalido={Boolean(errores.desde)}
+              describedBy="desde-error"
+              testid="cesion-desde"
             />
             <ErrorDelCampo
               id="desde-error"

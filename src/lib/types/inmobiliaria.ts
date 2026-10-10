@@ -2454,6 +2454,8 @@ export interface AgencySocials {
   x?: string;
   tiktok?: string;
   whatsapp?: string;
+  /** Marketplace (09-10-2026): su canal de YouTube en su página. */
+  youtube?: string;
 }
 
 // Helper for default branding colors (used when the agency has none saved)
@@ -2701,6 +2703,12 @@ export interface AgencyProfile {
  * 0..30 per element; empty array allowed; scalars rejected).
  */
 export interface UpdateAgencyPayload {
+  /** Marketplace (09-10-2026): el nombre corto de su página (`leasefy.co/i/<slug>`). */
+  slug?: string;
+  /** El lema de su página; `null` lo quita. */
+  lema?: string | null;
+  /** Sólo `null`: quita la portada (subirla es `uploadAgencyPortada`). */
+  portadaUrl?: null;
   name?: string;
   nit?: string;
   address?: string;

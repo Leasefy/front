@@ -118,6 +118,8 @@ export interface BackendProperty {
   parkingSpaces: number | null;
   stratum: number | null;
   yearBuilt: number | null;
+  /** El video del inmueble en Instagram, TikTok, YouTube o Facebook (marketplace, 09-10-2026). Un back anterior no lo manda. */
+  videoUrl?: string | null;
   amenities: string[];
 
   // Timestamps
@@ -192,6 +194,8 @@ export interface PropertyFiltersParams {
   amenities?: string[];
   searchQuery?: string;
   naturalQuery?: string;
+  /** Sólo los de esta inmobiliaria (marketplace, 09-10-2026). */
+  agencyId?: string;
   page?: number;
   limit?: number;
   /** contract.md T-0038 §3.7 — absent means no constraint; NOT a default to RENT. */

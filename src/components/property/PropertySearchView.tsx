@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/layout/Navbar';
 import { PropertyGrid } from '@/components/property/PropertyGrid';
 import { AISearchInput } from '@/components/property/AISearchInput';
-import { AperturaConIA } from '@/components/marketplace/AperturaConIA';
 import dynamic from 'next/dynamic';
 import { MapToggle } from '@/components/map';
 import { TopeAprobadoBanner } from '@/components/tenant/TopeAprobadoBanner';
@@ -32,6 +31,7 @@ import {
   type TipoDeLaApi,
 } from '@/lib/marketplace/busqueda';
 import { CIUDADES_DEL_FILTRO } from '@/lib/marketplace/sugerencias';
+import { conNombres } from '@/lib/marketplace/con-nombres';
 import type { Property } from '@/lib/types/property';
 
 export { sugerenciasDelCatalogo, type Sugerencia } from '@/lib/marketplace/sugerencias';
@@ -122,13 +122,11 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
   // ── La búsqueda vive en la URL ──
   const claveDeLaUrl = searchParams.toString();
   const busqueda = useMemo(() => leerBusqueda(new URLSearchParams(claveDeLaUrl)), [claveDeLaUrl]);
-  const abrirConIA = searchParams.get('abrir') === 'ia' && !!busqueda.q;
 
   const cambiar = useCallback(
-    (b: Busqueda, opciones: { abrirConIA?: boolean } = {}) => {
+    (b: Busqueda) => {
       const qs = escribirBusqueda(limpia(b));
-      const extra = opciones.abrirConIA ? `${qs ? '&' : ''}abrir=ia` : '';
-      router.replace(qs || extra ? `${pathname}?${qs}${extra}` : pathname, { scroll: false });
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
     [router, pathname],
   );
@@ -138,7 +136,10 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
   const entendidos = busqueda.q ? meta?.filtrosEntendidos ?? null : null;
   // La búsqueda entera, con lo entendido ya como filtros: lo que dicen los menús.
   const vigente = useMemo(() => absorber(busqueda, entendidos), [busqueda, entendidos]);
-  const pastillas = useMemo(() => pastillasDe(busqueda, entendidos), [busqueda, entendidos]);
+  const pastillas = useMemo(
+    () => conNombres(pastillasDe(busqueda, entendidos), apiProperties),
+    [busqueda, entendidos, apiProperties],
+  );
 
   const [texto, setTexto] = useState(busqueda.q ?? '');
   const [refinar, setRefinar] = useState('');
@@ -176,12 +177,12 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
   }, []);
 
   // ── Acciones sobre la búsqueda ──
-  /** Una búsqueda nueva con IA: reemplaza la de antes y abre con el momento de Ori. */
+  /** Una búsqueda nueva con IA: reemplaza la de antes. */
   const buscarConIA = useCallback(
     (q: string) => {
       const limpio = q.trim();
       if (!limpio) return;
-      cambiar({ q: limpio }, { abrirConIA: true });
+      cambiar({ q: limpio });
     },
     [cambiar],
   );
@@ -240,7 +241,12 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
 
   const currentSortLabel = SORT_OPTIONS.find(o => o.value === sortBy)?.label || 'Recomendado';
   const total = meta?.total ?? filteredProperties.length;
-  const titulo = hayBusqueda(vigente) ? tituloDeLaBusqueda(vigente) : 'Busca como le hablarías a un asesor';
+  const deLaInmobiliaria = busqueda.inmobiliaria ? apiProperties.find((p) => p.agencyName)?.agencyName : null;
+  const titulo = deLaInmobiliaria
+    ? `${tituloDeLaBusqueda(vigente)} de ${deLaInmobiliaria}`
+    : hayBusqueda(vigente)
+      ? tituloDeLaBusqueda(vigente)
+      : 'Busca como le hablarías a un asesor';
 
   const handlePropertySelect = useCallback((id: string) => {
     setSelectedPropertyId(id);
@@ -319,17 +325,6 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
         : 'min-h-screen bg-background'
     )}>
       {!embedded && !sinNavbar && <Navbar />}
-
-      {abrirConIA && busqueda.q && (
-        <AperturaConIA
-          key={busqueda.q}
-          texto={busqueda.q}
-          cargando={isInitialLoading}
-          entendido={pastillas.map((p) => p.etiqueta)}
-          total={isInitialLoading ? null : total}
-          onTerminar={() => cambiar(busqueda)}
-        />
-      )}
 
       {/* Main Layout - Split View */}
       <div className={cn(

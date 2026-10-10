@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react';
 import { ImageSquare, X, DotsSixVertical, WarningCircle } from '@phosphor-icons/react';
 import { usePublish } from '@/lib/context/PublishContext';
 import { cn } from '@/lib/utils';
+import { LARGO_MAXIMO_DEL_ENLACE, MENSAJE_DEL_VIDEO, redDelEnlace } from '@/lib/marketplace/video';
 
 const MAX_PHOTOS = 10;
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -17,6 +18,8 @@ export function StepPhotos() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { addPhotoFiles, removePhotoFile: removeFile, reorderPhotoFiles } = usePublish();
+  const video = (draft.videoUrl ?? '').trim();
+  const videoInvalido = video.length > 0 && (video.length > LARGO_MAXIMO_DEL_ENLACE || !redDelEnlace(video));
 
   const processFiles = useCallback((files: FileList | File[]) => {
     setError(null);
@@ -220,6 +223,33 @@ export function StepPhotos() {
           )}
         </div>
       )}
+
+      {/* El video del inmueble (marketplace, 09-10-2026): el reel que ya subiste. */}
+      <div className="rounded-xl border border-border bg-surface p-4" data-testid="video-del-inmueble">
+        <label htmlFor="video-del-inmueble" className="block text-sm font-medium text-fg">
+          Video del inmueble <span className="font-normal text-fg-muted">(opcional)</span>
+        </label>
+        <p className="mt-0.5 text-[13px] text-fg-muted">
+          Pega el enlace del video que subiste a Instagram, TikTok, YouTube o Facebook. En Leasefy sale con el inmueble
+          y se abre allá.
+        </p>
+        <input
+          id="video-del-inmueble"
+          type="url"
+          inputMode="url"
+          placeholder="https://www.instagram.com/reel/…"
+          value={draft.videoUrl ?? ''}
+          onChange={(e) => updateDraft({ videoUrl: e.target.value })}
+          aria-invalid={videoInvalido || undefined}
+          aria-describedby={videoInvalido ? 'video-del-inmueble-error' : undefined}
+          className="mt-2 h-11 w-full rounded-lg border border-border bg-surface px-3 text-[15px] text-fg placeholder:text-fg-placeholder focus:border-primary focus:outline-none"
+        />
+        {videoInvalido && (
+          <p id="video-del-inmueble-error" className="mt-1.5 text-[13px] text-danger">
+            {MENSAJE_DEL_VIDEO}
+          </p>
+        )}
+      </div>
 
       {/* Tips */}
       <div className="flex items-start gap-3 p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-xl border border-neutral-200 dark:border-neutral-700">

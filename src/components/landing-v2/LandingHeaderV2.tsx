@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/lib/auth/use-auth";
 import { LandingAuthCta } from "./LandingAuthCta";
 import { LandingRegistroCta } from "./LandingRegistroCta";
+import { useCuentaParaPublicar } from "@/components/marketplace/CuentaParaPublicar";
 
 /**
  * LandingHeaderV2 — el header de la landing, uno solo.
@@ -56,11 +57,21 @@ interface LandingHeaderV2Props {
 }
 
 export function LandingHeaderV2({ activo, fxExterno = false }: LandingHeaderV2Props) {
-  const { user, isLoading, activeContext } = useAuth();
+  const { user, isLoading, activeContext, agencyRole } = useAuth();
   // Solo escondemos cuando SABEMOS que es inmobiliaria. Ante la duda (sesion
   // cargando, anonimo, inquilino, propietario) el enlace se muestra.
   const esInmobiliaria = !isLoading && (activeContext === "agency" || user?.role === "agency");
   const verMarketplace = !esInmobiliaria;
+  // «Publicar inmueble» también para la inmobiliaria (Nico, 09-10-2026: «que el
+  // menú de arriba también muestre publicar inmueble»): ella publica desde su
+  // panel. Su contador o una cuenta de sólo lectura no publican: no se ofrece.
+  const hrefPublicar = !esInmobiliaria
+    ? "/publicar"
+    : agencyRole === "CONTADOR" || agencyRole === "VIEWER"
+      ? null
+      : "/panel/inmobiliaria/inmuebles/nuevo";
+  // Sin sesión, «Publicar inmueble» abre la cuenta ENCIMA y explica por qué (Nico, 09-10-2026).
+  const { alTocar: alTocarPublicar, ventana: ventanaPublicar } = useCuentaParaPublicar(hrefPublicar ?? "/publicar");
 
   // «Ver planes», «Producto» y «Agentes AI» apuntan a secciones que viven en
   // el home. Desde /blog o /terminos un `#planes` pelado no lleva a ningun
@@ -72,13 +83,9 @@ export function LandingHeaderV2({ activo, fxExterno = false }: LandingHeaderV2Pr
   // del orden real: escondiendo un item a mano quedaba 02..07 y el menu se lee
   // roto. Los numeros son parte del diseno, no decoracion.
   const itemsMovil: { href: string; label: string; clave?: LandingHeaderV2Props["activo"] }[] = [
-    ...(verMarketplace
-      ? [
-          { href: "/propiedades", label: "Buscar inmueble", clave: "inmuebles" as const },
-          // Marketplace (Nico, 09-10-2026): publicar vuelve al menú público.
-          { href: "/publicar", label: "Publicar inmueble" },
-        ]
-      : []),
+    ...(verMarketplace ? [{ href: "/propiedades", label: "Buscar inmueble", clave: "inmuebles" as const }] : []),
+    // Marketplace (Nico, 09-10-2026): publicar vuelve al menú público, también para la inmobiliaria.
+    ...(hrefPublicar ? [{ href: hrefPublicar, label: "Publicar inmueble" }] : []),
     { href: `${alHome}#producto`, label: "Producto" },
     { href: `${alHome}#producto`, label: "Agentes AI" },
     { href: `${alHome}#contacto`, label: "Planes" },
@@ -153,7 +160,8 @@ export function LandingHeaderV2({ activo, fxExterno = false }: LandingHeaderV2Pr
 
   return (
     <>
-<header id="hdr"><div className="container hrow"><a href="/" className="logo" aria-label="Leasefy — inicio"><svg viewBox="0 0 947 235"><use href="#lfLogo" /></svg></a><nav className="main"><a href={`${alHome}#producto`} id="pmTrigger" data-nav="producto">Producto <i className="pm-ar" aria-hidden="true">▾</i></a>{verMarketplace && <a href="/propiedades" data-nav="inmuebles" aria-current={activo === "inmuebles" ? "page" : undefined}>Buscar inmueble</a>}{verMarketplace && <a href="/publicar" data-nav="publicar">Publicar inmueble</a>}<a href="/avaluo" data-nav="avaluo" aria-current={activo === "avaluo" ? "page" : undefined}>Avalúos</a><a href="/blog" data-nav="blog" aria-current={activo === "blog" ? "page" : undefined}>Blog</a><a href="/contacto" data-nav="contacto" aria-current={activo === "contacto" ? "page" : undefined}>Contacto</a></nav><div className="hcta"><a className="lnk" href={`${alHome}#planes`}>Ver planes</a><LandingAuthCta variant="header" /><LandingRegistroCta variant="header" /></div><button className="mbtn" id="menuBtn" aria-label="Abrir menú">Menú <span className="bars"><span></span><span></span></span></button></div><div id="pmenu" aria-hidden="true"><div className="container pm-grid"><div className="pm-sys"><p className="pm-k">El sistema</p><a className="pm-big" href="/productos/crm"><span className="pm-gn" aria-hidden="true">01</span><b>CRM inmobiliario</b><span>Tu comercial de punta a punta</span><i>Ver producto →</i></a><a className="pm-big" href="/productos/erp"><span className="pm-gn" aria-hidden="true">02</span><b>ERP de arriendos</b><span>La plata en orden, sola</span><i>Ver producto →</i></a></div><div className="pm-agents"><p className="pm-k">Agentes AI</p><div className="pm-list"><a href="/productos/cobranza"><b>Cobranza</b><span>La mora se persigue sola</span></a><a href="/productos/inquilino"><b>Estudio del inquilino</b><span>Verificación en minutos</span></a><a href="/productos/avaluos"><b>Avalúos</b><span>El precio correcto</span></a><a href="/productos/conciliacion"><b>Conciliación</b><span>Cuadre contra el banco</span></a><a href="/productos/matching"><b>Matching</b><span>Opciones el mismo día</span></a><a href="/productos/asegurabilidad"><b>Asegurabilidad</b><span>Contratos protegidos</span></a></div></div><div className="pm-foot"><a href={`${alHome}#producto`}>Visión general en el home ↓</a><a href={`${alHome}#planes`}>Ver planes →</a></div></div></div></header><div className="mmenu" id="mmenu"><div className="top"><span className="logo mlogo"><svg viewBox="0 0 947 235"><use href="#lfLogo" /></svg></span><button id="closeBtn" aria-label="Cerrar menú">Cerrar ✕</button></div><nav>{itemsMovil.map((it, i) => (<a key={`${it.href}-${it.label}`} href={it.href} aria-current={it.clave && activo === it.clave ? "page" : undefined}><span className="n">{String(i + 1).padStart(2, "0")}</span><span className="t">{it.label}</span></a>))}</nav><div className="bottom"><LandingAuthCta variant="mobile" /><LandingRegistroCta variant="mobile" /><a className="btn outline lg" href={`${alHome}#planes`}>Ver planes</a></div></div>
+<header id="hdr"><div className="container hrow"><a href="/" className="logo" aria-label="Leasefy — inicio"><svg viewBox="0 0 947 235"><use href="#lfLogo" /></svg></a><nav className="main"><a href={`${alHome}#producto`} id="pmTrigger" data-nav="producto">Producto <i className="pm-ar" aria-hidden="true">▾</i></a>{verMarketplace && <a href="/propiedades" data-nav="inmuebles" aria-current={activo === "inmuebles" ? "page" : undefined}>Buscar inmueble</a>}{hrefPublicar && <a href={hrefPublicar} data-nav="publicar" onClick={alTocarPublicar}>Publicar inmueble</a>}<a href="/avaluo" data-nav="avaluo" aria-current={activo === "avaluo" ? "page" : undefined}>Avalúos</a><a href="/blog" data-nav="blog" aria-current={activo === "blog" ? "page" : undefined}>Blog</a><a href="/contacto" data-nav="contacto" aria-current={activo === "contacto" ? "page" : undefined}>Contacto</a></nav><div className="hcta"><a className="lnk" href={`${alHome}#planes`}>Ver planes</a><LandingAuthCta variant="header" /><LandingRegistroCta variant="header" /></div><button className="mbtn" id="menuBtn" aria-label="Abrir menú">Menú <span className="bars"><span></span><span></span></span></button></div><div id="pmenu" aria-hidden="true"><div className="container pm-grid"><div className="pm-sys"><p className="pm-k">El sistema</p><a className="pm-big" href="/productos/crm"><span className="pm-gn" aria-hidden="true">01</span><b>CRM inmobiliario</b><span>Tu comercial de punta a punta</span><i>Ver producto →</i></a><a className="pm-big" href="/productos/erp"><span className="pm-gn" aria-hidden="true">02</span><b>ERP de arriendos</b><span>La plata en orden, sola</span><i>Ver producto →</i></a></div><div className="pm-agents"><p className="pm-k">Agentes AI</p><div className="pm-list"><a href="/productos/cobranza"><b>Cobranza</b><span>La mora se persigue sola</span></a><a href="/productos/inquilino"><b>Estudio del inquilino</b><span>Verificación en minutos</span></a><a href="/productos/avaluos"><b>Avalúos</b><span>El precio correcto</span></a><a href="/productos/conciliacion"><b>Conciliación</b><span>Cuadre contra el banco</span></a><a href="/productos/matching"><b>Matching</b><span>Opciones el mismo día</span></a><a href="/productos/asegurabilidad"><b>Asegurabilidad</b><span>Contratos protegidos</span></a></div></div><div className="pm-foot"><a href={`${alHome}#producto`}>Visión general en el home ↓</a><a href={`${alHome}#planes`}>Ver planes →</a></div></div></div></header><div className="mmenu" id="mmenu"><div className="top"><span className="logo mlogo"><svg viewBox="0 0 947 235"><use href="#lfLogo" /></svg></span><button id="closeBtn" aria-label="Cerrar menú">Cerrar ✕</button></div><nav>{itemsMovil.map((it, i) => (<a key={`${it.href}-${it.label}`} href={it.href} onClick={it.href === hrefPublicar ? alTocarPublicar : undefined} aria-current={it.clave && activo === it.clave ? "page" : undefined}><span className="n">{String(i + 1).padStart(2, "0")}</span><span className="t">{it.label}</span></a>))}</nav><div className="bottom"><LandingAuthCta variant="mobile" /><LandingRegistroCta variant="mobile" /><a className="btn outline lg" href={`${alHome}#planes`}>Ver planes</a></div></div>
+{ventanaPublicar}
     </>
   );
 }

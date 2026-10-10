@@ -59,6 +59,7 @@ import { ConsignacionCard } from '@/components/inmobiliaria/ConsignacionCard';
 import { InmuebleSinMandatoCard } from '@/components/inmobiliaria/InmuebleSinMandatoCard';
 import { ConsignacionTable } from '@/components/inmobiliaria/ConsignacionTable';
 import { DisponiblesSinSenal } from '@/components/inmobiliaria/DisponiblesSinSenal';
+import { AvisoDeNoPublicados } from '@/components/inmobiliaria/marketplace/AvisoDeNoPublicados';
 import { cajonDelInmueble, contarPorCajon } from '@/lib/inmobiliaria/cajon-del-inmueble';
 import { coincideConLaBusqueda } from '@/lib/inmuebles/buscar-en-el-portafolio';
 import { ConsignacionFilters, ConsignacionFiltersState } from '@/components/inmobiliaria/ConsignacionFilters';
@@ -530,6 +531,10 @@ function PortafolioContent() {
       {/* Qué inmuebles puede abrir esta persona, en este teléfono, sin red.
           No aparece hasta que hay al menos uno preparado. */}
       <DisponiblesSinSenal aviso={avisoSinSenal} />
+
+      {/* 🔴 (10-10-2026, Nico) Lo que no sale en el marketplace y elegir
+          cuáles publicar. No se pinta si no hay nada por decidir. */}
+      <AvisoDeNoPublicados />
 
       {/*
         Aviso no bloqueante (contract.md T-0030 §3.3 — "Degrade, do not

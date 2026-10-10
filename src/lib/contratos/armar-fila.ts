@@ -75,6 +75,24 @@ function plataDeContrato(v: unknown, conCentavos = false): number | undefined {
 }
 
 /**
+ * 🔴 «Saldo» del sistema anterior (Nico, 10-10-2026). Se lee TAL CUAL: con su
+ * signo (un saldo a favor del inquilino es negativo, y el export lo escribe
+ * «$-4.500,00») y con sus centavos. Lo que no es plata, pasa del tope o trae
+ * más de dos decimales viaja ausente: la fila sigue sin saldo, nunca con uno
+ * adivinado.
+ */
+function saldoDelArchivo(v: unknown): number | undefined {
+  if (!hayValor(v) || plataConLetras(v)) return undefined
+  const n = plataDeOrigen(v)
+  if (n === undefined || !Number.isFinite(n) || Math.abs(n) > MAX_COP_POR_MOVIMIENTO) return undefined
+  try {
+    return aCentavos(n, { talCual: true }) / 100
+  } catch {
+    return undefined
+  }
+}
+
+/**
  * 🔴 EN-38 (QA-MIGRACION-95, 06-10-2026; misma regla que NI-07 en inmuebles):
  * con la llave de los contratos APAGADA, una celda con centavos de verdad
  * («2.500.000,29») NO se redondea en silencio. `comoEntero` la volvía
@@ -409,6 +427,7 @@ export function leerFilaDelArchivo(
       ? { canonConCentavosDelArchivo: String(celdaConCentavos).trim().slice(0, 60) }
       : {}),
     deposit: plataDeContrato(rawDeposito, conCentavos),
+    saldoInicial: saldoDelArchivo(v('saldo')),
     // X5: un día de pago ausente o fuera de [1,28] viaja ausente, nunca
     // fabricado como "el 1" — eso es lo que hacía que 1383 filas quedaran
     // fechadas al 1 de todos los meses sin que nadie lo pidiera.

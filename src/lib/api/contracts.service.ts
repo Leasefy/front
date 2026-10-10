@@ -1085,6 +1085,13 @@ export interface FilaAMigrar {
   /** C14 (QA-MIGRACION-95): la fila de la hoja de Excel (con encabezado y títulos contados). */
   filaDelArchivo?: number;
   deposit?: number;
+  /**
+   * 🔴 «Saldo» (Nico, 10-10-2026): lo que el inquilino debía en el sistema
+   * anterior a la fecha de corte, tal cual (con su signo y sus centavos).
+   * Entra a la cartera como «Saldo del sistema anterior». Ausente = el archivo
+   * no lo trae.
+   */
+  saldoInicial?: number;
   paymentDay?: number;
   /** Sin esto no se puede liquidar: vivienda va sin IVA, comercial con IVA. */
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL';

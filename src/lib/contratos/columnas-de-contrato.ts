@@ -89,6 +89,12 @@ export type CampoDeContrato =
   | "diasDePlazo"
   | "canon"
   | "deposito"
+  /**
+   * 🔴 Lo que el inquilino debía en el sistema anterior a la fecha de corte
+   * (Nico, 10-10-2026: «Columna "Saldo" en contratos»). Entra a la cartera
+   * como «Saldo del sistema anterior».
+   */
+  | "saldo"
   | "diaDePago"
   | "uso"
   | "periodicidad"
@@ -310,6 +316,11 @@ function contienePalabras(canon: string, termino: string): boolean {
  * ese error se comete UNA vez y sale en la factura.
  */
 export const SIN_CAMPO_EN_CONTRATO = [
+  /*
+   * Un saldo A FAVOR del inquilino no es su deuda: meterlo en «Saldo» lo
+   * cobraría (Nico, 10-10-2026; qué hacer con él todavía no está decidido).
+   */
+  "saldo a favor",
   /*
    * Direcciones y ciudades que NO son la del inmueble. La composición por rol
    * (abajo) ya cubre «Dirección del arrendatario»; estas entradas cubren las
@@ -866,6 +877,30 @@ const DICCIONARIO: Array<{ campo: CampoDeContrato; terminos: string[] }> = [
     campo: "creadoPor",
     terminos: ["creado por", "creada por", "usuario que creo", "registrado por"],
   },
+  {
+    /*
+     * 🔴 «Saldo» (Nico, 10-10-2026): la deuda del inquilino en el sistema
+     * anterior a la fecha de corte. «Saldo a la fecha de corte» gana a «fecha
+     * de corte» (fecha de cartera) por tener más palabras. «Deuda» y «Cartera»
+     * a secas quedan dudosas: alguien confirma que son el saldo del inquilino.
+     */
+    campo: "saldo",
+    terminos: [
+      "saldo del sistema anterior",
+      "saldo a la fecha de corte",
+      "saldo al corte",
+      "saldo inicial",
+      "saldo anterior",
+      "saldo pendiente",
+      "saldo por cobrar",
+      "saldo adeudado",
+      "saldo en mora",
+      "valor adeudado",
+      "saldo",
+      "deuda",
+      "cartera",
+    ],
+  },
 ];
 
 /**
@@ -900,6 +935,8 @@ const TERMINOS_DEBILES = new Set([
 ]);
 
 const TERMINOS_DUDOSOS = new Set([
+  "deuda",
+  "cartera",
   "desde",
   "hasta",
   "inicio",

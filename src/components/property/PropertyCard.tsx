@@ -1,16 +1,19 @@
 'use client';
 
 import { barrioYCiudad } from '@/lib/inmuebles/barrio-y-ciudad';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Heart, MapPin, CaretLeft, CaretRight, Check, ShieldCheck } from '@phosphor-icons/react';
+import { Heart, MapPin, CaretLeft, CaretRight, Check, Info, Play, ShieldCheck } from '@phosphor-icons/react';
 import { IconButton } from '@leasefy/cadence';
 
 import { cn } from '@/lib/utils';
 import { AdministradoPor } from '@/components/property/AdministradoPor';
+import { PortadaSinFotos } from '@/components/property/PortadaSinFotos';
+import { areaConocida } from '@/lib/inmuebles/area-conocida';
 import { formatCurrency, formatArea } from '@/lib/format';
 import { costoMensual, sinDeposito } from '@/lib/marketplace/busqueda';
+import { NOMBRE_DE_LA_RED, videoDelInmueble } from '@/lib/marketplace/video';
 import type { Property } from '@/lib/types/property';
 import type { QualificationResult } from '@/lib/scoring/propertyMatching';
 
@@ -31,7 +34,12 @@ export interface PropertyCardProps {
    * Por qué sale en la lista (marketplace, 09-10-2026): lo pedido que cumple y
    * lo que el inmueble no dice. Sin búsqueda no se pinta nada.
    */
-  explicacion?: { cumple: string[]; sinDato: string[] } | null;
+  explicacion?: { cumple: string[]; sinDato: string[]; noCumple?: string[] } | null;
+  /**
+   * Debajo de «Administrado por…» (marketplace, 09-10-2026): «% la recomienda»
+   * de esa inmobiliaria. Lo pone quien sabe de ella; sin él, nada.
+   */
+  debajoDeQuienLoOfrece?: ReactNode;
 }
 
 export function PropertyCard({
@@ -46,6 +54,7 @@ export function PropertyCard({
   basePath = '/propiedades',
   linkQuery,
   explicacion,
+  debajoDeQuienLoOfrece,
 }: PropertyCardProps) {
   const {
     id,
@@ -75,6 +84,9 @@ export function PropertyCard({
   // Lo que cuesta al mes de verdad y si la ley prohíbe el depósito (Ley 820).
   const costo = costoMensual(property);
   const vivienda = sinDeposito(property);
+  // El video que la inmobiliaria subió a su red (marketplace, 09-10-2026): la
+  // ficha lo abre; aquí sólo se avisa que lo hay.
+  const video = videoDelInmueble(property);
 
   const [activeImage, setActiveImage] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -92,6 +104,9 @@ export function PropertyCard({
     typeof src === 'string' && src.trim().length > 0;
   const gallery = (images ?? []).filter(isNonEmpty);
   const sinFotos = gallery.length === 0 && !isNonEmpty(thumbnailUrl);
+  // Las etiquetas de vidrio son blancas sobre la foto; sin foto, el fondo es claro: van oscuras.
+  // Sobre una foto clara el blanco translúcido no se leía (QA, 10-10-2026): fondo oscuro.
+  const vidrio = sinFotos ? 'text-fg-muted bg-white/70 border-white/60' : 'text-white bg-black/40 border-white/15';
   const allImages =
     gallery.length > 0
       ? gallery
@@ -134,11 +149,20 @@ export function PropertyCard({
     onHoverEnd?.();
   };
 
+  const chip =
+    'inline-flex items-center gap-1.5 whitespace-nowrap text-[12px] text-foreground/70 bg-surface-muted border border-border rounded-full px-2.5 py-1.5 font-mono tabular-nums';
+
   const typeLabels: Record<string, string> = {
     apartment: 'Apartamento',
     house: 'Casa',
     studio: 'Estudio',
     room: 'Habitación',
+    // Sin estos, la etiqueta salía en inglés («COMMERCIAL»; QA del marketplace, 10-10-2026).
+    commercial: 'Local',
+    office: 'Oficina',
+    warehouse: 'Bodega',
+    parking: 'Parqueadero',
+    land: 'Lote',
   };
 
   return (
@@ -157,7 +181,8 @@ export function PropertyCard({
         {/* All images stacked with opacity crossfade */}
         {allImages.map((src, i) => (
           <Image
-            key={src}
+            // Con la posición: un inmueble puede traer la misma foto dos veces.
+            key={`${i}-${src}`}
             src={src}
             alt={`${title} - ${i + 1}`}
             fill
@@ -171,14 +196,7 @@ export function PropertyCard({
           />
         ))}
 
-        {sinFotos && (
-          <div
-            data-testid="inmueble-sin-fotos"
-            className="absolute inset-0 flex items-center justify-center text-sm font-medium text-fg-muted"
-          >
-            Sin fotos
-          </div>
-        )}
+        {sinFotos && <PortadaSinFotos tipo={type} semilla={id} />}
 
         {/* Subtle bottom gradient for depth */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-reveal" />
@@ -247,13 +265,24 @@ export function PropertyCard({
         )}
 
         {/* Glass badges — top left */}
-        <div className="absolute top-3 left-3 flex gap-1.5 z-10">
-          <span className="inline-flex items-center text-[11px] font-mono font-normal uppercase text-white bg-white/15 backdrop-blur-xl border border-white/20 rounded-full px-2.5 py-1">
-            {isSaleListing ? 'En venta' : 'En arriendo'}
-          </span>
-          <span className="inline-flex items-center text-[11px] font-mono font-normal uppercase text-white bg-white/15 backdrop-blur-xl border border-white/20 rounded-full px-2.5 py-1">
-            {typeLabels[type] || type}
-          </span>
+        <div className="absolute top-3 left-3 z-10 flex flex-col items-start gap-1.5">
+          <div className="flex gap-1.5">
+            <span className={cn('inline-flex items-center text-[11px] font-mono font-normal uppercase backdrop-blur-xl border rounded-full px-2.5 py-1', vidrio)}>
+              {isSaleListing ? 'En venta' : 'En arriendo'}
+            </span>
+            <span className={cn('inline-flex items-center text-[11px] font-mono font-normal uppercase backdrop-blur-xl border rounded-full px-2.5 py-1', vidrio)}>
+              {typeLabels[type] || type}
+            </span>
+          </div>
+          {video && (
+            <span
+              data-testid="tiene-video"
+              className="inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 text-[11.5px] font-medium text-white backdrop-blur-sm"
+            >
+              <Play className="h-3 w-3" weight="fill" aria-hidden />
+              Video en {NOMBRE_DE_LA_RED[video.red]}
+            </span>
+          )}
         </div>
 
         {/* Wishlist button — top right, glass */}
@@ -266,10 +295,10 @@ export function PropertyCard({
             aria-label={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
             className={cn(
               'absolute right-3 top-3 rounded-full p-2 z-10',
-              'bg-white/15 backdrop-blur-xl border border-white/20',
+              'backdrop-blur-xl border',
+              sinFotos ? 'bg-white/70 border-white/60 hover:bg-white/90' : 'bg-white/15 border-white/20 hover:bg-white/30',
               'transition-[background-color,color] duration-slow',
-              'hover:bg-white/30',
-              isWishlisted ? 'text-danger' : 'text-white/80'
+              isWishlisted ? 'text-danger' : sinFotos ? 'text-fg-muted' : 'text-white/80'
             )}
           />
         )}
@@ -330,6 +359,7 @@ export function PropertyCard({
             administrador={{ agencyId: agencyId ?? null, nombre: agencyName, logoUrl: agencyLogoUrl ?? null }}
           />
         )}
+        {agencyName && debajoDeQuienLoOfrece && <div className="mt-1">{debajoDeQuienLoOfrece}</div>}
 
         {/* Price — prominent */}
         <p className="text-[22px] font-mono tabular-nums font-bold text-foreground tracking-[-0.03em] leading-none mt-3">
@@ -346,35 +376,41 @@ export function PropertyCard({
           </p>
         )}
 
-        {/* Features — clean chips */}
-        <div
-          className="flex items-center gap-2 mt-4"
-          aria-label="Características de la propiedad"
-        >
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70 bg-surface-muted border border-border rounded-full px-2.5 py-1.5 font-mono tabular-nums">
-            <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-              <rect x="3" y="3" width="18" height="18" rx="1" />
-              <path d="M3 9h18M9 21V9" />
-            </svg>
-            {formatArea(area)}
-          </span>
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70 bg-surface-muted border border-border rounded-full px-2.5 py-1.5 font-mono tabular-nums">
-            <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-              <path d="M3 12h18M3 12v6a2 2 0 002 2h14a2 2 0 002-2v-6M3 12V8a4 4 0 014-4h1a3 3 0 013 3v5" />
-            </svg>
-            {bedrooms ?? '—'} hab
-          </span>
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-foreground/70 bg-surface-muted border border-border rounded-full px-2.5 py-1.5 font-mono tabular-nums">
-            <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-              <path d="M4 12h16a2 2 0 012 2v2a4 4 0 01-4 4H6a4 4 0 01-4-4v-2a2 2 0 012-2z" />
-              <path d="M6 12V5a2 2 0 012-2h8a2 2 0 012 2v7" />
-            </svg>
-            {bathrooms ?? '—'} baño{bathrooms !== 1 ? 's' : ''}
-          </span>
-        </div>
+        {/* Features — clean chips. Sólo lo que se sabe (antes «— hab» en un local)
+            y sin partirse en dos líneas en una tarjeta angosta (QA, 10-10-2026). */}
+        {(areaConocida(area) || (bedrooms ?? 0) > 0 || (bathrooms ?? 0) > 0) && (
+          <div className="flex flex-wrap items-center gap-2 mt-4" aria-label="Características de la propiedad">
+            {areaConocida(area) && (
+              <span className={chip}>
+                <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="1" />
+                  <path d="M3 9h18M9 21V9" />
+                </svg>
+                {formatArea(area)}
+              </span>
+            )}
+            {(bedrooms ?? 0) > 0 && (
+              <span className={chip}>
+                <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <path d="M3 12h18M3 12v6a2 2 0 002 2h14a2 2 0 002-2v-6M3 12V8a4 4 0 014-4h1a3 3 0 013 3v5" />
+                </svg>
+                {bedrooms} hab
+              </span>
+            )}
+            {(bathrooms ?? 0) > 0 && (
+              <span className={chip}>
+                <svg className="h-3.5 w-3.5 text-foreground/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+                  <path d="M4 12h16a2 2 0 012 2v2a4 4 0 01-4 4H6a4 4 0 01-4-4v-2a2 2 0 012-2z" />
+                  <path d="M6 12V5a2 2 0 012-2h8a2 2 0 012 2v7" />
+                </svg>
+                {bathrooms} baño{bathrooms !== 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Lo que pesa al decidir: sin depósito (ley) y por qué sale en la lista. */}
-        {(vivienda || (explicacion && explicacion.cumple.length > 0)) && (
+        {(vivienda || (explicacion && (explicacion.cumple.length > 0 || (explicacion.noCumple?.length ?? 0) > 0))) && (
           <div className="mt-3 space-y-1.5 border-t border-border pt-3 text-[12.5px] leading-snug">
             {vivienda && (
               <p className="flex items-start gap-1.5 text-fg-muted" data-testid="sin-deposito">
@@ -388,6 +424,18 @@ export function PropertyCard({
                 <span className="line-clamp-2">
                   Cumple: {explicacion.cumple.join(' · ')}
                   {explicacion.sinDato.length > 0 && (
+                    <span className="text-fg-subtle"> · No dice: {explicacion.sinDato.join(', ')}</span>
+                  )}
+                </span>
+              </p>
+            )}
+            {/* «Los más cercanos»: lo que pediste y éste no tiene, dicho sin rodeos. */}
+            {explicacion && (explicacion.noCumple?.length ?? 0) > 0 && (
+              <p className="flex items-start gap-1.5 text-fg-muted" data-testid="no-cumple">
+                <Info className="mt-[1px] h-3.5 w-3.5 shrink-0 text-warning" aria-hidden />
+                <span className="line-clamp-2">
+                  No cumple: {explicacion.noCumple!.join(' · ')}
+                  {explicacion.cumple.length === 0 && explicacion.sinDato.length > 0 && (
                     <span className="text-fg-subtle"> · No dice: {explicacion.sinDato.join(', ')}</span>
                   )}
                 </span>

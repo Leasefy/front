@@ -13,6 +13,7 @@ import {
   tituloDeLaBusqueda,
   type Busqueda,
   type FiltrosEntendidos,
+  relajada,
 } from './busqueda';
 import type { Property } from '@/lib/types/property';
 
@@ -82,6 +83,14 @@ describe('la URL de una búsqueda', () => {
     });
   });
 
+  it('la inmobiliaria va por su id y sólo si es un id', () => {
+    const id = '7b1f0c1e-2a3b-4c5d-8e9f-0a1b2c3d4e5f';
+    expect(leer(`inmobiliaria=${id}`)).toEqual({ inmobiliaria: id });
+    expect(escribirBusqueda({ inmobiliaria: id })).toBe(`inmobiliaria=${id}`);
+    expect(leer('inmobiliaria=nogal')).toEqual({});
+    expect(filtrosDeLaApi({ inmobiliaria: id })).toMatchObject({ agencyId: id });
+  });
+
   it('dos búsquedas iguales dan la misma dirección', () => {
     expect(escribirBusqueda({ hasta: 1, ciudad: 'Cali' })).toBe(escribirBusqueda({ ciudad: 'Cali', hasta: 1 }));
   });
@@ -142,6 +151,22 @@ describe('las pastillas', () => {
       ciudad: 'Bello',
       habitaciones: 3,
     });
+  });
+});
+
+describe('los más cercanos', () => {
+  it('suelta los detalles y conserva lo grueso', () => {
+    expect(
+      relajada({ operacion: 'arriendo', tipo: 'APARTMENT', ciudad: 'Medellín', habitaciones: 2, comodidades: ['pets'], hasta: 3_000_000 }),
+    ).toEqual({ operacion: 'arriendo', tipo: 'APARTMENT', ciudad: 'Medellín', hasta: 3_000_000 });
+  });
+
+  it('lo entendido del texto también se suelta', () => {
+    expect(relajada({ q: 'apto de 2 habitaciones' }, { propertyType: 'APARTMENT', bedrooms: 2 })).toEqual({ tipo: 'APARTMENT' });
+  });
+
+  it('sin detalles que soltar no hay otra búsqueda', () => {
+    expect(relajada({ ciudad: 'Medellín', tipo: 'HOUSE' })).toBeNull();
   });
 });
 

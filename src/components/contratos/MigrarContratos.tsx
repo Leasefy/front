@@ -158,6 +158,7 @@ const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   fechaFin: "Fecha de terminación",
   canon: "Canon",
   deposito: "Depósito",
+  saldo: "Saldo del sistema anterior",
   diaDePago: "Día de pago",
   uso: "Uso del inmueble",
   periodicidad: "Periodicidad",

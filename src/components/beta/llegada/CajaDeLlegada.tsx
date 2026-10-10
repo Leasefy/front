@@ -77,6 +77,12 @@ interface CajaDeLlegadaProps {
   encima?: ReactNode;
   /** El texto fijo cuando no hay ejemplos que se escriben solos. */
   placeholder?: string;
+  /**
+   * Otro nombre para el botón del menú y para la etiqueta del campo (el
+   * marketplace público usa la MISMA caja: «Búsquedas de ejemplo», «¿Qué estás
+   * buscando?»). Sin esto, los del chat del panel.
+   */
+  textos?: { boton: string; botonCorto: string; etiqueta: string };
   className?: string;
 }
 
@@ -95,6 +101,7 @@ export function CajaDeLlegada({
   ocupado = false,
   encima,
   placeholder,
+  textos,
   className,
 }: CajaDeLlegadaProps) {
   const { t } = useI18n();
@@ -224,7 +231,7 @@ export function CajaDeLlegada({
               )}
             >
               <label htmlFor={idCampo} className="sr-only">
-                {t('beta.welcome.inputLabel')}
+                {textos?.etiqueta ?? t('beta.welcome.inputLabel')}
               </label>
               <span id={idAyuda} className="sr-only">
                 {t('beta.welcome.inputHint')}
@@ -381,7 +388,7 @@ export function CajaDeLlegada({
                           onClick={onPlantillas}
                           aria-haspopup="menu"
                           aria-expanded={plantillasAbiertas}
-                          aria-label={t('beta.templates.button')}
+                          aria-label={textos?.boton ?? t('beta.templates.button')}
                           data-testid="boton-de-preguntas"
                           className={cn(
                             'inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4',
@@ -396,8 +403,8 @@ export function CajaDeLlegada({
                           {/* «Preguntas predeterminadas», no «Plantillas» (Nico,
                               03-10). En el celular no cabe junto a Voz y Enviar:
                               ahí dice «Preguntas». */}
-                          <span className="sm:hidden">{t('beta.templates.buttonCorto')}</span>
-                          <span className="hidden sm:inline">{t('beta.templates.button')}</span>
+                          <span className="sm:hidden">{textos?.botonCorto ?? t('beta.templates.buttonCorto')}</span>
+                          <span className="hidden sm:inline">{textos?.boton ?? t('beta.templates.button')}</span>
                         </button>
                         {menuDePlantillas}
                       </span>

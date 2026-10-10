@@ -62,6 +62,7 @@ const ORDEN: CampoDeContrato[] = [
   'canonTotal',
   'diaDePago',
   'deposito',
+  'saldo',
   'uso',
   'periodicidad',
   'comision',
@@ -177,6 +178,8 @@ function valorLegible(
       return f.monthlyRent === undefined ? null : formatCurrency(f.monthlyRent)
     case 'deposito':
       return f.deposit === undefined ? null : formatCurrency(f.deposit)
+    case 'saldo':
+      return f.saldoInicial === undefined ? null : formatCurrency(f.saldoInicial)
     case 'diaDePago':
       return f.paymentDay === undefined ? null : `el ${f.paymentDay} de cada mes`
     case 'uso':

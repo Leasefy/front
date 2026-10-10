@@ -1902,6 +1902,8 @@
       "tabs": {
         "perfil": "Perfil",
         "perfilDesc": "Datos de la empresa, el extracto mensual al propietario y la renovación automática",
+        "tuPagina": "Tu página en Leasefy",
+        "tuPaginaDesc": "Tu nombre corto, tu portada y tus redes: tu página web es tu perfil en Leasefy",
         "branding": "Branding",
         "brandingDesc": "Logo, colores y estilo visual",
         "equipo": "Miembros y roles",
@@ -4256,6 +4258,8 @@
         "selectDepartment": "Elegir departamento",
         "neighborhood": "Barrio",
         "externalId": "Código de la inmobiliaria",
+        "videoUrl": "Video del inmueble",
+        "videoUrlHelper": "Pega el enlace del video que subiste a Instagram, TikTok, YouTube o Facebook. En el buscador de Leasefy se abre en esa red.",
         "externalIdHelper": "El código con el que este inmueble figura en tu sistema anterior. Es lo que lo amarra a sus contratos migrados.",
         "bedrooms": "Habitaciones",
         "bathrooms": "Baños",
@@ -4432,7 +4436,7 @@
           "property": "Propiedad",
           "commission": "Comisión",
           "agent": "Agente",
-          "inventory": "Inventario",
+          "inventory": "Fotos e inventario",
           "photos": "Fotos",
           "confirm": "Confirmar"
         },
@@ -4478,6 +4482,7 @@
           "subtitle": "Elige uno o varios propietarios, o crea uno nuevo"
         },
         "step2": {
+          "dondeVanLasFotos": "Las fotos y el video del inmueble se suben en el paso «Fotos e inventario»; puedes elegir varias fotos a la vez.",
           "title": "Datos del inmueble",
           "subtitle": "Ingresa la información básica del inmueble. Los campos con * son obligatorios.",
           "propertyTypeLabel": "Tipo de inmueble",
@@ -4557,6 +4562,7 @@
           "additionalNotes": "Notas adicionales...",
           "emptyInventory": "No hay ítems en el inventario",
           "addFirstItem": "Agregar el primer ítem",
+          "optional": "(opcional)",
           "photosTitle": "Fotografías del inmueble",
           "generalNotes": "Observaciones generales",
           "generalNotesPlaceholder": "Estado general del inmueble, detalles adicionales...",
@@ -13373,7 +13379,8 @@
       "porPagar": "Por pagar a propietarios",
       "cobrosEmitidos": "Cobros emitidos",
       "juridico": "Cobro jurídico",
-      "castigada": "Castigada"
+      "castigada": "Castigada",
+      "saldoAnterior": "Saldo anterior"
     },
     "interes": {
       "columnaIntereses": "Intereses",

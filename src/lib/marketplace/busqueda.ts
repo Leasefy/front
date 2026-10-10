@@ -44,6 +44,8 @@ export interface Busqueda {
   comodidades?: string[];
   /** Palabras que no son un filtro: se buscan en título, barrio y dirección. */
   texto?: string;
+  /** El id de una inmobiliaria: sólo sus inmuebles («Inmobiliarias en Leasefy»). */
+  inmobiliaria?: string;
 }
 
 /** `meta.filtrosEntendidos` del back: lo que el texto puso, con los nombres de la API. */
@@ -99,6 +101,8 @@ export const COMODIDADES: readonly { api: string; url: string; nombre: string }[
 /** Los tipos que son vivienda (Ley 820 de 2003: sin depósito en dinero). */
 const VIVIENDA: ReadonlySet<PropertyType> = new Set(['apartment', 'house', 'studio', 'room']);
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const entero = (v: string | null): number | undefined => {
   if (v == null || v.trim() === '') return undefined;
   const n = Number(v.replace(/[.\s]/g, ''));
@@ -145,6 +149,8 @@ export function leerBusqueda(params: URLSearchParams): Busqueda {
   if (comodidades.length > 0) b.comodidades = [...new Set(comodidades)];
   const texto = textoDe(params.get('texto'));
   if (texto) b.texto = texto;
+  const inmobiliaria = params.get('inmobiliaria')?.trim();
+  if (inmobiliaria && UUID.test(inmobiliaria)) b.inmobiliaria = inmobiliaria.toLowerCase();
   return b;
 }
 
@@ -171,6 +177,7 @@ export function escribirBusqueda(b: Busqueda): string {
     );
   }
   if (b.texto) p.set('texto', b.texto);
+  if (b.inmobiliaria) p.set('inmobiliaria', b.inmobiliaria);
   return p.toString();
 }
 
@@ -205,6 +212,7 @@ export function filtrosDeLaApi(b: Busqueda, limite = 100): PropertyFiltersParams
   if (b.areaMax !== undefined) f.maxArea = b.areaMax;
   if (b.comodidades?.length) f.amenities = b.comodidades;
   if (b.texto) f.searchQuery = b.texto;
+  if (b.inmobiliaria) f.agencyId = b.inmobiliaria;
   return f;
 }
 
@@ -254,6 +262,7 @@ export type ClaveDePastilla =
   | 'estrato'
   | 'area'
   | 'texto'
+  | 'inmobiliaria'
   | `comodidad:${string}`;
 
 export interface Pastilla {
@@ -303,6 +312,8 @@ function pastillasDe(b: Busqueda, entendida: boolean): Pastilla[] {
     poner(`comodidad:${c}`, COMODIDADES.find((x) => x.api === c)?.nombre ?? c);
   }
   if (b.texto) poner('texto', `«${b.texto}»`);
+  // El nombre lo pone la pantalla (lo sabe por los inmuebles que llegan).
+  if (b.inmobiliaria) poner('inmobiliaria', 'De una inmobiliaria');
   return p;
 }
 
@@ -367,14 +378,17 @@ export function porQueTeLoMuestro(
   p: Property,
   b: Busqueda,
   e?: FiltrosEntendidos | null,
-): { cumple: string[]; sinDato: string[] } {
+): { cumple: string[]; sinDato: string[]; noCumple: string[] } {
   const todo = absorber(b, e);
   const cumple: string[] = [];
   const sinDato: string[] = [];
+  // Sólo pasa en «los más cercanos» (`relajada`): la búsqueda exacta no los trae.
+  const noCumple: string[] = [];
   const revisar = (etiqueta: string | null, ok: boolean | null) => {
     if (!etiqueta) return;
     if (ok === null) sinDato.push(etiqueta);
     else if (ok) cumple.push(etiqueta);
+    else noCumple.push(etiqueta);
   };
   for (const x of pastillasDe(todo, false)) {
     switch (x.clave) {
@@ -427,13 +441,43 @@ export function porQueTeLoMuestro(
         break;
       case 'texto':
         break;
+      case 'inmobiliaria':
+        revisar(p.agencyName ? `De ${p.agencyName}` : x.etiqueta, p.agencyId === todo.inmobiliaria);
+        break;
       default: {
         const id = x.clave.slice('comodidad:'.length);
         revisar(x.etiqueta, p.amenities.some((a) => a.id === id));
       }
     }
   }
-  return { cumple, sinDato };
+  return { cumple, sinDato, noCumple };
+}
+
+/**
+ * «Los más cercanos» (opción 1, el diseño aprobado: «2 cumplen todo; a los
+ * demás les falta una cosa y te digo cuál»): cuando nada cumple todo, se busca
+ * otra vez sin los detalles —habitaciones, baños, parqueaderos, comodidades,
+ * estrato, área y palabras sueltas— y se conserva lo grueso: arriendo o venta,
+ * tipo, ciudad, barrio, precio y la inmobiliaria. Muchos inmuebles migrados no
+ * dicen cuántas habitaciones tienen, y «2 habitaciones» los dejaba a todos por
+ * fuera. Cada tarjeta dice qué le falta o qué no dice. `null` si no hay nada que
+ * soltar (sería la misma búsqueda).
+ */
+export function relajada(b: Busqueda, e?: FiltrosEntendidos | null): Busqueda | null {
+  const todo = absorber(b, e);
+  const {
+    habitaciones: _h,
+    banos: _b,
+    parqueaderos: _p,
+    comodidades: _c,
+    estrato: _e,
+    areaMin: _amin,
+    areaMax: _amax,
+    texto: _t,
+    ...grueso
+  } = todo;
+  void [_h, _b, _p, _c, _e, _amin, _amax, _t];
+  return escribirBusqueda(grueso) === escribirBusqueda(todo) ? null : grueso;
 }
 
 /** Lo que cuesta al mes de verdad: canon + administración. `null` si no aplica o no hay canon. */

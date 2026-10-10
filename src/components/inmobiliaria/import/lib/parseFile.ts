@@ -369,6 +369,8 @@ export async function downloadTemplate(): Promise<void> {
     'Estado',
     'Observaciones',
     'Fecha de Consignación',
+    'Video',
+    'Fotos',
   ];
 
   // Create a worksheet with a header row and two example rows
@@ -392,6 +394,8 @@ export async function downloadTemplate(): Promise<void> {
     'Disponible',
     'Parqueadero incluido',
     '',
+    'https://www.instagram.com/reel/…',
+    'https://drive.google.com/file/d/…/view, https://drive.google.com/file/d/…/view',
   ];
 
   const worksheetData = [headers, exampleRow];

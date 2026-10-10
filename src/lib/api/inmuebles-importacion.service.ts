@@ -291,6 +291,14 @@ export interface EstadoDeLoteInmuebles {
   subidoPor?: string | null;
   /** Desde dónde se lanzó: la Puesta en marcha (fuera del centro de procesos) o Inmuebles (ausente = Puesta en marcha). */
   origen?: 'puesta-en-marcha' | 'inmuebles';
+  /**
+   * T-0152 — `true` cuando `preparar` NO abrió una carga nueva: ya había una
+   * abierta del mismo archivo y esta respuesta es la suya. Ausente = back
+   * anterior (se compara el `lote` devuelto con el esperado).
+   */
+  adjuntadoAExistente?: boolean;
+  /** T-0152 — huella del archivo con que se abrió la carga (ausente/`null` = back anterior o sin huella). */
+  huellaDelArchivo?: string | null;
 }
 
 /**

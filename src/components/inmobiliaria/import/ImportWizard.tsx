@@ -43,6 +43,7 @@ import { analyzeProperties, mapRowsToProperties } from './lib/gapFiller';
 import { recalcularEstado } from './lib/requisitosDelBack';
 import { useAvisoAlSalir } from '@/lib/hooks/use-aviso-al-salir';
 import { etapaDeLaCarga, type PasoVisible } from './lib/describirCargaAbierta';
+import { inmueblesImportacionApi } from '@/lib/api/inmuebles-importacion.service';
 import { CargasAMedias } from './CargasAMedias';
 import { useCargasAbiertasDeInmuebles } from '@/lib/hooks/use-cargas-abiertas-de-inmuebles';
 import type { EstadoDeLoteInmuebles } from '@/lib/api/inmuebles-importacion.service';
@@ -296,8 +297,72 @@ export function ImportWizard({
     [updateState, wizardState.properties, wizardState.aiAnalyzed, wizardState.method, visibleSteps.length],
   );
 
+  /*
+   * T-0152 — el asistente se pone DONDE VA la carga, sin esperar un clic en
+   * «Retomar». Antes arrancaba siempre en el paso 1: lo que ya estaba ubicado,
+   * revisado o creado parecía empezar de nuevo, y subir otra vez el mismo
+   * archivo abría una segunda carga en paralelo.
+   *
+   *  - `?lote=X` (el enlace de la notificación) abre ESA carga; si ya no existe,
+   *    se cae a la abierta más reciente.
+   *  - Sin él, la carga abierta más reciente. Una TERMINADA o FALLIDA no se
+   *    re-abre sola (queda en la tarjeta): lo que acabó no se vuelve a correr.
+   *  - Sólo si la persona todavía no empezó nada acá (sin método, sin archivo).
+   */
+  const retomarRef = useRef(retomarLote);
+  retomarRef.current = retomarLote;
+  const yaAtado = useRef(false);
+  const loteDeLaUrl = useRef<string | null>(null);
+  const [urlResuelta, setUrlResuelta] = useState(false);
+  useEffect(() => {
+    let vigente = true;
+    const x =
+      typeof window === 'undefined'
+        ? null
+        : new URLSearchParams(window.location.search).get('lote');
+    loteDeLaUrl.current = x;
+    if (!x) {
+      setUrlResuelta(true);
+      return;
+    }
+    inmueblesImportacionApi
+      .estadoDeLote(x)
+      .then((l) => {
+        if (!vigente) return;
+        yaAtado.current = true;
+        retomarRef.current(l);
+      })
+      .catch(() => {
+        // Esa carga ya no existe: se sigue con la abierta más reciente.
+      })
+      .finally(() => {
+        if (vigente) setUrlResuelta(true);
+      });
+    return () => {
+      vigente = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (yaAtado.current || !urlResuelta) return;
+    if (
+      currentStep !== 1 ||
+      wizardState.method !== null ||
+      wizardState.rawRows.length > 0 ||
+      wizardState.loteRetomado ||
+      wizardState.subidaRetomada
+    ) {
+      return;
+    }
+    const abierta = cargasAbiertas.find((l) => l.fase !== 'TERMINADA' && l.estado !== 'FALLIDO');
+    if (!abierta) return;
+    yaAtado.current = true;
+    retomarRef.current(abierta);
+  }, [urlResuelta, cargasAbiertas, currentStep, wizardState.method, wizardState.rawRows.length, wizardState.loteRetomado, wizardState.subidaRetomada]);
+
   const alDescartarCarga = useCallback(
     (lote: string) => {
+      // Descartar una no es pedir que se abra otra sola.
+      yaAtado.current = true;
       quitarCarga(lote);
       if (wizardState.loteRetomado === lote || wizardState.subidaRetomada?.lote === lote) {
         updateState({

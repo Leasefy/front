@@ -2,7 +2,7 @@
   "_comentario": "Generado por scripts/rutas-del-back.mjs. No editar a mano: regenerar.",
   "sacadaDe": "back-erp/src/**/*.controller.ts",
   "cuando": "2026-10-10",
-  "cuantas": 1466,
+  "cuantas": 1467,
   "rutas": [
     "DELETE /admin/coupons/:id",
     "DELETE /admin/notification-templates/:id",
@@ -726,6 +726,7 @@
     "GET /pre-scoring/elegibilidad",
     "GET /properties",
     "GET /properties/:id",
+    "GET /properties/:id/costo-de-vivir",
     "GET /properties/:propertyId/agents",
     "GET /properties/assigned",
     "GET /properties/mine",

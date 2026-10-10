@@ -427,3 +427,52 @@ describe('la naturaleza tributaria de cada parte', () => {
     )
   })
 })
+
+describe('T-0153: fecha de cartera y 4x1000 en la ficha', () => {
+  const fila = (etiqueta: string) =>
+    Array.from(document.querySelectorAll('div.flex.items-start.justify-between')).find((f) =>
+      f.children[0]?.textContent === etiqueta,
+    )
+
+  it('un contrato MIGRADO muestra «Fecha de cartera» con dd/mm/aaaa y su regla', () => {
+    render(
+      contrato({
+        contractOrigin: 'MIGRATED',
+        fechaDeCartera: '2025-01-15',
+        prorratearPrimerMes: false,
+        paymentDueDay: 15,
+      }),
+    )
+    expect(fila('Día de pago')).toBeUndefined()
+    const f = fila('Fecha de cartera')!
+    expect(f.textContent).toContain('15/01/2025')
+    expect(f.textContent).toContain('Día 15')
+    expect(f.textContent).not.toContain('sólo referencia')
+  })
+
+  it('migrado sin fecha de cartera cae a la de inicio', () => {
+    render(contrato({ contractOrigin: 'MIGRATED', fechaDeCartera: null, startDate: '2025-03-10' }))
+    expect(fila('Fecha de cartera')!.textContent).toContain('10/03/2025')
+  })
+
+  it('un contrato nativo conserva «Día de pago» exactamente como hoy', () => {
+    render(contrato({ contractOrigin: 'GENERATED' }))
+    expect(fila('Día de pago')).toBeDefined()
+    expect(fila('Fecha de cartera')).toBeUndefined()
+  })
+
+  it('4x1000 del giro: según el valor del contrato, o la configuración si es null', () => {
+    render(contrato({ trasladaGmfAlPropietario: true }))
+    expect(fila('4x1000 del giro')!.textContent).toContain('Propietario')
+    act(() => root.unmount())
+    root = createRoot(container)
+    render(contrato({ trasladaGmfAlPropietario: false }))
+    expect(fila('4x1000 del giro')!.textContent).toContain('Inmobiliaria')
+    act(() => root.unmount())
+    root = createRoot(container)
+    render(contrato({ trasladaGmfAlPropietario: null }))
+    expect(fila('4x1000 del giro')!.textContent).toContain(
+      'propietario / inmobiliaria (según la configuración de la inmobiliaria)',
+    )
+  })
+})

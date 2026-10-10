@@ -16,6 +16,7 @@ vi.mock('@/lib/api/geocode.service', () => ({ geocodeApi: { autocomplete } }));
 
 import {
   consultaDeDireccion,
+  consultasParaBuscar,
   direccionParaBuscar,
   distanciaKm,
   olvidarMunicipios,
@@ -311,5 +312,77 @@ describe('ubicarDireccion', () => {
 
     expect(u.precision).toBe('municipio');
     expect(u.lat).toBeCloseTo(6.2442, 3);
+  });
+});
+
+describe('consultasParaBuscar (T-0159)', () => {
+  it('normalised first, then cleaned, then raw, without repeats', () => {
+    const q = consultasParaBuscar({
+      direccion: 'CR 55 N 53 A - 35 TO 1 AP 2201- PQ 3049 RESERVAS D',
+      ciudad: 'Caldas',
+      departamento: 'Antioquia',
+    });
+    expect(q[0]).toBe('Carrera 55 # 53 A - 35, Caldas, Antioquia, Colombia');
+    expect(q).toHaveLength(3);
+    expect(q[2]).toBe(
+      'CR 55 N 53 A - 35 TO 1 AP 2201- PQ 3049 RESERVAS D, Caldas, Antioquia, Colombia',
+    );
+    expect(new Set(q).size).toBe(q.length);
+  });
+
+  it('landmarks and building names yield no queries (today path)', () => {
+    expect(consultasParaBuscar({ direccion: 'EDIFICIO LUCIANA', ciudad: 'Caldas' })).toEqual([]);
+    expect(consultasParaBuscar({ direccion: 'PARQUE PRINCIPAL', ciudad: 'Caldas' })).toEqual([]);
+  });
+});
+
+describe('ubicarDireccion: noisy addresses (T-0159)', () => {
+  const direccion = 'CR 55 N 53 A - 35 TO 1 AP 2201- PQ 3049 RESERVAS D';
+
+  it('geocodes the normalised address first', async () => {
+    autocomplete.mockResolvedValueOnce([resultado(6.0925, -75.6361, 'Carrera 55', 'Caldas')]);
+
+    const u = await ubicarDireccion({ direccion, ciudad: 'Caldas', departamento: 'Antioquia' });
+
+    expect(u.precision).toBe('direccion');
+    expect(autocomplete).toHaveBeenCalledTimes(1);
+    expect(autocomplete.mock.calls[0][0]).toBe(
+      'Carrera 55 # 53 A - 35, Caldas, Antioquia, Colombia',
+    );
+  });
+
+  it('falls back to the next query when the normalised one finds nothing', async () => {
+    autocomplete
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([resultado(6.0925, -75.6361, 'Carrera 55', 'Caldas')]);
+
+    const u = await ubicarDireccion({ direccion, ciudad: 'Caldas', departamento: 'Antioquia' });
+
+    expect(u.precision).toBe('direccion');
+    expect(autocomplete).toHaveBeenCalledTimes(2);
+    expect(autocomplete.mock.calls[1][0]).toContain('Carrera 55 N 53 A');
+  });
+
+  it('every query failing lands on the municipality, as before', async () => {
+    autocomplete.mockImplementation(async (q: string) =>
+      q === 'Caldas, Antioquia, Colombia' ? [resultado(CALDAS.lat, CALDAS.lng)] : [],
+    );
+
+    const u = await ubicarDireccion({ direccion, ciudad: 'Caldas', departamento: 'Antioquia' });
+
+    expect(u.precision).toBe('municipio');
+    expect(u.lat).toBeCloseTo(CALDAS.lat, 4);
+  });
+
+  it('a normalised hit that lands in another city is still rejected', async () => {
+    autocomplete.mockImplementation(async (q: string) =>
+      q === 'Caldas, Antioquia, Colombia'
+        ? [resultado(CALDAS.lat, CALDAS.lng)]
+        : [resultado(BOGOTA.lat, BOGOTA.lng, 'Carrera 55, Bogotá', 'Bogotá')],
+    );
+
+    const u = await ubicarDireccion({ direccion, ciudad: 'Caldas', departamento: 'Antioquia' });
+
+    expect(u.precision).toBe('municipio');
   });
 });

@@ -4,6 +4,7 @@
  * Tres pasos, siempre en este orden y siempre los mismos para la vista previa
  * y para el envío:
  *   1. leer cada fila del archivo (`leerFilaConHoja`);
+ *   1b. unir las filas repetidas (copias exactas de un mismo contrato, T-0158);
  *   2. fundir los copropietarios de un mismo contrato (§4.3);
  *   3. §3.4: el sistema NUNCA asume el prorrateo. Una fila sin SI/NO
  *      reconocido (celda vacía, columna ausente o texto ilegible) no se manda
@@ -16,6 +17,7 @@ import type { FilaAMigrar } from '@/lib/api/contracts.service'
 import { leerFilaConHoja, type OpcionesDeLaLectura } from './armar-fila'
 import type { MapeoDeColumna } from './columnas-de-contrato'
 import { fundirFilasDelMismoContrato } from './fundir-filas-del-mismo-contrato'
+import { unirFilasRepetidas } from './unir-filas-repetidas'
 
 /** Un contrato al que le falta decidir si se prorratea el primer mes. */
 export interface FilaPorDecidir {
@@ -41,6 +43,8 @@ export interface FilasParaMigrar {
   pendientes: FilaPorDecidir[]
   /** Cuántas filas del archivo se absorbieron en el contrato de otra (copropietarios). */
   fundidas: number
+  /** Cuántas filas eran copia exacta de otra del mismo contrato y se unieron (T-0158). */
+  repetidas: number
 }
 
 export function prepararFilasParaMigrar(
@@ -50,7 +54,8 @@ export function prepararFilasParaMigrar(
   decisiones: ReadonlyMap<number, boolean>,
 ): FilasParaMigrar {
   const leidas = filas.map((f, indice) => ({ ...leerFilaConHoja(f, mapeo, opciones), indice }))
-  const contratos = fundirFilasDelMismoContrato(leidas)
+  const { filas: sinRepetir, repetidas } = unirFilasRepetidas(leidas)
+  const contratos = fundirFilasDelMismoContrato(sinRepetir)
 
   const aMigrar: FilaAMigrar[] = []
   const posiciones: number[] = []
@@ -77,7 +82,8 @@ export function prepararFilasParaMigrar(
     posiciones,
     porDefinir,
     pendientes: porDefinir.filter((p) => p.decision === undefined),
-    fundidas: filas.length - contratos.length,
+    fundidas: sinRepetir.length - contratos.length,
+    repetidas,
   }
 }
 

@@ -1,4 +1,6 @@
 'use client';
+import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas';
+import { MantenimientosMarcados } from '@/components/inmobiliaria/MantenimientosMarcados';
 import { PageGuard } from '@/components/auth/PageGuard';
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
@@ -238,6 +240,12 @@ function MantenimientosContent() {
 
   // Use API data or fallback to empty arrays
   const mantenimientos = mantenimientosData ?? [];
+  // Acciones masivas (Nico, 10-10-2026): sólo en la vista de lista y con permiso de editar.
+  const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas();
+  const arreglosMarcados = useMemo(
+    () => mantenimientos.filter((m) => marcadas.has(m.id)),
+    [mantenimientos, marcadas],
+  );
   const consignaciones = consignacionesData ?? [];
 
   // Modal states
@@ -900,7 +908,18 @@ function MantenimientosContent() {
                   onCancel={puedeEditar ? (s) => cambiarEstadoSinEsperar(s.id, 'cancelled') : undefined}
                   onCrear={puedeCrear ? handleNewMantenimiento : undefined}
                   minimal
+                  marcadas={puedeEditar ? marcadas : undefined}
+                  onMarcar={puedeEditar ? marcar : undefined}
                 />
+                {puedeEditar && mantenimientos.length > 0 && (
+                  <div className="px-5 pb-5">
+                    <MantenimientosMarcados
+                      marcados={arreglosMarcados}
+                      onQuitar={quitarLaSeleccion}
+                      onCambiaron={() => void refetchMantenimientos()}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </CrossFade>

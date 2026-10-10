@@ -1,5 +1,6 @@
 'use client';
 
+import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla';
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useState, useMemo } from 'react';
 import { Stagger, StaggerItem } from '@leasefy/cadence';
@@ -86,6 +87,12 @@ interface MantenimientoListProps {
   onCrear?: () => void;
   /** Hide the summary cards and filters - useful when embedded in a parent with its own UI */
   minimal?: boolean;
+  /**
+   * Acciones masivas (Nico, 10-10-2026): con esto cada tarjeta lleva su casilla.
+   * Lo marcado y lo que se hace con ello lo lleva la página.
+   */
+  marcadas?: ReadonlySet<string>;
+  onMarcar?: (ids: readonly string[], si: boolean) => void;
 }
 
 type SortField = 'priority' | 'createdAt' | 'status';
@@ -508,6 +515,8 @@ export function MantenimientoList({
   onCancel,
   onCrear,
   minimal = false,
+  marcadas,
+  onMarcar,
 }: MantenimientoListProps) {
   const { t, formatDate: fmtDate } = useI18n();
   // Filter State
@@ -660,9 +669,31 @@ export function MantenimientoList({
       {filteredData.length > 0 ? (
         // Filtrar, paginar, cerrar o cancelar: las tarjetas entran escalonadas
         // (techo de 320 ms) y la que se va, sale. Paginada: sin `layout`.
+        <>
+        {marcadas && onMarcar && (
+          <label className="mb-3 flex items-center gap-2 text-sm text-fg-muted">
+            <CasillaDeLaPagina
+              ids={pageItems.map((s) => s.id)}
+              marcadas={marcadas}
+              onMarcar={onMarcar}
+              queSon="arreglos"
+            />
+            Marcar los de esta página
+          </label>
+        )}
         <Stagger layout={false} className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {pageItems.map((solicitud) => (
-              <StaggerItem key={solicitud.id} className="flex [&>*]:w-full">
+              <StaggerItem key={solicitud.id} className="relative flex [&>*]:w-full">
+              {marcadas && onMarcar && (
+                <span className="absolute -left-2 -top-2 z-10 !w-auto rounded-md bg-surface p-1 shadow-sm">
+                  <CasillaDeLaFila
+                    id={solicitud.id}
+                    nombre={`el arreglo de ${solicitud.propertyTitle ?? 'este inmueble'}`}
+                    marcadas={marcadas}
+                    onMarcar={onMarcar}
+                  />
+                </span>
+              )}
               <MantenimientoCard
                 solicitud={solicitud}
                 onViewDetails={() => onViewDetails?.(solicitud)}
@@ -680,6 +711,7 @@ export function MantenimientoList({
               </StaggerItem>
             ))}
         </Stagger>
+        </>
       ) : (
         // Los dos vacíos: nunca hubo solicitudes (ofrece crear) o hay pero el
         // filtro no deja ver ninguna (ofrece quitarlo). `queSon` es «arreglos»

@@ -25,7 +25,6 @@ import { Funnel, X } from '@phosphor-icons/react';
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import {
   fechaLegible,
@@ -36,6 +35,7 @@ import {
   type PeriodoPreestablecido,
 } from './filas';
 import { useTextoDelEstado } from './textos';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 const ATAJOS: PeriodoPreestablecido[] = [
   'esteMes',
@@ -167,26 +167,26 @@ export function FiltrosDelEstado({
         {/* Las fechas exactas y «Limpiar» ENTRAN con un fundido al aparecer. */}
         {conFechas && (
           <Appear as="span" direction="none" className="flex flex-wrap items-center gap-3">
-            <Input
-              type="date"
+            <CampoDeDia
+              id="filtro-desde"
               value={filtros.desde}
+              onChange={(v) => onCambiar({ ...filtros, desde: v })}
               max={filtros.hasta || undefined}
-              onChange={(e) => onCambiar({ ...filtros, desde: e.target.value })}
-              aria-label={t('estadoDeCuenta.desde')}
+              placeholder={t('estadoDeCuenta.desde')}
               className="w-[10.5rem]"
-              data-testid="filtro-desde"
+              testid="filtro-desde"
             />
             <span className="text-sm text-muted-foreground" aria-hidden="true">
               –
             </span>
-            <Input
-              type="date"
+            <CampoDeDia
+              id="filtro-hasta"
               value={filtros.hasta}
+              onChange={(v) => onCambiar({ ...filtros, hasta: v })}
               min={filtros.desde || undefined}
-              onChange={(e) => onCambiar({ ...filtros, hasta: e.target.value })}
-              aria-label={t('estadoDeCuenta.hasta')}
+              placeholder={t('estadoDeCuenta.hasta')}
               className="w-[10.5rem]"
-              data-testid="filtro-hasta"
+              testid="filtro-hasta"
             />
           </Appear>
         )}

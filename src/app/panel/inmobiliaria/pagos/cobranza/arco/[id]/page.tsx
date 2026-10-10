@@ -47,9 +47,10 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 // Piezas que resuelve el design system: no rehacerlas a mano.
-import { Card, CrossFade, KeyValueList, MonoLabel, Presence, Timeline, type KeyValueItem, type TimelineEntry } from '@leasefy/cadence'
+import { Card, CrossFade, KeyValueList, MonoLabel, Presence, TimePicker, Timeline, type KeyValueItem, type TimelineEntry } from '@leasefy/cadence'
 import type { ArcoDetailTimelineEntry } from '@/lib/hooks/cobranza/use-arco-detail'
 import type { ArcoRequestType } from '@/lib/hooks/cobranza/use-arco-requests'
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
 
 /** Mismo mapeo tipo → variante de badge que la bandeja, para no divergir. */
 const TYPE_VARIANT: Record<ArcoRequestType, 'default' | 'secondary' | 'warning' | 'destructive'> = {
@@ -228,13 +229,26 @@ function ResolveForm({ type, disabled, t, onResolveData }: ResolveFormProps) {
           <label htmlFor="arco-expires" className="text-xs font-medium text-fg-muted">
             {t('inmobiliaria.ai.arco.detail.resolve.fields.acceso.expires_at')}
           </label>
-          <Input
-            id="arco-expires"
-            type="datetime-local"
-            value={expiresAt}
-            onChange={(e) => setExpiresAt(e.target.value)}
-            disabled={disabled}
-          />
+          {/* Nico, 10-10-2026: con los campos de Cadence, no el
+              `datetime-local` del navegador. Sigue entregando
+              `AAAA-MM-DDTHH:MM`: el día y la hora por separado (la hora, al
+              final del día si no se elige otra). */}
+          <div className="flex flex-wrap gap-2">
+            <CampoDeDia
+              id="arco-expires"
+              value={expiresAt.slice(0, 10)}
+              onChange={(dia) => setExpiresAt(dia ? `${dia}T${expiresAt.slice(11, 16) || '23:59'}` : '')}
+              disabled={disabled}
+              className="min-w-[11rem] flex-1"
+            />
+            <TimePicker
+              id="arco-expires-hora"
+              value={expiresAt.slice(11, 16) || undefined}
+              onChange={(hora) => setExpiresAt(`${expiresAt.slice(0, 10)}T${hora}`)}
+              disabled={disabled || !expiresAt}
+              placeholder="Hora"
+            />
+          </div>
         </div>
       </div>
     )

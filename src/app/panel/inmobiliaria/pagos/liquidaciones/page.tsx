@@ -36,6 +36,7 @@
  * falló, vacía y con datos se excluyen.
  */
 
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Wallet, CalendarBlank, DotsThreeVertical, MagnifyingGlass } from '@phosphor-icons/react';
@@ -784,7 +785,7 @@ function TesoreriaContent() {
                                   />
                                 </Button>
                               </DropdownListTrigger>
-                              <DropdownListContent align="end" className="w-52">
+                              <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
                                 <DropdownListItem asChild>
                                   <Link
                                     href={`/panel/inmobiliaria/pagos/dispersiones?mes=${month}`}

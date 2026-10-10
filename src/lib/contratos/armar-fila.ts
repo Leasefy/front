@@ -75,6 +75,24 @@ function plataDeContrato(v: unknown, conCentavos = false): number | undefined {
 }
 
 /**
+ * 🔴 «Saldo» del sistema anterior (Nico, 10-10-2026). Se lee TAL CUAL: con su
+ * signo (un saldo a favor del inquilino es negativo, y el export lo escribe
+ * «$-4.500,00») y con sus centavos. Lo que no es plata, pasa del tope o trae
+ * más de dos decimales viaja ausente: la fila sigue sin saldo, nunca con uno
+ * adivinado.
+ */
+function saldoDelArchivo(v: unknown): number | undefined {
+  if (!hayValor(v) || plataConLetras(v)) return undefined
+  const n = plataDeOrigen(v)
+  if (n === undefined || !Number.isFinite(n) || Math.abs(n) > MAX_COP_POR_MOVIMIENTO) return undefined
+  try {
+    return aCentavos(n, { talCual: true }) / 100
+  } catch {
+    return undefined
+  }
+}
+
+/**
  * 🔴 EN-38 (QA-MIGRACION-95, 06-10-2026; misma regla que NI-07 en inmuebles):
  * con la llave de los contratos APAGADA, una celda con centavos de verdad
  * («2.500.000,29») NO se redondea en silencio. `comoEntero` la volvía
@@ -137,6 +155,42 @@ export function siONoDeCelda(v: unknown): boolean | undefined {
 }
 
 /**
+ * T-0153 §3.4: la celda de «Prorrateado» TIENE algo, pero no se entiende
+ * («a veces», «2», «Parcial»). Distinto de la celda vacía: las dos dejan la
+ * fila «por decidir», pero a ésta se le muestra el texto que trae.
+ */
+export function prorrateadoNoReconocido(v: unknown): boolean {
+  return hayValor(v) && siONoDeCelda(v) === undefined
+}
+
+/**
+ * T-0153 (A3): «Tipo de interés». «Interés prorrateado» / «por día» ->
+ * `PRORRATEADO` (se cobra por día de mora); «Interés completo» / «fijo» ->
+ * `COMPLETO` (monto fijo sin importar los días). Otra cosa: `undefined`.
+ */
+export function tipoDeInteresDeCelda(v: unknown): 'PRORRATEADO' | 'COMPLETO' | undefined {
+  if (!hayValor(v)) return undefined
+  const t = String(v)
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+  if (/prorrate|por dia|diario/.test(t)) return 'PRORRATEADO'
+  if (/complet|fijo/.test(t)) return 'COMPLETO'
+  return undefined
+}
+
+/**
+ * T-0153 (A1): «Renovación automática» -> `noSeProrroga`, ya INVERTIDO. NO ->
+ * `true` (al vencer queda en alerta y no se generan cuotas); SI -> `false`;
+ * vacío o no reconocido -> `undefined` (la clave ni viaja: rige la prórroga
+ * legal).
+ */
+export function noSeProrrogaDeCelda(v: unknown): boolean | undefined {
+  const renueva = siONoDeCelda(v)
+  return renueva === undefined ? undefined : !renueva
+}
+
+/**
  * «Días de Plazo»: un entero de 0 a 365. Lo que no es un plazo (vacío,
  * «N/A», negativo, un año entero) viaja ausente y el contrato hereda el
  * plazo de la agencia — igual que cuando la columna no viene.
@@ -186,6 +240,22 @@ export interface DatosDeOrigenDeContrato {
   estrato?: number
   fechaCreacion?: string
   creadoPor?: string
+  /**
+   * ── T-0153: lo que se lee y NUNCA viaja ──────────────────────────────────
+   * El «Consecutivo detalle» ordena a los copropietarios; el canon de la fila
+   * y el total sirven para fundir sus filas (§4.3); el valor de la comisión
+   * sólo se cruza contra canon × % (§4.4).
+   */
+  consecutivoDetalle?: string
+  canonDeLaFila?: number
+  canonTotal?: number
+  valorComision?: number
+  /**
+   * 🔴 §3.4: el sistema NUNCA asume el prorrateo. `sinDecidir` = celda vacía,
+   * columna ausente o texto que no se entiende; la agencia lo define en la
+   * vista previa.
+   */
+  prorrateo: { estado: 'si' | 'no' | 'sinDecidir'; texto?: string }
 }
 
 /** Lo que sale de una fila: lo que viaja y lo que todavía no. */
@@ -199,7 +269,17 @@ export function armarFilaAMigrar(
   mapeo: MapeoDeColumna[],
   opciones: OpcionesDeLaLectura = {},
 ): FilaAMigrar {
-  const armada = leerFilaDelArchivo(fila, mapeo, opciones).fila
+  return leerFilaConHoja(fila, mapeo, opciones).fila
+}
+
+/** `leerFilaDelArchivo` + la fila de la HOJA en `filaDelArchivo` (lo que arma el payload). */
+export function leerFilaConHoja(
+  fila: Record<string, unknown>,
+  mapeo: MapeoDeColumna[],
+  opciones: OpcionesDeLaLectura = {},
+): FilaLeida {
+  const leida = leerFilaDelArchivo(fila, mapeo, opciones)
+  const armada = leida.fila
   /*
    * QA-MIGRACION-95 (C14, como ER-01 en terceros): la fila de la HOJA viaja
    * aparte para que la lista diga la fila que ve la persona en Excel («Fila 4»
@@ -208,9 +288,9 @@ export function armarFilaAMigrar(
    */
   const filaDeLaHoja = fila._rowIndex
   if (typeof filaDeLaHoja === 'number' && Number.isInteger(filaDeLaHoja) && filaDeLaHoja >= 1) {
-    return { ...armada, filaDelArchivo: filaDeLaHoja + 1 }
+    return { ...leida, fila: { ...armada, filaDelArchivo: filaDeLaHoja + 1 } }
   }
-  return armada
+  return leida
 }
 
 /**
@@ -381,6 +461,20 @@ export function leerFilaDelArchivo(
   const fechaCreacion = fechaDeOrigen(v('fechaCreacionOrigen'))
   const creadoPor = textoOpcional(v('creadoPor'))
 
+  const rawProrrateado = v('prorrateado')
+  const prorrateado = siONoDeCelda(rawProrrateado)
+  const prorrateo: DatosDeOrigenDeContrato['prorrateo'] =
+    prorrateado === true
+      ? { estado: 'si' }
+      : prorrateado === false
+        ? { estado: 'no' }
+        : prorrateadoNoReconocido(rawProrrateado)
+          ? { estado: 'sinDecidir', texto: String(rawProrrateado).trim().slice(0, 60) }
+          : { estado: 'sinDecidir' }
+  const noSeProrroga = noSeProrrogaDeCelda(v('renovacionAutomatica'))
+  const trasladaGmf = siONoDeCelda(v('impuestosAsumidos'))
+  const tipoDeInteres = tipoDeInteresDeCelda(v('tipoDeInteres'))
+
   const filaAMigrar: FilaAMigrar = {
     // Estructuralmente obligatorios en el DTO — nunca se omiten, aunque
     // viajen vacíos (`migrar-contrato.dto.ts`: `direccion` e `inquilino` no
@@ -409,6 +503,7 @@ export function leerFilaDelArchivo(
       ? { canonConCentavosDelArchivo: String(celdaConCentavos).trim().slice(0, 60) }
       : {}),
     deposit: plataDeContrato(rawDeposito, conCentavos),
+    saldoInicial: saldoDelArchivo(v('saldo')),
     // X5: un día de pago ausente o fuera de [1,28] viaja ausente, nunca
     // fabricado como "el 1" — eso es lo que hacía que 1383 filas quedaran
     // fechadas al 1 de todos los meses sin que nadie lo pidiera.
@@ -422,6 +517,12 @@ export function leerFilaDelArchivo(
      * cartera.
      */
     prorratearPrimerMes: siONoDeCelda(v('prorrateado')),
+    // T-0153 (A1): sólo viaja con un SI/NO reconocido; si no, la clave no existe.
+    ...(noSeProrroga !== undefined ? { noSeProrroga } : {}),
+    // T-0153 (A2): «Impuestos asumidos» SI/NO; si no, la clave no existe.
+    ...(trasladaGmf !== undefined ? { trasladaGmfAlPropietario: trasladaGmf } : {}),
+    // T-0153 (A3): sólo con un tipo reconocido; si no, la clave no existe.
+    ...(tipoDeInteres !== undefined ? { tipoDeInteres } : {}),
     diasDePlazo: diasDePlazoDeCelda(v('diasDePlazo')),
     // «0» es una comisión real (0% existe); «10%» y «10,5» son humanos; 110
     // no es un porcentaje. `Number(v) || undefined` convertía el 0 en «no hay
@@ -476,6 +577,11 @@ export function leerFilaDelArchivo(
       estrato: estratoDePalabras(v('estratoInmueble')),
       fechaCreacion,
       creadoPor,
+      consecutivoDetalle: textoOpcional(v('consecutivoDetalle')),
+      canonDeLaFila: canonPorPropietario ? undefined : canonSuelto,
+      canonTotal,
+      valorComision: hayValor(v('valorComision')) ? plataDeOrigen(v('valorComision')) : undefined,
+      prorrateo,
     },
   }
 }

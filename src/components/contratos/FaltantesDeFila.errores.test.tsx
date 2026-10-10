@@ -10,6 +10,10 @@
 
 import * as React from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+
+// 10-10-2026: las fechas son campos de Cadence (se eligen, no se escriben); en la
+// prueba, un <input> con el mismo id y data-testid (`campos-de-fecha.doble-de-prueba`).
+vi.mock('@/components/contabilidad/CampoDeDia', () => import('@/components/ui/campos-de-fecha.doble-de-prueba'))
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 
@@ -191,6 +195,14 @@ describe('el canon de una fila', () => {
 })
 
 describe('el día de pago', () => {
+  it('T-0153: ya no dice que FALTA; dice que el del archivo no es válido y que es opcional', () => {
+    pintar(['dia_de_pago'])
+    const texto = document.body.textContent ?? ''
+    expect(texto).toContain('El día de pago del archivo no es válido')
+    expect(texto).toContain('se usa la fecha de cartera')
+    expect(texto).not.toContain('Falta el día de pago')
+  })
+
   it('🔴 un 30 ya no se pierde en silencio: dice el rango y no viaja', async () => {
     pintar(['dia_de_pago'])
     const id = idDelCampo('f-1', 'paymentDay')

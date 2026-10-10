@@ -19,7 +19,6 @@ import { useCallback, useEffect, useState } from "react";
 import { Presence } from "@leasefy/cadence";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
 import { leerFallo, mensajeParaLaPersona } from "@/lib/errores/traductor-de-errores";
 import { errorDeLaFechaDeCorte } from "@/components/migracion/limites-de-la-migracion";
@@ -27,6 +26,7 @@ import {
   contractsApi,
   type FechaDeCorteDeLaMigracion as Estado,
 } from "@/lib/api/contracts.service";
+import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
 
 const MESES = [
   "enero",
@@ -148,13 +148,15 @@ export function FechaDeCorteDeLaMigracion({ onCambio }: Props) {
     >
       <div>
         <p className="text-sm font-medium text-foreground">
-          ¿Desde qué día cobras con Leasefy?
+          ¿Desde qué fecha empieza Leasefy a cobrar esta cartera?
         </p>
         <p className="text-caption text-muted-foreground">
-          Es la fecha de corte de la migración. Lo que venció antes de ese día
-          lo gestionó tu sistema anterior: queda en el estado de cuenta como
+          Es la fecha de corte de la migración, no el día de pago de tus
+          inquilinos: cada contrato conserva su propio día de pago, el de su
+          fecha de cartera. Las cuotas que vencieron antes de la fecha de corte
+          las gestionó tu sistema anterior: quedan en el estado de cuenta como
           historia, no como deuda, y los contratos terminados no generan
-          ningún cobro. Desde ese día, cada contrato vigente cobra con
+          ningún cobro. Desde esa fecha, cada contrato vigente cobra con
           Leasefy con el canon que trae el archivo, sin subirlo por los años
           anteriores. No tiene un valor por defecto: escríbela tú.
         </p>
@@ -176,19 +178,17 @@ export function FechaDeCorteDeLaMigracion({ onCambio }: Props) {
             >
               Fecha de corte
             </label>
-            <Input
+            <CampoDeDia
               id={idDelCampo}
-              type="date"
               value={borrador}
-              aria-invalid={errorDeLaFecha ? true : undefined}
-              invalid={Boolean(errorDeLaFecha)}
-              aria-describedby={errorDeLaFecha ? `${idDelCampo}-error` : undefined}
-              onChange={(e) => {
-                setBorrador(e.target.value);
+              onChange={(v) => {
+                setBorrador(v);
                 setErrorDeLaFecha(null);
               }}
+              invalido={Boolean(Boolean(errorDeLaFecha))}
+              describedBy={errorDeLaFecha ? `${idDelCampo}-error` : undefined}
               className="w-44"
-              data-testid="fecha-de-corte-input"
+              testid="fecha-de-corte-input"
             />
           </div>
           <Button

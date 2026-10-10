@@ -14,7 +14,7 @@
  * precedente, mismo anti-precedente (`use-avaluo-status.ts`, N8).
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ApiError, asegurarSesionVigente } from '@/lib/api/client'
 import { inmueblesImportacionApi, type EstadoDeLoteInmuebles } from '@/lib/api/inmuebles-importacion.service'
 
@@ -44,9 +44,19 @@ export function useEstadoDeLoteInmuebles(
 } {
   const [estado, setEstado] = useState<EstadoDeLoteInmuebles | null>(null)
   const [agotado, setAgotado] = useState(false)
+  const loteAnterior = useRef(lote)
 
   useEffect(() => {
-    setEstado(null)
+    /*
+     * T-0152 — sólo un lote DISTINTO parte de cero. Reiniciar el sondeo del
+     * mismo lote (`reinicio`) conserva el último estado conocido: con `null`
+     * en el medio, `pasoVisibleDeLaCarga(null)` da 1 y el asistente parpadeaba
+     * al paso «Subir» con lo ya terminado a la vista.
+     */
+    if (loteAnterior.current !== lote) {
+      loteAnterior.current = lote
+      setEstado(null)
+    }
     setAgotado(false)
     if (!lote) return
 

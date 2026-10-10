@@ -68,6 +68,21 @@ describe('politicaDeContenido', () => {
     )
   })
 
+  it('el reproductor de videos del marketplace: el de cada red, su portada y el oEmbed de TikTok', () => {
+    const p = politicaDeContenido('n', PROD)
+    expect(directiva(p, 'frame-src')).toEqual(
+      expect.arrayContaining([
+        'https://www.youtube-nocookie.com',
+        'https://www.tiktok.com',
+        'https://www.instagram.com',
+        'https://www.facebook.com',
+      ]),
+    )
+    expect(directiva(p, 'frame-src')).not.toContain('https:')
+    expect(directiva(p, 'img-src')).toEqual(expect.arrayContaining(['https://i.ytimg.com', 'https://*.tiktokcdn.com']))
+    expect(directiva(p, 'connect-src')).toContain('https://www.tiktok.com')
+  })
+
   it('nadie de afuera nos enmarca, no hay plugins y la base no se cambia', () => {
     const p = politicaDeContenido('n', PROD)
     expect(directiva(p, 'frame-ancestors')).toEqual(["'self'"])

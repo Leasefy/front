@@ -89,6 +89,12 @@ export type CampoDeContrato =
   | "diasDePlazo"
   | "canon"
   | "deposito"
+  /**
+   * 🔴 Lo que el inquilino debía en el sistema anterior a la fecha de corte
+   * (Nico, 10-10-2026: «Columna "Saldo" en contratos»). Entra a la cartera
+   * como «Saldo del sistema anterior».
+   */
+  | "saldo"
   | "diaDePago"
   | "uso"
   | "periodicidad"
@@ -96,7 +102,20 @@ export type CampoDeContrato =
   | "propietarioNombre"
   | "propietarioDocumento"
   | "propietarioCorreo"
-  | "propietarioTelefono";
+  | "propietarioTelefono"
+  /**
+   * ── T-0153: las columnas de «contratos por detalles» ────────────────────
+   * `consecutivoDetalle` (una fila por copropietario) y `valorComision` (para
+   * cruzar contra canon × %) son SÓLO del front: nunca viajan. La
+   * `renovacionAutomatica` sí: NO -> `noSeProrroga = true` (contrato A1).
+   */
+  | "consecutivoDetalle"
+  | "valorComision"
+  | "renovacionAutomatica"
+  /** A2: «Impuestos asumidos» -> `trasladaGmfAlPropietario` (SI = el propietario asume el 4x1000 del giro). */
+  | "impuestosAsumidos"
+  /** A3: «Tipo de interés» -> `tipoDeInteres` (PRORRATEADO = por día de mora, COMPLETO = monto fijo). */
+  | "tipoDeInteres";
 
 /**
  * Qué tan seguro está el auto-mapeo de una columna.
@@ -311,6 +330,11 @@ function contienePalabras(canon: string, termino: string): boolean {
  */
 export const SIN_CAMPO_EN_CONTRATO = [
   /*
+   * Un saldo A FAVOR del inquilino no es su deuda: meterlo en «Saldo» lo
+   * cobraría (Nico, 10-10-2026; qué hacer con él todavía no está decidido).
+   */
+  "saldo a favor",
+  /*
    * Direcciones y ciudades que NO son la del inmueble. La composición por rol
    * (abajo) ya cubre «Dirección del arrendatario»; estas entradas cubren las
    * que no nombran a nadie — «Dirección de notificación» se robaba la
@@ -433,6 +457,9 @@ const ATRIBUTOS_SIN_CAMPO = new Set([
   "codeudor",
   "coodeudor",
   "fiador",
+  "codeudores",
+  "coodeudores",
+  "fiadores",
   "tipo",
   "estado",
   "civil",
@@ -516,6 +543,11 @@ const DICCIONARIO: Array<{ campo: CampoDeContrato; terminos: string[] }> = [
     campo: "fechaDeCartera",
     terminos: [
       "fecha de inicio de cartera",
+      // Otras plataformas la llaman «fecha de liquidación» (T-0153). Siempre
+      // de dos palabras: «liquidación» a secas robaría «Liquidación del
+      // propietario».
+      "fecha de liquidacion",
+      "fecha liquidacion",
       "fecha de cartera",
       "fecha inicio cartera",
       "inicio de cartera",
@@ -715,6 +747,11 @@ const DICCIONARIO: Array<{ campo: CampoDeContrato; terminos: string[] }> = [
       "codigo predio",
       "numero del inmueble",
       "numero inmueble",
+      // «Nro. Propiedad» (T-0153): antes caía en `propiedad` (1 palabra) y el
+      // «3» se leía como dirección: el código se perdía.
+      "numero de la propiedad",
+      "numero de propiedad",
+      "numero propiedad",
       "id del inmueble",
       "id inmueble",
       "property code",
@@ -801,8 +838,54 @@ const DICCIONARIO: Array<{ campo: CampoDeContrato; terminos: string[] }> = [
     ],
   },
   {
+    /*
+     * T-0153: «Consecutivo detalle» — una fila por copropietario de un mismo
+     * contrato. Más específico (2 palabras) que «consecutivo» a secas.
+     */
+    campo: "consecutivoDetalle",
+    terminos: [
+      "consecutivo de detalle",
+      "consecutivo detalle",
+      "detalle consecutivo",
+      "numero detalle",
+    ],
+  },
+  {
+    // «Valor comisión»: el monto en pesos. Sólo cruza contra canon × %.
+    campo: "valorComision",
+    terminos: ["valor de la comision", "valor comision", "monto comision", "comision en pesos"],
+  },
+  {
+    // T-0153 (A1): NO -> `noSeProrroga = true`; SI o vacío -> la prórroga legal.
+    campo: "renovacionAutomatica",
+    terminos: [
+      "renovacion automatica del contrato",
+      "renovacion automatica",
+      "se renueva",
+      "renovacion",
+    ],
+  },
+  {
+    // A2: SI -> el propietario asume el 4x1000 del giro; NO -> la inmobiliaria.
+    campo: "impuestosAsumidos",
+    terminos: [
+      "impuestos asumidos por el propietario",
+      "impuestos asumidos",
+      "asume impuestos",
+      "4x1000",
+      "4 x 1000",
+      "gmf",
+    ],
+  },
+  {
+    campo: "tipoDeInteres",
+    terminos: ["tipo de interes", "tipo interes", "interes"],
+  },
+  {
     campo: "consecutivoContrato",
     terminos: [
+      "consecutivo del contrato",
+      "consecutivo contrato",
       "numero del contrato",
       "numero contrato",
       "codigo del contrato",
@@ -866,6 +949,30 @@ const DICCIONARIO: Array<{ campo: CampoDeContrato; terminos: string[] }> = [
     campo: "creadoPor",
     terminos: ["creado por", "creada por", "usuario que creo", "registrado por"],
   },
+  {
+    /*
+     * 🔴 «Saldo» (Nico, 10-10-2026): la deuda del inquilino en el sistema
+     * anterior a la fecha de corte. «Saldo a la fecha de corte» gana a «fecha
+     * de corte» (fecha de cartera) por tener más palabras. «Deuda» y «Cartera»
+     * a secas quedan dudosas: alguien confirma que son el saldo del inquilino.
+     */
+    campo: "saldo",
+    terminos: [
+      "saldo del sistema anterior",
+      "saldo a la fecha de corte",
+      "saldo al corte",
+      "saldo inicial",
+      "saldo anterior",
+      "saldo pendiente",
+      "saldo por cobrar",
+      "saldo adeudado",
+      "saldo en mora",
+      "valor adeudado",
+      "saldo",
+      "deuda",
+      "cartera",
+    ],
+  },
 ];
 
 /**
@@ -900,6 +1007,8 @@ const TERMINOS_DEBILES = new Set([
 ]);
 
 const TERMINOS_DUDOSOS = new Set([
+  "deuda",
+  "cartera",
   "desde",
   "hasta",
   "inicio",
@@ -916,6 +1025,7 @@ const TERMINOS_DUDOSOS = new Set([
   "ciudad",
   "municipio",
   "city",
+  "interes",
   "renta",
   "mensualidad",
   "destino",
@@ -1002,6 +1112,26 @@ function empatePorDiccionario(canon: string, nombraPersona: boolean): Empate | n
 export const NO_SE_MIGRA_EL_CODEUDOR =
   "el codeudor no se migra con el contrato: se agrega después en la ficha del contrato (Codeudores)";
 
+/** T-0153: derivada del canon y la comisión; no se guarda. */
+export const NO_SE_MIGRA_EL_TOTAL_ARRENDAMIENTO =
+  "se calcula (canon menos comisión): no se migra";
+
+/** T-0153: el dueño todavía no definió estas columnas (contrato §11 Q2, Q3). */
+export const NO_SE_MIGRA_TODAVIA = [
+  {
+    terminos: ["total arrendamiento"],
+    texto: NO_SE_MIGRA_EL_TOTAL_ARRENDAMIENTO,
+  },
+  {
+    terminos: [
+      "cobro de intereses",
+      "cobro de interes",
+    ],
+    // A3: «siempre se cobra interés»; esta columna nunca apaga la mora.
+    texto: "Siempre se cobra interés de mora (no se migra)",
+  },
+].map((r) => ({ ...r, terminos: r.terminos.map(canonizar) }));
+
 export function mapearColumnas(encabezados: string[]): MapeoDeColumna[] {
   const canones = encabezados.map(canonizar);
 
@@ -1058,9 +1188,19 @@ export function mapearColumnas(encabezados: string[]): MapeoDeColumna[] {
 
     // CO-18 (QA-MIGRACION-95, 06-10): una columna de CODEUDOR se ignoraba
     // con un «—» mudo. Se dice que no se migra y dónde se agrega.
-    if (["codeudor", "coodeudor", "fiador"].some((t) => tokensUtiles(canon).includes(t))) {
+    if (
+      ["codeudor", "coodeudor", "fiador", "codeudores", "coodeudores", "fiadores"].some((t) =>
+        tokensUtiles(canon).includes(t),
+      )
+    ) {
       return { ...sinCampo, noSeMigra: NO_SE_MIGRA_EL_CODEUDOR };
     }
+
+    // T-0153: columnas que se reconocen y todavía no se migran.
+    const sinDestino = NO_SE_MIGRA_TODAVIA.find((r) =>
+      r.terminos.some((t) => contienePalabras(canon, t)),
+    );
+    if (sinDestino) return { ...sinCampo, noSeMigra: sinDestino.texto };
 
     const persona = empatePorPersona(canon);
     if (persona === false) return sinCampo;
@@ -1364,7 +1504,6 @@ export const CAMPOS_CLAVE: CampoDeContrato[] = [
   "fechaInicio",
   "fechaFin",
   "canon",
-  "diaDePago",
   "uso",
 ];
 

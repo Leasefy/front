@@ -94,6 +94,7 @@ export function AdministracionDelContrato({
   onActualizado,
   pedidoDeCorregir = 0,
 }: Props) {
+  const migrado = contract.contractOrigin === 'MIGRATED'
   const [editando, setEditando] = useState(false)
   useEffect(() => {
     if (pedidoDeCorregir > 0 && puedeEditar) setEditando(true)
@@ -328,7 +329,9 @@ export function AdministracionDelContrato({
           se dice como lo que es: una referencia que no decide el vencimiento.
         */}
         <Fila
-          etiqueta="Día de pago"
+          // T-0153 §7.9: en un contrato MIGRADO el dato que importa es desde
+          // cuándo se cobra; el «día de pago» legado no decide nada.
+          etiqueta={migrado ? "Fecha de cartera" : "Día de pago"}
           valor={(() => {
             // El back ya resolvió la regla (`reglaDeCobro`, ff282197): vence el
             // día `venceElDia` y el pactado viaja como legado. Un back
@@ -337,6 +340,13 @@ export function AdministracionDelContrato({
             const diaDeCartera = Number((contract.fechaDeCartera ?? contract.startDate ?? '').slice(8, 10)) || null;
             const queRige = regla ? regla.venceElDia : contract.prorratearPrimerMes ? 1 : diaDeCartera;
             const pactado = regla ? regla.diaDePagoLegado : contract.paymentDueDay;
+            if (migrado) {
+              const base = (contract.fechaDeCartera ?? contract.startDate ?? '').slice(0, 10);
+              const [a, m, d] = base.split('-');
+              const fecha = a && m && d ? `${d}/${m}/${a}` : null;
+              if (!fecha) return queRige ? `Día ${queRige}` : null;
+              return queRige ? `${fecha} · Día ${queRige}` : fecha;
+            }
             if (!queRige) return pactado ? `Día ${pactado}` : null;
             const referencia =
               pactado && pactado !== queRige
@@ -345,6 +355,18 @@ export function AdministracionDelContrato({
             return `Día ${queRige}${referencia}`;
           })()}
           ausente="El de la inmobiliaria"
+        />
+        {/* T-0153 (A2): quién asume el 4x1000 del giro. Sólo lectura. */}
+        <Fila
+          etiqueta="4x1000 del giro"
+          valor={
+            contract.trasladaGmfAlPropietario == null
+              ? null
+              : contract.trasladaGmfAlPropietario
+                ? "Propietario"
+                : "Inmobiliaria"
+          }
+          ausente="propietario / inmobiliaria (según la configuración de la inmobiliaria)"
         />
         <Fila
           etiqueta="Plazo antes de la mora"

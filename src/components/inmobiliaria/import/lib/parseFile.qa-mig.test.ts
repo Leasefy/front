@@ -43,6 +43,16 @@ describe('QA-MIG-B: una celda numérica viaja con su VALOR, no con el texto del 
     expect(r.rows[0]['Canon']).toBe('1575000')
   })
 
+  it('T-0158: un canon de 7 cifras con centavos no estrena decimales (toFixed(10) mostraba 1227294.1200000001)', async () => {
+    const ws = XLSX.utils.aoa_to_sheet([['Canon'], [], [], []])
+    ws['A2'] = { t: 'n', v: 1227294.12, z: '"$"#,##0.00' }
+    ws['A3'] = { t: 'n', v: 2899159.66, z: '"$"#,##0.00' }
+    ws['A4'] = { t: 'n', v: 48350750.5, z: '#,##0' }
+    ws['!ref'] = 'A1:A4'
+    const r = await parseSpreadsheetFile(xlsx([{ nombre: 'H', ws }]))
+    expect(r.rows.map((f) => f['Canon'])).toEqual(['1227294.12', '2899159.66', '48350750.5'])
+  })
+
   it('tres decimales salen con cuatro: ningún lector los confunde con miles', async () => {
     const ws = XLSX.utils.aoa_to_sheet([['Área'], []])
     ws['A2'] = { t: 'n', v: 1234.567, z: '0.000' }

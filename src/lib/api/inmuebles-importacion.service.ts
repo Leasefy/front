@@ -32,6 +32,7 @@
 import { apiClient } from './client';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { anunciarProceso } from './procesos.service';
+import type { InmuebleConCodigo } from '@/lib/inmuebles/fotos-del-zip';
 
 // ============================================================================
 // Types — contract.md §3.8, wu-4-report.md §6
@@ -160,6 +161,14 @@ export interface ImportarInmuebleDto {
   consignedAt?: string;
   /** 1 a 6. El archivo lo trae en palabras y el front lo lee antes de mandarlo. */
   stratum?: number;
+  /**
+   * El enlace del video (marketplace, 09-10-2026). Crudo: el back lo guarda
+   * sólo si es de Instagram, TikTok, YouTube o Facebook; si no, el inmueble
+   * queda sin video y la fila sigue (no es un 400 ni un faltante).
+   */
+  videoUrl?: string;
+  /** Los enlaces de sus fotos: el back las baja después de crear el inmueble (sólo https, hasta 40). */
+  fotos?: string[];
   /**
    * Front-computed (LocationIQ, `geocodeImportRow.ts`) — the durable backend
    * does not geocode, so without these every imported property lands on the
@@ -291,6 +300,14 @@ export interface EstadoDeLoteInmuebles {
   subidoPor?: string | null;
   /** Desde dónde se lanzó: la Puesta en marcha (fuera del centro de procesos) o Inmuebles (ausente = Puesta en marcha). */
   origen?: 'puesta-en-marcha' | 'inmuebles';
+  /**
+   * T-0152 — `true` cuando `preparar` NO abrió una carga nueva: ya había una
+   * abierta del mismo archivo y esta respuesta es la suya. Ausente = back
+   * anterior (se compara el `lote` devuelto con el esperado).
+   */
+  adjuntadoAExistente?: boolean;
+  /** T-0152 — huella del archivo con que se abrió la carga (ausente/`null` = back anterior o sin huella). */
+  huellaDelArchivo?: string | null;
 }
 
 /**
@@ -307,6 +324,12 @@ export interface CreacionDeLote {
   inmuebles?: number;
   /** De ésos, los que nacieron con esta carga (QA-MIG-A, MG-36). */
   nuevos?: number;
+  /**
+   * La columna «Fotos» (10-10-2026), sólo con la carga TERMINADA: enlaces pedidos,
+   * fotos que quedaron y las filas a las que les falta alguna. Ausente = no había
+   * enlaces, o un back anterior.
+   */
+  fotos?: { pedidas: number; traidas: number; filas: number[] };
 }
 
 /** `POST .../lotes/:lote/crear` — 202. Llamarlo con el lote ya CREANDO devuelve lo mismo. */
@@ -533,6 +556,14 @@ export const TANDA_DE_SUBIDA = 500;
 export const TANDA_DE_UBICACION = 50;
 
 export const inmueblesImportacionApi = {
+  /**
+   * Los códigos de los inmuebles de la inmobiliaria y cuántas fotos tiene cada
+   * uno: con esto se emparejan las carpetas del ZIP de fotos (09-10-2026).
+   */
+  async codigos(): Promise<InmuebleConCodigo[]> {
+    return apiClient.get<InmuebleConCodigo[]>(`${BASE}/codigos`);
+  },
+
   /**
    * 1. Stages every row. NO property is created here — `202`, enqueues a
    * BullMQ job. The `lote` in the response is ALWAYS server-issued; the

@@ -11,6 +11,7 @@ import { createPortal } from "react-dom";
 import { useRanuraViva } from "@/components/migracion/ranura-viva";
 import { useMigracion } from "@/components/migracion/migracion-context";
 import { BarraDeTrabajo } from "@/components/migracion/BarraDeTrabajo";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle,
@@ -52,6 +53,7 @@ import {
   olvidarClaveEnCurso,
 } from "../lib/claveDeCarga";
 import { huellaDelArchivo } from "../lib/huellaDelArchivo";
+import { fraseDeLasFotosQueNoBajaron } from "../lib/fotosQueNoBajaron";
 import { mensajeDeCarga, MENSAJE_SESION_TERMINADA, esSesionMuerta } from "../lib/mensajeDeCarga";
 import { traeErroresPorCampo } from "@/lib/errores/errores-en-el-formulario";
 import { generarIdempotencyKey } from "../lib/idempotencia";
@@ -75,6 +77,7 @@ import { FilaImportacionRow } from "../FilaImportacionRow";
 import { LoteInmueblesMasivo } from "../LoteInmueblesMasivo";
 import { ProgresoDeLoteInmuebles } from "../ProgresoDeLoteInmuebles";
 import { useEstadoDeLoteInmuebles } from "@/lib/hooks/use-estado-de-lote-inmuebles";
+import { CualesPublicas } from "@/components/inmobiliaria/import/CualesPublicas";
 import {
   inmueblesImportacionApi,
   type FilaDeImportacion,
@@ -131,7 +134,32 @@ export function fraseDeLaComision(
   }
   return `El propietario salió del archivo, inmueble por inmueble. La comisión también, salvo en ${sinComision} ${sinComision === 1 ? "inmueble que no la traía: queda vacía" : "inmuebles que no la traían: quedan vacías"} hasta que la traiga el contrato vigente o la escribas.`;
 }
-export function StepConfirmImport({
+/**
+ * T-0152 — «Ya hay una importación de este archivo en curso». El servidor no abre
+ * una segunda carga del mismo archivo: devuelve la que está abierta, y la
+ * pantalla sigue en SU paso real. El aviso vive acá, fuera del cuerpo, porque el
+ * cuerpo cambia de pantalla según la fase y el aviso tiene que sobrevivir a todas.
+ */
+export function StepConfirmImport(props: ImportStepProps) {
+  const [adjuntado, setAdjuntado] = useState(false);
+  const alAdjuntar = useCallback(() => setAdjuntado(true), []);
+  return (
+    <>
+      {adjuntado ? (
+        <div
+          className="mb-4 rounded-md border border-border bg-surface-muted p-3 text-sm text-fg"
+          role="status"
+          data-testid="aviso-carga-existente"
+        >
+          Ya hay una importación de este archivo en curso — seguimos desde donde va.
+        </div>
+      ) : null}
+      <StepConfirmImportCuerpo {...props} alAdjuntar={alAdjuntar} />
+    </>
+  );
+}
+
+function StepConfirmImportCuerpo({
   state,
   updateState,
   origen = 'puesta-en-marcha',
@@ -139,7 +167,8 @@ export function StepConfirmImport({
   onContinuar,
   onOcupado,
   onPasoVisible,
-}: ImportStepProps) {
+  alAdjuntar,
+}: ImportStepProps & { alAdjuntar?: () => void }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useI18n();
@@ -744,18 +773,30 @@ export function StepConfirmImport({
   const cierreAplicado = useRef<string | null>(null);
 
   /* En cuál de los 4 pasos visibles va la carga: el asistente lo dibuja en su indicador. */
-  const pasoVisible: PasoVisible = subiendo
-    ? 1
-    : ubicando
-      ? 2
-      : irACrear
-        ? 4
-        : verRevisionDeNuevo
-          ? 3
-          : pasoVisibleDeLaCarga(lote ? estadoLote : null);
+  /*
+   * T-0152 — con la carga conocida, el paso sale de su `fase` en el SERVIDOR;
+   * «subiendo»/«ubicando» locales sólo mandan mientras todavía no se la conoce.
+   * Así una carga ya adelantada (el servidor devolvió una existente) no se
+   * dibuja en el paso 1 sólo porque esta pantalla está subiendo.
+   */
+  const estadoConocido = lote && estadoLote?.lote === lote ? estadoLote : null;
+  const pasoVisible: PasoVisible = irACrear
+    ? 4
+    : verRevisionDeNuevo
+      ? 3
+      : estadoConocido
+        ? pasoVisibleDeLaCarga(estadoConocido)
+        : subiendo
+          ? 1
+          : ubicando
+            ? 2
+            : 1;
+  /* Con una carga que todavía no se leyó no se avisa «1»: el asistente conserva el paso que tenía. */
+  const sinLeerTodavia = Boolean(lote) && !estadoConocido && !subiendo && !ubicando;
   useEffect(() => {
+    if (sinLeerTodavia) return;
     onPasoVisible?.(pasoVisible);
-  }, [pasoVisible, onPasoVisible]);
+  }, [pasoVisible, onPasoVisible, sinLeerTodavia]);
 
   /*
    * ── Subir el archivo ─────────────────────────────────────────────────────
@@ -777,6 +818,7 @@ export function StepConfirmImport({
     setDeteniendoSubida(false);
     detenerSubidaRef.current = false;
     let loteConocido: string | null = loteEnSubida;
+    let adjuntadoAvisado = false;
     try {
       const dtos = aEnviar.map((p) => toImportarInmuebleDto(p));
       const huella = await huellaDelArchivo(dtos);
@@ -838,6 +880,19 @@ export function StepConfirmImport({
           // desde la primera respuesta: en el estado del asistente (sobrevive a
           // «Anterior» y a un remount) y, con su clave, en el navegador (sobrevive
           // a una recarga: sin la clave no se puede seguir subiendo).
+          /*
+           * T-0152 — el servidor devolvió una carga que ya estaba abierta (la
+           * bandera, o —con un back anterior— un lote distinto al que se venía
+           * subiendo). No es una carga nueva: se sigue en la que ya existe.
+           */
+          if (
+            !adjuntadoAvisado &&
+            (p.estado.adjuntadoAExistente === true ||
+              (loteConocido !== null && loteConocido !== p.lote))
+          ) {
+            adjuntadoAvisado = true;
+            alAdjuntar?.();
+          }
           if (loteConocido !== p.lote) {
             loteConocido = p.lote;
             setLote(p.lote);
@@ -1456,6 +1511,18 @@ export function StepConfirmImport({
               {detalleDeReusados(creacion)}
             </p>
           ) : null}
+          {fraseDeLasFotosQueNoBajaron(creacion) ? (
+            <p className="text-sm text-warning" data-testid="aviso-fotos-por-enlace">
+              {fraseDeLasFotosQueNoBajaron(creacion)}{" "}
+              <Link href="/panel/inmobiliaria/inmuebles/importar?que=fotos" className="underline underline-offset-2">
+                Subirlas en un ZIP
+              </Link>
+            </p>
+          ) : null}
+          {/* 🔴 (10-10-2026, Nico) «Nada sale hasta que lo elijan». */}
+          <div className="flex justify-center">
+            <CualesPublicas lote={lote} />
+          </div>
           {(resumenLote?.pendientes ?? 0) > 0 && (
             <div className="space-y-2" data-testid="quedan-por-revisar">
               <p className="text-sm text-warning">

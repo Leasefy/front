@@ -64,6 +64,7 @@ import { diaDe, diaLegible, hoy } from '@/lib/contabilidad/fechas';
 import { Monto } from '../Monto';
 import { Nota } from '../piezas';
 import { MOTIVO_SIN_CAMBIO_DE_EGRESO, type PuedeEscribir } from '../use-puede-escribir';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 /**
  * El mensaje del back, tal cual, cuando lo hay: sus 409 de este flujo dicen
@@ -336,15 +337,14 @@ export function CajonDelEgreso({
                     permiso={permisoDe(permisos.fecha)}
                     ayuda="Si el banco rechazó o devolvió el giro y salió otro día, ese es el día que va. Cambiarla reversa el asiento del egreso y lo vuelve a causar en la fecha nueva."
                   >
-                    <Input
+                    <CampoDeDia
                       id="egreso-fecha"
-                      type="date"
                       value={fecha}
+                      onChange={(v) => setFecha(v)}
                       max={hoyEs}
-                      onChange={(e) => setFecha(e.target.value)}
                       disabled={!permisoDe(permisos.fecha).puede || guardando}
                       className="w-full font-mono sm:w-56"
-                      data-testid="egreso-fecha"
+                      testid="egreso-fecha"
                     />
                   </Campo>
 

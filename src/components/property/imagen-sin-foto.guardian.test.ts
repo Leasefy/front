@@ -106,12 +106,6 @@ const DECLARADOS: ReadonlyArray<Uso & { motivo: string }> = [
   { archivo: 'src/components/property/PhotoGalleryModal.tsx', src: 'image', motivo: 'Elemento de la lista de fotos.' },
   { archivo: 'src/components/property/PortadaDelInmueble.tsx', src: 'src', motivo: 'Es el remedio: `primeraFoto` ya descartó lo vacío.' },
   { archivo: 'src/components/property/PropertyCard.tsx', src: 'src', motivo: 'Recorre `allImages`, ya filtradas con `trim()`.' },
-  { archivo: 'src/components/property/PropertyDetailView.tsx', src: 'image', motivo: 'Elemento de la lista de fotos.' },
-  {
-    archivo: 'src/components/property/PropertyDetailView.tsx',
-    src: 'property.images[0]',
-    motivo: 'Dos usos, los dos dentro de `property.images.length === 0 ? «Sin fotos» : …`.',
-  },
   { archivo: 'src/components/tenant/PropertyDetailSheet.tsx', src: 'image', motivo: 'Elemento de la lista de fotos.' },
   {
     archivo: 'src/components/onboarding/perfil/EleccionDePerfil.tsx',

@@ -74,6 +74,24 @@ export const TERCEROS = {
   fotosDeGoogle: 'https://lh3.googleusercontent.com',
   /** Fotos de stock de la landing y de las páginas «Para …». */
   fotosDeLaLanding: ['https://images.unsplash.com', 'https://images.pexels.com'],
+  /**
+   * El reproductor de los videos de los inmuebles (marketplace, 09-10-2026):
+   * el modal es nuestro y adentro va el reproductor OFICIAL de cada red
+   * (`lib/marketplace/video.ts`). Sin estos orígenes, el día que la política
+   * pase a obligatoria el video queda en blanco.
+   */
+  reproductoresDeVideo: [
+    'https://www.youtube-nocookie.com',
+    'https://www.tiktok.com',
+    'https://www.instagram.com',
+    'https://www.facebook.com',
+  ],
+  /**
+   * Las portadas de esos videos: la de YouTube sale de su id y la de TikTok
+   * de su oEmbed (`use-portada-del-video.ts`), que se pide a www.tiktok.com.
+   */
+  portadasDeVideo: ['https://i.ytimg.com', 'https://*.tiktokcdn.com', 'https://*.tiktokcdn-us.com'],
+  oembedDeTiktok: 'https://www.tiktok.com',
 } as const;
 
 export type ModoDeLaPolitica = 'obligatoria' | 'reporte';
@@ -163,6 +181,7 @@ export function politicaDeContenido(nonce: string | null, env: EntornoDeLaPoliti
     TERCEROS.mapa,
     ...TERCEROS.wompiApi,
     ...TERCEROS.firebase,
+    TERCEROS.oembedDeTiktok,
     // El recargado en caliente de `next dev` abre un WebSocket al mismo host.
     env.desarrollo ? 'ws:' : null,
   ]);
@@ -184,6 +203,7 @@ export function politicaDeContenido(nonce: string | null, env: EntornoDeLaPoliti
     TERCEROS.mapa,
     TERCEROS.fotosDeGoogle,
     ...TERCEROS.fotosDeLaLanding,
+    ...TERCEROS.portadasDeVideo,
   ]);
 
   const frame = sinRepetidos([
@@ -196,6 +216,7 @@ export function politicaDeContenido(nonce: string | null, env: EntornoDeLaPoliti
     ...propios,
     TERCEROS.wompiCheckout,
     TERCEROS.tally,
+    ...TERCEROS.reproductoresDeVideo,
   ]);
 
   const directivas: Array<[string, string[]]> = [

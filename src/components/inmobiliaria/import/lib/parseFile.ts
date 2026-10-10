@@ -141,7 +141,16 @@ function textoDelNumero(v: number, formato?: string): string {
   if (/^0+$/.test(z)) return String(v).padStart(z.length, '0');
   const limpio = (n: number): string => {
     if (Number.isInteger(n)) return String(n);
-    let t = n.toFixed(10).replace(/0+$/, '').replace(/\.$/, '');
+    /*
+     * T-0158: `toFixed(10)` imprime la expansión binaria EXACTA: un canon de 7
+     * cifras (1227294.12) salía «1227294.1200000001» y el lector de plata lo
+     * rechazaba (más de dos decimales) — el contrato llegaba sin canon y sin
+     * aviso. Un double sólo garantiza ~15 cifras significativas: se recorta
+     * ahí y se usa la representación más corta. `toFixed(10)` queda para lo
+     * que `toString` escribe en notación científica (números diminutos).
+     */
+    const corto = Number(n.toPrecision(15)).toString();
+    let t = /e/i.test(corto) ? n.toFixed(10).replace(/0+$/, '').replace(/\.$/, '') : corto;
     const decimales = t.includes('.') ? t.split('.')[1].length : 0;
     if (decimales === 3) t += '0';
     return t;
@@ -369,6 +378,8 @@ export async function downloadTemplate(): Promise<void> {
     'Estado',
     'Observaciones',
     'Fecha de Consignación',
+    'Video',
+    'Fotos',
   ];
 
   // Create a worksheet with a header row and two example rows
@@ -392,6 +403,8 @@ export async function downloadTemplate(): Promise<void> {
     'Disponible',
     'Parqueadero incluido',
     '',
+    'https://www.instagram.com/reel/…',
+    'https://drive.google.com/file/d/…/view, https://drive.google.com/file/d/…/view',
   ];
 
   const worksheetData = [headers, exampleRow];

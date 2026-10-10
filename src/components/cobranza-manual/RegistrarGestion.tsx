@@ -16,7 +16,6 @@ import { Presence } from '@leasefy/cadence'
 import { Button } from '@/components/ui/button'
 import { Chip } from '@leasefy/cadence'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { CampoDePlata } from '@/components/ui/campo-de-plata'
 import {
@@ -47,6 +46,7 @@ import {
   type ResultadoDeGestion,
   type TipoDeGestion,
 } from '@/lib/api/cobranza-manual.types'
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
 
 type Campo = 'resultado' | 'comentario' | 'fecha' | 'monto'
 
@@ -236,13 +236,12 @@ export function RegistrarGestion({ abierto, onCerrar, quien, nombre, onRegistrad
                   <label htmlFor="gestion-promesa-fecha" className="text-sm font-medium text-fg">
                     ¿Qué día?
                   </label>
-                  <Input
+                  <CampoDeDia
                     id="gestion-promesa-fecha"
-                    type="date"
-                    min={hoy}
                     value={fecha}
-                    onChange={(e) => setFecha(e.target.value)}
-                    data-testid="gestion-promesa-fecha"
+                    onChange={(v) => setFecha(v)}
+                    min={hoy}
+                    testid="gestion-promesa-fecha"
                   />
                   {errores.fecha ? (
                     <p className="text-sm text-danger" role="alert">{errores.fecha}</p>

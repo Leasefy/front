@@ -5,6 +5,10 @@
  * registrar sobre ése; el contrato del propio inmueble se dice como siempre.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+
+// 10-10-2026: las fechas son campos de Cadence (se eligen, no se escriben); en la
+// prueba, un <input> con el mismo id y data-testid (`campos-de-fecha.doble-de-prueba`).
+vi.mock('@/components/contabilidad/CampoDeDia', () => import('@/components/ui/campos-de-fecha.doble-de-prueba'))
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 

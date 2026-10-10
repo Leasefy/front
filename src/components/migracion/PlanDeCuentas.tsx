@@ -842,7 +842,7 @@ function Nodo({
           {nodo.naturaleza === 'DEBITO' ? 'Débito' : 'Crédito'}
         </span>
         {nodo.imputable ? (
-          <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] text-primary">
+          <span className="text-[11px] font-medium text-primary">
             Imputable
           </span>
         ) : null}
@@ -850,7 +850,7 @@ function Nodo({
             exógena, y eso no puede vivir sólo dentro del formulario. */}
         {estaMarcadaNoDeducible(nodo) ? (
           <span
-            className="inline-flex items-center gap-1 rounded-full bg-warning-soft px-2 py-0.5 text-[11px] text-warning"
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-warning"
             data-testid={`puc-no-deducible-${nodo.codigo}`}
             title="El gasto de esta cuenta va a la columna «Pago o abono no deducible» del formato 1001."
           >
@@ -859,7 +859,7 @@ function Nodo({
           </span>
         ) : null}
         {!nodo.activa ? (
-          <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[11px] text-fg-subtle">
+          <span className="text-[11px] italic text-fg-subtle">
             Inactiva
           </span>
         ) : null}

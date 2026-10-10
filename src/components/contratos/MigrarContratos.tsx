@@ -98,13 +98,19 @@ import {
   type MapeoDeColumna,
 } from "@/lib/contratos/columnas-de-contrato";
 import {
+  comisionQueNoCuadra,
   comisionQueNoParecePorcentaje,
   faltantesEsencialesConDatos,
   huecosEsenciales,
   resumenDeLectura,
   vistaPreviaDeFilas,
 } from "@/lib/contratos/vista-previa-de-migracion";
-import { armarFilaAMigrar } from "@/lib/contratos/armar-fila";
+import {
+  conLaMismaDecision,
+  prepararFilasParaMigrar,
+} from "@/lib/contratos/preparar-filas-para-migrar";
+import { ProrrateoPorDefinir } from "./ProrrateoPorDefinir";
+import { AvisoDeReglaDeInteres } from "./AvisoDeReglaDeInteres";
 import { documentoComoLlave } from "@/lib/contratos/leer-celdas";
 import { motivoDeFilaConCanonPorConfirmar } from "@/lib/inmuebles/canon-por-confirmar";
 import { generarIdempotencyKey } from "@/lib/contratos/idempotencia";
@@ -121,6 +127,7 @@ import { FilaDeRevision } from "./FilaDeRevision";
 import { propietariosApi } from "@/lib/api/inmobiliaria.service";
 import type { Propietario } from "@/lib/types/inmobiliaria";
 import { ResolucionMasiva } from "./ResolucionMasiva";
+import { PendientesPorMotivo } from "./PendientesPorMotivo";
 import { CrearInmueblesFaltantes } from "./CrearInmueblesFaltantes";
 import { AlertaAccionable } from "@/components/ui/alerta-accionable";
 import { TarjetaDeArchivo } from "@/components/migracion/TarjetaDeArchivo";
@@ -145,7 +152,7 @@ import { usePlataConCentavos } from "@/lib/plata/use-plata-con-centavos";
 
 const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   direccionInmueble: "Dirección del inmueble",
-  fechaDeCartera: "Fecha de cartera",
+  fechaDeCartera: "Fecha de cartera (desde cuándo se cobra; también «Fecha de liquidación»)",
   prorrateado: "Prorrateado",
   diasDePlazo: "Días de plazo",
   codigoInmueble: "Código del inmueble (#)",
@@ -158,7 +165,8 @@ const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   fechaFin: "Fecha de terminación",
   canon: "Canon",
   deposito: "Depósito",
-  diaDePago: "Día de pago",
+  saldo: "Saldo del sistema anterior",
+  diaDePago: "Día de pago (opcional: si no viene, sale de la fecha de cartera)",
   uso: "Uso del inmueble",
   periodicidad: "Periodicidad",
   comision: "Comisión",
@@ -179,6 +187,12 @@ const NOMBRE_DE_CAMPO: Record<CampoDeContrato, string> = {
   observaciones: "Observaciones",
   fechaCreacionOrigen: "Fecha de creación (sistema anterior)",
   creadoPor: "Creado por",
+  // T-0153: las columnas de «contratos por detalles».
+  consecutivoDetalle: "Consecutivo del detalle (ordena a los copropietarios)",
+  valorComision: "Valor de la comisión (sólo se cruza con canon x %)",
+  renovacionAutomatica: "Renovación automática",
+  impuestosAsumidos: "Impuestos asumidos (4x1000 del giro)",
+  tipoDeInteres: "Tipo de interés (por día de mora / monto fijo)",
 };
 
 /** Todos los campos posibles, para ofrecerlos en el selector de remapeo. */
@@ -205,10 +219,20 @@ const POR_PAGINA = 25;
  * vez de una lista de frases sin lugar. Lo demás —un 409, un 5xx con su
  * referencia, la red— pasa por el traductor.
  */
-export function mensajeDelPreparar(e: unknown): string {
+export function mensajeDelPreparar(
+  e: unknown,
+  /**
+   * T-0153: la posición, en el archivo, de cada contrato que SALIÓ. Cuando
+   * hay contratos por definir o filas fundidas, la posición en el lote ya no
+   * es la fila del archivo.
+   */
+  posiciones?: readonly number[],
+): string {
   const porFila = camposDelError(e).flatMap((c) => {
     const m = /^contratos\.(\d+)\./.exec(c.campo);
-    return m ? [`Fila ${Number(m[1]) + 2}: ${c.mensaje}`] : [];
+    if (!m) return [];
+    const enElLote = Number(m[1]);
+    return [`Fila ${(posiciones?.[enElLote] ?? enElLote) + 2}: ${c.mensaje}`];
   });
   if (porFila.length > 0) {
     const unicos = Array.from(new Set(porFila));
@@ -499,6 +523,44 @@ export function MigrarContratos({
     [filas, mapeo],
   );
   const huecos = useMemo(() => huecosEsenciales(filas, mapeo), [filas, mapeo]);
+  /**
+   * T-0153 §3.4: el prorrateo que la agencia define en la vista previa (por
+   * contrato o en bloque). Llave = posición del contrato en el archivo. Un
+   * archivo nuevo, otras filas: se empieza de cero.
+   */
+  const [decisionesDeProrrateo, setDecisionesDeProrrateo] = useState<
+    ReadonlyMap<number, boolean>
+  >(new Map());
+  useEffect(() => {
+    setDecisionesDeProrrateo(new Map());
+  }, [filas]);
+  /**
+   * Lo que de verdad saldría: filas leídas, copropietarios fundidos (§4.3) y
+   * sin los contratos cuyo prorrateo nadie definió. Es la MISMA función para
+   * la pantalla y para el envío.
+   */
+  const preparadas = useMemo(
+    () =>
+      prepararFilasParaMigrar(
+        filas,
+        mapeo,
+        { conCentavos: contratosConCentavos },
+        decisionesDeProrrateo,
+      ),
+    [filas, mapeo, contratosConCentavos, decisionesDeProrrateo],
+  );
+  const sinColumnaDeProrrateo = useMemo(
+    () => !mapeo.some((m) => m.campo === "prorrateado"),
+    [mapeo],
+  );
+  /** §4.4: la comisión en pesos del archivo contra canon x %. Avisa, no bloquea. */
+  const comisionesQueNoCuadran = useMemo(
+    () => comisionQueNoCuadra(filas, mapeo),
+    [filas, mapeo],
+  );
+  const definirProrrateo = useCallback((indices: number[], valor: boolean) => {
+    setDecisionesDeProrrateo((actuales) => conLaMismaDecision(actuales, indices, valor));
+  }, []);
   /**
    * El resumen honesto del paso: cuántas filas traen con qué identificar el
    * inmueble, el propietario y el inquilino — y cuántas no, con el motivo.
@@ -819,12 +881,16 @@ export function MigrarContratos({
     }
     setCargando(true);
     setError(null);
+    let posicionesEnviadas: readonly number[] | undefined;
     try {
       // Cada campo mapeado viaja; lo que no se mapeó (o quedó vacío) viaja
       // ausente, nunca un default inventado — ver `armar-fila.ts`.
       // «Centavos en todo»: con la llave de los contratos el canon y el
       // depósito del archivo viajan tal cual, con sus centavos.
-      const aMigrar = filas.map((fila) => armarFilaAMigrar(fila, mapeo, { conCentavos: contratosConCentavos }));
+      // T-0153: las filas sin prorrateo definido NO salen; las demás sí.
+      const { aMigrar } = preparadas;
+      if (aMigrar.length === 0) return;
+      posicionesEnviadas = preparadas.posiciones;
 
       const r = await contractsApi.migracion.preparar(aMigrar, idempotencyKey);
       // El lote es SIEMPRE del servidor (contrato §3.2.A2) — generarlo acá
@@ -843,11 +909,11 @@ export function MigrarContratos({
       // cambia, no en cada refresco de página.
       setSeleccion(new Set());
     } catch (e) {
-      setError(mensajeDelPreparar(e));
+      setError(mensajeDelPreparar(e, posicionesEnviadas));
     } finally {
       setCargando(false);
     }
-  }, [filas, mapeo, idempotencyKey, contratosConCentavos]);
+  }, [filas, mapeo, idempotencyKey, preparadas]);
 
   /*
    * Volver a cruzar las filas pendientes contra lo que los otros pasos ya
@@ -1691,10 +1757,13 @@ export function MigrarContratos({
                         */}
                         {m.certeza === "dudosa" ? (
                           <span
+                            role="note"
                             data-testid={`dudosa-${m.columna}`}
-                            className="rounded-lg border border-warning/40 bg-warning-soft px-1.5 py-0.5 text-warning"
+                            className="inline-flex cursor-default items-center gap-1 text-warning"
                           >
-                            confirma esto
+                            <Warning className="h-3.5 w-3.5 shrink-0" weight="fill" aria-hidden="true" />
+                            <span className="sr-only">Advertencia: </span>
+                            Revisa que esta columna sea la correcta
                           </span>
                         ) : null}
                       </div>
@@ -1866,16 +1935,75 @@ export function MigrarContratos({
             No dice "importar": todavía no se crea nada. Y no se puede seguir
             con lo esencial sin mapear — ver `faltanEsenciales`.
           */}
+          {comisionesQueNoCuadran.length > 0 ? (
+            <AlertaAccionable
+              severidad="warning"
+              data-testid="aviso-comision-no-cuadra"
+              titulo={
+                comisionesQueNoCuadran.length === 1
+                  ? "La comisión de 1 fila no cuadra con canon x %"
+                  : `La comisión de ${comisionesQueNoCuadran.length} filas no cuadra con canon x %`
+              }
+            >
+              El porcentaje es lo que se guarda; el valor en pesos del archivo no
+              se usa. Revisa que el % y el canon de{" "}
+              {comisionesQueNoCuadran
+                .slice(0, 5)
+                .map((c) => `la fila ${c.filaDelArchivo}`)
+                .join(", ")}
+              {comisionesQueNoCuadran.length > 5
+                ? ` y ${comisionesQueNoCuadran.length - 5} más`
+                : ""}{" "}
+              sean los correctos.
+            </AlertaAccionable>
+          ) : null}
+
+          {preparadas.fundidas > 0 ? (
+            <AlertaAccionable
+              severidad="info"
+              data-testid="aviso-filas-fundidas"
+              titulo={`${preparadas.fundidas} ${preparadas.fundidas === 1 ? "fila se unió" : "filas se unieron"} al contrato de su copropietario`}
+            >
+              Cuando un contrato trae una fila por propietario, se arma un solo
+              contrato con el reparto del canon. Las filas que no coinciden en
+              todo quedan separadas.
+            </AlertaAccionable>
+          ) : null}
+
+          {preparadas.repetidas > 0 ? (
+            <p
+              className="text-caption text-muted-foreground"
+              data-testid="aviso-filas-repetidas"
+            >
+              {preparadas.repetidas}{" "}
+              {preparadas.repetidas === 1
+                ? "fila repetida del archivo se unió"
+                : "filas repetidas del archivo se unieron"}
+              .
+            </p>
+          ) : null}
+
+          {filas.length > 0 ? (
+            <ProrrateoPorDefinir
+              porDefinir={preparadas.porDefinir}
+              sinColumna={sinColumnaDeProrrateo}
+              onCambiar={definirProrrateo}
+            />
+          ) : null}
+
           <Button
             onClick={() => void preparar()}
             disabled={
-              filas.length === 0 || cargando || faltanEsenciales.length > 0
+              filas.length === 0 ||
+              cargando ||
+              faltanEsenciales.length > 0 ||
+              preparadas.aMigrar.length === 0
             }
             isLoading={cargando}
             hideArrow
           >
-            Revisar {filas.length}{" "}
-            {filas.length === 1 ? "contrato" : "contratos"}
+            Revisar {preparadas.aMigrar.length}{" "}
+            {preparadas.aMigrar.length === 1 ? "contrato" : "contratos"}
           </Button>
         </Card>
       ) : null}
@@ -2146,12 +2274,12 @@ function ListaDeTrabajo({
    * T-0135 — «Seguir con las N que faltan»: qué acción en bloque se retoma. Se
    * pasa a `ResolucionMasiva` (con `key`) para que abra ya en ese modo.
    */
-  const [modoMasivo, setModoMasivo] = useState<"uso" | "propietario" | null>(
-    null,
-  );
+  const [modoMasivo, setModoMasivo] = useState<
+    "uso" | "propietario" | "reparto" | null
+  >(null);
   const [versionMasivo, setVersionMasivo] = useState(0);
   const [seleccionandoFaltantes, setSeleccionandoFaltantes] = useState<
-    "uso" | "propietario" | null
+    "uso" | "propietario" | "reparto_del_canon" | null
   >(null);
   // Lo que todavía falta, con el número DEL SERVIDOR (`porMotivo` cuenta las
   // filas PENDIENTES con ese faltante: las ya resueltas, activadas o
@@ -2173,7 +2301,9 @@ function ListaDeTrabajo({
    * vuelven) y abre la acción en su modo. El estado sale del servidor, no de
    * la memoria de esta pestaña: sirve igual tras cerrar y volver.
    */
-  async function seguirConLasQueFaltan(faltante: "uso" | "propietario") {
+  async function seguirConLasQueFaltan(
+    faltante: "uso" | "propietario" | "reparto_del_canon",
+  ) {
     setSeleccionandoFaltantes(faltante);
     setNotaSeleccion(null);
     try {
@@ -2186,12 +2316,14 @@ function ListaDeTrabajo({
         setNotaSeleccion(
           faltante === "uso"
             ? "A ninguna fila le falta el uso: no hay nada que seguir."
-            : "A ninguna fila le falta el propietario: no hay nada que seguir.",
+            : faltante === "reparto_del_canon"
+              ? "Ninguna fila tiene ya problema de reparto: no hay nada que seguir."
+              : "A ninguna fila le falta el propietario: no hay nada que seguir.",
         );
         return;
       }
       onSeleccionCambia(new Set(r.ids));
-      setModoMasivo(faltante);
+      setModoMasivo(faltante === "reparto_del_canon" ? "reparto" : faltante);
       setVersionMasivo((v) => v + 1);
       setNotaSeleccion(
         r.truncado
@@ -2249,6 +2381,18 @@ function ListaDeTrabajo({
           />
           <Dato etiqueta="Ya activados" valor={resumen.activados} />
         </div>
+
+        {resumen.descartados > 0 ? (
+          <p
+            className="text-caption text-muted-foreground"
+            data-testid="resumen-descartadas"
+          >
+            {resumen.descartados}{" "}
+            {resumen.descartados === 1 ? "fila descartada" : "filas descartadas"}
+            : no cuentan como pendientes ni generan cobros (por ejemplo, las de
+            un inmueble que descartaste en la importación de inmuebles).
+          </p>
+        ) : null}
 
         {/*
          * A qué quedó pegado el lote, y POR QUÉ CAMINO. «2.851 listas» no dice
@@ -2551,6 +2695,7 @@ function ListaDeTrabajo({
               cobrado. Revísa{actualizados.porRevisarAMano === 1 ? "lo" : "los"} desde la ficha del contrato.
             </p>
           ) : null}
+          <AvisoDeReglaDeInteres avisos={activacion.avisos} />
           {activacion.porInvitar ? (
             <p
               className="text-sm text-muted-foreground"
@@ -2953,6 +3098,17 @@ function ListaDeTrabajo({
           ) : null}
         </div>
       ) : null}
+
+      <PendientesPorMotivo
+        porMotivo={resumen.porMotivo}
+        seleccionando={seleccionandoFaltantes}
+        onSeguir={(c) => void seguirConLasQueFaltan(c as "reparto_del_canon")}
+        onCrearInmuebles={() =>
+          document
+            .getElementById("crear-inmuebles-faltantes")
+            ?.scrollIntoView({ behavior: "smooth", block: "center" })
+        }
+      />
 
       {notaSeleccion ? (
         <p

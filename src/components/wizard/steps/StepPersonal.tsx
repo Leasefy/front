@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useMemo } from 'react';
-import { User, FileText, Calendar, Phone, MapPin, Users, Heart, Envelope } from '@phosphor-icons/react';
+import { User, FileText, Phone, MapPin, Users, Heart, Envelope } from '@phosphor-icons/react';
 import { useApplication } from '@/lib/context/ApplicationContext';
 import {
   DOCUMENT_TYPES,
@@ -14,6 +14,7 @@ import {
   LightSelect,
   LockedField,
 } from '../WizardFormField';
+import { CampoDeNacimiento } from '@/components/ui/campo-de-nacimiento';
 
 const RAZON_BLOQUEO = 'Viene de tu estudio de arrendamiento vigente y no se puede editar.';
 
@@ -155,17 +156,18 @@ export function StepPersonal() {
           error={getError('dateOfBirth')}
           required
         >
-          <LightInput
-            id="dateOfBirth"
-            type="date"
-            autoComplete="bday"
-            value={personal.dateOfBirth || ''}
-            onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-            onBlur={() => handleBlur('dateOfBirth')}
-            icon={<Calendar className="h-4 w-4" />}
-            hasError={!!getError('dateOfBirth')}
-            max={new Date().toISOString().split('T')[0]}
-          />
+          {/* Nico, 10-10-2026: las fechas con los campos de Cadence. La de
+              nacimiento se ESCRIBE (DD / MM / AAAA): con el calendario serían
+              cientos de clics hacia atrás. */}
+          <div onBlur={() => handleBlur('dateOfBirth')}>
+            <CampoDeNacimiento
+              id="dateOfBirth"
+              etiqueta="Fecha de nacimiento"
+              value={personal.dateOfBirth || ''}
+              onChange={(v) => handleInputChange('dateOfBirth', v)}
+              invalido={!!getError('dateOfBirth')}
+            />
+          </div>
         </FormField>
 
         <FormField

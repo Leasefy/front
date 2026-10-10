@@ -18,6 +18,7 @@ import { PageGuard } from '@/components/auth/PageGuard';
 import { ChatLessonsPanel } from '@/components/inmobiliaria/ai/lessons/ChatLessonsPanel';
 
 import { SeccionBranding } from './SeccionBranding';
+import { SeccionTuPagina } from './SeccionTuPagina';
 import { SeccionEquipo } from './SeccionEquipo';
 import { SeccionFacturacion } from './SeccionFacturacion';
 import { SeccionIntegraciones } from './SeccionIntegraciones';
@@ -44,6 +45,8 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
   switch (id) {
     case 'perfil':
       return <SeccionPerfil />;
+    case 'tu-pagina':
+      return <SeccionTuPagina />;
     case 'branding':
       return <SeccionBranding />;
     case 'facturacion':

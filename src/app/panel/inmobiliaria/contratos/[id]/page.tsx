@@ -79,6 +79,7 @@ import { ReglasDeMoraDelContrato } from '@/components/contratos/ReglasDeMoraDelC
 import { ProrrogaDelContrato } from '@/components/contratos/ProrrogaDelContrato';
 import { CondicionesDelContrato } from '@/components/contratos/CondicionesDelContrato';
 import { GarantiaDeServiciosDelContrato } from '@/components/contratos/GarantiaDeServiciosDelContrato';
+import { DocumentosDelContrato } from '@/components/contratos/DocumentosDelContrato';
 import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { PqrsDelContrato } from '@/components/contratos/PqrsDelContrato';
 import { BitacoraDelContrato } from '@/components/inmobiliaria/mandato/BitacoraDelContrato'
@@ -911,15 +912,10 @@ function ContratoDetalleContent() {
                   en los 1.836 contratos de la migración. No es un fallo: se
                   dice de frente y sin alarma.
 
-                  No hay acción que ofrecer hoy, y no se inventa ninguna:
-                  · adjuntar el PDF firmado lo rechaza el back («Solo se puede
-                    reemplazar el PDF en contratos con
-                    contractOrigin=UPLOADED_PDF»), y el PATCH además devuelve
-                    el contrato a PENDING_TENANT_SIGNATURE — sobre un contrato
-                    VIGENTE eso es romperlo;
-                  · armar desde plantilla sólo existe al CREAR
-                    (/contratos/nuevo), no sobre un contrato que ya existe.
-                  Cuando exista alguno de los dos caminos, el botón va acá.
+                  El PDF firmado NO reemplaza el documento (el PATCH devolvería
+                  un contrato VIGENTE a PENDING_TENANT_SIGNATURE): se sube como
+                  documento del contrato, en «Documentos subidos» justo debajo
+                  (Nico, 10-10-2026).
                 */
                 <p className="text-sm text-muted-foreground py-2" data-testid="contrato-sin-documento">
                   Este contrato se cargó desde tu sistema anterior y no tiene documento generado en Leasefy.
@@ -938,6 +934,12 @@ function ContratoDetalleContent() {
                 </p>
               )}
             </CrossFade>
+            {/* 🔴 Nico, 10-10-2026: «el usuario debería de poder agregar
+                documentos al contrato». En el migrado es donde va el contrato
+                firmado en papel; en cualquiera, otrosíes, inventario, pagaré… */}
+            <div className="border-t border-border p-5">
+              <DocumentosDelContrato contractId={contract.id} puedeEditar={canEditContracts} migrado={sinDocumento} />
+            </div>
           </section>
 
           {esPreFirma && (

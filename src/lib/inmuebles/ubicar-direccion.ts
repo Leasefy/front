@@ -48,6 +48,7 @@
 
 import { geocodeApi } from '@/lib/api/geocode.service';
 import { getCityCoordinates } from '@/lib/constants/map';
+import { consultaNormalizada } from './normalizar-direccion-co';
 
 /**
  * Hasta dónde puede caer un punto de su municipio antes de darlo por
@@ -231,6 +232,21 @@ export async function centroDelMunicipio(
   return punto;
 }
 
+/**
+ * T-0159. Las consultas a probar, de mejor a peor, sin repetir. Vacío si el
+ * texto no parece una dirección (una referencia de barrio no se busca).
+ */
+export function consultasParaBuscar(d: DireccionAUbicar): string[] {
+  const normalizada = consultaNormalizada(d);
+  if (!normalizada && !pareceDireccion(d.direccion)) return [];
+  const cruda = [(d.direccion ?? '').replace(/\s+/g, ' ').trim(), d.ciudad, d.departamento, 'Colombia']
+    .map((x) => (x ?? '').trim())
+    .filter(Boolean)
+    .join(', ');
+  const todas = [normalizada, consultaDeDireccion(d), cruda].filter((q): q is string => !!q);
+  return [...new Set(todas)];
+}
+
 /* ─────────────────────────── La ubicación ─────────────────────────────── */
 
 /** Sin acentos, sin mayúsculas y sin espacios de más: «Itagüí» ≡ «itagui». */
@@ -276,43 +292,56 @@ export async function ubicarDireccion(d: DireccionAUbicar): Promise<Ubicacion> {
     return centro;
   };
 
-  if (pareceDireccion(d.direccion)) {
-    try {
-      const primero = (await geocodeApi.autocomplete(consultaDeDireccion(d)))[0];
-      if (primero) {
-        const punto = { lat: primero.lat, lng: primero.lon };
+  let huboLlamada = false;
+  const respetandoElTecho = async <T>(llamada: () => Promise<T>): Promise<T> => {
+    // The provider ceiling is ~2/s: every call after the first waits.
+    if (huboLlamada) await espera(ESPERA_ENTRE_BUSQUEDAS_MS);
+    huboLlamada = true;
+    return llamada();
+  };
 
-        // 1. Por nombre: el buscador ya dijo en qué municipio cayó.
-        //    QA-MIGRACION-95 (IN-06): y del MISMO departamento, si los dos lo
-        //    dicen. Rionegro (Antioquia) y Rionegro (Santander) se llaman igual:
-        //    el de Santander pasaba como «dirección» a 200 km. Distinto
-        //    departamento no se descarta: va a la distancia, como sin nombre.
-        if (
-          primero.city &&
-          d.ciudad &&
-          comoNombre(primero.city) === comoNombre(d.ciudad) &&
-          (!primero.state || !d.departamento || comoNombre(primero.state) === comoNombre(d.departamento))
-        ) {
-          return { ...punto, precision: 'direccion', etiqueta: primero.label };
-        }
+  const centroConTecho = () => (centroBuscado ? Promise.resolve(centro) : respetandoElTecho(traerCentro));
 
-        // 2. Por distancia, cuando el nombre no vino o no coincide. La espera
-        //    es el techo de LocationIQ: sin ella esta segunda llamada sale
-        //    pegada a la de arriba y vuelve rechazada.
-        await espera(ESPERA_ENTRE_BUSQUEDAS_MS);
-        const ce = await traerCentro();
-        if (ce && distanciaKm(ce, punto) <= RADIO_DEL_MUNICIPIO_KM) {
-          return { ...punto, precision: 'direccion', etiqueta: primero.label };
-        }
-        // Sin centro no hay contra qué verificar, y aceptar a ciegas es
-        // justamente lo que puso 548 inmuebles en otro departamento.
+  /*
+   * T-0159. Up to three queries, best first: the normalised address
+   * («Carrera 55 # 53 A - 35»), the cleaned one of before, then the raw text.
+   * Each is verified the same way (by name, then by distance), so trying more
+   * never lowers the bar: it only gives a noisy address more chances to
+   * resolve before falling back to the municipality.
+   */
+  try {
+    for (const consulta of consultasParaBuscar(d)) {
+      const primero = (await respetandoElTecho(() => geocodeApi.autocomplete(consulta)))[0];
+      if (!primero) continue;
+      const punto = { lat: primero.lat, lng: primero.lon };
+
+      // 1. Por nombre: el buscador ya dijo en qué municipio cayó.
+      //    QA-MIGRACION-95 (IN-06): y del MISMO departamento, si los dos lo
+      //    dicen. Rionegro (Antioquia) y Rionegro (Santander) se llaman igual:
+      //    el de Santander pasaba como «dirección» a 200 km. Distinto
+      //    departamento no se descarta: va a la distancia, como sin nombre.
+      if (
+        primero.city &&
+        d.ciudad &&
+        comoNombre(primero.city) === comoNombre(d.ciudad) &&
+        (!primero.state || !d.departamento || comoNombre(primero.state) === comoNombre(d.departamento))
+      ) {
+        return { ...punto, precision: 'direccion', etiqueta: primero.label };
       }
-    } catch {
-      // Buscador caído: queda el municipio.
+
+      // 2. Por distancia, cuando el nombre no vino o no coincide. Sin centro
+      //    no hay contra qué verificar, y aceptar a ciegas es justamente lo
+      //    que puso 548 inmuebles en otro departamento.
+      const ce = await centroConTecho();
+      if (ce && distanciaKm(ce, punto) <= RADIO_DEL_MUNICIPIO_KM) {
+        return { ...punto, precision: 'direccion', etiqueta: primero.label };
+      }
     }
+  } catch {
+    // Buscador caído: queda el municipio.
   }
 
-  const ce = await traerCentro();
+  const ce = await centroConTecho();
   if (ce) return { ...ce, precision: 'municipio' };
   return { precision: 'ninguna' };
 }

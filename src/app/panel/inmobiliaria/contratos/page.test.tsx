@@ -29,6 +29,16 @@ const { useContractsMock, pushMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),
 }))
 
+// Acciones masivas (10-10-2026): `@leasefy/cadence` está simulado, así que la
+// casilla y la barra van con dobles sencillos.
+vi.mock('@/components/masivas/CasillasDeLaTabla', () => ({
+  CasillaDeLaPagina: () => <input type="checkbox" aria-label="Marcar la página" />,
+  CasillaDeLaFila: () => <input type="checkbox" aria-label="Marcar" />,
+}))
+vi.mock('@/components/contratos/ContratosMarcados', () => ({
+  ContratosMarcados: () => <div data-testid="contratos-marcados" />,
+}))
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: pushMock, replace: vi.fn() }),
   usePathname: () => '/panel/inmobiliaria/contratos',
@@ -303,13 +313,13 @@ describe('ContratosPage — the consecutive-number column', () => {
    * The column is leftmost and narrow, mirroring the property code in
    * `ConsignacionTable`. Proven red by deleting the header entry and the cell.
    */
-  it('renders the number as the first cell of the row', async () => {
+  it('renders the number as the first data cell of the row (after the checkbox)', async () => {
     withContracts([contract({ id: 'c-1', code: 14 })])
 
     await renderPage()
 
-    expect(headerCells()[0].textContent).toBe('Código')
-    expect(bodyRows()[0].querySelectorAll('td')[0].textContent).toBe('#14')
+    expect(headerCells()[1].textContent).toBe('Código')
+    expect(bodyRows()[0].querySelectorAll('td')[1].textContent).toBe('#14')
   })
 
   it('leaves the cell EMPTY when there is no number — never “—”, never “#0”', async () => {
@@ -320,7 +330,7 @@ describe('ContratosPage — the consecutive-number column', () => {
 
     await renderPage()
 
-    const first = bodyRows()[0].querySelectorAll('td')[0]
+    const first = bodyRows()[0].querySelectorAll('td')[1]
     expect(first.textContent).toBe('')
     expect(first.textContent).not.toContain('—')
     expect(first.textContent).not.toContain('#')
@@ -336,7 +346,7 @@ describe('ContratosPage — the consecutive-number column', () => {
     await renderPage()
 
     expect(
-      bodyRows().map((r) => r.querySelectorAll('td')[0].textContent),
+      bodyRows().map((r) => r.querySelectorAll('td')[1].textContent),
     ).toEqual(['#1', '#2', '#3'])
   })
 })
@@ -509,7 +519,7 @@ describe('ContratosPage — el buscador', () => {
  * el nuestro, nombrado.
  */
 describe('ContratosPage — el número que la inmobiliaria conoce', () => {
-  const primeraCelda = () => bodyRows()[0].querySelectorAll('td')[0]
+  const primeraCelda = () => bodyRows()[0].querySelectorAll('td')[1]
 
   it('un contrato migrado muestra SU número, y el nuestro ya no («Leasefy #…» se quitó el 16-09)', async () => {
     withContracts([contract({ id: 'c-1', code: 1839, externalId: '1686', contractOrigin: 'MIGRATED' })])
@@ -558,7 +568,7 @@ describe('ContratosPage — los filtros', () => {
   ]
   const filas = () => Array.from(container.querySelectorAll('tbody tr'))
   // La celda del inquilino trae nombre y correo: el nombre es el primer <p>.
-  const nombres = () => filas().map((r) => r.querySelectorAll('td')[1]?.querySelector('p')?.textContent ?? '')
+  const nombres = () => filas().map((r) => r.querySelectorAll('td')[2]?.querySelector('p')?.textContent ?? '')
   const click = async (sel: string) => {
     const el = container.querySelector(sel) as HTMLElement
     expect(el, sel).not.toBeNull()

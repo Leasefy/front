@@ -149,6 +149,7 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // contrato no tiene tabla de cuotas por la comisión (el mapeo es una lista
     // cerrada). Ausente con un back anterior.
     ...(bc.comisionSinDefinir !== undefined ? { comisionSinDefinir: bc.comisionSinDefinir === true } : {}),
+    ...(bc.trasladaGmfAlPropietario !== undefined ? { trasladaGmfAlPropietario: bc.trasladaGmfAlPropietario } : {}),
     ...(bc.sinTablaDeCuotas !== undefined ? { sinTablaDeCuotas: bc.sinTablaDeCuotas ?? null } : {}),
     ...(bc.loQueTraiaElArchivo !== undefined ? { loQueTraiaElArchivo: bc.loQueTraiaElArchivo ?? null } : {}),
     /*
@@ -803,6 +804,17 @@ export const contractsApi = {
   },
 
   /**
+   * POST /contracts/invitar-inquilino/en-el-centro → 202 `{ procesoId }`.
+   * Acciones masivas (10-10-2026): «Invitar al portal» de cada contrato
+   * marcado, en UNA petición que el back recorre en el centro de procesos.
+   */
+  async invitarInquilinosEnElCentro(contractIds: readonly string[]): Promise<{ procesoId: string }> {
+    return apiClient.post<{ procesoId: string }>('/contracts/invitar-inquilino/en-el-centro', {
+      contractIds: [...contractIds],
+    });
+  },
+
+  /**
    * 🔴 QA-CONT CR-08 — `GET /contracts/:id/invitacion-del-inquilino`: en qué
    * está la invitación al portal del inquilino del contrato y qué botón le
    * toca («Invitar al portal», «Reenviar invitación» o ninguno).
@@ -1085,15 +1097,41 @@ export interface FilaAMigrar {
   /** C14 (QA-MIGRACION-95): la fila de la hoja de Excel (con encabezado y títulos contados). */
   filaDelArchivo?: number;
   deposit?: number;
+  /**
+   * 🔴 «Saldo» (Nico, 10-10-2026): lo que el inquilino debía en el sistema
+   * anterior a la fecha de corte, tal cual (con su signo y sus centavos).
+   * Entra a la cartera como «Saldo del sistema anterior». Ausente = el archivo
+   * no lo trae.
+   */
+  saldoInicial?: number;
   paymentDay?: number;
   /** Sin esto no se puede liquidar: vivienda va sin IVA, comercial con IVA. */
   usoInmueble?: 'VIVIENDA' | 'COMERCIAL';
   /**
    * «Prorrateado» del archivo. Con prorrateo el primer mes cobra sólo los
    * días desde la fecha de cartera —y el último, los días ocupados—; sin él,
-   * el mes completo cada día de cartera. Ausente = sin prorrateo.
+   * el mes completo cada día de cartera. T-0153: el front SIEMPRE lo manda
+   * explícito (del archivo o elegido por la agencia en la vista previa).
    */
   prorratearPrimerMes?: boolean;
+  /**
+   * T-0153 (A1) «Renovación automática», ya invertido: `true` = al vencer
+   * queda en alerta y no se generan cuotas. Ausente = rige la prórroga legal.
+   * Un back anterior rechaza esta clave: desplegar el back primero.
+   */
+  noSeProrroga?: boolean;
+  /**
+   * T-0153 (A2) «Impuestos asumidos»: `true` = el propietario asume el 4x1000
+   * del giro de este contrato; `false` = la inmobiliaria. Ausente = rige la
+   * configuración de la inmobiliaria. Back antes que front.
+   */
+  trasladaGmfAlPropietario?: boolean;
+  /**
+   * T-0153 (A3) «Tipo de interés»: `PRORRATEADO` = interés de mora por día;
+   * `COMPLETO` = monto fijo. Ausente = rigen las reglas de la inmobiliaria.
+   * Back antes que front.
+   */
+  tipoDeInteres?: 'PRORRATEADO' | 'COMPLETO';
   /** «Días de Plazo»: gracia antes de la mora. Ausente = el de la agencia. */
   diasDePlazo?: number;
   periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
@@ -1199,7 +1237,11 @@ export type Faltante =
    * canon. No se inventa un 50/50: se corrige el archivo o se quita esa
    * columna del mapeo (partes iguales) y se ajusta en el mandato.
    */
-  | 'reparto_del_canon';
+  | 'reparto_del_canon'
+  /** Después de activar: lo guardado no coincide con el archivo. Nada se corrigió solo. */
+  | 'verificacion_difiere'
+  /** La red del back: un código que nadie mapeó. */
+  | 'otros';
 
 export interface InmuebleCandidato {
   id: string;
@@ -1746,6 +1788,12 @@ export interface ResumenActivacion {
    * todavía no manda este campo no puede afirmar un conteo que no tiene.
    */
   porInvitar?: number;
+  /**
+   * T-0153 (A3): avisos NO bloqueantes del back, por código. El único que se
+   * lee hoy es `regla_de_interes_no_configurada`: el archivo pedía un tipo de
+   * interés y la inmobiliaria no tiene esa regla. Ausente ⇒ nada que mostrar.
+   */
+  avisos?: Array<{ codigo: string; cuantos?: number }>;
   /**
    * 2026-09-02 — las filas sin inmueble de ESTA corrida. Con `sparse`
    * prendido en el back: cuántas se ACTIVARON sin inmueble (contratos que no

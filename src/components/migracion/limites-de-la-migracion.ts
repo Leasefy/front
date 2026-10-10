@@ -46,6 +46,8 @@ export const MENSAJES_DE_LA_MIGRACION = {
   canonMinimo: 'El canon tiene que ser mayor que cero.',
   // 02-10-2026: la plata de cada dueño de «Valor Canon» (`canonPorPropietario`).
   canonPorPropietarioNegativo: 'La parte del canon de cada propietario no puede ser negativa.',
+  // T-0163: la plata de cada inquilino de «Valor Canon» (`canonPorInquilino`).
+  canonPorInquilinoNegativo: 'La parte del canon de cada inquilino no puede ser negativa.',
   canonMaximoAlCorregir:
     'El canon no puede pasar de $2.000.000.000 al mes. Revisa que no sobren ceros.',
   demasiadosContratos:
@@ -160,5 +162,20 @@ export function errorDeLaPlataPorPropietario(
   if (!lista) return null;
   if (lista.some((n) => !esPlataQueSeAcepta(n, conCentavos))) return fraseDeLaPlata(M.canonEntero, conCentavos);
   if (lista.some((n) => n < 0)) return M.canonPorPropietarioNegativo;
+  return null;
+}
+
+/**
+ * T-0163: la plata de cada inquilino de «Valor Canon» (`canonPorInquilino`),
+ * con las mismas reglas que la de los propietarios (`ArrayMaxSize(20)`, pesos
+ * enteros, ninguna negativa). `null` si la lista sirve (o no viene).
+ */
+export function errorDeLaPlataPorInquilino(
+  lista: readonly number[] | null | undefined,
+  { conCentavos = false }: OpcionesDeLaPlata = {},
+): string | null {
+  if (!lista) return null;
+  if (lista.some((n) => !esPlataQueSeAcepta(n, conCentavos))) return fraseDeLaPlata(M.canonEntero, conCentavos);
+  if (lista.some((n) => n < 0)) return M.canonPorInquilinoNegativo;
   return null;
 }

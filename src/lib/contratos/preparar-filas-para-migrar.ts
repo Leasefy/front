@@ -43,6 +43,8 @@ export interface FilasParaMigrar {
   pendientes: FilaPorDecidir[]
   /** Cuántas filas del archivo se absorbieron en el contrato de otra (copropietarios). */
   fundidas: number
+  /** De `fundidas`, las que fueron «una fila por inquilino» (T-0163). */
+  fundidasPorInquilinos: number
   /** Cuántas filas eran copia exacta de otra del mismo contrato y se unieron (T-0158). */
   repetidas: number
 }
@@ -83,6 +85,10 @@ export function prepararFilasParaMigrar(
     porDefinir,
     pendientes: porDefinir.filter((p) => p.decision === undefined),
     fundidas: sinRepetir.length - contratos.length,
+    fundidasPorInquilinos: contratos.reduce(
+      (n, c) => n + (c.fila.canonPorInquilino ? c.fila.canonPorInquilino.length - 1 : 0),
+      0,
+    ),
     repetidas,
   }
 }

@@ -132,3 +132,23 @@ describe('prepararFilasParaMigrar', () => {
     expect(antes.size).toBe(1)
   })
 })
+
+describe('filas fundidas por inquilinos (T-0163)', () => {
+  it('cuenta aparte las filas que se unieron por inquilinos', () => {
+    const base = { 'Consecutivo contrato': 50, 'Nro. Propiedad': 5, 'Dirección Propiedad': 'Calle 5', 'Documento Propietario': 105 }
+    const filas = [
+      fila(1),
+      fila(5, { ...base, 'Consecutivo detalle': 1, 'Documento Inquilino': 301, 'Valor canon': 400000, 'Total Canon Contrato': 1000000 }),
+      fila(5, { ...base, 'Consecutivo detalle': 2, 'Documento Inquilino': 302, 'Valor canon': 600000, 'Total Canon Contrato': 1000000 }),
+    ]
+    const r = prepararFilasParaMigrar(filas, mapeo, {}, sinDecisiones)
+    expect(r.aMigrar).toHaveLength(2)
+    expect(r.fundidas).toBe(1)
+    expect(r.fundidasPorInquilinos).toBe(1)
+  })
+
+  it('las filas fundidas por dueños no cuentan como fundidas por inquilinos', () => {
+    const r = prepararFilasParaMigrar([fila(1)], mapeo, {}, sinDecisiones)
+    expect(r.fundidasPorInquilinos).toBe(0)
+  })
+})

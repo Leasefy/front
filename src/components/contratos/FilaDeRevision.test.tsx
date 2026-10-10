@@ -684,3 +684,72 @@ describe('<FilaDeRevision> — el error en su lugar', () => {
     expect($('[data-testid="error-de-fila"]')?.textContent).toMatch(/conexión/)
   })
 })
+
+/*
+ * T-0163: un contrato con varios inquilinos reparte su factura. La fila muestra,
+ * ANTES de activar, qué parte tiene cada uno (lo deriva el back de «Valor Canon»
+ * en `asociacion.inquilino.repartoDeInquilinos`). Datos inventados.
+ */
+describe('<FilaDeRevision> — el reparto entre los inquilinos', () => {
+  const conRepartoDeInquilinos = (reparto: unknown): Partial<FilaDeMigracion> => ({
+    asociacion: {
+      inmueble: { asociadoPor: 'codigo', codigo: '77001', direccion: 'Calle 10', propertyId: 'prop-1' },
+      propietario: { asociadoPor: 'documento', documento: '1', nombre: 'Dueña', id: 'po-1', cuantos: 1 },
+      inquilino: {
+        asociadoPor: 'documento',
+        documento: '222',
+        nombre: 'Inquilino Uno',
+        id: null,
+        cuantos: 2,
+        repartoDeInquilinos: reparto,
+      },
+      escenario: [],
+      historico: false,
+    } as FilaDeMigracion['asociacion'],
+  })
+
+  it('muestra cada inquilino con su % y su plata, y dice que el reparto es del archivo', () => {
+    montar(
+      conRepartoDeInquilinos({
+        explicito: true,
+        problema: null,
+        inquilinos: [
+          { documento: '222', nombre: 'Inquilino Uno', bps: 5000, canon: 1260504 },
+          { documento: '333', nombre: 'Inquilino Dos', bps: 5000, canon: 1260504 },
+        ],
+      }),
+    )
+    const bloque = document.querySelector('[data-testid="reparto-de-inquilinos"]')
+    expect(bloque?.textContent).toContain('2 inquilinos · reparto del archivo')
+    const filas = [...document.querySelectorAll('[data-testid="inquilino-del-reparto"]')].map((li) =>
+      (li.textContent ?? '').replace(/\s+/g, ' '),
+    )
+    expect(filas).toHaveLength(2)
+    expect(filas[0]).toContain('Inquilino Uno')
+    expect(filas[0]).toContain('50 %')
+    expect(filas[0]).toMatch(/1\.260\.504/)
+    expect(filas[1]).toContain('Inquilino Dos')
+  })
+
+  it('si no cuadra, muestra el motivo y NINGÚN porcentaje', () => {
+    montar(
+      conRepartoDeInquilinos({
+        explicito: false,
+        problema: 'Los valores de «Valor Canon» suman $1.100.000 y el canon es $2.500.000',
+        inquilinos: [
+          { documento: '222', nombre: 'Inquilino Uno', bps: null, canon: 1000000 },
+          { documento: '333', nombre: 'Inquilino Dos', bps: null, canon: 100000 },
+        ],
+      }),
+    )
+    const bloque = document.querySelector('[data-testid="reparto-de-inquilinos"]')
+    expect(bloque?.textContent).toContain('el reparto no cuadra')
+    expect(bloque?.textContent).toContain('suman $1.100.000')
+    expect(bloque?.textContent).not.toMatch(/\d+ %/)
+  })
+
+  it('con un solo inquilino, sin el dato (back anterior) o null, no dibuja nada', () => {
+    montar()
+    expect(document.querySelector('[data-testid="reparto-de-inquilinos"]')).toBeNull()
+  })
+})

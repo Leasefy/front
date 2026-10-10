@@ -56,6 +56,15 @@ describe('<PendientesPorMotivo> (T-0156)', () => {
     expect(onSeguir).toHaveBeenCalledWith('reparto_del_canon')
   })
 
+  it('T-0163: el reparto de inquilinos se cuenta y dice que sólo se arregla en el archivo o descartando', () => {
+    const { container } = montar({ porMotivo: { reparto_de_inquilinos: 2 } })
+    const li = container.querySelector('[data-testid="pendientes-reparto_de_inquilinos"]')
+    expect(li?.textContent).toContain('2 contratos')
+    expect(li?.textContent).toContain('La plata por inquilino no cuadra')
+    expect(li?.textContent).toContain('descarta')
+    expect(container.querySelector('[data-testid="seguir-reparto_de_inquilinos"]')).toBeNull()
+  })
+
   it('sin motivos no pinta nada', () => {
     const { container } = montar({ porMotivo: undefined })
     expect(container.querySelector('[data-testid="pendientes-por-motivo"]')).toBeNull()

@@ -58,6 +58,7 @@
  * Sólo pinta. Cargando y fallo los resuelve `EstadoDeDatos` en el panel.
  */
 
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useState } from 'react'
 import Link from 'next/link'
 import { CurrencyCircleDollar, DotsThreeVertical } from '@phosphor-icons/react'
@@ -322,7 +323,7 @@ export function CuotasDelMesTabla({
                         <DotsThreeVertical className="h-4 w-4" weight="bold" aria-hidden="true" />
                       </Button>
                     </DropdownListTrigger>
-                    <DropdownListContent align="end" className="w-52">
+                    <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
                       <DropdownListItem onClick={() => setAbierta(f)}>
                         Ver el detalle
                       </DropdownListItem>

@@ -15,7 +15,15 @@ import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, Dia
 import { marketplaceDelPortafolioApi, type ListaParaElegir } from '@/lib/api/marketplace-del-portafolio.service'
 import { ElegirQuePublicar } from './ElegirQuePublicar'
 
-export function AvisoDeNoPublicados() {
+export function AvisoDeNoPublicados({
+  version = 0,
+  alCambiar,
+}: {
+  /** Sube cuando la tabla publicó o quitó algo: el conteo se vuelve a leer. */
+  version?: number
+  /** Después de publicar o quitar desde el diálogo, para que la tabla relea. */
+  alCambiar?: () => void
+} = {}) {
   const [resumen, setResumen] = useState<ListaParaElegir['resumen'] | null>(null)
   const [abierto, setAbierto] = useState(false)
 
@@ -31,7 +39,7 @@ export function AvisoDeNoPublicados() {
 
   useEffect(() => {
     void leer()
-  }, [leer])
+  }, [leer, version])
 
   if (!resumen || resumen.noPublicados === 0) return null
 
@@ -69,7 +77,12 @@ export function AvisoDeNoPublicados() {
             </DialogDescription>
           </DialogHeader>
           <DialogBody>
-            <ElegirQuePublicar alCambiar={() => void leer()} />
+            <ElegirQuePublicar
+              alCambiar={() => {
+                void leer()
+                alCambiar?.()
+              }}
+            />
           </DialogBody>
         </DialogContent>
       </Dialog>

@@ -21,6 +21,8 @@ const h = vi.hoisted(() => ({
 }))
 
 vi.mock('@/components/ui/toast', () => ({ toast: h.toast }))
+// El Select de Radix no se abre en happy-dom: un <select> nativo con lo mismo.
+vi.mock('@/components/ui/select', () => import('@/components/ui/select.doble-de-prueba'))
 vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'))
 vi.mock('@/lib/api/pqrs.service', () => ({
   pqrsApi: { create: h.create },

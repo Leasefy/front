@@ -1,7 +1,7 @@
 'use client';
 
 import { Toaster } from '@/components/ui/toast';
-import { SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, SealCheck, Wrench, Lifebuoy, Tag } from '@phosphor-icons/react';
+import { Bank, SquaresFour, Buildings, Users, Chat, Gear, FileText, House, CalendarBlank, Wallet, UsersThree, ChatCircleText, Bell, Receipt, SealCheck, Wrench, Lifebuoy, Tag } from '@phosphor-icons/react';
 // Sparkle import removed — re-add when AI Beta nav item is uncommented
 import { DecisionProvider } from '@/lib/context/DecisionContext';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -161,6 +161,8 @@ const LANDLORD_NAV_ITEMS: NavItem[] = [
 const AGENCY_OWNER_NAV_ITEMS: NavItem[] = [
   { label: 'Inicio', href: '/panel', icon: SquaresFour, exact: true },
   { label: 'Estado de cuenta', href: '/panel/estado-de-cuenta', icon: Receipt },
+  // QA 11-10 (Nico): a qué cuenta le giran, el giro devuelto y lo girado mes a mes.
+  { label: 'Mis giros', href: '/panel/giros', icon: Bank },
   { label: 'Aprobar reparaciones', href: '/panel/aprobaciones', icon: Wrench },
   // 🔴 #14 (MANOS-1, 04-10-2026): escoger entre los candidatos de su inmueble.
   { label: 'Escoger inquilino', href: '/panel/escoger-inquilino', icon: UsersThree },
@@ -169,7 +171,7 @@ const AGENCY_OWNER_NAV_ITEMS: NavItem[] = [
   // SO-27 (PQRS-FIX, 04-10-2026): radicar PQRS y reportar daños desde su portal.
   { label: 'Solicitudes', href: '/panel/solicitudes', icon: Lifebuoy },
   { label: 'Mis informes', href: '/panel/informes', icon: Receipt },
-  { label: 'Certificados de retención', href: '/panel/certificados', icon: SealCheck },
+  { label: 'Certificados y facturas', href: '/panel/certificados', icon: SealCheck },
   { label: 'Mensajes', href: '/panel/mensajes', icon: Chat },
 ];
 

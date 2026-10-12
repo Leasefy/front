@@ -20,6 +20,9 @@ export function useEsPropietarioDeInmobiliaria(): boolean {
 /** Pantallas del panel del propietario que sí son de un propietario de inmobiliaria. */
 const RUTAS_DEL_PROPIETARIO_DE_INMOBILIARIA = [
   '/panel/estado-de-cuenta',
+  // QA 11-10-2026 (Nico): sus giros y cuenta de giro, y la ficha de cada inmueble.
+  '/panel/giros',
+  '/panel/inmuebles',
   '/panel/aprobaciones',
   // 🔴 #14 (MANOS-1, 04-10-2026): escoger entre los candidatos de su inmueble.
   '/panel/escoger-inquilino',

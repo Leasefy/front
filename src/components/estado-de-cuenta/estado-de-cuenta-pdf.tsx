@@ -75,7 +75,7 @@ import {
   type AmortizacionDelContrato,
 } from './resumen';
 import {
-  ORIGEN_DE_LA_DEDUCCION,
+  rotuloDeLaDeduccion,
   estadoDeLaDeduccionEnPalabras,
 } from '@/components/inmobiliaria/deducciones/DeduccionesDelEstado';
 import { claveDelLado, texto } from './textos';
@@ -756,7 +756,7 @@ function Portada({ doc, hoy, nota, conCentavos }: EstadoDeCuentaPDFProps) {
             >
               <View style={{ maxWidth: 400 }}>
                 <Text style={{ fontSize: 8 }}>
-                  {paraElPapel(`${ORIGEN_DE_LA_DEDUCCION[d.origen] ?? 'Descuento'}: ${d.concepto}`)}
+                  {paraElPapel(rotuloDeLaDeduccion(d))}
                 </Text>
                 <Text style={estilos.direccion}>
                   {paraElPapel(

@@ -11,6 +11,10 @@ import { act } from 'react';
 
 const { api } = vi.hoisted(() => ({ api: { misCertificados: vi.fn() } }));
 vi.mock('@/lib/api/tesoreria.service', () => ({ tesoreriaApi: api }));
+// Nico, 11-10-2026: la certificación del mandatario y las facturas ya se bajan aquí.
+vi.mock('@/components/landlord/portal/DocumentosTributarios', () => ({
+  DocumentosTributarios: () => <div data-testid="documentos-tributarios" />,
+}));
 
 import MisCertificadosPage from './page';
 
@@ -36,14 +40,12 @@ async function pintar() {
   });
 }
 
-describe('FA-E-14 · el portal del propietario dice lo que no muestra', () => {
-  it('nombra la certificación del mandatario y las facturas de comisión y dice a quién pedirlas', async () => {
+describe('FA-E-14 → 11-10-2026 · la certificación y las facturas ya están en el portal', () => {
+  it('ya no manda a pedirlas: monta los documentos tributarios', async () => {
     api.misCertificados.mockResolvedValue({ certificados: [], motivo: null });
     await pintar();
-    const nota = document.querySelector('[data-testid="portal-sin-certificacion-ni-facturas"]');
-    expect(nota).not.toBeNull();
-    expect(nota!.textContent).toContain('certificación del mandatario');
-    expect(nota!.textContent).toContain('facturas de la comisión');
-    expect(nota!.textContent).toContain('pídeselas a tu inmobiliaria');
+    expect(document.querySelector('[data-testid="documentos-tributarios"]')).not.toBeNull();
+    expect(document.querySelector('[data-testid="portal-sin-certificacion-ni-facturas"]')).toBeNull();
+    expect(document.body.textContent).not.toContain('pídeselas a tu inmobiliaria');
   });
 });

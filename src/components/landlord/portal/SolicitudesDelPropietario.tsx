@@ -10,6 +10,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { CaretRight, ChatCircleText, Plus } from '@phosphor-icons/react';
 import { PageHeader } from '@leasefy/cadence';
 
@@ -45,6 +46,14 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [nueva, setNueva] = useState(abrirNueva);
+  const router = useRouter();
+  const pathname = usePathname();
+  // Cerrado el modal, la dirección vuelve a la lista: si se quedaba en
+  // «/solicitudes/nueva», recargar volvía a abrir el formulario (QA 11-10).
+  const cerrarNueva = useCallback(() => {
+    setNueva(false);
+    if (pathname?.endsWith('/solicitudes/nueva')) router.replace('/panel/solicitudes');
+  }, [pathname, router]);
 
   const cargar = useCallback(() => {
     setCargando(true);
@@ -120,7 +129,7 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
       )}
       <NuevaSolicitudModal
         open={nueva}
-        onClose={() => setNueva(false)}
+        onClose={cerrarNueva}
         onCreated={cargar}
         contratos={contratos}
       />

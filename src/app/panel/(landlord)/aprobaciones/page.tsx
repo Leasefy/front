@@ -30,6 +30,7 @@ import type { AprobacionEnElPortal } from '@/lib/types/deducciones';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { SobrecostosPorAprobar } from '@/components/landlord/portal/SobrecostosPorAprobar';
 
 /** `RechazarAprobacionDto.motivo`: `@MaxLength(2000)` en el back. */
 const MAX_LARGO_DEL_MOTIVO = 2000;
@@ -110,7 +111,9 @@ function Pendiente({
       {aprobacion.cotizacion && (
         <p className="text-sm text-fg">
           Cotización de <strong>{aprobacion.cotizacion.proveedor}</strong>
-          {aprobacion.cotizacion.diasEstimados ? ` · ${aprobacion.cotizacion.diasEstimados} día(s)` : ''}
+          {aprobacion.cotizacion.diasEstimados
+            ? ` · ${aprobacion.cotizacion.diasEstimados} ${aprobacion.cotizacion.diasEstimados === 1 ? 'día' : 'días'}`
+            : ''}
           {aprobacion.cotizacion.descripcion ? ` — ${aprobacion.cotizacion.descripcion}` : ''}
         </p>
       )}
@@ -200,6 +203,12 @@ function DelHistorial({ aprobacion }: { aprobacion: AprobacionEnElPortal }) {
         </div>
         <p className="shrink-0 font-mono tabular-nums text-sm text-fg">{formatCurrency(aprobacion.valorCop)}</p>
       </div>
+      {/* QA 11-10: aprobaste un valor y el costo final descontó otro: se dice. */}
+      {aprobacion.descontadoCop != null && (
+        <p className="text-xs text-fg-muted" data-testid="aprobacion-descontado">
+          Por el costo final del trabajo se te descuentan {formatCurrency(aprobacion.descontadoCop)}.
+        </p>
+      )}
       {aprobacion.estado === 'EMERGENCIA' && aprobacion.aviso && (
         <details className="text-xs text-fg-muted">
           <summary className="cursor-pointer text-fg">{aprobacion.aviso.asunto}</summary>
@@ -258,6 +267,8 @@ export default function AprobarReparacionesPage() {
             </Card>
           }
         >
+          {/* Nico, 11-10: el costo final que pasa lo aprobado vuelve a pedirte aprobación. */}
+          <SobrecostosPorAprobar alCambiar={() => void cargar()} />
           {datos && datos.pendientes.length > 0 && (
             <section className="space-y-3" aria-label="Por aprobar">
               <h2 className="text-sm font-semibold text-fg">Por aprobar</h2>

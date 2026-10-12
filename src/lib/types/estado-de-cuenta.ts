@@ -340,6 +340,8 @@ export interface ClienteDelEstadoDeCuenta {
 
 export interface InmobiliariaDelEstadoDeCuenta {
   razonSocial: string;
+  /** El nombre comercial, para las frases (back desde el 12-10; antes, ausente). */
+  nombre?: string;
   nit: string | null;
   matricula: string | null;
   telefono: string | null;

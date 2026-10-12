@@ -221,6 +221,8 @@ export interface AprobacionDeReparacion {
 
 /** Lo que el propietario ve en su portal. */
 export interface AprobacionEnElPortal extends AprobacionDeReparacion {
+  /** Lo que se le descuenta hoy si el costo final cambió lo aprobado (back desde el 12-10). */
+  descontadoCop?: number | null;
   inmobiliaria: string;
   inmueble: string;
   reparacion: { titulo: string; descripcion: string };

@@ -50,6 +50,8 @@ export interface PropertyGridProps {
   aprobacion?: Aprobacion | null;
   /** Query extra en los links de las tarjetas (p.ej. `from=para-ti`). */
   linkQuery?: string;
+  /** Por qué sale cada inmueble (marketplace): sin esto las tarjetas no lo dicen. */
+  explicar?: (p: Property) => { cumple: string[]; sinDato: string[] } | null;
 }
 
 /**
@@ -69,6 +71,7 @@ export function PropertyGrid({
   basePath,
   aprobacion,
   linkQuery,
+  explicar,
 }: PropertyGridProps) {
   const [displayCount, setDisplayCount] = useState(INITIAL_ITEMS);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -156,6 +159,7 @@ export function PropertyGrid({
                 onHoverEnd={() => onPropertyHover?.(null)}
                 basePath={basePath}
                 linkQuery={linkQuery}
+                explicacion={explicar?.(property) ?? null}
               />
               {sobreTope && <SobreTopeOverlay referencia={referenciaCanon(aprobacion ?? null)} />}
             </div>

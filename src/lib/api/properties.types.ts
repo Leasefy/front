@@ -3,6 +3,8 @@
  * Reflects the exact shape of Prisma/NestJS responses
  */
 
+import type { FiltrosEntendidos } from '@/lib/marketplace/busqueda';
+
 export interface BackendPropertyImage {
   id: string;
   propertyId: string;
@@ -116,6 +118,8 @@ export interface BackendProperty {
   parkingSpaces: number | null;
   stratum: number | null;
   yearBuilt: number | null;
+  /** El video del inmueble en Instagram, TikTok, YouTube o Facebook (marketplace, 09-10-2026). Un back anterior no lo manda. */
+  videoUrl?: string | null;
   amenities: string[];
 
   // Timestamps
@@ -155,6 +159,12 @@ export interface PaginationMeta {
    * no dice si el metraje se tuvo en cuenta o se ignoró.
    */
   interpretacion?: Record<string, string>;
+  /**
+   * Lo mismo que `interpretacion`, como FILTROS (marketplace, 09-10-2026): lo
+   * que el texto puso y de verdad se aplicó. El marketplace lo vuelve pastillas
+   * editables y lo escribe en la URL (`src/lib/marketplace/busqueda.ts`).
+   */
+  filtrosEntendidos?: FiltrosEntendidos;
   total: number;
   page: number;
   limit: number;
@@ -180,10 +190,12 @@ export interface PropertyFiltersParams {
   minArea?: number;
   maxArea?: number;
   floor?: number;
-  propertyType?: 'APARTMENT' | 'HOUSE' | 'STUDIO' | 'ROOM';
+  propertyType?: 'APARTMENT' | 'HOUSE' | 'STUDIO' | 'ROOM' | 'COMMERCIAL' | 'OFFICE' | 'WAREHOUSE';
   amenities?: string[];
   searchQuery?: string;
   naturalQuery?: string;
+  /** Sólo los de esta inmobiliaria (marketplace, 09-10-2026). */
+  agencyId?: string;
   page?: number;
   limit?: number;
   /** contract.md T-0038 §3.7 — absent means no constraint; NOT a default to RENT. */

@@ -60,6 +60,7 @@ import {
   type CalificacionDelProveedor,
   type GuardarProveedor,
 } from '@/lib/api/proveedores-de-mantenimiento.service';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 function ContenidoDeProveedores() {
   const { canAccess } = usePermissions();
@@ -445,12 +446,13 @@ function FormularioDeProveedor({
               </div>
             </Campo>
             <Campo nombre="rutVigenteHasta" error={errorDe('rutVigenteHasta')} label="RUT vigente hasta">
-              <Input
+              <CampoDeDia
                 id="proveedor-rutVigenteHasta"
-                {...ariaDe('rutVigenteHasta', errorDe('rutVigenteHasta'))}
-                type="date"
                 value={form.rutVigenteHasta ?? ''}
-                onChange={(e) => poner('rutVigenteHasta', e.target.value)}
+                onChange={(v) => poner('rutVigenteHasta', v)}
+                invalido={Boolean(errorDe('rutVigenteHasta'))}
+                describedBy={errorDe('rutVigenteHasta') ? 'proveedor-rutVigenteHasta-error' : undefined}
+                quitable
               />
             </Campo>
           </div>
@@ -492,12 +494,13 @@ function FormularioDeProveedor({
               error={errorDe('seguridadSocialVigenteHasta')}
               label="Vigente hasta"
             >
-              <Input
+              <CampoDeDia
                 id="proveedor-seguridadSocialVigenteHasta"
-                {...ariaDe('seguridadSocialVigenteHasta', errorDe('seguridadSocialVigenteHasta'))}
-                type="date"
                 value={form.seguridadSocialVigenteHasta ?? ''}
-                onChange={(e) => poner('seguridadSocialVigenteHasta', e.target.value)}
+                onChange={(v) => poner('seguridadSocialVigenteHasta', v)}
+                invalido={Boolean(errorDe('seguridadSocialVigenteHasta'))}
+                describedBy={errorDe('seguridadSocialVigenteHasta') ? 'proveedor-seguridadSocialVigenteHasta-error' : undefined}
+                quitable
               />
             </Campo>
           </div>

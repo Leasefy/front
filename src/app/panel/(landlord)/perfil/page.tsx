@@ -36,6 +36,8 @@ import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { revisarDatosPersonales, type CampoPersonal } from '@/lib/perfil/datos-personales';
 import { pasosDelPerfilDelPropietario, type IdDelPasoDelPerfil } from '@/lib/perfil/pasos-del-perfil-del-propietario';
 
+import { ariaDelCampoDeDia } from '@/components/contabilidad/CampoDeDia';
+import { CampoDeNacimiento } from '@/components/ui/campo-de-nacimiento';
 /**
  * Los campos que esta pantalla muestra. El nombre y el contacto de emergencia
  * son UN campo cada uno («Nombre completo», «Nombre - Teléfono»), así que los
@@ -724,7 +726,12 @@ export default function PropietarioPerfilPage() {
                   <label className="block text-sm font-medium text-fg-muted mb-2">{locale === 'es' ? 'Fecha de nacimiento' : 'Date of birth'}</label>
                   {editingSection === 'personal' ? (
                     <>
-                      <Input type="date" {...propsDelCampo('birthDate')} value={formData.birthDate} onChange={(e) => handleInputChange('birthDate', e.target.value)} />
+                      <CampoDeNacimiento
+                        {...ariaDelCampoDeDia(propsDelCampo('birthDate'))}
+                        etiqueta={locale === 'es' ? 'Fecha de nacimiento' : 'Date of birth'}
+                        value={formData.birthDate}
+                        onChange={(v) => handleInputChange('birthDate', v)}
+                      />
                       {errorDelCampo('birthDate')}
                     </>
                   ) : (

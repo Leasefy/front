@@ -1,4 +1,5 @@
 'use client';
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { PageGuard } from '@/components/auth/PageGuard';
 import { mesEnTitulo } from '@/lib/utils/mes';
@@ -897,7 +898,7 @@ function PropietarioDetailContent() {
                 <DotsThree className="w-5 h-5" weight="bold" />
               </Button>
             </DropdownListTrigger>
-            <DropdownListContent align="end" className="w-52">
+            <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
               {veLaPlata && (
                 <DropdownListItem onSelect={() => setShowExtracto(true)} data-testid="accion-extracto">
                   <FileText className="w-4 h-4" />

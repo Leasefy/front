@@ -11,7 +11,11 @@
  * como vinieron y el back sigue frenándolas: acá no se adivina un reparto.
  * El validador del reparto sigue siendo `decidirReparto` del back.
  *
- * Es un paso del front, sin clave nueva en el cable: el «Consecutivo detalle»
+ * T-0163: también funde «un dueño, varios inquilinos» (una fila por inquilino,
+ * «Valor canon» = su parte). Manda `canonPorInquilino` y el back deriva el
+ * reparto; el mixto (dueños Y inquilinos distintos) no se funde.
+ *
+ * Es un paso del front, sin clave nueva en el cable salvo `canonPorInquilino`: el «Consecutivo detalle»
  * ordena a los dueños y no se manda.
  */
 
@@ -36,11 +40,29 @@ function ordenDeDetalle(a: string, b: string): number {
   return Number.isFinite(na) && Number.isFinite(nb) ? na - nb : a.localeCompare(b)
 }
 
+type ModoDeFusion = 'duenos' | 'inquilinos'
+
+/**
+ * ¿Qué persona varía en el grupo? Dueños distintos con el mismo inquilino
+ * (T-0153) o inquilinos distintos con el mismo dueño (T-0163). Si varían los
+ * dos (mixto) o ninguno, `null`: las filas siguen separadas y el back las frena.
+ */
+function modoDelGrupo(grupo: FilaLeida[]): ModoDeFusion | null {
+  const inquilinos = grupo.map((l) => normalizar(l.fila.inquilino.documento))
+  const duenos = grupo.map((l) => normalizar(l.fila.propietario?.documento))
+  // Sin documento no hay con qué decidir quién es quién.
+  if (inquilinos.some((d) => !d) || duenos.some((d) => !d)) return null
+  const mismoInquilino = todosIguales(inquilinos)
+  const mismoDueno = todosIguales(duenos)
+  if (mismoInquilino && !mismoDueno) return 'duenos'
+  if (mismoDueno && !mismoInquilino) return 'inquilinos'
+  return null
+}
+
 /** Funde un grupo con el mismo `externalId`, o `null` si no cumple TODO. */
 function fundirGrupo<T extends FilaLeida>(grupo: T[]): T | null {
-  // El inquilino: el mismo documento, y que exista.
-  const inquilinos = grupo.map((l) => normalizar(l.fila.inquilino.documento))
-  if (!inquilinos[0] || !todosIguales(inquilinos)) return null
+  const modo = modoDelGrupo(grupo)
+  if (!modo) return null
 
   const inmuebles = grupo.map(llaveDelInmueble)
   if (!inmuebles[0] || !todosIguales(inmuebles)) return null
@@ -54,13 +76,11 @@ function fundirGrupo<T extends FilaLeida>(grupo: T[]): T | null {
   }
   if (!todosIguales(grupo.map((l) => l.origen.prorrateo.estado))) return null
 
-  // Un dueño por fila, con documento, todos distintos.
-  const documentos = grupo.map((l) => l.fila.propietario?.documento?.trim())
-  if (documentos.some((d) => !d)) return null
+  // Una persona por fila en el lado que varía; en el otro, una sola persona sin reparto propio.
   if (grupo.some((l) => (l.fila.propietarios?.length ?? 0) > 1 || l.fila.canonPorPropietario)) return null
-  if (new Set(documentos).size !== grupo.length) return null
+  if (modo === 'inquilinos' && grupo.some((l) => (l.fila.inquilinos?.length ?? 0) > 1 || l.fila.canonPorInquilino)) return null
 
-  // La parte de cada dueño: un número por fila (y sin centavos por confirmar).
+  // La parte de cada fila: un número por fila (y sin centavos por confirmar).
   const partes = grupo.map((l) => l.origen.canonDeLaFila)
   if (partes.some((p) => p === undefined || p <= 0)) return null
   if (grupo.some((l) => l.fila.canonConCentavosDelArchivo !== undefined)) return null
@@ -87,12 +107,37 @@ function fundirGrupo<T extends FilaLeida>(grupo: T[]): T | null {
     ? [...grupo].sort((a, b) => ordenDeDetalle(a.origen.consecutivoDetalle ?? "", b.origen.consecutivoDetalle ?? ""))
     : grupo
   const primera = ordenadas[0]
+  const reparto = ordenadas.map((l) => l.origen.canonDeLaFila as number)
+
+  if (modo === 'inquilinos') {
+    // T-0163: el back deriva el reparto (R-M1…R-M7). Acá sólo viajan las personas y la plata de cada una.
+    const personas: PersonaDeOrigen[] = ordenadas.map((l, i) => ({
+      documento: l.fila.inquilino.documento,
+      nombre: l.fila.inquilino.nombre || l.origen.inquilinos[0]?.nombre,
+      orden: i + 1,
+    }))
+    // Todos los inquilinos con documento y todos distintos (el modo sólo probó que no son todos iguales).
+    if (new Set(personas.map((p) => normalizar(p.documento))).size !== grupo.length) return null
+    return {
+      ...primera,
+      fila: {
+        ...primera.fila,
+        monthlyRent: total,
+        inquilino: primera.fila.inquilino,
+        inquilinos: personas.map((p) => ({ documento: p.documento, nombre: p.nombre })),
+        canonPorInquilino: reparto,
+      },
+      origen: { ...primera.origen, inquilinos: personas },
+    }
+  }
+
   const personas: PersonaDeOrigen[] = ordenadas.map((l, i) => ({
     documento: l.fila.propietario!.documento,
     nombre: l.fila.propietario!.nombre ?? l.origen.propietarios[0]?.nombre,
     orden: i + 1,
   }))
-  const reparto = ordenadas.map((l) => l.origen.canonDeLaFila as number)
+  // Un dueño por fila, con documento, todos distintos (el modo ya probó que varían).
+  if (new Set(personas.map((p) => normalizar(p.documento))).size !== grupo.length) return null
 
   return {
     ...primera,
@@ -108,7 +153,8 @@ function fundirGrupo<T extends FilaLeida>(grupo: T[]): T | null {
 }
 
 /**
- * Funde las filas que son UN mismo contrato con varios dueños. Conserva el
+ * Funde las filas que son UN mismo contrato con varios dueños (T-0153) o con
+ * varios inquilinos (T-0163). Conserva el
  * orden del archivo (el contrato ocupa el lugar de su primera fila).
  */
 export function fundirFilasDelMismoContrato<T extends FilaLeida>(filas: T[]): T[] {

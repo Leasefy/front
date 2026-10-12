@@ -26,6 +26,40 @@ vi.mock('@/lib/api/ciclo-de-vida.service', () => ({
   },
 }))
 vi.mock('@/components/ui/toast', () => ({ toast: { success: vi.fn(), error: vi.fn() } }))
+/*
+ * Las fechas del seguro y de la póliza usan el selector de fecha del DS
+ * (`CampoDeDia`, sobre el `DatePicker` de Cadence; Nico, 10-10-2026: «este no
+ * usa Cadence»), que no se escribe. El doble es un input con el mismo `id`: el
+ * formulario sigue hablando en `AAAA-MM-DD` y las validaciones son las mismas.
+ */
+vi.mock('@/components/contabilidad/CampoDeDia', async () => {
+  const R = await import('react')
+  return {
+    CampoDeDia: ({
+      id,
+      value,
+      onChange,
+      invalido,
+      describedBy,
+      disabled,
+    }: {
+      id: string
+      value: string
+      onChange: (v: string) => void
+      invalido?: boolean
+      describedBy?: string
+      disabled?: boolean
+    }) =>
+      R.createElement('input', {
+        id,
+        value,
+        disabled,
+        'aria-invalid': invalido ? true : undefined,
+        'aria-describedby': describedBy,
+        onChange: (e: { target: { value: string } }) => onChange(e.target.value),
+      }),
+  }
+})
 vi.mock('@/lib/api/copropiedades.service', async () => {
   const real = await vi.importActual<typeof import('@/lib/api/copropiedades.service')>('@/lib/api/copropiedades.service')
   return {

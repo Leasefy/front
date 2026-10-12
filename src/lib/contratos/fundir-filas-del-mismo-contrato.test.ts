@@ -150,4 +150,92 @@ describe('fundirFilasDelMismoContrato', () => {
     const r = fundirFilasDelMismoContrato(leer(DOS))
     expect(Object.keys(JSON.parse(JSON.stringify(r[0].fila)))).not.toContain('consecutivoDetalle')
   })
+
+  /*
+   * T-0163 (Anexo B1): UN dueño y VARIOS inquilinos en filas distintas = un
+   * contrato con inquilinos que se reparten la factura. Datos inventados.
+   */
+  describe('modo inquilinos (T-0163)', () => {
+    const INQ_A = fila({ 'Total Canon Contrato': 2521008, 'Valor canon': 1260504 })
+    const INQ_B = fila({
+      'Total Canon Contrato': 2521008,
+      'Consecutivo detalle': 2,
+      'Documento Inquilino': 333,
+      'Nombre Inquilino': 'Inquilino Dos',
+      'Email inquilino': 'y@example.test',
+      'Valor canon': 1260504,
+    })
+    const DOS_INQ = [INQ_A, INQ_B]
+
+    it('un dueño y dos inquilinos -> UNA fila con canonPorInquilino alineado', () => {
+      const r = fundirFilasDelMismoContrato(leer(DOS_INQ))
+      expect(r).toHaveLength(1)
+      const f = r[0].fila
+      expect(f.monthlyRent).toBe(2521008)
+      expect(f.canonPorInquilino).toEqual([1260504, 1260504])
+      expect(f.inquilino.documento).toBe('222')
+      expect(f.inquilinos).toEqual([
+        { documento: '222', nombre: 'Inquilino Uno' },
+        { documento: '333', nombre: 'Inquilino Dos' },
+      ])
+      expect(f.propietario?.documento).toBe('111')
+      expect(f.canonPorPropietario).toBeUndefined()
+      expect(r[0].origen.inquilinos.map((p) => p.documento)).toEqual(['222', '333'])
+    })
+
+    it('nunca manda participacionBps ni tipoDocumento de los inquilinos', () => {
+      const f = JSON.parse(JSON.stringify(fundirFilasDelMismoContrato(leer(DOS_INQ))[0].fila))
+      for (const t of f.inquilinos) {
+        expect(Object.keys(t).sort()).toEqual(['documento', 'nombre'])
+      }
+      expect(Object.keys(f)).not.toContain('consecutivoDetalle')
+    })
+
+    it('tres inquilinos se ordenan por «Consecutivo detalle», no por el archivo', () => {
+      const tres = [
+        fila({ 'Consecutivo detalle': 3, 'Documento Inquilino': 444, 'Nombre Inquilino': 'Tres', 'Valor canon': 200000 }),
+        fila({ 'Consecutivo detalle': 1, 'Valor canon': 500000 }),
+        fila({ 'Consecutivo detalle': 2, 'Documento Inquilino': 333, 'Nombre Inquilino': 'Dos', 'Valor canon': 300000 }),
+      ]
+      const r = fundirFilasDelMismoContrato(leer(tres))
+      expect(r).toHaveLength(1)
+      expect(r[0].fila.inquilinos?.map((t) => t.documento)).toEqual(['222', '333', '444'])
+      expect(r[0].fila.canonPorInquilino).toEqual([500000, 300000, 200000])
+    })
+
+    it('sin «Total Canon Contrato» el canon es la suma de las partes', () => {
+      const filas = DOS_INQ.map(({ 'Total Canon Contrato': _t, ...resto }) => resto)
+      const r = fundirFilasDelMismoContrato(leer(filas, SIN_TOTAL))
+      expect(r[0].fila.monthlyRent).toBe(2521008)
+    })
+
+    it('MIXTO (dueños distintos E inquilinos distintos) queda separado', () => {
+      const mixto = [INQ_A, { ...INQ_B, 'Documento Propietario': 555, 'Nombre Propietario': 'Otro Dueño' }]
+      expect(fundirFilasDelMismoContrato(leer(mixto))).toHaveLength(2)
+    })
+
+    it('el mismo inquilino dos veces con el mismo dueño no se funde', () => {
+      const repetido = [INQ_A, { ...INQ_A, 'Consecutivo detalle': 2 }]
+      expect(fundirFilasDelMismoContrato(leer(repetido))).toHaveLength(2)
+    })
+
+    it('el modo dueños sigue igual (mismo inquilino, dueños distintos)', () => {
+      const r = fundirFilasDelMismoContrato(leer(DOS))
+      expect(r[0].fila.canonPorInquilino).toBeUndefined()
+    })
+
+    const noCoinciden: Array<[string, Record<string, unknown>]> = [
+      ['otro inmueble', { 'Nro. Propiedad': 8, 'Dirección Propiedad': 'Otra 1' }],
+      ['otra fecha de inicio', { 'Fecha inicio': '2025-02-10' }],
+      ['otro prorrateado', { Prorrateado: 'NO' }],
+      ['otra comisión', { '% Comisión': '9%' }],
+      ['otro total del contrato', { 'Total Canon Contrato': 1 }],
+      ['mismo consecutivo de detalle', { 'Consecutivo detalle': 1 }],
+      ['inquilino sin documento', { 'Documento Inquilino': '' }],
+      ['sin su parte del canon', { 'Valor canon': '' }],
+    ]
+    it.each(noCoinciden)('%s -> separadas', (_n, cambio) => {
+      expect(fundirFilasDelMismoContrato(leer([INQ_A, { ...INQ_B, ...cambio }]))).toHaveLength(2)
+    })
+  })
 })

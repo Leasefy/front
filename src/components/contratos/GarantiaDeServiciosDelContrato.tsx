@@ -37,6 +37,8 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { errorDeLaFechaDelMovimiento } from '@/lib/contratos/limites-de-la-garantia';
 import { plataEnPantalla } from '@/lib/plata/escribir-plata';
 import { diaLegible } from '@/lib/mandato/textos';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
+import { CampoDeMes } from '@/components/ui/campo-de-mes';
 
 const PESOS = plataEnPantalla('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
@@ -380,12 +382,12 @@ function RegistrarGarantia({
               </label>
               <label className="text-caption">
                 Mes
-                <Input
-                  type="month"
+                <CampoDeMes
+                  id={`factura-periodo-${i}`}
                   value={f.periodo}
-                  onChange={(e) => setFacturas((xs) => xs.map((x, j) => (j === i ? { ...x, periodo: e.target.value } : x)))}
+                  onChange={(v) => setFacturas((xs) => xs.map((x, j) => (j === i ? { ...x, periodo: v } : x)))}
                   className="mt-1"
-                  data-testid={`factura-periodo-${i}`}
+                  testid={`factura-periodo-${i}`}
                 />
               </label>
               <label className="text-caption">
@@ -566,14 +568,14 @@ function NuevoMovimiento({
         </label>
         <label className="text-caption">
           Fecha
-          <Input
-            type="date"
+          <CampoDeDia
+            id="movimiento-fecha"
             value={fecha}
-            onChange={(e) => setFecha(e.target.value)}
+            onChange={(v) => setFecha(v)}
+            invalido={Boolean(errorDeLaFecha)}
+            describedBy="movimiento-fecha-error"
             className="mt-1"
-            data-testid="movimiento-fecha"
-            aria-invalid={errorDeLaFecha ? true : undefined}
-            aria-describedby="movimiento-fecha-error"
+            testid="movimiento-fecha"
           />
         </label>
         <label className="text-caption">

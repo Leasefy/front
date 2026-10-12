@@ -313,6 +313,57 @@ describe('<StepActaEntrega> — property photos (T-0017)', () => {
 })
 
 /**
+ * <StepActaEntrega> — el video del inmueble (marketplace, 09-10-2026): el mismo
+ * campo de «Editar», opcional, con la regla de `lib/marketplace/video.ts`.
+ */
+describe('<StepActaEntrega> — el video del inmueble', () => {
+  function pintar(formData: Record<string, unknown>, erroresDelServidor?: Record<string, string>) {
+    const updateFormData = vi.fn()
+    act(() => {
+      root.render(
+        React.createElement(StepActaEntrega, {
+          formData: { inventoryItems: [], photos: [], ...formData },
+          updateFormData,
+          propietarios: PROPIETARIOS,
+          agentes: [],
+          erroresDelServidor,
+        }),
+      )
+    })
+    return { updateFormData, campo: container.querySelector<HTMLInputElement>('[data-testid="asistente-videoUrl"]')! }
+  }
+
+  it('está, vacío y sin error (es opcional), con la ayuda de las cuatro redes', () => {
+    const { campo } = pintar({})
+    expect(campo).toBeTruthy()
+    expect(campo.value).toBe('')
+    expect(campo.getAttribute('aria-invalid')).toBeNull()
+    expect(container.textContent).toContain('inmobiliaria.consignaciones.editForm.videoUrlHelper')
+  })
+
+  it('escribir lo guarda en el borrador del asistente', () => {
+    const { campo, updateFormData } = pintar({})
+    act(() => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!
+      setter.call(campo, 'https://www.instagram.com/reel/abc/')
+      campo.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    expect(updateFormData).toHaveBeenCalledWith({ videoUrl: 'https://www.instagram.com/reel/abc/' })
+  })
+
+  it('un enlace que no es de Instagram, TikTok, YouTube o Facebook se dice bajo el campo', () => {
+    const { campo } = pintar({ videoUrl: 'https://drive.google.com/x' })
+    expect(campo.getAttribute('aria-invalid')).toBe('true')
+    expect(container.textContent).toContain('Instagram, TikTok, YouTube o Facebook')
+  })
+
+  it('el error que mandó el back para `videoUrl` también va bajo el campo', () => {
+    pintar({ videoUrl: 'https://www.instagram.com/reel/abc/' }, { videoUrl: 'El enlace no sirve.' })
+    expect(container.textContent).toContain('El enlace no sirve.')
+  })
+})
+
+/**
  * <StepActaEntrega> — photos-only on a sale listing (T-0042, ledger.md §2/§3).
  *
  * Root cause: photos are staged by the UI in this step, but a sale listing

@@ -117,6 +117,51 @@ describe('<AnularCobroDialog>', () => {
     expect(opciones.description).toContain('sin número');
   });
 
+  it('T-0163: con la factura dividida entre inquilinos dice cuántas notas se generaron', async () => {
+    const parte = (id: string, nc: string) => ({
+      facturaId: id,
+      estado: 'GENERADA' as const,
+      notaCreditoId: nc,
+      notaCreditoGenerada: true,
+    });
+    api.anular.mockResolvedValue({
+      cobroId: 'cobro-1',
+      anuladoAt: '2026-09-16T12:00:00.000Z',
+      motivo: 'Se generó por error',
+      cuotasDesvinculadas: 1,
+      factura: parte('f-1', 'nc-1'),
+      facturas: [parte('f-1', 'nc-1'), parte('f-2', 'nc-2')],
+    });
+    await montar();
+    await escribir('Se generó por error');
+    await confirmar();
+    const [, opciones] = toast.success.mock.calls[0] as [string, { description?: string }];
+    expect(opciones.description).toContain('2 facturas');
+    expect(opciones.description).toContain('una por inquilino');
+  });
+
+  it('T-0163: si todas las notas ya existían, lo dice en plural y no crea otras', async () => {
+    const parte = (id: string, nc: string) => ({
+      facturaId: id,
+      estado: 'EMITIDA' as const,
+      notaCreditoId: nc,
+      notaCreditoGenerada: false,
+    });
+    api.anular.mockResolvedValue({
+      cobroId: 'cobro-1',
+      anuladoAt: '2026-09-16T12:00:00.000Z',
+      motivo: 'Se generó por error',
+      cuotasDesvinculadas: 1,
+      factura: parte('f-1', 'nc-1'),
+      facturas: [parte('f-1', 'nc-1'), parte('f-2', 'nc-2')],
+    });
+    await montar();
+    await escribir('Se generó por error');
+    await confirmar();
+    const [, opciones] = toast.success.mock.calls[0] as [string, { description?: string }];
+    expect(opciones.description).toContain('Sus facturas ya tenían nota crédito');
+  });
+
   it('un cobro con recibos vigentes dice qué hacer, dentro del diálogo', async () => {
     api.anular.mockRejectedValue(new ApiError(409, 'x', 'COBRO_CON_RECIBOS'));
     const onAnulado = await montar();

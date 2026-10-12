@@ -29,7 +29,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/toast';
@@ -50,6 +49,7 @@ import {
   errorDelMotivoDelRetiro,
 } from '@/lib/mandato/limites-de-la-modalidad-y-el-retiro';
 import { PESOS, diaLegible, mesLegible } from '@/lib/mandato/textos';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 function hoy(): string {
   const f = new Date();
@@ -85,7 +85,7 @@ export function RetiroDeLaAdministracionDialog({
   /** Lo que no es de un campo: aviso de bloque. */
   const [error, setError] = useState<string | null>(null);
   const [errores, setErrores] = useState<{ fecha?: string; motivo?: string }>({});
-  const fechaRef = useRef<HTMLInputElement>(null);
+  const fechaRef = useRef<HTMLButtonElement>(null);
   const motivoRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -260,19 +260,17 @@ export function RetiroDeLaAdministracionDialog({
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label htmlFor="fecha-de-corte">Último día que administra la inmobiliaria</Label>
-                <Input
+                <CampoDeDia
                   ref={fechaRef}
                   id="fecha-de-corte"
-                  type="date"
                   value={fecha}
-                  onChange={(e) => {
-                    setFecha(e.target.value);
+                  onChange={(v) => {
+                    setFecha(v);
                     setErrores((prev) => ({ ...prev, fecha: undefined }));
                   }}
-                  invalid={!!errorDeLaFecha}
-                  aria-invalid={errorDeLaFecha ? true : undefined}
-                  aria-describedby="fecha-de-corte-error"
-                  data-testid="fecha-de-corte"
+                  invalido={Boolean(errorDeLaFecha)}
+                  describedBy="fecha-de-corte-error"
+                  testid="fecha-de-corte"
                 />
                 <ErrorDelCampo id="fecha-de-corte-error" mensaje={errorDeLaFecha} />
               </div>

@@ -59,6 +59,7 @@ import { bpsComoPorcentaje } from "@/lib/migracion/valores-de-origen";
 import {
   contractsApi,
   type FilaDeMigracion,
+  type RepartoDeInquilinos,
 } from "@/lib/api/contracts.service";
 import type { Propietario } from "@/lib/types/inmobiliaria";
 import { FaltantesDeFila } from "./FaltantesDeFila";
@@ -363,6 +364,10 @@ export function FilaDeRevision({
       */}
       <RepartoEntreDuenos reparto={fila.asociacion?.propietario?.reparto} />
 
+      {/* T-0163: varios inquilinos = la factura se divide entre ellos. Lo deriva
+          el back; acá sólo se ve ANTES de activar. */}
+      <RepartoEntreInquilinos reparto={fila.asociacion?.inquilino?.repartoDeInquilinos} />
+
       {!consignada && !sinInmueble && editable ? (
         <p className="text-caption text-muted-foreground">
           El porcentaje se puede poner cuando el inmueble esté consignado.
@@ -661,6 +666,55 @@ function RepartoEntreDuenos({
             key={`${d.documento ?? d.nombre ?? i}`}
             className="flex items-baseline justify-between gap-3 text-caption"
             data-testid="dueno-del-reparto"
+          >
+            <span className="min-w-0 truncate text-foreground">
+              {d.nombre ?? d.documento ?? "Sin nombre"}
+              {d.documento && d.nombre ? (
+                <span className="text-muted-foreground"> · {d.documento}</span>
+              ) : null}
+            </span>
+            <span className="shrink-0 font-mono tabular-nums text-foreground">
+              {d.bps !== null ? `${bpsComoPorcentaje(d.bps)}` : "—"}
+              {d.canon !== null ? (
+                <span className="text-muted-foreground"> · {formatCurrency(d.canon)}</span>
+              ) : null}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * T-0163: los inquilinos del contrato con su parte de la factura. Sólo con
+ * dos o más. Con problema se ven igual, sin %, para que se sepa quiénes son
+ * mientras se corrige el archivo: nunca se finge un 50/50.
+ */
+function RepartoEntreInquilinos({ reparto }: { reparto?: RepartoDeInquilinos | null }) {
+  if (!reparto || reparto.inquilinos.length < 2) return null;
+  return (
+    <div className="space-y-1" data-testid="reparto-de-inquilinos">
+      <p className="text-caption text-muted-foreground">
+        {reparto.inquilinos.length} inquilinos
+        {reparto.problema
+          ? " · el reparto no cuadra"
+          : reparto.explicito
+            ? " · reparto del archivo"
+            : ""}
+      </p>
+      {reparto.problema ? (
+        <p className="flex items-start gap-1.5 text-caption text-warning">
+          <Warning className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+          <span>{reparto.problema}</span>
+        </p>
+      ) : null}
+      <ul className="space-y-0.5">
+        {reparto.inquilinos.map((d, i) => (
+          <li
+            key={`${d.documento ?? d.nombre ?? i}`}
+            className="flex items-baseline justify-between gap-3 text-caption"
+            data-testid="inquilino-del-reparto"
           >
             <span className="min-w-0 truncate text-foreground">
               {d.nombre ?? d.documento ?? "Sin nombre"}

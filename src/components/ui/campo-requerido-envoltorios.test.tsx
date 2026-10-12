@@ -111,7 +111,7 @@ function finDeLaApertura(s: string, desde: number): number {
   return -1
 }
 
-const CONTROL = /<(Input|Textarea|SelectTrigger|RadioCardGroup|MoneyInput|PhoneInput|Combobox|input|textarea|select)\b/
+const CONTROL = /<(Input|Textarea|SelectTrigger|RadioCardGroup|MoneyInput|PhoneInput|Combobox|CampoDeDia|input|textarea|select)\b/
 
 /** Cada `<InputWrapper … required>` del archivo, con el control de adentro (o null). */
 function requeridos(archivo: string) {
@@ -130,7 +130,11 @@ function requeridos(archivo: string) {
     if (c) {
       const finDelControl = finDeLaApertura(cuerpo, c.index + c[0].length)
       const attrs = cuerpo.slice(c.index + c[0].length, finDelControl)
-      dice = /(?:^|\s)aria-required(?=[=\s/]|$)/.test(attrs) || /(?:^|\s)required(?=[=\s/]|$)/.test(attrs)
+      dice =
+        /(?:^|\s)aria-required(?=[=\s/]|$)/.test(attrs) ||
+        /(?:^|\s)required(?=[=\s/]|$)/.test(attrs) ||
+        // `CampoDeDia` (10-10-2026) lo dice con `requerido`: lo pone en su botón.
+        /(?:^|\s)requerido(?=[=\s/]|$)/.test(attrs)
     }
     out.push({ linea: s.slice(0, m.index).split('\n').length, control: c?.[1] ?? null, dice })
   }

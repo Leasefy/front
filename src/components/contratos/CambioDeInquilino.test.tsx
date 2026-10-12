@@ -8,6 +8,10 @@
  *  · Un 400 con `campos` va bajo su campo. El botón dice qué falta.
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
+
+// 10-10-2026: las fechas son campos de Cadence (se eligen, no se escriben); en la
+// prueba, un <input> con el mismo id y data-testid (`campos-de-fecha.doble-de-prueba`).
+vi.mock('@/components/contabilidad/CampoDeDia', () => import('@/components/ui/campos-de-fecha.doble-de-prueba'))
 import { createRoot, type Root } from 'react-dom/client'
 import { act } from 'react'
 

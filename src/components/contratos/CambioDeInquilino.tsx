@@ -39,6 +39,7 @@ import { isPermissionError } from "@/lib/contratos/fallo-de-accion";
 import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
 import { leerFallo } from "@/lib/errores/traductor-de-errores";
 import { diaLegible } from "@/lib/mandato/textos";
+import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
 
 /** Hoy en la hora de quien mira, `AAAA-MM-DD` (el máximo del campo). */
 function hoyLocal(): string {
@@ -200,18 +201,17 @@ export function CambioDeInquilino({
 
         <div className="space-y-1.5">
           <Label htmlFor="cambio-desde">Desde qué día es del nuevo inquilino</Label>
-          <Input
+          <CampoDeDia
             id="cambio-desde"
-            type="date"
-            max={hoy}
             value={desde}
-            onChange={(e) => {
-              setDesde(e.target.value);
+            onChange={(v) => {
+              setDesde(v);
               limpiar("desde");
             }}
-            aria-invalid={errores.desde ? true : undefined}
-            aria-describedby="cambio-desde-error"
-            data-testid="cambio-desde"
+            max={hoy}
+            invalido={Boolean(errores.desde)}
+            describedBy="cambio-desde-error"
+            testid="cambio-desde"
           />
           <ErrorDelCampo
             id="cambio-desde-error"

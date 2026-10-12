@@ -50,6 +50,7 @@ import { MENSAJES_DEL_CONTRATO_VIGENTE, topeDePesos } from "@/lib/contratos/limi
 import { diaLegible, mesLegible } from "@/lib/mandato/textos";
 import { hoyEnColombia } from "@/lib/fechas/fecha-de-la-casa";
 import { plataEnPantalla } from "@/lib/plata/escribir-plata";
+import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
 
 /** `2026-09-15` — hoy, como lo espera un `<input type="date">`. */
 function hoyComoInput(): string {
@@ -274,18 +275,16 @@ export function TerminarContrato({
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="terminadoEn">Fecha de terminación</Label>
-            <Input
+            <CampoDeDia
               id="terminadoEn"
-              type="date"
               value={terminadoEn}
-              onChange={(e) => {
-                setTerminadoEn(e.target.value);
+              onChange={(v) => {
+                setTerminadoEn(v);
                 limpiar("terminadoEn");
               }}
-              data-testid="terminado-en"
-              aria-invalid={errores.terminadoEn ? true : undefined}
-              invalid={!!errores.terminadoEn}
-              aria-describedby="terminadoEn-error"
+              invalido={Boolean(errores.terminadoEn)}
+              describedBy="terminadoEn-error"
+              testid="terminado-en"
             />
             <ErrorDelCampo id="terminadoEn-error" mensaje={errores.terminadoEn} className="mt-0" />
             {vista?.finPactado && (

@@ -55,6 +55,7 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores'
 import { usePaymentsFunnelRealtime } from '@/lib/hooks/cobranza/use-payments-funnel-realtime'
 import { VolverALaLista } from '@/components/inmobiliaria/ai/VolverALaLista'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
 
 void React
 
@@ -732,11 +733,11 @@ export default function PaymentPlanApprovalClient({ planId }: Props) {
           </label>
           <label className="block text-sm font-medium text-fg-muted">
             {t('inmobiliaria.ai.cobranza.planes.modificarForm.fecha')}
-            <Input
-              type="date"
-              min={todayIso()}
+            <CampoDeDia
+              id="payment-plan-approval-client-fecha-1"
               value={modFecha}
-              onChange={(e) => setModFecha(e.target.value)}
+              onChange={(v) => setModFecha(v)}
+              min={todayIso()}
               className="mt-1 block w-full"
             />
           </label>

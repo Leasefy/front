@@ -482,3 +482,120 @@ describe('<ConsignacionTable> — IN-03 y borrador (QA 04-10)', () => {
     expect(container.textContent).not.toContain('inmobiliaria.consignaciones.availability.available');
   });
 });
+
+describe('<ConsignacionTable> — publicar o quitar del marketplace (Nico, 10-10-2026)', () => {
+  afterEach(() => {
+    permisos.concedidos = null;
+    document.body.querySelectorAll('[role="menu"]').forEach((m) => m.remove());
+  });
+
+  function abrirMenu(i = 0) {
+    const trigger = container.querySelectorAll('[aria-label="Acciones"]')[i];
+    expect(trigger).toBeTruthy();
+    act(() => {
+      (trigger as HTMLElement).dispatchEvent(
+        new PointerEvent('pointerdown', { bubbles: true, cancelable: true, button: 0, pointerId: 1 }),
+      );
+    });
+  }
+
+  const opcion = (testid: string) => document.querySelector(`[data-testid="${testid}"]`);
+
+  it('un inmueble sin publicar ofrece «Publicar en el marketplace» y manda su propertyId', () => {
+    const onCambiarPublicacion = vi.fn();
+    render([{ kind: 'consignacion', ...makeConsignacion() }], {
+      publicadoPorInmueble: { 'prop-consig-1': false },
+      onCambiarPublicacion,
+    });
+    abrirMenu();
+    expect(opcion('quitar-del-marketplace')).toBeNull();
+    const publicar = opcion('publicar-en-el-marketplace') as HTMLElement;
+    expect(publicar.textContent).toContain('inmobiliaria.inmuebles.acciones.publicarEnElMarketplace');
+    act(() => publicar.click());
+    expect(onCambiarPublicacion).toHaveBeenCalledWith(['prop-consig-1'], true);
+  });
+
+  it('uno publicado ofrece «Quitar del marketplace»', () => {
+    const onCambiarPublicacion = vi.fn();
+    render([{ kind: 'consignacion', ...makeConsignacion() }], {
+      publicadoPorInmueble: { 'prop-consig-1': true },
+      onCambiarPublicacion,
+    });
+    abrirMenu();
+    const quitar = opcion('quitar-del-marketplace') as HTMLElement;
+    act(() => quitar.click());
+    expect(onCambiarPublicacion).toHaveBeenCalledWith(['prop-consig-1'], false);
+  });
+
+  it('una fila sin mandato también lo ofrece: la marca es del inmueble', () => {
+    render([makeSinMandatoRow()], {
+      publicadoPorInmueble: { 'prop-sin-mandato-1': false },
+      onCambiarPublicacion: vi.fn(),
+    });
+    abrirMenu();
+    expect(opcion('publicar-en-el-marketplace')).toBeTruthy();
+  });
+
+  it('sin la lista del marketplace (sin la migración) no hay opción ni casillas', () => {
+    render([{ kind: 'consignacion', ...makeConsignacion() }], {
+      publicadoPorInmueble: null,
+      onCambiarPublicacion: vi.fn(),
+      elegidos: new Set(),
+      onElegir: vi.fn(),
+    });
+    expect(container.querySelector('[data-testid="elegir-inmueble"]')).toBeNull();
+    abrirMenu();
+    expect(opcion('publicar-en-el-marketplace')).toBeNull();
+  });
+
+  it('sin portafolio:edit no se ofrece publicar ni se puede marcar (el back lo pide)', () => {
+    permisos.concedidos = new Set(['portafolio:view']);
+    render([{ kind: 'consignacion', ...makeConsignacion() }], {
+      publicadoPorInmueble: { 'prop-consig-1': false },
+      onCambiarPublicacion: vi.fn(),
+      elegidos: new Set(),
+      onElegir: vi.fn(),
+    });
+    expect(container.querySelector('[data-testid="elegir-inmueble"]')).toBeNull();
+    abrirMenu();
+    expect(opcion('publicar-en-el-marketplace')).toBeNull();
+  });
+
+  it('la casilla de arriba marca los de la página que se pueden publicar, y los suelta', () => {
+    const onElegir = vi.fn();
+    const filas: PortafolioRow[] = [
+      { kind: 'consignacion', ...makeConsignacion() },
+      { kind: 'consignacion', ...makeConsignacion({ id: 'consig-2', propertyId: 'prop-2' }) },
+      // Sin inmueble todavía: no tiene marca que cambiar.
+      { kind: 'consignacion', ...makeConsignacion({ id: 'consig-3', propertyId: undefined }) },
+    ];
+    render(filas, {
+      publicadoPorInmueble: { 'prop-consig-1': false, 'prop-2': true },
+      elegidos: new Set(),
+      onElegir,
+    });
+    expect(container.querySelectorAll('[data-testid="elegir-inmueble"]')).toHaveLength(2);
+    act(() => (container.querySelector('[data-testid="elegir-la-pagina"]') as HTMLElement).click());
+    expect(onElegir).toHaveBeenCalledWith(['prop-consig-1', 'prop-2'], true);
+
+    render(filas, {
+      publicadoPorInmueble: { 'prop-consig-1': false, 'prop-2': true },
+      elegidos: new Set(['prop-consig-1', 'prop-2']),
+      onElegir,
+    });
+    act(() => (container.querySelector('[data-testid="elegir-la-pagina"]') as HTMLElement).click());
+    expect(onElegir).toHaveBeenLastCalledWith(['prop-consig-1', 'prop-2'], false);
+  });
+
+  it('marcar una fila no abre el inmueble', () => {
+    const onElegir = vi.fn();
+    const { onView } = render([{ kind: 'consignacion', ...makeConsignacion() }], {
+      publicadoPorInmueble: { 'prop-consig-1': false },
+      elegidos: new Set(),
+      onElegir,
+    });
+    act(() => (container.querySelector('[data-testid="elegir-inmueble"]') as HTMLElement).click());
+    expect(onElegir).toHaveBeenCalledWith(['prop-consig-1'], true);
+    expect(onView).not.toHaveBeenCalled();
+  });
+});

@@ -35,6 +35,7 @@ import { leerFallo } from '@/lib/errores/traductor-de-errores';
 import { revisarFechaDeVisita } from '@/lib/visitas/limites-de-la-visita';
 import { useI18n } from '@/lib/i18n';
 import type { Visit } from '@/lib/types/visit';
+import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 export const SCHEDULE_HOURS = [
   '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
@@ -167,17 +168,16 @@ export function ScheduleModal({
             <label htmlFor={ID_DE_AGENDAR.fecha} className="text-sm font-medium text-fg block mb-2">
               {t('landlord.visits.scheduleDateLabel')}
             </label>
-            <Input
+            <CampoDeDia
+              {...ariaDelCampoDeDia(conError('fecha'))}
               id={ID_DE_AGENDAR.fecha}
-              type="date"
               value={fecha}
-              min={minDate}
-              onChange={(e) => {
-                setFecha(e.target.value);
+              onChange={(v) => {
+                setFecha(v);
                 limpiar('fecha');
               }}
+              min={minDate}
               className="rounded-lg"
-              {...conError('fecha')}
             />
             <ErrorDelCampo id={`${ID_DE_AGENDAR.fecha}-error`} mensaje={errores.fecha} />
           </div>
@@ -361,18 +361,17 @@ export function RescheduleModal({
             <label htmlFor={ID_DE_REPROGRAMAR.fecha} className="text-sm font-medium text-fg block mb-2">
               {t('landlord.visits.rescheduleNewDate')}
             </label>
-            <Input
+            <CampoDeDia
               id={ID_DE_REPROGRAMAR.fecha}
-              type="date"
               value={newDate}
-              min={minDate}
-              onChange={(e) => {
-                setNewDate(e.target.value);
+              onChange={(v) => {
+                setNewDate(v);
                 limpiar('fecha');
               }}
+              min={minDate}
+              invalido={Boolean(errores.fecha)}
+              describedBy={errores.fecha ? `${ID_DE_REPROGRAMAR.fecha}-error` : undefined}
               className="rounded-lg"
-              aria-invalid={errores.fecha ? true : undefined}
-              aria-describedby={errores.fecha ? `${ID_DE_REPROGRAMAR.fecha}-error` : undefined}
             />
             <ErrorDelCampo id={`${ID_DE_REPROGRAMAR.fecha}-error`} mensaje={errores.fecha} />
           </div>

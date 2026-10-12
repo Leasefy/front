@@ -48,6 +48,7 @@ import {
   COMMON_ITEMS_BY_ROOM,
   ALL_ITEM_CONDITIONS,
 } from '@/lib/types/inmobiliaria';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 // ============================================================================
 // Types
@@ -192,11 +193,11 @@ export function StepBasicInfo({ formData, updateFormData, consignaciones, select
           <label className="text-sm font-medium text-fg">
             {formData.type === 'entrega' ? t('inmobiliaria.acta.deliveryDate') : t('inmobiliaria.acta.returnDate')}
           </label>
-          <Input
-            type="date"
-            required
+          <CampoDeDia
+            id="acta-entrega-steps-fecha-1"
+            requerido
             value={formData.deliveryDate}
-            onChange={(e) => updateFormData({ deliveryDate: e.target.value })}
+            onChange={(v) => updateFormData({ deliveryDate: v })}
             className="w-full"
           />
         </div>

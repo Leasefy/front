@@ -1,5 +1,6 @@
 'use client';
 
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
 import { CanonPorConfirmarBadge } from './CanonPorConfirmar';
 import {
@@ -488,7 +489,7 @@ export function ConsignacionHeader({
                       icon={<DotsThree className="w-5 h-5" weight="bold" />}
                     />
                   </DropdownListTrigger>
-                  <DropdownListContent align="end" className="w-48">
+                  <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
                     <DropdownListItem
                       onSelect={() => onTerminate?.()}
                       className="text-danger focus:text-danger"

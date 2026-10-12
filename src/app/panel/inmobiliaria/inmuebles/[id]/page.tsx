@@ -18,6 +18,7 @@ import { useI18n } from '@/lib/i18n';
 import { Button, EmptyState } from '@/components/ui';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FotosDelInmueble } from '@/components/inmobiliaria/FotosDelInmueble';
+import { PublicadoEnElMarketplace } from '@/components/inmobiliaria/marketplace/PublicadoEnElMarketplace';
 import { VisitasDelInmueble } from '@/components/inmobiliaria/VisitasDelInmueble';
 import { ComprobantesDelSistemaAnterior } from '@/components/contabilidad/ComprobantesDelSistemaAnterior';
 import { VisorDeFotos } from '@/components/inmobiliaria/inmueble/VisorDeFotos';
@@ -612,6 +613,15 @@ function ConsignacionDetailContent() {
                 onActualizado={refetchProperty}
               />
             </div>
+          )}
+
+          {/* 🔴 (10-10-2026, Nico) Publicado en el marketplace, aparte de
+              disponible. Se oculta solo sin la migración. */}
+          {consignacion.propertyId && (
+            <PublicadoEnElMarketplace
+              propertyId={consignacion.propertyId}
+              puedeCambiar={puedeEditarPortafolio}
+            />
           )}
 
           {/* Las fotos viven en el Property; sin propertyId (mandato sin

@@ -58,6 +58,7 @@
  * en null no es un guion decorativo, es a quién no se le puede cobrar.
  */
 
+import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import {
@@ -202,9 +203,16 @@ export interface CarteraTableProps {
    * su lugar las que ya no coinciden (`key` = la cuota).
    */
   clave?: string
+  /**
+   * Acciones masivas (Nico, 10-10-2026): con esto la tabla pinta las casillas
+   * (por cuota). Lo marcado y lo que se hace con ello lo lleva la pantalla.
+   */
+  marcadas?: ReadonlySet<string>
+  onMarcar?: (ids: readonly string[], si: boolean) => void
 }
 
-export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave }: CarteraTableProps) {
+export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave, marcadas, onMarcar }: CarteraTableProps) {
+  const conCasillas = Boolean(marcadas && onMarcar)
   const { t } = useI18n()
   /*
    * Por defecto, lo más vencido arriba. Una pantalla de cartera se abre para
@@ -263,6 +271,16 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
     <Table className="min-w-[1220px]" data-testid="cartera-tabla">
       <TableHeader>
         <TableRow>
+          {conCasillas && marcadas && onMarcar && (
+            <TableHead className="w-10 pl-4 pr-0">
+              <CasillaDeLaPagina
+                ids={ordenados.map((i) => i.cuotaId)}
+                marcadas={marcadas}
+                onMarcar={onMarcar}
+                queSon="cuotas"
+              />
+            </TableHead>
+          )}
           <Ordenable campo="inquilino">{t('cartera.tabla.inquilino')}</Ordenable>
           <TableHead className="whitespace-nowrap">{t('cartera.tabla.inmueble')}</TableHead>
           <TableHead className="whitespace-nowrap">{t('cartera.tabla.propietario')}</TableHead>
@@ -284,7 +302,7 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
       <TableBodyAnimado key={clave}>
         {ordenados.length === 0 && vacio ? (
           <TableRowAnimada key="vacio">
-            <TableCell colSpan={COLUMNAS_DE_CARTERA} className="p-0">
+            <TableCell colSpan={COLUMNAS_DE_CARTERA + (conCasillas ? 1 : 0)} className="p-0">
               {vacio}
             </TableCell>
           </TableRowAnimada>
@@ -292,6 +310,16 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
           ordenados.map((item) => (
             <FilaDeCartera
               key={item.cuotaId}
+              casilla={
+                marcadas && onMarcar ? (
+                  <CasillaDeLaFila
+                    id={item.cuotaId}
+                    nombre={`la cuota de ${item.tenantName ?? 'sin inquilino'} de ${item.month}`}
+                    marcadas={marcadas}
+                    onMarcar={onMarcar}
+                  />
+                ) : undefined
+              }
               item={item}
               onVerCobro={onVerCobro ? () => onVerCobro(item) : undefined}
               onGestiones={() => setGestionesDe(item)}
@@ -316,10 +344,13 @@ export function CarteraTable({ items, onVerCobro, vacio, orden, onOrdenar, clave
 }
 
 function FilaDeCartera({
+  casilla,
   item,
   onVerCobro,
   onGestiones,
 }: {
+  /** La casilla de las acciones masivas, si la tabla las tiene. */
+  casilla?: React.ReactNode
   item: CarteraItem
   onVerCobro?: () => void
   /** Abrir las gestiones de cobro de la persona (COBRANZA-MANUAL). */
@@ -340,6 +371,7 @@ function FilaDeCartera({
       data-cuota-id={item.cuotaId}
       data-cajon={item.cajon}
     >
+      {casilla !== undefined && <TableCell className="w-10 pl-4 pr-0 align-middle">{casilla}</TableCell>}
       {/* Inquilino: quién debe y por dónde se le habla. */}
       <TableCell className="align-middle">
         <div className="min-w-0 max-w-[12rem]">

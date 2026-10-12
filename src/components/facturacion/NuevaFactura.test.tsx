@@ -2180,3 +2180,166 @@ describe('QA-FACT-CONTA-95 · FA-04 · la plata de la fila en renglones cortos',
     expect(q(`[data-testid="neto-${c}"]`)?.textContent).toBe('Neto $ 10.025.850');
   });
 });
+
+
+/**
+ * T-0163 (Anexo B5): un contrato con varios inquilinos sale en una factura por
+ * inquilino, cada una por su parte, y se emite junta. Datos inventados.
+ */
+describe('T-0163: el mes dividido entre los inquilinos del contrato', () => {
+  const titular = (over: Partial<FacturaDelMes> = {}) =>
+    factura({
+      clave: 'ct-7|2026-09|INQUILINO',
+      cuotaId: 'cu-7',
+      contractId: 'ct-7',
+      terceroNombre: 'Titular Uno',
+      terceroDocumento: '111',
+      participacionBps: 5000,
+      contratoInquilinoId: null,
+      totalCop: 1_260_504,
+      subtotalCop: 1_260_504,
+      baseCop: 1_260_504,
+      netoCop: 1_260_504,
+      ...over,
+    });
+  const coarrendatario = (over: Partial<FacturaDelMes> = {}) =>
+    factura({
+      clave: 'ct-7|2026-09|INQUILINO|ci-1',
+      cuotaId: 'cu-7',
+      contractId: 'ct-7',
+      terceroNombre: 'Coarrendatario Dos',
+      terceroDocumento: '222',
+      participacionBps: 5000,
+      contratoInquilinoId: 'ci-1',
+      totalCop: 1_260_504,
+      subtotalCop: 1_260_504,
+      baseCop: 1_260_504,
+      netoCop: 1_260_504,
+      ...over,
+    });
+  const aparte = () =>
+    factura({
+      clave: 'ct-8|2026-09|INQUILINO',
+      cuotaId: 'cu-8',
+      contractId: 'ct-8',
+      terceroNombre: 'Persona Suelta',
+      terceroDocumento: '999',
+    });
+
+  const montarDividido = async (inquilinos: FacturaDelMes[]) => {
+    porGenerarMock.mockResolvedValue(respuesta({ inquilinos }));
+    await montar();
+  };
+  const casilla = (clave: string) =>
+    (q(`[data-testid="factura-${clave}"]`) as HTMLElement).querySelector(
+      'button[role="checkbox"]',
+    ) as HTMLButtonElement;
+
+  it('dos filas pegadas, cada una con su nombre y su porcentaje', async () => {
+    await montarDividido([titular(), coarrendatario(), aparte()]);
+    const nombres = qa('[data-testid^="factura-ct-"]').map((f) => f.querySelector('p')?.textContent);
+    expect(nombres.slice(0, 2)).toEqual(['Titular Uno · 50 %', 'Coarrendatario Dos · 50 %']);
+    expect(host.textContent).toContain('Persona Suelta');
+  });
+
+  it('el aviso de que salen juntas va UNA vez por contrato y mes, no en cada fila', async () => {
+    await montarDividido([titular(), coarrendatario(), aparte()]);
+    const avisos = qa('[data-testid="factura-junta-ct-7-2026-09"]');
+    expect(avisos).toHaveLength(1);
+    expect(avisos[0].textContent).toBe('La factura de este contrato se emite junta para todos los inquilinos.');
+    expect(q('[data-testid="factura-junta-ct-8-2026-09"]')).toBeNull();
+  });
+
+  it('arrancan marcadas las dos; desmarcar una desmarca a la otra', async () => {
+    await montarDividido([titular(), coarrendatario()]);
+    expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain('Emitir 2 facturas de inquilinos');
+    await act(async () => {
+      casilla('ct-7|2026-09|INQUILINO|ci-1').click();
+    });
+    const boton = q('[data-testid="facturacion-generar"]') as HTMLButtonElement;
+    expect(boton.disabled).toBe(true);
+  });
+
+  it('marcar una (con nada marcado) marca a la hermana', async () => {
+    await montarDividido([titular(), coarrendatario()]);
+    // Se vacía la selección y se vuelve a marcar sólo una.
+    await act(async () => {
+      casilla('ct-7|2026-09|INQUILINO').click();
+    });
+    expect((q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => {
+      casilla('ct-7|2026-09|INQUILINO|ci-1').click();
+    });
+    expect(q('[data-testid="facturacion-generar"]')!.textContent).toContain('Emitir 2 facturas de inquilinos');
+  });
+
+  it('«Emitir esta» en un mes dividido emite a TODOS los inquilinos, y la confirmación lo dice', async () => {
+    generarMock.mockResolvedValue({
+      mes: '2026-09',
+      emitidas: 2,
+      yaEstaban: 0,
+      sinNumero: 0,
+      facturas: [],
+      totalCop: 2_521_008,
+    });
+    await montarDividido([titular(), coarrendatario()]);
+    await clic('[data-testid="generar-una-ct-7|2026-09|INQUILINO|ci-1"]');
+    const pregunta = confirmarMock.mock.calls[0][0] as { titulo: string };
+    expect(pregunta.titulo).toContain('2 facturas');
+    expect(generarMock).toHaveBeenCalledTimes(1);
+    expect(generarMock.mock.calls[0][1]).toEqual([
+      'ct-7|2026-09|INQUILINO',
+      'ct-7|2026-09|INQUILINO|ci-1',
+    ]);
+  });
+
+  it('un código del back que esta versión no conoce: la fila no se emite y dice su texto', async () => {
+    const bloqueada = coarrendatario({
+      emitible: false,
+      codigoNoEmitible: 'DIVISION_NO_CUADRA',
+      motivoNoEmitible: 'Las partes de este mes no suman la cuota: anula con una nota.',
+    });
+    await montarDividido([
+      titular({ emitible: false, codigoNoEmitible: 'ALGO_QUE_NO_CONOCEMOS' as never, motivoNoEmitible: 'Texto crudo del back.' }),
+      bloqueada,
+    ]);
+    expect((q('[data-testid="facturacion-generar"]') as HTMLButtonElement).disabled).toBe(true);
+    expect(q('[data-testid="todavia-no-ct-7|2026-09|INQUILINO"]')?.getAttribute('title')).toBe('Texto crudo del back.');
+    expect(q('[data-testid="todavia-no-ct-7|2026-09|INQUILINO|ci-1"]')?.getAttribute('title')).toBe(
+      'Las partes de este mes no suman la cuota: anula con una nota.',
+    );
+  });
+
+  it('a un coarrendatario sin tipo de documento se le completa en el contrato, no en Inquilinos', async () => {
+    await montarDividido([
+      titular(),
+      coarrendatario({
+        emitible: false,
+        codigoNoEmitible: 'INQUILINO_SIN_TIPO_DE_DOCUMENTO',
+        motivoNoEmitible: 'Falta el tipo de documento.',
+      }),
+    ]);
+    const enlace = q('[data-testid="completar-en-el-contrato-ct-7|2026-09|INQUILINO|ci-1"]') as HTMLAnchorElement;
+    expect(enlace.textContent).toBe('Completar en el contrato');
+    expect(enlace.getAttribute('href')).toBe('/panel/inmobiliaria/contratos/ct-7#partes-del-contrato');
+    expect(q('[data-testid="completar-inquilino-ct-7|2026-09|INQUILINO|ci-1"]')).toBeNull();
+  });
+
+  it('el titular sin tipo sigue yendo a Inquilinos, como antes', async () => {
+    await montarDividido([
+      titular({
+        emitible: false,
+        codigoNoEmitible: 'INQUILINO_SIN_TIPO_DE_DOCUMENTO',
+        motivoNoEmitible: 'Falta el tipo de documento.',
+      }),
+    ]);
+    expect(q('[data-testid="completar-inquilino-ct-7|2026-09|INQUILINO"]')).not.toBeNull();
+  });
+
+  it('un back anterior (sin las claves nuevas) se ve exactamente como hoy', async () => {
+    await montar();
+    expect(host.textContent).toContain('Nubia Amparo David');
+    expect(host.textContent).not.toContain('Nubia Amparo David ·');
+    expect(qa('[data-testid^="factura-junta-"]')).toHaveLength(0);
+  });
+});

@@ -78,6 +78,7 @@ import {
 } from '@/lib/habeas-data/en-palabras';
 import { descargarBlob } from '@/lib/reportes/exportables';
 import { EsqueletoDeSeccion } from './piezas';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 type Pestana = 'abiertas' | 'respondidas' | 'todas';
 
@@ -695,12 +696,11 @@ function RegistrarSolicitud({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="hd-recibida">Día en que llegó (vacío = hoy)</Label>
-            <Input
+            <CampoDeDia
               id="hd-recibida"
-              type="date"
-              className="font-mono"
               value={f.recibidaEl}
-              onChange={(e) => cambiar('recibidaEl')(e.target.value)}
+              onChange={(v) => cambiar('recibidaEl')(v)}
+              className="font-mono"
             />
           </div>
           <div className="space-y-1.5">

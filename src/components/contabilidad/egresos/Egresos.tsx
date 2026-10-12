@@ -123,6 +123,7 @@ import {
 } from './cuenta-de-origen';
 import { useI18n } from '@/lib/i18n';
 
+import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 const TONO_DEL_ESTADO: Record<EstadoDeEgreso, 'secondary' | 'outline' | 'destructive' | 'default'> =
   {
     PENDIENTE: 'outline',
@@ -1120,16 +1121,15 @@ export function Egresos({ inicial = 'egresos' }: { inicial?: ParteDeEgresos } = 
           <div className="space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="fecha-del-pago">Fecha del pago</Label>
-              <Input
+              <CampoDeDia
+                {...ariaDelCampoDeDia(describir('fecha'))}
                 id="fecha-del-pago"
-                type="date"
                 value={fechaDelPago}
-                onChange={(e) => {
+                onChange={(v) => {
                   olvidar('fecha');
-                  setFechaDelPago(e.target.value);
+                  setFechaDelPago(v);
                 }}
-                data-testid="fecha-del-pago"
-                {...describir('fecha')}
+                testid="fecha-del-pago"
               />
               <ErrorDelCampo id="fecha-del-pago-error" mensaje={errorDelCampo.fecha} />
             </div>

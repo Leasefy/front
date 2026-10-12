@@ -80,6 +80,7 @@
  * agregar el input de vuelta; no hay nada más que deshacer.
  */
 
+import { resumenDeLasFacturasDelPago } from '@/lib/facturacion/facturas-del-pago';
 import * as React from 'react';
 import Link from 'next/link';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -161,6 +162,7 @@ import {
   useCarteraDelCliente,
   usePlanDeImputacion,
 } from './ReciboPorCliente';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 /**
  * El ícono de cada medio, por su TIPO. Las opciones las arma
@@ -724,13 +726,17 @@ export function RegistrarPagoModal({
        * abono», pero se lee «pagadas». Ahora se dice cuáles quedaron pagadas y
        * cuánto le queda a cada una de las que no.
        */
-      const pagadas = facturas.filter((f) => f.saldoCop <= 0);
-      const conSaldo = facturas.filter((f) => f.saldoCop > 0);
+      /*
+       * T-0163: con la factura dividida entre los inquilinos, un mes trae una
+       * entrada por inquilino. El aviso habla de MESES: se juntan por mes (un
+       * mes está pagado cuando TODAS sus partes lo están; el saldo es la suma).
+       */
+      const { pagados: pagadas, conSaldo } = resumenDeLasFacturasDelPago(facturas);
       const partesDeFacturas = [
         pagadas.length === 0
           ? null
           : t(pagadas.length === 1 ? 'recibos.form.facturaPagada' : 'recibos.form.facturasPagadas', {
-              meses: listaEnPalabras(pagadas.map((f) => nombreDelMes(f.mes, idioma)), idioma),
+              meses: listaEnPalabras(pagadas.map((mes) => nombreDelMes(mes, idioma)), idioma),
             }),
         ...conSaldo.map((f) =>
           t('recibos.form.facturaConSaldo', {
@@ -1378,9 +1384,9 @@ export function RegistrarPagoModal({
                   <Calendar className="h-4 w-4 text-fg-muted" />
                   {t('recibos.form.fechaLabel')}
                 </label>
-                <Input
+                <CampoDeDia
                   id="fecha-recibo"
-                  type="date"
+                  requerido
                   /*
                    * Sólo techo (`hoy`). El piso que puso R4 (auditoría 13-09)
                    * se quitó el 2026-09-16: el recibo lleva la fecha en la que
@@ -1388,17 +1394,17 @@ export function RegistrarPagoModal({
                    */
                   max={hoy}
                   value={fecha}
-                  onChange={(e) => {
-                    setFecha(e.target.value);
+                  onChange={(v) => {
+                    setFecha(v);
                     olvidarDelServidor('fecha');
                   }}
-                  aria-invalid={
+                  invalido={
                     (problemaDeLaFecha !== null && problemaDeLaFecha !== 'vacia') ||
                     errorDeLaFecha !== null ||
                     (tocado && !fecha) ||
                     Boolean(erroresDelServidor.fecha)
                   }
-                  aria-describedby="fecha-recibo-error"
+                  describedBy="fecha-recibo-error"
                   className={cn(
                     'w-full',
                     (tocado && !fecha) ||

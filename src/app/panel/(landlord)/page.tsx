@@ -1,5 +1,6 @@
 'use client';
 
+import { PreguntaDeLaRecomendacion } from '@/components/marketplace/inmobiliaria/PreguntaDeLaRecomendacion';
 import { ReparacionesPorAprobar } from '@/components/landlord/portal/ReparacionesPorAprobar';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
 import Link from 'next/link';
@@ -133,6 +134,8 @@ function InicioDelPropietarioDeInmobiliaria({ doc }: { doc: NonNullable<ReturnTy
         </header>
         {/* SO-10 (QA 04-10): lo que espera su respuesta, arriba de todo. */}
         <ReparacionesPorAprobar />
+        {/* «¿Recomendarías a la inmobiliaria?» (marketplace, 09-10-2026). */}
+        <PreguntaDeLaRecomendacion />
         <ContratosConLaInmobiliaria doc={doc} />
         <nav aria-label="Lo tuyo" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[

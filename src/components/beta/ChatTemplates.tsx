@@ -92,6 +92,18 @@ export function plantillasDelRol(rol: string | null | undefined): ChatTemplate[]
 // Menú
 // ============================================================================
 
+/** Hasta dónde llegan, desde arriba, los elementos fijos o pegados que tapan la ventana. */
+function bordeDeArriba(): number {
+  let borde = 0;
+  for (const el of document.querySelectorAll<HTMLElement>('header, [data-tapa-arriba]')) {
+    const posicion = getComputedStyle(el).position;
+    if (posicion !== 'fixed' && posicion !== 'sticky') continue;
+    const r = el.getBoundingClientRect();
+    if (r.height > 0 && r.top < window.innerHeight / 3 && r.bottom > borde) borde = r.bottom;
+  }
+  return borde;
+}
+
 interface ChatTemplatesMenuProps {
   open: boolean;
   onClose: () => void;
@@ -99,6 +111,13 @@ interface ChatTemplatesMenuProps {
   onSelect: (prompt: string) => void;
   /** `up` abre hacia arriba — para la barra de la conversación activa. */
   direction?: 'down' | 'up';
+  /**
+   * Otras opciones en vez de las plantillas del panel (el marketplace público
+   * usa el MISMO menú con búsquedas de ejemplo). `texto` es lo que se envía.
+   */
+  opciones?: readonly { id: string; titulo: string; texto: string; icono: Icon }[];
+  /** El título del menú cuando trae otras opciones. */
+  titulo?: string;
   className?: string;
 }
 
@@ -116,17 +135,29 @@ interface ChatTemplatesMenuProps {
  * botón NO cuenta como «afuera»: antes el `mousedown` lo cerraba y el `click`
  * del mismo botón lo volvía a abrir.
  */
+/** «Hasta $2,5 millones» y «hasta 2.5 millones» dicen lo mismo: sólo letras y números, sin mayúsculas. */
+function mismoTexto(a: string, b: string): boolean {
+  const limpio = (x: string) => x.toLocaleLowerCase('es').replace(/[^\p{L}\p{N}]/gu, '');
+  return limpio(a) === limpio(b);
+}
+
 export function ChatTemplatesMenu({
   open,
   onClose,
   onSelect,
   direction = 'down',
+  opciones,
+  titulo,
   className,
 }: ChatTemplatesMenuProps) {
   const { t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
   // `AuthContext` directo (no `useAuth`): fuera del proveedor, las de siempre.
-  const plantillas = plantillasDelRol(useContext(AuthContext)?.agencyRole);
+  const delRol = plantillasDelRol(useContext(AuthContext)?.agencyRole);
+  const plantillas = opciones
+    ? opciones.map((o) => ({ id: o.id, title: o.titulo, desc: o.texto, icon: o.icono }))
+    : delRol.map((tpl) => ({ id: tpl.id, title: t(tpl.titleKey), desc: t(tpl.descKey), icon: tpl.icon }));
+  const tituloDelMenu = titulo ?? t('beta.templates.title');
 
   /**
    * Alto y dirección medidos contra la ventana, no fijos (Nico, 2026-08-27:
@@ -148,7 +179,9 @@ export function ChatTemplatesMenu({
       const r = anclaje.getBoundingClientRect();
       const MARGEN = 16;
       const abajo = window.innerHeight - r.bottom - MARGEN;
-      const arriba = r.top - MARGEN;
+      // Lo que tapa arriba (el header fijo, una barra pegada) no es espacio: el
+      // menú quedaba debajo de «Conversación · Galería» (Nico, 09-10-2026).
+      const arriba = r.top - bordeDeArriba() - MARGEN;
 
       // Se conserva la dirección pedida salvo que del otro lado quepa
       // claramente más: cambiar de lado desorienta.
@@ -198,7 +231,7 @@ export function ChatTemplatesMenu({
         <motion.div
           ref={ref}
           role="menu"
-          aria-label={t('beta.templates.title')}
+          aria-label={tituloDelMenu}
           data-testid="menu-de-plantillas"
           initial={{ opacity: 0, y: abajo ? -6 : 6, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -218,7 +251,7 @@ export function ChatTemplatesMenu({
         >
           <div className="flex items-center justify-between px-3 pb-1.5 pt-2">
             <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-fg-subtle">
-              {t('beta.templates.title')}
+              {tituloDelMenu}
             </span>
             <span className="font-mono text-[11px] tabular-nums text-fg-subtle">{plantillas.length}</span>
           </div>
@@ -229,8 +262,7 @@ export function ChatTemplatesMenu({
             style={{ maxHeight: Math.max(140, caja.maxH - 44) }}
           >
             {plantillas.map((tpl, i) => {
-              const title = t(tpl.titleKey);
-              const desc = t(tpl.descKey);
+              const { title, desc } = tpl;
               const TplIcon = tpl.icon;
               return (
                 <motion.button
@@ -261,7 +293,11 @@ export function ChatTemplatesMenu({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block font-body text-[13.5px] font-medium text-fg">{title}</span>
-                    <span className="block truncate font-body text-[12.5px] leading-snug text-fg-muted">{desc}</span>
+                    {/* Si lo que se envía es el mismo título, no se repite debajo
+                        («Que tenga balcón / que tenga balcón»; QA del marketplace, 10-10-2026). */}
+                    {mismoTexto(title, desc) ? null : (
+                      <span className="block truncate font-body text-[12.5px] leading-snug text-fg-muted">{desc}</span>
+                    )}
                   </span>
                   <ArrowUpRight
                     size={14}

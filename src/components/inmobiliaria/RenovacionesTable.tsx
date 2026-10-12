@@ -44,6 +44,7 @@
  * («12 de 183») cuando hay algo puesto.
  */
 
+import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla';
 import { useMemo, useState } from 'react';
 import {
   SortAscending,
@@ -125,6 +126,9 @@ interface RenovacionesTableProps {
    * un menú termina ofreciendo cinco acciones que no existen.
    */
   onAbrir?: (renovacion: Renovacion) => void;
+  /** Acciones masivas (Nico, 10-10-2026): con esto la tabla pinta las casillas. */
+  marcadas?: ReadonlySet<string>;
+  onMarcar?: (ids: readonly string[], si: boolean) => void;
 }
 
 /**
@@ -215,7 +219,10 @@ export function RenovacionesTable({
   error,
   onReintentar,
   onAbrir,
+  marcadas,
+  onMarcar,
 }: RenovacionesTableProps) {
+  const conCasillas = Boolean(marcadas && onMarcar);
   const { t, locale } = useI18n();
   const [sortField, setSortField] = useState<SortField>('daysUntilExpiry');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -448,6 +455,11 @@ export function RenovacionesTable({
       <Table>
         <TableHeader>
           <TableRow>
+            {marcadas && onMarcar && (
+              <TableHead className="w-10 pl-4 pr-0">
+                <CasillaDeLaPagina ids={pageItems.map((r) => r.id)} marcadas={marcadas} onMarcar={onMarcar} queSon="renovaciones" />
+              </TableHead>
+            )}
             <SortableHeader field="propertyTitle">{t('inmobiliaria.finance.renewals.property')}</SortableHeader>
             <SortableHeader field="tenantName">{t('inmobiliaria.finance.renewals.tenant')}</SortableHeader>
             <SortableHeader field="propietarioName">{t('inmobiliaria.finance.renewals.owner')}</SortableHeader>
@@ -467,7 +479,7 @@ export function RenovacionesTable({
               está al día sin haberlo podido verificar. */}
           {!isLoading && Boolean(error) && (
             <TableRow>
-              <TableCell colSpan={COLUMNAS} className="p-0">
+              <TableCell colSpan={COLUMNAS + (conCasillas ? 1 : 0)} className="p-0">
                 <FalloDeCarga error={error} queEs="las renovaciones" onReintentar={onReintentar} />
               </TableCell>
             </TableRow>
@@ -475,7 +487,7 @@ export function RenovacionesTable({
 
           {!isLoading && !error && filtradas.length === 0 && (
             <TableRow>
-              <TableCell colSpan={COLUMNAS} className="p-0">
+              <TableCell colSpan={COLUMNAS + (conCasillas ? 1 : 0)} className="p-0">
                 <SinDatos
                   queSon="renovaciones"
                   icono={ArrowsClockwise}
@@ -511,6 +523,11 @@ export function RenovacionesTable({
                 )}
                 data-testid={`renovacion-${item.id}`}
               >
+                {marcadas && onMarcar && (
+                  <TableCell className="w-10 pl-4 pr-0">
+                    <CasillaDeLaFila id={item.id} nombre={`la renovación de ${item.tenantName}`} marcadas={marcadas} onMarcar={onMarcar} />
+                  </TableCell>
+                )}
                 <TableCell className="px-5 py-4 max-w-[240px]">
                   <p className="font-medium text-foreground truncate">{item.propertyTitle}</p>
                   {/* 🔴 El número del contrato: es como la inmobiliaria nombra

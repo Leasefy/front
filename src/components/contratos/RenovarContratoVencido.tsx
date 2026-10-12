@@ -14,12 +14,12 @@
 import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/toast";
 import { cicloDeVidaApi, type ContratoVencido } from "@/lib/api/ciclo-de-vida.service";
 import { ErrorDelCampo } from "@/components/estado/ErrorDelCampo";
 import { repartirErroresDelServidor } from "@/lib/errores/errores-en-el-formulario";
 import { diaLegible } from '@/lib/mandato/textos';
+import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
 
 export function RenovarContratoVencido({
   contractId,
@@ -89,17 +89,16 @@ export function RenovarContratoVencido({
       <div className="flex flex-wrap items-end gap-2">
         <label className="text-caption" htmlFor="fecha-de-entrega">
           Día en que entrega
-          <Input
+          <CampoDeDia
             id="fecha-de-entrega"
-            type="date"
             value={hasta}
-            onChange={(e) => {
-              setHasta(e.target.value);
+            onChange={(v) => {
+              setHasta(v);
               setErrorDelDia(undefined);
             }}
+            invalido={Boolean(errorDelDia)}
+            describedBy="fecha-de-entrega-error"
             className="mt-1"
-            aria-invalid={errorDelDia ? true : undefined}
-            aria-describedby="fecha-de-entrega-error"
           />
           <ErrorDelCampo id="fecha-de-entrega-error" mensaje={errorDelDia} />
         </label>

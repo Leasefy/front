@@ -11,6 +11,7 @@ import {
   MAX_CONTRATOS_POR_ARCHIVO,
   MENSAJES_DE_LA_MIGRACION as M,
   errorDeLaComision,
+  errorDeLaPlataPorInquilino,
   errorDeLaFechaDeCorte,
   errorDelCanon,
   errorDelDiaDePago,
@@ -116,5 +117,18 @@ describe('errorDeLaFechaDeCorte', () => {
   it('antes del 2000 o a más de un año: la frase del rango del back', () => {
     expect(errorDeLaFechaDeCorte('1999-12-31', hoy)).toBe(M.fechaDeCorteFueraDeRango);
     expect(errorDeLaFechaDeCorte('2028-01-01', hoy)).toBe(M.fechaDeCorteFueraDeRango);
+  });
+});
+
+describe('T-0163: la plata por inquilino (canonPorInquilino)', () => {
+  it('una lista sana, o ausente, no opina', () => {
+    expect(errorDeLaPlataPorInquilino([1260504, 1260504])).toBeNull();
+    expect(errorDeLaPlataPorInquilino(undefined)).toBeNull();
+  });
+  it('una parte negativa se dice con la frase de los inquilinos', () => {
+    expect(errorDeLaPlataPorInquilino([100, -1])).toBe('La parte del canon de cada inquilino no puede ser negativa.');
+  });
+  it('un valor con centavos se frena con la llave apagada', () => {
+    expect(errorDeLaPlataPorInquilino([100.5])).toContain('pesos enteros');
   });
 });

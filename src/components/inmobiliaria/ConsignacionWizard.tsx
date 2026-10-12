@@ -36,6 +36,7 @@ import { itemsDelInventarioDelAsistente } from '@/lib/inmuebles/inventario-del-a
 import { useAuth } from '@/lib/auth/use-auth';
 import { usePermissions } from '@/lib/hooks/usePermissions';
 import { propertiesApi } from '@/lib/api/properties.service';
+import { videoInvalido } from '@/lib/marketplace/video';
 import { uploadPropertyPhotos } from '@/lib/api/property-photos';
 import {
   newPropertyCreationSession,
@@ -285,8 +286,8 @@ export function ConsignacionWizard({
         // profile in handleSubmit, so nothing here should block "Siguiente".
         return true;
       case 5:
-        // Inventory is optional
-        return true;
+        // Inventory is optional; el video también, pero si se escribió tiene que servir.
+        return !videoInvalido(formData.videoUrl);
       case 6:
         // Confirmation step - agenteId is never required: an unassigned
         // consignment defaults to the profile that created it.
@@ -583,6 +584,9 @@ export function ConsignacionWizard({
             // Antes viajaban 0 / 1 / 10 de relleno: datos inventados.
             ...datosOpcionalesParaCrear(formData),
             adminFee:     formData.adminFee,
+            ...(formData.videoUrl?.trim() ? { videoUrl: formData.videoUrl.trim() } : {}),
+            // 🔴 Sólo si lo apagaron: encendido es lo de siempre (Nico, 10-10-2026).
+            ...(formData.publicarEnElMarketplace === false ? { publicadoEnMarketplace: false } : {}),
           }, { idempotencyKey });
         });
       } catch (error) {

@@ -40,6 +40,11 @@ vi.mock('@phosphor-icons/react', () => ({
   MapPin: () => null,
   CaretLeft: () => null,
   CaretRight: () => null,
+  Check: () => null,
+  Info: () => null,
+  Play: () => null,
+  ShieldCheck: () => null,
+  Camera: () => null,
 }))
 
 import { PropertyCard } from './PropertyCard'
@@ -112,6 +117,20 @@ describe('PropertyCard — T-0038 listing type badge + price', () => {
     montar({ listingType: 'sale', salePrice: null, monthlyRent: null })
     expect(container.textContent).not.toContain('$0')
     expect(container.textContent).not.toContain('$ 0')
+  })
+})
+
+describe('PropertyCard — el video de la red (marketplace, 09-10-2026)', () => {
+  it('con un reel de Instagram avisa que tiene video', () => {
+    montar({ videoUrl: 'https://www.instagram.com/reel/abc/' })
+    expect(container.querySelector('[data-testid="tiene-video"]')?.textContent).toContain('Video en Instagram')
+  })
+
+  it('sin video, o con un enlace que no es de una red, no dice nada', () => {
+    montar({ videoUrl: null })
+    expect(container.querySelector('[data-testid="tiene-video"]')).toBeNull()
+    montar({ videoUrl: 'https://ejemplo.com/v' })
+    expect(container.querySelector('[data-testid="tiene-video"]')).toBeNull()
   })
 })
 

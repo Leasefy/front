@@ -223,6 +223,24 @@ describe('las columnas nuevas del archivo real viajan con el nombre del back', (
    * al back la única forma de decir qué palabra no reconoció, y dejaría dos
    * tablas de traducción viviendo en repos distintos (C19).
    */
+  it('el video viaja como `videoUrl`, crudo; en blanco no viaja (marketplace, 09-10)', () => {
+    expect(
+      toImportarInmuebleDto(inmueble({ videoUrl: ' https://www.instagram.com/reel/abc/ ' })).videoUrl,
+    ).toBe('https://www.instagram.com/reel/abc/');
+    // Lo que no es un enlace también viaja: el back decide y lo degrada a «sin video».
+    expect(toImportarInmuebleDto(inmueble({ videoUrl: 'ver drive' })).videoUrl).toBe('ver drive');
+    expect(toImportarInmuebleDto(inmueble({ videoUrl: '  ' }))).not.toHaveProperty('videoUrl');
+  });
+
+  it('las fotos por enlace viajan partidas en una lista; en blanco no viajan (09-10)', () => {
+    expect(toImportarInmuebleDto(inmueble({ fotos: 'https://a.co/1.jpg, https://a.co/2.jpg\nhttps://a.co/3.jpg' })).fotos).toEqual([
+      'https://a.co/1.jpg',
+      'https://a.co/2.jpg',
+      'https://a.co/3.jpg',
+    ]);
+    expect(toImportarInmuebleDto(inmueble({ fotos: '  ' }))).not.toHaveProperty('fotos');
+  });
+
   it('el estado no se traduce: llega tal como lo escribió la inmobiliaria', () => {
     expect(toImportarInmuebleDto(inmueble({ status: 'Inactiva' })).estadoOrigen).toBe('Inactiva');
     expect(toImportarInmuebleDto(inmueble({ status: 'Lo que sea' })).estadoOrigen).toBe('Lo que sea');

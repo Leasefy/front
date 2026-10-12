@@ -19,6 +19,7 @@
  * `DatePicker` sólo elige días —, así que debajo del campo va «Quitar la fecha».
  */
 
+import { forwardRef, useCallback, useEffect, useRef } from 'react';
 import { DatePicker } from '@leasefy/cadence';
 
 import { aFechaIso, fechaLocal } from '@/lib/fechas-locales';
@@ -44,12 +45,19 @@ export interface CampoDeDiaProps {
   etiquetaDeQuitar?: string;
   /** El `aria-describedby` del botón (el id del error). */
   describedBy?: string;
+  /** Obligatorio: el botón lleva `aria-required` (el lector de pantalla lo dice). */
+  requerido?: boolean;
   className?: string;
   /** Para las pruebas y el navegador: el contenedor lleva este `data-testid`. */
   testid?: string;
 }
 
-export function CampoDeDia({
+/**
+ * El `ref` llega al BOTÓN del calendario: un formulario que enfoca el campo
+ * con error (`ref.current?.focus()`) sigue funcionando (10-10-2026, al pasar
+ * todos los `<input type="date">` del panel a este campo).
+ */
+export const CampoDeDia = forwardRef<HTMLButtonElement, CampoDeDiaProps>(function CampoDeDia({
   id,
   value,
   onChange,
@@ -61,9 +69,34 @@ export function CampoDeDia({
   quitable = false,
   etiquetaDeQuitar = 'Quitar la fecha',
   describedBy,
+  requerido = false,
   className,
   testid,
-}: CampoDeDiaProps) {
+}, ref) {
+  /*
+   * El `DatePicker` de Cadence no deja pasar atributos ARIA a su botón; el
+   * mensaje de error y «obligatorio» se le ponen acá, al botón mismo (que es
+   * lo que enfoca y lee el lector de pantalla), no sólo al contenedor. Un
+   * botón no lleva `aria-invalid` (no es de su rol): el error llega por
+   * `aria-describedby` y el borde rojo.
+   */
+  const boton = useRef<HTMLButtonElement | null>(null);
+  const conRef = useCallback(
+    (nodo: HTMLButtonElement | null) => {
+      boton.current = nodo;
+      if (typeof ref === 'function') ref(nodo);
+      else if (ref) ref.current = nodo;
+    },
+    [ref],
+  );
+  useEffect(() => {
+    const b = boton.current;
+    if (!b) return;
+    const poner = (nombre: string, valor: string | undefined) =>
+      valor ? b.setAttribute(nombre, valor) : b.removeAttribute(nombre);
+    poner('aria-describedby', describedBy);
+    poner('aria-required', requerido ? 'true' : undefined);
+  }, [describedBy, requerido]);
   const minimo = fechaLocal(min ?? null) ?? undefined;
   const maximo = fechaLocal(max ?? null) ?? undefined;
   return (
@@ -75,6 +108,7 @@ export function CampoDeDia({
       aria-describedby={describedBy}
     >
       <DatePicker
+        ref={conRef}
         id={id}
         value={fechaLocal(value)}
         onChange={(d) => onChange(aFechaIso(d))}
@@ -97,4 +131,24 @@ export function CampoDeDia({
       ) : null}
     </div>
   );
+});
+
+type AriaDeUnInput = {
+  id?: string;
+  'aria-invalid'?: boolean | 'true' | 'false';
+  'aria-describedby'?: string;
+};
+
+/**
+ * Las props de error que un formulario le esparcía a su `<Input type="date">`
+ * (`{...conError('fecha')}`: `id`, `aria-invalid`, `aria-describedby`), dichas
+ * como las de este campo. Así el ayudante de cada formulario sigue siendo la
+ * única fuente del id y del error.
+ */
+export function ariaDelCampoDeDia<T extends AriaDeUnInput>(a: T) {
+  return {
+    ...(a.id !== undefined ? { id: a.id } : {}),
+    invalido: a['aria-invalid'] === true || a['aria-invalid'] === 'true',
+    describedBy: a['aria-describedby'],
+  } as { invalido: boolean; describedBy?: string } & (T extends { id: string } ? { id: string } : unknown);
 }

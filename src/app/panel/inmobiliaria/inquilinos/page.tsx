@@ -61,6 +61,8 @@
  *        persona sin arriendo — que es donde de verdad hace falta.
  */
 
+import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas';
+import { InquilinosMarcados } from '@/components/inmobiliaria/InquilinosMarcados';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -238,6 +240,16 @@ function ContenidoDeInquilinos() {
   // XE-01: «apenas vuelva la red los traemos» — al volver la conexión, la
   // lista (y los números) que fallaron se piden otra vez, solos.
   useAlVolverLaConexion(refrescar, Boolean(error || errorPortafolio));
+
+  // Acciones masivas (Nico, 10-10-2026). Con otro filtro o búsqueda, lo marcado se suelta.
+  const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas(`${estado}|${buscar}`);
+  const inquilinosMarcados = useMemo(
+    () => inquilinos.filter((p) => marcadas.has(p.tenantId)),
+    [inquilinos, marcadas],
+  );
+  const permisosDeLaLista = usePermissionsContextSafe();
+  const puedeCompartirElEstado = permisosDeLaLista ? permisosDeLaLista.canAccess('cobros', 'view') : true;
+  const puedeReenviarInvitaciones = permisosDeLaLista ? permisosDeLaLista.canAccess('clientes', 'edit') : true;
 
   /*
    * Se abre UNA vez por id. Sin esta marca, cada refresco de la lista —el que
@@ -556,6 +568,15 @@ function ContenidoDeInquilinos() {
                 onAbrir={setAbierto}
                 orden={orden}
                 onOrdenar={setOrden}
+                marcadas={marcadas}
+                onMarcar={marcar}
+              />
+              {/* Acciones masivas: el pie de la MISMA tabla donde se marca. */}
+              <InquilinosMarcados
+                marcados={inquilinosMarcados}
+                onQuitar={quitarLaSeleccion}
+                puedeCompartir={puedeCompartirElEstado}
+                puedeInvitar={puedeReenviarInvitaciones}
               />
               {/* El pie se monta SIEMPRE que haya filas, aunque sean menos
                   que una página: con una sola dice «Mostrando 1–3 de 3» y deja

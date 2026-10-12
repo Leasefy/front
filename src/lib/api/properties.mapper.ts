@@ -147,6 +147,7 @@ export function mapBackendProperty(bp: BackendProperty): Property {
     parkingSpaces: bp.parkingSpaces ?? undefined,
     stratum: bp.stratum ?? undefined,
     yearBuilt: bp.yearBuilt ?? undefined,
+    videoUrl: bp.videoUrl ?? null,
 
     // Amenities: string[] -> PropertyAmenity[]
     amenities: resolveAmenities(bp.amenities),

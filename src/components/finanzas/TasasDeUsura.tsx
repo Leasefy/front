@@ -70,6 +70,8 @@ import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formular
 import { LARGO_MAXIMO_DE_LA_FUENTE, problemaDeLaUsura } from '@/lib/finanzas/limites-de-finanzas';
 import { avisoDeMesesQueFaltan, esMesValido, mesesAtras, mesesQueFaltan } from '@/lib/finanzas/usura';
 import { mesActual, nombreDelMes } from '@/lib/recaudo/meses';
+import { CampoDeMes } from '@/components/ui/campo-de-mes';
+import { ariaDelCampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 /** Cuántos meses se miran por defecto. Dos años: lo que tarda un juicio. */
 const MESES_POR_DEFECTO = 23;
@@ -139,22 +141,20 @@ export function TasasDeUsuraPanel() {
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="usura-desde">Desde</Label>
-            <Input
+            <CampoDeMes
               id="usura-desde"
-              type="month"
-              className="w-40"
               value={desde}
-              onChange={(e) => esMesValido(e.target.value) && setDesde(e.target.value)}
+              onChange={(v) => esMesValido(v) && setDesde(v)}
+              className="w-52"
             />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="usura-hasta">Hasta</Label>
-            <Input
+            <CampoDeMes
               id="usura-hasta"
-              type="month"
-              className="w-40"
               value={hasta}
-              onChange={(e) => esMesValido(e.target.value) && setHasta(e.target.value)}
+              onChange={(v) => esMesValido(v) && setHasta(v)}
+              className="w-52"
             />
           </div>
         </div>
@@ -425,15 +425,14 @@ function EditorDeTasa({
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="tasa-mes">Mes</Label>
-            <Input
+            <CampoDeMes
+              {...ariaDelCampoDeDia(describir('mes'))}
               id="tasa-mes"
-              type="month"
               value={mes}
-              onChange={(e) => {
+              onChange={(v) => {
                 olvidar('mes');
-                setMes(e.target.value);
+                setMes(v);
               }}
-              {...describir('mes')}
             />
             <ErrorDelCampo id="tasa-mes-error" mensaje={errorDe('mes')} />
           </div>

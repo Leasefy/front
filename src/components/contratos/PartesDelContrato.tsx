@@ -76,9 +76,16 @@ import type {
   Contract,
   InquilinoDelContrato,
   PropietarioDelContrato,
+  TipoDeDocumentoDelInquilino,
 } from '@/lib/types/contract'
 import { EditarPropietariosDialog } from '@/components/inmobiliaria/EditarPropietariosDialog'
+import { repartoEstaDefinido } from '@/lib/contratos/reparto-de-la-factura'
 import { InvitarInquilino } from './InvitarInquilino'
+import { RepartoDeLaFactura } from './RepartoDeLaFactura'
+import {
+  SelectorDeTipoDeDocumento,
+  etiquetaDelTipoDeDocumento,
+} from './SelectorDeTipoDeDocumento'
 
 interface Props {
   contract: Contract
@@ -104,9 +111,21 @@ export function PartesDelContrato({
    */
   const [inquilinos, setInquilinos] = useState<InquilinoDelContrato[] | null>(null)
   const lista = inquilinos ?? contract.inquilinosDelContrato ?? inquilinoDelSnapshot(contract)
+  // T-0163: ¿el contrato reparte hoy la factura entre sus inquilinos?
+  const repartida = repartoEstaDefinido(lista)
+
+  /*
+   * Agregar o quitar a alguien restablece el reparto (R-P4): el back deja todas
+   * las partes en `null`. Si estaba repartido y la lista que vuelve ya no lo
+   * está, se dice: la persona fue avisada antes, pero el cambio no se ve solo.
+   */
+  function alCambiarLasPartes(nueva: InquilinoDelContrato[]) {
+    if (repartida && !repartoEstaDefinido(nueva)) toast.success('Restablecimos el reparto de la factura.')
+    setInquilinos(nueva)
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" id="partes-del-contrato">
       <Propietarios contract={contract} puedeEditar={puedeEditar} onActualizado={onActualizado} />
 
       <div className="space-y-2 border-t border-border pt-3 first:border-0 first:pt-0">
@@ -117,7 +136,8 @@ export function PartesDelContrato({
           {puedeEditar ? (
             <AgregarInquilino
               contractId={contract.id}
-              onListaNueva={setInquilinos}
+              repartida={repartida}
+              onListaNueva={alCambiarLasPartes}
             />
           ) : null}
         </div>
@@ -134,11 +154,22 @@ export function PartesDelContrato({
                 inquilino={i}
                 contractId={contract.id}
                 puedeEditar={puedeEditar}
+                repartida={repartida}
                 onListaNueva={setInquilinos}
+                onCambioLasPartes={alCambiarLasPartes}
               />
             ))}
           </ul>
         )}
+
+        {/* T-0163: la factura se emite una por inquilino, cada una por su parte.
+            Sólo con 2+ inquilinos y un back que sabe de repartos. */}
+        <RepartoDeLaFactura
+          contractId={contract.id}
+          inquilinos={lista}
+          puedeEditar={puedeEditar}
+          onListaNueva={setInquilinos}
+        />
 
         {/* La invitación al portal (T-0036 §3.2.B6). 🔴 CR-08: también con la
             cuenta vinculada —el inquilino que nunca entró: estado y «Reenviar
@@ -183,14 +214,21 @@ function FilaDeInquilino({
   inquilino,
   contractId,
   puedeEditar,
+  repartida,
   onListaNueva,
+  onCambioLasPartes,
 }: {
   inquilino: InquilinoDelContrato
   contractId: string
   puedeEditar: boolean
+  /** El contrato reparte la factura entre sus inquilinos. */
+  repartida: boolean
   onListaNueva: (lista: InquilinoDelContrato[]) => void
+  /** Cambió quiénes son las partes (quitar): el back restablece el reparto. */
+  onCambioLasPartes: (lista: InquilinoDelContrato[]) => void
 }) {
   const [quitando, setQuitando] = useState(false)
+  const [guardandoTipo, setGuardandoTipo] = useState(false)
   // Quitar a alguien de un contrato no se hace a un clic: el ícono de la
   // basura queda a centímetros del nombre y un toque de más en el celular lo
   // sacaba sin preguntar (DESIGN.md §17: confirmación = AlertDialog).
@@ -202,7 +240,7 @@ function FilaDeInquilino({
     try {
       const lista = await contractsApi.quitarInquilino(contractId, inquilino.id)
       setConfirmando(false)
-      onListaNueva(lista)
+      onCambioLasPartes(lista)
       toast.success('Lo quitamos del contrato.')
     } catch (e) {
       toast.error(
@@ -216,8 +254,35 @@ function FilaDeInquilino({
     }
   }
 
+  async function guardarTipo(tipo: TipoDeDocumentoDelInquilino) {
+    if (!inquilino.id) return
+    setGuardandoTipo(true)
+    try {
+      onListaNueva(await contractsApi.actualizarInquilino(contractId, inquilino.id, { tipoDocumento: tipo }))
+      toast.success('Guardamos el tipo de documento.')
+    } catch (e) {
+      toast.error(
+        mensajeParaLaPersona(e, {
+          porDefecto: 'No pudimos guardar el tipo de documento.',
+          accion: 'guardar el tipo de documento',
+        }),
+      )
+    } finally {
+      setGuardandoTipo(false)
+    }
+  }
+
+  // T-0163: sin el tipo, la factura de ESTA persona no se emite. Sólo importa si hay reparto,
+  // sólo a los coarrendatarios (el del titular es el del contrato) y sólo con un back que lo manda.
+  const faltaElTipo =
+    repartida &&
+    !inquilino.esPrincipal &&
+    Boolean(inquilino.id) &&
+    'tipoDocumento' in inquilino &&
+    !inquilino.tipoDocumento
+
   return (
-    <li className="flex items-start justify-between gap-3 text-sm">
+    <li className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1 text-sm">
       <div className="min-w-0">
         {/* `break-words`, no `truncate`: la columna es angosta y un nombre
             cortado a la mitad no identifica a nadie. */}
@@ -227,6 +292,14 @@ function FilaDeInquilino({
             igual que en la fila del propietario. */}
         <p className="text-caption text-muted-foreground" data-testid="documento-del-inquilino">
           {inquilino.documento || 'Sin documento'}
+          {inquilino.tipoDocumento ? (
+            <span
+              className="ml-1.5 text-[11px] font-medium uppercase tracking-wide"
+              data-testid={`tipo-del-inquilino-${inquilino.id ?? 'principal'}`}
+            >
+              {etiquetaDelTipoDeDocumento(inquilino.tipoDocumento)}
+            </span>
+          ) : null}
         </p>
       </div>
       <div className="flex flex-shrink-0 items-center gap-2">
@@ -249,6 +322,25 @@ function FilaDeInquilino({
           </button>
         ) : null}
       </div>
+      {faltaElTipo ? (
+        <div className="flex w-full flex-wrap items-center gap-2" data-testid="falta-tipo-de-documento">
+          <p className="flex items-start gap-1.5 text-caption text-warning">
+            <Warning className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden />
+            <span>Falta el tipo de documento: no se podrá emitir su factura</span>
+          </p>
+          {puedeEditar ? (
+            <div className="w-36">
+              <SelectorDeTipoDeDocumento
+                value=""
+                onChange={(t) => void guardarTipo(t)}
+                disabled={guardandoTipo}
+                testId={`tipo-de-documento-${inquilino.id}`}
+                ariaLabel={`Tipo de documento de ${inquilino.nombre}`}
+              />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
       <AlertDialog open={confirmando} onOpenChange={(abierto) => !quitando && setConfirmando(abierto)}>
         <AlertDialogContent variant="destructive" icon={<UserMinus weight="bold" />}>
           <AlertDialogHeader>
@@ -258,6 +350,11 @@ function FilaDeInquilino({
               {inquilino.documento ? ` (documento ${inquilino.documento})` : ''} deja de
               figurar como coarrendatario de este contrato. El inquilino principal no
               cambia. Si fue un error, puedes volver a agregarlo desde esta misma sección.
+              {repartida ? (
+                <span className="mt-2 block" data-testid="quitar-inquilino-restablece">
+                  {AVISO_DE_RESTABLECER_EL_REPARTO}
+                </span>
+              ) : null}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -280,11 +377,17 @@ function FilaDeInquilino({
   )
 }
 
+/** R-P4: cambiar quiénes son las partes deja la factura toda al titular. Se dice ANTES. */
+const AVISO_DE_RESTABLECER_EL_REPARTO =
+  'Este contrato reparte la factura entre sus inquilinos. Al agregar o quitar a alguien el reparto se restablece (toda la factura al titular) y tendrás que definirlo de nuevo.'
+
 function AgregarInquilino({
   contractId,
+  repartida,
   onListaNueva,
 }: {
   contractId: string
+  repartida: boolean
   onListaNueva: (lista: InquilinoDelContrato[]) => void
 }) {
   const [abierto, setAbierto] = useState(false)
@@ -297,6 +400,8 @@ function AgregarInquilino({
   const [documento, setDocumento] = useState('')
   const [email, setEmail] = useState('')
   const [telefono, setTelefono] = useState('')
+  // T-0163: opcional. Sólo viaja si la persona lo eligió (un back anterior rechaza la clave).
+  const [tipoDocumento, setTipoDocumento] = useState<TipoDeDocumentoDelInquilino | ''>('')
 
   async function guardar() {
     setGuardando(true)
@@ -309,6 +414,7 @@ function AgregarInquilino({
           documento: documento.trim(),
           email: email.trim() || undefined,
           telefono: telefono.trim() || undefined,
+          ...(tipoDocumento ? { tipoDocumento } : {}),
         }),
       )
       toast.success('Lo sumamos al contrato.')
@@ -317,6 +423,7 @@ function AgregarInquilino({
       setDocumento('')
       setEmail('')
       setTelefono('')
+      setTipoDocumento('')
     } catch (e) {
       const { porCampo, orden, sueltos } = repartirErroresDelServidor(e, {
         campos: CAMPOS_DEL_INQUILINO,
@@ -383,6 +490,20 @@ function AgregarInquilino({
               error={errores.documento}
               ayuda="Es lo que identifica a la persona. El correo sólo sirve para crearle cuenta."
             />
+            <div className="space-y-1">
+              <label className="text-caption text-muted-foreground" htmlFor="inquilino-tipo">
+                Tipo de documento (opcional)
+              </label>
+              <SelectorDeTipoDeDocumento
+                value={tipoDocumento}
+                onChange={setTipoDocumento}
+                id="inquilino-tipo"
+                testId="inquilino-tipo"
+              />
+              <p className="text-caption text-muted-foreground">
+                La factura de cada inquilino lo necesita. Si lo dejas vacío, lo completas después.
+              </p>
+            </div>
             <Campo
               etiqueta="Correo (opcional)"
               valor={email}
@@ -399,6 +520,15 @@ function AgregarInquilino({
               maxLength={40}
               error={errores.telefono}
             />
+            {repartida ? (
+              <p
+                className="flex items-start gap-1.5 text-caption text-warning"
+                data-testid="agregar-inquilino-restablece"
+              >
+                <Warning className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden />
+                <span>{AVISO_DE_RESTABLECER_EL_REPARTO}</span>
+              </p>
+            ) : null}
             <Presence show={Boolean(error)} initial={false} distance="xs" as="p" role="alert" className="text-sm text-destructive" data-testid="agregar-inquilino-error">
               {error}
             </Presence>

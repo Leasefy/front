@@ -59,6 +59,7 @@ import { MENSAJES_DE_NOMINA, SALARIO_MAXIMO_DEL_MES_COP, pasaDe } from './limite
 import { Avisos, TituloDeBloque } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
 
+import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 /** Los campos de la persona que pueden llevar error, con el nombre del DTO. */
 type CampoDeLaPersona = 'nombre' | 'documento' | 'cargo' | 'salarioCop' | 'fechaIngreso';
 const CAMPOS_DE_LA_PERSONA: readonly CampoDeLaPersona[] = [
@@ -415,16 +416,15 @@ function NuevaPersona({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ingreso-de-persona">Fecha de ingreso</Label>
-              <Input
+              <CampoDeDia
+                {...ariaDelCampoDeDia(atributosDelError('ingreso-de-persona', errorDe('fechaIngreso')))}
                 id="ingreso-de-persona"
-                type="date"
                 value={fechaIngreso}
-                onChange={(e) => {
+                onChange={(v) => {
                   errores.olvidar('fechaIngreso');
-                  setFechaIngreso(e.target.value);
+                  setFechaIngreso(v);
                 }}
-                data-testid="campo-ingreso"
-                {...atributosDelError('ingreso-de-persona', errorDe('fechaIngreso'))}
+                testid="campo-ingreso"
               />
               <ErrorDelCampo id="ingreso-de-persona-error" mensaje={errorDe('fechaIngreso')} />
             </div>

@@ -96,6 +96,7 @@ import { AcuerdoDetalleSheet } from '@/components/inmobiliaria/cobranza/AcuerdoD
 import { AcuerdosGeneralesCard } from '@/components/inmobiliaria/cobranza/AcuerdosGeneralesCard'
 import { AcuerdosGeneralesTabla } from '@/components/inmobiliaria/cobranza/AcuerdosGeneralesTabla'
 import { CrossFade, Presence } from '@leasefy/cadence'
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
 
 // Etapas donde NO hay superficie de negociación (espejo del backend:
 // agency-cobranza-promises.ts NEGOTIATION_UNAVAILABLE_STAGES). En esas etapas el
@@ -572,16 +573,15 @@ function CrearAcuerdoForm({ onCreada }: { onCreada: () => void }) {
               <label htmlFor="acuerdo-fecha" className="text-sm font-medium text-fg">
                 Fecha de la primera cuota
               </label>
-              <Input
+              <CampoDeDia
                 id="acuerdo-fecha"
-                type="date"
                 value={primerPago}
-                aria-invalid={reparto?.porCampo.firstDueDate ? true : undefined}
-                aria-describedby={reparto?.porCampo.firstDueDate ? 'acuerdo-fecha-error' : undefined}
-                onChange={(e) => {
-                  setPrimerPago(e.target.value)
+                onChange={(v) => {
+                  setPrimerPago(v)
                   clearFeedback()
                 }}
+                invalido={Boolean(reparto?.porCampo.firstDueDate)}
+                describedBy={reparto?.porCampo.firstDueDate ? 'acuerdo-fecha-error' : undefined}
               />
               <ErrorDelCampo id="acuerdo-fecha-error" mensaje={reparto?.porCampo.firstDueDate} />
             </div>

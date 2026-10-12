@@ -62,6 +62,7 @@ import {
   traeLaColumnaDeSaldo,
   useAparecer,
 } from './cuentas-del-extracto';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 interface Props {
   onCargado: (resultado: ResultadoDeCarga) => void;
@@ -451,14 +452,14 @@ export function CargarExtracto({ onCargado }: Props) {
                 <legend className="px-1 text-sm font-medium text-fg">Saldos y período del extracto</legend>
                 <label className="space-y-1 text-sm">
                   <span className="font-medium text-fg">Desde</span>
-                  <input
-                    type="date"
-                    className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
+                  <CampoDeDia
+                    id="periodo-desde"
                     value={desde}
-                    onChange={(e) => setDesde(e.target.value)}
-                    data-testid="periodo-desde"
-                    aria-invalid={periodoAlReves || undefined}
-                    aria-describedby={periodoAlReves ? 'periodo-desde-error' : undefined}
+                    onChange={(v) => setDesde(v)}
+                    invalido={Boolean(periodoAlReves || undefined)}
+                    describedBy={periodoAlReves ? 'periodo-desde-error' : undefined}
+                    className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
+                    testid="periodo-desde"
                   />
                   <ErrorDelCampo
                     id="periodo-desde-error"
@@ -467,12 +468,12 @@ export function CargarExtracto({ onCargado }: Props) {
                 </label>
                 <label className="space-y-1 text-sm">
                   <span className="font-medium text-fg">Hasta</span>
-                  <input
-                    type="date"
-                    className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
+                  <CampoDeDia
+                    id="periodo-hasta"
                     value={hasta}
-                    onChange={(e) => setHasta(e.target.value)}
-                    data-testid="periodo-hasta"
+                    onChange={(v) => setHasta(v)}
+                    className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg"
+                    testid="periodo-hasta"
                   />
                 </label>
                 <label className="space-y-1 text-sm">

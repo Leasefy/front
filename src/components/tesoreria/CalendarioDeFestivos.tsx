@@ -44,6 +44,7 @@ import {
   errorDelNombreDelFestivo,
 } from '@/lib/tesoreria/limites-de-tesoreria';
 import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 /** Los dos campos de «Agregar un día», y el id de cada uno. */
 type CampoDelFestivo = 'fecha' | 'nombre';
@@ -297,17 +298,16 @@ export function CalendarioDeFestivosPanel() {
                 <div className="grid gap-3 sm:grid-cols-[auto_1fr_auto]">
                   <div className="space-y-1.5">
                     <Label htmlFor="fecha-del-festivo">Fecha</Label>
-                    <Input
+                    <CampoDeDia
                       id="fecha-del-festivo"
-                      type="date"
                       value={fecha}
-                      onChange={(e) => {
-                        setFecha(e.target.value);
+                      onChange={(v) => {
+                        setFecha(v);
                         setErrores((previos) => ({ ...previos, fecha: undefined }));
                       }}
-                      aria-invalid={errores.fecha ? true : undefined}
-                      aria-describedby={errores.fecha ? 'fecha-del-festivo-error' : undefined}
-                      data-testid="fecha-del-festivo"
+                      invalido={Boolean(errores.fecha)}
+                      describedBy={errores.fecha ? 'fecha-del-festivo-error' : undefined}
+                      testid="fecha-del-festivo"
                     />
                     <ErrorDelCampo id="fecha-del-festivo-error" mensaje={errores.fecha} />
                   </div>

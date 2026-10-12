@@ -99,6 +99,7 @@ const CODIGOS_DEL_BACK = [
   'dia_de_pago',
   'uso',
   'reparto_del_canon',
+  'reparto_de_inquilinos',
   'consecutivo_repetido',
   'verificacion_difiere',
   'otros',
@@ -177,5 +178,38 @@ describe('T-0156 — «El archivo dice» para los faltantes que antes no lo tra�
     const f = filaBase()
     expect(celdaDelFaltante(f, 'inmueble_en_venta')).toBe('Cra 1 # 2-3')
     expect(celdaDelFaltante(f, 'inmueble_ocupado')).toBe('Cra 1 # 2-3')
+  })
+})
+
+describe('T-0163 — reparto_de_inquilinos: sin editor, se corrige el archivo o se descarta', () => {
+  it('titula, explica y ofrece descartar la fila', () => {
+    render(filaBase({ faltantes: ['reparto_de_inquilinos'] } as never))
+    const t = container.textContent ?? ''
+    expect(t).toContain('La plata por inquilino no cuadra')
+    expect(t).toContain('no se inventa un reparto')
+    expect(container.querySelector('[data-testid="descartar-fila-sin-reparto"]')).toBeTruthy()
+  })
+
+  it('«Descartar esta fila» descarta la fila', () => {
+    render(filaBase({ faltantes: ['reparto_de_inquilinos'] } as never))
+    const b = container.querySelector('[data-testid="descartar-fila-sin-reparto"]') as HTMLButtonElement
+    act(() => b.click())
+    expect(contractsApi.migracion.descartar).toHaveBeenCalledWith('f-1')
+  })
+
+  it('muestra el motivo exacto que dio el back', () => {
+    render(
+      filaBase({
+        faltantes: ['reparto_de_inquilinos'],
+        asociacion: {
+          inquilino: {
+            repartoDeInquilinos: { inquilinos: [], explicito: false, problema: 'Los valores suman $1.100.000' },
+          },
+        },
+      } as never),
+    )
+    expect(container.querySelector('[data-testid="celda-de-reparto_de_inquilinos"]')?.textContent).toContain(
+      'Los valores suman $1.100.000',
+    )
   })
 })

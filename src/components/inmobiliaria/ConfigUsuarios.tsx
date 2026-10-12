@@ -1,5 +1,6 @@
 'use client';
 
+import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useEffect, useMemo, useState } from 'react';
 import {
   MagnifyingGlass,
@@ -602,7 +603,7 @@ export function ConfigUsuarios({
                             aria-label="Acciones"
                           />
                         </DropdownListTrigger>
-                        <DropdownListContent align="end" className="w-64">
+                        <DropdownListContent align="end" className={ANCHO_DEL_MENU_DE_ACCIONES}>
                           {/* Ver ficha */}
                           {onVerFicha && (
                             <DropdownListItem className="gap-3" onClick={() => onVerFicha(user)}>

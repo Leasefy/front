@@ -48,7 +48,7 @@ afterEach(() => {
 })
 
 describe('PestanasDeCartera', () => {
-  it('las seis lecturas cuelgan de la misma ruta de Cartera', () => {
+  it('las siete lecturas cuelgan de la misma ruta de Cartera', () => {
     montarEn('/panel/inmobiliaria/pagos/cartera')
     expect(PESTANAS_DE_CARTERA.map((p) => p.href)).toEqual([
       '/panel/inmobiliaria/pagos/cartera',
@@ -58,8 +58,10 @@ describe('PestanasDeCartera', () => {
       '/panel/inmobiliaria/pagos/cartera/juridico',
       // 🔴 21-09: la que se dejó de perseguir, al final del camino.
       '/panel/inmobiliaria/pagos/cartera/castigada',
+      // 🔴 10-10: lo que traían del sistema anterior (no se gira solo).
+      '/panel/inmobiliaria/pagos/cartera/saldo-anterior',
     ])
-    expect(host.querySelectorAll('a')).toHaveLength(6)
+    expect(host.querySelectorAll('a')).toHaveLength(7)
   })
 
   it('«Castigada» es una lectura de la cartera, con su texto traducido', () => {

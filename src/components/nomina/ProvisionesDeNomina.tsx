@@ -52,6 +52,7 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { Avisos, Cifra, TituloDeBloque } from './piezas';
 import { Cargado, useCargaDeNomina } from './usar-nomina';
 
+import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 const TIPOS = [
   { tipo: 'PRIMA', nombre: 'Prima de servicios' },
   { tipo: 'CESANTIAS', nombre: 'Cesantías' },
@@ -382,46 +383,43 @@ function PagoDePrestacion({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="desde-del-pago">Período causado, desde</Label>
-            <Input
+            <CampoDeDia
+              {...ariaDelCampoDeDia(conError('desde'))}
               id="desde-del-pago"
-              type="date"
               value={desde}
-              onChange={(e) => {
+              onChange={(v) => {
                 errores.olvidar('desde');
-                setDesde(e.target.value);
+                setDesde(v);
               }}
-              data-testid="campo-desde"
-              {...conError('desde')}
+              testid="campo-desde"
             />
             <ErrorDelCampo id="desde-del-pago-error" mensaje={errorDe('desde')} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="hasta-del-pago">hasta</Label>
-            <Input
+            <CampoDeDia
+              {...ariaDelCampoDeDia(conError('hasta'))}
               id="hasta-del-pago"
-              type="date"
               value={hasta}
-              onChange={(e) => {
+              onChange={(v) => {
                 errores.olvidar('hasta');
-                setHasta(e.target.value);
+                setHasta(v);
               }}
-              data-testid="campo-hasta"
-              {...conError('hasta')}
+              testid="campo-hasta"
             />
             <ErrorDelCampo id="hasta-del-pago-error" mensaje={errorDe('hasta')} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="fecha-del-pago">Fecha de pago</Label>
-            <Input
+            <CampoDeDia
+              {...ariaDelCampoDeDia(conError('fechaPago'))}
               id="fecha-del-pago"
-              type="date"
               value={fechaPago}
-              onChange={(e) => {
+              onChange={(v) => {
                 errores.olvidar('fechaPago');
-                setFechaPago(e.target.value);
+                setFechaPago(v);
               }}
-              data-testid="campo-fecha-pago"
-              {...conError('fechaPago')}
+              testid="campo-fecha-pago"
             />
             <ErrorDelCampo id="fecha-del-pago-error" mensaje={errorDe('fechaPago')} />
           </div>

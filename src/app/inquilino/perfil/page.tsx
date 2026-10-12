@@ -48,6 +48,8 @@ import {
   type ErroresPersonales,
 } from '@/lib/perfil/datos-personales';
 
+import { ariaDelCampoDeDia } from '@/components/contabilidad/CampoDeDia';
+import { CampoDeNacimiento } from '@/components/ui/campo-de-nacimiento';
 /** Prefijo de los `id` de los campos de esta pantalla (foco y `aria-describedby`). */
 const PREFIJO = 'perfil-inquilino';
 
@@ -854,12 +856,12 @@ export default function PerfilPage() {
                   </label>
                   {editingSection === 'personal' ? (
                     <>
-                      <Input
-                        type="date"
-                        {...propsDelCampo('birthDate')}
+                      <CampoDeNacimiento
+                        {...ariaDelCampoDeDia(propsDelCampo('birthDate'))}
+                        etiqueta={t('profile.dateOfBirth')}
                         value={formData.birthDate}
-                        onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                        className="w-full rounded-xl bg-surface-muted"
+                        onChange={(v) => handleInputChange('birthDate', v)}
+                        className="rounded-xl bg-surface-muted"
                       />
                       {errorDelCampo('birthDate')}
                     </>

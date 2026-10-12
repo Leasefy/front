@@ -13,6 +13,9 @@
  * CONTRACT_STATUS_COLORS already ship dark variants).
  */
 
+import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas';
+import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla';
+import { ContratosMarcados } from '@/components/contratos/ContratosMarcados';
 import { useEffect, useState, useMemo, useRef, type KeyboardEvent } from 'react';
 import Link from 'next/link';
 import { MagnifyingGlass, SortAscending, SortDescending } from '@phosphor-icons/react';
@@ -296,7 +299,9 @@ function ContratosContent() {
    * El esqueleto y el `colSpan` del vacío leen `COLUMNS.length`: repetir el
    * conteo a mano es cómo se produjo la deriva de T-0040.
    */
-  const COLUMNS: { label: string; campo?: CampoDeOrden }[] = [
+  const COLUMNS: { label: string; campo?: CampoDeOrden; casilla?: true }[] = [
+    // Acciones masivas (Nico, 10-10-2026): la casilla de la página.
+    { label: '', casilla: true },
     // El número que se LEE: el de la inmobiliaria si lo hay, si no el nuestro
     // (`CeldaDeNumero`). Angosta y a la izquierda de todo, igual que el código
     // de inmueble en `ConsignacionTable`.
@@ -310,6 +315,30 @@ function ContratosContent() {
   ];
 
   const openContract = (c: Contract) => router.push(`/panel/inmobiliaria/contratos/${c.id}`);
+
+  // ── Acciones masivas (Nico, 10-10-2026) ─────────────────────────────────
+  // Con otros filtros, lo marcado que ya no se ve se suelta.
+  const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas(
+    JSON.stringify({ ...filtros, campo: undefined, sentido: undefined }),
+  );
+  const contratosMarcados = useMemo(
+    () => contracts.filter((c) => marcadas.has(c.id)),
+    [contracts, marcadas],
+  );
+  /** El estado como lo dice el chip de la fila, para el Excel. */
+  const textoDelEstado = (c: Contract) =>
+    estadoParaMostrar({
+      contrato: c,
+      vigencia: vigenciaDelContrato({
+        status: c.status,
+        endDate: c.endDate,
+        terminadoEn: c.terminadoEn ?? null,
+        startDate: c.startDate ?? null,
+        fechaDeCartera: c.fechaDeCartera ?? null,
+      }),
+      etiquetaDelEstado: CONTRACT_STATUS_LABELS[c.status] ?? c.status,
+      locale,
+    }).texto;
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -541,7 +570,16 @@ function ContratosContent() {
         <Table className="max-md:block">
           <TableHeader className="max-md:hidden">
             <TableRow>
-              {COLUMNS.map((col, i) => (
+              {COLUMNS.map((col, i) => col.casilla ? (
+                <TableHead key={i} className="w-10 py-4 pl-4 pr-0">
+                  <CasillaDeLaPagina
+                    ids={pageItems.map((c) => c.id)}
+                    marcadas={marcadas}
+                    onMarcar={marcar}
+                    queSon="contratos"
+                  />
+                </TableHead>
+              ) : (
                 <TableHead
                   key={i}
                   className="whitespace-nowrap px-4"
@@ -688,6 +726,14 @@ function ContratosContent() {
                 className="border-b border-border last:border-0 hover:bg-muted/40 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:items-center max-md:gap-x-3 max-md:gap-y-1.5 max-md:px-4 max-md:py-3.5"
                 data-testid="fila-de-contrato"
               >
+                <TableCell className="w-10 py-4 pl-4 pr-0 max-md:hidden" onKeyDown={(e) => e.stopPropagation()}>
+                  <CasillaDeLaFila
+                    id={c.id}
+                    nombre={`el contrato de ${c.tenantName || 'sin inquilino'}`}
+                    marcadas={marcadas}
+                    onMarcar={marcar}
+                  />
+                </TableCell>
                 <TableCell className="px-4 py-4 max-md:order-5 max-md:block max-md:p-0 max-md:text-right">
                   <CeldaDeNumero contrato={c} />
                 </TableCell>
@@ -791,6 +837,17 @@ function ContratosContent() {
             ))}
           </TableBodyAnimado>
         </Table>
+
+        {/* Acciones masivas: el pie de la MISMA tabla donde se marca. */}
+        {contracts.length > 0 && (
+          <ContratosMarcados
+            marcados={contratosMarcados}
+            onQuitar={quitarLaSeleccion}
+            puedeCompartir={isAdmin || canAccess('cobros', 'view')}
+            puedeInvitar={isAdmin || canAccess('contratos', 'create')}
+            estadoDe={textoDelEstado}
+          />
+        )}
 
         {/* Pie: sólo si hay más de una página. */}
         {shouldPaginate && (

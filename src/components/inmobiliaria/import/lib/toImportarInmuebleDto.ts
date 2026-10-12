@@ -115,6 +115,11 @@ export function toImportarInmuebleDto(p: ImportProperty): ImportarInmuebleDto {
   if (p.urbanizacion?.trim()) dto.urbanizacion = p.urbanizacion.trim();
   if (p.llavesEn?.trim()) dto.llavesEn = p.llavesEn.trim();
   if (p.creadaPor?.trim()) dto.creadaPor = p.creadaPor.trim();
+  // El video (marketplace, 09-10-2026): crudo; el back lo guarda sólo si sirve.
+  if (p.videoUrl?.trim()) dto.videoUrl = p.videoUrl.trim();
+  // Las fotos por enlace (09-10-2026): la celda partida en enlaces; el back filtra y las baja.
+  const fotos = (p.fotos ?? '').split(/[\s,;]+/).map((f) => f.trim()).filter(Boolean);
+  if (fotos.length > 0) dto.fotos = fotos;
   if (p.ownerPhone?.trim()) dto.propietarioTelefono = p.ownerPhone.trim();
   if (p.status?.trim()) dto.estadoOrigen = p.status.trim();
 

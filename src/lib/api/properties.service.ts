@@ -34,6 +34,7 @@ function buildQueryString(filters: PropertyFiltersParams): string {
   if (filters.amenities?.length) params.set('amenities', filters.amenities.join(','));
   if (filters.searchQuery) params.set('searchQuery', filters.searchQuery);
   if (filters.naturalQuery) params.set('naturalQuery', filters.naturalQuery);
+  if (filters.agencyId) params.set('agencyId', filters.agencyId);
   if (filters.page != null) params.set('page', String(filters.page));
   if (filters.limit != null) params.set('limit', String(filters.limit));
 
@@ -122,6 +123,14 @@ export const propertiesApi = {
     parkingSpaces?: number;
     stratum?: number;
     yearBuilt?: number;
+    /** El enlace del video (Instagram, TikTok, YouTube o Facebook); `null` lo borra. */
+    videoUrl?: string | null;
+    /**
+     * 🔴 «Publicar en el marketplace» (Nico, 10-10-2026). Ausente = publicado
+     * (lo de siempre); `false` = queda en el portafolio sin salir en el
+     * marketplace hasta que alguien lo elija.
+     */
+    publicadoEnMarketplace?: boolean;
     amenities?: string[];
     /** contract.md T-0038 §3.2.1 — optional on write; `@IsIn` on the back. */
     department?: string;

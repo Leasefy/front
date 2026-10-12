@@ -56,6 +56,7 @@ import {
   errorDeVigenteDesde,
   revisarLasFilas,
 } from '@/lib/captacion/limites-de-la-captacion'
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia'
 
 /**
  * Las tres que publica un organismo, más «propia». El código viaja al back como
@@ -107,7 +108,7 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
   const [leido, setLeido] = useState<LoQueSeLeyo | null>(null)
   const [errores, setErrores] = useState<Partial<Record<CampoDeLaLista, string>>>({})
   const archivoRef = useRef<HTMLInputElement>(null)
-  const vigenteRef = useRef<HTMLInputElement>(null)
+  const vigenteRef = useRef<HTMLButtonElement>(null)
 
   const fuente = FUENTES.find((f) => f.codigo === codigo) ?? FUENTES[0]
 
@@ -266,19 +267,17 @@ export function CajonDeLaLista({ abierto, onOpenChange, onCargada }: CajonDeLaLi
 
         <div className="space-y-1.5">
           <Label htmlFor="lista-vigente">Vigente desde</Label>
-          <Input
+          <CampoDeDia
             ref={vigenteRef}
             id="lista-vigente"
-            type="date"
             value={vigenteDesde}
-            onChange={(e) => {
-              setVigenteDesde(e.target.value)
+            onChange={(v) => {
+              setVigenteDesde(v)
               setErrores((prev) => ({ ...prev, vigenteDesde: undefined }))
             }}
-            invalid={!!errores.vigenteDesde}
-            aria-invalid={errores.vigenteDesde ? true : undefined}
-            aria-describedby="lista-vigente-error"
-            data-testid="lista-vigente"
+            invalido={Boolean(errores.vigenteDesde)}
+            describedBy="lista-vigente-error"
+            testid="lista-vigente"
           />
           <ErrorDelCampo
             id="lista-vigente-error"

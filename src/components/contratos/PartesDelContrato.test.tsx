@@ -22,12 +22,39 @@ vi.mock('@/lib/api/contracts.service', async (importOriginal) => {
       ...actual.contractsApi,
       agregarInquilino: vi.fn(),
       quitarInquilino: vi.fn(),
+      actualizarInquilino: vi.fn(),
       getById: vi.fn(),
     },
   }
 })
 
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }))
+
+const { toastSuccess } = vi.hoisted(() => ({ toastSuccess: vi.fn() }))
+vi.mock('@/components/ui/toast', () => ({
+  toast: { error: vi.fn(), success: (...a: unknown[]) => toastSuccess(...a) },
+}))
+
+/* El select del DS (Radix) no se despliega en happy-dom: un doble con el mismo contrato. */
+vi.mock('./SelectorDeTipoDeDocumento', () => ({
+  etiquetaDelTipoDeDocumento: (t: string) => (t === 'PASSPORT' ? 'Pasaporte' : t),
+  SelectorDeTipoDeDocumento: ({
+    value,
+    onChange,
+    testId,
+  }: {
+    value: string
+    onChange: (v: string) => void
+    testId?: string
+  }) => (
+    <select data-testid={testId} value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">—</option>
+      <option value="CC">CC</option>
+      <option value="CE">CE</option>
+      <option value="NIT">NIT</option>
+    </select>
+  ),
+}))
 
 const getAllConsignaciones = vi.fn()
 vi.mock('@/lib/api/inmobiliaria.service', () => ({
@@ -66,6 +93,8 @@ import type { Contract, PropietarioDelContrato } from '@/lib/types/contract'
 
 const quitarInquilino = contractsApi.quitarInquilino as unknown as ReturnType<typeof vi.fn>
 const getById = contractsApi.getById as unknown as ReturnType<typeof vi.fn>
+const agregarInquilino = contractsApi.agregarInquilino as unknown as ReturnType<typeof vi.fn>
+const actualizarInquilino = contractsApi.actualizarInquilino as unknown as ReturnType<typeof vi.fn>
 
 function contrato(overrides: Partial<Contract> = {}): Contract {
   return {
@@ -440,5 +469,144 @@ describe('editar los propietarios desde la tarjeta', () => {
       container.querySelector<HTMLButtonElement>('[data-testid="agregar-propietario"]')!.click()
     })
     expect(document.body.querySelector('[data-testid="dialogo-de-duenos"]')).toBeNull()
+  })
+})
+
+
+/*
+ * T-0163: varios inquilinos reparten la factura. La sección «Reparto de la
+ * factura» sólo existe si el back manda `participacionBps`; agregar o quitar a
+ * alguien restablece el reparto y hay que avisarlo ANTES. Datos inventados.
+ */
+describe('T-0163: el reparto de la factura dentro de las partes', () => {
+  const persona = (over: Partial<NonNullable<Contract['inquilinosDelContrato']>[number]> = {}) => ({
+    id: null,
+    userId: null,
+    nombre: 'Titular Uno',
+    documento: '111',
+    email: null,
+    telefono: null,
+    esPrincipal: true,
+    ...over,
+  })
+  const nuevoBack = (a: number | null, b: number | null, tipoB: string | null = 'CC') =>
+    contrato({
+      inquilinosDelContrato: [
+        persona({ participacionBps: a, tipoDocumento: 'CC' }),
+        persona({
+          id: 'ci-1',
+          nombre: 'Coarrendatario Dos',
+          documento: '222',
+          esPrincipal: false,
+          participacionBps: b,
+          tipoDocumento: tipoB as 'CC' | null,
+        }),
+      ],
+    })
+  const viejoBack = () =>
+    contrato({
+      inquilinosDelContrato: [persona(), persona({ id: 'ci-1', nombre: 'Coarrendatario Dos', esPrincipal: false })],
+    })
+
+  const poner = async (id: string, valor: string, evento = 'input') => {
+    const el = document.querySelector(`[data-testid="${id}"]`) as HTMLInputElement
+    await act(async () => {
+      const proto = el.tagName === 'SELECT' ? HTMLSelectElement.prototype : HTMLInputElement.prototype
+      Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(el, valor)
+      el.dispatchEvent(new Event(evento, { bubbles: true }))
+    })
+  }
+
+  it('con un back nuevo y dos inquilinos se ve la sección', () => {
+    render(nuevoBack(null, null))
+    expect(container.querySelector('[data-testid="reparto-de-la-factura"]')).not.toBeNull()
+  })
+
+  it('con un back anterior (sin la clave) NO existe', () => {
+    render(viejoBack())
+    expect(container.querySelector('[data-testid="reparto-de-la-factura"]')).toBeNull()
+    expect(container.querySelector('[data-testid="falta-tipo-de-documento"]')).toBeNull()
+  })
+
+  it('quitar con reparto avisa que se restablece, y al volver sin reparto lo decimos', async () => {
+    quitarInquilino.mockResolvedValue([persona({ participacionBps: null, tipoDocumento: 'CC' })])
+    render(nuevoBack(5000, 5000))
+    await act(async () => {
+      ;(container.querySelector('button[aria-label^="Quitar a"]') as HTMLButtonElement).click()
+    })
+    expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain(
+      'Este contrato reparte la factura entre sus inquilinos. Al agregar o quitar a alguien el reparto se restablece',
+    )
+    await act(async () => {
+      ;(document.querySelector('[data-testid="confirmar-quitar-inquilino"]') as HTMLButtonElement).click()
+    })
+    expect(toastSuccess).toHaveBeenCalledWith('Restablecimos el reparto de la factura.')
+  })
+
+  it('quitar SIN reparto no menciona ningún restablecimiento', async () => {
+    render(nuevoBack(null, null))
+    await act(async () => {
+      ;(container.querySelector('button[aria-label^="Quitar a"]') as HTMLButtonElement).click()
+    })
+    expect(document.querySelector('[role="alertdialog"]')?.textContent).not.toContain('se restablece')
+  })
+
+  it('agregar con reparto lo avisa en el diálogo', async () => {
+    render(nuevoBack(5000, 5000))
+    await act(async () => {
+      ;(container.querySelector('[data-testid="agregar-inquilino"]') as HTMLButtonElement).click()
+    })
+    expect(document.querySelector('[data-testid="agregar-inquilino-restablece"]')?.textContent).toContain(
+      'el reparto se restablece',
+    )
+  })
+
+  it('agregar sin elegir tipo NO manda tipoDocumento (un back viejo lo rechazaría)', async () => {
+    agregarInquilino.mockResolvedValue([])
+    render(nuevoBack(null, null))
+    await act(async () => {
+      ;(container.querySelector('[data-testid="agregar-inquilino"]') as HTMLButtonElement).click()
+    })
+    await poner('inquilino-nombre', 'Tercero')
+    await poner('inquilino-documento', '333')
+    await act(async () => {
+      ;(document.querySelector('[data-testid="guardar-inquilino"]') as HTMLButtonElement).click()
+    })
+    expect(Object.keys(agregarInquilino.mock.calls[0][1])).not.toContain('tipoDocumento')
+  })
+
+  it('agregar eligiendo el tipo lo manda', async () => {
+    agregarInquilino.mockResolvedValue([])
+    render(nuevoBack(null, null))
+    await act(async () => {
+      ;(container.querySelector('[data-testid="agregar-inquilino"]') as HTMLButtonElement).click()
+    })
+    await poner('inquilino-nombre', 'Tercero')
+    await poner('inquilino-documento', '333')
+    await poner('inquilino-tipo', 'NIT', 'change')
+    await act(async () => {
+      ;(document.querySelector('[data-testid="guardar-inquilino"]') as HTMLButtonElement).click()
+    })
+    expect(agregarInquilino.mock.calls[0][1]).toMatchObject({ tipoDocumento: 'NIT' })
+  })
+
+  it('con reparto y un coarrendatario sin tipo: aviso (ícono + texto) y el select lo corrige por PATCH', async () => {
+    actualizarInquilino.mockResolvedValue([])
+    render(nuevoBack(5000, 5000, null))
+    const aviso = container.querySelector('[data-testid="falta-tipo-de-documento"]')
+    expect(aviso?.textContent).toContain('Falta el tipo de documento: no se podrá emitir su factura')
+    expect(aviso?.tagName).not.toBe('BUTTON')
+    await poner('tipo-de-documento-ci-1', 'CE', 'change')
+    expect(actualizarInquilino).toHaveBeenCalledWith('c-1', 'ci-1', { tipoDocumento: 'CE' })
+  })
+
+  it('sin reparto no se exige el tipo: no hay aviso', () => {
+    render(nuevoBack(null, null, null))
+    expect(container.querySelector('[data-testid="falta-tipo-de-documento"]')).toBeNull()
+  })
+
+  it('un coarrendatario con tipo lo muestra como texto', () => {
+    render(nuevoBack(5000, 5000, 'CC'))
+    expect(container.querySelector('[data-testid="tipo-del-inquilino-ci-1"]')?.textContent).toBe('CC')
   })
 })

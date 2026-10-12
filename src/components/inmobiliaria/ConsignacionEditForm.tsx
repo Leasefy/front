@@ -75,6 +75,7 @@ import {
 } from '@phosphor-icons/react';
 import { RadioCard, RadioCardGroup, Presence } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
+import { LARGO_MAXIMO_DEL_ENLACE, MENSAJE_DEL_VIDEO, redDelEnlace } from '@/lib/marketplace/video';
 import { useI18n } from '@/lib/i18n';
 import { toast } from '@/components/ui/toast';
 import {
@@ -99,6 +100,7 @@ import { useAgentes } from '@/lib/hooks/useInmobiliaria';
 import { AMENITIES_OPTIONS } from '@/lib/types/publish';
 import { COLOMBIAN_DEPARTMENTS, type Consignacion } from '@/lib/types/inmobiliaria';
 import { COLOMBIAN_CITIES, type Property, type PropertyType } from '@/lib/types/property';
+import { ariaDelCampoDeDia, CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 export interface ConsignacionEditFormProps {
   abierto: boolean;
@@ -146,6 +148,8 @@ interface Valores {
   parkingSpaces: string;
   stratum: string;
   yearBuilt: string;
+  /** El enlace del video en Instagram, TikTok, YouTube o Facebook (marketplace). */
+  videoUrl: string;
   amenities: string[];
   externalId: string;
   monthlyRent: string;
@@ -194,6 +198,7 @@ function valoresIniciales(consignacion: Consignacion, property: Property | null)
     parkingSpaces: texto(property?.parkingSpaces),
     stratum: texto(property?.stratum),
     yearBuilt: texto(property?.yearBuilt),
+    videoUrl: property?.videoUrl ?? '',
     amenities: property?.amenities.map((a) => a.id) ?? [],
     // `GET /properties/:id` es PUBLIC y no trae estos dos: vienen planos en el mandato.
     externalId: property?.externalId ?? consignacion.propertyExternalId ?? '',
@@ -243,7 +248,7 @@ const MAPA_DEL_SERVIDOR: Record<string, keyof Valores | null> = {
 
 const CAMPOS_DEL_CAJON: (keyof Valores)[] = [
   'title', 'description', 'type', 'department', 'city', 'neighborhood', 'address', 'bedrooms',
-  'bathrooms', 'area', 'floor', 'parkingSpaces', 'stratum', 'yearBuilt', 'amenities', 'externalId',
+  'bathrooms', 'area', 'floor', 'parkingSpaces', 'stratum', 'yearBuilt', 'videoUrl', 'amenities', 'externalId',
   'monthlyRent', 'salePrice', 'adminFee', 'deposit', 'consignedAt', 'commissionPercent',
   'saleCommissionPercent', 'contractDate', 'contractEndDate', 'minimumTerm', 'agenteId', 'publicado',
 ];
@@ -507,6 +512,10 @@ export function ConsignacionEditForm({
       if (v.yearBuilt !== '' && (Number(v.yearBuilt) < 1900 || Number(v.yearBuilt) > 2100)) {
         e.yearBuilt = tv('anioEntre');
       }
+      // La misma regla y la misma frase del back (`video-del-inmueble.ts`).
+      if (v.videoUrl.trim() && (v.videoUrl.trim().length > LARGO_MAXIMO_DEL_ENLACE || !redDelEnlace(v.videoUrl))) {
+        e.videoUrl = MENSAJE_DEL_VIDEO;
+      }
       if (esVenta) {
         if (!(Number(v.salePrice) > 0)) e.salePrice = tv('salePricePositive');
       } else if (!(Number(v.monthlyRent) > 0)) {
@@ -616,6 +625,7 @@ export function ConsignacionEditForm({
     for (const k of ['bedrooms', 'bathrooms', 'area', 'floor', 'parkingSpaces', 'stratum', 'yearBuilt'] as const) {
       if (v[k] !== b[k]) p[k] = numeroONull(v[k]);
     }
+    if (v.videoUrl.trim() !== b.videoUrl) p.videoUrl = v.videoUrl.trim() || null;
     if (!mismaLista(v.amenities, b.amenities)) p.amenities = v.amenities;
     if (v.externalId.trim() !== b.externalId) p.externalId = v.externalId.trim() || null;
     if (esVenta) {
@@ -1016,6 +1026,21 @@ export function ConsignacionEditForm({
                   </InputWrapper>
                 </div>
 
+                <InputWrapper label={tf('videoUrl')} error={errores.videoUrl} helper={tf('videoUrlHelper')} campo="videoUrl">
+                  <Input
+                    {...a11y('videoUrl')}
+                    type="url"
+                    inputMode="url"
+                    name="videoUrl"
+                    value={valores.videoUrl}
+                    onChange={campo('videoUrl')}
+                    placeholder="https://www.instagram.com/reel/…"
+                    maxLength={LARGO_MAXIMO_DEL_ENLACE}
+                    className={cn(errores.videoUrl && 'border-danger/30')}
+                    data-testid="editar-videoUrl"
+                  />
+                </InputWrapper>
+
                 <InputWrapper label={tf('amenities')} error={errores.amenities} campo="amenities">
                   <SelectorDeAmenidades value={valores.amenities} onChange={(v) => poner('amenities', v)} />
                 </InputWrapper>
@@ -1103,13 +1128,12 @@ export function ConsignacionEditForm({
                       </div>
                     </InputWrapper>
                     <InputWrapper label={tf('consignedAt')} helper={tf('consignedAtHelper')} error={errores.consignedAt} campo="consignedAt">
-                      <Input
-                        {...a11y('consignedAt')}
-                        type="date"
-                        name="consignedAt"
+                      <CampoDeDia
+                        {...ariaDelCampoDeDia(a11y('consignedAt'))}
                         value={valores.consignedAt}
-                        onChange={campo('consignedAt')}
-                        data-testid="editar-consignedAt"
+                        onChange={(v) => poner('consignedAt', v)}
+                        quitable
+                        testid="editar-consignedAt"
                       />
                     </InputWrapper>
                   </>
@@ -1189,28 +1213,23 @@ export function ConsignacionEditForm({
                   </>
                 )}
                 <InputWrapper label={tf('contractStartDate')} required error={errores.contractDate} campo="contractDate">
-                  <Input
-                    {...a11y('contractDate')}
-                    aria-required="true"
-                    type="date"
-                    name="contractDate"
-                    disabled={camposDelMandatoInactivos}
+                  <CampoDeDia
+                    {...ariaDelCampoDeDia(a11y('contractDate'))}
+                    requerido
                     value={valores.contractDate}
-                    onChange={campo('contractDate')}
-                    className={cn(errores.contractDate && 'border-danger/30')}
-                    data-testid="editar-contractDate"
+                    onChange={(v) => poner('contractDate', v)}
+                    disabled={camposDelMandatoInactivos}
+                    testid="editar-contractDate"
                   />
                 </InputWrapper>
                 <InputWrapper label={tf('contractEndDate')} helper={t('common.optional')} error={errores.contractEndDate} campo="contractEndDate">
-                  <Input
-                    {...a11y('contractEndDate')}
-                    type="date"
-                    name="contractEndDate"
-                    disabled={camposDelMandatoInactivos}
+                  <CampoDeDia
+                    {...ariaDelCampoDeDia(a11y('contractEndDate'))}
                     value={valores.contractEndDate}
-                    onChange={campo('contractEndDate')}
-                    className={cn(errores.contractEndDate && 'border-danger/30')}
-                    data-testid="editar-contractEndDate"
+                    onChange={(v) => poner('contractEndDate', v)}
+                    disabled={camposDelMandatoInactivos}
+                    quitable
+                    testid="editar-contractEndDate"
                   />
                 </InputWrapper>
               </div>

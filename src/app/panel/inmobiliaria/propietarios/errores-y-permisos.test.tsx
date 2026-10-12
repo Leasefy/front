@@ -211,11 +211,13 @@ afterEach(() => {
 });
 
 describe('O3 — sólo se ofrece lo que el back va a dejar hacer', () => {
-  it('pregunta con las llaves del back: propietarios create · edit · delete', async () => {
+  it('pregunta con las llaves del back: propietarios create · edit · delete (+ dispersiones:edit del extracto en bloque)', async () => {
     estado.lista = [unPropietario()];
     await montar();
+    // «Mandar el extracto» de las acciones masivas (10-10-2026) pide lo mismo
+    // que el back en `extractos/enviar-mes/en-el-centro`: `dispersiones:edit`.
     expect(new Set(permisos.pedidas)).toEqual(
-      new Set(['propietarios:create', 'propietarios:edit', 'propietarios:delete']),
+      new Set(['propietarios:create', 'propietarios:edit', 'propietarios:delete', 'dispersiones:edit']),
     );
   });
 

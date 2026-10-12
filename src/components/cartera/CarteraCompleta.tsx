@@ -84,6 +84,9 @@
  */
 
 import { useId, useMemo, useState } from 'react'
+import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas'
+import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext'
+import { CarteraMarcada } from '@/components/cartera/CarteraMarcada'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -284,6 +287,12 @@ export function CarteraCompleta() {
    */
   const clave = `${vista}|${cajon ?? ''}|${edad ?? ''}|${busqueda}|${propietario ? (propietario.id ?? 'null') : ''}|${orden.campo}|${orden.sentido}`
   const pagDeudas = useTablePagination(deudas, { resetKey: clave })
+  // Acciones masivas (Nico, 10-10-2026). Con otro filtro, lo marcado se suelta (el orden no).
+  const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas(
+    `${vista}|${cajon ?? ''}|${edad ?? ''}|${busqueda}|${propietario ? (propietario.id ?? 'null') : ''}`,
+  )
+  const cuotasMarcadas = useMemo(() => deudas.filter((d) => marcadas.has(d.cuotaId)), [deudas, marcadas])
+  const permisosMasivos = usePermissionsContextSafe()
   const pagPropietarios = useTablePagination(propietarios, { resetKey: clave })
   const pagCasos = useTablePagination(casos, { resetKey: clave })
   const pag =
@@ -725,7 +734,10 @@ export function CarteraCompleta() {
           </div>
 
           {vista === 'deudas' ? (
+            <>
             <CarteraTable
+              marcadas={marcadas}
+              onMarcar={marcar}
               items={pagDeudas.pageItems}
               clave={claveDelCuerpo}
               orden={orden}
@@ -748,6 +760,16 @@ export function CarteraCompleta() {
                 />
               }
             />
+            {/* Acciones masivas: el pie de la MISMA tabla donde se marca. */}
+            {deudas.length > 0 && (
+              <CarteraMarcada
+                marcadas={cuotasMarcadas}
+                onQuitar={quitarLaSeleccion}
+                puedeCompartir={permisosMasivos ? permisosMasivos.canAccess('cobros', 'view') : true}
+                puedeRecordar={permisosMasivos ? permisosMasivos.canAccess('cobros', 'edit') : true}
+              />
+            )}
+            </>
           ) : vista === 'propietarios' ? (
             <TablaPorPropietario
               propietarios={pagPropietarios.pageItems}

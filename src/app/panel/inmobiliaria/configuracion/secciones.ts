@@ -4,6 +4,7 @@ import {
   Bell,
   Brain,
   Buildings,
+  Browser,
   CreditCard,
   Globe,
   Plugs,
@@ -59,6 +60,7 @@ export const RAIZ_CONFIGURACION = '/panel/inmobiliaria/configuracion';
 export type SeccionId =
   | 'perfil'
   | 'branding'
+  | 'tu-pagina'
   | 'facturacion'
   | 'equipo'
   | 'permisos'
@@ -132,6 +134,16 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     labelKey: 'inmobiliaria.config.tabs.perfil',
     descKey: 'inmobiliaria.config.tabs.perfilDesc',
     icon: Buildings,
+    gate: { tipo: 'admin' },
+  },
+  {
+    // Marketplace (Nico, 09-10-2026): «el perfil reemplaza su página web».
+    id: 'tu-pagina',
+    grupo: 'inmobiliaria',
+    slug: 'tu-pagina',
+    labelKey: 'inmobiliaria.config.tabs.tuPagina',
+    descKey: 'inmobiliaria.config.tabs.tuPaginaDesc',
+    icon: Browser,
     gate: { tipo: 'admin' },
   },
   {

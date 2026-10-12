@@ -30,6 +30,9 @@
  *     el concepto con el `Select` del DS.
  */
 
+import { useFilasMarcadas } from '@/lib/hooks/use-filas-marcadas'
+import { CasillaDeLaFila, CasillaDeLaPagina } from '@/components/masivas/CasillasDeLaTabla'
+import { BarraDeAccionesMasivas } from '@/components/ui/acciones-masivas'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { DownloadSimple, MagnifyingGlass, Prohibit, Receipt, SealWarning } from '@phosphor-icons/react'
 import { RadioGroup, RadioGroupItem } from '@leasefy/cadence'
@@ -87,6 +90,7 @@ import {
   type NotaCreditoDeLaFactura,
   type NotaDelMes,
 } from '@/lib/api/facturacion-por-mes.service'
+import { parteDeLaFactura } from '@/lib/facturacion/por-facturar'
 import { descargarBlob } from '@/lib/reportes/exportables'
 // QA-FACT-CONTA-95 (FA-R28): las frases del back traen «$500.000»; la sección escribe «$ 500.000».
 import { conLaPlataPegada } from '@/lib/plata/plata-pegada'
@@ -109,6 +113,23 @@ export const MOTIVO_MINIMO = 10
 
 export function motivoSuficiente(motivo: string): boolean {
   return motivo.trim().length >= MOTIVO_MINIMO
+}
+
+/**
+ * T-0163: la parte de la factura de un inquilino cuando el contrato la divide
+ * entre varios («· 50 %»). Sin reparto, un 100 % o un back anterior: nada.
+ */
+function ParteDeLaFactura({ f }: { f: FacturaEmitida }) {
+  const parte = parteDeLaFactura(f.participacionBps)
+  if (!parte) return null
+  return (
+    <span
+      className="ml-1 font-normal text-fg-muted"
+      data-testid={`parte-de-la-factura-${f.numero}`}
+    >
+      · {parte} %
+    </span>
+  )
 }
 
 interface Props {
@@ -453,7 +474,10 @@ export function FacturasEmitidas({ mes, vista }: Props) {
    * «Por facturar». En escritorio sigue la tabla.
    */
   const esCelular = useIsMobile()
-  const { descargarUna, descargando } = useDescargarFacturas()
+  const { descargarUna, descargarLote, descargando } = useDescargarFacturas()
+  // Acciones masivas (Nico, 10-10-2026): marcar ventas y bajar sus PDF en un ZIP.
+  const { marcadas, marcar, quitar: quitarLaSeleccion } = useFilasMarcadas(`${vista}`)
+  const conPdfMarcadas = facturas.filter((f) => marcadas.has(f.id) && f.numeroDian)
   /*
    * 🔴 «Notas» lista TODAS las notas crédito de cada factura, no una sola.
    * Desde el 17-09 una factura puede tener varias PARCIALES además de la total,
@@ -558,7 +582,10 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                 <li key={f.id} className="space-y-2 py-3.5" data-testid={`factura-${f.numero}`}>
                   <div className="flex items-start justify-between gap-3">
                     {/* El nombre en dos renglones si hace falta, nunca «Ana So…». */}
-                    <p className="min-w-0 break-words font-medium text-fg">{f.terceroNombre}</p>
+                    <p className="min-w-0 break-words font-medium text-fg">
+                      {f.terceroNombre}
+                      <ParteDeLaFactura f={f} />
+                    </p>
                     <p className="shrink-0 font-mono font-medium tabular-nums text-fg">
                       {formatCurrency(f.totalCop)}
                     </p>
@@ -634,11 +661,20 @@ export function FacturasEmitidas({ mes, vista }: Props) {
             ))}
           </ul>
         ) : (
+        <>
         <Table>
           <TableHeader>
             <TableRow>
               {vista === 'ventas' ? (
                 <>
+                  <TableHead className="w-10 pl-4 pr-0">
+                    <CasillaDeLaPagina
+                      ids={paginado.pageItems.filter((f) => f.numeroDian).map((f) => f.id)}
+                      marcadas={marcadas}
+                      onMarcar={marcar}
+                      queSon="facturas"
+                    />
+                  </TableHead>
                   <TableHead>Número</TableHead>
                   <TableHead>DIAN</TableHead>
                   <TableHead>Cliente</TableHead>
@@ -668,7 +704,7 @@ export function FacturasEmitidas({ mes, vista }: Props) {
           <TableBody>
             {vista === 'ventas' && ventas.length === 0 && facturas.length > 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="p-0">
+                <TableCell colSpan={7} className="p-0">
                   <SinDatos
                     hayFiltros
                     queSon="facturas emitidas"
@@ -681,6 +717,11 @@ export function FacturasEmitidas({ mes, vista }: Props) {
             {(vista === 'ventas' ? paginado.pageItems : facturas).map((f) =>
               vista === 'ventas' ? (
                 <TableRow key={f.id} data-testid={`factura-${f.numero}`}>
+                  <TableCell className="w-10 pl-4 pr-0">
+                    {f.numeroDian ? (
+                      <CasillaDeLaFila id={f.id} nombre={`la factura ${f.numeroDian}`} marcadas={marcadas} onMarcar={marcar} />
+                    ) : null}
+                  </TableCell>
                   <TableCell className="font-mono tabular-nums">{f.numero}</TableCell>
                   <TableCell className="whitespace-nowrap font-mono tabular-nums">
                     {f.numeroDian ?? '—'}
@@ -688,7 +729,10 @@ export function FacturasEmitidas({ mes, vista }: Props) {
                     {estadoAnteLaDian(f)}
                   </TableCell>
                   <TableCell>
-                    <span className="block">{f.terceroNombre}</span>
+                    <span className="block">
+                      {f.terceroNombre}
+                      <ParteDeLaFactura f={f} />
+                    </span>
                     <span className="text-caption text-fg-muted">
                       {f.destinatario === 'INQUILINO'
                         ? 'Inquilino'
@@ -840,6 +884,36 @@ export function FacturasEmitidas({ mes, vista }: Props) {
               })}
           </TableBody>
         </Table>
+        {/* Acciones masivas: el pie de la MISMA tabla donde se marca (sólo ventas con número). */}
+        {vista === 'ventas' && ventas.some((f) => f.numeroDian) && (
+          <BarraDeAccionesMasivas
+            variant="pie"
+            testid="facturas-marcadas"
+            className="max-md:hidden"
+            marcadas={conPdfMarcadas.length}
+            queSon={['factura', 'factura' + 's']}
+            onQuitar={quitarLaSeleccion}
+            ocupado={descargando !== null}
+            cuandoNoHayNada="Marca facturas para bajar sus PDF en un ZIP."
+          >
+            <Button
+              size="sm"
+              hideArrow
+              disabled={descargando !== null || conPdfMarcadas.length === 0}
+              onClick={() =>
+                void descargarLote(
+                  conPdfMarcadas.map((f) => ({ facturaId: f.id, numero: f.numeroDian })),
+                  `facturas-${conPdfMarcadas.length}`,
+                ).then(() => quitarLaSeleccion())
+              }
+              data-testid="zip-de-las-marcadas"
+            >
+              <DownloadSimple className="h-4 w-4" aria-hidden="true" />
+              Bajar los PDF en un ZIP
+            </Button>
+          </BarraDeAccionesMasivas>
+        )}
+        </>
         )}
         {vista === 'ventas' && paginado.shouldPaginate && (
           <div className="border-t border-border pt-3">

@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useMemo, useRef, ReactNode } from 'react';
+import { LARGO_MAXIMO_DEL_ENLACE, redDelEnlace } from '@/lib/marketplace/video';
 import { PropertyDraft, PUBLISH_STEPS, initialPropertyDraft } from '@/lib/types/publish';
 import { propertiesApi } from '@/lib/api/properties.service';
 import {
@@ -168,7 +169,11 @@ export function PublishProvider({ children }: { children: ReactNode }) {
       case 4: // Amenities
         return true; // Optional
       case 5: // Photos
-        return draft.photos.length >= 1; // At least 1 photo
+        // Al menos 1 foto, y el video (opcional) tiene que ser un enlace de una red.
+        return (
+          draft.photos.length >= 1 &&
+          (!draft.videoUrl?.trim() || (draft.videoUrl.trim().length <= LARGO_MAXIMO_DEL_ENLACE && redDelEnlace(draft.videoUrl.trim()) !== null))
+        );
       case 6: // Pricing
         return draft.monthlyRent > 0;
       case 7: // Description
@@ -316,6 +321,7 @@ export function PublishProvider({ children }: { children: ReactNode }) {
         stratum: draft.stratum || undefined,
         yearBuilt: draft.yearBuilt || undefined,
         amenities: draft.amenities.length > 0 ? draft.amenities : undefined,
+        ...(draft.videoUrl?.trim() ? { videoUrl: draft.videoUrl.trim() } : {}),
         }, { idempotencyKey }),
       );
 

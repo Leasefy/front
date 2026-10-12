@@ -238,3 +238,40 @@ describe('copropietarios y comisión', () => {
     expect(q('aviso-comision-no-cuadra')).toBeNull()
   })
 })
+
+describe('T-0163: una fila por inquilino se une en un contrato con varios inquilinos', () => {
+  const CON = [...BASE, 'Prorrateado']
+  const dos = () => [
+    fila(1, { Prorrateado: 'SI', 'Total Canon Contrato': 2521008, 'Valor canon': 1260504, 'Valor comisión': 189075 }),
+    fila(1, {
+      Prorrateado: 'SI',
+      'Total Canon Contrato': 2521008,
+      'Consecutivo detalle': 2,
+      'Documento Inquilino': 999,
+      'Nombre Inquilino': 'Inquilino Dos',
+      'Email inquilino': 'dos@example.test',
+      'Valor canon': 1260504,
+      'Valor comisión': 189075,
+    }),
+  ]
+
+  it('avisa con su propio aviso (no el de copropietarios) y manda canonPorInquilino', async () => {
+    await subir(CON, dos())
+    const aviso = q('aviso-filas-fundidas-inquilinos')
+    expect(aviso?.textContent).toContain('1 fila se unió al contrato de sus inquilinos')
+    expect(aviso?.textContent).toContain('la factura se divide entre ellos')
+    expect(q('aviso-filas-fundidas')).toBeNull()
+    expect(botonRevisar()?.textContent).toContain('Revisar 1 contrato')
+    await revisar()
+    const [enviadas] = vi.mocked(contractsApi.migracion.preparar).mock.calls[0]
+    expect(enviadas).toHaveLength(1)
+    expect(enviadas[0].canonPorInquilino).toEqual([1260504, 1260504])
+    expect(enviadas[0].inquilinos).toHaveLength(2)
+    expect(enviadas[0].monthlyRent).toBe(2521008)
+  })
+
+  it('sin filas por inquilino no aparece el aviso', async () => {
+    await subir(CON, [fila(1, { Prorrateado: 'SI' })])
+    expect(q('aviso-filas-fundidas-inquilinos')).toBeNull()
+  })
+})

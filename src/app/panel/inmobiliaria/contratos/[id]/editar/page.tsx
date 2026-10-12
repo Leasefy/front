@@ -62,6 +62,7 @@ import {
   terminosDeCobro,
   validarDiasDePlazo,
 } from '@/lib/contratos/terminos-de-cobro';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -478,19 +479,21 @@ function EditarContratoContent() {
           <h2 className="text-base font-semibold text-foreground">Términos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field id={idDelCampoDelContrato('startDate')} label="Fecha de inicio" error={errorDe('startDate')}>
-              <Input
-                type="date"
-                {...ariaDelCampoDelContrato('startDate', errorDe('startDate'))}
+              <CampoDeDia
+                id={idDelCampoDelContrato('startDate')}
                 value={form.startDate}
-                onChange={(e) => updateForm('startDate', e.target.value)}
+                onChange={(v) => updateForm('startDate', v)}
+                invalido={Boolean(errorDe('startDate'))}
+                describedBy={errorDe('startDate') ? `${idDelCampoDelContrato('startDate')}-error` : undefined}
               />
             </Field>
             <Field id={idDelCampoDelContrato('endDate')} label="Fecha de fin" error={errorDe('endDate')}>
-              <Input
-                type="date"
-                {...ariaDelCampoDelContrato('endDate', errorDe('endDate'))}
+              <CampoDeDia
+                id={idDelCampoDelContrato('endDate')}
                 value={form.endDate}
-                onChange={(e) => updateForm('endDate', e.target.value)}
+                onChange={(v) => updateForm('endDate', v)}
+                invalido={Boolean(errorDe('endDate'))}
+                describedBy={errorDe('endDate') ? `${idDelCampoDelContrato('endDate')}-error` : undefined}
               />
             </Field>
             <Field

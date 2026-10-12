@@ -93,6 +93,7 @@ import {
 import { ESPACIO_DE_LA_PLATA, decimalesEnPantalla, seMuestranLosCentavos } from '@/lib/plata/escribir-plata'
 // QA-IA-95 (05-10-2026): el mes en palabras («octubre de 2026»), no «2026-10».
 import { nombreDelMes } from '@/lib/recaudo/meses'
+import { CampoDeMes } from '@/components/ui/campo-de-mes'
 
 const CANALES: { value: CanalDeCobranza; label: string }[] = [
   { value: 'CORREO', label: 'Correo' },
@@ -590,17 +591,16 @@ function PagosRecordatorios() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="mes">Mes que se cobra</Label>
-              <Input
+              <CampoDeMes
                 id="mes"
-                type="month"
                 value={mes}
-                onChange={(e) => {
-                  setMes(e.target.value)
+                onChange={(v) => {
+                  setMes(v)
                   setPrevia(null)
                   setSeleccion(null)
                   setPaso(null)
                 }}
-                className="w-44"
+                className="w-52"
               />
             </div>
           </div>

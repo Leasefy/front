@@ -44,6 +44,7 @@ import {
   erroresDeLasFechas,
 } from "@/components/migracion/limites-de-la-migracion";
 import { usePlataConCentavos } from "@/lib/plata/use-plata-con-centavos";
+import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
 
 /**
  * Los campos de esta fila que tienen dónde pintar su error, con el nombre que
@@ -217,6 +218,12 @@ export const EXPLICACION: Record<string, { titulo: string; porque: string }> = {
     porque:
       "«Valor Canon» reparte el canon entre los dueños y la lista no coincide con ellos o no suma el canon. No se inventa un 50/50: define abajo cuánto es de cada dueño, sin volver a subir el archivo.",
   },
+  // T-0163: varios inquilinos con «Valor Canon». Sin editor: lo derivó el back.
+  reparto_de_inquilinos: {
+    titulo: "La plata por inquilino no cuadra",
+    porque:
+      "«Valor Canon» reparte el canon entre los inquilinos y la lista no coincide con ellos o no suma el canon. Corrige la celda en el archivo y vuelve a subirlo, o descarta la fila: no se inventa un reparto.",
+  },
   // El back lo pone DESPUÉS de activar: el contrato ya existe.
   verificacion_difiere: {
     titulo: "Lo guardado no coincide con el archivo",
@@ -301,6 +308,9 @@ export function celdaDelFaltante(
       const motivo = fila.asociacion?.propietario?.reparto?.problema ?? null;
       return texto([plata, motivo].filter(Boolean).join(' — '));
     }
+    // T-0163: el motivo exacto que dio el back al derivar el reparto de los inquilinos.
+    case 'reparto_de_inquilinos':
+      return texto(fila.asociacion?.inquilino?.repartoDeInquilinos?.problema);
     // El consecutivo del sistema anterior, tal cual vino: es lo que hay que
     // buscar en el archivo para decidir cuál de las filas gemelas se queda.
     case 'consecutivo_repetido':
@@ -555,6 +565,18 @@ export function FaltantesDeFila({ fila, onResuelta, omitir }: Props) {
             ) : null}
             {f === "reparto_del_canon" ? (
               <RepartoEditable fila={fila} ocupado={ocupado} correr={correr} />
+            ) : null}
+            {f === "reparto_de_inquilinos" ? (
+              <Button
+                variant="outline"
+                size="sm"
+                hideArrow
+                disabled={ocupado}
+                data-testid="descartar-fila-sin-reparto"
+                onClick={() => void correr(() => contractsApi.migracion.descartar(fila.id))}
+              >
+                Descartar esta fila
+              </Button>
             ) : null}
             {f === "consecutivo_repetido" ? (
               <Button
@@ -1119,18 +1141,16 @@ function Fechas({
         <label htmlFor={cInicio.id} className="text-caption text-muted-foreground">
           Inicio
         </label>
-        <Input
+        <CampoDeDia
           id={cInicio.id}
-          type="date"
           value={inicio}
-          aria-invalid={mensajeDeInicio ? true : undefined}
-          invalid={Boolean(mensajeDeInicio)}
-          aria-describedby={mensajeDeInicio ? `${cInicio.id}-error` : undefined}
-          onChange={(e) => {
-            setInicio(e.target.value);
+          onChange={(v) => {
+            setInicio(v);
             setLocales({});
             cInicio.onEditar();
           }}
+          invalido={Boolean(Boolean(mensajeDeInicio))}
+          describedBy={mensajeDeInicio ? `${cInicio.id}-error` : undefined}
         />
         <ErrorDelCampo id={`${cInicio.id}-error`} mensaje={mensajeDeInicio} />
       </div>
@@ -1138,18 +1158,16 @@ function Fechas({
         <label htmlFor={cFin.id} className="text-caption text-muted-foreground">
           Fin
         </label>
-        <Input
+        <CampoDeDia
           id={cFin.id}
-          type="date"
           value={fin}
-          aria-invalid={mensajeDeFin ? true : undefined}
-          invalid={Boolean(mensajeDeFin)}
-          aria-describedby={mensajeDeFin ? `${cFin.id}-error` : undefined}
-          onChange={(e) => {
-            setFin(e.target.value);
+          onChange={(v) => {
+            setFin(v);
             setLocales({});
             cFin.onEditar();
           }}
+          invalido={Boolean(Boolean(mensajeDeFin))}
+          describedBy={mensajeDeFin ? `${cFin.id}-error` : undefined}
         />
         <ErrorDelCampo id={`${cFin.id}-error`} mensaje={mensajeDeFin} />
       </div>

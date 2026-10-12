@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Heart, ShareNetwork, VideoCamera, MapPin, TrendUp, Clock, Check, Calendar, Copy, ChatCircle } from '@phosphor-icons/react';
@@ -46,6 +46,11 @@ interface StickyCTAProps {
    * encabezan la tarjeta; Leasefy o sin inmobiliaria ⇒ el logotipo de Leasefy.
    */
   administrador?: Administrador | null;
+  /**
+   * Debajo de «Administra este inmueble» (marketplace, 09-10-2026): su sello,
+   * «% la recomienda» y «Ver sus N inmuebles». Lo arma la ficha.
+   */
+  sobreLaInmobiliaria?: ReactNode;
   /** Monthly rent (COP). Ignored for display when `listingType === 'sale'` — see `salePrice`. */
   price: number;
   adminFee?: number;
@@ -274,10 +279,19 @@ export function mensajeAlContactar(err: unknown): string {
  * StickyCTA — Sticky card with dual action: Apply or Schedule Visit.
  * Visit scheduling is connected to the real backend API.
  */
+/**
+ * «Visita» en la barra del celular (QA del marketplace, 10-10-2026): era un botón
+ * sin acción y la tarjeta para agendar no se veía en el celular, así que desde un
+ * teléfono no había cómo pedir la visita. Ahora la tarjeta se ve debajo de la
+ * ficha y este evento la abre en «Agendar visita» y la trae a la vista.
+ */
+export const EVENTO_AGENDAR_VISITA = 'leasefy:agendar-visita';
+
 export function StickyCTA({
   propertyId,
   arrendado = false,
   administrador = null,
+  sobreLaInmobiliaria,
   visitTypes,
   price,
   adminFee = 0,
@@ -311,11 +325,27 @@ export function StickyCTA({
     !!user && (user.role === 'agency' || user.backendRole === 'AGENT' || hasActiveAgencyMembership);
 
   const [ctaMode, setCtaMode] = useState<'apply' | 'visit' | 'contact'>(isSaleListing ? 'contact' : 'apply');
+  const raiz = useRef<HTMLDivElement>(null);
   // PL-23: al volver del login (`?visita=1`), directo a la pestaña de visita.
+  // También llega así desde «Agendar visita» del marketplace; en el celular la
+  // tarjeta queda abajo, así que se trae a la vista.
   useEffect(() => {
-    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('visita') === '1') {
+    if (typeof window === 'undefined') return;
+    const traerALaVista = () => {
+      if (window.matchMedia('(max-width: 1023px)').matches) {
+        raiz.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+    if (new URLSearchParams(window.location.search).get('visita') === '1') {
       setCtaMode('visit');
+      window.setTimeout(traerALaVista, 300);
     }
+    const alPedirLaVisita = () => {
+      setCtaMode('visit');
+      traerALaVista();
+    };
+    window.addEventListener(EVENTO_AGENDAR_VISITA, alPedirLaVisita);
+    return () => window.removeEventListener(EVENTO_AGENDAR_VISITA, alPedirLaVisita);
   }, []);
   const [visitTextT, setVisitType] = useState<'presencial' | 'virtual'>('presencial');
 
@@ -464,7 +494,7 @@ export function StickyCTA({
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className={cn('lg:sticky lg:top-28', className)}>
+    <div ref={raiz} id="reservar" className={cn('scroll-mt-24 lg:sticky lg:top-28', className)}>
       <Card className="overflow-hidden rounded-xl border-border shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
         <div className="p-6">
           {/* Header */}
@@ -492,6 +522,7 @@ export function StickyCTA({
               {administrador && !esLeasefy(administrador.agencyId) ? (
                 <p className="text-xs text-muted-foreground">Administra este inmueble</p>
               ) : null}
+              {sobreLaInmobiliaria && <div className="mt-2">{sobreLaInmobiliaria}</div>}
             </div>
             <div className="flex gap-2">
               {onWishlistToggle && (
@@ -998,10 +1029,10 @@ export function MobileStickyCTA({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-surface/95 backdrop-blur-xl border-t border-border lg:hidden z-30">
-      <div className="p-4">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-lg font-mono tabular-nums font-bold text-foreground tracking-tight">
+      <div className="px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate text-[16px] font-mono tabular-nums font-bold text-foreground tracking-tight">
               {isSaleListing ? (
                 salePrice != null ? formatCurrency(salePrice) : 'Sin dato'
               ) : (
@@ -1012,7 +1043,7 @@ export function MobileStickyCTA({
               )}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex shrink-0 gap-2">
             {isAgencyViewer ? (
               <Button type="button" onClick={handleCopyShare} hideArrow className="gap-2" data-testid="mobile-agency-share">
                 {copied ? (
@@ -1051,10 +1082,11 @@ export function MobileStickyCTA({
                 <Button
                   variant="outline"
                   hideArrow
+                  className="px-4"
                   onClick={() =>
                     isAuthenticated
-                      ? undefined
-                      : router.push(`/auth?returnUrl=${encodeURIComponent(pathname)}`)
+                      ? window.dispatchEvent(new Event(EVENTO_AGENDAR_VISITA))
+                      : router.push(`/auth?returnUrl=${encodeURIComponent(`${pathname}?visita=1`)}`)
                   }
                 >
                   Visita
@@ -1062,8 +1094,14 @@ export function MobileStickyCTA({
               </>
             ) : (
               <>
-                <PostularButton propertyId={propertyId} canonCop={price} hideArrow />
-                <Button variant="outline" hideArrow>
+                <PostularButton propertyId={propertyId} canonCop={price} hideArrow className="px-4" />
+                <Button
+                  variant="outline"
+                  hideArrow
+                  className="px-4"
+                  onClick={() => window.dispatchEvent(new Event(EVENTO_AGENDAR_VISITA))}
+                  data-testid="mobile-visita"
+                >
                   Visita
                 </Button>
               </>

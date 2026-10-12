@@ -49,7 +49,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
@@ -95,6 +94,7 @@ import {
 } from '@/lib/contabilidad/reapertura';
 import { FaltaLaMigracion, Nota } from '../piezas';
 import { MOTIVO_SIN_REAPERTURA, usePuedeReabrir } from '../use-puede-escribir';
+import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
 
 export interface ReaperturaProps {
   /** La frontera vigente, en `AAAA-MM-DD`. `null` = nada cerrado. */
@@ -415,19 +415,18 @@ export function Reapertura({
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor={`${id}-hasta`}>Volver a poder escribir desde</Label>
-              <Input
+              <CampoDeDia
                 id={`${id}-hasta`}
-                type="date"
                 value={hasta}
-                onChange={(e) => {
+                onChange={(v) => {
                   setDelServidor((d) => ({ ...d, hasta: undefined }));
-                  setHasta(e.target.value);
+                  setHasta(v);
                 }}
+                invalido={Boolean(Boolean(errorDe('hasta')) || undefined)}
+                describedBy={errorDe('hasta') ? `${id}-hasta-error` : undefined}
                 disabled={enviando || todo}
-                aria-invalid={Boolean(errorDe('hasta')) || undefined}
-                aria-describedby={errorDe('hasta') ? `${id}-hasta-error` : undefined}
                 className="w-48"
-                data-testid="reapertura-hasta"
+                testid="reapertura-hasta"
               />
               <div data-testid={campoDelProblema === 'hasta' ? 'problema-de-reapertura' : undefined}>
                 <ErrorDelCampo id={`${id}-hasta-error`} mensaje={errorDe('hasta')} />

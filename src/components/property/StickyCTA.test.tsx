@@ -365,33 +365,19 @@ describe('<StickyCTA> — compartir avisa lo que pasó', () => {
     expect(toast.error).not.toHaveBeenCalled()
   })
 
-  it('con hoja nativa comparte por ahí y NO toca el portapapeles ni molesta con un toast', async () => {
+  it('🔴 aunque el navegador tenga hoja nativa (Arc, Chrome del Mac), copia y avisa con el toast (Nico, 12-10-2026)', async () => {
+    // «al dar clic ahí que se copie la url del inmueble, y muestra toast»: antes
+    // abría la hoja del sistema, no copiaba nada y no había toast.
     const share = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'share', { value: share, configurable: true })
     render()
     await clic(botonCompartir())
 
-    expect(share).toHaveBeenCalledTimes(1)
-    expect(share.mock.calls[0][0].url).toContain('/propiedades/p1')
-    expect(writeText).not.toHaveBeenCalled()
-    // La hoja del sistema ya fue la señal.
-    expect(toast.success).not.toHaveBeenCalled()
-    expect(toast.error).not.toHaveBeenCalled()
-  })
-
-  it('cancelar la hoja nativa NO es un error: no se dice nada', async () => {
-    const abort = Object.assign(new Error('cancelado'), { name: 'AbortError' })
-    Object.defineProperty(navigator, 'share', {
-      value: vi.fn().mockRejectedValue(abort),
-      configurable: true,
-    })
-    render()
-    await clic(botonCompartir())
-
-    expect(toast.error).not.toHaveBeenCalled()
-    expect(toast.success).not.toHaveBeenCalled()
-    // Cancelar tampoco cae al portapapeles a espaldas del usuario.
-    expect(writeText).not.toHaveBeenCalled()
+    expect(share).not.toHaveBeenCalled()
+    expect(writeText).toHaveBeenCalledTimes(1)
+    expect(writeText.mock.calls[0][0]).toBe(`${window.location.origin}/propiedades/p1`)
+    expect(toast.success).toHaveBeenCalledTimes(1)
+    expect(String(toast.success.mock.calls[0][0])).toContain('Copiamos el enlace')
   })
 
   it('si el portapapeles falla lo DICE en vez de comerse el error', async () => {

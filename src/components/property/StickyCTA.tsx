@@ -146,16 +146,14 @@ function olvidarVisitaEscogida(propertyId: string) {
 
 // ─── Compartir el inmueble ───────────────────────────────────────────────────
 
-/**
- * Qué terminó pasando al compartir. Se separa `cancelado` de `error` a
- * propósito: cerrar la hoja del sistema es una decisión del usuario, no una
- * falla, y avisarla como error es mentirle.
- */
-type ResultadoDeCompartir = 'nativo' | 'copiado' | 'cancelado' | 'error';
+/** Qué terminó pasando al compartir. */
+type ResultadoDeCompartir = 'copiado' | 'error';
 
 /**
- * Compartir con la hoja nativa cuando existe (es lo que la gente espera en el
- * teléfono) y caer al portapapeles cuando no.
+ * Compartir = copiar el enlace del inmueble al portapapeles (Nico, 12-10-2026:
+ * «al dar clic ahí que se copie la url del inmueble, y muestra toast»). Antes
+ * abría la hoja nativa donde existía: en Arc y Chrome del Mac salía la hoja del
+ * sistema, no se copiaba nada y no había toast.
  *
  * Vive suelto en el módulo porque HAY DOS botones de compartir en esta
  * pantalla —el de la tarjeta de escritorio y el del CTA fijo del móvil— y
@@ -163,16 +161,6 @@ type ResultadoDeCompartir = 'nativo' | 'copiado' | 'cancelado' | 'error';
  * móvil ni siquiera reusaba la URL ya calculada.
  */
 async function compartirEnlace(url: string): Promise<ResultadoDeCompartir> {
-  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-    try {
-      await navigator.share({ url, title: 'Inmueble en Leasefy' });
-      return 'nativo';
-    } catch (err) {
-      // Cancelar la hoja no es un fallo: no hay nada que avisar.
-      if (err instanceof Error && err.name === 'AbortError') return 'cancelado';
-      // Cualquier otro fallo del share nativo todavía tiene el portapapeles.
-    }
-  }
   try {
     // En contexto inseguro `navigator.clipboard` ni existe: el acceso tira
     // TypeError acá adentro y termina en 'error', que es lo que queremos.
@@ -227,7 +215,6 @@ function useCompartirInmueble(propertyId: string) {
         },
       );
     }
-    // 'nativo' y 'cancelado' no dicen nada: la hoja del sistema ya fue la señal.
   }, [i18n, propertyId, shareUrl]);
 
   return { shareUrl, copied, compartir };
@@ -1001,8 +988,8 @@ export function MobileStickyCTA({
     !!user && (user.role === 'agency' || user.backendRole === 'AGENT' || hasActiveAgencyMembership);
   const isSaleListing = listingType === 'sale';
 
-  // El MISMO compartir que la tarjeta de escritorio: hoja nativa cuando existe,
-  // portapapeles cuando no, y toast en los dos desenlaces que importan.
+  // El MISMO compartir que la tarjeta de escritorio: copia el enlace y lo dice
+  // con un toast (Nico, 12-10-2026).
   const { copied, compartir } = useCompartirInmueble(propertyId);
   const [isStartingChat, setIsStartingChat] = useState(false);
 

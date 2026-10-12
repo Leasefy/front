@@ -94,6 +94,40 @@ export function LandingHeaderV2({ activo, fxExterno = false }: LandingHeaderV2Pr
     { href: "/contacto", label: "Contacto", clave: "contacto" },
   ];
 
+  // La pastilla del menú: se desliza bajo el enlace que se señala (con o sin
+  // la landing alrededor; no depende de `initLandingFx`).
+  useEffect(() => {
+    const nav = document.querySelector<HTMLElement>("#hdr nav.main");
+    if (!nav) return;
+    const pastilla = document.createElement("span");
+    pastilla.className = "nav-pastilla";
+    pastilla.setAttribute("aria-hidden", "true");
+    nav.prepend(pastilla);
+    const mover = (a: HTMLElement) => {
+      pastilla.style.width = `${a.offsetWidth}px`;
+      pastilla.style.transform = `translateX(${a.offsetLeft}px)`;
+      pastilla.dataset.visible = "true";
+    };
+    const alEntrar = (e: Event) => mover(e.currentTarget as HTMLElement);
+    const alSalir = () => {
+      pastilla.dataset.visible = "false";
+    };
+    const enlaces = [...nav.querySelectorAll<HTMLElement>("a")];
+    enlaces.forEach((a) => {
+      a.addEventListener("mouseenter", alEntrar);
+      a.addEventListener("focus", alEntrar);
+    });
+    nav.addEventListener("mouseleave", alSalir);
+    return () => {
+      enlaces.forEach((a) => {
+        a.removeEventListener("mouseenter", alEntrar);
+        a.removeEventListener("focus", alEntrar);
+      });
+      nav.removeEventListener("mouseleave", alSalir);
+      pastilla.remove();
+    };
+  }, [verMarketplace, hrefPublicar]);
+
   useEffect(() => {
     if (fxExterno) return;
 

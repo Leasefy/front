@@ -2476,3 +2476,437 @@
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------
+ * Internas de producto, segundo glow up (Nico, 12-10-2026: «que no se
+ * sienta como IA… donde haya imágenes, sácalo directamente del
+ * producto»). Todo lo que ilustra es una captura REAL del panel
+ * (`lib/landing/capturas.ts`) dentro de `.landing-pr-marco`. Sin auras,
+ * sin texturas borrosas: papel, tinta, el azul y la pantalla.
+ * ------------------------------------------------------------------- */
+.landing-scope .landing-pr {
+  overflow-x: clip;
+}
+
+/* Portada: el titular manda; la pantalla entra inclinada y se aplana. */
+.landing-scope .landing-pr-portada {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 128px 24px 0;
+}
+.landing-scope .landing-pr-h1 {
+  margin: 22px 0 0;
+  font-family: var(--fd);
+  font-size: clamp(46px, 6.8vw, 104px);
+  line-height: 0.94;
+  letter-spacing: -0.048em;
+  font-weight: 600;
+  color: var(--landing-ink);
+  max-width: 14ch;
+  text-wrap: balance;
+}
+.landing-scope .landing-pr-portada-pie {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 32px;
+  margin-top: 36px;
+  padding-top: 28px;
+  border-top: 1px solid var(--landing-line);
+}
+.landing-scope .landing-pr-lead {
+  margin: 0;
+  max-width: 56ch;
+  font-size: clamp(17px, 1.5vw, 21px);
+  line-height: 1.5;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-pr-portada-escena {
+  margin-top: 48px;
+  perspective: 1800px;
+}
+
+/* El marco: la pantalla del panel, con una barra mínima. */
+.landing-scope .landing-pr-marco {
+  position: relative;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid var(--landing-line);
+  box-shadow:
+    0 1px 0 rgba(17, 17, 17, 0.04),
+    0 40px 90px -48px rgba(17, 17, 17, 0.45);
+  overflow: hidden;
+  transform-origin: 50% 0%;
+  will-change: transform;
+}
+.landing-scope .landing-pr-marco--oscuro {
+  background: #111;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 40px 100px -40px rgba(0, 0, 0, 0.8);
+}
+.landing-scope .landing-pr-marco-barra {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 38px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--landing-line);
+  font-family: var(--fm);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-pr-marco--oscuro .landing-pr-marco-barra {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.45);
+}
+.landing-scope .landing-pr-marco-puntos {
+  display: inline-flex;
+  gap: 6px;
+}
+.landing-scope .landing-pr-marco-puntos i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: rgba(17, 17, 17, 0.12);
+}
+.landing-scope .landing-pr-marco--oscuro .landing-pr-marco-puntos i {
+  background: rgba(255, 255, 255, 0.14);
+}
+.landing-scope .landing-pr-marco-url {
+  margin: 0 auto;
+  padding-right: 48px;
+}
+.landing-scope .landing-pr-marco-vista {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--landing-paper);
+}
+.landing-scope .landing-pr-marco--oscuro .landing-pr-marco-vista {
+  background: #0d0d0d;
+}
+.landing-scope .landing-pr-marco-capa {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.landing-scope .landing-pr-marco-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* El foco: lo de afuera baja un tono; lo que cuenta la historia queda enmarcado. */
+.landing-scope .landing-pr-marco-anillo {
+  position: absolute;
+  border: 2px solid var(--landing-blue);
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(17, 17, 17, 0.16);
+  pointer-events: none;
+}
+.landing-scope .landing-pr-marco-etiqueta {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  max-width: calc(100% - 32px);
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--landing-ink);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+.landing-scope .landing-pr-cursor {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  margin: -2px 0 0 -3px;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 3px rgba(17, 17, 17, 0.35));
+}
+.landing-scope .landing-pr-cursor svg path {
+  fill: var(--landing-ink);
+  stroke: #fff;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+.landing-scope .landing-pr-nota {
+  position: absolute;
+  margin: 18px 0 0 14px;
+  padding: 9px 14px 9px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--landing-line);
+  border-left: 3px solid var(--landing-blue);
+  background: #fff;
+  color: var(--landing-ink);
+  font-size: 13.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: 0 16px 32px -16px rgba(17, 17, 17, 0.4);
+  pointer-events: none;
+}
+.landing-scope .landing-pr-notas-quietas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 14px 16px 16px;
+  border-top: 1px solid var(--landing-line);
+  font-size: 13px;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-pr-notas-quietas li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--landing-cream);
+}
+
+/* El recorrido: las historias a la izquierda, la pantalla fija a la derecha. */
+.landing-scope .landing-pr-recorrido {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 72px;
+  margin-top: 24px;
+}
+.landing-scope .landing-pr-historia {
+  min-height: 76vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  opacity: 0.32;
+  transition: opacity 0.6s var(--landing-ease);
+}
+.landing-scope .landing-pr-historia[data-activa='true'] {
+  opacity: 1;
+}
+.landing-scope .landing-pr-historia h3 {
+  margin: 14px 0 0;
+  font-family: var(--fd);
+  font-size: clamp(28px, 3vw, 42px);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  font-weight: 600;
+}
+.landing-scope .landing-pr-historia-kicker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-family: var(--fm);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-pr-historia-n {
+  color: var(--landing-blue);
+}
+.landing-scope .landing-pr-historia-cuerpo {
+  margin: 16px 0 0;
+  max-width: 42ch;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--landing-muted);
+}
+.landing-scope .landing-pr-historia-marco {
+  display: none;
+}
+.landing-scope .landing-pr-recorrido-fijo {
+  position: relative;
+}
+.landing-scope .landing-pr-recorrido-pegado {
+  position: sticky;
+  top: 14vh;
+}
+.landing-scope .landing-pr-recorrido-puntos {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.landing-scope .landing-pr-recorrido-puntos li {
+  width: 22px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--landing-line);
+  transition: width 0.5s var(--landing-ease), background 0.5s var(--landing-ease);
+}
+.landing-scope .landing-pr-recorrido-puntos li[data-activo='true'] {
+  width: 48px;
+  background: var(--landing-blue);
+}
+
+/* Capacidades: cada una con un pedazo real de la pantalla. */
+.landing-scope .landing-pr-bento {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 44px;
+}
+.landing-scope .landing-pr-cap > div {
+  height: 100%;
+  border: 1px solid var(--landing-line);
+  border-radius: 22px;
+  background: #fff;
+  overflow: hidden;
+  transition: transform 0.5s var(--landing-ease), box-shadow 0.5s var(--landing-ease);
+}
+.landing-scope .landing-pr-cap > div:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 30px 60px -40px rgba(17, 17, 17, 0.45);
+}
+.landing-scope .landing-pr-recorte {
+  width: 100%;
+  max-height: 300px;
+  background-repeat: no-repeat;
+  background-color: var(--landing-paper);
+  border-bottom: 1px solid var(--landing-line);
+}
+.landing-scope .landing-pr-cap-texto {
+  padding: 22px 26px 28px;
+}
+.landing-scope .landing-pr-cap-texto i {
+  font-style: normal;
+  font-family: var(--fm);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--landing-blue);
+}
+.landing-scope .landing-pr-cap-texto b {
+  display: block;
+  margin-top: 10px;
+  font-family: var(--fd);
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+.landing-scope .landing-pr-cap-texto p {
+  margin: 8px 0 0;
+  font-size: 15.5px;
+  line-height: 1.5;
+  color: var(--landing-muted);
+}
+
+/* Puesta en marcha: tres pasos sobre una línea. */
+.landing-scope .landing-pr-pasos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+  margin: 44px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.landing-scope .landing-pr-paso > div {
+  position: relative;
+  padding-top: 26px;
+  border-top: 1px solid var(--landing-line);
+}
+.landing-scope .landing-pr-paso > div::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 44px;
+  height: 2px;
+  background: var(--landing-blue);
+}
+.landing-scope .landing-pr-paso-n {
+  display: block;
+  font-family: var(--fd);
+  font-size: 64px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: rgba(17, 17, 17, 0.1);
+}
+.landing-scope .landing-pr-paso b {
+  display: block;
+  margin-top: 18px;
+  font-family: var(--fd);
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+.landing-scope .landing-pr-paso p {
+  margin: 8px 0 0;
+  font-size: 15.5px;
+  line-height: 1.5;
+  color: var(--landing-muted);
+}
+
+/* De noche: la misma pantalla, en el modo oscuro del panel. */
+.landing-scope .landing-pr-noche {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  align-items: center;
+  gap: 64px;
+  max-width: 1328px;
+  margin: 140px auto 0;
+  padding: 96px 64px;
+  border-radius: 32px;
+  background: var(--landing-night2);
+  color: #fff;
+}
+.landing-scope .landing-pr-noche-escena {
+  perspective: 1600px;
+}
+
+@media (max-width: 900px) {
+  .landing-scope .landing-pr-portada {
+    padding-top: 120px;
+  }
+  .landing-scope .landing-pr-portada-pie {
+    grid-template-columns: 1fr;
+  }
+  .landing-scope .landing-pr-portada-escena {
+    margin-top: 40px;
+  }
+  .landing-scope .landing-pr-marco-url {
+    display: none;
+  }
+  .landing-scope .landing-pr-nota {
+    white-space: normal;
+    max-width: 200px;
+    font-size: 12px;
+  }
+  .landing-scope .landing-pr-recorrido {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .landing-scope .landing-pr-recorrido-fijo {
+    display: none;
+  }
+  .landing-scope .landing-pr-historia {
+    min-height: 0;
+    margin: 36px 0;
+    opacity: 1;
+  }
+  .landing-scope .landing-pr-historia-marco {
+    display: block;
+    margin-top: 22px;
+  }
+  .landing-scope .landing-pr-bento,
+  .landing-scope .landing-pr-pasos {
+    grid-template-columns: 1fr;
+  }
+  .landing-scope .landing-pr-noche {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    margin: 96px 16px 0;
+    padding: 56px 22px;
+    border-radius: 24px;
+  }
+}
+.landing-scope .landing-pr-portada-texto,
+.landing-scope .landing-pr-recorrido-textos {
+  min-width: 0;
+}
+.landing-scope .landing-pr-noche-texto {
+  min-width: 0;
+  max-width: 46ch;
+}

@@ -1,8 +1,10 @@
 import Link from 'next/link'
+import type { CSSProperties } from 'react'
 import { Reveal } from '@/components/landing/motion/Reveal'
-import { VignetteRenderer } from '@/components/landing/product/vignettes/VignetteRenderer'
+import { MarcoDeCaptura } from '@/components/landing/product/MarcoDeCaptura'
+import { RecorridoDelProducto } from '@/components/landing/product/RecorridoDelProducto'
 import { PRODUCTS } from '@/lib/landing/products'
-import { LANDING_TEXTURES } from '@/lib/landing/assets'
+import { CAPTURAS, type PasoDelRecorrido } from '@/lib/landing/capturas'
 import type { ProductSlug } from '@/lib/landing/types'
 
 interface ProductPageProps {
@@ -12,54 +14,44 @@ interface ProductPageProps {
 /**
  * Plantilla de las ocho internas de producto.
  *
- * Rediseñada el 2026-09-05 (Nico: «quiero que le hagas un glow up a cada
- * interna de producto, que queden hermosas»). Lo que se veía barato era
- * concreto y se fue:
+ * Segundo glow up (Nico, 12-10-2026: «un glow up muy grande, que no se sienta
+ * como IA, sino con nuestro estilo, y donde haya imágenes… sácalo directamente
+ * del producto»). Lo que se fue y por qué:
+ * · La tarjeta oscura con el índice gigante sobre una textura borrosa, y las
+ *   viñetas dibujadas a mano: se leían como un mockup genérico. Ahora todo lo
+ *   que ilustra es una PANTALLA REAL del panel (`lib/landing/capturas.ts`),
+ *   fotografiada con una inmobiliaria de demostración.
+ * · El «registro de actividad» inventado del panel nocturno: ahora es la misma
+ *   pantalla en modo oscuro, que el producto tiene de verdad.
  *
- * · La portada del hero era una de las texturas borrosas t1–t7, rotada, con
- *   el nombre encima: leía como placeholder. Ahora es una tarjeta oscura del
- *   módulo —índice gigante, nombre, eyebrow— con la textura al fondo como
- *   una aurora tenue, en la línea del hero oscuro del home. La textura sigue
- *   ahí (y el test que la fija también), pero como grano, no como foto.
- * · El cierre era el banner del home viejo: un WebP animado de 3,5 MB que en
- *   una pantalla completa se veía como un borrón oscuro de mil píxeles con
- *   texto ilegible encima. Ahora cierra con el `demoPrompt` del producto
- *   —copy real que existía en el catálogo y nadie mostraba— y los dos CTA.
- * · El panel nocturno llevaba la misma textura como fondo. Ahora es Onyx con
- *   un resplandor azul y el grano tenue.
- *
- * La estructura no cambia: hero → ventana de la app (2-3 viñetas) → tres
- * historias alternadas → cuatro capacidades → ficha → tres pasos → panel
- * nocturno → cierre. Los `data-testid` son los de siempre. Las composiciones
- * en zigzag de las cabeceras (split / center / side / right) se conservan:
- * es una regla de Nico que no todo el texto salga de la izquierda.
- *
- * Los textos salen de `products.ts` sin tocar; el catálogo es la única
- * fuente. El pie lo pone el layout del grupo `(landing)`.
+ * Recorrido: portada (texto + la pantalla que se aplana al bajar, con un
+ * cursor que señala lo importante) → las tres historias contadas sobre la
+ * pantalla fija que se acerca a cada parte → capacidades con recortes reales →
+ * ficha → pasos → de noche → cierre. Los textos salen de `products.ts`; el pie
+ * lo pone el layout del grupo `(landing)`.
  */
 export function ProductPage({ slug }: ProductPageProps) {
   const product = PRODUCTS[slug]
-  const texture = LANDING_TEXTURES[product.textureId]
+  const capturas = CAPTURAS[slug]
   const [primaryCta, secondaryCta] = product.ctas
-  const indice = indiceDelModulo(product.eyebrow)
 
   return (
-    <article className="landing-pp" data-testid="product-page">
-      <section className="landing-pp__hero">
-        <div className="landing-pp__hero-grid">
-          <div className="landing-pp__hero-copy">
-            <p className="landing-pp__eyebrow">
-              <span className="landing-pp__eyebrow-k" data-testid="product-eyebrow">
-                {product.eyebrow}
-              </span>
-              <span className="landing-pp__badge" data-testid="product-badge">
-                {product.badge}
-              </span>
-            </p>
-            <h1 className="landing-pp__h1" data-testid="product-h1">
-              {product.h1}
-            </h1>
-            <p className="landing-pp__lead" data-testid="product-lead">
+    <article className="landing-pp landing-pr" data-testid="product-page">
+      <section className="landing-pr-portada">
+        <div className="landing-pr-portada-texto">
+          <p className="landing-pp__eyebrow">
+            <span className="landing-pp__eyebrow-k" data-testid="product-eyebrow">
+              {product.eyebrow}
+            </span>
+            <span className="landing-pp__badge" data-testid="product-badge">
+              {product.badge}
+            </span>
+          </p>
+          <h1 className="landing-pr-h1" data-testid="product-h1">
+            {product.h1}
+          </h1>
+          <div className="landing-pr-portada-pie">
+            <p className="landing-pr-lead" data-testid="product-lead">
               {product.lead}
             </p>
             <div className="landing-pp__ctas">
@@ -71,37 +63,15 @@ export function ProductPage({ slug }: ProductPageProps) {
               </Link>
             </div>
           </div>
-
-          <div
-            className="landing-pp__cover"
-            data-testid="product-cover"
-            aria-hidden="true"
-            style={{ backgroundImage: `url(${texture.src})` }}
-          >
-            <span className="landing-pp__cover-shade" />
-            <i className="landing-pp__cover-kicker">{product.eyebrow}</i>
-            <span className="landing-pp__cover-index">{indice}</span>
-            <b className="landing-pp__cover-title">{product.name}</b>
-          </div>
         </div>
-
-        <div className="landing-pp__win" data-testid="product-window">
-          <div className="landing-pp__win-bar">
-            <span className="landing-pp__win-title">
-              <span className="landing-pp__win-dots" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-              </span>
-              {product.window.title}
-            </span>
-            <span className="landing-pp__win-tag">{product.window.tag}</span>
-          </div>
-          <div className="landing-pp__win-body">
-            {product.window.vignettes.map((vignette, i) => (
-              <VignetteRenderer key={i} vignette={vignette} />
-            ))}
-          </div>
+        <div className="landing-pr-portada-escena">
+          <MarcoDeCaptura
+            captura={capturas.portada}
+            notas={capturas.notas}
+            inclinada
+            prioritaria
+            data-testid="product-window"
+          />
         </div>
       </section>
 
@@ -110,46 +80,31 @@ export function ProductPage({ slug }: ProductPageProps) {
           <ProductSectionHead
             eyebrow="Por qué importa"
             title="Lo que cambia en tu operación"
-            lede="Tres cambios que se sienten desde la primera semana de operación."
+            lede="Tres cambios que se sienten desde la primera semana, contados sobre la pantalla real."
             variant="split"
           />
-          <div className="landing-pp__stories">
-            {product.stories.map((story, i) => (
-              <div
-                className={i % 2 === 1 ? 'landing-pp__story landing-pp__story--alt' : 'landing-pp__story'}
-                data-testid="product-story"
-                key={story.h3}
-              >
-                <div className="landing-pp__story-copy">
-                  <p className="landing-pp__story-kicker">
-                    <span className="landing-pp__story-n">{`0${i + 1}`}</span>
-                    {story.kicker}
-                  </p>
-                  <h3>{story.h3}</h3>
-                  <p>{story.body}</p>
-                </div>
-                <div className="landing-pp__story-pane">
-                  <VignetteRenderer vignette={story.vignette} />
-                </div>
-              </div>
-            ))}
-          </div>
+          <RecorridoDelProducto historias={product.stories} pasos={capturas.recorrido} />
         </section>
 
         <section className="landing-pp__sec">
           <ProductSectionHead
             eyebrow="Capacidades"
             title="Qué hace por ti"
-            lede="Lo esencial, sin letra menuda."
+            lede="Cada pieza, tal como se ve en el panel."
             variant="center"
           />
-          <div className="landing-pp__caps">
+          <div className="landing-pr-bento">
             {product.capabilities.map((cap, i) => (
-              <div className="landing-pp__cap" data-testid="product-capability" key={cap.title}>
-                <i>{`C-0${i + 1}`}</i>
-                <b>{cap.title}</b>
-                <p>{cap.body}</p>
-              </div>
+              <Reveal className="landing-pr-cap" delay={i * 0.06} key={cap.title}>
+                <div data-testid="product-capability">
+                  <Recorte paso={capturas.recortes[i]} />
+                  <div className="landing-pr-cap-texto">
+                    <i>{capturas.recortes[i]?.etiqueta ?? `C-0${i + 1}`}</i>
+                    <b>{cap.title}</b>
+                    <p>{cap.body}</p>
+                  </div>
+                </div>
+              </Reveal>
             ))}
           </div>
         </section>
@@ -157,7 +112,7 @@ export function ProductPage({ slug }: ProductPageProps) {
         <section className="landing-pp__sec">
           <div className="landing-pp__side2">
             <ProductSectionHead
-              eyebrow="Snapshot"
+              eyebrow="Ficha"
               title="La ficha, sin adornos"
               lede="Los datos duros para decidir rápido — qué es, qué reemplaza y cuándo está operando."
             />
@@ -184,47 +139,29 @@ export function ProductPage({ slug }: ProductPageProps) {
             lede="Sin proyectos eternos: se prende por fases, contigo al volante."
             variant="right"
           />
-          <div className="landing-pp__steps">
+          <ol className="landing-pr-pasos">
             {product.steps.map((step, i) => (
-              <div className="landing-pp__step" data-testid="product-step" key={step.title}>
-                <i>{`Paso 0${i + 1}`}</i>
-                <b>{step.title}</b>
-                <p>{step.body}</p>
-              </div>
+              <Reveal className="landing-pr-paso" delay={i * 0.12} key={step.title}>
+                <div data-testid="product-step">
+                  <span className="landing-pr-paso-n" aria-hidden="true">{`0${i + 1}`}</span>
+                  <b>{step.title}</b>
+                  <p>{step.body}</p>
+                </div>
+              </Reveal>
             ))}
-          </div>
+          </ol>
         </section>
       </div>
 
-      <section className="landing-pp__night" data-testid="product-night">
-        <div className="landing-pp__npanel">
-          <span
-            className="landing-pp__npanel-grain"
-            aria-hidden="true"
-            style={{ backgroundImage: `url(${texture.src})` }}
-          />
-          <span className="landing-pp__npanel-shade" aria-hidden="true" />
-          <div className="landing-pp__npanel-text">
-            <p className="landing-pp__night-kicker">{product.night.kicker}</p>
-            {/* `h2` puede traer un `<em>` literal para énfasis (copy del catálogo). */}
-            <h2 className="landing-pp__night-h2" dangerouslySetInnerHTML={{ __html: product.night.h2 }} />
-            <p className="landing-pp__night-quote">{product.night.quote}</p>
-          </div>
-          <div className="landing-pp__npanel-log">
-            <div className="landing-pp__log-header">
-              <span>{`Registro de actividad · ${product.name}`}</span>
-              <b>En vivo</b>
-            </div>
-            {product.night.log.map((entry, i) => (
-              <Reveal className="landing-pp__log-row" delay={i * 0.1} key={`${entry.time}-${i}`}>
-                <span className="landing-pp__log-time" data-testid="product-night-log-time">
-                  {entry.time}
-                </span>
-                {/* `text` puede traer un `<span class="lb">` literal (copy del catálogo). */}
-                <span data-testid="product-night-log-text" dangerouslySetInnerHTML={{ __html: entry.text }} />
-              </Reveal>
-            ))}
-          </div>
+      <section className="landing-pr-noche" data-testid="product-night">
+        <div className="landing-pr-noche-texto">
+          <p className="landing-pp__night-kicker">{product.night.kicker}</p>
+          {/* `h2` puede traer un `<em>` literal para énfasis (copy del catálogo). */}
+          <h2 className="landing-pp__night-h2" dangerouslySetInnerHTML={{ __html: product.night.h2 }} />
+          <p className="landing-pp__night-quote">{product.night.quote}</p>
+        </div>
+        <div className="landing-pr-noche-escena">
+          <MarcoDeCaptura captura={capturas.oscura} inclinada oscuro />
         </div>
       </section>
 
@@ -250,13 +187,20 @@ export function ProductPage({ slug }: ProductPageProps) {
 }
 
 /**
- * El número del módulo sale del eyebrow del catálogo («Sistema · Módulo 01»,
- * «Agentes AI · 03»): es el índice que ya usa el mega-menú, así que la
- * portada y el menú dicen lo mismo sin un campo nuevo.
+ * Un pedazo de una captura real, recortado con CSS (sin imágenes nuevas): la
+ * imagen se agranda para que el recorte llene la tarjeta y se corre a su lugar.
  */
-function indiceDelModulo(eyebrow: string): string {
-  const n = eyebrow.match(/(\d{2})\s*$/)
-  return n ? n[1] : '01'
+function Recorte({ paso }: { paso?: PasoDelRecorrido }) {
+  if (!paso) return null
+  const { x, y, w, h } = paso.foco
+  const estilo: CSSProperties = {
+    backgroundImage: `url(${paso.captura.src})`,
+    backgroundSize: `${10000 / w}% auto`,
+    backgroundPosition: `${w >= 100 ? 0 : (x / (100 - w)) * 100}% ${h >= 100 ? 0 : (y / (100 - h)) * 100}%`,
+    // La proporción del recorte en la captura (1440 × 900).
+    aspectRatio: `${(w * 16) / (h * 10)}`,
+  }
+  return <div className="landing-pr-recorte" style={estilo} role="img" aria-label={paso.captura.alt} />
 }
 
 interface ProductSectionHeadProps {

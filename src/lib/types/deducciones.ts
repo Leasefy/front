@@ -229,6 +229,60 @@ export interface AprobacionEnElPortal extends AprobacionDeReparacion {
   cotizacion: { proveedor: string; descripcion: string | null; diasEstimados: number | null } | null;
 }
 
+/** Una página del historial del portal (Nico, 12-10-2026: «ese historial puede ser muy grande»). */
+export interface PaginaDelHistorialDeAprobaciones {
+  filas: AprobacionEnElPortal[];
+  total: number;
+  pagina: number;
+  porPagina: number;
+}
+
+/**
+ * El detalle completo de una reparación en el portal (Nico, 12-10-2026). Sólo
+ * la cotización que se le pidió aprobar y, del proveedor, sólo el nombre.
+ */
+export interface DetalleDeLaReparacionEnElPortal extends AprobacionEnElPortal {
+  reparacion: {
+    titulo: string;
+    descripcion: string;
+    /** El tipo del back (`PLUMBING`…). */
+    tipo: string | null;
+    prioridad: string | null;
+    /** El estado de la solicitud en el back (`MAINT_COMPLETED`…). */
+    estado: string | null;
+    reportadaAt: string | null;
+    /** Firmadas una hora. */
+    fotos: string[];
+  };
+  cotizacion: {
+    proveedor: string;
+    valorCop: number;
+    descripcion: string | null;
+    diasEstimados: number | null;
+  } | null;
+  aCargoDe: {
+    quien: ACargoDeLaReparacion;
+    propietarioPct: number | null;
+    inquilinoPct: number | null;
+    motivo: string | null;
+  } | null;
+  trabajo: {
+    terminadoAt: string | null;
+    notas: string | null;
+    /** Firmadas una hora. */
+    fotos: string[];
+    garantiaHasta: string | null;
+  };
+  sobrecosto: {
+    estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO' | 'ANULADO';
+    aprobadoCop: number;
+    costoFinalCop: number;
+    diferenciaCop: number;
+    decididoEl: string | null;
+    motivoDeRechazo: string | null;
+  } | null;
+}
+
 /** La bandeja de la inmobiliaria. */
 export interface AprobacionEnLaBandeja extends AprobacionDeReparacion {
   inmueble: string;

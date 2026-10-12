@@ -60,7 +60,7 @@ export default function MisCertificadosPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <header className="space-y-1.5">
         <SectionLabel>Impuestos</SectionLabel>
-        <h1 className="text-h2 text-fg">Mis certificados de retención</h1>
+        <h1 className="text-h2 text-fg">Certificados y facturas</h1>
         <p className="max-w-2xl text-sm text-fg-muted">
           Lo que los inquilinos te retuvieron en el año, para tu declaración. La cuota quedó
           saldada con el canon completo y lo retenido se te descontó en tu liquidación: es tu

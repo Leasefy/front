@@ -18,7 +18,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { PageHeader, Presence } from '@leasefy/cadence';
+import { Presence } from '@leasefy/cadence';
 import { CheckCircle, UserCircle, XCircle, Hourglass } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -257,11 +257,11 @@ export default function EscogerInquilinoPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
-        <PageHeader
-          title="Escoger inquilino"
-          subtitle="Cuando tu inmueble tiene candidatos, tú escoges quién lo arrienda. Tu inmobiliaria lo adjudica y les avisa a los demás."
-        />
+      <div className="space-y-6 p-6 lg:p-8">
+        <header className="space-y-1">
+          <h1 className="text-h2 text-fg">Escoger inquilino</h1>
+          <p className="max-w-2xl text-sm text-fg-muted">Cuando tu inmueble tiene candidatos, tú escoges quién lo arrienda. Tu inmobiliaria lo adjudica y les avisa a los demás.</p>
+        </header>
         <EstadoDeDatos
           cargando={cargando}
           error={error}

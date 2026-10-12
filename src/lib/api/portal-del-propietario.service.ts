@@ -121,8 +121,11 @@ export const portalDelPropietarioApi = {
   bajarExtracto: (g: Pick<GiroDelPropietario, 'id' | 'mes'>) =>
     bajar(`/portal/propietario/giros/${g.id}/extracto.pdf`, `extracto-${g.mes}.pdf`),
   inmueble: (contractId: string) => apiClient.get<FichaDelInmueble>(`/portal/propietario/contratos/${contractId}`),
+  // Las dos rutas del back son fijas: escritas enteras para que el guardián de rutas las reconozca.
   documento: (contractId: string, cual: 'mandato' | 'contrato') =>
-    apiClient.get<{ url: string }>(`/portal/propietario/contratos/${contractId}/documentos/${cual}`),
+    cual === 'mandato'
+      ? apiClient.get<{ url: string }>(`/portal/propietario/contratos/${contractId}/documentos/mandato`)
+      : apiClient.get<{ url: string }>(`/portal/propietario/contratos/${contractId}/documentos/contrato`),
   bajarCertificadoDeIngresos: (anio: number) =>
     bajar(`/portal/propietario/certificado-de-ingresos.pdf?anio=${anio}`, `certificado-de-ingresos-${anio}.pdf`),
   certificacionesDelMandatario: () =>

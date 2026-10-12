@@ -123,9 +123,9 @@ export default function MisInformesPage() {
   }, []);
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-8 p-6 lg:p-8">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-fg dark:text-white">Mis informes</h1>
+        <h1 className="text-h2 text-fg">Mis informes</h1>
         <p className="text-sm text-fg-muted dark:text-fg-subtle">
           Tu certificado anual de ingresos y el historial de reparaciones de tus inmuebles.
         </p>

@@ -12312,6 +12312,9 @@
       "historyLocal": "Se guardan en este navegador",
       "historyTrigger": "Conversaciones recientes ({{n}})",
       "vozHabla": "Habla con naturalidad: lo que digas aparece acá.",
+      "vozHablaGrabando": "Habla con naturalidad. Cuando termines, toca «Listo» y lo escribo.",
+      "vozTope": "hasta 1:00",
+      "vozTranscribiendo": "Escribiendo lo que dijiste…",
       "vozTitulo": "Te escucho · español",
       "vozPista": "haz una pausa y sigo escuchando",
       "vozCancelar": "Cancelar",
@@ -12320,6 +12323,7 @@
         "permiso": "Tu navegador no le dio permiso al micrófono. Actívalo en el candado de la barra de direcciones y vuelve a tocar «Voz».",
         "microfono": "No encontramos un micrófono. Conecta uno o escribe tu pregunta.",
         "servicio": "Este navegador no tiene el dictado por voz disponible. Prueba en Chrome o Edge, o escribe tu pregunta.",
+        "limite": "Ya dictaste muchas veces en esta hora. Espera un rato o escribe tu pregunta.",
         "otro": "No pude escucharte. Vuelve a tocar «Voz» o escribe tu pregunta.",
         "cerrar": "Cerrar el aviso"
       }

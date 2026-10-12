@@ -12276,6 +12276,9 @@
       "historyLocal": "Saved in this browser",
       "historyTrigger": "Recent conversations ({{n}})",
       "vozHabla": "Speak naturally: what you say shows up here.",
+      "vozHablaGrabando": "Speak naturally. When you're done, tap “Done” and I'll write it down.",
+      "vozTope": "up to 1:00",
+      "vozTranscribiendo": "Writing down what you said…",
       "vozTitulo": "Listening · Spanish",
       "vozPista": "pause anytime, I keep listening",
       "vozCancelar": "Cancel",
@@ -12284,6 +12287,7 @@
         "permiso": "Your browser didn't allow the microphone. Turn it on from the lock in the address bar and tap “Voice” again.",
         "microfono": "We couldn't find a microphone. Plug one in or type your question.",
         "servicio": "Voice dictation isn't available in this browser. Try Chrome or Edge, or type your question.",
+        "limite": "You've dictated many times this hour. Wait a bit or type your question.",
         "otro": "I couldn't hear you. Tap “Voice” again or type your question.",
         "cerrar": "Close notice"
       }

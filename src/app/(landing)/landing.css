@@ -2910,3 +2910,36 @@
   min-width: 0;
   max-width: 46ch;
 }
+
+/* Las tarjetas de capacidades con el panel en uso (Nico, 12-10-2026). */
+.landing-scope .landing-pr-clip {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  background: #fbfaf8;
+  box-shadow: 0 30px 60px -40px rgba(17, 17, 17, 0.35);
+}
+.landing-scope .landing-pr-clip-camara {
+  position: absolute;
+  inset: 0;
+  transform-origin: var(--pr-ox, 50%) var(--pr-oy, 50%);
+  animation: landing-pr-acercar 14s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  will-change: transform;
+}
+.landing-scope .landing-pr-clip-video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top left;
+}
+@keyframes landing-pr-acercar {
+  0%, 18% { transform: scale(1); }
+  42%, 70% { transform: scale(var(--pr-zoom, 1.3)); }
+  92%, 100% { transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-scope .landing-pr-clip-camara { animation: none; }
+}

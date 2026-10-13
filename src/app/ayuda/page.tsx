@@ -173,13 +173,13 @@ export default function AyudaPage() {
                 Nuestro equipo de soporte está disponible para ayudarte.
               </p>
               <a
-                href="mailto:soporte@leasefy.com"
+                href="mailto:hola@leasefy.co"
                 className="inline-flex items-center px-5 py-2.5 bg-foreground text-background text-[14px] font-medium rounded-md hover:bg-foreground/90 transition-colors"
               >
                 Contactar soporte
               </a>
               <p className="text-[12px] text-muted-foreground mt-3">
-                soporte@leasefy.com
+                hola@leasefy.co
               </p>
             </div>
           </div></div>

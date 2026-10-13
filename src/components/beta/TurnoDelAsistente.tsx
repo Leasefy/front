@@ -29,7 +29,7 @@ import { CabeceraDelTurno, DelegacionesDelTurno } from '@/components/agentes/Tur
  *                           (Nico, 02-10). Mientras piensa, a la derecha va el
  *                           tiempo corriendo (`derecha`, el pensamiento en vivo).
  *   ResumenDelTurno       — en una respuesta ya cerrada, la delegación en UNA
- *                           línea («Ori le pasó el trabajo a Laura») que se
+ *                           línea («Ori le pasó el trabajo a Mori») que se
  *                           abre en el detalle de cada especialista.
  *
  * Mientras el turno corre, la delegación vive dentro de la tarjeta de los
@@ -69,7 +69,7 @@ export function CabeceraDeLaRespuesta({
   );
 }
 
-/** «Laura», «Laura y Cobri», «Laura, Cobri y Vinci» — con la conjunción del idioma. */
+/** «Mori», «Mori y Cobri», «Mori, Cobri y Vinci» — con la conjunción del idioma. */
 function listaDeNombres(nombres: string[], locale: string): string {
   try {
     return new Intl.ListFormat(locale, { style: 'long', type: 'conjunction' }).format(nombres);
@@ -80,7 +80,7 @@ function listaDeNombres(nombres: string[], locale: string): string {
 
 /**
  * La delegación de una respuesta ya cerrada, en UNA línea elegante: los orbes
- * de quienes ayudaron y «Ori le pasó el trabajo a Laura y Cobri». Al tocarla
+ * de quienes ayudaron y «Ori le pasó el trabajo a Mori y Cobri». Al tocarla
  * se abre el detalle de cada uno (`DelegacionesDelTurno`: la tarea y lo que
  * contestó). Sin delegaciones no pinta nada.
  */

@@ -384,7 +384,7 @@ function ConversacionDelChat({ className }: ChatContainerProps) {
                 }
 
                 // Agentes corriendo: la tarjeta de los pasos EN el hilo, con
-                // cada especialista como delegación («Ori → Laura»).
+                // cada especialista como delegación («Ori → Mori»).
                 if (isLastAssistant && isAgentsRunning && (turnSteps.length > 0 || pensamientoDelTurno)) {
                   return (
                     <div key={message.id} className={envoltura} data-turno={message.id}>

@@ -122,11 +122,15 @@ describe('<ProductPage> — crm (detailed copy/wiring)', () => {
     expect(container.querySelector('footer')).toBeNull()
   })
 
-  it('cada capacidad lleva un recorte real de la pantalla', () => {
+  it('cada capacidad lleva el panel real en uso, con la captura de respaldo (Nico, 12-10-2026)', () => {
     const caps = container.querySelectorAll('[data-testid="product-capability"]')
     expect(caps.length).toBe(4)
-    const recorte = caps[0].querySelector('[role="img"]') as HTMLElement
-    expect(recorte.style.backgroundImage).toContain(CAPTURAS.crm.recortes[0].captura.src)
+    // Un clip del panel (la captura de esa pantalla es el póster) y la cámara apunta a su foco.
+    const video = caps[0].querySelector('video') as HTMLVideoElement
+    expect(video.getAttribute('poster')).toMatch(/\/landing-v2\/producto\/clips\/.+\.webp$/)
+    const marco = caps[0].querySelector('.landing-pr-clip') as HTMLElement
+    const { x, w } = CAPTURAS.crm.recortes[0].foco
+    expect(marco.style.getPropertyValue('--pr-ox')).toBe(`${x + w / 2}%`)
   })
 })
 

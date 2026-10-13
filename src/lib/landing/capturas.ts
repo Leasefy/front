@@ -39,6 +39,12 @@ export interface PasoDelRecorrido {
   foco: Rect
   /** Lo que dice la etiqueta del marco. */
   etiqueta: string
+  /**
+   * El clip que la pinta en movimiento (`public/landing-v2/producto/clips/`),
+   * cuando no es el de su pantalla: cada tarjeta de capacidades lleva la parte
+   * del panel que prueba lo que dice (Nico, 12-10-2026).
+   */
+  clip?: string
 }
 
 export interface CapturasDelProducto {
@@ -55,7 +61,7 @@ export interface CapturasDelProducto {
 
 const DIR = '/landing-v2/producto'
 const c = (nombre: string, alt: string): Captura => ({ src: `${DIR}/${nombre}.webp`, alt })
-const paso = (captura: Captura, foco: Rect, etiqueta: string): PasoDelRecorrido => ({ captura, foco, etiqueta })
+const paso = (captura: Captura, foco: Rect, etiqueta: string, clip?: string): PasoDelRecorrido => ({ captura, foco, etiqueta, ...(clip ? { clip } : {}) })
 
 const CRM = {
   pipeline: c('crm-pipeline', 'Embudo comercial de Leasefy con los interesados de cada etapa'),
@@ -77,6 +83,18 @@ const COB = {
 const CONC = {
   resumen: c('conc-resumen', 'Conciliación bancaria: lo que cruzó el agente y lo que dejó para revisar'),
   movimientos: c('conc-movimientos', 'Movimientos del extracto con el cruce que sugiere el agente'),
+}
+/** Pantallas que sólo viven como clip: su primer cuadro hace de foto. */
+const CLIP = {
+  comisiones: c('clips/crm-comisiones', 'Comisiones y metas: lo que gana cada asesor en el mes y cómo va contra su meta'),
+  deudor: c('clips/cob-deudor', 'El caso de un deudor con su historia: llamadas, pagos y notas, cada una con su hora'),
+  liberado: c('clips/match-liberado', 'Se liberó un inmueble: los interesados del embudo a los que les sirve, con su porqué'),
+  visitas: c('clips/crm-visitas', 'Preparar visitas: lo que le falta a cada una y los recordatorios del día siguiente'),
+  respaldo: c('clips/ctr-respaldo', 'Detalle de un contrato con su respaldo: aseguradora, póliza y vigencia'),
+  canon: c('clips/ava-canon', 'Recomendación de canon de arriendo con su rango de referencia'),
+  comparables: c('clips/ava-comparables', 'Comparables de arriendo de la zona usados para el canon'),
+  estado: c('clips/ava-estado', 'Puntaje de estado del inmueble, área por área'),
+  tiempo: c('clips/ava-tiempo', 'Estrategias de precio: el canon y la vacancia estimada de cada una'),
 }
 const ASEG = c('aseg-resumen', 'Asegurabilidad: cotizaciones del día contra varias aseguradoras')
 const MATCH = c('match-ofrecer', 'Qué ofrecer: los inmuebles que le sirven a un interesado y por qué')
@@ -101,7 +119,7 @@ export const CAPTURAS: Record<ProductSlug, CapturasDelProducto> = {
     recortes: [
       paso(CRM.pipeline, { x: 26, y: 62, w: 72, h: 38 }, 'Pipeline'),
       paso(MATCH, { x: 18, y: 52, w: 80, h: 46 }, 'Qué ofrecer'),
-      paso(CRM.detalle, { x: 61, y: 66, w: 37, h: 27 }, 'Asesor'),
+      paso(CLIP.comisiones, { x: 18, y: 14, w: 80, h: 72 }, 'Comisiones y metas', 'crm-comisiones'),
       paso(CRM.origenes, { x: 19, y: 52, w: 79, h: 46 }, 'Orígenes'),
     ],
   },
@@ -133,14 +151,14 @@ export const CAPTURAS: Record<ProductSlug, CapturasDelProducto> = {
     ],
     recorrido: [
       paso(COB.cartera, { x: 18, y: 30, w: 80, h: 34 }, 'La cartera partida por días de mora'),
-      paso(COB.whatsapp, { x: 18, y: 26, w: 56, h: 58 }, 'Laura escribe con la voz de tu inmobiliaria'),
+      paso(COB.whatsapp, { x: 18, y: 26, w: 56, h: 58 }, 'Mori escribe con la voz de tu inmobiliaria'),
       paso(COB.resumen, { x: 18, y: 25, w: 80, h: 35 }, 'A tu equipo le llega lo que necesita una persona'),
     ],
     recortes: [
       paso(COB.whatsapp, { x: 18, y: 26, w: 56, h: 58 }, 'WhatsApp'),
       paso(COB.cartera, { x: 18, y: 30, w: 80, h: 34 }, 'Cartera'),
       paso(COB.resumen, { x: 18, y: 25, w: 80, h: 35 }, 'Te toca a ti'),
-      paso(COB.resumen, { x: 18, y: 60, w: 80, h: 40 }, 'Resultados'),
+      paso(CLIP.deudor, { x: 18, y: 22, w: 80, h: 58 }, 'Historial del caso', 'cob-deudor'),
     ],
   },
   inquilino: {
@@ -156,29 +174,29 @@ export const CAPTURAS: Record<ProductSlug, CapturasDelProducto> = {
       paso(INQ, { x: 53, y: 20, w: 45, h: 20 }, 'Un veredicto claro para decidir'),
     ],
     recortes: [
-      paso(INQ, { x: 53, y: 8, w: 45, h: 30 }, 'Candidato'),
-      paso(INQ, { x: 53, y: 42, w: 45, h: 42 }, 'Estudio'),
-      paso(CRM.postulaciones, { x: 18, y: 26, w: 80, h: 12 }, 'Estados'),
-      paso(CRM.postulaciones, { x: 18, y: 44, w: 80, h: 52 }, 'Postulaciones'),
+      paso(INQ, { x: 57, y: 10, w: 42, h: 60 }, 'Documentos', 'inq-documentos'),
+      paso(INQ, { x: 57, y: 10, w: 42, h: 60 }, 'Aseguradoras', 'inq-aseguradoras'),
+      paso(INQ, { x: 57, y: 8, w: 42, h: 70 }, 'Riesgo', 'inq-riesgo'),
+      paso(CRM.postulaciones, { x: 18, y: 26, w: 80, h: 70 }, 'Postulaciones'),
     ],
   },
   avaluos: {
     portada: AVA,
     oscura: oscura('ava-lista', AVA.alt),
     notas: [
-      { x: 72, y: 34, texto: 'El valor de cada inmueble, firmado' },
-      { x: 88, y: 50, texto: 'El certificado, listo para el propietario' },
+      { x: 71, y: 49, texto: 'El valor de cada inmueble, firmado' },
+      { x: 88, y: 56, texto: 'El certificado, listo para el propietario' },
     ],
     recorrido: [
-      paso(AVA, { x: 18, y: 40, w: 80, h: 30 }, 'Cada avalúo con su método y su valor'),
-      paso(AVA, { x: 18, y: 25, w: 80, h: 18 }, 'De borrador a entregado, sin perder ninguno'),
-      paso(AVA, { x: 62, y: 40, w: 36, h: 52 }, 'Un certificado que se puede descargar y defender'),
+      paso(CLIP.comparables, { x: 17, y: 8, w: 66, h: 62 }, 'Arriendos de la zona, uno por uno'),
+      paso(CLIP.estado, { x: 17, y: 8, w: 66, h: 58 }, 'El estado de cada área, calificado'),
+      paso(CLIP.tiempo, { x: 17, y: 8, w: 66, h: 80 }, 'Cada canon con su vacancia estimada'),
     ],
     recortes: [
-      paso(AVA, { x: 18, y: 40, w: 80, h: 30 }, 'Valor'),
-      paso(AVA, { x: 18, y: 25, w: 80, h: 18 }, 'Estados'),
-      paso(AVA, { x: 62, y: 40, w: 36, h: 52 }, 'Certificados'),
-      paso(AVA, { x: 18, y: 0, w: 80, h: 22 }, 'Solicitar'),
+      paso(CLIP.comparables, { x: 17, y: 6, w: 66, h: 66 }, 'Comparables', 'ava-comparables'),
+      paso(CLIP.canon, { x: 17, y: 14, w: 66, h: 70 }, 'Canon', 'ava-canon'),
+      paso(CLIP.estado, { x: 17, y: 6, w: 66, h: 62 }, 'Estado', 'ava-estado'),
+      paso(CLIP.tiempo, { x: 17, y: 6, w: 66, h: 82 }, 'Tiempo de arriendo', 'ava-tiempo'),
     ],
   },
   conciliacion: {
@@ -196,8 +214,8 @@ export const CAPTURAS: Record<ProductSlug, CapturasDelProducto> = {
     recortes: [
       paso(CONC.movimientos, { x: 55, y: 8, w: 30, h: 62 }, 'Cruce sugerido'),
       paso(CONC.resumen, { x: 18, y: 34, w: 80, h: 18 }, 'Hallazgos'),
-      paso(CONC.resumen, { x: 18, y: 52, w: 80, h: 12 }, 'Avance'),
-      paso(CONC.resumen, { x: 18, y: 63, w: 80, h: 34 }, 'Actividad'),
+      paso(CONC.resumen, { x: 18, y: 50, w: 80, h: 30 }, 'Avance', 'conc-avance'),
+      paso(CONC.resumen, { x: 18, y: 10, w: 80, h: 76 }, 'Actividad', 'conc-actividad'),
     ],
   },
   matching: {
@@ -213,10 +231,10 @@ export const CAPTURAS: Record<ProductSlug, CapturasDelProducto> = {
       paso(CRM.pipeline, { x: 26, y: 62, w: 72, h: 38 }, 'Lo que se cierra vuelve al embudo'),
     ],
     recortes: [
-      paso(MATCH, { x: 18, y: 52, w: 80, h: 22 }, 'Calce'),
-      paso(MATCH, { x: 18, y: 44, w: 80, h: 10 }, 'Necesidad'),
-      paso(MATCH, { x: 18, y: 64, w: 80, h: 34 }, 'Opciones'),
-      paso(CRM.pipeline, { x: 26, y: 62, w: 72, h: 38 }, 'Embudo'),
+      paso(MATCH, { x: 18, y: 34, w: 80, h: 62 }, 'Cruce'),
+      paso(CLIP.liberado, { x: 18, y: 32, w: 80, h: 62 }, 'Se liberó', 'match-liberado'),
+      paso(MATCH, { x: 18, y: 42, w: 80, h: 56 }, 'Prioridad', 'match-calce'),
+      paso(CLIP.visitas, { x: 18, y: 14, w: 80, h: 74 }, 'Visitas', 'crm-visitas'),
     ],
   },
   asegurabilidad: {
@@ -232,10 +250,10 @@ export const CAPTURAS: Record<ProductSlug, CapturasDelProducto> = {
       paso(CRM.postulaciones, { x: 18, y: 44, w: 80, h: 52 }, 'El estudio viaja con la postulación'),
     ],
     recortes: [
-      paso(ASEG, { x: 18, y: 22, w: 80, h: 15 }, 'Indicadores'),
+      paso(ASEG, { x: 18, y: 24, w: 80, h: 24 }, 'Indicadores', 'aseg-indicadores'),
       paso(ASEG, { x: 18, y: 36, w: 80, h: 58 }, 'Cotizaciones'),
-      paso(INQ, { x: 53, y: 42, w: 45, h: 42 }, 'Aseguradoras'),
-      paso(CRM.postulaciones, { x: 18, y: 44, w: 80, h: 52 }, 'Postulaciones'),
+      paso(CLIP.respaldo, { x: 2, y: 20, w: 96, h: 34 }, 'Respaldo', 'ctr-respaldo'),
+      paso(ERP.renovaciones, { x: 18, y: 40, w: 80, h: 55 }, 'Renovaciones'),
     ],
   },
 }

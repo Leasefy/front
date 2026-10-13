@@ -1159,7 +1159,7 @@
       },
       "procesos": {
         "titulo": "Lo que hace el Piloto",
-        "descripcion": "Lo que el Piloto hizo, paso a paso: depósitos que detectó y concilió, llamadas de Laura y mensajes con los inquilinos.",
+        "descripcion": "Lo que el Piloto hizo, paso a paso: depósitos que detectó y concilió, llamadas de Mori y mensajes con los inquilinos.",
         "loQuePaso": "Lo que pasó",
         "volver": "Piloto automático",
         "enVivo": "En vivo",
@@ -1509,7 +1509,7 @@
         "descripcion": "Tus agentes hacen parte del trabajo de la inmobiliaria, y tú decides cuánto hacen solos.",
         "paso1": {
           "titulo": "Tus agentes trabajan",
-          "texto": "Cada uno en lo suyo: Laura cobra, Conciliación cruza el banco, Fixi atiende los mantenimientos y Avali le recuerda al propietario lo que tiene por aprobar."
+          "texto": "Cada uno en lo suyo: Mori cobra, Conciliación cruza el banco, Fixi atiende los mantenimientos y Avali le recuerda al propietario lo que tiene por aprobar."
         },
         "paso2": {
           "titulo": "Te dejan lo tuyo en la Bandeja",
@@ -1728,9 +1728,9 @@
             "directorPlan": "Plan del día del director",
             "directorReplan": "Volver a planear",
             "chat": "Chat del Piloto",
-            "cobranza": "Cobranza (Laura)"
+            "cobranza": "Cobranza (Mori)"
           },
-          "laura": "Lo de cobranza (Laura) no cuenta: se cobra aparte.",
+          "laura": "Lo de cobranza (Mori) no cuenta: se cobra aparte.",
           "excluido": "Este mes van"
         },
         "experimento": {
@@ -8495,7 +8495,7 @@
       },
       "intro": {
         "cobranza": {
-          "title": "Laura",
+          "title": "Mori",
           "description": "Contacta a quien tiene el arriendo atrasado, propone acuerdos dentro de tus reglas y deja constancia de cada contacto.",
           "rol": "Cobranza por voz, WhatsApp y correo",
           "hace": {
@@ -8518,9 +8518,9 @@
             "n3": "Revisar «Te toca a ti»: disputas, cartas y acuerdos por aprobar."
           },
           "modo": {
-            "sombra": "Laura prepara cada llamada, WhatsApp y correo y te lo deja en la Bandeja: nada sale sin ti, y no te interrumpe con avisos.",
-            "copiloto": "Laura prepara cada llamada, WhatsApp y correo y te lo deja en la Bandeja con su botón: nada sale sin tu visto bueno.",
-            "autonomo": "Laura llama y escribe sola, dentro del horario de ley y con un contacto al día por persona."
+            "sombra": "Mori prepara cada llamada, WhatsApp y correo y te lo deja en la Bandeja: nada sale sin ti, y no te interrumpe con avisos.",
+            "copiloto": "Mori prepara cada llamada, WhatsApp y correo y te lo deja en la Bandeja con su botón: nada sale sin tu visto bueno.",
+            "autonomo": "Mori llama y escribe sola, dentro del horario de ley y con un contacto al día por persona."
           },
           "empezar": "Ver la cobranza"
         },

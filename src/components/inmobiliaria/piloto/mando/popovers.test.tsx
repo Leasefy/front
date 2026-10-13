@@ -56,8 +56,8 @@ const laura: MiembroDeLaTripulacion = {
   corre: true,
   actua: true,
   porQueNoCorre: null,
-  efectoReal: 'Laura prepara cada llamada y te la deja con un clic.',
-  ultimo: { id: 'x', at: new Date(Date.now() - 3_600_000).toISOString(), agente: 'cobranza', tipo: 'llamada', titulo: 'Laura llamó a Camila Ejemplo' },
+  efectoReal: 'Mori prepara cada llamada y te la deja con un clic.',
+  ultimo: { id: 'x', at: new Date(Date.now() - 3_600_000).toISOString(), agente: 'cobranza', tipo: 'llamada', titulo: 'Mori llamó a Camila Ejemplo' },
   trabajando: false,
 }
 
@@ -100,12 +100,12 @@ describe('la tarjeta de un agente', () => {
     act(() => tarjeta.click())
     const p = popover('popover-agente-cobranza')
     expect(p).not.toBeNull()
-    expect(p?.getAttribute('aria-label')).toContain('Laura')
+    expect(p?.getAttribute('aria-label')).toContain('Mori')
     const texto = p?.textContent ?? ''
     expect(texto).toContain('Qué hace')
     expect(texto).toContain('Su modo · Copiloto')
-    expect(texto).toContain('Laura prepara cada llamada')
-    expect(texto).toContain('Laura llamó a Camila Ejemplo')
+    expect(texto).toContain('Mori prepara cada llamada')
+    expect(texto).toContain('Mori llamó a Camila Ejemplo')
     expect(texto).toContain('8 acciones')
   })
 
@@ -137,10 +137,10 @@ describe('la tarjeta de un agente', () => {
     const cta = popover('popover-agente-cobranza-cta') as HTMLButtonElement
     expect(cta.textContent).toContain('Desactivar')
     act(() => cta.click())
-    expect(c.encender).toHaveBeenCalledWith('cobranza', 'Laura', false)
+    expect(c.encender).toHaveBeenCalledWith('cobranza', 'Mori', false)
     const radio = [...document.body.querySelectorAll('[role="radio"]')].find((r) => r.textContent === 'Manual') as HTMLElement
     act(() => radio.click())
-    expect(c.cambiarModo).toHaveBeenCalledWith('cobranza', 'Laura', 'sombra')
+    expect(c.cambiarModo).toHaveBeenCalledWith('cobranza', 'Mori', 'sombra')
     expect(document.body.querySelector('[role="alert"]')?.textContent).toContain('No se pudo apagar el agente')
   })
 
@@ -254,7 +254,7 @@ describe('el control: las MISMAS llamadas de Autonomía', () => {
     api.putPilotoGobierno.mockResolvedValue({ ok: true, data: { agentes: [], llavesFinas: [] } })
     const refrescar = vi.fn(async () => undefined)
     act(() => root.render(conAuth(<Arnes a={autonomia()} refrescar={refrescar} />)))
-    await act(async () => visto?.control.encender('cobranza', 'Laura', false))
+    await act(async () => visto?.control.encender('cobranza', 'Mori', false))
     expect(api.putPilotoGobierno).toHaveBeenCalledWith('agencia-1', 'cobranza', false)
     expect(refrescar).toHaveBeenCalled()
     expect(toast.success).toHaveBeenCalled()
@@ -263,7 +263,7 @@ describe('el control: las MISMAS llamadas de Autonomía', () => {
   it('un fallo se dice en palabras (no un código) y queda en la tarjeta', async () => {
     api.putPilotoGobierno.mockResolvedValue({ ok: false, error: '403', fallo: { status: 403, code: 'FORBIDDEN', message: 'No tienes permiso.' } })
     act(() => root.render(conAuth(<Arnes a={autonomia()} refrescar={vi.fn(async () => undefined)} />)))
-    await act(async () => visto?.control.encender('cobranza', 'Laura', true))
+    await act(async () => visto?.control.encender('cobranza', 'Mori', true))
     expect(visto?.control.error?.agente).toBe('cobranza')
     expect(visto?.control.error?.mensaje).not.toMatch(/^403$/)
     expect(toast.error).toHaveBeenCalled()
@@ -272,11 +272,11 @@ describe('el control: las MISMAS llamadas de Autonomía', () => {
   it('bajar de modo es directo; subir a Automático pide la confirmación de Autonomía', async () => {
     const setModo = vi.fn(async () => ({ ok: true }))
     act(() => root.render(conAuth(<Arnes a={autonomia(setModo)} refrescar={vi.fn(async () => undefined)} />)))
-    await act(async () => visto?.control.cambiarModo('cobranza', 'Laura', 'sombra'))
+    await act(async () => visto?.control.cambiarModo('cobranza', 'Mori', 'sombra'))
     expect(setModo).toHaveBeenCalledWith('cobranza', 'sombra')
-    await act(async () => visto?.control.cambiarModo('cobranza', 'Laura', 'autonomo'))
+    await act(async () => visto?.control.cambiarModo('cobranza', 'Mori', 'autonomo'))
     expect(setModo).toHaveBeenCalledTimes(1)
-    expect(container.querySelector('[data-testid="confirmar-automatico"]')?.textContent).toBe('Laura')
+    expect(container.querySelector('[data-testid="confirmar-automatico"]')?.textContent).toBe('Mori')
   })
 
   it('sin ser administrador: no puede cambiar y dice por qué', () => {
@@ -318,7 +318,7 @@ describe('el orbe del núcleo', () => {
     const texto = p?.textContent ?? ''
     expect(texto).toContain('Modo general')
     expect(texto).toContain('Automático')
-    expect(texto).toContain('Laura está llamando')
+    expect(texto).toContain('Mori está llamando')
     expect(texto).toContain('Hoy el foco es la cartera de octubre')
     const boton = (nombre: string) => [...(p?.querySelectorAll('button') ?? [])].find((b) => b.textContent === nombre) as HTMLButtonElement
     act(() => boton('Abrir el plan').click())

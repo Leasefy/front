@@ -32,7 +32,7 @@ const guideSections: GuideSection[] = [
         subtitle: "Registro como propietario",
         text: "Crear una cuenta en Leasefy es gratuito y toma menos de 2 minutos. Solo necesitas tu correo electrónico y una contraseña segura.",
         steps: [
-          "Visita leasefy.com y haz clic en 'Registrarse'",
+          "Visita leasefy.co y haz clic en 'Registrarse'",
           "Selecciona 'Soy propietario' como tipo de cuenta",
           "Completa tu información básica",
           "Verifica tu correo electrónico",
@@ -399,7 +399,7 @@ export default function PropietariosGuidePage() {
                     <Link href="/ayuda">Ver preguntas frecuentes</Link>
                   </Button>
                   <a
-                    href="mailto:soporte@leasefy.com"
+                    href="mailto:hola@leasefy.co"
                     className="inline-flex items-center px-5 py-2.5 bg-foreground text-background text-[14px] font-medium rounded-md hover:bg-foreground/90 transition-colors"
                   >
                     Contactar soporte

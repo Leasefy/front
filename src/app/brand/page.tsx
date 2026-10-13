@@ -101,7 +101,7 @@ export default function BrandPage() {
                     Tecnología para inmobiliarias y propietarios modernos.
                   </p>
                 </div>
-                <div className="inline-flex items-center gap-1.5 text-[12px] text-white/60">leasefy.com ↗</div>
+                <div className="inline-flex items-center gap-1.5 text-[12px] text-white/60">leasefy.co ↗</div>
               </div>
             </div>
             <div className="px-4 py-2.5 border-t border-border">

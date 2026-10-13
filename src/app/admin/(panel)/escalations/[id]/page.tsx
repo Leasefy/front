@@ -258,7 +258,7 @@ export default function EscalationDetailPage() {
                 <input
                   type="email"
                   className="input mt-2"
-                  placeholder="ops@leasefy.com"
+                  placeholder="ops@leasefy.co"
                   value={assignee}
                   onChange={(e) => setAssignee(e.target.value)}
                 />

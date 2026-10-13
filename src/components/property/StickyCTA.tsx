@@ -316,12 +316,22 @@ export function StickyCTA({
   // PL-23: al volver del login (`?visita=1`), directo a la pestaña de visita.
   // También llega así desde «Agendar visita» del marketplace; en el celular la
   // tarjeta queda abajo, así que se trae a la vista.
+  // Nico, 12-10-2026 («no están sirviendo»): en el escritorio la tarjeta quedaba
+  // debajo de las fotos y nada decía que ya estaba lista para agendar. Ahora baja
+  // hasta ella en cualquier ancho y la resalta un momento.
+  const [resaltada, setResaltada] = useState(false);
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const traerALaVista = () => {
+      const el = raiz.current;
+      if (!el) return;
       if (window.matchMedia('(max-width: 1023px)').matches) {
-        raiz.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - 112), behavior: 'smooth' });
       }
+      setResaltada(true);
+      window.setTimeout(() => setResaltada(false), 1800);
     };
     if (new URLSearchParams(window.location.search).get('visita') === '1') {
       setCtaMode('visit');
@@ -482,7 +492,13 @@ export function StickyCTA({
 
   return (
     <div ref={raiz} id="reservar" className={cn('scroll-mt-24 lg:sticky lg:top-28', className)}>
-      <Card className="overflow-hidden rounded-xl border-border shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+      <Card
+        className={cn(
+          'overflow-hidden rounded-xl border-border shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-shadow duration-slow',
+          resaltada && 'shadow-[0_0_0_3px_hsl(var(--primary)/0.35),0_8px_30px_rgba(0,0,0,0.06)]',
+        )}
+        data-resaltada={resaltada || undefined}
+      >
         <div className="p-6">
           {/* Header */}
           <div className="flex items-start justify-between mb-6">

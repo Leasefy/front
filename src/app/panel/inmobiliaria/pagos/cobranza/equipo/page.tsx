@@ -63,8 +63,8 @@ const PERSONAS: EquipoCobranzaPersonaData[] = [
   },
   {
     id: 'laura',
-    nombre: 'Laura',
-    inicial: 'L',
+    nombre: 'Mori',
+    inicial: 'M',
     rol: 'Contactabilidad',
     icon: ChatCircleText,
     accent: 'green',
@@ -169,7 +169,7 @@ const PERSONAS: EquipoCobranzaPersonaData[] = [
 type FlujoPaso = { nombre: string; descripcion: string; icon: Icon }
 
 const FLUJO: FlujoPaso[] = [
-  { nombre: 'Laura', descripcion: 'Contacta al inquilino y clasifica su respuesta.', icon: ChatCircleText },
+  { nombre: 'Mori', descripcion: 'Contacta al inquilino y clasifica su respuesta.', icon: ChatCircleText },
   { nombre: 'Nicolás', descripcion: 'Registra la promesa de pago y la persigue.', icon: BellRinging },
   { nombre: 'Valentina', descripcion: 'Propone un acuerdo si el inquilino no puede pagar completo.', icon: ClipboardText },
   { nombre: 'Samuel', descripcion: 'Evalúa el escalamiento si el caso incumple.', icon: Scales },
@@ -180,7 +180,7 @@ const FLUJO: FlujoPaso[] = [
 // ── Lote ejemplo "en cada caso" (visión #16, ilustrativo) ────────────────────
 
 const LOTE_EJEMPLO: { agente: string; trabajo: string; estado: string; resultado: string }[] = [
-  { agente: 'Laura', trabajo: 'Contacto inicial', estado: 'Completado', resultado: 'Respondió por WhatsApp' },
+  { agente: 'Mori', trabajo: 'Contacto inicial', estado: 'Completado', resultado: 'Respondió por WhatsApp' },
   { agente: 'Nicolás', trabajo: 'Promesa de pago', estado: 'Activo', resultado: 'Prometió pagar el viernes' },
   { agente: 'Valentina', trabajo: 'Acuerdo', estado: 'Pendiente', resultado: 'Se activará si no paga' },
   { agente: 'Samuel', trabajo: 'Escalamiento', estado: 'No aplica aún', resultado: '—' },

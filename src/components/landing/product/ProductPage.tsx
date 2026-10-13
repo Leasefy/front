@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react'
 import { Reveal } from '@/components/landing/motion/Reveal'
 import { MarcoDeCaptura } from '@/components/landing/product/MarcoDeCaptura'
 import { RecorridoDelProducto } from '@/components/landing/product/RecorridoDelProducto'
+import { ClipDelProducto } from '@/components/landing-v2/ClipDelProducto'
 import { PRODUCTS } from '@/lib/landing/products'
 import { CAPTURAS, type PasoDelRecorrido } from '@/lib/landing/capturas'
 import type { ProductSlug } from '@/lib/landing/types'
@@ -190,17 +191,57 @@ export function ProductPage({ slug }: ProductPageProps) {
  * Un pedazo de una captura real, recortado con CSS (sin imágenes nuevas): la
  * imagen se agranda para que el recorte llene la tarjeta y se corre a su lugar.
  */
+// La escena de cada captura → su clip del panel en uso (`public/landing-v2/producto/clips`).
+const CLIP_DE_LA_ESCENA: Record<string, string> = {
+  'crm-pipeline': 'pipeline',
+  'crm-detalle': 'pipeline',
+  'crm-origenes': 'crm-origenes',
+  'crm-postulaciones': 'crm-postulaciones',
+  'match-ofrecer': 'matching',
+  'erp-tablero': 'erp-tablero',
+  'erp-recaudo': 'recaudo',
+  'erp-dispersiones': 'dispersiones',
+  'erp-renovaciones': 'erp-renovaciones',
+  'cob-resumen': 'cob-resumen',
+  'cob-cartera': 'cob-cartera',
+  'cob-whatsapp': 'cob-whatsapp',
+  'conc-resumen': 'conc-resumen',
+  'conc-movimientos': 'conc-movimientos',
+  'aseg-resumen': 'asegurabilidad',
+  'inq-detalle': 'estudio',
+  'ava-lista': 'ava-lista',
+  'ret-tablero': 'retencion',
+}
+
+/**
+ * Lo que muestra cada tarjeta de capacidades (Nico, 12-10-2026: «las imágenes
+ * no quedaron wow… como la última versión que montaste en la landing»): el
+ * panel REAL en uso, a pantalla completa, y la cámara se acerca despacio a la
+ * parte de la que habla la tarjeta (`foco`) y vuelve. Sin clip, la captura.
+ */
 function Recorte({ paso }: { paso?: PasoDelRecorrido }) {
   if (!paso) return null
+  const escena = paso.captura.src.split('/').pop()?.replace(/\.webp$/, '') ?? ''
+  const clip = paso.clip ?? CLIP_DE_LA_ESCENA[escena]
   const { x, y, w, h } = paso.foco
-  const estilo: CSSProperties = {
-    backgroundImage: `url(${paso.captura.src})`,
-    backgroundSize: `${10000 / w}% auto`,
-    backgroundPosition: `${w >= 100 ? 0 : (x / (100 - w)) * 100}% ${h >= 100 ? 0 : (y / (100 - h)) * 100}%`,
-    // La proporción del recorte en la captura (1440 × 900).
-    aspectRatio: `${(w * 16) / (h * 10)}`,
-  }
-  return <div className="landing-pr-recorte" style={estilo} role="img" aria-label={paso.captura.alt} />
+  // Un foco de lado a lado (la tarjeta ocupa toda la pantalla) apenas se acerca: con 1,12 se cortaba su borde.
+  const zoom = Math.min(1.55, Math.max(w >= 90 ? 1.04 : 1.12, (100 / Math.max(w, h * 1.6)) * 0.95))
+  const estilo = {
+    '--pr-ox': `${x + w / 2}%`,
+    '--pr-oy': `${y + h / 2}%`,
+    '--pr-zoom': zoom.toFixed(3),
+  } as CSSProperties
+  return (
+    <div className="landing-pr-clip" style={estilo}>
+      <div className="landing-pr-clip-camara">
+        {clip ? (
+          <ClipDelProducto nombre={clip} alt={paso.captura.alt} className="landing-pr-clip-video" />
+        ) : (
+          <img className="landing-pr-clip-video" src={paso.captura.src} alt={paso.captura.alt} loading="lazy" />
+        )}
+      </div>
+    </div>
+  )
 }
 
 interface ProductSectionHeadProps {

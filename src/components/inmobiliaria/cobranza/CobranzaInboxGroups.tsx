@@ -230,9 +230,11 @@ export function InboxItemCard({
       }`}
       data-testid={`inbox-item-${item.key}`}
     >
-      {/* Header: inquilino + badge de grupo + canal */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+      {/* Header: inquilino + badge de grupo + canal. A 390 px no cabía en una
+          línea y «Solicitudes de acuerdo» quedaba encima de «whatsapp · hace 6
+          horas» (QA 12-10-2026): ahora el canal y la hora bajan a otra línea. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <div className="flex flex-wrap items-center gap-2 min-w-0">
           <span className="text-sm font-semibold text-fg truncate">
             {item.inquilino || VACIO}
           </span>

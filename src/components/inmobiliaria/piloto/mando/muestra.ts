@@ -92,7 +92,7 @@ const INMUEBLES = ['Cra. 43A # 1-50 Apto 1203', 'Cl. 10 # 32-15 Apto 402', 'Cra.
 
 function enCursoDeMuestra(ahora: number): PulsoEnCurso[] {
   return [
-    { id: 'muestra:call:1', tipo: 'llamada', titulo: `Laura está llamando a ${P.julian}`, detalle: 'Canon de octubre · 12 días de mora', desde: iso(ahora - 3 * MIN), agente: 'cobranza' },
+    { id: 'muestra:call:1', tipo: 'llamada', titulo: `Mori está llamando a ${P.julian}`, detalle: 'Canon de octubre · 12 días de mora', desde: iso(ahora - 3 * MIN), agente: 'cobranza' },
     { id: 'muestra:wa:1', tipo: 'conversacion', titulo: `WhatsApp abierto con ${P.valentina}`, detalle: 'Pidió el estado de cuenta', desde: iso(ahora - 9 * MIN), agente: 'cobranza' },
     { id: 'muestra:mov:1', tipo: 'deposito', titulo: 'Conciliando un depósito de $ 2.350.000', detalle: 'Bancolombia · un solo candidato', desde: iso(ahora - 1 * MIN), agente: 'conciliacion' },
   ]
@@ -108,7 +108,7 @@ function pulsoDeMuestra(ahora: number): PulsoResponse {
         id: 'muestra:alerta:acuerdos',
         severidad: 'alta',
         titulo: '3 acuerdos de pago vencen hoy y ninguno está confirmado',
-        detalle: 'Laura los llama después de las 10:00 a. m. si no entra el pago.',
+        detalle: 'Mori los llama después de las 10:00 a. m. si no entra el pago.',
       },
       {
         id: 'muestra:alerta:mora',
@@ -146,7 +146,7 @@ const accion = (label: string): InboxItem['accion'] => ({
 
 function bandejaDeMuestra(ahora: number): PilotoInboxResponse {
   const items: InboxItem[] = [
-    { id: 'muestra:inbox:1', fuente: 'acciones', agente: 'cobranza', prioridad: 'alta', titulo: `Llamar a ${P.mateo}: 63 días de mora`, resumen: 'Debe $ 4.860.000 (canon de agosto, septiembre y octubre). Laura propone ofrecerle un acuerdo de 3 cuotas.', montoCop: 4_860_000, desde: iso(ahora - 26 * HORA), href: '/panel/inmobiliaria/piloto', accion: accion('Aprobar y llamar') },
+    { id: 'muestra:inbox:1', fuente: 'acciones', agente: 'cobranza', prioridad: 'alta', titulo: `Llamar a ${P.mateo}: 63 días de mora`, resumen: 'Debe $ 4.860.000 (canon de agosto, septiembre y octubre). Mori propone ofrecerle un acuerdo de 3 cuotas.', montoCop: 4_860_000, desde: iso(ahora - 26 * HORA), href: '/panel/inmobiliaria/piloto', accion: accion('Aprobar y llamar') },
     { id: 'muestra:inbox:2', fuente: 'acciones', agente: 'facturacion', prioridad: 'alta', titulo: 'Emitir 41 facturas de octubre por $ 78.420.000', resumen: 'Cada una con su cobro del mes. Las revisó la regla de escenarios tributarios.', montoCop: 78_420_000, desde: iso(ahora - 5 * HORA), href: '/panel/inmobiliaria/piloto', accion: accion('Emitir las 41') },
     { id: 'muestra:inbox:3', fuente: 'acciones', agente: 'propietarios', prioridad: 'alta', titulo: 'Girar a 12 propietarios $ 31.275.400', resumen: 'Liquidaciones de septiembre ya conciliadas. Mueve plata: siempre pide tu clic.', montoCop: 31_275_400, desde: iso(ahora - 3 * HORA), href: '/panel/inmobiliaria/piloto', accion: accion('Revisar el lote') },
     { id: 'muestra:inbox:4', fuente: 'acciones', agente: 'retencion', prioridad: 'media', titulo: `Carta de incremento para ${P.sofia}`, resumen: `${INMUEBLES[1]} · IPC 5,2 % · el contrato vence el 30 de octubre.`, desde: iso(ahora - 9 * DIA), href: '/panel/inmobiliaria/piloto', accion: accion('Aprobar la carta') },
@@ -170,31 +170,31 @@ interface Semilla {
 }
 
 const DE_HOY: Semilla[] = [
-  { agente: 'cobranza', tipo: 'llamada', titulo: `Laura llamó a ${P.camila}: promete pagar el viernes`, detalle: 'Acuerdo registrado por $ 1.850.000' },
+  { agente: 'cobranza', tipo: 'llamada', titulo: `Mori llamó a ${P.camila}: promete pagar el viernes`, detalle: 'Acuerdo registrado por $ 1.850.000' },
   { agente: 'conciliacion', tipo: 'pago', titulo: 'Concilié 6 depósitos de Bancolombia', detalle: '$ 9.420.000 aplicados a la cuota más vieja de cada uno' },
   { agente: 'facturacion', tipo: 'piloto', titulo: 'Preparé 41 facturas de octubre para tu clic' },
   { agente: 'cobranza', tipo: 'whatsapp', titulo: `Le mandé el estado de cuenta a ${P.valentina}` },
   { agente: 'inspeccion', tipo: 'piloto', titulo: `Vidi agendó la inspección de entrada de ${INMUEBLES[3]}` },
-  { agente: 'cobranza', tipo: 'llamada', titulo: `Laura llamó a ${P.andres}: no contestó`, detalle: 'Reintenta a las 4:00 p. m.' },
+  { agente: 'cobranza', tipo: 'llamada', titulo: `Mori llamó a ${P.andres}: no contestó`, detalle: 'Reintenta a las 4:00 p. m.' },
   { agente: 'retencion', tipo: 'piloto', titulo: 'Vinci preparó 4 cartas de renovación' },
   { agente: 'cobranza', tipo: 'promesa', titulo: `${P.sofia} confirmó su acuerdo de pago`, detalle: 'Primera cuota: $ 620.000' },
   { agente: 'conciliacion', tipo: 'pago', titulo: 'Concilié el giro de Leasefy del 4 de octubre', detalle: 'Liquidación del recaudo en línea: $ 3.812.500 neto' },
   { agente: 'mantenimiento', tipo: 'piloto', titulo: 'Fixi pidió 3 cotizaciones de plomería' },
-  { agente: 'cobranza', tipo: 'llamada', titulo: `Laura llamó a ${P.tomas}: pide hablar con un asesor`, detalle: 'Escalado a tu equipo' },
+  { agente: 'cobranza', tipo: 'llamada', titulo: `Mori llamó a ${P.tomas}: pide hablar con un asesor`, detalle: 'Escalado a tu equipo' },
   { agente: 'contabilidad', tipo: 'piloto', titulo: 'Asenté 18 recibos de caja del fin de semana' },
   { agente: 'prospectos', tipo: 'whatsapp', titulo: 'Imana respondió a 5 interesados en Laureles' },
-  { agente: 'cobranza', tipo: 'llamada', titulo: `Laura llamó a ${P.julian}: pagará hoy por PSE` },
+  { agente: 'cobranza', tipo: 'llamada', titulo: `Mori llamó a ${P.julian}: pagará hoy por PSE` },
   { agente: 'aprobaciones', tipo: 'piloto', titulo: `${P.paula} aprobó al inquilino para ${INMUEBLES[4]}` },
   { agente: 'conciliacion', tipo: 'pago', titulo: 'Concilié 3 pagos PSE de la mañana', detalle: '$ 5.310.000' },
   { agente: 'calidad', tipo: 'piloto', titulo: 'Niti revisó 9 publicaciones: 2 necesitan fotos' },
   { agente: 'cobranza', tipo: 'promesa', titulo: `${P.mateo} pidió un acuerdo de 3 cuotas` },
   { agente: 'facturacion', tipo: 'piloto', titulo: 'Las 3 facturas de intereses quedaron listas' },
-  { agente: 'cobranza', tipo: 'llamada', titulo: `Laura llamó a ${P.luisa}: ya pagó, mandará el soporte` },
+  { agente: 'cobranza', tipo: 'llamada', titulo: `Mori llamó a ${P.luisa}: ya pagó, mandará el soporte` },
   { agente: 'equipo', tipo: 'piloto', titulo: 'Pusiste Conciliación en Automático' },
 ]
 
 const DE_AYER: Semilla[] = [
-  { agente: 'cobranza', tipo: 'llamada', titulo: `Laura llamó a ${P.david}: promete pagar el lunes` },
+  { agente: 'cobranza', tipo: 'llamada', titulo: `Mori llamó a ${P.david}: promete pagar el lunes` },
   { agente: 'conciliacion', tipo: 'pago', titulo: 'Concilié 11 depósitos de Bancolombia' },
   { agente: 'contratos', tipo: 'piloto', titulo: `Firmé el contrato de ${P.paula}` },
   { agente: 'cobranza', tipo: 'whatsapp', titulo: `Le recordé el pago a ${P.camila}` },
@@ -204,7 +204,7 @@ const DE_AYER: Semilla[] = [
   { agente: 'inspeccion', tipo: 'piloto', titulo: 'Vidi subió el acta de entrega con 24 fotos' },
   { agente: 'conciliacion', tipo: 'pago', titulo: 'Concilié 4 pagos PSE' },
   { agente: 'retencion', tipo: 'piloto', titulo: `Vinci llamó a ${P.sofia} para renovar` },
-  { agente: 'cobranza', tipo: 'llamada', titulo: `Laura llamó a ${P.julian}: no contestó` },
+  { agente: 'cobranza', tipo: 'llamada', titulo: `Mori llamó a ${P.julian}: no contestó` },
   { agente: 'contabilidad', tipo: 'piloto', titulo: 'Cerré el día con 23 asientos' },
   { agente: 'prospectos', tipo: 'whatsapp', titulo: 'Imana agendó 3 visitas para el sábado' },
   { agente: 'calidad', tipo: 'piloto', titulo: 'Niti publicó 2 inmuebles en los portales' },
@@ -212,7 +212,7 @@ const DE_AYER: Semilla[] = [
 ]
 
 const DE_ANTIER: Semilla[] = [
-  { agente: 'cobranza', tipo: 'llamada', titulo: `Laura llamó a ${P.andres}: acuerdo de 2 cuotas` },
+  { agente: 'cobranza', tipo: 'llamada', titulo: `Mori llamó a ${P.andres}: acuerdo de 2 cuotas` },
   { agente: 'conciliacion', tipo: 'pago', titulo: 'Concilié 9 depósitos' },
   { agente: 'facturacion', tipo: 'piloto', titulo: 'Emití 6 notas crédito de ajuste' },
   { agente: 'aprobaciones', tipo: 'piloto', titulo: `Le mandé a ${P.david} el estudio del inquilino` },
@@ -220,7 +220,7 @@ const DE_ANTIER: Semilla[] = [
   { agente: 'mantenimiento', tipo: 'piloto', titulo: 'Fixi recibió una solicitud de humedad' },
   { agente: 'contabilidad', tipo: 'piloto', titulo: 'Concilié la cuenta puente del recaudo' },
   { agente: 'prospectos', tipo: 'whatsapp', titulo: 'Imana calificó 7 interesados' },
-  { agente: 'cobranza', tipo: 'llamada', titulo: `Laura llamó a ${P.valentina}: pagó en la tarde` },
+  { agente: 'cobranza', tipo: 'llamada', titulo: `Mori llamó a ${P.valentina}: pagó en la tarde` },
   { agente: 'retencion', tipo: 'piloto', titulo: 'Vinci detectó 4 contratos por vencer' },
   { agente: 'inspeccion', tipo: 'piloto', titulo: 'Vidi agendó 2 inspecciones' },
   { agente: 'conciliacion', tipo: 'pago', titulo: 'Concilié el giro de Leasefy' },
@@ -261,15 +261,15 @@ export interface GotaDeLaMuestra {
 
 export const GOTAS: GotaDeLaMuestra[] = [
   { semilla: { agente: 'conciliacion', tipo: 'pago', titulo: 'Concilié el depósito de $ 2.350.000', detalle: `Era de ${P.camila}` } },
-  { semilla: { agente: 'cobranza', tipo: 'llamada', titulo: `Laura llamó a ${P.julian}: pagará hoy a las 5:00 p. m.` }, efecto: { llamadas: 1 } },
+  { semilla: { agente: 'cobranza', tipo: 'llamada', titulo: `Mori llamó a ${P.julian}: pagará hoy a las 5:00 p. m.` }, efecto: { llamadas: 1 } },
   { semilla: { agente: 'cobranza', tipo: 'whatsapp', titulo: `${P.valentina} recibió su estado de cuenta` }, efecto: { conversaciones: -1 } },
   { semilla: { agente: 'equipo', tipo: 'piloto', titulo: 'Aprobaste la invitación al portal de Paula' }, efecto: { resueltas: 1 }, resuelve: 'muestra:inbox:8' },
   { semilla: { agente: 'prospectos', tipo: 'whatsapp', titulo: 'Imana respondió a un interesado en Envigado' }, efecto: { conversaciones: 1 } },
-  { semilla: { agente: 'cobranza', tipo: 'llamada', titulo: `Laura llamó a ${P.david}: promete pagar mañana` }, efecto: { llamadas: 1 } },
+  { semilla: { agente: 'cobranza', tipo: 'llamada', titulo: `Mori llamó a ${P.david}: promete pagar mañana` }, efecto: { llamadas: 1 } },
   { semilla: { agente: 'contabilidad', tipo: 'piloto', titulo: 'Asenté 2 recibos de caja' } },
   { semilla: { agente: 'cobranza', tipo: 'promesa', titulo: `${P.camila} confirmó el pago del viernes` } },
   { semilla: { agente: 'inspeccion', tipo: 'piloto', titulo: 'Vidi confirmó la inspección de las 3:00 p. m.' } },
-  { semilla: { agente: 'cobranza', tipo: 'llamada', titulo: `Laura llamó a ${P.tomas}: no contestó` }, efecto: { llamadas: 1 } },
+  { semilla: { agente: 'cobranza', tipo: 'llamada', titulo: `Mori llamó a ${P.tomas}: no contestó` }, efecto: { llamadas: 1 } },
   { semilla: { agente: 'conciliacion', tipo: 'pago', titulo: 'Concilié 2 pagos PSE', detalle: '$ 3.100.000' } },
   { semilla: { agente: 'equipo', tipo: 'piloto', titulo: 'Aprobaste la cotización de plomería' }, efecto: { resueltas: 1 }, resuelve: 'muestra:inbox:7' },
 ]
@@ -299,7 +299,7 @@ function agente(
 
 function flotaDeMuestra(ahora: number): PilotoFlotaResponse {
   const agentes: AgenteDeLaFlota[] = [
-    agente('cobranza', 'autonomo', true, true, 'Laura llama, escribe y registra acuerdos sola, dentro de tus topes y del horario de ley.'),
+    agente('cobranza', 'autonomo', true, true, 'Mori llama, escribe y registra acuerdos sola, dentro de tus topes y del horario de ley.'),
     agente('conciliacion', 'autonomo', true, true, 'Concilia sola los depósitos con un solo candidato; los dudosos te los deja.'),
     agente('facturacion', 'copiloto', true, true, 'Prepara cada factura y te la deja con un clic.'),
     agente('propietarios', 'copiloto', true, true, 'Prepara las liquidaciones; los giros siempre piden tu clic.'),
@@ -383,18 +383,18 @@ function hoyDeMuestra(ahora: number): DirectorHoy {
     fecha: new Date(ahora).toLocaleDateString('en-CA', { timeZone: ZONA }),
     ciclo: { id: 'muestra:ciclo', tipo: 'dia', estado: 'listo', inicio: iso(plan), fin: iso(plan + 2 * MIN), modelo: null, esfuerzo: null, costoCop: 1_850, sinModeloPorque: null },
     resumen:
-      'Hoy el foco es la cartera de octubre: 23 inquilinos con el canon vencido y 4 renovaciones que vencen esta semana. Laura llama primero a los de más de 30 días; Vinci deja listas las cartas de incremento.',
+      'Hoy el foco es la cartera de octubre: 23 inquilinos con el canon vencido y 4 renovaciones que vencen esta semana. Mori llama primero a los de más de 30 días; Vinci deja listas las cartas de incremento.',
     pensamiento: null,
     prioridades: [],
     ordenes: [
-      orden(1, 'cobranza', 'Laura', 'Llamar a los de más de 30 días de mora', P.mateo, antes(0.15), 'ejecutada', 'Lleva 63 días y no tiene acuerdo.'),
+      orden(1, 'cobranza', 'Mori', 'Llamar a los de más de 30 días de mora', P.mateo, antes(0.15), 'ejecutada', 'Lleva 63 días y no tiene acuerdo.'),
       orden(2, 'conciliacion', 'Conciliación', 'Conciliar los depósitos de la mañana', 'Bancolombia', antes(0.3), 'ejecutada', 'Entraron 6 depósitos antes de las 9.'),
       orden(3, 'facturacion', 'Facturación', 'Emitir las facturas de octubre', '41 contratos', antes(0.45), 'en_bandeja', 'Es día 5: la ley pide emitirlas dentro del mes.'),
       orden(4, 'retencion', 'Vinci', 'Preparar las cartas de incremento', '4 renovaciones', antes(0.55), 'ejecutada', 'Vencen esta semana.'),
-      orden(5, 'cobranza', 'Laura', 'Confirmar los acuerdos que vencen hoy', '3 acuerdos', mas(45), 'la_hace_el_agente', 'Ninguno está confirmado.'),
+      orden(5, 'cobranza', 'Mori', 'Confirmar los acuerdos que vencen hoy', '3 acuerdos', mas(45), 'la_hace_el_agente', 'Ninguno está confirmado.'),
       orden(6, 'inspeccion', 'Vidi', 'Inspección de salida', INMUEBLES[2] as string, mas(150), 'la_hace_el_agente', 'El inquilino entrega el 8 de octubre.'),
       orden(7, 'propietarios', 'Propietarios', 'Girar a los propietarios', '12 propietarios', mas(240), 'en_bandeja', 'Las liquidaciones ya están conciliadas.'),
-      orden(8, 'cobranza', 'Laura', 'Volver a llamar a quien no contestó', P.andres, mas(300), 'la_hace_el_agente', 'Pidió que lo llamaran en la tarde.'),
+      orden(8, 'cobranza', 'Mori', 'Volver a llamar a quien no contestó', P.andres, mas(300), 'la_hace_el_agente', 'Pidió que lo llamaran en la tarde.'),
       orden(9, 'mantenimiento', 'Fixi', 'Pedir la cotización de pintura', INMUEBLES[0] as string, 'hoy', 'la_hace_el_agente', 'La fuga ya se arregló.'),
       orden(10, 'calidad', 'Niti', 'Revisar las publicaciones sin fotos', '2 inmuebles', antes(0.2), 'descartada', 'El asesor ya las está tomando.'),
     ],
@@ -505,7 +505,7 @@ function tendenciasDeMuestra(ahora: number): PilotoTendencias {
       acciones: 612,
       estimada: true,
       supuesto:
-        'Medidas: el tiempo real al teléfono de Laura. Estimadas: cada acción que el Piloto hizo, por los minutos que le tomaría a una persona con todo a la vista (una tabla conservadora por proceso; ninguno pasa de una hora).',
+        'Medidas: el tiempo real al teléfono de Mori. Estimadas: cada acción que el Piloto hizo, por los minutos que le tomaría a una persona con todo a la vista (una tabla conservadora por proceso; ninguno pasa de una hora).',
     },
     mora: { desde: mora[0]?.fecha ?? hoy, hasta: hoy, dias: mora, definicion: 'Saldo de las cuotas con más de 30 días de mora.' },
   }

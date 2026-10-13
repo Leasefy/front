@@ -3,7 +3,7 @@
  *
  *  1. 🔴 El gasto de IA es SÓLO del administrador: a nadie más se le pinta.
  *  2. Gastado contra tope, tramo, escalón, por componente, y la nota de que
- *     lo de cobranza (Laura) no cuenta: se cobra aparte.
+ *     lo de cobranza (Mori) no cuenta: se cobra aparte.
  *  3. El interruptor del grupo de control lo mueve sólo el administrador; el
  *     resto ve cómo está.
  *  4. La explicación del experimento es la de la especificación, al pie de la
@@ -141,10 +141,10 @@ describe('PilotoDirectorAjustes — gasto de IA', () => {
     expect(componentes.split('inmobiliaria.piloto.director.gasto.noCuenta').length - 1).toBe(1)
   })
 
-  it('🔴 dice que lo de cobranza (Laura) no cuenta porque se cobra aparte', () => {
+  it('🔴 dice que lo de cobranza (Mori) no cuenta porque se cobra aparte', () => {
     render()
     expect(q('piloto-director-gasto-laura')?.textContent).toContain('inmobiliaria.piloto.director.gasto.laura')
-    expect(es.inmobiliaria.piloto.director.gasto.laura).toBe('Lo de cobranza (Laura) no cuenta: se cobra aparte.')
+    expect(es.inmobiliaria.piloto.director.gasto.laura).toBe('Lo de cobranza (Mori) no cuenta: se cobra aparte.')
   })
 })
 

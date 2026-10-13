@@ -77,15 +77,7 @@ export function initLandingFx(): () => void {
     });
   });
 
-  /* Wordmark del footer */
-  var wm = document.getElementById('wm').firstElementChild;
-  if(!wm.childElementCount) 'Leasefy.'.split('').forEach(function(ch,i){
-    var s = document.createElement('span');
-    s.textContent = ch;
-    s.style.setProperty('--d', (0.1 + i*0.05) + 's');
-    if(ch === '.') s.className = 'bd';
-    wm.appendChild(s);
-  });
+  /* Wordmark del footer: desde el 12-10-2026 lo pinta y lo anima <MarcaDelPie /> (con Ori de punto). */
 
   /* Observador de scroll (todo dispara una sola vez) */
   var io = new IntersectionObserver(function(entries){
@@ -96,7 +88,7 @@ export function initLandingFx(): () => void {
       io.unobserve(e.target);
     });
   }, {rootMargin:'-10% 0px'});
-  document.querySelectorAll('[data-reveal]:not([data-load]), .words:not([data-load-words]), .clip:not([data-load-clip]), .grow, .conn, .mconn, .frag, .frag2, .lrow, .cnt, #wm').forEach(function(el){ io.observe(el); });
+  document.querySelectorAll('[data-reveal]:not([data-load]), .words:not([data-load-words]), .clip:not([data-load-clip]), .grow, .conn, .mconn, .frag, .frag2, .lrow, .cnt').forEach(function(el){ io.observe(el); });
 
   /* Elementos del hero: animan al cargar */
   setTimeout(function(){
@@ -563,7 +555,7 @@ export function initLandingFx(): () => void {
     send.addEventListener('click', function(){
       var val = function(id){ var el = document.getElementById(id); return el ? el.value.trim() : ''; };
       var body = 'Nombre: ' + val('cf1') + '\nEmail: ' + val('cf2') + '\nInmobiliaria: ' + val('cf3') + '\nInterés: ' + (window.__cfChip || 'Todo el sistema') + '\nQué queremos resolver: ' + val('cf4');
-      window.location.href = 'mailto:hola@leasefy.com?subject=' + encodeURIComponent('Empezar con Leasefy') + '&body=' + encodeURIComponent(body);
+      window.location.href = 'mailto:hola@leasefy.co?subject=' + encodeURIComponent('Empezar con Leasefy') + '&body=' + encodeURIComponent(body);
     });
   }
   })();
@@ -960,8 +952,10 @@ export function initLandingFx(): () => void {
     var f2 = srcF.cloneNode(true);
     Array.prototype.forEach.call(f2.querySelectorAll('[id]'), function(el){ el.removeAttribute('id'); });
     Array.prototype.forEach.call(f2.querySelectorAll('[data-reveal]'), function(el){ el.removeAttribute('data-reveal'); el.classList.add('in'); });
-    var wm2 = f2.querySelector('.wm');
-    if(wm2){ wm2.classList.add('in'); }
+    /* La copia no tiene React: sus letras quedan a la vista y Ori, que es un lienzo, pasa a ser un punto. */
+    Array.prototype.forEach.call(f2.querySelectorAll('.wm2-l, .wm2-ori'), function(el){ el.style.opacity = '1'; el.style.transform = 'none'; });
+    var ori2 = f2.querySelector('.wm2-ori');
+    if(ori2){ ori2.innerHTML = ''; ori2.classList.add('wm2-ori--quieto'); }
     var ft2 = f2.querySelector('.ftop');
     if(ft2){ ft2.setAttribute('href', '#top'); }
     end2.appendChild(wrap);
@@ -1189,6 +1183,12 @@ export function initLandingFx(): () => void {
           arqStick.style.transform = 'translate(' + ztx.toFixed(1) + 'px,' + zty.toFixed(1) + 'px) scale(' + zs.toFixed(4) + ')';
           arqStick.style.opacity = (1 - clamp01((zt - 0.7) / 0.3)).toFixed(3);
           if(zoomC.h3){ zoomC.h3.style.setProperty('--zk', clamp01(zt / 0.68).toFixed(3)); }
+        } else if(rawZp > 1){
+          /* La cámara ya entró: la capa se queda adentro (invisible) mientras
+             se va hacia arriba. Antes volvía a su tamaño y las tres columnas
+             reaparecían un instante — se leía como un salto del scroll
+             (Nico, 12-10-2026). */
+          arqStick.style.opacity = '0';
         } else if(arqStick.style.transform){
           arqStick.style.transform = '';
           arqStick.style.opacity = '';
@@ -1286,13 +1286,19 @@ export function initLandingFx(): () => void {
       var fpr = finPanel.getBoundingClientRect();
       var fBaseTop = fpr.top - (finPanel.__ty || 0);
       var fH = finPanel.offsetHeight;
-      var shB = sheetEl ? sheetEl.getBoundingClientRect().bottom : -1e9;
+      var shR = sheetEl ? sheetEl.getBoundingClientRect() : null;
+      var shB = shR ? shR.bottom : -1e9;
+      var shT = shR ? shR.top : -1e9;
       var dspP = clamp01((vh * 0.92 - shB) / (vh * 0.6));
       var dspE = dspP < 0.5 ? 2 * dspP * dspP : 1 - Math.pow(-2 * dspP + 2, 2) / 2;
-      var hiddenTy = Math.min(0, (shB - 12 - fH) - fBaseTop);
+      /* Escondida, nunca más arriba que la hoja: si es más alta que ella, asomaba por
+         encima (Nico, 12-10-2026); así sólo sale por el borde de abajo. */
+      var hiddenTy = Math.min(0, Math.max((shT + 24) - fBaseTop, (shB - 12 - fH) - fBaseTop));
       var fy2 = hiddenTy * (1 - dspE);
       finPanel.__ty = fy2;
-      finPanel.style.transform = 'perspective(1200px) translateY(' + fy2.toFixed(1) + 'px) rotateX(' + (10 * (1 - dspE)).toFixed(2) + 'deg) scale(' + (0.96 + 0.04 * dspE).toFixed(4) + ')';
+      /* Mide lo mismo que la hoja (Nico, 12-10-2026): sale un poco más chica y menos
+         inclinada para que, al acercarse por abajo, no asome por los lados de la hoja. */
+      finPanel.style.transform = 'perspective(1200px) translateY(' + fy2.toFixed(1) + 'px) rotateX(' + (8 * (1 - dspE)).toFixed(2) + 'deg) scale(' + (0.9 + 0.1 * dspE).toFixed(4) + ')';
     }
     if(finTotal === null){ finTotal = document.querySelector('#finanzas .fototal') || false; }
     if(finTotal){

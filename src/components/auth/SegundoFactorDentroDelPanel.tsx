@@ -37,12 +37,13 @@ import { useSalidaDelSegundoFactor } from '@/lib/auth/use-salida-del-segundo-fac
  *    `mfaEnrollRequired` (o carga completa a los 8 s), y recién ahí se montan
  *    los hijos: el panel de verdad, con el recorrido arrancando solo.
  *
- * ── El orden: migración → segundo factor → recorrido ───────────────────────
- * El back no exige el segundo factor mientras la migración de una agencia
- * nueva está abierta, así que con el muro puesto `mfaEnrollRequired` es false.
- * Igual, si se prende mientras el muro, la pregunta o la bienvenida tapan el
- * panel (`AvisoDelMuroContext`), el panel con el muro se queda delante y esta
- * escena entra cuando el muro deja de tapar. El registro a medias
+ * ── El orden: segundo factor → migración → recorrido (T-0151) ──────────────
+ * Se invirtió el orden de T-0099 (Nico, 30-09): una agencia nueva activa el
+ * segundo factor ANTES de poder empezar la migración. Si `mfaEnrollRequired`
+ * se prende, esta escena manda aunque el muro, la pregunta o la bienvenida
+ * de la migración ya estén puestos (`AvisoDelMuroContext`). (Que el back
+ * deje de devolver `exigido: false` con el muro abierto es el otro lado de
+ * este cambio: `bootstrap.service.ts` / `primero-la-migracion.ts`.) El registro a medias
  * (`AsistentePendienteGuard`) va en el layout por encima de esto y manda
  * antes que las dos cosas.
  *
@@ -63,8 +64,12 @@ import { useSalidaDelSegundoFactor } from '@/lib/auth/use-salida-del-segundo-fac
  */
 export function SegundoFactorDentroDelPanel({ children }: { children: ReactNode }) {
   const { mfaEnrollRequired } = useAuth();
-  /** El muro de la migración (o su bienvenida) tapa el panel. */
-  const [muroTapando, setMuroTapando] = useState(false);
+  /**
+   * El muro de la migración (o su bienvenida) avisa que tapa el panel. Ya NO
+   * aplaza el segundo factor (T-0151): se sigue guardando por el contexto,
+   * pero la escena del 2FA manda aunque el muro esté puesto.
+   */
+  const [, setMuroTapando] = useState(false);
   /**
    * Ya pasó el primer código y la escena está mostrando el «Listo»: se queda
    * hasta que el hook de salida diga, aunque el contexto ya haya soltado
@@ -75,7 +80,7 @@ export function SegundoFactorDentroDelPanel({ children }: { children: ReactNode 
   const alActivar = useCallback(() => setTerminando(true), []);
   const alSalir = useCallback(() => setTerminando(false), []);
 
-  if ((mfaEnrollRequired && !muroTapando) || terminando) {
+  if (mfaEnrollRequired || terminando) {
     return <EscenaDelSegundoFactor onActivado={alActivar} onSalir={alSalir} />;
   }
 

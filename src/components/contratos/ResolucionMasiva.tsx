@@ -101,7 +101,7 @@ const PROBLEMAS_POR_FILA: Record<string, string> = {
   inquilino_documento_ajeno: 'con un documento del inquilino que es de otra cuenta',
   fechas: 'con fechas que no cuadran',
   canon: 'sin canon',
-  dia_de_pago: 'sin un día de pago válido',
+  dia_de_pago: 'con un día de pago fuera de rango',
   consecutivo_repetido: 'con un consecutivo repetido en el archivo',
   cartera_antes_del_inicio: 'con la fecha de cartera anterior al inicio',
   otros: 'con otro dato por completar',
@@ -212,7 +212,8 @@ export function ResolucionMasiva({
    * exacto de TODA la selección llega en `resultado.omitidas`, después de
    * aplicar.
    */
-  const sinInmueble = seleccionadas.filter((f) => !f.propertyId).length
+  // Una fila DESCARTADA sin inmueble (T-0156) no cuenta: está ignorada, no pendiente.
+  const sinInmueble = seleccionadas.filter((f) => !f.propertyId && f.estado !== 'DESCARTADO').length
 
   /**
    * Las filas a las que hay que aplicarle el cambio AHORA: las seleccionadas

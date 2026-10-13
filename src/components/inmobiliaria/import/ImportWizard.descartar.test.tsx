@@ -79,6 +79,13 @@ function lote(over: Partial<EstadoDeLoteInmuebles>): EstadoDeLoteInmuebles {
   };
 }
 
+/*
+ * T-0152 — al montar, el asistente se ata solo a la carga abierta MÁS RECIENTE
+ * (la tarjeta no la repite). Estas pruebas miran la tarjeta de las OTRAS, así que
+ * cada lista trae delante esa carga «actual».
+ */
+const actual = () => lote({ lote: 'actual', creadoEn: '2099-01-01T12:00:00.000Z' });
+
 let container: HTMLDivElement;
 let root: Root | null = null;
 const q = (t: string) => document.querySelector(`[data-testid="${t}"]`) as HTMLElement | null;
@@ -130,6 +137,7 @@ async function descartarYConfirmar(lote: string) {
 describe('<ImportWizard> — las cargas sin terminar se pueden descartar desde la tarjeta', () => {
   it('descarta sin entrar, lo saca de la lista y dice cuántas filas quedaron fuera', async () => {
     apiMock.lotesAbiertos.mockResolvedValue([
+      actual(),
       lote({ lote: 'vieja-a', creadoEn: '2026-09-10T12:00:00.000Z' }),
       lote({ lote: 'vieja-b', listos: 1_210, creadoEn: '2026-09-11T04:00:00.000Z' }),
     ]);
@@ -159,6 +167,7 @@ describe('<ImportWizard> — las cargas sin terminar se pueden descartar desde l
     const hoy = new Date();
     const ayer = new Date(hoy.getTime() - 86_400_000);
     apiMock.lotesAbiertos.mockResolvedValue([
+      actual(),
       // La buena: todo activado, nada que frene.
       lote({ lote: 'buena', activados: 2_824, pendientes: 40, listos: 0, creadoEn: hoy.toISOString() }),
       // La que frena: tiene filas listas sin activar.
@@ -191,7 +200,7 @@ describe('<ImportWizard> — las cargas sin terminar se pueden descartar desde l
   });
 
   it('un 409 «todavía se está procesando» se dice tal cual y la carga NO se saca de la lista', async () => {
-    apiMock.lotesAbiertos.mockResolvedValue([lote({ lote: 'vieja-a' })]);
+    apiMock.lotesAbiertos.mockResolvedValue([actual(), lote({ lote: 'vieja-a' })]);
     // T-0130: el 409 trae `code`, y es el `code` el que decide qué se dice.
     apiMock.descartarLote.mockRejectedValue(
       new ApiError(409, 'Lote en proceso', 'LOTE_EN_PROCESO'),
@@ -210,7 +219,7 @@ describe('<ImportWizard> — las cargas sin terminar se pueden descartar desde l
   });
 
   it('una carga que el worker todavía está procesando no se puede descartar', async () => {
-    apiMock.lotesAbiertos.mockResolvedValue([lote({ lote: 'en-vuelo', estado: 'PROCESANDO' })]);
+    apiMock.lotesAbiertos.mockResolvedValue([actual(), lote({ lote: 'en-vuelo', estado: 'PROCESANDO' })]);
 
     await pintar();
 

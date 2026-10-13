@@ -148,13 +148,15 @@ export function FechaDeCorteDeLaMigracion({ onCambio }: Props) {
     >
       <div>
         <p className="text-sm font-medium text-foreground">
-          ¿Desde qué día cobras con Leasefy?
+          ¿Desde qué fecha empieza Leasefy a cobrar esta cartera?
         </p>
         <p className="text-caption text-muted-foreground">
-          Es la fecha de corte de la migración. Lo que venció antes de ese día
-          lo gestionó tu sistema anterior: queda en el estado de cuenta como
+          Es la fecha de corte de la migración, no el día de pago de tus
+          inquilinos: cada contrato conserva su propio día de pago, el de su
+          fecha de cartera. Las cuotas que vencieron antes de la fecha de corte
+          las gestionó tu sistema anterior: quedan en el estado de cuenta como
           historia, no como deuda, y los contratos terminados no generan
-          ningún cobro. Desde ese día, cada contrato vigente cobra con
+          ningún cobro. Desde esa fecha, cada contrato vigente cobra con
           Leasefy con el canon que trae el archivo, sin subirlo por los años
           anteriores. No tiene un valor por defecto: escríbela tú.
         </p>

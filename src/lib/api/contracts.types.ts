@@ -202,6 +202,8 @@ export interface BackendContract {
   comisionDeConsignacion?: number | null;
   /** CO-28 (QA-MIGRACION-95): el mandato no traía la comisión. */
   comisionSinDefinir?: boolean;
+  /** T-0153 (A2): quién asume el 4x1000 del giro. `null` = rige la configuración de la inmobiliaria. */
+  trasladaGmfAlPropietario?: boolean | null;
   /** CO-28: por qué el contrato no tiene tabla de cuotas, o `null`. */
   sinTablaDeCuotas?: string | null;
   /** NI-05 (QA-MIGRACION-95): qué traía el archivo de un migrado. */

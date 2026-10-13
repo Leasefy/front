@@ -35,17 +35,23 @@ describe('useEstadoDeLoteInmuebles', () => {
   let container: HTMLDivElement
   const result: { current: Resultado | null } = { current: null }
 
-  function Sonda({ lote }: { lote: string | null }) {
-    result.current = useEstadoDeLoteInmuebles(lote)
+  function Sonda({ lote, reinicio = 0 }: { lote: string | null; reinicio?: number }) {
+    result.current = useEstadoDeLoteInmuebles(lote, reinicio)
     return null
   }
 
-  async function montar(lote: string | null) {
+  async function montar(lote: string | null, reinicio = 0) {
     container = document.createElement('div')
     document.body.appendChild(container)
     root = createRoot(container)
     await act(async () => {
-      root.render(<Sonda lote={lote} />)
+      root.render(<Sonda lote={lote} reinicio={reinicio} />)
+    })
+  }
+
+  async function remontar(lote: string | null, reinicio: number) {
+    await act(async () => {
+      root.render(<Sonda lote={lote} reinicio={reinicio} />)
     })
   }
 
@@ -73,6 +79,31 @@ describe('useEstadoDeLoteInmuebles', () => {
   it('sin lote, no sondea', async () => {
     await montar(null)
     expect(estadoDeLoteMock).not.toHaveBeenCalled()
+    expect(result.current?.estado).toBeNull()
+  })
+
+  it('T-0152: reiniciar el sondeo (mismo lote) conserva el último estado — el paso no vuelve al 1', async () => {
+    estadoDeLoteMock.mockResolvedValueOnce(loteBase({ fase: 'REVISANDO' }))
+    await montar('lote-1', 0)
+    expect(result.current?.estado?.fase).toBe('REVISANDO')
+
+    // La segunda lectura queda en vuelo: mientras tanto, el estado NO es null.
+    let resolver: (v: unknown) => void = () => {}
+    estadoDeLoteMock.mockImplementationOnce(() => new Promise((r) => { resolver = r }))
+    await remontar('lote-1', 1)
+    expect(result.current?.estado?.fase).toBe('REVISANDO')
+
+    await act(async () => { resolver(loteBase({ fase: 'LISTA', estado: 'LISTO' })) })
+    expect(result.current?.estado?.fase).toBe('LISTA')
+  })
+
+  it('T-0152: otro lote SÍ parte de cero — no se muestra el estado del anterior', async () => {
+    estadoDeLoteMock.mockResolvedValueOnce(loteBase({ lote: 'lote-1' }))
+    await montar('lote-1', 0)
+    expect(result.current?.estado?.lote).toBe('lote-1')
+
+    estadoDeLoteMock.mockImplementationOnce(() => new Promise(() => {}))
+    await remontar('lote-2', 0)
     expect(result.current?.estado).toBeNull()
   })
 

@@ -24,7 +24,7 @@ import type {
 } from './contracts.types';
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
-import type { Contract, ContractType, ContractStatus, ContractRejection, InquilinoDelContrato } from '@/lib/types/contract';
+import type { Contract, ContractType, ContractStatus, ContractRejection, InquilinoDelContrato, TipoDeDocumentoDelInquilino } from '@/lib/types/contract';
 import type { CobroConDesglose } from './recibos-de-caja.types';
 import type { ValoresPorDefectoDelContrato } from '@/lib/contratos/valores-por-defecto';
 import { normalizeCobro } from './inmobiliaria.service';
@@ -149,6 +149,7 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // contrato no tiene tabla de cuotas por la comisión (el mapeo es una lista
     // cerrada). Ausente con un back anterior.
     ...(bc.comisionSinDefinir !== undefined ? { comisionSinDefinir: bc.comisionSinDefinir === true } : {}),
+    ...(bc.trasladaGmfAlPropietario !== undefined ? { trasladaGmfAlPropietario: bc.trasladaGmfAlPropietario } : {}),
     ...(bc.sinTablaDeCuotas !== undefined ? { sinTablaDeCuotas: bc.sinTablaDeCuotas ?? null } : {}),
     ...(bc.loQueTraiaElArchivo !== undefined ? { loQueTraiaElArchivo: bc.loQueTraiaElArchivo ?? null } : {}),
     /*
@@ -873,9 +874,52 @@ export const contractsApi = {
 
   async agregarInquilino(
     id: string,
-    dto: { nombre: string; documento: string; email?: string; telefono?: string },
+    dto: {
+      nombre: string;
+      documento: string;
+      email?: string;
+      telefono?: string;
+      /** T-0163: sólo si la persona lo eligió. Un back anterior rechaza la clave (400). */
+      tipoDocumento?: TipoDeDocumentoDelInquilino;
+    },
   ): Promise<InquilinoDelContrato[]> {
     return apiClient.post<InquilinoDelContrato[]>(`/contracts/${id}/inquilinos`, dto);
+  },
+
+  /**
+   * T-0163: el tipo de documento de un coarrendatario (su factura lo exige).
+   * `tipoDocumento` es la ÚNICA clave que acepta el back.
+   */
+  async actualizarInquilino(
+    id: string,
+    inquilinoId: string,
+    cambios: { tipoDocumento: TipoDeDocumentoDelInquilino },
+  ): Promise<InquilinoDelContrato[]> {
+    return apiClient.patch<InquilinoDelContrato[]>(
+      `/contracts/${id}/inquilinos/${inquilinoId}`,
+      cambios,
+    );
+  },
+
+  /**
+   * T-0163: reparte la factura entre los inquilinos (reemplaza TODO el reparto
+   * en una transacción). `inquilinoId: null` es el titular. Exactamente uno
+   * con `null`, los demás son todos los coarrendatarios, cada parte entera de 1
+   * a 10.000 puntos básicos y la suma 10.000; si no, 400
+   * `PARTICIPACIONES_DE_INQUILINOS_INVALIDAS` con el motivo en `message`.
+   */
+  async repartirFactura(
+    id: string,
+    participaciones: Array<{ inquilinoId: string | null; participacionBps: number }>,
+  ): Promise<InquilinoDelContrato[]> {
+    return apiClient.put<InquilinoDelContrato[]>(`/contracts/${id}/inquilinos/participaciones`, {
+      participaciones,
+    });
+  },
+
+  /** T-0163: quita el reparto (toda la factura vuelve al titular). Idempotente. */
+  async quitarReparto(id: string): Promise<InquilinoDelContrato[]> {
+    return apiClient.delete<InquilinoDelContrato[]>(`/contracts/${id}/inquilinos/participaciones`);
   },
 
   async quitarInquilino(
@@ -1109,9 +1153,28 @@ export interface FilaAMigrar {
   /**
    * «Prorrateado» del archivo. Con prorrateo el primer mes cobra sólo los
    * días desde la fecha de cartera —y el último, los días ocupados—; sin él,
-   * el mes completo cada día de cartera. Ausente = sin prorrateo.
+   * el mes completo cada día de cartera. T-0153: el front SIEMPRE lo manda
+   * explícito (del archivo o elegido por la agencia en la vista previa).
    */
   prorratearPrimerMes?: boolean;
+  /**
+   * T-0153 (A1) «Renovación automática», ya invertido: `true` = al vencer
+   * queda en alerta y no se generan cuotas. Ausente = rige la prórroga legal.
+   * Un back anterior rechaza esta clave: desplegar el back primero.
+   */
+  noSeProrroga?: boolean;
+  /**
+   * T-0153 (A2) «Impuestos asumidos»: `true` = el propietario asume el 4x1000
+   * del giro de este contrato; `false` = la inmobiliaria. Ausente = rige la
+   * configuración de la inmobiliaria. Back antes que front.
+   */
+  trasladaGmfAlPropietario?: boolean;
+  /**
+   * T-0153 (A3) «Tipo de interés»: `PRORRATEADO` = interés de mora por día;
+   * `COMPLETO` = monto fijo. Ausente = rigen las reglas de la inmobiliaria.
+   * Back antes que front.
+   */
+  tipoDeInteres?: 'PRORRATEADO' | 'COMPLETO';
   /** «Días de Plazo»: gracia antes de la mora. Ausente = el de la agencia. */
   diasDePlazo?: number;
   periodicidad?: 'MENSUAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL';
@@ -1147,10 +1210,18 @@ export interface FilaAMigrar {
   canonPorPropietario?: number[];
   /**
    * TODOS los inquilinos. El `[1]` es el titular —el que se enlaza como
-   * inquilino del contrato— y los demás quedan escritos en las cláusulas: este
-   * esquema no tiene un modelo de co-arrendatario y el back no inventa uno.
+   * inquilino del contrato— y los demás quedan como co-arrendatarios
+   * (`ContratoInquilino`) del contrato.
    */
   inquilinos?: TerceroDelArchivo[];
+  /**
+   * T-0163: la plata de cada inquilino («Valor canon» de su fila), alineada
+   * índice a índice con `inquilinos`. Sólo viaja cuando el front fundió «una
+   * fila por inquilino» en un contrato. El back deriva el reparto de la
+   * factura (nunca confía en un porcentaje del front). Un back anterior
+   * rechaza esta clave: desplegar el back primero.
+   */
+  canonPorInquilino?: number[];
   /**
    * El «Escenario» tributario, tal como lo escribió la inmobiliaria. El back
    * lo guarda entero y deriva de él las banderas de IVA y retención; lo que el
@@ -1217,7 +1288,17 @@ export type Faltante =
    * canon. No se inventa un 50/50: se corrige el archivo o se quita esa
    * columna del mapeo (partes iguales) y se ajusta en el mandato.
    */
-  | 'reparto_del_canon';
+  | 'reparto_del_canon'
+  /**
+   * T-0163: «Valor Canon» reparte el canon entre los inquilinos y la lista no
+   * coincide con ellos o no suma el canon. No hay editor en la fila: se
+   * corrige el archivo o se descarta la fila.
+   */
+  | 'reparto_de_inquilinos'
+  /** Después de activar: lo guardado no coincide con el archivo. Nada se corrigió solo. */
+  | 'verificacion_difiere'
+  /** La red del back: un código que nadie mapeó. */
+  | 'otros';
 
 export interface InmuebleCandidato {
   id: string;
@@ -1254,6 +1335,13 @@ export interface AsociacionDeTercero {
    * las preparadas antes de que existiera.
    */
   reparto?: RepartoDeDuenos | null;
+  /**
+   * T-0163, sólo para el inquilino y sólo con 2+ inquilinos: cómo se va a
+   * repartir la factura entre ellos (el back deriva el % de «Valor Canon»).
+   * Ausente/`null` = no hay línea de reparto que mostrar (back anterior o un
+   * solo inquilino).
+   */
+  repartoDeInquilinos?: RepartoDeInquilinos | null;
 }
 
 /** Un dueño del reparto: quién, cuánto (bps) y cuánta plata es eso. */
@@ -1264,6 +1352,23 @@ export interface DuenoDelReparto {
   bps: number | null;
   /** La plata que le toca: la del archivo si la trajo, si no `canon × bps`. */
   canon: number | null;
+}
+
+/** T-0163: un inquilino del reparto de la factura: quién, qué parte (bps) y cuánta plata del canon. */
+export interface InquilinoDelReparto {
+  documento: string | null;
+  nombre: string | null;
+  /** `null` cuando el reparto tiene problema: nunca se finge un 50/50. */
+  bps: number | null;
+  canon: number | null;
+}
+
+export interface RepartoDeInquilinos {
+  inquilinos: InquilinoDelReparto[];
+  /** `true` si el archivo dijo cuánto es de quién (plata o %); `false` = no dijo nada y no se reparte. */
+  explicito: boolean;
+  /** El motivo, en castellano, cuando la fila quedó frenada por esto. */
+  problema: string | null;
 }
 
 export interface RepartoDeDuenos {
@@ -1764,6 +1869,12 @@ export interface ResumenActivacion {
    * todavía no manda este campo no puede afirmar un conteo que no tiene.
    */
   porInvitar?: number;
+  /**
+   * T-0153 (A3): avisos NO bloqueantes del back, por código. El único que se
+   * lee hoy es `regla_de_interes_no_configurada`: el archivo pedía un tipo de
+   * interés y la inmobiliaria no tiene esa regla. Ausente ⇒ nada que mostrar.
+   */
+  avisos?: Array<{ codigo: string; cuantos?: number }>;
   /**
    * 2026-09-02 — las filas sin inmueble de ESTA corrida. Con `sparse`
    * prendido en el back: cuántas se ACTIVARON sin inmueble (contratos que no

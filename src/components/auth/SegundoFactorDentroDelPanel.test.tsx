@@ -10,8 +10,8 @@
  *  - al activar, el «Listo» se queda hasta que el contexto suelta
  *    `mfaEnrollRequired` y pasa la pausa; ahí se monta el panel, sin navegar;
  *  - si el contexto no se entera, a los 8 s carga completa de ESTA pantalla;
- *  - con el muro de la migración tapando, el 2FA no sale encima: el panel
- *    (con su muro) se queda delante;
+ *  - el 2FA va ANTES de la migración (T-0151): con el muro tapando, el 2FA
+ *    sale encima igual;
  *  - es el siguiente paso de la puesta en marcha, no un pop-up (Nico, 30-09:
  *    «¿dentro de la plataforma por qué pone el "Cerrar sesión"?»): sin
  *    «Cerrar sesión», con el «Antes de empezar» y la tarjeta de la decisión
@@ -334,21 +334,35 @@ describe('SegundoFactorDentroDelPanel — sin pendiente', () => {
   })
 })
 
-describe('SegundoFactorDentroDelPanel — el orden: migración → segundo factor', () => {
-  it('con el muro tapando, el 2FA NO sale encima: el panel con su muro se queda delante; entra cuando el muro baja', async () => {
+describe('SegundoFactorDentroDelPanel — el orden: segundo factor → migración', () => {
+  // T-0151: the owner reversed the T-0099/Nico 30-09 order. A new agency
+  // activates the second factor BEFORE it can start the migration.
+  it('con el muro de la migración tapando, el 2FA sale encima: nada de la migración queda al alcance', async () => {
     authState.mfaEnrollRequired = false
     await pintar(<MuroDePrueba tapado />)
     expect(hay('muro')).toBe(true)
 
-    // Se resolvió la migración y el back ya exige, pero la bienvenida sigue.
     authState.mfaEnrollRequired = true
     await pintar(<MuroDePrueba tapado />)
-    expect(hay('muro')).toBe(true)
-    expect(hay('segundo-factor-dentro-del-panel')).toBe(false)
-
-    // La persona entra (la bienvenida se cierra): ahora sí, el segundo factor.
-    await pintar(<MuroDePrueba tapado={false} />)
-    expect(hay('muro')).toBe(false)
     expect(hay('segundo-factor-dentro-del-panel')).toBe(true)
+    expect(hay('muro')).toBe(false)
+  })
+
+  it('con el 2FA pendiente y el muro aún sin avisar, el 2FA va primero y el muro no se monta', async () => {
+    authState.mfaEnrollRequired = true
+    await pintar(<MuroDePrueba tapado={false} />)
+    expect(hay('segundo-factor-dentro-del-panel')).toBe(true)
+    expect(hay('muro')).toBe(false)
+  })
+
+  it('ya activado el 2FA, la persona vuelve al muro de la migración', async () => {
+    authState.mfaEnrollRequired = true
+    await pintar(<MuroDePrueba tapado />)
+    expect(hay('segundo-factor-dentro-del-panel')).toBe(true)
+
+    authState.mfaEnrollRequired = false
+    await pintar(<MuroDePrueba tapado />)
+    expect(hay('segundo-factor-dentro-del-panel')).toBe(false)
+    expect(hay('muro')).toBe(true)
   })
 })

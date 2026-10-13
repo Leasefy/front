@@ -383,6 +383,9 @@ export interface RespuestaDeReciboPorCliente {
 /** Una factura APARTE de los intereses que pagó un recibo (la del mes ya estaba emitida). */
 export interface FacturaDeInteresesDelPago {
   facturaId: string;
+  /** T-0163: de qué inquilino es esta parte (ausente en un back anterior = `null`). */
+  contratoInquilinoId?: string | null;
+  participacionBps?: number | null;
   reciboDeCajaId: string;
   totalCop: number;
   estado: 'GENERADA' | 'EMITIDA';
@@ -393,6 +396,13 @@ export interface FacturaDelPago {
   /** Vacío si no hubo intereses por facturar aparte; ausente en un back viejo. */
   facturasDeIntereses?: FacturaDeInteresesDelPago[];
   facturaId: string;
+  /**
+   * T-0163: con la factura dividida entre los inquilinos, un mes trae UNA
+   * entrada por inquilino con el mismo `contractId` y `mes` y distinto
+   * `facturaId`. La llave es `facturaId`, nunca contrato + mes.
+   */
+  contratoInquilinoId?: string | null;
+  participacionBps?: number | null;
   contractId: string;
   mes: string;
   estado: 'GENERADA' | 'EMITIDA';

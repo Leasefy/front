@@ -402,16 +402,17 @@ function FilaFrenada({
         {faltas.length === 0 ? (
           <span className="text-fg-subtle">{t(`${RAIZ}.tabla.nada`)}</span>
         ) : (
-          <span className="flex flex-wrap gap-1">
+          <ul className="flex flex-col gap-0.5">
             {faltas.map((falta) => (
-              <span
+              <li
                 key={falta}
-                className="rounded-full bg-warning-soft px-2 py-0.5 text-caption font-medium text-warning"
+                className="flex items-center gap-1.5 text-caption font-medium text-warning"
               >
+                <Warning className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 {t(`${RAIZ}.tabla.faltas.${falta}`)}
-              </span>
+              </li>
             ))}
-          </span>
+          </ul>
         )}
       </TableCell>
       {!hayAccion ? null : (

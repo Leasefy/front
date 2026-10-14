@@ -54,6 +54,9 @@ vi.mock('@/lib/api/contracts.service', () => ({
       preparar: vi.fn(),
       filas: vi.fn(),
       resolverMasivo: vi.fn(),
+      // ResolucionMasiva pregunta el desglose de la selección; sin él ofrece
+      // el par de siempre (uso / propietario), que es lo que fijan estas pruebas.
+      faltantesDeLaSeleccion: vi.fn().mockRejectedValue(new Error('sin desglose')),
       resumen: vi.fn(),
       lotesAbiertos: vi.fn(),
       resolver: vi.fn(),

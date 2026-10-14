@@ -74,6 +74,7 @@ import type {
 } from "@/lib/types/inmobiliaria";
 import { RanuraDelPie, type ImportStepProps } from "../ImportWizard";
 import { FilaImportacionRow } from "../FilaImportacionRow";
+import { TipoDeLasFilasSinTipo } from "../TipoDeLasFilasSinTipo";
 import { LoteInmueblesMasivo } from "../LoteInmueblesMasivo";
 import { ProgresoDeLoteInmuebles } from "../ProgresoDeLoteInmuebles";
 import { useEstadoDeLoteInmuebles } from "@/lib/hooks/use-estado-de-lote-inmuebles";
@@ -84,6 +85,7 @@ import {
   type ResolverInmuebleDto,
   type ResumenLoteInmuebles,
   type EstadoDeLoteInmuebles,
+  type MotivosDelLoteInmuebles,
 } from "@/lib/api/inmuebles-importacion.service";
 
 /**
@@ -330,6 +332,8 @@ function StepConfirmImportCuerpo({
   // Nico 14-10: lo que «Crear todas» crea AHORA (sólo las listas); `null` = back viejo.
   const [alCrear, setAlCrear] = useState<{ sinCanon: number; sinPrecioDeVenta: number } | null>(null);
   const sinCanonAlCrear = alCrear?.sinCanon ?? sinCanon;
+  // Nico 14-10: las filas sin tipo, agrupadas (un back anterior no lo manda).
+  const [sinTipo, setSinTipo] = useState<MotivosDelLoteInmuebles['sinTipo'] | null>(null);
   const [pendientes, setPendientes] = useState<FilaDeImportacion[]>([]);
   const [totalPendientes, setTotalPendientes] = useState(0);
   const [pagina, setPagina] = useState(1);
@@ -593,6 +597,7 @@ function StepConfirmImportCuerpo({
       if (e) setEstadoManual(e);
       setSinCanon(m?.sinCanon ?? 0);
       setAlCrear(m?.alCrear ?? null);
+      setSinTipo(m?.sinTipo ?? null);
       setResumenLote(r);
       setPendientes(p.filas);
       setTotalPendientes(p.total);
@@ -2192,6 +2197,13 @@ function StepConfirmImportCuerpo({
 
         {/* Una carga vieja pudo dejar fallidas: se ven y se reintentan acá también. */}
         {panelDeFallidas}
+
+        <TipoDeLasFilasSinTipo
+          lote={lote}
+          sinTipo={sinTipo}
+          deshabilitado={revisando || descartandoLote || iniciandoCreacion}
+          onCambio={() => void refrescarRevision(lote, 1)}
+        />
 
         <LoteInmueblesMasivo
           lote={lote}

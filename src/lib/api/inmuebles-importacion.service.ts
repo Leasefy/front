@@ -222,7 +222,20 @@ export interface ImportarInmuebleDto {
   comisionPorcentaje?: number;
 }
 
+/** Nico 14-10: el tipo que dice la dirección de una fila sin tipo. */
+export interface SugerenciaDeTipo {
+  tipo: string;
+  /** Las palabras de la dirección que lo dicen («APTO 201»). */
+  porque: string;
+}
+
 export interface FilaDeImportacion {
+  /** Nico 14-10 (sólo PENDIENTE sin tipo): la «Clase» del archivo; `null` = vacía. */
+  claseDelArchivo?: string | null;
+  /** …si es otra cosa del sistema anterior («Queja», «Reclamos»…). */
+  noEsInmueble?: boolean;
+  /** …y el tipo que dice su dirección, para confirmarlo de un clic. */
+  sugerenciaDeTipo?: SugerenciaDeTipo | null;
   id: string;
   lote: string;
   fila: number;
@@ -493,10 +506,18 @@ export interface FiltroDeFilasInmuebles {
   estado?: 'PENDIENTE' | 'LISTO';
   /** Un código de `faltantes` o `'canon'` (las que no traen canon usable). */
   motivo?: string;
+  // Nico 14-10 (filas sin tipo): por la «Clase» del archivo, las que no son
+  // inmuebles, o las que traen el tipo en la dirección.
+  clase?: string;
+  sinClase?: boolean;
+  noEsInmueble?: boolean;
+  conSugerenciaDeTipo?: boolean;
 }
 
 export interface CambiosMasivosInmuebles {
   campos?: CamposMasivosInmuebles;
+  /** Nico 14-10: a cada fila sin tipo, el tipo que dice SU dirección. */
+  usarSugerenciaDeTipo?: boolean;
   permitirDuplicado?: boolean;
   descartar?: boolean;
   /** `false` rellena sólo lo vacío; `true` pisa también lo que ya tenía valor. */
@@ -537,6 +558,12 @@ export interface MotivosDelLoteInmuebles {
    * completar. Un back anterior no lo manda.
    */
   alCrear?: { sinCanon: number; sinPrecioDeVenta: number };
+  /** Nico 14-10: las que esperan su tipo. Un back anterior no lo manda. */
+  sinTipo?: {
+    porClase: { clase: string | null; filas: number }[];
+    conSugerencia: number;
+    noSonInmuebles: { filas: number; clases: string[] };
+  };
   /** `codigo: 'canon'` trae `bloquea: false`. */
   porMotivo: { codigo: string; filas: number; bloquea: boolean }[];
 }
@@ -705,6 +732,7 @@ export const inmueblesImportacionApi = {
   ): Promise<ResultadoMasivoPorFiltroInmuebles> {
     const base: Record<string, unknown> = { lote, filtro };
     if (cambios.campos) base.campos = cambios.campos;
+    if (cambios.usarSugerenciaDeTipo) base.usarSugerenciaDeTipo = true;
     if (cambios.permitirDuplicado !== undefined) base.permitirDuplicado = cambios.permitirDuplicado;
     if (cambios.descartar !== undefined) base.descartar = cambios.descartar;
     if (cambios.sobrescribir !== undefined) base.sobrescribir = cambios.sobrescribir;

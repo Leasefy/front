@@ -50,6 +50,7 @@ import type {
 } from '@/lib/api/inmuebles-importacion.service';
 import { formatCurrency } from '@/lib/format';
 import { bpsComoPorcentaje } from '@/lib/migracion/valores-de-origen';
+import { etiquetaDelTipo } from './TipoDeLasFilasSinTipo';
 
 const TIPOS = [
   { value: 'apartment', label: 'Apartamento' },
@@ -248,6 +249,33 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
           })}
         </div>
       )}
+
+      {/* Nico 14-10: el tipo que dice la dirección, para confirmarlo de un clic (nunca se pone solo). */}
+      {fila.sugerenciaDeTipo ? (
+        <div className="flex flex-wrap items-center gap-2" data-testid="fila-sugerencia-de-tipo">
+          <span className="text-xs text-fg-muted">
+            La dirección dice «{fila.sugerenciaDeTipo.porque}».
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            hideArrow
+            disabled={isBusy}
+            onClick={() =>
+              void onResolver(fila.id, { type: fila.sugerenciaDeTipo!.tipo })
+            }
+          >
+            Es {etiquetaDelTipo(fila.sugerenciaDeTipo.tipo).toLowerCase()}
+          </Button>
+        </div>
+      ) : null}
+      {fila.noEsInmueble ? (
+        <p className="text-xs text-warning" data-testid="fila-no-es-inmueble">
+          El archivo dice «{fila.claseDelArchivo}»: parece un registro de otra cosa del sistema
+          anterior, no un inmueble. Si es así, no la traigas (botón de la papelera).
+        </p>
+      ) : null}
 
       {/* T-0129 — neutral: no frena la fila, sólo avisa cómo va a quedar. */}
       {fila.datosPendientes?.includes('canon') && (

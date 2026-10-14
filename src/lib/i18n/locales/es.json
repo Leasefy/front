@@ -13727,6 +13727,7 @@
     "noSuma": "No suma en los totales",
     "asociadoPorNumeroDeContrato": "Asociado por el número de contrato",
     "asociadoPorCodigoDelInmueble": "Asociado por el código del inmueble",
+    "asociadoPorNombreDelInquilino": "Asociado por el nombre del inquilino",
     "vencida": "vencida",
     "saldoDe": "Saldo pendiente",
     "columnasOmitidas": "No se muestran {{columnas}}: son cero en todas las filas de este contrato.",

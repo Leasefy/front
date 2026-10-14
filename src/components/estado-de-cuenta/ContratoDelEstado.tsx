@@ -836,7 +836,9 @@ function Pago({ fila }: { fila: FilaDelEstadoDeCuenta }) {
           {t(
             doc.asociadoPor === 'numero_contrato'
               ? 'estadoDeCuenta.asociadoPorNumeroDeContrato'
-              : 'estadoDeCuenta.asociadoPorCodigoDelInmueble',
+              : doc.asociadoPor === 'nombre'
+                ? 'estadoDeCuenta.asociadoPorNombreDelInquilino'
+                : 'estadoDeCuenta.asociadoPorCodigoDelInmueble',
           )}
         </p>
       )}

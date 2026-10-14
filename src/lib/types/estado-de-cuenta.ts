@@ -61,7 +61,7 @@ export interface DocumentoDePago {
    * paga el mes porque se colgó del contrato por su número o por el código del
    * inmueble. Ausente = por el documento.
    */
-  asociadoPor?: 'numero_contrato' | 'codigo_inmueble';
+  asociadoPor?: 'numero_contrato' | 'codigo_inmueble' | 'nombre';
 }
 
 /**

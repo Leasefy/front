@@ -65,6 +65,9 @@ export function filaConReciboAnulable(fila: FilaDelEstadoDeCuenta): boolean {
   // saldo a favor; el back no deja anular su recibo por aquí (409
   // `CUOTA_ANULADA_AL_TERMINAR`), así que no se ofrece un botón que siempre falla.
   if (fila.estado === 'ANULADA') return false;
+  // 🔴 QA de Portofino (14-10): el comprobante de un mes del sistema anterior
+  // («CI-8», migrado) no es un recibo de Leasefy: no hay nada que anular aquí.
+  if (fila.estado === 'ANTERIOR') return false;
   return Boolean(doc && doc.tipo === 'INGRESO' && !doc.pagador && doc.numero);
 }
 

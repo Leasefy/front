@@ -94,6 +94,21 @@ describe('BotonAnularRecibo', () => {
     expect(host!.querySelector('[data-testid="anular-recibo-de-la-fila"]')).toBeNull();
   });
 
+  it('🔴 en un mes del sistema anterior (comprobante migrado «CI-8») no se ofrece: no es un recibo de Leasefy (Portofino 14-10)', async () => {
+    await montar(
+      <ProveedorDeAnularRecibo habilitado onAnulado={() => {}}>
+        <BotonAnularRecibo
+          fila={{
+            ...PAGADA,
+            estado: 'ANTERIOR',
+            documentoDePago: { numero: 'CI-8', tipo: 'INGRESO', descripcion: 'RECAUDO', asociadoPor: 'nombre' },
+          }}
+        />
+      </ProveedorDeAnularRecibo>,
+    );
+    expect(host!.querySelector('[data-testid="anular-recibo-de-la-fila"]')).toBeNull();
+  });
+
   it('con el proveedor pero sin ser administrador, tampoco', async () => {
     await montar(
       <ProveedorDeAnularRecibo habilitado={false} onAnulado={() => {}}>

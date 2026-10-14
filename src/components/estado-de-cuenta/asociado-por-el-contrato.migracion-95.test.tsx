@@ -25,7 +25,7 @@ afterEach(() => {
   host.remove();
 });
 
-function conElMesDeMayo(asociadoPor?: 'numero_contrato' | 'codigo_inmueble') {
+function conElMesDeMayo(asociadoPor?: 'numero_contrato' | 'codigo_inmueble' | 'nombre') {
   const c = contrato();
   c.secciones = { ...c.secciones, arriendos: [
     fila({
@@ -59,6 +59,11 @@ describe('el mes pagado por un comprobante asociado por el contrato (CA-08)', ()
   it('dice «Asociado por el código del inmueble»', () => {
     conElMesDeMayo('codigo_inmueble');
     expect(host.querySelector('[data-testid="asociado-por"]')?.textContent).toBe('Asociado por el código del inmueble');
+  });
+  // QA de Portofino (14-10), Nico: el recibo con el nombre EXACTO del inquilino también paga.
+  it('dice «Asociado por el nombre del inquilino»', () => {
+    conElMesDeMayo('nombre');
+    expect(host.querySelector('[data-testid="asociado-por"]')?.textContent).toBe('Asociado por el nombre del inquilino');
   });
   it('el pagado por el documento del inquilino no dice nada de más', () => {
     conElMesDeMayo();

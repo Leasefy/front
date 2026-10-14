@@ -265,6 +265,24 @@ export function FilaDeTercero({
   const soloFaltaElDocumento =
     errores.length > 0 && errores.every((e) => CODIGOS_COMPLETABLES.includes(e.codigo));
 
+  /*
+   * QA de Portofino (14-10): decir QUÉ queda en blanco. La fila «SD1» trae su
+   * documento y sólo el tipo no se entiende: entra con su documento, no «con
+   * el dato del documento en blanco».
+   */
+  const faltaElNumero = errores.some(
+    (e) => e.codigo === 'FALTA_DOCUMENTO' || e.codigo === 'DOCUMENTO_INVALIDO',
+  );
+  const faltaElTipo = errores.some(
+    (e) => e.codigo === 'FALTA_TIPO_DOCUMENTO' || e.codigo === 'TIPO_DOCUMENTO_DESCONOCIDO',
+  );
+  const loQueQuedaEnBlanco =
+    faltaElTipo && !faltaElNumero
+      ? 'el tipo de documento'
+      : faltaElNumero && !faltaElTipo
+        ? 'el número de documento'
+        : 'el documento';
+
   /** T-0128 · varias personas en una celda: se muestra el texto crudo y se decide. */
   const variasPersonas = errores.find((e) => e.codigo === 'VARIAS_PERSONAS_EN_LA_FILA');
 
@@ -559,7 +577,7 @@ export function FilaDeTercero({
           data-testid="crear-incompleta"
         >
           <p className="text-sm text-fg">
-            Puedes crear a esta persona <strong className="font-medium">ya, con el dato del documento
+            Puedes crear a esta persona <strong className="font-medium">ya, con {loQueQuedaEnBlanco}{' '}
             en blanco</strong>. Queda marcada como «datos por completar» y la completas después desde{' '}
             {seccionDeLaFicha}.
           </p>

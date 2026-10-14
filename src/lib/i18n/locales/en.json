@@ -13691,6 +13691,7 @@
     "noSuma": "Not counted in the totals",
     "asociadoPorNumeroDeContrato": "Matched by the contract number",
     "asociadoPorCodigoDelInmueble": "Matched by the property code",
+    "asociadoPorNombreDelInquilino": "Matched by the tenant's exact name",
     "vencida": "overdue",
     "saldoDe": "Outstanding balance",
     "columnasOmitidas": "{{columnas}} are hidden: they are zero in every row of this contract.",

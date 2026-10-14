@@ -1057,7 +1057,7 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
           );
           if (r.ok) {
             setAvisoMasivo(
-              'La fila quedó lista para crearse con datos por completar: se crea con el botón de arriba y el documento se completa después, desde Propietarios o Inquilinos.',
+              'La fila quedó lista para crearse con datos por completar: se crea con el botón de arriba y lo que le falta del documento se completa después, desde Propietarios o Inquilinos.',
             );
           }
           return r;
@@ -2799,7 +2799,7 @@ function ResolucionMasiva({
       <div className="space-y-2 border-t border-primary/15 pt-3" data-testid="masivo-incompletas">
         <h3 className="text-sm font-medium text-fg">Crear con datos por completar</h3>
         <p className="max-w-prose text-sm text-fg-muted">
-          Se crea la ficha ahora, con el documento en blanco, y queda marcada como «Datos por
+          Se crea la ficha ahora, con lo que falta del documento en blanco, y queda marcada como «Datos por
           completar». Tu inmobiliaria la completa después desde {seccionDeLaFicha}. No se pierde a
           nadie.
         </p>

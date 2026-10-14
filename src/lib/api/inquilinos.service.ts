@@ -123,7 +123,7 @@ export interface Inquilino {
    */
   tipoDocumento?: TipoDeDocumento | null;
   /** Qué falta de su ficha (T-0128). Ausente = completa, o un back anterior. */
-  datosPendientes?: ['documento'];
+  datosPendientes?: ('documento' | 'tipoDocumento')[];
   /**
    * I-22 (Nico, 03-10): si la persona tiene cuenta del portal. Cuando lo dice
    * el back, `tenantId` es su `User.id` con `true`. Ausente = un back

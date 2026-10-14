@@ -61,6 +61,7 @@ import {
   conceptoLimpio,
   estaVencida,
   sinComprobantesDelSistemaAnterior,
+  sinPlataQueMostrar,
   ETIQUETA_DE_COLUMNA,
   fechaLegible,
   intercalarCortes,
@@ -1306,7 +1307,7 @@ function FilaDeLaTabla({
       </Text>
 
       <Text style={[estilos.celda, estilos.numero, cuerpo, { width: medidas.bruto }]}>
-        {fila.sinPorcentaje ? '—' : formatCurrency(fila.valorBruto)}
+        {sinPlataQueMostrar(fila) ? '—' : formatCurrency(fila.valorBruto)}
       </Text>
 
       {columnas.map((c) => (
@@ -1318,7 +1319,7 @@ function FilaDeLaTabla({
             { width: medidas.impuesto, fontSize: medidas.fuente, color: COLOR.tenue },
           ]}
         >
-          {formatCurrency(fila[c] ?? 0)}
+          {sinPlataQueMostrar(fila) ? '—' : formatCurrency(fila[c] ?? 0)}
         </Text>
       ))}
 
@@ -1330,7 +1331,7 @@ function FilaDeLaTabla({
           { width: medidas.neto, fontFamily: MONO },
         ]}
       >
-        {fila.sinPorcentaje ? '—' : formatCurrency(fila.valorNeto)}
+        {sinPlataQueMostrar(fila) ? '—' : formatCurrency(fila.valorNeto)}
       </Text>
 
       <Text style={[estilos.celda, estilos.numero, cuerpo, { width: medidas.vence, textAlign: 'left' }]}>
@@ -1349,7 +1350,17 @@ function FilaDeLaTabla({
         {fila.documentoDePago ? (
           <>
             <Text style={[estilos.numero, cuerpo, { textAlign: 'left', fontSize: medidas.fuente - 1 }]}>
-              {paraElPapel(`${fila.documentoDePago.numero} · ${fila.documentoDePago.tipo}`)}
+              {paraElPapel(
+                `${fila.documentoDePago.numero}${
+                  (fila.delSistemaAnterior?.comprobantes ?? 0) > 1
+                    ? ` y ${(fila.delSistemaAnterior?.comprobantes ?? 0) - 1} más`
+                    : ''
+                } · ${fila.documentoDePago.tipo}` +
+                  // 14-10 (Nico): lo que dice el comprobante migrado del sistema anterior.
+                  (typeof fila.documentoDePago.valor === 'number'
+                    ? ` · ${formatCurrency(fila.documentoDePago.valor)}`
+                    : ''),
+              )}
             </Text>
             <Text style={{ fontSize: medidas.fuente - 1, color: COLOR.tenue, marginTop: 1 }}>
               {paraElPapel(fila.documentoDePago.descripcion)}

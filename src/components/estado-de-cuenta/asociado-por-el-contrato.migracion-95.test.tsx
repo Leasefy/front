@@ -25,7 +25,7 @@ afterEach(() => {
   host.remove();
 });
 
-function conElMesDeMayo(asociadoPor?: 'numero_contrato' | 'codigo_inmueble' | 'nombre') {
+function conElMesDeMayo(asociadoPor?: 'numero_contrato' | 'codigo_inmueble' | 'nombre', valor?: number) {
   const c = contrato();
   c.secciones = { ...c.secciones, arriendos: [
     fila({
@@ -37,6 +37,7 @@ function conElMesDeMayo(asociadoPor?: 'numero_contrato' | 'codigo_inmueble' | 'n
         tipo: 'INGRESO',
         descripcion: 'RECAUDO CANON MAYO CONTRATO 9501 · asociado por el número de contrato',
         ...(asociadoPor ? { asociadoPor } : {}),
+        ...(valor !== undefined ? { valor } : {}),
       },
       valorBruto: 2_350_000,
       valorNeto: 2_350_000,
@@ -64,6 +65,15 @@ describe('el mes pagado por un comprobante asociado por el contrato (CA-08)', ()
   it('dice «Asociado por el nombre del inquilino»', () => {
     conElMesDeMayo('nombre');
     expect(host.querySelector('[data-testid="asociado-por"]')?.textContent).toBe('Asociado por el nombre del inquilino');
+  });
+  // QA de Portofino (14-10), Nico: «el valor del comprobante», nunca el canon de hoy.
+  it('el mes del sistema anterior dice «—» en su plata y el valor va junto a su comprobante', () => {
+    conElMesDeMayo('nombre', 1_665_000);
+    const fila = [...host.querySelectorAll('tr')].find((tr) => tr.textContent?.includes('RC-9001'))!;
+    expect(fila.textContent).toContain('RC-9001 · INGRESO · $\u00a01.665.000');
+    expect(fila.textContent).not.toContain('2.350.000');
+    expect(fila.textContent).not.toContain(' más');
+    expect(fila.textContent).toContain('—');
   });
   it('el pagado por el documento del inquilino no dice nada de más', () => {
     conElMesDeMayo();

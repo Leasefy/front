@@ -123,6 +123,40 @@ describe('listaDePersonas', () => {
   });
 });
 
+describe('documentoYNombre — el documento escrito con formato (Portofino 14-10)', () => {
+  // Regla de Nico (07-09 y 14-10): el documento se valida sólo por largo y
+  // caracteres. Los mismos dueños que la migración de Propietarios creó con
+  // «3014023878» y «447903502704» quedaban sin partir y el inmueble sin dueño.
+  it('con paréntesis y guion pegado', () => {
+    expect(documentoYNombre('(301) 402-3878 - RUBEN')).toEqual({
+      documento: '3014023878',
+      nombre: 'RUBEN',
+      orden: undefined,
+    });
+  });
+  it('con «+» y espacios', () => {
+    expect(documentoYNombre('+44 7903 502704 - LEIDY  JOHANA  CARRASQUILLA')).toMatchObject({
+      documento: '447903502704',
+      nombre: 'LEIDY JOHANA CARRASQUILLA',
+    });
+  });
+  it('sigue sin partir lo que no tiene forma de documento', () => {
+    expect(documentoYNombre('CONSTRUCTORA A - B S.A.S')).toEqual({
+      nombre: 'CONSTRUCTORA A - B S.A.S',
+      orden: undefined,
+    });
+    expect(documentoYNombre('- ')).toEqual({ nombre: '-', orden: undefined });
+    expect(documentoYNombre('123 - JUAN')).toEqual({ nombre: '123 - JUAN', orden: undefined });
+  });
+  it('el de siempre, igual', () => {
+    expect(documentoYNombre('901548190 - PORTOFINO PROPIEDAD RAIZ S.A.S')).toMatchObject({
+      documento: '901548190',
+      nombre: 'PORTOFINO PROPIEDAD RAIZ S.A.S',
+    });
+    expect(documentoYNombre('1.036.111.001 - ANA')).toMatchObject({ documento: '1036111001' });
+  });
+});
+
 describe('codigoYDireccion', () => {
   it('parte por el PRIMER guion, no por el de la dirección', () => {
     expect(codigoYDireccion('218 - 126 SUR 42 - 37 AP 504')).toEqual({

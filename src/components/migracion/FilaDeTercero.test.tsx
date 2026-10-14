@@ -451,6 +451,64 @@ describe('FilaDeTercero', () => {
   });
 });
 
+/*
+ * 🔴 QA de Portofino (14-10): la fila 1237 de Inquilinos dice «CC» y
+ * «A44689223». El back conserva la letra y pregunta el TIPO (el error viene
+ * en el campo `tipoDocumento`). Nico: «respetar la A y pedir el tipo» — con
+ * un clic.
+ */
+describe('cuando el número trae una letra y el tipo es CC', () => {
+  const conLetra = () =>
+    fila({
+      tipo: 'INQUILINO',
+      datos: { _fila: 1237, nombre: 'Charles Anthony Osceola', tipoDocumento: 'CC', documento: 'A44689223' },
+      errores: [
+        {
+          codigo: 'DOCUMENTO_INVALIDO',
+          campo: 'tipoDocumento',
+          mensaje:
+            'el documento «A44689223» trae la letra «A» y una CC lleva sólo dígitos: si es un pasaporte, márcalo así; si la letra sobra, bórrala del número',
+        },
+      ],
+    });
+
+  it('«Es pasaporte» manda sólo el tipo, en un clic, y deja el número como está', async () => {
+    const cb = await pintar({ fila: conLetra() });
+    const caja = container.querySelector('[data-testid="es-pasaporte"]');
+    expect(caja?.textContent).toContain('A44689223');
+    await click(container.querySelector('[data-testid="boton-es-pasaporte"]')!);
+    expect(cb.onCorregir).toHaveBeenCalledTimes(1);
+    expect(cb.onCorregir).toHaveBeenCalledWith({ tipoDocumento: 'PASSPORT' });
+  });
+
+  it('ofrece elegir el tipo en la fila (el campo con el error es el tipo)', async () => {
+    await pintar({ fila: conLetra() });
+    expect(container.querySelector('#tercero-f-1-tipoDocumento')).not.toBeNull();
+  });
+
+  it('«Crear con datos por completar» dice que queda en blanco el TIPO, no el número', async () => {
+    await pintar({ fila: conLetra(), onCrearIncompleta: vi.fn().mockResolvedValue({ ok: true, mensaje: null }) });
+    expect(
+      container.querySelector('[data-testid="crear-incompleta"]')?.textContent,
+    ).toContain('con el tipo de documento en blanco');
+  });
+
+  it('un número inválido de los de siempre no ofrece «Es pasaporte»', async () => {
+    await pintar({
+      fila: fila({
+        errores: [
+          {
+            codigo: 'DOCUMENTO_INVALIDO',
+            campo: 'documento',
+            mensaje: 'Para una CC el número tiene entre 3 y 20 dígitos; la celda trae «12»',
+          },
+        ],
+      }),
+    });
+    expect(container.querySelector('[data-testid="es-pasaporte"]')).toBeNull();
+  });
+});
+
 describe('valorEditable', () => {
   it('traduce el booleano del back al vocabulario de la plantilla', () => {
     // El back normaliza «Sí»/«No» a booleano. Un `<input value={false}>`

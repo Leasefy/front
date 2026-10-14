@@ -229,7 +229,26 @@ export interface SugerenciaDeTipo {
   porque: string;
 }
 
+/**
+ * 🔴 Portofino (14-10): la ficha que ya está con el mismo nombre completo y
+ * celular que el dueño del archivo, que trae OTRO documento.
+ */
+export interface DuenoParecido {
+  id: string;
+  nombre: string;
+  documento: string | null;
+  tipoDocumento: string | null;
+  telefono: string | null;
+  /** El teléfono que el archivo y la ficha tienen en común. */
+  telefonoEnComun?: string;
+}
+
 export interface FilaDeImportacion {
+  /**
+   * Portofino (14-10), sólo con el faltante `dueno_parecido`: con quién se
+   * parece el dueño del archivo. Se responde «¿Es la misma persona?».
+   */
+  duenoParecido?: DuenoParecido | null;
   /** Nico 14-10 (sólo PENDIENTE sin tipo): la «Clase» del archivo; `null` = vacía. */
   claseDelArchivo?: string | null;
   /** …si es otra cosa del sistema anterior («Queja», «Reclamos»…). */
@@ -484,6 +503,8 @@ export interface ResolverInmuebleDto {
   consignedAt?: string;
   /** The only exit for `posible_duplicado` — an action, not a form field. */
   permitirDuplicado?: boolean;
+  /** Portofino (14-10): la respuesta a «¿Es la misma persona?» (sólo esa fila). */
+  esElDuenoParecido?: boolean;
 }
 
 /** Los campos que se pueden poner en bloque (`PATCH filas/masivo`). */

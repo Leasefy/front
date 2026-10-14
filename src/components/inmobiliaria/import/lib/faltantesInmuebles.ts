@@ -25,7 +25,9 @@ export type FaltanteInmueble =
   | 'reparto'
   | 'codigo_repetido'
   /** EN-38 / NI-07 (QA-MIGRACION-95): una cifra trae centavos y la llave está apagada. */
-  | 'plata_con_centavos';
+  | 'plata_con_centavos'
+  /** Portofino (14-10): el dueño trae otro documento y hay UNA ficha con su nombre y celular. */
+  | 'dueno_parecido';
 
 const ETIQUETAS: Record<FaltanteInmueble, string> = {
   titulo: 'título',
@@ -43,6 +45,7 @@ const ETIQUETAS: Record<FaltanteInmueble, string> = {
   posible_duplicado: 'posible duplicado — revisar antes de continuar',
   codigo_repetido: 'código repetido en el archivo',
   plata_con_centavos: 'una cifra con centavos (tu plataforma todavía no guarda centavos: escríbela al peso; no se redondea por ti)',
+  dueno_parecido: '¿es el mismo propietario? (otro documento, mismo nombre y teléfono)',
   reparto: 'reparto entre los dueños (los porcentajes o la plata no cuadran; corrige el archivo o quita esa columna del mapeo para que queden en partes iguales)',
 };
 
@@ -60,7 +63,7 @@ export function etiquetaDeFaltante(faltante: string): string {
  * en el archivo, el reparto que no cuadra) no llevan «Sin»: «Sin el código
  * viene otra vez…» no se entiende (MIG-C, 04-10).
  */
-const NO_SON_UN_DATO_QUE_FALTA = new Set(['posible_duplicado', 'codigo_repetido', 'precio_inconsistente', 'reparto', 'plata_con_centavos']);
+const NO_SON_UN_DATO_QUE_FALTA = new Set(['posible_duplicado', 'codigo_repetido', 'precio_inconsistente', 'reparto', 'plata_con_centavos', 'dueno_parecido']);
 export function etiquetaDelGrupoDeFaltante(faltante: string): string {
   const etiqueta = etiquetaDeFaltante(faltante);
   if (!NO_SON_UN_DATO_QUE_FALTA.has(faltante)) return `Sin ${etiqueta}`;

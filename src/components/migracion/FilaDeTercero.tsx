@@ -270,12 +270,24 @@ export function FilaDeTercero({
    * documento y sólo el tipo no se entiende: entra con su documento, no «con
    * el dato del documento en blanco».
    */
+  /*
+   * QA de Portofino (14-10): «CC A44689223». El back conserva la letra y lo
+   * que pregunta es el TIPO (el error viene en el campo `tipoDocumento`): el
+   * número está bien, lo que no cuadra es que una CC lleve letra.
+   */
+  const tipoNoCuadra = errores.some(
+    (e) => e.codigo === 'DOCUMENTO_INVALIDO' && e.campo === 'tipoDocumento',
+  );
   const faltaElNumero = errores.some(
-    (e) => e.codigo === 'FALTA_DOCUMENTO' || e.codigo === 'DOCUMENTO_INVALIDO',
+    (e) =>
+      (e.codigo === 'FALTA_DOCUMENTO' || e.codigo === 'DOCUMENTO_INVALIDO') &&
+      e.campo !== 'tipoDocumento',
   );
-  const faltaElTipo = errores.some(
-    (e) => e.codigo === 'FALTA_TIPO_DOCUMENTO' || e.codigo === 'TIPO_DOCUMENTO_DESCONOCIDO',
-  );
+  const faltaElTipo =
+    tipoNoCuadra ||
+    errores.some(
+      (e) => e.codigo === 'FALTA_TIPO_DOCUMENTO' || e.codigo === 'TIPO_DOCUMENTO_DESCONOCIDO',
+    );
   const loQueQuedaEnBlanco =
     faltaElTipo && !faltaElNumero
       ? 'el tipo de documento'
@@ -334,7 +346,9 @@ export function FilaDeTercero({
    * pasaba nada visible, y se volvía a apretar (Nico, 2026-09-07). Mientras
    * una acción corre, las tres quedan apagadas y la que corre gira.
    */
-  const [ocupadaEn, setOcupadaEn] = useState<'vincular' | 'descartar' | 'incompleta' | null>(null);
+  const [ocupadaEn, setOcupadaEn] = useState<
+    'vincular' | 'descartar' | 'incompleta' | 'pasaporte' | null
+  >(null);
   const ocupada = guardando || ocupadaEn !== null;
 
   const guardar = async () => {
@@ -377,6 +391,19 @@ export function FilaDeTercero({
     try {
       const r = await onCrearIncompleta();
       if (!r.ok && r.mensaje) setErrorDeFila(`${r.mensaje} Reintenta.`);
+    } finally {
+      setOcupadaEn(null);
+    }
+  };
+
+  /** «Es pasaporte»: el tipo en un clic; el número queda tal cual, con su letra. */
+  const marcarPasaporte = async () => {
+    setErrorDeFila(null);
+    setOcupadaEn('pasaporte');
+    try {
+      const r = await onCorregir({ ...borrador, tipoDocumento: 'PASSPORT' } as FilaTercero);
+      if (r.ok) setBorrador({});
+      else if (r.mensaje) setErrorDeFila(`${r.mensaje} Reintenta.`);
     } finally {
       setOcupadaEn(null);
     }
@@ -563,6 +590,26 @@ export function FilaDeTercero({
               }}
             />
           ))}
+        </div>
+      ) : null}
+
+      {tipoNoCuadra ? (
+        <div className="space-y-2 rounded-md bg-primary-soft p-3" data-testid="es-pasaporte">
+          <p className="text-sm text-fg">
+            Si <span className="font-mono">{valorEditable(fila.datos.documento)}</span> es un
+            pasaporte, márcalo así: queda con su número tal cual, con la letra. Si es otro tipo,
+            elígelo arriba.
+          </p>
+          <Button
+            size="sm"
+            hideArrow
+            disabled={ocupada}
+            isLoading={ocupadaEn === 'pasaporte'}
+            onClick={() => void marcarPasaporte()}
+            data-testid="boton-es-pasaporte"
+          >
+            Es pasaporte
+          </Button>
         </div>
       ) : null}
 

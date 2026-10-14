@@ -45,6 +45,7 @@ import {
 } from './lib/datosDeFila';
 import type { ListingType, PropertyType } from '@/lib/types/property';
 import type {
+  DuenoParecido,
   FilaDeImportacion,
   ResolverInmuebleDto,
 } from '@/lib/api/inmuebles-importacion.service';
@@ -97,6 +98,75 @@ function ConError({ id, error, children }: { id: string; error?: string; childre
     <div className="min-w-0">
       {children}
       <ErrorDelCampo id={`${id}-error`} mensaje={error} />
+    </div>
+  );
+}
+
+/** «CC 1037636779», o el número solo si no se sabe el tipo. */
+function documentoConTipo(tipo: string | null | undefined, numero: string | null | undefined): string {
+  const n = (numero ?? '').trim();
+  if (!n) return 'sin documento';
+  const t = tipo === 'PASSPORT' ? 'Pasaporte' : (tipo ?? '').trim();
+  return t ? `${t} ${n}` : n;
+}
+
+function DuenoParecidoDeLaFila({
+  fila,
+  parecido,
+  isBusy,
+  onResponder,
+}: {
+  fila: FilaDeImportacion;
+  parecido: DuenoParecido;
+  isBusy?: boolean;
+  onResponder: (esLaMisma: boolean) => void;
+}) {
+  const delArchivo = fila.datos.propietarios?.[0];
+  const nombreDelArchivo = fila.datos.propietarioNombre ?? delArchivo?.nombre ?? '';
+  const documentoDelArchivo = fila.datos.propietarioDocumento ?? delArchivo?.documento ?? '';
+  return (
+    <div
+      className="rounded-md bg-warning-soft border border-border p-3 space-y-2"
+      data-testid="dueno-parecido"
+    >
+      <p className="text-sm font-medium text-fg">
+        ¿Es {parecido.nombre} ({documentoConTipo(parecido.tipoDocumento, parecido.documento)})?
+      </p>
+      <p className="text-sm text-fg-muted">
+        El archivo dice que el dueño es {nombreDelArchivo || 'alguien'} con el documento{' '}
+        <span className="font-mono">{documentoDelArchivo}</span>, que no está en tus propietarios.
+        Ya tienes a {parecido.nombre} con el mismo nombre
+        {parecido.telefonoEnComun ?? parecido.telefono ? (
+          <>
+            {' '}y el mismo teléfono (
+            <span className="font-mono">{parecido.telefonoEnComun ?? parecido.telefono}</span>)
+          </>
+        ) : null}
+        .
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          hideArrow
+          disabled={isBusy}
+          onClick={() => onResponder(true)}
+          data-testid="dueno-parecido-si"
+        >
+          Sí, es la misma persona
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          hideArrow
+          disabled={isBusy}
+          onClick={() => onResponder(false)}
+          data-testid="dueno-parecido-no"
+        >
+          No, es otra persona
+        </Button>
+      </div>
     </div>
   );
 }
@@ -334,6 +404,18 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
           </Button>
         </div>
       )}
+
+      {/* 🔴 Portofino (14-10): el dueño del archivo trae otro documento y ya
+          hay UNA ficha con su mismo nombre y celular. Nunca se asigna sola: la
+          persona responde con un clic. */}
+      {fila.faltantes.includes('dueno_parecido') && fila.duenoParecido ? (
+        <DuenoParecidoDeLaFila
+          fila={fila}
+          parecido={fila.duenoParecido}
+          isBusy={isBusy}
+          onResponder={(esLaMisma) => void resolver({ esElDuenoParecido: esLaMisma })}
+        />
+      ) : null}
 
       {/* EN-38 / NI-07 (QA-MIGRACION-95): la cifra con centavos se dice desde la
           revisión, con la misma frase que al crear. */}

@@ -1209,8 +1209,8 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
             <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
             <p className="text-sm text-fg">
               No pudimos verificar si tienes una carga sin terminar. Puedes seguir igual — pero si
-              dejaste una a medias, reintenta primero: volver a subir el mismo archivo duplica a
-              las personas.
+              dejaste una a medias, reintenta primero: volver a subir el mismo archivo crea otra
+              vez a las personas que no traen documento.
             </p>
           </div>
           <Button size="sm" variant="outline" hideArrow onClick={refrescarLotesAbiertos}>
@@ -1234,7 +1234,8 @@ export function MigrarTerceros({ tipoFijo, tipoInicial, onOcupado }: MigrarTerce
               {lotesVisibles.length === 1 ? 'Tienes una carga sin terminar' : 'Tienes cargas sin terminar'}
             </h2>
             <p className="text-caption text-fg-subtle">
-              Volver a subir el mismo archivo con otro nombre duplica a las personas.
+              Volver a subir el mismo archivo enlaza a quien ya está por su documento; sólo las
+              filas sin documento se crearían otra vez.
             </p>
           </div>
           {/* Las cargas entran escalonadas y la que se descarta SALE

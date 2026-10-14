@@ -85,6 +85,7 @@ function decodificarTexto(buffer: ArrayBuffer): string {
 function normalizarCeldasDeFecha(
   XLSX: typeof import('xlsx'),
   worksheet: import('xlsx').WorkSheet,
+  enterosLargos: ReadonlyMap<string, string> = new Map(),
 ): void {
   const dosDigitos = (n: number) => String(n).padStart(2, '0');
   for (const direccion of Object.keys(worksheet)) {
@@ -100,7 +101,7 @@ function normalizarCeldasDeFecha(
     } else if (celda.t === 'n' && typeof celda.v === 'number' && Number.isFinite(celda.v)) {
       // El VALOR, no el texto formateado (QA-MIG-B, 04-10): con «#,##0» una
       // celda 48350750,50 se leía «48,350,751» — redondeada en silencio.
-      celda.w = textoDelNumero(celda.v, celda.z);
+      celda.w = textoDelNumero(celda.v, celda.z, enterosLargos.get(direccion));
     } else if (celda.t === 'd' && celda.v instanceof Date) {
       // Celda ya materializada como Date. Hay dos orígenes y cada uno pone la
       // medianoche en un reloj distinto: SheetJS materializa serials en UTC
@@ -116,6 +117,79 @@ function normalizarCeldasDeFecha(
       worksheet[direccion] = { t: 's', v: iso, w: iso };
     }
   }
+}
+
+/**
+ * 🔴 Nico, 14-10-2026 («nosotros nos debemos adaptar a sus archivos»): un
+ * entero de más de 15 cifras no cabe exacto en un número de JavaScript, pero
+ * el .xlsx que exporta un sistema lo guarda COMPLETO en la hoja
+ * («<v>711408791026157919</v>», el documento de la fila 64 de inquilinos de
+ * Portofino). Se lee de ahí, por dirección de celda. Si la hoja lo guarda en
+ * notación científica (lo que escribe Excel), las cifras ya no están en el
+ * archivo y no hay nada que leer.
+ *
+ * Sólo se abre la hoja cruda cuando la planilla trae un entero así: el resto
+ * de los archivos se lee como siempre.
+ */
+async function enterosLargosDeLaHoja(
+  XLSX: typeof import('xlsx'),
+  file: File,
+  worksheet: import('xlsx').WorkSheet,
+  hoja: string,
+): Promise<Map<string, string>> {
+  const crudos = new Map<string, string>();
+  const hayAlguno = Object.keys(worksheet).some((direccion) => {
+    const celda = worksheet[direccion] as import('xlsx').CellObject | undefined;
+    return (
+      !direccion.startsWith('!') &&
+      celda?.t === 'n' &&
+      typeof celda.v === 'number' &&
+      Number.isInteger(celda.v) &&
+      !Number.isSafeInteger(celda.v)
+    );
+  });
+  if (!hayAlguno) return crudos;
+  try {
+    const zip = XLSX.CFB.read(new Uint8Array(await file.arrayBuffer()), { type: 'array' });
+    const texto = (ruta: string): string => {
+      const entrada = XLSX.CFB.find(zip, ruta) as { content?: Uint8Array } | null;
+      return entrada?.content ? new TextDecoder().decode(entrada.content) : '';
+    };
+    const ruta = rutaDeLaHoja(texto('/xl/workbook.xml'), texto('/xl/_rels/workbook.xml.rels'), hoja);
+    if (!ruta) return crudos;
+    const celda = /<c\b([^>]*)>(?:<f\b[^>]*\/>|<f\b[^>]*>[^<]*<\/f>)?<v>(-?\d{16,})<\/v>/g;
+    for (const m of texto(ruta).matchAll(celda)) {
+      const direccion = /\br="([A-Z]+\d+)"/.exec(m[1])?.[1];
+      if (direccion) crudos.set(direccion, m[2]);
+    }
+  } catch {
+    // Sin la hoja cruda queda la notación científica: ilegible, nunca inventada.
+  }
+  return crudos;
+}
+
+/** La ruta dentro del .xlsx de la hoja con ese nombre (workbook.xml → sus relaciones). */
+function rutaDeLaHoja(libro: string, relaciones: string, hoja: string): string | null {
+  const atributo = (etiqueta: string, nombre: RegExp) => nombre.exec(etiqueta)?.[1];
+  const desescapar = (t: string) =>
+    t
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&amp;/g, '&');
+  for (const etiqueta of libro.match(/<sheet\b[^>]*>/g) ?? []) {
+    const nombre = atributo(etiqueta, /\bname="([^"]*)"/);
+    if (nombre === undefined || desescapar(nombre) !== hoja) continue;
+    const id = atributo(etiqueta, /\b[\w]+:id="([^"]*)"/);
+    for (const rel of relaciones.match(/<Relationship\b[^>]*>/g) ?? []) {
+      if (atributo(rel, /\bId="([^"]*)"/) !== id) continue;
+      const destino = atributo(rel, /\bTarget="([^"]*)"/);
+      if (!destino) return null;
+      return destino.startsWith('/') ? destino : `/xl/${destino}`;
+    }
+  }
+  return null;
 }
 
 /**
@@ -136,16 +210,18 @@ function normalizarCeldasDeFecha(
  *  - un formato de puros ceros («00000», el de los códigos con ceros a la
  *    izquierda) conserva el texto formateado: «007» es el código, no 7.
  */
-function textoDelNumero(v: number, formato?: string): string {
+function textoDelNumero(v: number, formato?: string, crudo?: string): string {
   const z = typeof formato === 'string' ? formato : '';
   if (/^0+$/.test(z)) return String(v).padStart(z.length, '0');
+  // Las cifras que la hoja guarda tal cual (ver `enterosLargosDeLaHoja`).
+  if (crudo !== undefined && !z.includes('%') && Number(crudo) === v) return crudo;
   const limpio = (n: number): string => {
     /*
      * 🔴 QA de Portofino (14-10-2026): un entero de más de 15 cifras no cabe
      * exacto en un número de JavaScript. La celda «711408791026157919» salía
      * «711408791026158000» y ese documento, que no está en el archivo, quedaba
-     * guardado. Fuera del rango seguro va en notación científica: ilegible a
-     * propósito (el back la frena como «notación científica»), nunca inventada.
+     * guardado. Si la hoja no guarda las cifras completas, va en notación
+     * científica: ilegible a propósito (el back la frena), nunca inventada.
      */
     if (Number.isInteger(n)) return Number.isSafeInteger(n) ? String(n) : n.toExponential();
     /*
@@ -282,7 +358,10 @@ export async function parseSpreadsheetFile(
 
   const worksheet = workbook.Sheets[targetSheet];
 
-  if (!esTexto && worksheet) normalizarCeldasDeFecha(XLSX, worksheet);
+  if (!esTexto && worksheet) {
+    const enterosLargos = await enterosLargosDeLaHoja(XLSX, file, worksheet, targetSheet);
+    normalizarCeldasDeFecha(XLSX, worksheet, enterosLargos);
+  }
 
   // La fila de encabezados se lee APARTE de las filas de datos: un archivo de
   // sólo encabezados también tiene columnas que mostrar.

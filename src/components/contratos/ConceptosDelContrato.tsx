@@ -52,7 +52,8 @@ import {
   type ConceptoDelContrato,
 } from '@/lib/api/contracts.service'
 import { ComisionableDelConcepto } from '@/components/inmobiliaria/mandato/ComisionableDelConcepto'
-import { CONCEPTOS, type Parte } from '@/lib/contratos/conceptos'
+import { type Parte } from '@/lib/contratos/conceptos'
+import { useCatalogoDeConceptos } from '@/lib/conceptos/use-catalogo-de-conceptos'
 import { liquidar, perfilPorDefecto } from '@/lib/contratos/escenarios-tributarios'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
 import { AREAS_DE_LA_DEUDA, esPlataQueSeAcepta, fraseDeLaPlata } from '@/lib/plata/con-centavos'
@@ -75,6 +76,8 @@ interface Props {
 }
 
 export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
+  // El catálogo de la inmobiliaria (Nico, 13-10-2026): sus nombres, sin los que apagó.
+  const { activos: catalogoActivo } = useCatalogoDeConceptos()
   const [conceptos, setConceptos] = useState<ConceptoDelContrato[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   // El error del valor va debajo del valor, no al pie de la tarjeta.
@@ -156,7 +159,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
   )
 
   async function agregar() {
-    const catalogo = CONCEPTOS.find((c) => c.id === elegido)
+    const catalogo = catalogoActivo.find((c) => c.clave === elegido)
     if (!catalogo) return
     const n = Number(valor)
     // Con centavos va EXACTO (el campo ya frena el tercer decimal); sin ellos,
@@ -179,7 +182,7 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
     setErrorDelValor(null)
     try {
       const creado = await contractsApi.agregarConcepto(contract.id, {
-        conceptoId: catalogo.id,
+        conceptoId: catalogo.clave,
         nombre: catalogo.nombre,
         base: catalogo.base,
         paga: catalogo.paga,
@@ -312,8 +315,8 @@ export function ConceptosDelContrato({ contract, puedeEditar }: Props) {
               <SelectContent className="max-h-72">
                 {/* QA-CONT C-21: el canon no se agrega como concepto: el contrato
                     ya lo cobra (agregarlo lo cobraría dos veces). */}
-                {CONCEPTOS.filter((c) => c.id !== 'canon-arrendamiento').map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
+                {catalogoActivo.filter((c) => c.clave !== 'canon-arrendamiento').map((c) => (
+                  <SelectItem key={c.clave} value={c.clave}>
                     {c.nombre}
                   </SelectItem>
                 ))}

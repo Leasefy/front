@@ -8,7 +8,7 @@ import type {
   ColumnMapping,
   DuenoDelArchivo,
 } from './importTypes';
-import { tipoEfectivo } from './requisitosDelBack';
+import { conElCanonEnSuColumna, conElPrecioDeVentaEnSuColumna, tipoEfectivo } from './requisitosDelBack';
 import { tituloSugerido } from './tituloSugerido';
 import { cleanNumericValue } from './valorNumerico';
 import {
@@ -293,7 +293,10 @@ export function mapRowsToProperties(
       if (owners[0].telefono) prop.ownerPhone = owners[0].telefono;
     }
 
-    return prop;
+    // Nico, 13-10-2026: el precio de venta escrito en la columna del arriendo
+    // vuelve a su columna antes de que nadie lo lea (ver la función). Y el
+    // espejo (14-10): el canon escrito en la columna de la venta.
+    return conElCanonEnSuColumna(conElPrecioDeVentaEnSuColumna(prop));
   });
 }
 

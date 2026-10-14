@@ -105,3 +105,23 @@ describe('QA-MIG-A MG-02: las primeras filas de CADA hoja, para elegir la buena'
     expect(hojas[1].filas[0]).toEqual(['Documento', 'Nombre'])
   })
 })
+
+describe('🔴 Portofino (14-10) · un número de más de 15 cifras no se inventa', () => {
+  it('«711408791026157919» no sale «711408791026158000»: sale en notación científica (ilegible, se frena)', async () => {
+    const ws = XLSX.utils.aoa_to_sheet([['Documento'], []])
+    ws['A2'] = { t: 'n', v: 711408791026157919 }
+    ws['!ref'] = 'A1:A2'
+    const r = await parseSpreadsheetFile(xlsx([{ nombre: 'H', ws }]))
+    const valor = String(r.rows[0]['Documento'])
+    expect(valor).not.toBe('711408791026158000')
+    expect(valor).toMatch(/e\+17$/i)
+  })
+
+  it('un documento de 10 cifras sigue igual', async () => {
+    const ws = XLSX.utils.aoa_to_sheet([['Documento'], []])
+    ws['A2'] = { t: 'n', v: 1026157919 }
+    ws['!ref'] = 'A1:A2'
+    const r = await parseSpreadsheetFile(xlsx([{ nombre: 'H', ws }]))
+    expect(String(r.rows[0]['Documento'])).toBe('1026157919')
+  })
+})

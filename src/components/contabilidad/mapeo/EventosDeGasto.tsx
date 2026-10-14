@@ -49,7 +49,7 @@ import { SelectorDeCuenta } from '../SelectorDeCuenta';
 import { ExplicacionDelEvento } from './ExplicacionDelEvento';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { FaltaLaMigracion, Nota } from '../piezas';
-import { NOMBRE_DEL_LADO } from './mapeo';
+import { NOMBRE_DEL_LADO, propuestaQueSirve } from './mapeo';
 import { TituloDeBloque } from '@/components/finanzas/piezas';
 
 export interface EventosDeGastoProps {
@@ -198,7 +198,7 @@ export function EventosDeGasto({
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex max-w-[26rem] items-center gap-2">
                           <SelectorDeCuenta
                             cuentas={cuentas}
                             value={e.cuenta?.id ?? ''}
@@ -206,7 +206,7 @@ export function EventosDeGasto({
                             soloImputables
                             disabled={!puedeEscribir || guardando.has(e.evento)}
                             placeholder="Sin cuenta: este asiento no se genera"
-                            className="w-full"
+                            className="w-full min-w-0"
                           />
                           {e.cuenta ? (
                             <CheckCircle
@@ -232,7 +232,7 @@ export function EventosDeGasto({
                       <TableCell>
                         {/* 🔴 CB-05: la propuesta repetía, fila por fila, la cuenta que ya
                             estaba elegida. Sólo se dice cuando DIFIERE (o no hay cuenta). */}
-                        {e.propuesta && e.cuenta?.id === e.propuesta.id ? (
+                        {e.cuenta && !propuestaQueSirve(e, e.cuenta.id) ? (
                           <span
                             className="text-caption text-fg-subtle"
                             title="La cuenta elegida es la propuesta"
@@ -246,7 +246,16 @@ export function EventosDeGasto({
                             <span className="font-mono text-caption text-fg-muted">
                               {e.propuesta.codigo} · {e.propuesta.nombre}
                             </span>
-                            {!e.cuenta && e.propuesta.activa && e.propuesta.imputable ? (
+                            {/* 🔴 Portofino (14-10): como en el recaudo, en un plan
+                                importado el mismo código puede ser otra cuenta. */}
+                            {!e.cuenta && e.propuestaConElNombreDelPlanBase === false ? (
+                              <span
+                                className="text-caption text-warning"
+                                data-testid={`propuesta-otro-nombre-gasto-${e.evento}`}
+                              >
+                                En tu plan este código es otra cuenta: elige la tuya.
+                              </span>
+                            ) : !e.cuenta && e.propuesta.activa && e.propuesta.imputable ? (
                               <Button
                                 variant="outline"
                                 size="sm"

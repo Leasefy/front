@@ -1,5 +1,6 @@
 'use client';
 
+import { plataQueLlega } from '@/lib/plata/plata-que-llega';
 import { PreguntaDeLaRecomendacion } from '@/components/marketplace/inmobiliaria/PreguntaDeLaRecomendacion';
 import { ReparacionesPorAprobar } from '@/components/landlord/portal/ReparacionesPorAprobar';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
@@ -429,7 +430,7 @@ function PanelDelPropietarioIndependiente() {
                 <AnimatedNumber
                   value={dashboardData.financial.monthlyIncome}
                   from={huboCarga ? 0 : undefined}
-                  format={(n) => i18nFormatCurrency(Math.round(n))}
+                  format={plataQueLlega(dashboardData.financial.monthlyIncome, i18nFormatCurrency)}
                 />
               </p>
             )}
@@ -803,7 +804,7 @@ function PanelDelPropietarioIndependiente() {
                     <AnimatedNumber
                       value={dashboardData.financial.monthlyIncome}
                       from={huboCarga ? 0 : undefined}
-                      format={(n) => i18nFormatCurrency(Math.round(n))}
+                      format={plataQueLlega(dashboardData.financial.monthlyIncome, i18nFormatCurrency)}
                     />
                   </p>
                   <p className="text-fg-muted text-sm mt-1">

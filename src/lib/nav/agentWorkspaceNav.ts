@@ -223,7 +223,9 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.conciliacionMovimientos', href: `${CONCILIACION}/movimientos`, icon: ArrowsClockwise, module: null, roles: QUIENES_CONCILIAN },
       { labelKey: 'inmobiliaria.ai.nav.conciliacionConexiones', href: `${CONCILIACION}/conexiones`, icon: GitMerge, module: null, roles: QUIENES_CONCILIAN },
       { labelKey: 'inmobiliaria.ai.nav.conciliacionLiquidaciones', href: `${CONCILIACION}/liquidaciones`, icon: Wallet, module: null, roles: QUIENES_CONCILIAN },
-      { labelKey: 'inmobiliaria.ai.nav.conciliacionAnalitica', href: `${CONCILIACION}/analitica`, icon: ChartLineUp, module: null, roles: QUIENES_CONCILIAN },
+      // «Analítica» retirada (QA de Portofino, 14-10-2026, Nico: «organízala»):
+      // repetía el Resumen y debajo pedía al micro una ruta que no existe. La
+      // URL vieja manda al Resumen (`conciliacion/analitica/page.tsx`).
       { labelKey: 'inmobiliaria.ai.nav.conciliacionConfiguracion', href: `${CONCILIACION}/configuracion`, icon: SlidersHorizontal, module: null, roles: QUIENES_CONCILIAN },
     ],
   },

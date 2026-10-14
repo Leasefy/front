@@ -14,6 +14,7 @@ import {
   Lightning,
   DownloadSimple,
   Stamp,
+  Trash,
 } from '@phosphor-icons/react';
 import { useI18n } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
@@ -81,7 +82,7 @@ import {
   motivoDeUnaAccion,
 } from '@/lib/api/dispersiones-errores';
 import { traeErroresPorCampo } from '@/lib/errores/errores-en-el-formulario';
-import { mesEnTitulo } from '@/lib/utils/mes';
+import { nombreDelMes } from '@/lib/utils/mes';
 import type { OrigenPedido } from '@/lib/api/lotes-de-dispersion.types';
 import { CrossFade, Presence, SegmentedControl, Stagger, StaggerItem } from '@leasefy/cadence';
 
@@ -646,6 +647,40 @@ function DispersionesContent() {
     setTimeout(() => setSelectedDispersion(null), 300);
   }, []);
 
+  /**
+   * Descartar una liquidación borrador (Nico, 13-10-2026: «octubre en el
+   * sistema anterior, Leasefy desde noviembre»; si ya se habían generado las de
+   * octubre, no había cómo sacarlas). Pregunta antes; el toast sale DESPUÉS de
+   * la respuesta y dice cuántas cuotas volvieron a estar por girar.
+   */
+  const [porDescartar, setPorDescartar] = useState<Dispersion | null>(null);
+  const [descartando, setDescartando] = useState(false);
+  const confirmarDescarte = useCallback(async () => {
+    if (!porDescartar) return;
+    const id = `descartar-${porDescartar.id}`;
+    setDescartando(true);
+    try {
+      const r = await dispersionesApi.descartar(porDescartar.id);
+      setPorDescartar(null);
+      handleDetailClose();
+      await refetchDispersiones();
+      void cargarResumen();
+      toast.success('Liquidación descartada', {
+        id,
+        description: `${r.propietario}: ${r.cuotasSueltas} ${r.cuotasSueltas === 1 ? 'cuota vuelve' : 'cuotas vuelven'} a estar por girar.`,
+      });
+    } catch (error) {
+      setPorDescartar(null);
+      await refetchDispersiones();
+      toast.error('No se pudo descartar la liquidación', {
+        id,
+        description: motivoDeLaAccion(error, 'descartar la liquidación'),
+      });
+    } finally {
+      setDescartando(false);
+    }
+  }, [porDescartar, handleDetailClose, refetchDispersiones, cargarResumen]);
+
   // Handle extracto modal close
   const handleExtractoClose = useCallback(() => {
     setIsExtractoOpen(false);
@@ -703,7 +738,8 @@ function DispersionesContent() {
    * «julio de 2026» sobre los datos de agosto. Partiendo el string se lee el
    * mes que dice, sin pasar por ningún huso.
    */
-  const monthDisplay = mesEnTitulo(filters.month, locale === 'en' ? 'en' : 'es');
+  // Va a mitad de frase («…dispersiones de noviembre de 2026»): en minúscula.
+  const monthDisplay = nombreDelMes(filters.month, locale === 'en' ? 'en' : 'es');
 
   const hasPendingDispersiones = summary.dispersionsPending > 0;
 
@@ -955,7 +991,42 @@ function DispersionesContent() {
         onRetry={handleRetryDispersion}
         apruebaPorLote={porLote}
         usuarioActualId={user?.id ?? null}
+        onDescartar={setPorDescartar}
       />
+
+      {/* Descartar una liquidación borrador: qué pasa, antes de tocar nada. */}
+      <AlertDialog
+        open={porDescartar !== null}
+        onOpenChange={(abierto) => {
+          if (!abierto && !descartando) setPorDescartar(null);
+        }}
+      >
+        <AlertDialogContent variant="confirm" icon={<Trash weight="bold" />}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              ¿Descartas la liquidación de {porDescartar?.propietarioName ?? ''} de{' '}
+              {porDescartar ? nombreDelMes(porDescartar.month) : ''}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Se borra la liquidación y sus cuotas vuelven a estar por girar. No le llega
+              nada al propietario. Si hace falta, la vuelves a generar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={descartando}>Volver</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmarDescarte();
+              }}
+              disabled={descartando}
+              data-testid="confirmar-descartar-liquidacion"
+            >
+              {descartando ? 'Descartando…' : 'Descartar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* «Aprobar todas»: cuántas y cuánta plata, antes de tocar nada. */}
       <AlertDialog

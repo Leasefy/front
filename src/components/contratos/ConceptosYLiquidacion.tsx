@@ -28,7 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { formatCurrency } from '@/lib/format'
-import { CONCEPTOS, conceptoPorId } from '@/lib/contratos/conceptos'
+import { useCatalogoDeConceptos } from '@/lib/conceptos/use-catalogo-de-conceptos'
 import {
   liquidar,
   perfilPorDefecto,
@@ -53,7 +53,9 @@ export function ConceptosYLiquidacion() {
   const [paga, setPaga] = useState<PerfilTributario>(perfilPorDefecto('NATURAL'))
   const [recibe, setRecibe] = useState<PerfilTributario>(perfilPorDefecto('NATURAL'))
 
-  const concepto = conceptoPorId(conceptoId) ?? CONCEPTOS[0]
+  // El catálogo de la inmobiliaria (Nico, 13-10-2026): sus nombres, sin los que apagó.
+  const { activos } = useCatalogoDeConceptos()
+  const concepto = activos.find((c) => c.clave === conceptoId) ?? activos[0]
 
   // «Centavos en todo»: el simulador liquida igual que el back (al centavo con
   // las dos llaves de la deuda; al peso sin ellas).
@@ -76,8 +78,8 @@ export function ConceptosYLiquidacion() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {CONCEPTOS.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
+              {activos.map((c) => (
+                <SelectItem key={c.clave} value={c.clave}>
                   {c.nombre}
                 </SelectItem>
               ))}

@@ -1,9 +1,9 @@
 /**
  * useAgenteDePagos — cómo se traduce lo que contesta el micro.
  *
- * Lo que importa: un tablero que no existe (404) o está apagado (503) llega
- * como `notAvailable` y se lee «no disponible», NO como fallo; y que una
- * lectura falle no tapa a la otra.
+ * Lo que importa: que «no contestó» se lea como fallo y nunca como apagado.
+ * 🔴 (14-10-2026) ya no se pide el «tablero» (`/pagos/home/metrics`): esa ruta
+ * no existe en el micro y era un 404 en cada visita.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -71,41 +71,31 @@ afterEach(() => {
 })
 
 describe('useAgenteDePagos', () => {
-  it('hoy: toma el item «pagos» del gobierno y el tablero sin publicar es «no disponible»', async () => {
+  it('hoy: toma el item «pagos» del gobierno', async () => {
     fetchPilotoGobierno.mockResolvedValue(gobiernoCon(false, false))
-    fetchPagosHome.mockResolvedValue({ data: null, notAvailable: true })
     await montar()
     expect(fetchPilotoGobierno).toHaveBeenCalledWith('agency-1', expect.anything())
     expect(ultima?.gobierno).toEqual({
       estado: 'listo',
       item: { agente: 'pagos', corre: false, origen: 'heredado', disponibleGlobal: false },
     })
-    expect(ultima?.tablero).toEqual({ estado: 'no-disponible' })
-    expect(ultima?.resumen).toBeNull()
   })
 
-  it('🔴 el gobierno que no contesta es «fallo», y no tapa al tablero', async () => {
+  it('🔴 (14-10) no pide el tablero que el micro no publica', async () => {
+    fetchPilotoGobierno.mockResolvedValue(gobiernoCon(true, true))
+    await montar()
+    expect(fetchPagosHome).not.toHaveBeenCalled()
+    expect(ultima && 'tablero' in ultima).toBe(false)
+  })
+
+  it('🔴 el gobierno que no contesta es «fallo»', async () => {
     fetchPilotoGobierno.mockResolvedValue({ ok: false, error: '403' })
-    const resumen = { agente: 'pagos', kpis: [], pipeline: [], feed: [], generatedAt: '' }
-    fetchPagosHome.mockResolvedValue({ data: resumen, notAvailable: false })
     await montar()
     expect(ultima?.gobierno).toEqual({ estado: 'fallo' })
-    expect(ultima?.tablero).toEqual({ estado: 'listo' })
-    expect(ultima?.resumen).toBe(resumen)
-  })
-
-  it('un tablero que rompe (500, sin URL del agente) es «fallo», con el error', async () => {
-    fetchPilotoGobierno.mockResolvedValue(gobiernoCon(true, true))
-    const error = new Error('500')
-    fetchPagosHome.mockRejectedValue(error)
-    await montar()
-    expect(ultima?.tablero).toEqual({ estado: 'fallo', error })
-    expect(ultima?.gobierno.estado).toBe('listo')
   })
 
   it('si el micro no lista al equipo, el item llega en null (y se leerá «sin verificar»)', async () => {
     fetchPilotoGobierno.mockResolvedValue({ ok: true, data: { agentes: [], llavesFinas: [] } })
-    fetchPagosHome.mockResolvedValue({ data: null, notAvailable: true })
     await montar()
     expect(ultima?.gobierno).toEqual({ estado: 'listo', item: null })
   })
@@ -115,6 +105,5 @@ describe('useAgenteDePagos', () => {
     await montar()
     expect(fetchPilotoGobierno).not.toHaveBeenCalled()
     expect(ultima?.gobierno).toEqual({ estado: 'cargando' })
-    expect(ultima?.tablero).toEqual({ estado: 'cargando' })
   })
 })

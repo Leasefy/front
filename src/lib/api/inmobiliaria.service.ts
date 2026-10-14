@@ -1625,6 +1625,23 @@ export const dispersionesApi = {
   },
 
   /**
+   * Descarta una liquidación que todavía es un borrador (Nico, 13-10-2026):
+   * pendiente, sin aprobar, nunca en un lote. Sus cuotas vuelven a estar por
+   * girar. 409 si ya avanzó (`DISPERSION_NO_ES_BORRADOR`,
+   * `DISPERSION_ESTUVO_EN_UN_LOTE`…) con la frase del porqué.
+   */
+  async descartar(id: string): Promise<{
+    descartada: string;
+    mes: string;
+    propietario: string;
+    cuotasSueltas: number;
+    deduccionesDevueltas: number;
+    interesesSueltos: number;
+  }> {
+    return apiClient.put(`${BASE}/dispersiones/${id}/descartar`, {});
+  },
+
+  /**
    * Segundo par de ojos: anota la referencia del giro que YA se hizo.
    *
    * El back expone PUT, no PATCH (con PATCH la llamada moría en 404) y exige

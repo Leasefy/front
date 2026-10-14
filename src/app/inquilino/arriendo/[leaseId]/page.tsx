@@ -1,5 +1,6 @@
 'use client';
 
+import { plataQueLlega } from '@/lib/plata/plata-que-llega';
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { PortadaDelInmueble } from '@/components/property/PortadaDelInmueble';
@@ -645,7 +646,7 @@ export default function LeaseDetailPage() {
                   <TrendUp className="w-5 h-5 text-success" />
                 </div>
                 <p className="text-2xl font-bold text-fg">
-                  <AnimatedNumber value={totalPaid} format={(n) => formatCurrency(Math.round(n))} />
+                  <AnimatedNumber value={totalPaid} format={plataQueLlega(totalPaid, formatCurrency)} />
                 </p>
                 <p className="text-sm text-fg-muted mt-1">{locale === 'es' ? 'Total pagado' : 'Total paid'}</p>
               </div>

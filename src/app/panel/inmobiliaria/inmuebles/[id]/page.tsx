@@ -179,9 +179,25 @@ function ConsignacionDetailContent() {
   } = useConsignacion(consignacionId, { porInmueble: entraPorInmueble });
   useEffect(() => {
     if (entraPorInmueble && fetchedConsignacion?.id && fetchedConsignacion.id !== consignacionId) {
-      router.replace(`/panel/inmobiliaria/inmuebles/${fetchedConsignacion.id}`, { scroll: false });
+      // Lo demás de la URL se queda (`volver`, `editar`): sin eso «Volver al
+      // contrato» y «Ponerle el canon» se perdían en el cambio de dirección.
+      const resto = new URLSearchParams(parametrosDeEntrada.toString());
+      resto.delete('por');
+      const consulta = resto.toString();
+      router.replace(
+        `/panel/inmobiliaria/inmuebles/${fetchedConsignacion.id}${consulta ? `?${consulta}` : ''}`,
+        { scroll: false },
+      );
     }
-  }, [entraPorInmueble, fetchedConsignacion?.id, consignacionId, router]);
+  }, [entraPorInmueble, fetchedConsignacion?.id, consignacionId, router, parametrosDeEntrada]);
+  /*
+   * 🔴 QA de Portofino (14-10-2026): con `?por=inmueble` el id de la URL es el
+   * del INMUEBLE hasta que la dirección cambia. Lo que se pide por el id del
+   * MANDATO (historial, situación comercial, releer) espera a tenerlo: antes
+   * un mandato terminado pedía `consignaciones/<id del inmueble>/historial` →
+   * 404 en cada ficha abierta desde el contrato.
+   */
+  const idDelMandato = fetchedConsignacion?.id ?? (entraPorInmueble ? null : consignacionId);
 
   /*
    * 🔴 Abrir la ficha YA estando sin señal.
@@ -258,11 +274,12 @@ function ConsignacionDetailContent() {
   // refrescar el hook solo no cambiaba nada en pantalla.
   const recargarConsignacion = useCallback(async () => {
     try {
-      setConsignacionData(await consignacionesApi.getById(consignacionId));
+      if (!idDelMandato) return;
+      setConsignacionData(await consignacionesApi.getById(idDelMandato));
     } catch {
       // La subida ya avisó por su lado; si la relectura falla, el refresh la trae.
     }
-  }, [consignacionId]);
+  }, [idDelMandato]);
 
   // Handlers
   const handleEdit = useCallback(() => {
@@ -292,13 +309,13 @@ function ConsignacionDetailContent() {
   const terminada = consignacion?.status === 'terminated';
   const [fechaDeTerminacion, setFechaDeTerminacion] = useState<string | null>(null);
   useEffect(() => {
-    if (!terminada || !consignacionId) {
+    if (!terminada || !idDelMandato) {
       setFechaDeTerminacion(null);
       return;
     }
     let cancelado = false;
     consignacionesApi
-      .getHistorial(consignacionId)
+      .getHistorial(idDelMandato)
       .then((eventos) => {
         if (cancelado) return;
         const evento = eventos.find((e) => e.tipo === 'consignacion_terminada');
@@ -310,7 +327,7 @@ function ConsignacionDetailContent() {
     return () => {
       cancelado = true;
     };
-  }, [terminada, consignacionId]);
+  }, [terminada, idDelMandato]);
   // «Arrendado» de verdad = contrato vigente: `arrendado` lo calcula el back
   // mirando los contratos ACTIVE; `propertyStatus` lo pone el ciclo de vida
   // del contrato; `currentLeaseId` es el arriendo vigente del mandato.
@@ -592,7 +609,7 @@ function ConsignacionDetailContent() {
 
       {/* COMERCIAL (Nico, 04-10-2026): «Vacante hace 42 días» y el mandato
           que se vence. Fuente aparte: si falla, la ficha sigue igual. */}
-      {!terminada && <SituacionComercialDelInmueble consignacionId={consignacionId} />}
+      {!terminada && idDelMandato && <SituacionComercialDelInmueble consignacionId={idDelMandato} />}
 
       {/* Main Content - Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

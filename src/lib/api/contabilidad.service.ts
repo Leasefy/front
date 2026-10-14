@@ -1350,6 +1350,12 @@ export interface MapeoDeEvento {
   cuenta: CuentaResumida | null;
   propuesta: CuentaResumida | null;
   /**
+   * La propuesta se llama en el plan de la agencia como en el plan base. En un
+   * plan importado el mismo código puede ser otra cosa: sólo la que se llama
+   * igual se asigna sola. Ausente = back anterior (se toma como segura).
+   */
+  propuestaConElNombreDelPlanBase?: boolean;
+  /**
    * CB-28 (QA de Contabilidad, 03-10-2026): cuántos movimientos ya asentó el
    * evento con su cuenta. Opcional (lo puede agregar el back): sin él, cambiar
    * una cuenta YA asignada se confirma igual.

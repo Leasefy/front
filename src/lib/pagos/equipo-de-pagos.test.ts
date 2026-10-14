@@ -5,7 +5,8 @@
  *   · el estado sale de lo que CONTESTÓ el micro, y «no contestó» nunca se
  *     lee como «apagado»;
  *   · cada paso de «Qué necesita para trabajar» sale de una lectura real;
- *   · el tablero que todavía no existe (404/503) es «falta», no un error;
+ *   · 🔴 (14-10-2026) ya no hay paso «Su tablero publicado»: la ruta no existe
+ *     en el micro y no es algo que la inmobiliaria pueda hacer;
  *   · el equipo no repite las pantallas que se mudaron: las enlaza, y cada
  *     enlace va a una ruta que existe y que no es la del propio equipo.
  */
@@ -23,7 +24,6 @@ import {
   estadoDelEquipo,
   pasosParaQueTrabaje,
   type LecturaDelGobierno,
-  type LecturaDelTablero,
 } from './equipo-de-pagos'
 
 const item = (disponibleGlobal: boolean, corre: boolean): GobiernoItem => ({
@@ -34,7 +34,6 @@ const item = (disponibleGlobal: boolean, corre: boolean): GobiernoItem => ({
 })
 
 const listo = (i: GobiernoItem | null): LecturaDelGobierno => ({ estado: 'listo', item: i })
-const noDisponible: LecturaDelTablero = { estado: 'no-disponible' }
 
 describe('estadoDelEquipo', () => {
   it('con el interruptor general apagado: apagado, aunque la inmobiliaria lo herede', () => {
@@ -60,58 +59,46 @@ describe('estadoDelEquipo', () => {
 })
 
 describe('pasosParaQueTrabaje', () => {
-  const estados = (g: LecturaDelGobierno, t: LecturaDelTablero) =>
-    pasosParaQueTrabaje(g, t).map((p) => [p.id, p.estado])
+  const estados = (g: LecturaDelGobierno) => pasosParaQueTrabaje(g).map((p) => [p.id, p.estado])
 
-  it('hoy (interruptor apagado, tablero sin publicar): falta Leasefy, lo de la inmobiliaria espera, falta el tablero', () => {
-    expect(estados(listo(item(false, false)), noDisponible)).toEqual([
+  it('hoy (interruptor apagado): falta Leasefy y lo de la inmobiliaria espera', () => {
+    expect(estados(listo(item(false, false)))).toEqual([
       ['leasefy', 'falta'],
       ['inmobiliaria', 'espera'],
-      ['tablero', 'falta'],
     ])
   })
 
+  it('🔴 (14-10) sin paso del tablero: un tablero no es lo que el equipo necesita para trabajar', () => {
+    const ids = pasosParaQueTrabaje(listo(item(false, false))).map((p) => p.id as string)
+    expect(ids).not.toContain('tablero')
+  })
+
   it('encendido en el servidor pero no para la inmobiliaria: dice quién lo enciende y dónde', () => {
-    const pasos = pasosParaQueTrabaje(listo(item(true, false)), noDisponible)
-    expect(pasos.map((p) => p.estado)).toEqual(['hecho', 'falta', 'falta'])
+    const pasos = pasosParaQueTrabaje(listo(item(true, false)))
+    expect(pasos.map((p) => p.estado)).toEqual(['hecho', 'falta'])
     expect(pasos[1]!.detalle).toContain('Inicio')
     expect(pasos[1]!.detalle).toContain('Autonomía')
   })
 
-  it('🔴 se prende sola: con las dos llaves y el tablero publicado, todo listo', () => {
-    expect(pasosParaQueTrabaje(listo(item(true, true)), { estado: 'listo' }).map((p) => p.estado)).toEqual([
-      'hecho',
-      'hecho',
-      'hecho',
-    ])
+  it('con las dos llaves, todo listo', () => {
+    expect(pasosParaQueTrabaje(listo(item(true, true))).map((p) => p.estado)).toEqual(['hecho', 'hecho'])
   })
 
   it('🔴 una lectura que falló dice «sin verificar», nunca «falta»', () => {
-    expect(estados({ estado: 'fallo' }, { estado: 'fallo', error: new Error('500') })).toEqual([
+    expect(estados({ estado: 'fallo' })).toEqual([
       ['leasefy', 'sin-verificar'],
       ['inmobiliaria', 'sin-verificar'],
-      ['tablero', 'sin-verificar'],
     ])
   })
 
-  it('un tablero que no existe (404) o está apagado (503) es «falta», no un error', () => {
-    const tablero = pasosParaQueTrabaje(listo(item(false, false)), noDisponible)[2]!
-    expect(tablero.estado).toBe('falta')
-    expect(tablero.detalle).toContain('sola')
-  })
-
-  it('mientras pregunta, los tres pasos dicen que están consultando', () => {
-    expect(pasosParaQueTrabaje({ estado: 'cargando' }, { estado: 'cargando' }).map((p) => p.estado)).toEqual([
-      'cargando',
-      'cargando',
-      'cargando',
-    ])
+  it('mientras pregunta, los pasos dicen que están consultando', () => {
+    expect(pasosParaQueTrabaje({ estado: 'cargando' }).map((p) => p.estado)).toEqual(['cargando', 'cargando'])
   })
 
   it('ningún texto nombra una variable de entorno: le habla a la inmobiliaria', () => {
     const textos = [
-      ...pasosParaQueTrabaje(listo(item(false, false)), noDisponible),
-      ...pasosParaQueTrabaje(listo(item(true, false)), noDisponible),
+      ...pasosParaQueTrabaje(listo(item(false, false))),
+      ...pasosParaQueTrabaje(listo(item(true, false))),
     ].map((p) => p.detalle)
     for (const t of textos) expect(t).not.toMatch(/_ENABLED|PAGOS_|\/api\//)
   })

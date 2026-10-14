@@ -114,9 +114,96 @@ export function tipoEfectivo(p: ImportProperty): 'rent' | 'sale' {
   const hayCanon = !!p.monthlyRent && p.monthlyRent >= MINIMO_CANON;
   const hayVenta = !!p.salePrice && p.salePrice >= MINIMO_VENTA;
 
+  /*
+   * 🔴 «Arriendo si se arrienda» (Nico, 13-10-2026, QA de Portofino). Con
+   * canon, es arriendo:
+   *   · el inmueble «Venta y Arriendo» (se ofrece para las dos cosas; Leasefy
+   *     administra el arriendo y el precio de venta queda escrito en la
+   *     descripción) — antes entraba como venta y sus contratos vigentes no
+   *     podían migrar («inmueble en venta»);
+   *   · el que el archivo dice «Arrendada», aunque su categoría sea «Venta»:
+   *     tiene un contrato vivo.
+   */
+  if (hayCanon && (seOfreceTambienEnArriendo(p.listingType) || estaArrendado(p.status))) {
+    return 'rent';
+  }
   if (declarado === 'sale' && !hayVenta && hayCanon) return 'rent';
-  if (declarado === 'rent' && !hayCanon && hayVenta) return 'sale';
+  // 🔴 QA de Portofino (14-10-2026): un «Arriendo» sin canon pasa a venta sólo
+  // con un precio que PUEDE ser de venta ($50 M o más). Uno menor es el canon
+  // escrito en la otra columna (`conElCanonEnSuColumna`), no una venta.
+  if (declarado === 'rent' && !hayCanon && hayVenta && (p.salePrice ?? 0) >= CANON_QUE_ES_PRECIO_DE_VENTA) {
+    return 'sale';
+  }
   return declarado;
+}
+
+/** «Venta y Arriendo», «Venta y alquiler»… — la categoría dice las dos cosas. */
+export function seOfreceTambienEnArriendo(raw: string | undefined): boolean {
+  const t = sinTildes(raw);
+  return t.includes('venta') && /\b(arriendo|alquiler|renta|rent)\b/.test(t);
+}
+
+/** El «Estado» del archivo dice que hoy está arrendado («Arrendada», «Arrendado»). */
+export function estaArrendado(raw: string | undefined): boolean {
+  return /\b(arrendad[oa]|alquilad[oa]|rented)\b/.test(sinTildes(raw));
+}
+
+/**
+ * 🔴 Un «canon» de esta cifra o más en una fila de VENTA sin precio de venta
+ * es el precio de venta escrito en la columna equivocada (Nico, 13-10-2026:
+ * la 2341 de Portofino entraba como arriendo con un canon de $245 millones).
+ */
+export const CANON_QUE_ES_PRECIO_DE_VENTA = 50_000_000;
+
+/**
+ * Pasa el precio de venta que vino en la columna del arriendo a la de venta.
+ * Sólo en una fila de venta (y no «Venta y Arriendo», no arrendada) que no
+ * trae precio de venta y cuyo «canon» es de $50 M o más. Devuelve la misma
+ * fila si no aplica. Se corre al leer el archivo: así la revisión, el resumen
+ * y lo que viaja al back ven el mismo precio.
+ */
+export function conElPrecioDeVentaEnSuColumna(p: ImportProperty): ImportProperty {
+  const declarado = resolveImportListingType(p.listingType);
+  const hayVenta = !!p.salePrice && p.salePrice >= MINIMO_VENTA;
+  if (
+    declarado !== 'sale' ||
+    hayVenta ||
+    seOfreceTambienEnArriendo(p.listingType) ||
+    estaArrendado(p.status) ||
+    p.monthlyRent == null ||
+    p.monthlyRent < CANON_QUE_ES_PRECIO_DE_VENTA
+  ) {
+    return p;
+  }
+  return { ...p, salePrice: p.monthlyRent, monthlyRent: undefined };
+}
+
+/**
+ * 🔴 El espejo de la regla de arriba (QA de Portofino, 14-10-2026): un «precio
+ * de venta» de menos de $50 M en una fila de ARRIENDO sin canon es el canon
+ * escrito en la columna equivocada. La 1534 de Portofino («Arriendo», canon 0,
+ * venta $300.000) entraba como una VENTA de $300.000. Sólo en una fila de
+ * arriendo (no «Venta y Arriendo») sin canon; se corre al leer el archivo, como
+ * la otra, así que la revisión ya muestra el canon donde va y se puede corregir.
+ */
+export function conElCanonEnSuColumna(p: ImportProperty): ImportProperty {
+  const declarado = resolveImportListingType(p.listingType);
+  const hayCanon = !!p.monthlyRent && p.monthlyRent >= MINIMO_CANON;
+  if (
+    declarado !== 'rent' ||
+    hayCanon ||
+    seOfreceTambienEnArriendo(p.listingType) ||
+    p.salePrice == null ||
+    p.salePrice < MINIMO_CANON ||
+    p.salePrice >= CANON_QUE_ES_PRECIO_DE_VENTA
+  ) {
+    return p;
+  }
+  return { ...p, monthlyRent: p.salePrice, salePrice: undefined };
+}
+
+function sinTildes(raw: string | undefined): string {
+  return (raw ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 }
 
 /**

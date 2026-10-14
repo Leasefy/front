@@ -301,6 +301,17 @@ function FilaDeInquilino({
             </span>
           ) : null}
         </p>
+        {/* Cómo contactarlo (QA de Portofino, 14-10): el teléfono del archivo de
+            inquilinos llegaba al contrato y no se veía en ningún lado de él. */}
+        {inquilino.telefono || inquilino.email ? (
+          <p className="break-words text-caption text-muted-foreground" data-testid="contacto-del-inquilino">
+            {inquilino.telefono ? (
+              <span className="font-mono tabular-nums text-foreground">{inquilino.telefono}</span>
+            ) : null}
+            {inquilino.telefono && inquilino.email ? ' · ' : null}
+            {inquilino.email ?? null}
+          </p>
+        ) : null}
       </div>
       <div className="flex flex-shrink-0 items-center gap-2">
         {inquilino.esPrincipal ? (
@@ -626,7 +637,9 @@ function Propietarios({
   const hayMandato = lista.length > 0 && Boolean(contract.propertyId)
   const fichaDelInmueble = contract.propertyId
     ? conRegreso(
-        `/panel/inmobiliaria/inmuebles/${contract.propertyId}`,
+        // El contrato tiene el id del INMUEBLE: `?por=inmueble` busca su mandato
+        // sin el 404 de `GET /consignaciones/<id del inmueble>` (H18, 14-10).
+        `/panel/inmobiliaria/inmuebles/${contract.propertyId}?por=inmueble`,
         `/panel/inmobiliaria/contratos/${contract.id}`,
       )
     : null

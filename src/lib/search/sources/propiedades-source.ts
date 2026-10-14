@@ -129,7 +129,7 @@ export const propiedadesSource: SearchSource = {
             ? { label: item.salePrice != null ? formatCOP(item.salePrice) : 'Precio por confirmar', color: 'neutral' as const }
             : { label: item.monthlyRent != null ? formatCOP(item.monthlyRent) : 'Canon por confirmar', color: 'neutral' as const },
         ],
-        href: `/panel/inmobiliaria/inmuebles/${item.id}`,
+        href: `/panel/inmobiliaria/inmuebles/${item.id}?por=inmueble`,
         preview: {
           type: 'propiedad',
           id: item.id,

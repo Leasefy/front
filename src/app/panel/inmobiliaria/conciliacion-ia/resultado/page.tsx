@@ -9,8 +9,9 @@ import { redirect } from 'next/navigation';
  * mano en el archivo, sin un solo fetch, y nada del panel la enlazaba: duplicaba
  * el árbol real `/conciliacion`, que sí lee del micro y del back. Se retira la
  * carpeta entera (sus pantallas se enlazaban entre sí) y quien llegue por un
- * enlace viejo cae en la analítica del agente.
+ * enlace viejo cae en el Resumen de Conciliación (la analítica del agente se
+ * retiró el 14-10-2026: repetía el Resumen).
  */
 export default function ResultadoDeConciliacionIaRetiradoPage() {
-  redirect('/panel/inmobiliaria/conciliacion/analitica');
+  redirect('/panel/inmobiliaria/conciliacion');
 }

@@ -46,7 +46,8 @@ export function inmuebleIdDelError(e: unknown): string | null {
 
 /** Ruta de la ficha del inmueble, donde se pone el canon. */
 export function rutaParaPonerElCanon(inmuebleId: string): string {
-  return `/panel/inmobiliaria/inmuebles/${inmuebleId}?editar=1`;
+  // El id es del INMUEBLE (no del mandato): `?por=inmueble` evita el 404.
+  return `/panel/inmobiliaria/inmuebles/${inmuebleId}?por=inmueble&editar=1`;
 }
 
 /** Un canon para mostrar: «Por confirmar» cuando no se sabe, nunca «$0» ni «null». */

@@ -213,6 +213,23 @@ function avisoDeMasivo(cambios: CambiosMasivos, n: number, listasAhora?: number)
     return `${n} ${n === 1 ? 'fila vinculada' : 'filas vinculadas'} con las personas que ya existían: salieron de esta lista y quedaron listas para crear con el botón de arriba.`;
   }
   if (cambios.descartar) return `${n} ${n === 1 ? 'fila descartada' : 'filas descartadas'}.`;
+  if (cambios.sinCorreoRepetido) {
+    const listas = listasAhora ?? n;
+    return (
+      `${listas.toLocaleString('es-CO')} ${listas === 1 ? 'fila quedó lista' : 'filas quedaron listas'} para crearse sin el correo repetido: ` +
+      'el correo quedó en sus notas y la cuenta del portal nace cuando les pongas el suyo. Créalas con el botón de arriba.'
+    );
+  }
+  if (cambios.reintentar) {
+    const listas = listasAhora ?? n;
+    return (
+      `${listas.toLocaleString('es-CO')} ${listas === 1 ? 'fila quedó lista' : 'filas quedaron listas'} para crearse otra vez: ` +
+      'créalas con el botón de arriba.' +
+      (listasAhora !== undefined && n > listasAhora
+        ? ` Las otras ${(n - listasAhora).toLocaleString('es-CO')} siguen acá porque les falta algo más.`
+        : '')
+    );
+  }
   if (cambios.crearIncompleta) {
     const listas = listasAhora ?? n;
     return (
@@ -2544,7 +2561,7 @@ function ResolucionMasiva({
 }) {
   /** Qué botón de abajo se apretó, para que gire ése y no todos. */
   const [enVuelo, setEnVuelo] = useState<
-    'valor' | 'vincular' | 'descartar' | 'incompleta' | null
+    'valor' | 'vincular' | 'descartar' | 'incompleta' | 'reintentar' | 'sin-correo' | null
   >(null);
   const [campo, setCampo] = useState<string>('');
   const [valor, setValor] = useState('');
@@ -2604,6 +2621,61 @@ function ResolucionMasiva({
           </p>
         ) : null}
       </div>
+
+      {/*
+       * QA de Portofino (14-10-2026): las que «fallaron al crearse» (el
+       * proveedor de cuentas no respondió, o la cuenta quedó a medias) casi
+       * nunca tienen un dato malo. Sin esto, la única salida era abrirlas de a
+       * una o no traerlas: con 1.810 filas, ninguna de las dos sirve.
+       */}
+      {alcance.tipo === 'motivo' && alcance.codigo === 'FALLO_AL_APLICAR' ? (
+        <div className="space-y-2" data-testid="masivo-reintentar">
+          <h3 className="text-sm font-medium text-fg">Volver a intentar</h3>
+          <p className="max-w-prose text-sm text-fg-muted">
+            Se vuelven a revisar sin cambiarles nada. Las que tienen los datos bien quedan listas y
+            las creas con el botón de arriba.
+          </p>
+          <Button
+            size="sm"
+            hideArrow
+            disabled={cargando}
+            isLoading={cargando && enVuelo === 'reintentar'}
+            onClick={() => {
+              setEnVuelo('reintentar');
+              onAplicar({ reintentar: true });
+            }}
+            data-testid="masivo-reintentar-boton"
+          >
+            Volver a intentar {cantidad === 1 ? 'la fila' : `las ${cantidad.toLocaleString('es-CO')}`}
+          </Button>
+        </div>
+      ) : null}
+
+      {/* Nico (14-10-2026): el archivo de Portofino traía el mismo correo en
+          personas distintas («1@gmail.com» ×11, correos de la inmobiliaria). */}
+      {alcance.tipo === 'motivo' && alcance.codigo === 'CORREO_REPETIDO_EN_EL_LOTE' ? (
+        <div className="space-y-2" data-testid="masivo-sin-correo">
+          <h3 className="text-sm font-medium text-fg">Son personas distintas</h3>
+          <p className="max-w-prose text-sm text-fg-muted">
+            Se crean con su documento y sin ese correo, que queda en sus notas. La primera persona
+            que lo trae se queda con él. La cuenta del portal de las demás nace cuando les pongas su
+            propio correo.
+          </p>
+          <Button
+            size="sm"
+            hideArrow
+            disabled={cargando}
+            isLoading={cargando && enVuelo === 'sin-correo'}
+            onClick={() => {
+              setEnVuelo('sin-correo');
+              onAplicar({ sinCorreoRepetido: true });
+            }}
+            data-testid="masivo-sin-correo-boton"
+          >
+            Crear {cantidad === 1 ? 'la fila' : `las ${cantidad.toLocaleString('es-CO')}`} sin el correo repetido
+          </Button>
+        </div>
+      ) : null}
 
       {/* ── 1. El valor por defecto ───────────────────────────────────────── */}
       <div className="space-y-2" data-testid="valor-por-defecto">

@@ -11,8 +11,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { autocomplete } = vi.hoisted(() => ({ autocomplete: vi.fn() }));
-vi.mock('@/lib/api/geocode.service', () => ({ geocodeApi: { autocomplete } }));
+const { autocomplete, buscar } = vi.hoisted(() => ({ autocomplete: vi.fn(), buscar: vi.fn() }));
+// La dirección se ubica con `buscar` (/v1/search); el centro del municipio, con `autocomplete`.
+vi.mock('@/lib/api/geocode.service', () => ({ geocodeApi: { autocomplete, buscar } }));
 
 import {
   consultaDeDireccion,
@@ -29,16 +30,18 @@ import {
 const CALDAS = { lat: 6.0918609, lng: -75.6356917 };
 const BOGOTA = { lat: 4.6016156, lng: -74.066217 };
 
-const resultado = (lat: number, lon: number, label = 'un lugar', city?: string) => ({
+const resultado = (lat: number, lon: number, label = 'un lugar', city?: string, road?: string) => ({
   label,
   lat,
   lon,
   placeId: `${lat},${lon}`,
   ...(city ? { city } : {}),
+  ...(road ? { road } : {}),
 });
 
 beforeEach(() => {
   autocomplete.mockReset();
+  buscar.mockReset().mockResolvedValue([]);
   olvidarMunicipios();
 });
 
@@ -142,73 +145,46 @@ describe('distanciaKm', () => {
 
 describe('ubicarDireccion', () => {
   /*
-   * 🔴 UNA sola llamada. La primera versión pedía el centro del municipio y
-   * la dirección seguidas, y LocationIQ —dos por segundo— rechazaba la
-   * segunda: el inmueble quedaba clavado en el centro del pueblo con la
-   * dirección perfectamente resoluble. Se vio en vivo creando un inmueble de
-   * Caldas.
+   * 🔴 UNA sola llamada cuando el resultado ya dice su municipio: la primera
+   * versión pedía el centro y la dirección seguidas y LocationIQ —dos por
+   * segundo— rechazaba la segunda.
    */
-  it('un punto cuyo municipio coincide se acepta de una, sin una segunda llamada', async () => {
-    autocomplete.mockResolvedValueOnce([
-      resultado(6.0925, -75.6361, 'Madame Purita, Carrera 49', 'Caldas'),
-    ]);
+  it('un punto sobre su misma vía y en su municipio se acepta de una, sin una segunda llamada', async () => {
+    buscar.mockResolvedValueOnce([resultado(6.0925, -75.6361, 'Carrera 48, Caldas', 'Caldas', 'Carrera 48')]);
 
-    const u = await ubicarDireccion({
-      direccion: 'CRA 48 #128 SUR 14',
-      ciudad: 'Caldas',
-      departamento: 'Antioquia',
-    });
+    const u = await ubicarDireccion({ direccion: 'CRA 48 #128 SUR 14', ciudad: 'Caldas', departamento: 'Antioquia' });
 
     expect(u.precision).toBe('direccion');
     expect(u.lat).toBeCloseTo(6.0925, 4);
-    expect(u.etiqueta).toContain('Madame Purita');
-    expect(autocomplete).toHaveBeenCalledTimes(1);
+    expect(buscar).toHaveBeenCalledTimes(1);
+    expect(autocomplete).not.toHaveBeenCalled();
   });
 
   it('el municipio se compara sin acentos ni mayúsculas: «Itagüí» ≡ «ITAGUI»', async () => {
-    autocomplete.mockResolvedValueOnce([resultado(6.1724, -75.6093, 'una calle', 'Itagüí')]);
+    buscar.mockResolvedValueOnce([resultado(6.1724, -75.6093, 'Calle 52 Sur', 'Itagüí', 'Calle 52 Sur')]);
 
-    const u = await ubicarDireccion({
-      direccion: 'CL 52 SUR 48 30',
-      ciudad: 'ITAGUI',
-      departamento: 'Antioquia',
-    });
+    const u = await ubicarDireccion({ direccion: 'CL 52 SUR 48 30', ciudad: 'ITAGUI', departamento: 'Antioquia' });
+
+    expect(u.precision).toBe('direccion');
+    expect(buscar).toHaveBeenCalledTimes(1);
+  });
+
+  it('un resultado sin municipio se mide contra el centro', async () => {
+    buscar.mockResolvedValueOnce([resultado(6.0925, -75.6361, 'Carrera 48', undefined, 'Kr 48')]);
+    autocomplete.mockResolvedValueOnce([resultado(CALDAS.lat, CALDAS.lng, 'Caldas, Antioquia')]);
+
+    const u = await ubicarDireccion({ direccion: 'CRA 48 #128 SUR 14', ciudad: 'Caldas', departamento: 'Antioquia' });
 
     expect(u.precision).toBe('direccion');
     expect(autocomplete).toHaveBeenCalledTimes(1);
   });
 
-  /* Sin municipio en la respuesta queda la distancia, que es el respaldo. */
-  it('un resultado sin municipio se mide contra el centro', async () => {
-    autocomplete
-      .mockResolvedValueOnce([resultado(6.0925, -75.6361, 'un punto de interés')])
-      .mockResolvedValueOnce([resultado(CALDAS.lat, CALDAS.lng, 'Caldas, Antioquia')]);
-
-    const u = await ubicarDireccion({
-      direccion: 'CRA 48 #128 SUR 14',
-      ciudad: 'Caldas',
-      departamento: 'Antioquia',
-    });
-
-    expect(u.precision).toBe('direccion');
-    expect(autocomplete).toHaveBeenCalledTimes(2);
-  });
-
-  /*
-   * 🔴 EL caso. Es exactamente lo que pasó 548 veces: la dirección existe en
-   * Bogotá, el buscador la devuelve, y antes se guardaba tal cual. Ahora el
-   * punto se descarta y el inmueble queda en su municipio.
-   */
+  /* 🔴 EL caso de los 548: la misma vía existe en Bogotá. Se descarta. */
   it('un punto a 240 km NO es este inmueble: cae al municipio', async () => {
-    autocomplete
-      .mockResolvedValueOnce([resultado(BOGOTA.lat, BOGOTA.lng, 'Calle 132 Sur, Bogotá', 'Bogotá')])
-      .mockResolvedValueOnce([resultado(CALDAS.lat, CALDAS.lng, 'Caldas, Antioquia')]);
+    buscar.mockResolvedValue([resultado(BOGOTA.lat, BOGOTA.lng, 'Calle 132 Sur, Bogotá', 'Bogotá', 'Calle 132 Sur')]);
+    autocomplete.mockResolvedValueOnce([resultado(CALDAS.lat, CALDAS.lng, 'Caldas, Antioquia')]);
 
-    const u = await ubicarDireccion({
-      direccion: 'CALLE 132 SUR 55 19',
-      ciudad: 'Caldas',
-      departamento: 'Antioquia',
-    });
+    const u = await ubicarDireccion({ direccion: 'CALLE 132 SUR 55 19', ciudad: 'Caldas', departamento: 'Antioquia' });
 
     expect(u.precision).toBe('municipio');
     expect(u.lat).toBeCloseTo(CALDAS.lat, 4);
@@ -216,49 +192,67 @@ describe('ubicarDireccion', () => {
   });
 
   it('justo en el borde del radio todavía cuenta como dirección', async () => {
-    // Un grado de latitud son ~111 km: medio radio queda cómodamente adentro.
     const cerca = { lat: CALDAS.lat + (RADIO_DEL_MUNICIPIO_KM / 2 / 111), lng: CALDAS.lng };
-    autocomplete
-      .mockResolvedValueOnce([resultado(cerca.lat, cerca.lng)])
-      .mockResolvedValueOnce([resultado(CALDAS.lat, CALDAS.lng)]);
+    buscar.mockResolvedValueOnce([resultado(cerca.lat, cerca.lng, 'Calle 10', undefined, 'Calle 10')]);
+    autocomplete.mockResolvedValueOnce([resultado(CALDAS.lat, CALDAS.lng)]);
 
-    const u = await ubicarDireccion({
-      direccion: 'CL 10 # 20 30',
-      ciudad: 'Caldas',
-      departamento: 'Antioquia',
-    });
+    const u = await ubicarDireccion({ direccion: 'CL 10 # 20 30', ciudad: 'Caldas', departamento: 'Antioquia' });
 
     expect(u.precision).toBe('direccion');
   });
 
-  /* Una referencia no se busca: se queda en su municipio y punto. */
-  it('una referencia de barrio no gasta una búsqueda de dirección', async () => {
-    autocomplete.mockResolvedValueOnce([resultado(CALDAS.lat, CALDAS.lng)]);
+  /*
+   * 🔴 QA de Portofino (14-10-2026, 30 direcciones reales, Nico: «estricto»).
+   * Antes bastaba caer en el municipio: «CRA 82A 33B-48» quedaba en la
+   * Carrera 76 y «CL 131 SUR 50-35» en la Calle 142 A Sur, marcadas «dirección».
+   */
+  it('🔴 un resultado en OTRA vía de su municipio no es la dirección: cae al centro', async () => {
+    buscar.mockResolvedValue([
+      resultado(6.245, -75.59, '33A-48, Carrera 76, Laureles, Medellín', 'Medellín', 'Carrera 76'),
+    ]);
+    autocomplete.mockResolvedValueOnce([resultado(6.2442, -75.5812, 'Medellín')]);
 
-    const u = await ubicarDireccion({
-      direccion: 'DETRAS DE LA ESCUELA 9902',
-      ciudad: 'Caldas',
-      departamento: 'Antioquia',
-    });
+    const u = await ubicarDireccion({ direccion: 'CRA 82A 33B-48 6TO PISO LA CASTELLANA', ciudad: 'Medellin', departamento: 'Antioquia' });
 
     expect(u.precision).toBe('municipio');
+  });
+
+  it('🔴 la letra cuenta: la Calle 45 Sur no es la Calle 45 A Sur', async () => {
+    buscar.mockResolvedValue([resultado(6.17, -75.58, 'Cl 45 S', 'Envigado', 'Cl 45 S')]);
+    autocomplete.mockResolvedValueOnce([resultado(6.17, -75.59, 'Envigado')]);
+
+    const u = await ubicarDireccion({ direccion: 'CALLE 45A SUR # 39B 101', ciudad: 'Envigado', departamento: 'Antioquia' });
+
+    expect(u.precision).toBe('municipio');
+  });
+
+  it('de varios resultados se queda con el que está sobre su vía, escrita como sea («Kr 50 142 S 10»)', async () => {
+    buscar.mockResolvedValueOnce([
+      resultado(6.11, -75.63, 'Carrera 50, La Estrella', 'La Estrella', 'Carrera 50'),
+      resultado(6.0905, -75.6371, 'Kr 50 142 S 10, Caldas', 'Caldas', 'Kr 50'),
+    ]);
+
+    const u = await ubicarDireccion({ direccion: 'CR 50 CL 142 SUR 10 INT 314', ciudad: 'Caldas', departamento: 'Antioquia' });
+
+    expect(u.precision).toBe('direccion');
+    expect(u.lat).toBeCloseTo(6.0905, 4);
+  });
+
+  it('sin una vía que leer no hay con qué verificar: ni se busca la dirección', async () => {
+    autocomplete.mockResolvedValueOnce([resultado(CALDAS.lat, CALDAS.lng)]);
+
+    const u = await ubicarDireccion({ direccion: 'DETRAS DE LA ESCUELA 9902', ciudad: 'Caldas', departamento: 'Antioquia' });
+
+    expect(u.precision).toBe('municipio');
+    expect(buscar).not.toHaveBeenCalled();
     expect(autocomplete).toHaveBeenCalledTimes(1);
     expect(autocomplete.mock.calls[0][0]).toBe('Caldas, Antioquia, Colombia');
   });
 
-  /*
-   * 🔴 Los 1.442: Caldas, La Estrella y Amagá no estaban en la tabla de 32
-   * ciudades, así que no había red de seguridad. Preguntar por el municipio
-   * sí los cubre, sean 32 o 1.103.
-   */
   it('un municipio que ninguna tabla conoce igual queda ubicado', async () => {
     autocomplete.mockResolvedValueOnce([resultado(6.0406977, -75.7030694, 'Amagá, Antioquia')]);
 
-    const u = await ubicarDireccion({
-      direccion: 'PARTIDAS CAMILO C',
-      ciudad: 'Amaga',
-      departamento: 'Antioquia',
-    });
+    const u = await ubicarDireccion({ direccion: 'PARTIDAS CAMILO C', ciudad: 'Amaga', departamento: 'Antioquia' });
 
     expect(u.precision).toBe('municipio');
     expect(u.lat).toBeCloseTo(6.0406977, 4);
@@ -277,11 +271,7 @@ describe('ubicarDireccion', () => {
   it('sin municipio y sin nada que verificar, no se inventa un punto', async () => {
     autocomplete.mockResolvedValue([]);
 
-    const u = await ubicarDireccion({
-      direccion: 'CL 10 # 20 30',
-      ciudad: 'Villa Que No Existe',
-      departamento: 'Ninguno',
-    });
+    const u = await ubicarDireccion({ direccion: 'CL 10 # 20 30', ciudad: 'Villa Que No Existe', departamento: 'Ninguno' });
 
     expect(u.precision).toBe('ninguna');
     expect(u.lat).toBeUndefined();
@@ -289,26 +279,19 @@ describe('ubicarDireccion', () => {
   });
 
   it('un buscador caído no tumba la carga: devuelve «ninguna», no lanza', async () => {
+    buscar.mockRejectedValue(new Error('503'));
     autocomplete.mockRejectedValue(new Error('503'));
 
-    const u = await ubicarDireccion({
-      direccion: 'CL 10 # 20 30',
-      ciudad: 'Nunca Jamás',
-      departamento: 'Antioquia',
-    });
+    const u = await ubicarDireccion({ direccion: 'CL 10 # 20 30', ciudad: 'Nunca Jamás', departamento: 'Antioquia' });
 
     expect(u.precision).toBe('ninguna');
   });
 
-  /* La tabla de ciudades sigue siendo la red cuando el buscador no contesta. */
   it('con el buscador caído, una ciudad conocida cae en su centro', async () => {
+    buscar.mockRejectedValue(new Error('503'));
     autocomplete.mockRejectedValue(new Error('503'));
 
-    const u = await ubicarDireccion({
-      direccion: 'CL 10 # 20 30',
-      ciudad: 'Medellín',
-      departamento: 'Antioquia',
-    });
+    const u = await ubicarDireccion({ direccion: 'CL 10 # 20 30', ciudad: 'Medellín', departamento: 'Antioquia' });
 
     expect(u.precision).toBe('municipio');
     expect(u.lat).toBeCloseTo(6.2442, 3);
@@ -340,27 +323,27 @@ describe('ubicarDireccion: noisy addresses (T-0159)', () => {
   const direccion = 'CR 55 N 53 A - 35 TO 1 AP 2201- PQ 3049 RESERVAS D';
 
   it('geocodes the normalised address first', async () => {
-    autocomplete.mockResolvedValueOnce([resultado(6.0925, -75.6361, 'Carrera 55', 'Caldas')]);
+    buscar.mockResolvedValueOnce([resultado(6.0925, -75.6361, 'Carrera 55', 'Caldas', 'Carrera 55')]);
 
     const u = await ubicarDireccion({ direccion, ciudad: 'Caldas', departamento: 'Antioquia' });
 
     expect(u.precision).toBe('direccion');
-    expect(autocomplete).toHaveBeenCalledTimes(1);
-    expect(autocomplete.mock.calls[0][0]).toBe(
+    expect(buscar).toHaveBeenCalledTimes(1);
+    expect(buscar.mock.calls[0][0]).toBe(
       'Carrera 55 # 53 A - 35, Caldas, Antioquia, Colombia',
     );
   });
 
   it('falls back to the next query when the normalised one finds nothing', async () => {
-    autocomplete
+    buscar
       .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([resultado(6.0925, -75.6361, 'Carrera 55', 'Caldas')]);
+      .mockResolvedValueOnce([resultado(6.0925, -75.6361, 'Carrera 55', 'Caldas', 'Carrera 55')]);
 
     const u = await ubicarDireccion({ direccion, ciudad: 'Caldas', departamento: 'Antioquia' });
 
     expect(u.precision).toBe('direccion');
-    expect(autocomplete).toHaveBeenCalledTimes(2);
-    expect(autocomplete.mock.calls[1][0]).toContain('Carrera 55 N 53 A');
+    expect(buscar).toHaveBeenCalledTimes(2);
+    expect(buscar.mock.calls[1][0]).toContain('Carrera 55 N 53 A');
   });
 
   it('every query failing lands on the municipality, as before', async () => {
@@ -378,11 +361,49 @@ describe('ubicarDireccion: noisy addresses (T-0159)', () => {
     autocomplete.mockImplementation(async (q: string) =>
       q === 'Caldas, Antioquia, Colombia'
         ? [resultado(CALDAS.lat, CALDAS.lng)]
-        : [resultado(BOGOTA.lat, BOGOTA.lng, 'Carrera 55, Bogotá', 'Bogotá')],
+        : [],
     );
+    buscar.mockResolvedValue([resultado(BOGOTA.lat, BOGOTA.lng, 'Carrera 55, Bogotá', 'Bogotá', 'Carrera 55')]);
 
     const u = await ubicarDireccion({ direccion, ciudad: 'Caldas', departamento: 'Antioquia' });
 
     expect(u.precision).toBe('municipio');
+  });
+});
+
+describe('la vía principal (QA de Portofino, 14-10)', () => {
+  it('se lee igual del archivo y del buscador', async () => {
+    const { viaPrincipal, mismaVia } = await import('./normalizar-direccion-co');
+    const casos: [string, string, boolean][] = [
+      ['CL 131 SUR 50 - 35 INT 304', 'Calle 131 Sur', true],
+      ['CLL 139 SUR # 47 A 52', 'Cl 139 S', true],
+      ['CR 50 CL 142 SUR 10 INT 314', 'Kr 50', true],
+      ['CRA 43A # 71 SUR - 41', 'Carrera 43A', true],
+      ['CRA 39 E # 48 C SUR 103', 'Carrera 39E', true],
+      ['CALLE 45A SUR # 39B 101', 'Cl 45 S', false],
+      ['CRA 82A 33B-48', 'Carrera 76', false],
+      ['CALLE 66 SUR CRA. 43 C 35', 'Manzana C', false],
+      ['CL 72S 35-240', 'Calle 72A Sur', false],
+    ];
+    for (const [archivo, buscador, igual] of casos) {
+      const a = viaPrincipal(archivo);
+      const b = viaPrincipal(buscador);
+      expect([archivo, buscador, a !== null && b !== null && mismaVia(a, b)]).toEqual([archivo, buscador, igual]);
+    }
+  });
+});
+
+describe('el cruce de la puerta (QA de Portofino, 14-10, 2.ª muestra)', () => {
+  it('🔴 sobre la misma vía pero 29 calles más allá no es el inmueble', async () => {
+    buscar.mockResolvedValue([{ ...resultado(6.07, -75.64, '124 S 87, Kr 54, Caldas', 'Caldas', 'Kr 54'), houseNumber: '124 S 87' }]);
+    autocomplete.mockResolvedValueOnce([resultado(CALDAS.lat, CALDAS.lng)]);
+    const u = await ubicarDireccion({ direccion: 'CRA 54 CALLE 153 SUR 87, APTO 1004', ciudad: 'Caldas', departamento: 'Antioquia' });
+    expect(u.precision).toBe('municipio');
+  });
+
+  it('a una o dos calles del cruce sí lo es («Cl 77 S # 46B 65» por «# 47 C 65»)', async () => {
+    buscar.mockResolvedValueOnce([{ ...resultado(6.15, -75.61, '46B 65, Cl 77 S, Sabaneta', 'Sabaneta', 'Cl 77 S'), houseNumber: '46B 65' }]);
+    const u = await ubicarDireccion({ direccion: 'CL. 77 SUR # 47 C 65 INT 1301', ciudad: 'Sabaneta', departamento: 'Antioquia' });
+    expect(u.precision).toBe('direccion');
   });
 });

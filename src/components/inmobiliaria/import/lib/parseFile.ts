@@ -140,7 +140,14 @@ function textoDelNumero(v: number, formato?: string): string {
   const z = typeof formato === 'string' ? formato : '';
   if (/^0+$/.test(z)) return String(v).padStart(z.length, '0');
   const limpio = (n: number): string => {
-    if (Number.isInteger(n)) return String(n);
+    /*
+     * 🔴 QA de Portofino (14-10-2026): un entero de más de 15 cifras no cabe
+     * exacto en un número de JavaScript. La celda «711408791026157919» salía
+     * «711408791026158000» y ese documento, que no está en el archivo, quedaba
+     * guardado. Fuera del rango seguro va en notación científica: ilegible a
+     * propósito (el back la frena como «notación científica»), nunca inventada.
+     */
+    if (Number.isInteger(n)) return Number.isSafeInteger(n) ? String(n) : n.toExponential();
     /*
      * T-0158: `toFixed(10)` imprime la expansión binaria EXACTA: un canon de 7
      * cifras (1227294.12) salía «1227294.1200000001» y el lector de plata lo

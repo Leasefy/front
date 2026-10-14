@@ -1894,6 +1894,8 @@
         "automatizacionIaDesc": "Review and certify what the assistant learned before it can influence the chat",
         "mandato": "Mandate and payouts",
         "mandatoDesc": "Mandate mode, leasing fees to owners and VAT on the commission",
+        "conceptos": "Charges",
+        "conceptosDesc": "What you charge in your leases, with your own names: rename, turn off, create or import them",
         "mediosDeRecibo": "Receipt methods",
         "mediosDeReciboDesc": "What the cashier can record a payment with: cash and cheque off by default",
         "costosDeLaPlata": "Cost of moving money",

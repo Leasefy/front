@@ -1929,6 +1929,8 @@
         "automatizacionIaDesc": "Revisa y certifica lo que aprendió el asistente antes de que influya en el chat",
         "mandato": "Mandato y giros",
         "mandatoDesc": "Modalidad de los mandatos, cobros al arrendar e IVA de la comisión",
+        "conceptos": "Conceptos",
+        "conceptosDesc": "Lo que cobras en tus contratos, con tus nombres: renombra, apaga, crea o trae los de tu sistema anterior",
         "mediosDeRecibo": "Medios de recibo",
         "mediosDeReciboDesc": "Con qué puede caja registrar un pago: efectivo y cheque apagados por defecto",
         "costosDeLaPlata": "Costos de la plata",

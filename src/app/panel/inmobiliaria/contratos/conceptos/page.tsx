@@ -14,9 +14,10 @@ import { Eyebrow } from '@leasefy/cadence'
 import { PageGuard } from '@/components/auth/PageGuard'
 import { ROLES_DE_CONTRATOS } from '@/lib/contratos/roles-de-contratos'
 import { ConceptosYLiquidacion } from '@/components/contratos/ConceptosYLiquidacion'
-import { CONCEPTOS } from '@/lib/contratos/conceptos'
+import { useCatalogoDeConceptos } from '@/lib/conceptos/use-catalogo-de-conceptos'
 
 export default function ConceptosPage() {
+  const { activos } = useCatalogoDeConceptos()
   return (
     <PageGuard module="contratos" roles={ROLES_DE_CONTRATOS}>
       <div className="space-y-6 p-6 lg:p-8">
@@ -33,9 +34,9 @@ export default function ConceptosPage() {
             Conceptos y liquidación
           </h1>
           <p className="max-w-2xl text-sm text-muted-foreground line-clamp-2">
-            {CONCEPTOS.length} conceptos, uno por cosa que se cobra. Los
+            {activos.length} conceptos, uno por cosa que se cobra. Los
             impuestos no van en el nombre: salen de quién le paga a quién y del
-            uso del inmueble.
+            uso del inmueble. Los nombres se cambian en Configuración → Conceptos.
           </p>
         </header>
 

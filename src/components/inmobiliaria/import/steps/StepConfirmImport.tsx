@@ -327,6 +327,9 @@ function StepConfirmImportCuerpo({
   );
   /* T-0129 — cuántas de las listas se crean con el canon por confirmar. */
   const [sinCanon, setSinCanon] = useState(0);
+  // Nico 14-10: lo que «Crear todas» crea AHORA (sólo las listas); `null` = back viejo.
+  const [alCrear, setAlCrear] = useState<{ sinCanon: number; sinPrecioDeVenta: number } | null>(null);
+  const sinCanonAlCrear = alCrear?.sinCanon ?? sinCanon;
   const [pendientes, setPendientes] = useState<FilaDeImportacion[]>([]);
   const [totalPendientes, setTotalPendientes] = useState(0);
   const [pagina, setPagina] = useState(1);
@@ -589,6 +592,7 @@ function StepConfirmImportCuerpo({
       ]);
       if (e) setEstadoManual(e);
       setSinCanon(m?.sinCanon ?? 0);
+      setAlCrear(m?.alCrear ?? null);
       setResumenLote(r);
       setPendientes(p.filas);
       setTotalPendientes(p.total);
@@ -2062,12 +2066,21 @@ function StepConfirmImportCuerpo({
           </p>
         ) : null}
 
-        {sinCanon > 0 ? (
+        {/* Nico 14-10: se cuenta lo que se crea AHORA (las listas), no lo que sigue por revisar. */}
+        {sinCanonAlCrear > 0 ? (
           <p className="text-sm text-fg-muted" data-testid="listas-sin-canon">
-            {sinCanon === 1
+            {sinCanonAlCrear === 1
               ? "1 inmueble se crea con el canon por confirmar"
-              : `${sinCanon.toLocaleString("es-CO")} inmuebles se crean con el canon por confirmar`}
+              : `${sinCanonAlCrear.toLocaleString("es-CO")} inmuebles se crean con el canon por confirmar`}
             : no se usa para contratos, cobros ni facturas hasta que lo pongas a mano en el inmueble.
+          </p>
+        ) : null}
+        {alCrear && alCrear.sinPrecioDeVenta > 0 ? (
+          <p className="text-sm text-fg-muted" data-testid="listas-sin-precio-de-venta">
+            {alCrear.sinPrecioDeVenta === 1
+              ? "1 venta se crea con el precio por completar"
+              : `${alCrear.sinPrecioDeVenta.toLocaleString("es-CO")} ventas se crean con el precio por completar`}
+            : no se publica hasta que le pongas el precio de venta en el inmueble.
           </p>
         ) : null}
         {porRevisar > 0 ? (

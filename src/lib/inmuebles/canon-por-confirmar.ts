@@ -19,6 +19,16 @@ export const TEXTO_CANON_POR_CONFIRMAR = 'Por confirmar';
 /** Etiqueta de la insignia. */
 export const ETIQUETA_CANON_POR_CONFIRMAR = 'Canon por confirmar';
 
+/*
+ * Nico, 14-10-2026 (lote 1009 de Portofino): una VENTA también puede entrar sin
+ * precio. La marca es la misma (`canonPorConfirmar`); en venta se lee «precio
+ * por completar». No se publica hasta que una persona lo pone.
+ */
+export const TEXTO_PRECIO_POR_COMPLETAR = 'Por completar';
+export const ETIQUETA_PRECIO_POR_COMPLETAR = 'Precio por completar';
+export const AVISO_FILA_SIN_PRECIO_DE_VENTA =
+  'Sin precio de venta: se crea con el precio por completar y no se publica hasta tenerlo';
+
 /**
  * Lo que dice el aviso por fila antes de crear: la fila entra, pero queda
  * marcada.

@@ -722,6 +722,26 @@ describe('<StepConfirmImport> — revisar lo que falta (fase LISTA)', () => {
     expect(updateState).toHaveBeenCalledWith(expect.objectContaining({ importedCount: 0 }));
   });
 
+  it('Nico 14-10 (lote 1009): «Crear todas» dice lo que crea AHORA — la venta sin precio — y no el canon de las que siguen por revisar', async () => {
+    estadoLoteState.estado = lote({ listos: 1, listas: 1 });
+    api.motivos.mockResolvedValue({
+      lote: 'lote-1',
+      requierenAtencion: 53,
+      listas: 1,
+      sinCanon: 11,
+      alCrear: { sinCanon: 0, sinPrecioDeVenta: 1 },
+      porMotivo: [],
+    });
+    render(baseState());
+    await asentar();
+    await clic(porTestId('continuar-a-crear'));
+
+    expect(porTestId('listas-sin-canon')).toBeNull();
+    expect(porTestId('listas-sin-precio-de-venta')?.textContent).toContain(
+      '1 venta se crea con el precio por completar',
+    );
+  });
+
   it('409 NADA_PARA_CREAR: vuelve a la revisión y dice qué hacer', async () => {
     estadoLoteState.estado = lote({ listos: 2, listas: 2 });
     api.crear.mockRejectedValue(new ApiError(409, 'No hay filas LISTO', 'NADA_PARA_CREAR'));

@@ -265,6 +265,15 @@ export function sinCanon(p: ImportProperty): boolean {
 }
 
 /**
+ * Nico 14-10-2026 · ¿se va a crear con el precio de venta por completar? Una
+ * venta sin precio. Como `sinCanon`: NO es un error ni la deselecciona.
+ */
+export function sinPrecioDeVenta(p: ImportProperty): boolean {
+  if (tipoEfectivo(p) !== 'sale') return false;
+  return !p.salePrice || p.salePrice <= 0;
+}
+
+/**
  * Qué le falta a este inmueble para que el back lo acepte.
  *
  * ⚠️ Ninguno se puede inventar: el área de un inmueble es un dato, no una
@@ -294,8 +303,10 @@ export function faltantesParaElBack(p: ImportProperty): RequisitoFaltante[] {
   // constraint requires exactly one of the two per listingType). Mirrors
   // ImportWizard.isStepValid / StepColumnMapping's monthlyRent<->salePrice
   // alternative at the column-mapping gate, applied per-row here.
+  // Nico 14-10-2026 (lote 1009): SIN precio ya no frena, entra con el precio
+  // por completar (`sinPrecioDeVenta`). Uno presente y por debajo del piso, sí.
   if (tipoEfectivo(p) === 'sale') {
-    if (!p.salePrice || p.salePrice < MINIMO_VENTA) faltan.push('salePrice');
+    if (p.salePrice && p.salePrice > 0 && p.salePrice < MINIMO_VENTA) faltan.push('salePrice');
   }
   /*
    * T-0129 · el CANON ya no frena. Un arriendo sin canon se crea igual y queda

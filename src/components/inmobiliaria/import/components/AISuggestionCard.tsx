@@ -19,8 +19,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { IconButton, MonoLabel } from '@leasefy/cadence';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
-import { faltantesParaElBack, requisitoDe, sinCanon } from '../lib/requisitosDelBack';
-import { AVISO_FILA_SIN_CANON } from '@/lib/inmuebles/canon-por-confirmar';
+import { faltantesParaElBack, requisitoDe, sinCanon, sinPrecioDeVenta } from '../lib/requisitosDelBack';
+import {
+  AVISO_FILA_SIN_CANON,
+  AVISO_FILA_SIN_PRECIO_DE_VENTA,
+} from '@/lib/inmuebles/canon-por-confirmar';
 import { useCamposQueSeQuedan } from '../lib/useCamposQueSeQuedan';
 import type { ImportProperty, AISuggestion, DuenoDelArchivo } from '../lib/importTypes';
 
@@ -524,6 +527,15 @@ export function AISuggestionCard({
                 data-testid={`sin-canon-${property._rowIndex}`}
               >
                 {AVISO_FILA_SIN_CANON}
+              </span>
+            )}
+            {/* Nico 14-10: la venta sin precio tampoco frena. */}
+            {sinPrecioDeVenta(property) && (
+              <span
+                className="inline-flex items-center px-2 py-0.5 rounded-sm bg-surface-muted dark:bg-ink text-fg-muted dark:text-fg-subtle"
+                data-testid={`sin-precio-de-venta-${property._rowIndex}`}
+              >
+                {AVISO_FILA_SIN_PRECIO_DE_VENTA}
               </span>
             )}
           </div>

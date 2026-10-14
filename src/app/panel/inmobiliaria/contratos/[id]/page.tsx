@@ -71,7 +71,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { CrossFade, Presence } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { AdministracionDelContrato } from '@/components/contratos/AdministracionDelContrato';
-import { EscenarioTributario } from '@/components/contratos/EscenarioTributario';
+import { EscenarioDelArchivoPorRevisar, EscenarioTributario } from '@/components/contratos/EscenarioTributario';
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
 import { CobrosDelContrato } from '@/components/contratos/CobrosDelContrato';
 import { CastigoDelContrato } from '@/components/contratos/CastigoDelContrato';
@@ -533,6 +533,10 @@ function ContratoDetalleContent() {
         y cuándo, cómo va con la plata —desde el ESTADO DE CUENTA, que es la
         puerta principal— y, al pie, las decisiones del ciclo de vida.
       */}
+      {/* Nico 14-10: el escenario del archivo que no se pudo usar se dice arriba
+          (la tarjeta del escenario queda abajo, junto a Administración). */}
+      <EscenarioDelArchivoPorRevisar contract={contract} />
+
       <ArriendoDelContrato
         contract={contract}
         vigencia={vigencia}

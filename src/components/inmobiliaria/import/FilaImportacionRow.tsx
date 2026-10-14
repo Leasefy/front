@@ -18,7 +18,10 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toast';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
-import { AVISO_FILA_SIN_CANON } from '@/lib/inmuebles/canon-por-confirmar';
+import {
+  AVISO_FILA_SIN_CANON,
+  AVISO_FILA_SIN_PRECIO_DE_VENTA,
+} from '@/lib/inmuebles/canon-por-confirmar';
 import { errorDelNumero } from './lib/limites-de-la-importacion';
 import {
   Select,
@@ -250,6 +253,12 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
       {fila.datosPendientes?.includes('canon') && (
         <p className="text-xs text-fg-muted" data-testid="fila-sin-canon">
           {AVISO_FILA_SIN_CANON}
+        </p>
+      )}
+      {/* Nico 14-10: la venta sin precio entra con el precio por completar. */}
+      {fila.datosPendientes?.includes('precio_venta') && (
+        <p className="text-xs text-fg-muted" data-testid="fila-sin-precio-de-venta">
+          {AVISO_FILA_SIN_PRECIO_DE_VENTA}
         </p>
       )}
 

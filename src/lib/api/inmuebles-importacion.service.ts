@@ -529,8 +529,14 @@ export interface MotivosDelLoteInmuebles {
   lote: string;
   requierenAtencion: number;
   listas: number;
-  /** Filas que se van a crear con el canon por confirmar. */
+  /** Filas (por revisar o listas) que se crearían con el canon por confirmar. */
   sinCanon: number;
+  /**
+   * Nico 14-10-2026: de las LISTAS (lo que «Crear todas» crea ahora), cuántas
+   * entran con el canon por confirmar y cuántas son ventas con el precio por
+   * completar. Un back anterior no lo manda.
+   */
+  alCrear?: { sinCanon: number; sinPrecioDeVenta: number };
   /** `codigo: 'canon'` trae `bloquea: false`. */
   porMotivo: { codigo: string; filas: number; bloquea: boolean }[];
 }

@@ -33,10 +33,10 @@ export function SolicitudDelPropietario({ id }: { id: string }) {
   }, [id]);
   useEffect(() => cargar(), [cargar]);
 
-  if (cargando) return <EsqueletoDePagina variante="detail" className="mx-auto max-w-3xl" />;
+  if (cargando) return <EsqueletoDePagina variante="detail" className="p-6 lg:p-8" />;
   if (error || !s) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="p-6 lg:p-8">
         <FalloDeCarga
           error={error ?? new Error('No encontramos esa solicitud.')}
           queEs="esa solicitud"
@@ -50,12 +50,12 @@ export function SolicitudDelPropietario({ id }: { id: string }) {
   const abierta = s.estado !== 'resuelta' && s.estado !== 'cerrada';
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 px-4 py-8 sm:px-6">
+    <div className="space-y-5 p-6 lg:p-8">
       <Link href="/panel/solicitudes" className="inline-flex items-center gap-1.5 text-sm text-fg-muted hover:text-fg">
         <ArrowLeft className="h-4 w-4" /> Volver a solicitudes
       </Link>
       <header className="space-y-2">
-        <h1 className="text-2xl font-medium text-fg">{s.asunto}</h1>
+        <h1 className="text-h2 text-fg">{s.asunto}</h1>
         <p className="font-mono text-sm text-fg-muted" data-testid="solicitud-radicado">
           {s.radicado}
         </p>

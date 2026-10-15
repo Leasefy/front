@@ -589,7 +589,7 @@ function FilaDeInquilino({
             </Button>
           ) : principal?.inmueble ? (
             <Link
-              href={`/panel/inmobiliaria/inmuebles/${principal.inmueble.id}`}
+              href={`/panel/inmobiliaria/inmuebles/${principal.inmueble.id}?por=inmueble`}
               onClick={(e) => e.stopPropagation()}
               className="block max-w-[14rem] truncate text-sm text-fg hover:text-primary"
             >
@@ -693,7 +693,7 @@ export function RenglonDeArriendo({ arriendo }: { arriendo: ArriendoDeInquilino 
 
       {arriendo.inmueble ? (
         <Link
-          href={`/panel/inmobiliaria/inmuebles/${arriendo.inmueble.id}`}
+          href={`/panel/inmobiliaria/inmuebles/${arriendo.inmueble.id}?por=inmueble`}
           className="min-w-0 flex-1 truncate text-sm text-fg hover:text-primary"
         >
           {arriendo.inmueble.address}

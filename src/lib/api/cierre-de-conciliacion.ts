@@ -207,6 +207,11 @@ export interface AlertaDePartidas {
 }
 
 export interface CuentasContables {
+  /**
+   * Las cuentas del PUC que el plan del sistema anterior marcaba «Caja o Banco»
+   * (Nico, 13-10-2026): se proponen primero. Ausente en un back anterior.
+   */
+  cuentasDeCajaOBanco?: { id: string; codigo: string; nombre: string }[];
   disponible: boolean;
   motivo: string | null;
   cuentaDeLosRecibos: { id: string; codigo: string; nombre: string } | null;

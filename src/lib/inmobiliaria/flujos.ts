@@ -52,6 +52,12 @@ export interface FlujoNuevo {
    * navegación esconde.
    */
   module: string | null
+  /**
+   * 🔴 ROLES (auditoría 14-10-2026): la acción que pide EMPEZAR el flujo. Con
+   * `view` el botón «Nuevo» le ofrecía «Nueva consignación» al de sólo lectura y
+   * al coordinador, y «Nuevo contrato» al abogado externo; al guardar, 403.
+   */
+  accion: string
 }
 
 const I18N = 'inmobiliaria.nuevo.flujos'
@@ -75,6 +81,7 @@ export const FLUJOS: readonly FlujoNuevo[] = [
     icon: Buildings,
     href: '/panel/inmobiliaria/inmuebles/nuevo',
     module: 'portafolio',
+    accion: 'create',
   },
   {
     key: 'avaluo',
@@ -83,6 +90,7 @@ export const FLUJOS: readonly FlujoNuevo[] = [
     href: '',
     externo: true,
     module: 'avaluos',
+    accion: 'create',
   },
 
   // ── Evaluar: decidir sobre una persona ────────────────────────────────
@@ -103,6 +111,7 @@ export const FLUJOS: readonly FlujoNuevo[] = [
     icon: ShieldCheck,
     href: '/panel/inmobiliaria/postulaciones/asegurabilidad/nueva',
     module: 'cotizador',
+    accion: 'create-quote',
   },
 
   // ── Cerrar ────────────────────────────────────────────────────────────
@@ -114,6 +123,7 @@ export const FLUJOS: readonly FlujoNuevo[] = [
     href: '',
     selector: 'postulacion',
     module: 'contratos',
+    accion: 'create',
   },
 ] satisfies readonly Definicion[]
 
@@ -170,7 +180,7 @@ export function estadoDelFlujo(
   },
 ): EstadoFlujo {
   if (flujo.module === null) return 'disponible'
-  if (ctx.canAccess(flujo.module, 'view')) return 'disponible'
+  if (ctx.canAccess(flujo.module, flujo.accion)) return 'disponible'
   // Solo los módulos del agente pueden quedar sin resolver: los del monolito
   // se niegan con un payload que sí llegó.
   if (isAgentModule(flujo.module) && !ctx.permisosDelAgenteResueltos) return 'sinResolver'

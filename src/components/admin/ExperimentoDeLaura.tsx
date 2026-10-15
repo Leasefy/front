@@ -118,8 +118,8 @@ export function ExperimentoDeLaura() {
 
       {!e.disponible && (
         <p className="text-sm text-warn" data-testid="experimento-sin-migracion">
-          Todavía no se puede empezar: falta una actualización de la base del micro (la migración
-          20261008000000, pasa por Víctor). Sin ella no habría con qué medir la plata.
+          Todavía no se puede empezar: falta una actualización de la base del asistente de cobranza.
+          Sin ella no habría con qué medir la plata.
         </p>
       )}
 

@@ -89,7 +89,23 @@ export interface ArriendoDeInquilino {
  * el mismo nombre y sin decir por qué es cómo alguien termina llamando dos
  * veces al mismo inquilino.
  */
+/**
+ * Lo que trajo el archivo de su sistema anterior (Nico, 13-10-2026: «ficha del
+ * inquilino completa»). La cuenta llega ENMASCARADA. Sólo en el detalle.
+ */
+export interface FichaDelArchivoDelInquilino {
+  direccion: string | null;
+  ciudad: string | null;
+  departamento: string | null;
+  banco: string | null;
+  tipoDeCuenta: string | null;
+  cuentaEnmascarada: string | null;
+  notas: string | null;
+}
+
 export interface Inquilino {
+  /** Sólo en el detalle (`obtener`): `null` sin ficha; ausente en un back anterior. */
+  ficha?: FichaDelArchivoDelInquilino | null;
   /**
    * Su `User.id` cuando tiene cuenta del portal. Cuando no —se cargó con
    * documento y sin correo—, el id de su ficha de tercero. Es un uuid en los
@@ -107,7 +123,7 @@ export interface Inquilino {
    */
   tipoDocumento?: TipoDeDocumento | null;
   /** Qué falta de su ficha (T-0128). Ausente = completa, o un back anterior. */
-  datosPendientes?: ['documento'];
+  datosPendientes?: ('documento' | 'tipoDocumento')[];
   /**
    * I-22 (Nico, 03-10): si la persona tiene cuenta del portal. Cuando lo dice
    * el back, `tenantId` es su `User.id` con `true`. Ausente = un back

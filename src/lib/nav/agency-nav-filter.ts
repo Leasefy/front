@@ -17,6 +17,8 @@ export type NavItemWithModule = NavItem & {
   modulos?: readonly string[];
   /** Agency roles allowed (in addition to isAdmin). */
   roles?: readonly string[];
+  /** Con `true`, `roles` vale también para el administrador (ver `PantallaDelPanel.soloEsosRoles`). */
+  soloEsosRoles?: boolean;
   adminOnly?: boolean;
   /**
    * Módulo de negocio al que pertenece la fila. Recorta la navegación por rol
@@ -98,6 +100,7 @@ export function pasaGateDeFila(
     module?: string | null;
     modulos?: readonly string[];
     roles?: readonly string[];
+    soloEsosRoles?: boolean;
     moduloPago?: string;
   },
   ctx: NavFilterContext,
@@ -123,7 +126,7 @@ export function pasaGateDeFila(
   // be in the item's allow-list.
   if (fila.roles && fila.roles.length > 0) {
     const roleAllowed =
-      ctx.isAdmin ||
+      (ctx.isAdmin && !fila.soloEsosRoles) ||
       // H-09: sin los permisos del back el rol tampoco se sabe: no se borra.
       (ctx.backUnverified === true && ctx.agencyRole === null) ||
       (ctx.agencyRole !== null && fila.roles.includes(ctx.agencyRole));

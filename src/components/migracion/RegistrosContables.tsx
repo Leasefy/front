@@ -3,13 +3,20 @@
 /**
  * Paso 5 de la migración: los registros contables.
  *
- * Dos caminos, los dos válidos para dejar el paso listo:
+ * 🔴 8.ª tanda (14-10-2026, Nico: «saldos al cierre + movimientos del año»).
+ * Tres archivos, cada uno con su puerta, y uno solo obligatorio:
  *
- *   A. Saldos iniciales — UN asiento de apertura con los saldos a la fecha
- *      de corte. Es lo que hace cualquier contador al estrenar un sistema y
- *      alcanza para operar desde mañana.
- *   B. Migrar el histórico — el libro diario del sistema anterior, desde un
- *      archivo. Más trabajo, más trazabilidad.
+ *   A. Saldos iniciales — el balance de prueba POR TERCERO al cierre del año
+ *      anterior, que entra como UN asiento de apertura. Es lo que deja el
+ *      paso listo (el muro lo exige).
+ *   B. El libro diario — los movimientos de ESTE año, después de la apertura
+ *      (el back rechaza lo que ya está dentro de los saldos).
+ *   C. Los comprobantes — historia de todos los años en la ficha de cada
+ *      contrato; no entran al libro.
+ *
+ * Arriba, «Sube tu archivo contable»: Leasefy reconoce cuál de los tres es
+ * (`queArchivoContableSubieron`) y lo abre en su puerta. Las tres pestañas
+ * quedan para elegir a mano.
  *
  * Arriba de los dos, lo que ya está cargado: nadie debería cargar la
  * apertura dos veces porque no vio que ya existía.
@@ -18,10 +25,14 @@
  * camino, se manda al paso 4.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Receipt, Scales, Warning } from "@phosphor-icons/react";
+import { useDropzone } from "react-dropzone";
+import { ArrowRight, BookOpen, Info, Receipt, Scales, Warning } from "@phosphor-icons/react";
 import { SegmentedControl } from "@leasefy/cadence";
+
+import { ZonaDeArchivo } from "@/components/migracion/ZonaDeArchivo";
+import type { FormaDeArchivoContable } from "@/lib/migracion/que-archivo-contable-es";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -37,10 +48,24 @@ import { CargasDeAsientosAbiertas } from "./CargasDeAsientosAbiertas";
 import { DocumentosContables } from "./DocumentosContables";
 import { MigrarAsientos } from "./MigrarAsientos";
 import { mensajeDeContabilidad } from "./contabilidad-errores";
+import { queArchivoContableSubieron } from "./que-archivo-contable-subieron";
 
 const RUTA_DEL_PASO_4 = "/panel/inmobiliaria/migracion/puc";
 
 type Camino = "apertura" | "historico" | "documentos";
+
+/** A qué puerta va cada archivo que se reconoce. */
+const CAMINO_DEL_ARCHIVO: Record<FormaDeArchivoContable, Camino> = {
+  balance: "apertura",
+  "libro-diario": "historico",
+  comprobantes: "documentos",
+};
+
+const QUE_ES: Record<FormaDeArchivoContable, string> = {
+  balance: "Es un balance: lo abrimos en «Saldos iniciales».",
+  "libro-diario": "Es un libro diario: lo abrimos en «Subir el libro diario».",
+  comprobantes: "Son comprobantes: los abrimos en «Subir los comprobantes».",
+};
 
 interface ResumenDeCargado {
   total: number;
@@ -63,6 +88,38 @@ export function RegistrosContables({
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
 } = {}) {
   const [camino, setCamino] = useState<Camino>("apertura");
+  /*
+   * 8.ª tanda (14-10): el archivo de «Sube tu archivo contable», con la puerta
+   * a la que va. Cada camino lo recibe como `archivoInicial` y lo lee una vez.
+   */
+  const [archivoDelCamino, setArchivoDelCamino] = useState<{ archivo: File; camino: Camino } | null>(null);
+  const [reconociendo, setReconociendo] = useState(false);
+  const [reconocido, setReconocido] = useState<{
+    archivo: File;
+    forma: FormaDeArchivoContable | null;
+  } | null>(null);
+  const llevarA = useCallback((archivo: File, destino: Camino) => {
+    setCamino(destino);
+    setArchivoDelCamino({ archivo, camino: destino });
+  }, []);
+  const onDropContable = useCallback(
+    async (aceptados: File[]) => {
+      const archivo = aceptados[0];
+      if (!archivo) return;
+      setReconociendo(true);
+      try {
+        const forma = await queArchivoContableSubieron(archivo);
+        setReconocido({ archivo, forma });
+        if (forma) llevarA(archivo, CAMINO_DEL_ARCHIVO[forma]);
+      } finally {
+        setReconociendo(false);
+      }
+    },
+    [llevarA],
+  );
+  const zonaContable = useDropzone({ onDrop: onDropContable, maxFiles: 1, multiple: false });
+  const archivoPara = (c: Camino) =>
+    archivoDelCamino?.camino === c ? archivoDelCamino.archivo : null;
   /*
    * T-0125 · la carga de asientos que se está CONTINUANDO (viene de la franja
    * de cargas a medias) y el contador que la franja usa para volver a leer.
@@ -237,6 +294,100 @@ export function RegistrosContables({
         // éxito. No sabemos si hay plan — ni «ve al paso 4» ni un selector
         // de cuentas vacío; queda el cartel de arriba con su Reintentar.
         <>
+          {/*
+           * 🔴 8.ª tanda (14-10): qué traer y para qué. Nico vio a Juan subir
+           * todo por «libro diario»: la pantalla no decía cuál archivo va
+           * dónde. Ahora lo dice, y un solo botón lo reconoce.
+           */}
+          <section
+            className="space-y-4 rounded-lg border border-border-faint bg-surface p-6 shadow-sm"
+            data-testid="contables-guia"
+          >
+            <div>
+              <h2 className="text-sm font-medium text-fg">
+                Qué traer de tu sistema anterior
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm text-fg-muted">
+                Tres archivos, cada uno con su lugar. Sólo el primero es
+                obligatorio para terminar este paso.
+              </p>
+            </div>
+            <ol className="grid gap-3 md:grid-cols-3">
+              <PasoDeLaGuia
+                numero={1}
+                icono={<Scales className="h-4 w-4" />}
+                titulo="El balance de prueba por tercero"
+                cuando="Al cierre del año anterior (por ejemplo, al 31 de diciembre)."
+                para="Son los saldos iniciales: lo que había en bancos, lo que debía cada inquilino y lo que se le debía a cada propietario."
+                etiqueta="Obligatorio"
+                testid="guia-balance"
+              />
+              <PasoDeLaGuia
+                numero={2}
+                icono={<BookOpen className="h-4 w-4" />}
+                titulo="Los movimientos de este año"
+                cuando="El libro diario o auxiliar, del día siguiente a esos saldos hasta tu fecha de corte."
+                para="Completan el año: retenciones, exógena y resultados. Lo de antes de los saldos iniciales no entra (ya está en ellos)."
+                etiqueta="Si tu sistema lo exporta"
+                testid="guia-libro"
+              />
+              <PasoDeLaGuia
+                numero={3}
+                icono={<Receipt className="h-4 w-4" />}
+                titulo="Los comprobantes"
+                cuando="De todos los años: facturas, recibos de caja, egresos."
+                para="Quedan como historia en la ficha de cada contrato. No cambian la contabilidad."
+                etiqueta="Opcional"
+                testid="guia-comprobantes"
+              />
+            </ol>
+            <ZonaDeArchivo
+              rootProps={zonaContable.getRootProps()}
+              inputProps={zonaContable.getInputProps()}
+              activo={zonaContable.isDragActive}
+              testid="dropzone-archivo-contable"
+              inputTestid="input-archivo-contable"
+              titulo="Sube tu archivo contable"
+              detalle="Reconocemos cuál de los tres es y lo llevamos a su lugar."
+            />
+            {reconociendo ? (
+              <p className="text-sm text-fg-muted" role="status">
+                Revisando qué archivo es…
+              </p>
+            ) : reconocido ? (
+              <div
+                className="flex flex-wrap items-start gap-2 rounded-md bg-surface-muted p-3"
+                data-testid="contables-reconocido"
+                data-forma={reconocido.forma ?? "ninguna"}
+                aria-live="polite"
+              >
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
+                {reconocido.forma ? (
+                  <p className="min-w-0 flex-1 text-sm text-fg">
+                    «{reconocido.archivo.name}»: {QUE_ES[reconocido.forma]}
+                  </p>
+                ) : (
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <p className="text-sm text-fg">
+                      No reconocimos qué es «{reconocido.archivo.name}». Dinos dónde va:
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button size="sm" variant="outline" hideArrow onClick={() => llevarA(reconocido.archivo, "apertura")}>
+                        Es el balance
+                      </Button>
+                      <Button size="sm" variant="outline" hideArrow onClick={() => llevarA(reconocido.archivo, "historico")}>
+                        Es el libro diario
+                      </Button>
+                      <Button size="sm" variant="outline" hideArrow onClick={() => llevarA(reconocido.archivo, "documentos")}>
+                        Son comprobantes
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </section>
+
           {/* La salida de una carga a medias va ANTES de los caminos: la pestaña
               de por defecto es la de saldos iniciales, no la del libro diario. */}
           <CargasDeAsientosAbiertas
@@ -257,7 +408,7 @@ export function RegistrosContables({
           <section className="space-y-4 rounded-lg border border-border-faint bg-surface p-6 shadow-sm">
             <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
               <h2 className="text-sm font-medium text-fg">
-                Cómo entran tus registros
+                O elige a mano dónde va
               </h2>
               {/* Con la lectura caída, el resumen que quedó es de ANTES:
                   mostrarlo diría «0 asientos» a quien acaba de registrar la
@@ -335,9 +486,9 @@ export function RegistrosContables({
             />
             <p className="max-w-2xl text-sm text-fg-muted">
               {camino === "apertura"
-                ? "Lo más rápido: un asiento con los saldos a la fecha de corte y desde mañana operas aquí. El detalle histórico queda en tu sistema anterior."
+                ? "Los saldos de cada cuenta al cierre del año anterior, en un asiento. Súbelos desde el balance de prueba por tercero o escríbelos. Con esto queda listo el paso."
                 : camino === "historico"
-                  ? "El libro diario exportado de tu sistema actual, en Excel o CSV. Más trabajo, pero cada movimiento viejo queda acá, con su comprobante."
+                  ? "Los movimientos de este año, exportados de tu sistema anterior en Excel o CSV: sólo los posteriores a los saldos iniciales, que ya traen todo lo de antes."
                   : "El export de comprobantes: facturas, comprobantes de ingreso y de egreso, con su fecha y su concepto. No son asientos —no traen cuenta por línea— y por eso van a la ficha del contrato, no al libro diario."}
             </p>
           </section>
@@ -345,6 +496,7 @@ export function RegistrosContables({
           {camino === "apertura" ? (
             <AsientoDeApertura
               cuentas={cuentas}
+              archivoInicial={archivoPara("apertura")}
               onCreado={() => void cargar()}
               onRevisarCargado={() => void cargar()}
               enElMuro={Boolean(onIrAlPuc)}
@@ -362,14 +514,53 @@ export function RegistrosContables({
               /* El archivo de comprobantes metido en el libro diario tiene su
                  puerta acá al lado: el aviso la abre en vez de nombrarla. */
               onIrAComprobantes={() => setCamino("documentos")}
+              onIrASaldosIniciales={(archivo) => llevarA(archivo, "apertura")}
+              archivoInicial={archivoPara("historico")}
               enElMuro={Boolean(onIrAlPuc)}
               onOcupado={marcarOcupado}
             />
           ) : (
-            <DocumentosContables onOcupado={marcarOcupado} />
+            <DocumentosContables
+              onOcupado={marcarOcupado}
+              archivoInicial={archivoPara("documentos")}
+            />
           )}
         </>
       )}
     </div>
+  );
+}
+
+/** Uno de los tres archivos de la guía. */
+function PasoDeLaGuia({
+  numero,
+  icono,
+  titulo,
+  cuando,
+  para,
+  etiqueta,
+  testid,
+}: {
+  numero: number;
+  icono: ReactNode;
+  titulo: string;
+  cuando: string;
+  para: string;
+  etiqueta: string;
+  testid: string;
+}) {
+  return (
+    <li className="space-y-1.5 rounded-md bg-surface-muted/60 p-4" data-testid={testid}>
+      <div className="flex items-center gap-2 text-fg">
+        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-surface text-caption font-medium">
+          {numero}
+        </span>
+        {icono}
+        <span className="text-caption text-fg-muted">{etiqueta}</span>
+      </div>
+      <p className="text-sm font-medium text-fg">{titulo}</p>
+      <p className="text-caption text-fg-muted">{cuando}</p>
+      <p className="text-caption text-fg-muted">{para}</p>
+    </li>
   );
 }

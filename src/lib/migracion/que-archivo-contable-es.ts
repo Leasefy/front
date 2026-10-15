@@ -28,9 +28,13 @@
 
 import { mapearColumnas } from './columnas-de-tercero';
 import { COLUMNAS_DE_ASIENTO } from './columnas-de-asiento';
+import { COLUMNAS_DE_BALANCE } from './balance-de-apertura';
 import { COLUMNAS_DE_DOCUMENTO } from './columnas-de-documento';
 
-export type FormaDeArchivoContable = 'libro-diario' | 'comprobantes';
+export type FormaDeArchivoContable = 'balance' | 'libro-diario' | 'comprobantes';
+
+/** Las columnas que dicen «esto es un saldo», no un movimiento. */
+const COLUMNAS_DE_SALDO = new Set(['saldoFinal', 'saldoDebito', 'saldoCredito', 'saldoAnterior']);
 
 /**
  * Columnas que SÓLO existen en el export de comprobantes.
@@ -76,6 +80,22 @@ export function queArchivoContableEs(encabezados: string[]): QueArchivoEs {
 
   const comoAsiento = mapearColumnas(COLUMNAS_DE_ASIENTO, encabezados);
   /*
+   * 🔴 8.ª tanda (14-10-2026): el BALANCE de prueba va ANTES que el libro
+   * diario, porque también trae el código de cuenta. Lo que lo distingue:
+   * columnas de SALDO y ninguna fecha por fila — un balance es una foto a una
+   * fecha, no una lista de movimientos. (Un libro auxiliar trae «Saldo» y
+   * fecha: sigue siendo libro diario.)
+   */
+  const comoBalance = mapearColumnas(COLUMNAS_DE_BALANCE, encabezados);
+  const saldos = comoBalance.filter((m) => m.campo !== null && COLUMNAS_DE_SALDO.has(m.campo));
+  if (
+    comoBalance.some((m) => m.campo === 'codigoCuenta') &&
+    saldos.length > 0 &&
+    !comoAsiento.some((m) => m.campo === 'fecha')
+  ) {
+    return { forma: 'balance', senales: saldos.map((m) => m.columna) };
+  }
+  /*
    * 🔴 El código de cuenta es lo que hace que un asiento SEA un asiento: es
    * la única columna que dice a dónde va la plata. Si está, es el libro
    * diario y no hay nada más que discutir, traiga las columnas que traiga.
@@ -113,4 +133,19 @@ export function hayQueAvisarDeOtraPuerta(
   if (mapeo.some((m) => m.campo === 'codigoCuenta')) return null;
   const r = queArchivoContableEs(encabezados);
   return r.forma === 'comprobantes' ? r : null;
+}
+
+/**
+ * 🔴 8.ª tanda (14-10): ¿el archivo del libro diario es en realidad el
+ * BALANCE? Ahí no trae fecha por fila y no puede entrar como asientos: son
+ * los saldos iniciales. Deja de avisar si la persona señala a mano una
+ * columna como fecha (ella sabe que sí la trae).
+ */
+export function esElBalanceEnElLibroDiario(
+  encabezados: string[],
+  mapeo: readonly { campo: string | null }[],
+): QueArchivoEs | null {
+  if (mapeo.some((m) => m.campo === 'fecha')) return null;
+  const r = queArchivoContableEs(encabezados);
+  return r.forma === 'balance' ? r : null;
 }

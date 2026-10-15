@@ -1057,6 +1057,7 @@
       "visitasDelPipeline": "Preparar visitas",
       "comisionesYMetas": "Comisiones y metas",
       "reclamosDeCandidatos": "Reclamos",
+      "juridico": "Jurídico",
       "invitacionesAFirmar": "Firmas",
       "listasRestrictivas": "Listas",
       "clausulasPropias": "Cláusulas propias",
@@ -1159,7 +1160,7 @@
       },
       "procesos": {
         "titulo": "Lo que hace el Piloto",
-        "descripcion": "Lo que el Piloto hizo, paso a paso: depósitos que detectó y concilió, llamadas de Laura y mensajes con los inquilinos.",
+        "descripcion": "Lo que el Piloto hizo, paso a paso: depósitos que detectó y concilió, llamadas de Mori y mensajes con los inquilinos.",
         "loQuePaso": "Lo que pasó",
         "volver": "Piloto automático",
         "enVivo": "En vivo",
@@ -1509,7 +1510,7 @@
         "descripcion": "Tus agentes hacen parte del trabajo de la inmobiliaria, y tú decides cuánto hacen solos.",
         "paso1": {
           "titulo": "Tus agentes trabajan",
-          "texto": "Cada uno en lo suyo: Laura cobra, Conciliación cruza el banco, Fixi atiende los mantenimientos y Avali le recuerda al propietario lo que tiene por aprobar."
+          "texto": "Cada uno en lo suyo: Mori cobra, Conciliación cruza el banco, Fixi atiende los mantenimientos y Avali le recuerda al propietario lo que tiene por aprobar."
         },
         "paso2": {
           "titulo": "Te dejan lo tuyo en la Bandeja",
@@ -1728,9 +1729,9 @@
             "directorPlan": "Plan del día del director",
             "directorReplan": "Volver a planear",
             "chat": "Chat del Piloto",
-            "cobranza": "Cobranza (Laura)"
+            "cobranza": "Cobranza (Mori)"
           },
-          "laura": "Lo de cobranza (Laura) no cuenta: se cobra aparte.",
+          "laura": "Lo de cobranza (Mori) no cuenta: se cobra aparte.",
           "excluido": "Este mes van"
         },
         "experimento": {
@@ -1929,6 +1930,8 @@
         "automatizacionIaDesc": "Revisa y certifica lo que aprendió el asistente antes de que influya en el chat",
         "mandato": "Mandato y giros",
         "mandatoDesc": "Modalidad de los mandatos, cobros al arrendar e IVA de la comisión",
+        "conceptos": "Conceptos",
+        "conceptosDesc": "Lo que cobras en tus contratos, con tus nombres: renombra, apaga, crea o trae los de tu sistema anterior",
         "mediosDeRecibo": "Medios de recibo",
         "mediosDeReciboDesc": "Con qué puede caja registrar un pago: efectivo y cheque apagados por defecto",
         "costosDeLaPlata": "Costos de la plata",
@@ -8497,7 +8500,7 @@
       },
       "intro": {
         "cobranza": {
-          "title": "Laura",
+          "title": "Mori",
           "description": "Contacta a quien tiene el arriendo atrasado, propone acuerdos dentro de tus reglas y deja constancia de cada contacto.",
           "rol": "Cobranza por voz, WhatsApp y correo",
           "hace": {
@@ -8520,9 +8523,9 @@
             "n3": "Revisar «Te toca a ti»: disputas, cartas y acuerdos por aprobar."
           },
           "modo": {
-            "sombra": "Laura prepara cada llamada, WhatsApp y correo y te lo deja en la Bandeja: nada sale sin ti, y no te interrumpe con avisos.",
-            "copiloto": "Laura prepara cada llamada, WhatsApp y correo y te lo deja en la Bandeja con su botón: nada sale sin tu visto bueno.",
-            "autonomo": "Laura llama y escribe sola, dentro del horario de ley y con un contacto al día por persona."
+            "sombra": "Mori prepara cada llamada, WhatsApp y correo y te lo deja en la Bandeja: nada sale sin ti, y no te interrumpe con avisos.",
+            "copiloto": "Mori prepara cada llamada, WhatsApp y correo y te lo deja en la Bandeja con su botón: nada sale sin tu visto bueno.",
+            "autonomo": "Mori llama y escribe sola, dentro del horario de ley y con un contacto al día por persona."
           },
           "empezar": "Ver la cobranza"
         },
@@ -12314,6 +12317,9 @@
       "historyLocal": "Se guardan en este navegador",
       "historyTrigger": "Conversaciones recientes ({{n}})",
       "vozHabla": "Habla con naturalidad: lo que digas aparece acá.",
+      "vozHablaGrabando": "Habla con naturalidad. Cuando termines, toca «Listo» y lo escribo.",
+      "vozTope": "hasta 1:00",
+      "vozTranscribiendo": "Escribiendo lo que dijiste…",
       "vozTitulo": "Te escucho · español",
       "vozPista": "haz una pausa y sigo escuchando",
       "vozCancelar": "Cancelar",
@@ -12322,6 +12328,7 @@
         "permiso": "Tu navegador no le dio permiso al micrófono. Actívalo en el candado de la barra de direcciones y vuelve a tocar «Voz».",
         "microfono": "No encontramos un micrófono. Conecta uno o escribe tu pregunta.",
         "servicio": "Este navegador no tiene el dictado por voz disponible. Prueba en Chrome o Edge, o escribe tu pregunta.",
+        "limite": "Ya dictaste muchas veces en esta hora. Espera un rato o escribe tu pregunta.",
         "otro": "No pude escucharte. Vuelve a tocar «Voz» o escribe tu pregunta.",
         "cerrar": "Cerrar el aviso"
       }
@@ -13600,7 +13607,7 @@
       },
       "contables": {
         "titulo": "Registros contables",
-        "descripcion": "Los saldos y movimientos históricos. Va al final porque necesita a los terceros, los contratos y el plan de cuentas: cada saldo se imputa a una cuenta y a un propietario, un inquilino o un contrato. Un asiento de apertura con los saldos, o el histórico desde un archivo.",
+        "descripcion": "Los saldos y movimientos históricos. Va al final porque necesita a los terceros, los contratos y el plan de cuentas: cada saldo se imputa a una cuenta y a un propietario, un inquilino o un contrato. Lo que lo deja listo son los saldos iniciales: el balance por tercero al cierre del año anterior. Los movimientos de este año y los comprobantes se suman si los tienes.",
         "corto": "Registros contables"
       }
     },
@@ -13659,7 +13666,7 @@
       "vencidoEnPlazo": "Por girar, en plazo",
       "cuotasVencidas": "{{n}} giros atrasados",
       "unaCuotaVencida": "1 giro atrasado",
-      "pagadasDe": "Giradas {{pagadas}} de {{total}} cuotas",
+      "pagadasDe": "Cuotas giradas: {{pagadas}} de {{total}}",
       "proximaCuota": "Próximo giro",
       "sinProxima": "No queda ningún giro por vencer",
       "vencida": "atrasado",
@@ -13721,6 +13728,7 @@
     "noSuma": "No suma en los totales",
     "asociadoPorNumeroDeContrato": "Asociado por el número de contrato",
     "asociadoPorCodigoDelInmueble": "Asociado por el código del inmueble",
+    "asociadoPorNombreDelInquilino": "Asociado por el nombre del inquilino",
     "vencida": "vencida",
     "saldoDe": "Saldo pendiente",
     "columnasOmitidas": "No se muestran {{columnas}}: son cero en todas las filas de este contrato.",
@@ -13758,7 +13766,7 @@
     },
     "contratoPalabra": "Contrato",
     "colPago": "Pago",
-    "pagadasDe": "Pagadas {{pagadas}} de {{total}} cuotas",
+    "pagadasDe": "Cuotas pagadas: {{pagadas}} de {{total}}",
     "deLoPactado": "{{pagado}} de {{pactado}}",
     "leyendaPagadas": "Pagadas en Leasefy",
     "leyendaAnteriores": "Del sistema anterior",

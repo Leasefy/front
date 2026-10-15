@@ -62,3 +62,31 @@ describe.each([
     expect(r.interrumpida?.motivo).not.toContain('Failed to fetch');
   });
 });
+
+/** QA de Portofino (14-10-2026): «Volver a intentar» las que fallaron al crearse. */
+describe('resolverPorFiltro de terceros — volver a intentar', () => {
+  beforeEach(() => patchMock.mockReset());
+
+  it('manda `reintentar` sin campos ni otra decisión', async () => {
+    patchMock.mockResolvedValueOnce({ ...primeraVuelta, totalCoincidentes: 2, procesadas: 2, aplicadas: 2, listasAhora: 2, siguiente: null });
+    const r = await migracionTercerosApi.resolverPorFiltro(
+      'l1',
+      { estado: 'REQUIERE_ATENCION', motivo: 'FALLO_AL_APLICAR' },
+      { reintentar: true },
+    );
+    const [, cuerpo] = patchMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(cuerpo).toEqual({ lote: 'l1', filtro: { estado: 'REQUIERE_ATENCION', motivo: 'FALLO_AL_APLICAR' }, reintentar: true });
+    expect(r.listasAhora).toBe(2);
+  });
+});
+
+/** Nico (14-10-2026): «son personas distintas», sin el correo repetido. */
+describe('resolverPorFiltro de terceros — sin el correo repetido', () => {
+  beforeEach(() => patchMock.mockReset())
+  it('manda `sinCorreoRepetido` con el filtro del motivo', async () => {
+    patchMock.mockResolvedValueOnce({ ...primeraVuelta, totalCoincidentes: 32, procesadas: 32, aplicadas: 32, listasAhora: 32, siguiente: null })
+    await migracionTercerosApi.resolverPorFiltro('l1', { estado: 'REQUIERE_ATENCION', motivo: 'CORREO_REPETIDO_EN_EL_LOTE' }, { sinCorreoRepetido: true })
+    const [, cuerpo] = patchMock.mock.calls[0] as [string, Record<string, unknown>]
+    expect(cuerpo).toEqual({ lote: 'l1', filtro: { estado: 'REQUIERE_ATENCION', motivo: 'CORREO_REPETIDO_EN_EL_LOTE' }, sinCorreoRepetido: true })
+  })
+})

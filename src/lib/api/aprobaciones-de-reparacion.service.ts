@@ -17,7 +17,9 @@ import type {
   AprobacionEnElPortal,
   AprobacionEnLaBandeja,
   CargoDeLaReparacion,
+  DetalleDeLaReparacionEnElPortal,
   EstadoDeLaAprobacion,
+  PaginaDelHistorialDeAprobaciones,
 } from '@/lib/types/deducciones';
 import type { SolicitudMantenimiento } from '@/lib/types/inmobiliaria';
 
@@ -93,6 +95,16 @@ export const aprobacionesDeReparacionApi = {
       `/portal/aprobaciones-de-reparacion/${encodeURIComponent(id)}/rechazar`,
       motivo?.trim() ? { motivo: motivo.trim() } : {},
     );
+  },
+
+  /** Lo ya decidido, por páginas (Nico, 12-10-2026). */
+  async historialDelPortal(pagina: number, porPagina: number): Promise<PaginaDelHistorialDeAprobaciones> {
+    return apiClient.get(`/portal/aprobaciones-de-reparacion/historial?pagina=${pagina}&porPagina=${porPagina}`);
+  },
+
+  /** Todo lo de una reparación: fotos, la cotización aprobada, lo que se hizo y lo descontado. */
+  async detalleDelPortal(id: string): Promise<DetalleDeLaReparacionEnElPortal> {
+    return apiClient.get(`/portal/aprobaciones-de-reparacion/${encodeURIComponent(id)}/detalle`);
   },
 
   async soporte(id: string): Promise<{ url: string }> {

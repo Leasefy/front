@@ -6,12 +6,14 @@
   --fd:"Inter Tight",ui-sans-serif,system-ui,sans-serif;--fb:"Inter",ui-sans-serif,system-ui,sans-serif;
   --fm:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
 }
-.lv2 *{box-sizing:border-box;margin:0;padding:0}
+/* El reset NO toca las islas del producto (`.lv2-app`, p. ej. las tarjetas del marketplace): ahí mandan sus clases.
+   `:where` deja la especificidad igual que antes. */
+.lv2 :where(*:not(.lv2-app *)){box-sizing:border-box;margin:0;padding:0}
 html{scroll-padding-top:96px}
 .lv2{background:var(--paper);color:var(--ink);font-family:var(--fb);-webkit-font-smoothing:antialiased;overflow-x:clip;overflow-x:clip}
-.lv2 a{color:inherit;text-decoration:none}
-.lv2 ul{list-style:none}
-.lv2 button{font:inherit;background:none;border:0;cursor:pointer;color:inherit}
+.lv2 a:where(:not(.lv2-app *)){color:inherit;text-decoration:none}
+.lv2 ul:where(:not(.lv2-app *)){list-style:none}
+.lv2 button:where(:not(.lv2-app *)){font:inherit;background:none;border:0;cursor:pointer;color:inherit}
 .lv2 ::selection{background:var(--blue);color:#fff}
 .lv2 .container{max-width:1400px;margin:0 auto;padding:0 20px}
 @media(min-width:640px){.lv2 .container{padding:0 32px}}
@@ -175,7 +177,7 @@ html.pm-open .lv2 header .mbtn .bars span{background:var(--ink)}
 .lv2 .hscroll{position:absolute;left:50%;bottom:32px;transform:translateX(-50%);z-index:2}
 .lv2 .hfwrap{margin-top:56px;width:100%;max-width:1000px}
 .lv2 .hframe{border-radius:26px;border:1.5px solid rgba(17,17,17,.15);background:#fff;padding:10px;box-shadow:0 60px 120px -45px rgba(17,17,17,.38);will-change:transform}
-.lv2 .hframe img{display:block;width:100%;border-radius:18px;border:1px solid var(--line)}
+.lv2 .hframe img,.lv2 .hframe video{display:block;width:100%;height:auto;aspect-ratio:8/5;object-fit:cover;border-radius:18px;border:1px solid var(--line);background:#fbfaf8}
 @keyframes kb{from{transform:scale(1.05)}to{transform:scale(1.13)}}
 .lv2 .hright{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding-bottom:4px}
 @media(min-width:640px){.lv2 .hright{align-items:flex-end}}
@@ -1358,8 +1360,8 @@ body.arq-on .lv2 #como-funciona .archlead,
 body.arq-on .lv2 #finanzas .archlead{transition:none}
 .lv2 #como-funciona .h-big{font-size:clamp(2rem,4vw,3.3rem)}
 .lv2 #producto .h-big{font-size:clamp(2.6rem,5.6vw,5rem);max-width:none!important}
-body.arq-on .lv2 #producto .pd-tall::after{content:"";display:block;height:90vh}
-body.arq-on .lv2 #producto .pd-stick{position:sticky;top:0;min-height:100vh;display:flex;flex-direction:column;justify-content:center}
+/* Sin pausa en blanco (Nico, 12-10-2026): el titular se deletrea al entrar y
+   el bento llega pegado a él, sin anclar una pantalla vacía. */
 body.arq-on .lv2 #producto .h-big .wi,
 body.arq-on .lv2 #como-funciona .h-big .wi{transform:none}
 .lv2 #producto .h-big .ch,
@@ -1370,6 +1372,8 @@ body.arq-on .lv2 #arquitectura .lcol,
 body.arq-on .lv2 #producto .bento .bcell,
 body.arq-on .lv2 #finanzas .forow{transition:none}
 @media(min-width:1024px){body.arq-on .lv2 .arq-tall::after{content:"";display:block;height:85vh}body.arq-on .lv2 .arq-stick{position:sticky;top:0;will-change:transform,opacity}}
+/* El titular de #producto entra mientras la cámara termina de entrar a «Agentes AI»: sin cuadro vacío entre las dos. */
+@media(min-width:1024px){body.arq-on .lv2 #arquitectura{padding-bottom:0}body.arq-on .lv2 #producto{position:relative;z-index:1;margin-top:-20vh;padding-top:0}}
 .lv2 #producto .archlead b{transition:color .35s var(--ease)}
 body.ag-case .lv2 #producto .archlead b{color:var(--blue)!important}
 .lv2 #como-funciona .archlead b{transition:color .35s var(--ease)}
@@ -1884,3 +1888,370 @@ html.product-open .lv2 .pp-hero>*:nth-child(5){animation-delay:.22s}
 }
 
 .lv2 .mkt-cta{margin-top:56px;display:flex;flex-wrap:wrap;gap:12px}
+
+/* Menú (Nico, 12-10-2026: «mejora esas opciones, parece que ni se vieran,
+   como ahí tiradas»). Los enlaces van juntos en una píldora con su propio
+   fondo —sólido, sin desenfoque— para que se lean sobre cualquier parte del
+   hero, y una pastilla que se desliza bajo el que señalas. */
+@media(min-width:1024px){
+  .lv2 nav.main{position:relative;gap:2px;padding:5px;border-radius:999px;border:1px solid rgba(17,17,17,.08);background:rgba(17,17,17,.035);transition:background .4s,border-color .4s}
+  .lv2 nav.main a{z-index:1;padding:8px 15px;border-radius:999px;font-size:14px;color:rgba(17,17,17,.78)}
+  .lv2 nav.main a::after{display:none}
+  .lv2 nav.main .nav-pastilla{position:absolute;top:5px;bottom:5px;left:0;width:0;border-radius:999px;background:#fff;box-shadow:0 1px 2px rgba(17,17,17,.08),0 6px 16px -8px rgba(17,17,17,.3);opacity:0;transition:transform .45s cubic-bezier(.22,1,.36,1),width .45s cubic-bezier(.22,1,.36,1),opacity .25s;pointer-events:none}
+  .lv2 nav.main .nav-pastilla[data-visible="true"]{opacity:1}
+  .lv2 header:not(.scrolled) nav.main{background:rgba(8,10,22,.42);border-color:rgba(255,255,255,.16)}
+  .lv2 header:not(.scrolled) nav.main a{color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.25)}
+  .lv2 header:not(.scrolled) nav.main .nav-pastilla{background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+  html.pm-open .lv2 header nav.main{background:rgba(17,17,17,.035);border-color:rgba(17,17,17,.08)}
+  html.pm-open .lv2 header nav.main a{color:rgba(17,17,17,.78);text-shadow:none}
+  .lv2 nav.main a[aria-current="page"]{color:var(--ink);background:#fff;box-shadow:0 1px 2px rgba(17,17,17,.08)}
+  .lv2 header:not(.scrolled) nav.main a[aria-current="page"]{color:#fff;background:rgba(255,255,255,.16)}
+}
+
+/* La franja que pasa: los bordes se desvanecen, la palabra del centro se
+   enciende y su cuadrito gira (lo mueve `LandingHome`). */
+.lv2 .marq{-webkit-mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);mask-image:linear-gradient(90deg,transparent,#000 9%,#000 91%,transparent);padding:22px 0}
+.lv2 .marq .track{will-change:transform}
+.lv2 .marq span{font-size:13px;transition:color .5s cubic-bezier(.22,1,.36,1)}
+.lv2 .marq i{transition:transform .6s cubic-bezier(.22,1,.36,1),background .5s}
+.lv2 .marq span[data-centro]{color:var(--ink)}
+.lv2 .marq span[data-centro] i{transform:rotate(45deg) scale(1.7)}
+@media (prefers-reduced-motion:reduce){.lv2 .marq span[data-centro] i{transform:none}}
+
+/* «Un solo sistema»: Ori absorbe lo que se tacha y reparte (Nico, 12-10-2026). */
+.lv2 .oc-shell{position:relative}
+.lv2 .oc-inner{position:relative;z-index:1}
+.lv2 .oc-ori{position:absolute;pointer-events:none;z-index:2}
+.lv2 .oc-ori-orbe{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.72);opacity:0;display:flex;flex-direction:column;align-items:center;gap:10px;will-change:transform,opacity}
+.lv2 .oc-ori-nombre{font-family:var(--fm);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:rgba(244,241,234,.6)}
+.lv2 .oc-ori-hilos{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.lv2 .oc-ori-hilos line{stroke:rgba(244,241,234,.2);stroke-width:1;vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:1}
+.lv2 .oc-ori-agente{position:absolute;display:flex;align-items:center;gap:10px;padding:8px 14px 8px 8px;border-radius:14px;background:#17171a;border:1px solid rgba(244,241,234,.1);opacity:0;transform:translate(-50%,-50%) scale(.86);white-space:nowrap;will-change:transform,opacity}
+.lv2 .oc-ori-tarjeta{display:flex;flex-direction:column;gap:2px;line-height:1.25}
+.lv2 .oc-ori-tarjeta b{font-family:var(--fd);font-weight:600;font-size:14px;color:var(--cream);letter-spacing:-.01em}
+.lv2 .oc-ori-tarjeta i{font-style:normal;font-size:12.5px;color:rgba(244,241,234,.55)}
+.lv2 .oc-ori-vuelo{position:absolute;left:0;top:0;opacity:0;padding:7px 12px;border-radius:999px;background:var(--blue);color:#fff;font-family:var(--fm);font-size:11px;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;will-change:transform,opacity}
+/* El vuelo sale de la palabra (fuera de este panel): el script lo mueve desde la esquina del panel. */
+@media(min-width:1024px){.lv2 .oc-ori{right:clamp(24px,4vw,72px);top:50%;width:min(46%,560px);aspect-ratio:1;transform:translateY(-50%)}}
+@media(max-width:1023px){
+  .lv2 .oc-ori{right:18px;top:18px;width:120px;height:120px}
+  .lv2 .oc-ori-hilos,.lv2 .oc-ori-agente,.lv2 .oc-ori-vuelo,.lv2 .oc-ori-nombre{display:none}
+}
+.lv2 .oc-ori--quieto .oc-ori-orbe{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.lv2 .oc-ori--quieto .oc-ori-agente{opacity:1;transform:translate(-50%,-50%)}
+.lv2 .oc-ori--quieto .oc-ori-hilos line{stroke-dashoffset:0}
+
+/* Pedazos reales del producto (Nico, 12-10-2026): recortes de las capturas del panel. */
+.lv2 .preal{position:relative;margin:0;overflow:hidden;border-radius:14px;border:1px solid var(--line);background:#fff;box-shadow:0 30px 60px -36px rgba(17,17,17,.35)}
+.lv2 .preal img{position:absolute;max-width:none;height:auto;transform:scale(1.035);transform-origin:50% 0;transition:transform 1.4s var(--ease)}
+.lv2 .preal--oscuro{border-color:rgba(244,241,234,.12);background:#0b0b0c;box-shadow:0 30px 60px -30px rgba(0,0,0,.8)}
+.lv2 .bcell .preal{clip-path:inset(0 0 100% 0);transition:clip-path 1.1s var(--ease) .25s}
+.lv2 .bcell.in .preal{clip-path:inset(0 0 0 0)}
+.lv2 .bcell.in .preal img{transform:scale(1)}
+.lv2 .bcell:hover .preal img{transform:scale(1.025)}
+.lv2 .bpedazo{margin-top:8px}
+.lv2 .bdark .bpedazo{position:relative;z-index:1;margin-top:0}
+.lv2 .bwide .bwr{padding:0}
+.lv2 .pscr-real{background:#fbfaf8}
+.lv2 .pscr-real img{display:block;width:100%;height:auto}
+@media (prefers-reduced-motion: reduce){.lv2 .bcell .preal{clip-path:none;transition:none}.lv2 .preal img{transform:none;transition:none}}
+.lv2 .bwide .bwr{min-width:0;align-self:stretch;justify-content:center}
+.lv2 .bwide .bwr .bpedazo{width:100%}
+@media(min-width:1024px){.lv2 .bwide .bwl{flex:0 0 250px}}
+
+/* El caso, con el panel real en cada paso (Nico, 12-10-2026). */
+.lv2 .scbody-real{padding:10px}
+.lv2 .scbody-real .preal{border-radius:10px;box-shadow:none}
+/* El portátil de «Cartera» con el MISMO ancho que la hoja negra de arriba, de donde sale (Nico, 12-10-2026).
+   La hoja mide min(100% - 64px, 1336px): igual al contenido del contenedor bajo 1024 y 32 px más desde 1024. */
+.lv2 #finanzas .fscreen{width:100%}
+@media(min-width:1024px){.lv2 #finanzas .fscreen{width:calc(100% + 32px);margin-left:-16px;margin-right:-16px;border-radius:36px}}
+.lv2 .scard:has(.scbody-real){max-width:100%}
+.lv2 .hwscenes .scn:has(.scbody-real){padding:16px}
+
+
+/* La vitrina usa las tarjetas del marketplace tal cual (Nico, 12-10-2026): con la letra del producto. */
+.lv2 .lv2-app{font-family:var(--font-sans);letter-spacing:normal}
+.lv2 .lv2-app a{text-decoration:none}
+
+/* Planes (Nico, 12-10-2026: «lo siento muy AI… un glow up, más wow»): cada módulo con su pantalla real.
+   Papel, tinta y azul; sin números gigantes, sin brillos. */
+.lv2 .mods{margin-top:56px;display:grid;gap:20px}
+@media(min-width:1024px){.lv2 .mods{grid-template-columns:repeat(3,1fr)}}
+.lv2 .mod{position:relative;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:24px;background:#fff;transition:transform .5s var(--ease),box-shadow .5s var(--ease),border-color .5s var(--ease)}
+.lv2 .mod:hover{transform:translateY(-6px);box-shadow:0 40px 80px -48px rgba(17,17,17,.4)}
+.lv2 .mod--popular{border-color:var(--ink)}
+.lv2 .mod-pantalla{position:relative;padding:18px 18px 0;background:var(--paper);border-bottom:1px solid var(--line)}
+.lv2 .mod-pantalla .preal{border-radius:12px 12px 0 0;border-bottom:0;box-shadow:0 -1px 0 var(--line);clip-path:inset(100% 0 0 0);transition:clip-path 1.1s var(--ease) .2s}
+.lv2 .mod.in .mod-pantalla .preal{clip-path:inset(0 0 0 0)}
+.lv2 .mod.in .mod-pantalla .preal img{transform:scale(1)}
+.lv2 .mod:hover .mod-pantalla .preal img{transform:scale(1.04)}
+.lv2 .mod-cuerpo{display:flex;flex-direction:column;flex:1;padding:24px 26px 26px}
+.lv2 .mod-hd{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.lv2 .mod-k{font-family:var(--fm);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.lv2 .mod-k--w{color:rgba(244,241,234,.6)}
+.lv2 .mod-pop{border-radius:99px;background:var(--ink);color:#fff;padding:4px 10px;font-family:var(--fm);font-size:9px;letter-spacing:.16em;text-transform:uppercase}
+.lv2 .mod-tag{border:1px solid rgba(244,241,234,.25);border-radius:99px;padding:4px 10px;font-family:var(--fm);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,241,234,.75)}
+.lv2 .mod h3,.lv2 .mod-todo h3{margin-top:14px;font-family:var(--fd);font-weight:600;font-size:26px;line-height:1.1;letter-spacing:-.025em}
+.lv2 .mod-b{margin-top:8px;font-size:14.5px;line-height:1.55;color:var(--muted)}
+.lv2 .mod-b--w{color:rgba(244,241,234,.65)}
+.lv2 .mod-fts{margin-top:20px;display:grid;gap:10px;font-size:14px}
+.lv2 .mod-fts li{display:flex;align-items:center;gap:10px}
+.lv2 .mod-fts svg{width:12px;height:10px;flex:0 0 12px;stroke:var(--blue);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.lv2 .mod-fts--w{color:rgba(244,241,234,.9)}
+.lv2 .mod-cta{margin-top:auto;padding-top:26px;display:inline-flex;align-items:center;gap:8px;width:fit-content;font-size:14.5px;font-weight:600}
+.lv2 .mod-cta span{color:var(--blue);transition:transform .35s var(--ease)}
+.lv2 .mod:hover .mod-cta span{transform:translateX(4px)}
+.lv2 .mod-todo{margin-top:20px;display:grid;gap:28px;border-radius:24px;background:var(--night);color:var(--cream);padding:32px}
+@media(min-width:1024px){.lv2 .mod-todo{grid-template-columns:1.2fr 1fr auto;align-items:center;padding:40px 44px}}
+.lv2 .mod-todo h3{color:var(--cream)}
+.lv2 .mod-todo-r{display:flex;flex-direction:column;align-items:flex-start;gap:18px}
+@media(min-width:1024px){.lv2 .mod-todo-r{align-items:flex-end}}
+.lv2 .mod-orbes{display:flex;align-items:center;gap:12px}
+.lv2 .mod-orbes-fila{display:flex;align-items:center}
+.lv2 .mod-orbe{display:inline-flex;margin-left:-6px}
+.lv2 .mod-orbe:first-child{margin-left:0;margin-right:4px}
+.lv2 .mod-orbes-texto{font-family:var(--fm);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,241,234,.6)}
+@media (prefers-reduced-motion: reduce){.lv2 .mod-pantalla .preal{clip-path:none;transition:none}.lv2 .mod,.lv2 .mod:hover{transform:none}}
+
+/* El «Leasefy.» del pie, con Ori como el punto (Nico, 12-10-2026). */
+.lv2 .wm2{user-select:none;overflow:hidden;margin-top:64px;padding-top:6%}
+@media(min-width:1024px){.lv2 .wm2{margin-top:80px}}
+.lv2 .wm2-fila{display:flex;justify-content:center;align-items:baseline;font-family:var(--fd);font-weight:600;line-height:.85;letter-spacing:-.035em;font-size:clamp(5rem,21vw,19rem);color:#1c1c1c}
+.lv2 .wm2-l{display:inline-block;will-change:transform;transition:color .3s var(--ease);-webkit-mask-image:linear-gradient(to bottom,#000 30%,transparent 100%);mask-image:linear-gradient(to bottom,#000 30%,transparent 100%)}
+.lv2 .wm2-ori{display:inline-flex;align-items:center;justify-content:center;margin-left:.04em;align-self:flex-end;margin-bottom:.06em}
+.lv2 .wm2-ori--quieto{border-radius:50%;background:var(--blue)}
+
+/* Clips del producto en uso (Nico, 12-10-2026: «dale vida a la plataforma»). */
+.lv2 .clip{display:block;width:100%;height:auto;background:#fbfaf8}
+.lv2 .bclip{position:relative;margin-top:8px;overflow:hidden;border-radius:14px;border:1px solid var(--line);background:#fbfaf8;box-shadow:0 30px 60px -36px rgba(17,17,17,.35);clip-path:inset(0 0 100% 0);transition:clip-path 1.1s var(--ease) .2s}
+.lv2 .bcell.in .bclip{clip-path:inset(0 0 0 0)}
+.lv2 .bclip--oscuro{border-color:rgba(244,241,234,.12);background:#0b0b0c;box-shadow:0 30px 60px -30px rgba(0,0,0,.8)}
+.lv2 .bclip--oscuro .clip{background:#0b0b0c}
+.lv2 .bdark .bclip{position:relative;z-index:1;margin-top:0}
+.lv2 .bwide .bwr .bclip{width:100%}
+.lv2 .pscr-real .clip{aspect-ratio:780/1088;object-fit:cover}
+.lv2 .scbody-real .clip{border-radius:10px}
+/* Retén más: la pantalla sola y grande, debajo del texto. */
+.lv2 .dark-sec[data-sheet] .rgrid{grid-template-columns:1fr!important}
+.lv2 .pgrande{margin-top:8px;overflow:hidden;border-radius:18px;border:1px solid rgba(244,241,234,.14);background:#fbfaf8;box-shadow:0 50px 100px -40px rgba(0,0,0,.85);transform:translateY(24px) scale(.97);opacity:.0;transition:transform 1.1s var(--ease),opacity 1.1s var(--ease)}
+.lv2 .pgrande.in,.lv2 .pgrande:hover{transform:none;opacity:1}
+@media (prefers-reduced-motion: reduce){.lv2 .bclip{clip-path:none;transition:none}.lv2 .pgrande{transform:none;opacity:1;transition:none}}
+.lv2 .dark-sec[data-sheet] .rgrid>div:first-child{max-width:920px}
+/* El caso: el panel se ve grande (7 de 12 columnas) y sin el marco de líneas alrededor. */
+@media(min-width:1024px){.lv2 .hw{grid-template-columns:repeat(12,1fr)}.lv2 .hwleft{grid-column:span 7}.lv2 .hwrail{grid-column:8/13}}
+.lv2 .hwscenes:has(.scbody-real){min-height:0;aspect-ratio:16/11.4;background:transparent;box-shadow:none}
+.lv2 .hwscenes .scn:has(.scbody-real){padding:0}
+.lv2 .scard:has(.scbody-real){max-width:100%;width:100%}
+/* Asegurabilidad: el texto arriba y el panel ancho debajo. */
+.lv2 .bwide{flex-direction:column!important;align-items:stretch!important}
+.lv2 .bwide .bwl{max-width:none!important;flex:none!important}
+/* El texto del banner final con el mismo margen que el contenedor y el pie (Nico, 12-10-2026). */
+.lv2 .banner-in{max-width:1400px;padding:36px 20px 44px}
+@media(min-width:640px){.lv2 .banner-in{padding:36px 32px 44px}}
+@media(min-width:1024px){.lv2 .banner-in{padding:36px 48px 56px}}
+/* El vuelo de la palabra a Ori (Nico, 12-10-2026: «más top, está toda tosca»). */
+.lv2 .oc-ori-latido{display:inline-flex;will-change:transform}
+.lv2 .oc-ori-fantasma{position:absolute;pointer-events:none;font-family:var(--fd);font-weight:600;letter-spacing:-.035em;color:#f4f1ea;white-space:nowrap;transform-origin:0 50%;will-change:transform,opacity,filter;z-index:3}
+.lv2 .oc-ori-estela{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:3}
+.lv2 .oc-ori-estela path{fill:none;stroke:#6d8cff;stroke-width:2.2;stroke-linecap:round;filter:drop-shadow(0 0 6px rgba(26,64,255,.9))}
+.lv2 .oc-ori-chispa{position:absolute;left:-6px;top:-6px;width:12px;height:12px;border-radius:50%;background:#fff;pointer-events:none;z-index:4;box-shadow:0 0 0 3px rgba(109,140,255,.45),0 0 18px 6px rgba(26,64,255,.85),0 0 46px 14px rgba(26,64,255,.35);will-change:transform,opacity}
+.lv2 .oc-ori-onda{position:absolute;border-radius:50%;pointer-events:none;z-index:1;border:1.5px solid rgba(140,165,255,.75);box-shadow:0 0 30px rgba(26,64,255,.35) inset}
+
+/* «Cartera viva» (Nico, 12-10-2026: «le falta glow up, algo más hermoso»). */
+.lv2 .cv{display:grid;gap:18px;padding:22px 24px 24px;background:#fff;font-family:var(--fb);color:var(--ink)}
+@media(min-width:1024px){.lv2 .cv{padding:28px 32px 30px;gap:22px}}
+.lv2 .cv-hd{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.lv2 .cv-k,.lv2 .cv-sub,.lv2 .cv-curva-hd{font-family:var(--fm);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.lv2 .cv-k{display:flex;align-items:center;gap:10px;color:var(--ink)}
+.lv2 .cv-vivo{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.5);animation:cvVivo 1.8s ease-out infinite}
+@keyframes cvVivo{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55)}100%{box-shadow:0 0 0 10px rgba(34,197,94,0)}}
+.lv2 .cv-pill{border:1px solid var(--line);border-radius:99px;padding:5px 12px;font-family:var(--fm);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.lv2 .cv-top{display:grid;gap:22px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:20px}
+@media(min-width:900px){.lv2 .cv-top{grid-template-columns:auto 1fr 1.5fr}}
+.lv2 .cv-azul{color:var(--blue)}
+.lv2 .cv-mora{color:#b4541a}
+.lv2 .cv-curva{position:relative;min-width:0}
+.lv2 .cv-curva-hd{display:flex;justify-content:space-between;gap:10px;margin-bottom:8px}
+.lv2 .cv-ley{display:inline-flex;align-items:center;gap:6px;letter-spacing:.1em}
+.lv2 .cv-ley i{display:inline-block;width:14px;height:2px;border-radius:2px}
+.lv2 .cv-ley-oct{background:var(--blue)}
+.lv2 .cv-ley-sep{background:repeating-linear-gradient(90deg,#b9b4aa 0 4px,transparent 4px 7px)}
+.lv2 .cv-curva svg{display:block;overflow:visible}
+.lv2 .cv-sep{fill:none;stroke:#cfcac0;stroke-width:1.5;stroke-dasharray:4 5}
+.lv2 .cv-pro{fill:none;stroke:#1a40ff;stroke-opacity:.45;stroke-width:2;stroke-dasharray:2 6;stroke-linecap:round}
+.lv2 .cv-rejilla{stroke:rgba(17,17,17,.06)}
+.lv2 .cv-eje{stroke:rgba(17,17,17,.14)}
+.lv2 .cv-marca{stroke:#1a40ff;stroke-opacity:.35;stroke-dasharray:3 4}
+.lv2 .cv-txt{font-family:var(--fm);font-size:10px;letter-spacing:.06em;fill:var(--muted)}
+.lv2 .cv-txt--pro{fill:var(--blue);font-weight:600}
+.lv2 .cv-hoy-halo{fill:#1a40ff;fill-opacity:.14;transform-box:fill-box;transform-origin:center;animation:cvHalo 2.2s ease-out infinite}
+@keyframes cvHalo{0%{transform:scale(.6);fill-opacity:.28}100%{transform:scale(1.9);fill-opacity:0}}
+.lv2 .cv-fin{fill:#fff;stroke:#1a40ff;stroke-opacity:.6;stroke-width:2}
+.lv2 .cv-oct{fill:none;stroke:var(--blue);stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 4px 8px rgba(26,64,255,.25))}
+.lv2 .cv-hoy{fill:#fff;stroke:var(--blue);stroke-width:3}
+.lv2 .cv-tip{position:absolute;white-space:nowrap;border-radius:10px;background:var(--ink);color:rgba(255,255,255,.75);padding:7px 11px;font-size:12px;box-shadow:0 12px 28px -12px rgba(17,17,17,.5);pointer-events:none}
+.lv2 .cv-tip b{color:#fff;font-family:var(--fd);font-weight:600;margin-right:4px}
+.lv2 .cv-tip::before{content:"";position:absolute;left:50%;top:-5px;width:10px;height:10px;margin-left:-5px;background:var(--ink);transform:rotate(45deg);border-radius:2px}
+.lv2 .cv-mid{display:grid;gap:18px}
+@media(min-width:900px){.lv2 .cv-mid{grid-template-columns:1.25fr 1fr}}
+.lv2 .cv-llegan ul{position:relative;margin-top:10px;display:flex;flex-direction:column;gap:8px;height:226px;overflow:hidden}
+.lv2 .cv-llegan li{flex:0 0 70px;height:70px}
+.lv2 .cv-llegan li{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:#fff}
+.lv2 .cv-av{flex:0 0 34px;width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:11px;font-weight:600;color:var(--ink)}
+.lv2 .cv-quien{display:flex;flex-direction:column;min-width:0;flex:1}
+.lv2 .cv-quien b{font-size:14px;font-weight:600}
+.lv2 .cv-quien i{font-style:normal;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lv2 .cv-valor{font-family:var(--fd);font-weight:600;font-size:15px;font-variant-numeric:tabular-nums}
+.lv2 .cv-chip{flex:0 0 auto;min-width:112px;text-align:center;border-radius:99px;padding:4px 10px;font-family:var(--fm);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;border:1px solid var(--line);color:var(--muted);transition:background-color .4s var(--ease),color .4s var(--ease),border-color .4s var(--ease)}
+.lv2 .cv-chip--ok{background:#e8edff;border-color:transparent;color:var(--blue)}
+.lv2 .cv-conc{border-radius:16px;background:radial-gradient(circle at 1px 1px,rgba(17,17,17,.07) 1px,transparent 0) 0 0/14px 14px,#f8f7f5;padding:14px 16px 16px;display:flex;flex-direction:column}
+.lv2 .cv-pista{position:relative;flex:1;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-top:14px;min-height:110px}
+.lv2 .cv-ficha{border:1px solid var(--line);border-radius:12px;background:#fff;padding:12px 14px;display:flex;flex-direction:column;gap:3px;box-shadow:0 14px 30px -20px rgba(17,17,17,.35)}
+.lv2 .cv-ficha--der{text-align:right}
+.lv2 .cv-ficha b{font-family:var(--fd);font-weight:600;font-size:15px}
+.lv2 .cv-ficha i{font-style:normal;font-family:var(--fm);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.lv2 .cv-encaje{position:relative;z-index:1;width:38px;height:38px;border-radius:50%;background:var(--blue);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 8px 20px -6px rgba(26,64,255,.6)}
+.lv2 .cv-destello{position:absolute;left:50%;top:50%;width:38px;height:38px;margin:-19px 0 0 -19px;border-radius:50%;border:2px solid rgba(26,64,255,.6);pointer-events:none}
+.lv2 .cv-nota{margin-top:10px;font-size:12.5px;color:var(--muted)}
+.lv2 .cv-pago{display:grid;gap:14px;align-items:center;border-top:1px solid var(--line);padding-top:18px}
+@media(min-width:900px){.lv2 .cv-pago{grid-template-columns:auto 1fr;gap:40px}}
+@media (prefers-reduced-motion: reduce){.lv2 .cv-vivo{animation:none}}
+
+/* El anillo y las cifras de la cartera, con más oficio (Nico, 12-10-2026: «haz esto más hermoso»). */
+.lv2 .cv-anillo{position:relative;width:176px;height:176px;flex:0 0 176px}
+.lv2 .cv-anillo svg{width:100%;height:100%;transform:rotate(-90deg);overflow:visible}
+.lv2 .cv-marca-anillo{stroke:rgba(17,17,17,.12);stroke-width:1.2;stroke-linecap:round}
+.lv2 .cv-marca-anillo--on{stroke:rgba(26,64,255,.32)}
+.lv2 .cv-anillo-fondo{fill:none;stroke:#eef0f7;stroke-width:9}
+.lv2 .cv-anillo-lleno{fill:none;stroke-width:9;stroke-linecap:round}
+.lv2 .cv-cabeza{fill:#fff;stroke:#1a40ff;stroke-width:2.5}
+.lv2 .cv-cabeza-halo{fill:#1a40ff;fill-opacity:.18;transform-box:fill-box;transform-origin:center;animation:cvHalo 2.2s ease-out infinite}
+.lv2 .cv-anillo-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.lv2 .cv-anillo-txt b{display:flex;align-items:baseline;font-family:var(--fd);font-weight:600;font-size:34px;letter-spacing:-.04em;line-height:1}
+.lv2 .cv-anillo-txt b small{font-size:17px;margin-left:2px;color:var(--muted);letter-spacing:0}
+.lv2 .cv-anillo-txt>span{font-family:var(--fm);font-size:9.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+.lv2 .cv-kpis{display:grid;grid-template-columns:1fr 1fr;margin:0;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.lv2 .cv-kpi{display:flex;flex-direction:column;gap:6px;padding:14px 16px 14px;background:#fff}
+.lv2 .cv-kpi:nth-child(odd){border-right:1px solid var(--line)}
+.lv2 .cv-kpi:nth-child(-n+2){border-bottom:1px solid var(--line)}
+.lv2 .cv-kpi:nth-child(2){background:linear-gradient(180deg,#f5f7ff,#fff)}
+.lv2 .cv-kpi dt{display:flex;align-items:center;gap:8px;font-family:var(--fm);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.lv2 .cv-delta{margin-left:auto;white-space:nowrap;border-radius:99px;background:#e8f6ee;color:#15803d;padding:2px 7px;font-size:9.5px;letter-spacing:.04em;text-transform:none}
+.lv2 .cv-punto-mora{width:6px;height:6px;border-radius:50%;background:#d97706;box-shadow:0 0 0 3px rgba(217,119,6,.15)}
+.lv2 .cv-kpi dd{margin:0;display:flex;align-items:baseline;gap:3px;font-family:var(--fd);font-weight:600;font-size:clamp(24px,2.3vw,32px);letter-spacing:-.035em;line-height:1.05;font-variant-numeric:tabular-nums}
+.lv2 .cv-moneda{font-size:.55em;color:var(--muted);margin-right:2px;letter-spacing:0;align-self:flex-start;margin-top:.18em}
+.lv2 .cv-unidad{font-size:.5em;color:var(--muted);letter-spacing:0;margin-left:2px}
+.lv2 .cv-azul .cv-moneda,.lv2 .cv-azul .cv-unidad{color:rgba(26,64,255,.6)}
+.lv2 .cv-mora .cv-moneda,.lv2 .cv-mora .cv-unidad{color:rgba(180,84,26,.6)}
+.lv2 .cv-barra{display:block;height:4px;border-radius:4px;background:#eeece7;overflow:hidden}
+.lv2 .cv-barra i{display:block;height:100%;width:100%;border-radius:4px;background:var(--ink);transform-origin:left}
+.lv2 .cv-barra i.cv-barra-azul{background:linear-gradient(90deg,#7e97ff,#1a40ff)}
+.lv2 .cv-barra i.cv-barra-mora{background:linear-gradient(90deg,#f0a35e,#b4541a)}
+.lv2 .cv-nota-kpi{font-size:12px;color:var(--muted)}
+
+/* El pago del viernes, que se lee solo (Nico, 12-10-2026: «¿qué es esto?»). */
+.lv2 .cv-pago-h{margin-top:6px;display:flex;align-items:baseline;gap:8px;font-family:var(--fd);font-weight:600;font-size:22px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.lv2 .cv-pago-de{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:0}
+.lv2 .cv-pago-cuenta{margin-top:2px;font-size:12.5px;color:var(--muted)}
+.lv2 .cv-duenos{display:flex;flex-direction:column;gap:10px;min-width:0}
+.lv2 .cv-duenos-fila{display:flex;flex-wrap:wrap;gap:6px}
+.lv2 .cv-dueno{position:relative;width:30px;height:30px;border-radius:50%;background:#f3f1ec;border:1.5px solid #e2ded5;display:inline-flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:9.5px;font-weight:600;color:var(--muted);transition:background-color .35s var(--ease),border-color .35s var(--ease),color .35s var(--ease),transform .35s var(--ease)}
+.lv2 .cv-dueno-ok{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;opacity:0;transform:scale(.6);transition:opacity .3s var(--ease),transform .3s var(--ease)}
+.lv2 .cv-dueno--va{border-color:var(--blue);color:var(--blue);transform:scale(1.1);box-shadow:0 0 0 4px rgba(26,64,255,.12)}
+.lv2 .cv-dueno--ok{background:var(--blue);border-color:var(--blue)}
+.lv2 .cv-dueno--ok .cv-dueno-ini{opacity:0}
+.lv2 .cv-dueno--ok .cv-dueno-ok{opacity:1;transform:none}
+.lv2 .cv-girando{height:20px;overflow:hidden}
+.lv2 .cv-girando p{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lv2 .cv-girando b{color:var(--ink);font-weight:600}
+/* Marco gris, no beige (Nico, 12-10-2026: «marcos grises por favor»). */
+.lv2 #finanzas .fscreen{background:linear-gradient(180deg,#e9eaee,#dcdde2);box-shadow:0 60px 120px -55px rgba(8,8,8,.4),inset 0 1px 0 rgba(255,255,255,.7),inset 0 0 0 1px rgba(17,17,17,.08)}
+.lv2 #finanzas .fscreen .fcam{background:#b9bbc2}
+/* «Qué resuelve» pegado a la Cartera (Nico, 12-10-2026: «¿cómo juntamos eso con esto?»): ya no son
+   seis tarjetas sueltas debajo del marco, son la franja de abajo del MISMO marco gris, y cada punto
+   ilumina la parte de la Cartera que resuelve (`CarteraConLoQueResuelve`). */
+.lv2 .cv .cv-anillo,.lv2 .cv .cv-kpi,.lv2 .cv .cv-curva,.lv2 .cv .cv-llegan,.lv2 .cv .cv-conc,.lv2 .cv .cv-pago{transition:opacity .55s var(--ease),filter .55s var(--ease)}
+.lv2 .cv[data-foco] .cv-anillo,.lv2 .cv[data-foco] .cv-kpi,.lv2 .cv[data-foco] .cv-curva,.lv2 .cv[data-foco] .cv-llegan,.lv2 .cv[data-foco] .cv-conc,.lv2 .cv[data-foco] .cv-pago{opacity:.3;filter:saturate(.3)}
+.lv2 .cv[data-foco="cobros"] .cv-llegan,.lv2 .cv[data-foco="mora"] .cv-kpi[data-zona="mora"],.lv2 .cv[data-foco="banco"] .cv-conc,.lv2 .cv[data-foco="pago"] .cv-pago,.lv2 .cv[data-foco="cierre"] .cv-curva,.lv2 .cv[data-foco="cierre"] .cv-anillo{opacity:1;filter:none}
+.lv2 .cv [data-zona]{position:relative}
+.lv2 .cv [data-zona]::after{content:"";position:absolute;inset:-9px;border-radius:20px;pointer-events:none;box-shadow:0 0 0 1.5px rgba(26,64,255,0),0 0 0 8px rgba(26,64,255,0);transition:box-shadow .55s var(--ease)}
+.lv2 .cv .cv-kpi[data-zona]::after{inset:4px;border-radius:12px}
+.lv2 .cv[data-foco="cobros"] .cv-llegan::after,.lv2 .cv[data-foco="mora"] .cv-kpi[data-zona="mora"]::after,.lv2 .cv[data-foco="banco"] .cv-conc::after,.lv2 .cv[data-foco="pago"] .cv-pago::after,.lv2 .cv[data-foco="cierre"] .cv-curva::after{box-shadow:0 0 0 1.5px rgba(26,64,255,.5),0 0 0 8px rgba(26,64,255,.07)}
+.lv2 #finanzas .fores{position:relative;z-index:1;margin-top:16px}
+.lv2 #finanzas .fores-k{display:flex;align-items:center;gap:10px;margin:0 4px 10px;font-family:var(--fm);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(17,17,17,.5)}
+.lv2 #finanzas .fores-k::before{content:"";width:6px;height:6px;background:var(--blue);flex:0 0 6px}
+.lv2 #finanzas .fores ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:640px){.lv2 #finanzas .fores ul{grid-template-columns:repeat(3,1fr)}}
+@media(min-width:1024px){.lv2 #finanzas .fores ul{grid-template-columns:repeat(6,1fr)}}
+.lv2 #finanzas .fores li{display:flex}
+.lv2 #finanzas .fores-p{position:relative;flex:1;display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-height:96px;padding:12px 13px 18px;border:1px solid rgba(17,17,17,.07);border-radius:12px;background:rgba(255,255,255,.42);color:rgba(17,17,17,.6);font:500 13.5px/1.35 var(--fb);text-align:left;cursor:pointer;overflow:hidden;transition:background .4s var(--ease),color .4s var(--ease),box-shadow .4s var(--ease),border-color .4s var(--ease)}
+.lv2 #finanzas .fores-p:hover{color:var(--ink)}
+.lv2 #finanzas .fores-p:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.lv2 #finanzas .fores-p i{font-style:normal;font-family:var(--fm);font-size:10px;letter-spacing:.14em;color:rgba(17,17,17,.36);transition:color .4s var(--ease)}
+.lv2 #finanzas .fores-p[aria-pressed="true"]{background:#fff;color:var(--ink);border-color:rgba(26,64,255,.22);box-shadow:0 16px 34px -20px rgba(17,17,17,.35)}
+.lv2 #finanzas .fores-p[aria-pressed="true"] i{color:var(--blue)}
+.lv2 #finanzas .fores-barra{position:absolute;left:13px;right:13px;bottom:9px;height:2px;border-radius:99px;background:rgba(17,17,17,.06);overflow:hidden;opacity:0;transition:opacity .3s var(--ease)}
+.lv2 #finanzas .fores-barra b{display:block;height:100%;border-radius:inherit;background:var(--blue);transform-origin:left;transform:scaleX(0)}
+.lv2 #finanzas .fores-p[aria-pressed="true"] .fores-barra{opacity:1}
+.lv2 #finanzas .fores-p[aria-pressed="true"] .fores-barra b{animation:fores-corre var(--fores-t,3200ms) linear forwards}
+.lv2 #finanzas .fores[data-quieto] .fores-p[aria-pressed="true"] .fores-barra b{animation:none;transform:scaleX(1)}
+@keyframes fores-corre{to{transform:scaleX(1)}}
+.lv2 #finanzas .fores-p--total{background:rgba(17,17,17,.78);border-color:transparent;color:rgba(248,247,245,.62);font-family:var(--fd);font-weight:600;letter-spacing:-.01em}
+.lv2 #finanzas .fores-p--total i{color:#8fa4ff}
+.lv2 #finanzas .fores-p--total:hover{color:#fff}
+.lv2 #finanzas .fores-p--total[aria-pressed="true"]{background:var(--night);color:#fff;border-color:transparent;box-shadow:0 18px 38px -20px rgba(8,8,8,.6)}
+.lv2 #finanzas .fores-p--total[aria-pressed="true"] i{color:#8fa4ff}
+.lv2 #finanzas .fores-p--total .fores-barra{background:rgba(255,255,255,.12)}
+.lv2 #finanzas .fores-p--total .fores-barra b{background:#8fa4ff}
+/* La Cartera cabe en el celular: medía ~540 px de ancho mínimo y se salía por la derecha a 390. */
+.lv2 #finanzas .fo{grid-template-columns:minmax(0,1fr)}
+.lv2 #finanzas .fscreen,.lv2 #finanzas .fopanel,.lv2 .cv,.lv2 .cv>*,.lv2 .cv-top>*,.lv2 .cv-mid>*{min-width:0}
+.lv2 .cv-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:639px){
+  .lv2 #finanzas .fscreen{padding:12px 10px 16px;border-radius:24px}
+  .lv2 .cv{padding:18px 14px 18px}
+  .lv2 .cv-hd,.lv2 .cv-curva-hd{flex-wrap:wrap;row-gap:6px}
+  .lv2 .cv-kpi{padding:12px 12px}
+  .lv2 .cv-kpi dd{font-size:24px}
+  .lv2 .cv-llegan li{gap:8px;padding:10px}
+  .lv2 .cv-valor{font-size:13.5px}
+  .lv2 .cv-chip{min-width:0;padding:4px 8px;letter-spacing:.06em}
+  .lv2 .cv-av{flex:0 0 30px;width:30px;height:30px}
+  .lv2 .cv-quien b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lv2 .cv-kpi dt{flex-wrap:wrap;row-gap:4px}
+  .lv2 .cv-delta{margin-left:0}
+  .lv2 .cv-pista{gap:6px}
+  .lv2 .cv-ficha{padding:10px;min-width:0}
+  .lv2 .cv-ficha b{font-size:13px;white-space:nowrap}
+  .lv2 .cv-ficha i{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+@media(max-width:639px){
+  .lv2 .cv-llegan li{display:grid;grid-template-columns:30px minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:10px;row-gap:4px;align-items:center}
+  .lv2 .cv-llegan li .cv-av,.lv2 .cv-llegan li .cv-quien{grid-row:1/3}
+  .lv2 .cv-llegan li .cv-valor{grid-column:3;grid-row:1;justify-self:end;align-self:end}
+  .lv2 .cv-llegan li .cv-chip{grid-column:3;grid-row:2;justify-self:end;align-self:start;font-size:8.5px;padding:2px 7px}
+}
+/* Ori y su equipo entero (Nico, 12-10-2026: «son muchos más que esos 4»): los 20 agentes en dos órbitas
+   que giran despacio; cada nombre queda derecho; abajo, una frase y lo que acaba de hacer cada uno. */
+.lv2 .oc-ori{container-type:inline-size}
+.lv2 .oc-ori-orbitas{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.lv2 .oc-ori-orbitas circle{fill:none;stroke:rgba(244,241,234,.09);stroke-width:1;vector-effect:non-scaling-stroke;stroke-dasharray:2 5}
+.lv2 .oc-ori-anillo{position:absolute;inset:0;opacity:0;transform:scale(var(--crece,.9));animation:oc-gira 140s linear infinite}
+.lv2 .oc-ori-anillo--afuera{animation-duration:200s;animation-direction:reverse}
+.lv2 .oc-ori-sat{position:absolute;left:50%;top:50%;width:0;height:0;transform:rotate(var(--a)) translateX(calc(var(--r) * 1cqw)) rotate(calc(var(--a) * -1))}
+.lv2 .oc-ori-erguido{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;gap:5px;transform:translate(-50%,-13px);animation:oc-gira 140s linear infinite reverse}
+.lv2 .oc-ori-anillo--afuera .oc-ori-erguido{animation-duration:200s;animation-direction:normal}
+.lv2 .oc-ori-erguido b{font-family:var(--fd);font-weight:600;font-size:11px;letter-spacing:.01em;color:rgba(244,241,234,.55);white-space:nowrap;transition:color .4s var(--ease)}
+.lv2 .oc-ori-sat .agent-orb,.lv2 .oc-ori-sat [data-variant]{transition:transform .5s var(--ease)}
+.lv2 .oc-ori-sat--activo b{color:var(--cream)}
+.lv2 .oc-ori-sat--activo [data-variant]{transform:scale(1.35)}
+.lv2 .oc-ori-cuenta{position:absolute;left:50%;bottom:-15%;width:min(110%,520px);transform:translateX(-50%);text-align:center;opacity:0}
+.lv2 .oc-ori-cuenta p{margin:0;font-size:14px;line-height:1.5;color:rgba(244,241,234,.6)}
+.lv2 .oc-ori-cuenta p b{color:var(--cream);font-weight:600}
+.lv2 .oc-ori-ahora{display:inline-flex;align-items:center;gap:8px;margin-top:10px!important;padding:7px 14px 7px 9px;border-radius:99px;background:#17171a;border:1px solid rgba(244,241,234,.1);font-size:13px!important;animation:oc-ahora .5s var(--ease)}
+@keyframes oc-gira{to{transform:rotate(360deg)}}
+@keyframes oc-ahora{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.lv2 .oc-ori--quieto .oc-ori-anillo,.lv2 .oc-ori--quieto .oc-ori-cuenta{opacity:1}
+.lv2 .oc-ori--quieto .oc-ori-anillo,.lv2 .oc-ori--quieto .oc-ori-erguido{animation:none}
+@media(max-width:1023px){.lv2 .oc-ori-orbitas,.lv2 .oc-ori-anillo,.lv2 .oc-ori-cuenta{display:none}}

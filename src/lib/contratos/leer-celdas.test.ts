@@ -112,6 +112,16 @@ describe('fechas colombianas', () => {
     expect(comoFecha('2025-03-15')).toBe('2025-03-15')
   })
 
+  it('con la hora al final (exporte de una base de datos) sigue siendo ese día', () => {
+    expect(comoFecha('2025-10-15 00:00:00')).toBe('2025-10-15')
+    expect(comoFecha('2025-10-15T05:00:00.000Z')).toBe('2025-10-15')
+    expect(comoFecha('15/10/2025 08:30')).toBe('2025-10-15')
+    expect(comoFecha('15/10/2025 8:30 p. m.')).toBe('2025-10-15')
+    // Lo que no es una hora detrás de la fecha sigue sin leerse.
+    expect(comoFecha('2025-10-15 aprox')).toBeUndefined()
+    expect(comoFecha('31/02/2025 00:00')).toBeUndefined()
+  })
+
   it('una fecha de Excel que llega como Date se respeta', () => {
     expect(comoFecha(new Date('2025-06-30T00:00:00Z'))).toBe('2025-06-30')
   })

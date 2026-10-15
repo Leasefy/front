@@ -124,7 +124,7 @@ describe('el registro del equipo', () => {
   it('cada clave de despacho del micro es de un agente del equipo', () => {
     for (const k of DESPACHOS_DEL_MICRO) expect(agenteDelDespacho(k), k).not.toBeNull()
     expect(agenteDelDespacho('avaluo')?.id).toBe('avaluos')
-    expect(agenteDelDespacho('cobranza')?.nombrePropio).toBe('Laura')
+    expect(agenteDelDespacho('cobranza')?.nombrePropio).toBe('Mori')
   })
 
   it('las claves que el front ya tipa también caen bien (o en null, nunca en otro)', () => {

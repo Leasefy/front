@@ -219,6 +219,23 @@ describe('el documento del inquilino', () => {
     )
     expect(container.querySelector('[data-testid="sin-inquilino"]')).not.toBeNull()
   })
+
+  it('🔴 Portofino (14-10): el teléfono y el correo del inquilino se ven en el contrato', () => {
+    render(contrato({ inquilinosDelContrato: null }))
+    expect(container.querySelector('[data-testid="contacto-del-inquilino"]')?.textContent).toBe(
+      '3001112233 · wilson@example.com',
+    )
+  })
+
+  it('sólo con teléfono (inquilino sin cuenta), sin separador colgando', () => {
+    render(contrato({ tenantId: null, tenantEmail: '', inquilinosDelContrato: null }))
+    expect(container.querySelector('[data-testid="contacto-del-inquilino"]')?.textContent).toBe('3001112233')
+  })
+
+  it('sin teléfono ni correo no pinta una línea vacía', () => {
+    render(contrato({ tenantEmail: '', tenantPhone: undefined, inquilinosDelContrato: null }))
+    expect(container.querySelector('[data-testid="contacto-del-inquilino"]')).toBeNull()
+  })
 })
 
 describe('varios propietarios', () => {
@@ -439,6 +456,8 @@ describe('editar los propietarios desde la tarjeta', () => {
     const enlace = container.querySelector<HTMLAnchorElement>('[data-testid="corregir-en-el-inmueble"]')
     expect(enlace).not.toBeNull()
     expect(enlace!.getAttribute('href')).toContain('/panel/inmobiliaria/inmuebles/p-1')
+    // H18 (14-10): es el id del INMUEBLE; sin `?por=inmueble` la ficha pedía un mandato con ese id (404).
+    expect(enlace!.getAttribute('href')).toContain('por=inmueble')
   })
 
   it('«Editar» resuelve el mandato por el inmueble del contrato y, al guardar, relee el contrato', async () => {

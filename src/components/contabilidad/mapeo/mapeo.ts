@@ -24,7 +24,16 @@ export function eventosSinCuenta(mapeo: MapeoContable): EventoContable[] {
 /** Los eventos vacíos que la semilla SÍ puede llenar (la agencia tiene la cuenta propuesta, activa e imputable). */
 export function eventosSembrables(mapeo: MapeoContable): EventoContable[] {
   return mapeo.eventos
-    .filter((e) => e.cuenta === null && e.propuesta !== null && e.propuesta.activa && e.propuesta.imputable)
+    .filter(
+      (e) =>
+        e.cuenta === null &&
+        e.propuesta !== null &&
+        e.propuesta.activa &&
+        e.propuesta.imputable &&
+        // 🔴 Portofino (14-10): en un plan importado el mismo código puede ser otra
+        // cuenta (28150505 = «Cobro servicios públicos»): ésa no se siembra sola.
+        e.propuestaConElNombreDelPlanBase !== false,
+    )
     .map((e) => e.evento);
 }
 
@@ -71,4 +80,25 @@ export function fraseDelCambio(
       ? ` Los ${ev.movimientos.toLocaleString('es-CO')} movimientos que ya asentó no se mueven: siguen en la cuenta de antes.`
       : ' Lo que ya está en el libro no se mueve: sigue en la cuenta de antes.';
   return `Desde hoy, «${ev.nombre}» se asienta en ${destino}.${antes}${cuantos}`;
+}
+
+/**
+ * 🔴 Portofino (14-10-2026): con la cuenta ya elegida, la columna «Propuesta»
+ * sólo dice una ALTERNATIVA que sirve —activa, imputable, con el nombre del
+ * plan base y distinta de la elegida—. Antes mostraba «28150505 · COBRO
+ * SERVICIOS PUBLICOS AL PROPIETARIO» al lado del canon ya mapeado (el mismo
+ * código es otra cuenta en un plan importado) o «236705 no está en el PUC»:
+ * parecía que el sistema recomendaba lo que no hay que hacer.
+ */
+export function propuestaQueSirve(
+  e: Pick<MapeoDeEvento, 'propuesta' | 'propuestaConElNombreDelPlanBase'>,
+  cuentaElegidaId: string,
+): boolean {
+  return (
+    e.propuesta !== null &&
+    e.propuesta.id !== cuentaElegidaId &&
+    e.propuesta.activa &&
+    e.propuesta.imputable &&
+    e.propuestaConElNombreDelPlanBase !== false
+  );
 }

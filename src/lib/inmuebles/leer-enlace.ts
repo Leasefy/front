@@ -745,24 +745,56 @@ function imagenesDelHtml(html: string, jsonLd: Record<string, unknown>[], base: 
  * documento — `src` y cada URL del `srcSet` (el descriptor `Nw`/`Nx` no
  * importa, sólo la URL).
  */
-function etiquetasImg(html: string): string[] {
-  const urls: string[] = [];
+function etiquetasImg(html: string): { url: string; alt: string }[] {
+  const salida: { url: string; alt: string }[] = [];
   const etiquetas = html.match(/<(?:img|source)\b[^>]*>/gi) ?? [];
 
   for (const etiqueta of etiquetas) {
+    // El `alt` viaja con cada URL de la etiqueta: es lo que dice DE QUIÉN es
+    // la foto («Fotografía 3 - Apartamento En Primavera»). Ver `galeriaDeImgs`.
+    const alt = decodificarEntidades(etiqueta.match(/\balt\s*=\s*["']([^"']*)["']/i)?.[1] ?? '');
     const src = etiqueta.match(/\bsrc\s*=\s*["']([^"']+)["']/i)?.[1];
-    if (src) urls.push(src);
+    if (src) salida.push({ url: src, alt });
 
     const srcset = etiqueta.match(/\bsrcset\s*=\s*["']([^"']+)["']/i)?.[1];
     if (srcset) {
       for (const parte of srcset.split(',')) {
         const u = parte.trim().split(/\s+/)[0];
-        if (u) urls.push(u);
+        if (u) salida.push({ url: u, alt });
       }
     }
   }
 
-  return urls.map((u) => decodificarEntidades(u.trim()));
+  return salida.map((e) => ({ url: decodificarEntidades(e.url.trim()), alt: e.alt }));
+}
+
+/** Para comparar textos de la ficha: sin tildes, en minúscula, con un solo espacio. */
+function plano(texto: string): string {
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * El nombre con que la ficha se presenta: el `name` del bloque JSON-LD del
+ * inmueble, o el título de Open Graph / Twitter. Sólo se usa para reconocer
+ * las fotos que la página rotula con él (ver `galeriaDeImgs`).
+ */
+function tituloDeLaFicha(html: string, jsonLd: Record<string, unknown>[]): string | undefined {
+  for (const bloque of jsonLd) {
+    if (!esBloqueDelInmueble(bloque)) continue;
+    if (typeof bloque.name === 'string' && bloque.name.trim()) return bloque.name.trim();
+  }
+  const meta = etiquetasMeta(html);
+  return meta.get('og:title')?.trim() || meta.get('twitter:title')?.trim() || undefined;
+}
+
+/**
+ * ¿El `alt` de la foto la rotula con el nombre de ESTA ficha? Un título de
+ * menos de 8 letras («Casa», «Local») no prueba nada: cualquiera se llama así.
+ */
+function altDeLaFicha(alt: string, titulo: string | undefined): boolean {
+  if (!titulo) return false;
+  const t = plano(titulo);
+  return t.length >= 8 && plano(alt).includes(t);
 }
 
 function carpetaDe(u: URL): string {
@@ -805,8 +837,23 @@ function mismoPatronDeArchivo(a: URL, b: URL): boolean {
  * las dos — y si por casualidad comparten carpeta, casi nunca comparten el
  * patrón de nombre con el ancla (que si es él mismo el activo genérico, ya
  * fue descartado antes de llegar acá).
+ *
+ * 🔴 Nico, 13-10-2026: «pegando el link… solo trae una imagen y no trae
+ * todas». La web de Portofino (sobre Arrendasoft) guarda TODAS las fotos de
+ * todos sus inmuebles en la misma carpeta (`/img/fotos/`) y con el nombre que
+ * les puso WhatsApp («…2026-10-07-at-12_41_06-PM-_2_.jpeg», «…9_42_01-AM.jpeg»):
+ * el patrón numerado no prueba nada y de 7 fotos entraba 1. Lo que sí las
+ * prueba es que la página las ROTULA con el nombre de la ficha
+ * («Fotografía 3 - Apartamento En Primavera»): una foto de otro inmueble
+ * lleva el nombre de ese otro. Las dos pruebas valen; la carpeta se exige
+ * siempre.
  */
-function galeriaDeImgs(html: string, declaradas: string[], base: string): string[] {
+function galeriaDeImgs(
+  html: string,
+  declaradas: string[],
+  base: string,
+  titulo?: string,
+): string[] {
   if (declaradas.length === 0) return [];
 
   let anclaUrl: URL;
@@ -818,7 +865,7 @@ function galeriaDeImgs(html: string, declaradas: string[], base: string): string
   const carpetaAncla = carpetaDe(anclaUrl);
 
   const salida: string[] = [];
-  for (const cruda of etiquetasImg(html)) {
+  for (const { url: cruda, alt } of etiquetasImg(html)) {
     const desenvuelta = desenvolverProxy(cruda);
     let u: URL;
     try {
@@ -828,10 +875,67 @@ function galeriaDeImgs(html: string, declaradas: string[], base: string): string
     }
     if (u.origin !== anclaUrl.origin) continue;
     if (carpetaDe(u) !== carpetaAncla) continue;
-    if (!mismoPatronDeArchivo(anclaUrl, u)) continue;
+    if (!mismoPatronDeArchivo(anclaUrl, u) && !altDeLaFicha(alt, titulo)) continue;
     salida.push(u.toString());
   }
   return salida;
+}
+
+/** Claves con que un estado embebido nombra la lista de fotos de un inmueble. */
+const CLAVE_DE_GALERIA = /(imag|foto|photo|picture|galer|gallery|media)/i;
+
+/**
+ * La lista de fotos que la página trae en su ESTADO embebido (el `__NEXT_DATA__`
+ * o el RSC de Next, el JSON de un CRM), cuando esa lista CONTIENE la foto
+ * declarada.
+ *
+ * 🔴 Nico, 13-10-2026 («solo trae una imagen y no trae todas»): la ficha de
+ * Portofino pinta 6 miniaturas, pero el inmueble tiene 14 fotos, y las 14
+ * viajan en `"images":[…]` del objeto del inmueble. Esa lista se prueba sola:
+ * trae la portada declarada (og:image / JSON-LD), que es de este inmueble con
+ * certeza, y un carrusel de «similares» nunca lleva la portada de esta ficha.
+ *
+ * Además de contener la portada, la lista tiene que llamarse como una galería
+ * (`images`, `fotos`, `photos`…) o tener todas sus fotos en la carpeta de la
+ * portada. Sin eso no se toma: una lista de «vistos recientemente» también
+ * podría traer la portada de esta ficha junto a las de otros.
+ */
+function galeriaDelEstado(html: string, declaradas: string[], base: string): string[] {
+  if (declaradas.length === 0) return [];
+  let ancla: URL;
+  try {
+    ancla = new URL(declaradas[0]);
+  } catch {
+    return [];
+  }
+  const carpetaAncla = carpetaDe(ancla);
+  // Un nivel de escape de cadena JS (el RSC de Next es JSON dentro de un string).
+  const texto = html
+    .replace(/\\u0026/g, '&')
+    .replace(/\\u002F/gi, '/')
+    .replace(/\\\//g, '/')
+    .replace(/\\"/g, '"');
+  const listas = texto.matchAll(/(?:"([A-Za-z_][\w-]*)"\s*:\s*)?\[\s*("[^"\[\]]*"(?:\s*,\s*"[^"\[\]]*")+)\s*\]/g);
+  for (const m of listas) {
+    const clave = m[1] ?? '';
+    const urls: URL[] = [];
+    for (const [, cruda] of m[2].matchAll(/"([^"]*)"/g)) {
+      try {
+        urls.push(new URL(desenvolverProxy(decodificarEntidades(cruda.trim())), base));
+      } catch {
+        // No es una URL: la lista no es de fotos.
+      }
+    }
+    if (urls.length < 2) continue;
+    const traeLaPortada = urls.some((u) => u.origin === ancla.origin && u.pathname === ancla.pathname);
+    if (!traeLaPortada) continue;
+    const enLaCarpeta = urls.every((u) => u.origin === ancla.origin && carpetaDe(u) === carpetaAncla);
+    if (!enLaCarpeta && !CLAVE_DE_GALERIA.test(clave)) continue;
+    return urls
+      .filter((u) => u.origin === ancla.origin && carpetaDe(u) === carpetaAncla)
+      .map((u) => u.toString());
+  }
+  return [];
 }
 
 /**
@@ -949,7 +1053,11 @@ export function leerInmuebleDeHtml(html: string, url: string): InmuebleDesdeEnla
     // nombre de archivo (Slice A, T-0034 WU-1). La portada declarada va
     // primero en los dos, así que queda primera acá también.
     imagenes: normalizarUrls(
-      [...galeriaDelMismoInmueble(html, declaradas, url), ...galeriaDeImgs(html, declaradas, url)],
+      [
+        ...galeriaDelMismoInmueble(html, declaradas, url),
+        ...galeriaDelEstado(html, declaradas, url),
+        ...galeriaDeImgs(html, declaradas, url, tituloDeLaFicha(html, jsonLd)),
+      ],
       url,
     ),
     videos: videosDelHtml(html, jsonLd, url),

@@ -57,7 +57,10 @@ import type {
 } from '@/lib/types/inmobiliaria';
 import { formatCurrency, portafolioRowKey } from '@/lib/types/inmobiliaria';
 import { CanonPorConfirmarBadge } from './CanonPorConfirmar';
-import { TEXTO_CANON_POR_CONFIRMAR } from '@/lib/inmuebles/canon-por-confirmar';
+import {
+  TEXTO_CANON_POR_CONFIRMAR,
+  TEXTO_PRECIO_POR_COMPLETAR,
+} from '@/lib/inmuebles/canon-por-confirmar';
 import { textoCortoDeLaComision } from '@/lib/inmuebles/comision-del-mandato';
 import { cajonDelInmueble } from '@/lib/inmobiliaria/cajon-del-inmueble';
 
@@ -569,7 +572,9 @@ export function ConsignacionTable({
                     {row.listingType === 'sale' ? (
                       row.kind === 'sinMandato' ? (
                         <p className="font-semibold text-foreground tabular-nums">
-                          {row.salePrice != null ? formatCurrency(row.salePrice) : '—'}
+                          {row.salePrice != null
+                            ? formatCurrency(row.salePrice)
+                            : row.canonPorConfirmar ? TEXTO_PRECIO_POR_COMPLETAR : '—'}
                           <span className="ml-1 text-xs font-normal text-muted-foreground">
                             {t('inmobiliaria.consignaciones.table.saleTag')}
                           </span>
@@ -590,6 +595,7 @@ export function ConsignacionTable({
                       <CanonPorConfirmarBadge
                         inmuebleId={row.kind === 'sinMandato' ? row.propertyId : row.propertyId}
                         className="mt-1"
+                        esVenta={row.listingType === 'sale'}
                       />
                     ) : null}
                     {/*

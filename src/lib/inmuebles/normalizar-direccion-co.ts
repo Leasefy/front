@@ -135,3 +135,68 @@ export function consultaNormalizada(d: DireccionAUbicar): string | null {
     .filter(Boolean)
     .join(', ');
 }
+
+/* ───────────────────────── La vía, para comparar ───────────────────────── */
+
+/** La vía principal de una dirección («Calle 131 Sur», «Carrera 43 A»). */
+export interface ViaPrincipal {
+  tipo: string;
+  num: string;
+  letra?: string;
+  bis?: boolean;
+  letraBis?: string;
+  cardinal?: string;
+}
+
+/**
+ * QA de Portofino (14-10-2026, Nico: «estricto»). La vía principal de un texto:
+ * la dirección del archivo («CL 131 SUR 50 - 35 INT 304») o el nombre de la vía
+ * que devuelve el buscador («Calle 131 Sur», «Cl 45 S», «Kr 50», «Carrera
+ * 43A»). Con el MISMO lector las dos se comparan sin sorpresas. `null` si no
+ * hay una vía con número («Manzana C», «DUPLEX»).
+ */
+export function viaPrincipal(texto?: string | null): ViaPrincipal | null {
+  const t = tokenizar(texto ?? '');
+  const i = t.findIndex((x, k) => VIAS[x] !== undefined && esNum(t[k + 1]));
+  if (i < 0) return null;
+  const [tramo] = leerTramo(t, i + 1);
+  if (!tramo) return null;
+  return { tipo: VIAS[t[i]], ...tramo };
+}
+
+/**
+ * ¿Es la misma vía? Tipo, número, letra, «bis» y cardinal tienen que coincidir:
+ * la Calle 45 A Sur no es la Calle 45 Sur, y la Carrera 76 no es la 82 A.
+ */
+export function mismaVia(a: ViaPrincipal, b: ViaPrincipal): boolean {
+  return (
+    a.tipo === b.tipo &&
+    a.num === b.num &&
+    (a.letra ?? '') === (b.letra ?? '') &&
+    Boolean(a.bis) === Boolean(b.bis) &&
+    (a.letraBis ?? '') === (b.letraBis ?? '') &&
+    (a.cardinal ?? '') === (b.cardinal ?? '')
+  );
+}
+
+/**
+ * El número de la vía que cruza: en «CRA 54 CALLE 153 SUR 87» es 153. `null`
+ * si la dirección no trae cruce legible.
+ */
+export function numeroDelCruce(texto?: string | null): number | null {
+  const n = normalizarDireccionCo(texto);
+  const m = n ? /#\s*(\d+)/.exec(n) : null;
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * El cruce que dice el número de puerta del buscador («124 S 87», «46B 65»,
+ * «131SUT 95»): su primer número. `null` si no trae ninguno.
+ */
+export function numeroDelCruceDelBuscador(numeroDePuerta?: string | null): number | null {
+  const m = /^\s*(\d+)/.exec(numeroDePuerta ?? '');
+  return m ? Number(m[1]) : null;
+}
+
+/** Hasta cuántas calles de diferencia en el cruce todavía es la misma cuadra larga. */
+export const TOLERANCIA_DEL_CRUCE = 3;

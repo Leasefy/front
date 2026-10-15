@@ -62,6 +62,7 @@ import { SelectorDeEmojis } from '@/components/messages/SelectorDeEmojis';
 import { PlantillasDeMensajePopover } from '@/components/messages/PlantillasDeMensajePopover';
 import { PendientesDelHiloPopover } from '@/components/messages/PendientesDelHiloPopover';
 import { mesEnCurso } from '@/components/messages/pendientes-a-mensaje';
+import { separadoresDeDia } from '@/components/messages/dia-del-mensaje';
 import { PQRS_SLA_BUSINESS_DAYS } from '@/lib/constants/response-sla';
 
 // ============================================================================
@@ -604,6 +605,9 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
 
   /* El aviso se apaga solo cuando ya no queda ningún hueco en el campo: quien
      completó «{{saldo}}» a mano no tiene por qué seguir viendo una alerta. */
+  // El rótulo del día antes del primer mensaje de cada día (QA 11-10).
+  const separadores = useMemo(() => separadoresDeDia(messages), [messages]);
+
   const huecosVisibles =
     variablesSinResolver.length > 0 && messageText.includes('{{')
       ? variablesSinResolver
@@ -1089,7 +1093,27 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               </div>
                             )}
                             <AnimatePresence initial={false}>
-                              {messages.map((message, index) => (
+                              {messages.flatMap((message, index) => [
+                                // El día cambia: su rótulo antes del primer
+                                // mensaje de ese día («Hoy», «Ayer», «4 de octubre»).
+                                ...(separadores[index]
+                                  ? [
+                                      <motion.div
+                                        key={`dia-${message.id}`}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={enterTransition(reducido)}
+                                        className="flex items-center gap-3 py-1"
+                                        data-testid="separador-de-dia"
+                                      >
+                                        <span className="h-px flex-1 bg-border-faint" aria-hidden="true" />
+                                        <span className="text-caption font-medium text-muted-foreground">
+                                          {separadores[index]}
+                                        </span>
+                                        <span className="h-px flex-1 bg-border-faint" aria-hidden="true" />
+                                      </motion.div>,
+                                    ]
+                                  : []),
                                 // Sólo los mensajes NUEVOS entran (el hilo que ya
                                 // estaba no se anima): suben 8 px sin retraso. El
                                 // retraso por índice hacía esperar ~2 s al mensaje
@@ -1147,8 +1171,8 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                       locale={locale}
                                     />
                                   </div>
-                                </motion.div>
-                              ))}
+                                </motion.div>,
+                              ])}
                             </AnimatePresence>
                           </div>
                         )}

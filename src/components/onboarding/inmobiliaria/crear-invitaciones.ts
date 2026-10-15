@@ -36,6 +36,9 @@ const ROL_PARA_EL_BACK: Record<MemberRole, AgencyRole> = {
   AGENTE: 'agente',
   CONTADOR: 'contador',
   VIEWER: 'viewer',
+  COORDINADOR: 'coordinador',
+  AUXILIAR_CARTERA: 'auxiliar_cartera',
+  ABOGADO_EXTERNO: 'abogado_externo',
 }
 
 export interface InvitacionCreada {

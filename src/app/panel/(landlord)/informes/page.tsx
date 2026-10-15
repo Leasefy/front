@@ -39,6 +39,8 @@ import {
 import { formatCurrency } from '@/lib/types/inmobiliaria';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { anioQueAbreElCertificado } from '@/lib/propietarios/anio-del-certificado';
+import { fechaCorta } from '@/lib/fechas/fecha-de-la-casa';
+import { portalDelPropietarioApi } from '@/lib/api/portal-del-propietario.service';
 
 /**
  * 🔴 QA 22-09: el back ofrecía «2027 · 2026» y la pantalla abría 2027 —un
@@ -55,6 +57,7 @@ function aniosCertificables(anios: readonly number[], hoy: Date = new Date()): n
 export default function MisInformesPage() {
   const [disponibles, setDisponibles] = useState<InformesDisponibles | null>(null);
   const [certificado, setCertificado] = useState<CertificadoDeIngresos | null>(null);
+  const [bajandoPdf, setBajandoPdf] = useState(false);
   const [reparaciones, setReparaciones] = useState<ReparacionDelPropietario[] | null>(null);
   const [motivoDeReparaciones, setMotivoDeReparaciones] = useState<string | null>(null);
   const [anio, setAnio] = useState<number | null>(null);
@@ -120,9 +123,9 @@ export default function MisInformesPage() {
   }, []);
 
   return (
-    <div className="space-y-8 p-6">
+    <div className="space-y-8 p-6 lg:p-8">
       <header className="space-y-1">
-        <h1 className="text-2xl font-semibold text-fg dark:text-white">Mis informes</h1>
+        <h1 className="text-h2 text-fg">Mis informes</h1>
         <p className="text-sm text-fg-muted dark:text-fg-subtle">
           Tu certificado anual de ingresos y el historial de reparaciones de tus inmuebles.
         </p>
@@ -164,6 +167,29 @@ export default function MisInformesPage() {
               className="rounded-xl border border-border dark:border-border-strong p-5 space-y-4"
               data-testid="certificado"
             >
+              {/* Nico, 11-10-2026: «Certificados descargables». */}
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  hideArrow
+                  isLoading={bajandoPdf}
+                  data-testid="bajar-certificado-de-ingresos"
+                  onClick={async () => {
+                    setBajandoPdf(true);
+                    try {
+                      await portalDelPropietarioApi.bajarCertificadoDeIngresos(certificado.anio);
+                    } catch (e) {
+                      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No pudimos bajar el PDF.', accion: 'bajar el certificado' }));
+                    } finally {
+                      setBajandoPdf(false);
+                    }
+                  }}
+                >
+                  <FileArrowDown className="h-4 w-4" aria-hidden="true" />
+                  Descargar PDF
+                </Button>
+              </div>
               <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Renglon
                   titulo="Ingreso bruto por arrendamiento"
@@ -258,7 +284,7 @@ export default function MisInformesPage() {
                   <div className="min-w-0">
                     <p className="font-medium text-fg dark:text-white">{r.titulo}</p>
                     <p className="text-sm text-fg-muted dark:text-fg-subtle">
-                      {r.fecha} · {r.inmueble}
+                      {fechaCorta(r.fecha)} · {r.inmueble}
                       {r.proveedor ? ` · ${r.proveedor}` : ''}
                     </p>
                   </div>

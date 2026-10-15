@@ -82,7 +82,9 @@ export function useContratosAdministrados(): ContratosAdministrados {
 export function ContratosConLaInmobiliaria({ doc }: { doc: EstadoDeCuenta }) {
   // QA-PROP-95 (PO-01): un firmado que todavía no empieza no es «vigente».
   const vigentes = doc.contratos.filter((c) => estadoDe(c) === 'VIGENTE').length;
-  const quien = doc.inmobiliaria.razonSocial || 'Tu inmobiliaria';
+  // El nombre comercial, el mismo de «¿Recomendarías a…?» (QA 11-10); la razón
+  // social es para el documento del estado de cuenta.
+  const quien = doc.inmobiliaria.nombre || doc.inmobiliaria.razonSocial || 'Tu inmobiliaria';
   return (
     <section
       data-testid="contratos-con-la-inmobiliaria"
@@ -113,7 +115,13 @@ export function ContratosConLaInmobiliaria({ doc }: { doc: EstadoDeCuenta }) {
       </div>
       <ul className="divide-y divide-border-faint">
         {doc.contratos.map((c) => (
-          <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3">
+          <li key={c.id}>
+            {/* QA 11-10: cada contrato abre la ficha de su inmueble. */}
+            <Link
+              href={`/panel/inmuebles/${c.id}`}
+              className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 transition-colors hover:bg-surface-muted"
+              data-testid={`abrir-inmueble-${c.id}`}
+            >
             <div className="min-w-0">
               <p className="text-body-sm font-medium text-fg">
                 Contrato <span className="font-mono">{numeroDelContratoDelEstado(c).principal}</span>
@@ -131,6 +139,7 @@ export function ContratosConLaInmobiliaria({ doc }: { doc: EstadoDeCuenta }) {
             >
               {selloDelContrato(c).texto}
             </span>
+            </Link>
           </li>
         ))}
       </ul>

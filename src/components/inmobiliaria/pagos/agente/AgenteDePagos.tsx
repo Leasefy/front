@@ -8,11 +8,9 @@
  *   1. Si el equipo trabaja hoy: una píldora con el estado real (gobierno del
  *      micro) y la lista de lo que necesita para trabajar, cada paso con su
  *      lectura. Si una lectura falló se dice «sin verificar», nunca «falta».
- *   2. Lo que está haciendo: SÓLO cuando el micro publica el tablero. Mientras
- *      no exista no se dibuja ni una tarjeta con «—»: eso fue lo que tuvo la
- *      Sala que se retiró, ocho indicadores en rayas. Si la consulta falla, lo
- *      dice el paso «Su tablero publicado» con su «Volver a consultar»: un
- *      solo lugar para el mismo aviso, no dos carteles.
+ *   2. (Hasta el 14-10-2026 había un «tablero» del micro que nunca se
+ *      publicó: un paso en «Falta» y un 404 en cada visita. Se quitó; ver la
+ *      nota de `lib/pagos/equipo-de-pagos.ts`.)
  *   2b. Cobri este mes (08-10-2026, de cambios-nico-10): la frase del mes, cuándo
  *      escribe y el link de cada cuota (`CobriEsteMes`), con el resumen del back.
  *   3. Quién es quién: los seis del equipo, qué hace cada uno y en qué
@@ -41,10 +39,8 @@ import { SectionLabel } from '@/components/ui/section-label'
 import { Button } from '@/components/ui/button'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { pasaGateDeFila } from '@/lib/nav/agency-nav-filter'
-import { formatCurrency } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type { AgenteDePagosLectura } from '@/lib/hooks/use-agente-de-pagos'
-import type { OverviewKpi } from '@/lib/api/agent-workspace'
 import {
   EQUIPO_DE_PAGOS,
   ETIQUETA_DEL_ESTADO,
@@ -94,14 +90,6 @@ const PASO: Record<EstadoDelPaso, { icon: Icon; clase: string; palabra: string; 
   espera: { icon: HourglassMedium, clase: 'text-fg-subtle', palabra: 'Después' },
   'sin-verificar': { icon: Question, clase: 'text-fg-muted', palabra: 'Sin verificar' },
   cargando: { icon: CircleNotch, clase: 'text-fg-subtle', palabra: 'Consultando', gira: true },
-}
-
-// ── Los números, cuando existen ─────────────────────────────────────────────
-
-function valorDelKpi(kpi: OverviewKpi): string {
-  if (kpi.format === 'cop') return formatCurrency(kpi.value)
-  if (kpi.format === 'percent') return `${Math.round(kpi.value * 100)} %`
-  return new Intl.NumberFormat('es-CO').format(kpi.value)
 }
 
 // ── La tarjeta de cada especialista ─────────────────────────────────────────
@@ -162,9 +150,9 @@ function TarjetaDelEspecialista({ persona }: { persona: Especialista }) {
 // ── La pantalla ─────────────────────────────────────────────────────────────
 
 export function AgenteDePagos({ lectura }: { lectura: AgenteDePagosLectura }) {
-  const { gobierno, tablero, resumen, reintentar } = lectura
+  const { gobierno, reintentar } = lectura
   const estado = estadoDelEquipo(gobierno)
-  const pasos = pasosParaQueTrabaje(gobierno, tablero)
+  const pasos = pasosParaQueTrabaje(gobierno)
   const algoSinVerificar = pasos.some((p) => p.estado === 'sin-verificar')
 
   return (
@@ -229,40 +217,8 @@ export function AgenteDePagos({ lectura }: { lectura: AgenteDePagosLectura }) {
       </section>
 
       {/* Cobri (08-10, de cambios-nico-10): lo que el equipo ya hace de verdad,
-          con el resumen del back. Va antes del tablero del micro, que todavía
-          no se publica. */}
+          con el resumen del back. */}
       <CobriEsteMes />
-
-      {tablero.estado === 'listo' && resumen && (
-        <section aria-labelledby="que-esta-haciendo" className="space-y-4" data-testid="tablero-del-equipo">
-          <h2 id="que-esta-haciendo" className="text-subtitle text-fg">
-            Lo que está haciendo
-          </h2>
-          <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {resumen.kpis.map((kpi) => (
-              <div key={kpi.id} className="space-y-2 rounded-lg border border-border bg-surface p-5">
-                <dt className="text-caption text-fg-muted">{kpi.label}</dt>
-                <dd className="text-numeric text-stat font-medium text-fg">{valorDelKpi(kpi)}</dd>
-              </div>
-            ))}
-          </dl>
-          <div className="rounded-lg border border-border bg-surface p-5">
-            <h3 className="text-body-sm font-medium text-fg">Pendientes</h3>
-            {resumen.feed.length === 0 ? (
-              <p className="mt-2 text-body-sm text-fg-muted">El equipo no tiene nada esperando por ti.</p>
-            ) : (
-              <ul className="mt-3 divide-y divide-border-faint">
-                {resumen.feed.map((f) => (
-                  <li key={f.id} className="py-3">
-                    <p className="text-body-sm text-fg">{f.titulo}</p>
-                    {f.detalle && <p className="text-caption text-fg-muted">{f.detalle}</p>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </section>
-      )}
 
       <section aria-labelledby="el-equipo" className="space-y-4">
         <h2 id="el-equipo" className="text-subtitle text-fg">

@@ -662,10 +662,11 @@ describe('ContratoDetallePage — la cuenta del contrato', () => {
 
     expect(container.querySelector('[data-testid="vincular-inmueble"]')).toBeNull()
     expect(container.textContent).not.toContain('Sin inmueble vinculado')
-    // Fuera de la migración (QA-MIGRACION-95): entra «por el inmueble», sin el 404 previo.
-    expect(container.querySelector('[data-testid="ver-inmueble"]')?.getAttribute('href')).toBe(
-      '/panel/inmobiliaria/inmuebles/prop-1?por=inmueble',
-    )
+    // Fuera de la migración (QA-MIGRACION-95): entra «por el inmueble», sin el 404 previo,
+    // y la ficha ofrece «Volver al contrato» (14-10).
+    const href = container.querySelector('[data-testid="ver-inmueble"]')?.getAttribute('href') ?? ''
+    expect(href.startsWith('/panel/inmobiliaria/inmuebles/prop-1?por=inmueble&volver=')).toBe(true)
+    expect(decodeURIComponent(href)).toContain('volver=/panel/inmobiliaria/contratos/')
   })
 })
 
@@ -1025,5 +1026,32 @@ describe('ContratoDetallePage — el documento de un contrato migrado', () => {
 
     expect(container.querySelector('[data-testid="fallo-carga"]')).not.toBeNull()
     expect(container.querySelector('[data-testid="contrato-sin-documento"]')).toBeNull()
+  })
+})
+
+/** QA de Portofino (14-10-2026): las observaciones migradas se ven en el contrato. */
+describe('ContratoDetallePage — lo que traía el sistema anterior', () => {
+  it('muestra las «Observaciones (migrado)» y el origen; el escenario no se repite', async () => {
+    withContract(
+      contract({
+        customClauses: [
+          { title: 'Escenario tributario (migrado)', content: 'Escenario 1 VIVIENDA' },
+          { title: 'Observaciones (migrado)', content: 'Abril de 2025: se aplicará un incremento del 5%.' },
+          { title: 'Origen (migrado)', content: 'Consecutivo de origen: 3.' },
+        ],
+      }),
+    )
+    await renderPage()
+    const bloque = container.querySelector('[data-testid="del-sistema-anterior"]')
+    expect(bloque?.textContent).toContain('Abril de 2025: se aplicará un incremento del 5%.')
+    expect(bloque?.textContent).toContain('Observaciones')
+    expect(bloque?.textContent).toContain('Consecutivo de origen: 3.')
+    expect(bloque?.textContent).not.toContain('Escenario 1 VIVIENDA')
+  })
+
+  it('sin cláusulas migradas no aparece el bloque', async () => {
+    withContract(contract({ customClauses: [] }))
+    await renderPage()
+    expect(container.querySelector('[data-testid="del-sistema-anterior"]')).toBeNull()
   })
 })

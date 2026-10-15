@@ -486,6 +486,36 @@ export function CuerpoDelCajon({
         {/* El permiso para escribirle por WhatsApp desde el chat (2026-09-12).
             Apagado por defecto: tener su teléfono no autoriza el canal. */}
         <InterruptorDeWhatsapp personaId={idDeLaCuenta} className="mb-4" />
+        {/* La ficha del archivo de su sistema anterior (Nico, 13-10-2026). */}
+        {detalle.persona.ficha ? (
+          <dl className="mb-4 grid grid-cols-1 gap-x-4 gap-y-1.5 rounded-lg border border-border p-3 text-sm sm:grid-cols-2" data-testid="ficha-del-archivo">
+            <dt className="text-caption text-fg-muted sm:col-span-2">Datos de su sistema anterior</dt>
+            {detalle.persona.ficha.direccion ? (
+              /* Sin banco al lado, la dirección usa el ancho entero: en media
+                 columna una dirección larga se partía en tres renglones. */
+              <dd
+                className={cn(
+                  'text-fg',
+                  !detalle.persona.ficha.banco && !detalle.persona.ficha.cuentaEnmascarada && 'sm:col-span-2',
+                )}
+              >
+                {detalle.persona.ficha.direccion}
+                {detalle.persona.ficha.ciudad ? `, ${detalle.persona.ficha.ciudad}` : ''}
+                {detalle.persona.ficha.departamento ? ` (${detalle.persona.ficha.departamento})` : ''}
+              </dd>
+            ) : null}
+            {detalle.persona.ficha.banco || detalle.persona.ficha.cuentaEnmascarada ? (
+              <dd className="text-fg">
+                {[detalle.persona.ficha.banco, detalle.persona.ficha.tipoDeCuenta, detalle.persona.ficha.cuentaEnmascarada]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </dd>
+            ) : null}
+            {detalle.persona.ficha.notas ? (
+              <dd className="whitespace-pre-line text-fg-muted sm:col-span-2">{detalle.persona.ficha.notas}</dd>
+            ) : null}
+          </dl>
+        ) : null}
         {sinArriendos ? (
           <div className="space-y-3">
             {arriendosIncompletos ? <Aviso texto={t(`${NS}.arriendosIncompletos`)} /> : null}

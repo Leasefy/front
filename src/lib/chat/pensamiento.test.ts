@@ -133,7 +133,7 @@ describe('el nombre del equipo', () => {
     expect(conNombreDelEquipo('Le pido al especialista de pagos: “los pagos de octubre”…', 'pagos', t)).toBe(
       'Le pido a Cobri: “los pagos de octubre”…'
     );
-    expect(conNombreDelEquipo('El especialista de cobranza no pudo terminar', 'cobranza', t)).toBe('Laura no pudo terminar');
+    expect(conNombreDelEquipo('El especialista de cobranza no pudo terminar', 'cobranza', t)).toBe('Mori no pudo terminar');
     expect(
       conNombreDelEquipo('hay que contarlo sobre tus datos: se lo pido al especialista de reportes', 'reportes', t)
     ).toBe('hay que contarlo sobre tus datos: se lo pido a Reportes');

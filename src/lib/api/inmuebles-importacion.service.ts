@@ -222,7 +222,39 @@ export interface ImportarInmuebleDto {
   comisionPorcentaje?: number;
 }
 
+/** Nico 14-10: el tipo que dice la dirección de una fila sin tipo. */
+export interface SugerenciaDeTipo {
+  tipo: string;
+  /** Las palabras de la dirección que lo dicen («APTO 201»). */
+  porque: string;
+}
+
+/**
+ * 🔴 Portofino (14-10): la ficha que ya está con el mismo nombre completo y
+ * celular que el dueño del archivo, que trae OTRO documento.
+ */
+export interface DuenoParecido {
+  id: string;
+  nombre: string;
+  documento: string | null;
+  tipoDocumento: string | null;
+  telefono: string | null;
+  /** El teléfono que el archivo y la ficha tienen en común. */
+  telefonoEnComun?: string;
+}
+
 export interface FilaDeImportacion {
+  /**
+   * Portofino (14-10), sólo con el faltante `dueno_parecido`: con quién se
+   * parece el dueño del archivo. Se responde «¿Es la misma persona?».
+   */
+  duenoParecido?: DuenoParecido | null;
+  /** Nico 14-10 (sólo PENDIENTE sin tipo): la «Clase» del archivo; `null` = vacía. */
+  claseDelArchivo?: string | null;
+  /** …si es otra cosa del sistema anterior («Queja», «Reclamos»…). */
+  noEsInmueble?: boolean;
+  /** …y el tipo que dice su dirección, para confirmarlo de un clic. */
+  sugerenciaDeTipo?: SugerenciaDeTipo | null;
   id: string;
   lote: string;
   fila: number;
@@ -471,6 +503,8 @@ export interface ResolverInmuebleDto {
   consignedAt?: string;
   /** The only exit for `posible_duplicado` — an action, not a form field. */
   permitirDuplicado?: boolean;
+  /** Portofino (14-10): la respuesta a «¿Es la misma persona?» (sólo esa fila). */
+  esElDuenoParecido?: boolean;
 }
 
 /** Los campos que se pueden poner en bloque (`PATCH filas/masivo`). */
@@ -493,10 +527,18 @@ export interface FiltroDeFilasInmuebles {
   estado?: 'PENDIENTE' | 'LISTO';
   /** Un código de `faltantes` o `'canon'` (las que no traen canon usable). */
   motivo?: string;
+  // Nico 14-10 (filas sin tipo): por la «Clase» del archivo, las que no son
+  // inmuebles, o las que traen el tipo en la dirección.
+  clase?: string;
+  sinClase?: boolean;
+  noEsInmueble?: boolean;
+  conSugerenciaDeTipo?: boolean;
 }
 
 export interface CambiosMasivosInmuebles {
   campos?: CamposMasivosInmuebles;
+  /** Nico 14-10: a cada fila sin tipo, el tipo que dice SU dirección. */
+  usarSugerenciaDeTipo?: boolean;
   permitirDuplicado?: boolean;
   descartar?: boolean;
   /** `false` rellena sólo lo vacío; `true` pisa también lo que ya tenía valor. */
@@ -529,8 +571,20 @@ export interface MotivosDelLoteInmuebles {
   lote: string;
   requierenAtencion: number;
   listas: number;
-  /** Filas que se van a crear con el canon por confirmar. */
+  /** Filas (por revisar o listas) que se crearían con el canon por confirmar. */
   sinCanon: number;
+  /**
+   * Nico 14-10-2026: de las LISTAS (lo que «Crear todas» crea ahora), cuántas
+   * entran con el canon por confirmar y cuántas son ventas con el precio por
+   * completar. Un back anterior no lo manda.
+   */
+  alCrear?: { sinCanon: number; sinPrecioDeVenta: number };
+  /** Nico 14-10: las que esperan su tipo. Un back anterior no lo manda. */
+  sinTipo?: {
+    porClase: { clase: string | null; filas: number }[];
+    conSugerencia: number;
+    noSonInmuebles: { filas: number; clases: string[] };
+  };
   /** `codigo: 'canon'` trae `bloquea: false`. */
   porMotivo: { codigo: string; filas: number; bloquea: boolean }[];
 }
@@ -699,6 +753,7 @@ export const inmueblesImportacionApi = {
   ): Promise<ResultadoMasivoPorFiltroInmuebles> {
     const base: Record<string, unknown> = { lote, filtro };
     if (cambios.campos) base.campos = cambios.campos;
+    if (cambios.usarSugerenciaDeTipo) base.usarSugerenciaDeTipo = true;
     if (cambios.permitirDuplicado !== undefined) base.permitirDuplicado = cambios.permitirDuplicado;
     if (cambios.descartar !== undefined) base.descartar = cambios.descartar;
     if (cambios.sobrescribir !== undefined) base.sobrescribir = cambios.sobrescribir;

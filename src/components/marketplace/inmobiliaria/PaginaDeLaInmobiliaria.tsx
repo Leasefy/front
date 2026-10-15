@@ -33,6 +33,7 @@ import {
   TarjetaDeOpinion,
   Tira,
 } from './piezas';
+import { portadaDe } from '@/lib/marketplace/portadas';
 
 /**
  * ══ LA PÁGINA DE LA INMOBILIARIA · leasefy.co/i/<nombre> (Nico, 09-10-2026) ═
@@ -115,8 +116,8 @@ function Cabecera({ p }: { p: Pagina }) {
         </p>
       </motion.div>
       <motion.div {...entrada(1)} className="relative mt-4 h-44 overflow-hidden rounded-xl bg-surface-muted md:h-56">
-        {p.portadaUrl ? (
-          <Image src={p.portadaUrl} alt="" fill priority sizes="1280px" className="object-cover" />
+        {portadaDe(p.portadaUrl) ? (
+          <Image src={portadaDe(p.portadaUrl)} alt="" fill priority sizes="1280px" className="object-cover" />
         ) : (
           <span
             className="absolute inset-0"

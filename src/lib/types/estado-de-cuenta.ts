@@ -61,7 +61,13 @@ export interface DocumentoDePago {
    * paga el mes porque se colgó del contrato por su número o por el código del
    * inmueble. Ausente = por el documento.
    */
-  asociadoPor?: 'numero_contrato' | 'codigo_inmueble';
+  asociadoPor?: 'numero_contrato' | 'codigo_inmueble' | 'nombre';
+  /**
+   * QA de Portofino (14-10-2026): lo que dice el comprobante MIGRADO del
+   * sistema anterior (su total; la suma si el período trae varios). No es el
+   * valor neto: el comprobante viejo no trae su desglose.
+   */
+  valor?: number;
 }
 
 /**
@@ -154,6 +160,11 @@ export interface FilaDelEstadoDeCuenta {
    * «Sin definir · falta el porcentaje», sin «atrasado». Ausente en el resto.
    */
   sinPorcentaje?: true;
+  /**
+   * PG-08 (back): cuántos comprobantes migrados del sistema anterior caen en el
+   * período de esta fila. Con más de uno, `documentoDePago.valor` es su SUMA.
+   */
+  delSistemaAnterior?: { comprobantes: number };
 }
 
 /**
@@ -340,6 +351,8 @@ export interface ClienteDelEstadoDeCuenta {
 
 export interface InmobiliariaDelEstadoDeCuenta {
   razonSocial: string;
+  /** El nombre comercial, para las frases (back desde el 12-10; antes, ausente). */
+  nombre?: string;
   nit: string | null;
   matricula: string | null;
   telefono: string | null;

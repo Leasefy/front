@@ -1427,6 +1427,12 @@ export interface AsociacionDelLote {
   conInquilino: number;
   /** Filas TERMINADAS en el sistema anterior: se migran sin activar nada. */
   historicos: number;
+  /**
+   * De las que no quedaron con una cuenta de inquilino, las que sí tienen a
+   * su inquilino en la agencia SIN cuenta del portal (llegó sin correo y
+   * quedó como su ficha). Un back viejo no lo manda.
+   */
+  inquilinoSinCuenta?: number;
 }
 
 export interface FilaDeMigracion {

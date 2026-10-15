@@ -19,6 +19,7 @@ vi.mock('@/lib/i18n', async () => await import('@/lib/i18n/i18n-test-stub'));
 
 const api = vi.hoisted(() => ({
   delPortal: vi.fn(),
+  historialDelPortal: vi.fn(),
   aprobar: vi.fn(),
   rechazar: vi.fn(),
   soporte: vi.fn(),
@@ -248,8 +249,18 @@ describe('en el portal del propietario: «Aprobar reparaciones»', () => {
     expect(tarjeta).toMatch(/180\.?000/);
 
     api.delPortal.mockResolvedValue({ pendientes: [], historial: [{ ...PENDIENTE, estado: 'APROBADA' }] });
+    // Nico, 12-10: el historial es una tabla que el back pagina.
+    api.historialDelPortal.mockResolvedValue({
+      filas: [{ ...PENDIENTE, estado: 'APROBADA' }],
+      total: 1,
+      pagina: 1,
+      porPagina: 10,
+    });
     await act(async () => {
       (q('aprobacion-aprobar') as HTMLButtonElement).click();
+    });
+    await act(async () => {
+      await Promise.resolve();
     });
     expect(api.aprobar).toHaveBeenCalledWith('ap-1');
     expect(q('aprobacion-historial-APROBADA')).not.toBeNull();

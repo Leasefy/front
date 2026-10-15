@@ -165,7 +165,9 @@ describe('AISuggestionCard — completar lo que falta', () => {
    * misma regla.
    */
   it('el precio de venta no se esfuma al cruzar el mínimo: se puede escribir $470.000.000 entero', () => {
-    montar(base({ salePrice: undefined }))
+    // Nico 14-10: SIN precio la venta ya no frena (entra «por completar»); lo
+    // que frena es un precio escrito por debajo del piso, como $500.
+    montar(base({ salePrice: 500 }))
     const precio = () =>
       container.querySelector<HTMLInputElement>('[data-testid="falta-salePrice-0"]')
     expect(precio()).not.toBeNull()

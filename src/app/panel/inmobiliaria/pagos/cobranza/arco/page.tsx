@@ -28,6 +28,7 @@ import {
 } from '@phosphor-icons/react'
 
 import { useI18n } from '@/lib/i18n'
+import { PageGuard } from '@/components/auth/PageGuard'
 import { cn } from '@/lib/utils'
 import {
   useArcoRequests,
@@ -378,7 +379,18 @@ function RequestsTable({
 
 // ─── Pantalla ─────────────────────────────────────────────────────────────────
 
+// ROLES (14-10-2026): pide `resolve-arco`, lo mismo que el micro. Sin el
+// permiso el micro responde 403 y la pantalla parecía caída («No pudimos
+// cargar las solicitudes» con todo en cero); ahora dice que no tiene acceso.
 export default function ArcoInboxPage() {
+  return (
+    <PageGuard module="cotizador" action="resolve-arco">
+      <BandejaArco />
+    </PageGuard>
+  )
+}
+
+function BandejaArco() {
   const { t } = useI18n()
   const {
     requests,

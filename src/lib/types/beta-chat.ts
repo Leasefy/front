@@ -91,7 +91,7 @@ export interface AgentExecution {
   error?: string;
   /**
    * Lo que el especialista contestó, en una línea (`dispatch_result.dispatch.summary`).
-   * Lo pinta la delegación del turno («Ori → Laura» + su resumen) en los
+   * Lo pinta la delegación del turno («Ori → Mori» + su resumen) en los
    * mensajes ya cerrados, donde los pasos en vivo ya no están (02-10-2026).
    */
   resumen?: string;

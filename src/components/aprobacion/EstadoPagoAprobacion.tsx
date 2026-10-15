@@ -81,7 +81,7 @@ export function EstadoPagoAprobacion({
         <div className="flex flex-col sm:flex-row gap-3">
           <Button onClick={onReintentar}>Volver a intentar</Button>
           <Button asChild variant="secondary">
-            <a href="mailto:soporte@leasefy.com">Contactar soporte</a>
+            <a href="mailto:hola@leasefy.co">Contactar soporte</a>
           </Button>
         </div>
       </Estado>

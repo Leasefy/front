@@ -343,6 +343,10 @@ export function ConsignacionHeader({
                 {textoDeLaComision(consignacion)}
               </span>
               <span className="text-lg text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.consignaciones.header.saleCommission')}</span>
+              {/* Nico 14-10: la venta que entró sin precio. */}
+              {consignacion.canonPorConfirmar ? (
+                <CanonPorConfirmarBadge inmuebleId={consignacion.propertyId} esVenta />
+              ) : null}
             </div>
           ) : (
             <div className="flex flex-wrap items-baseline gap-3 mb-5">

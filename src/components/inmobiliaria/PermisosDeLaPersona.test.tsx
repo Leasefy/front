@@ -98,4 +98,43 @@ describe('<PermisosDeLaPersona>', () => {
     })
     expect(updateMemberPermissions).toHaveBeenCalledWith('m-1', null)
   })
+
+  it('ROLES 14-10: lo de los agentes se guarda con el MISMO «Guardar» (no hay otro)', async () => {
+    getMemberPermissions.mockResolvedValue({
+      memberId: 'm-1',
+      role: 'ABOGADO_EXTERNO',
+      isAdmin: false,
+      effectivePermissions: { contratos: ['view'] },
+      delRol: { contratos: ['view'] },
+      usingDefaults: true,
+      permissions: null,
+      modulosDelMicro: { cobranza: [], cotizador: [], ap: [] },
+      modulosDelMicroDelRol: { cobranza: [], cotizador: [], ap: [] },
+    })
+    await act(async () => {
+      root.render(<PermisosDeLaPersona persona={{ ...PERSONA, role: 'abogado_externo' as never }} onCerrar={() => undefined} />)
+    })
+    expect(q('permisos-de-los-agentes-de-la-persona')).not.toBeNull()
+    expect(q('guardar-agentes-de-la-persona')).toBeNull()
+    expect((q('volver-a-su-rol') as HTMLButtonElement).disabled).toBe(true)
+
+    await act(async () => {
+      ;(q('persona-m-1-cobranza-view') as HTMLButtonElement).click()
+    })
+    // Cuenta como cambio propio y el abogado ve el aviso de la cobranza.
+    expect(q('frase-de-permisos-propios')?.textContent).toContain('1 cambio propio')
+    expect(q('diferencias-con-el-rol')?.textContent).toContain('Cobranza (Mori) · Ver la cobranza')
+    expect(q('aviso-abogado-cobranza-persona')).not.toBeNull()
+    expect((q('volver-a-su-rol') as HTMLButtonElement).disabled).toBe(false)
+
+    await act(async () => {
+      ;(q('guardar-permisos-de-la-persona') as HTMLButtonElement).click()
+    })
+    expect(updateMemberPermissions).toHaveBeenCalledWith('m-1', {
+      contratos: ['view'],
+      cobranza: ['view'],
+      cotizador: [],
+      ap: [],
+    })
+  })
 })

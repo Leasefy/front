@@ -1057,6 +1057,7 @@
       "visitasDelPipeline": "Get visits ready",
       "comisionesYMetas": "Commissions and goals",
       "reclamosDeCandidatos": "Claims",
+      "juridico": "Legal",
       "invitacionesAFirmar": "Signatures",
       "listasRestrictivas": "Lists",
       "clausulasPropias": "Custom clauses",
@@ -1159,7 +1160,7 @@
       },
       "procesos": {
         "titulo": "Processes",
-        "descripcion": "What the Pilot did, step by step: deposits it detected and reconciled, Laura's calls and messages with tenants.",
+        "descripcion": "What the Pilot did, step by step: deposits it detected and reconciled, Mori's calls and messages with tenants.",
         "volver": "Autopilot",
         "enVivo": "Live",
         "enVivoVacio": "Nothing in progress right now",
@@ -1474,7 +1475,7 @@
         "descripcion": "Your agents take part in the agency's work, and you decide how much they do on their own.",
         "paso1": {
           "titulo": "Your agents work",
-          "texto": "Each on its own job: Laura collects, Reconciliation matches the bank, Fixi handles maintenance and Avali reminds owners of what they have to approve."
+          "texto": "Each on its own job: Mori collects, Reconciliation matches the bank, Fixi handles maintenance and Avali reminds owners of what they have to approve."
         },
         "paso2": {
           "titulo": "They leave your part in the Inbox",
@@ -1693,9 +1694,9 @@
             "directorPlan": "Director's daily plan",
             "directorReplan": "Plan again",
             "chat": "Pilot chat",
-            "cobranza": "Collections (Laura)"
+            "cobranza": "Collections (Mori)"
           },
-          "laura": "Collections (Laura) doesn't count: it is billed separately.",
+          "laura": "Collections (Mori) doesn't count: it is billed separately.",
           "excluido": "So far this month:"
         },
         "experimento": {
@@ -1894,6 +1895,8 @@
         "automatizacionIaDesc": "Review and certify what the assistant learned before it can influence the chat",
         "mandato": "Mandate and payouts",
         "mandatoDesc": "Mandate mode, leasing fees to owners and VAT on the commission",
+        "conceptos": "Charges",
+        "conceptosDesc": "What you charge in your leases, with your own names: rename, turn off, create or import them",
         "mediosDeRecibo": "Receipt methods",
         "mediosDeReciboDesc": "What the cashier can record a payment with: cash and cheque off by default",
         "costosDeLaPlata": "Cost of moving money",
@@ -8462,7 +8465,7 @@
       },
       "intro": {
         "cobranza": {
-          "title": "Laura",
+          "title": "Mori",
           "description": "Contacts whoever is behind on rent, proposes agreements within your rules and keeps a record of every contact.",
           "rol": "Collections by voice, WhatsApp and email",
           "hace": {
@@ -8485,9 +8488,9 @@
             "n3": "Reviewing «Your turn»: disputes, letters and agreements to approve."
           },
           "modo": {
-            "sombra": "Laura prepares each call, WhatsApp and email and leaves it in your Inbox: nothing goes out without you, and she doesn't interrupt you with alerts.",
-            "copiloto": "Laura prepares each call, WhatsApp and email and leaves it in your Inbox with its button: nothing goes out without your approval.",
-            "autonomo": "Laura calls and writes on her own, within legal hours and with one contact per person per day."
+            "sombra": "Mori prepares each call, WhatsApp and email and leaves it in your Inbox: nothing goes out without you, and she doesn't interrupt you with alerts.",
+            "copiloto": "Mori prepares each call, WhatsApp and email and leaves it in your Inbox with its button: nothing goes out without your approval.",
+            "autonomo": "Mori calls and writes on her own, within legal hours and with one contact per person per day."
           },
           "empezar": "See collections"
         },
@@ -12278,6 +12281,9 @@
       "historyLocal": "Saved in this browser",
       "historyTrigger": "Recent conversations ({{n}})",
       "vozHabla": "Speak naturally: what you say shows up here.",
+      "vozHablaGrabando": "Speak naturally. When you're done, tap “Done” and I'll write it down.",
+      "vozTope": "up to 1:00",
+      "vozTranscribiendo": "Writing down what you said…",
       "vozTitulo": "Listening · Spanish",
       "vozPista": "pause anytime, I keep listening",
       "vozCancelar": "Cancel",
@@ -12286,6 +12292,7 @@
         "permiso": "Your browser didn't allow the microphone. Turn it on from the lock in the address bar and tap “Voice” again.",
         "microfono": "We couldn't find a microphone. Plug one in or type your question.",
         "servicio": "Voice dictation isn't available in this browser. Try Chrome or Edge, or type your question.",
+        "limite": "You've dictated many times this hour. Wait a bit or type your question.",
         "otro": "I couldn't hear you. Tap “Voice” again or type your question.",
         "cerrar": "Close notice"
       }
@@ -13564,7 +13571,7 @@
       },
       "contables": {
         "titulo": "Accounting entries",
-        "descripcion": "Historical balances and movements. It goes last because it needs the chart of accounts in place: an opening entry with the balances, or the history from a file.",
+        "descripcion": "Historical balances and movements. It goes last because it needs the chart of accounts in place. What completes it is the opening balances: the trial balance by third party at the close of the previous year. This year's movements and the vouchers are added if you have them.",
         "corto": "Accounting entries"
       }
     },
@@ -13623,7 +13630,7 @@
       "vencidoEnPlazo": "To be paid out, within grace period",
       "cuotasVencidas": "{{n}} late payouts",
       "unaCuotaVencida": "1 late payout",
-      "pagadasDe": "Paid out {{pagadas}} of {{total}} installments",
+      "pagadasDe": "Installments paid out: {{pagadas}} of {{total}}",
       "proximaCuota": "Next payout",
       "sinProxima": "No payouts left to fall due",
       "vencida": "late",
@@ -13685,6 +13692,7 @@
     "noSuma": "Not counted in the totals",
     "asociadoPorNumeroDeContrato": "Matched by the contract number",
     "asociadoPorCodigoDelInmueble": "Matched by the property code",
+    "asociadoPorNombreDelInquilino": "Matched by the tenant's exact name",
     "vencida": "overdue",
     "saldoDe": "Outstanding balance",
     "columnasOmitidas": "{{columnas}} are hidden: they are zero in every row of this contract.",
@@ -13722,7 +13730,7 @@
     },
     "contratoPalabra": "Contract",
     "colPago": "Payment",
-    "pagadasDe": "Paid {{pagadas}} of {{total}} installments",
+    "pagadasDe": "Installments paid: {{pagadas}} of {{total}}",
     "deLoPactado": "{{pagado}} of {{pactado}}",
     "leyendaPagadas": "Paid in Leasefy",
     "leyendaAnteriores": "From the previous system",

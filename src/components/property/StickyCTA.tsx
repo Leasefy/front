@@ -146,16 +146,14 @@ function olvidarVisitaEscogida(propertyId: string) {
 
 // ─── Compartir el inmueble ───────────────────────────────────────────────────
 
-/**
- * Qué terminó pasando al compartir. Se separa `cancelado` de `error` a
- * propósito: cerrar la hoja del sistema es una decisión del usuario, no una
- * falla, y avisarla como error es mentirle.
- */
-type ResultadoDeCompartir = 'nativo' | 'copiado' | 'cancelado' | 'error';
+/** Qué terminó pasando al compartir. */
+type ResultadoDeCompartir = 'copiado' | 'error';
 
 /**
- * Compartir con la hoja nativa cuando existe (es lo que la gente espera en el
- * teléfono) y caer al portapapeles cuando no.
+ * Compartir = copiar el enlace del inmueble al portapapeles (Nico, 12-10-2026:
+ * «al dar clic ahí que se copie la url del inmueble, y muestra toast»). Antes
+ * abría la hoja nativa donde existía: en Arc y Chrome del Mac salía la hoja del
+ * sistema, no se copiaba nada y no había toast.
  *
  * Vive suelto en el módulo porque HAY DOS botones de compartir en esta
  * pantalla —el de la tarjeta de escritorio y el del CTA fijo del móvil— y
@@ -163,16 +161,6 @@ type ResultadoDeCompartir = 'nativo' | 'copiado' | 'cancelado' | 'error';
  * móvil ni siquiera reusaba la URL ya calculada.
  */
 async function compartirEnlace(url: string): Promise<ResultadoDeCompartir> {
-  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
-    try {
-      await navigator.share({ url, title: 'Inmueble en Leasefy' });
-      return 'nativo';
-    } catch (err) {
-      // Cancelar la hoja no es un fallo: no hay nada que avisar.
-      if (err instanceof Error && err.name === 'AbortError') return 'cancelado';
-      // Cualquier otro fallo del share nativo todavía tiene el portapapeles.
-    }
-  }
   try {
     // En contexto inseguro `navigator.clipboard` ni existe: el acceso tira
     // TypeError acá adentro y termina en 'error', que es lo que queremos.
@@ -227,7 +215,6 @@ function useCompartirInmueble(propertyId: string) {
         },
       );
     }
-    // 'nativo' y 'cancelado' no dicen nada: la hoja del sistema ya fue la señal.
   }, [i18n, propertyId, shareUrl]);
 
   return { shareUrl, copied, compartir };
@@ -329,12 +316,22 @@ export function StickyCTA({
   // PL-23: al volver del login (`?visita=1`), directo a la pestaña de visita.
   // También llega así desde «Agendar visita» del marketplace; en el celular la
   // tarjeta queda abajo, así que se trae a la vista.
+  // Nico, 12-10-2026 («no están sirviendo»): en el escritorio la tarjeta quedaba
+  // debajo de las fotos y nada decía que ya estaba lista para agendar. Ahora baja
+  // hasta ella en cualquier ancho y la resalta un momento.
+  const [resaltada, setResaltada] = useState(false);
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const traerALaVista = () => {
+      const el = raiz.current;
+      if (!el) return;
       if (window.matchMedia('(max-width: 1023px)').matches) {
-        raiz.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        window.scrollTo({ top: Math.max(0, el.getBoundingClientRect().top + window.scrollY - 112), behavior: 'smooth' });
       }
+      setResaltada(true);
+      window.setTimeout(() => setResaltada(false), 1800);
     };
     if (new URLSearchParams(window.location.search).get('visita') === '1') {
       setCtaMode('visit');
@@ -495,7 +492,13 @@ export function StickyCTA({
 
   return (
     <div ref={raiz} id="reservar" className={cn('scroll-mt-24 lg:sticky lg:top-28', className)}>
-      <Card className="overflow-hidden rounded-xl border-border shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+      <Card
+        className={cn(
+          'overflow-hidden rounded-xl border-border shadow-[0_8px_30px_rgba(0,0,0,0.06)] transition-shadow duration-slow',
+          resaltada && 'shadow-[0_0_0_3px_hsl(var(--primary)/0.35),0_8px_30px_rgba(0,0,0,0.06)]',
+        )}
+        data-resaltada={resaltada || undefined}
+      >
         <div className="p-6">
           {/* Header */}
           <div className="flex items-start justify-between mb-6">
@@ -1001,8 +1004,8 @@ export function MobileStickyCTA({
     !!user && (user.role === 'agency' || user.backendRole === 'AGENT' || hasActiveAgencyMembership);
   const isSaleListing = listingType === 'sale';
 
-  // El MISMO compartir que la tarjeta de escritorio: hoja nativa cuando existe,
-  // portapapeles cuando no, y toast en los dos desenlaces que importan.
+  // El MISMO compartir que la tarjeta de escritorio: copia el enlace y lo dice
+  // con un toast (Nico, 12-10-2026).
   const { copied, compartir } = useCompartirInmueble(propertyId);
   const [isStartingChat, setIsStartingChat] = useState(false);
 

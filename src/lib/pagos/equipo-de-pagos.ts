@@ -21,15 +21,19 @@
  * `samuel.ts`, `sofia.ts`, todos en `src/mastra/index.ts`. Lo que hace cada
  * uno sale de la cabecera y del schema de salida de su archivo.
  *
- * Qué está encendido NO se escribe acá: se pregunta. Dos lecturas reales:
+ * Qué está encendido NO se escribe acá: se pregunta, con `GET /ai-hub/gobierno`
+ * (`fetchPilotoGobierno`): `disponibleGlobal` es el interruptor general del
+ * servidor (`PAGOS_ENABLED`, `piloto/habilitacion.ts` del micro) y `corre` dice
+ * si además corre para ESTA inmobiliaria.
  *
- *   · `GET /ai-hub/gobierno` (`fetchPilotoGobierno`) — `disponibleGlobal` es el
- *     interruptor general del servidor (`PAGOS_ENABLED`, `piloto/habilitacion.ts`
- *     del micro) y `corre` dice si además corre para ESTA inmobiliaria.
- *   · `GET /pagos/home/metrics` (`fetchPagosHome`) — el tablero del equipo. Hoy
- *     esas rutas no existen en el micro (404) o responden 503 con el
- *     interruptor apagado; el cliente trata los dos como «no disponible». El
- *     día que existan, la pantalla muestra los números sin tocar el front.
+ * 🔴 Sin «tablero» (QA de Portofino, 14-10-2026; Nico: «organízala»). Había un
+ * tercer paso, «Su tablero publicado», que leía `GET /pagos/home/metrics` y
+ * decía «Falta» en cada visita: esa ruta no existe en el micro (la borró por
+ * error el commit `3ca090a6` «wip: full checkpoint»; nació en `520995a2`) y,
+ * aunque volviera, lee las facturas y liquidaciones PROPIAS del equipo, que
+ * sólo se llenan con el equipo encendido. No es algo que la inmobiliaria pueda
+ * hacer, ni lo que el equipo necesita para trabajar: no se muestra. Si el
+ * equipo se enciende, restaurar `520995a2` y volver a pintar sus números.
  */
 
 import type { Icon } from '@phosphor-icons/react'
@@ -153,13 +157,6 @@ export type LecturaDelGobierno =
   | { estado: 'fallo' }
   | { estado: 'listo'; item: GobiernoItem | null }
 
-/** Lo que se sabe del tablero del equipo, tal como llegó. */
-export type LecturaDelTablero =
-  | { estado: 'cargando' }
-  | { estado: 'fallo'; error: unknown }
-  | { estado: 'no-disponible' }
-  | { estado: 'listo' }
-
 export type EstadoDelEquipo =
   | 'cargando'
   /** El interruptor general del servidor está apagado: no corre para nadie. */
@@ -192,21 +189,18 @@ export const ETIQUETA_DEL_ESTADO: Record<EstadoDelEquipo, string> = {
 export type EstadoDelPaso = 'hecho' | 'falta' | 'espera' | 'sin-verificar' | 'cargando'
 
 export interface PasoParaTrabajar {
-  id: 'leasefy' | 'inmobiliaria' | 'tablero'
+  id: 'leasefy' | 'inmobiliaria'
   titulo: string
   estado: EstadoDelPaso
   detalle: string
 }
 
 /**
- * Las tres llaves, en el orden en que se abren. Cada una sale de una lectura
+ * Las dos llaves, en el orden en que se abren. Cada una sale de una lectura
  * real; ninguna se da por hecha. Si la lectura falló, el paso dice «sin
  * verificar», nunca «falta».
  */
-export function pasosParaQueTrabaje(
-  gobierno: LecturaDelGobierno,
-  tablero: LecturaDelTablero,
-): PasoParaTrabajar[] {
+export function pasosParaQueTrabaje(gobierno: LecturaDelGobierno): PasoParaTrabajar[] {
   const equipo = estadoDelEquipo(gobierno)
 
   const leasefy: PasoParaTrabajar = {
@@ -242,21 +236,5 @@ export function pasosParaQueTrabaje(
             : { estado: 'hecho', detalle: 'Corre para tu inmobiliaria.' }),
   }
 
-  const tableroPublicado: PasoParaTrabajar = {
-    id: 'tablero',
-    titulo: 'Su tablero publicado',
-    ...(tablero.estado === 'cargando'
-      ? { estado: 'cargando', detalle: 'Consultando el tablero del equipo…' }
-      : tablero.estado === 'fallo'
-        ? { estado: 'sin-verificar', detalle: 'No pudimos consultar el tablero del equipo.' }
-        : tablero.estado === 'no-disponible'
-          ? {
-              estado: 'falta',
-              detalle:
-                'El servicio de agentes todavía no publica lo que hace el equipo: cobros enviados, pagos fallidos, propietarios listos para girar. El día que lo publique, esta pantalla lo muestra sola.',
-            }
-          : { estado: 'hecho', detalle: 'Lo que hace el equipo se ve abajo.' }),
-  }
-
-  return [leasefy, inmobiliaria, tableroPublicado]
+  return [leasefy, inmobiliaria]
 }

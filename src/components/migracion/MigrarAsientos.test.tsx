@@ -670,3 +670,33 @@ describe('QA-MIG-B — rechazadas a 390 px', () => {
     expect(tarjetas?.textContent).toContain('El asiento no trae fecha.');
   });
 });
+
+/*
+ * 🔴 8.ª tanda (14-10-2026): el BALANCE en la puerta del libro diario. Trae
+ * el código de cuenta, pero son saldos a una fecha: van a los saldos
+ * iniciales, con el mismo archivo.
+ */
+describe('el balance en el libro diario', () => {
+  const BALANCE = {
+    headers: ['Cuenta', 'Nombre', 'Nit', 'Saldo Anterior', 'Debitos', 'Creditos', 'Nuevo Saldo'],
+    rows: [{ Cuenta: '110505', Nombre: 'Caja', Nit: '', 'Saldo Anterior': 0, Debitos: 0, Creditos: 0, 'Nuevo Saldo': 100 }],
+  };
+
+  it('lo reconoce y lo lleva a los saldos iniciales con ese archivo', async () => {
+    const onIrASaldosIniciales = vi.fn();
+    await pintar({ onIrASaldosIniciales });
+    await subirArchivo(BALANCE);
+
+    expect(q('asientos-archivo-es-el-balance')?.textContent).toContain(
+      'Este archivo es un balance, no el libro diario',
+    );
+    await click(q('ir-a-saldos-iniciales'));
+    expect(onIrASaldosIniciales).toHaveBeenCalledWith(expect.objectContaining({ name: 'diario.csv' }));
+  });
+
+  it('con un libro diario de verdad no dice nada de esto', async () => {
+    await pintar({ onIrASaldosIniciales: vi.fn() });
+    await subirArchivo();
+    expect(q('asientos-archivo-es-el-balance')).toBeNull();
+  });
+});

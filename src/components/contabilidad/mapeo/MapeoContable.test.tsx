@@ -166,6 +166,27 @@ describe('<MapeoContable>', () => {
     expect(visto.at(-1)?.faltan).toBe(0);
   });
 
+  it('🔴 Portofino (14-10): con OTRO nombre en el plan importado no hay «Usar» ni «Usar las cuentas propuestas»', async () => {
+    const otraCuenta = {
+      ...evento('falta0', false),
+      propuesta: {
+        id: 'c-otra',
+        codigo: '28150505',
+        nombre: 'COBRO SERVICIOS PUBLICOS AL PROPIETARIO',
+        activa: true,
+        imputable: true,
+      },
+      propuestaConElNombreDelPlanBase: false,
+    };
+    api.mapeo.obtener.mockResolvedValue({ eventos: [evento('ok0', true), otraCuenta], completo: false, faltantes: ['falta0'] });
+
+    await pintar();
+
+    expect(q('propuesta-otro-nombre-falta0')?.textContent).toContain('otra cuenta');
+    expect([...document.querySelectorAll('button')].some((b) => b.textContent === 'Usar')).toBe(false);
+    expect(q('usar-propuestas')).toBeNull();
+  });
+
   /*
    * 🔴 «Hay que dar feedback porque no se entiende nada». El título decía la
    * consecuencia («sin cuenta, ese asiento no se genera») y nunca el trabajo:
@@ -319,6 +340,34 @@ describe('<MapeoContable> — eventos de gasto', () => {
     expect(q('eventos-de-gasto-apagado')!.textContent).toContain('IVA descontable');
   });
 
+  it('🔴 Portofino (14-10): una propuesta de gasto con OTRO nombre en el plan importado no ofrece «Usar»', async () => {
+    api.mapeo.obtener.mockResolvedValue({
+      ...mapeoCon(9, 0),
+      hayEventosDeGasto: true,
+      completoGastos: false,
+      faltantesGastos: ['RETEFUENTE_DEL_INQUILINO', 'RETEFUENTE_PRACTICADA'],
+      eventosDeGasto: [
+        {
+          ...eventoDeGasto('RETEFUENTE_DEL_INQUILINO', false),
+          propuesta: { id: 'c-otra', codigo: '28150520', nombre: 'SERVICIOS PUBLICOS', activa: true, imputable: true },
+          propuestaConElNombreDelPlanBase: false,
+        },
+        {
+          ...eventoDeGasto('RETEFUENTE_PRACTICADA', false),
+          propuesta: { id: 'c-236525', codigo: '236525', nombre: 'SERVICIOS', activa: true, imputable: true },
+          propuestaConElNombreDelPlanBase: true,
+        },
+      ],
+    });
+
+    await pintar();
+
+    expect(q('propuesta-otro-nombre-gasto-RETEFUENTE_DEL_INQUILINO')?.textContent).toContain('otra cuenta');
+    expect(q('usar-propuesta-gasto-RETEFUENTE_DEL_INQUILINO')).toBeNull();
+    expect(q('usar-propuesta-gasto-RETEFUENTE_PRACTICADA')).not.toBeNull();
+    expect(q('propuesta-otro-nombre-gasto-RETEFUENTE_PRACTICADA')).toBeNull();
+  });
+
   it('completo lo dice sin reclamar nada', async () => {
     api.mapeo.obtener.mockResolvedValue({
       ...mapeoCon(9, 0),
@@ -389,5 +438,35 @@ describe('<MapeoContable> — sin permiso de escritura', () => {
 
     escrituraMock.puede = true;
     escrituraMock.motivo = null;
+  });
+
+  it('🔴 Portofino (14-10): el aviso de «Usar las cuentas propuestas» dice el motivo, no «el PUC no tiene»', async () => {
+    const conPropuesta = {
+      ...evento('falta0', false),
+      propuesta: { id: 'c-prop', codigo: '110505', nombre: 'Caja', activa: true, imputable: true },
+    };
+    api.mapeo.obtener.mockResolvedValue({ eventos: [conPropuesta], completo: false, faltantes: ['falta0'] });
+    api.mapeo.sembrar.mockResolvedValue({
+      asignados: ['falta0'],
+      yaEstaban: [],
+      sinCuenta: [
+        { evento: 'RECAUDO_CANON_TERCEROS', codigo: '28150505', motivo: 'OTRO_NOMBRE', nombreEnTuPlan: 'COBRO SERVICIOS PUBLICOS AL PROPIETARIO' },
+        { evento: 'CARTERA_INQUILINOS', codigo: '130505', motivo: 'NO_IMPUTABLE' },
+      ],
+      mapeo: { eventos: [{ ...conPropuesta, cuenta: conPropuesta.propuesta }], completo: true, faltantes: [] },
+    });
+    const { toast } = await import('@/components/ui/toast');
+
+    await pintar();
+    await act(async () => {
+      (q('usar-propuestas') as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const aviso = String(vi.mocked(toast.warning).mock.calls.at(-1)?.[0] ?? '');
+    expect(aviso).toContain('28150505 se llama «COBRO SERVICIOS PUBLICOS AL PROPIETARIO»');
+    expect(aviso).toContain('130505 está en tu plan como cuenta mayor');
+    expect(aviso).not.toContain('el PUC no tiene');
   });
 });

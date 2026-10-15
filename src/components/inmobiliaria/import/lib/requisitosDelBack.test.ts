@@ -8,9 +8,13 @@ import {
   requisitoDe,
   avisosDeValor,
   sinCanon,
+  sinPrecioDeVenta,
   MINIMO_CANON,
   MINIMO_AREA,
   MINIMO_VENTA,
+  conElCanonEnSuColumna,
+  conElPrecioDeVentaEnSuColumna,
+  CANON_QUE_ES_PRECIO_DE_VENTA,
 } from './requisitosDelBack';
 import type { ImportProperty } from './importTypes';
 
@@ -73,7 +77,7 @@ describe('faltantesParaElBack', () => {
     expect(faltantesParaElBack(inmueble(parcial))).toEqual([]);
   });
 
-  it('lo que SÍ sigue frenando es la dirección (y, en una venta, su precio)', () => {
+  it('lo que SÍ sigue frenando es la dirección; una venta sin precio ya no (Nico 14-10)', () => {
     // Sin dirección no hay inmueble que identificar. El canon de un arriendo
     // ya no frena (T-0129): sin él, la fila entra «por confirmar».
     expect(
@@ -85,7 +89,7 @@ describe('faltantesParaElBack', () => {
       faltantesParaElBack(
         inmueble({ propertyAddress: '', listingType: 'Venta', monthlyRent: undefined, salePrice: undefined }),
       ).map((f) => f.campo),
-    ).toEqual(['propertyAddress', 'salePrice']);
+    ).toEqual(['propertyAddress']);
   });
 
   it('un canon por debajo del mínimo del DTO no frena, pero cuenta como «por confirmar»', () => {
@@ -97,8 +101,9 @@ describe('faltantesParaElBack', () => {
   });
 
   it('cada faltante trae con qué completarlo', () => {
+    // Un precio de venta escrito y por debajo del piso sigue frenando.
     const [f] = faltantesParaElBack(
-      inmueble({ listingType: 'Venta', monthlyRent: undefined, salePrice: undefined }),
+      inmueble({ listingType: 'Venta', monthlyRent: undefined, salePrice: MINIMO_VENTA - 1 }),
     );
     // Sin etiqueta ni ayuda el campo no se puede dibujar: es lo que se muestra.
     expect(f.etiqueta).toBe('Precio de venta');
@@ -185,10 +190,18 @@ describe('faltantesParaElBack — a SALE row needs salePrice, never monthlyRent'
     expect(faltantesParaElBack(inmuebleEnVenta())).toEqual([]);
   });
 
-  it('a SALE row missing salePrice is flagged on salePrice, never on monthlyRent', () => {
-    const faltan = faltantesParaElBack(inmuebleEnVenta({ salePrice: undefined }));
+  it('Nico 14-10 (lote 1009): a SALE row WITHOUT salePrice no longer blocks — it enters with the price «por completar»', () => {
+    const sinPrecio = inmuebleEnVenta({ salePrice: undefined });
+    expect(faltantesParaElBack(sinPrecio)).toEqual([]);
+    expect(sinPrecioDeVenta(sinPrecio)).toBe(true);
+    expect(sinCanon(sinPrecio)).toBe(false);
+  });
+
+  it('a SALE row with a salePrice below the floor is flagged on salePrice, never on monthlyRent', () => {
+    const faltan = faltantesParaElBack(inmuebleEnVenta({ salePrice: MINIMO_VENTA - 1 }));
     expect(faltan.map((f) => f.campo)).toContain('salePrice');
     expect(faltan.map((f) => f.campo)).not.toContain('monthlyRent');
+    expect(sinPrecioDeVenta(inmuebleEnVenta({ salePrice: MINIMO_VENTA - 1 }))).toBe(false);
   });
 
   it('respeta el mínimo de salePrice de CreatePropertyDto (@Min, hoy $1.000)', () => {
@@ -250,7 +263,7 @@ describe('recalcularEstado', () => {
 
   it('el mensaje dice qué falta y con qué regla', () => {
     const { errorMessages } = recalcularEstado(
-      inmueble({ listingType: 'Venta', monthlyRent: undefined, salePrice: undefined }),
+      inmueble({ listingType: 'Venta', monthlyRent: undefined, salePrice: MINIMO_VENTA - 1 }),
     );
     expect(errorMessages[0]).toContain('precio de venta');
     expect(errorMessages[0]).toContain(MINIMO_VENTA.toLocaleString('es-CO'));
@@ -271,9 +284,9 @@ describe('escribirCampo', () => {
     expect(escribirCampo(inmueble(), 'monthlyRent', '$ 1.850.000').monthlyRent).toBe(1_850_000);
   });
 
-  it('escribir el precio de venta que faltaba desbloquea el inmueble', () => {
+  it('escribir un precio de venta de verdad desbloquea el inmueble', () => {
     const bloqueado = recalcularEstado(
-      inmueble({ listingType: 'Venta', monthlyRent: undefined, salePrice: undefined }),
+      inmueble({ listingType: 'Venta', monthlyRent: undefined, salePrice: MINIMO_VENTA - 1 }),
     );
     expect(bloqueado.hasErrors).toBe(true);
 
@@ -347,7 +360,7 @@ describe('requisitoDe', () => {
 
   it('faltantesParaElBack devuelve exactamente lo que dice el catálogo', () => {
     const faltan = faltantesParaElBack(
-      inmueble({ propertyAddress: '', listingType: 'Venta', monthlyRent: undefined, salePrice: undefined }),
+      inmueble({ propertyAddress: '', listingType: 'Venta', monthlyRent: undefined, salePrice: MINIMO_VENTA - 1 }),
     );
     expect(faltan).toEqual([requisitoDe('propertyAddress'), requisitoDe('salePrice')]);
   });
@@ -391,7 +404,9 @@ describe('tipoEfectivo — el tipo sigue al precio que sí existe', () => {
     expect(faltantesParaElBack(fila)).toEqual([]);
   });
 
-  it('«Venta y Arriendo» con los dos precios NO cambia: la categoría manda', () => {
+  it('«Venta y Arriendo» con los dos precios es ARRIENDO (Nico, 13-10-2026: «arriendo si se arrienda»)', () => {
+    // Antes la categoría mandaba y entraba como venta; sus contratos vigentes
+    // no podían migrar. El precio de venta queda escrito en la descripción.
     expect(
       tipoEfectivo(
         inmueble({
@@ -400,7 +415,7 @@ describe('tipoEfectivo — el tipo sigue al precio que sí existe', () => {
           salePrice: 350_000_000,
         }),
       ),
-    ).toBe('sale');
+    ).toBe('rent');
   });
 
   it('sin ningún precio no inventa: devuelve lo declarado', () => {
@@ -415,14 +430,16 @@ describe('tipoEfectivo — el tipo sigue al precio que sí existe', () => {
     expect(faltantesParaElBack(arriendoSinNada)).toEqual([]);
     expect(sinCanon(arriendoSinNada)).toBe(true);
 
-    // Una venta sin precio sí sigue incompleta: el precio de venta frena.
+    // Una venta sin precio tampoco se inventa: entra con el precio POR
+    // COMPLETAR (Nico 14-10), sin frenar la fila.
     const ventaSinNada = inmueble({
       listingType: 'Venta',
       monthlyRent: undefined,
       salePrice: undefined,
     });
     expect(tipoEfectivo(ventaSinNada)).toBe('sale');
-    expect(faltantesParaElBack(ventaSinNada).map((f) => f.campo)).toEqual(['salePrice']);
+    expect(faltantesParaElBack(ventaSinNada)).toEqual([]);
+    expect(sinPrecioDeVenta(ventaSinNada)).toBe(true);
   });
 
   it('un precio por DEBAJO del mínimo no cuenta como precio', () => {
@@ -432,7 +449,9 @@ describe('tipoEfectivo — el tipo sigue al precio que sí existe', () => {
       salePrice: undefined,
     });
     expect(tipoEfectivo(fila)).toBe('sale');
-    expect(faltantesParaElBack(fila).map((f) => f.campo)).toEqual(['salePrice']);
+    // No es un precio de venta: la venta entra con el precio por completar.
+    expect(faltantesParaElBack(fila)).toEqual([]);
+    expect(sinPrecioDeVenta(fila)).toBe(true);
   });
 });
 
@@ -446,5 +465,97 @@ describe('el mínimo del canon dejó de frenar inmuebles reales', () => {
     const cero = inmueble({ monthlyRent: 0 });
     expect(sinCanon(cero)).toBe(true);
     expect(faltantesParaElBack(cero)).toEqual([]);
+  });
+});
+
+/**
+ * 🔴 «Arriendo si se arrienda» (Nico, 13-10-2026), con las filas REALES del
+ * archivo de propiedades de Portofino.
+ */
+describe('arriendo si se arrienda (Portofino, 13-10-2026)', () => {
+  it('«Venta y Arriendo» con canon es arriendo; el precio de venta sigue viajando', () => {
+    // 2997: Casa, Activa, arriendo $6.300.000, venta $1.500.000.000.
+    const fila = inmueble({ listingType: 'Venta y Arriendo', status: 'Activa', monthlyRent: 6_300_000, salePrice: 1_500_000_000 });
+    expect(tipoEfectivo(fila)).toBe('rent');
+    expect(faltantesParaElBack(fila)).toEqual([]);
+  });
+
+  it('«Venta y Arriendo» ARRENDADA es arriendo (la 2803: su contrato vigente no migraba)', () => {
+    const fila = inmueble({ listingType: 'Venta y Arriendo', status: 'Arrendada', monthlyRent: 1_550_000, salePrice: 345_000_000 });
+    expect(tipoEfectivo(fila)).toBe('rent');
+  });
+
+  it('«Venta» que el archivo dice «Arrendada» es arriendo (la 2630)', () => {
+    const fila = inmueble({ listingType: 'Venta', status: 'Arrendada', monthlyRent: 700_000, salePrice: 150_000_000 });
+    expect(tipoEfectivo(fila)).toBe('rent');
+  });
+
+  it('«Venta» sin canon sigue siendo venta aunque esté arrendada: no hay canon que guardar', () => {
+    const fila = inmueble({ listingType: 'Venta', status: 'Arrendada', monthlyRent: undefined, salePrice: 150_000_000 });
+    expect(tipoEfectivo(fila)).toBe('sale');
+  });
+
+  it('«Venta» común (Activa, sólo precio de venta) sigue siendo venta', () => {
+    const fila = inmueble({ listingType: 'Venta', status: 'Activa', monthlyRent: undefined, salePrice: 995_000_000 });
+    expect(tipoEfectivo(fila)).toBe('sale');
+  });
+
+  it('🔴 «Venta» con el precio de venta en la columna del arriendo (la 2341: $245 M) pasa a venta con ese precio', () => {
+    const leida = conElPrecioDeVentaEnSuColumna(
+      inmueble({ listingType: 'Venta', status: 'Inactiva', monthlyRent: 245_000_000, salePrice: undefined }),
+    );
+    expect(leida.salePrice).toBe(245_000_000);
+    expect(leida.monthlyRent).toBeUndefined();
+    expect(tipoEfectivo(leida)).toBe('sale');
+    expect(faltantesParaElBack(leida)).toEqual([]);
+  });
+
+  it('por debajo de $50 M el número de la columna del arriendo sigue siendo un canon (regla del 09-09)', () => {
+    const fila = inmueble({ listingType: 'Venta', status: 'Activa', monthlyRent: CANON_QUE_ES_PRECIO_DE_VENTA - 1, salePrice: undefined });
+    expect(conElPrecioDeVentaEnSuColumna(fila)).toBe(fila);
+    expect(tipoEfectivo(fila)).toBe('rent');
+  });
+
+  it('no mueve nada en un arriendo, en «Venta y Arriendo», en uno arrendado ni si ya trae precio de venta', () => {
+    for (const fila of [
+      inmueble({ listingType: 'Arriendo', monthlyRent: 60_000_000 }),
+      inmueble({ listingType: 'Venta y Arriendo', monthlyRent: 60_000_000 }),
+      inmueble({ listingType: 'Venta', status: 'Arrendada', monthlyRent: 60_000_000 }),
+      inmueble({ listingType: 'Venta', monthlyRent: 60_000_000, salePrice: 900_000_000 }),
+    ]) {
+      expect(conElPrecioDeVentaEnSuColumna(fila)).toBe(fila);
+    }
+  });
+});
+
+describe('🔴 Portofino (14-10) · el canon escrito en la columna de la venta', () => {
+  it('«Arriendo» sin canon con $300.000 en la venta (la 1534) es un arriendo de $300.000, no una venta', () => {
+    const leida = conElCanonEnSuColumna(
+      inmueble({ listingType: 'Arriendo', status: 'Inactiva', monthlyRent: 0, salePrice: 300_000 }),
+    );
+    expect(leida.monthlyRent).toBe(300_000);
+    expect(leida.salePrice).toBeUndefined();
+    expect(tipoEfectivo(leida)).toBe('rent');
+  });
+
+  it('«Arriendo» sin canon con un precio de venta de verdad ($230 M, la 387) sigue pasando a venta', () => {
+    const fila = inmueble({ listingType: 'Arriendo', status: 'Inactiva', monthlyRent: 0, salePrice: 230_000_000 });
+    expect(conElCanonEnSuColumna(fila)).toBe(fila);
+    expect(tipoEfectivo(fila)).toBe('sale');
+  });
+
+  it('sin leer el archivo (otra entrada), un «precio de venta» chico no vuelve venta a un arriendo', () => {
+    const fila = inmueble({ listingType: 'Arriendo', monthlyRent: undefined, salePrice: 300_000 });
+    expect(tipoEfectivo(fila)).toBe('rent');
+  });
+
+  it('no mueve nada en una venta, en «Venta y Arriendo», ni si ya trae canon', () => {
+    for (const fila of [
+      inmueble({ listingType: 'Venta', salePrice: 30_000_000 }),
+      inmueble({ listingType: 'Venta y Arriendo', monthlyRent: undefined, salePrice: 300_000 }),
+      inmueble({ listingType: 'Arriendo', monthlyRent: 1_200_000, salePrice: 300_000 }),
+    ]) {
+      expect(conElCanonEnSuColumna(fila)).toBe(fila);
+    }
   });
 });

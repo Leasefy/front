@@ -17,8 +17,9 @@ import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { useI18n } from '@/lib/i18n';
 import { ConfigPermisos } from '@/components/inmobiliaria';
+import { PermisosDeLosAgentesPorRol } from '@/components/inmobiliaria/PermisosDeLosAgentes';
 import { usePermissions } from '@/lib/hooks/usePermissions';
-import { rolePermissionsApi } from '@/lib/api/inmobiliaria.service';
+import { rolePermissionsApi, type RoleMatrices } from '@/lib/api/inmobiliaria.service';
 import { DEFAULT_ROLE_PERMISSIONS, type RolDeLaMatriz, type RolePermissions } from '@/lib/types/inmobiliaria';
 import { cuerpoConLoQueCambio, matricesToUiMatrix } from '@/lib/permisos/matriz-de-roles';
 import { EsqueletoDeSeccion } from './piezas';
@@ -34,6 +35,8 @@ export function SeccionPermisos() {
   // se vuelve a montar con la matriz fresca (y sus contadores y su «hay
   // cambios sin guardar» vuelven a cero).
   const [version, setVersion] = useState(0);
+  // ROLES (14-10-2026): la respuesta tal cual, para el bloque de los agentes (sin pedirla dos veces).
+  const [crudas, setCrudas] = useState<RoleMatrices | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [cargando, setCargando] = useState(true);
   /**
@@ -57,6 +60,7 @@ export function SeccionPermisos() {
         const matrices = await rolePermissionsApi.getRolePermissions();
         if (cancelado) return;
         setPermissions(matricesToUiMatrix(matrices));
+        setCrudas(matrices);
         setErrorDeCarga(null);
         setVersion((v) => v + 1);
       } catch (error) {
@@ -80,6 +84,7 @@ export function SeccionPermisos() {
     setGuardando(true);
     try {
       const matrices = await rolePermissionsApi.updateRolePermissions(body);
+      setCrudas(matrices);
       setPermissions(matricesToUiMatrix(matrices));
       setVersion((v) => v + 1);
       await refetchMyPermissions();
@@ -107,6 +112,7 @@ export function SeccionPermisos() {
     setGuardando(true);
     try {
       const matrices = await rolePermissionsApi.resetRolePermissions();
+      setCrudas(matrices);
       setPermissions(matricesToUiMatrix(matrices));
       setVersion((v) => v + 1);
       await refetchMyPermissions();
@@ -140,6 +146,7 @@ export function SeccionPermisos() {
         onReset={restablecer}
         isLoading={guardando}
       />
+      {crudas && <PermisosDeLosAgentesPorRol key={`agentes-${version}`} inicial={crudas} />}
     </EstadoDeDatos>
   );
 }

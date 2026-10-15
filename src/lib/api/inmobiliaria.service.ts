@@ -133,6 +133,9 @@ export interface MemberPermissionsResponse {
   delRol?: Record<string, string[]>;
   /** Si tiene permisos propios, distintos de los de su rol. */
   tienePropios?: boolean;
+  /** ROLES (14-10-2026): lo que puede con los agentes (cobranza, cotizador, ap) y lo que le da su rol. */
+  modulosDelMicro?: { cobranza: string[]; cotizador: string[]; ap: string[] };
+  modulosDelMicroDelRol?: { cobranza: string[]; cotizador: string[]; ap: string[] };
   /**
    * 🔴 Los módulos de PAGO prendidos para esta inmobiliaria (17-09-2026).
    *
@@ -2752,6 +2755,8 @@ export interface RoleMatrices {
     AUXILIAR_CARTERA?: PermMap;
     ABOGADO_EXTERNO?: PermMap;
   };
+  /** ROLES (14-10-2026): los módulos de los agentes de cada rol (un back anterior no lo manda). */
+  modulosDelMicro?: Record<string, { cobranza: string[]; cotizador: string[]; ap: string[] }>;
 }
 
 /**

@@ -47,6 +47,12 @@ import {
   type PermissionAction,
   type PermissionModule,
 } from '@/lib/types/inmobiliaria';
+import {
+  AgentesDeLaPersona,
+  agentesDeLaRespuesta,
+  diferenciasDeLosAgentes,
+  type ModulosDelMicro,
+} from './PermisosDeLosAgentes';
 
 interface Props {
   persona: AgencyUser | null;
@@ -59,12 +65,18 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
   const [propios, setPropios] = useState<PermMap | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
+  // ROLES (14-10-2026): lo que puede con los agentes viene en la MISMA respuesta
+  // y se guarda con el mismo «Guardar».
+  const [agentes, setAgentes] = useState<ModulosDelMicro | null>(null);
+  const [agentesDelRol, setAgentesDelRol] = useState<ModulosDelMicro | null>(null);
 
   useEffect(() => {
     if (!persona) return;
     let cancelado = false;
     setDelRol(null);
     setPropios(null);
+    setAgentes(null);
+    setAgentesDelRol(null);
     setError(null);
     permissionsApi
       .getMemberPermissions(persona.id)
@@ -76,6 +88,9 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
             : {};
         setDelRol((r.delRol as PermMap | undefined) ?? efectivos);
         setPropios(efectivos);
+        const deLosAgentes = agentesDeLaRespuesta(r);
+        setAgentes(deLosAgentes?.propios ?? null);
+        setAgentesDelRol(deLosAgentes?.delRol ?? null);
       })
       .catch((e: unknown) => {
         if (!cancelado) {
@@ -95,6 +110,10 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
   const diferencias = useMemo<Diferencia[]>(
     () => (delRol && propios ? diferenciasConElRol(propios, delRol) : []),
     [delRol, propios],
+  );
+  const diferenciasConLosAgentes = useMemo(
+    () => (agentes && agentesDelRol ? diferenciasDeLosAgentes(agentes, agentesDelRol) : []),
+    [agentes, agentesDelRol],
   );
   const porCelda = useMemo(() => {
     const m = new Map<string, Diferencia['tipo']>();
@@ -117,7 +136,7 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
     if (!persona) return;
     setGuardando(true);
     try {
-      await permissionsApi.updateMemberPermissions(persona.id, matriz);
+      await permissionsApi.updateMemberPermissions(persona.id, matriz && agentes ? { ...matriz, ...agentes } : matriz);
       toast.success(matriz ? 'Permisos de la persona guardados' : 'Vuelve a tener lo de su rol');
       onCerrar();
     } catch (e) {
@@ -132,8 +151,12 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
     }
   };
 
-  const sumados = diferencias.filter((d) => d.tipo === 'sumado').length;
-  const quitados = diferencias.length - sumados;
+  const todas = [
+    ...diferencias.map((d) => ({ clave: `${d.modulo}:${d.accion}`, nombre: nombreDeAccion(d.modulo, d.accion), tipo: d.tipo })),
+    ...diferenciasConLosAgentes,
+  ];
+  const sumados = todas.filter((d) => d.tipo === 'sumado').length;
+  const quitados = todas.length - sumados;
   const rol = getRoleLabel(persona?.role);
 
   return (
@@ -142,9 +165,9 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
         <DialogHeader>
           <DialogTitle>Permisos de {persona?.name || persona?.email}</DialogTitle>
           <DialogDescription data-testid="frase-de-permisos-propios">
-            {diferencias.length === 0
+            {todas.length === 0
               ? `Tiene exactamente lo de su rol, «${rol}». Marca o desmarca para sumarle o quitarle algo sólo a esta persona.`
-              : `Hereda lo de su rol, «${rol}», con ${diferencias.length} ${diferencias.length === 1 ? 'cambio propio' : 'cambios propios'}: ${sumados} ${sumados === 1 ? 'sumado' : 'sumados'} y ${quitados} ${quitados === 1 ? 'quitado' : 'quitados'}.`}
+              : `Hereda lo de su rol, «${rol}», con ${todas.length} ${todas.length === 1 ? 'cambio propio' : 'cambios propios'}: ${sumados} ${sumados === 1 ? 'sumado' : 'sumados'} y ${quitados} ${quitados === 1 ? 'quitado' : 'quitados'}.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -157,15 +180,15 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
         ) : (
           // Sin scroll propio: el cuerpo del modal ya es lo único que scrollea.
           <div className="space-y-4">
-            {diferencias.length > 0 ? (
+            {todas.length > 0 ? (
               <section aria-labelledby="diferencias-titulo" className="rounded-md border border-border p-3">
                 <h3 id="diferencias-titulo" className="text-sm font-semibold text-fg">
                   Lo propio de esta persona
                 </h3>
                 <ul className="mt-1 space-y-0.5 text-sm" data-testid="diferencias-con-el-rol">
-                  {diferencias.map((d) => (
-                    <li key={`${d.modulo}:${d.accion}`} className={d.tipo === 'sumado' ? 'text-success' : 'text-warning'}>
-                      {nombreDeAccion(d.modulo, d.accion)} —{' '}
+                  {todas.map((d) => (
+                    <li key={d.clave} className={d.tipo === 'sumado' ? 'text-success' : 'text-warning'}>
+                      {d.nombre} —{' '}
                       {d.tipo === 'sumado'
                         ? 'sumado a esta persona (su rol no lo trae)'
                         : 'quitado a esta persona (su rol lo trae)'}
@@ -249,13 +272,25 @@ export function PermisosDeLaPersona({ persona, onCerrar }: Props) {
           </div>
         )}
 
+        {/* ROLES (14-10-2026): también lo que puede con los agentes; lo guarda el «Guardar» de abajo. */}
+        {persona && propios && agentes && agentesDelRol && (
+          <AgentesDeLaPersona
+            miembroId={persona.id}
+            rol={String(persona.role ?? '').toUpperCase()}
+            valor={agentes}
+            delRol={agentesDelRol}
+            deshabilitado={guardando}
+            onCambiar={setAgentes}
+          />
+        )}
+
         <DialogFooter>
           <Button
             variant="outline"
             hideArrow
             onClick={() => void guardar(null)}
-            disabled={guardando || !propios || diferencias.length === 0}
-            title={diferencias.length === 0 ? 'Ya tiene exactamente lo de su rol' : undefined}
+            disabled={guardando || !propios || todas.length === 0}
+            title={todas.length === 0 ? 'Ya tiene exactamente lo de su rol' : undefined}
             data-testid="volver-a-su-rol"
           >
             Volver a lo de su rol

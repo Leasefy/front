@@ -33,7 +33,7 @@ export function WorkspaceNav() {
   if (!workspace) return null;
 
   const items = workspace.items.filter((item) => {
-    if (item.module && !canAccess(item.module, 'view')) return false;
+    if (item.module && !canAccess(item.module, item.action ?? 'view')) return false;
     if (item.roles && item.roles.length > 0) {
       const roleAllowed = isAdmin || (agencyRole !== null && (item.roles as string[]).includes(agencyRole));
       if (!roleAllowed) return false;

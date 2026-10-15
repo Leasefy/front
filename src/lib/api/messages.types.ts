@@ -139,6 +139,12 @@ export interface CanalDeWhatsapp {
   /** Recortado a propósito por el back: `+57 310 ••• 0479`. */
   telefono: string | null;
   aceptaWhatsapp: boolean;
+  /**
+   * 🔴 14-10-2026: lo cambia sólo quien usa Mensajes (administrador, asesor,
+   * coordinador). Un back anterior no lo manda: ausente = puede (como antes).
+   */
+  puedeCambiarlo?: boolean;
+  motivoParaNoCambiarlo?: string | null;
 }
 
 export interface BackendConversationWithMessages {

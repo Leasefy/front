@@ -153,7 +153,7 @@ function NuevaConsignacionContent() {
 
 export default function NuevaConsignacionPage() {
   return (
-    <PageGuard module="portafolio">
+    <PageGuard module="portafolio" action="create">
       {/* `useSearchParams` obliga a un límite de Suspense: sin él, `next build`
           falla al prerenderizar la ruta. */}
       <Suspense fallback={null}>

@@ -45,6 +45,7 @@ import {
   HourglassMedium,
   HeartStraight,
   SealCheck,
+  Gavel,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import { ROLES_QUE_CONCILIAN, ROLES_QUE_VEN_LOS_BANCOS, SIN_EL_AUXILIAR_DE_CARTERA } from './el-auxiliar-de-cartera-no-ve-los-bancos';
@@ -145,6 +146,12 @@ const DEUDA_DEL_MES_ROLES: readonly AgencyRole[] = [...CONTADOR_ROLES, AGENCY_RO
  * portada sin decirle nada (MSJ-6).
  */
 const GESTION_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.AGENTE];
+
+/**
+ * 🔴 Mensajes (Nico, 14-10-2026): administrador, asesor y coordinador — el
+ * espejo de `ROLES_QUE_USAN_LOS_MENSAJES` y de `AgencyRoleGuard allowed="mensajes"`.
+ */
+const MENSAJES_ROLES: readonly AgencyRole[] = [AGENCY_ROLES.ADMIN, AGENCY_ROLES.AGENTE, AGENCY_ROLES.COORDINADOR];
 
 /**
  * Todos menos el abogado externo (QA-INQ E-05, 03-10-2026). Tiene `contratos`
@@ -267,6 +274,12 @@ export interface PantallaDelPanel {
   modulos?: readonly string[];
   /** Roles permitidos además de isAdmin. */
   roles?: readonly AgencyRole[];
+  /**
+   * Con `true`, `roles` vale también para el administrador: la fila es SÓLO de
+   * esos roles (ROLES, 14-10-2026: «Jurídico» es el menú del abogado externo; el
+   * administrador llega al cobro jurídico desde Cartera, como siempre).
+   */
+  soloEsosRoles?: boolean;
   /**
    * Encuadre por rol propio de la pantalla, cuando difiere del del módulo
    * (Soportes era una fila de Administración y ahora cuelga de Postulaciones,
@@ -504,7 +517,8 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // F-07: el canal del candidato rechazado para pedir detalle o
           // corregir un dato. Nunca se le dice el puntaje.
           { labelKey: 'inmobiliaria.nav.reclamosDeCandidatos', href: r('/postulaciones/reclamos'), icon: ChatCircleText, module: 'pipeline', scope: 'comercial' },
-          { labelKey: 'inmobiliaria.nav.soportesCorto', href: r('/postulaciones/soportes'), icon: ListChecks, module: 'documentos', scope: 'administracion', ia: true },
+          // ROLES (14-10-2026): al abogado externo le salía siempre vacía.
+          { labelKey: 'inmobiliaria.nav.soportesCorto', href: r('/postulaciones/soportes'), icon: ListChecks, module: 'documentos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion', ia: true },
         ],
       },
     ],
@@ -531,7 +545,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // A-13: la invitación a firmar vence a los 7 días. Acá se ve qué
           // recordatorio toca y qué se venció — y que el inmueble SIGUE
           // reservado hasta que alguien cancele.
-          { labelKey: 'inmobiliaria.nav.invitacionesAFirmar', href: r('/contratos/firmas'), icon: Signature, module: 'contratos' },
+          { labelKey: 'inmobiliaria.nav.invitacionesAFirmar', href: r('/contratos/firmas'), icon: Signature, module: 'contratos', roles: SIN_EL_ABOGADO_EXTERNO },
           // 🔴 18-09-2026: las cláusulas propias de la inmobiliaria. Va como
           // SECCIÓN de Contratos y no como fila: Contratos ya tiene riel, y
           // una cláusula sólo tiene sentido dentro de un contrato.
@@ -549,6 +563,9 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // (Nico, 2026-09-03: «¿qué es eso de tickets? no veo que funcione»).
       // Las rutas `mantenimientos/tickets/*` siguen existiendo para cuando el
       // micro lo sirva; el workspace está apagado en `agentWorkspaceNav.ts`.
+      // 🔴 ROLES (Nico, 14-10-2026): el trabajo del abogado externo es «Jurídico» (sus casos y
+      // sus honorarios); no lo tenía en el menú y le ofrecíamos puertas cerradas.
+      { key: 'juridico', labelKey: 'inmobiliaria.nav.juridico', href: r('/pagos/cartera/juridico'), icon: Gavel, module: 'cobros', roles: [AGENCY_ROLES.ABOGADO_EXTERNO], soloEsosRoles: true, scope: 'administracion' },
       { key: 'mantenimientos', labelKey: 'inmobiliaria.nav.mantenimientos', href: r('/mantenimientos'), icon: Wrench, module: 'operaciones', scope: 'administracion' },
       // 🔴 H-04 (18-09-2026): el registro de proveedores. Va como FILA y no
       // como sub-pantalla de Mantenimientos porque el riel no se dibuja con
@@ -558,7 +575,7 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       { key: 'solicitudes', labelKey: 'inmobiliaria.nav.solicitudes', href: r('/solicitudes'), icon: Lifebuoy, module: 'operaciones', scope: 'administracion', ia: true, hintKey: 'inmobiliaria.nav.pqrs' },
       // `roles` y no `module`: no hay llave de AGENCY_MODULES para mensajes, y
       // la pantalla se cierra por rol (`AgencyRoleGuard allowed="managers"`).
-      { key: 'mensajes', labelKey: 'inmobiliaria.nav.mensajes', href: r('/mensajes'), icon: Chat, module: null, roles: GESTION_ROLES, scope: 'administracion' },
+      { key: 'mensajes', labelKey: 'inmobiliaria.nav.mensajes', href: r('/mensajes'), icon: Chat, module: null, roles: MENSAJES_ROLES, scope: 'administracion' },
     ],
   },
 
@@ -703,7 +720,8 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // El permiso es `contratos` porque de ahí sale el dato. Sin el abogado
       // externo: el back le niega la sección entera (E-05).
       { key: 'inquilinos', labelKey: 'inquilinos.titulo', href: r('/inquilinos'), icon: UsersThree, module: 'contratos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'administracion' },
-      { key: 'documentos', labelKey: 'inmobiliaria.nav.documentos', href: r('/documentos'), icon: FileText, module: 'documentos', scope: 'general', exact: true },
+      // ROLES (14-10-2026): el back le cierra los documentos al abogado externo (sólo sus casos).
+      { key: 'documentos', labelKey: 'inmobiliaria.nav.documentos', href: r('/documentos'), icon: FileText, module: 'documentos', roles: SIN_EL_ABOGADO_EXTERNO, scope: 'general', exact: true },
     ],
   },
 
@@ -794,6 +812,7 @@ export function pestanasDelModulo(m: ModuloDelPanel): PantallaDelPanel[] {
     module: m.module,
     modulos: m.modulos,
     roles: m.roles,
+    soloEsosRoles: m.soloEsosRoles,
     scope: m.scope,
     ia: m.ia,
     agente: m.agente,

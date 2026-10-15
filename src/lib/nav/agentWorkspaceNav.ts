@@ -69,6 +69,8 @@ export interface WorkspaceNavItem {
   exact?: boolean;
   /** Agent permission module gate (null = no module gate). */
   module?: string | null;
+  /** La acción del módulo que pide la pestaña (por defecto `view`). */
+  action?: string;
   /** Agency role gate (in addition to the module gate). */
   roles?: AgencyRole[];
   /** data-tour-target passthrough (Phase 38 PanelTour). */
@@ -154,7 +156,9 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       // OCULTO — «Playbooks» (ver nota al pie del archivo).
       // { labelKey: 'inmobiliaria.ai.nav.cobranzaPlaybooks', href: `${COBRANZA}/plantillas`, icon: FileText, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.compliance', href: `${COBRANZA}/compliance`, icon: ClipboardText, module: 'cobranza' },
-      { labelKey: 'inmobiliaria.ai.nav.arco', href: `${COBRANZA}/arco`, icon: ShieldCheck, module: 'cobranza' },
+      // ROLES (14-10-2026): las solicitudes de datos personales las ve quien las
+      // resuelve (habeas data, `cotizador:resolve-arco`); el micro responde 403 a los demás.
+      { labelKey: 'inmobiliaria.ai.nav.arco', href: `${COBRANZA}/arco`, icon: ShieldCheck, module: 'cotizador', action: 'resolve-arco' },
       // OCULTO — «Equipo IA» (ver nota al pie del archivo).
       // { labelKey: 'inmobiliaria.ai.nav.cobranzaEquipo', href: `${COBRANZA}/equipo`, icon: UsersThree, module: 'cobranza' },
       { labelKey: 'inmobiliaria.ai.nav.configuracion', href: `${COBRANZA}/configuracion`, icon: SlidersHorizontal, module: 'cobranza' },

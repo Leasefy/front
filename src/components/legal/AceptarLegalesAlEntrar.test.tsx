@@ -78,6 +78,16 @@ describe('AceptarLegalesAlEntrar', () => {
     expect(ventana()).toBeNull();
   });
 
+  it('quien NUNCA aceptó nada (el propietario invitado) no lee «Actualizamos» ni «Qué cambió» (QA 11-10)', async () => {
+    api.estado.mockResolvedValue({ ...PIDE, primeraVez: true });
+    await act(async () => root.render(<AceptarLegalesAlEntrar />));
+    await esperar();
+    expect(ventana()).not.toBeNull();
+    expect(ventana()!.textContent).toMatch(/La política de datos y los términos de Leasefy/);
+    expect(ventana()!.textContent).not.toMatch(/Actualizamos|Qué cambió/);
+    expect(document.querySelector('[data-testid="aceptar-legales-cambios"]')).toBeNull();
+  });
+
   it('«Salir» cierra la sesión (sin aceptar no se sigue)', async () => {
     api.estado.mockResolvedValue(PIDE);
     await act(async () => root.render(<AceptarLegalesAlEntrar />));

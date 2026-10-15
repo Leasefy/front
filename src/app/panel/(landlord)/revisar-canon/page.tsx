@@ -16,7 +16,7 @@
  */
 
 import { useCallback, useEffect, useId, useState } from 'react';
-import { PageHeader, Presence } from '@leasefy/cadence';
+import { Presence } from '@leasefy/cadence';
 import { CheckCircle, Hourglass, Tag, XCircle, FileMagnifyingGlass } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -254,11 +254,11 @@ export default function RevisarCanonPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6">
-        <PageHeader
-          title="Revisar el canon"
-          subtitle="Cuando tu inmueble lleva más de un mes desocupado, tu inmobiliaria te cuenta lo que te ha costado y te pregunta si quieres revisar el canon. Tú decides."
-        />
+      <div className="space-y-6 p-6 lg:p-8">
+        <header className="space-y-1">
+          <h1 className="text-h2 text-fg">Revisar el canon</h1>
+          <p className="max-w-2xl text-sm text-fg-muted">Cuando tu inmueble lleva más de un mes desocupado, tu inmobiliaria te cuenta lo que te ha costado y te pregunta si quieres revisar el canon. Tú decides.</p>
+        </header>
         <EstadoDeDatos
           cargando={cargando}
           error={error}

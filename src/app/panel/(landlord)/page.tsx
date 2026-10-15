@@ -123,7 +123,7 @@ function InicioDelPropietarioDeInmobiliaria({ doc }: { doc: NonNullable<ReturnTy
   const firstName = user?.name?.split(' ')[0] || t('landlord.dashboard.defaultName');
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
+      <div className="space-y-8 p-6 lg:p-8">
         <header>
           <span className="inline-flex items-center gap-2 mb-2">
             <BrandDot />
@@ -172,7 +172,7 @@ function InicioSinContratos({ inmobiliaria }: { inmobiliaria: string }) {
   const firstName = user?.name?.split(' ')[0] || t('landlord.dashboard.defaultName');
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-8">
+      <div className="space-y-8 p-6 lg:p-8">
         <header>
           <span className="inline-flex items-center gap-2 mb-2">
             <BrandDot />

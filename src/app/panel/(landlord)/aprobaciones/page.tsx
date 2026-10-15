@@ -17,7 +17,6 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { PageHeader } from '@leasefy/cadence';
 import { CheckCircle, XCircle, Siren, Hourglass } from '@phosphor-icons/react';
 
 import { Button } from '@/components/ui/button';
@@ -30,6 +29,8 @@ import type { AprobacionEnElPortal } from '@/lib/types/deducciones';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import { SobrecostosPorAprobar } from '@/components/landlord/portal/SobrecostosPorAprobar';
+import { HistorialDeReparaciones } from '@/components/landlord/portal/HistorialDeReparaciones';
 
 /** `RechazarAprobacionDto.motivo`: `@MaxLength(2000)` en el back. */
 const MAX_LARGO_DEL_MOTIVO = 2000;
@@ -110,7 +111,9 @@ function Pendiente({
       {aprobacion.cotizacion && (
         <p className="text-sm text-fg">
           Cotización de <strong>{aprobacion.cotizacion.proveedor}</strong>
-          {aprobacion.cotizacion.diasEstimados ? ` · ${aprobacion.cotizacion.diasEstimados} día(s)` : ''}
+          {aprobacion.cotizacion.diasEstimados
+            ? ` · ${aprobacion.cotizacion.diasEstimados} ${aprobacion.cotizacion.diasEstimados === 1 ? 'día' : 'días'}`
+            : ''}
           {aprobacion.cotizacion.descripcion ? ` — ${aprobacion.cotizacion.descripcion}` : ''}
         </p>
       )}
@@ -164,66 +167,17 @@ function Pendiente({
   );
 }
 
-function DelHistorial({ aprobacion }: { aprobacion: AprobacionEnElPortal }) {
-  const abrirSoporte = async () => {
-    try {
-      const { url } = await aprobacionesDeReparacionApi.soporte(aprobacion.id);
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } catch (error) {
-      toast.error('No se pudo abrir el soporte', {
-        description: mensajeParaLaPersona(error, {
-          accion: 'abrir el soporte',
-          porDefecto: 'Prueba de nuevo en un momento.',
-        }),
-      });
-    }
-  };
-  return (
-    <li className="py-3 space-y-1" data-testid={`aprobacion-historial-${aprobacion.estado}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-medium text-fg">
-            {aprobacion.reparacion.titulo} · {aprobacion.inmueble}
-          </p>
-          <p className="flex items-center gap-1 text-xs text-fg-muted">
-            {aprobacion.estado === 'EMERGENCIA' ? (
-              <Siren className="h-3.5 w-3.5 text-warning" aria-hidden="true" />
-            ) : aprobacion.estado === 'APROBADA' ? (
-              <CheckCircle className="h-3.5 w-3.5 text-success" aria-hidden="true" />
-            ) : aprobacion.estado === 'RECHAZADA' ? (
-              <XCircle className="h-3.5 w-3.5 text-danger" aria-hidden="true" />
-            ) : (
-              <Hourglass className="h-3.5 w-3.5" aria-hidden="true" />
-            )}
-            {ESTADO[aprobacion.estado]} {aprobacion.decididaAt ? `· ${fecha(aprobacion.decididaAt)}` : ''}
-          </p>
-        </div>
-        <p className="shrink-0 font-mono tabular-nums text-sm text-fg">{formatCurrency(aprobacion.valorCop)}</p>
-      </div>
-      {aprobacion.estado === 'EMERGENCIA' && aprobacion.aviso && (
-        <details className="text-xs text-fg-muted">
-          <summary className="cursor-pointer text-fg">{aprobacion.aviso.asunto}</summary>
-          <pre className="mt-2 whitespace-pre-wrap font-sans">{aprobacion.aviso.cuerpo}</pre>
-          {aprobacion.soporteNombre && (
-            <Button size="sm" variant="outline" hideArrow className="mt-2" onClick={() => void abrirSoporte()}>
-              Ver el soporte ({aprobacion.soporteNombre})
-            </Button>
-          )}
-        </details>
-      )}
-    </li>
-  );
-}
-
 export default function AprobarReparacionesPage() {
   const [datos, setDatos] = useState<{ pendientes: AprobacionEnElPortal[]; historial: AprobacionEnElPortal[] } | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [cargando, setCargando] = useState(true);
+  const [recarga, setRecarga] = useState(0);
 
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
       setDatos(await aprobacionesDeReparacionApi.delPortal());
+      setRecarga((n) => n + 1);
       setError(null);
     } catch (e) {
       setError(e);
@@ -238,11 +192,11 @@ export default function AprobarReparacionesPage() {
 
   return (
     <div className="min-h-screen bg-bg">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-6">
-        <PageHeader
-          title="Aprobar reparaciones"
-          subtitle="Las reparaciones a tu cargo las apruebas tú. Nada se te descuenta sin tu aprobación, salvo una emergencia, que se te avisa el mismo día."
-        />
+      <div className="space-y-6 p-6 lg:p-8">
+        <header className="space-y-1">
+          <h1 className="text-h2 text-fg">Aprobar reparaciones</h1>
+          <p className="max-w-2xl text-sm text-fg-muted">Las reparaciones a tu cargo las apruebas tú. Nada se te descuenta sin tu aprobación, salvo una emergencia, que se te avisa el mismo día.</p>
+        </header>
         <EstadoDeDatos
           cargando={cargando}
           error={error}
@@ -258,6 +212,8 @@ export default function AprobarReparacionesPage() {
             </Card>
           }
         >
+          {/* Nico, 11-10: el costo final que pasa lo aprobado vuelve a pedirte aprobación. */}
+          <SobrecostosPorAprobar alCambiar={() => void cargar()} />
           {datos && datos.pendientes.length > 0 && (
             <section className="space-y-3" aria-label="Por aprobar">
               <h2 className="text-sm font-semibold text-fg">Por aprobar</h2>
@@ -266,16 +222,8 @@ export default function AprobarReparacionesPage() {
               ))}
             </section>
           )}
-          {datos && datos.historial.length > 0 && (
-            <section aria-label="Historial">
-              <h2 className="text-sm font-semibold text-fg">Historial</h2>
-              <ul className="divide-y divide-border">
-                {datos.historial.map((a) => (
-                  <DelHistorial key={a.id} aprobacion={a} />
-                ))}
-              </ul>
-            </section>
-          )}
+          {/* Nico, 12-10: el historial en una tabla con paginación y el detalle completo en un cajón. */}
+          {datos && datos.historial.length > 0 && <HistorialDeReparaciones recarga={recarga} />}
         </EstadoDeDatos>
       </div>
     </div>

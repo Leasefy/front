@@ -92,6 +92,7 @@ export function AceptarLegalesAlEntrar() {
   }, [pide, enElHome, enCalma]);
 
   const abierta = pide && enElHome && enCalma;
+  const primeraVez = estado?.primeraVez === true;
 
   const aceptar = async () => {
     if (enviando) return;
@@ -120,19 +121,33 @@ export function AceptarLegalesAlEntrar() {
         onInteractOutside={(e) => e.preventDefault()}
         data-testid="aceptar-legales"
       >
+        {/* QA 11-10: quien nunca aceptó nada (el propietario que entra por la
+            invitación de su inmobiliaria) no lee «Actualizamos… qué cambió». */}
         <DialogHeader>
-          <DialogTitle>Actualizamos la política de datos y los términos</DialogTitle>
-          <DialogDescription>Para seguir usando Leasefy, lee lo que cambió y acéptalo. Lo pedimos una sola vez.</DialogDescription>
+          <DialogTitle>
+            {primeraVez
+              ? 'La política de datos y los términos de Leasefy'
+              : 'Actualizamos la política de datos y los términos'}
+          </DialogTitle>
+          <DialogDescription>
+            {primeraVez
+              ? 'Para usar Leasefy, léelos y acéptalos. Lo pedimos una sola vez.'
+              : 'Para seguir usando Leasefy, lee lo que cambió y acéptalo. Lo pedimos una sola vez.'}
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <p className="text-sm font-medium text-foreground">Qué cambió</p>
-          <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground" data-testid="aceptar-legales-cambios">
-            {(estado?.cambios ?? []).map((c) => (
-              <li key={c}>{c}</li>
-            ))}
-          </ul>
+          {!primeraVez && (
+            <>
+              <p className="text-sm font-medium text-foreground">Qué cambió</p>
+              <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground" data-testid="aceptar-legales-cambios">
+                {(estado?.cambios ?? []).map((c) => (
+                  <li key={c}>{c}</li>
+                ))}
+              </ul>
+            </>
+          )}
           <p className="text-sm text-muted-foreground">
-            Puedes leer completas la{' '}
+            {primeraVez ? 'Léelas completas: la' : 'Puedes leer completas la'}{' '}
             <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-foreground underline underline-offset-2">
               Política de tratamiento de datos
             </a>{' '}

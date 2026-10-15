@@ -125,6 +125,7 @@ import { TablaDeSiniestros } from '@/components/cartera/EnSiniestro'
 import { PAGE_SIZE_OPTIONS, useTablePagination } from '@/lib/hooks/use-table-pagination'
 import { useCarteraReport } from '@/lib/hooks/useInmobiliaria'
 import { formatCurrency } from '@/lib/types/inmobiliaria'
+import { estiloDeLaFranja } from '@/lib/plata/cifra-que-cabe'
 import type { CarteraItem } from '@/lib/types/inmobiliaria'
 import {
   discriminar,
@@ -178,7 +179,8 @@ interface PropietarioElegido {
 export function CarteraCompleta() {
   const { t } = useI18n()
   const { report, isLoading, error, errorCrudo, refetch } = useCarteraReport()
-  const [cajon, setCajon] = useState<Cajon | null>(null)
+  // `undefined` = todavía nadie eligió: ver `cajon` más abajo.
+  const [cajonElegido, setCajon] = useState<Cajon | null | undefined>(undefined)
   const [edad, setEdad] = useState<Edad | null>(null)
   const [busqueda, setBusqueda] = useState('')
   const [vista, setVista] = useState<Vista>('deudas')
@@ -195,13 +197,6 @@ export function CarteraCompleta() {
    * hace que el número de arriba cuadre con sus partes.
    */
   const castigada = report?.castigada ?? null
-  /** COLA-01: con 6 fichas en fila (lg–2xl) la cifra va en text-base; con 5, en text-xl. */
-  const tamanoDeLaCifra =
-    castigada && siniestros
-      ? 'text-2xl lg:text-base 2xl:text-2xl'
-      : castigada || siniestros
-        ? 'text-2xl lg:text-xl 2xl:text-2xl'
-        : 'text-2xl'
   /*
    * Los tramos por edad que NO PUEDEN llenarse con esta configuración: los que
    * arrancan en o después del umbral de siniestro, porque esa cartera sale de
@@ -221,6 +216,15 @@ export function CarteraCompleta() {
   // Las fichas y la franja hablan de TODA la cartera, no de lo filtrado: si
   // se achicaran con el filtro, dejarían de servir para elegir el filtro.
   const cartera = useMemo(() => discriminar(items, casosEnSiniestro), [items, casosEnSiniestro])
+  /*
+   * 15-10-2026 (Nico, con Juan de Portofino: «la que deberíamos ver es lo que
+   * está vencido como cartera»): si hay cartera, la pantalla ENTRA en ella. La
+   * deuda total y lo por vencer (decisión del CEO del 16-09) siguen arriba, a un
+   * clic. Sin cartera entra en toda la deuda: abrir en un filtro vacío diría
+   * «sin resultados» cuando lo cierto es que nadie está en mora.
+   */
+  const hayCartera = (cartera.cajones.find((c) => c.cajon === 'CARTERA')?.items.length ?? 0) > 0
+  const cajon: Cajon | null = cajonElegido === undefined ? (hayCartera ? 'CARTERA' : null) : cajonElegido
   /** 🔴 CR-31: la inmobiliaria no ha fijado su plazo: lo vencido no está «en plazo». */
   const hayVencidasSinPlazo = useMemo(() => items.some((i) => i.plazoSinFijar), [items])
   const nombreDelCajon = (cual: Cajon) =>
@@ -395,17 +399,24 @@ export function CarteraCompleta() {
                 : 'lg:grid-cols-4',
           )}
           data-testid="resumen-de-cartera"
+          // 15-10: con centavos la cifra no cabía; cada ficha la achica a su ancho (`cifra-que-cabe`).
+          style={estiloDeLaFranja([
+            formatCurrency(cartera.deudaTotal),
+            ...(['POR_VENCER', 'VENCIDA_EN_PLAZO', 'CARTERA'] as const).map((c) => formatCurrency(montoDelCajon(c).monto)),
+            ...(siniestros ? [formatCurrency(siniestros.totalCop)] : []),
+            ...(castigada ? [formatCurrency(castigada.totalCop)] : []),
+          ])}
         >
           {/* La deuda entera. Tocarla quita los filtros: es «ver todo». */}
           <button
             type="button"
             onClick={limpiar}
             aria-pressed={cajon === null && edad === null}
-            className="p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+            className="ficha-con-cifra p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
             data-testid="resumen-deuda-total"
           >
             <p className="text-xs text-fg-muted">Deuda total</p>
-            <p className={cn('mt-1 font-mono font-semibold tabular-nums text-fg', tamanoDeLaCifra)} data-testid="cifra-deuda-total">
+            <p className="cifra-que-cabe mt-1 font-mono font-semibold tabular-nums text-fg" data-testid="cifra-deuda-total">
               {formatCurrency(cartera.deudaTotal)}
             </p>
             <p className="mt-0.5 text-xs text-fg-muted">
@@ -439,7 +450,7 @@ export function CarteraCompleta() {
                 onClick={() => elegirCajon(cual)}
                 aria-pressed={activo}
                 data-testid={`resumen-${cual.toLowerCase()}`}
-                className="relative isolate p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+                className="ficha-con-cifra relative isolate p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
               >
                 {/* El fondo del cajón elegido SE DESLIZA al nuevo. */}
                 {activo ? (
@@ -448,8 +459,7 @@ export function CarteraCompleta() {
                 <p className="text-xs text-fg-muted">{nombreDelCajon(cual)}</p>
                 <p
                   className={cn(
-                    'mt-1 font-mono font-semibold tabular-nums',
-                    tamanoDeLaCifra,
+                    'cifra-que-cabe mt-1 font-mono font-semibold tabular-nums',
                     cual === 'CARTERA' ? 'text-danger' : TONO[cual],
                   )}
                 >
@@ -489,14 +499,14 @@ export function CarteraCompleta() {
             <button
               type="button"
               onClick={() => setVista('siniestros')}
-              className="p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+              className="ficha-con-cifra p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
               data-testid="resumen-en-siniestro"
             >
               <p className="flex items-center gap-1.5 text-xs text-fg-muted">
                 <ShieldWarning className="h-3.5 w-3.5" aria-hidden="true" />
                 En siniestro
               </p>
-              <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-danger">
+              <p className="cifra-que-cabe mt-1 font-mono font-semibold tabular-nums text-danger">
                 {formatCurrency(siniestros.totalCop)}
               </p>
               <p className="mt-0.5 text-xs text-fg-muted">
@@ -521,14 +531,14 @@ export function CarteraCompleta() {
              */
             <Link
               href="/panel/inmobiliaria/pagos/cartera/castigada"
-              className="block p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+              className="ficha-con-cifra block p-4 text-left transition-colors hover:bg-surface-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
               data-testid="resumen-castigada"
             >
               <p className="flex items-center gap-1.5 text-xs text-fg-muted">
                 <Scales className="h-3.5 w-3.5" aria-hidden="true" />
                 Castigada
               </p>
-              <p className="mt-1 font-mono text-2xl font-semibold tabular-nums text-fg-muted">
+              <p className="cifra-que-cabe mt-1 font-mono font-semibold tabular-nums text-fg-muted">
                 {formatCurrency(castigada.totalCop)}
               </p>
               <p className="mt-0.5 text-xs text-fg-muted">

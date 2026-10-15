@@ -64,6 +64,9 @@ import { PendientesDelHiloPopover } from '@/components/messages/PendientesDelHil
 import { mesEnCurso } from '@/components/messages/pendientes-a-mensaje';
 import { separadoresDeDia } from '@/components/messages/dia-del-mensaje';
 import { PQRS_SLA_BUSINESS_DAYS } from '@/lib/constants/response-sla';
+import { InquilinoDrawer } from '@/components/inmobiliaria/InquilinoDrawer';
+import { inquilinosApi } from '@/lib/api/inquilinos.service';
+import type { Inquilino } from '@/lib/api/inquilinos.service';
 
 // ============================================================================
 // Widget props
@@ -249,6 +252,12 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [showOptionsList, setShowOptionsList] = useState(false);
+  /*
+   * 15-10-2026 (Nico, en la reunión con Juan): «si estoy en el chat, debería
+   * abrirme la ficha sin tener que ir al inquilino». La del inquilino se abre en
+   * su cajón ENCIMA de la conversación; la del propietario sigue siendo su página.
+   */
+  const [inquilinoAbierto, setInquilinoAbierto] = useState<Inquilino | null>(null);
   /*
    * SO-30 (PQRS-FIX, 04-10-2026): desde un mensaje se radica la PQRS o la
    * reparación con el texto y la persona ya puestos (antes había que copiarlo a
@@ -569,11 +578,20 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     return null;
   }, [enPanelDeInmobiliaria, selectedConversation, locale]);
 
-  const verFicha = useCallback(() => {
+  const verFicha = useCallback(async () => {
     if (!fichaDeLaContraparte) return;
     setShowOptionsList(false);
+    const id = selectedConversation?.contraparteId;
+    if (selectedConversation?.perfil === 'TENANT' && id) {
+      try {
+        setInquilinoAbierto(await inquilinosApi.obtener(id));
+        return;
+      } catch {
+        // Sin su detalle, la ficha de siempre: la lista abre a la persona.
+      }
+    }
     router.push(fichaDeLaContraparte.href);
-  }, [fichaDeLaContraparte, router]);
+  }, [fichaDeLaContraparte, router, selectedConversation]);
 
   /**
    * Con qué se resuelven las variables de una plantilla.
@@ -873,9 +891,21 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         {getInitials(selectedConversation.name)}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">
-                          {selectedConversation.name}
-                        </p>
+                        {fichaDeLaContraparte ? (
+                          <button
+                            type="button"
+                            onClick={() => void verFicha()}
+                            className="text-left text-sm font-semibold text-foreground hover:underline"
+                            title={fichaDeLaContraparte.etiqueta}
+                            data-testid="nombre-abre-la-ficha"
+                          >
+                            {selectedConversation.name}
+                          </button>
+                        ) : (
+                          <p className="text-sm font-semibold text-foreground">
+                            {selectedConversation.name}
+                          </p>
+                        )}
                         <div className="flex min-w-0 items-center gap-1.5">
                           <InsigniaDePerfil perfil={selectedConversation.perfil} />
                           {selectedConversation.property && (
@@ -953,7 +983,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               {fichaDeLaContraparte && (
                               <button
                                 type="button"
-                                onClick={verFicha}
+                                onClick={() => void verFicha()}
                                 data-testid="ver-ficha"
                                 className="flex w-full items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm text-fg transition-colors hover:bg-surface-muted"
                               >
@@ -1461,6 +1491,9 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
         onCerrar={() => setNuevoMensajeAbierto(false)}
         onHiloAbierto={alAbrirHiloNuevo}
       />
+      {enPanelDeInmobiliaria && (
+        <InquilinoDrawer persona={inquilinoAbierto} onCerrar={() => setInquilinoAbierto(null)} />
+      )}
       {enPanelDeInmobiliaria && (
         <NuevaPqrsDrawer
           open={radicarDesdeMensaje !== null}

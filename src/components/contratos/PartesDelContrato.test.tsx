@@ -232,6 +232,22 @@ describe('el documento del inquilino', () => {
     expect(container.querySelector('[data-testid="contacto-del-inquilino"]')?.textContent).toBe('3001112233')
   })
 
+  it('🔴 15-10 (Juan): el inquilino se abre desde el contrato, como el propietario', () => {
+    render(contrato({ inquilinosDelContrato: null }))
+    const enlace = container.querySelector<HTMLAnchorElement>('[data-testid="inquilino-ficha"]')
+    expect(enlace).not.toBeNull()
+    const url = new URL(enlace!.getAttribute('href')!, 'http://x')
+    expect(url.pathname).toBe('/panel/inmobiliaria/inquilinos')
+    expect(url.searchParams.get('persona')).toBe('inq-1')
+    expect(url.searchParams.get('volver')).toMatch(/^\/panel\/inmobiliaria\/contratos\//)
+  })
+
+  it('sin cuenta del portal se abre por su documento', () => {
+    render(contrato({ tenantId: null, inquilinosDelContrato: null }))
+    const enlace = container.querySelector<HTMLAnchorElement>('[data-testid="inquilino-ficha"]')
+    expect(new URL(enlace!.getAttribute('href')!, 'http://x').searchParams.get('persona')).toBe('doc:1026150802')
+  })
+
   it('sin teléfono ni correo no pinta una línea vacía', () => {
     render(contrato({ tenantEmail: '', tenantPhone: undefined, inquilinosDelContrato: null }))
     expect(container.querySelector('[data-testid="contacto-del-inquilino"]')).toBeNull()

@@ -39,7 +39,19 @@
 import { ANCHO_DEL_MENU_DE_ACCIONES } from '@/components/ui/ancho-del-menu-de-acciones';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Wallet, CalendarBlank, DotsThreeVertical, MagnifyingGlass } from '@phosphor-icons/react';
+import { Wallet, CalendarBlank, DotsThreeVertical, MagnifyingGlass, Trash } from '@phosphor-icons/react';
+import { toast } from '@/components/ui/toast';
+import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n';
 import { SectionLabel } from '@/components/ui/section-label';
@@ -268,6 +280,44 @@ function TesoreriaContent() {
   useEffect(() => {
     void cargar();
   }, [cargar]);
+
+  /*
+   * 15-10-2026 (Juan, Portofino: «no me deja cancelar esa operación… hasta
+   * que no se haya generado una dispersión real»). Una liquidación se cancela
+   * mientras sea BORRADOR (`DISP_PENDING`: sin aprobar, nunca en un lote, sin
+   * giro devuelto): sus cuotas vuelven a estar por girar. Desde el kebab de la
+   * fila o todas las del mes de una vez; lo que el back no deja dice por qué.
+   */
+  const [porCancelar, setPorCancelar] = useState<{ titulo: string; ids: string[] } | null>(null);
+  const [cancelando, setCancelando] = useState(false);
+  const borradoresDe = (fila: { liquidacion?: { dispersiones: { id: string; status: string }[] } }) =>
+    (fila.liquidacion?.dispersiones ?? []).filter((d) => d.status === 'DISP_PENDING').map((d) => d.id);
+  const confirmarCancelacion = useCallback(async () => {
+    if (!porCancelar) return;
+    setCancelando(true);
+    const resultados: PromiseSettledResult<unknown>[] = [];
+    for (let i = 0; i < porCancelar.ids.length; i += 4) {
+      resultados.push(...(await Promise.allSettled(porCancelar.ids.slice(i, i + 4).map((id) => dispersionesApi.descartar(id)))));
+    }
+    const bien = resultados.filter((r) => r.status === 'fulfilled').length;
+    const mal = resultados.filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+    if (bien > 0) {
+      toast.success(
+        bien === 1
+          ? 'Cancelamos la liquidación: sus cuotas vuelven a estar por girar.'
+          : `Cancelamos ${bien} liquidaciones: sus cuotas vuelven a estar por girar.`,
+      );
+    }
+    if (mal.length > 0) {
+      toast.error(
+        mal.length === 1 ? 'Una liquidación no se pudo cancelar' : `${mal.length} liquidaciones no se pudieron cancelar`,
+        { description: mensajeParaLaPersona(mal[0]!.reason, { accion: 'cancelar la liquidación' }) },
+      );
+    }
+    setCancelando(false);
+    setPorCancelar(null);
+    await cargar();
+  }, [porCancelar, cargar]);
 
   /*
    * Un 400 con código es un DATO del inmueble, no una caída: reintentar da el
@@ -606,6 +656,28 @@ function TesoreriaContent() {
                     {mesEnTitulo(month)}. Las cifras de arriba son las del mes completo.
                   </p>
                 </div>
+                {(() => {
+                  const borradores = propietarios.flatMap((fila) => borradoresDe(fila));
+                  return borradores.length > 0 ? (
+                    <div className="flex justify-end px-5 pb-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        hideArrow
+                        onClick={() =>
+                          setPorCancelar({
+                            titulo: `¿Cancelas las ${borradores.length} liquidaciones sin girar de ${mesEnTitulo(month)}?`,
+                            ids: borradores,
+                          })
+                        }
+                        data-testid="cancelar-liquidaciones-del-mes"
+                      >
+                        <Trash className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                        Cancelar las {borradores.length} sin girar
+                      </Button>
+                    </div>
+                  ) : null;
+                })()}
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
@@ -794,6 +866,19 @@ function TesoreriaContent() {
                                     {t(k('verDispersiones'))}
                                   </Link>
                                 </DropdownListItem>
+                                {borradoresDe(p).length > 0 ? (
+                                  <DropdownListItem
+                                    onSelect={() =>
+                                      setPorCancelar({
+                                        titulo: `¿Cancelas la liquidación de ${p.propietarioName} de ${mesEnTitulo(month)}?`,
+                                        ids: borradoresDe(p),
+                                      })
+                                    }
+                                    data-testid="liquidacion-cancelar"
+                                  >
+                                    Cancelar la liquidación
+                                  </DropdownListItem>
+                                ) : null}
                               </DropdownListContent>
                             </DropdownList>
                           </TableCell>
@@ -819,6 +904,35 @@ function TesoreriaContent() {
           </EstadoDeDatos>
         </div>
       )}
+      <AlertDialog
+        open={porCancelar !== null}
+        onOpenChange={(abierto) => {
+          if (!abierto && !cancelando) setPorCancelar(null);
+        }}
+      >
+        <AlertDialogContent variant="confirm" icon={<Trash weight="bold" />}>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{porCancelar?.titulo}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Se borra la liquidación y sus cuotas vuelven a estar por girar. No le llega nada al propietario. Las
+              que ya están aprobadas, en un lote o giradas no se tocan. Si hace falta, la vuelves a generar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelando}>Volver</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmarCancelacion();
+              }}
+              disabled={cancelando}
+              data-testid="confirmar-cancelar-liquidacion"
+            >
+              {cancelando ? 'Cancelando…' : 'Cancelar la liquidación'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <CajonDeLaLiquidacion
         propietario={abierta}
         mes={mesEnTitulo(month)}

@@ -65,6 +65,7 @@ vi.mock('@/components/ui/select', async () => {
 });
 
 const preview = vi.fn();
+const descartar = vi.fn((_id: string) => Promise.resolve({ descartada: _id }));
 const liquidacionDelMes = vi.fn<(m: string) => Promise<unknown>>(() =>
   Promise.reject(new ApiError(404, 'Cannot GET /inmobiliaria/dispersiones/liquidacion-del-mes')),
 );
@@ -75,6 +76,7 @@ vi.mock('@/lib/api/inmobiliaria.service', () => ({
   dispersionesApi: {
     preview: (m: string) => preview(m),
     liquidacionDelMes: (m: string) => liquidacionDelMes(m),
+    descartar: (id: string) => descartar(id),
   },
 }));
 
@@ -495,6 +497,27 @@ describe('🔴 PG-02: Liquidaciones pinta el MES COMPLETO (03-10-2026)', () => {
       },
     };
   }
+
+  it('🔴 15-10 (Juan): una liquidación sin girar se cancela desde la fila y desde «Cancelar las N sin girar»', async () => {
+    liquidacionDelMes.mockResolvedValue(liquidacionDePaula());
+    descartar.mockClear();
+    await montar();
+    const todas = q('cancelar-liquidaciones-del-mes');
+    expect(todas?.textContent).toContain('Cancelar las 1 sin girar');
+    await act(async () => {
+      (todas as HTMLElement).click();
+    });
+    const confirmar = document.querySelector<HTMLElement>('[data-testid="confirmar-cancelar-liquidacion"]');
+    expect(confirmar).not.toBeNull();
+    await act(async () => {
+      confirmar!.click();
+    });
+    expect(descartar).toHaveBeenCalledWith('d-1');
+    liquidacionDelMes.mockReset();
+    liquidacionDelMes.mockImplementation(() =>
+      Promise.reject(new ApiError(404, 'Cannot GET /inmobiliaria/dispersiones/liquidacion-del-mes')),
+    );
+  });
 
   it('la fila y el resumen son del mes ENTERO, y el estado dice «Generada en parte», no «Dispersión generada»', async () => {
     liquidacionDelMes.mockResolvedValueOnce(liquidacionDePaula());

@@ -1961,6 +1961,20 @@ select:-webkit-autofill:active {
   container-type: inline-size;
 }
 
+/* La cifra de plata que cabe en su ficha (15-10-2026; `lib/plata/cifra-que-cabe.ts`).
+ * La franja pone `--largo-de-la-cifra` (los caracteres de su cifra más larga);
+ * cada ficha es un contenedor y su cifra mide lo que cabe: un carácter mono
+ * semibold ocupa ~0,62 em. Entre 14 px y 24 px (el text-2xl de antes). */
+.ficha-con-cifra {
+  container-type: inline-size;
+}
+
+.cifra-que-cabe {
+  font-size: clamp(0.875rem, calc(100cqi / (var(--largo-de-la-cifra, 14) * 0.62)), 1.5rem);
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
 .grilla-inmuebles {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

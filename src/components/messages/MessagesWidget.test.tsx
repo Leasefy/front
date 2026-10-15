@@ -115,6 +115,13 @@ vi.mock('@/components/ui/alert-dialog', () => {
 
 // PQRS-FIX (04-10): el cajón de radicar desde un mensaje (SO-30) se prueba aparte.
 vi.mock('@/components/inmobiliaria/pqrs/NuevaPqrsDrawer', () => ({ NuevaPqrsDrawer: () => null }));
+// 15-10: la ficha del inquilino se abre en su cajón, encima de la conversación.
+const obtenerInquilino = vi.fn();
+vi.mock('@/lib/api/inquilinos.service', () => ({ inquilinosApi: { obtener: (...a: unknown[]) => obtenerInquilino(...a) } }));
+vi.mock('@/components/inmobiliaria/InquilinoDrawer', () => ({
+  InquilinoDrawer: ({ persona }: { persona: { nombre?: string } | null }) =>
+    persona ? <div data-testid="cajon-del-inquilino">{persona.nombre}</div> : null,
+}));
 vi.mock('@phosphor-icons/react', () => ({
   Lifebuoy: () => null,
   Wrench: () => null,
@@ -600,7 +607,8 @@ describe('<MessagesWidget> — los emojis funcionan (pedido 2)', () => {
 });
 
 describe('<MessagesWidget> — el menú de los tres puntos (pedido 3)', () => {
-  it('ofrece «Ver ficha del inquilino» y navega con el id de la contraparte', () => {
+  it('🔴 15-10: «Ver ficha del inquilino» la abre en su cajón, sin salir de la conversación', async () => {
+    obtenerInquilino.mockReset().mockResolvedValue({ tenantId: 'user-beto', nombre: 'Beto Ruiz' });
     conversationsState = [
       makeConversation({ perfil: 'TENANT', contraparteId: 'user-beto', name: 'Beto' }),
     ];
@@ -611,7 +619,23 @@ describe('<MessagesWidget> — el menú de los tres puntos (pedido 3)', () => {
     expect(verFicha).toBeTruthy();
     expect(verFicha!.textContent).toContain('Ver ficha del inquilino');
 
-    clic(verFicha);
+    await act(async () => {
+      (verFicha as HTMLElement).click();
+    });
+    expect(obtenerInquilino).toHaveBeenCalledWith('user-beto');
+    expect(document.querySelector('[data-testid="cajon-del-inquilino"]')?.textContent).toBe('Beto Ruiz');
+    expect(pushMock).not.toHaveBeenCalled();
+  });
+
+  it('el nombre del encabezado también abre la ficha; si no se puede leer, va a la de siempre', async () => {
+    obtenerInquilino.mockReset().mockRejectedValue(new Error('caído'));
+    conversationsState = [
+      makeConversation({ perfil: 'TENANT', contraparteId: 'user-beto', name: 'Beto' }),
+    ];
+    render('landlord');
+    await act(async () => {
+      container.querySelector<HTMLElement>('[data-testid="nombre-abre-la-ficha"]')!.click();
+    });
     expect(pushMock).toHaveBeenCalledWith('/panel/inmobiliaria/inquilinos?persona=user-beto');
   });
 

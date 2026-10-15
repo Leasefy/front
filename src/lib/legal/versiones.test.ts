@@ -5,6 +5,12 @@ import { join } from 'node:path'
 import { VERSION_POLITICA_DE_TRATAMIENTO, VERSION_TERMINOS, VIGENCIA_POLITICA_DE_TRATAMIENTO } from './versiones'
 import { POLITICA_V3 } from './politica-v3'
 import { POLITICA_V4 } from './politica-v4'
+import {
+  AUTORIZACION_DE_WHATSAPP,
+  PARRAFO_DE_WHATSAPP,
+  POLITICA_V5,
+  SUBTITULO_DE_WHATSAPP,
+} from './politica-v5'
 
 /**
  * La versión que se guarda como prueba tiene que ser la que está publicada.
@@ -73,12 +79,8 @@ describe('la cláusula de las preguntas al asistente (v4.0)', () => {
   const VINETA_16 =
     '**Revisar las preguntas que le hacen al asistente** para entender qué necesitan las inmobiliarias y mejorar sus respuestas. Las lee sólo el equipo de producto de Leasefy, con la inmobiliaria a la que pertenecen pero **sin el nombre ni el correo de quien preguntó**, y con los números largos (documentos, cuentas, teléfonos) ocultos. No las usamos para contactar a nadie, no las vendemos y no las compartimos con terceros. Se guardan 12 meses.'
 
-  it('la versión publicada es la 4.0, con su fecha de vigencia', () => {
-    expect(VERSION_POLITICA_DE_TRATAMIENTO).toBe('politica-tratamiento-v4.0')
-    expect(VIGENCIA_POLITICA_DE_TRATAMIENTO).toBe('2026-10-04')
-    const pagina = leer('src/app/privacidad/page.tsx')
-    expect(pagina).toContain('POLITICA_V4')
-    expect(pagina).toContain('VIGENCIA_POLITICA_DE_TRATAMIENTO')
+  it('la v4.0 sigue escrita aparte (desde el 15-10 la publicada es la 5.0)', () => {
+    expect(POLITICA_V4.length).toBe(19)
   })
 
   it('§13 y §16 traen las viñetas nuevas palabra por palabra', () => {
@@ -95,8 +97,8 @@ describe('la cláusula de las preguntas al asistente (v4.0)', () => {
     expect(sinLasNuevas).toBe(JSON.stringify(POLITICA_V3))
   })
 
-  it('los términos v2.1 traen la frase del Anexo de Encargo en la §19', () => {
-    expect(VERSION_TERMINOS).toBe('terminos-v2.1')
+  it('los términos (desde la v2.1) traen la frase del Anexo de Encargo en la §19', () => {
+    expect(VERSION_TERMINOS).toBe('terminos-v2.2')
     const terminos = leer('src/components/legal/TerminosContenido.tsx').replace(/\s+/g, ' ')
     expect(terminos).toContain(
       'La inmobiliaria autoriza a Leasefy a revisar, en los términos de la §16 de la Política, las preguntas que su equipo hace al asistente, con el único fin de mejorar el servicio.',
@@ -104,3 +106,49 @@ describe('la cláusula de las preguntas al asistente (v4.0)', () => {
   })
 })
 
+/**
+ * 🔴 Los mensajes de la inmobiliaria por WhatsApp (Nico, 15-10-2026): política
+ * v5.0 (§4 y §5) y términos v2.2 (§18). La v4.0 queda intacta.
+ */
+describe('WhatsApp a quien firmó contrato (v5.0 y v2.2)', () => {
+  const textoDe = (secciones: typeof POLITICA_V5, n: number) =>
+    JSON.stringify(secciones.find((s) => s.n === n)?.bloques ?? [])
+
+  it('la publicada es la 5.0 desde el 15-10, y /privacidad la muestra', () => {
+    expect(VERSION_POLITICA_DE_TRATAMIENTO).toBe('politica-tratamiento-v5.0')
+    expect(VIGENCIA_POLITICA_DE_TRATAMIENTO).toBe('2026-10-15')
+    const pagina = leer('src/app/privacidad/page.tsx')
+    expect(pagina).toContain('POLITICA_V5')
+    expect(pagina).not.toContain('POLITICA_V4')
+  })
+
+  it('§4 trae el subtítulo y el párrafo de WhatsApp después de «Operar el arrendamiento» (inquilinos y propietarios)', () => {
+    expect(PARRAFO_DE_WHATSAPP).toContain('si eres propietario, de administración de tu inmueble')
+    const s4 = POLITICA_V5.find((s) => s.n === 4)!.bloques
+    const i = s4.findIndex((b) => b.texto === 'Operar el arrendamiento')
+    expect(s4[i + 2]).toEqual({ tipo: 'sub', texto: SUBTITULO_DE_WHATSAPP })
+    expect(s4[i + 3]).toEqual({ tipo: 'p', texto: PARRAFO_DE_WHATSAPP })
+  })
+
+  it('§5 trae la autorización y dice «versión 5.0»', () => {
+    expect(textoDe(POLITICA_V5, 5)).toContain(JSON.stringify(AUTORIZACION_DE_WHATSAPP).slice(1, -1))
+    expect(textoDe(POLITICA_V5, 5)).toContain('la versión 5.0')
+    expect(textoDe(POLITICA_V4, 5)).toContain('la versión 3.0')
+  })
+
+  it('fuera de eso, la 5.0 es la 4.0 sin tocar (y la 4.0 no tiene nada de esto)', () => {
+    expect(JSON.stringify(POLITICA_V4)).not.toContain('por WhatsApp de parte de tu inmobiliaria')
+    const sinLoNuevo = JSON.stringify(POLITICA_V5)
+      .replace(',' + JSON.stringify({ tipo: 'sub', texto: SUBTITULO_DE_WHATSAPP }), '')
+      .replace(',' + JSON.stringify({ tipo: 'p', texto: PARRAFO_DE_WHATSAPP }), '')
+      .replace(',' + JSON.stringify({ tipo: 'p', texto: AUTORIZACION_DE_WHATSAPP }), '')
+      .replace('la versión 5.0', 'la versión 3.0')
+    expect(sinLoNuevo).toBe(JSON.stringify(POLITICA_V4))
+  })
+
+  it('los términos v2.2 traen la autorización de WhatsApp en la §18', () => {
+    const terminos = leer('src/components/legal/TerminosContenido.tsx').replace(/\s+/g, ' ')
+    expect(terminos).toContain('Contar con la autorización de sus inquilinos y propietarios con contrato firmado para escribirles por WhatsApp')
+    expect(terminos).toContain('lo apaga en la ficha de quien le pida no recibir más mensajes por WhatsApp')
+  })
+})

@@ -21,9 +21,9 @@ export function TerminosContenido() {
                 <dt className="font-medium text-foreground">Ámbito</dt>
                 <dd className="text-muted-foreground">Colombia, únicamente</dd>
                 <dt className="font-medium text-foreground">Vigente desde</dt>
-                <dd className="text-muted-foreground">4 de octubre de 2026</dd>
+                <dd className="text-muted-foreground">15 de octubre de 2026</dd>
                 <dt className="font-medium text-foreground">Versión</dt>
-                <dd className="text-muted-foreground font-mono">v2.1</dd>
+                <dd className="text-muted-foreground font-mono">v2.2</dd>
               </dl>
             </div>
 
@@ -436,6 +436,8 @@ export function TerminosContenido() {
                   <li><strong className="text-foreground/85">Contar con la matrícula de arrendadores</strong> vigente donde la ley se la exija, e incluir su número en sus anuncios y contratos (artículos 28 a 31 de la Ley 820).</li>
                   <li>Tener autorización de los propietarios para publicar y administrar sus inmuebles.</li>
                   <li><strong className="text-foreground/85">Haber obtenido la autorización de tratamiento de datos</strong> de las personas cuya información carga en la plataforma, y responder como responsable del tratamiento frente a ellas (§19).</li>
+                  {/* v2.2 (15-10-2026, Nico): WhatsApp a quien firmó contrato (inquilinos y propietarios), sin un «sí» aparte en la plataforma. */}
+                  <li><strong className="text-foreground/85">Contar con la autorización de sus inquilinos y propietarios con contrato firmado para escribirles por WhatsApp</strong> sobre ese contrato —por ejemplo, en el propio contrato de arrendamiento o de administración—. Con ella, la plataforma les envía por WhatsApp lo que la inmobiliaria les escribe en Mensajes sin pedirles un «sí» aparte. La inmobiliaria responde por esa autorización, no usa ese canal para publicidad y lo apaga en la ficha de quien le pida no recibir más mensajes por WhatsApp.</li>
                   <li>Cumplir las obligaciones de prevención de lavado de activos que le correspondan según su tamaño y actividad.</li>
                   <li>Publicar información veraz de los inmuebles. Lo que se anuncia obliga a quien lo anuncia (artículo 29 de la Ley 1480).</li>
                   <li>Cumplir sus obligaciones tributarias, incluidas las de agente retenedor cuando administra por cuenta de terceros.</li>

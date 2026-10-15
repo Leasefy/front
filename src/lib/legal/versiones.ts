@@ -26,20 +26,24 @@
 /**
  * Política de tratamiento de datos personales publicada en `/privacidad`.
  *
- * v4.0 (04-10-2026): la cláusula de las preguntas al asistente (§13 y §16),
- * aprobada tal cual por Nico. La v3.0 sigue en `politica-v3.ts`.
+ * v5.0 (15-10-2026): la inmobiliaria escribe por WhatsApp a quien firmó
+ * contrato con ella, sin un «sí» aparte (§4 y §5; Nico). La v4.0 sigue en
+ * `politica-v4.ts` y la v3.0 en `politica-v3.ts`.
  */
-export const VERSION_POLITICA_DE_TRATAMIENTO = 'politica-tratamiento-v4.0';
+export const VERSION_POLITICA_DE_TRATAMIENTO = 'politica-tratamiento-v5.0';
 
 /** Desde cuándo rige la versión publicada (AAAA-MM-DD). */
-export const VIGENCIA_POLITICA_DE_TRATAMIENTO = '2026-10-04';
+export const VIGENCIA_POLITICA_DE_TRATAMIENTO = '2026-10-15';
 
 /**
  * Términos y condiciones publicados en `/terminos`.
+ *
+ * v2.2 (15-10-2026): §18 suma la autorización de los inquilinos con contrato
+ * para escribirles por WhatsApp desde Mensajes (va con la Política v5.0).
  *
  * v2.1 (04-10-2026): §19 suma la frase del Anexo de Encargo sobre las
  * preguntas al asistente (la inmobiliaria autoriza a Leasefy a revisarlas en
  * los términos de la §16 de la Política). Lo acepta la inmobiliaria al
  * registrarse (`onboarding-session.service.ts`, `CURRENT_TERMS_VERSION`).
  */
-export const VERSION_TERMINOS = 'terminos-v2.1';
+export const VERSION_TERMINOS = 'terminos-v2.2';

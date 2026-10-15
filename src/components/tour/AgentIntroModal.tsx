@@ -122,6 +122,13 @@ export const AGENT_INTROS: AgentIntroConfig[] = [
     descriptionKey: 'inmobiliaria.ai.intro.pagos.description',
     image: '/images/features/leasefy-brand-08.jpg',
   },
+  {
+    id: 'naira',
+    slug: 'naira',
+    titleKey: 'inmobiliaria.ai.intro.naira.title',
+    descriptionKey: 'inmobiliaria.ai.intro.naira.description',
+    image: '/images/features/leasefy-brand-10.jpg',
+  },
 ]
 
 export interface AgentIntroModalProps {

@@ -6112,7 +6112,9 @@
         "pagosHome": "Pagos",
         "mantenimiento": "Mantenimiento",
         "mantenimientoTickets": "Tickets",
-        "mantenimientoResumen": "Resumen"
+        "mantenimientoResumen": "Resumen",
+        "naira": "Naira",
+        "nairaHint": "Briefing y seguimiento"
       },
       "breadcrumb": {
         "aiAgents": "Agentes AI",
@@ -8674,6 +8676,10 @@
         "pagos": {
           "title": "Agente de Pagos",
           "description": "Gestiona cuentas por pagar y dispersiones con cadenas de aprobación. Nada se paga sin autorización: cada desembolso queda trazado de punta a punta."
+        },
+        "naira": {
+          "title": "Naira, la que mira toda tu inmobiliaria",
+          "description": "Cada mañana te cuenta qué necesita tu atención, con el corte de cada dato; sigue cada caso hasta que se resuelve y te propone acciones que solo se ejecutan si alguien las aprueba."
         }
       },
       "hub": {
@@ -9976,6 +9982,544 @@
         "modo": "Modo",
         "aPedido": "A pedido",
         "sinPilotoActivo": "Automático sólo corre con el piloto automático activo; mientras tanto rige Copiloto. El modo se cambia en la píldora «Piloto» de arriba o en «Autonomía»."
+      },
+      "naira": {
+        "estados": {
+          "cargando": "Cargando {{queEs}}…",
+          "apagadaTitulo": "Naira todavía no está activa para tu inmobiliaria",
+          "apagadaDescripcion": "Cuando se active, aquí verás su briefing diario, lo que sigue de cerca y lo que te propone hacer.",
+          "noEncontradoTitulo": "No encontramos {{queEs}}, o no está disponible para tu rol",
+          "noEncontradoDescripcion": "Vuelve a la lista para ver lo que sí puedes abrir.",
+          "contratoRotoTitulo": "No pudimos leer la respuesta de Naira",
+          "contratoRotoDescripcion": "Llegó con una forma que esta versión del panel no reconoce, así que no mostramos nada de ella."
+        },
+        "ejemplo": {
+          "queEsInventado": "El briefing, las señales, el seguimiento, las propuestas y la memoria de Naira",
+          "queFalta": "Falta que el servicio de agentes publique los endpoints de Naira."
+        },
+        "corte": {
+          "prefijo": "Corte",
+          "datoDeEjemplo": "DATO DE EJEMPLO",
+          "descripcion": "Dato con corte al {{fecha}}, hora de Colombia; {{edad}}",
+          "edadAhora": "hace menos de 1 min",
+          "edadMinutos": "hace {{n}} min",
+          "edadHoras": "hace {{n}} h",
+          "edadDias": "hace {{n}} d",
+          "sinCorte": "Dato sin corte: no lo mostramos"
+        },
+        "cifra": {
+          "noLeida": "No pude leer este dato"
+        },
+        "fuente": {
+          "verEn": "Ver en {{modulo}}",
+          "rolSinAcceso": "Tu rol no puede abrir {{modulo}}",
+          "inactivoEjemplo": "Enlace inactivo: datos de ejemplo",
+          "sinPantalla": "Esta fuente no tiene una pantalla en el panel",
+          "referenciaTecnica": "Referencia técnica",
+          "verReferenciaTecnica": "Ver la referencia técnica"
+        },
+        "categorias": {
+          "dato": "DATO",
+          "inferencia": "INFERENCIA",
+          "recomendacion": "RECOMENDACIÓN",
+          "conocimiento": "CONOCIMIENTO",
+          "memoria": "MEMORIA",
+          "accion": "ACCIÓN"
+        },
+        "afirmacion": {
+          "aritmetica": "ARITMÉTICA",
+          "asociacion": "ASOCIACIÓN",
+          "hipotesis": "HIPÓTESIS",
+          "explicacionAritmetica": "Sale de sumar, restar o dividir datos medidos. Se puede comprobar con los datos.",
+          "explicacionAsociacion": "Dos datos se mueven juntos. Eso no prueba que uno cause el otro.",
+          "explicacionHipotesis": "Una explicación posible, todavía no probada. Abajo ves su banda, qué otra explicación se consideró y qué dato la confirmaría.",
+          "queSignifica": "Qué significa {{clase}}",
+          "causaOculta": "Hay una explicación investigada, pero esta versión de Naira no envía su clasificación, así que no la mostramos."
+        },
+        "hipotesis": {
+          "probabilidad": "Probabilidad",
+          "alternativa": "Alternativa considerada",
+          "sinAlternativa": "No había otra explicación en los datos descompuestos",
+          "confirmaria": "Qué la confirmaría",
+          "verQueSube": "Ver que {{metrica}} sube",
+          "verQueBaja": "Ver que {{metrica}} baja"
+        },
+        "utilidad": {
+          "pregunta": "¿Te sirvió?",
+          "grupo": "¿Te sirvió esta señal?",
+          "util": "Útil",
+          "no_util": "No útil",
+          "ya_lo_sabia": "Ya lo sabía",
+          "valorEnMensaje": {
+            "util": "útil",
+            "no_util": "no útil",
+            "ya_lo_sabia": "ya lo sabía"
+          },
+          "registrado": "Registrado como \"{{valor}}\". Tu respuesta cuenta como la del equipo y reemplaza la anterior.",
+          "sinPermiso": "No tienes permiso para esta acción.",
+          "soloQuienLaRecibio": "Solo puede responder quien recibió esta señal en su briefing.",
+          "ventanaVencida": "Ya pasó el plazo para responder sobre esta señal.",
+          "antesDeLaEntrega": "Esta señal todavía no te llegó.",
+          "noRegistrado": "No pudimos registrar tu respuesta. Intenta de nuevo.",
+          "ejemplo": "Datos de ejemplo: no se puede responder."
+        },
+        "tabs": {
+          "briefing": "Briefing",
+          "seguimiento": "Seguimiento",
+          "aprobaciones": "Aprobaciones",
+          "preguntar": "Preguntar",
+          "memoria": "Qué cree Naira"
+        },
+        "briefing": {
+          "queEs": "el briefing",
+          "volverAlPanel": "Ir al inicio del panel",
+          "tituloHoy": "Briefing de hoy",
+          "tituloDelDia": "Briefing del {{fecha}}",
+          "bajada": "Lo que Naira te envió el {{momento}}. Los datos pueden haber cambiado desde entonces.",
+          "bajadaEjemplo": "Lo que Naira te envió (fecha de ejemplo). Los datos pueden haber cambiado desde entonces.",
+          "navegacion": "Navegación por día",
+          "diaAnterior": "Día anterior",
+          "diaSiguiente": "Día siguiente",
+          "tambienPorWhatsapp": "También te llegó por WhatsApp.",
+          "avisoDeSuspension": "Este día Naira te envió un aviso de suspensión en lugar del briefing.",
+          "ocultosPorRol": "Hay elementos que tu rol no puede ver.",
+          "secciones": {
+            "atencion": "Requiere tu atención",
+            "informativo": "Para que estés al tanto",
+            "estado": "Estado de la agencia",
+            "semanal": "Resumen de la semana",
+            "seguimiento": "Seguimiento"
+          },
+          "urgencia": {
+            "ventana_legal": "Plazo legal",
+            "irreversible": "Irreversible",
+            "degradacion_con_realimentacion": "Empeora si nadie actúa",
+            "reversible": "Reversible"
+          },
+          "investigacionNoDisponible": "Naira todavía no había investigado esta señal cuando armó el briefing.",
+          "verLaSenal": "Ver la señal",
+          "fraseDeSilencio": "Hoy no hay nada que requiera tu atención",
+          "silencioSinInventario": "No podemos mostrarte qué revisó Naira hoy, así que no sabemos si este silencio es un día tranquilo.",
+          "sinEntrega": {
+            "antes_del_corte": "El briefing de hoy sale a las 6:45 a. m. (hora de Colombia).",
+            "sin_entregas_del_tenant": "Naira no envió briefing este día.",
+            "sin_entrega_para_el_llamador": "Este día no te llegó briefing a ti. Si crees que debió llegarte, revisa tus preferencias de notificación con un administrador."
+          },
+          "verElDeAyer": "Ver el de ayer",
+          "arranqueSinGoLive": "Nada entra a «Requiere tu atención» hasta que tu inmobiliaria fije la fecha de arranque de Naira."
+        },
+        "inventario": {
+          "titulo": "Qué revisó Naira hoy",
+          "abrir": "Ver qué revisó Naira hoy",
+          "noViaja": "No podemos mostrarte qué revisó Naira hoy: esta versión no lo envía.",
+          "sinRegistro": "No quedó registro de qué revisó Naira este día.",
+          "clase": {
+            "con_senales": "Hoy hubo señales",
+            "silencio": "Hoy no hubo señales",
+            "sin_evaluacion": "Hoy Naira no evaluó: no es lo mismo que un día tranquilo"
+          },
+          "detectores": "Detectores",
+          "estadoDelDetector": {
+            "ok": "Corrió",
+            "skipped_stale": "No corrió: la fuente estaba desactualizada",
+            "failed": "Falló"
+          },
+          "fuentes": "Fuentes y cortes",
+          "nuncaObservada": "Esta fuente nunca se ha leído",
+          "compuertas": "Qué se descartó y dónde",
+          "investigacion": "Señales sin investigar",
+          "motivo": {
+            "no_promovida": "No pasó a investigación",
+            "no_disponible_hoy": "La investigación no estaba disponible hoy",
+            "sin_explicacion_completa": "La investigación no llegó a una explicación completa",
+            "fila_ilegible": "No pudimos leer su investigación"
+          },
+          "madurez": "Métricas que todavía no evalúa"
+        },
+        "madurez": {
+          "fechaEstimada": "Todavía no evalúo {{metrica}}: tendré suficiente historia el {{fecha}}.",
+          "sinFecha": "No puedo estimar cuándo evaluaré {{metrica}}: {{remedio}}"
+        },
+        "recall": {
+          "titulo": "¿Hubo algo importante esta semana que Naira no te dijo?",
+          "etiqueta": "Tu respuesta para Naira",
+          "enviar": "Enviar respuesta",
+          "gracias": "Gracias. Lo usamos para descubrir lo que Naira no está viendo.",
+          "pii": "Tu respuesta tiene una cédula, un teléfono o un correo. Quítalos y vuelve a enviarla.",
+          "equipo": "Tu respuesta habla de alguien del equipo y eso todavía no se puede guardar. Quítalo y vuelve a enviarla.",
+          "cerrada": "Esta pregunta ya no está abierta.",
+          "invalida": "Escribe tu respuesta, con hasta 2000 caracteres.",
+          "noEnviada": "No pudimos enviar tu respuesta. Intenta de nuevo.",
+          "sinPermiso": "No tienes permiso para esta acción.",
+          "ejemplo": "Datos de ejemplo: no se puede responder."
+        },
+        "senal": {
+          "queEs": "esta señal",
+          "volverAlBriefing": "Volver al briefing",
+          "congelada": "Congelada el {{momento}}: es lo que Naira te envió ese día.",
+          "congeladaEjemplo": "Congelada (fecha de ejemplo): es lo que Naira te envió ese día.",
+          "causaNoDisponible": "Naira todavía no había investigado esta señal cuando la congeló.",
+          "causaNoCitable": {
+            "sin_investigacion_al_congelar": "Cuando se envió, esta señal no tenía investigación.",
+            "fila_ilegible": "No pudimos leer la investigación de esta señal.",
+            "no_visible_para_el_rol": "Tu rol no puede ver la explicación de esta señal.",
+            "con_datos_de_terceros": "La explicación usa datos de terceros y no se muestra.",
+            "sin_explicacion": "Naira investigó y no encontró una explicación que pudiera sostener con datos."
+          },
+          "entidades": {
+            "titulo": "ENTIDADES AFECTADAS",
+            "agregada": "Esta señal es de toda la agencia: el detector mide el total y no señala inmuebles, contratos ni personas en particular.",
+            "masEnLaFuente": "Hay más: míralas todas en la fuente."
+          }
+        },
+        "roles": {
+          "cartera": "Cartera",
+          "portafolio": "Inmuebles",
+          "prospectos": "Prospectos"
+        },
+        "seguimiento": {
+          "titulo": "Seguimiento",
+          "bajada": "Lo que Naira sigue de cerca hasta que se resuelva. Naira cierra cada caso cuando los datos lo confirman.",
+          "queEs": "el seguimiento",
+          "volverAlPanel": "Ir al inicio del panel",
+          "vacioTitulo": "Naira no está siguiendo nada en este momento",
+          "vacioDescripcion": "Cuando una señal necesite seguimiento, aparecerá aquí con su próxima revisión.",
+          "ocultosPorRol": "Hay elementos que tu rol no puede ver.",
+          "rol": "Rol: {{rol}}",
+          "huerfanoDeRol": "Nadie tiene asignado este rol: el seguimiento va al dueño de la cuenta.",
+          "comunicado": "Te lo avisamos el {{fecha}}",
+          "sinComunicar": "Todavía no se ha avisado a nadie.",
+          "ultimaRevision": "Última revisión: {{fecha}}",
+          "proximaRevision": "Próxima: {{fecha}}",
+          "sinRevisionProgramada": "Sin revisión programada",
+          "expira": "Se cierra solo el {{fecha}} si nada cambia.",
+          "fechaIlegible": "sin fecha legible",
+          "metricaSinNombre": "Una métrica que esta versión del panel no reconoce",
+          "verLaSenal": "Ver la señal",
+          "verLaBitacora": "Ver la bitácora",
+          "lineaDeLaSenal": "Seguimiento: {{estado}}",
+          "estados": {
+            "abierto": "Abierto",
+            "en_seguimiento": "En seguimiento",
+            "escalado": "Escalado",
+            "en_confirmacion": "Confirmando el cierre",
+            "cerrado": "Cerrado"
+          },
+          "formas": {
+            "recordatorio": "Recordatorio",
+            "impacto": "Impacto",
+            "escalada": "Escalada"
+          },
+          "desenlaces": {
+            "resuelto_por_dato": "Se resolvió según los datos",
+            "no_accionado": "Nadie actuó",
+            "sin_reincidencia": "No volvió a aparecer",
+            "expirado": "Venció sin cambios"
+          },
+          "candidato": {
+            "resuelto_por_dato": "Parece resuelto según los datos: Naira lo confirmará en la próxima revisión.",
+            "no_accionado": "Parece que nadie actuó: Naira lo confirmará en la próxima revisión.",
+            "sin_reincidencia": "Parece que no volvió a aparecer: Naira lo confirmará en la próxima revisión."
+          }
+        },
+        "bitacora": {
+          "titulo": "Bitácora del seguimiento",
+          "queEs": "este seguimiento",
+          "volverALaLista": "Volver a Seguimiento",
+          "eventosTitulo": "Qué pasó, día por día",
+          "sinEventos": "Esta bitácora todavía no tiene eventos.",
+          "abiertoEl": "Se abrió el {{fecha}}",
+          "cerradoEl": "Se cerró el {{fecha}}: {{desenlace}}",
+          "reasignado": "Empezó con Rol: {{antes}}; hoy es Rol: {{ahora}}.",
+          "eventos": {
+            "nacimiento": "Se abrió",
+            "ciclo": "Revisión",
+            "cambio_de_forma": "Cambió a {{forma}}",
+            "en_confirmacion": "Parece resuelto; a confirmar",
+            "confirmacion_fallida": "No se confirmó",
+            "no_verificable": "No se pudo verificar",
+            "cierre": "Se cerró"
+          },
+          "verificacion": {
+            "nacimiento": "Primera observación",
+            "del_dia": "Verificado con los datos del día",
+            "sin_veredicto": "Sin veredicto del día"
+          }
+        },
+        "aprobaciones": {
+          "titulo": "Aprobaciones",
+          "bajada": "Lo que Naira propone hacer. Nada se ejecuta sin que alguien con permiso lo apruebe.",
+          "queEs": "las aprobaciones",
+          "volverAlPanel": "Ir al inicio del panel",
+          "porDecidir": "Por decidir",
+          "recientes": "Recientes",
+          "desde": "Desde el {{fecha}}",
+          "vacioTitulo": "No hay nada por decidir",
+          "vacioDescripcion": "Cuando Naira proponga algo, lo verás aquí; al abrirla verás su consecuencia antes de que se ejecute.",
+          "ocultasPorRol": "Hay elementos que tu rol no puede ver.",
+          "titularConRol": "{{tipo}} · Rol: {{rol}}",
+          "titularOtroAgente": "{{tipo}} · Otro agente: {{evento}}",
+          "vence": "Vence el {{fecha}}",
+          "noReproducible": "No podemos mostrarte la consecuencia exacta de esta propuesta, así que no se puede aprobar.",
+          "revisar": "Revisar propuesta",
+          "tipos": {
+            "crear_tarea": "Crear una tarea",
+            "asignar_tarea": "Reasignar una tarea",
+            "aviso_interno": "Aviso interno",
+            "despachar_vertical": "Pedirle algo a otro agente"
+          },
+          "clases": {
+            "interna_reversible": "Interna · se puede deshacer",
+            "interna_irreversible": "Interna · no se puede deshacer",
+            "externa": "Externa"
+          },
+          "estados": {
+            "pendiente": "Por decidir",
+            "vencible": "Vence pronto",
+            "aprobada": "Aprobada",
+            "rechazada": "Rechazada",
+            "vencida": "Vencida",
+            "ejecutada": "Ejecutada",
+            "no_ejecutada": "Aprobada, no ejecutada"
+          }
+        },
+        "tareas": {
+          "titulo": "Tareas creadas por Naira",
+          "vacio": "Naira no tiene tareas abiertas.",
+          "ocultasPorRol": "Hay elementos que tu rol no puede ver.",
+          "sinNombre": "Una tarea sobre algo que esta versión del panel no reconoce",
+          "abiertaDesde": "Abierta desde el {{fecha}}",
+          "estados": {
+            "abierta": "Abierta",
+            "cancelada": "Cancelada",
+            "cerrada_por_loop": "Cerrada por el seguimiento"
+          },
+          "cancelar": "Cancelar tarea",
+          "dialogoTitulo": "¿Cancelar esta tarea?",
+          "dialogoCuerpo": "La tarea deja de estar asignada al rol {{rol}}. Si el problema sigue, Naira lo seguirá mostrando en Seguimiento.",
+          "dialogoConfirmar": "Cancelar tarea",
+          "volver": "Volver",
+          "cancelada": "Cancelamos la tarea. Si el problema sigue, Naira lo seguirá mostrando en Seguimiento.",
+          "yaNoEstaAbierta": "Esta tarea ya no está abierta.",
+          "noCancelada": "No pudimos cancelar la tarea. Intenta de nuevo.",
+          "sinPermiso": "No tienes permiso para esta acción.",
+          "ejemplo": "Datos de ejemplo: no se puede cancelar."
+        },
+        "propuesta": {
+          "titulo": "Propuesta de Naira",
+          "queEs": "esta propuesta",
+          "volverALaLista": "Volver a aprobaciones",
+          "datosDeLaPropuesta": "Datos de esta propuesta:",
+          "otroAgente": "Otro agente: {{evento}}",
+          "actualizar": "Actualizar propuesta",
+          "aprobar": "Aprobar acción",
+          "rechazar": "Rechazar propuesta",
+          "rolNoPuedeAprobar": "Tu rol no puede aprobar esta acción.",
+          "ejemplo": "Datos de ejemplo: no se puede decidir.",
+          "aprobada": "Registramos tu aprobación. Antes de ejecutarla, Naira vuelve a comprobar que nada cambió; si algo cambió, no la ejecuta y lo verás aquí.",
+          "rechazada": "Rechazada. Naira no la ejecutará ni la volverá a proponer para este seguimiento.",
+          "dialogoRechazoTitulo": "¿Rechazar esta propuesta?",
+          "dialogoRechazoCuerpo": "Naira no la ejecutará y no la volverá a proponer para este seguimiento.",
+          "dialogoRechazoConfirmar": "Rechazar propuesta",
+          "volver": "Volver",
+          "cargarVersionActual": "Cargar la versión actual",
+          "conflictos": {
+            "huella_distinta": "La situación cambió desde que abriste esta propuesta. Carga la versión actual para ver su consecuencia antes de decidir.",
+            "vencida": "Esta propuesta venció el {{fecha}} y ya no se puede decidir.",
+            "ya_decidida": "Esta propuesta ya fue decidida.",
+            "no_verificable": "No podemos verificar esta propuesta, así que no se puede aprobar."
+          },
+          "sinPermiso": "No tienes permiso para esta acción.",
+          "noEncontrada": "No encontramos esta propuesta, o ya no está disponible para tu rol.",
+          "noRegistrada": "No pudimos registrar tu decisión. Intenta de nuevo.",
+          "sinConfirmar": "No pudimos confirmar tu decisión. Actualiza la propuesta para ver su estado.",
+          "razonamiento": {
+            "ver": "Ver el razonamiento",
+            "ocultar": "Ocultar el razonamiento",
+            "region": "Razonamiento de la propuesta",
+            "hechos": "Hechos en los que se basa",
+            "senal": "Señal que la originó",
+            "verLaSenal": "Ver la señal",
+            "verLaExplicacion": "Ver la explicación en la señal",
+            "sinInvestigacion": "Esta propuesta no tiene investigación detrás."
+          },
+          "aporte": "Aportado por: {{origen}}",
+          "aportes": {
+            "system": "Sistema",
+            "staff": "Equipo",
+            "third_party": "Tercero"
+          }
+        },
+        "preguntar": {
+          "titulo": "Pregúntale a Naira",
+          "bajada": "Responde solo con las métricas de su catálogo, con el corte de cada dato. No guarda la conversación.",
+          "queEs": "la conversación con Naira",
+          "volverAlPanel": "Ir al inicio del panel",
+          "hilo": "Conversación con Naira",
+          "vacioTitulo": "Pregúntale por una métrica de tu inmobiliaria",
+          "vacioDescripcion": "Toca un ejemplo para escribirlo en tu pregunta, o escribe la tuya.",
+          "ejemplos": "Ejemplos de preguntas",
+          "consultando": "Naira está consultando…",
+          "tuPregunta": "Tu pregunta para Naira",
+          "placeholder": "Pregúntale a Naira por una métrica…",
+          "enviar": "Enviar pregunta",
+          "atajos": "Enter envía · Shift+Enter nueva línea",
+          "quedan": "Te quedan {{n}} caracteres",
+          "respuesta": "RESPUESTA",
+          "sinSeparar": "Esta versión de Naira no separa dato, inferencia y recomendación dentro de la respuesta.",
+          "textoOculto": "Esta respuesta puede incluir una explicación de causas que esta versión de Naira no clasifica, así que no mostramos su texto. Abajo ves los cortes y el alcance.",
+          "cortes": "Cortes de los datos:",
+          "sinFuentePorCifra": "Esta versión de Naira no indica de qué métrica sale cada cifra, así que no podemos enlazarla a su fuente.",
+          "alcanceToda": "Alcance: toda la inmobiliaria",
+          "alcancePorEje": "Alcance: por {{eje}}",
+          "ejes": {
+            "stage": "etapa",
+            "guarantee_status": "estado de la garantía",
+            "channel": "canal",
+            "payment_provider": "proveedor de pagos",
+            "payment_method": "medio de pago",
+            "discount_kind": "tipo de descuento",
+            "stage_at_offer": "etapa al momento de la oferta",
+            "urgency": "urgencia",
+            "dispute_status": "estado de la reclamación",
+            "city": "ciudad",
+            "property_type": "tipo de inmueble",
+            "stratum": "estrato"
+          },
+          "noServidos": {
+            "grafo_sin_filtro_de_rol": "No consulté las relaciones entre registros: todavía no se pueden filtrar por rol."
+          },
+          "puedesPreguntar": "Puedes preguntarle por:",
+          "sugerencias": {
+            "politicas": "Políticas de la agencia",
+            "ficha": "Una ficha por dirección o referencia"
+          },
+          "negativa": {
+            "accion": "Naira no ejecuta acciones desde la conversación: lo que propone se revisa y se aprueba en Aprobaciones.",
+            "irAAprobaciones": "Ir a Aprobaciones",
+            "fuenteRancia": "Fuente desactualizada",
+            "presupuesto": "Llegaste al límite de preguntas de hoy. Vuelve a intentarlo mañana."
+          },
+          "bloqueada": "Naira armó una respuesta pero no pasó sus controles de calidad, así que no te la mostramos. Reformula la pregunta o inténtalo más tarde.",
+          "falla": {
+            "lectura_fallida": "No pude leer el dato. Eso no significa que sea cero. Reformula la pregunta o inténtalo más tarde.",
+            "registro_no_escrito": "Naira no pudo registrar tu pregunta, así que no la respondió. Inténtalo de nuevo en un momento.",
+            "cupo_no_reservado": "Naira no pudo reservar lo que necesita para responder. Inténtalo de nuevo en un momento."
+          },
+          "noEnviada": "No pudimos enviar tu pregunta. Revisa tu conexión e inténtalo de nuevo.",
+          "reintentar": "Reintentar pregunta",
+          "ilegible": "No pudimos leer la respuesta de Naira, así que no mostramos nada de ella. Inténtalo más tarde.",
+          "invalida": "Escribe tu pregunta, con hasta 2000 caracteres.",
+          "apagadaTitulo": "La conversación con Naira no está habilitada para tu inmobiliaria",
+          "apagadaDescripcion": "Cuando se habilite, aquí podrás preguntarle por las métricas de tu inmobiliaria."
+        },
+        "memoria": {
+          "titulo": "Qué cree Naira sobre tu inmobiliaria",
+          "bajada": "Cada cosa que Naira cree, de dónde la sacó y desde cuándo. Puedes corregirla o borrarla.",
+          "queEs": "lo que cree Naira",
+          "volverAlPanel": "Ir al inicio del panel",
+          "version": "Versión {{revision}} de la memoria",
+          "filtros": {
+            "capa": "Capa",
+            "procedencia": "Procedencia",
+            "todas": "Todas"
+          },
+          "capas": {
+            "episodic": "Episodios",
+            "semantic": "Conocimiento",
+            "preference": "Preferencias",
+            "procedural": "Procedimientos"
+          },
+          "procedencias": {
+            "observed": "Observado",
+            "inferred": "Inferido",
+            "stated_by_human": "Lo dijo alguien del equipo"
+          },
+          "sinResultados": "No hay nada con estos filtros.",
+          "quitarFiltros": "Quitar filtros",
+          "vacioTitulo": "Naira todavía no cree nada sobre tu inmobiliaria",
+          "vacioDescripcion": "A medida que trabaje, aquí verás cada cosa que crea, de dónde la sacó y desde cuándo.",
+          "item": {
+            "escritoPorNaira": "Lo escribió Naira",
+            "escritoPorEquipo": "Lo escribió alguien del equipo",
+            "desde": "Desde el {{fecha}}",
+            "borrado": "Se borró el {{fecha}}.",
+            "origenDato": "Sale de un dato:",
+            "origenMemoria": "Sale de otra memoria",
+            "verEsaMemoria": "Ver esa memoria",
+            "origenPersona": "Sale de algo que dijo alguien del equipo",
+            "origenConsulta": "Lo reprodujo una consulta:",
+            "acciones": "Acciones"
+          },
+          "acciones": {
+            "corregir": "Corregir ítem",
+            "borrar": "Borrar ítem",
+            "promover": "Confirmar que es cierto",
+            "ejemplo": "Datos de ejemplo: no se puede cambiar la memoria.",
+            "sinPermiso": "No tienes permiso para esta acción."
+          },
+          "correccion": {
+            "titulo": "Corregir lo que cree Naira",
+            "descripcion": "Naira usará tu versión desde ahora; la anterior queda en el historial.",
+            "etiqueta": "Texto corregido",
+            "guardar": "Guardar corrección",
+            "volver": "Volver",
+            "corregido": "Corregido. Naira usará la versión nueva desde ahora; la anterior queda en el historial.",
+            "quitarYGuardar": "Quítalo y vuelve a guardar.",
+            "noGuardada": "No pudimos guardar la corrección. Intenta de nuevo."
+          },
+          "rechazos": {
+            "cedula": "Tiene un número de cédula.",
+            "telefono": "Tiene un teléfono.",
+            "correo": "Tiene un correo.",
+            "desempeno": "Habla del desempeño de una persona del equipo; eso todavía no se puede guardar.",
+            "otro": "Este texto no se puede guardar tal como está."
+          },
+          "borrado": {
+            "titulo": "¿Borrar esto de la memoria de Naira?",
+            "cuerpo": "Se borra el texto y todo lo que Naira derivó de él. No se puede deshacer. Queda el registro de que se borró y cuándo.",
+            "motivo": "Motivo (obligatorio)",
+            "motivos": {
+              "solicitud_del_titular": "Lo pidió el titular de los datos",
+              "decision_de_la_agencia": "Decisión de la inmobiliaria"
+            },
+            "confirmar": "Borrar ítem",
+            "volver": "Volver",
+            "hecho": "Borrado. También se borró lo que Naira había derivado de ese ítem.",
+            "noBorrado": "No pudimos borrar este ítem. Intenta de nuevo."
+          },
+          "promocion": {
+            "titulo": "¿Confirmar que esto es cierto?",
+            "cuerpo": "Naira pasará a tratarlo como observado. Hazlo solo si lo comprobaste.",
+            "confirmar": "Confirmar como cierto",
+            "volver": "Volver",
+            "hecho": "Confirmado. Naira lo tratará como observado desde ahora.",
+            "corrigeloPrimero": "Corrígelo antes de confirmarlo.",
+            "noConfirmado": "No pudimos confirmarlo. Intenta de nuevo."
+          },
+          "propuestas": {
+            "titulo": "Propuestas pendientes (procedimientos)",
+            "propuestoEl": "Propuesto el {{fecha}}",
+            "confirmar": "Confirmar procedimiento",
+            "rechazar": "Rechazar procedimiento",
+            "dialogoTitulo": "¿Rechazar esta propuesta?",
+            "dialogoCuerpo": "Naira no guardará este procedimiento.",
+            "dialogoConfirmar": "Rechazar procedimiento",
+            "volver": "Volver",
+            "confirmada": "Procedimiento confirmado. Naira lo usará desde ahora.",
+            "rechazada": "Propuesta rechazada. Naira no guardará este procedimiento.",
+            "noResuelta": "No pudimos resolver la propuesta. Intenta de nuevo.",
+            "pideOtraVersion": "Recházala y pide que la escriban sin ese dato."
+          },
+          "avisos": {
+            "item_cambio": "Este ítem cambió mientras lo revisabas. Ya te mostramos la versión actual.",
+            "item_ya_no_esta": "Este ítem ya no está entre lo que cree Naira. Ya te mostramos la versión actual.",
+            "ya_no_se_puede_confirmar": "Este ítem ya no es una inferencia que se pueda confirmar. Ya te mostramos la versión actual.",
+            "propuesta_ya_resuelta": "Esta propuesta ya se resolvió. Ya te mostramos la lista actual.",
+            "propuesta_ya_no_esta": "Esta propuesta ya no está. Ya te mostramos la lista actual.",
+            "sin_confirmar": "No pudimos confirmar el cambio. Ya te mostramos la versión actual."
+          }
+        }
       }
     },
     "hoy": {
@@ -14232,6 +14776,22 @@
       "noHace": {
         "sinConfirmar": "No manda nada sin tu confirmación: la propuesta vence a los 10 minutos",
         "plata": "No mueve plata"
+      }
+    },
+    "naira": {
+      "rol": "Account manager de la inmobiliaria",
+      "historia": "Lee toda la inmobiliaria cada mañana, te cuenta lo que importa antes de que se vuelva un problema y sigue cada caso hasta que se resuelve.",
+      "hace": {
+        "briefing": "Cada mañana manda un briefing con lo urgente, el estado y el seguimiento",
+        "sigue": "Sigue cada señal hasta que se resuelve o deja de pasar",
+        "propone": "Propone acciones (tareas, avisos, recordatorios) que una persona aprueba",
+        "responde": "Responde preguntas sobre la operación con cifras que se pueden abrir",
+        "recuerda": "Recuerda cómo trabaja tu inmobiliaria, con la fuente de cada cosa"
+      },
+      "noHace": {
+        "sinAprobar": "No ejecuta nada sin que una persona lo apruebe",
+        "evalua": "No evalúa a nadie: sus cifras por persona son apoyo, no una calificación",
+        "inventa": "No da una cifra sin su fuente y su fecha de corte"
       }
     }
   },

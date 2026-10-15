@@ -59,6 +59,7 @@ export type IdDeAgente =
   | 'documentos'
   | 'reportes'
   | 'comunicacion'
+  | 'naira'
 
 export type IdDeFrente =
   | 'direccion'
@@ -493,6 +494,24 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     trabajaCon: ['orquestador', 'cobranza'],
     reportaA: 'orquestador',
     fuentes: ['src/mastra/agents/chat/acciones-tool.ts (recordatorio_pago, mensaje_directo, crear_pqrs; vence a los 10 min)'],
+  },
+  {
+    // Naira, la account manager (rama account-manager, 15-10-2026). Lee toda la inmobiliaria y no la llama el chat.
+    id: 'naira',
+    nombrePropio: 'Naira',
+    frente: 'direccion',
+    orbe: orbe('cobalt', 'naira'),
+    autonomia: null,
+    despachos: [],
+    hace: ['briefing', 'sigue', 'propone', 'responde', 'recuerda'],
+    noHace: [{ clave: 'sinAprobar' }, { clave: 'evalua' }, { clave: 'inventa' }],
+    herramientas: ['consultas', 'busqueda', 'correo', 'whatsapp', 'confirmacion'],
+    trabajaCon: ['orquestador', 'cobranza', 'contratos', 'prospectos'],
+    reportaA: 'equipo',
+    fuentes: [
+      'src/naira/notify/ (briefing diario), src/naira/loops/ (seguimiento), src/naira/acciones/ (propuestas con aprobación)',
+      'src/naira/conversacion/ (Preguntar), src/naira/memory/ (qué cree Naira)',
+    ],
   },
 ]
 

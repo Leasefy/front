@@ -30,6 +30,7 @@ import {
   SquaresFour,
   ChartLineUp,
   TrendUp,
+  Compass,
   ArrowLineDown,
   ArrowLineUp,
   HandCoins,
@@ -415,6 +416,10 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
       // que lo abre `isAdmin` y nadie más (una fila que se ve y rebota es MSJ-6).
       // Va después de los que trabajan con datos reales y antes de «Desempeño IA».
       { key: 'retencion', labelKey: 'inmobiliaria.ai.nav.retencion', href: r('/retencion'), icon: HeartStraight, module: null, roles: [AGENCY_ROLES.ADMIN], scope: 'administracion', agente: 'retencion' },
+      // Naira lee toda la inmobiliaria —cartera, inmuebles y prospectos—; su URL `/reportes/naira` es la que contrató el
+      // agente (E13-1), como «Desempeño IA» con `/reportes/ia`. Registrada y gateada fail-closed (D13-3): invisible hasta
+      // que el agente publique `naira` en /my-permissions (regla «sin sacar», RB-2 🔔, D13-1′).
+      { key: 'naira', labelKey: 'inmobiliaria.ai.nav.naira', href: r('/reportes/naira'), icon: Compass, module: 'naira', scope: 'general', agente: 'naira', hintKey: 'inmobiliaria.ai.nav.nairaHint' },
       // Venía de Reportes (`scope: 'general'` heredado): es cómo rinden los
       // agentes de arriba, por eso cierra la sección.
       { key: 'desempeno-ia', labelKey: 'inmobiliaria.nav.desempenoIa', href: r('/reportes/ia'), icon: ChartLineUp, module: 'analytics', scope: 'general' },

@@ -244,7 +244,9 @@ describe('arquitectura del panel — sidebar', () => {
     // cambios-nico-10 (29-09, Nico: «no los veo en la sección de agentes para
     // poder probarlos»).
     // 14-10-2026 (ROLES): 28 con «Jurídico», que sólo ve el abogado externo.
-    expect(modulos).toHaveLength(28);
+    // 15-10-2026 (rama account-manager): 29 con Naira (módulo N2 de «Agentes IA», D13-1′),
+    // gateada fail-closed hasta que el agente publique `naira` en /my-permissions.
+    expect(modulos).toHaveLength(29);
   });
 
   it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
@@ -802,6 +804,7 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
       'agente-de-pagos',
       // QA-CONT C-19 (03-10-2026): con datos de ejemplo hasta que el agente exista.
       'retencion',
+      'naira',
       'desempeno-ia',
     ]);
   });
@@ -821,6 +824,7 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
       // La única que SÍ se movió, a propósito (QA-CONT C-19): colgaba de
       // `/contratos/(retencion)/` sin navegación. Las viejas redirigen.
       '/retencion',
+      '/reportes/naira',
       '/reportes/ia',
     ]);
   });
@@ -909,6 +913,7 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
       '/inmuebles/calidad-de-publicaciones',
       '/postulaciones/matching',
       '/postulaciones/asegurabilidad',
+      '/reportes/naira',
       '/reportes/ia',
     ]);
     // El contador no ve comercial —no veía Avalúos dentro de Inmuebles—.
@@ -916,6 +921,7 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
       '/pagos/cobranza',
       '/conciliacion',
       '/pagos/agente',
+      '/reportes/naira',
       '/reportes/ia',
     ]);
   });

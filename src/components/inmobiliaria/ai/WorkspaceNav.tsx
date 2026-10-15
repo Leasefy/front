@@ -23,6 +23,11 @@ import { BarraDePestanas, type PestanaDeBarra } from '@/components/inmobiliaria/
  * Los gates espejan el sidebar (PermissionsContext): nadie ve una pestaña que
  * no puede abrir. La mecánica de scroll, flechas y medida vive en
  * `BarraDePestanas`, compartida con las secciones.
+ *
+ * Cada pestaña se gatea por SU acción (`item.action`) y, si no declara una,
+ * por 'view'. Naira declara la acción real de cada pestaña (D13-3: su gate
+ * falla cerrado por acción); los demás workspaces no declaran ninguna y siguen
+ * preguntando 'view', como siempre.
  */
 export function WorkspaceNav() {
   const pathname = usePathname();

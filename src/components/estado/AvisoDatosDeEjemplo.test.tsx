@@ -70,4 +70,33 @@ describe('<AvisoDatosDeEjemplo>', () => {
     render({ queEsInventado: 'La bandeja' })
     expect(container.querySelector('button')).toBeNull()
   })
+
+  /**
+   * C11 (Fase 13, plan 13-02; UI-SPEC §5): `text-warning` sobre
+   * `bg-warning-soft` da 3.2:1 y falla AA para texto. El tono de precaución
+   * vive en el icono (componente no textual, pasa 3:1); el texto va en
+   * `text-fg`, también la línea de qué falta.
+   */
+  it('[N13:aviso-contraste] el texto va en text-fg y text-warning queda solo en el icono', () => {
+    render({ queEsInventado: 'La bandeja', queFalta: 'Falta cablear fetchOwnerInbox().' })
+    const aviso = container.querySelector('[data-testid="aviso-datos-de-ejemplo"]')
+    const clases = (aviso?.getAttribute('class') ?? '').split(/\s+/)
+    expect(clases).toContain('text-fg')
+    expect(clases.filter((c) => c === 'text-warning' || c.startsWith('text-warning/'))).toEqual([])
+    const icono = aviso?.querySelector('svg')
+    expect((icono?.getAttribute('class') ?? '').split(/\s+/)).toContain('text-warning')
+    const parrafos = aviso?.querySelectorAll('p') ?? []
+    expect(parrafos).toHaveLength(2)
+    const clasesDeQueFalta = (parrafos[1]?.getAttribute('class') ?? '').split(/\s+/)
+    expect(clasesDeQueFalta).toContain('text-fg')
+    expect(clasesDeQueFalta.filter((c) => c.startsWith('text-warning'))).toEqual([])
+  })
+
+  it('[N13:control-positivo] con qué es inventado y qué falta, los dos textos se ven y el aviso es un status', () => {
+    render({ queEsInventado: 'Los propietarios (prueba)', queFalta: 'Falta el endpoint (prueba).' })
+    const aviso = container.querySelector('[data-testid="aviso-datos-de-ejemplo"]')
+    expect(aviso?.getAttribute('role')).toBe('status')
+    expect(aviso?.textContent).toContain('Los propietarios (prueba)')
+    expect(aviso?.textContent).toContain('Falta el endpoint (prueba).')
+  })
 })

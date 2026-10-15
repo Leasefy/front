@@ -32,9 +32,16 @@ import {
   Bank,
   HeartStraight,
   Warning,
+  Compass,
+  Newspaper,
+  ArrowsCounterClockwise,
+  SealCheck,
+  ChatTeardropText,
+  Notebook,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos';
+import { RUTA_DE_NAIRA } from './rutas-de-naira';
 
 /**
  * Single source of truth for each AI agent's INTERNAL navigation.
@@ -113,6 +120,7 @@ const RETENCION = `${PANEL}/retencion`;
 // cartera también concilia. Antes era `CONTADOR_ROLES` (administrador y contador),
 // que sólo usaba este bloque.
 const QUIENES_CONCILIAN: AgencyRole[] = [...ROLES_QUE_CONCILIAN];
+const NAIRA = RUTA_DE_NAIRA;
 
 export const AGENT_WORKSPACES: AgentWorkspace[] = [
   // ── Cobranza ──────────────────────────────────────────────────────────────
@@ -294,6 +302,25 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.nav.resumen', href: RETENCION, icon: SquaresFour, exact: true, module: null, roles: [AGENCY_ROLES.ADMIN] },
       { labelKey: 'inmobiliaria.ai.nav.retencionRiesgo', href: `${RETENCION}/riesgo`, icon: Warning, module: null, roles: [AGENCY_ROLES.ADMIN] },
       { labelKey: 'inmobiliaria.ai.nav.retencionPorAprobar', href: `${RETENCION}/aprobar`, icon: ListChecks, module: null, roles: [AGENCY_ROLES.ADMIN] },
+    ],
+  },
+  // ── Naira (lectura transversal de la agencia) ─────────────────────────────
+  // Módulo N2 de «Agentes IA» (D13-1′) con la URL que contrató el agente (E13-1). Cada pestaña se gatea por su
+  // acción REAL del módulo `naira` (D13-3), no por 'view'. Con una sola pestaña `WorkspaceNav` no dibuja la barra:
+  // aparece cuando 13-04 agregue Seguimiento.
+  {
+    slug: 'naira',
+    basePath: NAIRA,
+    labelKey: 'inmobiliaria.ai.nav.naira',
+    icon: Compass,
+    module: 'naira',
+    items: [
+      { labelKey: 'inmobiliaria.ai.naira.tabs.briefing', href: NAIRA, icon: Newspaper, exact: true, module: 'naira', action: 'briefing-view' },
+      { labelKey: 'inmobiliaria.ai.naira.tabs.seguimiento', href: `${NAIRA}/seguimiento`, icon: ArrowsCounterClockwise, module: 'naira', action: 'open-loops-view' },
+      { labelKey: 'inmobiliaria.ai.naira.tabs.aprobaciones', href: `${NAIRA}/aprobaciones`, icon: SealCheck, module: 'naira', action: 'action-view' },
+      { labelKey: 'inmobiliaria.ai.naira.tabs.preguntar', href: `${NAIRA}/preguntar`, icon: ChatTeardropText, module: 'naira', action: 'conversation-ask' },
+      { labelKey: 'inmobiliaria.ai.naira.tabs.memoria', href: `${NAIRA}/memoria`, icon: Notebook, module: 'naira', action: 'memory-view' },
+      // ← 13-04..13-07 AGREGAN su pestaña AQUÍ (una línea cada una, en el orden de UI-SPEC §2.3)
     ],
   },
   // ── Mantenimiento (tickets) — APAGADO ─────────────────────────────────────

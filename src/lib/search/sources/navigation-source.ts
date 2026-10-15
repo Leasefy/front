@@ -75,6 +75,8 @@ const NAV_CATALOG: NavEntry[] = [
   // Sin `permission`: la fila se gatea por rol (ADMIN y CONTADOR) y la página
   // se defiende sola, igual que Conciliación.
   { kind: 'page', title: 'Agente de pagos', context: 'Agentes IA', href: `${P}/pagos/agente`, keywords: 'agente ia equipo de pagos gabriela cuenti nicolas valentina samuel sofia link de pago cobro automatico liquidacion automatica' }, // IA95-10: Cuenti prepara el cobro (Laura es la voz de cobranza)
+  // Naira: gateada por su módulo (fail-closed): no aparece hasta que el agente publique `naira` en /my-permissions.
+  { kind: 'page', title: 'Naira', context: 'Agentes IA', href: `${P}/reportes/naira`, keywords: 'naira briefing senales seguimiento propuestas memoria agente ia', permission: { module: 'naira', action: 'view' } },
   { kind: 'page', title: 'Desempeño IA', context: 'Agentes IA', href: `${P}/reportes/ia`, keywords: 'analytics analitica metricas ia agentes desempeño', permission: { module: 'analytics', action: 'view' } },
 
   // ── Captación y arriendo ──────────────────────────────────────────────────

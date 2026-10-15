@@ -6077,7 +6077,9 @@
         "pagosHome": "Payments",
         "mantenimiento": "Maintenance",
         "mantenimientoTickets": "Tickets",
-        "mantenimientoResumen": "Overview"
+        "mantenimientoResumen": "Overview",
+        "naira": "Naira",
+        "nairaHint": "Briefing and follow-up"
       },
       "breadcrumb": {
         "aiAgents": "AI Agents",
@@ -8639,6 +8641,10 @@
         "pagos": {
           "title": "Payments Agent",
           "description": "Manage accounts payable and disbursements with approval chains. Nothing gets paid without authorization: every disbursement is traced end to end."
+        },
+        "naira": {
+          "title": "Naira, the one who looks at your whole agency",
+          "description": "Every morning it tells you what needs your attention, with the cutoff of each data point; it follows each case until it's resolved and proposes actions that only run if someone approves them."
         }
       },
       "hub": {
@@ -9940,6 +9946,544 @@
         "modo": "Mode",
         "aPedido": "On demand",
         "sinPilotoActivo": "Automatic only runs with the autopilot on; until then Copilot applies. Change the mode in the «Pilot» pill at the top or in «Autonomy»."
+      },
+      "naira": {
+        "estados": {
+          "cargando": "Loading {{queEs}}…",
+          "apagadaTitulo": "Naira isn't active for your agency yet",
+          "apagadaDescripcion": "Once it's active, you'll see its daily briefing here, what it follows closely and what it proposes to do.",
+          "noEncontradoTitulo": "We couldn't find {{queEs}}, or it isn't available for your role",
+          "noEncontradoDescripcion": "Go back to the list to see what you can open.",
+          "contratoRotoTitulo": "We couldn't read Naira's response",
+          "contratoRotoDescripcion": "It arrived in a shape this version of the panel doesn't recognize, so we don't show any of it."
+        },
+        "ejemplo": {
+          "queEsInventado": "Naira's briefing, signals, follow-up, proposals and memory",
+          "queFalta": "The agents service still has to publish Naira's endpoints."
+        },
+        "corte": {
+          "prefijo": "As of",
+          "datoDeEjemplo": "SAMPLE DATA",
+          "descripcion": "Data as of {{fecha}}, Colombia time; {{edad}}",
+          "edadAhora": "less than 1 min ago",
+          "edadMinutos": "{{n}} min ago",
+          "edadHoras": "{{n}} h ago",
+          "edadDias": "{{n}} d ago",
+          "sinCorte": "Data without a cutoff: we don't show it"
+        },
+        "cifra": {
+          "noLeida": "I couldn't read this data point"
+        },
+        "fuente": {
+          "verEn": "View in {{modulo}}",
+          "rolSinAcceso": "Your role can't open {{modulo}}",
+          "inactivoEjemplo": "Link inactive: sample data",
+          "sinPantalla": "This source has no screen in the panel",
+          "referenciaTecnica": "Technical reference",
+          "verReferenciaTecnica": "See the technical reference"
+        },
+        "categorias": {
+          "dato": "DATA",
+          "inferencia": "INFERENCE",
+          "recomendacion": "RECOMMENDATION",
+          "conocimiento": "KNOWLEDGE",
+          "memoria": "MEMORY",
+          "accion": "ACTION"
+        },
+        "afirmacion": {
+          "aritmetica": "ARITHMETIC",
+          "asociacion": "ASSOCIATION",
+          "hipotesis": "HYPOTHESIS",
+          "explicacionAritmetica": "It comes from adding, subtracting or dividing measured data. You can check it against the data.",
+          "explicacionAsociacion": "Two data points move together. That doesn't prove one causes the other.",
+          "explicacionHipotesis": "A possible explanation, not yet proven. Below you see its band, which other explanation was considered and which data point would confirm it.",
+          "queSignifica": "What {{clase}} means",
+          "causaOculta": "There is an investigated explanation, but this version of Naira doesn't send its classification, so we don't show it."
+        },
+        "hipotesis": {
+          "probabilidad": "Probability",
+          "alternativa": "Alternative considered",
+          "sinAlternativa": "There was no other explanation in the decomposed data",
+          "confirmaria": "What would confirm it",
+          "verQueSube": "Seeing {{metrica}} go up",
+          "verQueBaja": "Seeing {{metrica}} go down"
+        },
+        "utilidad": {
+          "pregunta": "Was it useful?",
+          "grupo": "Was this signal useful?",
+          "util": "Useful",
+          "no_util": "Not useful",
+          "ya_lo_sabia": "I already knew",
+          "valorEnMensaje": {
+            "util": "useful",
+            "no_util": "not useful",
+            "ya_lo_sabia": "already knew it"
+          },
+          "registrado": "Recorded as \"{{valor}}\". Your answer counts as the team's and replaces the previous one.",
+          "sinPermiso": "You don't have permission for this action.",
+          "soloQuienLaRecibio": "Only someone who got this signal in their briefing can answer.",
+          "ventanaVencida": "The deadline to answer about this signal has passed.",
+          "antesDeLaEntrega": "This signal hasn't reached you yet.",
+          "noRegistrado": "We couldn't record your answer. Try again.",
+          "ejemplo": "Sample data: answering is disabled."
+        },
+        "tabs": {
+          "briefing": "Briefing",
+          "seguimiento": "Follow-up",
+          "aprobaciones": "Approvals",
+          "preguntar": "Ask",
+          "memoria": "What Naira believes"
+        },
+        "briefing": {
+          "queEs": "the briefing",
+          "volverAlPanel": "Go to the panel home",
+          "tituloHoy": "Today's briefing",
+          "tituloDelDia": "Briefing for {{fecha}}",
+          "bajada": "What Naira sent you on {{momento}}. The data may have changed since then.",
+          "bajadaEjemplo": "What Naira sent you (sample date). The data may have changed since then.",
+          "navegacion": "Day navigation",
+          "diaAnterior": "Previous day",
+          "diaSiguiente": "Next day",
+          "tambienPorWhatsapp": "It also reached you on WhatsApp.",
+          "avisoDeSuspension": "On this day Naira sent you a suspension notice instead of the briefing.",
+          "ocultosPorRol": "There are items your role can't see.",
+          "secciones": {
+            "atencion": "Needs your attention",
+            "informativo": "For your awareness",
+            "estado": "State of the agency",
+            "semanal": "Weekly summary",
+            "seguimiento": "Follow-up"
+          },
+          "urgencia": {
+            "ventana_legal": "Legal deadline",
+            "irreversible": "Can't be undone",
+            "degradacion_con_realimentacion": "Gets worse if nobody acts",
+            "reversible": "Can be undone"
+          },
+          "investigacionNoDisponible": "Naira hadn't investigated this signal yet when it put the briefing together.",
+          "verLaSenal": "See the signal",
+          "fraseDeSilencio": "Nothing needs your attention today",
+          "silencioSinInventario": "We can't show you what Naira checked today, so we don't know whether this silence is a quiet day.",
+          "sinEntrega": {
+            "antes_del_corte": "Today's briefing goes out at 6:45 a.m. (Colombia time).",
+            "sin_entregas_del_tenant": "Naira didn't send a briefing on this day.",
+            "sin_entrega_para_el_llamador": "No briefing reached you on this day. If you think it should have, review your notification preferences with an administrator."
+          },
+          "verElDeAyer": "See yesterday's",
+          "arranqueSinGoLive": "Nothing goes into \"Needs your attention\" until your agency sets Naira's start date."
+        },
+        "inventario": {
+          "titulo": "What Naira checked today",
+          "abrir": "See what Naira checked today",
+          "noViaja": "We can't show you what Naira checked today: this version doesn't send it.",
+          "sinRegistro": "There's no record of what Naira checked on this day.",
+          "clase": {
+            "con_senales": "There were signals today",
+            "silencio": "There were no signals today",
+            "sin_evaluacion": "Naira didn't evaluate today: that's not the same as a quiet day"
+          },
+          "detectores": "Detectors",
+          "estadoDelDetector": {
+            "ok": "Ran",
+            "skipped_stale": "Didn't run: the source was out of date",
+            "failed": "Failed"
+          },
+          "fuentes": "Sources and cutoffs",
+          "nuncaObservada": "This source has never been read",
+          "compuertas": "What was discarded and where",
+          "investigacion": "Signals not investigated",
+          "motivo": {
+            "no_promovida": "It didn't go on to investigation",
+            "no_disponible_hoy": "Investigation wasn't available today",
+            "sin_explicacion_completa": "The investigation didn't reach a complete explanation",
+            "fila_ilegible": "We couldn't read its investigation"
+          },
+          "madurez": "Metrics it doesn't evaluate yet"
+        },
+        "madurez": {
+          "fechaEstimada": "I don't evaluate {{metrica}} yet: I'll have enough history on {{fecha}}.",
+          "sinFecha": "I can't estimate when I'll evaluate {{metrica}}: {{remedio}}"
+        },
+        "recall": {
+          "titulo": "Was there something important this week that Naira didn't tell you?",
+          "etiqueta": "Your answer for Naira",
+          "enviar": "Send answer",
+          "gracias": "Thanks. We use it to find what Naira isn't seeing.",
+          "pii": "Your answer has an ID number, a phone number or an email. Remove them and send it again.",
+          "equipo": "Your answer talks about someone on the team and that can't be saved yet. Remove it and send it again.",
+          "cerrada": "This question is no longer open.",
+          "invalida": "Write your answer, up to 2000 characters.",
+          "noEnviada": "We couldn't send your answer. Try again.",
+          "sinPermiso": "You don't have permission for this action.",
+          "ejemplo": "Sample data: answering is disabled."
+        },
+        "senal": {
+          "queEs": "this signal",
+          "volverAlBriefing": "Back to the briefing",
+          "congelada": "Frozen on {{momento}}: it's what Naira sent you that day.",
+          "congeladaEjemplo": "Frozen (sample date): it's what Naira sent you that day.",
+          "causaNoDisponible": "Naira hadn't investigated this signal yet when it froze it.",
+          "causaNoCitable": {
+            "sin_investigacion_al_congelar": "When it was sent, this signal had no investigation.",
+            "fila_ilegible": "We couldn't read this signal's investigation.",
+            "no_visible_para_el_rol": "Your role can't see this signal's explanation.",
+            "con_datos_de_terceros": "The explanation uses third-party data and isn't shown.",
+            "sin_explicacion": "Naira investigated and didn't find an explanation it could back with data."
+          },
+          "entidades": {
+            "titulo": "AFFECTED ENTITIES",
+            "agregada": "This signal is about the whole agency: the detector measures the total and doesn't point to specific properties, contracts or people.",
+            "masEnLaFuente": "There are more: see them all in the source."
+          }
+        },
+        "roles": {
+          "cartera": "Portfolio due",
+          "portafolio": "Properties",
+          "prospectos": "Prospects"
+        },
+        "seguimiento": {
+          "titulo": "Follow-up",
+          "bajada": "What Naira keeps an eye on until it's resolved. Naira closes each case when the data confirms it.",
+          "queEs": "the follow-up",
+          "volverAlPanel": "Go to the panel home",
+          "vacioTitulo": "Naira isn't following anything right now",
+          "vacioDescripcion": "When a signal needs follow-up, it will show up here with its next review.",
+          "ocultosPorRol": "There are items your role can't see.",
+          "rol": "Role: {{rol}}",
+          "huerfanoDeRol": "Nobody has this role assigned: the follow-up goes to the account owner.",
+          "comunicado": "We let you know on {{fecha}}",
+          "sinComunicar": "Nobody has been notified yet.",
+          "ultimaRevision": "Last review: {{fecha}}",
+          "proximaRevision": "Next: {{fecha}}",
+          "sinRevisionProgramada": "No review scheduled",
+          "expira": "It closes on its own on {{fecha}} if nothing changes.",
+          "fechaIlegible": "no readable date",
+          "metricaSinNombre": "A metric this version of the panel doesn't recognize",
+          "verLaSenal": "See the signal",
+          "verLaBitacora": "See the log",
+          "lineaDeLaSenal": "Follow-up: {{estado}}",
+          "estados": {
+            "abierto": "Open",
+            "en_seguimiento": "In follow-up",
+            "escalado": "Escalated",
+            "en_confirmacion": "Confirming closure",
+            "cerrado": "Closed"
+          },
+          "formas": {
+            "recordatorio": "Reminder",
+            "impacto": "Impact",
+            "escalada": "Escalation"
+          },
+          "desenlaces": {
+            "resuelto_por_dato": "Resolved according to the data",
+            "no_accionado": "Nobody acted",
+            "sin_reincidencia": "It didn't come back",
+            "expirado": "Expired with no changes"
+          },
+          "candidato": {
+            "resuelto_por_dato": "It looks resolved according to the data: Naira will confirm it at the next review.",
+            "no_accionado": "It looks like nobody acted: Naira will confirm it at the next review.",
+            "sin_reincidencia": "It looks like it didn't come back: Naira will confirm it at the next review."
+          }
+        },
+        "bitacora": {
+          "titulo": "Follow-up log",
+          "queEs": "this follow-up",
+          "volverALaLista": "Back to Follow-up",
+          "eventosTitulo": "What happened, day by day",
+          "sinEventos": "This log has no events yet.",
+          "abiertoEl": "Opened on {{fecha}}",
+          "cerradoEl": "Closed on {{fecha}}: {{desenlace}}",
+          "reasignado": "It started with Role: {{antes}}; today it's Role: {{ahora}}.",
+          "eventos": {
+            "nacimiento": "Opened",
+            "ciclo": "Review",
+            "cambio_de_forma": "Changed to {{forma}}",
+            "en_confirmacion": "Looks resolved; to be confirmed",
+            "confirmacion_fallida": "Not confirmed",
+            "no_verificable": "Couldn't be verified",
+            "cierre": "Closed"
+          },
+          "verificacion": {
+            "nacimiento": "First observation",
+            "del_dia": "Checked against the day's data",
+            "sin_veredicto": "No verdict for the day"
+          }
+        },
+        "aprobaciones": {
+          "titulo": "Approvals",
+          "bajada": "What Naira proposes to do. Nothing runs unless someone with permission approves it.",
+          "queEs": "the approvals",
+          "volverAlPanel": "Go to the panel home",
+          "porDecidir": "To decide",
+          "recientes": "Recent",
+          "desde": "Since {{fecha}}",
+          "vacioTitulo": "There's nothing to decide",
+          "vacioDescripcion": "When Naira proposes something, you'll see it here; when you open it, you'll see its consequence before it runs.",
+          "ocultasPorRol": "There are items your role can't see.",
+          "titularConRol": "{{tipo}} · Role: {{rol}}",
+          "titularOtroAgente": "{{tipo}} · Another agent: {{evento}}",
+          "vence": "Expires on {{fecha}}",
+          "noReproducible": "We can't show you this proposal's exact consequence, so it can't be approved.",
+          "revisar": "Review proposal",
+          "tipos": {
+            "crear_tarea": "Create a task",
+            "asignar_tarea": "Reassign a task",
+            "aviso_interno": "Internal notice",
+            "despachar_vertical": "Ask another agent for something"
+          },
+          "clases": {
+            "interna_reversible": "Internal · can be undone",
+            "interna_irreversible": "Internal · can't be undone",
+            "externa": "External"
+          },
+          "estados": {
+            "pendiente": "To decide",
+            "vencible": "Expires soon",
+            "aprobada": "Approved",
+            "rechazada": "Rejected",
+            "vencida": "Expired",
+            "ejecutada": "Carried out",
+            "no_ejecutada": "Approved, not carried out"
+          }
+        },
+        "tareas": {
+          "titulo": "Tasks Naira created",
+          "vacio": "Naira has no open tasks.",
+          "ocultasPorRol": "There are items your role can't see.",
+          "sinNombre": "A task about something this version of the panel doesn't recognize",
+          "abiertaDesde": "Open since {{fecha}}",
+          "estados": {
+            "abierta": "Open",
+            "cancelada": "Cancelled",
+            "cerrada_por_loop": "Closed by the follow-up"
+          },
+          "cancelar": "Cancel task",
+          "dialogoTitulo": "Cancel this task?",
+          "dialogoCuerpo": "The task stops being assigned to the {{rol}} role. If the problem persists, Naira will keep showing it in Follow-up.",
+          "dialogoConfirmar": "Cancel task",
+          "volver": "Go back",
+          "cancelada": "We cancelled the task. If the problem persists, Naira will keep showing it in Follow-up.",
+          "yaNoEstaAbierta": "This task is no longer open.",
+          "noCancelada": "We couldn't cancel the task. Try again.",
+          "sinPermiso": "You don't have permission for this action.",
+          "ejemplo": "Sample data: cancelling is disabled."
+        },
+        "propuesta": {
+          "titulo": "Naira's proposal",
+          "queEs": "this proposal",
+          "volverALaLista": "Back to approvals",
+          "datosDeLaPropuesta": "Data behind this proposal:",
+          "otroAgente": "Another agent: {{evento}}",
+          "actualizar": "Refresh proposal",
+          "aprobar": "Approve action",
+          "rechazar": "Reject proposal",
+          "rolNoPuedeAprobar": "Your role can't approve this action.",
+          "ejemplo": "Sample data: deciding is disabled.",
+          "aprobada": "We recorded your approval. Before carrying it out, Naira checks again that nothing changed; if something did, it won't carry it out and you'll see it here.",
+          "rechazada": "Rejected. Naira won't carry it out or propose it again for this follow-up.",
+          "dialogoRechazoTitulo": "Reject this proposal?",
+          "dialogoRechazoCuerpo": "Naira won't carry it out and won't propose it again for this follow-up.",
+          "dialogoRechazoConfirmar": "Reject proposal",
+          "volver": "Go back",
+          "cargarVersionActual": "Load the current version",
+          "conflictos": {
+            "huella_distinta": "The situation changed since you opened this proposal. Load the current version to see its consequence before deciding.",
+            "vencida": "This proposal expired on {{fecha}} and can no longer be decided.",
+            "ya_decidida": "This proposal has already been decided.",
+            "no_verificable": "We can't verify this proposal, so it can't be approved."
+          },
+          "sinPermiso": "You don't have permission for this action.",
+          "noEncontrada": "We couldn't find this proposal, or it's no longer available for your role.",
+          "noRegistrada": "We couldn't record your decision. Try again.",
+          "sinConfirmar": "We couldn't confirm your decision. Refresh the proposal to see its status.",
+          "razonamiento": {
+            "ver": "See the reasoning",
+            "ocultar": "Hide the reasoning",
+            "region": "Reasoning behind the proposal",
+            "hechos": "Facts it's based on",
+            "senal": "Signal it came from",
+            "verLaSenal": "See the signal",
+            "verLaExplicacion": "See the explanation in the signal",
+            "sinInvestigacion": "This proposal has no investigation behind it."
+          },
+          "aporte": "Provided by: {{origen}}",
+          "aportes": {
+            "system": "System",
+            "staff": "Team",
+            "third_party": "Third party"
+          }
+        },
+        "preguntar": {
+          "titulo": "Ask Naira",
+          "bajada": "It answers only with the metrics in its catalog, with the cutoff of each data point. It doesn't save the conversation.",
+          "queEs": "the conversation with Naira",
+          "volverAlPanel": "Go to the panel home",
+          "hilo": "Conversation with Naira",
+          "vacioTitulo": "Ask it about a metric of your agency",
+          "vacioDescripcion": "Tap an example to write it into your question, or write your own.",
+          "ejemplos": "Example questions",
+          "consultando": "Naira is checking…",
+          "tuPregunta": "Your question for Naira",
+          "placeholder": "Ask Naira about a metric…",
+          "enviar": "Send question",
+          "atajos": "Enter sends · Shift+Enter new line",
+          "quedan": "You have {{n}} characters left",
+          "respuesta": "ANSWER",
+          "sinSeparar": "This version of Naira doesn't separate data, inference and recommendation within the answer.",
+          "textoOculto": "This answer may include an explanation of causes that this version of Naira doesn't classify, so we don't show its text. Below you see the cutoffs and the scope.",
+          "cortes": "Data cutoffs:",
+          "sinFuentePorCifra": "This version of Naira doesn't say which metric each figure comes from, so we can't link it to its source.",
+          "alcanceToda": "Scope: the whole agency",
+          "alcancePorEje": "Scope: by {{eje}}",
+          "ejes": {
+            "stage": "stage",
+            "guarantee_status": "guarantee status",
+            "channel": "channel",
+            "payment_provider": "payment provider",
+            "payment_method": "payment method",
+            "discount_kind": "discount type",
+            "stage_at_offer": "stage at the time of the offer",
+            "urgency": "urgency",
+            "dispute_status": "dispute status",
+            "city": "city",
+            "property_type": "property type",
+            "stratum": "socioeconomic stratum"
+          },
+          "noServidos": {
+            "grafo_sin_filtro_de_rol": "I didn't check the relationships between records: they can't be filtered by role yet."
+          },
+          "puedesPreguntar": "You can ask it about:",
+          "sugerencias": {
+            "politicas": "The agency's policies",
+            "ficha": "A record by address or reference"
+          },
+          "negativa": {
+            "accion": "Naira doesn't carry out actions from the conversation: what it proposes is reviewed and approved in Approvals.",
+            "irAAprobaciones": "Go to Approvals",
+            "fuenteRancia": "Outdated source",
+            "presupuesto": "You've reached today's question limit. Try again tomorrow."
+          },
+          "bloqueada": "Naira put together an answer but it didn't pass its quality checks, so we don't show it to you. Rephrase the question or try again later.",
+          "falla": {
+            "lectura_fallida": "I couldn't read the data. That doesn't mean it's zero. Rephrase the question or try again later.",
+            "registro_no_escrito": "Naira couldn't record your question, so it didn't answer it. Try again in a moment.",
+            "cupo_no_reservado": "Naira couldn't reserve what it needs to answer. Try again in a moment."
+          },
+          "noEnviada": "We couldn't send your question. Check your connection and try again.",
+          "reintentar": "Retry question",
+          "ilegible": "We couldn't read Naira's answer, so we don't show any of it. Try later.",
+          "invalida": "Write your question, up to 2000 characters.",
+          "apagadaTitulo": "The conversation with Naira isn't enabled for your agency",
+          "apagadaDescripcion": "Once it's enabled, you'll be able to ask it about your agency's metrics here."
+        },
+        "memoria": {
+          "titulo": "What Naira believes about your agency",
+          "bajada": "Everything Naira believes, where it got it from and since when. You can correct it or erase it.",
+          "queEs": "what Naira believes",
+          "volverAlPanel": "Go to the panel home",
+          "version": "Memory version {{revision}}",
+          "filtros": {
+            "capa": "Layer",
+            "procedencia": "Origin",
+            "todas": "All"
+          },
+          "capas": {
+            "episodic": "Episodes",
+            "semantic": "Knowledge",
+            "preference": "Preferences",
+            "procedural": "Procedures"
+          },
+          "procedencias": {
+            "observed": "Observed",
+            "inferred": "Inferred",
+            "stated_by_human": "Someone on the team said it"
+          },
+          "sinResultados": "Nothing matches these filters.",
+          "quitarFiltros": "Clear filters",
+          "vacioTitulo": "Naira doesn't believe anything about your agency yet",
+          "vacioDescripcion": "As it works, you'll see here everything it believes, where it got it from and since when.",
+          "item": {
+            "escritoPorNaira": "Written by Naira",
+            "escritoPorEquipo": "Written by someone on the team",
+            "desde": "Since {{fecha}}",
+            "borrado": "Erased on {{fecha}}.",
+            "origenDato": "Comes from a data point:",
+            "origenMemoria": "Comes from another memory",
+            "verEsaMemoria": "See that memory",
+            "origenPersona": "Comes from something someone on the team said",
+            "origenConsulta": "A query reproduced it:",
+            "acciones": "Actions"
+          },
+          "acciones": {
+            "corregir": "Correct item",
+            "borrar": "Erase item",
+            "promover": "Confirm it's true",
+            "ejemplo": "Sample data: the memory can't be changed.",
+            "sinPermiso": "You don't have permission for this action."
+          },
+          "correccion": {
+            "titulo": "Correct what Naira believes",
+            "descripcion": "Naira will use your version from now on; the previous one stays in the history.",
+            "etiqueta": "Corrected text",
+            "guardar": "Save correction",
+            "volver": "Go back",
+            "corregido": "Corrected. Naira will use the new version from now on; the previous one stays in the history.",
+            "quitarYGuardar": "Remove it and save again.",
+            "noGuardada": "We couldn't save the correction. Try again."
+          },
+          "rechazos": {
+            "cedula": "It contains an ID number.",
+            "telefono": "It contains a phone number.",
+            "correo": "It contains an email address.",
+            "desempeno": "It's about the performance of someone on the team; that can't be saved yet.",
+            "otro": "This text can't be saved as it is."
+          },
+          "borrado": {
+            "titulo": "Erase this from Naira's memory?",
+            "cuerpo": "The text and everything Naira derived from it are erased. This can't be undone. A record that it was erased, and when, is kept.",
+            "motivo": "Reason (required)",
+            "motivos": {
+              "solicitud_del_titular": "The data subject asked for it",
+              "decision_de_la_agencia": "The agency's decision"
+            },
+            "confirmar": "Erase item",
+            "volver": "Go back",
+            "hecho": "Erased. What Naira had derived from that item was erased too.",
+            "noBorrado": "We couldn't erase this item. Try again."
+          },
+          "promocion": {
+            "titulo": "Confirm this is true?",
+            "cuerpo": "Naira will treat it as observed. Only do this if you checked it.",
+            "confirmar": "Confirm as true",
+            "volver": "Go back",
+            "hecho": "Confirmed. Naira will treat it as observed from now on.",
+            "corrigeloPrimero": "Correct it before confirming it.",
+            "noConfirmado": "We couldn't confirm it. Try again."
+          },
+          "propuestas": {
+            "titulo": "Pending proposals (procedures)",
+            "propuestoEl": "Proposed on {{fecha}}",
+            "confirmar": "Confirm procedure",
+            "rechazar": "Reject procedure",
+            "dialogoTitulo": "Reject this proposal?",
+            "dialogoCuerpo": "Naira won't save this procedure.",
+            "dialogoConfirmar": "Reject procedure",
+            "volver": "Go back",
+            "confirmada": "Procedure confirmed. Naira will use it from now on.",
+            "rechazada": "Proposal rejected. Naira won't save this procedure.",
+            "noResuelta": "We couldn't resolve the proposal. Try again.",
+            "pideOtraVersion": "Reject it and ask for it to be written without that information."
+          },
+          "avisos": {
+            "item_cambio": "This item changed while you were reviewing it. We're now showing you the current version.",
+            "item_ya_no_esta": "This item is no longer among what Naira believes. We're now showing you the current version.",
+            "ya_no_se_puede_confirmar": "This item is no longer an inference that can be confirmed. We're now showing you the current version.",
+            "propuesta_ya_resuelta": "This proposal has already been resolved. We're now showing you the current list.",
+            "propuesta_ya_no_esta": "This proposal is no longer there. We're now showing you the current list.",
+            "sin_confirmar": "We couldn't confirm the change. We're now showing you the current version."
+          }
+        }
       }
     },
     "hoy": {
@@ -14196,6 +14740,22 @@
       "noHace": {
         "sinConfirmar": "Doesn't send anything without your confirmation: the proposal expires in 10 minutes",
         "plata": "Doesn't move money"
+      }
+    },
+    "naira": {
+      "rol": "The agency's account manager",
+      "historia": "Reads the whole agency every morning, tells you what matters before it becomes a problem and follows each case until it's resolved.",
+      "hace": {
+        "briefing": "Sends a morning briefing with what's urgent, the status and the follow-up",
+        "sigue": "Follows each signal until it's resolved or stops happening",
+        "propone": "Proposes actions (tasks, notices, reminders) that a person approves",
+        "responde": "Answers questions about the operation with figures you can open",
+        "recuerda": "Remembers how your agency works, with the source of each thing"
+      },
+      "noHace": {
+        "sinAprobar": "Doesn't run anything without a person's approval",
+        "evalua": "Doesn't evaluate anyone: its per-person figures are support, not a grade",
+        "inventa": "Never gives a figure without its source and cutoff date"
       }
     }
   },

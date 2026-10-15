@@ -18,12 +18,13 @@ const BASE: AgentModulePermissions = {
 }
 
 describe('isAgentModule', () => {
-  it('recognizes the five agent modules', () => {
+  it('recognizes the six agent modules', () => {
     expect(isAgentModule('cobranza')).toBe(true)
     expect(isAgentModule('cotizador')).toBe(true)
     expect(isAgentModule('estudio')).toBe(true)
     expect(isAgentModule('matching')).toBe(true)
     expect(isAgentModule('avaluos')).toBe(true)
+    expect(isAgentModule('naira')).toBe(true)
   })
 
   it('rejects monolith modules (resolved via effectivePermissions instead)', () => {
@@ -85,5 +86,28 @@ describe('cobranza/cotizador — FAIL CLOSED (pre-existing, unchanged)', () => {
 
   it('allows when the action is granted', () => {
     expect(resolveAgentModuleAccess(BASE, 'cobranza', 'view')).toBe(true)
+  })
+})
+
+describe('naira — FAIL CLOSED por acción real (D13-3)', () => {
+  it('[N13:naira-fail-closed] sin el arreglo naira (payload null o sin la clave) todo es falso', () => {
+    for (const perms of [null, BASE]) {
+      expect(resolveAgentModuleAccess(perms, 'naira', 'view')).toBe(false)
+      expect(resolveAgentModuleAccess(perms, 'naira', 'briefing-view')).toBe(false)
+      expect(resolveAgentModuleAccess(perms, 'naira', 'memory-view')).toBe(false)
+    }
+  })
+
+  it('[N13:naira-view-alias] view = arreglo presente y no vacío; cualquier otra acción tiene que estar en el arreglo', () => {
+    expect(resolveAgentModuleAccess({ ...BASE, naira: [] }, 'naira', 'view')).toBe(false)
+    const conMemoria: AgentModulePermissions = { ...BASE, naira: ['memory-view'] }
+    expect(resolveAgentModuleAccess(conMemoria, 'naira', 'view')).toBe(true)
+    expect(resolveAgentModuleAccess(conMemoria, 'naira', 'memory-view')).toBe(true)
+    expect(resolveAgentModuleAccess(conMemoria, 'naira', 'briefing-view')).toBe(false)
+  })
+
+  it('[N13:control-positivo] una acción otorgada por el agente da acceso', () => {
+    const perms: AgentModulePermissions = { ...BASE, naira: ['briefing-view', 'memory-view'] }
+    expect(resolveAgentModuleAccess(perms, 'naira', 'briefing-view')).toBe(true)
   })
 })

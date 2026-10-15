@@ -21,6 +21,12 @@
  *
  * No se puede cerrar. La forma de sacarlo es cablear la pantalla a su fuente
  * real —o retirarla—, que es justo la decisión que el cartel está pidiendo.
+ *
+ * Contraste (Fase 13, plan 13-02; UI-SPEC §5 y C11): el texto iba en
+ * `text-warning` sobre `bg-warning-soft`, que da 3.2:1 — falla AA para texto
+ * y el gate axe `panel-a11y` lo marcaría. El texto va ahora en `text-fg`; el
+ * tono de precaución queda en el icono (componente no textual, pasa 3:1) y en
+ * el borde. Props y copy intactas: sus consumidores no cambian.
  */
 
 import { Warning } from '@phosphor-icons/react'
@@ -48,14 +54,14 @@ export function AvisoDatosDeEjemplo({
       data-testid="aviso-datos-de-ejemplo"
       className={[
         'flex items-start gap-3 rounded-lg border px-4 py-3',
-        'border-warning/30 bg-warning-soft text-warning',
+        'border-warning/30 bg-warning-soft text-fg',
         'text-sm leading-relaxed',
         className ?? '',
       ]
         .join(' ')
         .trim()}
     >
-      <Warning weight="fill" className="h-5 w-5 shrink-0 mt-0.5" aria-hidden="true" />
+      <Warning weight="fill" className="h-5 w-5 shrink-0 mt-0.5 text-warning" aria-hidden="true" />
       <div className="space-y-1">
         <p>
           <strong className="font-semibold">
@@ -64,7 +70,7 @@ export function AvisoDatosDeEjemplo({
           {queEsInventado} no salen de tu inmobiliaria: están escritos a mano en
           el código. No tomes decisiones con lo que ves acá.
         </p>
-        {queFalta ? <p className="text-warning/90">{queFalta}</p> : null}
+        {queFalta ? <p className="text-fg">{queFalta}</p> : null}
       </div>
     </div>
   )

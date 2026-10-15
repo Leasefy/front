@@ -21,6 +21,7 @@ export function useVentanaDeCuenta({
   detalle,
   Icono,
   testId,
+  correoInicial,
 }: {
   destino: string;
   rol: 'tenant' | 'landlord';
@@ -28,6 +29,8 @@ export function useVentanaDeCuenta({
   detalle: string;
   Icono: ComponentType<{ className?: string; weight?: 'duotone'; 'aria-hidden'?: boolean }>;
   testId: string;
+  /** El correo que ya escribió en la pantalla de atrás, puesto en el formulario. */
+  correoInicial?: string;
 }) {
   const [abierta, setAbierta] = useState(false);
   const abrir = useCallback(() => setAbierta(true), []);
@@ -40,6 +43,7 @@ export function useVentanaDeCuenta({
       returnUrl={destino}
       titulo={titulo}
       descripcion={detalle}
+      correoInicial={correoInicial}
       aviso={
         <div className="flex items-start gap-3 rounded-lg bg-primary-soft px-4 py-3" data-testid={testId}>
           <Icono className="mt-0.5 h-5 w-5 shrink-0 text-primary" weight="duotone" aria-hidden />

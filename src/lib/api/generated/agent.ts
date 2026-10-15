@@ -9416,6 +9416,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/mensajes/redactar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Escribir con IA: un borrador de mensaje para el hilo abierto
+         * @description Con los últimos mensajes del hilo, lo que se sabe de la persona y (opcional) qué quiere decir, devuelve un borrador. No envía ni guarda nada. Nunca inventa montos, fechas ni cuentas: lo que falta sale como [completar].
+         */
+        post: operations["redactarMensaje"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -17146,6 +17166,33 @@ export interface components {
             }[];
             total: number;
             generatedAt: string;
+        };
+        MensajeRedactado: {
+            texto: string;
+            tokensUsed: {
+                input: number;
+                output: number;
+            };
+            estimatedCostCop: number;
+        };
+        PedidoDeRedaccionDeMensaje: {
+            nombre: string;
+            /**
+             * @default otro
+             * @enum {string}
+             */
+            perfil: "inquilino" | "propietario" | "prospecto" | "otro";
+            inmobiliaria?: string | null;
+            /** @default [] */
+            mensajes: {
+                deLaInmobiliaria: boolean;
+                texto: string;
+            }[];
+            datos?: {
+                [key: string]: string;
+            };
+            instruccion?: string | null;
+            borrador?: string | null;
         };
     };
     responses: never;
@@ -40906,6 +40953,117 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CalidadV2Error"];
+                };
+            };
+        };
+    };
+    redactarMensaje: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PedidoDeRedaccionDeMensaje"];
+            };
+        };
+        responses: {
+            /** @description El borrador */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MensajeRedactado"];
+                };
+            };
+            /** @description Datos inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Sólo quien escribe mensajes */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Demasiados pedidos */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description No se pudo escribir */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Escribir con IA no está disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
                 };
             };
         };

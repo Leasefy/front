@@ -291,7 +291,7 @@ export function ElegirAQuienPagarle({
         tildar, nunca parte el neto de nadie.
       </p>
       {gmf !== null && gmf.porMil === null && (
-        <p className="text-xs text-fg-muted" data-testid="gmf-sin-configurar">
+        <p className="text-caption text-fg-muted" data-testid="gmf-sin-configurar">
           La inmobiliaria no tiene configurado el 4x1000: no se le descuenta a ningún propietario.
         </p>
       )}
@@ -387,7 +387,7 @@ export function ElegirAQuienPagarle({
           )}
           .
           {conColumnaDelGmf && (
-            <span className="block text-xs text-fg-muted" data-testid="gmf-de-lo-elegido">
+            <span className="block text-caption text-fg-muted" data-testid="gmf-de-lo-elegido">
               {gmfElegido.n > 0
                 ? `${gmfElegido.n === 1 ? 'Se le descuenta' : 'Se les descuenta'} el 4x1000 a ${gmfElegido.n} ${
                     gmfElegido.n === 1 ? 'propietario' : 'propietarios'
@@ -480,7 +480,7 @@ function CeldaDelGmf({ candidato }: { candidato: CandidatoDeDispersion }) {
       {cop > 0 ? (
         <span className="font-mono text-sm tabular-nums text-fg">−{formatCurrency(cop)}</span>
       ) : (
-        <span className="text-xs text-fg-muted">No se descuenta</span>
+        <span className="text-caption text-fg-muted">No se descuenta</span>
       )}
     </TableCell>
   );

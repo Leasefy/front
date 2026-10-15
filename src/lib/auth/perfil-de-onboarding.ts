@@ -46,3 +46,19 @@ export function leerPerfilElegido(metadata: unknown): PerfilDeOnboarding | null 
 export function rutaDeOnboarding(perfil: PerfilDeOnboarding | null | undefined): string {
   return perfil ? RUTAS[perfil] : RUTA_DEL_SELECTOR_DE_PERFIL
 }
+
+/**
+ * Igual que `rutaDeOnboarding`, pero con el destino que la persona traía
+ * (Juan, Portofino, 15-10-2026: el estudio desde el marketplace terminaba en
+ * el inicio del inquilino y no en el estudio). Sólo los onboardings del
+ * inquilino y del propietario saben volver (`?returnUrl=`); el selector y el
+ * de la inmobiliaria siguen como siempre. Sin destino (o el inicio), igual.
+ */
+export function rutaDeOnboardingConRegreso(
+  perfil: PerfilDeOnboarding | null | undefined,
+  destino: string | null | undefined,
+): string {
+  const ruta = rutaDeOnboarding(perfil)
+  if (!destino || destino === '/' || (perfil !== 'tenant' && perfil !== 'landlord')) return ruta
+  return `${ruta}?returnUrl=${encodeURIComponent(destino)}`
+}

@@ -60,6 +60,8 @@ import {
 import { NuevoMensajeDrawer } from '@/components/messages/NuevoMensajeDrawer';
 import { SelectorDeEmojis } from '@/components/messages/SelectorDeEmojis';
 import { PlantillasDeMensajePopover } from '@/components/messages/PlantillasDeMensajePopover';
+import { EscribirConIaPopover, HUECO_DEL_BORRADOR } from '@/components/messages/EscribirConIaPopover';
+import type { PedidoDeRedaccion } from '@/lib/api/redactar-mensaje.service';
 import { PendientesDelHiloPopover } from '@/components/messages/PendientesDelHiloPopover';
 import { mesEnCurso } from '@/components/messages/pendientes-a-mensaje';
 import { separadoresDeDia } from '@/components/messages/dia-del-mensaje';
@@ -520,6 +522,14 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     [insertarEnElCursor],
   );
 
+  /* «Escribir con IA» (Juan, 15-10-2026): el borrador REEMPLAZA el campo (si
+     había algo escrito, el micro ya lo mejoró) y el cursor queda al final. */
+  const alEscribirConIa = useCallback((texto: string) => {
+    cursorPendiente.current = texto.length;
+    setMessageText(texto);
+    setVariablesSinResolver([]);
+  }, []);
+
   const alElegirPendiente = useCallback(
     (texto: string) => {
       insertarEnElCursor(texto);
@@ -620,6 +630,21 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     }),
     [selectedConversation, agency?.name],
   );
+
+  /* Lo que el micro necesita para escribir: el hilo que se ve, quién es la otra
+     persona y lo que se sabe de verdad (lo mismo que resuelve las plantillas). */
+  const contextoParaLaIa = useCallback((): Omit<PedidoDeRedaccion, 'instruccion' | 'borrador'> => {
+    const perfil = selectedConversation?.perfil;
+    return {
+      nombre: selectedConversation?.name || (locale === 'es' ? 'la persona' : 'the person'),
+      perfil: perfil === 'TENANT' ? 'inquilino' : perfil === 'LANDLORD' ? 'propietario' : 'otro',
+      inmobiliaria: agency?.name ?? null,
+      mensajes: messages.map((m) => ({ deLaInmobiliaria: Boolean(m.isMine), texto: m.content })),
+      datos: Object.fromEntries(
+        Object.entries({ inmueble: datosDePlantilla.inmueble, mes: datosDePlantilla.mes }).filter(([, v]) => v),
+      ),
+    };
+  }, [selectedConversation, locale, agency?.name, messages, datosDePlantilla]);
 
   /* El aviso se apaga solo cuando ya no queda ningún hueco en el campo: quien
      completó «{{saldo}}» a mano no tiene por qué seguir viendo una alerta. */
@@ -1237,6 +1262,18 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                 onElegir={alElegirPlantilla}
                               />
                             )}
+                            {/* `key` por conversación: lo que se pidió para Ana no
+                                queda abierto en el hilo de Beto. */}
+                            {enPanelDeInmobiliaria && agency?.id && (
+                              <EscribirConIaPopover
+                                key={`ia-${selectedConversation.id}`}
+                                locale={locale}
+                                agencyId={agency.id}
+                                contexto={contextoParaLaIa}
+                                borradorActual={messageText}
+                                onEscrito={alEscribirConIa}
+                              />
+                            )}
                             {/* `key` por conversación: los pendientes de Ana no
                                 pueden quedar cacheados en el panel de Beto ni
                                 por un cuadro. Remontar es más barato y más
@@ -1331,6 +1368,20 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           botón. No bloquea el envío —puede que el hueco sea a
                           propósito— pero no deja que pase desapercibido.
                         */}
+                        {/* Lo que el borrador de la IA no sabía (nunca lo inventa). */}
+                        {messageText.includes(HUECO_DEL_BORRADOR) && (
+                          <p
+                            data-testid="borrador-con-huecos"
+                            className="mt-2 flex items-start gap-1.5 text-caption text-warning"
+                          >
+                            <Warning className="mt-px h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+                            <span>
+                              {locale === 'es'
+                                ? `Cambia ${HUECO_DEL_BORRADOR} por el dato real antes de mandarlo: la IA no lo inventa.`
+                                : `Replace ${HUECO_DEL_BORRADOR} with the real value before sending: the AI never makes it up.`}
+                            </span>
+                          </p>
+                        )}
                         {huecosVisibles.length > 0 && (
                           <p
                             data-testid="plantilla-con-huecos"

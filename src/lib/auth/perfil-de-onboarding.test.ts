@@ -4,6 +4,7 @@ import {
   esPerfilDeOnboarding,
   leerPerfilElegido,
   rutaDeOnboarding,
+  rutaDeOnboardingConRegreso,
   RUTA_DEL_SELECTOR_DE_PERFIL,
 } from './perfil-de-onboarding'
 
@@ -31,5 +32,19 @@ describe('perfil de onboarding', () => {
     expect(rutaDeOnboarding('agency')).toBe('/onboarding/inmobiliaria')
     expect(rutaDeOnboarding(null)).toBe(RUTA_DEL_SELECTOR_DE_PERFIL)
     expect(rutaDeOnboarding(undefined)).toBe('/onboarding/seleccionar-rol')
+  })
+
+  it('lleva el destino al onboarding del inquilino y del propietario, que saben volver (Juan, 15-10)', () => {
+    expect(rutaDeOnboardingConRegreso('tenant', '/aprobacion?canon=2000000')).toBe(
+      '/onboarding/inquilino?returnUrl=%2Faprobacion%3Fcanon%3D2000000',
+    )
+    expect(rutaDeOnboardingConRegreso('landlord', '/publicar')).toBe('/onboarding/propietario?returnUrl=%2Fpublicar')
+  })
+
+  it('sin destino, con el inicio, en el selector o en la inmobiliaria, la ruta de siempre', () => {
+    expect(rutaDeOnboardingConRegreso('tenant', null)).toBe('/onboarding/inquilino')
+    expect(rutaDeOnboardingConRegreso('tenant', '/')).toBe('/onboarding/inquilino')
+    expect(rutaDeOnboardingConRegreso(null, '/aprobacion')).toBe(RUTA_DEL_SELECTOR_DE_PERFIL)
+    expect(rutaDeOnboardingConRegreso('agency', '/aprobacion')).toBe('/onboarding/inmobiliaria')
   })
 })

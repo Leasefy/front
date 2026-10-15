@@ -25,6 +25,8 @@ import {
 import { EsqueletoTabla } from '@/components/estado/EsqueletoTabla'
 import { FalloDeCarga } from '@/components/estado/FalloDeCarga'
 import { SinDatos } from '@/components/estado/SinDatos'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { mesesRecientes } from '@/components/inmobiliaria/pagos/DeudaDelMesPanel'
 import { toast } from '@/components/ui/toast'
 import { dispersionesApi } from '@/lib/api/inmobiliaria.service'
 import { listaDeRecibosApi } from '@/lib/api/lista-de-recibos.service'
@@ -43,6 +45,8 @@ function mesDeHoy(): string {
 
 export function EgresosAPropietarios() {
   const [mes, setMes] = useState(mesDeHoy)
+  // Los giros HECHOS: del mes en curso hacia atrás, dos años (el mismo selector de «Deuda del mes»).
+  const meses = useMemo(() => mesesRecientes(24), [])
   const [giros, setGiros] = useState<Dispersion[] | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<unknown>(null)
@@ -80,16 +84,21 @@ export function EgresosAPropietarios() {
   return (
     <div className="space-y-4" data-testid="egresos-a-propietarios">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label className="flex items-center gap-2 text-sm text-fg-muted">
+        <div className="flex items-center gap-2 text-sm text-fg-muted">
           Mes
-          <input
-            type="month"
-            value={mes}
-            onChange={(e) => e.target.value && setMes(e.target.value)}
-            className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-fg"
-            data-testid="mes-de-los-egresos"
-          />
-        </label>
+          <Select value={mes} onValueChange={(v) => v && setMes(v)}>
+            <SelectTrigger className="w-[190px]" aria-label="Mes de los egresos" data-testid="mes-de-los-egresos">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {meses.map((m) => (
+                <SelectItem key={m} value={m}>
+                  {nombreDelMes(m)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         {giros && giros.length > 0 && (
           <p className="text-sm text-fg-muted sm:ml-auto" data-testid="resumen-de-los-egresos">
             {giros.length} {giros.length === 1 ? 'giro' : 'giros'} de {nombreDelMes(mes)} · {formatCurrency(total)} girados

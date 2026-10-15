@@ -22,6 +22,8 @@ interface AuthModalProps {
   titulo?: string;
   /** La descripción para el lector de pantalla (por defecto, la de publicar). */
   descripcion?: string;
+  /** El correo que la persona ya escribió (p. ej. en su estudio): llega puesto en el formulario. */
+  correoInicial?: string;
 }
 
 export function AuthModal({
@@ -33,6 +35,7 @@ export function AuthModal({
   aviso,
   titulo = 'Crea tu cuenta para continuar',
   descripcion = 'Guardamos tu publicación. Crea una cuenta para gestionar tu propiedad.',
+  correoInicial,
 }: AuthModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -46,6 +49,7 @@ export function AuthModal({
           defaultMode="register"
           defaultRole={defaultRole}
           returnUrl={returnUrl}
+          correoInicial={correoInicial}
           onSuccess={() => {
             onOpenChange(false);
             onAuthSuccess?.();

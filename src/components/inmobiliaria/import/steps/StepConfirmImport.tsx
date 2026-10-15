@@ -2188,9 +2188,9 @@ function StepConfirmImportCuerpo({
             className="rounded-lg border border-border bg-surface-muted p-3 text-sm text-fg-muted"
             data-testid="aviso-canon-por-confirmar"
           >
-            {sinCanon === 1
-              ? "1 inmueble no trae canon: se crea con el canon por confirmar."
-              : `${sinCanon.toLocaleString("es-CO")} inmuebles no traen canon: se crean con el canon por confirmar.`}{" "}
+            {/* 🔴 QA Portofino (14-10): el conteo de las LISTAS para crear va aparte de
+                las que todavía están por revisar; antes las sumaba todas en «se crean». */}
+            {fraseDelCanonPorConfirmar(sinCanon, alCrear?.sinCanon ?? null)}{" "}
             No bloquea nada; el canon se completa después, en bloque o en cada inmueble.
           </p>
         ) : null}
@@ -2614,4 +2614,32 @@ export function detalleDeReusados(
     )
   }
   return partes.length > 0 ? partes.join(' ') : null
+}
+
+/**
+ * «4 inmuebles listos para crear no traen canon…» y, aparte, los que todavía
+ * están por revisar. Sin el conteo de las listas (un back anterior), la frase
+ * de siempre con el total.
+ */
+export function fraseDelCanonPorConfirmar(total: number, listas: number | null): string {
+  const n = (x: number) => x.toLocaleString("es-CO");
+  if (listas === null) {
+    return total === 1
+      ? "1 inmueble no trae canon: se crea con el canon por confirmar."
+      : `${n(total)} inmuebles no traen canon: se crean con el canon por confirmar.`;
+  }
+  const porRevisar = Math.max(0, total - listas);
+  const deLasListas =
+    listas === 0
+      ? ""
+      : listas === 1
+        ? "1 inmueble listo para crear no trae canon: se crea con el canon por confirmar."
+        : `${n(listas)} inmuebles listos para crear no traen canon: se crean con el canon por confirmar.`;
+  const deLasPorRevisar =
+    porRevisar === 0
+      ? ""
+      : porRevisar === 1
+        ? `${listas > 0 ? "Otro" : "1 inmueble"} sin canon está entre los que faltan por revisar.`
+        : `${listas > 0 ? "Otros" : ""} ${n(porRevisar)} inmuebles sin canon están entre los que faltan por revisar.`.trim();
+  return [deLasListas, deLasPorRevisar].filter(Boolean).join(" ");
 }

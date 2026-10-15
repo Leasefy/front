@@ -98,7 +98,7 @@ describe('CrearInmueblesFaltantes', () => {
       creados: 2,
       vinculados: 2,
       consignados: 1,
-      omitidas: [{ id: 'f-3', fila: 2, motivo: 'Sin ciudad: decila al crear.' }],
+      omitidas: [{ id: 'f-3', fila: 2, motivo: 'Sin ciudad: ni el archivo ni la inmobiliaria la tienen. Escríbela al crear.' }],
       fallidas: [],
     })
     const onListo = await render()

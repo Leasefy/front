@@ -18,6 +18,7 @@ import { ArrowSquareOut, XCircle } from '@phosphor-icons/react'
 import { toast } from '@/components/ui/toast'
 
 import { useI18n } from '@/lib/i18n'
+import { PageGuard } from '@/components/auth/PageGuard'
 import { useAuth } from '@/lib/auth'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { falloDelMicro } from '@/lib/api/fallo-del-micro'
@@ -873,7 +874,18 @@ interface ArcoDetailPageProps {
   params: Promise<{ id: string }>
 }
 
+// ROLES (14-10-2026): pide `resolve-arco`, lo mismo que el micro. Sin el
+// permiso el micro responde 403 y la pantalla parecía caída («No pudimos
+// cargar las solicitudes» con todo en cero); ahora dice que no tiene acceso.
 export default function ArcoDetailPage(props: ArcoDetailPageProps) {
+  return (
+    <PageGuard module="cotizador" action="resolve-arco">
+      <DetalleArco {...props} />
+    </PageGuard>
+  )
+}
+
+function DetalleArco(props: ArcoDetailPageProps) {
   const params = use(props.params)
   const { t } = useI18n()
   const { data, isLoading, error, refetch: detailRefetch } = useArcoDetail(params.id)

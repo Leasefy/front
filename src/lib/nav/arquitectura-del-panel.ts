@@ -549,7 +549,11 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // 🔴 18-09-2026: las cláusulas propias de la inmobiliaria. Va como
           // SECCIÓN de Contratos y no como fila: Contratos ya tiene riel, y
           // una cláusula sólo tiene sentido dentro de un contrato.
-          { labelKey: 'inmobiliaria.nav.clausulasPropias', href: r('/contratos/clausulas'), icon: Scroll, module: 'contratos' },
+          // ROLES (14-10-2026): sin el abogado externo. El back le cierra
+          // `contratos` fuera de lo jurídico (`el-abogado-externo-solo-lo-juridico.ts`):
+          // en su menú «Contratos» llevaba a una pantalla que le decía «No tienes
+          // acceso». Su trabajo está en «Jurídico».
+          { labelKey: 'inmobiliaria.nav.clausulasPropias', href: r('/contratos/clausulas'), icon: Scroll, module: 'contratos', roles: SIN_EL_ABOGADO_EXTERNO },
           // Retención (tablero, riesgo de salida y decisiones por aprobar) ya
           // no cuelga de Contratos: se mudó a «Agentes IA» (QA-CONT C-19,
           // 03-10-2026) y las rutas viejas redirigen a `/retencion`.

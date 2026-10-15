@@ -147,6 +147,22 @@ export function ElegirAQuienPagarle({
   );
   const girados = todoElMes ? girables.length : elegidos.size - cerradosEnCero;
 
+  /*
+   * 🔴 El 4x1000 (Juan, 15-10-2026: «al armar el lote, decir si se descuenta o
+   * no»). Con la inmobiliaria cobrándolo, una columna por fila; sin
+   * configurarlo, una línea que lo dice. Un back anterior no manda `gmf`.
+   */
+  const gmf = datos?.gmf ?? null;
+  const conColumnaDelGmf = gmf !== null && gmf.porMil !== null;
+  const gmfElegido = useMemo(
+    () =>
+      girables.reduce(
+        (s, c) => (entra(c.dispersionId) && (c.gmfCop ?? 0) > 0 ? { cop: s.cop + (c.gmfCop ?? 0), n: s.n + 1 } : s),
+        { cop: 0, n: 0 },
+      ),
+    [girables, entra],
+  );
+
   const disponible = datos?.plata.disponibleCop ?? 0;
   // El descubierto se mide contra el disponible, nunca contra 0: si ya venía
   // negativo, todo lo que se gire hoy es plata adelantada.
@@ -274,6 +290,11 @@ export function ElegirAQuienPagarle({
         Cada propietario se gira completo o no se gira: el monto de «Pagar hasta» sólo decide a quién
         tildar, nunca parte el neto de nadie.
       </p>
+      {gmf !== null && gmf.porMil === null && (
+        <p className="text-xs text-fg-muted" data-testid="gmf-sin-configurar">
+          La inmobiliaria no tiene configurado el 4x1000: no se le descuenta a ningún propietario.
+        </p>
+      )}
 
       <div className="overflow-x-auto rounded-lg border border-border">
         <Table>
@@ -283,6 +304,7 @@ export function ElegirAQuienPagarle({
               <TableHead>Propietario</TableHead>
               <TableHead>Mes</TableHead>
               <TableHead className="text-right">Neto</TableHead>
+              {conColumnaDelGmf && <TableHead className="text-right">4x1000</TableHead>}
               <TableHead className="text-right">Acumulado</TableHead>
             </TableRow>
           </TableHeader>
@@ -293,6 +315,7 @@ export function ElegirAQuienPagarle({
                 candidato={c}
                 elegido={elegidos.has(c.dispersionId)}
                 onAlternar={() => alternar(c.dispersionId)}
+                conColumnaDelGmf={conColumnaDelGmf}
               />
             ))}
             {compensables.map((c) => (
@@ -318,6 +341,7 @@ export function ElegirAQuienPagarle({
                 </TableCell>
                 <TableCell className="text-fg-muted">{nombreDelMes(c.month)}</TableCell>
                 <TableCell className="text-right font-mono tabular-nums text-fg">{formatCurrency(0)}</TableCell>
+                {conColumnaDelGmf && <CeldaDelGmf candidato={c} />}
                 <TableCell className="text-right text-xs text-fg-muted">No suma</TableCell>
               </TableRow>
             ))}
@@ -332,12 +356,13 @@ export function ElegirAQuienPagarle({
                 <TableCell className="text-right font-mono tabular-nums text-fg-muted">
                   {formatCurrency(c.netoCop)}
                 </TableCell>
+                {conColumnaDelGmf && <CeldaDelGmf candidato={c} />}
                 <TableCell className="text-right text-xs text-fg-muted">No se puede girar</TableCell>
               </TableRow>
             ))}
             {girables.length === 0 && excluidos.length === 0 && compensables.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="py-8 text-center text-sm text-fg-muted">
+                <TableCell colSpan={conColumnaDelGmf ? 6 : 5} className="py-8 text-center text-sm text-fg-muted">
                   No hay dispersiones pendientes de {nombreDelMes(mes)} sin lote.
                 </TableCell>
               </TableRow>
@@ -361,6 +386,15 @@ export function ElegirAQuienPagarle({
             </>
           )}
           .
+          {conColumnaDelGmf && (
+            <span className="block text-xs text-fg-muted" data-testid="gmf-de-lo-elegido">
+              {gmfElegido.n > 0
+                ? `${gmfElegido.n === 1 ? 'Se le descuenta' : 'Se les descuenta'} el 4x1000 a ${gmfElegido.n} ${
+                    gmfElegido.n === 1 ? 'propietario' : 'propietarios'
+                  }: ${formatCurrency(gmfElegido.cop)} en total, ya restados del neto.`
+                : 'A ninguno se le descuenta el 4x1000.'}
+            </span>
+          )}
         </p>
         {descubierto > 0 && (
           <span className="flex items-center gap-1.5 text-sm text-warning">
@@ -438,14 +472,30 @@ function Dato({
   );
 }
 
+/** «−$ 3.524» si se le descuenta el 4x1000 en este giro; si no, «No se descuenta». */
+function CeldaDelGmf({ candidato }: { candidato: CandidatoDeDispersion }) {
+  const cop = candidato.gmfCop ?? 0;
+  return (
+    <TableCell className="text-right" data-testid={`gmf-${candidato.dispersionId}`}>
+      {cop > 0 ? (
+        <span className="font-mono text-sm tabular-nums text-fg">−{formatCurrency(cop)}</span>
+      ) : (
+        <span className="text-xs text-fg-muted">No se descuenta</span>
+      )}
+    </TableCell>
+  );
+}
+
 function FilaDelCandidato({
   candidato,
   elegido,
   onAlternar,
+  conColumnaDelGmf,
 }: {
   candidato: CandidatoDeDispersion;
   elegido: boolean;
   onAlternar: () => void;
+  conColumnaDelGmf: boolean;
 }) {
   return (
     <TableRow
@@ -475,6 +525,7 @@ function FilaDelCandidato({
       <TableCell className="text-right font-mono tabular-nums text-fg">
         {formatCurrency(candidato.netoCop)}
       </TableCell>
+      {conColumnaDelGmf && <CeldaDelGmf candidato={candidato} />}
       <TableCell
         className={cn(
           'text-right font-mono text-xs tabular-nums',

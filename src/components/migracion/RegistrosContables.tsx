@@ -46,6 +46,7 @@ import { formatDate } from "@/lib/format";
 import { AsientoDeApertura } from "./AsientoDeApertura";
 import { CargasDeAsientosAbiertas } from "./CargasDeAsientosAbiertas";
 import { DocumentosContables } from "./DocumentosContables";
+import { CarteraDelSistemaAnterior } from "./CarteraDelSistemaAnterior";
 import { MigrarAsientos } from "./MigrarAsientos";
 import { mensajeDeContabilidad } from "./contabilidad-errores";
 import { queArchivoContableSubieron } from "./que-archivo-contable-subieron";
@@ -525,6 +526,10 @@ export function RegistrosContables({
               archivoInicial={archivoPara("documentos")}
             />
           )}
+
+          {/* 🔴 Juan (15-10-2026): «que traiga la cartera antigua». Aparte de
+              los tres caminos: no es un asiento, es la deuda de cada contrato. */}
+          <CarteraDelSistemaAnterior />
         </>
       )}
     </div>

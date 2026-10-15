@@ -702,6 +702,12 @@ export interface Contract {
   /** T-0153 (A2): `true` propietario, `false` inmobiliaria, `null` = la configuración de la inmobiliaria. */
   trasladaGmfAlPropietario?: boolean | null;
   /**
+   * 🔴 El 4x1000 que configuró la inmobiliaria (Juan, 15-10-2026): qué rige
+   * cuando el contrato no elige. `porMil: null` = no lo cobra en ningún giro.
+   * Ausente con un back anterior.
+   */
+  gmfDeLaInmobiliaria?: GmfDeLaInmobiliaria | null;
+  /**
    * CO-28: por qué este contrato no tiene tabla de cuotas (nadie sabe la
    * comisión), tal cual lo dice el generador del back; `null` si no aplica.
    */
@@ -864,4 +870,10 @@ export interface ContractSummary {
   monthlyRent: number;
   startDate: string;
   endDate: string;
+}
+
+/** El 4x1000 de la inmobiliaria, tal como lo manda `GET /contracts/:id`. */
+export interface GmfDeLaInmobiliaria {
+  porMil: number | null;
+  trasladaAlPropietario: boolean;
 }

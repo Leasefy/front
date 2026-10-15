@@ -37,6 +37,14 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { contractsApi } from '@/lib/api/contracts.service'
+import {
+  AYUDA_DEL_GMF,
+  eleccionDelGmf,
+  opcionesDelGmf,
+  textoDelGmf,
+  valorDeLaEleccion,
+  type EleccionDelGmf,
+} from '@/lib/contratos/gmf-del-contrato'
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario'
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo'
 import type { Contract } from '@/lib/types/contract'
@@ -138,6 +146,12 @@ export function AdministracionDelContrato({
    * manda igual (ver `guardar`).
    */
   const [referencia, setReferencia] = useState(contract.referenciaDeRecaudo ?? '')
+  /*
+   * 🔴 El 4x1000 del giro (Juan, 15-10-2026): antes sólo se veía. Tres
+   * opciones —«como la inmobiliaria» no es «la inmobiliaria lo asume»—, ver
+   * `gmf-del-contrato.ts`.
+   */
+  const [gmf, setGmf] = useState<EleccionDelGmf>(eleccionDelGmf(contract.trasladaGmfAlPropietario))
 
   /*
    * El perfil tributario del inquilino. Es el ÚNICO de los tres que vive en el
@@ -240,6 +254,10 @@ export function AdministracionDelContrato({
         // contrato vuelve a pagarse con su consecutivo. Guardar '' dejaría un
         // identificador que no empata con ninguna línea del extracto.
         referenciaDeRecaudo: referencia.trim() === '' ? null : referencia.trim(),
+        // Sólo si cambió: cambiarlo rehace las cuotas del propietario del mes.
+        ...(gmf !== eleccionDelGmf(contract.trasladaGmfAlPropietario)
+          ? { trasladaGmfAlPropietario: valorDeLaEleccion(gmf) }
+          : {}),
         // `null` es una acción: «vuelve a no saberlo». Distinto de no mandar el
         // campo, que lo deja como estaba.
         arrendadorResponsableIva: deTernario(arrendadorIva),
@@ -356,17 +374,11 @@ export function AdministracionDelContrato({
           })()}
           ausente="El de la inmobiliaria"
         />
-        {/* T-0153 (A2): quién asume el 4x1000 del giro. Sólo lectura. */}
+        {/* 🔴 Quién asume el 4x1000 del giro (Juan, 15-10-2026: se corrige en «Corregir»). */}
         <Fila
           etiqueta="4x1000 del giro"
-          valor={
-            contract.trasladaGmfAlPropietario == null
-              ? null
-              : contract.trasladaGmfAlPropietario
-                ? "Propietario"
-                : "Inmobiliaria"
-          }
-          ausente="propietario / inmobiliaria (según la configuración de la inmobiliaria)"
+          valor={textoDelGmf(contract.trasladaGmfAlPropietario, contract.gmfDeLaInmobiliaria)}
+          ausente="Como la inmobiliaria"
         />
         <Fila
           etiqueta="Plazo antes de la mora"
@@ -687,6 +699,29 @@ export function AdministracionDelContrato({
                   pista="El número con el que el inquilino paga y que viene escrito en el extracto: es lo que deja que la conciliación reconozca el pago sola. Vacío = se usa el consecutivo del contrato."
                   className="mt-0"
                 />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-caption text-muted-foreground" htmlFor="gmf-del-giro">
+                  4x1000 del giro
+                </label>
+                <Select value={gmf} onValueChange={(v) => setGmf(v as EleccionDelGmf)}>
+                  <SelectTrigger id="gmf-del-giro" data-testid="gmf-del-giro">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {opcionesDelGmf(contract.gmfDeLaInmobiliaria).map((o) => (
+                      <SelectItem key={o.valor} value={o.valor}>
+                        {o.etiqueta}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-caption text-muted-foreground" data-testid="ayuda-del-gmf">
+                  {contract.gmfDeLaInmobiliaria && contract.gmfDeLaInmobiliaria.porMil === null
+                    ? 'La inmobiliaria no tiene configurado el 4x1000: no se descuenta en ningún giro hasta que lo configure en Configuración → Costos de la plata.'
+                    : AYUDA_DEL_GMF}
+                </p>
               </div>
 
               <label className="flex cursor-pointer items-start gap-2 text-sm text-foreground">

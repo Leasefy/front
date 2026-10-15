@@ -105,6 +105,16 @@ const DECLARADOS: ReadonlyArray<Uso & { motivo: string }> = [
   },
   { archivo: 'src/components/property/PhotoGalleryModal.tsx', src: 'image', motivo: 'Elemento de la lista de fotos.' },
   { archivo: 'src/components/property/PortadaDelInmueble.tsx', src: 'src', motivo: 'Es el remedio: `primeraFoto` ya descartó lo vacío.' },
+  {
+    archivo: 'src/app/panel/inmobiliaria/configuracion/SeccionTuPagina.tsx',
+    src: 'portadaDe(portada)',
+    motivo: '`portadaDe` nunca devuelve vacío: sin portada propia cae en la primera de Leasefy (`lib/marketplace/portadas.ts`).',
+  },
+  {
+    archivo: 'src/app/panel/inmobiliaria/configuracion/SeccionTuPagina.tsx',
+    src: 'p.src',
+    motivo: 'Recorre `PORTADAS_DE_LEASEFY`, el catálogo fijo de portadas (archivos del sitio).',
+  },
   { archivo: 'src/components/property/PropertyCard.tsx', src: 'src', motivo: 'Recorre `allImages`, ya filtradas con `trim()`.' },
   { archivo: 'src/components/tenant/PropertyDetailSheet.tsx', src: 'image', motivo: 'Elemento de la lista de fotos.' },
   {

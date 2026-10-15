@@ -141,7 +141,7 @@ export function FotosYFirmasDelActa({ acta, onCambio }: Props) {
       <FalloDeCarga
         error={error}
         queEs="las fotos y las firmas del acta"
-        onReintentar={() => void leer()}
+        onReintentar={() => leer()}
         enmarcado={false}
       />
     );

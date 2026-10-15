@@ -156,7 +156,7 @@ export function PasosParaTransmitir() {
         <FalloDeCarga
           error={error}
           queEs="el estado de tu facturación electrónica"
-          onReintentar={() => void recargar()}
+          onReintentar={() => recargar()}
         />
       ) : !estado ? (
         <p className="text-caption text-fg-muted" data-testid="pasos-sin-datos">

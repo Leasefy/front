@@ -155,6 +155,7 @@ vi.mock('@phosphor-icons/react', () => ({
   Warning: () => null,
   // Los tres paneles del compositor (emojis, plantillas, pendientes).
   Notepad: () => null,
+  MagicWand: () => null,
   ListChecks: () => null,
   Receipt: () => null,
   CurrencyCircleDollar: () => null,

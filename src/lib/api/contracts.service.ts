@@ -150,6 +150,7 @@ export function mapBackendContract(bc: BackendContract): Contract {
     // cerrada). Ausente con un back anterior.
     ...(bc.comisionSinDefinir !== undefined ? { comisionSinDefinir: bc.comisionSinDefinir === true } : {}),
     ...(bc.trasladaGmfAlPropietario !== undefined ? { trasladaGmfAlPropietario: bc.trasladaGmfAlPropietario } : {}),
+    ...(bc.gmfDeLaInmobiliaria !== undefined ? { gmfDeLaInmobiliaria: bc.gmfDeLaInmobiliaria ?? null } : {}),
     ...(bc.sinTablaDeCuotas !== undefined ? { sinTablaDeCuotas: bc.sinTablaDeCuotas ?? null } : {}),
     ...(bc.loQueTraiaElArchivo !== undefined ? { loQueTraiaElArchivo: bc.loQueTraiaElArchivo ?? null } : {}),
     /*
@@ -664,6 +665,23 @@ export const contractsApi = {
     },
 
     /**
+     * 🔴 La cartera del sistema anterior por inquilino (Juan, 15-10-2026): lo
+     * que cada documento debía al corte entra como el «Saldo del sistema
+     * anterior» de su contrato. `soloVer` = la vista previa, no escribe.
+     */
+    async saldosDelSistemaAnterior(
+      saldos: Array<{ documento: string; nombre?: string | null; saldoCop: number }>,
+      soloVer: boolean,
+    ): Promise<CargaDeSaldosAnteriores> {
+      return apiClient.post<CargaDeSaldosAnteriores>(
+        soloVer
+          ? '/contracts/migrar/saldos-del-sistema-anterior/vista-previa'
+          : '/contracts/migrar/saldos-del-sistema-anterior',
+        { saldos },
+      );
+    },
+
+    /**
      * 3. Convierte en contratos las filas LISTO. Sólo esas.
      *
      * 🔴 `invitar` es `false` por defecto (QA 22-09): la invitación al portal
@@ -989,6 +1007,13 @@ export const contractsApi = {
        * vacía o `null` = borrarla y volver al consecutivo del contrato.
        */
       referenciaDeRecaudo?: string | null;
+      /**
+       * 🔴 Quién asume el 4x1000 del giro de ESTE contrato (Juan, 15-10-2026):
+       * `true` el propietario, `false` la inmobiliaria, `null` = lo que diga la
+       * inmobiliaria. Cambiarlo rehace las cuotas del propietario desde el mes
+       * en curso que no estén en una liquidación.
+       */
+      trasladaGmfAlPropietario?: boolean | null;
     },
   ): Promise<Contract> {
     const raw = await apiClient.patch<BackendContract>(
@@ -1825,6 +1850,29 @@ export interface ResultadoDeVerificacion {
    * se aplicó: los números son ciertos, pero se pierden al recargar.
    */
   guardado: boolean
+}
+
+/** `POST /contracts/migrar/saldos-del-sistema-anterior[/vista-previa]`. */
+export interface CargaDeSaldosAnteriores {
+  /** `AAAA-MM-DD`. */
+  fechaDeCorte: string;
+  filas: Array<{
+    documento: string;
+    nombre: string | null;
+    saldoCop: number;
+    estado: 'SE_CARGA' | 'CARGADO' | 'IGUAL' | 'CON_PAGOS' | 'SIN_CONTRATO' | 'NO_SE_SABE';
+    motivo: string | null;
+    contrato: {
+      id: string;
+      numero: number;
+      externalId: string | null;
+      inquilino: string | null;
+      inmueble: string | null;
+    } | null;
+    /** Otros contratos del mismo inquilino que NO toman el saldo. */
+    otrosContratos: number;
+  }>;
+  totales: { documentos: number; conContrato: number; sinContrato: number; totalCop: number };
 }
 
 /** `GET/PUT /contracts/migrar/fecha-de-corte`. */

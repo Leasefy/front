@@ -126,10 +126,9 @@ describe('LandingHeaderV2', () => {
     })
   })
   describe('a quien le sirve "Buscar inmueble"', () => {
-    // El marketplace es para el que BUSCA donde vivir. A una inmobiliaria
-    // ofrecerle "Buscar inmueble" en su propio header es ofrecerle el
-    // inventario de la competencia: no es un enlace de mas, es el enlace
-    // equivocado. Se saca de las DOS navegaciones, no solo de la de escritorio.
+    // A todos, con sesion o sin ella (Juan, Portofino, 15-10-2026: «al iniciar
+    // sesión desaparece Buscar inmuebles»). Antes se le escondia a la
+    // inmobiliaria; ahora sale en las DOS navegaciones para cualquiera.
     function entrarComo(role: string, activeContext: string | null = null) {
       authState.isAuthenticated = true
       authState.isLoading = false
@@ -150,19 +149,17 @@ describe('LandingHeaderV2', () => {
       expect(container.querySelector('#mmenu nav a[href="/propiedades"]')).not.toBeNull()
     })
 
-    it('la inmobiliaria NO lo ve, ni en escritorio ni en movil', () => {
+    it('la inmobiliaria con sesion TAMBIEN lo ve, en escritorio y en movil (Juan, 15-10)', () => {
       entrarComo('agency')
       montar({ fxExterno: true })
-      expect(container.querySelector('nav.main a[href="/propiedades"]')).toBeNull()
-      expect(container.querySelector('#mmenu nav a[href="/propiedades"]')).toBeNull()
+      expect(container.querySelector('nav.main a[href="/propiedades"]')).not.toBeNull()
+      expect(container.querySelector('#mmenu nav a[href="/propiedades"]')).not.toBeNull()
     })
 
-    it('tampoco lo ve quien esta parado en contexto de inmobiliaria', () => {
-      // Cuenta dual: rol personal inquilino + membresia activa en una agencia.
-      // Manda el contexto activo, igual que en getUserHomeRoute.
+    it('tambien quien esta parado en contexto de inmobiliaria', () => {
       entrarComo('tenant', 'agency')
       montar({ fxExterno: true })
-      expect(container.querySelector('nav.main a[href="/propiedades"]')).toBeNull()
+      expect(container.querySelector('nav.main a[href="/propiedades"]')).not.toBeNull()
     })
 
     it('mientras la sesion carga no lo esconde — no parpadea el nav', () => {
@@ -173,13 +170,22 @@ describe('LandingHeaderV2', () => {
       expect(container.querySelector('nav.main a[href="/propiedades"]')).not.toBeNull()
     })
 
-    it('al esconderlo, el menu movil sigue numerado 01..06 sin huecos («Planes» oculto, 12-10)', () => {
+    it('al esconder «Publicar», el menu movil sigue numerado 01..06 sin huecos («Planes» oculto, 12-10)', () => {
       // Los numeros del menu movil son parte del diseno, no decoracion: si
-      // desaparece el 01 y queda 02..08, el menu se lee roto.
+      // desaparece uno y queda un hueco, el menu se lee roto.
       entrarComo('agency')
+      authState.agencyRole = 'VIEWER'
       montar({ fxExterno: true })
       const numeros = [...container.querySelectorAll('#mmenu nav a .n')].map((n) => n.textContent)
       expect(numeros).toEqual(['01', '02', '03', '04', '05', '06'])
+    })
+
+    it('la inmobiliaria que publica ve 07 en el menu movil, con «Buscar inmueble» de primero', () => {
+      entrarComo('agency')
+      montar({ fxExterno: true })
+      const enlaces = [...container.querySelectorAll('#mmenu nav a')]
+      expect(enlaces.map((a) => a.querySelector('.n')?.textContent)).toEqual(['01', '02', '03', '04', '05', '06', '07'])
+      expect(enlaces[0]?.getAttribute('href')).toBe('/propiedades')
     })
 
     it('la inmobiliaria SÍ ve «Publicar inmueble», y la lleva a publicar desde su panel (Nico, 09-10)', () => {

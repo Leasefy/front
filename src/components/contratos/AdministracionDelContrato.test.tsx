@@ -461,18 +461,45 @@ describe('T-0153: fecha de cartera y 4x1000 en la ficha', () => {
     expect(fila('Fecha de cartera')).toBeUndefined()
   })
 
-  it('4x1000 del giro: según el valor del contrato, o la configuración si es null', () => {
+  it('4x1000 del giro: según el valor del contrato, o lo que rige en la inmobiliaria si es null', () => {
     render(contrato({ trasladaGmfAlPropietario: true }))
-    expect(fila('4x1000 del giro')!.textContent).toContain('Propietario')
+    expect(fila('4x1000 del giro')!.textContent).toContain('Lo paga el propietario')
     act(() => root.unmount())
     root = createRoot(container)
     render(contrato({ trasladaGmfAlPropietario: false }))
-    expect(fila('4x1000 del giro')!.textContent).toContain('Inmobiliaria')
+    expect(fila('4x1000 del giro')!.textContent).toContain('Lo asume la inmobiliaria')
     act(() => root.unmount())
     root = createRoot(container)
+    // Un back anterior no manda la configuración de la inmobiliaria.
     render(contrato({ trasladaGmfAlPropietario: null }))
-    expect(fila('4x1000 del giro')!.textContent).toContain(
-      'propietario / inmobiliaria (según la configuración de la inmobiliaria)',
+    expect(fila('4x1000 del giro')!.textContent).toContain('Como la inmobiliaria')
+    act(() => root.unmount())
+    root = createRoot(container)
+    render(
+      contrato({
+        trasladaGmfAlPropietario: null,
+        gmfDeLaInmobiliaria: { porMil: 4, trasladaAlPropietario: true },
+      }),
     )
+    expect(fila('4x1000 del giro')!.textContent).toContain('Como la inmobiliaria: lo paga el propietario')
+  })
+
+  it('🔴 Juan (15-10-2026): el 4x1000 se corrige en «Corregir», y sólo viaja si cambió', async () => {
+    actualizar.mockResolvedValue(contrato())
+    render(contrato({ trasladaGmfAlPropietario: true }))
+    editar()
+
+    expect(document.querySelector('[data-testid="gmf-del-giro"]')?.textContent).toContain(
+      'Lo paga el propietario',
+    )
+    expect(document.querySelector('[data-testid="ayuda-del-gmf"]')?.textContent).toContain(
+      'mientras no estén en una liquidación',
+    )
+    await act(async () => {
+      boton('Guardar')!.click()
+      await Promise.resolve()
+    })
+    // Sin tocarlo no se manda: cambiarlo rehace las cuotas del propietario.
+    expect(actualizar.mock.calls[0][1]).not.toHaveProperty('trasladaGmfAlPropietario')
   })
 })

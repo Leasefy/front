@@ -4,6 +4,7 @@
  * bucles ni pantallas negadas. Y desde el 08-10 (Nico): sólo en el HOME, con
  * todo lo demás hecho.
  */
+import { VERSION_POLITICA_DE_TRATAMIENTO, VERSION_TERMINOS } from '@/lib/legal/versiones';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 import { act } from 'react';
@@ -32,8 +33,8 @@ import { LATIDO_MS, LATIDOS_EN_CALMA } from '@/lib/legal/cuando-sale-la-ventana-
 const PIDE = {
   disponible: true,
   debeAceptar: true,
-  politica: { version: 'politica-tratamiento-v4.0', aceptada: false, aceptadaEl: null },
-  terminos: { version: 'terminos-v2.1', aceptada: false, aceptadaEl: null },
+  politica: { version: VERSION_POLITICA_DE_TRATAMIENTO, aceptada: false, aceptadaEl: null },
+  terminos: { version: VERSION_TERMINOS, aceptada: false, aceptadaEl: null },
   cambios: ['Política de tratamiento de datos, versión 4.0 (desde el 4 de octubre de 2026): cambiaron las secciones 13 y 16.', 'Términos y condiciones, versión 2.1: cambió la sección 19.'],
 };
 
@@ -74,7 +75,7 @@ describe('AceptarLegalesAlEntrar', () => {
     expect(document.querySelector('[data-testid="aceptar-legales"] button[aria-label="Cerrar"]')).toBeNull();
     await act(async () => (document.querySelector('[data-testid="aceptar-legales-acepto"]') as HTMLElement).click());
     await esperar();
-    expect(api.aceptar).toHaveBeenCalledWith('politica-tratamiento-v4.0', 'terminos-v2.1');
+    expect(api.aceptar).toHaveBeenCalledWith(VERSION_POLITICA_DE_TRATAMIENTO, VERSION_TERMINOS);
     expect(ventana()).toBeNull();
   });
 

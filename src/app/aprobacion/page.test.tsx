@@ -6,9 +6,10 @@
  * click, antes de cualquier `await`) y esta página se queda, poleando el
  * back vía `<EstadoPagoAprobacion>` (probado aparte en su propio archivo).
  *
- * Alcance de este submit: la persona YA ESTÁ LOGUEADA. Si no hay sesión, el
- * submit manda a `/auth?returnUrl=/aprobacion` en vez de intentar crear la
- * orden — sin tocar `window.open`.
+ * Sin sesión (Juan, 15-10-2026; Nico: «pasos primero, cuenta al final») el
+ * submit NO manda al login: guarda lo escrito y abre la ventana de la cuenta
+ * encima, sin tocar `window.open`. Con la cuenta recién creada y el perfil
+ * sin hacer, va al onboarding del inquilino con regreso a esta pantalla.
  *
  * Con sesión, cubre las tres respuestas del back:
  *  (a) `reused:false` → crea la orden, redirige la pestaña pre-abierta al
@@ -65,8 +66,26 @@ vi.mock('@/lib/hooks/use-prescoring-current', () => ({
 }))
 
 let mockUser: { role: string } | null = null
+let mockSesion: { isAuthenticated: boolean; needsOnboarding: boolean; perfilElegido: string | null } = {
+  isAuthenticated: false,
+  needsOnboarding: false,
+  perfilElegido: null,
+}
 vi.mock('@/lib/auth/use-auth', () => ({
-  useAuth: () => ({ user: mockUser }),
+  useAuth: () => ({ user: mockUser, isLoading: false, ...mockSesion }),
+}))
+
+// La ventana de la cuenta se prueba con «Publicar inmueble»; acá sólo importa
+// que se abra, con qué destino y con qué correo.
+const { pedirLaCuentaMock, ventanaDeCuentaOpcionesMock } = vi.hoisted(() => ({
+  pedirLaCuentaMock: vi.fn(),
+  ventanaDeCuentaOpcionesMock: vi.fn(),
+}))
+vi.mock('@/components/marketplace/CuentaParaPublicar', () => ({
+  useVentanaDeCuenta: (opciones: unknown) => {
+    ventanaDeCuentaOpcionesMock(opciones)
+    return { abrir: pedirLaCuentaMock, ventana: null }
+  },
 }))
 
 const { crearOrdenPreScoringMock, MockPreScoringError } = vi.hoisted(() => {
@@ -167,6 +186,10 @@ beforeEach(() => {
   document.body.appendChild(container)
   root = createRoot(container)
   mockUser = null
+  mockSesion = { isAuthenticated: false, needsOnboarding: false, perfilElegido: null }
+  window.localStorage.clear()
+  pedirLaCuentaMock.mockReset()
+  ventanaDeCuentaOpcionesMock.mockReset()
   mockEstudio = { estado: 'sin_estudio', isLoading: false }
   pushMock.mockReset()
   replaceMock.mockReset()
@@ -232,7 +255,7 @@ async function submit() {
 
 describe('<AprobacionPage> — Slice 1 pre-scoring (pago en otra pestaña)', () => {
   describe('sin sesión', () => {
-    it('formulario válido: NO crea la orden, NO abre ninguna pestaña, manda a /auth con returnUrl a /aprobacion', async () => {
+    it('formulario válido: NO crea la orden ni abre pestañas, NO manda al login: guarda lo escrito y abre la cuenta encima', async () => {
       mockUser = null
 
       act(() => {
@@ -243,7 +266,45 @@ describe('<AprobacionPage> — Slice 1 pre-scoring (pago en otra pestaña)', () 
 
       expect(openMock).not.toHaveBeenCalled()
       expect(crearOrdenPreScoringMock).not.toHaveBeenCalled()
-      expect(pushMock).toHaveBeenCalledWith('/auth?returnUrl=%2Faprobacion')
+      expect(pushMock).not.toHaveBeenCalled()
+      expect(pedirLaCuentaMock).toHaveBeenCalledTimes(1)
+      const opciones = ventanaDeCuentaOpcionesMock.mock.calls.at(-1)?.[0] as { destino: string; rol: string; correoInicial: string }
+      expect(opciones).toMatchObject({ destino: '/aprobacion', rol: 'tenant', correoInicial: 'maria@correo.com' })
+      const guardado = JSON.parse(window.localStorage.getItem('leasefy:borrador-del-estudio') ?? '{}')
+      expect(guardado.campos).toMatchObject({ nombres: 'María', cedula: '1098765432', email: 'maria@correo.com' })
+      expect(guardado.campos.consent).toBeUndefined()
+    })
+
+    it('muestra los pasos del estudio aunque no venga de un inmueble (Juan, 15-10)', () => {
+      act(() => {
+        root.render(<AprobacionPage />)
+      })
+      expect(container.querySelector('[data-testid="pasos-del-estudio"]')).not.toBeNull()
+      expect(container.textContent).toContain('Paso 1 de 3 · tus datos')
+      expect(container.querySelector('[data-testid="paso-2-de-3"]')).toBeNull()
+    })
+
+    it('al volver, lo escrito sigue ahí y lo dice (la autorización NO: se vuelve a dar)', () => {
+      window.localStorage.setItem(
+        'leasefy:borrador-del-estudio',
+        JSON.stringify({ campos: { nombres: 'María', cedula: '1098765432', email: 'maria@correo.com' }, guardadoEn: Date.now() }),
+      )
+      mockUser = { role: 'tenant' }
+      act(() => {
+        root.render(<AprobacionPage />)
+      })
+      expect((container.querySelector('#nombres') as HTMLInputElement).value).toBe('María')
+      expect((container.querySelector('#cedula') as HTMLInputElement).value).toBe('1098765432')
+      expect(container.querySelector('[data-testid="datos-del-estudio-guardados"]')?.textContent).toContain('Tu cuenta quedó lista')
+      expect(container.querySelector('#consent')?.getAttribute('aria-checked')).not.toBe('true')
+    })
+
+    it('con la cuenta recién creada y sin perfil, va al onboarding del inquilino con regreso al estudio', () => {
+      mockSesion = { isAuthenticated: true, needsOnboarding: true, perfilElegido: 'tenant' }
+      act(() => {
+        root.render(<AprobacionPage />)
+      })
+      expect(replaceMock).toHaveBeenCalledWith('/onboarding/inquilino?returnUrl=%2Faprobacion')
     })
   })
 

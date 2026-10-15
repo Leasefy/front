@@ -19,7 +19,7 @@
  *
  * El endpoint (`GET /inmobiliaria/recaudo/{resumen,serie}`) devuelve
  * agregados: no hay una lista recibo por recibo ni giro por giro del mes.
- * Esa lista vive en `/cobros` (recibos) y en `/pagos/dispersiones` (giros).
+ * Esa lista vive en `/pagos/recibos` (recibos de caja y egresos, 15-10-2026).
  *
  * ── 🔴 Lo que cambió el 2026-09-16: la deuda ya no sale de los cobros ──────
  *
@@ -316,6 +316,10 @@ export function Recaudo() {
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="secondary" size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/pagos/cartera/cobros">Ver cobros del mes</Link>
+          </Button>
+          {/* 🔴 Juan (15-10-2026): «¿dónde se ven los recibos de caja que se generaron?». */}
+          <Button asChild variant="secondary" size="sm" hideArrow>
+            <Link href="/panel/inmobiliaria/pagos/recibos">Ver los recibos</Link>
           </Button>
           <Button asChild variant="secondary" size="sm" hideArrow>
             <Link href="/panel/inmobiliaria/pagos/cartera">Ver cartera</Link>

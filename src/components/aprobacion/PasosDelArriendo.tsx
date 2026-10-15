@@ -4,14 +4,25 @@
  * Los tres pasos para arrendar desde el marketplace, con el `Stepper` de la casa
  * (@leasefy/cadence, el mismo del onboarding y los asistentes).
  * 1 · Te alcanza · 2 · Validamos tus datos · 3 · Tu respuesta (Nico, 14-09).
+ *
+ * `variante="estudio"`: los pasos del estudio solo, para quien llega a
+ * «Hacer mi estudio» sin pasar por un inmueble (Juan, Portofino, 15-10-2026:
+ * «no muestra el paso a paso del estudio»). 1 · Tus datos · 2 · El pago ·
+ * 3 · Tu respuesta. La cuenta se pide en el 2, encima, sin salir.
  */
 
 import { Stepper } from '@leasefy/cadence';
 
-const PASOS = [
+const PASOS_DEL_ARRIENDO = [
   { id: 'alcanza', label: 'Te alcanza', description: 'Tu ingreso frente al canon' },
   { id: 'datos', label: 'Validamos tus datos', description: 'Consultamos a las aseguradoras' },
   { id: 'respuesta', label: 'Tu respuesta', description: 'Si te lo arrendamos y cómo seguir' },
+];
+
+const PASOS_DEL_ESTUDIO = [
+  { id: 'datos', label: 'Tus datos', description: 'Nombre, cédula, celular y correo' },
+  { id: 'pago', label: 'El pago', description: 'Una sola vez, te sirve para todos' },
+  { id: 'respuesta', label: 'Tu respuesta', description: 'Hasta cuánto te respaldan' },
 ];
 
 export function PasosDelArriendo({
@@ -20,15 +31,19 @@ export function PasosDelArriendo({
   orientation = 'horizontal',
   conDescripcion = false,
   className,
+  variante = 'arriendo',
 }: {
   /** Paso en curso, 1 a 3. */
   actual: 1 | 2 | 3;
+  /** Los pasos para arrendar un inmueble (por defecto) o los del estudio solo. */
+  variante?: 'arriendo' | 'estudio';
   /** El paso en curso ya se cumplió (p. ej. «te alcanza» recién verificado). */
   listo?: boolean;
   orientation?: 'horizontal' | 'vertical';
   conDescripcion?: boolean;
   className?: string;
 }) {
+  const PASOS = variante === 'estudio' ? PASOS_DEL_ESTUDIO : PASOS_DEL_ARRIENDO;
   const indice = listo ? actual : actual - 1;
   const steps = PASOS.map((p, i) => ({
     id: p.id,
@@ -38,11 +53,11 @@ export function PasosDelArriendo({
   }));
   const activo = Math.min(indice, PASOS.length - 1);
   const stepper = (
-    <Stepper steps={steps} activeIndex={activo} orientation={orientation} aria-label="Pasos para arrendar" />
+    <Stepper steps={steps} activeIndex={activo} orientation={orientation} aria-label={variante === 'estudio' ? 'Pasos de tu estudio' : 'Pasos para arrendar'} />
   );
   if (orientation === 'vertical') {
     return (
-      <div data-testid="pasos-del-arriendo" className={className}>
+      <div data-testid={variante === 'estudio' ? 'pasos-del-estudio' : 'pasos-del-arriendo'} className={className}>
         {stepper}
       </div>
     );
@@ -50,7 +65,7 @@ export function PasosDelArriendo({
   // En celular los tres rótulos no caben en fila y la franja se salía de la
   // pantalla (medido a 400 px el 14-09): ahí va el paso en curso y una barra.
   return (
-    <div data-testid="pasos-del-arriendo" className={className}>
+    <div data-testid={variante === 'estudio' ? 'pasos-del-estudio' : 'pasos-del-arriendo'} className={className}>
       <div className="hidden sm:block">{stepper}</div>
       <div className="flex flex-col gap-2 sm:hidden">
         <p className="flex items-baseline justify-between gap-3 text-caption">

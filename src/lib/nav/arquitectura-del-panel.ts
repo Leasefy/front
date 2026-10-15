@@ -665,6 +665,11 @@ export const ARQUITECTURA_DEL_PANEL: readonly GrupoDelPanel[] = [
           // auxiliar de cartera no entra (`el-auxiliar-de-cartera-no-ve-los-bancos.ts`).
           { labelKey: 'inmobiliaria.nav.recaudoBancario', href: r('/pagos/recaudo-bancario'), icon: Bank, module: 'cobros', roles: ROLES_QUE_VEN_LOS_BANCOS, cara: 'inquilinos' },
           { labelKey: 'inmobiliaria.nav.cartera', href: r('/pagos/cartera'), icon: CurrencyCircleDollar, module: 'cobros', cara: 'inquilinos' },
+          // 🔴 Juan (Portofino, 15-10-2026): «¿dónde se ven los recibos de caja
+          // que se generaron? ¿y los egresos de la dispersión?». Los recibos sólo
+          // se veían dentro de cada cobro o contrato. La pantalla tiene las dos
+          // pestañas; los egresos piden además `dispersiones` (adentro).
+          { labelKey: 'inmobiliaria.nav.recibos', href: r('/pagos/recibos'), icon: Scroll, module: 'cobros', cara: 'inquilinos' },
           // Lo que SALE (cara propietarios). Las facturas de proveedor (CxP)
           // cuelgan de Liquidaciones: hoy no tienen listado propio, y no se
           // inventa uno.

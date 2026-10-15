@@ -112,7 +112,9 @@ export function InterruptorDeWhatsapp({
         </div>
         <p className="mt-0.5 text-caption text-muted-foreground">
           {canal.aceptaWhatsapp
-            ? `Lo que le escribas en el chat también le llega a su WhatsApp${canal.telefono ? ` ${canal.telefono}` : ''}.`
+            ? `Lo que le escribas en el chat también le llega a su WhatsApp${canal.telefono ? ` ${canal.telefono}` : ''}${
+                canal.porContrato ? ', porque tiene contrato firmado con la inmobiliaria. Si lo apagas, deja de llegarle.' : '.'
+              }`
             : 'Autoriza que lo que le escribas en el chat también le llegue por WhatsApp.'}
         </p>
         {advertencia && (

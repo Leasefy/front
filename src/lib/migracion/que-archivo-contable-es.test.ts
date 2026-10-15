@@ -9,10 +9,13 @@
 
 import { describe, it, expect } from 'vitest';
 import {
+  esElBalanceEnElLibroDiario,
   hayQueAvisarDeOtraPuerta,
   queArchivoContableEs,
   SENALES_PARA_AFIRMAR,
 } from './que-archivo-contable-es';
+import { mapearColumnas } from './columnas-de-tercero';
+import { COLUMNAS_DE_ASIENTO } from './columnas-de-asiento';
 
 /*
  * Los encabezados REALES que Nico tenía en pantalla, leídos de la captura.
@@ -119,5 +122,49 @@ describe('hayQueAvisarDeOtraPuerta', () => {
 
   it('con un libro diario no avisa nada', () => {
     expect(hayQueAvisarDeOtraPuerta(LIBRO_DIARIO, LIBRO_DIARIO.map(() => ({ campo: null })))).toBeNull();
+  });
+});
+/*
+ * 🔴 8.ª tanda (14-10-2026): el BALANCE de prueba por tercero, que es con lo
+ * que nacen los saldos iniciales. Trae el código de cuenta igual que el libro
+ * diario; lo distingue que trae SALDOS y ninguna fecha por fila.
+ */
+describe('el balance de prueba', () => {
+  const BALANCES: Record<string, string[]> = {
+    'Siigo Nube (por tercero)': [
+      'Nivel', 'Transaccional', 'Código cuenta contable', 'Nombre cuenta contable',
+      'Identificación', 'Sucursal', 'Nombre tercero', 'Saldo inicial',
+      'Movimiento débito', 'Movimiento crédito', 'Saldo final',
+    ],
+    'Siigo Pyme': ['CUENTA', 'DESCRIPCION', 'NIT', 'NOMBRE', 'SALDO ANTERIOR', 'DEBITOS', 'CREDITOS', 'NUEVO SALDO'],
+    'World Office': ['Cuenta', 'Nombre Cuenta', 'Nit', 'Nombre Tercero', 'Saldo Anterior', 'Débito', 'Crédito', 'Saldo Actual'],
+    Helisa: ['Cuenta', 'Nombre', 'Nit', 'Saldo Anterior', 'Debitos', 'Creditos', 'Nuevo Saldo'],
+    Alegra: ['Código', 'Nombre', 'Saldo inicial', 'Débito', 'Crédito', 'Saldo final'],
+    'saldo débito y crédito': ['Cuenta', 'Nombre', 'Saldo Débito', 'Saldo Crédito'],
+  };
+
+  it.each(Object.entries(BALANCES))('%s es un balance', (_sistema, encabezados) => {
+    const r = queArchivoContableEs(encabezados);
+    expect(r.forma).toBe('balance');
+    expect(r.senales.length).toBeGreaterThan(0);
+  });
+
+  it('un libro auxiliar con «Saldo» Y fecha sigue siendo libro diario', () => {
+    expect(
+      queArchivoContableEs(['Fecha', 'Comprobante', 'Cuenta', 'Detalle', 'Debito', 'Credito', 'Saldo']).forma,
+    ).toBe('libro-diario');
+  });
+
+  it('un archivo con cuenta y movimientos pero sin saldos no es balance', () => {
+    expect(queArchivoContableEs(['Cuenta', 'Nombre', 'Debitos', 'Creditos']).forma).toBe('libro-diario');
+  });
+
+  it('en el libro diario avisa que es el balance, hasta que alguien señala una fecha', () => {
+    const encabezados = BALANCES.Helisa;
+    const mapeo = mapearColumnas(COLUMNAS_DE_ASIENTO, encabezados);
+    expect(esElBalanceEnElLibroDiario(encabezados, mapeo)?.forma).toBe('balance');
+    const conFecha = mapeo.map((m) => (m.columna === 'Nuevo Saldo' ? { ...m, campo: 'fecha' } : m));
+    expect(esElBalanceEnElLibroDiario(encabezados, conFecha)).toBeNull();
+    expect(esElBalanceEnElLibroDiario(LIBRO_DIARIO, mapearColumnas(COLUMNAS_DE_ASIENTO, LIBRO_DIARIO))).toBeNull();
   });
 });

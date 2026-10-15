@@ -13606,7 +13606,7 @@
       },
       "contables": {
         "titulo": "Registros contables",
-        "descripcion": "Los saldos y movimientos históricos. Va al final porque necesita a los terceros, los contratos y el plan de cuentas: cada saldo se imputa a una cuenta y a un propietario, un inquilino o un contrato. Un asiento de apertura con los saldos, o el histórico desde un archivo.",
+        "descripcion": "Los saldos y movimientos históricos. Va al final porque necesita a los terceros, los contratos y el plan de cuentas: cada saldo se imputa a una cuenta y a un propietario, un inquilino o un contrato. Lo que lo deja listo son los saldos iniciales: el balance por tercero al cierre del año anterior. Los movimientos de este año y los comprobantes se suman si los tienes.",
         "corto": "Registros contables"
       }
     },

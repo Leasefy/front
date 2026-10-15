@@ -13570,7 +13570,7 @@
       },
       "contables": {
         "titulo": "Accounting entries",
-        "descripcion": "Historical balances and movements. It goes last because it needs the chart of accounts in place: an opening entry with the balances, or the history from a file.",
+        "descripcion": "Historical balances and movements. It goes last because it needs the chart of accounts in place. What completes it is the opening balances: the trial balance by third party at the close of the previous year. This year's movements and the vouchers are added if you have them.",
         "corto": "Accounting entries"
       }
     },

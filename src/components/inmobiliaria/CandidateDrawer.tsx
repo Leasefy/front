@@ -1069,15 +1069,15 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
         </div>
         {carriers.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-semibold text-foreground">Aseguradoras evaluadas</p>
+            <p className="text-caption font-semibold text-foreground">Aseguradoras evaluadas</p>
             {carriers.map((carrier) => (
               <div
                 key={carrier.name}
                 className="flex items-center justify-between gap-3 rounded-md bg-surface-muted p-2.5 border border-border"
                 data-testid="prescoring-carrier-row"
               >
-                <span className="text-xs text-foreground truncate">{carrier.name}</span>
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-danger">
+                <span className="text-caption text-foreground truncate">{carrier.name}</span>
+                <span className="inline-flex items-center gap-1 text-caption font-medium text-danger">
                   <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
                   No viable
                 </span>
@@ -1152,14 +1152,14 @@ export function PreScoringStudyPanel({ study }: { study: PreScoringStudy | null 
 
       {carriers.length > 0 ? (
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-foreground">Aseguradoras evaluadas</p>
+          <p className="text-caption font-semibold text-foreground">Aseguradoras evaluadas</p>
           {carriers.map((carrier) => (
             <div
               key={carrier.name}
               className="flex items-center justify-between gap-3 rounded-md bg-surface-muted p-2.5 border border-border"
               data-testid="prescoring-carrier-row"
             >
-              <span className="text-xs text-foreground truncate">{carrier.name}</span>
+              <span className="text-caption text-foreground truncate">{carrier.name}</span>
               <div className="flex items-center gap-3 flex-shrink-0">
                 {carrier.maxAsegurableCop != null ? (
                   <span className="text-xs font-semibold text-foreground tabular-nums font-mono">

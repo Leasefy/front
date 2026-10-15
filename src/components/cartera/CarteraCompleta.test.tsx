@@ -210,6 +210,13 @@ function montar() {
   })
 }
 
+/** «Deuda total»: ver TODA la deuda (Cartera entra en la cartera desde el 15-10). */
+function verToda() {
+  act(() => {
+    $('[data-testid="resumen-deuda-total"]').click()
+  })
+}
+
 const $ = (sel: string) => {
   const el = host.querySelector<HTMLElement>(sel)
   if (!el) throw new Error(`No está: ${sel}`)
@@ -263,13 +270,20 @@ describe('CarteraCompleta', () => {
     }
   })
 
-  it('🔴 COLA-01 a 1440: con 5 o 6 fichas en fila la cifra baja de tamaño (en text-2xl se montaba sobre la de al lado)', () => {
+  it('🔴 15-10 (Juan, en producción): cada cifra de la franja cabe en su ficha, también con centavos', () => {
+    // «$ 7.112.907.502,14» se montaba sobre «Por vencer»: el tamaño fijo estaba
+    // pensado para diez dígitos sin centavos. Ahora cada ficha es un contenedor
+    // y su cifra se achica a su ancho según la cifra más larga de la franja.
     conReporte(reporte())
     montar()
-    const cifra = $('[data-testid="cifra-deuda-total"]').className.split(/\s+/)
-    expect(cifra.some((c) => c === 'lg:text-base' || c === 'lg:text-xl')).toBe(true)
-    expect(cifra).toContain('2xl:text-2xl')
-    expect(cifra).toContain('text-2xl')
+    const franja = $('[data-testid="resumen-de-cartera"]')
+    const cifras = Array.from(franja.querySelectorAll('.cifra-que-cabe')).map((p) => p.textContent ?? '')
+    expect(cifras.length).toBeGreaterThanOrEqual(4)
+    const largo = Math.max(...cifras.map((c) => Array.from(c).length))
+    expect(franja.style.getPropertyValue('--largo-de-la-cifra')).toBe(String(largo))
+    expect($('[data-testid="cifra-deuda-total"]').className).toContain('cifra-que-cabe')
+    expect($('[data-testid="resumen-deuda-total"]').className).toContain('ficha-con-cifra')
+    expect($('[data-testid="cifra-deuda-total"]').className).not.toContain('text-2xl')
   })
 
   it('🔴 la franja separa deuda, por vencer, vencido en plazo y cartera', () => {
@@ -356,9 +370,21 @@ describe('CarteraCompleta', () => {
     expect(enFichas).not.toContain(formatCurrency(750_000))
   })
 
+  it('🔴 15-10 (Juan): Cartera ENTRA en la cartera; «Deuda total» muestra toda la deuda', () => {
+    conReporte(reporte())
+    montar()
+    expect($('[data-testid="resumen-cartera"]').getAttribute('aria-pressed')).toBe('true')
+    const enCartera = todos('[data-testid="cartera-fila"]').length
+    expect(enCartera).toBeGreaterThan(0)
+    expect(enCartera).toBeLessThan(6)
+    verToda()
+    expect(todos('[data-testid="cartera-fila"]')).toHaveLength(6)
+  })
+
   it('LA tabla trae una fila por cuota, de los tres cajones y los casos en siniestro', () => {
     conReporte(reporte())
     montar()
+    verToda()
 
     expect(todos('[data-testid="cartera-fila"]')).toHaveLength(6)
     expect(host.querySelector('[data-testid="sin-datos"]')).toBeNull()
@@ -450,6 +476,7 @@ describe('CarteraCompleta', () => {
   it('«Por propietario» agrupa en la misma tarjeta, y tocar uno abre sus deudas con el filtro a la vista', () => {
     conReporte(reporte())
     montar()
+    verToda()
 
     clic(boton('Por propietario'))
     const filas = todos('[data-testid="propietario-fila"]')
@@ -475,6 +502,7 @@ describe('CarteraCompleta', () => {
   it('la fila sin propietario también se abre: filtra las deudas que no tienen dueño', () => {
     conReporte(reporte())
     montar()
+    verToda()
     clic(boton('Por propietario'))
     clic(todos('[data-testid="propietario-fila"]')[2])
     const filas = todos('[data-testid="cartera-fila"]')
@@ -557,6 +585,7 @@ describe('CarteraCompleta', () => {
       )
       conReporte(reporte({ items }))
       montar()
+      verToda()
 
       const cartera = $('[data-testid="resumen-cartera"]').textContent ?? ''
       expect(cartera).toContain(formatCurrency(3_750_000 + 1_000_000 + 500_000 + 900_000))

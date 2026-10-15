@@ -68,6 +68,7 @@ export function ContratoFilters({ filtros, onFiltros, totalFiltrado, total }: Co
     // C-05: los que empiezan después de hoy no son «vigentes»; se buscan acá.
     { value: 'por_empezar', label: tx('Por empezar', 'Not started yet') },
     { value: 'vencido', label: tx('Vencidos', 'Ended') },
+    { value: 'vencido_sin_renovar', label: tx('Vencidos sin renovar', 'Ended, not renewed') },
     { value: 'sin_fechas', label: tx('Sin fechas', 'No dates') },
   ];
   /*

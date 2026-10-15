@@ -118,12 +118,15 @@ function CifraDeLaTabla({
   value,
   dot,
   sub,
+  accion,
 }: {
   label: string;
   value: number | string;
   dot: string;
   /** La línea de abajo: «No se pudo traer» cuando el número es una raya por un fallo. */
   sub?: string;
+  /** 🔴 Juan (15-10-2026): un enlace debajo que filtra la lista («ver cuáles»). */
+  accion?: { texto: string; onClick: () => void; testid: string };
 }) {
   // La cifra que llega DESPUÉS de cargar (montó con la raya) cuenta desde 0;
   // la que ya estaba al montarse no se anima, y si después cambia cuenta desde
@@ -147,6 +150,16 @@ function CifraDeLaTabla({
         )}
       </p>
       {sub ? <p className="mt-0.5 text-caption text-muted-foreground">{sub}</p> : null}
+      {accion ? (
+        <button
+          type="button"
+          onClick={accion.onClick}
+          className="mt-0.5 text-caption font-medium text-primary underline-offset-2 hover:underline"
+          data-testid={accion.testid}
+        >
+          {accion.texto}
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -515,21 +528,34 @@ function ContratosContent() {
             sub={
               error
                 ? sinDato
-                : !isLoading && (porEmpezar > 0 || vencidosSinRenovar > 0)
+                : !isLoading && porEmpezar > 0
                   ? [
                       porEmpezar > 0 ? tx(`+ ${porEmpezar} por empezar`, `+ ${porEmpezar} not started yet`) : null,
-                      vencidosSinRenovar > 0
-                        ? tx(
-                            `+ ${vencidosSinRenovar} ${vencidosSinRenovar === 1 ? 'vencido sin renovar' : 'vencidos sin renovar'}`,
-                            `+ ${vencidosSinRenovar} ended, not renewed`,
-                          )
-                        : null,
+                      // Los vencidos sin renovar van abajo, como enlace a la lista (Juan, 15-10).
                     ]
                       .filter(Boolean)
                       .join(' · ')
                   : undefined
             }
             dot="bg-success"
+            accion={
+              !error && !isLoading && vencidosSinRenovar > 0
+                ? {
+                    texto: tx(
+                      `+ ${vencidosSinRenovar} ${vencidosSinRenovar === 1 ? 'vencido sin renovar' : 'vencidos sin renovar'} · ver cuáles`,
+                      `+ ${vencidosSinRenovar} ended, not renewed · see which`,
+                    ),
+                    onClick: () =>
+                      setFiltros({
+                        ...FILTROS_INICIALES,
+                        campo: filtros.campo,
+                        sentido: filtros.sentido,
+                        vigencia: 'vencido_sin_renovar',
+                      }),
+                    testid: 'ver-vencidos-sin-renovar',
+                  }
+                : undefined
+            }
           />
           <CifraDeLaTabla
             label={tx('Pendientes de firma', 'Pending signature')}

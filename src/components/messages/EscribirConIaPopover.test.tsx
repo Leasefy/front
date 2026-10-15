@@ -29,7 +29,7 @@ const CONTEXTO = {
 
 let container: HTMLDivElement;
 let root: Root;
-const onEscrito = vi.fn<(texto: string) => void>();
+const onEscrito = vi.fn<(texto: string, nota: string | null) => void>();
 
 beforeEach(() => {
   container = document.createElement('div');
@@ -82,7 +82,12 @@ async function pedir() {
 
 describe('<EscribirConIaPopover>', () => {
   it('pide con el contexto y lo que quiere decir, y deja el borrador en el campo (no manda nada)', async () => {
-    redactarMock.mockResolvedValue({ texto: 'Hola John, le recordamos el pago de octubre.', tokensUsed: { input: 1, output: 1 }, estimatedCostCop: 4 });
+    redactarMock.mockResolvedValue({
+      texto: 'Hola John, le recordamos el pago de octubre por [completar].',
+      nota: 'No tengo el monto del canon.',
+      tokensUsed: { input: 1, output: 1 },
+      estimatedCostCop: 4,
+    });
     montar();
     abrir();
     escribirInstruccion('recuérdale el pago de octubre');
@@ -93,12 +98,15 @@ describe('<EscribirConIaPopover>', () => {
       instruccion: 'recuérdale el pago de octubre',
       borrador: null,
     });
-    expect(onEscrito).toHaveBeenCalledWith('Hola John, le recordamos el pago de octubre.');
+    expect(onEscrito).toHaveBeenCalledWith(
+      'Hola John, le recordamos el pago de octubre por [completar].',
+      'No tengo el monto del canon.',
+    );
     expect(container.querySelector('[data-testid="panel-escribir-con-ia"]')).toBeNull();
   });
 
   it('con algo escrito en el campo, ofrece mejorarlo y lo manda como borrador', async () => {
-    redactarMock.mockResolvedValue({ texto: 'Hola John, ¿pudo pagar?', tokensUsed: { input: 1, output: 1 }, estimatedCostCop: 4 });
+    redactarMock.mockResolvedValue({ texto: 'Hola John, ¿pudo pagar?', nota: null, tokensUsed: { input: 1, output: 1 }, estimatedCostCop: 4 });
     montar('hola john pago');
     abrir();
     expect(container.textContent).toContain('Mejorar lo que escribí');

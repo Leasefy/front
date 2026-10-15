@@ -17169,6 +17169,7 @@ export interface components {
         };
         MensajeRedactado: {
             texto: string;
+            nota: string | null;
             tokensUsed: {
                 input: number;
                 output: number;

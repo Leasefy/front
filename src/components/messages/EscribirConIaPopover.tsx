@@ -37,8 +37,11 @@ interface Props {
   contexto: () => Omit<PedidoDeRedaccion, 'instruccion' | 'borrador'>;
   /** Lo que ya hay escrito en el campo: si hay algo, se mejora. */
   borradorActual: string;
-  /** El borrador listo: reemplaza el campo. */
-  onEscrito: (texto: string) => void;
+  /**
+   * El borrador listo: reemplaza el campo. `nota` es sólo para quien escribe
+   * (qué faltó o qué no se hizo) y nunca se envía.
+   */
+  onEscrito: (texto: string, nota: string | null) => void;
   className?: string;
 }
 
@@ -68,7 +71,7 @@ export function EscribirConIaPopover({ locale, agencyId, contexto, borradorActua
         instruccion: instruccion.trim() || null,
         borrador: hayBorrador ? borradorActual : null,
       });
-      onEscrito(r.texto);
+      onEscrito(r.texto, r.nota ?? null);
       setInstruccion('');
       panel.cerrar();
     } catch (e) {

@@ -32778,6 +32778,12 @@
           "texto": {
             "type": "string"
           },
+          "nota": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "tokensUsed": {
             "type": "object",
             "properties": {
@@ -32799,6 +32805,7 @@
         },
         "required": [
           "texto",
+          "nota",
           "tokensUsed",
           "estimatedCostCop"
         ]

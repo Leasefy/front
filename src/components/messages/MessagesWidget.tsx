@@ -524,11 +524,21 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
 
   /* «Escribir con IA» (Juan, 15-10-2026): el borrador REEMPLAZA el campo (si
      había algo escrito, el micro ya lo mejoró) y el cursor queda al final. */
-  const alEscribirConIa = useCallback((texto: string) => {
+  const [notaDeLaIa, setNotaDeLaIa] = useState<string | null>(null);
+  const alEscribirConIa = useCallback((texto: string, nota: string | null) => {
     cursorPendiente.current = texto.length;
     setMessageText(texto);
     setVariablesSinResolver([]);
+    setNotaDeLaIa(nota);
   }, []);
+  /* La nota habla del borrador que se pidió: con el campo vacío (se envió o se
+     borró) o en otra conversación, ya no describe nada. */
+  useEffect(() => {
+    if (!messageText.trim()) setNotaDeLaIa(null);
+  }, [messageText]);
+  useEffect(() => {
+    setNotaDeLaIa(null);
+  }, [selectedConversationId]);
 
   const alElegirPendiente = useCallback(
     (texto: string) => {
@@ -1368,6 +1378,19 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           botón. No bloquea el envío —puede que el hueco sea a
                           propósito— pero no deja que pase desapercibido.
                         */}
+                        {/* Lo que la IA le dice a quien escribe (no se envía): qué faltó o qué no hizo. */}
+                        {notaDeLaIa && (
+                          <p
+                            data-testid="nota-de-la-ia"
+                            className="mt-2 flex items-start gap-1.5 text-caption text-fg-muted"
+                          >
+                            <Info className="mt-px h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+                            <span>
+                              {locale === 'es' ? 'Nota de la IA (no se envía): ' : 'AI note (not sent): '}
+                              {notaDeLaIa}
+                            </span>
+                          </p>
+                        )}
                         {/* Lo que el borrador de la IA no sabía (nunca lo inventa). */}
                         {messageText.includes(HUECO_DEL_BORRADOR) && (
                           <p

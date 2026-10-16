@@ -128,7 +128,7 @@ function FilaDeDelegacion({
             )}
           </p>
           {d.tarea && <p className="mt-0.5 line-clamp-2 text-body-sm text-fg">{d.tarea}</p>}
-          {d.resumen && <p className="mt-1 text-body-sm text-fg-muted">{d.resumen}</p>}
+          {d.resumen && <p className="mt-1 whitespace-pre-line text-body-sm text-fg-muted">{d.resumen}</p>}
           {d.estado === 'fallo' && d.error && (
             <p className="mt-1 flex items-start gap-1.5 text-body-sm text-fg-muted">
               <WarningCircle size={14} aria-hidden="true" className="mt-0.5 shrink-0 text-fg-subtle" />

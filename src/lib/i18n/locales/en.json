@@ -10285,6 +10285,7 @@
           "ocultasPorRol": "There are items your role can't see.",
           "titularConRol": "{{tipo}} · Role: {{rol}}",
           "titularOtroAgente": "{{tipo}} · Another agent: {{evento}}",
+          "titularExterno": "{{tipo}} · To: {{aQuien}}",
           "vence": "Expires on {{fecha}}",
           "noReproducible": "We can't show you this proposal's exact consequence, so it can't be approved.",
           "revisar": "Review proposal",
@@ -10292,7 +10293,13 @@
             "crear_tarea": "Create a task",
             "asignar_tarea": "Reassign a task",
             "aviso_interno": "Internal notice",
-            "despachar_vertical": "Ask another agent for something"
+            "despachar_vertical": "Ask another agent for something",
+            "recordatorio_de_pago": "Payment reminder (sent by Mori)",
+            "aviso_al_propietario": "Notice to owners"
+          },
+          "destinosExternos": {
+            "inquilinos_en_mora": "tenants in arrears",
+            "propietarios_de_inmuebles_disponibles": "owners of available properties"
           },
           "clases": {
             "interna_reversible": "Internal · can be undone",
@@ -10337,6 +10344,7 @@
           "volverALaLista": "Back to approvals",
           "datosDeLaPropuesta": "Data behind this proposal:",
           "otroAgente": "Another agent: {{evento}}",
+          "externo": "To: {{aQuien}}",
           "actualizar": "Refresh proposal",
           "aprobar": "Approve action",
           "rechazar": "Reject proposal",

@@ -10321,6 +10321,7 @@
           "ocultasPorRol": "Hay elementos que tu rol no puede ver.",
           "titularConRol": "{{tipo}} · Rol: {{rol}}",
           "titularOtroAgente": "{{tipo}} · Otro agente: {{evento}}",
+          "titularExterno": "{{tipo}} · Para: {{aQuien}}",
           "vence": "Vence el {{fecha}}",
           "noReproducible": "No podemos mostrarte la consecuencia exacta de esta propuesta, así que no se puede aprobar.",
           "revisar": "Revisar propuesta",
@@ -10328,7 +10329,13 @@
             "crear_tarea": "Crear una tarea",
             "asignar_tarea": "Reasignar una tarea",
             "aviso_interno": "Aviso interno",
-            "despachar_vertical": "Pedirle algo a otro agente"
+            "despachar_vertical": "Pedirle algo a otro agente",
+            "recordatorio_de_pago": "Recordatorio de pago (lo envía Mori)",
+            "aviso_al_propietario": "Aviso a los propietarios"
+          },
+          "destinosExternos": {
+            "inquilinos_en_mora": "inquilinos en mora",
+            "propietarios_de_inmuebles_disponibles": "propietarios de inmuebles disponibles"
           },
           "clases": {
             "interna_reversible": "Interna · se puede deshacer",
@@ -10373,6 +10380,7 @@
           "volverALaLista": "Volver a aprobaciones",
           "datosDeLaPropuesta": "Datos de esta propuesta:",
           "otroAgente": "Otro agente: {{evento}}",
+          "externo": "Para: {{aQuien}}",
           "actualizar": "Actualizar propuesta",
           "aprobar": "Aprobar acción",
           "rechazar": "Rechazar propuesta",

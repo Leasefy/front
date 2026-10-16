@@ -176,6 +176,19 @@ describe('TarjetaDePropuesta', () => {
     expect(contenedor.innerHTML).not.toContain('role:')
   })
 
+  it('[P6:externa] una acción externa dice a qué grupo le llega y que es externa, nunca a una persona', () => {
+    montar({
+      accion: accionCon({ tipo: 'recordatorio_de_pago', clase: 'externa', destinatario: { kind: 'externo', aQuien: 'inquilinos_en_mora' } }),
+    })
+    expect(contenedor.querySelector('h3')?.textContent).toBe('Recordatorio de pago (lo envía Mori) · Para: inquilinos en mora')
+    expect(contenedor.textContent).toContain('Externa')
+    montar({
+      accion: accionCon({ tipo: 'aviso_al_propietario', clase: 'externa', destinatario: { kind: 'externo', aQuien: 'propietarios_de_inmuebles_disponibles' } }),
+    })
+    expect(contenedor.querySelector('h3')?.textContent).toBe('Aviso a los propietarios · Para: propietarios de inmuebles disponibles')
+    for (const id of USER_IDS_DE_EJEMPLO) expect(contenedor.innerHTML).not.toContain(id)
+  })
+
   it('[N13:sin-href-del-agente] sin href de la ficha no hay ningún enlace', () => {
     montar({ hrefDeLaFicha: null })
     expect(contenedor.querySelector('a')).toBeNull()

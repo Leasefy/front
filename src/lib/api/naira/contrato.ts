@@ -155,7 +155,10 @@ export const KINDS_DE_MEMORIA_DEL_EVENTO = ['ninguna', 'candidata', 'confirmada'
 // fuente: 11-03-PLAN.md:399 (PLANIFICADO; nodo opaco, P3)  // +
 export const KINDS_DE_VERIFICACION_DEL_EVENTO = ['nacimiento', 'del_dia', 'sin_veredicto'] as const
 // fuente: 12-01-PLAN.md:213-223 (PLANIFICADO)
-export const TIPOS_DE_ACCION = ['crear_tarea', 'asignar_tarea', 'aviso_interno', 'despachar_vertical'] as const
+// P6 (Nico, 15-10-2026): los dos últimos son EXTERNOS (micro `acciones/types.ts`).
+export const TIPOS_DE_ACCION = ['crear_tarea', 'asignar_tarea', 'aviso_interno', 'despachar_vertical', 'recordatorio_de_pago', 'aviso_al_propietario'] as const
+// P6: a quién le llega una acción externa, como grupo (micro `DESTINOS_EXTERNOS`, decision-humana.ts).
+export const DESTINOS_EXTERNOS = ['inquilinos_en_mora', 'propietarios_de_inmuebles_disponibles'] as const
 // fuente: 12-01-PLAN.md:213-223 (PLANIFICADO)
 export const CLASES_DE_CONSECUENCIA = ['interna_reversible', 'interna_irreversible', 'externa'] as const
 // fuente: 12-07-PLAN.md:372 (PLANIFICADO)
@@ -607,6 +610,8 @@ function construirEsquemas(estricto: boolean) {
   const NairaActionRecipient = z.discriminatedUnion('kind', [
     objeto({ kind: z.literal('rol'), rol: z.enum(DUENOS_DE_ROL) }),
     objeto({ kind: z.literal('vertical'), evento: z.string() }),
+    // P6: una acción externa le llega a un grupo que elige el agente que contacta (nunca una persona).
+    objeto({ kind: z.literal('externo'), aQuien: z.enum(DESTINOS_EXTERNOS) }),
   ])
   // fuente: src/lib/automated-decisions/write.ts:139-154 (FactSnapshot; `value` REQUERIDO, `confidence` nunca se pinta)
   // estado: EXISTE

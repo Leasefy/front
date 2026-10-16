@@ -21,6 +21,7 @@
 import {
   RAZONES_DE_CONFLICTO_DE_DECISION,
   type CLASES_DE_CONSECUENCIA,
+  type DESTINOS_EXTERNOS,
   type ESTADOS_DE_LA_PROPUESTA,
   type ESTADOS_DE_TAREA,
   type NairaActionSummary,
@@ -37,7 +38,15 @@ export const CLAVE_DEL_TIPO_DE_ACCION = {
   asignar_tarea: 'inmobiliaria.ai.naira.aprobaciones.tipos.asignar_tarea',
   aviso_interno: 'inmobiliaria.ai.naira.aprobaciones.tipos.aviso_interno',
   despachar_vertical: 'inmobiliaria.ai.naira.aprobaciones.tipos.despachar_vertical',
+  recordatorio_de_pago: 'inmobiliaria.ai.naira.aprobaciones.tipos.recordatorio_de_pago',
+  aviso_al_propietario: 'inmobiliaria.ai.naira.aprobaciones.tipos.aviso_al_propietario',
 } as const satisfies Record<(typeof TIPOS_DE_ACCION)[number], string>
+
+/** P6: el grupo al que le llega una acción externa. */
+export const CLAVE_DEL_DESTINO_EXTERNO = {
+  inquilinos_en_mora: 'inmobiliaria.ai.naira.aprobaciones.destinosExternos.inquilinos_en_mora',
+  propietarios_de_inmuebles_disponibles: 'inmobiliaria.ai.naira.aprobaciones.destinosExternos.propietarios_de_inmuebles_disponibles',
+} as const satisfies Record<(typeof DESTINOS_EXTERNOS)[number], string>
 
 export const CLAVE_DE_LA_CLASE_DE_CONSECUENCIA = {
   interna_reversible: 'inmobiliaria.ai.naira.aprobaciones.clases.interna_reversible',

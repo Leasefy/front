@@ -26,6 +26,7 @@ import type { NairaActionDetail } from '@/lib/api/naira/contrato'
 import { useI18n } from '@/lib/i18n'
 import {
   CLAVE_DE_LA_CLASE_DE_CONSECUENCIA,
+  CLAVE_DEL_DESTINO_EXTERNO,
   CLAVE_DEL_ESTADO_DE_LA_PROPUESTA,
   CLAVE_DEL_TIPO_DE_ACCION,
   cortesDeLosHechos,
@@ -55,10 +56,13 @@ export function PropuestaView({
   const estadoMostrado = decidida ?? detalle.estado
   const cortes = cortesDeLosHechos(detalle.razonamiento.hechos)
   const { consecuencia } = detalle
+  const d = consecuencia.destinatario
   const destinatario =
-    consecuencia.destinatario.kind === 'rol'
-      ? t('inmobiliaria.ai.naira.seguimiento.rol', { rol: t(CLAVE_DEL_ROL[consecuencia.destinatario.rol]) })
-      : t('inmobiliaria.ai.naira.propuesta.otroAgente', { evento: consecuencia.destinatario.evento })
+    d.kind === 'rol'
+      ? t('inmobiliaria.ai.naira.seguimiento.rol', { rol: t(CLAVE_DEL_ROL[d.rol]) })
+      : d.kind === 'externo'
+        ? t('inmobiliaria.ai.naira.propuesta.externo', { aQuien: t(CLAVE_DEL_DESTINO_EXTERNO[d.aQuien]) })
+        : t('inmobiliaria.ai.naira.propuesta.otroAgente', { evento: d.evento })
 
   return (
     <div className="space-y-6">

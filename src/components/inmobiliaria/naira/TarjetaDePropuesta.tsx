@@ -24,6 +24,7 @@ import type { NairaActionSummary } from '@/lib/api/naira/contrato'
 import { useI18n } from '@/lib/i18n'
 import {
   CLAVE_DE_LA_CLASE_DE_CONSECUENCIA,
+  CLAVE_DEL_DESTINO_EXTERNO,
   CLAVE_DEL_ESTADO_DE_LA_PROPUESTA,
   CLAVE_DEL_TIPO_DE_ACCION,
   consecuenciaDelListado,
@@ -45,10 +46,13 @@ export function TarjetaDePropuesta({ accion, hrefDeLaFicha }: TarjetaDePropuesta
   const idTitulo = useId()
   const consecuencia = consecuenciaDelListado(accion)
   const tipo = t(CLAVE_DEL_TIPO_DE_ACCION[accion.tipo])
+  const d = accion.destinatario
   const titular =
-    accion.destinatario.kind === 'rol'
-      ? t('inmobiliaria.ai.naira.aprobaciones.titularConRol', { tipo, rol: t(CLAVE_DEL_ROL[accion.destinatario.rol]) })
-      : t('inmobiliaria.ai.naira.aprobaciones.titularOtroAgente', { tipo, evento: accion.destinatario.evento })
+    d.kind === 'rol'
+      ? t('inmobiliaria.ai.naira.aprobaciones.titularConRol', { tipo, rol: t(CLAVE_DEL_ROL[d.rol]) })
+      : d.kind === 'externo'
+        ? t('inmobiliaria.ai.naira.aprobaciones.titularExterno', { tipo, aQuien: t(CLAVE_DEL_DESTINO_EXTERNO[d.aQuien]) })
+        : t('inmobiliaria.ai.naira.aprobaciones.titularOtroAgente', { tipo, evento: d.evento })
 
   return (
     <article data-naira-propuesta={accion.estado} aria-labelledby={idTitulo} className="min-w-0">

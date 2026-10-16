@@ -79,6 +79,7 @@ const AGENT_RESULT_SUMMARIES: Record<AgentType, string> = {
   comunicacion: '2 notificaciones programadas. 1 recordatorio enviado.',
   reportes: 'Rentabilidad neta 85.4%. +2.1% vs mes anterior.',
   retencion: 'Quién está en riesgo de irse, según Vinci.',
+  naira: 'El estado de la operación, con cifras verificadas y su fecha de corte, según Naira.',
 };
 
 const AGENT_ERROR_MESSAGES: Record<AgentType, string> = {
@@ -95,6 +96,7 @@ const AGENT_ERROR_MESSAGES: Record<AgentType, string> = {
   comunicacion: 'Fallo al preparar notificaciones. Servicio no disponible.',
   reportes: 'Error al generar el reporte. Datos incompletos.',
   retencion: 'No se pudo consultar a Vinci en este momento.',
+  naira: 'No se pudo consultar a Naira en este momento.',
 };
 
 // ============================================================================

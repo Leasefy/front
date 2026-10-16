@@ -35,7 +35,7 @@ describe('rutas de la memoria de Naira', () => {
     expect(item?.href).toBe(RUTA_DE_LA_MEMORIA)
   })
 
-  it('[N13:pestana-por-su-accion] la 5.ª y última pestaña, gateada por memory-view en el registro y en su página', () => {
+  it('[N13:pestana-por-su-accion] la 4.ª y última pestaña (sin «Preguntar» desde el 15-10), gateada por memory-view en el registro y en su página', () => {
     const items = naira()?.items ?? []
     const i = items.findIndex((x) => x.action === 'memory-view')
     const item = items[i]
@@ -43,7 +43,7 @@ describe('rutas de la memoria de Naira', () => {
     expect(item?.icon).toBe(Notebook)
     expect(item?.module).toBe('naira')
     expect((item as { exact?: boolean } | undefined)?.exact).toBeUndefined()
-    expect(items[i - 1]?.action).toBe('conversation-ask')
+    expect(items[i - 1]?.action).toBe('action-view')
     expect(i).toBe(items.length - 1)
     const fuente = readFileSync(join(process.cwd(), PAGINA), 'utf8')
     const primero = /<PageGuard\b([^>]*)>/.exec(fuente)

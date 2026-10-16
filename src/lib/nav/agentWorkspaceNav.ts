@@ -318,7 +318,6 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.naira.tabs.briefing', href: NAIRA, icon: Newspaper, exact: true, module: 'naira', action: 'briefing-view' },
       { labelKey: 'inmobiliaria.ai.naira.tabs.seguimiento', href: `${NAIRA}/seguimiento`, icon: ArrowsCounterClockwise, module: 'naira', action: 'open-loops-view' },
       { labelKey: 'inmobiliaria.ai.naira.tabs.aprobaciones', href: `${NAIRA}/aprobaciones`, icon: SealCheck, module: 'naira', action: 'action-view' },
-      { labelKey: 'inmobiliaria.ai.naira.tabs.preguntar', href: `${NAIRA}/preguntar`, icon: ChatTeardropText, module: 'naira', action: 'conversation-ask' },
       { labelKey: 'inmobiliaria.ai.naira.tabs.memoria', href: `${NAIRA}/memoria`, icon: Notebook, module: 'naira', action: 'memory-view' },
       // ← 13-04..13-07 AGREGAN su pestaña AQUÍ (una línea cada una, en el orden de UI-SPEC §2.3)
     ],

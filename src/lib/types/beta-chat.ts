@@ -32,7 +32,9 @@ export type AgentType =
   | 'comunicacion'
   | 'reportes'
   // 26-09-2026: Vinci (retención) — el chat le pregunta quién está en riesgo.
-  | 'retencion';
+  | 'retencion'
+  // 15-10-2026: Naira (la account manager) — el chat le pregunta por el estado de la operación.
+  | 'naira';
 
 export type AgentExecutionStatus = 'dispatching' | 'running' | 'completed' | 'failed';
 
@@ -486,6 +488,7 @@ export const AGENT_METADATA: Record<AgentType, { label: string; icon: string; co
   comunicacion:  { label: 'Comunicacion',  icon: 'ChatCircle',     color: 'pink' },
   reportes:      { label: 'Reportes',      icon: 'ChartBar',       color: 'indigo' },
   retencion:     { label: 'Retención',     icon: 'ChartBar',       color: 'purple' },
+  naira:         { label: 'Naira',         icon: 'ChartBar',       color: 'indigo' },
 };
 
 // ============================================================================

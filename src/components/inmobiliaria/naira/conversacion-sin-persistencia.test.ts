@@ -131,8 +131,10 @@ describe('la conversación con Naira no se guarda, no se loguea y no sabe quién
 
   it('[N13:control-positivo] el recorrido ve la conversación y el árbol; los detectores marcan lo prohibido y no lo legítimo', () => {
     const conversacion = archivosDeLaConversacion()
-    expect(conversacion.length).toBeGreaterThanOrEqual(7)
-    for (const a of [...ARCHIVOS_FIJOS_DE_LA_CONVERSACION, 'page.tsx', 'PreguntarClient.tsx', 'PreguntarView.tsx']) {
+    // 15-10-2026: la pestaña «Preguntar» salió (Naira se pregunta desde el chat); quedan los archivos de la
+    // conversación que siguen en el repo.
+    expect(conversacion.length).toBeGreaterThanOrEqual(ARCHIVOS_FIJOS_DE_LA_CONVERSACION.length)
+    for (const a of ARCHIVOS_FIJOS_DE_LA_CONVERSACION) {
       expect(conversacion.some((c) => c.endsWith(a)), a).toBe(true)
     }
     for (const a of conversacion) expect(existsSync(join(process.cwd(), a)), a).toBe(true)

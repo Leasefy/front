@@ -496,13 +496,14 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
     fuentes: ['src/mastra/agents/chat/acciones-tool.ts (recordatorio_pago, mensaje_directo, crear_pqrs; vence a los 10 min)'],
   },
   {
-    // Naira, la account manager (rama account-manager, 15-10-2026). Lee toda la inmobiliaria y no la llama el chat.
+    // Naira, la account manager (rama account-manager, 15-10-2026). Lee toda la inmobiliaria; el chat la llama.
     id: 'naira',
     nombrePropio: 'Naira',
     frente: 'direccion',
     orbe: orbe('cobalt', 'naira'),
     autonomia: null,
-    despachos: [],
+    // 15-10-2026 (Nico): Naira entra al chat como el resto de los agentes; el micro la despacha con la clave `naira`.
+    despachos: ['naira'],
     hace: ['briefing', 'sigue', 'propone', 'responde', 'recuerda'],
     noHace: [{ clave: 'sinAprobar' }, { clave: 'evalua' }, { clave: 'inventa' }],
     herramientas: ['consultas', 'busqueda', 'correo', 'whatsapp', 'confirmacion'],

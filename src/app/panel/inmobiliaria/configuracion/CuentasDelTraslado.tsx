@@ -97,7 +97,7 @@ export function CuentasDelTraslado() {
         error={error}
         vacio={false}
         queEs="la configuración del traslado"
-        onReintentar={() => void leer()}
+        onReintentar={() => leer()}
         esqueleto={<EsqueletoDeSeccion filas={2} />}
       >
         {datos && (

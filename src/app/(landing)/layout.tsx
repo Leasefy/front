@@ -2,6 +2,7 @@
 
 import type { CSSProperties, ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
+import { separarIdioma } from '@/lib/idioma/idioma'
 import { Inter, Inter_Tight, IBM_Plex_Mono } from 'next/font/google'
 import { LandingChrome } from '@/components/landing-v2/LandingChrome'
 import { LandingFooterV2 } from '@/components/landing-v2/LandingFooterV2'
@@ -64,7 +65,8 @@ interface LandingLayoutProps {
 }
 
 export default function LandingLayout({ children }: LandingLayoutProps) {
-  const pathname = usePathname()
+  // Con `/es` o `/en` delante (idioma, 16-10-2026), la ruta de siempre.
+  const pathname = separarIdioma(usePathname() ?? '/').ruta
   const hasOwnChrome = SELF_CONTAINED_CHROME_PATHS.includes(pathname ?? '')
 
   return (

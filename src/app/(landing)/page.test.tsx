@@ -37,7 +37,13 @@ vi.mock('@/lib/auth/use-auth', () => ({
   useAuth: () => ({ user: null, isAuthenticated: false, isLoading: false }),
 }))
 
-import HomePage, { metadata } from './page'
+// El idioma lo pone el middleware en la petición (16-10-2026).
+const cabeceras = vi.hoisted(() => ({ idioma: null as string | null }))
+vi.mock('next/headers', () => ({
+  headers: async () => new Headers(cabeceras.idioma ? { 'x-idioma': cabeceras.idioma } : {}),
+}))
+
+import HomePage, { generateMetadata } from './page'
 import { landingRobots } from '@/lib/landing/landing-stage'
 
 let container: HTMLDivElement
@@ -59,8 +65,25 @@ afterEach(() => {
 })
 
 describe('/ (home) page', () => {
-  it('spreads landingRobots() into metadata.robots', () => {
-    expect(metadata.robots).toEqual(landingRobots())
+  it('spreads landingRobots() into metadata.robots', async () => {
+    expect((await generateMetadata()).robots).toEqual(landingRobots())
+  })
+
+  it('en /es y /en: canonical, hreflang y el título en su idioma (16-10-2026)', async () => {
+    cabeceras.idioma = 'en'
+    const en = await generateMetadata()
+    expect(en.alternates?.canonical).toBe('/en')
+    expect(en.alternates?.languages).toEqual({ 'es-CO': '/es', en: '/en', 'x-default': '/' })
+    expect(en.title).toBe('Leasefy — The intelligent operating system for real estate agencies')
+    expect((en.openGraph as { locale?: string } | undefined)?.locale).toBe('en_US')
+
+    cabeceras.idioma = 'es'
+    const es = await generateMetadata()
+    expect(es.alternates?.canonical).toBe('/es')
+    // El español, como estaba: su título y el Open Graph del layout raíz.
+    expect(es.title).toBe('Leasefy — El sistema operativo inteligente para inmobiliarias')
+    expect(es.openGraph).toBeUndefined()
+    cabeceras.idioma = null
   })
 
   it('renders the v2 home inside the .lv2 scope', () => {

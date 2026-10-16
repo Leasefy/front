@@ -2,6 +2,7 @@
 
 import { AgentOrb, type AgentOrbPaletteName } from "@leasefy/cadence";
 import { ORBE_DEL_ORQUESTADOR } from "@/lib/agentes/nombre-del-orquestador";
+import { useTx } from "@/lib/idioma/use-idioma";
 
 /**
  * Ori y su equipo, en fila: los mismos orbes del producto (paletas y semillas
@@ -16,8 +17,9 @@ const EQUIPO: readonly { nombre: string; paleta: AgentOrbPaletteName; semilla: s
 ];
 
 export function OrbesDelEquipo() {
+  const tx = useTx();
   return (
-    <div className="mod-orbes" aria-label="Ori, Mori, Cobri, Niti y Fixi">
+    <div className="mod-orbes" aria-label={tx("Ori, Mori, Cobri, Niti y Fixi", "Ori, Mori, Cobri, Niti and Fixi")}>
       <span className="mod-orbes-fila" aria-hidden="true">
         {EQUIPO.map((a) => (
           <span key={a.nombre} className="mod-orbe" title={a.nombre}>
@@ -25,7 +27,7 @@ export function OrbesDelEquipo() {
           </span>
         ))}
       </span>
-      <span className="mod-orbes-texto">Ori y su equipo</span>
+      <span className="mod-orbes-texto">{tx("Ori y su equipo", "Ori and the team")}</span>
     </div>
   );
 }

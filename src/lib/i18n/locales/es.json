@@ -7269,7 +7269,7 @@
             "paused": "En pausa"
           },
           "tabs": {
-            "timeline": "Timeline",
+            "timeline": "Historial",
             "llamadas": "Llamadas",
             "memos": "Memos",
             "compromisos": "Compromisos",
@@ -7282,14 +7282,14 @@
             "title": "Próximos pasos",
             "nextAction": "Próxima acción",
             "noNextAction": "Sin acción programada",
-            "contactAttempts": "Intentos restantes",
-            "paused": "En pausa hasta {{date}}",
+            "contactAttempts": "Intentos de contacto hechos",
+            "paused": "En pausa hasta el {{date}}",
             "openSidebar": "Ver detalles",
             "closeSidebar": "Cerrar"
           },
           "timeline": {
-            "loading": "Cargando timeline…",
-            "error": "Error cargando timeline",
+            "loading": "Cargando el historial…",
+            "error": "No pudimos cargar el historial",
             "errorRetry": "Reintentar",
             "empty": "Sin eventos registrados",
             "eventStageTransition": "Cambio de etapa",
@@ -7362,7 +7362,7 @@
               "accessDenied": "Acceso denegado",
               "currentLabel": "Etapa actual",
               "effectLabel": "Qué pasa si confirmas",
-              "effectNote": "Los días se cuentan desde el primer vencimiento impago. Este es el calendario por defecto; si tu inmobiliaria configuró el suyo, manda ese.",
+              "effectNote": "Los días se cuentan desde el primer día de mora, cuando se acaba el plazo de pago. Este es el calendario por defecto; si tu inmobiliaria configuró el suyo, manda ese.",
               "reasonTooShort": "Escribe al menos 10 caracteres.",
               "targetPlaceholder": "Elige la etapa…",
               "targetMissing": "Elige a qué etapa la quieres mover."
@@ -7606,7 +7606,7 @@
           },
           "comparisonHeader": {
             "campo": "Campo",
-            "propuesto": "Propuesto por IA",
+            "propuesto": "Propuesto",
             "limite": "Límite agencia"
           },
           "comparison": {
@@ -7911,22 +7911,22 @@
           "thresholds": {
             "pageTitle": "Umbrales del reporte",
             "fields": {
-              "topN": "Top-N deudores a mostrar",
-              "moraBoundaries": "Cortes de días de mora",
-              "pkrAlertBelow": "Alerta si PKR cae por debajo de (%)",
-              "morosidadAlertAbove": "Alerta si morosidad supera (%)",
-              "violationsAtLeast": "Mínimo de violaciones para alertar",
-              "callsOutsideAtLeast": "Mínimo de llamadas fuera de horario para alertar"
+              "topN": "Cuántos deudores mostrar (los que más deben)",
+              "moraBoundaries": "Cortes de días de mora, separados por coma",
+              "pkrAlertBelow": "Avisar si las promesas cumplidas bajan de (%)",
+              "morosidadAlertAbove": "Avisar si la morosidad pasa de (%)",
+              "violationsAtLeast": "Avisar desde cuántas faltas a la Ley 2300",
+              "callsOutsideAtLeast": "Avisar desde cuántas llamadas fuera de horario"
             },
             "submit": "Guardar umbrales",
             "versionsHeading": "Versiones anteriores",
             "rollbackConfirm": "¿Confirmas reversar a la versión {{version}}?",
             "rolledBackToast": "Umbrales reversados a la versión {{version}}",
             "empty": {
-              "title": "Usando thresholds por defecto",
+              "title": "Usando los umbrales por defecto",
               "description": "Ajusta los umbrales según las políticas de tu inmobiliaria.",
               "cta": {
-                "label": "Editar thresholds"
+                "label": "Editar los umbrales"
               }
             }
           },
@@ -8724,6 +8724,7 @@
           "matching": "Matching",
           "avaluos": "Avalúos",
           "gerente": "Gerente",
+          "director": "Director",
           "equipo": "Tu equipo",
           "piloto": "Piloto automático",
           "retencion": "Retención",

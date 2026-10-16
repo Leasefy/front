@@ -15,10 +15,19 @@ import { act } from 'react'
 void React
 ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
 
-const { agentFetchMock, toastOk } = vi.hoisted(() => ({ agentFetchMock: vi.fn(), toastOk: vi.fn() }))
+const { agentFetchMock, toastOk, detalleDelDeudor } = vi.hoisted(() => ({
+  agentFetchMock: vi.fn(),
+  toastOk: vi.fn(),
+  detalleDelDeudor: { deudaMasVieja: null as unknown },
+}))
 
 vi.mock('@/lib/api/agent-fetch', () => ({
-  agentFetch: (...a: unknown[]) => agentFetchMock(...a),
+  // El detalle del deudor (la cuota más vieja, QA-AGENTES 16-10) se contesta
+  // aparte: las pruebas encolan las plantillas y los envíos en orden.
+  agentFetch: (...a: unknown[]) =>
+    /\/cobranza\/debtors\/[^/]+$/.test(String(a[0]))
+      ? Promise.resolve(new Response(JSON.stringify(detalleDelDeudor), { status: 200 }))
+      : agentFetchMock(...a),
 }))
 vi.mock('@/lib/auth', () => ({
   useAuth: () => ({ agency: { id: 'agencia-1', name: 'Inmobiliaria QA' } }),
@@ -61,6 +70,7 @@ const onSuccess = vi.fn()
 beforeEach(() => {
   process.env.NEXT_PUBLIC_AGENT_URL = 'http://micro.test'
   agentFetchMock.mockReset()
+  detalleDelDeudor.deudaMasVieja = null
   toastOk.mockReset()
   onSuccess.mockReset()
   contenedor = document.createElement('div')
@@ -101,6 +111,49 @@ const envios = () => agentFetchMock.mock.calls.filter((c) => String(c[0]).endsWi
 describe('🔴 CB-10: el WhatsApp manual', () => {
   it('variablesVacias dice cuáles faltan (espacios cuentan como vacío)', () => {
     expect(variablesVacias(['deudor', 'monto'], { deudor: 'Ana', monto: '  ' })).toEqual(['monto'])
+  })
+
+  // QA-AGENTES 16-10 (MORI-7, lab, contrato #1894): el recordatorio pedía
+  // escribir a mano el mes, la fecha y el monto aunque el caso ya los tiene.
+  it('🔴 el recordatorio trae el mes, el vencimiento y el monto de la cuota más vieja', async () => {
+    detalleDelDeudor.deudaMasVieja = { periodo: '2026-08', vence: '2026-08-01', saldoCop: 1_400_000 }
+    agentFetchMock.mockResolvedValueOnce(
+      json(200, {
+        templates: [
+          {
+            id: 'reminder_soft_co',
+            label: 'Recordatorio amable de canon vencido',
+            variables: ['debtor_first_name', 'overdue_month', 'due_date', 'amount_cop'],
+            body: 'Hola {{1}}, tu canon de {{2}} venció el {{3}} por COP {{4}}.',
+          },
+        ],
+      }),
+    )
+    await montar()
+    for (let i = 0; i < 3; i++) {
+      await act(async () => {
+        await Promise.resolve()
+      })
+    }
+    const valores = [...contenedor.querySelectorAll<HTMLInputElement>('input')].map((i) => i.value)
+    expect(valores).toEqual(['Ana', 'agosto', '1 de agosto', '1.400.000'])
+    expect(enviar().disabled).toBe(false)
+  })
+
+  it('🔴 el monto de la cuota no se pone en una plantilla que no nombra un mes vencido', async () => {
+    detalleDelDeudor.deudaMasVieja = { periodo: '2026-08', vence: '2026-08-01', saldoCop: 1_400_000 }
+    agentFetchMock.mockResolvedValueOnce(
+      json(200, {
+        templates: [{ id: 'payment_confirmed_co', label: 'Pago recibido', variables: ['debtor_first_name', 'amount_cop'], body: 'Hola {{1}}, recibimos COP {{2}}.' }],
+      }),
+    )
+    await montar()
+    for (let i = 0; i < 3; i++) {
+      await act(async () => {
+        await Promise.resolve()
+      })
+    }
+    expect([...contenedor.querySelectorAll<HTMLInputElement>('input')].map((i) => i.value)).toEqual(['Ana', ''])
   })
 
   it('🔴 con un dato del mensaje vacío, «Enviar» está apagado y lo dice', async () => {

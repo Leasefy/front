@@ -431,7 +431,7 @@ export default function DocumentosPage() {
               {/* Recibos de caja (QA-INQ-95): los que la inmobiliaria emitió de verdad, con su PDF.
                   `recibos === null` = un back sin la ruta: la sección no se pinta. */}
               {(Boolean(recibosError) || (recibos?.length ?? 0) > 0) && (
-                <RecibosDeCaja recibos={recibos ?? []} error={recibosError} onReintentar={() => void recargarRecibos()} />
+                <RecibosDeCaja recibos={recibos ?? []} error={recibosError} onReintentar={() => recargarRecibos()} />
               )}
             </div>
           ) : (

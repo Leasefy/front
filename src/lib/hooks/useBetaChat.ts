@@ -1990,20 +1990,28 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
       // cerraban juntos al llegar el `snapshot`, y entre ese instante y el
       // primer texto —el modelo pensando, a veces 15 s— no quedaba NINGÚN paso
       // vivo: la lista se veía muerta. Ahora «entender» corre hasta el texto.
+      //
+      // QA-AGENTES 16-10: con un botón o una tarjeta (`intencion`) el micro va
+      // directo a la ficha, sin reunir la cartera: arrancar con «Revisar tu
+      // cartera» mostraba un paso que no iba a pasar («Prorrogar…: 12»).
       aplicarPasos([
-        {
-          id: 'cartera',
-          kind: 'cartera',
-          labelKey: 'beta.tasks.plan.snapshot',
-          status: 'running',
-          startedAt: new Date(),
-        },
+        ...(intencion
+          ? []
+          : [
+              {
+                id: 'cartera',
+                kind: 'cartera' as const,
+                labelKey: 'beta.tasks.plan.snapshot',
+                status: 'running' as const,
+                startedAt: new Date(),
+              },
+            ]),
         {
           id: 'entender',
           kind: 'entender',
           labelKey: 'beta.tasks.plan.understand',
           detail: trimmed,
-          status: 'pending',
+          ...(intencion ? { status: 'running' as const, startedAt: new Date() } : { status: 'pending' as const }),
         },
         { id: 'redactar', kind: 'redactar', labelKey: 'beta.tasks.plan.write', status: 'pending' },
       ]);

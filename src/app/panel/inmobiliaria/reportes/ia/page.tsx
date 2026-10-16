@@ -134,7 +134,7 @@ function TarjetaDeAgente({ agente, nombre, hace }: { agente: AgenteId; nombre: s
       <FalloDeCarga
         error={errorCrudo}
         queEs={`la actividad de ${nombre}`}
-        onReintentar={() => void refetch()}
+        onReintentar={() => refetch()}
         enmarcado={false}
       />
     );
@@ -199,7 +199,7 @@ function TarjetasDeLosAgentesConManos() {
     return (
       <StaggerItem key="con-manos-fallo">
         <Tarjeta nombre="Agentes del Piloto" hace="Fixi, Avali, Vidi, Niti, Imana y el precio contra la vacancia." testId="desempeno-con-manos-fallo">
-          <FalloDeCarga error={error} queEs="lo que hicieron los agentes del Piloto" onReintentar={() => void refetch()} enmarcado={false} />
+          <FalloDeCarga error={error} queEs="lo que hicieron los agentes del Piloto" onReintentar={() => refetch()} enmarcado={false} />
         </Tarjeta>
       </StaggerItem>
     );
@@ -243,7 +243,7 @@ function TarjetaDeEstudio() {
     cuerpo = <div className="h-16 rounded bg-surface-muted animate-pulse" aria-label="Cargando" />;
   } else if (errorCrudo) {
     cuerpo = (
-      <FalloDeCarga error={errorCrudo} queEs="las evaluaciones" onReintentar={() => void refetch()} enmarcado={false} />
+      <FalloDeCarga error={errorCrudo} queEs="las evaluaciones" onReintentar={() => refetch()} enmarcado={false} />
     );
   } else {
     const evaluaciones = metrics?.scoring.evaluationsThisMonth ?? 0;

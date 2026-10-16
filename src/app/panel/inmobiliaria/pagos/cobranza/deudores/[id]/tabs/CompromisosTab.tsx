@@ -18,7 +18,7 @@
  */
 
 import * as React from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { useI18n } from '@/lib/i18n'
 import { useDebtorCompromisos } from '@/lib/hooks/cobranza/use-debtor-compromisos'
@@ -27,6 +27,8 @@ import { LlamadaDetalleSheet } from '@/components/inmobiliaria/cobranza/LlamadaD
 import { channelLabel } from '@/lib/cobranza/call-vocab'
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { plataEnPantalla } from '@/lib/plata/escribir-plata'
+import { cobranzaManualApi } from '@/lib/api/cobranza-manual.service'
+import { NOMBRE_DEL_ESTADO_DE_LA_PROMESA, type EntradaDelHistorial } from '@/lib/api/cobranza-manual.types'
 
 void React
 
@@ -68,6 +70,12 @@ const CARTA_ESTADO: Record<string, string> = {
   void: 'Anulada',
 }
 
+const PROVEEDOR_DE_PAGO: Record<string, string> = {
+  wompi: 'pago en línea por Wompi',
+  bold: 'pago en línea por Bold',
+  stub: 'pago en línea simulado (entorno de prueba)',
+}
+
 const CARTA_TIPO: Record<string, string> = {
   pre_judicial_letter: 'Carta prejurídica',
   pre_bureau_notification: 'Notificación a centrales de riesgo',
@@ -102,6 +110,25 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
   const { t, locale } = useI18n()
   const { data, isLoading, error, refetch } = useDebtorCompromisos({ debtorId })
   const [llamadaAbierta, setLlamadaAbierta] = useState<string | null>(null)
+  // QA-AGENTES 16-10 (lab): las promesas que registró el EQUIPO viven en el back
+  // (gestiones de cobro), no en el micro: la pestaña decía «Sin compromisos» con
+  // una promesa pendiente que sí salía en Gestiones y en Promesas. Se leen del
+  // mismo historial que la pestaña Gestiones; si falla, quedan las del agente.
+  const [delEquipo, setDelEquipo] = useState<EntradaDelHistorial[]>([])
+  useEffect(() => {
+    let vivo = true
+    cobranzaManualApi
+      .historial({ deudorId: debtorId })
+      .then((h) => {
+        if (vivo) setDelEquipo(h.historial.filter((g) => g.origen === 'equipo' && g.promesa !== null))
+      })
+      .catch(() => {
+        if (vivo) setDelEquipo([])
+      })
+    return () => {
+      vivo = false
+    }
+  }, [debtorId])
 
   // Movimiento: cada salida en un `CrossFade` con su clave (cargando →
   // compromisos, → fallo, → vacío); cada lista entra escalonada y lo que
@@ -149,6 +176,7 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
 
   if (
     promesas.length === 0 &&
+    delEquipo.length === 0 &&
     paymentPlans.length === 0 &&
     claims.length === 0 &&
     legals.length === 0
@@ -171,6 +199,28 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
   return (
     <CrossFade swapKey="compromisos">
     <div className="space-y-5">
+      {delEquipo.length > 0 && (
+        <section data-testid="compromisos-del-equipo">
+          <h3 className="text-sm font-semibold text-fg mb-2">Promesas que registró tu equipo</h3>
+          <Stagger as="ul" className="space-y-2">
+            {delEquipo.map((g) => (
+              <StaggerItem as="li" key={g.id} className="rounded-sm border border-border bg-surface p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-fg font-mono tabular-nums">
+                    {COP.format(g.promesa!.montoCop)}
+                  </span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-surface-muted text-fg-muted">
+                    {NOMBRE_DEL_ESTADO_DE_LA_PROMESA[g.promesa!.estado] ?? g.promesa!.estado}
+                  </span>
+                </div>
+                <p className="text-xs text-fg-muted mt-1">
+                  Prometió pagar el {fecha(`${g.promesa!.fecha.slice(0, 10)}T12:00:00`, locale)} · {g.tipoTexto} · registró {g.quien}
+                </p>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        </section>
+      )}
       {promesas.length > 0 && (
         <section>
           <h3 className="text-sm font-semibold text-fg mb-2">
@@ -260,7 +310,8 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                 </div>
                 <p className="text-xs text-fg-muted mt-0.5">
                   Ofrecido el {fecha(p.offered_at, locale)}
-                  {p.payment_provider ? ` · ${p.payment_provider}` : ''}
+                  {/* QA-AGENTES 16-10: salía el slug crudo («· stub»). */}
+                  {p.payment_provider ? ` · ${PROVEEDOR_DE_PAGO[p.payment_provider] ?? p.payment_provider}` : ''}
                 </p>
               </StaggerItem>
             ))}

@@ -98,7 +98,7 @@ export function TipoDeLasFilasSinTipo({
             : 'Filas que no son inmuebles'}
         </h3>
         {totalSinTipo > 0 ? (
-          <p className="text-xs text-fg-muted">
+          <p className="text-caption text-fg-muted">
             El archivo no dice qué tipo de inmueble es. Ponlo por grupo o fila por fila; nada se
             pone solo.
           </p>

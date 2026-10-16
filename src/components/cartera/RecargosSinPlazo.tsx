@@ -12,7 +12,7 @@
  */
 
 import * as React from 'react';
-import { Banner } from '@leasefy/cadence';
+import { Warning } from '@phosphor-icons/react';
 
 import { apiClient } from '@/lib/api/client';
 import { formatCurrency } from '@/lib/format';
@@ -54,8 +54,15 @@ export function RecargosSinPlazo({ leer = leerRecargosSinPlazo }: { leer?: typeo
   if (!datos?.plazoSinFijar || (datos.quedan.length === 0 && datos.porQuitar === 0)) return null;
   const n = datos.quedan.length;
   return (
-    <Banner variant="warning" data-testid="recargos-sin-plazo">
-      <div className="space-y-2">
+    // Una caja de aviso y no el `Banner` de Cadence: éste envuelve su contenido en
+    // un <p> y aquí van varios párrafos y una lista (guardián el-banner-no-lleva-bloques).
+    <div
+      role="status"
+      data-testid="recargos-sin-plazo"
+      className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-fg"
+    >
+      <Warning className="mt-0.5 h-5 w-5 flex-shrink-0 text-warning" weight="fill" aria-hidden />
+      <div className="min-w-0 space-y-2">
         {n > 0 && (
           <p>
             {n === 1
@@ -84,6 +91,6 @@ export function RecargosSinPlazo({ leer = leerRecargosSinPlazo }: { leer?: typeo
           </p>
         )}
       </div>
-    </Banner>
+    </div>
   );
 }

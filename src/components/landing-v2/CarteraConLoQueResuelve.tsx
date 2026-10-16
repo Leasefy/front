@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useInView, useReducedMotion } from "framer-motion";
 import { CarteraViva, type ZonaDeLaCartera } from "./CarteraViva";
+import { useIdioma, useTx } from "@/lib/idioma/use-idioma";
 
 /**
  * «Qué resuelve» pegado a la Cartera (Nico, 12-10-2026: «¿cómo juntamos eso
@@ -17,13 +18,13 @@ import { CarteraViva, type ZonaDeLaCartera } from "./CarteraViva";
  */
 const DURACION = 3200;
 
-const PUNTOS: { zona: ZonaDeLaCartera; texto: string; total?: true }[] = [
-  { zona: "cobros", texto: "Cobros y recordatorios automáticos" },
-  { zona: "mora", texto: "La mora se persigue sola" },
-  { zona: "banco", texto: "Cada pago cuadrado contra el banco" },
-  { zona: "pago", texto: "Pagos a propietarios programados" },
-  { zona: "pago", texto: "Comisiones calculadas solas" },
-  { zona: "cierre", texto: "Cierre de mes sin sorpresas", total: true },
+const PUNTOS: { zona: ZonaDeLaCartera; texto: string; en: string; total?: true }[] = [
+  { zona: "cobros", texto: "Cobros y recordatorios automáticos", en: "Automatic charges and reminders" },
+  { zona: "mora", texto: "La mora se persigue sola", en: "Late rent chases itself" },
+  { zona: "banco", texto: "Cada pago cuadrado contra el banco", en: "Every payment matched against the bank" },
+  { zona: "pago", texto: "Pagos a propietarios programados", en: "Scheduled owner payouts" },
+  { zona: "pago", texto: "Comisiones calculadas solas", en: "Commissions calculated on their own" },
+  { zona: "cierre", texto: "Cierre de mes sin sorpresas", en: "Month-end close with no surprises", total: true },
 ];
 
 export function CarteraConLoQueResuelve() {
@@ -32,6 +33,8 @@ export function CarteraConLoQueResuelve() {
   const reducido = useReducedMotion() ?? false;
   const [activo, setActivo] = useState(0);
   const [señalado, setSeñalado] = useState(false);
+  const tx = useTx();
+  const en = useIdioma() === "en";
 
   useEffect(() => {
     if (!visto || reducido || señalado) return;
@@ -58,7 +61,7 @@ export function CarteraConLoQueResuelve() {
         style={{ "--fores-t": `${DURACION}ms` } as React.CSSProperties}
         onMouseLeave={() => setSeñalado(false)}
       >
-        <p className="fores-k">Qué resuelve</p>
+        <p className="fores-k">{tx("Qué resuelve", "What it solves")}</p>
         <ul>
           {PUNTOS.map((p, i) => (
             <li key={p.texto}>
@@ -72,7 +75,7 @@ export function CarteraConLoQueResuelve() {
                 onClick={() => señalar(i)}
               >
                 <i>{p.total ? "=" : `0${i + 1}`}</i>
-                <span>{p.texto}</span>
+                <span>{en ? p.en : p.texto}</span>
                 <span className="fores-barra" aria-hidden="true">
                   <b key={`${activo}-${i}`} />
                 </span>

@@ -7247,7 +7247,7 @@
             "title": "Next steps",
             "nextAction": "Next action",
             "noNextAction": "No scheduled action",
-            "contactAttempts": "Contact attempts left",
+            "contactAttempts": "Contact attempts made",
             "paused": "Paused until {{date}}",
             "openSidebar": "View details",
             "closeSidebar": "Close"
@@ -7327,7 +7327,7 @@
               "accessDenied": "Access denied",
               "currentLabel": "Current stage",
               "effectLabel": "What happens if you confirm",
-              "effectNote": "Days are counted from the first unpaid due date. This is the default calendar; if your agency configured its own, that one wins.",
+              "effectNote": "Days are counted from the first day of delinquency, when the payment grace period ends. This is the default calendar; if your agency configured its own, that one wins.",
               "reasonTooShort": "Write at least 10 characters.",
               "targetPlaceholder": "Pick a stage…",
               "targetMissing": "Pick the stage you want to move it to."
@@ -7571,7 +7571,7 @@
           },
           "comparisonHeader": {
             "campo": "Field",
-            "propuesto": "AI Proposed",
+            "propuesto": "Proposed",
             "limite": "Agency Limit"
           },
           "comparison": {
@@ -8689,6 +8689,8 @@
           "matching": "Matching",
           "avaluos": "Appraisals",
           "gerente": "Manager",
+          "director": "Director",
+          "equipo": "Your team",
           "piloto": "Autopilot",
           "retencion": "Retention",
           "calidad": "Niti · quality",

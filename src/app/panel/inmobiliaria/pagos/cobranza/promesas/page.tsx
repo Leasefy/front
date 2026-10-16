@@ -235,8 +235,10 @@ function PromesasContent() {
       {promesas.length === 0 && !error ? (
         <EmptyState
           icon={Handshake}
-          title="No hay promesas de pago registradas"
-          description="Cuando un inquilino prometa pagar, aparecerá aquí con su estado y seguimiento. El histórico completo de promesas por deudor también está en su detalle."
+          // QA-AGENTES 16-10: esta sección es la del AGENTE. Arriba ya pueden
+          // estar las del equipo: «No hay promesas registradas» las contradecía.
+          title="Mori todavía no tiene promesas"
+          description="Cuando un inquilino le prometa pagar a Mori por llamada o WhatsApp, aparecerá aquí con su estado y seguimiento. Las que registra tu equipo van arriba; el histórico de cada deudor está en su detalle."
           primaryCta={{ label: 'Ir a deudores', href: DEUDORES_HREF }}
         />
       ) : (

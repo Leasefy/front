@@ -259,6 +259,14 @@ describe('la vista previa, legible', () => {
     expect(etiquetaDeLaClave('dianaRestrepo')).toBe('Diana restrepo');
     expect(etiquetaDeLaClave('nitDelPropietario')).toBe('NIT del propietario');
     expect(etiquetaDeLaClave('cop')).toBe('Cop');
+    // QA-AGENTES 16-10: la tarjeta de «Prorrogar» decía «Ultimo dia», «Accion», «Automatica».
+    expect(etiquetaDeLaClave('vencio')).toBe('Venció');
+    expect(etiquetaDeLaClave('quedaHasta')).toBe('Queda hasta');
+    expect(etiquetaDeLaClave('termino')).toBe('Término');
+    expect(etiquetaDeLaClave('prorrogasSeguidas')).toBe('Prórrogas seguidas');
+    expect(etiquetaDeLaClave('noSePuede')).toBe('No se puede');
+    expect(etiquetaDeLaClave('ultimoDia')).toBe('Último día');
+    expect(etiquetaDeLaClave('accion')).toBe('Acción');
   });
 
   it('un estado del ERP se lee como palabra; las siglas cortas y lo demás, tal cual', () => {

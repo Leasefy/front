@@ -341,7 +341,7 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
         </div>
       ) : null}
       {fila.noEsInmueble ? (
-        <p className="text-xs text-warning" data-testid="fila-no-es-inmueble">
+        <p className="text-caption text-warning" data-testid="fila-no-es-inmueble">
           El archivo dice «{fila.claseDelArchivo}»: parece un registro de otra cosa del sistema
           anterior, no un inmueble. Si es así, no la traigas (botón de la papelera).
         </p>
@@ -355,7 +355,7 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
       )}
       {/* Nico 14-10: la venta sin precio entra con el precio por completar. */}
       {fila.datosPendientes?.includes('precio_venta') && (
-        <p className="text-xs text-fg-muted" data-testid="fila-sin-precio-de-venta">
+        <p className="text-caption text-fg-muted" data-testid="fila-sin-precio-de-venta">
           {AVISO_FILA_SIN_PRECIO_DE_VENTA}
         </p>
       )}

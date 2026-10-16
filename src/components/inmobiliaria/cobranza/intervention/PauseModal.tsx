@@ -10,6 +10,7 @@
 import * as React from 'react'
 import { useEffect, useState } from 'react'
 import { Pause, Play } from '@phosphor-icons/react'
+import { toast } from 'sonner'
 
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { falloDelMicro } from '@/lib/api/fallo-del-micro'
@@ -47,10 +48,30 @@ interface PauseModalProps {
   onSuccess: () => void
 }
 
+/** `AAAA-MM-DD` del día local (`toISOString` es UTC: después de las 7 p. m. en Colombia daba el día siguiente). */
+export function diaLocal(dias: number, hoy: Date = new Date()): string {
+  const d = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + dias)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/**
+ * QA-AGENTES 16-10 (lab): el calendario dejaba elegir un día pasado y el micro
+ * lo guardaba: la «pausa» quedaba en la bitácora y no pausaba nada. Una pausa
+ * termina, como pronto, mañana.
+ */
+export function errorDeLaFechaDePausa(dia: string, hoy: Date = new Date()): string | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dia)) return 'Elige hasta qué día queda pausada.'
+  return dia < diaLocal(1, hoy) ? 'La pausa tiene que terminar después de hoy. Elige una fecha a partir de mañana.' : null
+}
+
+/** «23 de octubre de 2026», el día tal cual (sin correrlo por el huso). */
+function diaEnPalabras(dia: string): string {
+  const [a, m, d] = dia.split('-').map(Number)
+  return new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(a!, m! - 1, d!))
+}
+
 function defaultPausedUntil(): string {
-  const d = new Date()
-  d.setDate(d.getDate() + 7)
-  return d.toISOString().slice(0, 10)
+  return diaLocal(7)
 }
 
 export function PauseModal({
@@ -91,6 +112,12 @@ export function PauseModal({
       return
     }
     // Antes: «Min 5 characters», en inglés y lejos del campo.
+    const delaFecha = modo === 'pausar' ? errorDeLaFechaDePausa(pausedUntil) : null
+    if (delaFecha) {
+      setErrores({ paused_until: delaFecha })
+      document.getElementById('pausa-hasta')?.focus()
+      return
+    }
     const delMotivo = errorDelMotivo(reason, 5)
     if (delMotivo) {
       setErrores({ reason: delMotivo })
@@ -114,6 +141,12 @@ export function PauseModal({
         },
       )
       if (!res.ok) throw await falloDelMicro(res)
+      // Antes se cerraba sin decir nada.
+      toast.success(
+        modo === 'reanudar'
+          ? 'Cobranza reanudada: el agente vuelve a trabajar este caso.'
+          : `Cobranza pausada hasta el ${diaEnPalabras(pausedUntil)}.`,
+      )
       onSuccess()
       onClose()
     } catch (err) {
@@ -173,6 +206,7 @@ export function PauseModal({
                 </span>
                 <CampoDeDia
                   id="pausa-hasta"
+                  min={diaLocal(1)}
                   value={pausedUntil}
                   onChange={(v) => {
                     setPausedUntil(v)

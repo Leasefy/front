@@ -28,3 +28,17 @@ function mesesDespues(fecha: string, meses: number): string {
   const ultimo = new Date(Date.UTC(a, m - 1 + meses + 1, 0)).getUTCDate()
   return new Date(Date.UTC(a, m - 1 + meses, Math.min(d, ultimo))).toISOString().slice(0, 10)
 }
+
+/**
+ * QA-AGENTES 16-10 (lab): con una inicial de $5.000.000 sobre una deuda de
+ * $4.200.000 no se decía nada (sólo «Guardar» apagado) y la vista previa
+ * mostraba «Saldo en 2 cuotas $ 0» junto a «Pago único». Las mismas reglas
+ * (y frases) que `problemasDeLoPedido` del micro, antes de guardar.
+ */
+export function errorDeLaCuotaInicial(input: { inicial: number; total: number; cuotas: number; plata: (n: number) => string }): string | null {
+  const { inicial, total, cuotas } = input
+  if (cuotas <= 0 || total <= 0 || inicial <= 0) return null
+  if (inicial > total) return `La cuota inicial no puede pasar del total del acuerdo: ${input.plata(total)}.`
+  if (inicial === total) return 'Con la inicial cubriendo todo no queda nada para las cuotas: elige «Pago único» o baja la inicial.'
+  return null
+}

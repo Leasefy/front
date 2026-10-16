@@ -215,9 +215,12 @@ describe('la migración de contratos (el archivo y la corrección a mano)', () =
     { columna: 'Deposito', campo: 'deposito', porque: 'deposito', certeza: 'exacta' },
   ];
 
-  it('apagada: la celda se lee al peso y la corrección dice «sin centavos», como hoy', () => {
+  it('apagada: el canon con centavos no viaja (EN-38), el depósito se lee al peso y la corrección dice «sin centavos»', () => {
     const fila = armarFilaAMigrar({ Canon: '$2.350.000,29', Deposito: '4.700.000,58' }, mapeo);
-    expect(fila.monthlyRent).toBe(2_350_000);
+    // 🔴 EN-38 (06-10-2026): un canon con centavos de verdad y la llave apagada ya NO
+    // se redondea en silencio: no viaja, viaja la celda tal cual y el back frena la fila.
+    expect(fila.monthlyRent).toBeUndefined();
+    expect((fila as { canonConCentavosDelArchivo?: string }).canonConCentavosDelArchivo).toBe('$2.350.000,29');
     expect(fila.deposit).toBe(4_700_001);
     expect(listaDePlata('451.000,50; 649.000')).toEqual([451_001, 649_000]);
     expect(errorDelCanon('2350000.29')).toBe(MENSAJES_DE_LA_MIGRACION.canonEntero);

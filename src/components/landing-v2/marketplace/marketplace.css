@@ -81,6 +81,7 @@
 .lv2 .mk-boleto-t b{font-family:var(--fd);font-weight:600;color:var(--ink)}
 .lv2 .mk-boleto-pub{display:inline-flex;align-items:center;gap:6px;padding:0 18px;border-left:1px solid var(--line);font-family:var(--fm);font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);transition:color .25s}
 .lv2 .mk-boleto-pub:hover{color:var(--blue)}
+.lv2 .mk-boleto[data-sin-fotos] .mk-boleto-ver{padding-left:18px}
 @media(max-width:640px){.lv2 .mk-boleto-t{display:none}.lv2 .mk-boleto-pub{padding:0 14px}}
 
 /* La franja que pasa: inmuebles de verdad en vez de frases. */
@@ -114,11 +115,21 @@
 .lv2 .mk-mosaico-grid{display:grid;gap:56px}
 @media(min-width:1024px){.lv2 .mk-mosaico-grid{grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:64px;align-items:start}}
 .lv2 .mk-mosaico .h-big{font-size:clamp(2.3rem,4.4vw,3.9rem)}
-.lv2 .mk-razones{margin-top:36px;border-top:1px solid var(--line)}
-.lv2 .mk-razones li{display:grid;grid-template-columns:44px minmax(0,1fr);column-gap:8px;padding:16px 0;border-bottom:1px solid var(--line)}
-.lv2 .mk-razon-n{grid-row:span 2;font-family:var(--fm);font-size:11px;letter-spacing:.12em;color:var(--blue);padding-top:3px}
-.lv2 .mk-razones b{font-family:var(--fd);font-size:17px;font-weight:600;letter-spacing:-.01em}
-.lv2 .mk-razones li>span:last-child{margin-top:3px;font-size:14px;line-height:1.55;color:var(--muted)}
+/* Las razones de a una: 01 02 03 04 con su barrita, y la que toca debajo. */
+.lv2 .mk-razones{margin-top:32px;border-top:1px solid var(--line)}
+.lv2 .mk-razones-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding-top:14px}
+.lv2 .mk-razon-tab{display:flex;flex-direction:column;gap:9px;padding:0;border:0;background:none;text-align:left;font-family:var(--fm);font-size:11px;font-weight:500;letter-spacing:.12em;color:var(--muted);cursor:pointer;transition:color .25s}
+.lv2 .mk-razon-tab:hover,.lv2 .mk-razon-tab[aria-selected="true"]{color:var(--blue)}
+.lv2 .mk-razon-tab:focus-visible{outline:2px solid var(--blue);outline-offset:4px;border-radius:2px}
+.lv2 .mk-razon-barra{display:block;height:2px;overflow:hidden;border-radius:2px;background:var(--line)}
+.lv2 .mk-razon-barra>i{display:block;height:100%;background:var(--blue);transform:scaleX(0);transform-origin:left}
+.lv2 .mk-razon-tab[data-vista] .mk-razon-barra>i{transform:scaleX(1);opacity:.35}
+.lv2 .mk-razon-tab[aria-selected="true"] .mk-razon-barra>i{animation:mk-razon-avanza 5.2s linear forwards}
+.lv2 .mk-razones[data-pausa] .mk-razon-barra>i{animation-play-state:paused}
+@keyframes mk-razon-avanza{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.lv2 .mk-razon-panel{min-height:118px;padding:18px 0 16px;border-bottom:1px solid var(--line)}
+.lv2 .mk-razon-panel b{display:block;font-family:var(--fd);font-size:19px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+.lv2 .mk-razon-panel span{display:block;margin-top:6px;max-width:460px;font-size:14.5px;line-height:1.55;color:var(--muted)}
 .lv2 .mk-mosaico-fotos{position:relative;padding:12px;border-radius:26px;border:1px solid rgba(17,17,17,.1);background:#ecebe8}
 .lv2 .mk-bento{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:200px 200px 170px;gap:10px}
 .lv2 .mk-tile{position:relative;display:block;overflow:hidden;border-radius:16px;background:#dedbd5}
@@ -133,6 +144,27 @@
 .lv2 .mk-tile-0 .mk-tile-pie{left:14px;bottom:14px;padding:12px 15px 13px}
 .lv2 .mk-tile-0 .mk-tile-pie b{font-size:22px}
 .lv2 .mk-tile-pie>span{margin-top:3px;font-size:12.5px;color:var(--muted)}
+/* La vitrina sin inmuebles: casillas vacías y la invitación en la grande. */
+/* Una casilla sin inmueble: uno armándose (las fases las mueve framer; aquí,
+   el brillo de carga, la barrita, el ✓ y el pie con sus datos). */
+.lv2 .mk-tile-armandose{background:#e4e1db}
+.lv2 .mk-tile-armandose .mk-tile-capa{will-change:filter,transform}
+.lv2 .mk-arma-brillo{position:absolute;inset:0;z-index:1;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%);background-size:240% 100%;animation:mk-brilla 2.4s ease-in-out infinite}
+@keyframes mk-brilla{from{background-position:130% 0}to{background-position:-130% 0}}
+.lv2 .mk-arma-avance{position:absolute;left:12px;right:12px;top:12px;z-index:2;height:3px;overflow:hidden;border-radius:2px;background:rgba(255,255,255,.6);transition:opacity .4s}
+.lv2 .mk-arma-avance[data-oculta]{opacity:0}
+.lv2 .mk-arma-avance>i{display:block;height:100%;background:var(--blue);transform-origin:left}
+.lv2 .mk-arma-listo{position:absolute;top:10px;right:10px;z-index:2;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;font-weight:700;box-shadow:0 6px 14px -6px rgba(26,64,255,.6)}
+.lv2 .mk-arma-pie{position:absolute;left:10px;bottom:10px;z-index:2;display:flex;flex-direction:column;gap:6px;width:min(150px,calc(100% - 20px));padding:10px 11px 11px;border-radius:11px;background:var(--paper);box-shadow:0 8px 20px -12px rgba(0,0,0,.35)}
+.lv2 .mk-arma-pie>i{display:block;height:7px;border-radius:4px;background:#dedbd5;transform-origin:left}
+.lv2 .mk-arma-pie>i:nth-child(1){width:58%}
+.lv2 .mk-arma-pie>i:nth-child(2){width:82%;height:11px;background:#cfcbc2}
+.lv2 .mk-arma-pie>i:nth-child(3){width:44%}
+.lv2 .mk-tile-armandose[data-fase="lista"] .mk-arma-pie>i:nth-child(2){background:var(--ink)}
+.lv2 .mk-tile-libre{display:flex;flex-direction:column;justify-content:flex-end;gap:12px;padding:28px;background:var(--paper);border:1px solid rgba(17,17,17,.1)}
+.lv2 .mk-tile-libre b{font-family:var(--fd);font-size:clamp(1.6rem,2.4vw,2.2rem);font-weight:600;line-height:1.05;letter-spacing:-.03em;color:var(--ink)}
+.lv2 .mk-tile-libre>span{max-width:380px;font-size:14.5px;line-height:1.6;color:var(--muted)}
+.lv2 .mk-tile-libre .btn{align-self:flex-start;margin-top:4px}
 .lv2 .mk-publican{display:flex;flex-wrap:wrap;align-items:center;gap:12px 18px;margin-top:12px;padding:14px 6px 4px}
 .lv2 .mk-publican-k{font-family:var(--fm);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .lv2 .mk-publican ul{display:flex;flex-wrap:wrap;gap:8px}
@@ -140,7 +172,9 @@
 .lv2 .mk-ini{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-family:var(--fm);font-size:9.5px;letter-spacing:.04em}
 @media(max-width:760px){
   .lv2 .mk-mosaico{padding-top:88px}
-  .lv2 .mk-bento{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:220px 150px 150px}
+  .lv2 .mk-bento{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto 150px 150px}
+  .lv2 .mk-tile-libre{padding:22px}
+  .lv2 .mk-razones-tabs{gap:8px}
   .lv2 .mk-tile-0{grid-column:span 2;grid-row:span 1}
   .lv2 .mk-tile-5{display:none}
   .lv2 .mk-mosaico-fotos{padding:8px;border-radius:20px}
@@ -187,4 +221,7 @@
 
 @media (prefers-reduced-motion: reduce){
   .lv2 .mk-boleto,.lv2 .mk-pip,.lv2 .mk-pin,.lv2 .mk-vivo{animation:none}
+  /* Quietas: las razones no pasan solas (se eligen) y los inmuebles armándose quedan con sus datos puestos. */
+  .lv2 .mk-razon-tab[aria-selected="true"] .mk-razon-barra>i{animation:none;transform:scaleX(1)}
+  .lv2 .mk-arma-brillo{animation:none;opacity:0}
 }

@@ -10075,7 +10075,7 @@
           "volverAlPanel": "Ir al inicio del panel",
           "tituloHoy": "Briefing de hoy",
           "tituloDelDia": "Briefing del {{fecha}}",
-          "bajada": "Lo que Naira te envió el {{momento}}. Los datos pueden haber cambiado desde entonces.",
+          "bajada": "Lo que Naira te envió el {{momento}}; los datos pueden haber cambiado desde entonces.",
           "bajadaEjemplo": "Lo que Naira te envió (fecha de ejemplo). Los datos pueden haber cambiado desde entonces.",
           "navegacion": "Navegación por día",
           "diaAnterior": "Día anterior",

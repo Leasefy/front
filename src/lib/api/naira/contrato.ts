@@ -580,8 +580,6 @@ function construirEsquemas(estricto: boolean) {
     corte: z.string(),
     datos: objeto({
       dias: z.number().int(),
-      preguntas: z.number().int(),
-      preguntasPorTipo: z.array(ConteoDeNaira),
       memoriaVigente: z.number().int(),
       briefingsPorCanal: z.array(ConteoDeNaira),
     }),

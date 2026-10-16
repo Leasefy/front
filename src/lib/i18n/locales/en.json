@@ -10008,6 +10008,18 @@
           "verQueSube": "Seeing {{metrica}} go up",
           "verQueBaja": "Seeing {{metrica}} go down"
         },
+        "votoPorEnlace": {
+          "titulo": "Your answer to Naira",
+          "queEs": "Tells us whether the signal in your briefing was useful. It counts as the team's answer.",
+          "guardando": "Saving your answer…",
+          "sinEnlace": "This link arrived incomplete. Open the signal in Naira's panel to answer.",
+          "enlaceInvalido": "This link isn't valid. Open the signal in Naira's panel to answer.",
+          "sinMiembro": "This link belongs to someone who is no longer on the agency's team.",
+          "apagada": "Naira isn't turned on for your agency.",
+          "noDisponible": "Answering from the email isn't available right now. Answer from Naira's panel.",
+          "demasiados": "You answered many times this hour. Wait a while and try again.",
+          "irAlPanel": "See the briefing in Naira's panel"
+        },
         "utilidad": {
             "sinAutorizacion": "Your vote was not saved: this signal reached very few people and, without your authorization, your vote would identify you. You can authorize it in «What Naira says about me».",
           "pregunta": "Was it useful?",

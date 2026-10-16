@@ -10044,6 +10044,18 @@
           "verQueSube": "Ver que {{metrica}} sube",
           "verQueBaja": "Ver que {{metrica}} baja"
         },
+        "votoPorEnlace": {
+          "titulo": "Tu respuesta a Naira",
+          "queEs": "Nos dice si la señal de tu briefing te sirvió. Cuenta como la respuesta del equipo.",
+          "guardando": "Guardando tu respuesta…",
+          "sinEnlace": "Este enlace llegó incompleto. Abre la señal en el panel de Naira para responder.",
+          "enlaceInvalido": "Este enlace no es válido. Abre la señal en el panel de Naira para responder.",
+          "sinMiembro": "Este enlace es de una persona que ya no está en el equipo de la inmobiliaria.",
+          "apagada": "Naira no está prendida para tu inmobiliaria.",
+          "noDisponible": "Responder desde el correo no está disponible en este momento. Responde desde el panel de Naira.",
+          "demasiados": "Respondiste muchas veces en esta hora. Espera un rato e intenta de nuevo.",
+          "irAlPanel": "Ver el briefing en el panel de Naira"
+        },
         "utilidad": {
             "sinAutorizacion": "Tu voto no se guardó: esta señal le llegó a muy pocas personas y, sin tu autorización, tu voto te identificaría. Puedes autorizar en «Qué dice Naira de mí».",
           "pregunta": "¿Te sirvió?",

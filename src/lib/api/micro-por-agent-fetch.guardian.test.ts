@@ -28,6 +28,7 @@ const EXCEPCIONES: Readonly<Record<string, string>> = {
   'src/lib/api/agent-auth.ts': 'sólo arma el encabezado (su comentario de uso nombra `fetch`)',
   'src/app/arco/ArcoFormClient.tsx': 'pública: el titular de los datos pide ARCO sin sesión',
   'src/app/arco/verify/[token]/page.tsx': 'pública: verificación por enlace, sin sesión',
+  'src/app/naira/votar/VotoPorEnlaceClient.tsx': 'pública: el voto de Naira desde el correo, sin sesión (la autenticación es el sobre del enlace)',
   'src/lib/api/funnel.service.ts': 'pública: la preaprobación del embudo, sin sesión',
   'src/lib/admin/agent-api.ts': 'el /admin de Leasefy usa SU token (`getAdminToken`), no el de la inmobiliaria',
   'src/lib/chat/senales.ts':

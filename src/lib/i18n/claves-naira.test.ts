@@ -25,6 +25,7 @@ const CLAVES_SUELTAS_DE_NAIRA = ['inmobiliaria.ai.nav.naira', 'inmobiliaria.ai.n
 /** clave ⇒ razón por la que su texto es igual en los dos idiomas. Vacía en 13-01. */
 const IDENTICAS_PERMITIDAS: Readonly<Record<string, string>> = {
   'inmobiliaria.ai.nav.naira': '«Naira» es nombre propio: se escribe igual en los dos idiomas',
+  'inmobiliaria.ai.naira.deMi.canales.whatsapp': '«WhatsApp» es nombre propio: se escribe igual en los dos idiomas',
   'inmobiliaria.ai.naira.tabs.briefing': '«Briefing» es el préstamo que el panel usa igual en español y en inglés',
 }
 

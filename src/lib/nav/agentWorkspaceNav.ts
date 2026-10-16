@@ -38,6 +38,7 @@ import {
   SealCheck,
   ChatTeardropText,
   Notebook,
+  UserCircle,
 } from '@phosphor-icons/react';
 import { AGENCY_ROLES, type AgencyRole } from '@/lib/auth/agency-roles';
 import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos';
@@ -319,6 +320,8 @@ export const AGENT_WORKSPACES: AgentWorkspace[] = [
       { labelKey: 'inmobiliaria.ai.naira.tabs.seguimiento', href: `${NAIRA}/seguimiento`, icon: ArrowsCounterClockwise, module: 'naira', action: 'open-loops-view' },
       { labelKey: 'inmobiliaria.ai.naira.tabs.aprobaciones', href: `${NAIRA}/aprobaciones`, icon: SealCheck, module: 'naira', action: 'action-view' },
       { labelKey: 'inmobiliaria.ai.naira.tabs.memoria', href: `${NAIRA}/memoria`, icon: Notebook, module: 'naira', action: 'memory-view' },
+      // P3 (Nico, 15-10-2026): «Qué dice Naira de mí» — cada persona ve lo suyo (y el dueño, el admin y el gerente, la ficha de quien autorizó).
+      { labelKey: 'inmobiliaria.ai.naira.tabs.deMi', href: `${NAIRA}/de-mi`, icon: UserCircle, module: 'naira', action: 'notify-preferences-edit' },
       // ← 13-04..13-07 AGREGAN su pestaña AQUÍ (una línea cada una, en el orden de UI-SPEC §2.3)
     ],
   },

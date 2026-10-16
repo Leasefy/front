@@ -46,6 +46,8 @@ const PESTANAS_DEL_CONTRATO = [
   ['aprobaciones', 'action-view', 'aprobaciones'],
   ['preguntar', 'conversation-ask', 'preguntar'],
   ['memoria', 'memory-view', 'memoria'],
+  // P3 (Nico, 15-10-2026): «Qué dice Naira de mí», la de cada persona.
+  ['de-mi', 'notify-preferences-edit', 'deMi'],
 ] as const
 
 /** La acción de lectura de cada ruta del workspace (pantallas y fichas N4), relativa a RUTA_DE_NAIRA. */
@@ -58,6 +60,8 @@ const ACCION_POR_RUTA: Readonly<Record<string, string>> = {
   'aprobaciones/[proposalId]': 'action-view',
   preguntar: 'conversation-ask',
   memoria: 'memory-view',
+  // P3: «Qué dice Naira de mí».
+  'de-mi': 'notify-preferences-edit',
 }
 
 /** Las carpetas de Naira: sus componentes y hooks solo se importan desde acá. */

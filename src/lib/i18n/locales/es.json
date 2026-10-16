@@ -10045,6 +10045,7 @@
           "verQueBaja": "Ver que {{metrica}} baja"
         },
         "utilidad": {
+            "sinAutorizacion": "Tu voto no se guardó: esta señal le llegó a muy pocas personas y, sin tu autorización, tu voto te identificaría. Puedes autorizar en «Qué dice Naira de mí».",
           "pregunta": "¿Te sirvió?",
           "grupo": "¿Te sirvió esta señal?",
           "util": "Útil",
@@ -10068,7 +10069,54 @@
           "seguimiento": "Seguimiento",
           "aprobaciones": "Aprobaciones",
           "preguntar": "Preguntar",
-          "memoria": "Qué cree Naira"
+          "memoria": "Qué cree Naira",
+          "deMi": "Qué dice Naira de mí"
+        },
+        "deMi": {
+          "queEs": "lo que dice Naira de ti",
+          "titulo": "Qué dice Naira de ti",
+          "tituloDe": "Qué dice Naira de {{nombre}}",
+          "noEsEvaluacion": "Todo lo que Naira tiene a tu nombre, con su fecha. Esto no es una evaluación de desempeño: ninguna decisión sobre tu trabajo se toma solo con esto, y tus compañeros no lo ven.",
+          "verFichaDe": "Ver la ficha de",
+          "yo": "Tú",
+          "corte": "Datos al {{fecha}}, hora de Colombia.",
+          "canales": {
+            "email": "correo",
+            "whatsapp": "WhatsApp"
+          },
+          "datos": {
+            "titulo": "Lo que haces con Naira · últimos {{dias}} días",
+            "memoria": "Cosas que le contaste y recuerda",
+            "memoriaDe": "Cosas que le contó y recuerda",
+            "briefings": "Briefings recibidos",
+            "sinPreguntas": "Naira no guarda el texto de las preguntas ni cuenta cuántas hace cada persona."
+          },
+          "gestion": {
+            "titulo": "Tu gestión · últimos {{dias}} días",
+            "tituloDe": "Su gestión · últimos {{dias}} días",
+            "votos": "Votos sobre señales",
+            "aprobaciones": "Propuestas aprobadas",
+            "rechazos": "Propuestas rechazadas",
+            "cancelaciones": "Tareas canceladas",
+            "escalaciones": "Escalaciones de cobranza a tu nombre",
+            "escalacionesDe": "Escalaciones de cobranza a su nombre",
+            "vencidas": "{{n}} pasadas de plazo",
+            "acuerdos": "Acuerdos de pago que aprobaste",
+            "acuerdosDe": "Acuerdos de pago que aprobó",
+            "motivos": "Por qué rechazaste",
+            "motivosDe": "Por qué rechazó",
+            "sinAutorizacion": "No autorizaste que Naira te atribuya tu gestión: te trata por tu rol y por tu equipo. Puedes cambiarlo arriba.",
+            "sinAutorizacionDe": "Esta persona no autorizó que Naira le atribuya su gestión."
+          },
+          "autorizacion": {
+            "titulo": "Autorizo que Naira me atribuya mi gestión",
+            "pregunta": "¿Autorizas que Naira te atribuya tu gestión?",
+            "autorizo": "Autorizo",
+            "ahoraNo": "Ahora no",
+            "verQueGuarda": "Ver qué dice Naira de ti",
+            "retirar": "Si la retiras, Naira borra lo que te había atribuido.",
+            "noSeGuardo": "No pudimos guardar tu decisión. Intenta de nuevo en un momento."
+          }
         },
         "whatsapp": {
           "titulo": "Recibir el briefing por WhatsApp",

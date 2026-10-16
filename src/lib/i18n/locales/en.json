@@ -10009,6 +10009,7 @@
           "verQueBaja": "Seeing {{metrica}} go down"
         },
         "utilidad": {
+            "sinAutorizacion": "Your vote was not saved: this signal reached very few people and, without your authorization, your vote would identify you. You can authorize it in «What Naira says about me».",
           "pregunta": "Was it useful?",
           "grupo": "Was this signal useful?",
           "util": "Useful",
@@ -10032,7 +10033,54 @@
           "seguimiento": "Follow-up",
           "aprobaciones": "Approvals",
           "preguntar": "Ask",
-          "memoria": "What Naira believes"
+          "memoria": "What Naira believes",
+          "deMi": "What Naira says about me"
+        },
+        "deMi": {
+          "queEs": "what Naira says about you",
+          "titulo": "What Naira says about you",
+          "tituloDe": "What Naira says about {{nombre}}",
+          "noEsEvaluacion": "Everything Naira has under your name, with its date. This is not a performance review: no decision about your work is made from this alone, and your teammates cannot see it.",
+          "verFichaDe": "See the sheet of",
+          "yo": "You",
+          "corte": "Data as of {{fecha}}, Colombia time.",
+          "canales": {
+            "email": "email",
+            "whatsapp": "WhatsApp"
+          },
+          "datos": {
+            "titulo": "What you do with Naira · last {{dias}} days",
+            "memoria": "Things you told it and it remembers",
+            "memoriaDe": "Things they told it and it remembers",
+            "briefings": "Briefings received",
+            "sinPreguntas": "Naira does not keep the text of questions nor count how many each person asks."
+          },
+          "gestion": {
+            "titulo": "Your work · last {{dias}} days",
+            "tituloDe": "Their work · last {{dias}} days",
+            "votos": "Votes on signals",
+            "aprobaciones": "Proposals approved",
+            "rechazos": "Proposals rejected",
+            "cancelaciones": "Tasks cancelled",
+            "escalaciones": "Collection escalations under your name",
+            "escalacionesDe": "Collection escalations under their name",
+            "vencidas": "{{n}} past due",
+            "acuerdos": "Payment plans you approved",
+            "acuerdosDe": "Payment plans they approved",
+            "motivos": "Why you rejected",
+            "motivosDe": "Why they rejected",
+            "sinAutorizacion": "You did not authorize Naira to attribute your work to you: it treats you by role and team. You can change it above.",
+            "sinAutorizacionDe": "This person did not authorize Naira to attribute their work to them."
+          },
+          "autorizacion": {
+            "titulo": "I authorize Naira to attribute my work to me",
+            "pregunta": "Do you authorize Naira to attribute your work to you?",
+            "autorizo": "I authorize",
+            "ahoraNo": "Not now",
+            "verQueGuarda": "See what Naira says about you",
+            "retirar": "If you withdraw it, Naira deletes what it had attributed to you.",
+            "noSeGuardo": "We could not save your decision. Try again in a moment."
+          }
         },
         "whatsapp": {
           "titulo": "Receive the briefing on WhatsApp",

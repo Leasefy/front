@@ -50,6 +50,12 @@ const TABLA_DEL_CONTEXTO: readonly (readonly [IdDeEndpoint, 'GET' | 'POST', stri
   ['whatsapp.consentimiento', 'GET', '/whatsapp-consent', ['notify-preferences-edit'], 'EXISTE', 'apagada'],
   ['whatsapp.consentir', 'POST', '/whatsapp-consent', ['notify-preferences-edit'], 'EXISTE', 'apagada'],
   ['whatsapp.codigo', 'POST', '/whatsapp-code', ['notify-preferences-edit'], 'EXISTE', 'apagada'],
+  // P3 (Nico, 15-10-2026): la autorización de gestión y «Qué dice Naira de mí».
+  ['persona.autorizacion', 'GET', '/authorization', ['notify-preferences-edit'], 'EXISTE', 'apagada'],
+  ['persona.autorizar', 'POST', '/authorization', ['notify-preferences-edit'], 'EXISTE', 'apagada'],
+  ['persona.deMi', 'GET', '/about-me', ['notify-preferences-edit'], 'EXISTE', 'apagada'],
+  ['persona.equipo', 'GET', '/team', ['role-assignment-edit'], 'EXISTE', 'apagada'],
+  ['persona.ficha', 'GET', '/team/{userId}', ['role-assignment-edit'], 'EXISTE', 'no_encontrado'],
 ]
 
 /** Una copia profunda de un ejemplo (JSON: los ejemplos son datos planos). */
@@ -126,14 +132,14 @@ describe('ENDPOINTS_DE_NAIRA — la tabla del §3.1', () => {
     }
   })
 
-  it('[N13:acciones-bicondicional] las acciones de las 19 filas son EXACTAMENTE ACCIONES_DE_NAIRA, sin repetidas', () => {
+  it('[N13:acciones-bicondicional] las acciones de las filas son EXACTAMENTE ACCIONES_DE_NAIRA, sin repetidas', () => {
     const deLaTabla = new Set<string>()
     for (const id of IDS_DE_ENDPOINT) for (const a of ENDPOINTS_DE_NAIRA[id].acciones) deLaTabla.add(a)
     const delModulo = new Set<string>(ACCIONES_DE_NAIRA)
     expect(delModulo.size).toBe(ACCIONES_DE_NAIRA.length)
     for (const a of deLaTabla) expect(delModulo.has(a), a).toBe(true)
     for (const a of delModulo) expect(deLaTabla.has(a), a).toBe(true)
-    expect(deLaTabla.size).toBe(17)
+    expect(deLaTabla.size).toBe(18)
   })
 })
 

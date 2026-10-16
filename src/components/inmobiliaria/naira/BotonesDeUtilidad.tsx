@@ -98,6 +98,8 @@ export function BotonesDeUtilidad({ promocionId, origenDelVoto }: BotonesDeUtili
       case 'conflicto':
         if (r.razon === 'ventana_vencida') setMensaje(t('inmobiliaria.ai.naira.utilidad.ventanaVencida'))
         else if (r.razon === 'voto_antes_de_la_entrega') setMensaje(t('inmobiliaria.ai.naira.utilidad.antesDeLaEntrega'))
+        // B-5 §8.4 (P3): la señal le llegó a muy pocas personas; sin su autorización, el voto la delataría.
+        else if (r.razon === 'sin_autorizacion') setMensaje(t('inmobiliaria.ai.naira.utilidad.sinAutorizacion'))
         else setMensaje(t('inmobiliaria.ai.naira.utilidad.noRegistrado'))
         return
       case 'no_disponible':

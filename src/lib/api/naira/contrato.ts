@@ -569,6 +569,35 @@ function construirEsquemas(estricto: boolean) {
     verificadoHasta: enmendado(z.string().nullable()),
     telefonoRegistrado: enmendado(z.boolean()),
   })
+  // P3 (Nico, 15-10-2026; concepto B-5): la autorización de gestión y «Qué dice Naira de mí».
+  // estado: EXISTE (micro naira-por-persona.ts)
+  const EstadoDeAutorizacion = z.enum(['sin_decidir', 'autorizada', 'no_autorizada'])
+  const NairaManagementAuthorization = objeto({ estado: EstadoDeAutorizacion, texto: z.string(), version: z.string() })
+  const ConteoDeNaira = objeto({ clave: z.string(), n: z.number().int() })
+  const NairaPersonSheet = objeto({
+    persona: objeto({ userId: z.string(), nombre: z.string(), esQuienPregunta: z.boolean() }),
+    autorizacion: EstadoDeAutorizacion,
+    corte: z.string(),
+    datos: objeto({
+      dias: z.number().int(),
+      preguntas: z.number().int(),
+      preguntasPorTipo: z.array(ConteoDeNaira),
+      memoriaVigente: z.number().int(),
+      briefingsPorCanal: z.array(ConteoDeNaira),
+    }),
+    gestion: objeto({
+      dias: z.number().int(),
+      votos: z.array(ConteoDeNaira),
+      aprobaciones: z.number().int(),
+      rechazos: z.number().int(),
+      cancelaciones: z.number().int(),
+      motivos: z.array(objeto({ tipo: z.enum(['rechazo', 'cancelacion']), motivo: z.string(), en: z.string() })),
+      escalacionesAbiertas: z.number().int(),
+      escalacionesVencidas: z.number().int(),
+      acuerdosAprobados: z.number().int(),
+    }).nullable(),
+  })
+  const NairaAuthorizedTeam = objeto({ personas: z.array(objeto({ userId: z.string(), nombre: z.string() })) })
   // #13: el código de seis dígitos para escribírselo a Naira por WhatsApp (se muestra una sola vez).
   // estado: EXISTE (micro naira-whatsapp-consentimiento.ts)
   const NairaWhatsappCode = objeto({ codigo: z.string().regex(/^[0-9]{6}$/), venceEn: z.string(), minutos: z.number().int() })
@@ -687,6 +716,9 @@ function construirEsquemas(estricto: boolean) {
     NairaSignalFeedbackResult,
     NairaWhatsappConsent,
     NairaWhatsappCode,
+    NairaManagementAuthorization,
+    NairaPersonSheet,
+    NairaAuthorizedTeam,
     NairaOpenLoopsList,
     NairaOpenLoop,
     NairaOpenLoopDetail,
@@ -754,6 +786,12 @@ export const NairaWhatsappConsentSchema = TOLERANTES.NairaWhatsappConsent
 export type NairaWhatsappConsent = z.infer<typeof NairaWhatsappConsentSchema>
 export const NairaWhatsappCodeSchema = TOLERANTES.NairaWhatsappCode
 export type NairaWhatsappCode = z.infer<typeof NairaWhatsappCodeSchema>
+export const NairaManagementAuthorizationSchema = TOLERANTES.NairaManagementAuthorization
+export type NairaManagementAuthorization = z.infer<typeof NairaManagementAuthorizationSchema>
+export const NairaPersonSheetSchema = TOLERANTES.NairaPersonSheet
+export type NairaPersonSheet = z.infer<typeof NairaPersonSheetSchema>
+export const NairaAuthorizedTeamSchema = TOLERANTES.NairaAuthorizedTeam
+export type NairaAuthorizedTeam = z.infer<typeof NairaAuthorizedTeamSchema>
 export const NairaOpenLoopsListSchema = TOLERANTES.NairaOpenLoopsList
 export type NairaOpenLoopsList = z.infer<typeof NairaOpenLoopsListSchema>
 export const NairaOpenLoopSchema = TOLERANTES.NairaOpenLoop
@@ -821,6 +859,8 @@ export const ACCIONES_DE_NAIRA = [
   'task-cancel',
   // P2 (15-10-2026): el consentimiento de WhatsApp propio vive bajo la preferencia de notificación.
   'notify-preferences-edit',
+  // P3 (15-10-2026): la ficha de otra persona del equipo (dueño, admin y gerente), la misma acción que asigna responsables.
+  'role-assignment-edit',
 ] as const
 export type AccionDeNaira = (typeof ACCIONES_DE_NAIRA)[number]
 
@@ -845,6 +885,11 @@ export type IdDeEndpoint =
   | 'whatsapp.consentimiento'
   | 'whatsapp.consentir'
   | 'whatsapp.codigo'
+  | 'persona.autorizacion'
+  | 'persona.autorizar'
+  | 'persona.deMi'
+  | 'persona.equipo'
+  | 'persona.ficha'
 
 export interface EndpointDeNaira {
   readonly id: IdDeEndpoint
@@ -967,6 +1012,51 @@ export const ENDPOINTS_DE_NAIRA: Readonly<Record<IdDeEndpoint, EndpointDeNaira>>
     fuente: '#13 (Nico, 15-10-2026) — micro naira-whatsapp-consentimiento.ts',
     si404: 'apagada',
   },
+  'persona.autorizacion': {
+    id: 'persona.autorizacion',
+    metodo: 'GET',
+    ruta: '/authorization',
+    acciones: ['notify-preferences-edit'],
+    estado: 'EXISTE',
+    fuente: 'P3 (Nico, 15-10-2026) — micro naira-por-persona.ts',
+    si404: 'apagada',
+  },
+  'persona.autorizar': {
+    id: 'persona.autorizar',
+    metodo: 'POST',
+    ruta: '/authorization',
+    acciones: ['notify-preferences-edit'],
+    estado: 'EXISTE',
+    fuente: 'P3 (Nico, 15-10-2026) — micro naira-por-persona.ts',
+    si404: 'apagada',
+  },
+  'persona.deMi': {
+    id: 'persona.deMi',
+    metodo: 'GET',
+    ruta: '/about-me',
+    acciones: ['notify-preferences-edit'],
+    estado: 'EXISTE',
+    fuente: 'P3 (Nico, 15-10-2026) — micro naira-por-persona.ts',
+    si404: 'apagada',
+  },
+  'persona.equipo': {
+    id: 'persona.equipo',
+    metodo: 'GET',
+    ruta: '/team',
+    acciones: ['role-assignment-edit'],
+    estado: 'EXISTE',
+    fuente: 'P3 (Nico, 15-10-2026) — micro naira-por-persona.ts',
+    si404: 'apagada',
+  },
+  'persona.ficha': {
+    id: 'persona.ficha',
+    metodo: 'GET',
+    ruta: '/team/{userId}',
+    acciones: ['role-assignment-edit'],
+    estado: 'EXISTE',
+    fuente: 'P3 (Nico, 15-10-2026) — micro naira-por-persona.ts',
+    si404: 'no_encontrado',
+  },
   'senal.voto': {
     id: 'senal.voto',
     metodo: 'POST',
@@ -1063,6 +1153,11 @@ export const IDS_DE_ENDPOINT: readonly IdDeEndpoint[] = [
   'whatsapp.consentimiento',
   'whatsapp.consentir',
   'whatsapp.codigo',
+  'persona.autorizacion',
+  'persona.autorizar',
+  'persona.deMi',
+  'persona.equipo',
+  'persona.ficha',
 ]
 
 // ── Respuesta de cada endpoint ──────────────────────────────────────────────────────────────────────────────────────
@@ -1081,6 +1176,11 @@ export type RespuestasDeNaira = {
   readonly 'whatsapp.consentimiento': NairaWhatsappConsent
   readonly 'whatsapp.consentir': NairaWhatsappConsent
   readonly 'whatsapp.codigo': NairaWhatsappCode
+  readonly 'persona.autorizacion': NairaManagementAuthorization
+  readonly 'persona.autorizar': NairaManagementAuthorization
+  readonly 'persona.deMi': NairaPersonSheet
+  readonly 'persona.equipo': NairaAuthorizedTeam
+  readonly 'persona.ficha': NairaPersonSheet
   readonly 'seguimiento.lista': NairaOpenLoopsList
   readonly 'seguimiento.detalle': NairaOpenLoopDetail
   readonly 'acciones.lista': NairaActionsList
@@ -1108,6 +1208,11 @@ function respuestaPorEndpoint(e: EsquemasDeNaira): RespuestaPorEndpoint {
     'whatsapp.consentimiento': e.NairaWhatsappConsent,
     'whatsapp.consentir': e.NairaWhatsappConsent,
     'whatsapp.codigo': e.NairaWhatsappCode,
+    'persona.autorizacion': e.NairaManagementAuthorization,
+    'persona.autorizar': e.NairaManagementAuthorization,
+    'persona.deMi': e.NairaPersonSheet,
+    'persona.equipo': e.NairaAuthorizedTeam,
+    'persona.ficha': e.NairaPersonSheet,
     'seguimiento.lista': e.NairaOpenLoopsList,
     'seguimiento.detalle': e.NairaOpenLoopDetail,
     'acciones.lista': e.NairaActionsList,

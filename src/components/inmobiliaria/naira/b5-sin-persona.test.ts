@@ -43,6 +43,20 @@ const PROHIBIDOS = ['userId', 'actorId', 'approvedBy', 'proposedBy', 'erasedBy',
 /** Sin mayúsculas: `latencia`, `latency`, `Latencia…`. */
 const LATENCIA = 'latenc'
 
+/**
+ * P3 (Nico, 15-10-2026: «Sí, por persona, con transparencia ("Qué dice Naira de mí" + autorización del empleado)»;
+ * concepto B-5 §3-§5): la ÚNICA superficie de Naira que nombra a una persona es su ficha, que la persona ve siempre y el
+ * dueño, el admin o el gerente solo si ella autorizó. Fuera de estos archivos la regla sigue igual.
+ */
+const FICHA_POR_PERSONA: readonly string[] = [
+  'src/app/panel/inmobiliaria/reportes/naira/de-mi/',
+  'src/lib/hooks/naira/use-naira-ficha.ts',
+  'src/components/inmobiliaria/naira/AutorizacionDeGestion.tsx',
+]
+function esLaFichaPorPersona(ruta: string): boolean {
+  return FICHA_POR_PERSONA.some((p) => ruta.startsWith(p))
+}
+
 /** Todo `.ts`/`.tsx` no-test bajo las raíces (rutas relativas al repo). */
 function archivosDelArbol(): string[] {
   const salida: string[] = []
@@ -50,7 +64,8 @@ function archivosDelArbol(): string[] {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
       const ruta = join(dir, e.name)
       if (e.isDirectory()) recorrer(ruta)
-      else if (/\.tsx?$/.test(e.name) && !e.name.includes('.test.')) salida.push(relative(process.cwd(), ruta).split('\\').join('/'))
+      else if (/\.tsx?$/.test(e.name) && !e.name.includes('.test.') && !esLaFichaPorPersona(relative(process.cwd(), ruta).split('\\').join('/')))
+        salida.push(relative(process.cwd(), ruta).split('\\').join('/'))
     }
   }
   for (const raiz of RAICES) {

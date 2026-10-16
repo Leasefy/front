@@ -55,6 +55,9 @@ import {
   type NairaSignalDetail,
   type NairaSignalFeedbackRequest,
   type NairaSignalFeedbackResult,
+  type NairaAuthorizedTeam,
+  type NairaManagementAuthorization,
+  type NairaPersonSheet,
   type NairaWhatsappCode,
   type NairaWhatsappConsent,
   type NairaTaskCancelResult,
@@ -211,6 +214,31 @@ export async function leerConsentimientoWhatsapp(agencyId: string): Promise<Esta
 /** P2: autorizar o retirar el briefing por WhatsApp (siempre de quien llama). */
 export async function guardarConsentimientoWhatsapp(agencyId: string, otorgar: boolean): Promise<EstadoNaira<NairaWhatsappConsent>> {
   return pedirANaira('whatsapp.consentir', agencyId, {}, { cuerpo: { otorgar } })
+}
+
+/** P3: la autorización de quien llama para que Naira le atribuya datos de su gestión. */
+export async function leerAutorizacionDeGestion(agencyId: string): Promise<EstadoNaira<NairaManagementAuthorization>> {
+  return pedirANaira('persona.autorizacion', agencyId, {})
+}
+
+/** P3: autorizar o retirar (siempre de quien llama); al retirarla, lo atribuido se borra en el micro. */
+export async function guardarAutorizacionDeGestion(agencyId: string, autorizar: boolean): Promise<EstadoNaira<NairaManagementAuthorization>> {
+  return pedirANaira('persona.autorizar', agencyId, {}, { cuerpo: { autorizar } })
+}
+
+/** P3: «Qué dice Naira de mí». */
+export async function leerFichaPropia(agencyId: string): Promise<EstadoNaira<NairaPersonSheet>> {
+  return pedirANaira('persona.deMi', agencyId, {})
+}
+
+/** P3: quiénes del equipo autorizaron (dueño, admin y gerente). */
+export async function leerEquipoQueAutorizo(agencyId: string): Promise<EstadoNaira<NairaAuthorizedTeam>> {
+  return pedirANaira('persona.equipo', agencyId, {})
+}
+
+/** P3: la ficha de una persona del equipo que autorizó. */
+export async function leerFichaDe(agencyId: string, userId: string): Promise<EstadoNaira<NairaPersonSheet>> {
+  return pedirANaira('persona.ficha', agencyId, { userId })
 }
 
 /** #13: un código de seis dígitos para que Naira responda cualquier pregunta por WhatsApp (se muestra una sola vez). */

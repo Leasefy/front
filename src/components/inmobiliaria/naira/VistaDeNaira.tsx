@@ -36,7 +36,7 @@ import { NairaApagada } from './NairaApagada'
 import { NairaSinPermiso } from './NairaSinPermiso'
 import { ProveedorDeOrigen, type OrigenDeLosDatos } from './OrigenDeNaira'
 
-export const VISTAS_DE_NAIRA = ['briefing', 'senal', 'seguimiento', 'loop', 'aprobaciones', 'propuesta', 'preguntar', 'memoria'] as const
+export const VISTAS_DE_NAIRA = ['briefing', 'senal', 'seguimiento', 'loop', 'aprobaciones', 'propuesta', 'preguntar', 'memoria', 'deMi'] as const
 export type NombreDeVistaDeNaira = (typeof VISTAS_DE_NAIRA)[number]
 
 export interface VistaDeNairaProps<T> {

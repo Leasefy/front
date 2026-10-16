@@ -69,3 +69,7 @@ export function rutaDeLaMemoria(filtros?: { readonly capa: string; readonly proc
   if (filtros.procedencia !== 'todas') partes.push('procedencia=' + encodeURIComponent(filtros.procedencia))
   return partes.length === 0 ? RUTA_DE_LA_MEMORIA : RUTA_DE_LA_MEMORIA + '?' + partes.join('&')
 }
+
+// + P3 (Nico, 15-10-2026): «Qué dice Naira de mí»
+/** La pestaña «Qué dice Naira de mí» (B/de-mi). */
+export const RUTA_DE_LO_QUE_DICE_NAIRA = `${RUTA_DE_NAIRA}/de-mi`

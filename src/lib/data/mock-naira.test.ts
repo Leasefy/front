@@ -34,7 +34,7 @@ const ARREGLOS_DE_TEXTO_LIBRE = new Set(['citas', 'refsServidas'])
 describe('EJEMPLOS_DE_NAIRA', () => {
   it('[N13:un-ejemplo-por-endpoint] las claves son exactamente IDS_DE_ENDPOINT', () => {
     expect(Object.keys(EJEMPLOS_DE_NAIRA).sort()).toEqual([...IDS_DE_ENDPOINT].sort())
-    expect(IDS_DE_ENDPOINT.length).toBe(17)
+    expect(IDS_DE_ENDPOINT.length).toBe(19) // P2 (15-10-2026): + whatsapp.consentimiento y whatsapp.consentir
   })
 
   it.each(IDS_DE_ENDPOINT)('[N13:fixture-es-contrato] %s pasa su esquema ESTRICTO en todos los niveles', (id: IdDeEndpoint) => {

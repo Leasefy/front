@@ -46,6 +46,9 @@ const TABLA_DEL_CONTEXTO: readonly (readonly [IdDeEndpoint, 'GET' | 'POST', stri
   ['acciones.decidir', 'POST', '/actions/{proposalId}/decision', ['action-approve-internal', 'action-approve-external'], 'PLANIFICADO', 'no_encontrado'],
   ['tareas.lista', 'GET', '/tasks', ['task-view'], 'PLANIFICADO', 'apagada'],
   ['tareas.cancelar', 'POST', '/tasks/{tareaId}/cancel', ['task-cancel'], 'PLANIFICADO', 'no_encontrado'],
+  // P2 (Nico, 15-10-2026): el consentimiento de WhatsApp del briefing, de quien llama.
+  ['whatsapp.consentimiento', 'GET', '/whatsapp-consent', ['notify-preferences-edit'], 'EXISTE', 'apagada'],
+  ['whatsapp.consentir', 'POST', '/whatsapp-consent', ['notify-preferences-edit'], 'EXISTE', 'apagada'],
 ]
 
 /** Una copia profunda de un ejemplo (JSON: los ejemplos son datos planos). */
@@ -122,14 +125,14 @@ describe('ENDPOINTS_DE_NAIRA — la tabla del §3.1', () => {
     }
   })
 
-  it('[N13:acciones-bicondicional] las acciones de las 17 filas son EXACTAMENTE ACCIONES_DE_NAIRA, sin repetidas', () => {
+  it('[N13:acciones-bicondicional] las acciones de las 19 filas son EXACTAMENTE ACCIONES_DE_NAIRA, sin repetidas', () => {
     const deLaTabla = new Set<string>()
     for (const id of IDS_DE_ENDPOINT) for (const a of ENDPOINTS_DE_NAIRA[id].acciones) deLaTabla.add(a)
     const delModulo = new Set<string>(ACCIONES_DE_NAIRA)
     expect(delModulo.size).toBe(ACCIONES_DE_NAIRA.length)
     for (const a of deLaTabla) expect(delModulo.has(a), a).toBe(true)
     for (const a of delModulo) expect(deLaTabla.has(a), a).toBe(true)
-    expect(deLaTabla.size).toBe(16)
+    expect(deLaTabla.size).toBe(17)
   })
 })
 

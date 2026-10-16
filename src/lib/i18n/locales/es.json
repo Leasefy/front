@@ -10070,6 +10070,10 @@
           "preguntar": "Preguntar",
           "memoria": "Qué cree Naira"
         },
+        "whatsapp": {
+          "titulo": "Recibir el briefing por WhatsApp",
+          "noSeGuardo": "No pudimos guardar tu autorización. Intenta de nuevo en un momento."
+        },
         "briefing": {
           "queEs": "el briefing",
           "volverAlPanel": "Ir al inicio del panel",

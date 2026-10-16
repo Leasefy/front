@@ -55,6 +55,7 @@ import {
   type NairaSignalDetail,
   type NairaSignalFeedbackRequest,
   type NairaSignalFeedbackResult,
+  type NairaWhatsappConsent,
   type NairaTaskCancelResult,
   type NairaTasksList,
   type RespuestasDeNaira,
@@ -199,6 +200,16 @@ export async function preguntarANaira(agencyId: string, question: string): Promi
 
 export async function leerBriefing(agencyId: string, dia?: string): Promise<EstadoNaira<NairaBriefingDay>> {
   return pedirANaira('briefing.dia', agencyId, {}, { query: dia ? '?dia=' + encodeURIComponent(dia) : '' })
+}
+
+/** P2: si quien llama autorizó recibir el briefing por WhatsApp, con el texto que aceptaría. */
+export async function leerConsentimientoWhatsapp(agencyId: string): Promise<EstadoNaira<NairaWhatsappConsent>> {
+  return pedirANaira('whatsapp.consentimiento', agencyId, {})
+}
+
+/** P2: autorizar o retirar el briefing por WhatsApp (siempre de quien llama). */
+export async function guardarConsentimientoWhatsapp(agencyId: string, otorgar: boolean): Promise<EstadoNaira<NairaWhatsappConsent>> {
+  return pedirANaira('whatsapp.consentir', agencyId, {}, { cuerpo: { otorgar } })
 }
 
 export async function leerSenal(agencyId: string, promocionId: string): Promise<EstadoNaira<NairaSignalDetail>> {

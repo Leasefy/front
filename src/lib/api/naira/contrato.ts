@@ -559,6 +559,10 @@ function construirEsquemas(estricto: boolean) {
     diaDelVoto: z.string(),
   })
 
+  // P2 (Nico, 15-10-2026): el consentimiento de WhatsApp del briefing, siempre de quien llama.
+  // estado: EXISTE (micro naira-whatsapp-consentimiento.ts)
+  const NairaWhatsappConsent = objeto({ otorgado: z.boolean(), texto: z.string(), version: z.string() })
+
   // ── Acciones y tareas (12-07, PLANIFICADO) ──
 
   // fuente: 12-07-PLAN.md:390 (Destinatario; `evento` de vertical se mide al ejecutar 12-01: z.string(), P9)
@@ -671,6 +675,7 @@ function construirEsquemas(estricto: boolean) {
     NairaSignalDetail,
     NairaRecallResult,
     NairaSignalFeedbackResult,
+    NairaWhatsappConsent,
     NairaOpenLoopsList,
     NairaOpenLoop,
     NairaOpenLoopDetail,
@@ -734,6 +739,8 @@ export const NairaRecallResultSchema = TOLERANTES.NairaRecallResult
 export type NairaRecallResult = z.infer<typeof NairaRecallResultSchema>
 export const NairaSignalFeedbackResultSchema = TOLERANTES.NairaSignalFeedbackResult
 export type NairaSignalFeedbackResult = z.infer<typeof NairaSignalFeedbackResultSchema>
+export const NairaWhatsappConsentSchema = TOLERANTES.NairaWhatsappConsent
+export type NairaWhatsappConsent = z.infer<typeof NairaWhatsappConsentSchema>
 export const NairaOpenLoopsListSchema = TOLERANTES.NairaOpenLoopsList
 export type NairaOpenLoopsList = z.infer<typeof NairaOpenLoopsListSchema>
 export const NairaOpenLoopSchema = TOLERANTES.NairaOpenLoop
@@ -799,6 +806,8 @@ export const ACCIONES_DE_NAIRA = [
   'action-approve-internal',
   'action-approve-external',
   'task-cancel',
+  // P2 (15-10-2026): el consentimiento de WhatsApp propio vive bajo la preferencia de notificación.
+  'notify-preferences-edit',
 ] as const
 export type AccionDeNaira = (typeof ACCIONES_DE_NAIRA)[number]
 
@@ -820,6 +829,8 @@ export type IdDeEndpoint =
   | 'acciones.decidir'
   | 'tareas.lista'
   | 'tareas.cancelar'
+  | 'whatsapp.consentimiento'
+  | 'whatsapp.consentir'
 
 export interface EndpointDeNaira {
   readonly id: IdDeEndpoint
@@ -915,6 +926,24 @@ export const ENDPOINTS_DE_NAIRA: Readonly<Record<IdDeEndpoint, EndpointDeNaira>>
     fuente: '10-06-PLAN.md:348,619',
     si404: 'apagada',
   },
+  'whatsapp.consentimiento': {
+    id: 'whatsapp.consentimiento',
+    metodo: 'GET',
+    ruta: '/whatsapp-consent',
+    acciones: ['notify-preferences-edit'],
+    estado: 'EXISTE',
+    fuente: 'P2 (Nico, 15-10-2026) — micro naira-whatsapp-consentimiento.ts',
+    si404: 'apagada',
+  },
+  'whatsapp.consentir': {
+    id: 'whatsapp.consentir',
+    metodo: 'POST',
+    ruta: '/whatsapp-consent',
+    acciones: ['notify-preferences-edit'],
+    estado: 'EXISTE',
+    fuente: 'P2 (Nico, 15-10-2026) — micro naira-whatsapp-consentimiento.ts',
+    si404: 'apagada',
+  },
   'senal.voto': {
     id: 'senal.voto',
     metodo: 'POST',
@@ -1008,6 +1037,8 @@ export const IDS_DE_ENDPOINT: readonly IdDeEndpoint[] = [
   'acciones.decidir',
   'tareas.lista',
   'tareas.cancelar',
+  'whatsapp.consentimiento',
+  'whatsapp.consentir',
 ]
 
 // ── Respuesta de cada endpoint ──────────────────────────────────────────────────────────────────────────────────────
@@ -1023,6 +1054,8 @@ export type RespuestasDeNaira = {
   readonly 'senal.detalle': NairaSignalDetail
   readonly 'recall.responder': NairaRecallResult
   readonly 'senal.voto': NairaSignalFeedbackResult
+  readonly 'whatsapp.consentimiento': NairaWhatsappConsent
+  readonly 'whatsapp.consentir': NairaWhatsappConsent
   readonly 'seguimiento.lista': NairaOpenLoopsList
   readonly 'seguimiento.detalle': NairaOpenLoopDetail
   readonly 'acciones.lista': NairaActionsList
@@ -1047,6 +1080,8 @@ function respuestaPorEndpoint(e: EsquemasDeNaira): RespuestaPorEndpoint {
     'senal.detalle': e.NairaSignalDetail,
     'recall.responder': e.NairaRecallResult,
     'senal.voto': e.NairaSignalFeedbackResult,
+    'whatsapp.consentimiento': e.NairaWhatsappConsent,
+    'whatsapp.consentir': e.NairaWhatsappConsent,
     'seguimiento.lista': e.NairaOpenLoopsList,
     'seguimiento.detalle': e.NairaOpenLoopDetail,
     'acciones.lista': e.NairaActionsList,

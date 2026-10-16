@@ -10034,6 +10034,10 @@
           "preguntar": "Ask",
           "memoria": "What Naira believes"
         },
+        "whatsapp": {
+          "titulo": "Receive the briefing on WhatsApp",
+          "noSeGuardo": "We could not save your authorization. Try again in a moment."
+        },
         "briefing": {
           "queEs": "the briefing",
           "volverAlPanel": "Go to the panel home",

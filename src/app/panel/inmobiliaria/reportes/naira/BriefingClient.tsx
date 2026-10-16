@@ -19,6 +19,7 @@ import type { JSX } from 'react'
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 
+import { ConsentimientoWhatsapp } from '@/components/inmobiliaria/naira/ConsentimientoWhatsapp'
 import { VistaDeNaira } from '@/components/inmobiliaria/naira/VistaDeNaira'
 import { Skeleton } from '@/components/ui/skeleton'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
@@ -57,6 +58,8 @@ export function BriefingClient(): JSX.Element {
 
   return (
     <div className="space-y-6 p-6 lg:p-8">
+      {/* P2 (15-10-2026): el briefing por WhatsApp, con la autorización de cada persona. */}
+      <ConsentimientoWhatsapp />
       <VistaDeNaira
         nombre="briefing"
         estado={estado}

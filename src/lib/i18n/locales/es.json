@@ -7280,7 +7280,7 @@
             "title": "Próximos pasos",
             "nextAction": "Próxima acción",
             "noNextAction": "Sin acción programada",
-            "contactAttempts": "Intentos restantes",
+            "contactAttempts": "Intentos de contacto hechos",
             "paused": "En pausa hasta {{date}}",
             "openSidebar": "Ver detalles",
             "closeSidebar": "Cerrar"

@@ -11,6 +11,7 @@
 import * as React from 'react'
 import { useEffect, useState } from 'react'
 import { Phone } from '@phosphor-icons/react'
+import { toast } from 'sonner'
 
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { falloDelMicro } from '@/lib/api/fallo-del-micro'
@@ -45,6 +46,7 @@ export function ManualCallModal({
   open,
   onClose,
   debtorId,
+  debtorName,
   onSuccess,
 }: ManualCallModalProps) {
   const { t } = useI18n()
@@ -96,6 +98,14 @@ export function ManualCallModal({
         },
       )
       if (!res.ok) throw await falloDelMicro(res)
+      // QA-AGENTES 16-10 (lab): el diálogo se cerraba sin decir nada, también
+      // cuando la voz no está configurada (202, `stub: true`: no se marcó).
+      const cuerpo = (await res.json().catch(() => null)) as { stub?: boolean } | null
+      if (cuerpo?.stub) {
+        toast.warning('No se marcó: la llamada por voz no está activa para tu inmobiliaria. Quedó registrado el pedido.')
+      } else {
+        toast.success(debtorName ? `Llamando a ${debtorName}.` : 'Llamada iniciada.')
+      }
       onSuccess()
       onClose()
     } catch (err) {

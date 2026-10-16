@@ -7245,7 +7245,7 @@
             "title": "Next steps",
             "nextAction": "Next action",
             "noNextAction": "No scheduled action",
-            "contactAttempts": "Contact attempts left",
+            "contactAttempts": "Contact attempts made",
             "paused": "Paused until {{date}}",
             "openSidebar": "View details",
             "closeSidebar": "Close"

@@ -18,7 +18,12 @@ import { act } from 'react'
 
 void React
 
-const { agentFetchMock } = vi.hoisted(() => ({ agentFetchMock: vi.fn() }))
+const { agentFetchMock, toastMock } = vi.hoisted(() => ({
+  agentFetchMock: vi.fn(),
+  toastMock: { success: vi.fn(), warning: vi.fn(), error: vi.fn() },
+}))
+
+vi.mock('sonner', () => ({ toast: toastMock }))
 
 vi.mock('@/lib/api/agent-fetch', () => ({
   agentFetch: (...a: unknown[]) => agentFetchMock(...a),
@@ -190,4 +195,33 @@ describe('Llamada manual', () => {
     const alerta = contenedor.querySelector('[data-testid="intervencion-error"]')?.textContent ?? ''
     expect(alerta).toBe('No encontramos a este deudor o no tiene un teléfono registrado.')
   })
+})
+
+// QA-AGENTES 16-10 (lab): la llamada manual cerraba el diálogo sin decir nada,
+// también con la voz sin configurar (202 `stub`: no se marcó a nadie).
+describe('la llamada manual dice qué pasó', () => {
+  for (const [nombre, cuerpo, espera] of [
+    ['sin voz configurada: avisa que no se marcó', { ok: true, callId: 'c1', stub: true }, 'warning'],
+    ['con voz: dice que está llamando', { ok: true, callId: 'c2' }, 'success'],
+  ] as const) {
+    it(nombre, async () => {
+      toastMock.success.mockClear()
+      toastMock.warning.mockClear()
+      agentFetchMock.mockResolvedValue(json('stub' in cuerpo ? 202 : 200, cuerpo))
+      const onSuccess = vi.fn()
+      await act(async () => {
+        root.render(<ManualCallModal open onClose={vi.fn()} debtorId="deudor-1" debtorName="Ana" onSuccess={onSuccess} />)
+      })
+      await escribir(contenedor.querySelector<HTMLTextAreaElement>('#llamada-manual-motivo')!, 'Llamar para confirmar el pago.')
+      await act(async () => {
+        boton('inmobiliaria.ai.cobranza.detail.acciones.manualCall.confirm').click()
+      })
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0))
+      })
+      expect(contenedor.querySelector('[data-testid="intervencion-error"]')).toBeNull()
+      expect(toastMock[espera]).toHaveBeenCalledTimes(1)
+      expect(onSuccess).toHaveBeenCalled()
+    })
+  }
 })

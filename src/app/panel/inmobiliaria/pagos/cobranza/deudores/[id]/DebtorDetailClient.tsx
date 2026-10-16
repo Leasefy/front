@@ -268,9 +268,13 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
                   daysBadgeClasses(data.daysInStage)
                 }
               >
-                {/* QA-IA-95 (IA-B-09): «1 día en la etapa», no «1 d». */}
-                <AnimatedNumber value={data.daysInStage} format={(n) => String(Math.round(n))} />
-                {Math.round(data.daysInStage) === 1 ? ' día en la etapa' : ' días en la etapa'}
+                {/* QA-IA-95 (IA-B-09): «1 día en la etapa», no «1 d». QA-AGENTES
+                    16-10: en un flex el espacio del texto se perdía («0días»): número
+                    y texto van juntos en un span normal. */}
+                <span>
+                  <AnimatedNumber value={data.daysInStage} format={(n) => String(Math.round(n))} />
+                  {Math.round(data.daysInStage) === 1 ? ' día en la etapa' : ' días en la etapa'}
+                </span>
               </span>
             )}
             <Presence as="span" show={Boolean(data?.isPaused)} direction="none" initial={false}>

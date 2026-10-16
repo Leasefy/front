@@ -366,6 +366,12 @@ export interface AsientoRegistrado extends AsientoContable {
    * asiento y el back devolvió ESE: no se registró nada nuevo.
    */
   yaExistia: boolean;
+  /**
+   * 🔴 8.ª tanda (14-10): sólo en unos saldos iniciales recién registrados,
+   * cuántos asientos del libro diario migrado ya había con fecha hasta su
+   * corte (están DENTRO de los saldos). Ausente = ninguno, o un back anterior.
+   */
+  asientosMigradosHastaElCorte?: number;
 }
 
 /** `GET /asientos`: paginado por `limite` / `desplazamiento`, orden `numero desc`. */
@@ -802,6 +808,20 @@ export interface ProgresoDeCarga {
   esperados: number;
   procesados: number;
   estado: EstadoDeCargaDeAsientos;
+}
+
+/**
+ * 8.ª tanda (14-10): a quién es un documento del balance de saldos iniciales,
+ * de cada lado. `VARIOS` = dos fichas de ese lado con el mismo documento (no
+ * se adivina); `SIN_CUENTA` = el inquilino no tiene cuenta del portal y la
+ * contabilidad no tiene a quién imputarle.
+ */
+export interface TerceroDelBalance {
+  /** Tal como se consultó. */
+  documento: string;
+  propietario: { id: string; nombre: string } | 'VARIOS' | null;
+  /** `SIN_CONTRATO` = tiene cuenta del portal pero todavía ningún contrato (la contabilidad lo pide). */
+  inquilino: { id: string; nombre: string } | 'VARIOS' | 'SIN_CUENTA' | 'SIN_CONTRATO' | null;
 }
 
 /** `GET /migracion/cargas`: una carga ABIERTA, o sea un archivo que quedó a medias. */
@@ -1350,6 +1370,12 @@ export interface MapeoDeEvento {
   cuenta: CuentaResumida | null;
   propuesta: CuentaResumida | null;
   /**
+   * La propuesta se llama en el plan de la agencia como en el plan base. En un
+   * plan importado el mismo código puede ser otra cosa: sólo la que se llama
+   * igual se asigna sola. Ausente = back anterior (se toma como segura).
+   */
+  propuestaConElNombreDelPlanBase?: boolean;
+  /**
    * CB-28 (QA de Contabilidad, 03-10-2026): cuántos movimientos ya asentó el
    * evento con su cuenta. Opcional (lo puede agregar el back): sin él, cambiar
    * una cuenta YA asignada se confirma igual.
@@ -1857,6 +1883,17 @@ export const contabilidadApi = {
       return apiClient.post<{ lote: string; estado: EstadoDeCargaDeAsientos }>(
         `${BASE}/migracion/cargas/descartar`,
         { lote },
+      );
+    },
+
+    /**
+     * 8.ª tanda (14-10): los propietarios e inquilinos con estos documentos,
+     * para imputar cada saldo del balance a su tercero. No escribe nada.
+     */
+    async tercerosPorDocumento(documentos: string[]): Promise<TerceroDelBalance[]> {
+      return apiClient.post<TerceroDelBalance[]>(
+        `${BASE}/migracion/terceros-por-documento`,
+        { documentos },
       );
     },
 

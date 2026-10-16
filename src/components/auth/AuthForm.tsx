@@ -11,7 +11,7 @@ import { AuthInput } from './AuthInput';
 import { useAuth } from '@/lib/auth/use-auth';
 import { urlDeRegresoDelRegistro } from '@/lib/auth/regreso-del-correo';
 import { AUTH_BOOTSTRAP_ERROR_KEY } from '@/lib/auth/auth-context';
-import { rutaDeOnboarding } from '@/lib/auth/perfil-de-onboarding';
+import { rutaDeOnboarding, rutaDeOnboardingConRegreso } from '@/lib/auth/perfil-de-onboarding';
 import { tomarAvisoDeCierre, PARAM_MOTIVO, type MotivoDeCierre } from '@/lib/auth/session-terminal';
 import { getRoleHomeRoute } from '@/lib/auth/role-routes';
 import { cn, sanitizeReturnUrl } from '@/lib/utils';
@@ -58,6 +58,8 @@ interface AuthFormProps {
   defaultMode?: AuthMode;
   defaultRole?: 'tenant' | 'landlord' | 'agency';
   returnUrl?: string;
+  /** El correo que la persona ya escribió en otra pantalla (p. ej. su estudio): llega puesto. */
+  correoInicial?: string;
 }
 
 function GoogleIcon({ className }: { className?: string }) {
@@ -390,7 +392,7 @@ function errorDeGoogle(err: unknown): string {
   });
 }
 
-export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp }: AuthFormProps) {
+export function AuthForm({ className, onSuccess, defaultMode, defaultRole, returnUrl: returnUrlProp, correoInicial }: AuthFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { signInWithGoogle, signInWithEmail, signUpWithEmail, resendSignUpEmail, sendPasswordReset, signOut, user, isAuthenticated, isLoading: authLoading, needsOnboarding, perfilElegido, mfaRequired, mfaEnrollRequired, mfaCheckStatus, agencyRole, agencyMembershipChecked, hasActiveAgencyMembership, confirmacionDeLaSesion } = useAuth();
@@ -588,8 +590,10 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
     }
     // JWT valid but backend has no user record yet → onboarding. Si ya había
     // elegido perfil antes de irse, directo a ese onboarding y no al selector.
+    // El destino viaja al onboarding (Juan, 15-10-2026): quien creó la cuenta
+    // para pagar su estudio vuelve al estudio, no al inicio.
     if (needsOnboarding) {
-      window.location.href = rutaDeOnboarding(perfilElegido);
+      window.location.href = rutaDeOnboardingConRegreso(perfilElegido, returnUrl);
       return;
     }
     if (!isAuthenticated || !user) return;
@@ -605,7 +609,7 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
       const deUnaInmobiliaria = user.role === 'agency' || user.backendRole === 'AGENT';
       if (deUnaInmobiliaria && !agencyMembershipChecked && !probeWaitElapsed) return;
       if (!(deUnaInmobiliaria && hasActiveAgencyMembership)) {
-        window.location.href = rutaDeOnboarding(perfilElegido);
+        window.location.href = rutaDeOnboardingConRegreso(perfilElegido, returnUrl);
         return;
       }
     }
@@ -633,15 +637,15 @@ export function AuthForm({ className, onSuccess, defaultMode, defaultRole, retur
   const webmail = webmailDelCorreo(resetEmail);
 
   const loginForm = useForm<LoginFormData>({
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: correoInicial?.trim() ?? '', password: '' },
   });
 
   const registerForm = useForm<RegisterFormData>({
-    defaultValues: { email: '', password: '', confirmPassword: '' },
+    defaultValues: { email: correoInicial?.trim() ?? '', password: '', confirmPassword: '' },
   });
 
   const forgotPasswordForm = useForm<ForgotPasswordFormData>({
-    defaultValues: { email: '' },
+    defaultValues: { email: correoInicial?.trim() ?? '' },
   });
 
   /*

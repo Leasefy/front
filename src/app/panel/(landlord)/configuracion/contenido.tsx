@@ -4,6 +4,7 @@ import { Bell, CreditCard, Envelope, FileText, Tag } from '@phosphor-icons/react
 
 import { useI18n } from '@/lib/i18n';
 import { useLeases } from '@/lib/hooks/useLeases';
+import { useContratosAdministrados } from '@/components/landlord/ContratosConLaInmobiliaria';
 import { SeccionSeguridad } from '@/components/configuracion/SeccionSeguridad';
 import { SeccionPreferenciasDeCuenta } from '@/components/configuracion/SeccionPreferenciasDeCuenta';
 import { SeccionDatosDeCuenta } from '@/components/configuracion/SeccionDatosDeCuenta';
@@ -59,6 +60,40 @@ function NotificacionesDelPropietario() {
       descripcion: t('landlordSettings.notifications.promotionalEmailsDesc'),
     },
   ];
+  // QA 11-10: al propietario de INMOBILIARIA no le escriben candidatos ni le
+  // llegan postulaciones; de esas perillas sólo le sirven los mensajes de su
+  // inmobiliaria y las novedades. Lo de su plata y sus inmuebles llega siempre
+  // (`preferencias-del-correo.ts` del back: es «obligatorio»).
+  const administrados = useContratosAdministrados();
+  const deInmobiliaria = administrados.doc !== null || Boolean(administrados.fichaSinContratos);
+  if (deInmobiliaria) {
+    const suyas: FilaDeNotificacion[] = [
+      {
+        id: 'mensajes',
+        claves: ['emailMessages'],
+        icono: Bell,
+        titulo: es ? 'Mensajes de tu inmobiliaria' : 'Messages from your agency',
+        descripcion: es ? 'Un correo cuando tu inmobiliaria te escribe por Mensajes' : 'An email when your agency writes to you',
+      },
+      {
+        id: 'marketing',
+        claves: ['emailMarketing'],
+        icono: Tag,
+        titulo: t('landlordSettings.notifications.promotionalEmails'),
+        descripcion: t('landlordSettings.notifications.promotionalEmailsDesc'),
+      },
+    ];
+    return (
+      <SeccionNotificacionesDeCuenta
+        filas={suyas}
+        nota={
+          es
+            ? 'Los avisos de tu plata y tus inmuebles te llegan siempre: los giros, las reparaciones por aprobar, tu estado de cuenta y las respuestas a tus solicitudes.'
+            : 'Notices about your money and properties always reach you: payouts, repairs to approve, your statement and replies to your requests.'
+        }
+      />
+    );
+  }
   return <SeccionNotificacionesDeCuenta filas={filas} />;
 }
 

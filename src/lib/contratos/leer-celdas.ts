@@ -205,6 +205,15 @@ const armar = (a: number, m: number, d: number): string | undefined =>
     ? `${String(a).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
     : undefined
 
+/**
+ * QA de Portofino (14-10-2026): «2025-10-15 00:00:00» o «15/10/2025 08:30»,
+ * como exporta una base de datos. La hora no cambia el día que el archivo
+ * escribió: se ignora (igual que `fechaDeOrigen`, que ya la aceptaba para la
+ * terminación — el inicio y el fin del mismo archivo no se leían).
+ */
+const HORA_AL_FINAL =
+  '(?:[ T]\\d{1,2}:\\d{2}(?::\\d{2}(?:\\.\\d+)?)?\\s*(?:Z|[+-]\\d{2}:?\\d{2}|[aApP]\\.?\\s?[mM]\\.?)?)?'
+
 export function comoFecha(v: unknown): string | undefined {
   if (v instanceof Date) {
     // `new Date('basura')` sigue siendo `instanceof Date`; `.toISOString()`
@@ -217,7 +226,7 @@ export function comoFecha(v: unknown): string | undefined {
   // SIEMPRE: «03/04/2026» es 3 de abril. No se intenta adivinar mm/dd; si el
   // archivo viene en formato gringo, el mes >12 no existe en el calendario y
   // la fila queda como faltante visible en vez de correrse de mes.
-  const conBarras = s.match(/^(\d{1,2})[/.\-](\d{1,2})[/.\-](\d{4})$/)
+  const conBarras = s.match(new RegExp(`^(\\d{1,2})[/.\\-](\\d{1,2})[/.\\-](\\d{4})${HORA_AL_FINAL}$`))
   if (conBarras) {
     const [, d, m, a] = conBarras
     return armar(Number(a), Number(m), Number(d))
@@ -225,7 +234,7 @@ export function comoFecha(v: unknown): string | undefined {
 
   // aaaa/mm/dd y aaaa-mm-dd (el ISO también pasa por acá para validar que la
   // fecha exista: la regex de forma no sabe que febrero no tiene 31).
-  const conAnioPrimero = s.match(/^(\d{4})[/.\-](\d{1,2})[/.\-](\d{1,2})$/)
+  const conAnioPrimero = s.match(new RegExp(`^(\\d{4})[/.\\-](\\d{1,2})[/.\\-](\\d{1,2})${HORA_AL_FINAL}$`))
   if (conAnioPrimero) {
     const [, a, m, d] = conAnioPrimero
     return armar(Number(a), Number(m), Number(d))

@@ -14,6 +14,7 @@ import { Warning } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
   ETIQUETA_CANON_POR_CONFIRMAR,
+  ETIQUETA_PRECIO_POR_COMPLETAR,
   MENSAJE_INMUEBLE_SIN_CANON,
   inmuebleIdDelError,
   rutaParaPonerElCanon,
@@ -22,11 +23,15 @@ import {
 export function CanonPorConfirmarBadge({
   inmuebleId,
   className,
+  esVenta = false,
 }: {
   /** Con el id la marca es un enlace a editar el inmueble; sin él, sólo una etiqueta. */
   inmuebleId?: string | null;
   className?: string;
+  /** Nico 14-10: en una venta la marca es del PRECIO, no del canon. */
+  esVenta?: boolean;
 }) {
+  const etiqueta = esVenta ? ETIQUETA_PRECIO_POR_COMPLETAR : ETIQUETA_CANON_POR_CONFIRMAR;
   const estilo = cn(
     'inline-flex items-center gap-1 rounded-sm bg-warning-soft px-2 py-0.5 text-xs font-medium text-warning',
     className,
@@ -35,7 +40,7 @@ export function CanonPorConfirmarBadge({
     return (
       <span className={estilo} data-testid="canon-por-confirmar">
         <Warning className="h-3 w-3" aria-hidden="true" />
-        {ETIQUETA_CANON_POR_CONFIRMAR}
+        {etiqueta}
       </span>
     );
   }
@@ -47,7 +52,7 @@ export function CanonPorConfirmarBadge({
       onClick={(e) => e.stopPropagation()}
     >
       <Warning className="h-3 w-3" aria-hidden="true" />
-      {ETIQUETA_CANON_POR_CONFIRMAR}
+      {etiqueta}
     </Link>
   );
 }

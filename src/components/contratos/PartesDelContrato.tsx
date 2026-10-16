@@ -286,7 +286,20 @@ function FilaDeInquilino({
       <div className="min-w-0">
         {/* `break-words`, no `truncate`: la columna es angosta y un nombre
             cortado a la mitad no identifica a nadie. */}
-        <p className="break-words font-medium text-foreground">{inquilino.nombre || '—'}</p>
+        {/* 15-10-2026 (Juan, Portofino): el propietario se abría y el inquilino
+            no. Su ficha vive en Inquilinos (`?persona=`): por su cuenta o, sin
+            cuenta, por su documento; «Volver» trae de regreso al contrato. */}
+        {fichaDelInquilino(inquilino) ? (
+          <Link
+            href={conRegreso(fichaDelInquilino(inquilino)!, `/panel/inmobiliaria/contratos/${contractId}`)}
+            className="block break-words font-medium text-foreground hover:underline"
+            data-testid="inquilino-ficha"
+          >
+            {inquilino.nombre || '—'}
+          </Link>
+        ) : (
+          <p className="break-words font-medium text-foreground">{inquilino.nombre || '—'}</p>
+        )}
         {/* 🔴 Lo que faltaba: el documento. Es lo que identifica a la persona
             —el correo sólo le crea la cuenta—, así que va debajo del nombre
             igual que en la fila del propietario. */}
@@ -301,6 +314,17 @@ function FilaDeInquilino({
             </span>
           ) : null}
         </p>
+        {/* Cómo contactarlo (QA de Portofino, 14-10): el teléfono del archivo de
+            inquilinos llegaba al contrato y no se veía en ningún lado de él. */}
+        {inquilino.telefono || inquilino.email ? (
+          <p className="break-words text-caption text-muted-foreground" data-testid="contacto-del-inquilino">
+            {inquilino.telefono ? (
+              <span className="font-mono tabular-nums text-foreground">{inquilino.telefono}</span>
+            ) : null}
+            {inquilino.telefono && inquilino.email ? ' · ' : null}
+            {inquilino.email ?? null}
+          </p>
+        ) : null}
       </div>
       <div className="flex flex-shrink-0 items-center gap-2">
         {inquilino.esPrincipal ? (
@@ -626,7 +650,9 @@ function Propietarios({
   const hayMandato = lista.length > 0 && Boolean(contract.propertyId)
   const fichaDelInmueble = contract.propertyId
     ? conRegreso(
-        `/panel/inmobiliaria/inmuebles/${contract.propertyId}`,
+        // El contrato tiene el id del INMUEBLE: `?por=inmueble` busca su mandato
+        // sin el 404 de `GET /consignaciones/<id del inmueble>` (H18, 14-10).
+        `/panel/inmobiliaria/inmuebles/${contract.propertyId}?por=inmueble`,
         `/panel/inmobiliaria/contratos/${contract.id}`,
       )
     : null
@@ -886,3 +912,9 @@ function SinPropietarios({ contract }: { contract: Contract }) {
 
 export type { PropietarioDelContrato }
 export default PartesDelContrato
+
+/** La ficha del inquilino en Inquilinos: por su cuenta o, sin cuenta, por su documento. */
+function fichaDelInquilino(inquilino: InquilinoDelContrato): string | null {
+  const persona = inquilino.userId ?? (inquilino.documento ? `doc:${inquilino.documento.trim()}` : null)
+  return persona ? `/panel/inmobiliaria/inquilinos?persona=${encodeURIComponent(persona)}` : null
+}

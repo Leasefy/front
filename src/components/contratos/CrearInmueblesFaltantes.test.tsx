@@ -98,7 +98,7 @@ describe('CrearInmueblesFaltantes', () => {
       creados: 2,
       vinculados: 2,
       consignados: 1,
-      omitidas: [{ id: 'f-3', fila: 2, motivo: 'Sin ciudad: decila al crear.' }],
+      omitidas: [{ id: 'f-3', fila: 2, motivo: 'Sin ciudad: ni el archivo ni la inmobiliaria la tienen. Escríbela al crear.' }],
       fallidas: [],
     })
     const onListo = await render()
@@ -125,16 +125,19 @@ describe('CrearInmueblesFaltantes', () => {
 
     // QA-MIG-A MG-34: sin elegir tipo NO viaja ninguno (el back usa el de la
     // dirección o deja la fila sin crear, diciéndolo — nunca un apartamento).
+    // T-0135: va por tandas (`limite` + cursor); la primera, sin cursor.
     expect(contractsApi.migracion.crearInmueblesFaltantes).toHaveBeenCalledWith(
       { lote: 'lote-1' },
       'Bello',
+      expect.objectContaining({ limite: 25, despuesDeFila: undefined }),
       undefined,
     )
     const resultado = document.querySelector('[data-testid="crear-inmuebles-faltantes-resultado"]')
     expect(resultado?.textContent).toContain('2 inmuebles creados')
     expect(resultado?.textContent).toContain('1 consignado')
-    // La omitida sale con su línea del archivo (+2: encabezado y base 1).
-    expect(resultado?.textContent).toContain('Fila 4: Sin ciudad')
+    // La omitida sale agrupada por su motivo, con su línea del archivo (+2: encabezado y base 1).
+    expect(resultado?.textContent).toContain('1 fila — Sin ciudad')
+    expect(resultado?.textContent).toContain('Fila 4')
     // 2 con inmueble, 1 consignado ⇒ 1 sin propietario, y se dice.
     expect(resultado?.textContent).toContain('1 sin propietario')
     expect(onListo).toHaveBeenCalledTimes(1)

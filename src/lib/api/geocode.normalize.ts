@@ -20,10 +20,13 @@ export interface GeocodeSuggestion {
   state?: string;
   neighborhood?: string;
   road?: string;
+  /** El número de la puerta, cuando el buscador lo conoce (`/v1/search`). */
+  houseNumber?: string;
 }
 
 interface LocationIqAddress {
   road?: unknown;
+  house_number?: unknown;
   neighbourhood?: unknown;
   suburb?: unknown;
   city_district?: unknown;
@@ -58,7 +61,8 @@ function toNonEmptyString(value: unknown): string | undefined {
 }
 
 /** Normalizes the raw LocationIQ `/v1/autocomplete` payload (an array of
- * results) into GeocodeSuggestion[]. Never throws — malformed entries are
+ * results) into GeocodeSuggestion[]. `/v1/search` answers with the same shape
+ * (plus `address.house_number`), so `/api/geocode/buscar` uses it too. Never throws — malformed entries are
  * silently dropped so the UI can fall back to free-text address entry.
  */
 export function normalizeAutocompleteResults(raw: unknown): GeocodeSuggestion[] {
@@ -92,6 +96,7 @@ export function normalizeAutocompleteResults(raw: unknown): GeocodeSuggestion[] 
       toNonEmptyString(address.city_district);
     const road = toNonEmptyString(address.road);
     const state = toNonEmptyString(address.state);
+    const houseNumber = toNonEmptyString(address.house_number);
 
     suggestions.push({
       label,
@@ -102,6 +107,7 @@ export function normalizeAutocompleteResults(raw: unknown): GeocodeSuggestion[] 
       ...(state ? { state } : {}),
       ...(neighborhood ? { neighborhood } : {}),
       ...(road ? { road } : {}),
+      ...(houseNumber ? { houseNumber } : {}),
     });
   }
 

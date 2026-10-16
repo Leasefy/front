@@ -63,7 +63,8 @@ export function useArcoAlerts(enabled: boolean): ArcoAlertsResult {
   const agencyId = agency?.id ?? null
 
   // `cobranza` es fail-closed: sin payload de permisos, denegado.
-  const canSee = enabled && Boolean(agencyId) && (perms?.canAccess('cobranza', 'view') ?? false)
+  // ROLES (14-10-2026): el micro sólo le muestra las solicitudes a quien las resuelve.
+  const canSee = enabled && Boolean(agencyId) && (perms?.canAccess('cotizador', 'resolve-arco') ?? false)
 
   const [rows, setRows] = useState<ArcoRequestRow[]>([])
 

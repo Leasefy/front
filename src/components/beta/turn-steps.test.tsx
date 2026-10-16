@@ -162,12 +162,12 @@ const PASOS_EQUIPO: TurnStep[] = [
 describe('el especialista es una delegación del orquestador (02-10)', () => {
   const turno = leerElTurno({ mensaje: null, pasos: PASOS_EQUIPO, enCurso: true });
 
-  it('el paso del especialista dice «Ori → Laura», con su orbe y lo que hace ahora', () => {
+  it('el paso del especialista dice «Ori → Mori», con su orbe y lo que hace ahora', () => {
     pintar(<AgentTaskThread steps={PASOS_EQUIPO} turno={turno} />);
     const fila = container.querySelector('[data-testid="paso-delegacion"]')!;
     expect(fila.getAttribute('data-agente')).toBe('cobranza');
     expect(fila.textContent).toContain('Ori');
-    expect(fila.textContent).toContain('Laura');
+    expect(fila.textContent).toContain('Mori');
     expect(fila.querySelector('[data-agente="cobranza"][data-estado="trabajando"]')).not.toBeNull();
     expect(fila.querySelector('[aria-live="polite"]')!.textContent).toBe('Calculando la mora de 31 contratos…');
   });
@@ -186,7 +186,7 @@ describe('el especialista es una delegación del orquestador (02-10)', () => {
     expect(container.textContent).toContain('Paso 2 de 3');
     // El encabezado dice lo que hace AHORA y a quién se lo pidió.
     expect(container.querySelector('button[aria-expanded]')!.textContent).toContain('Calculando la mora de 31 contratos…');
-    expect(container.textContent).toContain('Ori le pidió a Laura');
+    expect(container.textContent).toContain('Ori le pidió a Mori');
   });
 
   it('al terminar, la delegación muestra lo que CONTESTÓ el especialista', () => {

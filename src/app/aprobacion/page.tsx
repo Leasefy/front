@@ -4,17 +4,24 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, ArrowsClockwise, CheckCircle, HouseLine, MapPin, X } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowsClockwise, CheckCircle, FloppyDisk, HouseLine, MapPin, UserPlus, X } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
 import { BrandHomeLink } from '@/components/brand/BrandHomeLink'
 import { LeasefyLogotype } from '@/components/brand'
 import { useAuth } from '@/lib/auth/use-auth'
 import { getUserHomeRoute } from '@/lib/auth/role-routes'
+import { rutaDeOnboardingConRegreso } from '@/lib/auth/perfil-de-onboarding'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { MoneyInput } from '@/components/ui/money-input'
 import { formatCurrency } from '@/lib/format'
 import { leerArriendoEnCurso, type ArriendoEnCurso } from '@/lib/aprobacion/arriendo-en-curso'
+import {
+  borrarBorradorDelEstudio,
+  guardarBorradorDelEstudio,
+  leerBorradorDelEstudio,
+} from '@/lib/aprobacion/borrador-del-estudio'
+import { useVentanaDeCuenta } from '@/components/marketplace/CuentaParaPublicar'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ConfirmarSalidaDelArriendo } from '@/components/aprobacion/ConfirmarSalidaDelArriendo'
@@ -72,7 +79,7 @@ const EMPTY: PreApprovalFormFields = {
 
 export default function AprobacionPage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, isAuthenticated, isLoading: authCargando, needsOnboarding, perfilElegido } = useAuth()
   const [fields, setFields] = useState<PreApprovalFormFields>(EMPTY)
   const [errors, setErrors] = useState<ReturnType<typeof validatePreApprovalForm>['errors']>({})
   const [submitting, setSubmitting] = useState(false)
@@ -103,6 +110,11 @@ export default function AprobacionPage() {
   // cualquier texto; el micro la resuelve contra la lista de Fianly y avisa si
   // no hay cobertura.
   const [ciudades, setCiudades] = useState<readonly string[]>(CIUDADES)
+  // Lo que escribió antes de crear la cuenta (Juan, 15-10-2026: «pasos primero,
+  // cuenta al final»). `destino` es esta misma pantalla con su consulta: a ella
+  // vuelve la ventana de la cuenta, el enlace del correo y el onboarding.
+  const [conLosDatosGuardados, setConLosDatosGuardados] = useState(false)
+  const [destino, setDestino] = useState('/aprobacion')
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const ciudadDeLaFicha = params.get('ciudad')?.trim()
@@ -114,6 +126,13 @@ export default function AprobacionPage() {
     setCiudades(conLaDeLaFicha)
     const prellenado = prellenadoDesdeUrl(params, conLaDeLaFicha)
     if (Object.keys(prellenado).length > 0) setFields((f) => ({ ...f, ...prellenado }))
+    // Lo que la persona escribió manda sobre lo que trae la URL.
+    const borrador = leerBorradorDelEstudio()
+    if (borrador) {
+      setFields((f) => ({ ...f, ...borrador }))
+      setConLosDatosGuardados(true)
+    }
+    setDestino('/aprobacion' + window.location.search)
     const delPaso1 = vieneDelPaso1(params)
     setDesdeLaFicha(delPaso1)
     if (delPaso1) setArriendo(leerArriendoEnCurso())
@@ -153,6 +172,27 @@ export default function AprobacionPage() {
     if (redirigiendoAEstudio) router.replace('/inquilino/aprobacion')
   }, [redirigiendoAEstudio, router])
 
+  // Con la cuenta recién creada (vuelve del enlace del correo) todavía falta su
+  // perfil de inquilino: el back no tiene a quién cobrarle el estudio. Se va al
+  // onboarding (dos pasos) y éste vuelve aquí, con lo escrito.
+  const faltaElPerfil = !authCargando && Boolean(isAuthenticated) && Boolean(needsOnboarding)
+  useEffect(() => {
+    if (faltaElPerfil) router.replace(rutaDeOnboardingConRegreso(perfilElegido ?? 'tenant', destino))
+  }, [faltaElPerfil, perfilElegido, destino, router])
+
+  // «Pasos primero, cuenta al final» (Nico, 15-10-2026): sin sesión, pagar abre
+  // la cuenta ENCIMA, con el correo que ya escribió; nunca manda al login.
+  const { abrir: pedirLaCuenta, ventana: ventanaDeLaCuenta } = useVentanaDeCuenta({
+    destino,
+    rol: 'tenant',
+    titulo: 'Para pagar tu estudio necesitas una cuenta',
+    detalle:
+      'Créala aquí mismo con tu correo, o inicia sesión si ya tienes una. Lo que escribiste queda guardado: al volver sigues donde ibas.',
+    Icono: UserPlus,
+    testId: 'aviso-cuenta-para-el-estudio',
+    correoInicial: fields.email,
+  })
+
   function set<K extends keyof PreApprovalFormFields>(key: K, value: PreApprovalFormFields[K]) {
     setFields((f) => ({ ...f, [key]: value }))
     // Lo que se marcó (aquí o en el back) deja de valer en cuanto se toca ese campo.
@@ -188,11 +228,13 @@ export default function AprobacionPage() {
    * ya lista, igual que el checkout de planes de agencia
    * (`useAgencyCheckout` → `chargePaymentLink`).
    *
-   * Alcance actual: la persona YA TIENE que estar logueada. `POST
-   * /pre-scoring` usa su sesión (JWT vía `apiClient`); sin sesión no hay a
-   * quién asociarle la orden, así que se manda a `/auth` con `returnUrl` a
-   * `/aprobacion` en vez de intentar crearla. El flujo de signup para
-   * quien no tiene cuenta todavía lo construye otro dev.
+   * `POST /pre-scoring` usa la sesión (JWT vía `apiClient`): sin ella no hay
+   * a quién asociarle la orden. Sin sesión ya NO se manda al login (Juan,
+   * Portofino, 15-10-2026: «al llenar los datos manda a login»): se guarda lo
+   * escrito (`borrador-del-estudio`) y la cuenta se crea en una ventana encima
+   * (Nico: «pasos primero, cuenta al final»). Al volver, lo escrito sigue ahí
+   * y falta marcar la autorización y tocar el botón otra vez: el pago abre
+   * otra pestaña y eso exige un toque de la persona.
    */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -205,7 +247,12 @@ export default function AprobacionPage() {
     if (!v.valid || v.phoneE164 === null || v.canonCop === null) return
 
     if (!user) {
-      router.push('/auth?returnUrl=' + encodeURIComponent('/aprobacion' + window.location.search))
+      guardarBorradorDelEstudio(fields)
+      if (faltaElPerfil) {
+        router.push(rutaDeOnboardingConRegreso(perfilElegido ?? 'tenant', destino))
+        return
+      }
+      pedirLaCuenta()
       return
     }
 
@@ -227,6 +274,9 @@ export default function AprobacionPage() {
         tipoInmueble: fields.tipoInmueble as 'apartamento' | 'casa' | 'local',
         consent: fields.consent,
       })
+
+      // El estudio ya existe en el back: lo escrito deja de hacer falta aquí.
+      borrarBorradorDelEstudio()
 
       if (orden.reused) {
         // Ya hay un estudio para esta persona: no se cobra de nuevo. Se
@@ -282,6 +332,7 @@ export default function AprobacionPage() {
    */
   function salirDelFlujo() {
     setConfirmandoSalida(false)
+    borrarBorradorDelEstudio()
     if (arriendo?.propertyId) {
       router.push(`/propiedades/${arriendo.propertyId}`)
       return
@@ -333,11 +384,18 @@ export default function AprobacionPage() {
       <main id="main-content" className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-8 md:py-12">
         {/* La franja de pasos sigue arriba también mientras paga y valida: es
             el mismo paso 2, no otra pantalla. */}
-        {desdeLaFicha && (
+        {/* Sin inmueble de por medio, los pasos del estudio solo (Juan, 15-10-2026:
+            «no muestra el paso a paso del estudio»). */}
+        {desdeLaFicha ? (
           <section data-testid="paso-2-de-3" className="rounded-2xl border border-border bg-surface px-5 py-4">
             <PasosDelArriendo actual={2} />
           </section>
+        ) : (
+          <section data-testid="franja-del-estudio" className="rounded-2xl border border-border bg-surface px-5 py-4">
+            <PasosDelArriendo variante="estudio" actual={pagando ? 2 : 1} />
+          </section>
         )}
+        {ventanaDeLaCuenta}
         {resolviendoEstudio ? (
           // Nunca el formulario mientras no se sepa si esta persona ya tiene
           // estudio: mostrarlo y sacarlo un instante después es peor que
@@ -366,11 +424,9 @@ export default function AprobacionPage() {
             >
               <div className="flex flex-col gap-5 bg-primary-soft px-6 py-8 md:px-10">
                 <div className="flex flex-col gap-2">
-                  {desdeLaFicha && (
-                    <p className="text-caption font-medium uppercase tracking-wide text-primary">
-                      Paso 2 de 3 · validamos tus datos
-                    </p>
-                  )}
+                  <p className="text-caption font-medium uppercase tracking-wide text-primary">
+                    {desdeLaFicha ? 'Paso 2 de 3 · validamos tus datos' : 'Paso 1 de 3 · tus datos'}
+                  </p>
                   <h1
                     id="estudio-titulo"
                     className="font-heading text-2xl font-semibold leading-tight text-fg text-balance md:text-4xl"
@@ -423,6 +479,17 @@ export default function AprobacionPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-8 p-6 md:p-8" noValidate>
+                {conLosDatosGuardados && (
+                  <p
+                    data-testid="datos-del-estudio-guardados"
+                    className="flex items-start gap-2 rounded-lg bg-primary-soft px-4 py-3 text-sm text-fg"
+                  >
+                    <FloppyDisk className="mt-0.5 h-4 w-4 shrink-0 text-primary" weight="duotone" aria-hidden="true" />
+                    {user
+                      ? 'Tu cuenta quedó lista y lo que escribiste sigue aquí. Revisa, marca la autorización y toca «Consultar mi aprobación» para pagar.'
+                      : 'Lo que escribiste quedó guardado en este navegador hasta mañana. Toca «Consultar mi aprobación» para crear tu cuenta y pagar.'}
+                  </p>
+                )}
                 <Grupo
                   id="grupo-tus-datos"
                   titulo="Tus datos"

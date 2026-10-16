@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import type { Icon } from '@phosphor-icons/react';
-import { CaretDown, SignOut, Question, TrendUp, CheckCircle, Circle, ArrowUpRight, X, SidebarSimple } from '@phosphor-icons/react';
+import { CaretDown, SignOut, Question, TrendUp, X, SidebarSimple } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
 import { motionDuration, motionEase } from '@leasefy/cadence';
 import { cn } from '@/lib/utils';
@@ -53,6 +53,7 @@ import {
   motionSpring,
   motionTransition,
 } from '@leasefy/cadence';
+import { TarjetaDelPerfil } from './TarjetaDelPerfil';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Mobile sidebar opener — module-level pub-sub.
@@ -1105,87 +1106,12 @@ export function SidebarContent({
         )}
       </nav>
 
-      {/* Profile Completion Widget */}
-      {profileCompletion && !isCollapsed && (() => {
-        const completedCount = profileCompletion.completedCount ?? 0;
-        const totalSteps = profileCompletion.totalSteps ?? 2;
-        const steps = profileCompletion.steps ?? [];
-        const locale = profileCompletion.locale ?? 'es';
-        const completedSteps = steps.filter(s => s.completed);
-        const pendingSteps = steps.filter(s => !s.completed);
-        const nextStep = pendingSteps[0];
-        const isComplete = completedCount >= totalSteps;
-
-        // Don't show widget if profile is complete
-        if (isComplete) return null;
-
-        return (
-          <div className="px-3 pb-3">
-            <Link
-              href={profileCompletion.href}
-              onClick={onItemClick}
-              className="block p-3 rounded-lg bg-surface-muted border border-border-faint hover:bg-surface-hover transition-colors group"
-            >
-              {/* Header with progress */}
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[13px] font-medium text-fg">
-                  {profileCompletion.label || (locale === 'es' ? 'Completa tu perfil' : 'Complete your profile')}
-                </p>
-                <span className="text-[11px] font-medium font-mono tabular-nums text-fg-subtle">
-                  {completedCount}/{totalSteps}
-                </span>
-              </div>
-
-              {/* Progress bar */}
-              <div className="h-1.5 bg-border rounded-full overflow-hidden mb-3">
-                <div
-                  className="h-full rounded-full bg-primary transition-[width] duration-slow ease-enter"
-                  style={{ width: `${profileCompletion.percentage}%` }}
-                />
-              </div>
-
-              {/* Completed steps - compact (only show if there are completed steps) */}
-              {completedSteps.length > 0 && (
-                <div className="flex flex-wrap gap-1 mb-2">
-                  {completedSteps.map((step) => (
-                    <span key={step.id} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-success-soft text-success text-[10px] font-medium rounded-md">
-                      <CheckCircle className="w-2.5 h-2.5" weight="fill" />
-                      {locale === 'es' ? step.labelEs : step.labelEn}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Next step - highlighted */}
-              {nextStep && (
-                <div className="flex items-center gap-2 p-2 bg-surface rounded-lg border border-border group-hover:border-border-strong transition-colors">
-                  <div className="w-5 h-5 rounded-full border-2 border-primary bg-primary-soft flex items-center justify-center flex-shrink-0">
-                    <span className="font-mono text-[9px] font-bold text-primary">{completedCount + 1}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-medium text-fg truncate">
-                      {locale === 'es' ? nextStep.labelEs : nextStep.labelEn}
-                    </p>
-                    <p className="text-[10px] text-fg-subtle">
-                      {locale === 'es' ? 'Siguiente paso' : 'Next step'}
-                    </p>
-                  </div>
-                  <ArrowUpRight className="w-3.5 h-3.5 text-fg-subtle group-hover:text-fg-muted transition-colors flex-shrink-0" />
-                </div>
-              )}
-
-              {/* If no completed steps and no next step, show a start message */}
-              {completedSteps.length === 0 && !nextStep && (
-                <div className="flex items-center gap-2 p-2 bg-surface rounded-lg border border-border">
-                  <p className="text-[11px] text-fg-subtle">
-                    {locale === 'es' ? 'Comienza configurando tu perfil' : 'Start by setting up your profile'}
-                  </p>
-                </div>
-              )}
-            </Link>
-          </div>
-        );
-      })()}
+      {/* «Completa tu perfil», con la forma de la tarjeta de migración (Nico, 11-10). */}
+      {profileCompletion && !isCollapsed && (
+        <div className="px-3 pb-3">
+          <TarjetaDelPerfil config={profileCompletion} onIr={onItemClick} />
+        </div>
+      )}
 
       {/* Footer — cadence §Navigation: invite card + upgrade CTA, then Help.
           Collapsed rail shows only the Help icon. */}

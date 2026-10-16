@@ -179,12 +179,12 @@ export function ElegirQuePublicar({ lote, alCambiar }: ElegirQuePublicarProps) {
                         />
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-sm font-medium text-fg">{i.titulo}</span>
-                          <span className="block truncate text-xs text-fg-muted">
+                          <span className="block truncate text-caption text-fg-muted">
                             {[i.barrio, i.ciudad].filter(Boolean).join(', ') || i.direccion || 'Sin dirección'}
                             {i.canonCop ? ` · ${formatCurrency(i.canonCop)}${i.venta ? '' : ' / mes'}` : ''}
                           </span>
                           {i.porQueNoSeVe && (
-                            <span className="mt-0.5 block text-xs text-fg-subtle">{i.porQueNoSeVe}</span>
+                            <span className="mt-0.5 block text-caption text-fg-subtle">{i.porQueNoSeVe}</span>
                           )}
                         </span>
                         <Badge variant={i.fotos > 0 ? 'secondary' : 'outline'} className="shrink-0 whitespace-nowrap">

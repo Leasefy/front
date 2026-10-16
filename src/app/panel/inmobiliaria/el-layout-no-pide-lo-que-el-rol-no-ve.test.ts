@@ -28,7 +28,7 @@ describe('🔴 el layout del panel pide sólo con el permiso del back', () => {
   })
 
   it('los lotes de migración (el badge), sólo con contratos:view', () => {
-    expect(src).toMatch(/useMigracionesPendientes\(\s*canAccess\('contratos',\s*'view'\)\s*\)/)
+    expect(src).toMatch(/useMigracionesPendientes\(\s*canAccess\('contratos',\s*'view'\)(\s*&&\s*agencyRole !== 'ABOGADO_EXTERNO')?\s*,?\s*\)/)
     expect(src).not.toMatch(/useMigracionesPendientes\(\s*\)/)
   })
 })

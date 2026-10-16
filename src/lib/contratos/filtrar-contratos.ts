@@ -30,7 +30,15 @@ export type EstadoDeFiltro = ContractStatus | 'all';
  * La vigencia se mide por FECHAS, no por el estado del flujo de firma: un
  * contrato migrado entra «activo» aunque su fecha de fin ya haya pasado.
  */
-export type VigenciaDeFiltro = 'all' | 'vigente' | 'por_vencer' | 'vencido' | 'por_empezar' | 'sin_fechas';
+export type VigenciaDeFiltro =
+  | 'all'
+  | 'vigente'
+  | 'por_vencer'
+  | 'vencido'
+  // 🔴 Juan (Portofino, 15-10-2026): «dice 5 vencidos sin renovar, pero no cuáles».
+  | 'vencido_sin_renovar'
+  | 'por_empezar'
+  | 'sin_fechas';
 export type ConOSin = 'all' | 'con' | 'sin';
 export type OrigenDeFiltro = 'all' | 'migrado' | 'nativo';
 /** Bandas de canon en pesos. `sin_canon` = migrados sin el dato (nunca «$ 0»). */
@@ -185,6 +193,8 @@ export function empiezaDespues(c: Partial<Contract>, hoy: Date = new Date()): bo
 
 function coincideVigencia(c: Partial<Contract>, v: VigenciaDeFiltro, hoy: Date): boolean {
   if (v === 'all') return true;
+  // La MISMA regla que la cifra «+ N vencidos sin renovar» de la lista.
+  if (v === 'vencido_sin_renovar') return vencidoSinRenovar(c, hoy);
   const fin = fechaDeVigencia(c.endDate);
   if (v === 'sin_fechas') return fin === null;
   if (v === 'por_empezar') return empiezaDespues(c, hoy);

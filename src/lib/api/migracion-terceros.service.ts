@@ -292,6 +292,16 @@ export interface CambiosMasivos {
    * ruta por filtro, el back asume `false`. La pantalla lo manda siempre.
    */
   sobrescribir?: boolean;
+  /**
+   * QA de Portofino (14-10-2026) · sólo por filtro: volver a revisar las filas
+   * sin cambiarles nada. Las que sólo «fallaron al crearse» quedan listas otra vez.
+   */
+  reintentar?: boolean;
+  /**
+   * Nico (14-10-2026) · sólo por filtro, con el motivo CORREO_REPETIDO_EN_EL_LOTE:
+   * «son personas distintas» — se crean sin ese correo (queda en sus notas).
+   */
+  sinCorreoRepetido?: boolean;
 }
 
 /** Una vuelta de `PATCH filas/masivo`. */
@@ -656,6 +666,8 @@ export const migracionTercerosApi = {
     if (cambios.descartar !== undefined) base.descartar = cambios.descartar;
     if (cambios.crearIncompleta !== undefined) base.crearIncompleta = cambios.crearIncompleta;
     if (cambios.sobrescribir !== undefined) base.sobrescribir = cambios.sobrescribir;
+    if (cambios.reintentar) base.reintentar = true;
+    if (cambios.sinCorreoRepetido) base.sinCorreoRepetido = true;
 
     const total: ResultadoMasivoPorFiltro = {
       totalAlEmpezar: 0,

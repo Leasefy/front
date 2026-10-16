@@ -250,7 +250,9 @@ function InboxContent() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         {/* QA-IA-B (04-10-2026): a 390 px el control medía 709 px y corría la
             página de lado (scrollWidth 733). Se desplaza dentro de su riel. */}
-        <div className="max-w-full overflow-x-auto" data-testid="inbox-filtro-riel">
+        {/* QA 12-10-2026: dentro del riel cada opción va en UNA línea («Nuevas
+            respuestas» se partía en dos y se cortaba). */}
+        <div className="max-w-full overflow-x-auto [&_button]:whitespace-nowrap" data-testid="inbox-filtro-riel">
           <SegmentedControl<GrupoFiltro>
             options={FILTRO_OPCIONES}
             value={filtro}
@@ -283,7 +285,7 @@ function InboxContent() {
               data-testid={`inbox-chip-${g}`}
             >
               {meta.label}
-              <span className="tabular-nums">
+              <span className="ml-1 tabular-nums text-fg-muted">
                 <AnimatedNumber value={counts[g]} format={enteroTalCual} />
               </span>
             </Chip>

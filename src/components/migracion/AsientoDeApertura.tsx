@@ -14,9 +14,9 @@
  */
 
 import { fechaLarga } from "@/lib/fechas/fecha-de-la-casa";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle, Info, Plus, Warning, X } from "@phosphor-icons/react";
+import { CheckCircle, FileArrowUp, Info, Plus, Warning, X } from "@phosphor-icons/react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,7 @@ import {
 import {
   descripcionSugerida,
   esCuentaDeTerceros,
+  esFechaContable,
   filaVacia,
   hoyContable,
   movimientosDeApertura,
@@ -58,6 +59,9 @@ import {
   type ProblemaDeApertura,
 } from "@/lib/migracion/asiento-de-apertura";
 import { formatCurrencyEnDocumento } from "@/lib/format";
+import { cierreDelAnioAnterior } from "@/lib/migracion/balance-de-apertura";
+import { TablePagination } from "@/components/ui/pagination";
+import { PAGE_SIZE_OPTIONS, useTablePagination } from "@/lib/hooks/use-table-pagination";
 
 /** La plata de los saldos: con sus centavos si los trae, nunca redondeada. */
 const plataDeLosSaldos = (valor: number) => formatCurrencyEnDocumento(valor, false);
@@ -66,6 +70,10 @@ import { CampoDePlata } from "@/components/ui/campo-de-plata";
 import { mensajeDeContabilidad } from "./contabilidad-errores";
 import { TerceroDeApertura } from "./TerceroDeApertura";
 import { CampoDeDia } from "@/components/contabilidad/CampoDeDia";
+import { BalanceDeApertura } from "./BalanceDeApertura";
+
+/** Con más líneas que esto el formulario se pagina (un balance trae miles). */
+const LINEAS_SIN_PAGINAR = 25;
 
 /** Sentinel: Radix `Select` no admite `value=""`. */
 const SIN_CUENTA = "__sin_cuenta__";
@@ -89,6 +97,7 @@ export function AsientoDeApertura({
   onRevisarCargado,
   enElMuro = false,
   onOcupado,
+  archivoInicial = null,
 }: {
   /** Sólo las imputables y activas: las únicas que reciben movimientos. */
   cuentas: CuentaPuc[];
@@ -103,8 +112,24 @@ export function AsientoDeApertura({
   enElMuro?: boolean;
   /** Aviso al muro mientras el asiento viaja: el pie espera. */
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
+  /**
+   * 8.ª tanda (14-10): el balance que «Sube tu archivo contable» reconoció.
+   * Abre «Subir el balance» con ese archivo.
+   */
+  archivoInicial?: File | null;
 }) {
   const [fecha, setFecha] = useState(hoyContable());
+  /*
+   * 8.ª tanda (14-10): «Subir el balance». La fecha que se sugiere al usar el
+   * balance es el cierre del año anterior, salvo que la persona ya haya
+   * escrito la suya.
+   */
+  const [subiendoBalance, setSubiendoBalance] = useState(Boolean(archivoInicial));
+  const [delBalance, setDelBalance] = useState<{ archivo: string; lineas: number } | null>(null);
+  const [fechaTocada, setFechaTocada] = useState(false);
+  useEffect(() => {
+    if (archivoInicial) setSubiendoBalance(true);
+  }, [archivoInicial]);
   const [descripcion, setDescripcion] = useState(() =>
     descripcionSugerida(hoyContable()),
   );
@@ -147,6 +172,24 @@ export function AsientoDeApertura({
     setFecha(v);
     if (!descripcionTocada) setDescripcion(descripcionSugerida(v));
   };
+
+  const usarElBalance = (lineas: FilaDeApertura[], archivo: string) => {
+    // Un asiento necesita dos líneas: si el balance trae una, la otra queda vacía.
+    setFilas(lineas.length >= 2 ? lineas : [...lineas, filaVacia()]);
+    if (!fechaTocada) cambiarFecha(cierreDelAnioAnterior(hoyContable()));
+    setDelBalance({ archivo, lineas: lineas.length });
+    setSubiendoBalance(false);
+    setError(null);
+  };
+
+  /*
+   * Un balance por tercero trae miles de líneas: con más de 25 el formulario
+   * se pagina (los totales y los problemas miran TODAS).
+   */
+  const pag = useTablePagination(filas, { initialPageSize: 50 });
+  const paginado = filas.length > LINEAS_SIN_PAGINAR;
+  const visibles = paginado ? pag.pageItems : filas;
+  const indiceDe = useMemo(() => new Map(filas.map((f, i) => [f.id, i])), [filas]);
 
   const editar = (id: string, cambio: Partial<FilaDeApertura>) =>
     setFilas((previas) =>
@@ -256,6 +299,21 @@ export function AsientoDeApertura({
             </p>
           </div>
         </div>
+        {!yaEstaba && (registrado.asientosMigradosHastaElCorte ?? 0) > 0 ? (
+          <div
+            className="mt-4 flex items-start gap-2 rounded-md bg-warning-soft p-3"
+            data-testid="apertura-migrados-antes"
+          >
+            <Warning className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+            <p className="text-sm text-fg">
+              Ya había {(registrado.asientosMigradosHastaElCorte ?? 0).toLocaleString("es-CO")}{" "}
+              {registrado.asientosMigradosHastaElCorte === 1 ? "asiento" : "asientos"} del libro
+              diario migrado con fecha hasta el {fechaLarga(registrado.fecha)}. Esos movimientos
+              ya están dentro de estos saldos: revísalos en Contabilidad y reversa los que
+              sobren, o los saldos quedan contados dos veces.
+            </p>
+          </div>
+        ) : null}
         <div className="mt-5 flex flex-wrap gap-2">
           {/* Adentro del muro no hay a dónde ir: el muro es la migración. */}
           {enElMuro ? null : (
@@ -271,6 +329,7 @@ export function AsientoDeApertura({
             onClick={() => {
               setRegistrado(null);
               setFilas([filaVacia(), filaVacia()]);
+              setDelBalance(null);
               // Formulario nuevo, llave nueva: con la vieja el back devolvería
               // el asiento anterior y el siguiente no se escribiría nunca.
               setClaveIdempotencia(generarIdempotencyKey());
@@ -289,15 +348,68 @@ export function AsientoDeApertura({
       aria-labelledby="apertura-titulo"
       data-testid="asiento-de-apertura"
     >
-      <h2 id="apertura-titulo" className="text-sm font-medium text-fg">
-        Saldos iniciales
-      </h2>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h2 id="apertura-titulo" className="text-sm font-medium text-fg">
+          Saldos iniciales
+        </h2>
+        {subiendoBalance ? null : (
+          <Button
+            size="sm"
+            variant="outline"
+            hideArrow
+            onClick={() => setSubiendoBalance(true)}
+            data-testid="apertura-subir-balance"
+          >
+            <FileArrowUp className="mr-1.5 h-4 w-4" />
+            Subir el balance
+          </Button>
+        )}
+      </div>
       <p className="mt-1 max-w-2xl text-sm text-fg-muted">
         Un solo asiento con la fecha de corte y el saldo de cada cuenta a esa
         fecha: bancos, lo que te deben los inquilinos, lo que les debes a los
         propietarios, el patrimonio. Los saldos deudores van en débito y los
-        acreedores en crédito, y los dos totales tienen que ser iguales.
+        acreedores en crédito, y los dos totales tienen que ser iguales. Lo más
+        fácil: sube el balance de prueba por tercero de tu sistema anterior y
+        las líneas se llenan solas.
       </p>
+
+      {subiendoBalance ? (
+        <div className="mt-5">
+          <BalanceDeApertura
+            cuentas={cuentas}
+            archivoInicial={archivoInicial}
+            onUsar={usarElBalance}
+            onCancelar={() => setSubiendoBalance(false)}
+          />
+        </div>
+      ) : null}
+
+      {delBalance ? (
+        <div
+          className="mt-5 flex flex-wrap items-start gap-2 rounded-md bg-surface-muted p-3"
+          data-testid="apertura-del-balance"
+        >
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-fg-muted" />
+          <p className="min-w-0 flex-1 text-sm text-fg">
+            {delBalance.lineas.toLocaleString("es-CO")} líneas del balance
+            {delBalance.archivo ? ` «${delBalance.archivo}»` : ""}. Revisa que la fecha de
+            corte sea la del balance: {esFechaContable(fecha) ? fechaLarga(fecha) : "sin fecha"}.
+          </p>
+          <Button
+            size="sm"
+            variant="ghost"
+            hideArrow
+            onClick={() => {
+              setFilas([filaVacia(), filaVacia()]);
+              setDelBalance(null);
+            }}
+            data-testid="apertura-vaciar"
+          >
+            Vaciar las líneas
+          </Button>
+        </div>
+      ) : null}
 
       <div className="mt-5 grid gap-4 sm:grid-cols-[12rem_1fr]">
         <div className="space-y-1">
@@ -310,7 +422,10 @@ export function AsientoDeApertura({
           <CampoDeDia
             id="apertura-fecha"
             value={fecha}
-            onChange={(v) => cambiarFecha(v)}
+            onChange={(v) => {
+              setFechaTocada(true);
+              cambiarFecha(v);
+            }}
             testid="apertura-fecha"
           />
         </div>
@@ -346,7 +461,9 @@ export function AsientoDeApertura({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filas.map((fila, i) => (
+            {visibles.map((fila) => {
+              const i = indiceDe.get(fila.id) ?? 0;
+              return (
               <TableRow key={fila.id} data-testid={`apertura-fila-${i}`}>
                 <TableCell>
                   <Select
@@ -431,17 +548,35 @@ export function AsientoDeApertura({
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </div>
+
+      {paginado ? (
+        <div className="mt-2" data-testid="apertura-paginas">
+          <TablePagination
+            total={pag.total}
+            page={pag.page}
+            pageSize={pag.pageSize}
+            pageSizeOptions={PAGE_SIZE_OPTIONS}
+            onPageChange={pag.setPage}
+            onPageSizeChange={pag.setPageSize}
+          />
+        </div>
+      ) : null}
 
       <div className="mt-2">
         <Button
           size="sm"
           variant="ghost"
           hideArrow
-          onClick={() => setFilas((previas) => [...previas, filaVacia()])}
+          onClick={() => {
+            setFilas((previas) => [...previas, filaVacia()]);
+            // Paginado, la línea nueva queda en la última página: se va allá.
+            if (paginado) pag.setPage(Math.ceil((filas.length + 1) / pag.pageSize));
+          }}
           data-testid="apertura-agregar-fila"
         >
           <Plus className="mr-1.5 h-3.5 w-3.5" />

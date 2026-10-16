@@ -516,3 +516,37 @@ function ChoqueConLaFicha({
     </div>
   )
 }
+
+/**
+ * Nico, 14-10-2026 (#1659 de Portofino): el escenario que el contrato traía de
+ * su sistema anterior no se pudo usar —cobra IVA y el inmueble es de vivienda,
+ * o no se sabe el uso, o no es del catálogo—. No se adivina cuál de los dos
+ * datos está mal: se dice ARRIBA del contrato, donde se ve al abrirlo, y se
+ * lleva a la tarjeta del escenario para corregirlo. La campana avisa lo mismo,
+ * una vez (back: `aviso-del-escenario-del-archivo.service.ts`).
+ */
+export function EscenarioDelArchivoPorRevisar({
+  contract,
+}: {
+  contract: Pick<Contract, 'escenarioTributario'>
+}) {
+  const delArchivo = contract.escenarioTributario?.delArchivo
+  if (!delArchivo || delArchivo.aplicado || !delArchivo.motivo) return null
+  return (
+    <div
+      className="flex flex-col gap-3 rounded-lg border border-warning/40 bg-warning-soft p-4 sm:flex-row sm:items-center sm:justify-between"
+      data-testid="escenario-del-archivo-por-revisar"
+    >
+      <div className="flex items-start gap-2">
+        <WarningCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning-700 dark:text-warning-100" />
+        <div className="space-y-1 text-sm text-foreground">
+          <p className="font-medium">Revisa el escenario tributario de este contrato</p>
+          <p>{delArchivo.motivo}</p>
+        </div>
+      </div>
+      <Button asChild size="sm" variant="outline" hideArrow className="shrink-0 self-start sm:self-center">
+        <a href="#escenario-tributario">Ver el escenario</a>
+      </Button>
+    </div>
+  )
+}

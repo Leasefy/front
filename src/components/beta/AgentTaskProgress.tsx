@@ -121,7 +121,7 @@ function FranjaDeLosPasos({
   const especialista =
     turno && turno.hablaAhora.id !== turno.orquestador.agente.id && enCurso ? turno.hablaAhora : null;
   // El mismo título que la tarjeta del hilo: lo que hace ahora o, si el
-  // especialista no avisó nada todavía, «Laura está trabajando».
+  // especialista no avisó nada todavía, «Mori está trabajando».
   const texto = enCurso
     ? enCurso.actividad ||
       (enCurso.kind === 'agente' && especialista

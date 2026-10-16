@@ -2,6 +2,7 @@ import type React from "react";
 import type { CSSProperties } from "react";
 import { Inter, Inter_Tight, IBM_Plex_Mono } from "next/font/google";
 import { LandingRegistroCta } from "./LandingRegistroCta";
+import { MarcaDelPie } from "./MarcaDelPie";
 
 type CSSVars = React.CSSProperties & Record<string, string | number>;
 
@@ -47,11 +48,6 @@ interface LandingFooterV2Props {
  * `.in` al hacer scroll, así que la animación queda igual; fuera del home
  * `.in` viene puesta y se ve quieto.
  */
-const WORDMARK = "Leasefy.".split("").map((ch, i) => ({
-  ch,
-  d: `${(0.1 + i * 0.05).toFixed(2)}s`,
-  bd: ch === ".",
-}));
 
 export function LandingFooterV2({ fxExterno = false }: LandingFooterV2Props) {
   // Los bloques `[data-reveal]` arrancan en `opacity:0` y los revela el
@@ -70,7 +66,7 @@ export function LandingFooterV2({ fxExterno = false }: LandingFooterV2Props) {
         } as CSSProperties
       }
     >
-    <footer><div className="fstrip" aria-hidden="true"><div className="lbg"></div></div><div className="container"><div className="fgrid2"><div className={`fbrand${rev}`} data-reveal><span className="logo flogo"><svg viewBox="0 0 947 235"><use href="#lfLogo" /></svg></span><p>El sistema operativo inteligente para inmobiliarias: CRM, ERP y agentes AI para operar arriendos de punta a punta.</p><span className="fstatus"><span className="pingw" style={{width:'6px',height:'6px'} as CSSVars}><span className="pinga" style={{background:'rgba(52,211,153,.6)'} as CSSVars}></span><span className="pingb" style={{width:'6px',height:'6px',background:'#34d399'} as CSSVars}></span></span>Operando con normalidad</span><div className="btns"><LandingRegistroCta variant="banner" /><a className="btn odark sm" href="https://wa.me/573000000000" target="_blank" rel="noopener">Escribir por WhatsApp</a></div></div><div></div><div className={`fcol${rev}`} data-reveal style={{'--d':'.1s'} as CSSVars}><p className="k">Producto</p><ul><li><a href="/productos/crm">CRM inmobiliario</a></li><li><a href="/productos/erp">ERP de arriendos</a></li><li><a href="/productos/asegurabilidad">Asegurabilidad</a></li><li><a href="/productos/matching">Matching</a></li><li><a href="/productos/cobranza">Cobranza</a></li></ul></div><div className={`fcol${rev}`} data-reveal style={{'--d':'.18s'} as CSSVars}><p className="k">Empresa</p><ul><li><a href="/blog">Blog</a></li><li><a href="/contacto">Contacto</a></li><li><a href="mailto:hola@leasefy.co">Soporte</a></li></ul></div></div><div className={`wm${fxExterno ? "" : " in"}`} id="wm" aria-hidden="true"><div>{WORDMARK.map(({ ch, d, bd }, i) => (<span key={`${ch}-${i}`} className={bd ? "bd" : undefined} style={{ "--d": d } as CSSVars}>{ch}</span>))}</div></div><div className="fbot"><p>© 2026 Leasefy. Todos los derechos reservados. <a href="/terminos">Términos</a> · <a href="/privacidad">Privacidad</a></p><span className="fbr"><span>Medellín, Colombia · CRM · ERP · Agentes AI</span><a className="ftop" href="#top">Volver arriba <span>↑</span></a></span></div></div></footer>
+    <footer><div className="fstrip" aria-hidden="true"><div className="lbg"></div></div><div className="container"><div className="fgrid2"><div className={`fbrand${rev}`} data-reveal><span className="logo flogo"><svg viewBox="0 0 947 235"><use href="#lfLogo" /></svg></span><p>El sistema operativo inteligente para inmobiliarias: CRM, ERP y agentes AI para operar arriendos de punta a punta.</p><span className="fstatus"><span className="pingw" style={{width:'6px',height:'6px'} as CSSVars}><span className="pinga" style={{background:'rgba(52,211,153,.6)'} as CSSVars}></span><span className="pingb" style={{width:'6px',height:'6px',background:'#34d399'} as CSSVars}></span></span>Operando con normalidad</span><div className="btns"><LandingRegistroCta variant="banner" /><a className="btn odark sm" href="mailto:hola@leasefy.co">Escríbenos</a></div></div><div></div><div className={`fcol${rev}`} data-reveal style={{'--d':'.1s'} as CSSVars}><p className="k">Producto</p><ul><li><a href="/productos/crm">CRM inmobiliario</a></li><li><a href="/productos/erp">ERP de arriendos</a></li><li><a href="/productos/asegurabilidad">Asegurabilidad</a></li><li><a href="/productos/matching">Matching</a></li><li><a href="/productos/cobranza">Cobranza</a></li></ul></div><div className={`fcol${rev}`} data-reveal style={{'--d':'.18s'} as CSSVars}><p className="k">Empresa</p><ul><li><a href="/blog">Blog</a></li><li><a href="/contacto">Contacto</a></li><li><a href="mailto:hola@leasefy.co">Soporte</a></li></ul></div></div><MarcaDelPie /><div className="fbot"><p>© 2026 Leasefy. Todos los derechos reservados. <a href="/terminos">Términos</a> · <a href="/privacidad">Privacidad</a></p><span className="fbr"><span>Medellín, Colombia · CRM · ERP · Agentes AI</span><a className="ftop" href="#top">Volver arriba <span>↑</span></a></span></div></div></footer>
     </div>
   );
 }

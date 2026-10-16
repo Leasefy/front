@@ -48,7 +48,14 @@
 
 import { geocodeApi } from '@/lib/api/geocode.service';
 import { getCityCoordinates } from '@/lib/constants/map';
-import { consultaNormalizada } from './normalizar-direccion-co';
+import {
+  consultaNormalizada,
+  mismaVia,
+  numeroDelCruce,
+  numeroDelCruceDelBuscador,
+  TOLERANCIA_DEL_CRUCE,
+  viaPrincipal,
+} from './normalizar-direccion-co';
 
 /**
  * Hasta dónde puede caer un punto de su municipio antes de darlo por
@@ -309,32 +316,53 @@ export async function ubicarDireccion(d: DireccionAUbicar): Promise<Ubicacion> {
    * never lowers the bar: it only gives a noisy address more chances to
    * resolve before falling back to the municipality.
    */
+  /*
+   * 🔴 QA de Portofino (14-10-2026, Nico: «estricto + otro buscador»). Con 30
+   * direcciones reales, caer en su municipio no bastaba: 6 de 12 «direcciones»
+   * estaban en OTRA calle a 1–3 km (Carrera 82 A → Carrera 76). Ahora sólo es
+   * «dirección» un resultado sobre la MISMA vía del inmueble (tipo, número,
+   * letra, bis y cardinal), y se busca con `/v1/search`, que devuelve la vía.
+   * Sin una vía que leer en el texto no hay con qué verificar: queda el
+   * municipio.
+   */
+  const via = viaPrincipal(d.direccion);
+  const cruceEsperado = numeroDelCruce(d.direccion);
   try {
-    for (const consulta of consultasParaBuscar(d)) {
-      const primero = (await respetandoElTecho(() => geocodeApi.autocomplete(consulta)))[0];
-      if (!primero) continue;
-      const punto = { lat: primero.lat, lng: primero.lon };
+    for (const consulta of via ? consultasParaBuscar(d) : []) {
+      const resultados = await respetandoElTecho(() => geocodeApi.buscar(consulta));
+      // Sólo los que están sobre la misma vía; de ésos, el primero que cae en su municipio.
+      const sobreSuVia = resultados.filter((r) => {
+        const suya = viaPrincipal(r.road);
+        if (suya === null || !mismaVia(via!, suya)) return false;
+        // Sobre la misma vía pero con la puerta en otro cruce («Cra 54 # 153
+        // Sur» devuelta en la 124 Sur, a 3 km): tampoco es el inmueble.
+        const cruce = numeroDelCruceDelBuscador(r.houseNumber);
+        return cruce === null || cruceEsperado === null || Math.abs(cruce - cruceEsperado) <= TOLERANCIA_DEL_CRUCE;
+      });
+      for (const primero of sobreSuVia) {
+        const punto = { lat: primero.lat, lng: primero.lon };
 
-      // 1. Por nombre: el buscador ya dijo en qué municipio cayó.
-      //    QA-MIGRACION-95 (IN-06): y del MISMO departamento, si los dos lo
-      //    dicen. Rionegro (Antioquia) y Rionegro (Santander) se llaman igual:
-      //    el de Santander pasaba como «dirección» a 200 km. Distinto
-      //    departamento no se descarta: va a la distancia, como sin nombre.
-      if (
-        primero.city &&
-        d.ciudad &&
-        comoNombre(primero.city) === comoNombre(d.ciudad) &&
-        (!primero.state || !d.departamento || comoNombre(primero.state) === comoNombre(d.departamento))
-      ) {
-        return { ...punto, precision: 'direccion', etiqueta: primero.label };
-      }
+        // 1. Por nombre: el buscador ya dijo en qué municipio cayó.
+        //    QA-MIGRACION-95 (IN-06): y del MISMO departamento, si los dos lo
+        //    dicen. Rionegro (Antioquia) y Rionegro (Santander) se llaman igual:
+        //    el de Santander pasaba como «dirección» a 200 km. Distinto
+        //    departamento no se descarta: va a la distancia, como sin nombre.
+        if (
+          primero.city &&
+          d.ciudad &&
+          comoNombre(primero.city) === comoNombre(d.ciudad) &&
+          (!primero.state || !d.departamento || comoNombre(primero.state) === comoNombre(d.departamento))
+        ) {
+          return { ...punto, precision: 'direccion', etiqueta: primero.label };
+        }
 
-      // 2. Por distancia, cuando el nombre no vino o no coincide. Sin centro
-      //    no hay contra qué verificar, y aceptar a ciegas es justamente lo
-      //    que puso 548 inmuebles en otro departamento.
-      const ce = await centroConTecho();
-      if (ce && distanciaKm(ce, punto) <= RADIO_DEL_MUNICIPIO_KM) {
-        return { ...punto, precision: 'direccion', etiqueta: primero.label };
+        // 2. Por distancia, cuando el nombre no vino o no coincide. Sin centro
+        //    no hay contra qué verificar, y aceptar a ciegas es justamente lo
+        //    que puso 548 inmuebles en otro departamento.
+        const ce = await centroConTecho();
+        if (ce && distanciaKm(ce, punto) <= RADIO_DEL_MUNICIPIO_KM) {
+          return { ...punto, precision: 'direccion', etiqueta: primero.label };
+        }
       }
     }
   } catch {

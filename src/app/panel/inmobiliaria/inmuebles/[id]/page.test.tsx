@@ -31,7 +31,7 @@ const { useConsignacionMock, usePropietarioMock, useAgenteMock, usePropertyMock 
 
 // `?editar=1` (el «Editar» del kebab de la lista) abre el formulario: el test
 // controla la query con `queryDePrueba`.
-const queryDePrueba = { editar: null as string | null, por: null as string | null };
+const queryDePrueba = { editar: null as string | null, por: null as string | null, volver: null as string | null };
 const routerReplaceMock = vi.fn();
 // La ficha dibuja Candidatos, que decide con `usePermissions` (S3). Permisos
 // abiertos: estas pruebas miran la ficha, no el gate de decidir.
@@ -42,7 +42,11 @@ vi.mock('@/lib/hooks/usePermissions', () => ({
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'consig-1' }),
   useRouter: () => ({ push: vi.fn(), replace: routerReplaceMock }),
-  useSearchParams: () => ({ get: (k: string) => (k === 'editar' ? queryDePrueba.editar : k === 'por' ? queryDePrueba.por : null) }),
+  useSearchParams: () => {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(queryDePrueba)) if (v != null) p.set(k, v);
+    return p;
+  },
 }));
 
 // El cajón de edición tiene su propio test; acá sólo importa que se abra
@@ -239,7 +243,11 @@ describe('<ConsignacionDetailPage> — property photo wiring', () => {
  * mandato.
  */
 describe('<ConsignacionDetailPage> — entrar por el id del inmueble', () => {
-  afterEach(() => { queryDePrueba.por = null; });
+  afterEach(() => {
+    queryDePrueba.por = null;
+    queryDePrueba.volver = null;
+    queryDePrueba.editar = null;
+  });
 
   it('con `?por=inmueble` busca el mandato por el inmueble y pasa la URL a la del mandato', () => {
     queryDePrueba.por = 'inmueble';
@@ -247,6 +255,32 @@ describe('<ConsignacionDetailPage> — entrar por el id del inmueble', () => {
     renderPage();
     expect(useConsignacionMock).toHaveBeenCalledWith('consig-1', { porInmueble: true });
     expect(routerReplaceMock).toHaveBeenCalledWith('/panel/inmobiliaria/inmuebles/consig-9', { scroll: false });
+  });
+
+  it('🔴 Portofino (14-10): con `?por=inmueble` y el mandato terminado, el historial va con el id del MANDATO', async () => {
+    queryDePrueba.por = 'inmueble';
+    getHistorialMock.mockResolvedValue([]);
+    useConsignacionMock.mockReturnValue({
+      consignacion: { ...BASE_CONSIGNACION, id: 'consig-9', status: 'terminated' },
+    });
+    renderPage();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(getHistorialMock).toHaveBeenCalledWith('consig-9');
+    expect(getHistorialMock).not.toHaveBeenCalledWith('consig-1');
+  });
+
+  it('🔴 H18 (14-10): al pasar a la URL del mandato conserva «volver» y «editar»', () => {
+    queryDePrueba.por = 'inmueble';
+    queryDePrueba.volver = '/panel/inmobiliaria/contratos/ct-1';
+    queryDePrueba.editar = '1';
+    useConsignacionMock.mockReturnValue({ consignacion: { ...BASE_CONSIGNACION, id: 'consig-9' } });
+    renderPage();
+    expect(routerReplaceMock).toHaveBeenCalledWith(
+      '/panel/inmobiliaria/inmuebles/consig-9?editar=1&volver=%2Fpanel%2Finmobiliaria%2Fcontratos%2Fct-1',
+      { scroll: false },
+    );
   });
 
   it('sin el parámetro, como siempre (por el id del mandato)', () => {

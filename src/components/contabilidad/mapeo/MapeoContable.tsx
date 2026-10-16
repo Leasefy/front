@@ -70,7 +70,8 @@ import { useCuentas } from '../use-cuentas';
 import { usePuedeEscribir } from '../use-puede-escribir';
 import { EventosDeGasto } from './EventosDeGasto';
 import { RubrosDelPyg } from './RubrosDelPyg';
-import { NOMBRE_DEL_LADO, eventosSembrables, eventosSinCuenta, loQueNoSeAsienta } from './mapeo';
+import { NOMBRE_DEL_LADO, propuestaQueSirve, eventosSembrables, eventosSinCuenta, loQueNoSeAsienta } from './mapeo';
+import { fraseDeLoQueNoSeAsigno } from '@/components/migracion/ImportarCuentas';
 import { EN_CURSO_EN_EL_CENTRO } from '@/components/procesos/estado-del-proceso';
 
 /** Cómo va el mapeo, para quien lo tiene adentro. Ver `onEstado`. */
@@ -298,10 +299,10 @@ export function MapeoContable({
         );
       }
       if (r.sinCuenta.length > 0) {
+        // 🔴 Portofino (14-10): «el PUC no tiene 28150505» era falso — la tiene,
+        // con otro nombre (o como cuenta mayor). Se dice el motivo de cada una.
         toast.warning(
-          `Sin cuenta propuesta para ${r.sinCuenta.length}: el PUC no tiene ${r.sinCuenta
-            .map((s) => s.codigo)
-            .join(', ')}.`,
+          `Sin cuenta propuesta para ${r.sinCuenta.length}. ${fraseDeLoQueNoSeAsigno(r.sinCuenta)}`,
         );
       }
     } catch (e) {
@@ -507,7 +508,7 @@ export function MapeoContable({
                   <Badge variant={e.lado === 'DEBE' ? 'secondary' : 'outline'}>{NOMBRE_DEL_LADO[e.lado]}</Badge>
                 </TableCell>
                 <TableCell>
-                  <div className="flex items-center gap-2">
+                  <div className="flex max-w-[26rem] items-center gap-2">
                     <SelectorDeCuenta
                       cuentas={cuentas}
                       value={e.cuenta?.id ?? ''}
@@ -515,7 +516,7 @@ export function MapeoContable({
                       soloImputables
                       disabled={guardando.has(e.evento) || !escritura.puede}
                       placeholder="Sin cuenta: este asiento no se genera"
-                      className="w-full"
+                      className="w-full min-w-0"
                     />
                     {/* El estado de la fila se dice SIEMPRE, no sólo cuando
                         está bien: nueve filas donde el único indicio de lo que
@@ -536,7 +537,7 @@ export function MapeoContable({
                 <TableCell>
                   {/* 🔴 CB-05: la propuesta repetía, fila por fila, la cuenta que ya
                       estaba elegida. Sólo se dice cuando DIFIERE (o no hay cuenta). */}
-                  {e.propuesta && e.cuenta?.id === e.propuesta.id ? (
+                  {e.cuenta && !propuestaQueSirve(e, e.cuenta.id) ? (
                     <span
                       className="text-caption text-fg-subtle"
                       title="La cuenta elegida es la propuesta"
@@ -550,7 +551,16 @@ export function MapeoContable({
                       <span className="font-mono text-caption text-fg-muted">
                         {e.propuesta.codigo} · {e.propuesta.nombre}
                       </span>
-                      {!e.cuenta && e.propuesta.activa && e.propuesta.imputable ? (
+                      {/* 🔴 Portofino (14-10): en un plan importado el mismo código
+                          puede ser otra cuenta. Ésa no se usa de un clic. */}
+                      {!e.cuenta && e.propuestaConElNombreDelPlanBase === false ? (
+                        <span
+                          className="text-caption text-warning"
+                          data-testid={`propuesta-otro-nombre-${e.evento}`}
+                        >
+                          En tu plan este código es otra cuenta: elige la tuya.
+                        </span>
+                      ) : !e.cuenta && e.propuesta.activa && e.propuesta.imputable ? (
                         <Button
                           variant="outline"
                           size="sm"

@@ -294,6 +294,10 @@ export function ConsignacionCard({
               {textoDeLaComision(consignacion)}
             </span>
             <span className="text-sm text-fg-muted dark:text-fg-subtle">{t('inmobiliaria.portafolio.card.saleCommission')}</span>
+            {/* Nico 14-10: la venta que entró sin precio. */}
+            {consignacion.canonPorConfirmar ? (
+              <CanonPorConfirmarBadge inmuebleId={consignacion.propertyId} esVenta />
+            ) : null}
           </div>
         ) : (
           <div className="flex items-baseline gap-2 mb-4">

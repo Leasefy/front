@@ -1134,7 +1134,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             completedAt: new Date(),
             ...(d.status === 'failed' ? { error: d.summary } : {}),
             // Lo que contestó el especialista: lo lee la delegación del turno
-            // («Ori → Laura» + su resumen) cuando el mensaje ya cerró.
+            // («Ori → Mori» + su resumen) cuando el mensaje ya cerró.
             ...(d.status !== 'failed' && d.summary?.trim() ? { resumen: d.summary.trim() } : {}),
             ...(d.id ? { despachoId: d.id } : {}),
           };
@@ -1420,7 +1420,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
         .map((d) => d.summary)
         .filter((s): s is string => Boolean(s));
       // Los resúmenes de los especialistas van en la delegación del turno
-      // («Ori le pasó el trabajo a Laura» → lo que contestó cada uno, 02-10).
+      // («Ori le pasó el trabajo a Mori» → lo que contestó cada uno, 02-10).
       // Pegarlos también al final del texto los decía dos veces (Nico: «no
       // repitas»). Sólo hacen de texto si el orquestador no escribió nada.
       const fullText = resp.responseText?.trim() ? resp.responseText : summaries.join('\n\n');
@@ -1679,7 +1679,7 @@ export function useBetaChat(options?: UseBetaChatOptions): UseBetaChatReturn {
             // Despachar ES la decisión (02-10): el orquestador ya entendió y le
             // pasó el trabajo a un especialista. «Entender» (y el contexto, si
             // seguía) se cierra acá; si no, quedaban dos pasos girando y la
-            // tarjeta decía «Entender la pregunta» mientras Laura trabajaba.
+            // tarjeta decía «Entender la pregunta» mientras Mori trabajaba.
             const alDespachar = new Date();
             if (turnStepsRef.current.some((p) => p.id === 'cartera' && p.status === 'running')) {
               parchearPaso('cartera', { status: 'done', completedAt: alDespachar, actividad: undefined });

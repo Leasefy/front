@@ -3,7 +3,7 @@ import { LandingChrome } from "@/components/landing-v2/LandingChrome";
 import { LandingFooterV2 } from "@/components/landing-v2/LandingFooterV2";
 import { SectionLabel } from "@/components/ui/section-label";
 import { IndiceLegal, TextoLegal } from "@/components/legal/TextoLegal";
-import { POLITICA_V4 } from "@/lib/legal/politica-v4";
+import { POLITICA_V5 } from "@/lib/legal/politica-v5";
 import {
   VERSION_POLITICA_DE_TRATAMIENTO,
   VIGENCIA_POLITICA_DE_TRATAMIENTO,
@@ -105,8 +105,8 @@ export default function PrivacidadPage() {
               </dd>
             </dl>
 
-            <IndiceLegal secciones={POLITICA_V4} />
-            <TextoLegal secciones={POLITICA_V4} />
+            <IndiceLegal secciones={POLITICA_V5} />
+            <TextoLegal secciones={POLITICA_V5} />
           </div></div>
         </section>
       </main>

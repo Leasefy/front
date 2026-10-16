@@ -213,8 +213,8 @@ describe('las claves', () => {
   })
 
   it('el inglés no es el español copiado', () => {
-    // Un nombre propio («Laura») y «Manual» se escriben igual en los dos idiomas.
-    const iguales = todas.filter((c) => leer(es, c) === leer(en, c) && !['Laura', 'Manual'].includes(leer(es, c) as string))
+    // Un nombre propio («Mori») y «Manual» se escriben igual en los dos idiomas.
+    const iguales = todas.filter((c) => leer(es, c) === leer(en, c) && !['Mori', 'Manual'].includes(leer(es, c) as string))
     expect(iguales).toEqual([])
   })
 

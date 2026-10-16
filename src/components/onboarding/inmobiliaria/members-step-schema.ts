@@ -30,13 +30,24 @@
 import { z } from 'zod'
 import type { OnboardingSessionMembersRequest } from '@/lib/api/generated/agency'
 
-export type MemberRole = 'AGENTE' | 'CONTADOR' | 'ADMIN' | 'VIEWER'
+export type MemberRole =
+  | 'AGENTE'
+  | 'CONTADOR'
+  | 'ADMIN'
+  | 'VIEWER'
+  // ROLES (Nico, 14-10-2026): los siete roles del panel, como Configuración → Equipo.
+  | 'COORDINADOR'
+  | 'AUXILIAR_CARTERA'
+  | 'ABOGADO_EXTERNO'
 
 export const MEMBER_ROLE_OPTIONS: { value: MemberRole; label: string }[] = [
   { value: 'AGENTE', label: 'Asesor comercial' },
   { value: 'CONTADOR', label: 'Contador' },
   { value: 'ADMIN', label: 'Administrador' },
   { value: 'VIEWER', label: 'Solo lectura' },
+  { value: 'COORDINADOR', label: 'Coordinador' },
+  { value: 'AUXILIAR_CARTERA', label: 'Auxiliar de cartera' },
+  { value: 'ABOGADO_EXTERNO', label: 'Abogado externo' },
 ]
 
 const memberRowSchema = z.object({
@@ -49,7 +60,7 @@ const memberRowSchema = z.object({
    * derivarlo del correo sería inventarle un nombre a alguien.
    */
   nombre: z.string().trim().max(120, 'El nombre no puede pasar de 120 caracteres.').optional(),
-  role: z.enum(['AGENTE', 'CONTADOR', 'ADMIN', 'VIEWER'], {
+  role: z.enum(['AGENTE', 'CONTADOR', 'ADMIN', 'VIEWER', 'COORDINADOR', 'AUXILIAR_CARTERA', 'ABOGADO_EXTERNO'], {
     errorMap: () => ({ message: 'Selecciona un rol.' }),
   }),
 })

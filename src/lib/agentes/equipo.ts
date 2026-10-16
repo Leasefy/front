@@ -98,7 +98,7 @@ export interface OrbeDelAgente {
 export interface AgenteDelEquipo {
   id: IdDeAgente
   /**
-   * Nombre propio (no se traduce: Laura es Laura en inglés). `null` = nombre
+   * Nombre propio (no se traduce: Mori es Mori en inglés). `null` = nombre
    * funcional, que sí se traduce (`agentes.<id>.nombre`).
    */
   nombrePropio: string | null
@@ -154,7 +154,7 @@ export const EQUIPO: readonly AgenteDelEquipo[] = [
   },
   {
     id: 'cobranza',
-    nombrePropio: 'Laura',
+    nombrePropio: 'Mori',
     frente: 'cartera',
     orbe: orbe('coral', 'cobranza'),
     autonomia: 'cobranza',

@@ -181,7 +181,7 @@ describe('<ExperimentoDeLaura>', () => {
   it('sin la migración lo dice y no ofrece empezar', async () => {
     adminApi.mockResolvedValueOnce(estado({ disponible: false, inmobiliariasQueLoApagaron: 2 }))
     await pintar()
-    expect($('experimento-sin-migracion')?.textContent).toContain('20261008000000')
+    expect($('experimento-sin-migracion')?.textContent).toContain('falta una actualización de la base')
     expect(boton('Empezar el experimento')).toBeUndefined()
     expect($('experimento-de-laura')?.textContent).toContain('menos 2 que lo apagaron')
   })

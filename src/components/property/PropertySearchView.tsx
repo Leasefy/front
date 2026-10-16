@@ -415,7 +415,7 @@ export function PropertySearchView({ embedded = false, sinNavbar = false, basePa
                       value={refinar}
                       onChange={(e) => setRefinar(e.target.value)}
                       placeholder="Agrega: con balcón, hasta 3 millones…"
-                      className="w-full rounded-full border border-dashed border-border bg-transparent px-3.5 py-1.5 text-sm text-fg placeholder:text-fg-subtle focus:border-primary focus:outline-none"
+                      className="w-full rounded-full border border-dashed border-border bg-transparent px-3.5 py-1.5 text-sm text-fg placeholder:text-fg-placeholder focus:border-primary focus:outline-none"
                       data-testid="refinar-busqueda"
                     />
                   </form>

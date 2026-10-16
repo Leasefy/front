@@ -1,11 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
+import Link, { useLinkStatus } from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MessageBubble, motionDuration, motionEase } from '@leasefy/cadence';
-import { MapTrifold, ShieldCheck, Sparkle, X } from '@phosphor-icons/react';
+import { CircleNotch, MapTrifold, ShieldCheck, Sparkle, X } from '@phosphor-icons/react';
 
 import { OrbeDeAgente } from '@/components/agentes/OrbeDeAgente';
 import { PensamientoDelTurno } from '@/components/beta/PensamientoDelTurno';
@@ -52,6 +52,7 @@ import {
   TarjetaDelVideo,
   Tira,
 } from './inmobiliaria/piezas';
+import { portadaDe } from '@/lib/marketplace/portadas';
 
 /**
  * ══ LA CONVERSACIÓN DEL MARKETPLACE · OPCIÓN 1 (Nico, 09-10-2026) ══════════
@@ -226,9 +227,9 @@ function PresentacionDeLaInmobiliaria({ t, suyos }: { t: TarjetaDeInmobiliaria; 
         </p>
         <div className="overflow-hidden rounded-lg border border-border bg-surface">
           <Link href={paginaDe(t)} className="relative block h-24 bg-surface-muted" aria-label={`Ver la página de ${t.nombre}`}>
-            {t.portadaUrl ? (
+            {portadaDe(t.portadaUrl) ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={t.portadaUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              <img src={portadaDe(t.portadaUrl)} alt="" className="absolute inset-0 h-full w-full object-cover" />
             ) : (
               <span className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${colorDe(t)}40, ${colorDe(t)}12)` }} aria-hidden />
             )}
@@ -280,6 +281,24 @@ function PresentacionDeLaInmobiliaria({ t, suyos }: { t: TarjetaDeInmobiliaria; 
   );
 }
 
+/**
+ * El texto de un botón-enlace mientras la página nueva llega (Nico, 12-10-2026:
+ * «esas dos acciones no están sirviendo»). Sí navegaban, pero sin decir nada:
+ * la primera vez la página tarda (en desarrollo, hasta 17 s compilando) y el
+ * clic parecía muerto. Ahora gira y dice «Abriendo…» desde el primer instante.
+ */
+function TextoDelEnlace({ texto }: { texto: string }) {
+  const { pending } = useLinkStatus();
+  return pending ? (
+    <span className="inline-flex items-center gap-1.5" aria-live="polite">
+      <CircleNotch className="h-3.5 w-3.5 animate-spin" aria-hidden />
+      Abriendo…
+    </span>
+  ) : (
+    <>{texto}</>
+  );
+}
+
 /** «Antes de visitar, haz tu estudio una sola vez» (prototipo de la opción 1). */
 function AntesDeVisitar({ primero, cuantos }: { primero: Property; cuantos: number }) {
   const lugar = primero.neighborhood ? `al de ${barrioYCiudad(primero.neighborhood, null)}` : 'al primero';
@@ -301,13 +320,13 @@ function AntesDeVisitar({ primero, cuantos }: { primero: Property; cuantos: numb
               href="/aprobacion"
               className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-[13.5px] font-medium text-primary-fg transition-colors duration-fast hover:bg-primary-600 active:scale-[0.97]"
             >
-              Hacer mi estudio
+              <TextoDelEnlace texto="Hacer mi estudio" />
             </Link>
             <Link
               href={`/propiedades/${primero.id}?visita=1`}
               className="inline-flex h-9 items-center rounded-full border border-border bg-surface px-4 text-[13.5px] font-medium text-fg transition-colors duration-fast hover:border-border-strong active:scale-[0.97]"
             >
-              Agendar visita {lugar}
+              <TextoDelEnlace texto={`Agendar visita ${lugar}`} />
             </Link>
           </div>
         </div>

@@ -333,3 +333,47 @@ describe('nunca un giro parcial, y las liquidaciones que se cierran en $ 0', () 
     expect((cambios.at(-1) as { dispersionIds: string[] }).dispersionIds.sort()).toEqual(['d-b', 'd-z']);
   });
 });
+
+describe('🔴 el 4x1000 (Juan, 15-10-2026: «al armar el lote, decir si se descuenta o no»)', () => {
+  const conGmf = () =>
+    respuesta({
+      gmf: { porMil: 4, trasladaAlPropietario: false },
+      candidatos: respuesta().candidatos.map((c) =>
+        c.dispersionId === 'd-c' ? { ...c, gmfCop: 6_000 } : { ...c, gmfCop: 0 },
+      ),
+    });
+
+  it('dice por fila cuánto se le descuenta, o que no se le descuenta', async () => {
+    candidatos.mockResolvedValue(conGmf());
+    await montar();
+    const celda = (id: string) =>
+      contenedor.querySelector(`[data-testid="gmf-${id}"]`)?.textContent ?? '(no está)';
+    expect(celda('d-c')).toContain('6.000');
+    expect(celda('d-c')).toContain('−');
+    expect(celda('d-b')).toBe('No se descuenta');
+  });
+
+  it('el pie suma el 4x1000 de lo elegido', async () => {
+    candidatos.mockResolvedValue(conGmf());
+    await montar();
+    const pie = () => contenedor.querySelector('[data-testid="gmf-de-lo-elegido"]')?.textContent ?? '';
+    // Sin tildar = el mes entero.
+    expect(pie()).toContain('Se le descuenta el 4x1000 a 1 propietario');
+    await tildar('d-b');
+    expect(pie()).toBe('A ninguno se le descuenta el 4x1000.');
+  });
+
+  it('sin el 4x1000 configurado no hay columna y se dice una vez', async () => {
+    candidatos.mockResolvedValue(respuesta({ gmf: { porMil: null, trasladaAlPropietario: false } }));
+    await montar();
+    expect(contenedor.querySelector('[data-testid^="gmf-d-"]')).toBeNull();
+    expect(contenedor.querySelector('[data-testid="gmf-sin-configurar"]')?.textContent).toContain(
+      'no se le descuenta a ningún propietario',
+    );
+  });
+
+  it('un back anterior (sin `gmf`) no dice nada', async () => {
+    await montar();
+    expect(contenedor.querySelector('[data-testid^="gmf-"]')).toBeNull();
+  });
+});

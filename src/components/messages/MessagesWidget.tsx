@@ -60,9 +60,15 @@ import {
 import { NuevoMensajeDrawer } from '@/components/messages/NuevoMensajeDrawer';
 import { SelectorDeEmojis } from '@/components/messages/SelectorDeEmojis';
 import { PlantillasDeMensajePopover } from '@/components/messages/PlantillasDeMensajePopover';
+import { EscribirConIaPopover, HUECO_DEL_BORRADOR } from '@/components/messages/EscribirConIaPopover';
+import type { PedidoDeRedaccion } from '@/lib/api/redactar-mensaje.service';
 import { PendientesDelHiloPopover } from '@/components/messages/PendientesDelHiloPopover';
 import { mesEnCurso } from '@/components/messages/pendientes-a-mensaje';
+import { separadoresDeDia } from '@/components/messages/dia-del-mensaje';
 import { PQRS_SLA_BUSINESS_DAYS } from '@/lib/constants/response-sla';
+import { InquilinoDrawer } from '@/components/inmobiliaria/InquilinoDrawer';
+import { inquilinosApi } from '@/lib/api/inquilinos.service';
+import type { Inquilino } from '@/lib/api/inquilinos.service';
 
 // ============================================================================
 // Widget props
@@ -248,6 +254,12 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
   const [showMobileChat, setShowMobileChat] = useState(false);
   const [showInfoPanel, setShowInfoPanel] = useState(false);
   const [showOptionsList, setShowOptionsList] = useState(false);
+  /*
+   * 15-10-2026 (Nico, en la reunión con Juan): «si estoy en el chat, debería
+   * abrirme la ficha sin tener que ir al inquilino». La del inquilino se abre en
+   * su cajón ENCIMA de la conversación; la del propietario sigue siendo su página.
+   */
+  const [inquilinoAbierto, setInquilinoAbierto] = useState<Inquilino | null>(null);
   /*
    * SO-30 (PQRS-FIX, 04-10-2026): desde un mensaje se radica la PQRS o la
    * reparación con el texto y la persona ya puestos (antes había que copiarlo a
@@ -510,6 +522,24 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     [insertarEnElCursor],
   );
 
+  /* «Escribir con IA» (Juan, 15-10-2026): el borrador REEMPLAZA el campo (si
+     había algo escrito, el micro ya lo mejoró) y el cursor queda al final. */
+  const [notaDeLaIa, setNotaDeLaIa] = useState<string | null>(null);
+  const alEscribirConIa = useCallback((texto: string, nota: string | null) => {
+    cursorPendiente.current = texto.length;
+    setMessageText(texto);
+    setVariablesSinResolver([]);
+    setNotaDeLaIa(nota);
+  }, []);
+  /* La nota habla del borrador que se pidió: con el campo vacío (se envió o se
+     borró) o en otra conversación, ya no describe nada. */
+  useEffect(() => {
+    if (!messageText.trim()) setNotaDeLaIa(null);
+  }, [messageText]);
+  useEffect(() => {
+    setNotaDeLaIa(null);
+  }, [selectedConversationId]);
+
   const alElegirPendiente = useCallback(
     (texto: string) => {
       insertarEnElCursor(texto);
@@ -568,11 +598,20 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     return null;
   }, [enPanelDeInmobiliaria, selectedConversation, locale]);
 
-  const verFicha = useCallback(() => {
+  const verFicha = useCallback(async () => {
     if (!fichaDeLaContraparte) return;
     setShowOptionsList(false);
+    const id = selectedConversation?.contraparteId;
+    if (selectedConversation?.perfil === 'TENANT' && id) {
+      try {
+        setInquilinoAbierto(await inquilinosApi.obtener(id));
+        return;
+      } catch {
+        // Sin su detalle, la ficha de siempre: la lista abre a la persona.
+      }
+    }
     router.push(fichaDeLaContraparte.href);
-  }, [fichaDeLaContraparte, router]);
+  }, [fichaDeLaContraparte, router, selectedConversation]);
 
   /**
    * Con qué se resuelven las variables de una plantilla.
@@ -602,8 +641,26 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
     [selectedConversation, agency?.name],
   );
 
+  /* Lo que el micro necesita para escribir: el hilo que se ve, quién es la otra
+     persona y lo que se sabe de verdad (lo mismo que resuelve las plantillas). */
+  const contextoParaLaIa = useCallback((): Omit<PedidoDeRedaccion, 'instruccion' | 'borrador'> => {
+    const perfil = selectedConversation?.perfil;
+    return {
+      nombre: selectedConversation?.name || (locale === 'es' ? 'la persona' : 'the person'),
+      perfil: perfil === 'TENANT' ? 'inquilino' : perfil === 'LANDLORD' ? 'propietario' : 'otro',
+      inmobiliaria: agency?.name ?? null,
+      mensajes: messages.map((m) => ({ deLaInmobiliaria: Boolean(m.isMine), texto: m.content })),
+      datos: Object.fromEntries(
+        Object.entries({ inmueble: datosDePlantilla.inmueble, mes: datosDePlantilla.mes }).filter(([, v]) => v),
+      ),
+    };
+  }, [selectedConversation, locale, agency?.name, messages, datosDePlantilla]);
+
   /* El aviso se apaga solo cuando ya no queda ningún hueco en el campo: quien
      completó «{{saldo}}» a mano no tiene por qué seguir viendo una alerta. */
+  // El rótulo del día antes del primer mensaje de cada día (QA 11-10).
+  const separadores = useMemo(() => separadoresDeDia(messages), [messages]);
+
   const huecosVisibles =
     variablesSinResolver.length > 0 && messageText.includes('{{')
       ? variablesSinResolver
@@ -869,9 +926,21 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                         {getInitials(selectedConversation.name)}
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">
-                          {selectedConversation.name}
-                        </p>
+                        {fichaDeLaContraparte ? (
+                          <button
+                            type="button"
+                            onClick={() => void verFicha()}
+                            className="text-left text-sm font-semibold text-foreground hover:underline"
+                            title={fichaDeLaContraparte.etiqueta}
+                            data-testid="nombre-abre-la-ficha"
+                          >
+                            {selectedConversation.name}
+                          </button>
+                        ) : (
+                          <p className="text-sm font-semibold text-foreground">
+                            {selectedConversation.name}
+                          </p>
+                        )}
                         <div className="flex min-w-0 items-center gap-1.5">
                           <InsigniaDePerfil perfil={selectedConversation.perfil} />
                           {selectedConversation.property && (
@@ -949,7 +1018,7 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               {fichaDeLaContraparte && (
                               <button
                                 type="button"
-                                onClick={verFicha}
+                                onClick={() => void verFicha()}
                                 data-testid="ver-ficha"
                                 className="flex w-full items-center gap-3 whitespace-nowrap px-4 py-2.5 text-sm text-fg transition-colors hover:bg-surface-muted"
                               >
@@ -1089,7 +1158,27 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                               </div>
                             )}
                             <AnimatePresence initial={false}>
-                              {messages.map((message, index) => (
+                              {messages.flatMap((message, index) => [
+                                // El día cambia: su rótulo antes del primer
+                                // mensaje de ese día («Hoy», «Ayer», «4 de octubre»).
+                                ...(separadores[index]
+                                  ? [
+                                      <motion.div
+                                        key={`dia-${message.id}`}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={enterTransition(reducido)}
+                                        className="flex items-center gap-3 py-1"
+                                        data-testid="separador-de-dia"
+                                      >
+                                        <span className="h-px flex-1 bg-border-faint" aria-hidden="true" />
+                                        <span className="text-caption font-medium text-muted-foreground">
+                                          {separadores[index]}
+                                        </span>
+                                        <span className="h-px flex-1 bg-border-faint" aria-hidden="true" />
+                                      </motion.div>,
+                                    ]
+                                  : []),
                                 // Sólo los mensajes NUEVOS entran (el hilo que ya
                                 // estaba no se anima): suben 8 px sin retraso. El
                                 // retraso por índice hacía esperar ~2 s al mensaje
@@ -1147,8 +1236,8 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                       locale={locale}
                                     />
                                   </div>
-                                </motion.div>
-                              ))}
+                                </motion.div>,
+                              ])}
                             </AnimatePresence>
                           </div>
                         )}
@@ -1181,6 +1270,18 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                                 locale={locale}
                                 datos={datosDePlantilla}
                                 onElegir={alElegirPlantilla}
+                              />
+                            )}
+                            {/* `key` por conversación: lo que se pidió para Ana no
+                                queda abierto en el hilo de Beto. */}
+                            {enPanelDeInmobiliaria && agency?.id && (
+                              <EscribirConIaPopover
+                                key={`ia-${selectedConversation.id}`}
+                                locale={locale}
+                                agencyId={agency.id}
+                                contexto={contextoParaLaIa}
+                                borradorActual={messageText}
+                                onEscrito={alEscribirConIa}
                               />
                             )}
                             {/* `key` por conversación: los pendientes de Ana no
@@ -1277,6 +1378,33 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
                           botón. No bloquea el envío —puede que el hueco sea a
                           propósito— pero no deja que pase desapercibido.
                         */}
+                        {/* Lo que la IA le dice a quien escribe (no se envía): qué faltó o qué no hizo. */}
+                        {notaDeLaIa && (
+                          <p
+                            data-testid="nota-de-la-ia"
+                            className="mt-2 flex items-start gap-1.5 text-caption text-fg-muted"
+                          >
+                            <Info className="mt-px h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+                            <span>
+                              {locale === 'es' ? 'Nota de la IA (no se envía): ' : 'AI note (not sent): '}
+                              {notaDeLaIa}
+                            </span>
+                          </p>
+                        )}
+                        {/* Lo que el borrador de la IA no sabía (nunca lo inventa). */}
+                        {messageText.includes(HUECO_DEL_BORRADOR) && (
+                          <p
+                            data-testid="borrador-con-huecos"
+                            className="mt-2 flex items-start gap-1.5 text-caption text-warning"
+                          >
+                            <Warning className="mt-px h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+                            <span>
+                              {locale === 'es'
+                                ? `Cambia ${HUECO_DEL_BORRADOR} por el dato real antes de mandarlo: la IA no lo inventa.`
+                                : `Replace ${HUECO_DEL_BORRADOR} with the real value before sending: the AI never makes it up.`}
+                            </span>
+                          </p>
+                        )}
                         {huecosVisibles.length > 0 && (
                           <p
                             data-testid="plantilla-con-huecos"
@@ -1437,6 +1565,9 @@ export function MessagesWidget({ actor, pantallaCompleta = false }: MessagesWidg
         onCerrar={() => setNuevoMensajeAbierto(false)}
         onHiloAbierto={alAbrirHiloNuevo}
       />
+      {enPanelDeInmobiliaria && (
+        <InquilinoDrawer persona={inquilinoAbierto} onCerrar={() => setInquilinoAbierto(null)} />
+      )}
       {enPanelDeInmobiliaria && (
         <NuevaPqrsDrawer
           open={radicarDesdeMensaje !== null}

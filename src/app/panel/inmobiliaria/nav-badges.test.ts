@@ -60,7 +60,9 @@ function nombresDeclaradosPorHooks(): Set<string> {
  * `filasDelSidebar(...)`, ver `sidebar-del-panel.ts`).
  */
 function identificadoresDeBadge(): string[] {
-  return [...src.matchAll(/\b(?:badge|contratos|postulaciones):\s*([A-Za-z_][A-Za-z0-9_]*)/g)].map((m) => m[1])
+  // Sin los comentarios: «pide `contratos:view`» en un comentario no es un badge (15-10-2026).
+  const sinComentarios = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+  return [...sinComentarios.matchAll(/\b(?:badge|contratos|postulaciones):\s*([A-Za-z_][A-Za-z0-9_]*)/g)].map((m) => m[1])
 }
 
 describe('badges del sidebar de inmobiliaria — regresión T-0049', () => {

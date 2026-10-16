@@ -204,6 +204,8 @@ export interface BackendContract {
   comisionSinDefinir?: boolean;
   /** T-0153 (A2): quién asume el 4x1000 del giro. `null` = rige la configuración de la inmobiliaria. */
   trasladaGmfAlPropietario?: boolean | null;
+  /** El 4x1000 que configuró la inmobiliaria (15-10-2026). Ausente con un back anterior. */
+  gmfDeLaInmobiliaria?: { porMil: number | null; trasladaAlPropietario: boolean } | null;
   /** CO-28: por qué el contrato no tiene tabla de cuotas, o `null`. */
   sinTablaDeCuotas?: string | null;
   /** NI-05 (QA-MIGRACION-95): qué traía el archivo de un migrado. */

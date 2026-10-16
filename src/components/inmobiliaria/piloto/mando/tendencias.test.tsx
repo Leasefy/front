@@ -71,7 +71,7 @@ describe('las tendencias en la pantalla elegida', () => {
     expect(horas).toContain('12\u00a0h medidas en llamadas · 72\u00a0h estimadas')
     expect(horas).toContain('estimada')
     expect(horas).toContain('Cómo se cuenta')
-    expect(horas).toContain('el tiempo real al teléfono de Laura')
+    expect(horas).toContain('el tiempo real al teléfono de Mori')
     // Dato 2: el ritmo, con la leyenda (varias series) y la parte que decidió el equipo.
     expect(texto).toContain('El ritmo de los agentes')
     expect(texto).toContain('Otros')

@@ -79,6 +79,7 @@ import {
   periodoLegible,
   pintaDelEstado,
   sinComprobantesDelSistemaAnterior,
+  sinPlataQueMostrar,
   type ColumnaDeImpuesto,
 } from './filas';
 import { AmortizacionDelContrato } from './ResumenDelEstado';
@@ -827,7 +828,14 @@ function Pago({ fila }: { fila: FilaDelEstadoDeCuenta }) {
           className="font-mono text-caption tabular-nums text-fg-muted"
           title={doc.descripcion || undefined}
         >
-          {doc.numero} · {doc.tipo}
+          {doc.numero}
+          {/* 14-10: con varios comprobantes en el período el valor es la SUMA; se dice. */}
+          {(fila.delSistemaAnterior?.comprobantes ?? 0) > 1
+            ? ` y ${(fila.delSistemaAnterior?.comprobantes ?? 0) - 1} más`
+            : ''}{' '}
+          · {doc.tipo}
+          {/* 14-10 (Nico): lo que dice el comprobante migrado del sistema anterior. */}
+          {typeof doc.valor === 'number' ? ` · ${formatCurrency(doc.valor)}` : ''}
         </p>
       )}
       {/* QA-MIGRACION-95 (CA-08): el recibo migrado sin el documento del inquilino dice cómo se asoció. */}
@@ -836,7 +844,9 @@ function Pago({ fila }: { fila: FilaDelEstadoDeCuenta }) {
           {t(
             doc.asociadoPor === 'numero_contrato'
               ? 'estadoDeCuenta.asociadoPorNumeroDeContrato'
-              : 'estadoDeCuenta.asociadoPorCodigoDelInmueble',
+              : doc.asociadoPor === 'nombre'
+                ? 'estadoDeCuenta.asociadoPorNombreDelInquilino'
+                : 'estadoDeCuenta.asociadoPorCodigoDelInmueble',
           )}
         </p>
       )}
@@ -900,7 +910,7 @@ function FilaDeLaTabla({
             key={c}
             className="whitespace-nowrap text-right align-top font-mono text-caption tabular-nums text-fg-muted"
           >
-            {formatCurrency(fila[c] ?? 0)}
+            {plataDeLaFila(fila, fila[c] ?? 0)}
           </TableCell>
         ))
       )}
@@ -914,9 +924,13 @@ function FilaDeLaTabla({
   );
 }
 
-/** CA-06: una parte sin definir no es «$ 0»: es «—» (la píldora dice por qué). */
+/**
+ * CA-06: una parte sin definir no es «$ 0»: es «—» (la píldora dice por qué).
+ * 14-10 (Nico): un mes del sistema anterior tampoco muestra un canon; lo que
+ * dice su comprobante va en «Pago».
+ */
 function plataDeLaFila(fila: FilaDelEstadoDeCuenta, valor: number): string {
-  return fila.sinPorcentaje ? '—' : formatCurrency(valor);
+  return sinPlataQueMostrar(fila) ? '—' : formatCurrency(valor);
 }
 
 /**
@@ -988,7 +1002,7 @@ function TarjetaDeFila({
         </Dato>
         {columnas.map((c) => (
           <Dato key={c} etiqueta={ETIQUETA_DE_COLUMNA[c]}>
-            <span className="font-mono tabular-nums">{formatCurrency(fila[c] ?? 0)}</span>
+            <span className="font-mono tabular-nums">{plataDeLaFila(fila, fila[c] ?? 0)}</span>
           </Dato>
         ))}
         <Dato etiqueta={t('estadoDeCuenta.colPago')}>

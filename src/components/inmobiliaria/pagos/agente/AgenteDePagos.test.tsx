@@ -1,10 +1,10 @@
 /**
- * AgenteDePagos — lo que se ve, en cada estado de las dos lecturas.
+ * AgenteDePagos — lo que se ve, en cada estado de la lectura del gobierno.
  *
  * El defecto que no puede volver: la Sala retirada del agente de Pagos
  * pintaba ocho indicadores en «—» porque las rutas del tablero no existían.
- * Esta pantalla no dibuja un número hasta que el micro lo publica, y mientras
- * tanto dice con palabras qué falta.
+ * 🔴 (14-10-2026) Tampoco hay un paso «Su tablero publicado» en «Falta»: esa
+ * ruta no existe en el micro y no es lo que el equipo necesita para trabajar.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -54,8 +54,6 @@ const item = (disponibleGlobal: boolean, corre: boolean): GobiernoItem => ({
 function lectura(parcial: Partial<AgenteDePagosLectura>): AgenteDePagosLectura {
   return {
     gobierno: { estado: 'listo', item: item(false, false) },
-    tablero: { estado: 'no-disponible' },
-    resumen: null,
     reintentar: vi.fn(async () => {}),
     ...parcial,
   }
@@ -84,7 +82,7 @@ afterEach(() => {
   contenedor.remove()
 })
 
-describe('AgenteDePagos — hoy: interruptor apagado y tablero sin publicar', () => {
+describe('AgenteDePagos — hoy: interruptor apagado', () => {
   it('dice que está apagado, con icono y palabra (no sólo color)', () => {
     render(lectura({}))
     const pildora = q('[data-testid="estado-del-equipo"]')
@@ -97,12 +95,13 @@ describe('AgenteDePagos — hoy: interruptor apagado y tablero sin publicar', ()
     render(lectura({}))
     expect(estadoDe('leasefy')).toBe('falta')
     expect(estadoDe('inmobiliaria')).toBe('espera')
-    expect(estadoDe('tablero')).toBe('falta')
   })
 
-  it('🔴 no dibuja ni un indicador en «—»: sin tablero publicado no hay tablero', () => {
+  it('🔴 (14-10) ni paso ni tablero del micro: no pide lo que no existe', () => {
     render(lectura({}))
+    expect(q('[data-testid="paso-tablero"]')).toBeNull()
     expect(q('[data-testid="tablero-del-equipo"]')).toBeNull()
+    expect(contenedor.textContent).not.toContain('tablero')
     // Ningún elemento cuyo texto entero sea una raya (el guion largo sí
     // aparece dentro de frases, como inciso).
     const rayas = [...contenedor.querySelectorAll('*')].filter((el) => (el.textContent ?? '').trim() === '—')
@@ -151,10 +150,10 @@ describe('AgenteDePagos — hoy: interruptor apagado y tablero sin publicar', ()
 describe('AgenteDePagos — cuando una lectura falla', () => {
   it('🔴 dice «sin verificar», nunca «apagado», y ofrece volver a consultar', () => {
     const reintentar = vi.fn(async () => {})
-    render(lectura({ gobierno: { estado: 'fallo' }, tablero: { estado: 'fallo', error: new Error('500') }, reintentar }))
+    render(lectura({ gobierno: { estado: 'fallo' }, reintentar }))
     expect(q('[data-testid="estado-del-equipo"]')?.getAttribute('data-estado')).toBe('sin-verificar')
     expect(estadoDe('leasefy')).toBe('sin-verificar')
-    expect(estadoDe('tablero')).toBe('sin-verificar')
+    expect(estadoDe('inmobiliaria')).toBe('sin-verificar')
     const boton = [...contenedor.querySelectorAll('button')].find((b) => b.textContent?.includes('Volver a consultar'))
     expect(boton).toBeTruthy()
     act(() => boton!.click())
@@ -162,31 +161,11 @@ describe('AgenteDePagos — cuando una lectura falla', () => {
   })
 })
 
-describe('AgenteDePagos — el día que el backend exista, se prende sola', () => {
-  it('con las dos llaves y el tablero publicado, muestra los números y los pendientes', () => {
-    render(
-      lectura({
-        gobierno: { estado: 'listo', item: item(true, true) },
-        tablero: { estado: 'listo' },
-        resumen: {
-          agente: 'pagos',
-          kpis: [
-            { id: 'cobros_enviados', label: 'Cobros enviados', value: 12, format: 'number' },
-            { id: 'valor_recaudado', label: 'Valor recaudado', value: 2500000, format: 'cop' },
-          ],
-          pipeline: [],
-          feed: [{ id: 'a1', titulo: 'Link vencido de Ana', detalle: 'Reenviar', actorType: 'system', occurredAt: '' }],
-          generatedAt: '2026-09-16T00:00:00.000Z',
-        },
-      }),
-    )
+describe('AgenteDePagos — con las llaves', () => {
+  it('con las dos llaves: encendido y los dos pasos listos', () => {
+    render(lectura({ gobierno: { estado: 'listo', item: item(true, true) } }))
     expect(q('[data-testid="estado-del-equipo"]')?.getAttribute('data-estado')).toBe('encendido')
-    expect(['leasefy', 'inmobiliaria', 'tablero'].map(estadoDe)).toEqual(['hecho', 'hecho', 'hecho'])
-    const tablero = q('[data-testid="tablero-del-equipo"]')
-    expect(tablero?.textContent).toContain('Cobros enviados')
-    expect(tablero?.textContent).toContain('12')
-    expect(tablero?.textContent).toContain('2.500.000')
-    expect(tablero?.textContent).toContain('Link vencido de Ana')
+    expect(['leasefy', 'inmobiliaria'].map(estadoDe)).toEqual(['hecho', 'hecho'])
   })
 
   it('encendido en el servidor pero no para la inmobiliaria: dice que falta encenderlo acá', () => {

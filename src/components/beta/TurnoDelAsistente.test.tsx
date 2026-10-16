@@ -102,7 +102,7 @@ describe('la delegación de una respuesta cerrada, en una línea', () => {
   it('dice a quién le pasó el trabajo y quién no pudo terminar', () => {
     pintar(<ResumenDelTurno turno={leerElTurno({ mensaje: respuesta() })} />);
     const linea = container.querySelector('[data-testid="resumen-del-turno"]')!;
-    expect(linea.textContent).toContain('Ori le pasó el trabajo a Laura y Cobri');
+    expect(linea.textContent).toContain('Ori le pasó el trabajo a Mori y Cobri');
     expect(linea.textContent).toContain('Cobri no pudo terminar');
   });
 

@@ -74,6 +74,7 @@ import type {
 } from "@/lib/types/inmobiliaria";
 import { RanuraDelPie, type ImportStepProps } from "../ImportWizard";
 import { FilaImportacionRow } from "../FilaImportacionRow";
+import { TipoDeLasFilasSinTipo } from "../TipoDeLasFilasSinTipo";
 import { LoteInmueblesMasivo } from "../LoteInmueblesMasivo";
 import { ProgresoDeLoteInmuebles } from "../ProgresoDeLoteInmuebles";
 import { useEstadoDeLoteInmuebles } from "@/lib/hooks/use-estado-de-lote-inmuebles";
@@ -84,6 +85,7 @@ import {
   type ResolverInmuebleDto,
   type ResumenLoteInmuebles,
   type EstadoDeLoteInmuebles,
+  type MotivosDelLoteInmuebles,
 } from "@/lib/api/inmuebles-importacion.service";
 
 /**
@@ -327,6 +329,11 @@ function StepConfirmImportCuerpo({
   );
   /* T-0129 — cuántas de las listas se crean con el canon por confirmar. */
   const [sinCanon, setSinCanon] = useState(0);
+  // Nico 14-10: lo que «Crear todas» crea AHORA (sólo las listas); `null` = back viejo.
+  const [alCrear, setAlCrear] = useState<{ sinCanon: number; sinPrecioDeVenta: number } | null>(null);
+  const sinCanonAlCrear = alCrear?.sinCanon ?? sinCanon;
+  // Nico 14-10: las filas sin tipo, agrupadas (un back anterior no lo manda).
+  const [sinTipo, setSinTipo] = useState<MotivosDelLoteInmuebles['sinTipo'] | null>(null);
   const [pendientes, setPendientes] = useState<FilaDeImportacion[]>([]);
   const [totalPendientes, setTotalPendientes] = useState(0);
   const [pagina, setPagina] = useState(1);
@@ -589,6 +596,8 @@ function StepConfirmImportCuerpo({
       ]);
       if (e) setEstadoManual(e);
       setSinCanon(m?.sinCanon ?? 0);
+      setAlCrear(m?.alCrear ?? null);
+      setSinTipo(m?.sinTipo ?? null);
       setResumenLote(r);
       setPendientes(p.filas);
       setTotalPendientes(p.total);
@@ -2062,12 +2071,21 @@ function StepConfirmImportCuerpo({
           </p>
         ) : null}
 
-        {sinCanon > 0 ? (
+        {/* Nico 14-10: se cuenta lo que se crea AHORA (las listas), no lo que sigue por revisar. */}
+        {sinCanonAlCrear > 0 ? (
           <p className="text-sm text-fg-muted" data-testid="listas-sin-canon">
-            {sinCanon === 1
+            {sinCanonAlCrear === 1
               ? "1 inmueble se crea con el canon por confirmar"
-              : `${sinCanon.toLocaleString("es-CO")} inmuebles se crean con el canon por confirmar`}
+              : `${sinCanonAlCrear.toLocaleString("es-CO")} inmuebles se crean con el canon por confirmar`}
             : no se usa para contratos, cobros ni facturas hasta que lo pongas a mano en el inmueble.
+          </p>
+        ) : null}
+        {alCrear && alCrear.sinPrecioDeVenta > 0 ? (
+          <p className="text-sm text-fg-muted" data-testid="listas-sin-precio-de-venta">
+            {alCrear.sinPrecioDeVenta === 1
+              ? "1 venta se crea con el precio por completar"
+              : `${alCrear.sinPrecioDeVenta.toLocaleString("es-CO")} ventas se crean con el precio por completar`}
+            : no se publica hasta que le pongas el precio de venta en el inmueble.
           </p>
         ) : null}
         {porRevisar > 0 ? (
@@ -2170,15 +2188,22 @@ function StepConfirmImportCuerpo({
             className="rounded-lg border border-border bg-surface-muted p-3 text-sm text-fg-muted"
             data-testid="aviso-canon-por-confirmar"
           >
-            {sinCanon === 1
-              ? "1 inmueble no trae canon: se crea con el canon por confirmar."
-              : `${sinCanon.toLocaleString("es-CO")} inmuebles no traen canon: se crean con el canon por confirmar.`}{" "}
+            {/* 🔴 QA Portofino (14-10): el conteo de las LISTAS para crear va aparte de
+                las que todavía están por revisar; antes las sumaba todas en «se crean». */}
+            {fraseDelCanonPorConfirmar(sinCanon, alCrear?.sinCanon ?? null)}{" "}
             No bloquea nada; el canon se completa después, en bloque o en cada inmueble.
           </p>
         ) : null}
 
         {/* Una carga vieja pudo dejar fallidas: se ven y se reintentan acá también. */}
         {panelDeFallidas}
+
+        <TipoDeLasFilasSinTipo
+          lote={lote}
+          sinTipo={sinTipo}
+          deshabilitado={revisando || descartandoLote || iniciandoCreacion}
+          onCambio={() => void refrescarRevision(lote, 1)}
+        />
 
         <LoteInmueblesMasivo
           lote={lote}
@@ -2589,4 +2614,32 @@ export function detalleDeReusados(
     )
   }
   return partes.length > 0 ? partes.join(' ') : null
+}
+
+/**
+ * «4 inmuebles listos para crear no traen canon…» y, aparte, los que todavía
+ * están por revisar. Sin el conteo de las listas (un back anterior), la frase
+ * de siempre con el total.
+ */
+export function fraseDelCanonPorConfirmar(total: number, listas: number | null): string {
+  const n = (x: number) => x.toLocaleString("es-CO");
+  if (listas === null) {
+    return total === 1
+      ? "1 inmueble no trae canon: se crea con el canon por confirmar."
+      : `${n(total)} inmuebles no traen canon: se crean con el canon por confirmar.`;
+  }
+  const porRevisar = Math.max(0, total - listas);
+  const deLasListas =
+    listas === 0
+      ? ""
+      : listas === 1
+        ? "1 inmueble listo para crear no trae canon: se crea con el canon por confirmar."
+        : `${n(listas)} inmuebles listos para crear no traen canon: se crean con el canon por confirmar.`;
+  const deLasPorRevisar =
+    porRevisar === 0
+      ? ""
+      : porRevisar === 1
+        ? `${listas > 0 ? "Otro" : "1 inmueble"} sin canon está entre los que faltan por revisar.`
+        : `${listas > 0 ? "Otros" : ""} ${n(porRevisar)} inmuebles sin canon están entre los que faltan por revisar.`.trim();
+  return [deLasListas, deLasPorRevisar].filter(Boolean).join(" ");
 }

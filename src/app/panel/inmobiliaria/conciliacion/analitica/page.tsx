@@ -1,52 +1,16 @@
-'use client'
+import { redirect } from 'next/navigation'
 
 /**
- * /ai/conciliacion/analitica — F10: per-agent Analítica (superficie 6).
+ * /panel/inmobiliaria/conciliacion/analitica — RETIRADA (QA de Portofino, 14-10-2026).
  *
- * Thin instantiation of <AnaliticaAgente> over
- * GET …/ai-hub/agentes/conciliacion/analitica (404 → graceful panel).
+ * Nico, sobre las analíticas que decían «no disponible»: «organízala». Esta
+ * pantalla pintaba el resumen y los hallazgos del back —exactamente los mismos
+ * que ya muestra el Resumen de Conciliación— y debajo un panel que pedía
+ * `ai-hub/agentes/conciliacion/analitica` al micro, ruta que no existe: en cada
+ * visita, un cartel de «no disponible». Lo real ya vive en el Resumen; lo que
+ * no existe no se muestra (mismo criterio que la Analítica de Matching). La
+ * ruta se conserva para que un enlace viejo no dé 404: manda al Resumen.
  */
-
-import { PageGuard } from '@/components/auth/PageGuard'
-import { ROLES_QUE_CONCILIAN } from '@/lib/nav/el-auxiliar-de-cartera-no-ve-los-bancos'
-import { useAgentAnalitica } from '@/lib/hooks/ai/use-agent-analitica'
-import { useConciliacionSummary } from '@/lib/hooks/conciliacion/use-conciliacion-summary'
-import { AnaliticaAgente } from '@/components/inmobiliaria/ai/AnaliticaAgente'
-import {
-  ConciliacionResumen,
-  HallazgosDelAgente,
-} from '@/components/inmobiliaria/ai/ConciliacionResumen'
-import { useI18n } from '@/lib/i18n'
-
-function ConciliacionAnalitica() {
-  const { t } = useI18n()
-  const { data, isLoading, error, notAvailable } = useAgentAnalitica('conciliacion')
-  // Resumen real del backend (taxonomía + totales + tasa). Fail-soft: null → no se muestra.
-  const { data: summary } = useConciliacionSummary()
-
-  return (
-    <div className="p-6 lg:p-8 space-y-6">
-      <header className="space-y-2">
-        <h1 className="text-h2 text-fg">{t('inmobiliaria.ai.workspace.pages.comun.analiticaTitle')}</h1>
-        <p className="text-body text-fg-muted max-w-2xl">
-          {t('inmobiliaria.ai.workspace.pages.conciliacion.analiticaDesc')}
-        </p>
-      </header>
-
-      {/* Resumen real del backend: totales + tasa, y el desglose por tipo de
-          excepción con su acción (fail-soft: null → no se pinta nada). */}
-      <ConciliacionResumen data={summary} />
-      <HallazgosDelAgente data={summary} colaHref="/panel/inmobiliaria/conciliacion/cola" />
-
-      <AnaliticaAgente data={data} isLoading={isLoading} error={error} notAvailable={notAvailable} />
-    </div>
-  )
-}
-
-export default function ConciliacionAnaliticaPage() {
-  return (
-    <PageGuard roles={[...ROLES_QUE_CONCILIAN]}>
-      <ConciliacionAnalitica />
-    </PageGuard>
-  )
+export default function ConciliacionAnaliticaRetiradaPage() {
+  redirect('/panel/inmobiliaria/conciliacion')
 }

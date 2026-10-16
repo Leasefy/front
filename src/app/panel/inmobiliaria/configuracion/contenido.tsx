@@ -23,6 +23,7 @@ import { SeccionEquipo } from './SeccionEquipo';
 import { SeccionFacturacion } from './SeccionFacturacion';
 import { SeccionIntegraciones } from './SeccionIntegraciones';
 import { SeccionMigracion } from './SeccionMigracion';
+import { SeccionConceptos } from './SeccionConceptos';
 import { SeccionMandato } from './SeccionMandato';
 import { SeccionCostosDeLaPlata } from './SeccionCostosDeLaPlata';
 import { DiferenciasConocidas } from './DiferenciasConocidas';
@@ -81,6 +82,8 @@ export function ContenidoDeSeccion({ id }: { id: SeccionId }) {
       return <SeccionSedes />;
     case 'mandato':
       return <SeccionMandato />;
+    case 'conceptos':
+      return <SeccionConceptos />;
     case 'migracion':
       return <SeccionMigracion />;
     case 'integraciones':

@@ -23,13 +23,15 @@
  * Follows the NEXT_PUBLIC_AGENT_URL + agentFetch + 404→notAvailable
  * pattern of `agent-workspace.ts`.
  *
- * ── 🔴 Quién lo usa hoy (2026-09-16) ───────────────────────────────────────
+ * ── 🔴 Quién lo usa hoy (2026-10-14): NADIE ─────────────────────────────────
  *
- * `fetchPagosHome` lo consume la pantalla «Agente de pagos» de «Agentes IA»
- * (`/pagos/agente`, vía `useAgenteDePagos`): muestra el tablero del equipo SÓLO
- * cuando esto devuelve datos, y mientras devuelva `notAvailable` dice con
- * palabras que el tablero todavía no está publicado. Así se prende sola el día
- * que el micro publique estas rutas, sin tocar el front.
+ * Lo consumía la pantalla «Agente de pagos» (`/pagos/agente`), que decía en
+ * cada visita «Su tablero publicado · Falta» y pedía estas rutas (404). QA de
+ * Portofino (Nico: «organízala»): las rutas nacieron en el micro (`520995a2`) y
+ * las borró por error `3ca090a6` («wip: full checkpoint»); además leen las
+ * facturas y liquidaciones PROPIAS del equipo de agentes, que sólo se llenan
+ * con el equipo encendido. La pantalla dejó de pedirlas. Si el equipo se
+ * enciende: restaurar `520995a2` en el micro y volver a enchufar esto.
  *
  * `pagos-home.service.ts`, `pagos-home.types.ts` y los widgets
  * `PagosHomeMetricsStrip` / `PagosHomeAttentionList` siguen sin consumidor. No

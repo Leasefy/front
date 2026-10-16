@@ -66,7 +66,8 @@ describe('<Navbar> — marketing nav for anonymous visitors', () => {
 })
 
 describe('<Navbar> — slimmed nav for authenticated users', () => {
-  it('shows only "Publicar Inmueble" for an inmobiliaria/agent (no marketing nav, no "Buscar")', () => {
+  // 🔴 Juan (Portofino, 15-10-2026): con la sesión iniciada, «Buscar Inmueble» no desaparece.
+  it('shows "Publicar Inmueble" AND "Buscar Inmueble" for an inmobiliaria/agent (no marketing nav)', () => {
     authState = {
       user: { role: 'agency', backendRole: 'AGENT', name: 'Test Agency', email: 'a@test.co' },
       isAuthenticated: true,
@@ -78,7 +79,7 @@ describe('<Navbar> — slimmed nav for authenticated users', () => {
 
     expect(text()).toContain('Publicar Inmueble')
     expect(text()).toContain('Test Agency')
-    expect(text()).not.toContain('Buscar Inmueble')
+    expect(text()).toContain('Buscar Inmueble')
     expect(text()).not.toContain('Precios')
     expect(text()).not.toContain('Para quién')
     expect(text()).not.toContain('Productos')

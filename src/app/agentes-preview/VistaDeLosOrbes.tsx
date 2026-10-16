@@ -48,7 +48,7 @@ const ESTADOS: Array<{ estado: EstadoDelOrbe; texto: string }> = [
   { estado: 'apagado', texto: 'Apagado' },
 ]
 
-/** La fila: el orquestador, quien habla (Laura) y tres más, uno apagado. */
+/** La fila: el orquestador, quien habla (Mori) y tres más, uno apagado. */
 const FILA: Array<{ id: IdDeAgente; habla?: boolean; apagado?: boolean }> = [
   { id: 'orquestador' },
   { id: 'cobranza', habla: true },
@@ -69,7 +69,7 @@ const FLOTA: PilotoFlotaResponse = {
   modo: 'copiloto',
   agentes: [
     { agente: 'chat', modo: 'copiloto', origen: 'default', corre: true, gobierna: true, actua: true, efectoReal: 'Cada acción te la deja lista en el chat con «¿Lo hago?».' },
-    { agente: 'cobranza', modo: 'autonomo', origen: 'piloto', corre: true, gobierna: true, actua: true, efectoReal: 'Laura llama y escribe sola.' },
+    { agente: 'cobranza', modo: 'autonomo', origen: 'piloto', corre: true, gobierna: true, actua: true, efectoReal: 'Mori llama y escribe sola.' },
     { agente: 'pagos', modo: 'copiloto', origen: 'default', corre: true, gobierna: true, actua: true },
     { agente: 'retencion', modo: 'copiloto', origen: 'default', corre: false, porQueNoCorre: 'Apagado en el servidor: lo enciende el equipo técnico.' },
     { agente: 'conciliacion', modo: 'copiloto', origen: 'default', corre: true, gobierna: true, actua: false },
@@ -139,7 +139,7 @@ function Vista() {
         <p className="max-w-[72ch] text-body text-fg-muted">
           Tres looks del mismo motor: un fluido que emite luz, con un solo contexto WebGL para todos los orbes de la página.
           La predeterminada es <b className="font-medium text-fg">{AGENT_ORB_LOOKS[AGENT_ORB_DEFAULT_LOOK].nombre}</b>. Los
-          botones pasan a quien habla (Ori en el chat, Laura en la lista) por cada estado.
+          botones pasan a quien habla (Ori en el chat, Mori en la lista) por cada estado.
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <Segmentado
@@ -342,7 +342,7 @@ function TarjetaDelLook({
         </div>
       </Bloque>
 
-      <Bloque titulo="Los seis estados · Laura, 44 px">
+      <Bloque titulo="Los seis estados · Mori, 44 px">
         <div className="grid grid-cols-6 gap-2">
           {ESTADOS.map((e) => (
             <figure key={e.estado} className="flex flex-col items-center gap-2.5">

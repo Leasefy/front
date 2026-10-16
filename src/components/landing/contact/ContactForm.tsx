@@ -51,16 +51,6 @@ export function ContactForm() {
               <span className="landing-cp__channel-k">Email</span>
               <span className="landing-cp__channel-v">{CONTACT_EMAIL}</span>
             </a>
-            <a
-              className="landing-cp__channel"
-              href="https://wa.me/573000000000"
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid="contact-channel-whatsapp"
-            >
-              <span className="landing-cp__channel-k">WhatsApp</span>
-              <span className="landing-cp__channel-v">+57 300 000 0000</span>
-            </a>
             <div className="landing-cp__channel" data-testid="contact-channel-base">
               <span className="landing-cp__channel-k">Base</span>
               <span className="landing-cp__channel-v">Medellín, Colombia</span>

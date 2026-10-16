@@ -30,6 +30,9 @@
 
 import { useEffect, useState } from 'react'
 
+import { Stagger, StaggerItem } from '@leasefy/cadence'
+
+import { PropertyCard } from '@/components/property/PropertyCard'
 import { propertiesApi } from '@/lib/api/properties.service'
 import type { Property } from '@/lib/types/property'
 
@@ -43,44 +46,6 @@ const CUANTAS = 6
  * cuanto una estuviera ocupada.
  */
 const CUANTAS_PEDIDAS = 18
-
-function precio(cop: number): string {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: 'COP',
-    maximumFractionDigits: 0,
-  }).format(cop)
-}
-
-/**
- * T-0038: `GET /properties` mixes RENT and SALE listings (contract.md
- * §3.7 — no server-side default). A SALE listing's `monthlyRent` is `null`
- * — never format it as currency (`precio(null)` would need a coalesce, and
- * a coalesced `0` reads as a free property, C6). Render "Sin dato" instead
- * of guessing.
- */
-function precioTarjeta(p: Property): string {
-  if (p.listingType === 'sale') {
-    return p.salePrice != null ? precio(p.salePrice) : 'Sin dato'
-  }
-  return p.monthlyRent != null ? precio(p.monthlyRent) : 'Sin dato'
-}
-
-/** «2 hab · 2 baños · 72 m²», saltando lo que no venga. */
-function ficha(p: Property): string {
-  const partes: string[] = []
-  // `null` es «no lo sabemos» y `0` es cero: los dos se saltan igual acá,
-  // porque «0 hab» en una tarjeta del catálogo no le dice nada a nadie.
-  if ((p.bedrooms ?? 0) > 0) partes.push(`${p.bedrooms} hab`)
-  if ((p.bathrooms ?? 0) > 0)
-    partes.push(`${p.bathrooms} ${p.bathrooms === 1 ? 'baño' : 'baños'}`)
-  if ((p.area ?? 0) > 0) partes.push(`${p.area} m²`)
-  return partes.join(' · ')
-}
-
-function donde(p: Property): string {
-  return [p.neighborhood, p.city].filter(Boolean).join(', ')
-}
 
 export function MarketplaceSection() {
   const [inmuebles, setInmuebles] = useState<Property[] | null>(null)
@@ -136,29 +101,15 @@ export function MarketplaceSection() {
             ))}
           </ul>
         ) : (
-          <ul className="mkt-grid">
+          // Las MISMAS tarjetas del marketplace (Nico, 12-10-2026: «que las cards
+          // sean como las del marketplace, mira que son súper diferentes»).
+          <Stagger className="mkt-grid lv2-app">
             {inmuebles.map((p) => (
-              <li key={p.id} className="mkt-card">
-                <a href={`/propiedades/${p.id}`}>
-                  <span className="mkt-ph">
-                    {p.images[0] ? (
-                      // Imagen del backend: dominios variables, así que <img>
-                      // normal en vez de next/image (que exige allowlist).
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.images[0]} alt="" loading="lazy" />
-                    ) : (
-                      <span className="mkt-noimg" aria-hidden="true" />
-                    )}
-                  </span>
-                  <span className="mkt-body">
-                    <b className="mkt-precio">{precioTarjeta(p)}</b>
-                    <span className="mkt-donde">{donde(p)}</span>
-                    <span className="mkt-ficha">{ficha(p)}</span>
-                  </span>
-                </a>
-              </li>
+              <StaggerItem key={p.id}>
+                <PropertyCard property={p} />
+              </StaggerItem>
             ))}
-          </ul>
+          </Stagger>
         )}
 
         <div className="mkt-cta">

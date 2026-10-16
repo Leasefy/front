@@ -24,6 +24,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { SealCheck } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
+import { DocumentosTributarios } from '@/components/landlord/portal/DocumentosTributarios';
 import { SectionLabel } from '@/components/ui/section-label';
 import { tesoreriaApi } from '@/lib/api/tesoreria.service';
 import type { MisCertificados } from '@/lib/api/tesoreria.types';
@@ -33,8 +34,6 @@ import { formatCurrency } from '@/lib/types/inmobiliaria';
  * FA-E-14 (QA-FACT-CONTA-95 r2): la certificación del mandatario y las facturas
  * de la comisión no están en el portal; la inmobiliaria las descarga en PDF.
  */
-const LO_QUE_EL_PORTAL_NO_MUESTRA =
-  'La certificación del mandatario (lo que tu inmobiliaria les facturó a tus inquilinos por tu cuenta, para tu declaración) y las facturas de la comisión de administración todavía no se ven en este portal: pídeselas a tu inmobiliaria, que las descarga en PDF.';
 
 export default function MisCertificadosPage() {
   const [datos, setDatos] = useState<MisCertificados | null>(null);
@@ -61,21 +60,17 @@ export default function MisCertificadosPage() {
     <div className="space-y-6 p-6 lg:p-8">
       <header className="space-y-1.5">
         <SectionLabel>Impuestos</SectionLabel>
-        <h1 className="text-h2 text-fg">Mis certificados de retención</h1>
+        <h1 className="text-h2 text-fg">Certificados y facturas</h1>
         <p className="max-w-2xl text-sm text-fg-muted">
           Lo que los inquilinos te retuvieron en el año, para tu declaración. La cuota quedó
           saldada con el canon completo y lo retenido se te descontó en tu liquidación: es tu
           impuesto, y esto es el papel con el que lo acreditas.
         </p>
-        {/* FA-E-14 (QA-FACT-CONTA-95 r2): lo que este portal TODAVÍA no muestra,
-            dicho de frente, y quién lo tiene. */}
-        <p
-          className="max-w-2xl rounded-md border border-border bg-surface-muted p-3 text-caption text-fg-muted"
-          data-testid="portal-sin-certificacion-ni-facturas"
-        >
-          {LO_QUE_EL_PORTAL_NO_MUESTRA}
-        </p>
       </header>
+
+      {/* Nico, 11-10-2026: la certificación del mandatario y las facturas de la
+          comisión se bajan aquí (antes: «pídeselas a tu inmobiliaria»). */}
+      <DocumentosTributarios />
 
       <EstadoDeDatos
         cargando={cargando}

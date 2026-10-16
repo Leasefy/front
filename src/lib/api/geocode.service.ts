@@ -36,6 +36,21 @@ interface ReverseResponseBody {
 }
 
 export const geocodeApi = {
+  /**
+   * Ubicar una dirección YA escrita (QA de Portofino, 14-10): `/v1/search`, con
+   * la vía y el número de cada resultado. Para sugerir mientras se teclea sigue
+   * `autocomplete`.
+   */
+  async buscar(query: string, signal?: AbortSignal): Promise<GeocodeSuggestion[]> {
+    const res = await fetchConSesion(`/api/geocode/buscar?q=${encodeURIComponent(query)}`, { signal });
+    if (!res.ok) {
+      const body: AutocompleteResponseBody = await res.json().catch(() => ({}));
+      throw new GeocodeApiError(res.status, body.error || `Geocode request failed: ${res.status}`);
+    }
+    const body: AutocompleteResponseBody = await res.json();
+    return body.results ?? [];
+  },
+
   /** Autocomplete a partial Colombian address via the internal proxy. */
   async autocomplete(query: string, signal?: AbortSignal): Promise<GeocodeSuggestion[]> {
     const res = await fetchConSesion(`/api/geocode/autocomplete?q=${encodeURIComponent(query)}`, { signal });

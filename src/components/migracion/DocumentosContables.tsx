@@ -169,9 +169,12 @@ function loteDelArchivo(archivo: File): string {
 
 export function DocumentosContables({
   onOcupado,
+  archivoInicial = null,
 }: {
   /** Aviso al muro mientras se lee o se escribe: el pie espera. */
   onOcupado?: (ocupado: boolean, cancelar?: () => void) => void;
+  /** 8.ª tanda (14-10): el archivo que «Sube tu archivo contable» trajo hasta acá. */
+  archivoInicial?: File | null;
 } = {}) {
   const [fase, setFase] = useState<Fase>("elegir");
   const [nombreDeArchivo, setNombreDeArchivo] = useState("");
@@ -362,6 +365,14 @@ export function DocumentosContables({
     maxFiles: 1,
     multiple: false,
   });
+
+  // El archivo que llegó de «Sube tu archivo contable»: se lee UNA vez.
+  const archivoYaLeido = useRef<File | null>(null);
+  useEffect(() => {
+    if (!archivoInicial || archivoYaLeido.current === archivoInicial) return;
+    archivoYaLeido.current = archivoInicial;
+    onDrop([archivoInicial]);
+  }, [archivoInicial, onDrop]);
 
   /** Suelta el archivo y TODO lo que salió de él: lo que corre «Descartar». */
   const soltarArchivo = useCallback(() => {

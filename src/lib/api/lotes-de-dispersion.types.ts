@@ -440,6 +440,12 @@ export interface CandidatoDeDispersion {
    * back anterior no lo manda.
    */
   tipoDeExclusion?: TipoDeExclusion | null;
+  /**
+   * 🔴 El 4x1000 que se le descuenta al propietario en este giro (Juan,
+   * 15-10-2026). `0` = no se le descuenta. Ya está restado del neto. Ausente con
+   * un back anterior: no se dice nada.
+   */
+  gmfCop?: number;
 }
 
 /** Espejo de `lotes/tipo-de-exclusion.ts` del back. */
@@ -460,6 +466,11 @@ export interface CandidatosDeDispersion {
   cantidad: number;
   /** PG-05: cuántas hay de cada exclusión. Opcional: un back anterior no lo manda. */
   exclusiones?: Record<TipoDeExclusion, number>;
+  /**
+   * 🔴 El 4x1000 de la inmobiliaria (15-10-2026). `porMil: null` = no lo tiene
+   * configurado: no se le descuenta a nadie. Ausente con un back anterior.
+   */
+  gmf?: { porMil: number | null; trasladaAlPropietario: boolean };
 }
 
 /** Con qué se arma el lote: a quiénes, en qué orden y hasta qué monto. */

@@ -52,7 +52,7 @@ import { OrbeDeAgente } from '@/components/agentes/OrbeDeAgente';
  *
  * ── El equipo (02-10, commit `27a3b2b8`) ────────────────────────────────────
  * Con la lectura del turno (`leerElTurno`), el paso de un especialista es una
- * DELEGACIÓN: su orbe en lugar del glifo, «Ori → Laura», la tarea mientras
+ * DELEGACIÓN: su orbe en lugar del glifo, «Ori → Mori», la tarea mientras
  * trabaja (o su resumen al terminar) y «Lo que hizo · N» con sus herramientas
  * colgadas de él. Las herramientas ya no van sueltas en la lista.
  */
@@ -265,7 +265,7 @@ const ESTADO_DEL_PASO = {
  * Una DELEGACIÓN en la lista de pasos (02-10): el orquestador le pasó el
  * trabajo a un especialista. Ocupa el lugar del paso `agente`, con el mismo
  * riel y el mismo ritmo que las demás filas, para que el turno se lea como UNA
- * historia: entendió → revisó la cartera → «Ori → Laura» → escribió.
+ * historia: entendió → revisó la cartera → «Ori → Mori» → escribió.
  */
 function FilaDeDelegacion({
   step,

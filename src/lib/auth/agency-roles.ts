@@ -48,3 +48,22 @@ export function isAgencyManager(params: { isAdmin: boolean; agencyRole: string |
 export function isAgencyMember(params: { isAdmin: boolean; agencyRole: string | null }): boolean {
   return params.isAdmin || params.agencyRole !== null;
 }
+
+/**
+ * 🔴 QUIÉN USA MENSAJES (Nico, 14-10-2026, auditoría de roles): los hilos con
+ * inquilinos y propietarios y el interruptor de WhatsApp de su ficha. Espejo de
+ * `back/src/chat/quien-usa-los-mensajes.ts`: el back responde 403
+ * `SIN_ACCESO_A_MENSAJES` a los demás roles.
+ */
+export const ROLES_QUE_USAN_LOS_MENSAJES: readonly string[] = [
+  AGENCY_ROLES.ADMIN,
+  AGENCY_ROLES.AGENTE,
+  AGENCY_ROLES.COORDINADOR,
+];
+
+export function usaLosMensajes(params: { isAdmin: boolean; agencyRole: string | null }): boolean {
+  return params.isAdmin || (params.agencyRole !== null && ROLES_QUE_USAN_LOS_MENSAJES.includes(params.agencyRole));
+}
+
+export const MOTIVO_SIN_ACCESO_A_MENSAJES =
+  'Los mensajes con inquilinos y propietarios los manejan el administrador, el asesor y el coordinador de la inmobiliaria. Si los necesitas, pídeselos a un administrador.';

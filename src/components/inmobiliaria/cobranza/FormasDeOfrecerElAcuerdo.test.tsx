@@ -1,6 +1,6 @@
 /**
  * FormasDeOfrecerElAcuerdo — el interruptor con que la inmobiliaria sale (o
- * vuelve) del A/B de cómo Laura ofrece el acuerdo (07-10-2026, Nico: «la que
+ * vuelve) del A/B de cómo Mori ofrece el acuerdo (07-10-2026, Nico: «la que
  * no quiera lo apaga»). createRoot + act, como el resto del repo.
  */
 
@@ -105,7 +105,7 @@ describe('<FormasDeOfrecerElAcuerdo>', () => {
     expect($('formas-apagado')?.textContent).toContain('como hoy')
     await clic($('guardar-experimentos'))
     expect(estado.guardar).toHaveBeenCalledWith({ experimentosPrendidos: false })
-    expect(avisos.exito).toHaveBeenCalledWith('Listo: Laura le ofrece el acuerdo a todos tus deudores como hoy.')
+    expect(avisos.exito).toHaveBeenCalledWith('Listo: Mori le ofrece el acuerdo a todos tus deudores como hoy.')
   })
 
   it('apagado se vuelve a prender', async () => {
@@ -116,7 +116,7 @@ describe('<FormasDeOfrecerElAcuerdo>', () => {
     await clic(interruptor())
     await clic($('guardar-experimentos'))
     expect(estado.guardar).toHaveBeenCalledWith({ experimentosPrendidos: true })
-    expect(avisos.exito).toHaveBeenCalledWith('Listo: Laura entra a las pruebas de cómo ofrecer el acuerdo.')
+    expect(avisos.exito).toHaveBeenCalledWith('Listo: Mori entra a las pruebas de cómo ofrecer el acuerdo.')
   })
 
   it('un error del micro se dice junto al interruptor', async () => {

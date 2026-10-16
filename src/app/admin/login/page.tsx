@@ -126,7 +126,7 @@ function LoginForm({ error, nextPath }: { error?: string; nextPath?: string }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="input"
-          placeholder="tú@leasefy.com"
+          placeholder="tú@leasefy.co"
         />
       </label>
       {(error || localErr) && (

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { datosDeLosCampos } from './CamposEnElChat';
+import { datosDeLosCampos, soloNumero } from './CamposEnElChat';
 import type { CampoDelFormulario } from '@/lib/chat/acciones-del-hilo';
 
 const meses: CampoDelFormulario = {
@@ -30,5 +30,25 @@ describe('datosDeLosCampos', () => {
 
   it('lo vacío no viaja', () => {
     expect(datosDeLosCampos([meses], { meses: '  ' })).toEqual({});
+  });
+});
+
+// Nico (16-10): «obliga al input solo a numérico y ya».
+describe('soloNumero', () => {
+  it('las letras no se dejan escribir', () => {
+    expect(soloNumero('doce')).toBe('');
+    expect(soloNumero('12 meses')).toBe('12');
+    expect(soloNumero('a-3')).toBe('3');
+  });
+
+  it('el menos sólo al principio (el incremento puede ser una rebaja)', () => {
+    expect(soloNumero('-3,5')).toBe('-3,5');
+    expect(soloNumero('3-5')).toBe('35');
+  });
+
+  it('cifras y un solo separador decimal', () => {
+    expect(soloNumero('12')).toBe('12');
+    expect(soloNumero('1,5')).toBe('1,5');
+    expect(soloNumero('1.2.3')).toBe('1.23');
   });
 });

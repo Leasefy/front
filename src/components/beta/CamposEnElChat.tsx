@@ -17,6 +17,18 @@ import { CampoDeDia } from '@/components/contabilidad/CampoDeDia';
  * mismo aspecto, una sola forma de llenarlos.
  */
 
+/**
+ * Un dato numérico sólo admite cifras, UN separador decimal y el signo menos al
+ * principio (el incremento puede ser una rebaja) (Nico, 16-10: «obliga al input
+ * solo a numérico y ya»): «doce» no se deja escribir.
+ */
+export function soloNumero(v: string): string {
+  const signo = v.trimStart().startsWith('-') ? '-' : '';
+  const limpio = v.replace(/[^\d.,]/g, '');
+  const i = limpio.search(/[.,]/);
+  return signo + (i < 0 ? limpio : limpio.slice(0, i + 1) + limpio.slice(i + 1).replace(/[.,]/g, ''));
+}
+
 /** Lo que se muestra al abrir: lo que ya dijo la persona; un mes nunca queda vacío. */
 export function valoresIniciales(campos: readonly CampoDelFormulario[]): Record<string, string> {
   return Object.fromEntries(campos.map((c) => [c.clave, c.valor ?? (c.tipo === 'mes' ? mesActual() : '')]));
@@ -111,7 +123,7 @@ export function CamposEnElChat({
                 disabled={deshabilitados}
                 inputMode={c.tipo === 'numero' ? 'decimal' : undefined}
                 value={valores[c.clave] ?? ''}
-                onChange={(e) => onCambiar(c.clave, e.target.value)}
+                onChange={(e) => onCambiar(c.clave, c.tipo === 'numero' ? soloNumero(e.target.value) : e.target.value)}
               />
             )}
             {c.ayuda && <p className="font-body text-[13px] text-fg-muted">{c.ayuda}</p>}

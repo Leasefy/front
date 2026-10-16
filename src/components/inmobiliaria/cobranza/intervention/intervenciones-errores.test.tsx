@@ -52,7 +52,7 @@ vi.mock('@/components/ui/dialog', () => {
   }
 })
 
-import { PauseModal } from './PauseModal'
+import { PauseModal, diaLocal, errorDeLaFechaDePausa } from './PauseModal'
 import { ManualCallModal } from './ManualCallModal'
 
 function json(status: number, cuerpo: unknown): Response {
@@ -158,6 +158,31 @@ describe('Pausar la cobranza', () => {
     expect(contenedor.querySelector('[data-testid="intervencion-error"]')?.textContent).toMatch(
       /conexi[oó]n/i,
     )
+  })
+})
+
+// QA-AGENTES 16-10 (lab): «Pausar hasta el 10 de octubre» pedido el 16 se
+// guardaba, quedaba en la bitácora y no pausaba nada; y pausar no decía nada.
+describe('Pausar: la fecha y el aviso', () => {
+  const HOY = new Date(2026, 9, 16, 21, 30) // 9:30 p. m.: en UTC ya es el 17
+
+  it('el día es el LOCAL (no el de UTC) y la pausa termina, como pronto, mañana', () => {
+    expect(diaLocal(0, HOY)).toBe('2026-10-16')
+    expect(diaLocal(7, HOY)).toBe('2026-10-23')
+    expect(errorDeLaFechaDePausa('2026-10-10', HOY)).toMatch(/después de hoy/)
+    expect(errorDeLaFechaDePausa('2026-10-16', HOY)).toMatch(/después de hoy/)
+    expect(errorDeLaFechaDePausa('2026-10-17', HOY)).toBeNull()
+  })
+
+  it('al pausar, avisa hasta cuándo', async () => {
+    toastMock.success.mockClear()
+    agentFetchMock.mockResolvedValue(json(200, { ok: true }))
+    const motivo = await montarPausa()
+    await escribir(motivo, 'El deudor pidió una semana para pagar.')
+    await confirmarPausa()
+    const cuerpo = JSON.parse(String((agentFetchMock.mock.calls[0]?.[1] as RequestInit).body)) as { paused_until: string }
+    expect(new Date(cuerpo.paused_until).getTime()).toBeGreaterThan(Date.now())
+    expect(toastMock.success).toHaveBeenCalledWith(expect.stringMatching(/^Cobranza pausada hasta el \d{1,2} de [a-z]+ de \d{4}\.$/))
   })
 })
 

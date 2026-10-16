@@ -9,7 +9,15 @@
  * operador tenía que escribir a mano hasta el nombre de su propia
  * inmobiliaria. No fallaba nada — simplemente no rellenaba nunca.
  *
- * ── Por qué NO se rellena la plata ni las fechas ──────────────────────────
+ * ── La plata y las fechas: sólo las de UNA cuota (QA-AGENTES 16-10) ────────
+ *
+ * 🔴 Desde el 16-10 el detalle del micro trae `deudaMasVieja` (mes,
+ * vencimiento y saldo de la cuota abierta más vieja, la que nombra el
+ * recordatorio) y `prefillDeLaCuotaVencida` los pone —sólo en la plantilla
+ * que habla de un mes vencido (`overdue_month`)—. Lo de abajo sigue valiendo:
+ * nunca el acumulado del caso ni los días de la etapa.
+ *
+ * ── Por qué NO se rellenaba la plata ni las fechas ────────────────────────
  *
  * Se rellena sólo lo que el panel sabe con certeza: el nombre del deudor y el
  * de la inmobiliaria. El monto, el mes vencido y la fecha de vencimiento NO,
@@ -62,5 +70,42 @@ export function construirPrefillWA({
     prefill.nombre_inmobiliaria = agencia
   }
 
+  return prefill
+}
+
+/** La cuota abierta más vieja del deudor (`deudaMasVieja` del detalle del micro). */
+export interface CuotaMasVieja {
+  /** '2026-08' (puede faltar). */
+  periodo: string | null
+  /** 'AAAA-MM-DD'. */
+  vence: string
+  /** Lo que falta por pagar de ESA cuota. */
+  saldoCop: number
+}
+
+const MESES = [
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+  'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+] as const
+
+/**
+ * Mes, vencimiento y monto de la cuota más vieja, como los pide la plantilla
+ * del recordatorio («del mes de agosto venció el 1 de agosto por valor de COP
+ * 1.400.000»). Lo que no se puede leer no se pone (el campo queda para escribir).
+ */
+export function prefillDeLaCuotaVencida(c: CuotaMasVieja | null | undefined): Record<string, string> {
+  if (!c) return {}
+  const prefill: Record<string, string> = {}
+  const vence = /^(\d{4})-(\d{2})-(\d{2})$/.exec(c.vence ?? '')
+  const periodo = /^(\d{4})-(\d{2})$/.exec(c.periodo ?? '')
+  const mes = Number(periodo?.[2] ?? vence?.[2])
+  if (mes >= 1 && mes <= 12) prefill.overdue_month = MESES[mes - 1]!
+  if (vence) {
+    const m = Number(vence[2])
+    if (m >= 1 && m <= 12) prefill.due_date = `${Number(vence[3])} de ${MESES[m - 1]}`
+  }
+  if (Number.isFinite(c.saldoCop) && c.saldoCop > 0) {
+    prefill.amount_cop = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 2 }).format(c.saldoCop)
+  }
   return prefill
 }

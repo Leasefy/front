@@ -70,6 +70,12 @@ const CARTA_ESTADO: Record<string, string> = {
   void: 'Anulada',
 }
 
+const PROVEEDOR_DE_PAGO: Record<string, string> = {
+  wompi: 'pago en línea por Wompi',
+  bold: 'pago en línea por Bold',
+  stub: 'pago en línea simulado (entorno de prueba)',
+}
+
 const CARTA_TIPO: Record<string, string> = {
   pre_judicial_letter: 'Carta prejurídica',
   pre_bureau_notification: 'Notificación a centrales de riesgo',
@@ -304,7 +310,8 @@ export function CompromisosTab({ debtorId }: CompromisosTabProps) {
                 </div>
                 <p className="text-xs text-fg-muted mt-0.5">
                   Ofrecido el {fecha(p.offered_at, locale)}
-                  {p.payment_provider ? ` · ${p.payment_provider}` : ''}
+                  {/* QA-AGENTES 16-10: salía el slug crudo («· stub»). */}
+                  {p.payment_provider ? ` · ${PROVEEDOR_DE_PAGO[p.payment_provider] ?? p.payment_provider}` : ''}
                 </p>
               </StaggerItem>
             ))}

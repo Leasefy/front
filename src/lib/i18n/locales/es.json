@@ -7267,7 +7267,7 @@
             "paused": "En pausa"
           },
           "tabs": {
-            "timeline": "Timeline",
+            "timeline": "Historial",
             "llamadas": "Llamadas",
             "memos": "Memos",
             "compromisos": "Compromisos",
@@ -7281,13 +7281,13 @@
             "nextAction": "Próxima acción",
             "noNextAction": "Sin acción programada",
             "contactAttempts": "Intentos de contacto hechos",
-            "paused": "En pausa hasta {{date}}",
+            "paused": "En pausa hasta el {{date}}",
             "openSidebar": "Ver detalles",
             "closeSidebar": "Cerrar"
           },
           "timeline": {
-            "loading": "Cargando timeline…",
-            "error": "Error cargando timeline",
+            "loading": "Cargando el historial…",
+            "error": "No pudimos cargar el historial",
             "errorRetry": "Reintentar",
             "empty": "Sin eventos registrados",
             "eventStageTransition": "Cambio de etapa",
@@ -7360,7 +7360,7 @@
               "accessDenied": "Acceso denegado",
               "currentLabel": "Etapa actual",
               "effectLabel": "Qué pasa si confirmas",
-              "effectNote": "Los días se cuentan desde el primer vencimiento impago. Este es el calendario por defecto; si tu inmobiliaria configuró el suyo, manda ese.",
+              "effectNote": "Los días se cuentan desde el primer día de mora, cuando se acaba el plazo de pago. Este es el calendario por defecto; si tu inmobiliaria configuró el suyo, manda ese.",
               "reasonTooShort": "Escribe al menos 10 caracteres.",
               "targetPlaceholder": "Elige la etapa…",
               "targetMissing": "Elige a qué etapa la quieres mover."
@@ -7604,7 +7604,7 @@
           },
           "comparisonHeader": {
             "campo": "Campo",
-            "propuesto": "Propuesto por IA",
+            "propuesto": "Propuesto",
             "limite": "Límite agencia"
           },
           "comparison": {

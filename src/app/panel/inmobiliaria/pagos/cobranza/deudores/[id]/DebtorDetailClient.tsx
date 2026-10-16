@@ -186,6 +186,9 @@ function DebtorDetailInner({ debtorId }: DebtorDetailClientProps) {
 
   const onIntervention = useCallback(() => {
     void refetch()
+    // QA-AGENTES 16-10: forzar la etapa con la línea de tiempo abierta no la
+    // refrescaba (sólo el tiempo real, que no siempre llega).
+    setTimelineRefetchKey((n) => n + 1)
   }, [refetch])
 
   // Write back ?tab=… on tab change (shallow).

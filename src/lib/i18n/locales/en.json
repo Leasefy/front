@@ -10410,6 +10410,11 @@
             "system": "System",
             "staff": "Team",
             "third_party": "Third party"
+          },
+          "porQue": {
+            "titulo": "Why Naira proposes this",
+            "investigada": "Naira explained it when it investigated the signal behind this proposal.",
+            "regla": "The signal has no investigated explanation: Naira proposes this because of the rule that detected it."
           }
         },
         "preguntar": {

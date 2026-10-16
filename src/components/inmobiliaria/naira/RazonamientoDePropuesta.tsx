@@ -5,7 +5,8 @@
  * §7.6, §11.1).
  *
  * Cerrado al montar y nunca auto-abierto: la consecuencia va primero y el razonamiento se ve solo si la persona lo pide
- * (ACT-05). Abierto, cada hecho es una fila DATO (D13-9) con su valor CRUDO, su corte pegado y el enlace al listado de su
+ * (ACT-05). Abierto, primero el porqué con las palabras de Naira (#33, `PorQueDeLaPropuesta`; solo con `signal-view`).
+ * Después, cada hecho es una fila DATO (D13-9) con su valor CRUDO, su corte pegado y el enlace al listado de su
  * fuente (P8: la representación por unidad no está fijada, así que formatearla podría mentir; la tabla cruda sale SOLO en
  * la referencia técnica del popover). Después, la señal que la originó y la investigación, con los enlaces que la página
  * arma (D13-1). Un valor que no se puede leer lo dice, nunca pinta `0`.
@@ -27,6 +28,7 @@ import { cn } from '@/lib/utils'
 
 import { BloqueDeCategoria } from './BloqueDeCategoria'
 import { CifraDeNaira } from './CifraDeNaira'
+import { PorQueDeLaPropuesta } from './PorQueDeLaPropuesta'
 
 export interface RazonamientoDePropuestaProps {
   readonly razonamiento: NairaActionDetail['razonamiento']
@@ -61,6 +63,7 @@ export function RazonamientoDePropuesta({
         data-naira-razonamiento=""
         className="space-y-4"
       >
+        {hrefDeLaSenal !== null ? <PorQueDeLaPropuesta promocionId={razonamiento.senal.promocionId} /> : null}
         <BloqueDeCategoria origen={{ kind: 'seccion', seccion: 'LIVE_DATA' }}>
           <p className="text-sm font-medium text-fg">{t('inmobiliaria.ai.naira.propuesta.razonamiento.hechos')}</p>
           <ul className="space-y-3">

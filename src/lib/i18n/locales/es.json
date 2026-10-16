@@ -10446,6 +10446,11 @@
             "system": "Sistema",
             "staff": "Equipo",
             "third_party": "Tercero"
+          },
+          "porQue": {
+            "titulo": "Por qué lo propone Naira",
+            "investigada": "Lo explicó Naira al investigar la señal que originó esta propuesta.",
+            "regla": "La señal no tiene una explicación investigada: Naira lo propone por la regla que la detectó."
           }
         },
         "preguntar": {

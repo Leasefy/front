@@ -29,6 +29,14 @@ vi.mock('@/lib/auth', () => ({ useAuth: () => ({ agency: { id: 'AGY-1' } }) }))
 vi.mock('@/lib/context/PermissionsContext', () => ({
   usePermissionsContext: () => ({ canAccess: () => true, isAdmin: false, agencyRole: 'ADMIN' }),
 }))
+// #33: la ficha de la señal, sin red; cada prueba elige su estado (por defecto, no disponible: no pinta nada).
+const senal = vi.hoisted(() => ({ estado: { kind: 'no_disponible' } as unknown, pedidas: [] as string[] }))
+vi.mock('@/lib/hooks/naira/use-naira-senal', () => ({
+  useNairaSenal: (promocionId: string) => {
+    senal.pedidas.push(promocionId)
+    return { estado: senal.estado, recargar: () => {} }
+  },
+}))
 vi.mock('@/components/ui/popover', () => ({
   Popover: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
   PopoverTrigger: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
@@ -107,6 +115,8 @@ function sinContenidoVisible(): boolean {
 }
 
 beforeEach(() => {
+  senal.estado = { kind: 'no_disponible' }
+  senal.pedidas = []
   contenedor = document.createElement('div')
   document.body.appendChild(contenedor)
   root = createRoot(contenedor)
@@ -115,6 +125,57 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount())
   contenedor.remove()
+})
+
+describe('#33 — por qué lo propone Naira, con la explicación investigada', () => {
+  const SENAL = EJEMPLOS_DE_NAIRA['senal.detalle']
+
+  it('[33:investigada] abierto, primero el porqué: la explicación investigada de SU señal, con su clase', async () => {
+    senal.estado = { kind: 'ok', data: SENAL, origen: 'agente' }
+    montar()
+    expect(senal.pedidas).toStrictEqual([])
+    await tocar()
+    expect(senal.pedidas.at(-1)).toBe('PROMO-1')
+    const porQue = contenedor.querySelector('[data-naira-por-que]')
+    expect(porQue?.getAttribute('data-naira-por-que')).toBe('investigada')
+    expect(porQue?.textContent).toContain('Por qué lo propone Naira')
+    expect(porQue?.textContent).toContain('Lo explicó Naira al investigar la señal')
+    expect(porQue?.textContent).toContain(SENAL.causa.kind === 'citada' ? SENAL.causa.citas[0] : 'x')
+    // Va antes de los hechos.
+    const region = contenedor.querySelector('[data-naira-razonamiento]')
+    expect(region?.firstElementChild?.hasAttribute('data-naira-por-que')).toBe(true)
+  })
+
+  it('[33:regla] sin explicación investigada, el texto de la regla: el título de la señal con su cifra', async () => {
+    senal.estado = { kind: 'ok', data: { ...SENAL, causa: { kind: 'no_citable', razon: 'sin_explicacion' } }, origen: 'agente' }
+    montar()
+    await tocar()
+    const porQue = contenedor.querySelector('[data-naira-por-que]')
+    expect(porQue?.getAttribute('data-naira-por-que')).toBe('regla')
+    expect(porQue?.textContent).toContain('Naira lo propone por la regla que la detectó')
+    expect(porQue?.textContent).toContain(SENAL.item.titulo)
+  })
+
+  it('[33:sin-senal] sin signal-view (sin enlace a la señal), de ejemplo o ilegible: no se pide o no se pinta', async () => {
+    senal.estado = { kind: 'ok', data: SENAL, origen: 'agente' }
+    montar({ hrefDeLaSenal: null })
+    await tocar()
+    expect(senal.pedidas).toStrictEqual([])
+    expect(contenedor.querySelector('[data-naira-por-que]')).toBeNull()
+    act(() => root.unmount())
+    root = createRoot(contenedor)
+    senal.estado = { kind: 'ok', data: SENAL, origen: 'ejemplo' }
+    montar()
+    await tocar()
+    expect(contenedor.querySelector('[data-naira-por-que]')).toBeNull()
+    act(() => root.unmount())
+    root = createRoot(contenedor)
+    senal.estado = { kind: 'sin_permiso' }
+    montar()
+    await tocar()
+    expect(contenedor.querySelector('[data-naira-por-que]')).toBeNull()
+    expect(contenedor.querySelectorAll('[data-naira-hecho]')).toHaveLength(2)
+  })
 })
 
 describe('RazonamientoDePropuesta', () => {

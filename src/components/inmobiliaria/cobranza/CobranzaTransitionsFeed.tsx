@@ -25,7 +25,8 @@ function StagePill({ stage }: { stage: string }) {
       title={stage}
     >
       {/* El nombre de la etapa (QA-AGENTES 16-10: decía «S2 → S3»). */}
-      {validStages.includes(s) ? STAGE_LABELS_ES[s] : stage}
+      {/* Sin el rango («Mora administrativa», no «… · 16–45 días»): a 390 px no cabía. */}
+      {validStages.includes(s) ? STAGE_LABELS_ES[s].split(' · ')[0] : stage}
     </span>
   )
 }
@@ -77,7 +78,7 @@ export function CobranzaTransitionsFeed({
                 className="flex flex-wrap items-start gap-2 p-3 rounded-md bg-surface-muted border border-border-faint"
               >
                 {/* Stage transition */}
-                <div className="flex items-center gap-1.5 flex-shrink-0">
+                <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5">
                   <StagePill stage={item.fromStage} />
                   <span className="text-fg-subtle text-xs">→</span>
                   <StagePill stage={item.toStage} />

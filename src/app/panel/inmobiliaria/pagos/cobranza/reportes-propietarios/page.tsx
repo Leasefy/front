@@ -519,14 +519,19 @@ function ReportesPropietariosContent() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         {/* Columna izquierda — lista de reportes preparados */}
         <section className="space-y-3" aria-label="Reportes preparados">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-base font-semibold text-fg">Reportes preparados</h2>
-            <SegmentedControl
-              options={estadoOptions}
-              value={estadoFilter}
-              onChange={onFilterChange}
-              aria-label="Filtrar por estado"
-            />
+          {/* QA-AGENTES 16-10: a 390 px los cuatro filtros no cabían al lado del
+              título («Por aprobar» partido) y arrastraban las tarjetas: en el
+              celular van debajo, en su riel. */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+            <h2 className="whitespace-nowrap text-base font-semibold text-fg">Reportes preparados</h2>
+            <div className="-mx-1 max-w-full overflow-x-auto whitespace-nowrap px-1">
+              <SegmentedControl
+                options={estadoOptions}
+                value={estadoFilter}
+                onChange={onFilterChange}
+                aria-label="Filtrar por estado"
+              />
+            </div>
           </div>
 
           {isLoading && !hayReales ? (

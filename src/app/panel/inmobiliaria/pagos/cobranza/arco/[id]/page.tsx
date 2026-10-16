@@ -86,13 +86,17 @@ function useArcoActionBase(requestId: string): string | null {
  * ancho de sobra y lleva el año completo; la ficha de la derecha son 320px y con
  * el año de cuatro cifras la etiqueta se truncaba.
  */
+// QA-AGENTES 16-10: el timeline con el mes en palabras («16 oct 2026, 11:51 a. m.»
+// en vez de «16/10/2026»), y los dos en la hora de Colombia (un navegador en
+// otra zona movía la hora de una solicitud con plazo legal).
 const timelineDateTime = new Intl.DateTimeFormat('es-CO', {
-  day: '2-digit',
-  month: '2-digit',
+  day: 'numeric',
+  month: 'short',
   year: 'numeric',
   hour: 'numeric',
   minute: '2-digit',
   hour12: true,
+  timeZone: 'America/Bogota',
 })
 
 const shortDateTime = new Intl.DateTimeFormat('es-CO', {
@@ -102,6 +106,7 @@ const shortDateTime = new Intl.DateTimeFormat('es-CO', {
   hour: 'numeric',
   minute: '2-digit',
   hour12: true,
+  timeZone: 'America/Bogota',
 })
 
 // ─── STATUS TIMELINE ────────────────────────────────────────────────────────────

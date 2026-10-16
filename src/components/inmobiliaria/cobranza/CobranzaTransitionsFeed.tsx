@@ -2,7 +2,7 @@
 
 import { CrossFade, Stagger, StaggerItem } from '@leasefy/cadence'
 import { useI18n } from '@/lib/i18n'
-import { type CarteraStage, stageColorClasses, relativeTime } from '@/lib/cartera'
+import { type CarteraStage, stageColorClasses, relativeTime, STAGE_LABELS_ES } from '@/lib/cartera'
 import type { CarteraOverviewResponse } from '@/lib/hooks/cobranza/use-cartera-overview'
 
 import { laHizoUnaPersona, motivoDeLaTransicion } from '@/lib/cobranza/transicion-vocab'
@@ -21,9 +21,11 @@ function StagePill({ stage }: { stage: string }) {
 
   return (
     <span
-      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-mono font-medium ${colors.bg} ${colors.text} border ${colors.border}`}
+      className={`inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium ${colors.bg} ${colors.text} border ${colors.border}`}
+      title={stage}
     >
-      {stage}
+      {/* El nombre de la etapa (QA-AGENTES 16-10: decía «S2 → S3»). */}
+      {validStages.includes(s) ? STAGE_LABELS_ES[s] : stage}
     </span>
   )
 }

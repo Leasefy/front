@@ -5,7 +5,7 @@ import { useI18n } from '@/lib/i18n';
 import { Breadcrumb, type BreadcrumbItem } from '@/components/ui/breadcrumb';
 import { findAgentWorkspace } from '@/lib/nav/agentWorkspaceNav';
 import { grupoDelModulo, moduloDeLaRuta } from '@/lib/nav/arquitectura-del-panel';
-import { paginaSinPestana } from '@/lib/nav/paginas-sin-pestana';
+import { paginaDeLaFicha, paginaSinPestana } from '@/lib/nav/paginas-sin-pestana';
 
 /**
  * AgentHeaderBreadcrumb — el breadcrumb de los workspaces de agente, en el
@@ -74,6 +74,10 @@ export function AgentHeaderBreadcrumb() {
       for (const padre of conNombre.padres) items.push({ label: t(padre.labelKey), href: padre.href });
       items.push({ label: t(conNombre.labelKey) });
     } else {
+      // La ficha de una página sin pestaña (una escalación) pasa por su página.
+      for (const escalon of paginaDeLaFicha(pathname) ?? []) {
+        items.push({ label: t(escalon.labelKey), href: escalon.href });
+      }
       items.push({ label: t('inmobiliaria.ai.breadcrumb.detalle') });
     }
   }

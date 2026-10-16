@@ -196,8 +196,8 @@ export function CobranzaTeTocaATi({ enMora, gestionados }: CobranzaTeTocaATiProp
           <p className="text-sm text-fg-muted max-w-2xl">
             <span className="text-fg font-medium">{frase}</span>{' '}
             El agente gestionó{' '}
-            <span className="font-mono tabular-nums text-fg">{gestionados}</span> de tus{' '}
-            <span className="font-mono tabular-nums text-fg">{enMora}</span> casos en mora hoy.
+            <span className="font-mono tabular-nums text-fg">{gestionados}</span> de {enMora === 1 ? 'tu' : 'tus'}{' '}
+            <span className="font-mono tabular-nums text-fg">{enMora}</span> {enMora === 1 ? 'caso' : 'casos'} en mora hoy.
           </p>
         </div>
 

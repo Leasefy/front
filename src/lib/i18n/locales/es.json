@@ -6119,6 +6119,12 @@
         "cobranza": "Cobranza",
         "cotizador": "Asegurabilidad",
         "detalle": "Detalle",
+        "paginas": {
+          "equipo": "Equipo IA de cobranza",
+          "inbox": "Inbox de conversaciones",
+          "promesas": "Promesas de pago",
+          "resultados": "Resultados del agente"
+        },
         "mantenimiento": "Mantenimiento"
       },
       "volverA": {
@@ -7809,7 +7815,7 @@
           },
           "detail": {
             "linkedCall": "Llamada asociada",
-            "reason": "Motivo del agente",
+            "reason": "Motivo",
             "stateTrace": "Estado del agente al escalar",
             "assignee": "Asignada a",
             "timing": "Tiempos"
@@ -8049,7 +8055,7 @@
         },
         "arco": {
           "empty": {
-            "title": "Sin solicitudes ARCO pendientes",
+            "title": "Sin solicitudes de Habeas Data pendientes",
             "description": "Las solicitudes Ley 1581 aparecerán acá."
           }
         },
@@ -8184,8 +8190,8 @@
         "reject": "Rechazar solicitud",
         "viewAudit": "Ver en auditoría",
         "counselGate": {
-          "title": "Requiere revisión de asesor",
-          "description": "Esta función requiere activación por el equipo de Leasefy y confirmación de asesor jurídico. Contacta a compliance@leasefy.co para habilitar la resolución de solicitudes ARCO."
+          "title": "Falta la revisión del abogado",
+          "description": "Responder solicitudes de Habeas Data se habilita cuando el abogado de Leasefy apruebe las respuestas. Escríbenos a compliance@leasefy.co para habilitarlo. Mientras tanto puedes tomar la solicitud y ampliar el plazo."
         },
         "dialog": {
           "reject": {
@@ -8196,7 +8202,7 @@
           }
         },
         "empty": {
-          "title": "Sin solicitudes ARCO",
+          "title": "Sin solicitudes de Habeas Data",
           "body": "Cuando alguien pida ver, corregir, eliminar u oponerse al uso de sus datos, la solicitud aparece acá con su plazo.",
           "filteredTitle": "Sin solicitudes de este tipo",
           "filteredBody": "No hay solicitudes de {type} en este momento."

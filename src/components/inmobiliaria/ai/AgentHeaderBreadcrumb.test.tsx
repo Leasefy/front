@@ -181,6 +181,18 @@ describe('AgentHeaderBreadcrumb — la ficha tiene cómo volver', () => {
     expect(items[items.length - 1].texto).toBe('ley2300Title')
   })
 
+  it('Escalaciones dice su nombre y su ficha pasa por ella', () => {
+    render('/panel/inmobiliaria/pagos/cobranza/escalaciones')
+    expect(escalones().at(-1)?.texto).toBe('pageTitle')
+    render('/panel/inmobiliaria/pagos/cobranza/escalaciones/f3dc4df6')
+    const items = escalones().filter((e) => e.texto !== '')
+    expect(items[items.length - 2]).toEqual({
+      texto: 'pageTitle',
+      href: '/panel/inmobiliaria/pagos/cobranza/escalaciones',
+    })
+    expect(items[items.length - 1].texto).toBe('detalle')
+  })
+
   it('la ficha de un caso sigue diciendo «Detalle»', () => {
     render('/panel/inmobiliaria/pagos/cobranza/deudores/abc-123')
     expect(escalones().at(-1)?.texto).toBe('detalle')

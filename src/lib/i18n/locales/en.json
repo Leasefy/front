@@ -6084,6 +6084,12 @@
         "cobranza": "Collections",
         "cotizador": "Insurability",
         "detalle": "Detail",
+        "paginas": {
+          "equipo": "Collections AI team",
+          "inbox": "Conversations inbox",
+          "promesas": "Payment promises",
+          "resultados": "Agent results"
+        },
         "mantenimiento": "Maintenance"
       },
       "volverA": {

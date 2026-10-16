@@ -10347,6 +10347,7 @@
           "dialogoRechazoTitulo": "Reject this proposal?",
           "dialogoRechazoCuerpo": "Naira won't carry it out and won't propose it again for this follow-up.",
           "dialogoRechazoConfirmar": "Reject proposal",
+          "motivoDelRechazo": "Why are you rejecting it? (optional)",
           "volver": "Go back",
           "cargarVersionActual": "Load the current version",
           "conflictos": {

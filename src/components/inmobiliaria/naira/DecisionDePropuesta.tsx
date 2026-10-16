@@ -28,6 +28,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { Textarea } from '@/components/ui/textarea'
 import { decidirPropuesta } from '@/lib/api/naira/cliente'
 import type { ESTADOS_DE_LA_PROPUESTA } from '@/lib/api/naira/contrato'
 import { useAuth } from '@/lib/auth'
@@ -70,6 +71,7 @@ export function DecisionDePropuesta({
   const esEjemplo = useOrigenDeNaira() === 'ejemplo'
   const [enVuelo, setEnVuelo] = useState(false)
   const [confirmandoRechazo, setConfirmandoRechazo] = useState(false)
+  const [motivo, setMotivo] = useState('')
   const [resultado, setResultado] = useState<ResultadoDeDecidir | null>(null)
   const refDelResultado = useRef<HTMLParagraphElement>(null)
   const cerradoPorResultado = useRef(false)
@@ -91,7 +93,8 @@ export function DecisionDePropuesta({
   async function decidir(decision: 'aprobar' | 'rechazar') {
     setResultado(null)
     setEnVuelo(true)
-    const r = await decidirPropuesta(agencyId ?? '', proposalId, { decision, huellaVista: huellaMostrada })
+    const porQue = motivo.trim()
+    const r = await decidirPropuesta(agencyId ?? '', proposalId, decision === 'rechazar' && porQue !== '' ? { decision, huellaVista: huellaMostrada, motivo: porQue.slice(0, 500) } : { decision, huellaVista: huellaMostrada })
     setEnVuelo(false)
     cerradoPorResultado.current = true
     setConfirmandoRechazo(false)
@@ -220,6 +223,13 @@ export function DecisionDePropuesta({
             <AlertDialogTitle>{t('inmobiliaria.ai.naira.propuesta.dialogoRechazoTitulo')}</AlertDialogTitle>
             <AlertDialogDescription>{t('inmobiliaria.ai.naira.propuesta.dialogoRechazoCuerpo')}</AlertDialogDescription>
           </AlertDialogHeader>
+          {/* #31: por qué la rechaza (opcional). Se guarda a su nombre solo si autorizó que Naira le atribuya su gestión. */}
+          <div className="space-y-1">
+            <label htmlFor="naira-motivo-rechazo" className="text-sm text-fg">
+              {t('inmobiliaria.ai.naira.propuesta.motivoDelRechazo')}
+            </label>
+            <Textarea id="naira-motivo-rechazo" value={motivo} maxLength={500} disabled={enVuelo} onChange={(e) => setMotivo(e.target.value)} rows={3} />
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={enVuelo}>{t('inmobiliaria.ai.naira.propuesta.volver')}</AlertDialogCancel>
             <AlertDialogAction

@@ -10383,6 +10383,7 @@
           "dialogoRechazoTitulo": "¿Rechazar esta propuesta?",
           "dialogoRechazoCuerpo": "Naira no la ejecutará y no la volverá a proponer para este seguimiento.",
           "dialogoRechazoConfirmar": "Rechazar propuesta",
+          "motivoDelRechazo": "¿Por qué la rechazas? (opcional)",
           "volver": "Volver",
           "cargarVersionActual": "Cargar la versión actual",
           "conflictos": {

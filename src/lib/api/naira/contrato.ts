@@ -670,7 +670,8 @@ function construirEsquemas(estricto: boolean) {
   })
   // fuente: 12-07-PLAN.md:434 (el agente lo valida .strict())
   // estado: PLANIFICADO
-  const NairaActionDecisionRequest = objeto({ decision: z.enum(['aprobar', 'rechazar']), huellaVista: z.string().min(1) })
+  // #31 (Nico, 15-10-2026): «rechazo: quién y por qué». El motivo es opcional; el micro lo guarda solo con la autorización de gestión.
+  const NairaActionDecisionRequest = objeto({ decision: z.enum(['aprobar', 'rechazar']), huellaVista: z.string().min(1), motivo: z.string().max(500).optional() })
   // fuente: 12-07-PLAN.md:435
   // estado: PLANIFICADO
   const NairaActionDecisionResult = objeto({

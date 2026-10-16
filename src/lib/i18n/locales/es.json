@@ -7909,22 +7909,22 @@
           "thresholds": {
             "pageTitle": "Umbrales del reporte",
             "fields": {
-              "topN": "Top-N deudores a mostrar",
-              "moraBoundaries": "Cortes de días de mora",
-              "pkrAlertBelow": "Alerta si PKR cae por debajo de (%)",
-              "morosidadAlertAbove": "Alerta si morosidad supera (%)",
-              "violationsAtLeast": "Mínimo de violaciones para alertar",
-              "callsOutsideAtLeast": "Mínimo de llamadas fuera de horario para alertar"
+              "topN": "Cuántos deudores mostrar (los que más deben)",
+              "moraBoundaries": "Cortes de días de mora, separados por coma",
+              "pkrAlertBelow": "Avisar si las promesas cumplidas bajan de (%)",
+              "morosidadAlertAbove": "Avisar si la morosidad pasa de (%)",
+              "violationsAtLeast": "Avisar desde cuántas faltas a la Ley 2300",
+              "callsOutsideAtLeast": "Avisar desde cuántas llamadas fuera de horario"
             },
             "submit": "Guardar umbrales",
             "versionsHeading": "Versiones anteriores",
             "rollbackConfirm": "¿Confirmas reversar a la versión {{version}}?",
             "rolledBackToast": "Umbrales reversados a la versión {{version}}",
             "empty": {
-              "title": "Usando thresholds por defecto",
+              "title": "Usando los umbrales por defecto",
               "description": "Ajusta los umbrales según las políticas de tu inmobiliaria.",
               "cta": {
-                "label": "Editar thresholds"
+                "label": "Editar los umbrales"
               }
             }
           },
@@ -8718,6 +8718,7 @@
           "matching": "Matching",
           "avaluos": "Avalúos",
           "gerente": "Gerente",
+          "director": "Director",
           "equipo": "Tu equipo",
           "piloto": "Piloto automático",
           "retencion": "Retención",

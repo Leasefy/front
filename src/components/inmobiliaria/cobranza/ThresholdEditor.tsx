@@ -146,7 +146,11 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
   })
 
   return (
+    // QA-AGENTES 16-10: sin `noValidate` el navegador se adelantaba con su
+    // globo en inglés («Value must be greater than or equal to 1.») y la
+    // validación en español de abajo no llegaba a correr.
     <form
+      noValidate
       onSubmit={(e) => void onFormSubmit(e)}
       className="rounded-lg border border-border bg-card p-4 space-y-4"
     >

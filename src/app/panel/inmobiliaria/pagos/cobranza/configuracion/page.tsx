@@ -80,6 +80,24 @@ import { plataEnPantalla } from '@/lib/plata/escribir-plata'
 const PAYMENT_PLAN_OPTIONS = [1, 3, 6, 9, 12, 18, 24, 36]
 const CRM_PROVIDERS = ['wasi', 'domus', 'webprop', 'sinco'] as const
 const ERP_PROVIDERS = ['alegra', 'alegra_full', 'siigo_full', 'world_office'] as const
+
+/**
+ * QA-AGENTES 16-10 (lab): los selectores mostraban el valor técnico («wasi»,
+ * «alegra_full», «world_office»). Lo que es cada ERP sale de
+ * `agent/src/erp/provider.ts`.
+ */
+const NOMBRE_DEL_CRM: Record<(typeof CRM_PROVIDERS)[number], string> = {
+  wasi: 'Wasi',
+  domus: 'Domus',
+  webprop: 'Webprop',
+  sinco: 'Sinco',
+}
+const NOMBRE_DEL_ERP: Record<(typeof ERP_PROVIDERS)[number], string> = {
+  alegra: 'Alegra (sólo facturas)',
+  alegra_full: 'Alegra (sincronización completa)',
+  siigo_full: 'Siigo (sincronización completa)',
+  world_office: 'World Office (sincronización completa)',
+}
 const BILLING_MODELS = ['performance', 'subscription', 'hybrid'] as const
 
 /**
@@ -593,7 +611,7 @@ function CobranzaConfiguracionContent() {
                 <SelectContent>
                   {CRM_PROVIDERS.map((p) => (
                     <SelectItem key={p} value={p}>
-                      {p}
+                      {NOMBRE_DEL_CRM[p]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -614,7 +632,7 @@ function CobranzaConfiguracionContent() {
                 <SelectContent>
                   {ERP_PROVIDERS.map((p) => (
                     <SelectItem key={p} value={p}>
-                      {p}
+                      {NOMBRE_DEL_ERP[p]}
                     </SelectItem>
                   ))}
                 </SelectContent>

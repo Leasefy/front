@@ -38,6 +38,12 @@ export interface UseSubscriptionResult {
   /** Optimistic + debounced PATCH (300ms). Reverts on error. */
   setToggle: (patch: SubscriptionPatch) => void
   refetch: () => Promise<void>
+  /**
+   * El último guardado que salió bien: lo que se pidió y cuándo (MORI-24). La
+   * página lo usa para avisar y para volver a contar al equipo: antes, al
+   * apagar, el conteo se quedaba en «1 de 1» hasta recargar.
+   */
+  ultimoGuardado: { patch: SubscriptionPatch; en: number } | null
 }
 
 const DEBOUNCE_MS = 300
@@ -49,6 +55,7 @@ export function useSubscription(): UseSubscriptionResult {
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [isSaving, setIsSaving] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const [ultimoGuardado, setUltimoGuardado] = useState<{ patch: SubscriptionPatch; en: number } | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pendingRef = useRef<SubscriptionPatch>({})
   const lastConfirmedRef = useRef<SubscriptionRow | null>(null)
@@ -113,6 +120,7 @@ export function useSubscription(): UseSubscriptionResult {
       setData(json)
       lastConfirmedRef.current = json
       setError(null)
+      setUltimoGuardado({ patch, en: Date.now() })
     } catch (err) {
       // Revert optimistic state
       if (lastConfirmedRef.current) setData(lastConfirmedRef.current)
@@ -157,5 +165,5 @@ export function useSubscription(): UseSubscriptionResult {
     await fetchOnce()
   }, [fetchOnce])
 
-  return { data, isLoading, isSaving, error, setToggle, refetch }
+  return { data, isLoading, isSaving, error, setToggle, refetch, ultimoGuardado }
 }

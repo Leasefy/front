@@ -17,6 +17,7 @@
 
 import { useState } from 'react'
 import { MonoLabel, Presence } from '@leasefy/cadence'
+import { toast } from 'sonner'
 
 import type { ThresholdRow, ThresholdUpdateBody } from '@/lib/hooks/cobranza/use-thresholds'
 import { useI18n } from '@/lib/i18n'
@@ -86,12 +87,10 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
   )
   const [errors, setErrors] = useState<FieldErrors>({})
   const [isSaving, setIsSaving] = useState<boolean>(false)
-  const [successVersion, setSuccessVersion] = useState<number | null>(null)
 
   const onFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setErrors({})
-    setSuccessVersion(null)
 
     const boundariesParsed = parseBoundaries(boundaries)
     const raw = {
@@ -114,7 +113,17 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
     setIsSaving(true)
     try {
       const row = await onSubmit({ ...raw, mora_dias_bucket_boundaries: boundariesParsed })
-      setSuccessVersion(row.version ?? null)
+      // MORI-23 (QA-AGENTES 16-10): antes, una franja verde en monoespaciado
+      // («Versión 1 creada») que se quedaba pegada; el aviso de todo el panel.
+      toast.success(
+        locale.startsWith('es')
+          ? row.version != null
+            ? `Umbrales guardados: ahora rige la versión ${row.version}.`
+            : 'Umbrales guardados.'
+          : row.version != null
+            ? `Thresholds saved: version ${row.version} is now active.`
+            : 'Thresholds saved.',
+      )
       onSuccess?.(row.version ?? null)
     } catch (err) {
       // El 403 del micro no trae un `message` para la persona: se dice acá
@@ -138,9 +147,14 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
     }
   }
 
-  /** Lo que lleva cada control para leer su error. */
+  /**
+   * Lo que lleva cada control para leer su rótulo y su error. MORI-23: el
+   * rótulo era un `span` suelto y el lector de pantalla leía «campo de número»
+   * sin decir cuál.
+   */
   const aria = (campo: CampoDeLosUmbrales) => ({
     id: ID_DEL_CAMPO[campo],
+    'aria-labelledby': `${ID_DEL_CAMPO[campo]}-rotulo`,
     'aria-invalid': errors[campo] ? true : undefined,
     'aria-describedby': errors[campo] ? `${ID_DEL_CAMPO[campo]}-error` : undefined,
   })
@@ -156,7 +170,7 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <MonoLabel className="block text-muted-foreground tracking-wide">
+          <MonoLabel id={`${ID_DEL_CAMPO.top_n_debtors_in_report}-rotulo`} className="block text-muted-foreground tracking-wide">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.topN')}
           </MonoLabel>
           <Input
@@ -173,7 +187,7 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
 
         <div>
-          <MonoLabel className="block text-muted-foreground tracking-wide">
+          <MonoLabel id={`${ID_DEL_CAMPO.mora_dias_bucket_boundaries}-rotulo`} className="block text-muted-foreground tracking-wide">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.moraBoundaries')}
           </MonoLabel>
           <Input
@@ -192,7 +206,7 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
 
         <div>
-          <MonoLabel className="block text-muted-foreground tracking-wide">
+          <MonoLabel id={`${ID_DEL_CAMPO.pkr_pct_alert_below}-rotulo`} className="block text-muted-foreground tracking-wide">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.pkrAlertBelow')}
           </MonoLabel>
           <Input
@@ -210,7 +224,7 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
 
         <div>
-          <MonoLabel className="block text-muted-foreground tracking-wide">
+          <MonoLabel id={`${ID_DEL_CAMPO.indice_morosidad_pct_alert_above}-rotulo`} className="block text-muted-foreground tracking-wide">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.morosidadAlertAbove')}
           </MonoLabel>
           <Input
@@ -231,7 +245,7 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
 
         <div>
-          <MonoLabel className="block text-muted-foreground tracking-wide">
+          <MonoLabel id={`${ID_DEL_CAMPO.compliance_violations_critical_at_least}-rotulo`} className="block text-muted-foreground tracking-wide">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.violationsAtLeast')}
           </MonoLabel>
           <Input
@@ -251,7 +265,7 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
         </div>
 
         <div>
-          <MonoLabel className="block text-muted-foreground tracking-wide">
+          <MonoLabel id={`${ID_DEL_CAMPO.calls_outside_window_critical_at_least}-rotulo`} className="block text-muted-foreground tracking-wide">
             {t('inmobiliaria.ai.cobranza.reporte.thresholds.fields.callsOutsideAtLeast')}
           </MonoLabel>
           <Input
@@ -277,12 +291,6 @@ export function ThresholdEditor({ active, onSubmit, onSuccess }: ThresholdEditor
           className="rounded-sm border border-danger/30 bg-danger-soft px-3 py-2 text-sm text-danger"
         >
           {errors.form}
-      </Presence>
-
-      <Presence show={successVersion !== null} className="rounded-sm border border-success/30 bg-success-soft text-success font-mono">
-          {locale.startsWith('es')
-            ? `Versión ${successVersion} creada`
-            : `Version ${successVersion} created`}
       </Presence>
 
       <div className="flex justify-end">

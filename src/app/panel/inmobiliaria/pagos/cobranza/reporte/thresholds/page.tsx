@@ -43,10 +43,16 @@ function ThresholdsContent() {
         <h1 className="text-h2 font-heading text-foreground mt-2">
           {t('inmobiliaria.ai.cobranza.reporte.thresholds.pageTitle')}
         </h1>
+        {/* MORI-23 (QA-AGENTES 16-10): la pantalla no decía para qué eran
+            estas cifras ni dónde se ven. */}
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+          {locale.startsWith('es')
+            ? 'Cuándo te avisa el Reporte diario —en la pantalla y en el correo— y cuántos deudores muestra. Cada cambio queda guardado como una versión y puedes volver a una anterior.'
+            : 'When the Daily report warns you —on screen and by email— and how many debtors it shows. Every change is saved as a version you can go back to.'}
+        </p>
         {active?.version != null && (
-          <p className="mt-1 text-xs font-mono tabular-nums text-muted-foreground">
-            {locale.startsWith('es') ? 'Versión vigente' : 'Active version'}: v
-            {active.version}
+          <p className="mt-1 text-xs text-muted-foreground">
+            {locale.startsWith('es') ? `Rige la versión ${active.version}.` : `Version ${active.version} is active.`}
           </p>
         )}
       </div>
@@ -67,7 +73,11 @@ function ThresholdsContent() {
 
       {active && (
         <>
+          {/* MORI-31: el editor toma sus valores al montar; con la versión de
+              llave se vuelve a montar al restaurar (antes seguía mostrando los
+              valores de la versión que se acababa de deshacer). */}
           <ThresholdEditor
+            key={active.version ?? 'por-defecto'}
             active={active}
             onSubmit={async (body) => {
               const row = await updateThresholds(body)

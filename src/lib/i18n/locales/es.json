@@ -7858,7 +7858,7 @@
             "actor": "Actor",
             "action": "Acción",
             "dateRange": "Rango de fechas",
-            "search": "Cédula (hash) o ID de cotización"
+            "search": "Cédula o referencia del caso"
           },
           "actions": {
             "acknowledge": "Reconocer",
@@ -7894,17 +7894,21 @@
         "reporte": {
           "pageTitle": "Reporte diario",
           "kpis": {
-            "pkr": "PKR (% recuperado)",
+            "pkr": "Promesas cumplidas (7 días)",
             "morosidad": "Índice de morosidad",
-            "outsideHours": "Llamadas fuera de horario"
+            "outsideHours": "Llamadas fuera de horario",
+            "pkrSinPromesas": "Ninguna promesa venció en los últimos 7 días.",
+            "morosidadBase": "{{enMora}} de {{conContrato}} inquilinos con contrato vigente"
           },
           "topDebtors": {
-            "heading": "Top deudores",
-            "empty": "No hay deudores destacados hoy"
+            "heading": "Los que más deben",
+            "empty": "No hay deudores destacados hoy",
+            "diasDeMora": "Días de mora"
           },
           "history": {
             "heading": "Histórico (últimos 30 días)",
-            "exportCsv": "Exportar CSV"
+            "exportCsv": "Exportar CSV",
+            "empty": "Todavía no hay reportes de días anteriores. Se guarda uno cada día."
           },
           "thresholds": {
             "pageTitle": "Umbrales del reporte",
@@ -7917,7 +7921,7 @@
               "callsOutsideAtLeast": "Avisar desde cuántas llamadas fuera de horario"
             },
             "submit": "Guardar umbrales",
-            "versionsHeading": "Versiones anteriores",
+            "versionsHeading": "Historial de versiones",
             "rollbackConfirm": "¿Confirmas reversar a la versión {{version}}?",
             "rolledBackToast": "Umbrales reversados a la versión {{version}}",
             "empty": {
@@ -7936,7 +7940,7 @@
           },
           "empty": {
             "title": "Aún no hay datos para el reporte diario",
-            "description": "El reporte se genera cada noche a partir de la actividad del día.",
+            "description": "El reporte se arma cada mañana con la actividad de la cobranza.",
             "cta": {
               "label": "Configurar suscripción"
             }

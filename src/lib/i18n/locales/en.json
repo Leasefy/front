@@ -7823,7 +7823,7 @@
             "actor": "Actor",
             "action": "Action",
             "dateRange": "Date range",
-            "search": "Cédula (hash) or quote ID"
+            "search": "ID number or case reference"
           },
           "actions": {
             "acknowledge": "Acknowledge",
@@ -7859,17 +7859,21 @@
         "reporte": {
           "pageTitle": "Daily report",
           "kpis": {
-            "pkr": "PKR (% recovered)",
+            "pkr": "Promises kept (7 days)",
             "morosidad": "Delinquency index",
-            "outsideHours": "Outside-hours calls"
+            "outsideHours": "Outside-hours calls",
+            "pkrSinPromesas": "No promises came due in the last 7 days.",
+            "morosidadBase": "{{enMora}} of {{conContrato}} tenants with an active lease"
           },
           "topDebtors": {
-            "heading": "Top debtors",
-            "empty": "No notable debtors today"
+            "heading": "Largest balances",
+            "empty": "No notable debtors today",
+            "diasDeMora": "Days past due"
           },
           "history": {
             "heading": "History (last 30 days)",
-            "exportCsv": "Export CSV"
+            "exportCsv": "Export CSV",
+            "empty": "No reports from previous days yet. One is saved every day."
           },
           "thresholds": {
             "pageTitle": "Report thresholds",
@@ -7882,7 +7886,7 @@
               "callsOutsideAtLeast": "Minimum outside-hours calls to alert"
             },
             "submit": "Save thresholds",
-            "versionsHeading": "Previous versions",
+            "versionsHeading": "Version history",
             "rollbackConfirm": "Confirm rollback to version {{version}}?",
             "rolledBackToast": "Thresholds rolled back to version {{version}}",
             "empty": {
@@ -7901,7 +7905,7 @@
           },
           "empty": {
             "title": "No data for the daily report yet",
-            "description": "The report is generated nightly from the day's activity.",
+            "description": "The report is built every morning from collections activity.",
             "cta": {
               "label": "Set up subscription"
             }

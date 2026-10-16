@@ -5,6 +5,7 @@ import { useI18n } from '@/lib/i18n';
 import { Breadcrumb, type BreadcrumbItem } from '@/components/ui/breadcrumb';
 import { findAgentWorkspace } from '@/lib/nav/agentWorkspaceNav';
 import { grupoDelModulo, moduloDeLaRuta } from '@/lib/nav/arquitectura-del-panel';
+import { paginaSinPestana } from '@/lib/nav/paginas-sin-pestana';
 
 /**
  * AgentHeaderBreadcrumb — el breadcrumb de los workspaces de agente, en el
@@ -66,7 +67,15 @@ export function AgentHeaderBreadcrumb() {
     items.push(enDetalle ? { label: t(current.labelKey), href: current.href } : { label: t(current.labelKey) });
   }
   if (enDetalle || fichaSuelta) {
-    items.push({ label: t('inmobiliaria.ai.breadcrumb.detalle') });
+    // Una página con nombre propio (Reporte diario, Auditoría…) dice su
+    // nombre; «Detalle» queda para la ficha de una cosa (QA-AGENTES 16-10).
+    const conNombre = paginaSinPestana(pathname);
+    if (conNombre) {
+      for (const padre of conNombre.padres) items.push({ label: t(padre.labelKey), href: padre.href });
+      items.push({ label: t(conNombre.labelKey) });
+    } else {
+      items.push({ label: t('inmobiliaria.ai.breadcrumb.detalle') });
+    }
   }
 
   return <Breadcrumb items={items} showHouseIcon homeHref="/panel/inmobiliaria" size="sm" className="min-w-0" />;

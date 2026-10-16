@@ -156,6 +156,36 @@ describe('AgentHeaderBreadcrumb — la ficha tiene cómo volver', () => {
     expect(items[items.length - 1].texto).toContain('detalle')
   })
 
+  // QA-AGENTES 16-10: el Reporte diario, sus Umbrales y las páginas de
+  // Cumplimiento terminaban en «Detalle»: son pantallas con nombre propio.
+  it('el Reporte diario dice su nombre, no «Detalle»', () => {
+    render('/panel/inmobiliaria/pagos/cobranza/reporte')
+    const items = escalones().filter((e) => e.texto !== '')
+    expect(items.map((e) => e.texto)).toEqual(['secAgentes', 'cobranza', 'pageTitle'])
+    expect(items[1].href).toBe('/panel/inmobiliaria/pagos/cobranza')
+    expect(items[items.length - 1].href).toBeNull()
+  })
+
+  it('los Umbrales cuelgan del Reporte diario, con enlace de vuelta', () => {
+    render('/panel/inmobiliaria/pagos/cobranza/reporte/thresholds')
+    const items = escalones().filter((e) => e.texto !== '')
+    expect(items.map((e) => e.texto)).toEqual(['secAgentes', 'cobranza', 'pageTitle', 'pageTitle'])
+    expect(items[2].href).toBe('/panel/inmobiliaria/pagos/cobranza/reporte')
+    expect(items.some((e) => e.texto.includes('detalle'))).toBe(false)
+  })
+
+  it('las páginas de Cumplimiento dicen cuál son', () => {
+    render('/panel/inmobiliaria/pagos/cobranza/compliance/ley-2300')
+    const items = escalones().filter((e) => e.texto !== '')
+    expect(items[items.length - 2]).toEqual({ texto: 'compliance', href: '/panel/inmobiliaria/pagos/cobranza/compliance' })
+    expect(items[items.length - 1].texto).toBe('ley2300Title')
+  })
+
+  it('la ficha de un caso sigue diciendo «Detalle»', () => {
+    render('/panel/inmobiliaria/pagos/cobranza/deudores/abc-123')
+    expect(escalones().at(-1)?.texto).toBe('detalle')
+  })
+
   it('fuera de un workspace de agente no se renderiza nada', () => {
     render('/panel/inmobiliaria/inmuebles')
     expect(container.textContent).toBe('')

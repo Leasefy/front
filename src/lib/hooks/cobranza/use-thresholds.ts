@@ -40,6 +40,8 @@ export interface ThresholdRow {
   created_at?: string
   created_by_user_id?: string | null
   created_by_email?: string | null
+  /** Nombre (o correo) de quien guardó la versión (MORI-23); null si no se sabe. */
+  created_by_name?: string | null
   is_rollback_of_version?: number | null
 }
 

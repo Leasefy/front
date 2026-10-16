@@ -30,7 +30,16 @@ import { useAuth } from '@/lib/auth'
 import { usePermissionsContext } from '@/lib/context/PermissionsContext'
 import { agentFetch } from '@/lib/api/agent-fetch'
 import { Mask } from '@/components/inmobiliaria/cobranza/Mask'
+import Link from 'next/link'
 import { detallesLegibles } from '@/lib/cobranza/detalles-de-la-auditoria'
+import {
+  accionConNombre,
+  accionLegible,
+  actorLegible,
+  cuandoPaso,
+  enlaceDeLaEntidad,
+  entidadLegible,
+} from '@/lib/cobranza/vocabulario-de-la-auditoria'
 import { PageSkeleton } from '@/components/skeleton/panel/PageSkeleton'
 import { EmptyState } from '@/components/data-display/EmptyState'
 import { Badge, CrossFade, MonoLabel, Presence } from '@leasefy/cadence'
@@ -111,7 +120,10 @@ function AuditContent() {
   const [from, setFrom] = useState<string>(daysAgoYmd(7))
   const [to, setTo] = useState<string>(todayYmd())
   const [qInput, setQInput] = useState<string>('')
-  const qValid = qInput.length === 0 || qInput.length >= 8
+  // MORI-26: una cédula (con o sin puntos, desde 5 cifras) o 8 caracteres de
+  // una referencia; el micro busca el caso de esa cédula.
+  const esCedula = /^\d{5,15}$/.test(qInput.replace(/[.\s-]/g, ''))
+  const qValid = qInput.length === 0 || esCedula || qInput.length >= 8
   const [isExportingCsv, setIsExportingCsv] = useState(false)
 
   // Stable filter object: only re-fire fetch when ALL inputs stabilize
@@ -121,7 +133,7 @@ function AuditContent() {
       action: action && action.length > 0 ? action : undefined,
       from,
       to,
-      q: qValid && qInput.length >= 8 ? qInput : undefined,
+      q: qValid && qInput.length > 0 ? qInput : undefined,
     }),
     [actor, action, from, to, qInput, qValid],
   )
@@ -210,7 +222,7 @@ function AuditContent() {
           </h1>
           <p className="mt-1 text-xs text-muted-foreground">
             {locale.startsWith('es')
-              ? 'Vista forense de solo lectura — el PII nunca es revelable en esta página.'
+              ? 'Lo que pasó en la cobranza, quién lo hizo y cuándo. Es sólo lectura y los datos personales no se muestran aquí.'
               : 'Forensic read-only view — PII is never revealable on this page.'}
           </p>
         </div>
@@ -296,7 +308,7 @@ function AuditContent() {
                 <SelectItem value="__all__">{locale.startsWith('es') ? 'Todas' : 'All'}</SelectItem>
                 {ACTION_OPTIONS.map((opt) => (
                   <SelectItem key={opt} value={opt}>
-                    {opt}
+                    {accionLegible(opt)}
                   </SelectItem>
                 ))}
                 <SelectItem value="__custom__">
@@ -311,7 +323,7 @@ function AuditContent() {
                 type="text"
                 value={action ?? ''}
                 onChange={(e) => setAction(e.target.value || undefined)}
-                placeholder="custom_action"
+                placeholder={locale.startsWith('es') ? 'código de la acción' : 'action code'}
                 className="flex-1 font-mono"
               />
               <Button
@@ -368,14 +380,14 @@ function AuditContent() {
             type="text"
             value={qInput}
             onChange={(e) => setQInput(e.target.value)}
-            placeholder={locale.startsWith('es') ? 'mín. 8 chars' : 'min 8 chars'}
+            placeholder={locale.startsWith('es') ? 'Ej.: 1.017.234.567' : 'e.g. 1017234567'}
             className="w-full font-mono"
           />
-          {qInput.length > 0 && qInput.length < 8 && (
+          {!qValid && (
             <p className="mt-1 text-xs text-warning">
               {locale.startsWith('es')
-                ? 'Ingrese al menos 8 caracteres'
-                : 'Enter at least 8 characters'}
+                ? 'Escribe la cédula completa o al menos 8 caracteres de la referencia.'
+                : 'Type the full ID number or at least 8 characters of the reference.'}
             </p>
           )}
         </div>
@@ -420,10 +432,10 @@ function AuditContent() {
           <Table className="w-full text-sm">
             <TableHeader className="bg-muted/30">
               <TableRow>
-                <TableHead>{locale.startsWith('es') ? 'Fecha' : 'Timestamp'}</TableHead>
-                <TableHead>{locale.startsWith('es') ? 'Actor' : 'Actor'}</TableHead>
-                <TableHead>{locale.startsWith('es') ? 'Acción' : 'Action'}</TableHead>
-                <TableHead>{locale.startsWith('es') ? 'Entidad' : 'Entity'}</TableHead>
+                <TableHead>{locale.startsWith('es') ? 'Cuándo' : 'When'}</TableHead>
+                <TableHead>{locale.startsWith('es') ? 'Quién' : 'Who'}</TableHead>
+                <TableHead>{locale.startsWith('es') ? 'Qué pasó' : 'What happened'}</TableHead>
+                <TableHead>{locale.startsWith('es') ? 'Sobre qué' : 'On what'}</TableHead>
                 <TableHead>{locale.startsWith('es') ? 'Detalles' : 'Details'}</TableHead>
               </TableRow>
             </TableHeader>
@@ -443,28 +455,42 @@ function AuditContent() {
                       : null
                 return (
                   <TableRowAnimada key={row.id} className="align-top">
-                    <TableCell className="px-3 py-2 font-mono tabular-nums text-xs text-foreground whitespace-nowrap">
-                      {new Date(row.occurred_at).toLocaleString(locale)}
+                    {/* MORI-26 (QA-AGENTES 16-10): el día en palabras, la acción y
+                        «sobre qué» en español, con enlace al caso o al acuerdo. */}
+                    <TableCell className="px-3 py-2 text-xs text-foreground whitespace-nowrap">
+                      {cuandoPaso(row.occurred_at)}
                     </TableCell>
-                    <TableCell className="px-3 py-2 font-mono text-xs text-foreground whitespace-nowrap">
+                    <TableCell className="px-3 py-2 text-xs text-foreground whitespace-nowrap">
                       {/* Sin `actor_id` la celda quedaba en blanco bajo el
                           encabezado «Actor». No actuó nadie: actuó el sistema,
                           y `actor_type` lo dice. */}
-                      {row.actor_id ?? ACTOR_SISTEMA[row.actor_type] ?? row.actor_type}
+                      {actorLegible(row.actor_id) ?? ACTOR_SISTEMA[row.actor_type] ?? row.actor_type}
                     </TableCell>
-                    <TableCell className="px-3 py-2">
-                      <Badge variant="primary">{row.action}</Badge>
+                    <TableCell className="px-3 py-2 text-xs">
+                      {accionConNombre(row.action) ? (
+                        <span className="text-foreground">{accionLegible(row.action)}</span>
+                      ) : (
+                        <Badge variant="primary">{row.action}</Badge>
+                      )}
                     </TableCell>
-                    <TableCell className="px-3 py-2 font-mono text-xs text-muted-foreground whitespace-nowrap">
-                      <div>{row.entity_type ?? '—'}</div>
+                    <TableCell className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                      <div>{entidadLegible(row.entity_type)}</div>
                       {/* `entity_id` es nullable en el contrato: hay acciones
                           que no apuntan a una entidad. El tipo escrito a mano
                           lo declaraba `string` y esto reventaba. */}
-                      {row.entity_id && (
-                        <div className="text-[11px] opacity-70">
-                          {row.entity_id.slice(0, 8)}…
-                        </div>
-                      )}
+                      {(() => {
+                        const href = enlaceDeLaEntidad(row.entity_type, row.entity_id)
+                        if (href) {
+                          return (
+                            <Link href={href} className="text-primary underline-offset-2 hover:underline">
+                              {row.entity_type === 'debtor' ? 'Ver el caso' : 'Ver el acuerdo'}
+                            </Link>
+                          )
+                        }
+                        return row.entity_id ? (
+                          <div className="font-mono text-[11px] opacity-70">{row.entity_id.slice(0, 8)}…</div>
+                        ) : null
+                      })()}
                     </TableCell>
                     <TableCell className="px-3 py-2 max-w-md">
                       {cedulaMasked && (

@@ -436,17 +436,19 @@ function ReportesPropietariosContent() {
     // Confirmación humana explícita antes de marcar como enviado al propietario.
     // Con el modal del sistema, no con el diálogo del navegador (02-10-2026).
     const ok = await confirmar({
-      titulo: `¿Aprobar y enviar el reporte a ${seleccionado.propietario}?`,
+      // QA-AGENTES 16-10 (MORI-33): Leasefy todavía no le manda el reporte al
+      // propietario (ni correo ni PDF); el botón decía «enviar» y nada salía.
+      titulo: `¿Aprobar el reporte para ${seleccionado.propietario}?`,
       descripcion:
-        'Confirmas que lo revisaste. El reporte queda aprobado y marcado como enviado al propietario.',
-      accion: 'Aprobar y enviar',
+        'Confirmas que lo revisaste y que se lo mandaste al propietario: Leasefy todavía no lo envía por ti. Queda aprobado y marcado como enviado.',
+      accion: 'Aprobar y marcar como enviado',
       icono: <PaperPlaneTilt weight="bold" />,
     })
     if (!ok) return
     setActionMsg(null)
     const updated = await approve(seleccionado.id, true)
     if (updated) {
-      setActionMsg('Reporte aprobado y marcado como enviado al propietario.')
+      setActionMsg('Reporte aprobado y marcado como enviado.')
     }
   }
 
@@ -583,7 +585,7 @@ function ReportesPropietariosContent() {
                       ? 'Disponible al generar un reporte real'
                       : yaEnviado
                         ? 'Este reporte ya fue enviado'
-                        : 'Aprobar y enviar al propietario'
+                        : 'Aprobar y marcar como enviado al propietario'
                   }
                 >
                   {isApproving ? (
@@ -591,7 +593,7 @@ function ReportesPropietariosContent() {
                   ) : (
                     <PaperPlaneTilt className="w-3.5 h-3.5" aria-hidden="true" />
                   )}
-                  {yaEnviado ? 'Enviado' : 'Aprobar y enviar'}
+                  {yaEnviado ? 'Enviado' : 'Aprobar'}
                 </Button>
 
                 {/* Generar borrador (POST generate) — necesita un deudor real */}

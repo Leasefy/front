@@ -17,7 +17,7 @@ import { usePublicarGratis } from "./marketplace/publicar";
 import { AvisoDelMarketplace, BoletoDelMarketplace, MosaicoDelMarketplace, VitrinaQuePasa } from "./marketplace/VitrinaViva";
 import { MapaEnElHero } from "./marketplace/MapaEnElHero";
 import "./marketplace/marketplace.css";
-import { useTx } from "@/lib/idioma/use-idioma";
+import { useIdioma, useTx } from "@/lib/idioma/use-idioma";
 
 /**
  * LandingHome — port fiel del index.html standalone (Cohere-style) a React.
@@ -43,8 +43,12 @@ const ALT_DEL_CHAT: [string, string] = [
   "Leasefy platform — your agency's chat answering how much it is owed and who is behind on rent, with its own data",
 ];
 
+/** ¿Ya está grabado el chat con el panel en inglés (`home-chat-en.*`)? (16-10-2026) */
+const VIDEO_DEL_CHAT_EN_INGLES = true;
+
 function VideoDelChat() {
   const tx = useTx();
+  const s = useIdioma() === "en" && VIDEO_DEL_CHAT_EN_INGLES ? "-en" : "";
   const [quieto, setQuieto] = useState(false);
   const ref = useRef<HTMLVideoElement>(null);
   useEffect(() => {
@@ -58,7 +62,7 @@ function VideoDelChat() {
     v.defaultMuted = true;
     v.play().catch(() => {});
   }, [quieto]);
-  if (quieto) return <img src="/landing-v2/producto/home-chat.webp" width={2400} height={1500} alt={tx(...ALT_DEL_CHAT)} />;
+  if (quieto) return <img src={`/landing-v2/producto/home-chat${s}.webp`} width={2400} height={1500} alt={tx(...ALT_DEL_CHAT)} />;
   return (
     <video
       ref={ref}
@@ -67,13 +71,13 @@ function VideoDelChat() {
       loop
       playsInline
       preload="auto"
-      poster="/landing-v2/producto/home-chat-inicio.webp"
+      poster={`/landing-v2/producto/home-chat-inicio${s}.webp`}
       width={2400}
       height={1500}
       aria-label={tx(...ALT_DEL_CHAT)}
     >
-      <source src="/landing-v2/producto/home-chat.webm" type="video/webm" />
-      <source src="/landing-v2/producto/home-chat.mp4" type="video/mp4" />
+      <source src={`/landing-v2/producto/home-chat${s}.webm`} type="video/webm" />
+      <source src={`/landing-v2/producto/home-chat${s}.mp4`} type="video/mp4" />
     </video>
   );
 }

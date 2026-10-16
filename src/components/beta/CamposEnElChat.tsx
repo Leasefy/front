@@ -31,7 +31,13 @@ export function datosDeLosCampos(
   for (const c of campos) {
     const v = (valores[c.clave] ?? '').trim();
     if (!v) continue;
-    datos[c.clave] = c.tipo === 'moneda' || c.tipo === 'numero' ? Number(v.replace(',', '.')) : v;
+    if (c.tipo === 'moneda' || c.tipo === 'numero') {
+      // QA-AGENTES 16-10: «doce» daba NaN, viajaba como `null` y el micro
+      // descartaba la tarjeta entera («No encontré a nadie con «vencido ley»»).
+      // Lo que no es un número va tal cual: el micro dice qué tiene que ir.
+      const n = Number(v.replace(',', '.'));
+      datos[c.clave] = Number.isFinite(n) ? n : v;
+    } else datos[c.clave] = v;
   }
   return datos;
 }

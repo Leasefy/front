@@ -558,6 +558,17 @@ const CON_TILDE: Readonly<Record<string, string>> = {
   liquidacion: 'liquidación',
   conciliacion: 'conciliación',
   facturacion: 'facturación',
+  // QA-AGENTES 16-10: la vista previa de la prórroga («Venció», «Término»,
+  // «Prórrogas seguidas») y las que pintaban «Ultimo dia», «Accion».
+  dia: 'día',
+  vencio: 'venció',
+  termino: 'término',
+  prorroga: 'prórroga',
+  prorrogas: 'prórrogas',
+  accion: 'acción',
+  renovacion: 'renovación',
+  automatica: 'automática',
+  automatico: 'automático',
 };
 /** Siglas que se escriben en mayúsculas dentro de la etiqueta. */
 const SIGLAS: ReadonlyArray<[RegExp, string]> = [

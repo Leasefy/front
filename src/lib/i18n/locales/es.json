@@ -10044,6 +10044,11 @@
           "verQueSube": "Ver que {{metrica}} sube",
           "verQueBaja": "Ver que {{metrica}} baja"
         },
+        "porAprobar": {
+          "una": "Tienes 1 propuesta de Naira por aprobar.",
+          "varias": "Tienes {{n}} propuestas de Naira por aprobar.",
+          "ver": "Ver las propuestas"
+        },
         "votoPorEnlace": {
           "titulo": "Tu respuesta a Naira",
           "queEs": "Nos dice si la señal de tu briefing te sirvió. Cuenta como la respuesta del equipo.",

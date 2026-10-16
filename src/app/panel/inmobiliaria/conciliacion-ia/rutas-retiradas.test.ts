@@ -72,7 +72,8 @@ describe('conciliacion-ia — cada ruta vieja cae en su par del módulo real', (
     ['/conciliacion-ia/lote', Lote, `${REAL}/movimientos`],
     ['/conciliacion-ia/procesar', Procesar, REAL],
     ['/conciliacion-ia/reglas', Reglas, `${REAL}/configuracion`],
-    ['/conciliacion-ia/resultado', Resultado, `${REAL}/analitica`],
+    // La analítica del agente se retiró el 14-10-2026 (repetía el Resumen): cae en el Resumen.
+    ['/conciliacion-ia/resultado', Resultado, REAL],
   ] as const)('🔴 %s redirige a su par de verdad', (_ruta, Pagina, destino) => {
     expect(adondeVa(Pagina as () => unknown)).toBe(destino);
   });

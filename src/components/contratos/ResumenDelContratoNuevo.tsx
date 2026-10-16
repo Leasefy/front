@@ -15,6 +15,7 @@
  * el canon) y la frase de cómo se cobra de `ritmoDePago`, la misma de la ficha.
  */
 
+import { plataQueLlega } from '@/lib/plata/plata-que-llega';
 import type { ReactNode } from 'react';
 import { AnimatedNumber, Presence } from '@leasefy/cadence';
 import { WarningCircle } from '@phosphor-icons/react';
@@ -107,7 +108,7 @@ export function ResumenDelContratoNuevo({
         </Fila>
         <Fila etiqueta="Canon" testId="resumen-canon">
           {canon && canon > 0 ? (
-            <AnimatedNumber value={canon} format={(n) => formatCurrency(Math.round(n))} className="font-mono tabular-nums" />
+            <AnimatedNumber value={canon} format={plataQueLlega(canon, formatCurrency)} className="font-mono tabular-nums" />
           ) : (
             <span className="text-fg-subtle">—</span>
           )}
@@ -134,7 +135,7 @@ export function ResumenDelContratoNuevo({
             <>
               <AnimatedNumber
                 value={primerCanon.valor}
-                format={(n) => formatCurrency(Math.round(n))}
+                format={plataQueLlega(primerCanon.valor, formatCurrency)}
                 className="font-mono tabular-nums"
               />
               <span className="block text-caption text-fg-muted">

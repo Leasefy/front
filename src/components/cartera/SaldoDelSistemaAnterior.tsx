@@ -44,7 +44,7 @@ function Cifra({
       <p className={`mt-1 font-mono text-2xl font-semibold tabular-nums ${tono ?? 'text-fg'}`} data-testid={testid}>
         {formatCurrency(valor)}
       </p>
-      <p className="mt-1 text-xs text-fg-muted">{explicacion}</p>
+      <p className="mt-1 text-caption text-fg-muted">{explicacion}</p>
     </Card>
   )
 }
@@ -142,7 +142,7 @@ export function SaldoDelSistemaAnterior() {
                           >
                             {f.contrato ? `#${f.contrato}` : 'Ver contrato'}
                           </a>
-                          {f.inmueble && <p className="text-xs text-fg-muted">{f.inmueble}</p>}
+                          {f.inmueble && <p className="text-caption text-fg-muted">{f.inmueble}</p>}
                         </TableCell>
                         <TableCell>{f.inquilino ?? '—'}</TableCell>
                         <TableCell>{f.propietario ?? '—'}</TableCell>

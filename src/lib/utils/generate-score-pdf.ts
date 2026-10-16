@@ -244,7 +244,7 @@ export function generateScorePDF(
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(60);
-  doc.text('Verifica en: leasefy.com/verificar/' + verificationCode, margin + contentWidth / 2, y + 12, { align: 'center' });
+  doc.text('Verifica en: leasefy.co/verificar/' + verificationCode, margin + contentWidth / 2, y + 12, { align: 'center' });
 
   // ==========================================
   // FOOTER
@@ -258,7 +258,7 @@ export function generateScorePDF(
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(130);
   doc.text(
-    'Este documento fue generado por Leasefy. Verifica su autenticidad en leasefy.com/verificar',
+    'Este documento fue generado por Leasefy. Verifica su autenticidad en leasefy.co/verificar',
     pageWidth / 2,
     footerY,
     { align: 'center' }

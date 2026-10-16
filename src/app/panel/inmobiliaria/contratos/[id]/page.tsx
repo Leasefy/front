@@ -71,7 +71,7 @@ import { FalloDeCarga } from '@/components/estado/FalloDeCarga';
 import { CrossFade, Presence } from '@leasefy/cadence';
 import { BackButton } from '@/components/ui/back-button';
 import { AdministracionDelContrato } from '@/components/contratos/AdministracionDelContrato';
-import { EscenarioTributario } from '@/components/contratos/EscenarioTributario';
+import { EscenarioDelArchivoPorRevisar, EscenarioTributario } from '@/components/contratos/EscenarioTributario';
 import { ConceptosDelContrato } from '@/components/contratos/ConceptosDelContrato';
 import { CobrosDelContrato } from '@/components/contratos/CobrosDelContrato';
 import { CastigoDelContrato } from '@/components/contratos/CastigoDelContrato';
@@ -533,6 +533,10 @@ function ContratoDetalleContent() {
         y cuándo, cómo va con la plata —desde el ESTADO DE CUENTA, que es la
         puerta principal— y, al pie, las decisiones del ciclo de vida.
       */}
+      {/* Nico 14-10: el escenario del archivo que no se pudo usar se dice arriba
+          (la tarjeta del escenario queda abajo, junto a Administración). */}
+      <EscenarioDelArchivoPorRevisar contract={contract} />
+
       <ArriendoDelContrato
         contract={contract}
         vigencia={vigencia}
@@ -677,7 +681,10 @@ function ContratoDetalleContent() {
               /* La dirección de arriba es la que dice el contrato (no se pisa
                  al vincular); la ficha del inmueble es donde se ve cuál quedó. */
               <Link
-                href={`/panel/inmobiliaria/inmuebles/${contract.propertyId}?por=inmueble`}
+                href={conRegreso(
+                  `/panel/inmobiliaria/inmuebles/${contract.propertyId}?por=inmueble`,
+                  `/panel/inmobiliaria/contratos/${contract.id}`,
+                )}
                 className="inline-block text-sm font-medium text-primary hover:underline"
                 data-testid="ver-inmueble"
               >
@@ -747,6 +754,30 @@ function ContratoDetalleContent() {
               </p>
             </InfoCard>
           )}
+
+          {/* QA de Portofino (14-10-2026): la migración guarda las
+              «Observaciones» del sistema anterior (incrementos pactados,
+              cuentas de servicios, días de gracia…) y el origen del contrato
+              como cláusulas «(migrado)», y ninguna pantalla las mostraba:
+              1.686 contratos de Portofino con notas invisibles. */}
+          {(() => {
+            const delSistemaAnterior = (Array.isArray(contract.customClauses) ? contract.customClauses : [])
+              .filter((c): c is { title: string; content: string } =>
+                !!c && typeof c.title === 'string' && typeof c.content === 'string' &&
+                /\(migrado\)\s*$/i.test(c.title) && !/^escenario tributario/i.test(c.title) && c.content.trim() !== '')
+            return delSistemaAnterior.length > 0 ? (
+              <InfoCard title="De tu sistema anterior" icon={Clock}>
+                <dl className="space-y-3" data-testid="del-sistema-anterior">
+                  {delSistemaAnterior.map((c) => (
+                    <div key={c.title}>
+                      <dt className="text-caption text-muted-foreground">{c.title.replace(/\s*\(migrado\)\s*$/i, '')}</dt>
+                      <dd className="whitespace-pre-line text-sm text-foreground">{c.content.trim()}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </InfoCard>
+            ) : null
+          })()}
 
           {contract.auditTrail && contract.auditTrail.length > 0 && (
             <InfoCard title="Historial" icon={Clock}>

@@ -18,7 +18,10 @@ import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/toast';
 import { ErrorDelCampo } from '@/components/estado/ErrorDelCampo';
 import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formulario';
-import { AVISO_FILA_SIN_CANON } from '@/lib/inmuebles/canon-por-confirmar';
+import {
+  AVISO_FILA_SIN_CANON,
+  AVISO_FILA_SIN_PRECIO_DE_VENTA,
+} from '@/lib/inmuebles/canon-por-confirmar';
 import { errorDelNumero } from './lib/limites-de-la-importacion';
 import {
   Select,
@@ -42,11 +45,13 @@ import {
 } from './lib/datosDeFila';
 import type { ListingType, PropertyType } from '@/lib/types/property';
 import type {
+  DuenoParecido,
   FilaDeImportacion,
   ResolverInmuebleDto,
 } from '@/lib/api/inmuebles-importacion.service';
 import { formatCurrency } from '@/lib/format';
 import { bpsComoPorcentaje } from '@/lib/migracion/valores-de-origen';
+import { etiquetaDelTipo } from './TipoDeLasFilasSinTipo';
 
 const TIPOS = [
   { value: 'apartment', label: 'Apartamento' },
@@ -93,6 +98,75 @@ function ConError({ id, error, children }: { id: string; error?: string; childre
     <div className="min-w-0">
       {children}
       <ErrorDelCampo id={`${id}-error`} mensaje={error} />
+    </div>
+  );
+}
+
+/** «CC 1037636779», o el número solo si no se sabe el tipo. */
+function documentoConTipo(tipo: string | null | undefined, numero: string | null | undefined): string {
+  const n = (numero ?? '').trim();
+  if (!n) return 'sin documento';
+  const t = tipo === 'PASSPORT' ? 'Pasaporte' : (tipo ?? '').trim();
+  return t ? `${t} ${n}` : n;
+}
+
+function DuenoParecidoDeLaFila({
+  fila,
+  parecido,
+  isBusy,
+  onResponder,
+}: {
+  fila: FilaDeImportacion;
+  parecido: DuenoParecido;
+  isBusy?: boolean;
+  onResponder: (esLaMisma: boolean) => void;
+}) {
+  const delArchivo = fila.datos.propietarios?.[0];
+  const nombreDelArchivo = fila.datos.propietarioNombre ?? delArchivo?.nombre ?? '';
+  const documentoDelArchivo = fila.datos.propietarioDocumento ?? delArchivo?.documento ?? '';
+  return (
+    <div
+      className="rounded-md bg-warning-soft border border-border p-3 space-y-2"
+      data-testid="dueno-parecido"
+    >
+      <p className="text-sm font-medium text-fg">
+        ¿Es {parecido.nombre} ({documentoConTipo(parecido.tipoDocumento, parecido.documento)})?
+      </p>
+      <p className="text-sm text-fg-muted">
+        El archivo dice que el dueño es {nombreDelArchivo || 'alguien'} con el documento{' '}
+        <span className="font-mono">{documentoDelArchivo}</span>, que no está en tus propietarios.
+        Ya tienes a {parecido.nombre} con el mismo nombre
+        {parecido.telefonoEnComun ?? parecido.telefono ? (
+          <>
+            {' '}y el mismo teléfono (
+            <span className="font-mono">{parecido.telefonoEnComun ?? parecido.telefono}</span>)
+          </>
+        ) : null}
+        .
+      </p>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          size="sm"
+          hideArrow
+          disabled={isBusy}
+          onClick={() => onResponder(true)}
+          data-testid="dueno-parecido-si"
+        >
+          Sí, es la misma persona
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          hideArrow
+          disabled={isBusy}
+          onClick={() => onResponder(false)}
+          data-testid="dueno-parecido-no"
+        >
+          No, es otra persona
+        </Button>
+      </div>
     </div>
   );
 }
@@ -246,10 +320,43 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
         </div>
       )}
 
+      {/* Nico 14-10: el tipo que dice la dirección, para confirmarlo de un clic (nunca se pone solo). */}
+      {fila.sugerenciaDeTipo ? (
+        <div className="flex flex-wrap items-center gap-2" data-testid="fila-sugerencia-de-tipo">
+          <span className="text-xs text-fg-muted">
+            La dirección dice «{fila.sugerenciaDeTipo.porque}».
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            hideArrow
+            disabled={isBusy}
+            onClick={() =>
+              void onResolver(fila.id, { type: fila.sugerenciaDeTipo!.tipo })
+            }
+          >
+            Es {etiquetaDelTipo(fila.sugerenciaDeTipo.tipo).toLowerCase()}
+          </Button>
+        </div>
+      ) : null}
+      {fila.noEsInmueble ? (
+        <p className="text-caption text-warning" data-testid="fila-no-es-inmueble">
+          El archivo dice «{fila.claseDelArchivo}»: parece un registro de otra cosa del sistema
+          anterior, no un inmueble. Si es así, no la traigas (botón de la papelera).
+        </p>
+      ) : null}
+
       {/* T-0129 — neutral: no frena la fila, sólo avisa cómo va a quedar. */}
       {fila.datosPendientes?.includes('canon') && (
         <p className="text-xs text-fg-muted" data-testid="fila-sin-canon">
           {AVISO_FILA_SIN_CANON}
+        </p>
+      )}
+      {/* Nico 14-10: la venta sin precio entra con el precio por completar. */}
+      {fila.datosPendientes?.includes('precio_venta') && (
+        <p className="text-caption text-fg-muted" data-testid="fila-sin-precio-de-venta">
+          {AVISO_FILA_SIN_PRECIO_DE_VENTA}
         </p>
       )}
 
@@ -297,6 +404,18 @@ export function FilaImportacionRow({ fila, onResolver, onDescartar, isBusy }: Fi
           </Button>
         </div>
       )}
+
+      {/* 🔴 Portofino (14-10): el dueño del archivo trae otro documento y ya
+          hay UNA ficha con su mismo nombre y celular. Nunca se asigna sola: la
+          persona responde con un clic. */}
+      {fila.faltantes.includes('dueno_parecido') && fila.duenoParecido ? (
+        <DuenoParecidoDeLaFila
+          fila={fila}
+          parecido={fila.duenoParecido}
+          isBusy={isBusy}
+          onResponder={(esLaMisma) => void resolver({ esElDuenoParecido: esLaMisma })}
+        />
+      ) : null}
 
       {/* EN-38 / NI-07 (QA-MIGRACION-95): la cifra con centavos se dice desde la
           revisión, con la misma frase que al crear. */}

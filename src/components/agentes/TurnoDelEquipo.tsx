@@ -21,7 +21,7 @@ import { OrbeDeAgente } from './OrbeDeAgente'
  * `useQuienHabla(mensaje, { pasos, enCurso })`:
  *
  *   <CabeceraDelTurno turno={turno} />        ← el orbe del orquestador + su nombre y estado
- *   <DelegacionesDelTurno turno={turno} />    ← «Ori le pidió a Laura» + la tarea + lo que hizo
+ *   <DelegacionesDelTurno turno={turno} />    ← «Ori le pidió a Mori» + la tarea + lo que hizo
  *   <RazonamientoDelTurno turno={turno} />    ← «Cómo lo pensó» (`done.razonamiento`), SÓLO si llegó
  *
  * Sin gradientes de fondo ni tarjetas pesadas: el color lo pone el orbe.

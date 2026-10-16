@@ -54,6 +54,9 @@ vi.mock('@/lib/api/contracts.service', () => ({
       preparar: vi.fn(),
       filas: vi.fn(),
       resolverMasivo: vi.fn(),
+      // ResolucionMasiva pregunta el desglose de la selección; sin él ofrece
+      // el par de siempre (uso / propietario), que es lo que fijan estas pruebas.
+      faltantesDeLaSeleccion: vi.fn().mockRejectedValue(new Error('sin desglose')),
       resumen: vi.fn(),
       lotesAbiertos: vi.fn(),
       resolver: vi.fn(),
@@ -2209,6 +2212,55 @@ describe('<MigrarContratos> — a qué quedó pegada cada fila', () => {
       container.querySelector('[data-testid="asociacion-del-lote"]')?.textContent ?? ''
     expect(texto).toContain('30 de 30 quedaron con inmueble')
     expect(texto).not.toContain('vienen terminados del sistema anterior')
+  })
+
+  /*
+   * 🔴 QA de Portofino (14-10): «1849 de 1886 quedaron con inquilino» dejaba
+   * afuera a los 35 que llegaron sin correo y quedaron con su ficha, sin
+   * cuenta del portal. Se suman y se dice por qué no tienen cuenta.
+   */
+  it('suma a los inquilinos sin cuenta del portal y dice por qué', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(0, {
+      asociacion: {
+        inmueblePorCodigo: 30,
+        inmueblePorDireccion: 0,
+        inmuebleAMano: 0,
+        sinInmueble: 0,
+        conPropietario: 30,
+        conInquilino: 24,
+        historicos: 0,
+        inquilinoSinCuenta: 5,
+      },
+    })
+
+    const caja = container.querySelector('[data-testid="asociacion-del-lote"]')
+    expect(caja?.textContent).toContain('29 de 30 · quedaron con inquilino')
+    expect(
+      container.querySelector('[data-testid="inquilinos-sin-cuenta"]')?.textContent,
+    ).toContain('5 sin cuenta del portal: llegaron sin correo y quedaron con su ficha.')
+  })
+
+  it('con un back que no manda los sin cuenta, el número es el de siempre y no hay nota', async () => {
+    render()
+    await esperar()
+    await avanzarAListaDeTrabajo(0, {
+      asociacion: {
+        inmueblePorCodigo: 30,
+        inmueblePorDireccion: 0,
+        inmuebleAMano: 0,
+        sinInmueble: 0,
+        conPropietario: 30,
+        conInquilino: 24,
+        historicos: 0,
+      },
+    })
+
+    expect(
+      container.querySelector('[data-testid="asociacion-del-lote"]')?.textContent,
+    ).toContain('24 de 30 · quedaron con inquilino')
+    expect(container.querySelector('[data-testid="inquilinos-sin-cuenta"]')).toBeNull()
   })
 })
 

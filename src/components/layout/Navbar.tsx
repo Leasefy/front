@@ -172,18 +172,21 @@ export function Navbar() {
             {/* Nav Links - Desktop */}
             <div className="hidden md:flex items-center gap-6">
               {isLoggedIn ? (
-                /* Authenticated: single role-based action, no marketing nav. */
-                canPublish ? (
-                  <Button
-                    variant={isActive('/publicar') ? "default" : "secondary"}
-                    size="sm"
-                    hideArrow
-                    asChild
-                    className="text-[13px]"
-                  >
-                    <Link href="/publicar">Publicar Inmueble</Link>
-                  </Button>
-                ) : (
+                /* Authenticated: no marketing nav, pero «Buscar Inmueble» se queda
+                   (Juan, Portofino, 15-10-2026: con la sesión iniciada desaparecía
+                   el marketplace de la landing). «Publicar» va además si puede. */
+                <>
+                  {canPublish && (
+                    <Button
+                      variant={isActive('/publicar') ? "default" : "secondary"}
+                      size="sm"
+                      hideArrow
+                      asChild
+                      className="text-[13px]"
+                    >
+                      <Link href="/publicar">Publicar Inmueble</Link>
+                    </Button>
+                  )}
                   <Link
                     href="/propiedades"
                     className={cn(
@@ -195,7 +198,7 @@ export function Navbar() {
                   >
                     Buscar Inmueble
                   </Link>
-                )
+                </>
               ) : (
                 <>
                   {canPublish && (
@@ -669,8 +672,9 @@ export function Navbar() {
               className="px-6 py-4 space-y-1"
             >
               {isLoggedIn ? (
-                /* Authenticated: single role-based action, no marketing nav. */
-                canPublish ? (
+                /* Authenticated: «Buscar Inmueble» siempre; «Publicar» si puede (Juan, 15-10). */
+                <>
+                  {canPublish && (
                   <Link
                     href="/publicar"
                     className={cn(
@@ -682,7 +686,7 @@ export function Navbar() {
                     Publicar Inmueble
                     {isActive('/publicar') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-primary" />}
                   </Link>
-                ) : (
+                  )}
                   <Link
                     href="/propiedades"
                     className={cn(
@@ -694,7 +698,7 @@ export function Navbar() {
                     Buscar Inmueble
                     {isActive('/propiedades') && <span className="ml-2 w-1.5 h-1.5 rounded-full bg-primary" />}
                   </Link>
-                )
+                </>
               ) : (
                 <>
                   {canPublish && (

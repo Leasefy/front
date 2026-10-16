@@ -471,6 +471,17 @@ export function sinComprobantesDelSistemaAnterior(fila: FilaDelEstadoDeCuenta): 
 }
 
 /**
+ * 🔴 QA de Portofino (Nico, 14-10-2026: «el valor del comprobante»): las
+ * columnas de plata de un mes del sistema anterior dicen «—». El archivo no
+ * trae los cánones viejos (el de hoy no es el de 2022) ni el desglose de sus
+ * comprobantes: lo que se sabe es lo que dice el comprobante, y va junto a él
+ * (`documentoDePago.valor`). CA-06: una parte sin definir, tampoco.
+ */
+export function sinPlataQueMostrar(fila: FilaDelEstadoDeCuenta): boolean {
+  return fila.sinPorcentaje === true || fila.estado === 'ANTERIOR';
+}
+
+/**
  * `true` si la fila ya se venció y todavía se debe.
  *
  * No cambia el estado —ese lo manda el back— pero sí se dice en la columna

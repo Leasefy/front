@@ -8,6 +8,8 @@ export interface EstadoDeLasAceptaciones {
   /** `false` = el back todavía no puede guardarlo: la ventana NO se muestra (sin bucles). */
   disponible: boolean;
   debeAceptar: boolean;
+  /** Sin ninguna aceptación guardada: la ventana no habla de cambios (back desde el 12-10). */
+  primeraVez?: boolean;
   politica: { version: string; aceptada: boolean; aceptadaEl: string | null };
   terminos: { version: string; aceptada: boolean; aceptadaEl: string | null };
   cambios: string[];

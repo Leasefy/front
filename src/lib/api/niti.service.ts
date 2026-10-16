@@ -152,7 +152,7 @@ function leerInmueble(x: unknown): InmuebleAuditado {
       .map<FotoSenalada>((f) => ({ fotoId: texto(f.fotoId), url: texto(f.url), motivo: texto(f.motivo) })),
     propuestas: lista(x.propuestas).map(leerPropuesta).filter((p) => p.id !== ''),
     auditadoEn: texto(x.auditadoEn),
-    href: texto(x.href) || `/panel/inmobiliaria/inmuebles/${x.propertyId}`,
+    href: texto(x.href) || `/panel/inmobiliaria/inmuebles/${x.propertyId}?por=inmueble`,
   };
 }
 

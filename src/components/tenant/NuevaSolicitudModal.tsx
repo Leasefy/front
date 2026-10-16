@@ -61,6 +61,7 @@ import { repartirErroresDelServidor } from '@/lib/errores/errores-en-el-formular
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { ACCEPT_DE_ADJUNTOS, problemaDelAdjunto } from '@/lib/api/pqrs-adjuntos';
 import type { PqrsTipo } from '@/lib/api/pqrs.types';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface NuevaSolicitudModalProps {
   open: boolean;
@@ -320,25 +321,29 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
             <label htmlFor="solicitud-contrato" className="block text-sm font-medium text-fg mb-1.5">
               {locale === 'es' ? (esDelPropietario ? '¿Sobre cuál inmueble?' : '¿Sobre cuál contrato?') : 'Which lease?'}
             </label>
-            <select
-              id="solicitud-contrato"
-              value={contratoId}
-              onChange={(e) => {
-                setContratoId(e.target.value);
+            <Select
+              value={contratoId || undefined}
+              onValueChange={(v) => {
+                setContratoId(v);
                 setErrores((prev) => ({ ...prev, contratoId: undefined }));
               }}
               disabled={isSubmitting}
-              aria-invalid={errores.contratoId ? true : undefined}
-              aria-describedby={errores.contratoId ? 'solicitud-contrato-error' : undefined}
-              className="w-full h-11 px-4 text-base md:text-sm rounded-lg border border-border bg-surface text-fg focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
             >
-              <option value="">{locale === 'es' ? 'Elige el inmueble' : 'Choose the property'}</option>
-              {contratos.map((c) => (
-                <option key={c.contratoId} value={c.contratoId}>
-                  {c.inmueble}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger
+                id="solicitud-contrato"
+                aria-invalid={errores.contratoId ? true : undefined}
+                aria-describedby={errores.contratoId ? 'solicitud-contrato-error' : undefined}
+              >
+                <SelectValue placeholder={locale === 'es' ? 'Elige el inmueble' : 'Choose the property'} />
+              </SelectTrigger>
+              <SelectContent>
+                {contratos.map((c) => (
+                  <SelectItem key={c.contratoId} value={c.contratoId}>
+                    {c.inmueble}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <ErrorDelCampo id="solicitud-contrato-error" mensaje={errores.contratoId} />
           </div>
         )}
@@ -348,24 +353,29 @@ export function NuevaSolicitudModal({ open, onClose, onCreated, prefill, contrat
           <label htmlFor="solicitud-tipo" className="block text-sm font-medium text-fg mb-1.5">
             {locale === 'es' ? 'Tipo de solicitud' : 'Request type'}
           </label>
-          <select
-            id="solicitud-tipo"
+          <Select
             value={tipo}
-            onChange={(e) => {
-              setTipo(e.target.value as PqrsTipo);
+            onValueChange={(v) => {
+              setTipo(v as PqrsTipo);
               setErrores((prev) => ({ ...prev, tipo: undefined }));
             }}
             disabled={isSubmitting}
-            aria-invalid={errores.tipo ? true : undefined}
-            aria-describedby={errores.tipo ? 'solicitud-tipo-error' : undefined}
-            className="w-full h-11 px-4 text-base md:text-sm rounded-lg border border-border bg-surface text-fg focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
           >
-            {TIPO_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {locale === 'es' ? opt.es : opt.en}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger
+              id="solicitud-tipo"
+              aria-invalid={errores.tipo ? true : undefined}
+              aria-describedby={errores.tipo ? 'solicitud-tipo-error' : undefined}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TIPO_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {locale === 'es' ? opt.es : opt.en}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <ErrorDelCampo id="solicitud-tipo-error" mensaje={errores.tipo} />
         </div>
 

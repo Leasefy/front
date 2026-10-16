@@ -39,7 +39,7 @@ interface AgentTaskThreadProps {
  *   hace (el especialista que trabaja o el orquestador) y «Paso 2 de 4»;
  * - una barra fina que avanza con los pasos (`scaleX`, no `width`);
  * - la lista de pasos con su riel; cada especialista es una delegación
- *   («Ori → Laura», la tarea, lo que hizo). Se pliega con `Collapse`; arranca
+ *   («Ori → Mori», la tarea, lo que hizo). Se pliega con `Collapse`; arranca
  *   abierta, porque ver qué hace es la gracia (Nico, 27-08: «debemos mostrar
  *   qué está haciendo y pensando»).
  *

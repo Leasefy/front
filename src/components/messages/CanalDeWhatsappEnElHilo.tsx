@@ -35,8 +35,8 @@ const MOTIVOS: Record<
   ok: { es: '', en: '' },
   no_aplica: { es: '', en: '' },
   sin_consentimiento: {
-    es: 'Todavía no autorizó que le escribamos por WhatsApp. Puedes activarlo en su ficha.',
-    en: 'They have not authorized WhatsApp yet. You can turn it on from their profile.',
+    es: 'No tiene contrato firmado con la inmobiliaria y no ha autorizado WhatsApp, o se lo apagaron. Puedes activarlo en su ficha.',
+    en: 'They have no signed contract with the agency and have not authorized WhatsApp, or it was turned off. You can turn it on from their profile.',
   },
   sin_telefono: {
     es: 'No tenemos su teléfono, así que esto no sale por WhatsApp.',

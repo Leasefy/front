@@ -208,7 +208,7 @@ describe('arquitectura del panel — sidebar', () => {
     }
   });
 
-  it('el sidebar tiene 27 módulos en 5 grupos con nombre (+ Inicio y Chat = 29 filas)', () => {
+  it('el sidebar tiene 28 módulos en 5 grupos con nombre (+ Inicio y Chat = 30 filas)', () => {
     // Eran 18 hasta que Configuración salió del sidebar (Nico, 2026-09-03): se
     // entra por el menú del perfil. Eran 17 hasta que «Cobros» y «Pagos» se
     // volvieron un solo módulo de plata (Nico + CEO, 2026-09-15). Eran 16 en 4
@@ -243,7 +243,8 @@ describe('arquitectura del panel — sidebar', () => {
     // 08-10-2026: 27 con Calidad de publicaciones (Niti), traída de
     // cambios-nico-10 (29-09, Nico: «no los veo en la sección de agentes para
     // poder probarlos»).
-    expect(modulos).toHaveLength(27);
+    // 14-10-2026 (ROLES): 28 con «Jurídico», que sólo ve el abogado externo.
+    expect(modulos).toHaveLength(28);
   });
 
   it('Agenda vive en «Captación y arriendo», detrás de Pipeline', () => {
@@ -609,6 +610,8 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
       `${PANEL}/pagos/recaudo`,
       `${PANEL}/pagos/recaudo-bancario`,
       `${PANEL}/pagos/cartera`,
+      // 🔴 Juan (15-10-2026): «¿dónde se ven los recibos de caja?».
+      `${PANEL}/pagos/recibos`,
       `${PANEL}/pagos/liquidaciones`,
       `${PANEL}/pagos/dispersiones`,
       `${PANEL}/pagos/cuadre`,
@@ -620,6 +623,7 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
 
   it('las tres caras están declaradas y en orden: entra, sale, y lo que está en la cuenta', () => {
     expect(pagos.pantallas?.map((p) => p.cara)).toEqual([
+      'inquilinos',
       'inquilinos',
       'inquilinos',
       'inquilinos',
@@ -718,6 +722,8 @@ describe('arquitectura del panel — un solo módulo de plata (Nico + CEO, 2026-
       `${PANEL}/pagos/recaudo`,
       `${PANEL}/pagos/recaudo-bancario`,
       `${PANEL}/pagos/cartera`,
+      // Los recibos piden `cobros`, como el recaudo (los egresos, adentro, `dispersiones`).
+      `${PANEL}/pagos/recibos`,
     ]);
   });
 
@@ -999,6 +1005,7 @@ describe('🔴 «Agentes IA»: los agentes tienen su propia sección (Nico, 2026
       '/pagos/recaudo',
       '/pagos/recaudo-bancario',
       '/pagos/cartera',
+      '/pagos/recibos',
       '/pagos/liquidaciones',
       '/pagos/dispersiones',
       '/pagos/cuadre',

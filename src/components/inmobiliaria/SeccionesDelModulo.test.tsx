@@ -335,6 +335,8 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
       'recaudo',
       'recaudoBancario',
       'cartera',
+      // Juan (Portofino, 15-10-2026): «¿dónde se ven los recibos de caja?».
+      'recibos',
     ])
   })
 
@@ -420,6 +422,7 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
       '/panel/inmobiliaria/pagos/recaudo',
       '/panel/inmobiliaria/pagos/recaudo-bancario',
       '/panel/inmobiliaria/pagos/cartera',
+      '/panel/inmobiliaria/pagos/recibos',
     ])
     render('/panel/inmobiliaria/pagos/cuadre')
     expect(cards().map((c) => c.href)).toEqual([
@@ -479,7 +482,7 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
     permisos.agencyRole = 'VIEWER'
     permisos.modulos = ['cobros']
     render('/panel/inmobiliaria/pagos/cartera')
-    expect(cards().map((c) => c.label)).toEqual(['recaudo', 'recaudoBancario', 'cartera'])
+    expect(cards().map((c) => c.label)).toEqual(['recaudo', 'recaudoBancario', 'cartera', 'recibos'])
     expect(contenedor.querySelector('[data-testid="selector-de-caras"]')).toBeNull()
     // Y tampoco ve el tablero financiero, que pide `dashboard`: la cara nueva
     // no le regala pantallas a nadie.
@@ -500,6 +503,8 @@ describe('SeccionesDelModulo — las caras de la plata (Nico, 16 y 18-09-2026)',
       'recaudo',
       'recaudoBancario',
       'cartera',
+      // Juan (Portofino, 15-10-2026): «¿dónde se ven los recibos de caja?».
+      'recibos',
     ])
     render('/panel/inmobiliaria/pagos/liquidaciones')
     expect(cards().map((c) => c.label)).toEqual([

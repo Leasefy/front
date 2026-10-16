@@ -67,24 +67,13 @@ describe('<LandingFooterV2>', () => {
     bloques.forEach((b) => expect(b.className).not.toContain('in'))
   })
 
-  it('el wordmark trae sus letras en el markup, con el punto en gradiente', () => {
+  it('el wordmark trae las letras de «Leasefy» y a Ori como el punto (Nico, 12-10-2026)', () => {
     montar()
-    const wm = container.querySelector('#wm')
-    const letras = [...(wm?.querySelectorAll('span') ?? [])]
-    expect(letras.map((l) => l.textContent).join('')).toBe('Leasefy.')
-    // `initLandingFx` construye las letras solo `if(!wm.childElementCount)`,
-    // asi que traerlas armadas no las duplica en el home.
-    expect(letras.at(-1)?.className).toBe('bd')
-    expect(letras[0].getAttribute('style')).toContain('--d')
-  })
-
-  it('el wordmark se ve quieto sin fx y espera al scroll con fx', () => {
-    montar()
-    expect(container.querySelector('#wm')?.className).toContain('in')
-    act(() => {
-      root.render(<LandingFooterV2 fxExterno />)
-    })
-    expect(container.querySelector('#wm')?.className).not.toContain('in')
+    const letras = [...container.querySelectorAll('.wm2 .wm2-l')]
+    expect(letras.map((l) => l.textContent).join('')).toBe('Leasefy')
+    // El punto ya no es un «.» en gradiente: es el orbe de Ori.
+    expect(container.querySelector('.wm2 .wm2-ori')).not.toBeNull()
+    expect(container.querySelector('#wm')).toBeNull()
   })
 
   it('los enlaces de producto van a rutas reales, no a anclas del home', () => {

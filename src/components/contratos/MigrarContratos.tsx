@@ -3220,6 +3220,7 @@ function AsociacionDelLoteResumen({
   total: number;
 }) {
   if (!asociacion) return null;
+  const sinCuenta = asociacion.inquilinoSinCuenta ?? 0;
 
   const conInmueble =
     asociacion.inmueblePorCodigo +
@@ -3286,12 +3287,29 @@ function AsociacionDelLoteResumen({
           <span className="text-fg-muted"> de {total} · </span>
           <span className="text-fg">quedaron con propietario</span>
         </p>
+        {/* 🔴 QA de Portofino (14-10): el inquilino que llegó sin correo
+            quedó como su ficha, sin cuenta del portal. El contrato lo tiene
+            —nombre, documento y teléfono— y la lista de Inquilinos lo
+            muestra con su arriendo: contarlo como «sin inquilino» hacía
+            buscar un problema que no existe. */}
         <p>
           <span className="font-mono tabular-nums text-fg">
-            {asociacion.conInquilino}
+            {asociacion.conInquilino + sinCuenta}
           </span>
           <span className="text-fg-muted"> de {total} · </span>
           <span className="text-fg">quedaron con inquilino</span>
+          {sinCuenta > 0 ? (
+            <span
+              className="block text-caption text-fg-muted"
+              data-testid="inquilinos-sin-cuenta"
+            >
+              {sinCuenta === 1
+                ? "1 sin cuenta del portal: llegó sin correo y quedó con su ficha."
+                : `${sinCuenta} sin cuenta del portal: llegaron sin correo y quedaron con su ficha.`}{" "}
+              El contrato tiene su nombre, documento y teléfono, y aparecen en
+              Inquilinos con su arriendo.
+            </span>
+          ) : null}
         </p>
         {/* Un histórico se migra igual —hace falta para el historial y para
             colgarle los comprobantes viejos— pero no activa nada. Decirlo

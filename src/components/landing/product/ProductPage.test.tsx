@@ -22,7 +22,7 @@ vi.mock('next/image', () => ({
 
 import { ProductPage } from './ProductPage'
 import { PRODUCTS, PRODUCT_SLUGS } from '@/lib/landing/products'
-import { LANDING_TEXTURES } from '@/lib/landing/assets'
+import { CAPTURAS } from '@/lib/landing/capturas'
 
 let container: HTMLDivElement
 let root: Root
@@ -56,10 +56,13 @@ describe('<ProductPage> — crm (detailed copy/wiring)', () => {
     expect(container.querySelector('[data-testid="product-lead"]')?.textContent).toBe(crm.lead)
   })
 
-  it('renders the cover with the product texture and name', () => {
-    const cover = container.querySelector('[data-testid="product-cover"]') as HTMLElement
-    expect(cover.style.backgroundImage).toContain(LANDING_TEXTURES[PRODUCTS.crm.textureId].src)
-    expect(cover.textContent).toContain(PRODUCTS.crm.name)
+  it('🔴 la portada es una pantalla REAL del panel, no una textura (Nico, 12-10-2026)', () => {
+    // «donde haya imágenes que quieran representar algo del producto, sácalo
+    // directamente del producto»: la portada borrosa con el índice se fue.
+    expect(container.querySelector('[data-testid="product-cover"]')).toBeNull()
+    const img = container.querySelector('[data-testid="product-window"] img') as HTMLImageElement
+    expect(img.getAttribute('src')).toBe(CAPTURAS.crm.portada.src)
+    expect(img.getAttribute('alt')).toBe(CAPTURAS.crm.portada.alt)
   })
 
   it('renders both real CTA links, primary first, no # fragments', () => {
@@ -72,18 +75,16 @@ describe('<ProductPage> — crm (detailed copy/wiring)', () => {
     expect(secondary.getAttribute('href')?.startsWith('#')).toBe(false)
   })
 
-  it('renders one VignetteRenderer (vg-card) per window vignette', () => {
-    const cards = container.querySelectorAll('[data-testid="product-window"] [data-testid="vg-card"]')
-    expect(cards.length).toBe(PRODUCTS.crm.window.vignettes.length)
+  it('ninguna viñeta dibujada a mano: todo lo que ilustra es una captura', () => {
+    expect(container.querySelectorAll('[data-testid="vg-card"]').length).toBe(0)
   })
 
-  it('renders 3 stories, alternating the --alt modifier on odd indices', () => {
+  it('cuenta las 3 historias sobre su pantalla real', () => {
     const stories = container.querySelectorAll('[data-testid="product-story"]')
     expect(stories.length).toBe(3)
-    expect(stories[0].className).not.toContain('landing-pp__story--alt')
-    expect(stories[1].className).toContain('landing-pp__story--alt')
-    expect(stories[2].className).not.toContain('landing-pp__story--alt')
     expect(stories[0].textContent).toContain(PRODUCTS.crm.stories[0].h3)
+    // En el celular cada historia lleva su captura debajo.
+    expect(stories[1].querySelector('img')?.getAttribute('src')).toBe(CAPTURAS.crm.recorrido[1].captura.src)
   })
 
   it('renders the snapshot rows, preserving verbatim inline <b> markup', () => {
@@ -99,13 +100,12 @@ describe('<ProductPage> — crm (detailed copy/wiring)', () => {
     expect(steps[0].textContent).toContain(PRODUCTS.crm.steps[0].title)
   })
 
-  it('renders the night panel with kicker, quote and every log entry', () => {
+  it('de noche muestra la misma pantalla en el modo oscuro del panel, no un registro inventado', () => {
     const night = container.querySelector('[data-testid="product-night"]')
     expect(night?.textContent).toContain(PRODUCTS.crm.night.kicker)
     expect(night?.textContent).toContain(PRODUCTS.crm.night.quote)
-    const logTimes = container.querySelectorAll('[data-testid="product-night-log-time"]')
-    expect(logTimes.length).toBe(PRODUCTS.crm.night.log.length)
-    expect(logTimes[0].textContent).toBe(PRODUCTS.crm.night.log[0].time)
+    expect(container.querySelectorAll('[data-testid="product-night-log-time"]').length).toBe(0)
+    expect(night?.querySelector('img')?.getAttribute('src')).toBe(CAPTURAS.crm.oscura.src)
   })
 
   it('cierra con la demo del producto y deja el pie al layout', () => {
@@ -122,9 +122,15 @@ describe('<ProductPage> — crm (detailed copy/wiring)', () => {
     expect(container.querySelector('footer')).toBeNull()
   })
 
-  it('la portada muestra el índice del módulo que ya usa el mega-menú', () => {
-    // «Sistema · Módulo 01» → 01. Un campo nuevo diría lo mismo dos veces.
-    expect(container.querySelector('.landing-pp__cover-index')?.textContent).toBe('01')
+  it('cada capacidad lleva el panel real en uso, con la captura de respaldo (Nico, 12-10-2026)', () => {
+    const caps = container.querySelectorAll('[data-testid="product-capability"]')
+    expect(caps.length).toBe(4)
+    // Un clip del panel (la captura de esa pantalla es el póster) y la cámara apunta a su foco.
+    const video = caps[0].querySelector('video') as HTMLVideoElement
+    expect(video.getAttribute('poster')).toMatch(/\/landing-v2\/producto\/clips\/.+\.webp$/)
+    const marco = caps[0].querySelector('.landing-pr-clip') as HTMLElement
+    const { x, w } = CAPTURAS.crm.recortes[0].foco
+    expect(marco.style.getPropertyValue('--pr-ox')).toBe(`${x + w / 2}%`)
   })
 })
 
@@ -135,9 +141,8 @@ describe('<ProductPage> — every product slug renders without error', () => {
     })
     const product = PRODUCTS[slug]
     expect(container.querySelector('[data-testid="product-h1"]')?.textContent).toBe(product.h1)
-    expect(container.querySelectorAll('[data-testid="product-window"] [data-testid="vg-card"]').length).toBe(
-      product.window.vignettes.length,
-    )
+    // La portada es la captura real de ESE producto.
+    expect(container.querySelector('[data-testid="product-window"] img')?.getAttribute('src')).toBe(CAPTURAS[slug].portada.src)
     expect(container.querySelectorAll('[data-testid="product-story"]').length).toBe(product.stories.length)
     expect(container.querySelectorAll('[data-testid="product-capability"]').length).toBe(
       product.capabilities.length,
@@ -146,8 +151,6 @@ describe('<ProductPage> — every product slug renders without error', () => {
       product.snapshot.length,
     )
     expect(container.querySelectorAll('[data-testid="product-step"]').length).toBe(product.steps.length)
-    expect(container.querySelectorAll('[data-testid="product-night-log-time"]').length).toBe(
-      product.night.log.length,
-    )
+    expect(container.querySelector('[data-testid="product-night"] img')?.getAttribute('src')).toBe(CAPTURAS[slug].oscura.src)
   })
 })

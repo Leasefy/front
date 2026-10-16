@@ -10,7 +10,7 @@
  * exact string composition is unit-testable without DOM/window mocking.
  */
 
-export const CONTACT_EMAIL = 'hola@leasefy.com'
+export const CONTACT_EMAIL = 'hola@leasefy.co'
 const CONTACT_SUBJECT = 'Empezar con Leasefy'
 
 export interface ContactFormFields {

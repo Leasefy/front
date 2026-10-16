@@ -118,6 +118,22 @@ export async function elegirHojaYEncabezado(
   /** Sólo esta hoja (la persona eligió otra en la pantalla). */
   soloHoja?: string,
 ): Promise<HojaYEncabezado> {
+  const leidas = await primerasFilasDelArchivo(archivo, soloHoja);
+  if (!leidas) return { hoja: '', filaDeEncabezado: 0, hojas: [], obligatorias: 0 };
+  return { ...mejorHojaYEncabezado(leidas.filasPorHoja, columnas), hojas: leidas.hojas };
+}
+
+/**
+ * Las primeras filas de cada hoja (sin leer el archivo entero). `null` si no
+ * se puede leer: el lector de siempre dirá qué le pasa con su mensaje.
+ */
+export async function primerasFilasDelArchivo(
+  archivo: File,
+  soloHoja?: string,
+): Promise<{
+  hojas: string[];
+  filasPorHoja: { hoja: string; filas: unknown[][] }[];
+} | null> {
   try {
     const XLSX = await import('xlsx');
     const ext = archivo.name.split('.').pop()?.toLowerCase() ?? '';
@@ -131,9 +147,9 @@ export async function elegirHojaYEncabezado(
         ? XLSX.utils.sheet_to_json<unknown[]>(libro.Sheets[hoja], { header: 1, raw: false, defval: '' })
         : [],
     }));
-    return { ...mejorHojaYEncabezado(filasPorHoja, columnas), hojas: libro.SheetNames };
+    return { hojas: libro.SheetNames, filasPorHoja };
   } catch {
-    return { hoja: '', filaDeEncabezado: 0, hojas: [], obligatorias: 0 };
+    return null;
   }
 }
 

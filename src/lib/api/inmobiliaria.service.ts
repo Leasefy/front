@@ -133,6 +133,9 @@ export interface MemberPermissionsResponse {
   delRol?: Record<string, string[]>;
   /** Si tiene permisos propios, distintos de los de su rol. */
   tienePropios?: boolean;
+  /** ROLES (14-10-2026): lo que puede con los agentes (cobranza, cotizador, ap) y lo que le da su rol. */
+  modulosDelMicro?: { cobranza: string[]; cotizador: string[]; ap: string[] };
+  modulosDelMicroDelRol?: { cobranza: string[]; cotizador: string[]; ap: string[] };
   /**
    * 🔴 Los módulos de PAGO prendidos para esta inmobiliaria (17-09-2026).
    *
@@ -1625,6 +1628,23 @@ export const dispersionesApi = {
   },
 
   /**
+   * Descarta una liquidación que todavía es un borrador (Nico, 13-10-2026):
+   * pendiente, sin aprobar, nunca en un lote. Sus cuotas vuelven a estar por
+   * girar. 409 si ya avanzó (`DISPERSION_NO_ES_BORRADOR`,
+   * `DISPERSION_ESTUVO_EN_UN_LOTE`…) con la frase del porqué.
+   */
+  async descartar(id: string): Promise<{
+    descartada: string;
+    mes: string;
+    propietario: string;
+    cuotasSueltas: number;
+    deduccionesDevueltas: number;
+    interesesSueltos: number;
+  }> {
+    return apiClient.put(`${BASE}/dispersiones/${id}/descartar`, {});
+  },
+
+  /**
    * Segundo par de ojos: anota la referencia del giro que YA se hizo.
    *
    * El back expone PUT, no PATCH (con PATCH la llamada moría en 404) y exige
@@ -2735,6 +2755,8 @@ export interface RoleMatrices {
     AUXILIAR_CARTERA?: PermMap;
     ABOGADO_EXTERNO?: PermMap;
   };
+  /** ROLES (14-10-2026): los módulos de los agentes de cada rol (un back anterior no lo manda). */
+  modulosDelMicro?: Record<string, { cobranza: string[]; cotizador: string[]; ap: string[] }>;
 }
 
 /**

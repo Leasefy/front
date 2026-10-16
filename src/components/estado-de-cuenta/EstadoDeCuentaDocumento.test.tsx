@@ -200,7 +200,8 @@ describe('EstadoDeCuentaDocumento', () => {
        «no suma ni en la deuda ni en lo pagado». Ya no se cuenta como pagada
        («1 de 4», no «2 de 4»), y la leyenda dice por qué. Con su comprobante
        sí cuenta (resumen.test.ts). */
-    expect(host.textContent).toContain('1 de 4 cuotas');
+    // QA del portal 11-10: «Cuotas pagadas: 1 de 4» (antes «Pagadas 1 de 4 cuotas»).
+    expect(host.textContent).toContain('Cuotas pagadas: 1 de 4');
     expect(host.textContent).toContain('1 del sistema anterior');
     expect(host.querySelector('[data-testid="anteriores-sin-comprobante"]')?.textContent).toContain(
       '1 sin comprobantes cargados',

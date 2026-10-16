@@ -105,3 +105,50 @@ describe('QA-MIG-A MG-02: las primeras filas de CADA hoja, para elegir la buena'
     expect(hojas[1].filas[0]).toEqual(['Documento', 'Nombre'])
   })
 })
+
+/**
+ * Un .xlsx cuya celda A2 guarda en la hoja EXACTAMENTE `guardado` (lo que
+ * escribe el sistema que exporta), con otra hoja delante para que la ruta se
+ * resuelva por el nombre y no por el orden.
+ */
+function xlsxConLaCeldaGuardada(guardado: string): File {
+  const ws = XLSX.utils.aoa_to_sheet([['Documento'], []])
+  ws['A2'] = { t: 'n', v: 1 }
+  ws['!ref'] = 'A1:A2'
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Léeme']]), 'Instrucciones')
+  XLSX.utils.book_append_sheet(wb, ws, 'Terceros')
+  const zip = XLSX.CFB.read(new Uint8Array(XLSX.write(wb, { bookType: 'xlsx', type: 'array' })), {
+    type: 'array',
+  })
+  const hoja = XLSX.CFB.find(zip, '/xl/worksheets/sheet2.xml')
+  const xml = new TextDecoder().decode(hoja.content).replace(
+    /(<c r="A2"[^>]*>)<v>1<\/v>/,
+    `$1<v>${guardado}</v>`,
+  )
+  hoja.content = new TextEncoder().encode(xml)
+  hoja.size = hoja.content.length
+  return archivo('a.xlsx', new Uint8Array(XLSX.CFB.write(zip, { fileType: 'zip', type: 'array' })))
+}
+
+describe('🔴 Portofino (14-10) · un número de más de 15 cifras no se inventa', () => {
+  it('la hoja guarda «711408791026157919» completo (fila 64 de Portofino): sale completo', async () => {
+    const r = await parseSpreadsheetFile(xlsxConLaCeldaGuardada('711408791026157919'), 'Terceros')
+    expect(String(r.rows[0]['Documento'])).toBe('711408791026157919')
+  })
+
+  it('la hoja guarda sólo 15 cifras (como Excel): sale en notación científica, nunca «…158000»', async () => {
+    const r = await parseSpreadsheetFile(xlsxConLaCeldaGuardada('7.1140879102615795E+17'), 'Terceros')
+    const valor = String(r.rows[0]['Documento'])
+    expect(valor).not.toBe('711408791026158000')
+    expect(valor).toMatch(/e\+17$/i)
+  })
+
+  it('un documento de 10 cifras sigue igual', async () => {
+    const ws = XLSX.utils.aoa_to_sheet([['Documento'], []])
+    ws['A2'] = { t: 'n', v: 1026157919 }
+    ws['!ref'] = 'A1:A2'
+    const r = await parseSpreadsheetFile(xlsx([{ nombre: 'H', ws }]))
+    expect(String(r.rows[0]['Documento'])).toBe('1026157919')
+  })
+})

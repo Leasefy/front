@@ -136,8 +136,8 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
     capabilities: [
       { title: 'Pipeline en tiempo real', body: 'Cada solicitud con su etapa, su dueño y su siguiente paso, visible para todos.' },
       { title: 'Matching automático', body: 'Cruza interesado e inventario al instante y sugiere opciones que sí van a cerrar.' },
-      { title: 'Tiempos por asesor', body: 'Sabes quién responde en minutos y quién deja enfriar — sin perseguir a nadie.' },
-      { title: 'Historial completo', body: 'Cada conversación, visita y oferta queda en el caso, no en el teléfono de alguien.' },
+      { title: 'Comisiones y metas por asesor', body: 'Lo que gana cada uno en el mes y cómo va contra su meta.' },
+      { title: 'Origen de cada lead', body: 'Qué portal trae a cada interesado y cuántos terminan en contrato.' },
     ],
     snapshot: [
       { label: 'Módulo', value: '<b>CRM inmobiliario</b> · núcleo comercial del sistema' },
@@ -389,7 +389,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       { title: 'Recordatorios automáticos', body: 'Por WhatsApp y correo, con la voz de tu inmobiliaria, sin turnos ni festivos.' },
       { title: 'Detección temprana', body: 'El atraso se ve el día uno, cuando todavía es fácil de resolver.' },
       { title: 'Escalamiento con criterio', body: 'De suave a firme, y a humano solo cuando de verdad hace falta.' },
-      { title: 'Registro completo', body: 'Cada gestión y cada respuesta quedan en el contrato, auditable.' },
+      { title: 'Registro completo', body: 'Cada llamada, pago y nota quedan en el caso del deudor, con su hora.' },
     ],
     snapshot: [
       { label: 'Agente', value: '<b>Cobranza</b> · L-AG-01' },
@@ -510,10 +510,10 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       },
     ],
     capabilities: [
-      { title: 'Identidad y antecedentes', body: 'Verificación real contra fuentes, no una foto de la cédula en un chat.' },
-      { title: 'Capacidad de pago', body: 'Ingresos, obligaciones y comportamiento leídos en minutos.' },
+      { title: 'Documentos en un lugar', body: 'Cédula, extractos y carta laboral adjuntos al candidato.' },
+      { title: 'Hasta cuánto respaldan las aseguradoras', body: 'El monto máximo y el veredicto de cada una.' },
       { title: 'Score de riesgo', body: 'Un veredicto claro con sustento, por candidato.' },
-      { title: 'Minutos, no días', body: 'El candidato bueno no se enfría esperando un estudio de 3 días.' },
+      { title: 'Todas las postulaciones a la vista', body: 'Estado y estudio de cada candidato en una lista, para decidir sin perseguir a nadie.' },
     ],
     snapshot: [
       { label: 'Agente', value: '<b>Estudio del inquilino</b> · L-AG-02' },
@@ -607,7 +607,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       {
         kicker: 'Ajustes',
         h3: 'El inmueble real, no el ideal',
-        body: 'Piso, estado, parqueadero, años del edificio: cada ajuste queda explícito, para que el canon refleje lo que se está arrendando de verdad.',
+        body: 'Acabados, cocina, baños y conservación se califican área por área, y el puntaje se entrega junto al canon: se ve lo que se está arrendando de verdad.',
         vignette: {
           kind: 'rows',
           header: { label: 'Ajustes aplicados', meta: 'Apto 301', family: 'ag' },
@@ -634,8 +634,8 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
     capabilities: [
       { title: 'Comparables de zona', body: 'Arriendos reales del sector, no promedios de portal.' },
       { title: 'Canon en segundos', body: 'Pides el avalúo y sale el rango con su sustento.' },
-      { title: 'Ajustes explícitos', body: 'Estado, piso, amenidades: cada peso del ajuste se explica.' },
-      { title: 'Historial del sector', body: 'Cómo se ha movido el precio de la zona, para conversar con datos.' },
+      { title: 'Estado del inmueble', body: 'Acabados, cocina, baños y conservación, calificados uno por uno.' },
+      { title: 'Tiempo de arriendo a cada precio', body: 'Arrendar rápido, el recomendado o maximizar: cada canon con su vacancia estimada.' },
     ],
     snapshot: [
       { label: 'Agente', value: '<b>Avalúos</b> · L-AG-03' },
@@ -763,8 +763,8 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
     capabilities: [
       { title: 'Match automático', body: 'Extracto contra contratos, todos los días, sin planilla.' },
       { title: 'Alertas de no identificados', body: 'Lo que no cuadra se ve hoy, no al cierre.' },
-      { title: 'Cierre en horas', body: 'La conciliación deja de definir la fecha del cierre de mes.' },
-      { title: 'Trazabilidad total', body: 'Del peso en el banco al contrato y al informe, en clics.' },
+      { title: 'Avance a la vista', body: 'Cuántos movimientos cruzó el agente, con su tasa y el monto conciliado.' },
+      { title: 'Trazabilidad total', body: 'Cada peso del banco con su inquilino, su cuota y su inmueble, y quién lo concilió.' },
     ],
     snapshot: [
       { label: 'Agente', value: '<b>Conciliación</b> · L-AG-04' },
@@ -894,9 +894,9 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
     ],
     capabilities: [
       { title: 'Cruce automático', body: 'Necesidad contra inventario vivo, sin repasar listas a mano.' },
-      { title: 'Mismo día', body: 'Las opciones salen mientras el interesado sigue caliente.' },
+      { title: 'Se liberó un inmueble', body: 'Te dice a qué interesados del embudo les sirve, con su porqué.' },
       { title: 'Prioriza por cierre', body: 'Pocas opciones bien ordenadas, no un catálogo.' },
-      { title: 'Menos visitas perdidas', body: 'El asesor visita lo que tiene probabilidad real.' },
+      { title: 'Menos visitas perdidas', body: 'Ninguna se confirma sin asesor, y el recordatorio queda listo 24 horas antes.' },
     ],
     snapshot: [
       { label: 'Agente', value: '<b>Matching</b> · L-AG-05' },
@@ -1026,7 +1026,7 @@ export const PRODUCTS: Record<ProductSlug, Product> = {
       },
     ],
     capabilities: [
-      { title: 'Evaluación por contrato', body: 'Cada firma pasa por su filtro de asegurabilidad, sin excepción.' },
+      { title: 'Radar del día', body: 'Cotizaciones de hoy, tasa de aprobación y prima promedio, de un vistazo.' },
       { title: 'Cotización integrada', body: 'Aseguradoras en paralelo, veredicto en minutos.' },
       { title: 'Cobertura desde la firma', body: 'El contrato nace protegido, no queda en trámite.' },
       { title: 'Alertas de renovación', body: 'Vencimientos avisados con tiempo, gestionados y registrados.' },

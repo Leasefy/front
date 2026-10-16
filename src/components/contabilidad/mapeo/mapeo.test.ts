@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { MapeoContable, MapeoDeEvento } from '@/lib/api/contabilidad.service';
-import { eventosSembrables, eventosSinCuenta, loQueNoSeAsienta } from './mapeo';
+import { eventosSembrables, eventosSinCuenta, loQueNoSeAsienta, propuestaQueSirve } from './mapeo';
 
 function evento(over: Partial<MapeoDeEvento> & Pick<MapeoDeEvento, 'evento'>): MapeoDeEvento {
   return {
@@ -43,6 +43,21 @@ describe('mapeo (puro)', () => {
     expect(eventosSembrables(mapeo)).toEqual(['RECIBO_CAJA']);
   });
 
+  it('🔴 Portofino (14-10): una propuesta con OTRO nombre en el plan importado no se siembra', () => {
+    const conOtroNombre: MapeoContable = {
+      ...mapeo,
+      eventos: [
+        evento({ evento: 'RECIBO_CAJA', propuesta: cuenta('c-2'), propuestaConElNombreDelPlanBase: true }),
+        evento({
+          evento: 'RECAUDO_CANON_TERCEROS',
+          propuesta: { ...cuenta('c-3'), codigo: '28150505', nombre: 'COBRO SERVICIOS PUBLICOS AL PROPIETARIO' },
+          propuestaConElNombreDelPlanBase: false,
+        }),
+      ],
+    };
+    expect(eventosSembrables(conOtroNombre)).toEqual(['RECIBO_CAJA']);
+  });
+
   it('loQueNoSeAsienta traduce lo que falta a los asientos que quedan apagados, sin repetir', () => {
     expect(loQueNoSeAsienta(['RECAUDO_CANON_TERCEROS'])).toEqual([
       'los recibos de caja por transferencia, PSE o pasarela',
@@ -69,3 +84,19 @@ describe('el evento opcional «Ajuste al peso» (2026-09-16)', () => {
     expect(eventosSinCuenta(mapeo)).toEqual(['RECIBO_CAJA']);
   });
 });
+
+describe('propuestaQueSirve (Portofino 14-10)', () => {
+  const p = { id: 'c-p', codigo: '28150505', nombre: 'X', activa: true, imputable: true }
+  it('una alternativa activa, imputable, con el nombre del plan base y distinta de la elegida, sirve', () => {
+    expect(propuestaQueSirve({ propuesta: p, propuestaConElNombreDelPlanBase: true }, 'c-elegida')).toBe(true)
+  })
+  it('🔴 con otro nombre en el plan importado, no', () => {
+    expect(propuestaQueSirve({ propuesta: p, propuestaConElNombreDelPlanBase: false }, 'c-elegida')).toBe(false)
+  })
+  it('mayor, inactiva, la misma elegida o sin propuesta, no', () => {
+    expect(propuestaQueSirve({ propuesta: { ...p, imputable: false } }, 'c-elegida')).toBe(false)
+    expect(propuestaQueSirve({ propuesta: { ...p, activa: false } }, 'c-elegida')).toBe(false)
+    expect(propuestaQueSirve({ propuesta: p }, 'c-p')).toBe(false)
+    expect(propuestaQueSirve({ propuesta: null }, 'c-elegida')).toBe(false)
+  })
+})

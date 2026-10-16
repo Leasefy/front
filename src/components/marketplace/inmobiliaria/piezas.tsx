@@ -32,6 +32,7 @@ import {
 import { useAqui, useSeguir } from '@/lib/marketplace/use-inmobiliarias';
 import { useCuentaParaSeguir } from '../CuentaParaPublicar';
 import { cn } from '@/lib/utils';
+import { portadaDe } from '@/lib/marketplace/portadas';
 
 /**
  * ══ LAS PIEZAS DE LA INMOBILIARIA EN EL MARKETPLACE (Nico, 09-10-2026) ══════
@@ -478,8 +479,8 @@ export function TarjetaDeInmobiliaria({ t }: { t: TarjetaDeInmobiliaria }) {
         className="relative block h-24 bg-surface-muted"
         aria-label={`Ver la página de ${t.nombre}`}
       >
-        {t.portadaUrl ? (
-          <Image src={t.portadaUrl} alt="" fill sizes="320px" className="object-cover" />
+        {portadaDe(t.portadaUrl) ? (
+          <Image src={portadaDe(t.portadaUrl)} alt="" fill sizes="320px" className="object-cover" />
         ) : (
           <span
             className="absolute inset-0"

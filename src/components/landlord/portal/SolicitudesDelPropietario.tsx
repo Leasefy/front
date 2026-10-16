@@ -10,8 +10,8 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { CaretRight, ChatCircleText, Plus } from '@phosphor-icons/react';
-import { PageHeader } from '@leasefy/cadence';
 
 import { Button, Card } from '@/components/ui';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +45,14 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<unknown>(null);
   const [nueva, setNueva] = useState(abrirNueva);
+  const router = useRouter();
+  const pathname = usePathname();
+  // Cerrado el modal, la dirección vuelve a la lista: si se quedaba en
+  // «/solicitudes/nueva», recargar volvía a abrir el formulario (QA 11-10).
+  const cerrarNueva = useCallback(() => {
+    setNueva(false);
+    if (pathname?.endsWith('/solicitudes/nueva')) router.replace('/panel/solicitudes');
+  }, [pathname, router]);
 
   const cargar = useCallback(() => {
     setCargando(true);
@@ -60,25 +68,28 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
   }, []);
   useEffect(() => cargar(), [cargar]);
 
-  if (cargando) return <EsqueletoDePagina variante="list" className="mx-auto max-w-4xl" />;
+  if (cargando) return <EsqueletoDePagina variante="list" className="p-6 lg:p-8" />;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6">
-      <PageHeader
-        title="Solicitudes"
-        subtitle="Peticiones, quejas, reclamos y daños de tus inmuebles. Tu inmobiliaria te responde aquí."
-        actions={
-          <Button
-            hideArrow
-            onClick={() => setNueva(true)}
-            disabled={contratos.length === 0}
-            data-testid="propietario-nueva-solicitud"
-          >
-            <Plus className="h-4 w-4" weight="bold" />
-            Nueva solicitud
-          </Button>
-        }
-      />
+    <div className="space-y-6 p-6 lg:p-8">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-h2 text-fg">Solicitudes</h1>
+          <p className="max-w-2xl text-sm text-fg-muted">
+            Peticiones, quejas, reclamos y daños de tus inmuebles. Tu inmobiliaria te responde aquí.
+          </p>
+        </div>
+        <Button
+          hideArrow
+          className="shrink-0"
+          onClick={() => setNueva(true)}
+          disabled={contratos.length === 0}
+          data-testid="propietario-nueva-solicitud"
+        >
+          <Plus className="h-4 w-4" weight="bold" />
+          Nueva solicitud
+        </Button>
+      </header>
       {contratos.length === 0 && !error && (
         <p className="text-sm text-fg-muted">
           Para radicar una solicitud necesitas un inmueble consignado con una inmobiliaria.
@@ -120,7 +131,7 @@ export function SolicitudesDelPropietario({ abrirNueva = false }: { abrirNueva?:
       )}
       <NuevaSolicitudModal
         open={nueva}
-        onClose={() => setNueva(false)}
+        onClose={cerrarNueva}
         onCreated={cargar}
         contratos={contratos}
       />

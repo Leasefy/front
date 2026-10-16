@@ -108,7 +108,7 @@ describe('leerElTurno — el turno en curso (pasos de useBetaChat)', () => {
   it('mientras el especialista trabaja: él habla ahora y el orquestador espera pensando', () => {
     const r = leerElTurno({ mensaje: enVuelo, pasos: corriendo, enCurso: true })
     expect(r.orquestador.estado).toBe('pensando')
-    expect(r.hablaAhora.nombrePropio).toBe('Laura')
+    expect(r.hablaAhora.nombrePropio).toBe('Mori')
     expect(r.delegaciones).toHaveLength(1)
     expect(r.delegaciones[0]?.estado).toBe('trabajando')
     expect(r.delegaciones[0]?.tarea).toBe('Arma una estrategia')

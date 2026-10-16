@@ -9,8 +9,9 @@ interface AgencyRoleGuardProps {
   /**
    * - `managers` → solo ADMIN y AGENTE pasan. Contador/Viewer son redirigidos.
    * - `members`  → cualquier miembro de agencia (ADMIN, AGENTE, CONTADOR, VIEWER) pasa.
+   * - `mensajes` → quien usa Mensajes: ADMIN, AGENTE y COORDINADOR (14-10-2026).
    */
-  allowed: 'managers' | 'members';
+  allowed: 'managers' | 'members' | 'mensajes';
   /** Ruta a la que redirigir si el usuario no cumple. */
   fallbackPath?: string;
   children: ReactNode;
@@ -29,9 +30,9 @@ export function AgencyRoleGuard({
   children,
 }: AgencyRoleGuardProps) {
   const router = useRouter();
-  const { isManager, isMember, isLoading, isOutsideAgencyLayout } = useAgencyAccess();
+  const { isManager, isMember, usaLosMensajes, isLoading, isOutsideAgencyLayout } = useAgencyAccess();
 
-  const hasAccess = allowed === 'managers' ? isManager : isMember;
+  const hasAccess = allowed === 'managers' ? isManager : allowed === 'mensajes' ? usaLosMensajes : isMember;
 
   useEffect(() => {
     if (!isOutsideAgencyLayout && !isLoading && !hasAccess) {

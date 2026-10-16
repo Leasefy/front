@@ -23,6 +23,7 @@ import {
   ClockCounterClockwise,
   IdentificationBadge,
   Handshake,
+  Tag,
 } from '@phosphor-icons/react';
 
 /**
@@ -70,6 +71,7 @@ export type SeccionId =
   | 'costos-de-la-plata'
   | 'sedes'
   | 'mandato'
+  | 'conceptos'
   | 'integraciones'
   | 'migracion'
   | 'avisos'
@@ -206,6 +208,17 @@ export const SECCIONES_DE_CONFIGURACION: readonly SeccionDeConfiguracion[] = [
     labelKey: 'inmobiliaria.config.tabs.mandato',
     descKey: 'inmobiliaria.config.tabs.mandatoDesc',
     icon: HandCoins,
+    gate: { tipo: 'admin' },
+  },
+  {
+    // 13-10-2026 (Nico, QA de Portofino): el catálogo de conceptos de la
+    // inmobiliaria — «Base de Leasefy + lo suyo». Del ADMIN, como el mandato.
+    id: 'conceptos',
+    grupo: 'dinero',
+    slug: 'conceptos',
+    labelKey: 'inmobiliaria.config.tabs.conceptos',
+    descKey: 'inmobiliaria.config.tabs.conceptosDesc',
+    icon: Tag,
     gate: { tipo: 'admin' },
   },
   {

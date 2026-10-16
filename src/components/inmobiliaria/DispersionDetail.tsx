@@ -24,6 +24,7 @@ import {
   Receipt,
   Check,
   XCircle,
+  Trash,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { titularEnUnaLinea } from '@/lib/propietarios/titular-de-la-cuenta';
@@ -85,6 +86,12 @@ interface DispersionDetailProps {
    * `APROBADOR_Y_EJECUTOR_IGUALES`): se dice ANTES de escribir la referencia.
    */
   usuarioActualId?: string | null;
+  /**
+   * Descartar una liquidación que todavía es un borrador (Nico, 13-10-2026).
+   * Quien llama pregunta antes y dice lo que pasó: el cajón sólo la ofrece en
+   * una pendiente. El back la rechaza (409) si está o estuvo en un lote.
+   */
+  onDescartar?: (dispersion: Dispersion) => void;
 }
 
 // Status icons
@@ -268,6 +275,7 @@ export function DispersionDetail({
   onRetry,
   apruebaPorLote = false,
   usuarioActualId,
+  onDescartar,
 }: DispersionDetailProps) {
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [referencia, setReferencia] = React.useState('');
@@ -988,6 +996,19 @@ export function DispersionDetail({
           >
             <FileText className="w-4 h-4 mr-2" />
             {t('inmobiliaria.dispersiones.detailView.viewExtracto')}
+          </Button>
+        )}
+
+        {/* Descartar — sólo un borrador. Pregunta la página, no el cajón. */}
+        {isPending && onDescartar && (
+          <Button
+            variant="outline"
+            onClick={() => onDescartar(dispersion)}
+            disabled={isProcessing}
+            data-testid="dispersion-descartar"
+          >
+            <Trash className="w-4 h-4 mr-2" />
+            Descartar
           </Button>
         )}
 

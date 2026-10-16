@@ -33,7 +33,14 @@ export interface FilaDeNotificacion {
   descripcion: string;
 }
 
-export function SeccionNotificacionesDeCuenta({ filas }: { filas: readonly FilaDeNotificacion[] }) {
+export function SeccionNotificacionesDeCuenta({
+  filas,
+  nota,
+}: {
+  filas: readonly FilaDeNotificacion[];
+  /** Lo que llega siempre y no se apaga, dicho debajo de las perillas. */
+  nota?: string;
+}) {
   const { t } = useI18n();
   const { settings, isLoading, errorCrudo, refresh, updateSettings } = useNotificationSettings();
 
@@ -82,6 +89,11 @@ export function SeccionNotificacionesDeCuenta({ filas }: { filas: readonly FilaD
           );
         })}
       </TarjetaDeAjustes>
+      {nota && (
+        <p className="mt-3 text-body-sm text-fg-muted" data-testid="notificaciones-nota">
+          {nota}
+        </p>
+      )}
     </EstadoDeDatos>
   );
 }

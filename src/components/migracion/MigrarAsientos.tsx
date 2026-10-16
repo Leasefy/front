@@ -27,6 +27,7 @@ import {
   CheckCircle,
   Info,
   Receipt,
+  Scales,
   Warning,
 } from "@phosphor-icons/react";
 
@@ -71,7 +72,10 @@ import {
   remapear,
   type MapeoDeColumna,
 } from "@/lib/migracion/columnas-de-tercero";
-import { hayQueAvisarDeOtraPuerta } from "@/lib/migracion/que-archivo-contable-es";
+import {
+  esElBalanceEnElLibroDiario,
+  hayQueAvisarDeOtraPuerta,
+} from "@/lib/migracion/que-archivo-contable-es";
 import { REGLA_DE_CORRECCION } from "@/lib/migracion/regla-de-correccion";
 import {
   armarAsientos,
@@ -106,6 +110,8 @@ export function MigrarAsientos({
   onOcupado,
   continuar = null,
   onDejarDeContinuar,
+  onIrASaldosIniciales,
+  archivoInicial = null,
 }: {
   onAplicado: (informe: InformeDeMigracion) => void;
   /** Adentro del muro: abrir el paso 4 en el mismo muro. Sin esto, enlace en pestaña nueva. */
@@ -131,6 +137,13 @@ export function MigrarAsientos({
   continuar?: CargaAbierta | null;
   /** «Empezar una carga nueva»: el padre suelta la carga y el lote vuelve a ser uno nuevo. */
   onDejarDeContinuar?: () => void;
+  /**
+   * 8.ª tanda (14-10): el archivo que subieron es el BALANCE. Abre los saldos
+   * iniciales con ESE archivo, en vez de sólo nombrar la otra puerta.
+   */
+  onIrASaldosIniciales?: (archivo: File) => void;
+  /** 8.ª tanda (14-10): el archivo que «Sube tu archivo contable» trajo hasta acá. */
+  archivoInicial?: File | null;
 }) {
   /** El archivo tal cual. `null` = no hay nada subido; ver TarjetaDeArchivo. */
   const [archivo, setArchivo] = useState<File | null>(null);
@@ -274,6 +287,14 @@ export function MigrarAsientos({
     multiple: false,
   });
 
+  // El archivo que llegó de «Sube tu archivo contable»: se lee UNA vez.
+  const archivoYaLeido = useRef<File | null>(null);
+  useEffect(() => {
+    if (!archivoInicial || archivoYaLeido.current === archivoInicial) return;
+    archivoYaLeido.current = archivoInicial;
+    void onDrop([archivoInicial]);
+  }, [archivoInicial, onDrop]);
+
   const sinMapear = useMemo(
     () => obligatoriasSinMapear(COLUMNAS_DE_ASIENTO, mapeo),
     [mapeo],
@@ -286,6 +307,16 @@ export function MigrarAsientos({
    */
   const esOtroArchivo = useMemo(
     () => hayQueAvisarDeOtraPuerta(encabezados, mapeo),
+    [encabezados, mapeo],
+  );
+  /*
+   * 🔴 8.ª tanda (14-10): el BALANCE en el libro diario. Trae el código de
+   * cuenta, pero no una fecha por fila: son saldos a una fecha, no
+   * movimientos. Entrar como asientos sería imposible (sin fecha) y, peor,
+   * contaría los saldos además de los movimientos.
+   */
+  const esElBalance = useMemo(
+    () => esElBalanceEnElLibroDiario(encabezados, mapeo),
     [encabezados, mapeo],
   );
   const armados = useMemo(
@@ -643,6 +674,39 @@ export function MigrarAsientos({
               COMPROBANTES, que no puede traerlo — y la puerta correcta estaba
               al lado, sin que nada se lo dijera. Un archivo en la puerta
               equivocada no es un archivo con un error. */}
+          {esElBalance ? (
+            <div
+              className="mt-4 rounded-md bg-warning-soft p-4"
+              data-testid="asientos-archivo-es-el-balance"
+            >
+              <div className="flex items-start gap-2">
+                <Scales className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-fg">
+                    Este archivo es un balance, no el libro diario
+                  </p>
+                  <p className="text-sm text-fg-muted">
+                    Trae {esElBalance.senales.slice(0, 3).map((c) => `«${c}»`).join(", ")} y
+                    ninguna fecha por fila: son los saldos de cada cuenta a una
+                    fecha, no los movimientos. Con él nacen los saldos
+                    iniciales; el libro diario es lo que pasó después.
+                  </p>
+                  {onIrASaldosIniciales && archivo ? (
+                    <Button
+                      size="sm"
+                      hideArrow
+                      onClick={() => onIrASaldosIniciales(archivo)}
+                      data-testid="ir-a-saldos-iniciales"
+                    >
+                      Usarlo para los saldos iniciales
+                      <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           {esOtroArchivo ? (
             <div
               className="mt-4 rounded-md bg-warning-soft p-4"

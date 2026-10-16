@@ -82,11 +82,11 @@ describe('MarketplaceSection', () => {
     await montar()
 
     expect(container.querySelector(SECCION)).not.toBeNull()
-    const tarjetas = container.querySelectorAll('.mkt-card')
+    // Las mismas tarjetas del marketplace: cada una es el enlace a su ficha real.
+    const tarjetas = container.querySelectorAll('.mkt-grid a[href^="/propiedades/"]')
     expect(tarjetas).toHaveLength(2)
-    // Enlaza a la ficha real, no a un placeholder.
-    expect(tarjetas[0].querySelector('a')?.getAttribute('href')).toBe('/propiedades/a')
-    expect(container.textContent).toContain('Chapinero, Bogotá')
+    expect(tarjetas[0].getAttribute('href')).toBe('/propiedades/a')
+    expect(container.textContent).toContain('Chapinero')
   })
 
   it('si la carga FALLA, la sección no se pinta — y no dice que no hay nada', async () => {
@@ -117,7 +117,7 @@ describe('MarketplaceSection', () => {
     })
     await montar()
 
-    const hrefs = [...container.querySelectorAll('.mkt-card a')].map((a) =>
+    const hrefs = [...container.querySelectorAll('.mkt-grid a[href^="/propiedades/"]')].map((a) =>
       a.getAttribute('href'),
     )
     expect(hrefs).toEqual(['/propiedades/libre'])

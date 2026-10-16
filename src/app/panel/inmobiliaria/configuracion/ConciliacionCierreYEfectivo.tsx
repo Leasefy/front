@@ -54,9 +54,20 @@ export function ConciliacionCierreYEfectivo() {
   const puedeElEfectivo = isLoading || (canAccess('cobros', 'edit') && canAccess('configuracion', 'edit'));
   const aparecer = useAparecer();
   const { cuentas: puc } = useCuentas();
-  const delDisponible = useMemo(() => puc.filter((c) => c.codigo.startsWith('11')), [puc]);
   const [config, setConfig] = useState<ConfiguracionDeLaConciliacion | null>(null);
   const [contables, setContables] = useState<CuentasContables | null>(null);
+  // Las que el plan del sistema anterior marcaba «Caja o Banco» van primero (Nico, 13-10-2026).
+  const deCajaOBanco = useMemo(
+    () => new Set((contables?.cuentasDeCajaOBanco ?? []).map((c) => c.id)),
+    [contables],
+  );
+  const delDisponible = useMemo(
+    () =>
+      puc
+        .filter((c) => c.codigo.startsWith('11') || deCajaOBanco.has(c.id))
+        .sort((a, b) => Number(deCajaOBanco.has(b.id)) - Number(deCajaOBanco.has(a.id))),
+    [puc, deCajaOBanco],
+  );
   const [dias, setDias] = useState('');
   const [errorDeDias, setErrorDeDias] = useState<string | null>(null);
   const [guardando, setGuardando] = useState<string | null>(null);

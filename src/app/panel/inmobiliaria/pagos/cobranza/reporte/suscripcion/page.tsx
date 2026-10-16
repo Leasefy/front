@@ -95,6 +95,14 @@ function SuscripcionContent() {
       <CrossFade swapKey={isLoading && !data ? 'cargando' : data ? 'formulario' : 'nada'} className="space-y-6">
       {isLoading && !data && <PageSkeleton variant="list" />}
 
+      {/* 🔴 ROLES (14-10-2026): sin `subscribe-daily-report` la pantalla quedaba
+          en blanco (el micro responde 403). Ahora dice por qué. */}
+      {!isLoading && !data && !canAccess('cobranza', 'subscribe-daily-report') && (
+        <p className="rounded-lg border border-border bg-muted/20 p-4 text-sm text-muted-foreground" data-testid="suscripcion-sin-permiso">
+          Tu rol no puede suscribirse al reporte diario de cobranza. Si lo necesitas, pídeselo a un administrador de tu inmobiliaria.
+        </p>
+      )}
+
       {data && (
         <>
           <SubscriptionToggles

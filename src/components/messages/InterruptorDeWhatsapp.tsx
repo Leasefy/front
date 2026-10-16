@@ -97,6 +97,8 @@ export function InterruptorDeWhatsapp({
   if (!personaId || !canal || canal.motivo === 'no_aplica') return null;
 
   const advertencia = canal.aceptaWhatsapp ? SIN_NUMERO[canal.motivo] : undefined;
+  // 14-10-2026: quien no usa Mensajes lo ve, pero apagado y con el motivo.
+  const puedeCambiarlo = canal.puedeCambiarlo !== false;
 
   return (
     <div
@@ -110,17 +112,24 @@ export function InterruptorDeWhatsapp({
         </div>
         <p className="mt-0.5 text-caption text-muted-foreground">
           {canal.aceptaWhatsapp
-            ? `Lo que le escribas en el chat también le llega a su WhatsApp${canal.telefono ? ` ${canal.telefono}` : ''}.`
+            ? `Lo que le escribas en el chat también le llega a su WhatsApp${canal.telefono ? ` ${canal.telefono}` : ''}${
+                canal.porContrato ? ', porque tiene contrato firmado con la inmobiliaria. Si lo apagas, deja de llegarle.' : '.'
+              }`
             : 'Autoriza que lo que le escribas en el chat también le llegue por WhatsApp.'}
         </p>
         {advertencia && (
           <p className="mt-1 text-caption text-warning">{advertencia}</p>
         )}
+        {!puedeCambiarlo && (
+          <p className="mt-1 text-caption text-muted-foreground" data-testid="interruptor-whatsapp-sin-permiso">
+            {canal.motivoParaNoCambiarlo ?? 'Tu rol no puede cambiar esto.'}
+          </p>
+        )}
       </div>
       <Switch
         checked={canal.aceptaWhatsapp}
         onCheckedChange={cambiar}
-        disabled={guardando}
+        disabled={guardando || !puedeCambiarlo}
         aria-label="Mensajes por WhatsApp"
       />
     </div>

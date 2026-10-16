@@ -1,5 +1,6 @@
 'use client';
 
+import { plataQueLlega } from '@/lib/plata/plata-que-llega';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -484,7 +485,7 @@ function PagosPageContent() {
                     <AnimatedNumber
                       value={resumen.proxima.valor}
                       from={0}
-                      format={(n) => formatCurrencyI18n(Math.round(n))}
+                      format={plataQueLlega(resumen.proxima.valor, formatCurrencyI18n)}
                     />
                   ) : '—'}
                 </p>
@@ -509,7 +510,7 @@ function PagosPageContent() {
                   <AnimatedNumber
                     value={resumen.vencidoCop}
                     from={0}
-                    format={(n) => formatCurrencyI18n(Math.round(n))}
+                    format={plataQueLlega(resumen.vencidoCop, formatCurrencyI18n)}
                   />
                 </p>
                 <p className="text-sm text-fg-muted mt-2">
@@ -531,7 +532,7 @@ function PagosPageContent() {
                   <AnimatedNumber
                     value={resumen.restaPorPagar}
                     from={0}
-                    format={(n) => formatCurrencyI18n(Math.round(n))}
+                    format={plataQueLlega(resumen.restaPorPagar, formatCurrencyI18n)}
                   />
                 </p>
                 <Link href="/inquilino/estado-de-cuenta" className="mt-2 inline-flex items-center gap-1 text-sm text-primary hover:underline">

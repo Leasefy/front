@@ -44,7 +44,9 @@ import { useEjemploQueSeEscribe } from './use-ejemplo-que-se-escribe';
  *
  * Qué NO tiene, a propósito: «+» (el chat no recibe adjuntos) ni selector de
  * modelo, ni «Pausa» en la voz (el dictado del navegador no se puede pausar:
- * sería un botón que finge). «Voz» sólo donde el navegador sabe dictar.
+ * sería un botón que finge). «Voz» donde el navegador sabe dictar o grabar:
+ * en Arc, Brave y Firefox se graba y el texto llega al tocar «Listo»
+ * (Nico, 12-10-2026).
  */
 
 interface CajaDeLlegadaProps {
@@ -116,7 +118,7 @@ export function CajaDeLlegada({
   const dictado = useDictadoPorVoz(valor, setValor);
   useNivelDelMicrofono(cajaRef, dictado.escuchando, reducido);
   const hayTexto = valor.trim().length > 0;
-  const puedeEnviar = hayTexto && !dictado.escuchando && !ocupado;
+  const puedeEnviar = hayTexto && !dictado.escuchando && !dictado.transcribiendo && !ocupado;
   const encendida = enfocada || hayTexto;
   // Sin la franja de arriba la caja se veía chica (Nico, 02-10): más aire.
   const altoMinimo = compacta ? 'min-h-[28px]' : aviso ? 'min-h-[56px]' : 'min-h-[92px]';
@@ -126,7 +128,7 @@ export function CajaDeLlegada({
   // Sin ejemplos (la conversación), el texto fijo hace de ejemplo quieto.
   const conEjemplos = ejemplos.length > 0;
   const ejemplo = useEjemploQueSeEscribe(conEjemplos ? ejemplos : [placeholder ?? ''], {
-    activo: conEjemplos && !enfocada && !hayTexto && !dictado.escuchando,
+    activo: conEjemplos && !enfocada && !hayTexto && !dictado.escuchando && !dictado.transcribiendo,
     reducido,
   });
 
@@ -147,10 +149,10 @@ export function CajaDeLlegada({
 
   const enviar = useCallback(() => {
     const texto = valor.trim();
-    if (!texto || dictado.escuchando || ocupado) return;
+    if (!texto || dictado.escuchando || dictado.transcribiendo || ocupado) return;
     onEnviar(texto);
     setValor('');
-  }, [valor, dictado.escuchando, ocupado, onEnviar]);
+  }, [valor, dictado.escuchando, dictado.transcribiendo, ocupado, onEnviar]);
 
   const alTeclear = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     // Con un IME (tildes compuestas, teclados asiáticos) Enter confirma la
@@ -256,7 +258,10 @@ export function CajaDeLlegada({
                       {dictado.enVivo}
                       <span aria-hidden className="llegada-cursor llegada-cursor-voz" />
                       {!dictado.enVivo && (
-                        <span className="ml-2 text-fg-placeholder">{t('beta.welcome.vozHabla')}</span>
+                        <span className="ml-2 text-fg-placeholder">
+                          {/* Grabando no hay texto en vivo: llega al tocar «Listo». */}
+                          {t(dictado.modo === 'grabacion' ? 'beta.welcome.vozHablaGrabando' : 'beta.welcome.vozHabla')}
+                        </span>
                       )}
                     </p>
                     <div className="mt-3 flex items-center gap-3">
@@ -273,7 +278,7 @@ export function CajaDeLlegada({
                         <span className="mt-0.5 block truncate text-[13px] text-fg-muted">
                           <span className="font-mono tabular-nums">{relojDeVoz(dictado.segundos)}</span>
                           {' · '}
-                          {t('beta.welcome.vozPista')}
+                          {t(dictado.modo === 'grabacion' ? 'beta.welcome.vozTope' : 'beta.welcome.vozPista')}
                         </span>
                       </span>
                       <button
@@ -316,6 +321,10 @@ export function CajaDeLlegada({
                           if (dictado.error) dictado.limpiarError();
                         }}
                         onKeyDown={alTeclear}
+                        // Mientras el micro pasa lo grabado a texto, lo que se
+                        // escriba se pisaría con lo dictado: se espera.
+                        readOnly={dictado.transcribiendo}
+                        aria-busy={dictado.transcribiendo}
                         onFocus={() => setEnfocada(true)}
                         onBlur={() => setEnfocada(false)}
                         rows={compacta ? 1 : 2}
@@ -332,7 +341,22 @@ export function CajaDeLlegada({
                       {/* El ejemplo que se escribe solo: decoración, por eso
                           `aria-hidden` — la etiqueta de arriba es la que dice
                           qué escribir. Se va apenas hay texto. */}
-                      {!valor && (
+                      {/* Lo grabado va al micro: en la caja vacía, donde va a
+                          caer el texto, se dice que se está escribiendo. */}
+                      {!valor && dictado.transcribiendo && (
+                        <p
+                          role="status"
+                          data-testid="voz-transcribiendo"
+                          className={cn(
+                            'pointer-events-none absolute inset-x-1.5 top-0 leading-[1.5] text-fg-muted',
+                            compacta ? 'text-[16px]' : 'text-[17px]'
+                          )}
+                        >
+                          {t('beta.welcome.vozTranscribiendo')}
+                          <span aria-hidden className="llegada-cursor llegada-cursor-voz" />
+                        </p>
+                      )}
+                      {!valor && !dictado.transcribiendo && (
                         <span
                           aria-hidden
                           data-testid="ejemplo-de-llegada"
@@ -346,6 +370,18 @@ export function CajaDeLlegada({
                         </span>
                       )}
                     </div>
+
+                    {/* Con algo ya escrito, el aviso va debajo del texto. */}
+                    {dictado.transcribiendo && valor && (
+                      <p
+                        role="status"
+                        data-testid="voz-transcribiendo"
+                        className="mt-2 flex items-center gap-2 px-1.5 text-[13px] text-fg-muted"
+                      >
+                        <span aria-hidden className="llegada-cursor llegada-cursor-voz" />
+                        {t('beta.welcome.vozTranscribiendo')}
+                      </p>
+                    )}
 
                     {/* Por qué no se pudo dictar — dentro de la caja, nunca en
                         silencio (Nico, 02-10: «le da clic a voz y se sale»). */}
@@ -426,13 +462,15 @@ export function CajaDeLlegada({
                           <button
                             type="button"
                             onClick={dictado.alternar}
+                            disabled={dictado.transcribiendo}
                             aria-label={t('beta.chat.voiceButton')}
                             title={t('beta.chat.voiceButton')}
                             data-testid="voz-llegada"
                             className={cn(
                               'group inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 text-[14px] font-medium text-fg',
                               boton,
-                              'transition-colors duration-fast hover:border-border-strong hover:bg-bg active:scale-[0.98]'
+                              'transition-colors duration-fast hover:border-border-strong hover:bg-bg active:scale-[0.98]',
+                              'disabled:cursor-not-allowed disabled:opacity-60'
                             )}
                           >
                             {/* La onda de la referencia: quieta, se mueve al pasar el mouse. */}

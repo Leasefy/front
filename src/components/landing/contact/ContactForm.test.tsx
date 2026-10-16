@@ -64,9 +64,10 @@ describe('<ContactForm>', () => {
     render()
     expect(container.querySelector('h1')?.textContent).toContain('Hablemos de tu operación')
     expect(container.querySelector('[data-testid="contact-channel-email"]')?.textContent).toContain(
-      'hola@leasefy.com',
+      'hola@leasefy.co',
     )
-    expect(container.querySelector('[data-testid="contact-channel-whatsapp"]')).toBeTruthy()
+    // Sin número de WhatsApp todavía (Nico, 12-10-2026: «quitarlo hasta tenerlo»).
+    expect(container.querySelector('[data-testid="contact-channel-whatsapp"]')).toBeNull()
     expect(container.querySelector('[data-testid="contact-channel-base"]')?.textContent).toContain('Medellín')
   })
 

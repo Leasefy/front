@@ -22,7 +22,7 @@ interface TypingIndicatorProps {
 }
 
 /**
- * TypingIndicator — Laura pensando, antes del primer despacho.
+ * TypingIndicator — Mori pensando, antes del primer despacho.
  *
  * Sin barra (Nico, 2026-08-27: «quítale esa barra, para eso es el orbe»). La
  * bajada rota por HECHOS que de verdad llegan en esta fase — no por frases de

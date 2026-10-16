@@ -1,7 +1,7 @@
 'use client';
 
 import { usePermissionsContextSafe } from '@/lib/context/PermissionsContext';
-import { isAgencyManager, isAgencyMember } from './agency-roles';
+import { isAgencyManager, isAgencyMember, usaLosMensajes } from './agency-roles';
 
 /**
  * Hook para gatear UI por rol de agencia. Devuelve flags booleanos calculados a partir del
@@ -18,6 +18,7 @@ export function useAgencyAccess() {
     return {
       isManager: false,
       isMember: false,
+      usaLosMensajes: false,
       isLoading: false,
       isOutsideAgencyLayout: true,
     };
@@ -27,6 +28,7 @@ export function useAgencyAccess() {
 
   return {
     isManager: isAgencyManager({ isAdmin, agencyRole }),
+    usaLosMensajes: usaLosMensajes({ isAdmin, agencyRole }),
     isMember: isAgencyMember({ isAdmin, agencyRole }),
     isLoading,
     isOutsideAgencyLayout: false,

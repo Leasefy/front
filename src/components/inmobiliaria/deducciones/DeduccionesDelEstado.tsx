@@ -31,6 +31,17 @@ export const ORIGEN_DE_LA_DEDUCCION: Record<string, string> = {
 };
 const ORIGEN = ORIGEN_DE_LA_DEDUCCION;
 
+/**
+ * «Reparación: gotera en el baño». Si el concepto ya empieza con el nombre del
+ * origen no se repite: salía «Reparación: Reparación QA…» (QA 11-10).
+ */
+export function rotuloDeLaDeduccion(d: Pick<DeduccionDelEstado, 'origen' | 'concepto'>): string {
+  const origen = ORIGEN_DE_LA_DEDUCCION[d.origen] ?? 'Descuento';
+  const concepto = (d.concepto ?? '').trim();
+  if (!concepto) return origen;
+  return concepto.toLocaleLowerCase('es').startsWith(origen.toLocaleLowerCase('es')) ? concepto : `${origen}: ${concepto}`;
+}
+
 export function estadoDeLaDeduccionEnPalabras(d: Pick<DeduccionDelEstado, 'estado' | 'mes'>): string {
   const mes = nombreDelMes(d.mes);
   if (d.estado === 'APLICADA') return `Descontada en el giro de ${mes}`;
@@ -104,7 +115,7 @@ export function DeduccionesDelEstado({
               )}
               <div className="min-w-0">
                 <p className="text-body-sm font-medium text-fg">
-                  {ORIGEN[d.origen] ?? 'Descuento'}: {d.concepto}
+                  {rotuloDeLaDeduccion(d)}
                 </p>
                 <p className="text-xs text-fg-muted">
                   {[d.inmueble, estadoDeLaDeduccionEnPalabras(d)].filter(Boolean).join(' · ')}

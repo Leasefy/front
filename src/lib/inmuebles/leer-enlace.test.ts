@@ -433,6 +433,101 @@ describe('galería ampliada — fotos que sólo están en el <img> (T-0034 WU-1,
   });
 });
 
+/**
+ * 🔴 Ficha REAL 2999 de portofinopropiedadraiz.com (13-10-2026), recortada.
+ * Lo que la hace distinta del fixture 2925: los nombres son los que les puso
+ * WhatsApp, todas las fotos de todos los inmuebles viven en `/img/fotos/` y la
+ * página pinta 6 miniaturas aunque el inmueble tenga más. Con el lector de
+ * antes entraba UNA foto de siete (Nico: «solo trae una imagen»).
+ */
+const FOTOS_2999 = [
+  '1920x1080_WhatsApp-Image-2026-10-07-at-9_42_01-AM.jpeg',
+  '1920x1080_WhatsApp-Image-2026-10-07-at-12_41_05-PM.jpeg',
+  '1920x1080_WhatsApp-Image-2026-10-07-at-12_41_05-PM-_1_.jpeg',
+  '1920x1080_WhatsApp-Image-2026-10-07-at-12_41_06-PM.jpeg',
+  '1920x1080_WhatsApp-Image-2026-10-07-at-12_41_06-PM-_1_.jpeg',
+  '1920x1080_WhatsApp-Image-2026-10-07-at-12_41_06-PM-_2_.jpeg',
+  '1920x1080_WhatsApp-Image-2026-10-07-at-12_41_06-PM-_3_.jpeg',
+];
+const realDe = (nombre: string) => `https://portofinopr.arrendasoft.co/img/fotos/${nombre}`;
+const proxyDe = (nombre: string, w: number) =>
+  `https://portofino-propiedad-raiz.web.app/api/nuby/image-proxy?url=${encodeURIComponent(realDe(nombre))}&amp;w=${w}&amp;q=75`;
+const proxyRsc = (nombre: string) =>
+  `https://portofino-propiedad-raiz.web.app/api/nuby/image-proxy?url=${encodeURIComponent(realDe(nombre))}\\u0026w=1600\\u0026q=75`;
+
+function fichaDe2999({ conEstado = true, miniaturas = 6, extra = '' } = {}): string {
+  const estado = conEstado
+    ? `<script>self.__next_f.push([1,"{\\"code\\":2999,\\"title\\":\\"Apartaestudio En Sabaneta\\",\\"images\\":[${FOTOS_2999.map((n) => `\\"${proxyRsc(n)}\\"`).join(',')}],\\"features\\":[\\"Balcón\\"]}"])</script>`
+    : '';
+  return `<!doctype html><html><head>
+<title>Apartaestudio En Sabaneta | Portofino Propiedad Raíz</title>
+<meta property="og:image" content="${proxyDe(FOTOS_2999[0], 1600)}"/>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"RealEstateListing","name":"Apartaestudio En Sabaneta","image":"${proxyDe(FOTOS_2999[0], 1600).replace(/&amp;/g, '&')}","address":{"@type":"PostalAddress","addressLocality":"Sabaneta","addressRegion":"Antioquia"},"offers":{"@type":"Offer","price":1200000,"priceCurrency":"COP"}}</script>
+</head><body>
+<img src="/logo-portofino.png" alt="Portofino Propiedad Raíz"/>
+<img alt="Apartaestudio En Sabaneta" sizes="660px" srcSet="${proxyDe(FOTOS_2999[0], 640)} 640w" src="${proxyDe(FOTOS_2999[0], 3840)}"/>
+${FOTOS_2999.slice(0, miniaturas)
+  .map((n, i) => `<button><img alt="Fotografía ${i + 1} - Apartaestudio En Sabaneta" sizes="96px" srcSet="${proxyDe(n, 96)} 96w" src="${proxyDe(n, 3840)}"/></button>`)
+  .join('\n')}
+${extra}
+${estado}
+</body></html>`;
+}
+
+describe('fotos de la web de Portofino por enlace (Nico, 13-10-2026: «solo trae una imagen»)', () => {
+  const URL_2999 = 'https://portofinopropiedadraiz.com/propiedades/2999';
+
+  it('trae las 7 fotos de la ficha, en el orden del inmueble y con la portada primera', () => {
+    const r = leerInmuebleDeHtml(fichaDe2999(), URL_2999);
+    expect(r.imagenes).toEqual(FOTOS_2999.map(realDe));
+  });
+
+  it('sin el estado embebido, igual trae las 6 miniaturas rotuladas con el nombre de la ficha', () => {
+    const r = leerInmuebleDeHtml(fichaDe2999({ conEstado: false }), URL_2999);
+    expect(r.imagenes).toEqual(FOTOS_2999.slice(0, 6).map(realDe));
+  });
+
+  it('una foto de OTRO inmueble en la misma carpeta, rotulada con su nombre, NO entra', () => {
+    const otra = '1920x1080_WhatsApp-Image-2026-10-08-at-7_00_00-AM.jpeg';
+    const html = fichaDe2999({
+      conEstado: false,
+      extra: `<img alt="Casa En Caldas" src="${proxyDe(otra, 640)}"/>`,
+    });
+    const r = leerInmuebleDeHtml(html, URL_2999);
+    expect(r.imagenes).not.toContain(realDe(otra));
+    expect(r.imagenes).toHaveLength(6);
+  });
+
+  it('una lista del estado que NO trae la portada de esta ficha (similares) no se toma', () => {
+    const otras = ['1920x1080_similar-1.jpeg', '1920x1080_similar-2.jpeg'];
+    const html = fichaDe2999({
+      conEstado: false,
+      extra: `<script>self.__next_f.push([1,"{\\"similares\\":[${otras.map((n) => `\\"${proxyRsc(n)}\\"`).join(',')}]}"])</script>`,
+    });
+    const r = leerInmuebleDeHtml(html, URL_2999);
+    for (const n of otras) expect(r.imagenes).not.toContain(realDe(n));
+  });
+
+  it('una lista que trae la portada pero no se llama como una galería y mezcla carpetas no se toma', () => {
+    const ajena = 'https://cdn.otro.co/fotos/9999/portada.jpeg';
+    const html = fichaDe2999({
+      conEstado: false,
+      extra: `<script>self.__next_f.push([1,"{\\"vistos\\":[\\"${proxyRsc(FOTOS_2999[0])}\\",\\"${ajena}\\"]}"])</script>`,
+    });
+    const r = leerInmuebleDeHtml(html, URL_2999);
+    expect(r.imagenes).not.toContain(ajena);
+  });
+
+  it('un título corto («Casa») no basta para rotular: no prueba de quién es la foto', () => {
+    const html = `<html><head>
+      <meta property="og:image" content="https://cdn.co/fotos/portada.jpeg">
+      <meta property="og:title" content="Casa">
+      </head><body><img alt="Casa" src="https://cdn.co/fotos/de-cualquiera.jpeg"></body></html>`;
+    const r = leerInmuebleDeHtml(html, 'https://x.co/ficha-123');
+    expect(r.imagenes).toEqual(['https://cdn.co/fotos/portada.jpeg']);
+  });
+});
+
 describe('dirección — no perder el primer carácter y caer a referencia o municipio (T-0034 WU-1, Slice B)', () => {
   it('no pierde la «c» de «cerca al tránsito de itagui» (defecto real, ficha 2925)', () => {
     const r = leerInmuebleDeHtml(FICHA_2925_PORTOFINO, 'https://portofinopropiedadraiz.com/propiedades/2925');

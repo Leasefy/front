@@ -101,12 +101,22 @@ export interface PersonaDeOrigen {
  * prefijo con el número de un apartamento.
  *
  * 🔴 No se valida el PRIMER dígito ni el DV: en Colombia hay documentos que
- * empiezan por cualquier cifra, y rechazar por ahí bota gente real. Tampoco se
- * acepta cualquier cosa: un teléfono («(301) 402-3878») trae paréntesis y
- * guiones y NO pasa, que es justo lo que evita guardar un teléfono como si
- * fuera la cédula del dueño.
+ * empiezan por cualquier cifra, y rechazar por ahí bota gente real.
+ *
+ * 🔴 QA de Portofino (14-10-2026), regla de Nico (07-09 y 14-10): el documento
+ * se valida SÓLO por largo y caracteres. Lo que el archivo escribió con
+ * paréntesis, «+», espacios o guiones internos («(301) 402-3878 - RUBEN»,
+ * «+44 7903 502704 - LEIDY…») es el documento con su formato: se le quitan y
+ * se mira el largo, igual que la migración de Propietarios, que creó a esas
+ * mismas personas con «3014023878» y «447903502704». Antes no se partía y el
+ * inmueble quedaba sin dueño aunque el dueño estaba en Leasefy.
  */
 const DOCUMENTO = /^[A-Z]{0,3}\d{5,12}$/;
+
+/** El documento sin su formato: puntos, espacios, paréntesis, «+» y guiones. */
+function sinFormato(izquierda: string): string {
+  return izquierda.replace(/[.\s()+\-]/g, '').toUpperCase();
+}
 
 /**
  * «901548190 - PORTOFINO PROPIEDAD RAIZ S.A.S» → documento + nombre.
@@ -126,9 +136,11 @@ export function documentoYNombre(v: unknown): PersonaDeOrigen {
   const cuerpo = conOrden ? conOrden[2].trim() : texto;
   if (conOrden) orden = Number(conOrden[1]);
 
-  const partido = cuerpo.match(/^([^\s-][^-]*?)\s+-\s+(.+)$/);
+  // Por el PRIMER « - » con espacios: un guion pegado («402-3878») es parte
+  // del documento escrito con formato, no el separador.
+  const partido = cuerpo.match(/^(\S.*?)\s+-\s+(.+)$/);
   if (partido) {
-    const izquierda = partido[1].replace(/[.\s]/g, '').toUpperCase();
+    const izquierda = sinFormato(partido[1]);
     if (DOCUMENTO.test(izquierda)) {
       return { documento: izquierda, nombre: partido[2].trim() || undefined, orden };
     }

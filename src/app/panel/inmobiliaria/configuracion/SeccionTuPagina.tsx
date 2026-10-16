@@ -15,7 +15,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowSquareOut, Globe, ImageSquare, Stack, UploadSimple } from '@phosphor-icons/react';
+import { ArrowSquareOut, Check, Globe, Stack, UploadSimple } from '@phosphor-icons/react';
 
 import { EstadoDeDatos } from '@/components/estado/EstadoDeDatos';
 import { toast } from '@/components/ui/toast';
@@ -23,6 +23,8 @@ import { agencyApi } from '@/lib/api/inmobiliaria.service';
 import { mensajeParaLaPersona } from '@/lib/errores/traductor-de-errores';
 import { useInmobiliariaConfig } from '@/lib/hooks/useInmobiliaria';
 import { normalizarNombreCorto, problemaDelNombreCorto } from '@/lib/marketplace/nombre-corto';
+import { PORTADAS_DE_LEASEFY, esPortadaDeLeasefy, portadaDe } from '@/lib/marketplace/portadas';
+import { LogoDeLaInmobiliaria } from '@/components/marketplace/inmobiliaria/piezas';
 import { EsqueletoDeSeccion, VacioDeSeccion } from './piezas';
 
 const REDES = [
@@ -65,13 +67,18 @@ interface Agencia {
   slug?: string | null;
   lema?: string | null;
   portadaUrl?: string | null;
-  branding?: { socials?: Partial<Record<string, string>> } | null;
+  logoUrl?: string | null;
+  branding?: { socials?: Partial<Record<string, string>>; primaryColor?: string | null } | null;
 }
 
 function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => void }) {
   const [slug, setSlug] = useState(agency.slug ?? '');
   const [lema, setLema] = useState(agency.lema ?? '');
   const [portada, setPortada] = useState(agency.portadaUrl ?? null);
+  const [logo, setLogo] = useState(agency.logoUrl ?? null);
+  const [subiendoLogo, setSubiendoLogo] = useState(false);
+  const [eligiendo, setEligiendo] = useState<string | null>(null);
+  const archivoDelLogo = useRef<HTMLInputElement>(null);
   const [redes, setRedes] = useState<Redes>(() => ({
     instagram: agency.branding?.socials?.instagram ?? '',
     tiktok: agency.branding?.socials?.tiktok ?? '',
@@ -84,6 +91,7 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
   const archivo = useRef<HTMLInputElement>(null);
 
   useEffect(() => setPortada(agency.portadaUrl ?? null), [agency.portadaUrl]);
+  useEffect(() => setLogo(agency.logoUrl ?? null), [agency.logoUrl]);
 
   const normalizado = String(normalizarNombreCorto(slug) ?? '');
   const problema = slug ? problemaDelNombreCorto(normalizado) : 'forma';
@@ -131,6 +139,53 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
       setSubiendo(false);
     }
   };
+
+  /** Una portada de Leasefy, o `null` para volver a la de por defecto. */
+  const elegirPortada = async (src: string | null) => {
+    setEligiendo(src ?? 'ninguna');
+    try {
+      await agencyApi.updateAgency({ portadaUrl: src } as never);
+      setPortada(src);
+      toast.success(src ? 'Elegiste esa portada para tu página.' : 'Quedó la portada de Leasefy.');
+      alGuardar();
+    } catch (e) {
+      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No pudimos cambiar la portada.', accion: 'cambiar la portada' }));
+    } finally {
+      setEligiendo(null);
+    }
+  };
+
+  const subirLogo = async (f: File | undefined) => {
+    if (!f) return;
+    setSubiendoLogo(true);
+    try {
+      const r = await agencyApi.uploadAgencyLogo(f);
+      setLogo(r.logoUrl);
+      toast.success('Tu logo quedó en tu página.');
+      alGuardar();
+    } catch (e) {
+      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No pudimos subir el logo.', accion: 'subir el logo' }));
+    } finally {
+      setSubiendoLogo(false);
+    }
+  };
+
+  const usarIniciales = async () => {
+    setSubiendoLogo(true);
+    try {
+      await agencyApi.updateAgency({ logoUrl: null } as never);
+      setLogo(null);
+      toast.success('Tu página muestra tus iniciales.');
+      alGuardar();
+    } catch (e) {
+      toast.error(mensajeParaLaPersona(e, { porDefecto: 'No pudimos quitar el logo.', accion: 'quitar el logo' }));
+    } finally {
+      setSubiendoLogo(false);
+    }
+  };
+
+  const propia = Boolean(portada) && !esPortadaDeLeasefy(portada);
+  const elegida = portada ?? PORTADAS_DE_LEASEFY[0].src;
 
   return (
     <div className="space-y-8" data-testid="seccion-tu-pagina">
@@ -190,35 +245,127 @@ function Formulario({ agency, alGuardar }: { agency: Agencia; alGuardar: () => v
         </div>
       </div>
 
-      <div>
-        <p className="text-[14px] font-medium text-fg">Portada</p>
-        <div className="relative mt-1.5 h-32 overflow-hidden rounded-lg border border-border bg-surface-muted md:h-40">
-          {portada ? (
-            <Image src={portada} alt="La portada de tu página" fill sizes="800px" className="object-cover" />
-          ) : (
-            <span className="absolute inset-0 flex items-center justify-center gap-2 text-[13.5px] text-fg-muted">
-              <ImageSquare className="h-5 w-5" aria-hidden />
-              Sin portada todavía
-            </span>
-          )}
+      {/* Nico, 12-10-2026: «que suban su logo y su portada y puedan elegir cómo se van a ver
+          en la red social; si no eligen nada, los predeterminados nuestros». */}
+      <div className="space-y-5" data-testid="asi-te-ven">
+        <div>
+          <p className="text-[14px] font-medium text-fg">Así te ven en Leasefy</p>
+          <p className="text-[13px] text-fg-muted">
+            Tu logo y tu portada salen en tu página, en el buscador y en el chat. Si no subes nada, salen tus iniciales y
+            una portada de Leasefy.
+          </p>
         </div>
-        <input
-          ref={archivo}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          className="hidden"
-          onChange={(e) => subirPortada(e.target.files?.[0])}
-        />
-        <button
-          type="button"
-          onClick={() => archivo.current?.click()}
-          disabled={subiendo}
-          className="mt-2 inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-surface px-4 text-[13.5px] font-medium text-fg hover:border-border-strong disabled:opacity-60"
-        >
-          <UploadSimple className="h-4 w-4" aria-hidden />
-          {subiendo ? 'Subiendo…' : portada ? 'Cambiar la portada' : 'Subir una portada'}
-        </button>
-        <p className="mt-1 text-[12.5px] text-fg-muted">JPG, PNG o WebP, ancha (por ejemplo 2000 × 800), hasta 8 MB.</p>
+
+        <div className="overflow-hidden rounded-lg border border-border bg-surface" data-testid="vista-previa-de-la-pagina">
+          <div className="relative h-28 bg-surface-muted md:h-36">
+            <Image src={portadaDe(portada)} alt="" fill sizes="900px" className="object-cover" />
+          </div>
+          <div className="flex items-end gap-4 px-5 pb-4">
+            <LogoDeLaInmobiliaria
+              i={{ nombre: agency.name, logoUrl: logo, color: agency.branding?.primaryColor ?? null }}
+              tamano={64}
+              className="relative z-10 -mt-8 ring-4 ring-surface"
+            />
+            <div className="min-w-0 pt-3">
+              <p className="truncate font-heading text-[18px] font-semibold text-fg">{agency.name}</p>
+              <p className="truncate text-[13px] text-fg-muted">{lema.trim() || 'Tu lema sale aquí'}</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <p className="text-[13.5px] font-medium text-fg">Logo</p>
+          <input
+            ref={archivoDelLogo}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/svg+xml"
+            className="hidden"
+            onChange={(e) => subirLogo(e.target.files?.[0])}
+          />
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => archivoDelLogo.current?.click()}
+              disabled={subiendoLogo}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-surface px-4 text-[13.5px] font-medium text-fg hover:border-border-strong disabled:opacity-60"
+            >
+              <UploadSimple className="h-4 w-4" aria-hidden />
+              {subiendoLogo ? 'Guardando…' : logo ? 'Cambiar el logo' : 'Subir mi logo'}
+            </button>
+            {logo && (
+              <button
+                type="button"
+                onClick={usarIniciales}
+                disabled={subiendoLogo}
+                className="inline-flex h-9 items-center rounded-full px-3 text-[13.5px] font-medium text-fg-muted hover:text-fg disabled:opacity-60"
+              >
+                Usar mis iniciales
+              </button>
+            )}
+          </div>
+          <p className="mt-1 text-[12.5px] text-fg-muted">Cuadrado, con fondo transparente si puedes. PNG, JPG, WebP o SVG.</p>
+        </div>
+
+        <div>
+          <p className="text-[13.5px] font-medium text-fg">Portada</p>
+          <p className="text-[13px] text-fg-muted">Sube la tuya o elige una de Leasefy.</p>
+          <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Portadas de Leasefy">
+            {PORTADAS_DE_LEASEFY.map((p) => {
+              const activa = !propia && elegida === p.src;
+              return (
+                <button
+                  key={p.src}
+                  type="button"
+                  role="radio"
+                  aria-checked={activa}
+                  aria-label={p.nombre}
+                  disabled={eligiendo !== null}
+                  onClick={() => elegirPortada(p.src)}
+                  className={
+                    'relative h-20 overflow-hidden rounded-lg border-2 transition-[border-color,box-shadow] duration-base disabled:opacity-70 ' +
+                    (activa ? 'border-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.15)]' : 'border-transparent hover:border-border-strong')
+                  }
+                >
+                  <Image src={p.src} alt="" fill sizes="240px" className="object-cover" />
+                  {activa && (
+                    <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-fg">
+                      <Check className="h-3 w-3" weight="bold" aria-hidden />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <input
+            ref={archivo}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(e) => subirPortada(e.target.files?.[0])}
+          />
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => archivo.current?.click()}
+              disabled={subiendo}
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-surface px-4 text-[13.5px] font-medium text-fg hover:border-border-strong disabled:opacity-60"
+            >
+              <UploadSimple className="h-4 w-4" aria-hidden />
+              {subiendo ? 'Subiendo…' : propia ? 'Cambiar mi portada' : 'Subir mi portada'}
+            </button>
+            {propia && (
+              <button
+                type="button"
+                onClick={() => elegirPortada(null)}
+                disabled={eligiendo !== null}
+                className="inline-flex h-9 items-center rounded-full px-3 text-[13.5px] font-medium text-fg-muted hover:text-fg disabled:opacity-60"
+              >
+                Usar la de Leasefy
+              </button>
+            )}
+          </div>
+          <p className="mt-1 text-[12.5px] text-fg-muted">JPG, PNG o WebP, ancha (por ejemplo 2000 × 800), hasta 8 MB.</p>
+        </div>
       </div>
 
       <div>

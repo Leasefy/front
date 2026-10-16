@@ -33,6 +33,19 @@
   .lv2 #hdr .mk-n{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;background:var(--blue);color:#fff;font-size:10px;font-weight:600;letter-spacing:.04em}
 }
 
+/* ── ES / EN (Nico, 16-10-2026) ──────────────────────────────────────────── */
+.lv2 .idioma{display:inline-flex;align-items:center;gap:2px;margin-right:2px;font-family:var(--fm);font-size:11px;font-weight:500;letter-spacing:.12em;color:var(--ink)}
+.lv2 .idioma button{height:30px;min-width:34px;padding:0 8px;border:0;border-radius:999px;background:transparent;color:inherit;opacity:.5;cursor:pointer;transition:opacity .2s,background-color .2s}
+.lv2 .idioma button:hover{opacity:1}
+.lv2 .idioma button[aria-pressed="true"]{opacity:1;background:rgba(17,17,17,.07)}
+.lv2 .idioma button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.lv2 #hdr:not(.scrolled) .idioma{color:#fff}
+.lv2 #hdr:not(.scrolled) .idioma button[aria-pressed="true"]{background:rgba(255,255,255,.16)}
+html.pm-open .lv2 #hdr .idioma{color:var(--ink)}
+html.pm-open .lv2 #hdr .idioma button[aria-pressed="true"]{background:rgba(17,17,17,.07)}
+.lv2 .mmenu .idioma{align-self:flex-start;margin:0 0 14px;font-size:12px;color:var(--ink)}
+@media(max-width:1023px){.lv2 #hdr .hcta .idioma{display:none}}
+
 /* ── La franja de arriba, en todas las páginas públicas ─────────────────── */
 /* Va en el flujo, ARRIBA del header fijo: empuja la página en vez de taparla.
    El header baja hasta donde termina la franja (`--franja-y`, lo mide la
@@ -202,6 +215,10 @@
 .lv2 .mk-pin-sm{height:20px;padding:0 7px;font-size:9.5px;cursor:inherit}
 @keyframes mk-pin{from{opacity:0;transform:translateY(8px) scale(.8)}to{opacity:1}}
 .lv2 .mk-pin[data-activo]{animation:none}
+/* Sin catálogo: un solo pin, el de quien publique, con un halo que late. */
+.lv2 .mk-pin-tuyo{position:relative;background:var(--blue);animation:mk-pin .55s var(--ease) 2s both}
+.lv2 .mk-pin-tuyo::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 0 0 0 rgba(26,64,255,.5);animation:mk-tuyo 2.2s ease-out 2.6s infinite}
+@keyframes mk-tuyo{0%{box-shadow:0 0 0 0 rgba(26,64,255,.5)}70%{box-shadow:0 0 0 10px rgba(26,64,255,0)}100%{box-shadow:0 0 0 0 rgba(26,64,255,0)}}
 
 /* El mapa chico pegado al marco del hero. */
 .lv2 .hfwrap{position:relative}
@@ -220,7 +237,7 @@
 @media(max-width:1023px){.lv2 .mk-pip{display:none}}
 
 @media (prefers-reduced-motion: reduce){
-  .lv2 .mk-boleto,.lv2 .mk-pip,.lv2 .mk-pin,.lv2 .mk-vivo{animation:none}
+  .lv2 .mk-boleto,.lv2 .mk-pip,.lv2 .mk-pin,.lv2 .mk-vivo,.lv2 .mk-pin-tuyo::after{animation:none}
   /* Quietas: las razones no pasan solas (se eligen) y los inmuebles armándose quedan con sus datos puestos. */
   .lv2 .mk-razon-tab[aria-selected="true"] .mk-razon-barra>i{animation:none;transform:scaleX(1)}
   .lv2 .mk-arma-brillo{animation:none;opacity:0}

@@ -71,10 +71,10 @@ export function useCatalogo(): Catalogo {
   return catalogo;
 }
 
-/** «$ 2.350.000»: como lo escribe el marketplace. */
-export function pesos(n: number | null | undefined): string {
-  if (!n) return 'Canon por confirmar';
-  return `$ ${Math.round(n).toLocaleString('es-CO')}`;
+/** «$ 2.350.000»: como lo escribe el marketplace. En inglés, también en pesos («$ 2,350,000»). */
+export function pesos(n: number | null | undefined, en = false): string {
+  if (!n) return en ? 'Rent to be confirmed' : 'Canon por confirmar';
+  return `$ ${Math.round(n).toLocaleString(en ? 'en-US' : 'es-CO')}`;
 }
 
 /** «Laureles · Medellín», o sólo la ciudad. */
@@ -92,8 +92,18 @@ const TIPO: Record<string, string> = {
   warehouse: 'Bodega',
 };
 
-export function tipoDe(p: Property): string {
-  return TIPO[p.type] ?? 'Inmueble';
+const TIPO_EN: Record<string, string> = {
+  apartment: 'Apartment',
+  house: 'House',
+  studio: 'Studio',
+  room: 'Room',
+  commercial: 'Retail space',
+  office: 'Office',
+  warehouse: 'Warehouse',
+};
+
+export function tipoDe(p: Property, en = false): string {
+  return en ? (TIPO_EN[p.type] ?? 'Property') : (TIPO[p.type] ?? 'Inmueble');
 }
 
 /** Con «reducir movimiento», todo quieto. */

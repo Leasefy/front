@@ -103,9 +103,35 @@ describe('la vitrina viva sin inmuebles', () => {
     expect(container.querySelector('.mk-boleto')!.textContent).toContain('1 inmuebles para arrendar')
     const seccion = container.querySelector('#marketplace')!
     expect(seccion.querySelector('.mk-tile-0')?.textContent).toContain('Tu inmueble aquí')
-    expect(seccion.querySelectorAll('a.mk-tile[href="/propiedades/a"]')).toHaveLength(1)
+    // Con el idioma de la página en la URL (16-10-2026): sin prefijo, el middleware tendría que redirigir.
+    expect(seccion.querySelectorAll('a.mk-tile[href="/es/propiedades/a"]')).toHaveLength(1)
     expect(seccion.querySelectorAll('.mk-tile-armandose')).toHaveLength(4)
     expect(seccion.textContent).toContain('Teja Roja Arriendos')
+  })
+})
+
+describe('en /en (Nico, 16-10-2026)', () => {
+  it('la vitrina habla inglés y el español queda igual', async () => {
+    catalogo.respuesta = null
+    const { IdiomaDeLaPagina } = await import('@/lib/idioma/use-idioma')
+    await act(async () => {
+      root.render(
+        <IdiomaDeLaPagina idioma="en">
+          <Vitrina.BoletoDelMarketplace hrefPublicar="/publicar" alTocarPublicar={() => {}} />
+          <Vitrina.MosaicoDelMarketplace hrefPublicar="/publicar" alTocarPublicar={() => {}} />
+        </IdiomaDeLaPagina>,
+      )
+    })
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(container.querySelector('.mk-boleto')!.textContent).toContain('List for free')
+    const seccion = container.querySelector('#marketplace')!
+    expect(seccion.textContent).toContain('Let the whole city find you.')
+    expect(seccion.textContent).toContain('Your property here')
+    expect(seccion.querySelector('[role="tabpanel"]')!.textContent).toContain('Listing costs nothing')
+    expect(seccion.textContent).not.toContain('Publica')
   })
 })
 

@@ -29,6 +29,7 @@ vi.mock('@/lib/auth/use-auth', () => ({
 }))
 
 import { LandingFooterV2 } from './LandingFooterV2'
+import { IdiomaDeLaPagina } from '@/lib/idioma/use-idioma'
 
 let container: HTMLDivElement
 let root: Root
@@ -46,9 +47,13 @@ afterEach(() => {
   container.remove()
 })
 
-function montar(props: { fxExterno?: boolean } = {}) {
+function montar(props: { fxExterno?: boolean } = {}, idioma: 'es' | 'en' = 'es') {
   act(() => {
-    root.render(<LandingFooterV2 {...props} />)
+    root.render(
+      <IdiomaDeLaPagina idioma={idioma}>
+        <LandingFooterV2 {...props} />
+      </IdiomaDeLaPagina>,
+    )
   })
 }
 
@@ -82,14 +87,24 @@ describe('<LandingFooterV2>', () => {
     // Un `#producto` desde /blog no lleva a ningun lado: esa seccion vive en
     // el home. El pie viejo que este reemplaza si llevaba a las rutas.
     expect(hrefs.every((h) => !h?.startsWith('#'))).toBe(true)
-    expect(hrefs).toContain('/productos/crm')
-    expect(hrefs).toContain('/blog')
+    // Con el idioma de la página en la URL (16-10-2026).
+    expect(hrefs).toContain('/es/productos/crm')
+    expect(hrefs).toContain('/es/blog')
   })
 
   it('cierra con los enlaces legales', () => {
     montar()
     const hrefs = [...container.querySelectorAll('.fbot a')].map((a) => a.getAttribute('href'))
-    expect(hrefs).toContain('/terminos')
-    expect(hrefs).toContain('/privacidad')
+    expect(hrefs).toContain('/es/terminos')
+    expect(hrefs).toContain('/es/privacidad')
+  })
+
+  it('en /en, en inglés y con los enlaces en /en (Nico, 16-10-2026)', () => {
+    montar({}, 'en')
+    expect(container.querySelector('.fbot')!.textContent).toContain('All rights reserved.')
+    expect(container.textContent).not.toContain('Volver arriba')
+    const hrefs = [...container.querySelectorAll('.fbot a')].map((a) => a.getAttribute('href'))
+    expect(hrefs).toContain('/en/terminos')
+    expect(hrefs).toContain('#top')
   })
 })

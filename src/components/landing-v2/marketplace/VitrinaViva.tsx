@@ -7,6 +7,7 @@ import { motionDuration, motionEase } from '@leasefy/cadence';
 
 import { primeraFoto } from '@/components/property/PortadaDelInmueble';
 import type { Property } from '@/lib/types/property';
+import { useEnlace, useIdioma, useTx } from '@/lib/idioma/use-idioma';
 import { dondeQueda, pesos, tipoDe, useCatalogo, useQuieto, useTurno } from './catalogo';
 
 /**
@@ -24,6 +25,15 @@ import { dondeQueda, pesos, tipoDe, useCatalogo, useQuieto, useTurno } from './c
  */
 
 type AlTocar = (e: MouseEvent<HTMLAnchorElement>) => void;
+
+/** Lo del idioma que usa cada pieza: el texto en pares, los enlaces con /es o /en y las cifras. */
+function useLengua() {
+  const tx = useTx();
+  const enlace = useEnlace();
+  const en = useIdioma() === 'en';
+  const num = (n: number) => n.toLocaleString(en ? 'en-US' : 'es-CO');
+  return { tx, enlace, en, num };
+}
 
 function Foto({ p, sizes, prioridad, pronto }: { p: Property; sizes: string; prioridad?: boolean; pronto?: boolean }) {
   return (
@@ -43,6 +53,7 @@ function Foto({ p, sizes, prioridad, pronto }: { p: Property; sizes: string; pri
 
 export function BoletoDelMarketplace({ hrefPublicar, alTocarPublicar }: { hrefPublicar: string; alTocarPublicar: AlTocar }) {
   const { inmuebles, total, fallo, cargando } = useCatalogo();
+  const { tx, enlace, num } = useLengua();
   const turno = useTurno(inmuebles.length, 2600);
   // Mientras carga, el hueco (que no salte el título). Sin catálogo (el back
   // no contestó o nadie ha publicado) el boleto se queda, sin fotos ni número:
@@ -53,7 +64,7 @@ export function BoletoDelMarketplace({ hrefPublicar, alTocarPublicar }: { hrefPu
   const tres = conFotos ? [0, 1, 2].map((k) => inmuebles[(turno + k) % inmuebles.length]) : [];
   return (
     <div className="mk-boleto" data-sin-fotos={!conFotos || undefined}>
-      <a href="/propiedades" className="mk-boleto-ver">
+      <a href={enlace('/propiedades')} className="mk-boleto-ver">
         {conFotos && (
           <span className="mk-boleto-fotos" aria-hidden="true">
             {tres.map((p, k) => (
@@ -78,15 +89,15 @@ export function BoletoDelMarketplace({ hrefPublicar, alTocarPublicar }: { hrefPu
         <span className="mk-boleto-t">
           {conFotos ? (
             <>
-              <b>{total.toLocaleString('es-CO')}</b> inmuebles para arrendar
+              <b>{num(total)}</b> {tx('inmuebles para arrendar', 'properties for rent')}
             </>
           ) : (
-            'Arriendos de las inmobiliarias de Leasefy'
+            tx('Arriendos de las inmobiliarias de Leasefy', 'Rentals from the agencies on Leasefy')
           )}
         </span>
       </a>
       <a href={hrefPublicar} onClick={alTocarPublicar} className="mk-boleto-pub">
-        Publica gratis <span aria-hidden="true">→</span>
+        {tx('Publica gratis', 'List for free')} <span aria-hidden="true">→</span>
       </a>
     </div>
   );
@@ -96,6 +107,7 @@ export function BoletoDelMarketplace({ hrefPublicar, alTocarPublicar }: { hrefPu
 
 export function VitrinaQuePasa() {
   const { inmuebles, total, fallo } = useCatalogo();
+  const { tx, enlace, en, num } = useLengua();
   const quieto = useQuieto();
   const pista = useRef<HTMLDivElement>(null);
 
@@ -140,38 +152,38 @@ export function VitrinaQuePasa() {
   if (fallo || !inmuebles.length) return <div className="mk-vitrina mk-vitrina-vacia" aria-hidden="true" />;
   const vuelta = [...inmuebles, ...inmuebles];
   return (
-    <section className="mk-vitrina" aria-label="Inmuebles publicados en el marketplace de Leasefy">
+    <section className="mk-vitrina" aria-label={tx('Inmuebles publicados en el marketplace de Leasefy', 'Properties listed on the Leasefy marketplace')}>
       <p className="mk-vitrina-rotulo">
         <i className="mk-cuadro" aria-hidden="true" />
         <span>
-          En el <br />
+          {tx('En el', 'On the')} <br />
           marketplace
         </span>
       </p>
       <div className="mk-vitrina-pista">
         <div className="mk-vitrina-track" ref={pista}>
           {vuelta.map((p, k) => (
-            <a key={`${p.id}-${k}`} href={`/propiedades/${p.id}`} className="mk-vi" tabIndex={k >= inmuebles.length ? -1 : undefined} aria-hidden={k >= inmuebles.length || undefined}>
+            <a key={`${p.id}-${k}`} href={enlace(`/propiedades/${p.id}`)} className="mk-vi" tabIndex={k >= inmuebles.length ? -1 : undefined} aria-hidden={k >= inmuebles.length || undefined}>
               <span className="mk-vi-foto">
                 <Foto p={p} sizes="88px" pronto />
               </span>
               <span className="mk-vi-txt">
                 <small>{dondeQueda(p)}</small>
                 <b>
-                  {pesos(p.monthlyRent)}
-                  <em>/mes</em>
+                  {pesos(p.monthlyRent, en)}
+                  <em>{tx('/mes', '/mo')}</em>
                 </b>
                 <span>
-                  {tipoDe(p)}
-                  {p.bedrooms ? ` · ${p.bedrooms} hab` : ''} · {p.agencyName}
+                  {tipoDe(p, en)}
+                  {p.bedrooms ? ` · ${p.bedrooms} ${tx('hab', 'bd')}` : ''} · {p.agencyName}
                 </span>
               </span>
             </a>
           ))}
         </div>
       </div>
-      <a className="mk-vitrina-fin" href="/propiedades">
-        Ver los {total.toLocaleString('es-CO')} <span aria-hidden="true">→</span>
+      <a className="mk-vitrina-fin" href={enlace('/propiedades')}>
+        {tx('Ver los', 'See all')} {num(total)} <span aria-hidden="true">→</span>
       </a>
     </section>
   );
@@ -180,10 +192,22 @@ export function VitrinaQuePasa() {
 /* ── La sección «Publica gratis» ────────────────────────────────────────── */
 
 const RAZONES = [
-  ['Publicar no cuesta', 'Todos tus inmuebles, sin límite y sin pagar por aviso.'],
-  ['Tu página en Leasefy', 'Tu perfil reemplaza tu sitio web: tus inmuebles, tus videos y lo que dicen de ti.'],
-  ['Inquilinos que llegan listos', 'Quien busca se postula una sola vez; esa aprobación le sirve para tus inmuebles.'],
-  ['Te encuentran escribiendo', 'Quien busca le escribe a Ori como le hablaría a alguien, y Ori le muestra los tuyos.'],
+  {
+    es: ['Publicar no cuesta', 'Todos tus inmuebles, sin límite y sin pagar por aviso.'],
+    en: ['Listing costs nothing', 'All your properties, with no limit and no fee per listing.'],
+  },
+  {
+    es: ['Tu página en Leasefy', 'Tu perfil reemplaza tu sitio web: tus inmuebles, tus videos y lo que dicen de ti.'],
+    en: ['Your page on Leasefy', 'Your profile replaces your website: your properties, your videos and what people say about you.'],
+  },
+  {
+    es: ['Inquilinos que llegan listos', 'Quien busca se postula una sola vez; esa aprobación le sirve para tus inmuebles.'],
+    en: ['Tenants who arrive ready', 'Renters apply once, and that approval counts for your properties.'],
+  },
+  {
+    es: ['Te encuentran escribiendo', 'Quien busca le escribe a Ori como le hablaría a alguien, y Ori le muestra los tuyos.'],
+    en: ['Found by asking', 'Renters write to Ori the way they would talk to a person, and Ori shows them yours.'],
+  },
 ] as const;
 
 /**
@@ -206,7 +230,9 @@ const CHICAS = CASILLAS - 1;
 function RazonesQuePasan({ activa }: { activa: boolean }) {
   const [elegida, setElegida] = useState(0);
   const [encima, setEncima] = useState(false);
-  const [titulo, detalle] = RAZONES[elegida];
+  const idioma = useIdioma();
+  const tx = useTx();
+  const [titulo, detalle] = RAZONES[elegida][idioma];
   return (
     <div
       className="mk-razones"
@@ -219,7 +245,7 @@ function RazonesQuePasan({ activa }: { activa: boolean }) {
       <div
         className="mk-razones-tabs"
         role="tablist"
-        aria-label="Por qué publicar en el marketplace"
+        aria-label={tx('Por qué publicar en el marketplace', 'Why list on the marketplace')}
         onKeyDown={(e) => {
           if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
           e.preventDefault();
@@ -229,9 +255,9 @@ function RazonesQuePasan({ activa }: { activa: boolean }) {
           document.getElementById(`mk-razon-${sig}`)?.focus();
         }}
       >
-        {RAZONES.map(([t], k) => (
+        {RAZONES.map((_, k) => (
           <button
-            key={t}
+            key={k}
             type="button"
             role="tab"
             id={`mk-razon-${k}`}
@@ -355,20 +381,27 @@ function InmuebleArmandose({ casilla, activa }: { casilla: number; activa: boole
 
 /** La casilla grande: la invitación. «Todavía no hay…» SÓLO si el catálogo contestó vacío. */
 function TuInmuebleAqui({ vacia, hrefPublicar, alTocarPublicar }: { vacia: boolean; hrefPublicar: string; alTocarPublicar: AlTocar }) {
+  const tx = useTx();
   return (
     <div className="mk-tile mk-tile-0 mk-tile-libre">
       <p className="mk-ceja">
         <i className="mk-cuadro" aria-hidden="true" />
-        La vitrina del marketplace
+        {tx('La vitrina del marketplace', 'The marketplace showcase')}
       </p>
-      <b>Tu inmueble aquí</b>
+      <b>{tx('Tu inmueble aquí', 'Your property here')}</b>
       <span>
         {vacia
-          ? 'Todavía no hay inmuebles publicados. Los primeros que publiques salen aquí, con tus fotos, tu precio y tu marca.'
-          : 'Aquí salen, con foto y precio, los inmuebles que publican las inmobiliarias en Leasefy.'}
+          ? tx(
+              'Todavía no hay inmuebles publicados. Los primeros que publiques salen aquí, con tus fotos, tu precio y tu marca.',
+              'No properties listed yet. The first ones you list show up here, with your photos, your price and your brand.',
+            )
+          : tx(
+              'Aquí salen, con foto y precio, los inmuebles que publican las inmobiliarias en Leasefy.',
+              'This is where the properties listed by agencies on Leasefy show up, with photo and price.',
+            )}
       </span>
       <a className="btn primary" href={hrefPublicar} onClick={alTocarPublicar}>
-        Publicar gratis <span className="ar">→</span>
+        {tx('Publicar gratis', 'List for free')} <span className="ar">→</span>
       </a>
     </div>
   );
@@ -376,6 +409,7 @@ function TuInmuebleAqui({ vacia, hrefPublicar, alTocarPublicar }: { vacia: boole
 
 export function MosaicoDelMarketplace({ hrefPublicar, alTocarPublicar }: { hrefPublicar: string; alTocarPublicar: AlTocar }) {
   const { inmuebles, total, inmobiliarias, fallo, cargando } = useCatalogo();
+  const { tx, enlace, en, num } = useLengua();
   const quieto = useQuieto();
   const [enVista, setEnVista] = useState<number[]>([]);
   const [recien, setRecien] = useState<number | null>(null);
@@ -423,22 +457,32 @@ export function MosaicoDelMarketplace({ hrefPublicar, alTocarPublicar }: { hrefP
         <div className="mk-mosaico-txt">
           <p className="mk-ceja">
             <i className="mk-cuadro" aria-hidden="true" />
-            Marketplace Leasefy · gratis para inmobiliarias
+            {tx('Marketplace Leasefy · gratis para inmobiliarias', 'Leasefy Marketplace · free for agencies')}
           </p>
           <h2 className="h-big mk-h">
-            Publica <span className="mk-hl">gratis</span>. Que te encuentre toda la ciudad.
+            {en ? (
+              <>
+                List for <span className="mk-hl">free</span>. Let the whole city find you.
+              </>
+            ) : (
+              <>
+                Publica <span className="mk-hl">gratis</span>. Que te encuentre toda la ciudad.
+              </>
+            )}
           </h2>
           <p className="mk-lead">
-            Sube tus inmuebles al marketplace de Leasefy sin pagar nada. Aparecen con tu marca, tus fotos y tus videos, frente a
-            quien está buscando dónde vivir.
+            {tx(
+              'Sube tus inmuebles al marketplace de Leasefy sin pagar nada. Aparecen con tu marca, tus fotos y tus videos, frente a quien está buscando dónde vivir.',
+              'Put your properties on the Leasefy marketplace without paying a thing. They show up with your brand, your photos and your videos, in front of people looking for a place to live.',
+            )}
           </p>
           <RazonesQuePasan activa={visible} />
           <div className="mk-ctas">
             <a className="btn primary lg" href={hrefPublicar} onClick={alTocarPublicar}>
-              Publicar mis inmuebles gratis <span className="ar">→</span>
+              {tx('Publicar mis inmuebles gratis', 'List my properties for free')} <span className="ar">→</span>
             </a>
-            <a className="btn outline lg" href="/propiedades">
-              Ver el marketplace
+            <a className="btn outline lg" href={enlace('/propiedades')}>
+              {tx('Ver el marketplace', 'See the marketplace')}
             </a>
           </div>
         </div>
@@ -451,7 +495,7 @@ export function MosaicoDelMarketplace({ hrefPublicar, alTocarPublicar }: { hrefP
               const p = hayVitrina && enVista[k] != null ? inmuebles[enVista[k]] : undefined;
               if (!p) return <InmuebleArmandose key={casilla} casilla={casilla} activa={visible} />;
               return (
-                <a key={casilla} href={`/propiedades/${p.id}`} className={`mk-tile mk-tile-${casilla}`}>
+                <a key={casilla} href={enlace(`/propiedades/${p.id}`)} className={`mk-tile mk-tile-${casilla}`}>
                   <AnimatePresence initial={false} mode="popLayout">
                     <motion.span
                       key={p.id}
@@ -469,14 +513,14 @@ export function MosaicoDelMarketplace({ hrefPublicar, alTocarPublicar }: { hrefP
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: motionDuration.slow, ease: motionEase.enter, delay: 0.25 }}
                         >
-                          Recién publicado
+                          {tx('Recién publicado', 'Just listed')}
                         </motion.span>
                       )}
                       <span className="mk-tile-pie">
                         <small>{dondeQueda(p)}</small>
                         <b>
-                          {pesos(p.monthlyRent)}
-                          <em>/mes</em>
+                          {pesos(p.monthlyRent, en)}
+                          <em>{tx('/mes', '/mo')}</em>
                         </b>
                       </span>
                     </motion.span>
@@ -488,8 +532,10 @@ export function MosaicoDelMarketplace({ hrefPublicar, alTocarPublicar }: { hrefP
           {hayVitrina && inmobiliarias.length > 0 && (
             <div className="mk-publican">
               <p className="mk-publican-k">
-                {total.toLocaleString('es-CO')} inmuebles de {inmobiliarias.length}{' '}
-                {inmobiliarias.length === 1 ? 'inmobiliaria' : 'inmobiliarias'}
+                {tx(
+                  `${num(total)} inmuebles de ${inmobiliarias.length} ${inmobiliarias.length === 1 ? 'inmobiliaria' : 'inmobiliarias'}`,
+                  `${num(total)} properties from ${inmobiliarias.length} ${inmobiliarias.length === 1 ? 'agency' : 'agencies'}`,
+                )}
               </p>
               <ul>
                 {inmobiliarias.slice(0, 6).map((i) => (
@@ -522,6 +568,7 @@ export function iniciales(nombre: string): string {
 
 export function AvisoDelMarketplace() {
   const { inmuebles, total, fallo } = useCatalogo();
+  const { tx, enlace, en, num } = useLengua();
   const [mostrar, setMostrar] = useState(false);
   const [cerrado, setCerrado] = useState(false);
   const turno = useTurno(inmuebles.length, 3000, !mostrar);
@@ -552,7 +599,7 @@ export function AvisoDelMarketplace() {
           exit={{ opacity: 0, y: 12, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
           transition={{ duration: motionDuration.slow, ease: motionEase.enter }}
         >
-          <a href="/propiedades" className="mk-aviso-ir">
+          <a href={enlace('/propiedades')} className="mk-aviso-ir">
             <span className="mk-aviso-foto">
               <AnimatePresence initial={false}>
                 <motion.span
@@ -572,16 +619,16 @@ export function AvisoDelMarketplace() {
                 <i className="mk-cuadro" aria-hidden="true" />
                 Marketplace
               </small>
-              <b>{total.toLocaleString('es-CO')} inmuebles para arrendar</b>
+              <b>{tx(`${num(total)} inmuebles para arrendar`, `${num(total)} properties for rent`)}</b>
               <span>
-                {dondeQueda(p)} · {pesos(p.monthlyRent)}
+                {dondeQueda(p)} · {pesos(p.monthlyRent, en)}
               </span>
             </span>
             <span className="mk-aviso-flecha" aria-hidden="true">
               →
             </span>
           </a>
-          <button type="button" className="mk-aviso-x" aria-label="Cerrar el aviso del marketplace" onClick={() => setCerrado(true)}>
+          <button type="button" className="mk-aviso-x" aria-label={tx('Cerrar el aviso del marketplace', 'Close the marketplace notice')} onClick={() => setCerrado(true)}>
             ×
           </button>
         </motion.div>

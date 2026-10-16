@@ -9,6 +9,14 @@ import {
   nuevoNonce,
   politicaDeContenido,
 } from '@/lib/seguridad/politica-de-contenido';
+import {
+  CABECERA_DEL_IDIOMA,
+  COOKIE_DEL_IDIOMA,
+  conIdioma,
+  esRutaPublica,
+  idiomaParaLaVisita,
+  separarIdioma,
+} from '@/lib/idioma/idioma';
 
 /**
  * Middleware
@@ -30,8 +38,44 @@ import {
  *   /pricing, /blog, /ayuda, /terminos, /privacidad
  */
 export function middleware(request: NextRequest) {
-  if (!llevaPoliticaDeDocumento(request.nextUrl.pathname)) {
-    return NextResponse.next();
+  /*
+   * El idioma de la parte pública (Nico, 16-10-2026): `/es/...` y `/en/...`.
+   *   - Lo público SIN prefijo se manda al idioma de la persona: el que eligió
+   *     antes (cookie) o, la primera vez, el de su navegador.
+   *   - Con prefijo, se reescribe a la ruta de siempre (las páginas no se
+   *     mueven) y la página sabe su idioma por `x-idioma`. Navegar en un idioma
+   *     lo deja recordado.
+   */
+  const { idioma, ruta } = separarIdioma(request.nextUrl.pathname);
+  const publica = esRutaPublica(ruta);
+  if (!idioma && publica) {
+    const destino = request.nextUrl.clone();
+    destino.pathname = conIdioma(
+      ruta,
+      idiomaParaLaVisita(request.cookies.get(COOKIE_DEL_IDIOMA)?.value, request.headers.get('accept-language')),
+    );
+    return NextResponse.redirect(destino);
+  }
+  const reescrita = idioma && publica ? request.nextUrl.clone() : null;
+  if (reescrita) reescrita.pathname = ruta;
+
+  const deLaPeticion = new Headers(request.headers);
+  // Nadie de afuera dice en qué idioma va la página.
+  deLaPeticion.delete(CABECERA_DEL_IDIOMA);
+  if (reescrita && idioma) deLaPeticion.set(CABECERA_DEL_IDIOMA, idioma);
+  const seguir = () =>
+    reescrita
+      ? NextResponse.rewrite(reescrita, { request: { headers: deLaPeticion } })
+      : NextResponse.next({ request: { headers: deLaPeticion } });
+  const recordar = (respuesta: NextResponse) => {
+    if (reescrita && idioma && request.cookies.get(COOKIE_DEL_IDIOMA)?.value !== idioma) {
+      respuesta.cookies.set(COOKIE_DEL_IDIOMA, idioma, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' });
+    }
+    return respuesta;
+  };
+
+  if (!llevaPoliticaDeDocumento(ruta)) {
+    return recordar(seguir());
   }
 
   const nonce = nuevoNonce();
@@ -49,7 +93,6 @@ export function middleware(request: NextRequest) {
   });
   const cabecera = cabeceraDeLaPolitica(modo);
 
-  const deLaPeticion = new Headers(request.headers);
   deLaPeticion.set(CABECERA_DEL_NONCE, nonce);
   // Next busca el nonce en `content-security-policy` o en la versión
   // `-report-only` de la PETICIÓN; se le pasa la misma que va a aplicar el
@@ -58,7 +101,7 @@ export function middleware(request: NextRequest) {
   deLaPeticion.delete('content-security-policy-report-only');
   deLaPeticion.set(cabecera.toLowerCase(), politica);
 
-  const respuesta = NextResponse.next({ request: { headers: deLaPeticion } });
+  const respuesta = seguir();
   respuesta.headers.set(cabecera, politica);
   // `report-to` (navegadores nuevos) necesita el grupo declarado; `report-uri`
   // cubre al resto. Mismo destino.
@@ -66,7 +109,7 @@ export function middleware(request: NextRequest) {
     'Reporting-Endpoints',
     `${GRUPO_DE_REPORTES_CSP}="${RUTA_DE_REPORTES_CSP}"`,
   );
-  return respuesta;
+  return recordar(respuesta);
 }
 
 export const config = {

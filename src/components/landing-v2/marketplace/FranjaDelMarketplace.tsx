@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } fr
 import { AnimatePresence, motion } from 'framer-motion';
 import { motionDuration, motionEase } from '@leasefy/cadence';
 
+import { useTx } from '@/lib/idioma/use-idioma';
+
 import { useCatalogo, useTurno } from './catalogo';
 
 type AlTocar = (e: MouseEvent<HTMLAnchorElement>) => void;
@@ -11,9 +13,10 @@ type AlTocar = (e: MouseEvent<HTMLAnchorElement>) => void;
 /** El número de inmuebles publicados, al lado de «Marketplace». Sin catálogo, nada. */
 export function CuentaDelMarketplace() {
   const { total, cargando, fallo } = useCatalogo();
+  const tx = useTx();
   if (cargando || fallo || !total) return null;
   return (
-    <b className="mk-n" aria-label={`${total} inmuebles publicados`}>
+    <b className="mk-n" aria-label={tx(`${total} inmuebles publicados`, `${total} listed properties`)}>
       {total.toLocaleString('es-CO')}
     </b>
   );
@@ -97,6 +100,7 @@ const LARGO_MAXIMO = 56;
 /** «Teja Roja Arriendos ya publica en Laureles»: una por inmobiliaria, con su barrio. */
 function useQuienesYaPublican(): string[] {
   const { inmuebles } = useCatalogo();
+  const tx = useTx();
   return useMemo(() => {
     const vistas = new Set<string>();
     const frases: string[] = [];
@@ -105,12 +109,12 @@ function useQuienesYaPublican(): string[] {
       const donde = p.neighborhood?.trim() || p.city?.trim();
       if (!nombre || !donde || vistas.has(nombre)) continue;
       vistas.add(nombre);
-      const frase = `${nombre} ya publica en ${donde}`;
+      const frase = tx(`${nombre} ya publica en ${donde}`, `${nombre} already lists in ${donde}`);
       // Una razón social larguísima no cabe en la franja: esa se salta.
       if (frase.length <= LARGO_MAXIMO) frases.push(frase);
     }
     return frases.slice(0, 8);
-  }, [inmuebles]);
+  }, [inmuebles, tx]);
 }
 
 export function FranjaDelMarketplace({
@@ -123,12 +127,13 @@ export function FranjaDelMarketplace({
   alCerrar: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const tx = useTx();
   const quienes = useQuienesYaPublican();
   const turno = useTurno(quienes.length, 3400);
   // El ancho de la frase más larga (más el «·», el punto verde y sus
   // espacios): si cada una midiera lo suyo, la fila centrada bailaría de lado
   // a lado con cada cambio.
-  const ancho = useMemo(() => Math.max(0, ...quienes.map((q) => q.length)) + 8, [quienes]);
+  const ancho = useMemo(() => Math.max(0, ...quienes.map((q) => q.length)) + 10, [quienes]);
 
   // El header sigue a la franja mientras se ve; después queda arriba del todo.
   useEffect(() => {
@@ -153,15 +158,15 @@ export function FranjaDelMarketplace({
       ref={ref}
       className="mk-anuncio"
       role="region"
-      aria-label="Marketplace de Leasefy"
+      aria-label={tx('Marketplace de Leasefy', 'Leasefy marketplace')}
       initial={false}
       animate={{ opacity: 1 }}
       exit={{ height: 0, opacity: 0, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
     >
       <div className="container mk-anuncio-fila">
         <a href={hrefPublicar} onClick={alTocarPublicar} className="mk-anuncio-t">
-          <span className="mk-anuncio-largo">Publica tus inmuebles gratis en el marketplace de Leasefy</span>
-          <span className="mk-anuncio-corto">Publica gratis antes que tu competencia</span>
+          <span className="mk-anuncio-largo">{tx('Publica tus inmuebles gratis en el marketplace de Leasefy', 'List your properties for free on the Leasefy marketplace')}</span>
+          <span className="mk-anuncio-corto">{tx('Publica gratis antes que tu competencia', 'List for free before your competitors do')}</span>
         </a>
         {quienes.length > 0 && (
           <span className="mk-anuncio-quien" style={{ width: `calc(${ancho} * (1ch + .14em) + 44px)` }}>
@@ -175,7 +180,7 @@ export function FranjaDelMarketplace({
                   exit={{ opacity: 0, y: -8, transition: { duration: motionDuration.fast, ease: motionEase.exit } }}
                   transition={{ duration: motionDuration.base, ease: motionEase.enter }}
                 >
-                  {quienes[turno]}. <b>¿Y tú?</b>
+                  {quienes[turno]}. <b>{tx('¿Y tú?', 'Do you?')}</b>
                 </motion.span>
               </AnimatePresence>
             </span>
@@ -183,13 +188,13 @@ export function FranjaDelMarketplace({
         )}
         {/* Sin nadie publicando todavía, o sin ancho para la que pasa. */}
         <span className="mk-anuncio-fija" data-con-quien={quienes.length > 0 || undefined}>
-          Antes que tu competencia
+          {tx('Antes que tu competencia', 'Before your competitors')}
         </span>
         <a href={hrefPublicar} onClick={alTocarPublicar} className="mk-anuncio-ir" aria-hidden="true" tabIndex={-1}>
           →
         </a>
       </div>
-      <button type="button" className="mk-anuncio-x" aria-label="Cerrar este aviso" onClick={alCerrar}>
+      <button type="button" className="mk-anuncio-x" aria-label={tx('Cerrar este aviso', 'Close this notice')} onClick={alCerrar}>
         ×
       </button>
     </motion.div>

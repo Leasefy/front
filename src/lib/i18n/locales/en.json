@@ -10036,7 +10036,17 @@
         },
         "whatsapp": {
           "titulo": "Receive the briefing on WhatsApp",
-          "noSeGuardo": "We could not save your authorization. Try again in a moment."
+          "noSeGuardo": "We could not save your authorization. Try again in a moment.",
+          "preguntas": {
+            "titulo": "Ask Naira on WhatsApp",
+            "explicacion": "Write to the WhatsApp number your briefing comes from. For questions beyond the briefing it asks for a code: it sends one to your email, or you can request it here.",
+            "verificado": "Your WhatsApp is verified until {{fecha}}: you can ask anything you need.",
+            "sinTelefono": "To ask on WhatsApp, add your mobile number to your profile.",
+            "pedir": "Get a code",
+            "otroCodigo": "Get another code",
+            "codigo": "Send this code to Naira on WhatsApp. It expires in {{minutos}} minutes.",
+            "noSalio": "We could not create the code. Try again in a moment."
+          }
         },
         "briefing": {
           "queEs": "the briefing",

@@ -10072,7 +10072,17 @@
         },
         "whatsapp": {
           "titulo": "Recibir el briefing por WhatsApp",
-          "noSeGuardo": "No pudimos guardar tu autorización. Intenta de nuevo en un momento."
+          "noSeGuardo": "No pudimos guardar tu autorización. Intenta de nuevo en un momento.",
+          "preguntas": {
+            "titulo": "Preguntarle a Naira por WhatsApp",
+            "explicacion": "Escríbele al WhatsApp del que te llega el briefing. Para preguntas fuera del briefing te pide un código: te lo envía a tu correo o lo pides aquí.",
+            "verificado": "Tu WhatsApp está verificado hasta el {{fecha}}: puedes preguntarle lo que necesites.",
+            "sinTelefono": "Para preguntarle por WhatsApp, agrega tu celular en tu perfil.",
+            "pedir": "Pedir código",
+            "otroCodigo": "Pedir otro código",
+            "codigo": "Escríbele este código a Naira por WhatsApp. Vence en {{minutos}} minutos.",
+            "noSalio": "No pude crear el código. Intenta de nuevo en un momento."
+          }
         },
         "briefing": {
           "queEs": "el briefing",

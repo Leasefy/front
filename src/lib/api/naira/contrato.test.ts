@@ -49,6 +49,7 @@ const TABLA_DEL_CONTEXTO: readonly (readonly [IdDeEndpoint, 'GET' | 'POST', stri
   // P2 (Nico, 15-10-2026): el consentimiento de WhatsApp del briefing, de quien llama.
   ['whatsapp.consentimiento', 'GET', '/whatsapp-consent', ['notify-preferences-edit'], 'EXISTE', 'apagada'],
   ['whatsapp.consentir', 'POST', '/whatsapp-consent', ['notify-preferences-edit'], 'EXISTE', 'apagada'],
+  ['whatsapp.codigo', 'POST', '/whatsapp-code', ['notify-preferences-edit'], 'EXISTE', 'apagada'],
 ]
 
 /** Una copia profunda de un ejemplo (JSON: los ejemplos son datos planos). */

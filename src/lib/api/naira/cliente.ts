@@ -55,6 +55,7 @@ import {
   type NairaSignalDetail,
   type NairaSignalFeedbackRequest,
   type NairaSignalFeedbackResult,
+  type NairaWhatsappCode,
   type NairaWhatsappConsent,
   type NairaTaskCancelResult,
   type NairaTasksList,
@@ -210,6 +211,11 @@ export async function leerConsentimientoWhatsapp(agencyId: string): Promise<Esta
 /** P2: autorizar o retirar el briefing por WhatsApp (siempre de quien llama). */
 export async function guardarConsentimientoWhatsapp(agencyId: string, otorgar: boolean): Promise<EstadoNaira<NairaWhatsappConsent>> {
   return pedirANaira('whatsapp.consentir', agencyId, {}, { cuerpo: { otorgar } })
+}
+
+/** #13: un código de seis dígitos para que Naira responda cualquier pregunta por WhatsApp (se muestra una sola vez). */
+export async function pedirCodigoWhatsapp(agencyId: string): Promise<EstadoNaira<NairaWhatsappCode>> {
+  return pedirANaira('whatsapp.codigo', agencyId, {})
 }
 
 export async function leerSenal(agencyId: string, promocionId: string): Promise<EstadoNaira<NairaSignalDetail>> {

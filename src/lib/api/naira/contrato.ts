@@ -561,7 +561,17 @@ function construirEsquemas(estricto: boolean) {
 
   // P2 (Nico, 15-10-2026): el consentimiento de WhatsApp del briefing, siempre de quien llama.
   // estado: EXISTE (micro naira-whatsapp-consentimiento.ts)
-  const NairaWhatsappConsent = objeto({ otorgado: z.boolean(), texto: z.string(), version: z.string() })
+  // #13 (Nico, 15-10-2026: «cualquier pregunta, con un código»): hasta cuándo está verificado su WhatsApp y si tiene celular.
+  const NairaWhatsappConsent = objeto({
+    otorgado: z.boolean(),
+    texto: z.string(),
+    version: z.string(),
+    verificadoHasta: enmendado(z.string().nullable()),
+    telefonoRegistrado: enmendado(z.boolean()),
+  })
+  // #13: el código de seis dígitos para escribírselo a Naira por WhatsApp (se muestra una sola vez).
+  // estado: EXISTE (micro naira-whatsapp-consentimiento.ts)
+  const NairaWhatsappCode = objeto({ codigo: z.string().regex(/^[0-9]{6}$/), venceEn: z.string(), minutos: z.number().int() })
 
   // ── Acciones y tareas (12-07, PLANIFICADO) ──
 
@@ -676,6 +686,7 @@ function construirEsquemas(estricto: boolean) {
     NairaRecallResult,
     NairaSignalFeedbackResult,
     NairaWhatsappConsent,
+    NairaWhatsappCode,
     NairaOpenLoopsList,
     NairaOpenLoop,
     NairaOpenLoopDetail,
@@ -741,6 +752,8 @@ export const NairaSignalFeedbackResultSchema = TOLERANTES.NairaSignalFeedbackRes
 export type NairaSignalFeedbackResult = z.infer<typeof NairaSignalFeedbackResultSchema>
 export const NairaWhatsappConsentSchema = TOLERANTES.NairaWhatsappConsent
 export type NairaWhatsappConsent = z.infer<typeof NairaWhatsappConsentSchema>
+export const NairaWhatsappCodeSchema = TOLERANTES.NairaWhatsappCode
+export type NairaWhatsappCode = z.infer<typeof NairaWhatsappCodeSchema>
 export const NairaOpenLoopsListSchema = TOLERANTES.NairaOpenLoopsList
 export type NairaOpenLoopsList = z.infer<typeof NairaOpenLoopsListSchema>
 export const NairaOpenLoopSchema = TOLERANTES.NairaOpenLoop
@@ -831,6 +844,7 @@ export type IdDeEndpoint =
   | 'tareas.cancelar'
   | 'whatsapp.consentimiento'
   | 'whatsapp.consentir'
+  | 'whatsapp.codigo'
 
 export interface EndpointDeNaira {
   readonly id: IdDeEndpoint
@@ -944,6 +958,15 @@ export const ENDPOINTS_DE_NAIRA: Readonly<Record<IdDeEndpoint, EndpointDeNaira>>
     fuente: 'P2 (Nico, 15-10-2026) — micro naira-whatsapp-consentimiento.ts',
     si404: 'apagada',
   },
+  'whatsapp.codigo': {
+    id: 'whatsapp.codigo',
+    metodo: 'POST',
+    ruta: '/whatsapp-code',
+    acciones: ['notify-preferences-edit'],
+    estado: 'EXISTE',
+    fuente: '#13 (Nico, 15-10-2026) — micro naira-whatsapp-consentimiento.ts',
+    si404: 'apagada',
+  },
   'senal.voto': {
     id: 'senal.voto',
     metodo: 'POST',
@@ -1039,6 +1062,7 @@ export const IDS_DE_ENDPOINT: readonly IdDeEndpoint[] = [
   'tareas.cancelar',
   'whatsapp.consentimiento',
   'whatsapp.consentir',
+  'whatsapp.codigo',
 ]
 
 // ── Respuesta de cada endpoint ──────────────────────────────────────────────────────────────────────────────────────
@@ -1056,6 +1080,7 @@ export type RespuestasDeNaira = {
   readonly 'senal.voto': NairaSignalFeedbackResult
   readonly 'whatsapp.consentimiento': NairaWhatsappConsent
   readonly 'whatsapp.consentir': NairaWhatsappConsent
+  readonly 'whatsapp.codigo': NairaWhatsappCode
   readonly 'seguimiento.lista': NairaOpenLoopsList
   readonly 'seguimiento.detalle': NairaOpenLoopDetail
   readonly 'acciones.lista': NairaActionsList
@@ -1082,6 +1107,7 @@ function respuestaPorEndpoint(e: EsquemasDeNaira): RespuestaPorEndpoint {
     'senal.voto': e.NairaSignalFeedbackResult,
     'whatsapp.consentimiento': e.NairaWhatsappConsent,
     'whatsapp.consentir': e.NairaWhatsappConsent,
+    'whatsapp.codigo': e.NairaWhatsappCode,
     'seguimiento.lista': e.NairaOpenLoopsList,
     'seguimiento.detalle': e.NairaOpenLoopDetail,
     'acciones.lista': e.NairaActionsList,

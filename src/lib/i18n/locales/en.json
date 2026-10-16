@@ -2945,7 +2945,8 @@
           "enviado": "Sent",
           "pagado": "Paid",
           "vencido": "Expired",
-          "fallido": "Payment failed"
+          "fallido": "Payment failed",
+          "enRevision": "Payment under review"
         },
         "detalle": {
           "ninguno": "Cobri has not written about this installment yet.",
@@ -2953,7 +2954,12 @@
           "enMoraPorOtra": "The tenant owes an earlier overdue installment: until then Cobri does not write to them; collections takes it.",
           "pagada": "Already paid: Cobri has nothing to collect for this installment.",
           "vencido": "The link expired unpaid. Cobri no longer writes about this installment: collections takes it from here.",
-          "fallido": "The tenant tried to pay and the payment gateway did not approve it."
+          "fallido": "The tenant tried to pay and the payment gateway did not approve it. The link still works to try again.",
+          "esperaAprobacion": "Cobri has it ready and is waiting for your approval to send it by WhatsApp.",
+          "siguienteEsperaAprobacion": "Cobri's next notice, with this same link, is waiting for your approval to go out by WhatsApp.",
+          "noSalio": "The «{{hito}}» notice did not go out: {{porQue}}.",
+          "noSalioDefinitivo": "The «{{hito}}» notice did not go out: {{porQue}}. That notice will not be retried.",
+          "pagoSinAplicar": "The payment came in through the link, but it was not applied to the installment, which is still owed: {{motivo}}"
         },
         "pagadoEl": "Paid on {{fecha}}",
         "ultimoAviso": "Last reminder: {{fecha}}",
@@ -2972,6 +2978,7 @@
           "link": "Payment link"
         },
         "contrato": "Contract {{numero}}",
+        "revisarYAprobar": "Review and approve",
         "verLink": "View the link",
         "verLinkAria": "View {{inquilino}}'s payment link (opens in a new tab)",
         "conteoUno": "1 installment",

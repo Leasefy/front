@@ -111,8 +111,11 @@ export const EQUIPO_DE_PAGOS: readonly Especialista[] = [
     id: 'nicolas',
     nombre: 'Nicolás',
     rol: 'Envía el link de pago',
+    // COBRI-2 (QA de los agentes, 16-10-2026): decía «por WhatsApp, correo o
+    // SMS»; el envío del micro es sólo WhatsApp (correo y SMS no están hechos).
+    // El mismo link va en los correos de aviso de cobro que manda Leasefy.
     queHace:
-      'Pide el link de pago del cobro y se lo manda al inquilino por WhatsApp, correo o SMS.',
+      'Pide el link de pago del cobro y se lo manda al inquilino por WhatsApp. El mismo link va en los correos de aviso de cobro.',
     icon: LinkSimple,
     dondeSeVe: null,
     sinPantalla: 'No tiene pantalla propia: trabaja sobre el cobro que preparó Cuenti.',
@@ -180,7 +183,8 @@ export const ETIQUETA_DEL_ESTADO: Record<EstadoDelEquipo, string> = {
   cargando: 'Consultando…',
   'apagado-en-leasefy': 'Apagado',
   'apagado-para-tu-inmobiliaria': 'Apagado para tu inmobiliaria',
-  encendido: 'Encendido',
+  // COBRI-3: la pantalla decía «Encendido» acá y «Prendido» en Cobri; el producto dice «Prendido».
+  encendido: 'Prendido',
   'sin-verificar': 'Sin verificar',
 }
 
@@ -205,33 +209,33 @@ export function pasosParaQueTrabaje(gobierno: LecturaDelGobierno): PasoParaTraba
 
   const leasefy: PasoParaTrabajar = {
     id: 'leasefy',
-    titulo: 'Encendido en Leasefy',
+    titulo: 'Prendido en Leasefy',
     ...(equipo === 'cargando'
       ? { estado: 'cargando', detalle: 'Consultando el servicio de agentes…' }
       : equipo === 'sin-verificar'
-        ? { estado: 'sin-verificar', detalle: 'El servicio de agentes no contestó, así que no sabemos si está encendido.' }
+        ? { estado: 'sin-verificar', detalle: 'El servicio de agentes no contestó, así que no sabemos si está prendido.' }
         : equipo === 'apagado-en-leasefy'
           ? {
               estado: 'falta',
               detalle:
-                'El interruptor general del equipo está apagado para todas las inmobiliarias. Lo enciende el equipo de Leasefy; desde tu panel no se puede.',
+                'El interruptor general del equipo está apagado para todas las inmobiliarias. Lo prende el equipo de Leasefy; desde tu panel no se puede.',
             }
-          : { estado: 'hecho', detalle: 'El interruptor general del equipo está encendido.' }),
+          : { estado: 'hecho', detalle: 'El interruptor general del equipo está prendido.' }),
   }
 
   const inmobiliaria: PasoParaTrabajar = {
     id: 'inmobiliaria',
-    titulo: 'Encendido para tu inmobiliaria',
+    titulo: 'Prendido para tu inmobiliaria',
     ...(equipo === 'cargando'
       ? { estado: 'cargando', detalle: 'Consultando el servicio de agentes…' }
       : equipo === 'sin-verificar'
         ? { estado: 'sin-verificar', detalle: 'Depende de la misma consulta, que no contestó.' }
         : equipo === 'apagado-en-leasefy'
-          ? { estado: 'espera', detalle: 'Se decide cuando esté encendido en Leasefy.' }
+          ? { estado: 'espera', detalle: 'Se decide cuando esté prendido en Leasefy.' }
           : equipo === 'apagado-para-tu-inmobiliaria'
             ? {
                 estado: 'falta',
-                detalle: 'Un administrador lo enciende desde Inicio, en «Autonomía».',
+                detalle: 'Un administrador lo prende desde Inicio, en «Autonomía».',
               }
             : { estado: 'hecho', detalle: 'Corre para tu inmobiliaria.' }),
   }

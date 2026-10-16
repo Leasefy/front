@@ -80,7 +80,7 @@
  *   · El MISMO cajón de casos (`PilotoCajon`), con su pila.
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ListChecks } from '@phosphor-icons/react'
 
@@ -171,6 +171,20 @@ function PilotoContent() {
 
   /** Los cajones de lo que la pantalla resume: la Bandeja, la actividad, el director. */
   const [resumen, setResumen] = useState<Resumen>(null)
+
+  /**
+   * COBRI-4 (QA de los agentes, 16-10-2026): otra pantalla puede mandar aquí a
+   * resolver UN caso (`?item=hold:…`, el «Revisar y aprobar» de Cobri) o a la
+   * Bandeja entera (`?bandeja=1`). Sin esto el caso había que buscarlo entre
+   * cientos, en la última página. Se lee una vez y se limpia de la URL.
+   */
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const item = params.get('item')
+    if (item) setPila([{ tipo: 'item', id: item }])
+    else if (params.get('bandeja') === '1') setResumen('bandeja')
+    if (item || params.has('bandeja')) window.history.replaceState(null, '', window.location.pathname)
+  }, [])
   const acciones = useMemo<AccionesDelMando>(
     () => ({
       abrirItem,

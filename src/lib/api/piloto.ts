@@ -166,6 +166,8 @@ export interface InboxItem {
   director?: DirectorDeLaAccion | null
   /** La frase de la perilla: por qué esto espera un clic. Se muestra SIEMPRE que venga. */
   motivo?: string
+  /** Sólo el cobro de Cobri retenido: la cuota que espera el clic (COBRI-4). */
+  cuotaId?: string
 }
 
 export interface PilotoInboxResponse {

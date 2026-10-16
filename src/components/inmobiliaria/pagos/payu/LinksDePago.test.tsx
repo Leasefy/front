@@ -271,6 +271,74 @@ describe('LinksDePago — el estado del link de cada cuota', () => {
     expect(acciones.filter((texto) => /enviar|mandar|reenviar/i.test(texto))).toEqual([]);
   });
 
+  it('🔴 COBRI-4: la cuota cuyo aviso espera aprobación en la Bandeja lo dice y lleva a ESE caso (tabla y teléfono)', async () => {
+    get.mockResolvedValue(pagina(LOS_CINCO));
+    const enLaBandeja = new Map([
+      ['c-ninguno', 'hold:d-1'],
+      ['c-pagado', 'hold:d-2'], // ya pagó: no se le pide nada a nadie
+      ['c-fallido', 'hold:d-3'], // el pago se rechazó y el siguiente aviso espera
+    ]);
+    await montar(<LinksDePago mes="2026-10" esperanEnLaBandeja={enLaBandeja} />);
+    const espera = fila('c-ninguno');
+    expect(espera?.textContent).toContain(es.inmobiliaria.cobros.linksDePago.detalle.esperaAprobacion);
+    expect(espera?.textContent).not.toContain(es.inmobiliaria.cobros.linksDePago.detalle.ninguno);
+    expect(espera?.querySelector('[data-testid="revisar-y-aprobar"]')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/piloto?item=hold%3Ad-1',
+    );
+    expect(fila('c-pagado')?.querySelector('[data-testid="revisar-y-aprobar"]')).toBeNull();
+    expect(fila('c-enviado')?.querySelector('[data-testid="revisar-y-aprobar"]')).toBeNull();
+    // Con el pago rechazado sigue diciendo «Pago fallido» y, además, que el
+    // siguiente aviso espera (antes no se veía el camino a la Bandeja).
+    const rechazado = fila('c-fallido');
+    expect(rechazado?.textContent).toContain(es.inmobiliaria.cobros.linksDePago.detalle.fallido);
+    expect(rechazado?.textContent).toContain(es.inmobiliaria.cobros.linksDePago.detalle.siguienteEsperaAprobacion);
+    expect(rechazado?.querySelector('[data-testid="revisar-y-aprobar"]')?.getAttribute('href')).toBe(
+      '/panel/inmobiliaria/piloto?item=hold%3Ad-3',
+    );
+
+    pantalla.movil = true;
+    await montar(<LinksDePago mes="2026-10" esperanEnLaBandeja={enLaBandeja} />);
+    expect(fila('c-ninguno')?.querySelector('[data-testid="revisar-y-aprobar"]')).not.toBeNull();
+  });
+
+  it('🔴 COBRI-9: el aviso que no salió se dice con su porqué (y si ya no se reintenta); en una cuota paga no', async () => {
+    const noSalio = { hito: 'antes', porQueNo: 'ya se le escribió hoy (la Ley 2300 permite un contacto al día)', definitivo: false, cuando: '2026-10-02T13:00:00.000Z' };
+    get.mockResolvedValue(
+      pagina([
+        { ...LOS_CINCO[0], noSalio },
+        { ...LOS_CINCO[1], cuotaId: 'c-def', noSalio: { ...noSalio, hito: 'dia', porQueNo: 'pidió no recibir WhatsApp', definitivo: true } },
+        { ...LOS_CINCO[2], noSalio },
+      ]),
+    );
+    await montar(<LinksDePago mes="2026-10" />);
+    expect(fila('c-ninguno')?.querySelector('[data-testid="aviso-no-salio"]')?.textContent).toBe(
+      'No salió el aviso «3 días antes»: ya se le escribió hoy (la Ley 2300 permite un contacto al día).',
+    );
+    expect(fila('c-def')?.querySelector('[data-testid="aviso-no-salio"]')?.textContent).toBe(
+      'No salió el aviso «El día»: pidió no recibir WhatsApp. Ese aviso ya no se vuelve a intentar.',
+    );
+    expect(fila('c-pagado')?.querySelector('[data-testid="aviso-no-salio"]')).toBeNull();
+  });
+
+  it('🔴 COBRI-12: pagó por el link pero el pago no se aplicó a la cuota → «Pago en revisión», con el motivo', async () => {
+    const motivo = 'El cobro de octubre de 2026 ya respalda otra cuota del contrato. Desde caja no se puede corregir: avísale a soporte.';
+    get.mockResolvedValue(
+      pagina([{ ...LOS_CINCO[2], pagada: false, pagoSinAplicar: { motivo } }, { ...LOS_CINCO[2], cuotaId: 'c-bien', pagada: true, pagoSinAplicar: null }]),
+    );
+    await montar(<LinksDePago mes="2026-10" />);
+    expect(fila('c-pagado')?.querySelector('[data-testid="pago-sin-aplicar"]')?.textContent).toBe(
+      `El pago entró por el link, pero no se aplicó a la cuota y sigue debiéndose: ${motivo}`,
+    );
+    // Un «Pagado» verde encima de «sigue debiéndose» se contradecía.
+    const pastilla = fila('c-pagado')?.querySelector('[data-testid="estado-del-link"]');
+    expect(pastilla?.getAttribute('data-estado')).toBe('pagado');
+    expect(pastilla?.getAttribute('data-en-revision')).toBe('si');
+    expect(pastilla?.textContent).toBe('Pago en revisión');
+    expect(fila('c-bien')?.querySelector('[data-testid="pago-sin-aplicar"]')).toBeNull();
+    expect(fila('c-bien')?.querySelector('[data-testid="estado-del-link"]')?.textContent).toBe('Pagado');
+    expect(fila('c-bien')?.querySelector('[data-testid="estado-del-link"]')?.hasAttribute('data-en-revision')).toBe(false);
+  });
+
   it('en el teléfono es una lista, no una tabla que haya que correr', async () => {
     pantalla.movil = true;
     get.mockResolvedValue(pagina(LOS_CINCO));

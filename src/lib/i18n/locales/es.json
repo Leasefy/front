@@ -2980,7 +2980,8 @@
           "enviado": "Enviado",
           "pagado": "Pagado",
           "vencido": "Vencido",
-          "fallido": "Pago fallido"
+          "fallido": "Pago fallido",
+          "enRevision": "Pago en revisión"
         },
         "detalle": {
           "ninguno": "Cobri todavía no le ha escrito por esta cuota.",
@@ -2988,7 +2989,12 @@
           "enMoraPorOtra": "El inquilino debe una cuota anterior en mora: mientras tanto Cobri no le escribe, la lleva cobranza.",
           "pagada": "Ya está paga: Cobri no tiene nada que cobrar por esta cuota.",
           "vencido": "El link venció sin pago. Cobri ya no escribe por esta cuota: la sigue cobranza.",
-          "fallido": "El inquilino intentó pagar y la pasarela no aprobó el pago."
+          "fallido": "El inquilino intentó pagar y la pasarela no aprobó el pago. El link sigue sirviendo para volver a intentar.",
+          "esperaAprobacion": "Cobri lo dejó listo y espera tu aprobación para mandarlo por WhatsApp.",
+          "siguienteEsperaAprobacion": "El siguiente aviso de Cobri, con este mismo link, espera tu aprobación para salir por WhatsApp.",
+          "noSalio": "No salió el aviso «{{hito}}»: {{porQue}}.",
+          "noSalioDefinitivo": "No salió el aviso «{{hito}}»: {{porQue}}. Ese aviso ya no se vuelve a intentar.",
+          "pagoSinAplicar": "El pago entró por el link, pero no se aplicó a la cuota y sigue debiéndose: {{motivo}}"
         },
         "pagadoEl": "Pagado el {{fecha}}",
         "ultimoAviso": "Último aviso: {{fecha}}",
@@ -3007,6 +3013,7 @@
           "link": "Link de pago"
         },
         "contrato": "Contrato {{numero}}",
+        "revisarYAprobar": "Revisar y aprobar",
         "verLink": "Ver el link",
         "verLinkAria": "Ver el link de pago de {{inquilino}} (se abre en otra pestaña)",
         "conteoUno": "1 cuota",

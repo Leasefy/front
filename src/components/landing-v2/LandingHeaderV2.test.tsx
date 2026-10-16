@@ -29,6 +29,22 @@ vi.mock('@/lib/auth/use-auth', () => ({
   useAuth: () => authState,
 }))
 
+// El catálogo del marketplace (el número al lado de «Marketplace» y las
+// inmobiliarias de la franja), sin red.
+vi.mock('@/lib/api/properties.service', () => ({
+  propertiesApi: {
+    list: () =>
+      Promise.resolve({
+        data: [
+          { id: 'a', status: 'available', images: ['x.jpg'], agencyName: 'Teja Roja Arriendos', neighborhood: 'Laureles', city: 'Medellín' },
+          { id: 'b', status: 'available', images: ['y.jpg'], agencyName: 'Teja Roja Arriendos', neighborhood: 'Belén', city: 'Medellín' },
+          { id: 'c', status: 'available', images: ['z.jpg'], agencyName: 'Cuadra Arriendos', neighborhood: null, city: 'Envigado' },
+        ],
+        meta: { total: 3 },
+      }),
+  },
+}))
+
 import { LandingHeaderV2 } from './LandingHeaderV2'
 
 let container: HTMLDivElement
@@ -60,7 +76,20 @@ describe('LandingHeaderV2', () => {
   it('trae los mismos enlaces del nav de la landing', () => {
     montar({ fxExterno: true })
     const rutas = [...container.querySelectorAll('nav.main a')].map((a) => a.getAttribute('href'))
-    expect(rutas).toEqual(['#producto', '/propiedades', '/publicar', '/avaluo', '/blog', '/contacto'])
+    expect(rutas).toEqual(['/propiedades', '/publicar', '#producto', '/avaluo', '/blog', '/contacto'])
+  })
+
+  it('el marketplace va primero y se llama igual en todas partes (Nico, 16-10-2026)', () => {
+    // «cuando entren al marketplace que no cambie la disposición de los
+    // elementos en la topbar»: el menú de /propiedades es el del home.
+    montar({ fxExterno: true })
+    const enLaLanding = [...container.querySelectorAll('nav.main a')].map((a) => a.textContent?.trim())
+    act(() => root.unmount())
+    root = createRoot(container)
+    montar({ activo: 'inmuebles' })
+    const enElMarketplace = [...container.querySelectorAll('nav.main a')].map((a) => a.textContent?.trim())
+    expect(enElMarketplace).toEqual(enLaLanding)
+    expect(enLaLanding.slice(0, 2)).toEqual([expect.stringContaining('Marketplace'), 'Publicar gratis'])
   })
 
   describe('dónde estás', () => {
@@ -70,7 +99,7 @@ describe('LandingHeaderV2', () => {
       montar({ activo: 'inmuebles', fxExterno: true })
       const activo = container.querySelector('nav.main a[aria-current="page"]')
       expect(activo?.getAttribute('href')).toBe('/propiedades')
-      expect(activo?.textContent).toContain('Buscar inmueble')
+      expect(activo?.textContent).toContain('Marketplace')
     })
 
     it('marca uno solo POR NAVEGACIÓN', () => {
@@ -272,7 +301,7 @@ describe('LandingHeaderV2', () => {
       // suave del home las siga atendiendo.
       montar()
       const rutas = [...container.querySelectorAll('nav.main a')].map((a) => a.getAttribute('href'))
-      expect(rutas).toEqual(['/#producto', '/propiedades', '/publicar', '/avaluo', '/blog', '/contacto'])
+      expect(rutas).toEqual(['/propiedades', '/publicar', '/#producto', '/avaluo', '/blog', '/contacto'])
       const movil = [...container.querySelectorAll('#mmenu nav a')].map((a) => a.getAttribute('href'))
       expect(movil).toContain('/#producto')
     })

@@ -644,11 +644,25 @@ function construirEsquemas(estricto: boolean) {
   })
   // fuente: 12-07-PLAN.md:433
   // estado: PLANIFICADO
+  // #32 (Nico, 15-10-2026): la latencia de aprobación que ve el DUEÑO (el agente manda null a los demás roles).
+  // fuente: src/server/routes/naira-acciones.ts (NairaActionLatency / NairaActionLatencyReport)
+  // estado: EXISTE
+  const NairaActionLatencyReport = z.discriminatedUnion('kind', [
+    objeto({ kind: z.literal('medida'), n: z.number(), medianaMs: z.number(), p10Ms: z.number() }),
+    objeto({ kind: z.literal('no_medible'), razon: z.enum(['n_bajo_minimo', 'sin_presentacion']) }),
+    objeto({ kind: z.literal('no_reportable_a_la_agencia'), razon: z.literal('un_aprobador') }),
+  ])
+  const NairaActionLatency = objeto({
+    semanaReciente: z.string(),
+    semanaPrevia: z.string(),
+    porTipo: z.array(objeto({ tipo: z.enum(TIPOS_DE_ACCION), semanaIso: z.string(), reporte: NairaActionLatencyReport })),
+  })
   const NairaActionsList = objeto({
     generadoEn: z.string(),
     desde: z.string(),
     acciones: z.array(NairaActionSummary),
     ocultasPorRol: z.number(),
+    latencia: enmendado(NairaActionLatency.nullable()),
   })
   // fuente: 12-07-PLAN.md:395-399 (DetalleDeAccion, consecuencia PRIMERO) y :433-434 (E2: estado y puedeDecidir)
   // estado: PLANIFICADO

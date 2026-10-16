@@ -431,6 +431,7 @@ const ACCIONES: RespuestasDeNaira['acciones.lista'] = {
     },
   ],
   ocultasPorRol: 0,
+  latencia: null,
 }
 
 const ACCION_DETALLE: RespuestasDeNaira['acciones.detalle'] = {

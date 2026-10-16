@@ -10008,6 +10008,16 @@
           "verQueSube": "Seeing {{metrica}} go up",
           "verQueBaja": "Seeing {{metrica}} go down"
         },
+        "latencia": {
+          "titulo": "How long the team takes to decide",
+          "queEs": "From when someone opens a proposal until they approve or reject it, over the last two full weeks. Only you see this, and it never says who decided.",
+          "medida": "Median: {{duracion}} ({{n}} decisions)",
+          "pocas": "Too few decisions to measure",
+          "sinAbrir": "Decided without opening the detail",
+          "unAprobador": "Not shown: only one person can approve this type",
+          "sinDecisiones": "No decisions in these two weeks yet.",
+          "semanaDel": "week of {{dia}}"
+        },
         "porAprobar": {
           "una": "You have 1 Naira proposal to approve.",
           "varias": "You have {{n}} Naira proposals to approve.",

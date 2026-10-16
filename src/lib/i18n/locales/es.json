@@ -10044,6 +10044,16 @@
           "verQueSube": "Ver que {{metrica}} sube",
           "verQueBaja": "Ver que {{metrica}} baja"
         },
+        "latencia": {
+          "titulo": "Cuánto tarda el equipo en decidir",
+          "queEs": "Desde que alguien abre una propuesta hasta que la aprueba o la rechaza, en las dos últimas semanas completas. Solo tú lo ves y nunca dice quién decidió.",
+          "medida": "Mediana: {{duracion}} ({{n}} decisiones)",
+          "pocas": "Muy pocas decisiones para medir",
+          "sinAbrir": "Se decidió sin abrir el detalle",
+          "unAprobador": "No se muestra: una sola persona puede aprobar este tipo",
+          "sinDecisiones": "Todavía no hay decisiones en estas dos semanas.",
+          "semanaDel": "semana del {{dia}}"
+        },
         "porAprobar": {
           "una": "Tienes 1 propuesta de Naira por aprobar.",
           "varias": "Tienes {{n}} propuestas de Naira por aprobar.",

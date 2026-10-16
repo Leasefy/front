@@ -16,6 +16,7 @@ import { useId } from 'react'
 import { SealCheck } from '@phosphor-icons/react'
 
 import { FilaDeTarea } from '@/components/inmobiliaria/naira/FilaDeTarea'
+import { LatenciaDeAprobacion } from '@/components/inmobiliaria/naira/LatenciaDeAprobacion'
 import { LineaConFecha } from '@/components/inmobiliaria/naira/FilaDeSeguimiento'
 import { ProveedorDeOrigen, type OrigenDeLosDatos } from '@/components/inmobiliaria/naira/OrigenDeNaira'
 import { TarjetaDePropuesta } from '@/components/inmobiliaria/naira/TarjetaDePropuesta'
@@ -51,6 +52,9 @@ export function AprobacionesView({ lista, tareas, puedeCancelar, hrefDeLaFicha, 
         </h1>
         <p className="text-sm text-fg-muted">{t('inmobiliaria.ai.naira.aprobaciones.bajada')}</p>
       </header>
+
+      {/* #32 (15-10-2026): solo el dueño recibe la latencia (a los demás el agente manda null). */}
+      {lista.latencia ? <LatenciaDeAprobacion latencia={lista.latencia} /> : null}
 
       <section data-naira-grupo="por_decidir" aria-labelledby={idPorDecidir} className="space-y-3">
         <h2 id={idPorDecidir} className="text-lg font-semibold text-fg">

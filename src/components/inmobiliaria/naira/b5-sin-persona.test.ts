@@ -28,6 +28,16 @@ import { describe, expect, it } from 'vitest'
 import es from '@/lib/i18n/locales/es.json'
 import en from '@/lib/i18n/locales/en.json'
 
+/**
+ * #32 (Nico, 15-10-2026: «Latencia de aprobación: la ven Leasefy y el dueño») cambia H9 SOLO para el dueño: el agente manda
+ * `latencia` únicamente al OWNER, agregada por tipo y semana (nunca por persona) y sin número cuando un solo aprobador
+ * posible la delataría (B-5). Estos dos archivos son la vista; nada más de Naira puede nombrar una latencia.
+ */
+const EXCEPCIONES_DE_LATENCIA: Readonly<Record<string, string>> = {
+  'src/components/inmobiliaria/naira/LatenciaDeAprobacion.tsx': '#32: la tarjeta del dueño (agregada por tipo y semana, con la supresión de B-5)',
+  'src/app/panel/inmobiliaria/reportes/naira/aprobaciones/AprobacionesView.tsx': '#32: monta la tarjeta solo si llega lista.latencia (el agente la manda solo al dueño)',
+}
+
 const RAICES = [
   'src/components/inmobiliaria/naira',
   'src/lib/hooks/naira',
@@ -149,9 +159,15 @@ describe('B-5 en la superficie de Naira', () => {
     expect(encontrados, 'B-5: la UI de Naira no lee actores ni personas del equipo:\n' + encontrados.join('\n')).toEqual([])
   })
 
-  it('[N13:sin-latencia] ni el código ni la copy de Naira tienen una vista de latencia', () => {
-    const enCodigo = archivosDelArbol().flatMap((a) => hallazgos(a, readFileSync(join(process.cwd(), a), 'utf8')).latencia)
+  it('[N13:sin-latencia] ni el código ni la copy de Naira tienen una vista de latencia (salvo la del dueño, #32)', () => {
+    const enCodigo = archivosDelArbol()
+      .filter((a) => !(a in EXCEPCIONES_DE_LATENCIA))
+      .flatMap((a) => hallazgos(a, readFileSync(join(process.cwd(), a), 'utf8')).latencia)
     expect(enCodigo, 'latencia en el código de Naira:\n' + enCodigo.join('\n')).toEqual([])
+    // Las excepciones siguen vigentes: existen y de verdad nombran la latencia (una rancia se saca de la lista).
+    for (const archivo of Object.keys(EXCEPCIONES_DE_LATENCIA)) {
+      expect(hallazgos(archivo, readFileSync(join(process.cwd(), archivo), 'utf8')).latencia.length, archivo).toBeGreaterThan(0)
+    }
     const enCopy: string[] = []
     for (const [idioma, diccionario] of [['es', es], ['en', en]] as const) {
       for (const [clave, texto] of hojasDeNaira(diccionario)) {

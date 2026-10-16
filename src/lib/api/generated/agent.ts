@@ -2036,7 +2036,7 @@ export interface paths {
         };
         /**
          * Get effective permissions for the calling member
-         * @description Returns the effective permissions for the calling member broken down by module (cobranza + cotizador). Role → action mapping is defined in permissions-matrix.ts. No DB query in the handler — role is already verified by agencyRoleMiddleware.
+         * @description Returns the effective permissions for the calling member broken down by module (cobranza + cotizador + naira; naira desde la Fase 10, 10-06: incluye conversation-ask). Role → action mapping is defined in permissions-matrix.ts. No DB query in the handler — role is already verified by agencyRoleMiddleware.
          */
         get: operations["getMemberPermissions"];
         put?: never;
@@ -6916,6 +6916,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/mensajes/redactar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Escribir con IA: un borrador de mensaje para el hilo abierto
+         * @description Con los últimos mensajes del hilo, lo que se sabe de la persona y (opcional) qué quiere decir, devuelve un borrador. No envía ni guarda nada. Nunca inventa montos, fechas ni cuentas: lo que falta sale como [completar].
+         */
+        post: operations["redactarMensaje"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/agency/{agencyId}/ap/aging": {
         parameters: {
             query?: never;
@@ -9022,6 +9042,630 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/agency/{agencyId}/naira/memory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Qué cree Naira sobre la agencia (memoria con procedencia)
+         * @description Lo que Naira cree en la revisión vigente de la memoria del tenant, leído por snapshot: cada ítem con capa, procedencia, confianza, autor, origen, revisión y contenido (un ítem borrado sale como erased), y las propuestas procedurales pendientes. Requiere naira:memory-view (los cuatro roles).
+         */
+        get: operations["getNairaMemoryView"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/memory/items/{itemId}/correction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Corregir un ítem que Naira cree
+         * @description Cierra la versión creída y escribe la nueva como stated_by_human de la persona (misma capa). El texto pasa la pantalla de contenido (cédula, teléfono, correo, persona del equipo). Requiere naira:memory-correct (OWNER/ADMIN).
+         */
+        post: operations["correctNairaMemoryItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/memory/items/{itemId}/erasure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Borrar efectivamente un ítem (texto y vector de su linaje entero)
+         * @description Redacta texto Y vector de todas las versiones del linaje, con su fila de auditoría en la misma transacción. El libro se conserva (append-only). Requiere naira:memory-erase (OWNER/ADMIN).
+         */
+        post: operations["eraseNairaMemoryItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/memory/procedural": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Escribir (OWNER/ADMIN) o proponer (OPERATOR) memoria procedural
+         * @description El gate procedural decide: OWNER/ADMIN escriben la memoria procedural (201); un OPERATOR deja una propuesta pendiente de confirmación (202); cualquier otro caso es 403 con la razón. Requiere naira:procedural-propose.
+         */
+        post: operations["writeNairaProceduralMemory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/memory/procedural/proposals/{proposalId}/resolution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirmar o rechazar una propuesta procedural
+         * @description Confirmar escribe la memoria procedural y marca la propuesta en UNA transacción (la pantalla corre otra vez); rechazar la marca. Las dos redactan el texto de la propuesta. Requiere naira:procedural-approve (OWNER/ADMIN).
+         */
+        post: operations["resolveNairaProceduralProposal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/memory/items/{itemId}/promotion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirmar una inferencia de Naira como observación
+         * @description Cierra la inferencia creída y escribe la versión observed con la prueba de la persona que la confirma (su userId real, derivada de la inferencia, confianza staff). El texto pasa la pantalla de contenido. Nunca la dispara un voto de feedback ni el cierre de un loop. Requiere naira:memory-promote (OWNER/ADMIN).
+         */
+        post: operations["promoteNairaMemoryItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/conversation/questions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preguntarle a Naira
+         * @description Una pregunta de una persona de la agencia. Naira responde solo desde el catálogo cerrado (métricas canónicas, políticas y fichas por dirección o referencia), sin modelo, con el alcance y la frescura declarados. La negativa, el bloqueo y la falla son un 200 con su kind: la negativa nombra lo que sí puede responder a ese rol. Requiere naira:conversation-ask (los cuatro roles).
+         */
+        post: operations["askNaira"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/briefing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * El briefing congelado del día del llamador
+         * @description Las entregas congeladas del día para quien llama (una por canal), cada ítem tal como se congeló; los ítems cuya métrica exige un rol mayor se ocultan y se cuentan. Sin entrega, la razón. Nunca compone ni recalcula. Requiere naira:briefing-view (los cuatro roles).
+         */
+        get: operations["getNairaBriefing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/signals/{promocionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * El detalle de una señal entregada, desde lo congelado
+         * @description El ítem tal como se congeló y su causa LEÍDA del registro de investigaciones, acotada a lo registrado hasta el congelado (misma regla, confianza system o staff, visible para el rol). Una señal no entregada y una cuya métrica el rol no ve responden el mismo 404. Requiere naira:signal-view (los cuatro roles).
+         */
+        get: operations["getNairaSignalDetail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/notification-preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * La preferencia de notificación propia y la de la compañía
+         * @description La preferencia efectiva de quien llama (persona, compañía o por defecto) y la de la compañía (la que rige para el contacto primario). Requiere naira:notify-preferences-edit (los cuatro roles).
+         */
+        get: operations["getNairaNotificationPreferences"];
+        /**
+         * Registrar la preferencia propia o la de la compañía
+         * @description Registra una revisión nueva de la preferencia. La propia es siempre la de quien llama; la de la compañía exige además naira:notify-company-preferences-edit (OWNER/ADMIN). Requiere naira:notify-preferences-edit.
+         */
+        put: operations["setNairaNotificationPreference"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/role-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Las asignaciones de roles de dominio y las señales del día sin destinatario
+         * @description Las asignaciones vigentes y, para las señales promovidas hoy, los dueños que no tienen a quién llegar (con su razón y cuántas señales tienen). Solo lectura: no envía nada. Requiere naira:role-assignment-edit (OWNER/ADMIN).
+         */
+        get: operations["listNairaRoleAssignments"];
+        put?: never;
+        /**
+         * Asignar un rol de dominio a un miembro del tenant
+         * @description Asigna cartera, portafolio o prospectos a un miembro del tenant (primario o no). 201 si se asignó, 200 si ya estaba vigente igual, 409 con el conflicto nombrado, 422 si la persona no es miembro. Requiere naira:role-assignment-edit.
+         */
+        post: operations["createNairaRoleAssignment"];
+        /**
+         * Retirar una asignación vigente de un rol de dominio
+         * @description Retira la asignación vigente del rol a la persona. 404 si no había una vigente. Requiere naira:role-assignment-edit.
+         */
+        delete: operations["deleteNairaRoleAssignment"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/recall": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Contestar el recall semanal
+         * @description Registra la respuesta de quien llama para la semana (un lunes que no es futuro). El texto pasa la pantalla de PII de la Fase 8 con el equipo del tenant; si la rechaza, 422 con la razón y sin eco del texto. Requiere naira:recall-answer.
+         */
+        post: operations["answerNairaRecall"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/go-live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * El go-live del tenant
+         * @description El instante desde el que lo observado deja de ser legacy, o que no hay go-live fijado. Requiere naira:go-live-set (OWNER/ADMIN).
+         */
+        get: operations["getNairaGoLive"];
+        /**
+         * Fijar el go-live del tenant (una sola vez, hacia adelante)
+         * @description Fija el go-live una vez y hacia adelante; queda registrado el ROL de quien lo fijó, no la persona. 409 si ya estaba fijado (con el vigente), 422 si el instante es retroactivo. Requiere naira:go-live-set (OWNER/ADMIN).
+         */
+        put: operations["setNairaGoLive"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/investigation-cap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * El tope de investigación de la agencia
+         * @description La política de la agencia sobre el tope diario de investigaciones, el máximo aceptado y la regla con la que se aplica (el mínimo entre la política y el N del portafolio). Requiere naira:investigation-cap-edit (OWNER/ADMIN).
+         */
+        get: operations["getNairaInvestigationCap"];
+        /**
+         * Fijar el tope de investigación de la agencia (solo baja)
+         * @description Fija la política de la agencia: un entero entre 0 y el máximo. Solo puede BAJAR el tope del día (se aplica el mínimo con el N del portafolio). 422 con el detalle si no es entero o está fuera de rango. Requiere naira:investigation-cap-edit.
+         */
+        put: operations["setNairaInvestigationCap"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/legacy-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * La cola de hallazgos previos al go-live
+         * @description Los próximos hallazgos legacy (COP descendente), los que la métrica no deja ver al rol ocultos y contados. Requiere naira:legacy-queue-view (OWNER/ADMIN/OPERATOR).
+         */
+        get: operations["listNairaLegacyQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/rules/{reglaId}/resolution": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirmar o revertir una regla degradada
+         * @description Registra la decisión humana sobre una regla: confirmar la degradación o revertirla. 404 si la regla no tiene estado, 409 si la transición no es legal desde su estado. Requiere naira:rule-state-edit (OWNER/ADMIN).
+         */
+        post: operations["resolveNairaRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/whatsapp-consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Si quien llama autorizó recibir el briefing de Naira por WhatsApp */
+        get: operations["getNairaWhatsappConsent"];
+        put?: never;
+        /** Autorizar o retirar el briefing de Naira por WhatsApp (siempre de quien llama) */
+        post: operations["setNairaWhatsappConsent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/whatsapp-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Un código de seis dígitos para que Naira responda cualquier pregunta por WhatsApp (siempre de quien llama) */
+        post: operations["createNairaWhatsappCode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/authorization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La autorización de quien llama para que Naira le atribuya datos de su gestión (B-5 §3) */
+        get: operations["getNairaManagementAuthorization"];
+        put?: never;
+        /** Autorizar o retirar la autorización de gestión (siempre de quien llama); al retirarla, lo atribuido se borra */
+        post: operations["setNairaManagementAuthorization"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/about-me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** «Qué dice Naira de mí»: la ficha de quien llama */
+        get: operations["getNairaAboutMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/team": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Las personas del equipo que autorizaron, por nombre (sin cifras) */
+        get: operations["listNairaAuthorizedTeam"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/team/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** La ficha de UNA persona del equipo que autorizó (dueño, admin y gerente) */
+        get: operations["getNairaTeamMemberSheet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/open-loops": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Los Open Loops vivos de la agencia
+         * @description Los loops VIVOS del tenant con su seguimiento, el dueño EFECTIVO (el rol de dominio del último evento), si ese rol quedó sin personas (huérfano) y si la causa ya se comunicó. Los loops cuya métrica exige un rol mayor se ocultan y se cuentan. Nunca por persona. Requiere naira:open-loops-view (los cuatro roles).
+         */
+        get: operations["listNairaOpenLoops"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/open-loops/{loopId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Un Open Loop con su bitácora
+         * @description La identidad del loop, su cierre, el dueño al nacer y el EFECTIVO, y la bitácora ENTERA en orden de día. Un loop inexistente, de otro tenant o cuya métrica el rol no ve responde el MISMO 404. Requiere naira:open-loops-view (los cuatro roles).
+         */
+        get: operations["getNairaOpenLoop"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/signals/{promocionId}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Votar una señal entregada (voto de equipo)
+         * @description Útil, no útil o ya lo sabía, excluyentes, sobre una señal que al llamador le llegó en atención o informativo, dentro de la ventana de feedback desde su entrega. Es un voto de EQUIPO: no se guarda quién votó. Gana el último voto. Una señal no entregada al llamador o cuya métrica su rol no ve responde el mismo 404. Requiere naira:signal-feedback (los cuatro roles).
+         */
+        post: operations["submitNairaSignalFeedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/feedback/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * El descubrimiento por regla
+         * @description Por regla, sobre las causas-episodio entregadas en [desde, hasta] (atención o informativo, despacho terminal) y los votos vigentes desde `desde`: el descubrimiento, y la aceptación cruda SOLO a su lado. Bajo el mínimo de entregas, no_medible. Nunca por persona. Rango obligatorio, no futuro y de a lo sumo 90 días. Requiere naira:feedback-report-view.
+         */
+        get: operations["getNairaFeedbackReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Las propuestas de acción de Naira
+         * @description Las propuestas de los últimos días con su consecuencia, su clase, su destinatario (un rol) y su estado. Las propuestas cuya métrica exige un rol mayor se ocultan y se cuentan. Nunca por persona. Requiere naira:action-view (los cuatro roles).
+         */
+        get: operations["listNairaActions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/actions/{proposalId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Una propuesta de acción: la consecuencia primero
+         * @description La consecuencia (texto, tipo, clase, destinatario, reversible, vencimiento) PRIMERO y el razonamiento (la señal, los hechos guardados, la referencia de la investigación) detrás, con la huella de lo mostrado. La primera vez que la abre un rol que puede decidir esa clase queda registrada la presentación (sin actor). Una propuesta inexistente, de otro tenant o cuya métrica el rol no ve responde el MISMO 404. Requiere naira:action-view.
+         */
+        get: operations["getNairaAction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/actions/{proposalId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Aprobar o rechazar una propuesta de acción
+         * @description Aprobar o rechazar con la huella que se mostró (huellaVista). Pasa el middleware quien tiene algún permiso de aprobación; después decide el permiso de la CLASE de la propuesta (naira:action-approve-internal o naira:action-approve-external) y el canal de la clase. La decisión y su registro quedan en UNA transacción; una segunda decisión responde 409. Nunca devuelve quién decidió.
+         */
+        post: operations["decideNairaAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Las tareas abiertas que creó Naira
+         * @description Las tareas ABIERTAS con su dueño vigente (un rol de dominio). Las de una métrica que el rol no ve se ocultan y se cuentan. Nunca por persona. Requiere naira:task-view (los cuatro roles).
+         */
+        get: operations["listNairaTasks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/agency/{agencyId}/naira/tasks/{tareaId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancelar una tarea de Naira
+         * @description Cancela una tarea ABIERTA (sin actor). Una tarea inexistente, de otro tenant, ya cerrada o cuya métrica el rol no ve responde el MISMO 404. No toca la propuesta ni el loop. Requiere naira:task-cancel.
+         */
+        post: operations["cancelNairaTask"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cotizador/quote": {
         parameters: {
             query?: never;
@@ -9365,23 +10009,6 @@ export interface paths {
         patch: operations["cotizadorAdminPrescoringConfigUpdate"];
         trace?: never;
     };
-    "/api/agency/{agencyId}/calidad/publicaciones": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Cola de calidad de publicaciones (worst-first). */
-        get: operations["listCalidadPublicaciones"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/agency/{agencyId}/calidad/estado": {
         parameters: {
             query?: never;
@@ -9416,20 +10043,17 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/agency/{agencyId}/mensajes/redactar": {
+    "/api/agency/{agencyId}/calidad/publicaciones": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Cola de calidad de publicaciones (worst-first). */
+        get: operations["listCalidadPublicaciones"];
         put?: never;
-        /**
-         * Escribir con IA: un borrador de mensaje para el hilo abierto
-         * @description Con los últimos mensajes del hilo, lo que se sabe de la persona y (opcional) qué quiere decir, devuelve un borrador. No envía ni guarda nada. Nunca inventa montos, fechas ni cuentas: lo que falta sale como [completar].
-         */
-        post: operations["redactarMensaje"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -10326,6 +10950,7 @@ export interface components {
         MemberPermissionsResponse: {
             cobranza: string[];
             cotizador: string[];
+            naira: string[];
         };
         MemberPermissionsError: {
             error: string;
@@ -11010,6 +11635,11 @@ export interface components {
             creditBalanceCop: number | null;
             sidebar: components["schemas"]["CobranzaDebtorDetailSidebar"];
             kpis: components["schemas"]["CobranzaDebtorDetailKpis"];
+            deudaMasVieja: {
+                periodo: string | null;
+                vence: string;
+                saldoCop: number;
+            } | null;
             generatedAt: string;
         };
         CobranzaDebtorDetailError: {
@@ -11568,6 +12198,7 @@ export interface components {
             calls_outside_window_critical_at_least: number;
             is_rollback_of_version?: number | null;
             created_at?: string | null;
+            created_by_name?: string | null;
         };
         CobranzaDailyReportThresholdsHistory: {
             items: components["schemas"]["CobranzaDailyReportThresholds"][];
@@ -12484,7 +13115,7 @@ export interface components {
         AiHubChatPendingApproval: {
             id: string;
             /** @enum {string} */
-            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion";
+            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | "naira";
             actionType: string;
             title: string;
             description: string;
@@ -12504,7 +13135,7 @@ export interface components {
         AiHubChatDispatch: {
             id?: string;
             /** @enum {string} */
-            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion";
+            agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | "naira";
             taskDescription: string;
             /** @enum {string} */
             status: "completed" | "failed";
@@ -12554,7 +13185,7 @@ export interface components {
             snapshot: components["schemas"]["AiHubChatSnapshot"];
             razonamiento?: {
                 /** @enum {string} */
-                agente?: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion";
+                agente?: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | "naira";
                 texto: string;
             }[];
             generatedAt: string;
@@ -12592,7 +13223,7 @@ export interface components {
             kind: "routing" | "approval" | "feedback";
             pattern: {
                 /** @enum {string|null} */
-                agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | null;
+                agent: "cobranza" | "cotizador" | "estudio" | "matching" | "avaluo" | "conciliacion" | "pagos" | "documentos" | "reportes" | "comunicacion" | "director" | "retencion" | "naira" | null;
                 tags: string[];
             };
             recommendation: string;
@@ -14886,6 +15517,34 @@ export interface components {
         ApBillExtractRequest: {
             documentos: components["schemas"]["ApBillExtractDocumento"][];
         };
+        MensajeRedactado: {
+            texto: string;
+            nota: string | null;
+            tokensUsed: {
+                input: number;
+                output: number;
+            };
+            estimatedCostCop: number;
+        };
+        PedidoDeRedaccionDeMensaje: {
+            nombre: string;
+            /**
+             * @default otro
+             * @enum {string}
+             */
+            perfil: "inquilino" | "propietario" | "prospecto" | "otro";
+            inmobiliaria?: string | null;
+            /** @default [] */
+            mensajes: {
+                deLaInmobiliaria: boolean;
+                texto: string;
+            }[];
+            datos?: {
+                [key: string]: string;
+            };
+            instruccion?: string | null;
+            borrador?: string | null;
+        };
         ApAgingResponse: {
             asOf: string;
             buckets: {
@@ -16739,6 +17398,1069 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        NairaMemorySnapshot: {
+            /** @description la revisión de la memoria del tenant (bigint como string decimal) */
+            revision: string;
+        };
+        NairaMemoryWrittenBy: {
+            /** @enum {string} */
+            kind: "user";
+            userId: string;
+        } | {
+            /** @enum {string} */
+            kind: "system";
+        };
+        NairaMemoryDerivedFrom: {
+            /** @enum {string} */
+            kind: "fact";
+            source: string;
+            ref: string;
+        } | {
+            /** @enum {string} */
+            kind: "memory";
+            itemId: string;
+        } | {
+            /** @enum {string} */
+            kind: "human_statement";
+        } | {
+            /** @enum {string} */
+            kind: "deterministic_query";
+            queryId: string;
+        };
+        NairaMemoryContent: {
+            /** @enum {string} */
+            kind: "present";
+            text: string;
+        } | {
+            /** @enum {string} */
+            kind: "erased";
+            erasedAt: string;
+            erasedBy: components["schemas"]["NairaMemoryWrittenBy"];
+        };
+        NairaMemoryItem: {
+            id: string;
+            /** @enum {string} */
+            layer: "episodic" | "semantic" | "preference" | "procedural";
+            /** @enum {string} */
+            provenance: "observed" | "inferred" | "stated_by_human";
+            /** @enum {string} */
+            trust: "system" | "staff" | "third_party";
+            writtenBy: components["schemas"]["NairaMemoryWrittenBy"];
+            derivedFrom: components["schemas"]["NairaMemoryDerivedFrom"];
+            /** @description ISO-8601 */
+            recordedAt: string;
+            /** @description bigint como string decimal */
+            revision: string;
+            content: components["schemas"]["NairaMemoryContent"];
+        };
+        NairaMemoryProposal: {
+            id: string;
+            proposedBy: {
+                /** @enum {string} */
+                kind: "user";
+                userId: string;
+            };
+            proposedAt: string;
+            text: string;
+        };
+        NairaMemoryView: {
+            snapshot: components["schemas"]["NairaMemorySnapshot"];
+            items: components["schemas"]["NairaMemoryItem"][];
+            pendingProposals: components["schemas"]["NairaMemoryProposal"][];
+            generatedAt: string;
+        };
+        NairaMemoryError: {
+            error: string;
+            reason: string | null;
+        };
+        NairaMemoryWriteResult: {
+            item: components["schemas"]["NairaMemoryItem"];
+            snapshot: components["schemas"]["NairaMemorySnapshot"];
+        };
+        NairaMemoryTextRequest: {
+            text: string;
+        };
+        NairaMemoryErasureResult: {
+            erasedItemIds: string[];
+            erasedAt: string;
+            auditId: string;
+        };
+        NairaMemoryErasureRequest: {
+            /** @enum {string} */
+            motivo: "solicitud_del_titular" | "decision_de_la_agencia";
+        };
+        NairaMemoryProceduralWritten: {
+            /** @enum {string} */
+            kind: "written";
+            item: components["schemas"]["NairaMemoryItem"];
+            snapshot: components["schemas"]["NairaMemorySnapshot"];
+        };
+        NairaMemoryProceduralProposed: {
+            /** @enum {string} */
+            kind: "proposed";
+            proposalId: string;
+        };
+        NairaMemoryResolutionResult: {
+            /** @enum {string} */
+            kind: "confirmed";
+            item: components["schemas"]["NairaMemoryItem"];
+            snapshot: components["schemas"]["NairaMemorySnapshot"];
+        } | {
+            /** @enum {string} */
+            kind: "rejected";
+            proposalId: string;
+        };
+        NairaMemoryResolutionRequest: {
+            /** @enum {string} */
+            decision: "confirm" | "reject";
+        };
+        NairaConversationScope: {
+            /** @enum {string} */
+            kind: "toda_la_agencia";
+        } | {
+            /** @enum {string} */
+            kind: "por_eje";
+            /** @enum {string} */
+            eje: "stage" | "guarantee_status" | "channel" | "payment_provider" | "payment_method" | "discount_kind" | "stage_at_offer" | "urgency" | "dispute_status" | "city" | "property_type" | "stratum";
+        };
+        NairaConversationAnswered: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "respondida";
+            preguntaId: string;
+            texto: string;
+            refsServidas: string[];
+            /** @description ISO-8601, uno por fuente leída */
+            asOfs: string[];
+            alcance: components["schemas"]["NairaConversationScope"];
+            noServidos: "grafo_sin_filtro_de_rol"[];
+        };
+        NairaConversationCanAnswer: {
+            /** @enum {string} */
+            kind: "metrica";
+            /** @enum {string} */
+            metricId: "cartera.morosidad_rate" | "cartera.mora_exposure_cop" | "cartera.recovered_cop_30d" | "cartera.promise_kept_rate_7d" | "cartera.promises_open_count" | "cartera.payment_plan_default_rate_90d" | "cartera.escalations_open_count" | "cartera.disputes_open_count" | "portafolio.available_units_count" | "portafolio.vacancy_rate" | "portafolio.rent_roll_cop" | "portafolio.days_on_market_p50" | "prospectos.leads_sin_contacto_count" | "sla.escalacion_vencida_count";
+            nombre: string;
+        } | {
+            /** @enum {string} */
+            kind: "politicas";
+        } | {
+            /** @enum {string} */
+            kind: "ficha_por_direccion_o_referencia";
+        };
+        NairaConversationDeclined: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "negada";
+            preguntaId: string;
+            /** @enum {string} */
+            razon: "fuera_de_catalogo" | "instruccion" | "accion_en_fase_12" | "dimension_de_persona" | "eje_no_disponible" | "bajo_k" | "metrica_no_visible_para_el_rol" | "documento_no_buscable_en_v1" | "fuente_rancia" | "presupuesto_agotado";
+            puedoResponder: components["schemas"]["NairaConversationCanAnswer"][];
+            texto: string;
+        };
+        NairaConversationBlocked: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "bloqueada";
+            preguntaId: string;
+            /** @enum {string} */
+            motivo: "numeric_drift" | "causal_sin_clase" | "vocabulario_fuera_de_adr" | "categoria_inconsistente";
+            texto: string;
+        };
+        NairaConversationFailed: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "fallida";
+            preguntaId: string;
+            /** @enum {string} */
+            razon: "registro_no_escrito" | "cupo_no_reservado" | "lectura_fallida";
+            texto: string;
+        };
+        NairaConversationAnswer: components["schemas"]["NairaConversationAnswered"] | components["schemas"]["NairaConversationDeclined"] | components["schemas"]["NairaConversationBlocked"] | components["schemas"]["NairaConversationFailed"];
+        NairaConversationError: {
+            error: string;
+            reason: string | null;
+        };
+        NairaConversationQuestionRequest: {
+            question: string;
+        };
+        NairaBriefingItemPromotion: {
+            /** @enum {string} */
+            kind: "promovida";
+            promocionId: string;
+        } | {
+            /** @enum {string} */
+            kind: "sin_promocion";
+        };
+        NairaBriefingItemCause: {
+            /** @enum {string} */
+            kind: "investigada";
+            razon: string;
+        } | {
+            /** @enum {string} */
+            kind: "investigacion_no_disponible";
+        };
+        NairaBriefingItemEntities: {
+            /** @enum {string} */
+            kind: "agregada";
+        } | {
+            /** @enum {string} */
+            kind: "lista";
+            items: {
+                tipo: string;
+                id: string;
+            }[];
+        };
+        NairaBriefingItem: {
+            /** @enum {string} */
+            seccion: "atencion" | "informativo" | "estado" | "semanal" | "seguimiento";
+            posicion: number;
+            metricId: string;
+            valor: string;
+            unidad: string;
+            /** @description ISO-8601 */
+            asOf: string;
+            fuente: string;
+            trust: string;
+            clave: string;
+            /** @enum {string} */
+            urgencyClass: "ventana_legal" | "irreversible" | "degradacion_con_realimentacion" | "reversible";
+            titulo: string;
+            promocion: components["schemas"]["NairaBriefingItemPromotion"];
+            causa: components["schemas"]["NairaBriefingItemCause"];
+            entidades: components["schemas"]["NairaBriefingItemEntities"];
+            /** @description El valor con su unidad, formateado como en el título del correo (una sola forma de formatear) */
+            valorRenderizado: string;
+            nombreDeMetrica: string;
+        };
+        NairaBriefingDelivery: {
+            /** @enum {string} */
+            canal: "email" | "whatsapp";
+            /** @enum {string} */
+            tipo: "briefing" | "aviso_suspension";
+            /** @description ISO-8601: el instante en que se congeló la entrega */
+            congeladaEn: string;
+            /** @enum {string} */
+            estadoDelEnvio: "sin_despacho" | "enviado" | "stub" | "solo_fallidos";
+            items: components["schemas"]["NairaBriefingItem"][];
+        };
+        NairaBriefingDay: {
+            dia: string;
+            /** @description ISO-8601: el corte del día (06:45 de Bogotá), el mismo de toda superficie */
+            corte: string;
+            resultado: {
+                /** @enum {string} */
+                kind: "entregado";
+                entregas: components["schemas"]["NairaBriefingDelivery"][];
+                ocultosPorRol: number;
+            } | {
+                /** @enum {string} */
+                kind: "sin_entrega";
+                /** @enum {string} */
+                razon: "antes_del_corte" | "briefing_apagado" | "sin_entregas_del_tenant" | "sin_entrega_para_el_llamador";
+            };
+        };
+        NairaBriefingError: {
+            error: string;
+            reason: string | null;
+        };
+        NairaSignalCitation: {
+            texto: string;
+            /** @enum {string|null} */
+            claimClass: "aritmetica" | "asociacion" | "hipotesis" | null;
+            hipotesis: {
+                banda: string;
+                alternativa: string;
+                discriminador: string;
+            } | null;
+        };
+        NairaSignalCause: {
+            /** @enum {string} */
+            kind: "investigacion_no_disponible";
+        } | {
+            /** @enum {string} */
+            kind: "citada";
+            investigacionId: string;
+            citas: string[];
+            citasConClase: components["schemas"]["NairaSignalCitation"][];
+        } | {
+            /** @enum {string} */
+            kind: "no_citable";
+            /** @enum {string} */
+            razon: "sin_investigacion_al_congelar" | "fila_ilegible" | "no_visible_para_el_rol" | "con_datos_de_terceros" | "sin_explicacion";
+        };
+        NairaSignalDetail: {
+            promocionId: string;
+            dia: string;
+            /** @description ISO-8601: el corte del día de la entrega (06:45 de Bogotá) */
+            corte: string;
+            /** @description ISO-8601: el instante en que se congeló la entrega del ítem */
+            congeladaEn: string;
+            item: components["schemas"]["NairaBriefingItem"];
+            causa: components["schemas"]["NairaSignalCause"];
+        };
+        NairaNotifyConfigPreference: {
+            /** @enum {string} */
+            modo: "normal" | "solo_digest";
+            /** @enum {string} */
+            urgenciaMinimaParaAtencion: "ventana_legal" | "irreversible" | "degradacion_con_realimentacion" | "reversible";
+            /** @enum {string} */
+            origen: "persona" | "compania" | "por_defecto";
+        };
+        NairaNotifyConfigPreferences: {
+            propia: components["schemas"]["NairaNotifyConfigPreference"];
+            compania: components["schemas"]["NairaNotifyConfigPreference"];
+        };
+        NairaNotifyConfigError: {
+            error: string;
+            reason: string | null;
+        };
+        NairaNotifyConfigPreferenceWritten: {
+            revision: number;
+        };
+        NairaNotifyConfigPreferenceRequest: {
+            /** @enum {string} */
+            alcance: "propia" | "compania";
+            /** @enum {string} */
+            modo: "normal" | "solo_digest";
+            /** @enum {string} */
+            urgenciaMinimaParaAtencion: "ventana_legal" | "irreversible" | "degradacion_con_realimentacion" | "reversible";
+        };
+        NairaNotifyConfigAssignment: {
+            asignacionId: string;
+            /** @enum {string} */
+            rol: "cartera" | "portafolio" | "prospectos";
+            userId: string;
+            esPrimario: boolean;
+        };
+        NairaNotifyConfigUnroutedOwner: {
+            owner: string;
+            /** @enum {string} */
+            razon: "universo_vacio" | "sin_owner_ni_contacto" | "fuera_del_universo";
+            senales: number;
+        };
+        NairaNotifyConfigAssignments: {
+            asignaciones: components["schemas"]["NairaNotifyConfigAssignment"][];
+            sinDestinatario: {
+                dia: string;
+                duenos: components["schemas"]["NairaNotifyConfigUnroutedOwner"][];
+            };
+        };
+        NairaNotifyConfigAssignmentResult: {
+            /** @enum {string} */
+            kind: "asignada" | "ya_vigente";
+            asignacionId: string;
+        };
+        NairaNotifyConfigAssignmentRequest: {
+            /** @enum {string} */
+            rol: "cartera" | "portafolio" | "prospectos";
+            userId: string;
+            esPrimario: boolean;
+        };
+        NairaNotifyConfigAssignmentRemoved: {
+            /** @enum {string} */
+            kind: "retirada";
+        };
+        NairaNotifyConfigRecallWritten: {
+            respuestaId: string;
+        };
+        NairaNotifyConfigRecallRequest: {
+            semana: string;
+            texto: string;
+        };
+        NairaNotifyConfigGoLive: {
+            /** @enum {string} */
+            kind: "fijado";
+            goLiveAt: string;
+        } | {
+            /** @enum {string} */
+            kind: "sin_go_live";
+        };
+        NairaNotifyConfigGoLiveConflict: {
+            error: string;
+            /** @enum {string} */
+            reason: "ya_fijado";
+            goLiveAt: string;
+        };
+        NairaNotifyConfigGoLiveRequest: {
+            /** Format: date-time */
+            goLiveAt: string;
+        };
+        NairaNotifyConfigCapPolicy: {
+            /** @enum {string} */
+            kind: "politica";
+            tope: number;
+        } | {
+            /** @enum {string} */
+            kind: "sin_politica";
+        } | {
+            /** @enum {string} */
+            kind: "politica_invalida";
+            /** @enum {string} */
+            detalle: "fuera_de_rango" | "no_entero";
+        };
+        NairaNotifyConfigInvestigationCap: {
+            politica: components["schemas"]["NairaNotifyConfigCapPolicy"];
+            maximo: number;
+            /** @enum {string} */
+            regla: "min_politica_y_n_del_portafolio";
+        };
+        NairaNotifyConfigInvestigationCapWritten: {
+            tope: number;
+            actualizadoEn: string;
+        };
+        NairaNotifyConfigInvestigationCapRequest: {
+            tope: number;
+        };
+        NairaNotifyConfigLegacyRow: {
+            id: string;
+            huella: string;
+            detectorId: string;
+            detectorVersion: number;
+            metricId: string;
+            entidad: {
+                kind: string;
+                id: string;
+            };
+            impacto: {
+                /** @enum {string} */
+                kind: "cop";
+                valueCop: number;
+            } | {
+                /** @enum {string} */
+                kind: "not_monetary";
+            };
+            primeraObservacion: string;
+            asOf: string;
+        };
+        NairaNotifyConfigLegacyQueue: {
+            filas: components["schemas"]["NairaNotifyConfigLegacyRow"][];
+            ocultosPorRol: number;
+        };
+        NairaNotifyConfigRuleResolved: {
+            reglaId: string;
+            revision: number;
+            /** @enum {string} */
+            transicion: "confirmada" | "revertida";
+        };
+        NairaNotifyConfigRuleDecision: {
+            /** @enum {string} */
+            decision: "confirmar" | "revertir";
+        };
+        NairaWhatsappConsent: {
+            otorgado: boolean;
+            texto: string;
+            version: string;
+            verificadoHasta: string | null;
+            telefonoRegistrado: boolean;
+        };
+        NairaWhatsappConsentError: {
+            error: string;
+            reason: string | null;
+        };
+        NairaWhatsappConsentRequest: {
+            otorgar: boolean;
+        };
+        NairaWhatsappCode: {
+            codigo: string;
+            venceEn: string;
+            minutos: number;
+        };
+        NairaManagementAuthorization: {
+            /** @enum {string} */
+            estado: "sin_decidir" | "autorizada" | "no_autorizada";
+            texto: string;
+            version: string;
+        };
+        NairaPorPersonaError: {
+            error: string;
+            reason: string | null;
+        };
+        NairaManagementAuthorizationRequest: {
+            autorizar: boolean;
+        };
+        NairaPersonSheet: {
+            persona: {
+                userId: string;
+                nombre: string;
+                esQuienPregunta: boolean;
+            };
+            /** @enum {string} */
+            autorizacion: "sin_decidir" | "autorizada" | "no_autorizada";
+            corte: string;
+            datos: {
+                dias: number;
+                memoriaVigente: number;
+                briefingsPorCanal: {
+                    clave: string;
+                    n: number;
+                }[];
+            };
+            gestion: {
+                dias: number;
+                votos: {
+                    clave: string;
+                    n: number;
+                }[];
+                aprobaciones: number;
+                rechazos: number;
+                cancelaciones: number;
+                motivos: {
+                    /** @enum {string} */
+                    tipo: "rechazo" | "cancelacion";
+                    motivo: string;
+                    en: string;
+                }[];
+                escalacionesAbiertas: number;
+                escalacionesVencidas: number;
+                acuerdosAprobados: number;
+            } | null;
+        };
+        NairaAuthorizedTeam: {
+            personas: {
+                userId: string;
+                nombre: string;
+            }[];
+        };
+        NairaOpenLoop: {
+            loopId: string;
+            detectorId: string;
+            metricId: string;
+            /** @enum {string} */
+            clase: "state" | "trend";
+            /** @enum {string} */
+            familia: "cartera" | "portafolio" | "prospectos";
+            episodio: string;
+            claveDeCausa: string;
+            promocionId: string;
+            /**
+             * @description El dueño EFECTIVO: el del último evento (siempre un rol de dominio)
+             * @enum {string}
+             */
+            owner: "role:cartera" | "role:portafolio" | "role:prospectos";
+            /** @enum {string} */
+            ownerRazon: "sin_fuente_de_asignacion" | "denominador_por_debajo_de_r_min" | "sin_denominador_basal" | "finalidad_no_autorizada" | "persona_espera_b5";
+            /** @enum {string} */
+            estado: "abierto" | "en_seguimiento" | "escalado" | "en_confirmacion" | "cerrado";
+            ciclos: number;
+            /** @enum {string} */
+            forma: "recordatorio" | "impacto" | "escalada";
+            nextCheckAt: {
+                /** @enum {string} */
+                kind: "programada";
+                /** @description ISO-8601 */
+                en: string;
+            } | {
+                /** @enum {string} */
+                kind: "ninguna";
+            };
+            candidato: {
+                /** @enum {string} */
+                kind: "ninguno";
+            } | {
+                /** @enum {string} */
+                kind: "en_curso";
+                /** @enum {string} */
+                desenlace: "resuelto_por_dato" | "no_accionado" | "sin_reincidencia" | "expirado";
+                confirmaciones: number;
+                desde: string;
+            };
+            /** @description El rol dueño no tenía personas asignadas en el último evento (LOOP-06) */
+            huerfanoDeRol: boolean;
+            ultimoDiaVerificado: string;
+            /** @description ISO-8601 */
+            abiertoEn: string;
+            /** @description ISO-8601 */
+            expiraEn: string;
+            comunicacion: {
+                /** @enum {string} */
+                kind: "comunicado";
+                /** @description YYYY-MM-DD: el primer día en que la causa se comunicó */
+                primerDia: string;
+            } | {
+                /** @enum {string} */
+                kind: "sin_comunicar";
+            };
+        };
+        NairaOpenLoopsList: {
+            /** @description ISO-8601: el instante de la lectura */
+            generadoEn: string;
+            loops: components["schemas"]["NairaOpenLoop"][];
+            /** @description Loops vivos cuya métrica exige un rol mayor que el del llamador */
+            ocultosPorRol: number;
+        };
+        NairaOpenLoopsError: {
+            error: string;
+            reason: string | null;
+        };
+        NairaOpenLoopEvent: {
+            /** @enum {string} */
+            tipo: "nacimiento" | "ciclo" | "cambio_de_forma" | "en_confirmacion" | "confirmacion_fallida" | "no_verificable" | "cierre";
+            seguimiento: {
+                /** @enum {string} */
+                estado: "abierto" | "en_seguimiento" | "escalado" | "en_confirmacion" | "cerrado";
+                ciclos: number;
+                /** @enum {string} */
+                forma: "recordatorio" | "impacto" | "escalada";
+                nextCheckAt: {
+                    /** @enum {string} */
+                    kind: "programada";
+                    /** @description ISO-8601 */
+                    en: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "ninguna";
+                };
+                candidato: {
+                    /** @enum {string} */
+                    kind: "ninguno";
+                } | {
+                    /** @enum {string} */
+                    kind: "en_curso";
+                    /** @enum {string} */
+                    desenlace: "resuelto_por_dato" | "no_accionado" | "sin_reincidencia" | "expirado";
+                    confirmaciones: number;
+                    desde: string;
+                };
+                rachaSinReincidencia: number;
+                ultimoDiaVerificado: string;
+            };
+            cambioDeForma: {
+                /** @enum {string} */
+                kind: "sin_cambio";
+            } | {
+                /** @enum {string} */
+                kind: "cambio";
+                /** @enum {string} */
+                de: "recordatorio" | "impacto" | "escalada";
+                /** @enum {string} */
+                a: "recordatorio" | "impacto" | "escalada";
+            };
+            memoria: {
+                /** @enum {string} */
+                kind: "ninguna";
+            } | {
+                /** @enum {string} */
+                kind: "candidata";
+                memoryId: string;
+                /** @enum {string} */
+                desenlace: "resuelto_por_dato" | "no_accionado" | "sin_reincidencia" | "expirado";
+            } | {
+                /** @enum {string} */
+                kind: "confirmada";
+                memoryId: string;
+            } | {
+                /** @enum {string} */
+                kind: "corregida";
+                memoryId: string;
+            } | {
+                /** @enum {string} */
+                kind: "corregida_y_candidata";
+                memoryIdCorreccion: string;
+                memoryIdCandidata: string;
+                /** @enum {string} */
+                desenlace: "resuelto_por_dato" | "no_accionado" | "sin_reincidencia" | "expirado";
+            };
+            /** @enum {string} */
+            owner: "role:cartera" | "role:portafolio" | "role:prospectos";
+            /** @enum {string} */
+            ownerRazon: "sin_fuente_de_asignacion" | "denominador_por_debajo_de_r_min" | "sin_denominador_basal" | "finalidad_no_autorizada" | "persona_espera_b5";
+            cambioDeDueno: {
+                /** @enum {string} */
+                kind: "sin_cambio";
+            } | {
+                /** @enum {string} */
+                kind: "reasignado";
+                /** @enum {string} */
+                anterior: "role:cartera" | "role:portafolio" | "role:prospectos";
+                /** @enum {string} */
+                nuevo: "role:cartera" | "role:portafolio" | "role:prospectos";
+                /** @enum {string} */
+                razon: "resolvedor_cambio";
+            } | {
+                /** @enum {string} */
+                kind: "revalidacion_rechazada";
+                razon: string;
+            };
+            huerfanoDeRol: boolean;
+            verificacion: {
+                /** @enum {string} */
+                kind: "nacimiento";
+            } | {
+                /** @enum {string} */
+                kind: "del_dia";
+                verificacion: {
+                    /** @enum {string} */
+                    kind: "persiste";
+                } | {
+                    /** @enum {string} */
+                    kind: "se_dejo_de_observar";
+                    razon: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "reincidencia";
+                } | {
+                    /** @enum {string} */
+                    kind: "no_aplica_por_clase";
+                } | {
+                    /** @enum {string} */
+                    kind: "no_verificable";
+                    razon: string;
+                };
+                veredicto: {
+                    /** @enum {string} */
+                    kind: "con_veredicto";
+                    detectorVersion: number;
+                    veredicto: {
+                        /** @enum {string} */
+                        kind: "senal";
+                    } | {
+                        /** @enum {string} */
+                        kind: "sin_senal";
+                        razon: string;
+                    } | {
+                        /** @enum {string} */
+                        kind: "no_evaluado";
+                        razon: string;
+                    } | {
+                        /** @enum {string} */
+                        kind: "no_corrio";
+                        estado: string;
+                    };
+                };
+                episodioDelDia: {
+                    /** @enum {string} */
+                    kind: "sin_promocion_hoy";
+                } | {
+                    /** @enum {string} */
+                    kind: "mismo_episodio";
+                } | {
+                    /** @enum {string} */
+                    kind: "episodio_nuevo";
+                    episodio: string;
+                };
+            } | {
+                /** @enum {string} */
+                kind: "sin_veredicto";
+                verificacion: {
+                    /** @enum {string} */
+                    kind: "persiste";
+                } | {
+                    /** @enum {string} */
+                    kind: "se_dejo_de_observar";
+                    razon: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "reincidencia";
+                } | {
+                    /** @enum {string} */
+                    kind: "no_aplica_por_clase";
+                } | {
+                    /** @enum {string} */
+                    kind: "no_verificable";
+                    razon: string;
+                };
+                episodioDelDia: {
+                    /** @enum {string} */
+                    kind: "sin_promocion_hoy";
+                } | {
+                    /** @enum {string} */
+                    kind: "mismo_episodio";
+                } | {
+                    /** @enum {string} */
+                    kind: "episodio_nuevo";
+                    episodio: string;
+                };
+            };
+            /** @description ISO-8601: el corte del tick */
+            corte: string;
+            /** @description ISO-8601 */
+            recordedAt: string;
+        };
+        NairaOpenLoopDetail: {
+            loop: {
+                loopId: string;
+                detectorId: string;
+                detectorVersion: number;
+                metricId: string;
+                /** @enum {string} */
+                clase: "state" | "trend";
+                /** @enum {string} */
+                familia: "cartera" | "portafolio" | "prospectos";
+                episodio: string;
+                claveDeCausa: string;
+                promocionId: string;
+                /** @enum {string} */
+                ownerAlNacer: "role:cartera" | "role:portafolio" | "role:prospectos";
+                /** @enum {string} */
+                owner: "role:cartera" | "role:portafolio" | "role:prospectos";
+                /** @enum {string} */
+                ownerRazon: "sin_fuente_de_asignacion" | "denominador_por_debajo_de_r_min" | "sin_denominador_basal" | "finalidad_no_autorizada" | "persona_espera_b5";
+                huerfanoDeRol: boolean;
+                /** @description ISO-8601 */
+                abiertoEn: string;
+                /** @description ISO-8601 */
+                expiraEn: string;
+                cierre: {
+                    /** @enum {string} */
+                    kind: "abierto";
+                } | {
+                    /** @enum {string} */
+                    kind: "cerrado";
+                    /** @description ISO-8601 */
+                    en: string;
+                    /** @enum {string} */
+                    desenlace: "resuelto_por_dato" | "no_accionado" | "sin_reincidencia" | "expirado";
+                };
+                comunicacion: {
+                    /** @enum {string} */
+                    kind: "comunicado";
+                    /** @description YYYY-MM-DD: el primer día en que la causa se comunicó */
+                    primerDia: string;
+                } | {
+                    /** @enum {string} */
+                    kind: "sin_comunicar";
+                };
+            };
+            /** @description La bitácora entera, en orden de día */
+            eventos: components["schemas"]["NairaOpenLoopEvent"][];
+        };
+        NairaSignalFeedbackResult: {
+            /** @enum {string} */
+            kind: "registrado";
+            votoId: string;
+            /** @enum {string} */
+            valor: "util" | "no_util" | "ya_lo_sabia";
+            /** @description YYYY-MM-DD de Bogotá: el día en que se registró el voto */
+            diaDelVoto: string;
+        };
+        NairaSignalFeedbackRequest: {
+            /** @enum {string} */
+            valor: "util" | "no_util" | "ya_lo_sabia";
+        };
+        NairaFeedbackRate: {
+            exitos: number;
+            n: number;
+            /** @description Intervalo de Wilson al 95 % */
+            ic: {
+                inferior: number;
+                superior: number;
+            };
+        };
+        NairaFeedbackRuleReport: {
+            /** @enum {string} */
+            kind: "medido";
+            n: number;
+            descubrimiento: components["schemas"]["NairaFeedbackRate"];
+            yaLoSabia: components["schemas"]["NairaFeedbackRate"];
+            noUtil: components["schemas"]["NairaFeedbackRate"];
+            sinRespuesta: components["schemas"]["NairaFeedbackRate"];
+            aceptacion: components["schemas"]["NairaFeedbackRate"];
+        } | {
+            /** @enum {string} */
+            kind: "no_medible";
+            /** @description n_bajo_minimo o sin_entregas */
+            razon: string;
+        };
+        NairaFeedbackReport: {
+            desde: string;
+            hasta: string;
+            /** @enum {string} */
+            definicion: "descubrimiento = votos útiles sobre las causas-episodio entregadas de la regla, votadas o no (el denominador son las entregadas); útil, no útil y ya lo sabía son excluyentes, así que útil y no ya lo sabía es exactamente útil; la aceptación cruda (útil más ya lo sabía) solo se informa al lado del descubrimiento; por regla y agencia, nunca por persona.";
+            /** @description Una por regla, en orden lexicográfico */
+            reglas: {
+                reglaId: string;
+                reporte: components["schemas"]["NairaFeedbackRuleReport"];
+            }[];
+            /** @description Causas-episodio cuya métrica exige un rol mayor que el del llamador */
+            ocultosPorRol: number;
+        };
+        /** @description Un ROL de dominio, en un despacho el evento del vertical o, en una acción externa, el grupo al que le llega. Nunca una persona. */
+        NairaActionRecipient: {
+            /** @enum {string} */
+            kind: "rol";
+            /** @enum {string} */
+            rol: "role:cartera" | "role:portafolio" | "role:prospectos";
+        } | {
+            /** @enum {string} */
+            kind: "vertical";
+            evento: string;
+        } | {
+            /** @enum {string} */
+            kind: "externo";
+            /** @enum {string} */
+            aQuien: "inquilinos_en_mora" | "propietarios_de_inmuebles_disponibles";
+        };
+        NairaActionSummary: {
+            proposalId: string;
+            consecuencia: {
+                /** @enum {string} */
+                kind: "reproducible";
+                texto: string;
+            } | {
+                /** @enum {string} */
+                kind: "no_reproducible";
+            };
+            /** @description El asOf (ISO-8601) de cada hecho guardado, sin repetidos y ordenados */
+            asOfs: string[];
+            /** @enum {string} */
+            tipo: "crear_tarea" | "asignar_tarea" | "aviso_interno" | "despachar_vertical" | "recordatorio_de_pago" | "aviso_al_propietario";
+            /** @enum {string} */
+            clase: "interna_reversible" | "interna_irreversible" | "externa";
+            destinatario: components["schemas"]["NairaActionRecipient"];
+            reversible: boolean;
+            /** @enum {string} */
+            estado: "pendiente" | "vencible" | "aprobada" | "rechazada" | "vencida" | "ejecutada" | "no_ejecutada";
+            /** @description ISO-8601 */
+            venceEn: string;
+            /** @description ISO-8601 */
+            propuestaEn: string;
+            puedeDecidir: boolean;
+        };
+        NairaActionLatencyReport: {
+            /** @enum {string} */
+            kind: "medida";
+            n: number;
+            medianaMs: number;
+            p10Ms: number;
+        } | {
+            /** @enum {string} */
+            kind: "no_medible";
+            /** @enum {string} */
+            razon: "n_bajo_minimo" | "sin_presentacion";
+        } | {
+            /** @enum {string} */
+            kind: "no_reportable_a_la_agencia";
+            /** @enum {string} */
+            razon: "un_aprobador";
+        };
+        /** @description #32: cuánto tarda el equipo en decidir, por tipo y semana (las dos semanas completas anteriores). Solo para el OWNER; para los demás roles, null. Una clase con un solo aprobador posible no se reporta (B-5). */
+        NairaActionLatency: {
+            /** @description Semana ISO (AAAA-Www, Bogotá) más reciente de la ventana */
+            semanaReciente: string;
+            /** @description Semana ISO anterior */
+            semanaPrevia: string;
+            porTipo: {
+                /** @enum {string} */
+                tipo: "crear_tarea" | "asignar_tarea" | "aviso_interno" | "despachar_vertical" | "recordatorio_de_pago" | "aviso_al_propietario";
+                semanaIso: string;
+                reporte: components["schemas"]["NairaActionLatencyReport"];
+            }[];
+        } | null;
+        NairaActionsList: {
+            /** @description ISO-8601 */
+            generadoEn: string;
+            /** @description ISO-8601: el comienzo de la ventana de recientes */
+            desde: string;
+            acciones: components["schemas"]["NairaActionSummary"][];
+            /** @description Propuestas cuya métrica exige un rol mayor que el del llamador */
+            ocultasPorRol: number;
+            latencia: components["schemas"]["NairaActionLatency"];
+        };
+        NairaActionsError: {
+            error: string;
+            reason: string | null;
+        };
+        NairaActionConsequence: {
+            /** @description La consecuencia renderizada con la plantilla y los hechos guardados */
+            texto: string;
+            /** @enum {string} */
+            tipo: "crear_tarea" | "asignar_tarea" | "aviso_interno" | "despachar_vertical" | "recordatorio_de_pago" | "aviso_al_propietario";
+            /** @enum {string} */
+            clase: "interna_reversible" | "interna_irreversible" | "externa";
+            destinatario: components["schemas"]["NairaActionRecipient"];
+            reversible: boolean;
+            /** @description ISO-8601 */
+            venceEn: string;
+        };
+        NairaActionFact: {
+            value: number | string;
+            source: string;
+            /** @description ISO-8601 */
+            asOf: string;
+            confidence: number;
+            volatility: string;
+            trust: string;
+        };
+        NairaActionReasoning: {
+            senal: {
+                senalId: string;
+                promocionId: string;
+                detectorId: string;
+                metricId: string;
+            };
+            /** @description Los hechos GUARDADOS con la propuesta, por valor */
+            hechos: components["schemas"]["NairaActionFact"][];
+            /** @description La referencia de la investigación de la señal (su texto lo sirve la ruta de señales), o ninguna */
+            investigacion: {
+                /** @enum {string} */
+                kind: "referencia";
+                id: string;
+            } | {
+                /** @enum {string} */
+                kind: "sin_investigacion";
+            };
+        };
+        NairaActionDetail: {
+            consecuencia: components["schemas"]["NairaActionConsequence"];
+            razonamiento: components["schemas"]["NairaActionReasoning"];
+            /** @description La huella de lo mostrado: la que exige la decisión como huellaVista */
+            huella: string;
+            /** @enum {string} */
+            estado: "pendiente" | "vencible" | "aprobada" | "rechazada" | "vencida" | "ejecutada" | "no_ejecutada";
+            puedeDecidir: boolean;
+        };
+        NairaActionDecisionResult: {
+            /** @enum {string} */
+            kind: "decidida";
+            proposalId: string;
+            /** @enum {string} */
+            decision: "aprobada" | "rechazada";
+            decisionId: string;
+        };
+        NairaActionDecisionRequest: {
+            /** @enum {string} */
+            decision: "aprobar" | "rechazar";
+            /** @description La huella del detalle que se mostró */
+            huellaVista: string;
+            /** @description Por qué la rechaza (opcional) */
+            motivo?: string;
+        };
+        NairaTask: {
+            tareaId: string;
+            proposalId: string;
+            loopId: string;
+            detectorId: string;
+            /**
+             * @description El dueño VIGENTE: siempre un rol de dominio
+             * @enum {string}
+             */
+            owner: "role:cartera" | "role:portafolio" | "role:prospectos";
+            /** @enum {string} */
+            estado: "abierta" | "cancelada" | "cerrada_por_loop";
+            /** @description ISO-8601 */
+            creadaEn: string;
+        };
+        NairaTasksList: {
+            /** @description ISO-8601 */
+            generadoEn: string;
+            tareas: components["schemas"]["NairaTask"][];
+            /** @description Tareas cuya métrica exige un rol mayor que el del llamador */
+            ocultasPorRol: number;
+        };
+        NairaTaskCancelResult: {
+            /** @enum {string} */
+            kind: "cancelada";
+            tareaId: string;
+        };
         /** @description Per-carrier quote result (Phase 20 D-20-15 8-carrier set). */
         AseguradoraQuote: {
             /** @enum {string} */
@@ -17166,34 +18888,6 @@ export interface components {
             }[];
             total: number;
             generatedAt: string;
-        };
-        MensajeRedactado: {
-            texto: string;
-            nota: string | null;
-            tokensUsed: {
-                input: number;
-                output: number;
-            };
-            estimatedCostCop: number;
-        };
-        PedidoDeRedaccionDeMensaje: {
-            nombre: string;
-            /**
-             * @default otro
-             * @enum {string}
-             */
-            perfil: "inquilino" | "propietario" | "prospecto" | "otro";
-            inmobiliaria?: string | null;
-            /** @default [] */
-            mensajes: {
-                deLaInmobiliaria: boolean;
-                texto: string;
-            }[];
-            datos?: {
-                [key: string]: string;
-            };
-            instruccion?: string | null;
-            borrador?: string | null;
         };
     };
     responses: never;
@@ -31609,6 +33303,117 @@ export interface operations {
             };
         };
     };
+    redactarMensaje: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PedidoDeRedaccionDeMensaje"];
+            };
+        };
+        responses: {
+            /** @description El borrador */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MensajeRedactado"];
+                };
+            };
+            /** @description Datos inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Sólo quien escribe mensajes */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Demasiados pedidos */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description No se pudo escribir */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+            /** @description Escribir con IA no está disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        error: string;
+                        statusCode?: number;
+                        code?: string;
+                        message?: string | string[];
+                        campos?: components["schemas"]["SobreDeErrorCampo"][];
+                        referencia?: string;
+                        servicio?: string;
+                    };
+                };
+            };
+        };
+    };
     getApAging: {
         parameters: {
             query?: never;
@@ -39483,6 +41288,2850 @@ export interface operations {
             };
         };
     };
+    getNairaMemoryView: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La memoria creída en la revisión vigente */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryView"];
+                };
+            };
+            /** @description Cuerpo o parámetros inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, miembro no resuelto, o la decisión procedural (con reason) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Naira apagada para el tenant, ítem no creído / de otro tenant, o propuesta inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+        };
+    };
+    correctNairaMemoryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaMemoryTextRequest"];
+            };
+        };
+        responses: {
+            /** @description La versión nueva y la revisión que consumió */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryWriteResult"];
+                };
+            };
+            /** @description Cuerpo o parámetros inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, miembro no resuelto, o la decisión procedural (con reason) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Naira apagada para el tenant, ítem no creído / de otro tenant, o propuesta inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Versión no vigente, carrera de revisión, ya redactado, o propuesta ya resuelta */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Contenido rechazado por la pantalla (reason de MEMORY_CONTENT_REJECTION_REASONS, nunca el texto) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+        };
+    };
+    eraseNairaMemoryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaMemoryErasureRequest"];
+            };
+        };
+        responses: {
+            /** @description Las versiones redactadas, el instante y la fila de auditoría */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryErasureResult"];
+                };
+            };
+            /** @description Cuerpo o parámetros inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, miembro no resuelto, o la decisión procedural (con reason) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Naira apagada para el tenant, ítem no creído / de otro tenant, o propuesta inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Versión no vigente, carrera de revisión, ya redactado, o propuesta ya resuelta */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+        };
+    };
+    writeNairaProceduralMemory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaMemoryTextRequest"];
+            };
+        };
+        responses: {
+            /** @description Memoria procedural escrita */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryProceduralWritten"];
+                };
+            };
+            /** @description Propuesta pendiente de confirmación de un OWNER/ADMIN */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryProceduralProposed"];
+                };
+            };
+            /** @description Cuerpo o parámetros inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, miembro no resuelto, o la decisión procedural (con reason) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Naira apagada para el tenant, ítem no creído / de otro tenant, o propuesta inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Versión no vigente, carrera de revisión, ya redactado, o propuesta ya resuelta */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Contenido rechazado por la pantalla (reason de MEMORY_CONTENT_REJECTION_REASONS, nunca el texto) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+        };
+    };
+    resolveNairaProceduralProposal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaMemoryResolutionRequest"];
+            };
+        };
+        responses: {
+            /** @description Propuesta confirmada (con el ítem) o rechazada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryResolutionResult"];
+                };
+            };
+            /** @description Cuerpo o parámetros inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, miembro no resuelto, o la decisión procedural (con reason) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Naira apagada para el tenant, ítem no creído / de otro tenant, o propuesta inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Versión no vigente, carrera de revisión, ya redactado, o propuesta ya resuelta */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Contenido rechazado por la pantalla (reason de MEMORY_CONTENT_REJECTION_REASONS, nunca el texto) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+        };
+    };
+    promoteNairaMemoryItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La observación nueva y la revisión que consumió */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryWriteResult"];
+                };
+            };
+            /** @description Cuerpo o parámetros inválidos */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, miembro no resuelto, o la decisión procedural (con reason) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Naira apagada para el tenant, ítem no creído / de otro tenant, o propuesta inexistente */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Versión no vigente, carrera de revisión, ya redactado, o propuesta ya resuelta */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description La versión no es una inferencia promovible (reason no-promovible), o la pantalla rechaza su texto (reason de MEMORY_CONTENT_REJECTION_REASONS, nunca el texto) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaMemoryError"];
+                };
+            };
+        };
+    };
+    askNaira: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaConversationQuestionRequest"];
+            };
+        };
+        responses: {
+            /** @description La respuesta de Naira: respondida, negada, bloqueada o fallida */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaConversationAnswer"];
+                };
+            };
+            /** @description Cuerpo o parámetros inválidos (pregunta vacía o más larga que el tope): no se registra */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaConversationError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaConversationError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaConversationError"];
+                };
+            };
+            /** @description Naira apagada para el tenant, o la conversación (NAIRA_CONVERSATION_ENABLED) apagada */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaConversationError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaConversationError"];
+                };
+            };
+        };
+    };
+    getNairaBriefing: {
+        parameters: {
+            query?: {
+                dia?: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El día del llamador: sus entregas o la razón por la que no hay */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaBriefingDay"];
+                };
+            };
+            /** @description Parámetros inválidos (agencyId en mayúsculas, día inexistente o futuro, promocionId sin forma) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaBriefingError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaBriefingError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaBriefingError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o la señal no fue entregada o su métrica no es visible para el rol */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaBriefingError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaBriefingError"];
+                };
+            };
+        };
+    };
+    getNairaSignalDetail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                promocionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El detalle de la señal con su causa citada, no disponible o no citable */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaSignalDetail"];
+                };
+            };
+            /** @description Parámetros inválidos (agencyId en mayúsculas, día inexistente o futuro, promocionId sin forma) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaBriefingError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaBriefingError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaBriefingError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o la señal no fue entregada o su métrica no es visible para el rol */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaBriefingError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaBriefingError"];
+                };
+            };
+        };
+    };
+    getNairaNotificationPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las dos preferencias efectivas */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigPreferences"];
+                };
+            };
+            /** @description Cuerpo, query o parámetros inválidos (clave de más, vocabulario, UUID en mayúsculas, día inexistente) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el recurso nombrado no existe (reason) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+        };
+    };
+    setNairaNotificationPreference: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaNotifyConfigPreferenceRequest"];
+            };
+        };
+        responses: {
+            /** @description La revisión registrada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigPreferenceWritten"];
+                };
+            };
+            /** @description Cuerpo, query o parámetros inválidos (clave de más, vocabulario, UUID en mayúsculas, día inexistente) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el recurso nombrado no existe (reason) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+        };
+    };
+    listNairaRoleAssignments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Asignaciones vigentes y dueños sin destinatario del día */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigAssignments"];
+                };
+            };
+            /** @description Cuerpo, query o parámetros inválidos (clave de más, vocabulario, UUID en mayúsculas, día inexistente) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el recurso nombrado no existe (reason) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+        };
+    };
+    createNairaRoleAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaNotifyConfigAssignmentRequest"];
+            };
+        };
+        responses: {
+            /** @description La asignación ya estaba vigente (el mismo id) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigAssignmentResult"];
+                };
+            };
+            /** @description La asignación nueva */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigAssignmentResult"];
+                };
+            };
+            /** @description Cuerpo, query o parámetros inválidos (clave de más, vocabulario, UUID en mayúsculas, día inexistente) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el recurso nombrado no existe (reason) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Conflicto con el estado vigente (reason con su nombre) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Pedido bien formado que el dominio rechaza (reason con su nombre; nunca el texto rechazado) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+        };
+    };
+    deleteNairaRoleAssignment: {
+        parameters: {
+            query: {
+                rol: "cartera" | "portafolio" | "prospectos";
+                userId: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La asignación quedó retirada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigAssignmentRemoved"];
+                };
+            };
+            /** @description Cuerpo, query o parámetros inválidos (clave de más, vocabulario, UUID en mayúsculas, día inexistente) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el recurso nombrado no existe (reason) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+        };
+    };
+    answerNairaRecall: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaNotifyConfigRecallRequest"];
+            };
+        };
+        responses: {
+            /** @description La respuesta registrada */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigRecallWritten"];
+                };
+            };
+            /** @description Cuerpo, query o parámetros inválidos (clave de más, vocabulario, UUID en mayúsculas, día inexistente) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el recurso nombrado no existe (reason) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Pedido bien formado que el dominio rechaza (reason con su nombre; nunca el texto rechazado) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+        };
+    };
+    getNairaGoLive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El go-live fijado o sin_go_live */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigGoLive"];
+                };
+            };
+            /** @description Cuerpo, query o parámetros inválidos (clave de más, vocabulario, UUID en mayúsculas, día inexistente) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el recurso nombrado no existe (reason) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+        };
+    };
+    setNairaGoLive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaNotifyConfigGoLiveRequest"];
+            };
+        };
+        responses: {
+            /** @description El go-live quedó fijado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigGoLive"];
+                };
+            };
+            /** @description Cuerpo, query o parámetros inválidos (clave de más, vocabulario, UUID en mayúsculas, día inexistente) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el recurso nombrado no existe (reason) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Ya había un go-live fijado: se devuelve el vigente */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigGoLiveConflict"];
+                };
+            };
+            /** @description Pedido bien formado que el dominio rechaza (reason con su nombre; nunca el texto rechazado) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+        };
+    };
+    getNairaInvestigationCap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La política, el máximo y la regla */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigInvestigationCap"];
+                };
+            };
+            /** @description Cuerpo, query o parámetros inválidos (clave de más, vocabulario, UUID en mayúsculas, día inexistente) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el recurso nombrado no existe (reason) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+        };
+    };
+    setNairaInvestigationCap: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaNotifyConfigInvestigationCapRequest"];
+            };
+        };
+        responses: {
+            /** @description La política fijada con su instante */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigInvestigationCapWritten"];
+                };
+            };
+            /** @description Cuerpo, query o parámetros inválidos (clave de más, vocabulario, UUID en mayúsculas, día inexistente) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el recurso nombrado no existe (reason) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Pedido bien formado que el dominio rechaza (reason con su nombre; nunca el texto rechazado) */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+        };
+    };
+    listNairaLegacyQueue: {
+        parameters: {
+            query?: {
+                limite?: number;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las filas visibles y cuántas se ocultaron por rol */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigLegacyQueue"];
+                };
+            };
+            /** @description Cuerpo, query o parámetros inválidos (clave de más, vocabulario, UUID en mayúsculas, día inexistente) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el recurso nombrado no existe (reason) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+        };
+    };
+    resolveNairaRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                reglaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaNotifyConfigRuleDecision"];
+            };
+        };
+        responses: {
+            /** @description La transición registrada con su revisión */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigRuleResolved"];
+                };
+            };
+            /** @description Cuerpo, query o parámetros inválidos (clave de más, vocabulario, UUID en mayúsculas, día inexistente) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el recurso nombrado no existe (reason) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Conflicto con el estado vigente (reason con su nombre) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaNotifyConfigError"];
+                };
+            };
+        };
+    };
+    getNairaWhatsappConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El consentimiento de quien llama */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsent"];
+                };
+            };
+            /** @description Cuerpo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+            /** @description Fuera de la matriz o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+            /** @description Naira apagada para el tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+        };
+    };
+    setNairaWhatsappConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaWhatsappConsentRequest"];
+            };
+        };
+        responses: {
+            /** @description El consentimiento de quien llama */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsent"];
+                };
+            };
+            /** @description Cuerpo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+            /** @description Fuera de la matriz o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+            /** @description Naira apagada para el tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+        };
+    };
+    createNairaWhatsappCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El código, que se muestra una sola vez */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappCode"];
+                };
+            };
+            /** @description Cuerpo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+            /** @description Fuera de la matriz o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+            /** @description Naira apagada para el tenant */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaWhatsappConsentError"];
+                };
+            };
+        };
+    };
+    getNairaManagementAuthorization: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El estado y el texto que se acepta */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaManagementAuthorization"];
+                };
+            };
+            /** @description Cuerpo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Fuera de la matriz o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Naira apagada para el tenant, o la persona no autorizó (reason sin_autorizacion) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+        };
+    };
+    setNairaManagementAuthorization: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaManagementAuthorizationRequest"];
+            };
+        };
+        responses: {
+            /** @description El estado después de guardar */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaManagementAuthorization"];
+                };
+            };
+            /** @description Cuerpo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Fuera de la matriz o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Naira apagada para el tenant, o la persona no autorizó (reason sin_autorizacion) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+        };
+    };
+    getNairaAboutMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La ficha de quien llama */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPersonSheet"];
+                };
+            };
+            /** @description Cuerpo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Fuera de la matriz o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Naira apagada para el tenant, o la persona no autorizó (reason sin_autorizacion) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+        };
+    };
+    listNairaAuthorizedTeam: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Quién autorizó */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaAuthorizedTeam"];
+                };
+            };
+            /** @description Cuerpo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Fuera de la matriz o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Naira apagada para el tenant, o la persona no autorizó (reason sin_autorizacion) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+        };
+    };
+    getNairaTeamMemberSheet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La ficha de esa persona */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPersonSheet"];
+                };
+            };
+            /** @description Cuerpo inválido */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Fuera de la matriz o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Naira apagada para el tenant, o la persona no autorizó (reason sin_autorizacion) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+            /** @description Base de datos no disponible */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaPorPersonaError"];
+                };
+            };
+        };
+    };
+    listNairaOpenLoops: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Los loops vivos visibles para el rol del llamador */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsList"];
+                };
+            };
+            /** @description Parámetros inválidos (agencyId o loopId sin forma de UUID en minúsculas, promocionId sin forma, cuerpo del voto fuera de sus tres valores, o rango del reporte irreal, invertido, futuro o mayor que el máximo) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el loop no existe, es de otro tenant o su métrica no es visible para el rol (reason no_encontrado), o la señal no se le entregó al llamador en atención o informativo (reason no_entregado) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) o tablas de loops no disponibles (reason tabla_no_disponible) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+        };
+    };
+    getNairaOpenLoop: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                loopId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El loop con su bitácora */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopDetail"];
+                };
+            };
+            /** @description Parámetros inválidos (agencyId o loopId sin forma de UUID en minúsculas, promocionId sin forma, cuerpo del voto fuera de sus tres valores, o rango del reporte irreal, invertido, futuro o mayor que el máximo) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el loop no existe, es de otro tenant o su métrica no es visible para el rol (reason no_encontrado), o la señal no se le entregó al llamador en atención o informativo (reason no_entregado) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) o tablas de loops no disponibles (reason tabla_no_disponible) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+        };
+    };
+    submitNairaSignalFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                promocionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaSignalFeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description El voto quedó registrado */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaSignalFeedbackResult"];
+                };
+            };
+            /** @description Parámetros inválidos (agencyId o loopId sin forma de UUID en minúsculas, promocionId sin forma, cuerpo del voto fuera de sus tres valores, o rango del reporte irreal, invertido, futuro o mayor que el máximo) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el loop no existe, es de otro tenant o su métrica no es visible para el rol (reason no_encontrado), o la señal no se le entregó al llamador en atención o informativo (reason no_entregado) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Voto fuera de la ventana de feedback (reason ventana_vencida o voto_antes_de_la_entrega), o sin autorización para una señal que le llegó a menos de 3 personas (reason sin_autorizacion, B-5 §8.4) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) o tablas de loops no disponibles (reason tabla_no_disponible) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+        };
+    };
+    getNairaFeedbackReport: {
+        parameters: {
+            query: {
+                desde: string;
+                hasta: string;
+            };
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El reporte por regla */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaFeedbackReport"];
+                };
+            };
+            /** @description Parámetros inválidos (agencyId o loopId sin forma de UUID en minúsculas, promocionId sin forma, cuerpo del voto fuera de sus tres valores, o rango del reporte irreal, invertido, futuro o mayor que el máximo) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, o miembro no resuelto */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), o el loop no existe, es de otro tenant o su métrica no es visible para el rol (reason no_encontrado), o la señal no se le entregó al llamador en atención o informativo (reason no_entregado) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) o tablas de loops no disponibles (reason tabla_no_disponible) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaOpenLoopsError"];
+                };
+            };
+        };
+    };
+    listNairaActions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las propuestas visibles para el rol del llamador */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsList"];
+                };
+            };
+            /** @description Parámetros inválidos (agencyId, proposalId o tareaId sin forma de UUID en minúsculas, o cuerpo de la decisión fuera de su forma) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, miembro no resuelto, o la clase de la propuesta no se aprueba por ese canal o con ese rol (reason canal_no_permitido_para_la_clase o sin_permiso_de_la_clase) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), acciones apagadas (reason acciones_apagadas), o la propuesta o la tarea no existe, es de otro tenant, no está abierta o su métrica no es visible para el rol (el mismo cuerpo) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Reservado por D12-19: este listado no lo produce */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+        };
+    };
+    getNairaAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description El detalle de la propuesta */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionDetail"];
+                };
+            };
+            /** @description Parámetros inválidos (agencyId, proposalId o tareaId sin forma de UUID en minúsculas, o cuerpo de la decisión fuera de su forma) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, miembro no resuelto, o la clase de la propuesta no se aprueba por ese canal o con ese rol (reason canal_no_permitido_para_la_clase o sin_permiso_de_la_clase) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), acciones apagadas (reason acciones_apagadas), o la propuesta o la tarea no existe, es de otro tenant, no está abierta o su métrica no es visible para el rol (el mismo cuerpo) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description La decisión no se registra: clase incoherente, vencida, no reproducible, huella distinta, procedencia no disponible o ya decidida (reason); la tarea ya se cerró (reason ya_cerrada) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+        };
+    };
+    decideNairaAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                proposalId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NairaActionDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description La decisión quedó registrada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionDecisionResult"];
+                };
+            };
+            /** @description Parámetros inválidos (agencyId, proposalId o tareaId sin forma de UUID en minúsculas, o cuerpo de la decisión fuera de su forma) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, miembro no resuelto, o la clase de la propuesta no se aprueba por ese canal o con ese rol (reason canal_no_permitido_para_la_clase o sin_permiso_de_la_clase) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), acciones apagadas (reason acciones_apagadas), o la propuesta o la tarea no existe, es de otro tenant, no está abierta o su métrica no es visible para el rol (el mismo cuerpo) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description La decisión no se registra: clase incoherente, vencida, no reproducible, huella distinta, procedencia no disponible o ya decidida (reason); la tarea ya se cerró (reason ya_cerrada) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+        };
+    };
+    listNairaTasks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Las tareas abiertas visibles para el rol del llamador */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaTasksList"];
+                };
+            };
+            /** @description Parámetros inválidos (agencyId, proposalId o tareaId sin forma de UUID en minúsculas, o cuerpo de la decisión fuera de su forma) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, miembro no resuelto, o la clase de la propuesta no se aprueba por ese canal o con ese rol (reason canal_no_permitido_para_la_clase o sin_permiso_de_la_clase) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), acciones apagadas (reason acciones_apagadas), o la propuesta o la tarea no existe, es de otro tenant, no está abierta o su métrica no es visible para el rol (el mismo cuerpo) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Reservado por D12-19: este listado no lo produce */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+        };
+    };
+    cancelNairaTask: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                agencyId: string;
+                tareaId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description La tarea quedó cancelada */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaTaskCancelResult"];
+                };
+            };
+            /** @description Parámetros inválidos (agencyId, proposalId o tareaId sin forma de UUID en minúsculas, o cuerpo de la decisión fuera de su forma) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Sin JWT de agencia o JWT inválido */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Acción fuera de la matriz, tenant del JWT distinto del path, miembro no resuelto, o la clase de la propuesta no se aprueba por ese canal o con ese rol (reason canal_no_permitido_para_la_clase o sin_permiso_de_la_clase) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Naira apagada para el tenant (reason naira_no_habilitada), acciones apagadas (reason acciones_apagadas), o la propuesta o la tarea no existe, es de otro tenant, no está abierta o su métrica no es visible para el rol (el mismo cuerpo) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description La decisión no se registra: clase incoherente, vencida, no reproducible, huella distinta, procedencia no disponible o ya decidida (reason); la tarea ya se cerró (reason ya_cerrada) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+            /** @description Base de datos no disponible (stub mode) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NairaActionsError"];
+                };
+            };
+        };
+    };
     cotizadorQuoteCreate: {
         parameters: {
             query?: {
@@ -40828,48 +45477,6 @@ export interface operations {
             };
         };
     };
-    listCalidadPublicaciones: {
-        parameters: {
-            query?: {
-                limit?: number;
-            };
-            header?: never;
-            path: {
-                agencyId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Cola de calidad */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CalidadPublicacionResponse"];
-                };
-            };
-            /** @description Feature no habilitada */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CalidadPublicacionError"];
-                };
-            };
-            /** @description DB no disponible */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CalidadPublicacionError"];
-                };
-            };
-        };
-    };
     getCalidadEstado: {
         parameters: {
             query?: never;
@@ -40958,113 +45565,44 @@ export interface operations {
             };
         };
     };
-    redactarMensaje: {
+    listCalidadPublicaciones: {
         parameters: {
-            query?: never;
+            query?: {
+                limit?: number;
+            };
             header?: never;
             path: {
                 agencyId: string;
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PedidoDeRedaccionDeMensaje"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description El borrador */
+            /** @description Cola de calidad */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MensajeRedactado"];
+                    "application/json": components["schemas"]["CalidadPublicacionResponse"];
                 };
             };
-            /** @description Datos inválidos */
-            400: {
+            /** @description Feature no habilitada */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                        statusCode?: number;
-                        code?: string;
-                        message?: string | string[];
-                        campos?: components["schemas"]["SobreDeErrorCampo"][];
-                        referencia?: string;
-                        servicio?: string;
-                    };
+                    "application/json": components["schemas"]["CalidadPublicacionError"];
                 };
             };
-            /** @description Sólo quien escribe mensajes */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                        statusCode?: number;
-                        code?: string;
-                        message?: string | string[];
-                        campos?: components["schemas"]["SobreDeErrorCampo"][];
-                        referencia?: string;
-                        servicio?: string;
-                    };
-                };
-            };
-            /** @description Demasiados pedidos */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                        statusCode?: number;
-                        code?: string;
-                        message?: string | string[];
-                        campos?: components["schemas"]["SobreDeErrorCampo"][];
-                        referencia?: string;
-                        servicio?: string;
-                    };
-                };
-            };
-            /** @description No se pudo escribir */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        error: string;
-                        statusCode?: number;
-                        code?: string;
-                        message?: string | string[];
-                        campos?: components["schemas"]["SobreDeErrorCampo"][];
-                        referencia?: string;
-                        servicio?: string;
-                    };
-                };
-            };
-            /** @description Escribir con IA no está disponible */
+            /** @description DB no disponible */
             503: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        error: string;
-                        statusCode?: number;
-                        code?: string;
-                        message?: string | string[];
-                        campos?: components["schemas"]["SobreDeErrorCampo"][];
-                        referencia?: string;
-                        servicio?: string;
-                    };
+                    "application/json": components["schemas"]["CalidadPublicacionError"];
                 };
             };
         };
